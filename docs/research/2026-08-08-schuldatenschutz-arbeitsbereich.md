@@ -1,0 +1,84 @@
+# Schuldatenschutzrahmen für lokalen Lehrkraft-Kontext und Kursübergabe
+
+**Recherche-Ticket:** „Recherche: Schuldatenschutzrahmen für lokalen Lehrkraft-Kontext und Kursübergabe“  
+**Stand:** 08.08.2026  
+**Methode:** Ausschließlich Rechtsquellen und Veröffentlichungen der europäischen, deutschen oder unabhängigen Datenschutzaufsicht. Diese Notiz ist keine Rechtsberatung und ersetzt weder die landesrechtliche Prüfung noch die Freigabe durch Schulleitung/Datenschutzbeauftragte:n.
+
+## Ergebnis in einem Satz
+
+Ohne Bundesland und Status der IGS lässt sich keine landesrechtlich belastbare Erlaubnis für Privatgerät, iCloud oder eine feste Löschfrist feststellen. Bundesweit sicher ist nur: Schülerdaten dürfen für einen bestimmten schulischen Zweck, auf einer einschlägigen Rechtsgrundlage und mit angemessenen Schutzmaßnahmen verarbeitet werden; eine Übergabe an eine andere Lehrkraft ist eine eigene, erforderliche und zweckgebundene Verarbeitung. Die konkrete Freigabe, Zuständigkeit und Frist sind Landes- und Schulvorgaben.
+
+## Zwingend vor der Landesrecherche zu klären
+
+Im Repository und in den zugehörigen Issues ist lediglich „IGS“ belegt. Das bestimmt kein Bundesland; auch die vorgeschriebene FTS-Abfrage der lokalen Wissensbasis konnte deren Datenbank in dieser Umgebung nicht öffnen. Es darf deshalb **nicht** aus der Schulform auf Niedersachsen oder ein anderes Land geschlossen werden.
+
+**Präzise HITL-Frage:** In welchem Bundesland befindet sich die IGS, ist sie eine öffentliche Schule, und wer ist nach der dortigen Schul-/Datenschutzregelung Verantwortlicher (Schule, Schulaufsicht oder Schulträger)? Bitte außerdem die für die Schule geltende Dienstanweisung bzw. Freigabeliste für Privatgeräte, private Clouds und dienstliche Speicherorte nennen oder den:die Datenschutzbeauftragte:n benennen.
+
+Die Datenschutzkonferenz (DSK) nennt für Schülerdaten als erste Rechtsgrundlagen gerade die jeweiligen Schulgesetze, Schuldatenschutzgesetze und Rechtsverordnungen; ergänzend können Landesdatenschutzrecht und je nach Land/Schultyp das BDSG gelten. Sie ordnet die Verantwortlichkeit bei Lernplattformen der Schule oder – landesabhängig – der Schulaufsicht zu. [DSK, *Orientierungshilfe Online-Lernplattformen*, S. 4–5](https://www.bfdi.bund.de/SharedDocs/Downloads/DE/DSK/Orientierungshilfen/OH_OnlineLernplattformen.pdf?__blob=publicationFile&v=2) (abgerufen am 08.08.2026).
+
+## Bundesweit belastbarer Mindestmaßstab
+
+- Die DSGVO verlangt Rechtmäßigkeit, Zweckbindung, Datenminimierung, Richtigkeit und Speicherbegrenzung. Daten dürfen nur so lange identifizierbar gespeichert bleiben, wie es für den festgelegten Zweck nötig ist; weitergehende gesetzliche Aufbewahrungs- oder Archivpflichten bleiben möglich. [DSGVO, Art. 5](https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX%3A32016R0679) (abgerufen am 08.08.2026).
+- Für öffentliche schulische Aufgaben kommt grundsätzlich Art. 6 Abs. 1 Buchst. e DSGVO in Betracht, aber nur zusammen mit der hierfür einschlägigen Unions- oder **Landes**norm nach Art. 6 Abs. 3 DSGVO. Das ist keine pauschale Freigabe jeder Weitergabe. Enthält der Kontext etwa Angaben zu Gesundheit, Behinderung oder Förderbedarf, können besondere Kategorien nach Art. 9 DSGVO vorliegen und benötigen zusätzlich einen passenden Ausnahmetatbestand, regelmäßig eine spezifischere Rechtsgrundlage. [DSGVO, Art. 6 und 9](https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX%3A32016R0679) (abgerufen am 08.08.2026).
+- Verantwortliche müssen das Risiko bewerten und angemessene technische und organisatorische Maßnahmen treffen; die DSGVO nennt unter anderem Verschlüsselung/Pseudonymisierung, Wiederherstellbarkeit und regelmäßige Wirksamkeitsprüfung. [DSGVO, Art. 32](https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX%3A32016R0679) (abgerufen am 08.08.2026). Die BfDI hebt für ruhende Daten hervor, dass Verschlüsselung Vertraulichkeit stärkt und bei Verlust eines mobilen Endgeräts regelmäßig fortwirkt, aber mit weiteren Maßnahmen verbunden sein muss. [BfDI, *Kurzposition: Verschlüsselung und Backups*](https://www.bfdi.bund.de/DE/Fachthemen/Inhalte/Technik/Kurzposition_Verschl%C3%BCsselung_und_Backups.html) (abgerufen am 08.08.2026).
+- Ein externer Cloudanbieter, der die Daten im Auftrag verarbeitet, darf nur mit ausreichenden Garantien eingesetzt werden; die Verarbeitung ist vertraglich nach Art. 28 DSGVO zu regeln. Werden Daten an ein Drittland oder eine internationale Organisation übermittelt, greift zusätzlich Kapitel V, beginnend mit Art. 44 DSGVO. [DSGVO, Art. 28 und 44](https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX%3A32016R0679) (abgerufen am 08.08.2026).
+
+## Folgerungen für die vier Fragen des Tickets
+
+### Privatgerät und iCloud Drive
+
+Es gibt keinen bundesweit einheitlichen Satz „Privatgerät erlaubt/verboten“. Ob eine Lehrkraft dienstliche Schülerdaten auf einem Privatgerät speichern darf, entscheidet das zuständige Land bzw. die verantwortliche Schule/Schulaufsicht innerhalb ihres Sicherheitskonzepts. Die DSK betont, dass Lehrende digitale Lernplattformen nur einsetzen dürfen, soweit Schule oder Schulaufsicht darüber entschieden hat. [DSK, *Orientierungshilfe Online-Lernplattformen*, S. 5](https://www.bfdi.bund.de/SharedDocs/Downloads/DE/DSK/Orientierungshilfen/OH_OnlineLernplattformen.pdf?__blob=publicationFile&v=2) (abgerufen am 08.08.2026).
+
+Für den Arbeitsbereich folgt daraus zunächst eine sichere Produktgrenze: **Keinen Speicherort als zulässig deklarieren und keine personenbezogenen Sidecars in iCloud Drive voraussetzen.** Wenn macOS/iCloud Drive den Ordner synchronisiert, liegt nicht mehr nur lokale Speicherung vor, sondern eine Cloudverarbeitung, die vorher durch die verantwortliche Stelle freigegeben werden muss. Soweit der Anbieter dabei Auftragsverarbeiter ist, muss sie nach Art. 28 DSGVO abgesichert sein; bei Drittlandübermittlungen ist zusätzlich Art. 44 DSGVO zu prüfen. Die konkrete iCloud-Konfiguration, Rollenverteilung, Vertragslage und Datenregion sind dafür festzustellen, nicht zu unterstellen. [DSGVO, Art. 28 und 44](https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX%3A32016R0679) (abgerufen am 08.08.2026).
+
+Erst nach Landes-/Schulfreigabe gehören mindestens risikogerecht umgesetzte Maßnahmen wie eindeutige Gerätesperre, getrennte Benutzerkonten, aktuelle Sicherheitsupdates, Verschlüsselung des Datenträgers und ein geregelter Verlust-/Löschprozess in die lokale Dienstanweisung. Diese Liste ist eine Ableitung aus Art. 32, keine universelle, abschließende Gerätezulassung. [DSGVO, Art. 32](https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX%3A32016R0679) (abgerufen am 08.08.2026).
+
+### Übergabe innerhalb derselben Schule
+
+Die interne Übergabe ist nicht allein deshalb zulässig, weil beide Personen Lehrkräfte sind. Sie muss für eine konkrete schulische Aufgabe der empfangenden Lehrkraft erforderlich sein, auf der landesrechtlichen Grundlage beruhen und auf diesen Zweck beschränkt sein. Dass keine Einwilligung nötig ist, kann erst die Landesnorm bzw. die schulische Zulassungsentscheidung tragen; Einwilligung ist daher nicht als universelle Voraussetzung, aber auch nicht als universell entbehrlich zu behandeln. Die DSK verlangt vor Einsatz einer Lernplattform die Prüfung, ob der Einsatz gesetzlich zulässig ist und ob eine Einwilligung von Schüler:innen bzw. Erziehungsberechtigten erforderlich ist. [DSK, *Orientierungshilfe Online-Lernplattformen*, S. 4–5](https://www.bfdi.bund.de/SharedDocs/Downloads/DE/DSK/Orientierungshilfen/OH_OnlineLernplattformen.pdf?__blob=publicationFile&v=2) (abgerufen am 08.08.2026).
+
+Das gilt für Leistungs- und Lernstandsbeobachtungen ebenso wie für Noten, sobald eine Person bestimmbar ist. Bei Förder-, Gesundheits- oder vergleichbar sensiblen Angaben ist die Art-9-Prüfung zwingend; ein pauschaler „schulinterner“ Vermerk ersetzt sie nicht. [DSGVO, Art. 5, 6 und 9](https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX%3A32016R0679) (abgerufen am 08.08.2026).
+
+### Aufbewahrung und Löschung
+
+Eine bundeseinheitliche Jahreszahl für lokale Lernstands- und Verlaufsnotizen gibt es nicht. Die DSK empfiehlt für Daten in schulischen Online-Lernplattformen die Löschung von Kursbearbeitungen, Fehlern und Korrekturanmerkungen am Ende des laufenden Schuljahres; Ausnahmen nennt sie unter anderem für schuljahresübergreifende Projekte, abiturrelevante Kurse und Dokumentationspflichten. Sie verlangt ausdrücklich, die Aufbewahrungsfristen aus Landesschulgesetzen/-verordnungen zu beachten und die Einhaltung schriftlich festzulegen. Diese Orientierung ist hilfreich, aber keine Ersatzregel für den lokalen Kurspilot-Arbeitsbereich. [DSK, *Orientierungshilfe Online-Lernplattformen*, S. 16–17](https://www.bfdi.bund.de/SharedDocs/Downloads/DE/DSK/Orientierungshilfen/OH_OnlineLernplattformen.pdf?__blob=publicationFile&v=2) (abgerufen am 08.08.2026).
+
+Bis zur Landesklärung darf das Manifest deshalb keine erfundene feste Frist nennen. Es soll Zweck, Empfängerrolle, Prüfzeitpunkt und die Pflicht zur Anwendung der konkret geltenden Lösch-/Aufbewahrungsregel transparent machen. Das stützt sich auf Zweckbindung und Speicherbegrenzung, nicht auf eine technische Löschgarantie. [DSGVO, Art. 5](https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX%3A32016R0679) (abgerufen am 08.08.2026).
+
+### Andere Schule und Schulwechsel
+
+Eine andere Schule ist nicht durch die Annahme „gleiche Schule, gleiche Aufgabe“ gedeckt. Die DSK behandelt jede Schule bei Lernplattformen als eigene Organisationseinheit und fordert die logische Trennung ihrer Datenbestände. Daraus folgt für Kurspilot mindestens, dass ein Schulwechsel als **separater Übergabefall** mit landesrechtlicher Prüfung, konkretem Zweck und Empfängerzuständigkeit modelliert werden muss; eine automatische Übernahme eines Modus-2-Pakets wäre nicht begründet. [DSK, *Orientierungshilfe Online-Lernplattformen*, S. 17](https://www.bfdi.bund.de/SharedDocs/Downloads/DE/DSK/Orientierungshilfen/OH_OnlineLernplattformen.pdf?__blob=publicationFile&v=2) (abgerufen am 08.08.2026).
+
+Ob und in welcher Form Lernstandsnotizen beim konkreten Schulwechsel übergeben werden dürfen oder müssen, ergibt sich aus dem noch unbekannten Landesrecht. Dieser Fall kommt begrifflich vor, ist hier aber nicht als zulässiger Standardtransport nachgewiesen.
+
+## Textvorschlag – bis zur Landesfreigabe
+
+### Manifest: Aufbewahrungshinweis
+
+> Dieses Paket enthält personenbezogene Lernstands- und Verlaufsdaten. Die empfangende Lehrkraft darf es ausschließlich für die ihr dienstlich übertragene pädagogische Aufgabe für diese Lerngruppe verwenden. Aufbewahrung, Zugriff und Löschung richten sich nach den für **[Bundesland/Schule]** geltenden Schuldatenschutz-, Aufbewahrungs- und Dienstvorgaben. Spätestens bei Wegfall der Zuständigkeit, Zweckänderung, Ende des Schuljahres oder Schulwechsel ist die weitere Erforderlichkeit zu prüfen und das Paket nach dieser Vorgabe zu löschen, zu übergeben oder der zuständigen Schule vorzulegen. Keine Weitergabe an Personen oder Stellen außerhalb der hierfür zuständigen Schule und keine Speicherung in nicht freigegebenen Cloud-Diensten.
+
+Die Klammer darf erst nach der HITL-Antwort ersetzt werden. Der Text behauptet bewusst keine feste Frist und keine technisch erzwungene Löschung.
+
+### Handreichung für Empfänger:innen
+
+1. Prüfen, dass Sie für diese Lerngruppe und den im Manifest genannten Zweck dienstlich zuständig sind.
+2. Speichern Sie das Paket nur am von Schule/Schulaufsicht freigegebenen Ort; ein privater iCloud-Ordner ist ohne dokumentierte Freigabe kein freigegebener Ort.
+3. Geben Sie nur die für die eigene Aufgabe erforderlichen Informationen weiter. Bei Gesundheits-, Förder- oder vergleichbar sensiblen Angaben Rücksprache mit Schulleitung/Datenschutzbeauftragten.
+4. Prüfen Sie zu den oben genannten Ereignissen die Lösch- oder Aufbewahrungspflicht nach der Landesregel. Bei Wechsel an eine andere Schule nicht weitergeben, bevor die neue Rechtsgrundlage und der Übermittlungsweg geklärt sind.
+
+## Nächste Entscheidung nach der HITL-Antwort
+
+Die nächste Recherche muss die benannte Landesnorm, einschlägige Verordnung, landesweite Handreichung und die schulinterne Freigabe gegen die vier Felder prüfen: erlaubte Endgeräte, zugelassene Cloud-/Synchronisationsdienste, Rechtsgrundlage der internen Datenübermittlung und konkrete Lösch-/Aufbewahrungsfristen. Erst dann kann der Platzhalter im Manifest zu einer rechtsraumbezogenen Aussage werden.
+
+## Bedingter Recherchepfad: nur falls Niedersachsen bestätigt wird
+
+Dieser Abschnitt ist **keine** Zuordnung der Schule zu Niedersachsen. Er verkürzt nur die Folgearbeit, falls die HITL-Antwort Niedersachsen bestätigt.
+
+- Der aktuelle niedersächsische Erlass zur Verarbeitung personenbezogener Daten auf privaten IT-Systemen lässt private IT für dienstliche Aufgaben nicht pauschal frei: Die Schulleitung muss die Nutzung schriftlich genehmigen; der Antrag benennt System, Software und technische/organisatorische Maßnahmen. Für Cloud- oder sonstige Fremddienste verlangt der Erlass die Anforderungen der Auftragsverarbeitung und bei Drittlandbezug die einschlägigen Übermittlungsregeln. Er beschränkt die Daten auf unmittelbar betreute Schüler:innen und auf Erforderliches; er fordert unter anderem Zugriffsschutz, Verschlüsselung interner Speicher sowie Verschlüsselung elektronischer Übermittlungen und die Löschung lokaler Daten, wenn die Betreuungsfunktion endet. [Niedersachsen, *Verarbeitung personenbezogener Daten auf privaten IT-Systemen von Lehrkräften*, §§ 1–4](https://voris.wolterskluwer-online.de/browse/document/cite/ef2f215e-6602-3028-b55d-3ff7b7ce9d19) (abgerufen am 08.08.2026); [§ 2](https://voris.wolterskluwer-online.de/browse/document/94f5bf0f-e860-3013-afb1-1be4ba9cd500), [§ 3](https://voris.wolterskluwer-online.de/browse/document/ef6fc2af-dae2-3b7e-99c8-c1272e9eedbb) und [§ 4](https://voris.wolterskluwer-online.de/browse/document/4a79aab5-9395-33aa-8a5b-632b6193ae9f) (jeweils abgerufen am 08.08.2026).
+- § 31 NSchG erlaubt die Verarbeitung durch Schulen, soweit sie für Bildungsauftrag und Fürsorge erforderlich ist, und enthält eine Ermächtigung für Regelungen zur Datenübermittlung beim Übergang in eine andere Schule. Für eine bestätigte niedersächsische IGS wäre die schulinterne Übergabe daher über konkrete Aufgabenerfüllung und Erforderlichkeit, nicht über eine Routinen-Einwilligung, zu beurteilen; bei Schulwechsel bliebe der geregelte offizielle Übermittlungsweg maßgeblich. [Niedersächsisches Schulgesetz, § 31](https://voris.wolterskluwer-online.de/browse/document/dual/639b3c72-a5a3-3ddc-bbfa-05f016188ffe/65bb7e9c-5f4b-39fc-81cb-5f793fb52403) (abgerufen am 08.08.2026).
+- Das niedersächsische Kultusministerium beschreibt die Dokumentation der individuellen Lernentwicklung bis Jahrgang 10 und nennt Lehrkraft- und Schulwechsel als Übergabesituationen. Die Aufbewahrung folgt dabei den Schriftgutvorgaben; eine feste Frist für jede lokale Kurspilot-Notiz folgt daraus nicht. [Niedersächsisches Kultusministerium, *Individuelle Lernentwicklung und ihre Dokumentation*](https://www.mk.niedersachsen.de/startseite/schule/lehrkrafte_und_nichtlehrendes_personal/unterricht/individuelle_lernentwicklung/individuelle-lernentwicklung-und-ihre-dokumentation-6064.html) (abgerufen am 08.08.2026). Die begleitende Handreichung erläutert Lernentwicklungsdokumentation und ihre Weiterführung beim Wechsel, ist aber für aktuelle Fristen nur ergänzend heranzuziehen. [Niedersächsisches Kultusministerium, *Handreichung zur Dokumentation der individuellen Lernentwicklung*, S. 7–8](https://www.mk.niedersachsen.de/download/183299/Handreichung_zur_Dokumentation_der_individuellen_Lernentwicklung.pdf) (abgerufen am 08.08.2026).
+- Der niedersächsische Aufbewahrungs-/Lösch-Erlass gilt unabhängig von der Speicherart und knüpft an die aufgabenbezogene Erforderlichkeit sowie die Archivübernahme an; ohne Dokumenttyp ist auch hier keine pauschale Jahresfrist ableitbar. [Niedersachsen, *Aufbewahrung von Schriftgut an Schulen; Löschung personenbezogener Daten*, VORIS 22560](https://voris.wolterskluwer-online.de/browse/document/640e4c85-5bee-31a9-90a1-255f5186216c) (abgerufen am 08.08.2026).
+
+Für den bestätigten Fall Niedersachsen wäre der folgende Manifesttext enger und belastbar:
+
+> Die Übergabe erfolgt ausschließlich zur Erfüllung einer konkreten schulischen Betreuungs- oder Förderaufgabe. Die empfangende Lehrkraft darf nur die hierfür erforderlichen Daten verarbeiten, muss sie gegen unbefugten Zugriff schützen und bei elektronischer Übermittlung verschlüsseln. Lokale Kopien sind zu löschen, sobald die eigene Betreuungsfunktion endet. Abweichende schulische Aufbewahrungs-/Archivvorgaben und Freigaben der Schulleitung gehen vor. Keine Ablage in privaten Cloud-Konten; cloudbasierte Ablage nur in einem von der Schule datenschutzrechtlich freigegebenen Dienst.
