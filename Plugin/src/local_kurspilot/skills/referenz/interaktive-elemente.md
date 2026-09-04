@@ -5,8 +5,9 @@ description: Lies diese Datei, wenn eine Aufgabe Eingabefelder, Checkboxen, Bewe
 
 # Referenz: Interaktive Elemente in Aufgaben
 
-Lies diese Datei, wenn eine Aufgabe (`moodle_create_assign`) Eingabefelder,
-Checkboxen, Bewertungsskalen oder Tabellen mit Eingabefeldern enthalten soll.
+Lies diese Datei, wenn eine Aufgabe (`kurspilot_create_module` mit
+`modname="assign"`) Eingabefelder, Checkboxen, Bewertungsskalen oder Tabellen
+mit Eingabefeldern enthalten soll.
 
 ## Texteingabe
 

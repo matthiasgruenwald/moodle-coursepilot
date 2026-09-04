@@ -5,16 +5,16 @@ description: Lies diese Datei beim Erstellen von Textseiten, Phasen-Headern oder
 
 # Referenz: HTML-Vorlagen
 
-Lies diese Datei beim Erstellen von Textseiten (`moodle_create_page`),
-Phasen-Headern (`moodle_create_label`) oder Aufgabenbeschreibungen
-(`moodle_create_assign`) mit HTML-Inhalt.
+Lies diese Datei beim Erstellen von Textseiten (`kurspilot_create_module` mit
+`modname="page"`), Phasen-Headern (`modname="label"`) oder Aufgabenbeschreibungen
+(`modname="assign"`) mit HTML-Inhalt.
 
 Keine dieser Vorlagen ist Pflicht. Nutze nur die sichtbaren Elemente, die im
 Auftrag, Material oder freigegebenen Implementierungsplan fachlich begruendet
 sind (siehe Planstrenge in `kurspilot_get_skill("kurspilot-core")`). Wenn eine
 schlichtere Darstellung denselben Zweck erfuellt, ist sie die richtige Wahl.
 
-## Geplanter Abschnittseinstieg (optional fuer moodle_update_section summary)
+## Geplanter Abschnittseinstieg (optional fuer kurspilot_update_section, Feld "summary")
 
 Nur verwenden, wenn ein freigegebener Plan fuer diesen Abschnitt ausdruecklich
 einen sichtbaren Einstieg vorsieht. Das gilt auch fuer Abschnitt 0
@@ -45,7 +45,10 @@ Ersetze alle [PLATZHALTER] mit echten Inhalten aus der Unterrichtseinheit bzw. d
 </div>
 ```
 
-## Phasen-Header (fuer moodle_create_label content)
+## Phasen-Header (fuer kurspilot_create_module mit modname="label")
+
+Feld `"intro"` setzen - Moodle leitet den Anzeigenamen selbst aus `intro` ab,
+`"name"` ist fuer `label` gesperrt.
 
 ```html
 <div style="background:linear-gradient(135deg,[FARBE]dd,[FARBE]);border-radius:10px;padding:16px 20px;margin:10px 0;box-shadow:0 3px 10px rgba(0,0,0,0.15);">
@@ -73,7 +76,11 @@ Empfehlungen (nicht verpflichtend):
 | Analyse / Problem | #B71C1C (Rot) | &#128270; |
 | Dokumentation | #37474F (Grau) | &#128196; |
 
-## Textseite mit Syntax-Highlighting (fuer moodle_create_page content)
+## Textseite mit Syntax-Highlighting (fuer kurspilot_create_module mit modname="page")
+
+Pseudofeld `"page": {"text": ..., "format": 1, "itemid": 0}` setzen - NICHT das Feld
+`"content"` direkt, sonst bleibt der Seiteninhalt leer (ohne das Pseudofeld setzt Moodle
+`content` beim Schreiben still auf null).
 
 Nur einbinden wenn die Seite tatsaechlich Code enthaelt:
 
@@ -100,7 +107,7 @@ Verfuegbare Sprachen: cpp, python, javascript, java, bash, ini, json, html, css,
 
 Fuer Seiten OHNE Code: highlight.js weglassen, nur den div-Container verwenden.
 
-## Aufgabe (fuer moodle_create_assign description)
+## Aufgabe (fuer kurspilot_create_module mit modname="assign", Feld "intro")
 
 Grundsatz: Aufgaben enthalten nur die fuer den Arbeitsauftrag noetigen
 sichtbaren Elemente. Abgabehinweise, Print-/PDF-Hinweise, Banner oder

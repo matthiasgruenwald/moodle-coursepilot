@@ -132,7 +132,7 @@ gesetzt, sondern nur dann, wenn der freigegebene Plan ihn fuer genau diesen
 Abschnitt vorsieht.
 
 Wenn ein Moodle-Ziel bekannt ist, liest `kurspilot-planen` den Kursstand ueber
-`moodle_get_course_catalog` im read-only Profil. Die Lehrkraftansicht heisst
+`kurspilot_get_course_catalog` im read-only Profil. Die Lehrkraftansicht heisst
 Moodle-Katalogansicht, ist kompakt und filterbar, und markiert Moodle-Daten
 klar als "aus Moodle gelesen". Detailinhalte werden nur ueber passende Filter
 oder `detail=full` aufgeklappt; Roh-JSON oder ungefilterte Grosskurs-Dumps sind
@@ -171,19 +171,19 @@ und uebertraegt nur die freigegebenen Inhalte, dokumentiert jede begruendete
 Abweichung vor einer Ausfuehrung erneut.
 
 Fuer Abschnitts- und Aktivitaetsverschiebungen gilt dieselbe Planbindung: Vor
-`moodle_move_section` oder `moodle_move_module` wird die geplante neue
+`kurspilot_move_section` oder `kurspilot_move_module` wird die geplante neue
 Reihenfolge zuerst in `plan.md` aktualisiert und bestaetigt. Nur wenn die
 Lehrkraft ausdruecklich bestaetigt, dass der freigegebene Plan fachlich
 unveraendert bleibt und nur der bestehende Moodle-Kurs organisatorisch sortiert
 wird, ist eine Journal-only-Ausnahme erlaubt; dann dokumentiert
 `kurspilot-umsetzen` die Verschiebung vor dem Moodle-Schreibzugriff im Journal
-und nimmt keine weitere Kursgestaltung vor. `moodle_move_module` verschiebt nur
+und nimmt keine weitere Kursgestaltung vor. `kurspilot_move_module` verschiebt nur
 die bestehende Aktivitaet per `cmid`; Inhalte, Sichtbarkeit,
 Abschlussbedingungen, Voraussetzungen, Quizsettings, Fragenreferenzen und
 Fragedaten bleiben unveraendert.
 
 Fuer **Fragensammlungs-Bereinigung** gilt dieselbe Freigabelogik: Vor
-`moodle_update_question_category` zeigt `kurspilot-planen` beziehungsweise
+`kurspilot_update_question_category` zeigt `kurspilot-planen` beziehungsweise
 `kurspilot-umsetzen` immer Quelle, Ziel und betroffene Kategorien
 (mindestens die zu verschiebende Hauptkategorie und bekannte Unterkategorien)
 sowie den geplanten neuen Namen oder Ziel-Parent. Erst nach ausdruecklicher

@@ -5,9 +5,9 @@ description: Lies diese Datei vor jedem schreibenden Moodle-Zugriff, beim Aufbau
 
 # Referenz: Implementierungsplan-Workflow
 
-Lies diese Datei vor jedem schreibenden Moodle-Zugriff (`moodle_create_*`,
-`moodle_update_*`, `moodle_move_section`, `moodle_move_module`,
-`moodle_set_completion`, `moodle_set_restriction`) – also beim Aufbau und bei
+Lies diese Datei vor jedem schreibenden Moodle-Zugriff (`kurspilot_create_module`,
+`kurspilot_update_module_settings`, `kurspilot_move_section`, `kurspilot_move_module`,
+`kurspilot_set_completion`, `kurspilot_set_restriction`) – also beim Aufbau und bei
 der Ausfuehrung eines Implementierungsplans in `kurspilot-planen` und
 `kurspilot-umsetzen`.
 
@@ -113,7 +113,7 @@ Chat bestaetigt.
 
 Fuer eine reine **Abschnittsverschiebung** wird die geplante neue
 Abschnittsreihenfolge zuerst in `plan.md` nachgefuehrt und von der Lehrkraft
-bestaetigt; erst danach wird `moodle_move_section` ausgefuehrt. Eine
+bestaetigt; erst danach wird `kurspilot_move_section` ausgefuehrt. Eine
 planexterne Ausnahme ist nur erlaubt, wenn die Lehrkraft ausdruecklich
 bestaetigt, dass der freigegebene Plan fachlich unveraendert bleibt und nur
 der bestehende Moodle-Kurs organisatorisch sortiert werden soll. Dann ist vor
@@ -123,8 +123,8 @@ Abschnittsinhalte oder Sichtbarkeiten
 mitveraendert.
 
 Fuer eine reine **Aktivitaetsverschiebung** gilt dieselbe Planbindung:
-`moodle_move_module` verschiebt nur eine bestehende Aktivitaet per `cmid`
-vor/nach eine andere Aktivitaet oder ans Abschnittsende. Das Tool darf keine
+`kurspilot_move_module` verschiebt nur eine bestehende Aktivitaet per `cmid`
+in einen (anderen) Abschnitt, optional an eine bestimmte Position darin. Das Tool darf keine
 Inhalte, Sichtbarkeit, Abschlussbedingungen, Voraussetzungen, Quizsettings,
 Fragenreferenzen oder Fragedaten aendern.
 
@@ -162,7 +162,7 @@ Vor dem ersten API-Aufruf die Unterrichtseinheit bzw. das Unterthema lesen und n
 ### Schritt 2: Kursstruktur pruefen
 
 ```
-moodle_get_sections(courseid=KURS_ID)
+kurspilot_get_sections(courseid=KURS_ID)
 ```
 
 Geplanten Zielabschnitt mit dem freigegebenen Plan abgleichen. Abschnitt 0
@@ -174,7 +174,7 @@ als Default befuellen.
 ### Schritt 3: Abschnitt benennen und nur bei Planbezug einen Abschnittseinstieg setzen
 
 ```
-moodle_update_section(courseid, sectionnum, name, summary)
+kurspilot_update_section(courseid, sectionnum, felder_json='{"name": ..., "summary": ...}')
 ```
 
 Ein Abschnittseinstieg im `summary` ist kein automatischer Default. Nutze ihn
@@ -183,29 +183,33 @@ Einstieg vorsieht.
 
 ### Schritt 4: Pro Phase die geplanten Elemente anlegen
 
-Fuer jede Phase der Unterrichtseinheit bzw. des Unterthemas:
-1. `moodle_create_label` – nur wenn ein sichtbarer Phasen-Trenner geplant ist
-2. Je nach Inhalt: `moodle_create_page`, `moodle_create_url`, `moodle_create_assign`,
-   `moodle_create_resource`, `moodle_create_folder`, `moodle_create_choice`,
-   `moodle_create_forum`
+Fuer jede Phase der Unterrichtseinheit bzw. des Unterthemas alles ueber
+`kurspilot_create_module(courseid, sectionnum, modname, felder_json)` anlegen:
+1. `modname="label"` – nur wenn ein sichtbarer Phasen-Trenner geplant ist
+2. Je nach Inhalt: `modname="page"`, `"url"`, `"assign"`, `"resource"`,
+   `"folder"`, `"choice"`, `"forum"`
 
 ## Aktivitaetstypen waehlen
 
-| Situation | Tool |
+| Situation | `modname` |
 |---|---|
-| SuS liest nur (Infoblatt, Leitfaden, Anleitung, Codebeispiel) | `moodle_create_page` |
-| SuS fuellt etwas aus / gibt etwas ab / reflektiert | `moodle_create_assign` |
-| Externe Dokumentation, GitHub, MDN, Referenz | `moodle_create_url` |
-| Phasen-Trenner (direkt auf Kursseite sichtbar) | `moodle_create_label` |
-| Datei zum Herunterladen (PDF, Arbeitsblatt, Vorlage) | `moodle_create_resource` |
-| Datei-Sammlung in einem Ordner | `moodle_create_folder` |
-| SuS waehlt eine Option (Umfrage, Meinungsbild) | `moodle_create_choice` |
-| SuS diskutiert asynchron (Austausch, Frage-Antwort) | `moodle_create_forum` |
+| SuS liest nur (Infoblatt, Leitfaden, Anleitung, Codebeispiel) | `page` |
+| SuS fuellt etwas aus / gibt etwas ab / reflektiert | `assign` |
+| Externe Dokumentation, GitHub, MDN, Referenz | `url` |
+| Phasen-Trenner (direkt auf Kursseite sichtbar) | `label` |
+| Datei zum Herunterladen (PDF, Arbeitsblatt, Vorlage) | `resource` |
+| Datei-Sammlung in einem Ordner | `folder` |
+| SuS waehlt eine Option (Umfrage, Meinungsbild) | `choice` |
+| SuS diskutiert asynchron (Austausch, Frage-Antwort) | `forum` |
+
+`resource` ist bis Spec 0018 gesperrt (kaputte Seite ohne Hauptdatei) – fuer
+Dateien zum Herunterladen bis dahin `folder` verwenden.
 
 **GOLDENE REGEL:** Sobald SuS irgendetwas ausfullen, eintragen, ankreuzen
-oder hochladen sollen -> IMMER `moodle_create_assign`, NIEMALS `moodle_create_page`!
+oder hochladen sollen -> IMMER `kurspilot_create_module(modname="assign")`,
+NIEMALS `modname="page"`!
 
-### Abstimmung (`moodle_create_choice`): Optionenzahl didaktisch pruefen
+### Abstimmung (`kurspilot_create_module` mit `modname="choice"`): Optionenzahl didaktisch pruefen
 
 Moodle setzt fuer `option[]` keine Obergrenze, und Kurspilot prueft die Anzahl
 nicht (Spec 0015 §4.5). Ab etwa acht Optionen lohnt trotzdem eine

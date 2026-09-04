@@ -159,7 +159,7 @@ sichtbar verlinkt.
 
 ## Vorlagen-Ablage für Klon-Quellen (KP-010)
 
-Häufig genutzte Klon-Quellen für `moodle_clone_activity` (Issue #328,
+Häufig genutzte Klon-Quellen für `kurspilot_clone_activity` (Issue #328,
 Spezifikation 0013) können Lehrkräfte in einer einfachen Textdatei
 `vorlagen.md` an der Kontextwurzel festhalten (Geschwisterebene zu den
 Schuljahresordnern). Keine Registry im Plugin, keine Datenbank — eine
@@ -191,7 +191,7 @@ Nur bei einem der drei Trigger, nicht präventiv bei jeder Sitzung:
    eine Plugin-Konfiguration eines Abgabetyps).
 2. Sie verweist auf eine frühere Lösung ("wie bei der letzten Aufgabe", "so
    wie im Bio-Kurs").
-3. Unmittelbar vor einem `moodle_clone_activity`-Aufruf, wenn keine `cmid`
+3. Unmittelbar vor einem `kurspilot_clone_activity`-Aufruf, wenn keine `cmid`
    genannt wurde.
 
 ### Schreiben nur nach Bestätigung

@@ -5,11 +5,11 @@ description: Lies diese Datei, wenn ein Quiz geplant oder umgesetzt wird, oder w
 
 # Referenz: Quiz-Modi und Fragenbank-Kategorien
 
-Lies diese Datei, wenn ein Quiz (`moodle_create_quiz`/`moodle_update_quiz_settings`)
+Lies diese Datei, wenn ein Quiz (`kurspilot_create_quiz`/`kurspilot_update_quiz_settings`)
 geplant oder umgesetzt wird, oder wenn Fragenbank-Kategorien angelegt bzw.
 bereinigt werden.
 
-## Quiz-Modi (`moodle_create_quiz`, `moodle_update_quiz_settings`)
+## Quiz-Modi (`kurspilot_create_quiz`, `kurspilot_update_quiz_settings`)
 
 Quizze werden über den Parameter `mode` in einer von drei dokumentierten
 Settings-Kombinationen angelegt oder nachträglich aktualisiert. Default ist
@@ -51,7 +51,7 @@ Modusnamen verwenden.
 ## Fragenbank-Kategorien benennen (Kurs-Fragensammlung)
 
 Vor dem ersten Kategorien- oder Fragenzugriff wird immer zuerst eine
-**benannte Kurs-Fragensammlung** per `moodle_ensure_question_bank`
+**benannte Kurs-Fragensammlung** per `kurspilot_ensure_question_bank`
 festgelegt. Der vorgeschlagene Name muss fuer Lehrkraefte lesbar sein und
 sich am Kurs, Thema oder fachlichen Inhalt orientieren, zum Beispiel
 `Biologie 9a - Immunsystem` oder `Chemie EF - Saeuren und Basen`. Kein
@@ -72,18 +72,18 @@ bleiben Fragen spaeter nach Unterthema/Abschnitt sortier- und wiederfindbar
 (siehe **Kurs-Fragensammlung** und **Nummerierter Inhaltsabschnitt** in
 `CONTEXT.md`).
 
-`moodle_create_question_category` ist idempotent: existiert in der
-ausgewaehlten Fragensammlung bereits eine Kategorie mit identischem Namen
-unter demselben `parent`, wird KEINE Dublette angelegt - stattdessen liefert
-das Tool die bestehende `id` mit `created=false` zurueck. Ohne `parent`-Angabe
-wird die Kategorie direkt unter der Top-Kategorie der ausgewaehlten
-Fragensammlung angelegt (`parent=0`).
+`kurspilot_ensure_question_category` ist idempotent: existiert unter demselben
+`parent` bereits eine Kategorie mit identischem Namen, wird KEINE Dublette
+angelegt - stattdessen liefert das Tool die bestehende `id` mit
+`angelegt=false` zurueck. `parent` ist Pflicht, z.B. die `topcategoryid` aus
+`kurspilot_ensure_question_bank` fuer eine Kategorie direkt unter der
+Fragensammlung.
 
 ### Fragensammlungs-Bereinigung (nicht-destruktiv)
 
 Wenn Fragenkategorien an der falschen Stelle gelandet sind, wird fuer die
 Bereinigung kein Delete-Tool verwendet. Stattdessen verschiebt
-`moodle_update_question_category` eine bestehende Kategorie nicht-destruktiv in
+`kurspilot_update_question_category` eine bestehende Kategorie nicht-destruktiv in
 die richtige benannte Kurs-/Projekt-Fragensammlung oder unter eine andere
 Zielkategorie und kann sie dabei bei Bedarf umbenennen. Fragen und
 Unterkategorien bleiben erhalten.
@@ -106,7 +106,7 @@ aufbauen, Kurzuebersicht zeigen, Freigabe abwarten).
    Kurs-/Projekt-Fragensammlung als Planungsentscheidung festlegen und in der
    Kurzuebersicht sichtbar mit Name + Struktur zeigen; die Lehrkraft kann sie
    vor der Freigabe bestaetigen oder aendern. Vor dem Moodle-Schreibzugriff
-   wird die gewaehlte Fragensammlung mit `moodle_ensure_question_bank`
+   wird die gewaehlte Fragensammlung mit `kurspilot_ensure_question_bank`
    aufgeloest; die Rueckgabe `questionbankid` wird fuer Kategorien und
    spaetere Fragen genutzt.
 2. **Quiz hinzufuegen**: Ohne ausdruecklich anderslautende Planung gilt
@@ -118,24 +118,25 @@ aufbauen, Kurzuebersicht zeigen, Freigabe abwarten).
    braucht eine kurze Begruendung (siehe
    `kurspilot_get_skill("implementierungsplan-workflow")`).
 3. **Fragen hinzufuegen**: Jede geplante Frage hat dieselbe Form wie
-   `moodle_create_mc_question` (`questiontext`, `answers`, `correctindex`,
-   `generalfeedback`) plus eine **Bezugsaktivitaet** (CONTEXT.md) – die
-   bereits im Plan vorhandene Aktivitaet, aus der die Frage beantwortbar ist.
-   Eine lesbare Fragenvorschau wird in `plan.md` festgehalten.
+   `kurspilot_create_mc_question` (`questiontext`, `selectionmode`, `answers`
+   mit `answer`/`fraction`/`feedback` je Option, `generalfeedback`) plus eine
+   **Bezugsaktivitaet** (CONTEXT.md) – die bereits im Plan vorhandene
+   Aktivitaet, aus der die Frage beantwortbar ist. Eine lesbare Fragenvorschau
+   wird in `plan.md` festgehalten.
 4. **Materialluecken erkennen**: Hat eine Frage keine aufloesbare
    Bezugsaktivitaet (fehlt oder zeigt auf keine Plan-Aktivitaet), wird sie als
    **Materialluecke** (CONTEXT.md) markiert und erscheint in `plan.md` sowie
    in der Kurzuebersicht. Materialluecken-Fragen werden bei der Freigabe
-   NICHT angelegt – keine `moodle_create_mc_question`- oder
-   `moodle_add_questions_to_quiz`-Aufrufe. Der Lehrkraft werden
+   NICHT angelegt – keine `kurspilot_create_mc_question`- oder
+   `kurspilot_add_questions_to_quiz`-Aufrufe. Der Lehrkraft werden
    Materialluecken VOR der Freigabe gezeigt; sie entscheidet, ob Material
    ergaenzt (**Freigegebene Materialergaenzung**, siehe #19) oder die Frage
    angepasst wird.
-5. **Freigabe & Anwendung**: legt das Quiz an (`moodle_create_quiz` mit
-   `mode`/`gradepass`/`timelimit`), setzt Completion/Restriction, legt dann
-   jede nicht-Materialluecken-Frage per `moodle_create_mc_question` an und
+5. **Freigabe & Anwendung**: legt das Quiz an (`kurspilot_create_quiz` mit
+   `mode`/`grade`), setzt Completion/Restriction, legt dann jede
+   nicht-Materialluecken-Frage per `kurspilot_create_mc_question` an und
    haengt alle erzeugten Fragen in einem Aufruf per
-   `moodle_add_questions_to_quiz` (#13) ein. `activity.categoryid`
+   `kurspilot_add_questions_to_quiz` (#13) ein. `activity.categoryid`
    (Fragenbank-Kategorie, siehe oben "Fragenbank-Kategorien benennen") muss
    gesetzt sein, wenn das Quiz Fragen enthaelt; diese Kategorie liegt in der
    zuvor bestaetigten benannten Fragensammlung.

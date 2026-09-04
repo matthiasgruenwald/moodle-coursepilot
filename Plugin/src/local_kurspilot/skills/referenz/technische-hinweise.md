@@ -44,10 +44,12 @@ NIEMALS Formeln als Plain-Text schreiben (z.B. `f = 1/T` oder `U_GPIO`).
 
 ## Benennung von Labels und Aktivitaeten (KRITISCH)
 
-**Labels (Phasen-Header):** IMMER den `name`-Parameter setzen – er erscheint in der
-Kursnavigation und gibt dem Phase-Trenner einen sichtbaren Namen:
+**Labels (Phasen-Header):** `name` ist fuer `label` gesperrt – Moodle leitet den in der
+Kursnavigation sichtbaren Namen selbst aus `intro` ab (`get_label_name()`). IMMER den
+Phasennamen als HTML in `intro` schreiben, NIEMALS `name` in `felder_json` mitgeben:
 ```
-moodle_create_label(name="Phase 1 – Informieren & Analysieren", content="...", ...)
+kurspilot_create_module(courseid, sectionnum, modname="label",
+  felder_json='{"intro": "<h3>Phase 1 – Informieren &amp; Analysieren</h3>"}')
 ```
 
 **Aufgaben, Seiten und Links:** NIEMALS einen "Phase x –" Prefix im `name`-Feld verwenden.
@@ -65,8 +67,8 @@ FALSCH:  name="Phase 2 – Frequenzberechnung und Schaltplan"
 Fuer jede Aktivitaet pruefen:
 
 1. Textseite oder Aufgabe?
-   - SuS liest nur → moodle_create_page
-   - SuS gibt etwas ab → moodle_create_assign
+   - SuS liest nur → `kurspilot_create_module(modname="page", ...)`
+   - SuS gibt etwas ab → `kurspilot_create_module(modname="assign", ...)`
 
 2. Name korrekt?
    - Label: Hat es einen `name`-Parameter mit dem Phasennamen? → Pflicht!

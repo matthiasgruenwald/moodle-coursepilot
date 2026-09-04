@@ -147,4 +147,31 @@ final class skill_corpus_test extends \advanced_testcase {
             'suffixed-real-name' => ['kurspilot-core/../../../etc/passwd'],
         ];
     }
+
+    /**
+     * Jeder im Korpus genannte Werkzeugname muss in der Live-Werkzeugliste
+     * vorkommen (Issue #459): ein Name aus dem lokalen Weg (`moodle_*`) oder
+     * ein abgebautes Werkzeug faellt hier auf, statt erst im Abnahmelauf.
+     */
+    public function test_every_mentioned_tool_name_exists_in_tool_registry(): void {
+        $validnames = tool_registry::allowed_tools();
+
+        $mentioned = [];
+        foreach (skill_corpus::list() as $entry) {
+            $content = (string) file_get_contents($entry['path']);
+            preg_match_all('/\b(?:kurspilot|moodle)_[a-z_]+\b/', $content, $matches);
+            foreach ($matches[0] as $name) {
+                $mentioned[$name][] = $entry['name'];
+            }
+        }
+
+        foreach ($mentioned as $name => $files) {
+            $this->assertArrayHasKey(
+                $name,
+                $validnames,
+                "Werkzeugname '$name' (genannt in: " . implode(', ', array_unique($files))
+                    . ") steht nicht in tool_registry::allowed_tools()."
+            );
+        }
+    }
 }
