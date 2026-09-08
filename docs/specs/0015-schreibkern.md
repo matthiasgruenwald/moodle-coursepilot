@@ -481,6 +481,35 @@ ausdrücklicher Bestätigung führt aus. Derselbe Zweitakt gilt beim Rückschrei
 Ein beiläufiges `update_module_settings` darf keine Lernendendaten löschen
 können. Ein Pfad für den einzigen Datenverlustfall, nicht zwei.
 
+**Modulspezifische Vervollständigungsfelder** (Ticket #461, Nachtrag zur
+Erstfassung): `completionsubmit` — „Abgabe erforderlich" bei `assign`,
+„Abstimmung abgegeben" bei `choice` — ist Vervollständigungsfeld *und* echte
+Spalte der Instanztabelle zugleich. Fachlich gehört es hierher, nicht in einen
+Feld-Patch: `mod_assign::update_instance()` schreibt es nur innerhalb von
+`if (!empty($formdata->completionunlocked))`, es unterliegt also demselben
+Datenverlust-Zweitakt wie die vier generischen Sperrfelder. Festlegung:
+
+- `set_completion` führt es je Aktivitätsart frei (`assign`, `choice`); bei
+  jeder anderen antwortet der Endpunkt mit einem **Wegweiser** auf die
+  Aktivitätsarten, die es tragen, statt mit „Unbekanntes Feld".
+- Es steht damit auf der Sperrliste **beider** Modultypen — auch bei `choice`,
+  wo Moodle es über den Formularweg zwar durchschreiben würde, aber ohne
+  `completionunlocked`: die Lernenden blieben unter der alten Regel als
+  abgeschlossen stehen. Eine Abstimmung braucht dafür seither einen zweiten
+  Aufruf nach `create_module`.
+- Der Feldkatalog (`describe_module_fields`) führt es bei **keiner**
+  Aktivitätsart als setzbares Feld — wie jedes Vervollständigungsfeld. Den Weg
+  nennt stattdessen die Sperrmeldung (s. u.) und die Werkzeugbeschreibung von
+  `set_completion`.
+
+**Die Sperrmeldung nennt den Weg.** „Feld ist gesperrt" sagte nicht, wohin
+stattdessen — im Abnahmelauf zu #456 scheiterte ein Modell daran fünfmal in
+Folge. `update_module_settings` und `create_module` antworten deshalb bei jedem
+Vervollständigungsfeld (den sieben generischen samt `completionunlocked` und
+dem modulspezifischen `completionsubmit`) mit einem Verweis auf
+`set_completion`, nicht mit der bloßen Sperrmeldung — dieselbe Haltung wie beim
+Lese-Vokabular in §3.5.
+
 **Bei den Voraussetzungen** ist der Grund schlichter: `set_restriction` baut
 `availability`-JSON aus Lehrkraft-verständlichen Argumenten. Über den
 Formularweg ist das Feld nicht kaputtschreibbar (§1) — die Kapselung bleibt
