@@ -239,7 +239,8 @@ $string['sectioninvalidvisible'] = 'Ungültiger Wert "{$a->value}" für "visible
 $string['sectionnotmovable'] = 'Abschnitt "{$a->sectionnum}" existiert nicht oder ist der allgemeine Abschnitt (0) - dieser kann nicht verschoben werden.';
 
 // Schreibkern: set_completion (#392).
-$string['completionunknownfield'] = 'Unbekanntes Vervollständigungsfeld "{$a->field}". Erlaubt: completion, completionview, completionusegrade, completionpassgrade, completionexpected. Nichts wurde geschrieben.';
+$string['completionunknownfield'] = 'Unbekanntes Vervollständigungsfeld "{$a->field}". Erlaubt für diese Aktivitätsart: {$a->erlaubt}. Nichts wurde geschrieben.';
+$string['completionfieldnotformodname'] = 'Das Vervollständigungsfeld "{$a->field}" gibt es nur bei den Aktivitätsarten {$a->modnames}, nicht bei "{$a->modname}". Nichts wurde geschrieben.';
 $string['completioninvalidfieldvalue'] = 'Ungültiger Wert "{$a->value}" für Vervollständigungsfeld "{$a->field}". Nichts wurde geschrieben.';
 $string['completionnotenabled'] = 'Die Abschlussverfolgung ist für diesen Kurs (oder die gesamte Moodle-Instanz) deaktiviert. Moodle würde diese Felder ohnehin still verwerfen. Aktivieren Sie zuerst die Abschlussverfolgung im Kurs. Nichts wurde geschrieben.';
 $string['completiondatalossconfirmationrequired'] = 'Diese Änderung würde die vorhandenen Abschlussdaten von {$a->betroffene_lernende} Lernenden für diese Aktivität löschen - Moodle löscht und berechnet sie neu, sobald dieser Schreibvorgang die Vervollständigung entsperrt. Nichts wurde geschrieben. Rufen Sie set_completion erneut mit "bestaetigt": true auf, um trotzdem fortzufahren.';

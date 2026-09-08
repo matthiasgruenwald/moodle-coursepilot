@@ -324,8 +324,10 @@ final class tool_registry {
                 . 'the only path for these fields, in a named two-step confirmation when it would delete learner '
                 . 'completion data.',
             'description' => 'Setzt die Abschlussverfolgung einer Aktivitaet - "completion" (0=aus, 1=manuell, '
-                . '2=automatisch), "completionview", "completionusegrade", "completionpassgrade" und/oder '
-                . '"completionexpected". Der einzige Schreibweg fuer diese Felder: update_module_settings und '
+                . '2=automatisch), "completionview", "completionusegrade", "completionpassgrade", '
+                . '"completionexpected" und - nur bei "assign" und "choice" - "completionsubmit" (1 = "Abgabe '
+                . 'erforderlich" bzw. "Abstimmung abgegeben"; die uebliche Abschlussbedingung einer Aufgabe). '
+                . 'Der einzige Schreibweg fuer diese Felder: update_module_settings und '
                 . 'create_module sperren sie, weil Moodle sie ohne "completionunlocked" still verwirft und mit '
                 . '"completionunlocked" die Abschlussdaten der Lernenden loescht. Wuerde die Aenderung bestehende '
                 . 'Abschlussdaten loeschen, meldet der erste Aufruf das (Anzahl betroffener Lernender) und schreibt '
@@ -339,7 +341,8 @@ final class tool_registry {
                     'felder_json' => [
                         'type' => 'string',
                         'description' => 'JSON-Objekt mit "completion", "completionview", "completionusegrade", '
-                            . '"completionpassgrade" und/oder "completionexpected" - nur die zu aendernden Felder',
+                            . '"completionpassgrade", "completionexpected" und/oder (nur assign/choice) '
+                            . '"completionsubmit" - nur die zu aendernden Felder',
                     ],
                     'bestaetigt' => [
                         'type' => 'boolean',

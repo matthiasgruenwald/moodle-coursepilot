@@ -73,11 +73,14 @@ defined('MOODLE_INTERNAL') || die();
 final class restore_activity_version extends external_api {
 
     /**
-     * Die fuenf Vervollstaendigungsfelder (identisch zu
-     * {@see set_completion}::ALLOWED_FIELDS) - hier separat gefuehrt, weil
-     * set_completion sie als private Konstante haelt und dieser Endpunkt sie
-     * nur braucht, um sie aus dem generischen Patch herauszuhalten und
-     * getrennt zu behandeln.
+     * Die Vervollstaendigungsfelder (identisch zu
+     * {@see set_completion}::ALLOWED_FIELDS plus dessen modulspezifischen
+     * Feldern, Ticket #461) - hier separat gefuehrt, weil set_completion sie
+     * als private Konstanten haelt und dieser Endpunkt sie nur braucht, um sie
+     * aus dem generischen Patch herauszuhalten und getrennt zu behandeln.
+     * "completionsubmit" steht bei jeder anderen Aktivitaetsart gar nicht erst
+     * im Versionsstand, faellt dort also schon ueber die
+     * array_key_exists()-Pruefung heraus.
      *
      * @var string[]
      */
@@ -87,6 +90,7 @@ final class restore_activity_version extends external_api {
         'completionusegrade',
         'completionpassgrade',
         'completionexpected',
+        'completionsubmit',
     ];
 
     /**

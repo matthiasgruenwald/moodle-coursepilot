@@ -20,9 +20,13 @@ Falls ja: Den folgenden Workflow NACH dem Erstellen aller Aktivitaeten ausfuehre
 | Aktivitaetstyp (`modname`) | Completion-Typ | Erlaeuterung |
 |---|---|---|
 | `assign` | completion=2, completionsubmit=1 | Automatisch bei Einreichung |
+| `choice` | completion=2, completionsubmit=1 | Automatisch bei abgegebener Abstimmung |
 | `page` | completion=1 | Manuell (SuS klickt "Abgeschlossen") |
 | `url` | – | Keine Verfolgung (Links ueberspringen) |
 | `label` | – | Keine Verfolgung (Header ueberspringen) |
+
+`completionsubmit` gibt es nur bei `assign` und `choice` – bei jeder anderen
+Aktivitaetsart weist `kurspilot_set_completion` das Feld ab.
 
 `completion`/`completionsubmit` (und die anderen `completion*`-Felder) laufen
 ausschliesslich ueber `kurspilot_set_completion` – `kurspilot_create_module` und

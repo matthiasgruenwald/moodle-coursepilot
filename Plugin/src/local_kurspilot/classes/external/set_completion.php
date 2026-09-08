@@ -62,6 +62,14 @@ defined('MOODLE_INTERNAL') || die();
  * aus. Ohne Datenverlustrisiko (keine vorhandenen Daten, oder nur
  * "completionexpected" geaendert) laeuft der Aufruf ohne Zweitakt durch.
  *
+ * Modulspezifische Vervollstaendigungsfelder (Ticket #461) laufen durch
+ * denselben Weg: "completionsubmit" ("Abgabe erforderlich" bei assign,
+ * "Abstimmung abgegeben" bei choice) ist eine Spalte der Instanztabelle, aber
+ * fachlich ein Vervollstaendigungsfeld - und ein Sperrfeld, weil
+ * mod_assign::update_instance() es nur mit "completionunlocked" schreibt. Bei
+ * jeder anderen Aktivitaetsart scheitert der Patch mit einem Wegweiser statt
+ * mit "Unbekanntes Feld" (s. {@see self::MODULE_SPECIFIC_FIELDS}).
+ *
  * "completionunlocked" wird ausschliesslich hier und nur unmittelbar vor dem
  * bestaetigten Schreiben gesetzt - nie automatisch, nie in
  * update_module_settings/create_module (dort steht es auf der Sperrliste).
@@ -101,6 +109,57 @@ final class set_completion extends external_api {
     private const LOCKED_FIELDS = ['completion', 'completionview', 'completionusegrade', 'completionpassgrade'];
 
     /**
+     * Modulspezifische Vervollstaendigungsfelder (Ticket #461): sie stehen
+     * nicht in {course_modules}, sondern als echte Spalte in der
+     * Instanztabelle - "Abgabe erforderlich" bei einer Aufgabe, "Abstimmung
+     * abgegeben" bei einer Abstimmung. Fachlich sind sie dennoch
+     * Vervollstaendigungsfelder und laufen deshalb durch denselben Schreibweg:
+     * mod_assign schreibt "completionsubmit" nur innerhalb von
+     * `if (!empty($formdata->completionunlocked))` (mod/assign/locallib.php:
+     * update_instance(), Zeile ~1569) - ueber update_module_settings waere es
+     * still verworfen, und mit "completionunlocked" gilt derselbe
+     * Datenverlust-Zweitakt wie fuer die vier generischen Sperrfelder.
+     * Deshalb stehen sie auf der Sperrliste von
+     * assign::blocklist()/choice::blocklist() und sind hier je Aktivitaetsart
+     * freigeschaltet: ein Patch bei einer anderen Aktivitaetsart scheitert mit
+     * Wegweiser statt mit "Unbekanntes Feld".
+     *
+     * @var array<string, array{modnames: string[], values: ?int[]}>
+     */
+    private const MODULE_SPECIFIC_FIELDS = [
+        'completionsubmit' => ['modnames' => ['assign', 'choice'], 'values' => [0, 1]],
+    ];
+
+    /**
+     * Die fuer $modname setzbaren Felder mit ihrem Wertebereich: die fuenf
+     * generischen plus die modulspezifischen dieser Aktivitaetsart.
+     *
+     * @param string $modname
+     * @return array<string, ?int[]>
+     */
+    private static function allowed_fields(string $modname): array {
+        $fields = self::ALLOWED_FIELDS;
+        foreach (self::MODULE_SPECIFIC_FIELDS as $fieldname => $spec) {
+            if (in_array($modname, $spec['modnames'], true)) {
+                $fields[$fieldname] = $spec['values'];
+            }
+        }
+        return $fields;
+    }
+
+    /**
+     * Die Sperrfelder dieser Aktivitaetsart - die vier generischen plus die
+     * modulspezifischen (auch sie brauchen "completionunlocked").
+     *
+     * @param string $modname
+     * @return string[]
+     */
+    private static function locked_fields(string $modname): array {
+        $modulefields = array_keys(array_diff_key(self::allowed_fields($modname), self::ALLOWED_FIELDS));
+        return array_merge(self::LOCKED_FIELDS, $modulefields);
+    }
+
+    /**
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -109,7 +168,8 @@ final class set_completion extends external_api {
             'felder_json' => new external_value(
                 PARAM_RAW,
                 'JSON-Objekt mit "completion" (0=aus,1=manuell,2=automatisch), "completionview", '
-                    . '"completionusegrade", "completionpassgrade" und/oder "completionexpected" - nur die zu '
+                    . '"completionusegrade", "completionpassgrade", "completionexpected" und - bei "assign" und '
+                    . '"choice" - "completionsubmit" (1=Abgabe bzw. Abstimmung erforderlich) - nur die zu '
                     . 'aendernden Felder (Patch)'
             ),
             'bestaetigt' => new external_value(
@@ -161,7 +221,7 @@ final class set_completion extends external_api {
         if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
             throw new moodle_exception('invalidpatchjson', 'local_kurspilot');
         }
-        self::validate_patch($patch);
+        self::validate_patch($patch, $modname);
 
         $course = get_course((int) $cm->course);
         $completion = new completion_info($course);
@@ -173,7 +233,7 @@ final class set_completion extends external_api {
         }
 
         $before = self::read_settings($cmid);
-        $changedlocked = self::changed_fields($before, $patch, self::LOCKED_FIELDS);
+        $changedlocked = self::changed_fields($before, $patch, self::locked_fields($modname));
         $changedexpected = self::changed_fields($before, $patch, ['completionexpected']);
 
         if (!$changedlocked && !$changedexpected) {
@@ -201,7 +261,7 @@ final class set_completion extends external_api {
         require_once($CFG->dirroot . '/course/modlib.php');
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
         pseudofield_carry_forward::apply($modname, $catalogclass, $moduleinfo, $before, $cm, $patch);
-        self::apply_patch($moduleinfo, $before, $patch, (bool) $changedlocked);
+        self::apply_patch($moduleinfo, $before, $patch, (bool) $changedlocked, $modname);
 
         \update_moduleinfo($cm, $moduleinfo, $course);
 
@@ -224,13 +284,20 @@ final class set_completion extends external_api {
      * @return void
      * @throws coding_exception|moodle_exception completionunknownfield|completioninvalidfieldvalue
      */
-    private static function validate_patch(array $patch): void {
+    private static function validate_patch(array $patch, string $modname): void {
+        $allowedfields = self::allowed_fields($modname);
         foreach ($patch as $fieldname => $value) {
             if (!is_string($fieldname)) {
                 throw new coding_exception('felder_json muss ein JSON-Objekt sein, kein Array.');
             }
-            if (!array_key_exists($fieldname, self::ALLOWED_FIELDS)) {
-                throw new moodle_exception('completionunknownfield', 'local_kurspilot', '', ['field' => $fieldname]);
+            if (!array_key_exists($fieldname, $allowedfields)) {
+                self::assert_not_foreign_module_field($fieldname, $modname);
+                throw new moodle_exception(
+                    'completionunknownfield',
+                    'local_kurspilot',
+                    '',
+                    ['field' => $fieldname, 'erlaubt' => implode(', ', array_keys($allowedfields))]
+                );
             }
             if (!is_int($value)) {
                 throw new moodle_exception(
@@ -240,7 +307,7 @@ final class set_completion extends external_api {
                     ['field' => $fieldname, 'value' => json_encode($value)]
                 );
             }
-            $allowedvalues = self::ALLOWED_FIELDS[$fieldname];
+            $allowedvalues = $allowedfields[$fieldname];
             if ($allowedvalues !== null && !in_array($value, $allowedvalues, true)) {
                 throw new moodle_exception(
                     'completioninvalidfieldvalue',
@@ -250,6 +317,28 @@ final class set_completion extends external_api {
                 );
             }
         }
+    }
+
+    /**
+     * Ein modulspezifisches Vervollstaendigungsfeld, das es gibt - nur nicht
+     * bei dieser Aktivitaetsart: eigene Meldung mit den Aktivitaetsarten, die
+     * es tragen, statt "Unbekanntes Feld" (dieselbe Haltung wie
+     * shared_block::assert_not_read_only_vocabulary()).
+     *
+     * @param string $fieldname
+     * @param string $modname
+     * @return void
+     * @throws moodle_exception completionfieldnotformodname
+     */
+    private static function assert_not_foreign_module_field(string $fieldname, string $modname): void {
+        if (!array_key_exists($fieldname, self::MODULE_SPECIFIC_FIELDS)) {
+            return;
+        }
+        throw new moodle_exception('completionfieldnotformodname', 'local_kurspilot', '', [
+            'field' => $fieldname,
+            'modname' => $modname,
+            'modnames' => implode(', ', self::MODULE_SPECIFIC_FIELDS[$fieldname]['modnames']),
+        ]);
     }
 
     /**
@@ -300,9 +389,16 @@ final class set_completion extends external_api {
      * @param bool $lockedchanged
      * @return void
      */
-    private static function apply_patch(\stdClass $moduleinfo, array $before, array $patch, bool $lockedchanged): void {
+    private static function apply_patch(
+        \stdClass $moduleinfo,
+        array $before,
+        array $patch,
+        bool $lockedchanged,
+        string $modname
+    ): void {
+        $allowedfields = self::allowed_fields($modname);
         $final = [];
-        foreach (array_keys(self::ALLOWED_FIELDS) as $field) {
+        foreach (array_keys($allowedfields) as $field) {
             $final[$field] = array_key_exists($field, $patch) ? (int) $patch[$field] : (int) ($before[$field] ?? 0);
         }
 
@@ -312,6 +408,15 @@ final class set_completion extends external_api {
         $moduleinfo->completionusegrade = $final['completionusegrade'];
         $moduleinfo->completionpassgrade = $final['completionpassgrade'];
         $moduleinfo->completiongradeitemnumber = $final['completionusegrade'] ? 0 : null;
+
+        // Die modulspezifischen Felder dieser Aktivitaetsart (Ticket #461) -
+        // je eine echte Spalte der Instanztabelle, die update_moduleinfo()
+        // ueber den Formularweg an add_instance()/update_instance() reicht.
+        foreach (array_keys(self::MODULE_SPECIFIC_FIELDS) as $field) {
+            if (array_key_exists($field, $allowedfields)) {
+                $moduleinfo->$field = $final[$field];
+            }
+        }
 
         if ($lockedchanged) {
             $moduleinfo->completionunlocked = 1;

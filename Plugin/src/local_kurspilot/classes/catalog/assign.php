@@ -53,8 +53,10 @@ namespace local_kurspilot\catalog;
  *   ohne "completionunlocked" aber loescht ein Schreibvorgang laut Spec 0015
  *   §8 die Vervollstaendigungsdaten der Lernenden. Deshalb hier wie die
  *   generischen Vervollstaendigungsfelder (course_modules, siehe
- *   {@see shared_block::BLOCKLIST}) auf die Sperrliste - geschrieben wird
- *   erst ueber den kuenftigen `set_completion`-Endpunkt im Zweitakt.
+ *   {@see shared_block::BLOCKLIST}) auf die Sperrliste - geschrieben wird es
+ *   ueber `set_completion` im Zweitakt (Ticket #461; dort als
+ *   modulspezifisches Vervollstaendigungsfeld fuer "assign" und "choice"
+ *   freigeschaltet).
  * - **"teamsubmissiongroupingid"** listet im Formular nur Gruppierungen des
  *   eigenen Kurses (mod/assign/mod_form.php:195:
  *   `groups_get_all_groupings($assignment->get_course()->id)`), aber weder

@@ -242,7 +242,8 @@ $string['sectioninvalidvisible'] = 'Invalid value "{$a->value}" for "visible" - 
 $string['sectionnotmovable'] = 'Section "{$a->sectionnum}" does not exist or is the general section (0) - it cannot be moved.';
 
 // Write core: set_completion (#392).
-$string['completionunknownfield'] = 'Unknown completion field "{$a->field}". Allowed: completion, completionview, completionusegrade, completionpassgrade, completionexpected. Nothing was written.';
+$string['completionunknownfield'] = 'Unknown completion field "{$a->field}". Allowed for this activity type: {$a->erlaubt}. Nothing was written.';
+$string['completionfieldnotformodname'] = 'The completion field "{$a->field}" only exists for the activity types {$a->modnames}, not for "{$a->modname}". Nothing was written.';
 $string['completioninvalidfieldvalue'] = 'Invalid value "{$a->value}" for completion field "{$a->field}". Nothing was written.';
 $string['completionnotenabled'] = 'Completion tracking is disabled for this course (or the whole site). Moodle would silently discard these fields either way. Enable completion tracking for the course first. Nothing was written.';
 $string['completiondatalossconfirmationrequired'] = 'This change would delete the existing completion data of {$a->betroffene_lernende} learner(s) for this activity - Moodle wipes and recalculates it as soon as this write unlocks completion. Nothing was written. Call set_completion again with "bestaetigt": true to proceed anyway.';

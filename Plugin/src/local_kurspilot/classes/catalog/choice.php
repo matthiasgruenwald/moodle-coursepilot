@@ -45,6 +45,12 @@ namespace local_kurspilot\catalog;
  *   allowupdate=1. Literale Werte statt Konstanten, weil mod/choice/lib.php
  *   beim Laden dieser Klasse nicht zwingend eingebunden ist - die Konstanten
  *   stehen als Kommentar dabei.
+ * - **"completionsubmit"** ist Vervollstaendigungsfeld UND echte Spalte
+ *   zugleich, genau wie bei assign: fachlich gehoert es zur
+ *   Abschlussverfolgung, nicht in einen beilaeufigen Feld-Patch. Deshalb wie
+ *   dort auf der Sperrliste - geschrieben wird es ueber `set_completion` im
+ *   Zweitakt (Ticket #461), wo es fuer "assign" und "choice" als
+ *   modulspezifisches Vervollstaendigungsfeld freigeschaltet ist.
  *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
@@ -223,17 +229,6 @@ final class choice implements module_catalog {
                 'mod/choice/lib.php:34-35 (CHOICE_PUBLISH_ANONYMOUS/CHOICE_PUBLISH_NAMES); '
                     . 'mod/choice/mod_form.php:107-112'
             ),
-            new field(
-                'completionsubmit',
-                'PARAM_BOOL',
-                'Aktivitaet automatisch als abgeschlossen markieren, sobald abgestimmt wurde.',
-                false,
-                0,
-                [0, 1],
-                null,
-                'mod/choice/mod_form.php:183-193 (add_completion_rules()); Spalte '
-                    . 'mod/choice/db/install.xml (choice.completionsubmit)'
-            ),
         ];
     }
 
@@ -288,7 +283,9 @@ final class choice implements module_catalog {
     }
 
     public static function blocklist(): array {
-        return [];
+        return [
+            'completionsubmit',
+        ];
     }
 
     public static function combination_rules(): array {

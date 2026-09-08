@@ -432,4 +432,31 @@ final class restore_activity_version_test extends \advanced_testcase {
         global $DB;
         return (int) $DB->get_field('role', 'id', ['shortname' => $shortname], MUST_EXIST);
     }
+
+    /**
+     * Auch das modulspezifische Vervollstaendigungsfeld kehrt zurueck - ueber
+     * set_completion, nicht ueber den generischen Patch (dort steht es auf der
+     * Sperrliste von assign/choice, Ticket #461).
+     */
+    public function test_restore_writes_back_completionsubmit(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+            'course' => $course->id,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+        ]);
+        $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
+
+        set_completion::execute($cmid, json_encode(['completionsubmit' => 1]));
+        $this->assertEquals(1, $DB->get_field('assign', 'completionsubmit', ['id' => $assign->id]));
+
+        $result = external_api::clean_returnvalue(
+            restore_activity_version::execute_returns(),
+            restore_activity_version::execute($cmid, 1)
+        );
+
+        $this->assertEquals(0, $DB->get_field('assign', 'completionsubmit', ['id' => $assign->id]));
+        $this->assertContains('completionsubmit', array_column($result['aenderungen'], 'feld'));
+    }
 }

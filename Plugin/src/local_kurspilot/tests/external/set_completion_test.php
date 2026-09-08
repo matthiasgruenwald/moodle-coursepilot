@@ -380,4 +380,152 @@ final class set_completion_test extends \advanced_testcase {
             $DB->count_records('local_kurspilot_cm_version', ['cmid' => $page->cmid])
         );
     }
+
+    /**
+     * "completionsubmit" ("Abgabe erforderlich") ist bei einer Aufgabe die
+     * eigentlich gemeinte Abschlussbedingung - sie laeuft ueber denselben
+     * Schreibweg wie die generischen Felder (#461).
+     */
+    public function test_assign_completionsubmit_is_written(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+            'course' => $course->id,
+            'assignsubmission_onlinetext_enabled' => 1,
+        ]);
+        $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
+
+        $result = external_api::clean_returnvalue(
+            set_completion::execute_returns(),
+            set_completion::execute($cmid, json_encode([
+                'completion' => COMPLETION_TRACKING_AUTOMATIC,
+                'completionsubmit' => 1,
+            ]))
+        );
+
+        $this->assertEquals(1, $DB->get_field('assign', 'completionsubmit', ['id' => $assign->id]));
+        $this->assertSame(COMPLETION_TRACKING_AUTOMATIC, $this->read($cmid)['completion']);
+        $this->assertStringContainsString('completionsubmit', $result['meldung']);
+        // Die Abgabearten bleiben unangetastet (#400).
+        $this->assertEquals(0, $DB->get_field('assign', 'nosubmissions', ['id' => $assign->id]));
+    }
+
+    /**
+     * Dasselbe Feld bei "choice" ("Abstimmung abgegeben") - der zweite und
+     * letzte Modultyp mit einem modulspezifischen Vervollstaendigungsfeld.
+     */
+    public function test_choice_completionsubmit_is_written(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $choice = $this->getDataGenerator()->get_plugin_generator('mod_choice')->create_instance([
+            'course' => $course->id,
+        ]);
+        $cmid = (int) get_coursemodule_from_instance('choice', $choice->id)->id;
+
+        set_completion::execute($cmid, json_encode([
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionsubmit' => 1,
+        ]));
+
+        $this->assertEquals(1, $DB->get_field('choice', 'completionsubmit', ['id' => $choice->id]));
+        $this->assertSame(COMPLETION_TRACKING_AUTOMATIC, $this->read($cmid)['completion']);
+    }
+
+    /**
+     * Das Feld ist modulspezifisch: bei jeder anderen Aktivitaetsart scheitert
+     * der Aufruf mit einem Wegweiser statt "Unbekanntes Feld".
+     */
+    public function test_completionsubmit_is_rejected_for_other_modnames(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
+
+        try {
+            set_completion::execute($page->cmid, json_encode(['completionsubmit' => 1]));
+            $this->fail('Erwartete moodle_exception blieb aus.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('completionfieldnotformodname', $e->errorcode);
+            $this->assertStringContainsString('assign', $e->getMessage());
+            $this->assertStringContainsString('choice', $e->getMessage());
+        }
+    }
+
+    /**
+     * "completionsubmit" ist ein Sperrfeld wie die vier generischen: Moodle
+     * schreibt es nur mit "completionunlocked" (mod/assign/locallib.php:
+     * update_instance()), und das loescht die Abschlussdaten der Lernenden -
+     * also derselbe Zweitakt.
+     */
+    public function test_completionsubmit_change_needs_confirmation_when_data_exists(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+            'course' => $course->id,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+        ]);
+        $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
+        $student = $this->getDataGenerator()->create_user();
+        $this->seed_completion_data($cmid, $student->id);
+
+        try {
+            set_completion::execute($cmid, json_encode(['completionsubmit' => 1]));
+            $this->fail('Erwartete moodle_exception blieb aus.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('completiondatalossconfirmationrequired', $e->errorcode);
+        }
+        $this->assertEquals(0, $DB->get_field('assign', 'completionsubmit', ['id' => $assign->id]));
+
+        set_completion::execute($cmid, json_encode(['completionsubmit' => 1]), true);
+        $this->assertEquals(1, $DB->get_field('assign', 'completionsubmit', ['id' => $assign->id]));
+    }
+
+    /**
+     * Ein Patch, der den geltenden Wert nur wiederholt, aendert nichts und
+     * loest keinen Zweitakt aus - auch beim modulspezifischen Feld.
+     */
+    public function test_completionsubmit_patch_matching_current_value_is_a_noop(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+            'course' => $course->id,
+        ]);
+        $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
+        $student = $this->getDataGenerator()->create_user();
+        $this->seed_completion_data($cmid, $student->id);
+
+        $result = external_api::clean_returnvalue(
+            set_completion::execute_returns(),
+            set_completion::execute($cmid, json_encode(['completionsubmit' => 0]))
+        );
+
+        $this->assertEmpty($result['aenderungen']);
+    }
+
+    /**
+     * Der Umweg ueber update_module_settings bleibt fuer beide Modultypen
+     * gesperrt - ein beilaeufiger Patch darf Abschlussregeln nicht aendern.
+     */
+    public function test_completionsubmit_is_blocked_in_update_module_settings(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+            'course' => $course->id,
+        ]);
+        $choice = $this->getDataGenerator()->get_plugin_generator('mod_choice')->create_instance([
+            'course' => $course->id,
+        ]);
+
+        foreach (['assign' => $assign->id, 'choice' => $choice->id] as $modname => $instanceid) {
+            $cmid = (int) get_coursemodule_from_instance($modname, $instanceid)->id;
+            try {
+                update_module_settings::execute($cmid, json_encode(['completionsubmit' => 1]));
+                $this->fail('Erwartete moodle_exception blieb aus fuer "' . $modname . '".');
+            } catch (\moodle_exception $e) {
+                $this->assertStringContainsString('completionsubmit', $e->getMessage());
+            }
+        }
+    }
 }
