@@ -64,6 +64,19 @@ Server-Konfiguration nötig.
 - Dual-Era-Unterstützung: reale Clients hängen teils noch auf älteren
   Protokoll-Revisionen — der Endpunkt bedient sowohl `initialize` als auch
   `server/discover` (#290, #294).
+- Antwortform je Ära (#400, #458, #466): Revision 2026-07-28 verlangt
+  `resultType` in **jedem** `result` — auch in einer Fehlerantwort
+  (`isError: true`) und in einer leeren wie der auf `ping`. Der einzige
+  Erfolgswert ist `"complete"`; `"input_required"` gehört zum MRTR-Muster, das
+  wir nicht anbieten. Die Caching-Felder `ttlMs`/`cacheScope` gehören nur an
+  Listenantworten, nicht an `tools/call`. Spiegelbildlich verwirft ein Client
+  der Revision 2025-06-18 jede Antwort, die `resultType` **enthält** — dort
+  bleibt das Feld weg. Entschieden wird an der ausgehandelten Revision aus dem
+  Protocol-Version-Header; fehlt er, gilt die Legacy-Ära.
+  Ein einzelner Zweig, der das vergisst, kostet mehr als er scheint: solange
+  der Fehlerzweig von `tools/call` das Feld nicht trug, kam **jede** Meldung
+  dieses Servers beim Client als Protokollfehler an und keine der für die
+  Lehrkraft formulierten Meldungen war lesbar (#466).
 - Fehlerantworten sind **immer JSON**, nie HTML — Moodles Standard-404 bricht
   z. B. opencodes Parser (Nebenbefund #312).
 - Vorbild im Plugin-Verzeichnis: `webservice_mcp` (onbirdev), Moodle 4.5–5.2.

@@ -491,6 +491,134 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
+     * Die Regel, nicht der Einzelfall (#466): JEDE Antwort mit einem
+     * 'result' traegt in der Revision 2026-07-28 ein 'resultType' - die
+     * Revision macht das Feld fuer alle Ergebnisse zur Pflicht, nicht nur
+     * fuer tools/call.
+     *
+     * Die Methodenliste wird aus den case-Labels des Dispatchers abgeleitet,
+     * nicht von Hand gepflegt: der Ausloeser dieser Runde war ein einzelner
+     * vergessener Zweig (der Fehlerpfad von tools/call), und eine handgefuehrte
+     * Liste haette denselben Fehler ein zweites Mal zugelassen. Ein neuer
+     * Zweig ist damit automatisch mitgetestet - wer ihn hinzufuegt, muss ihn
+     * entweder korrekt beantworten oder bewusst unter die result-losen
+     * Methoden eintragen.
+     *
+     * Legacy-Aera bleibt spiegelbildlich feldlos: ein 2025-06-18-Client
+     * verwirft eine Antwort MIT diesen Feldern (#400).
+     */
+    public function test_every_result_carries_resulttype_in_the_modern_era(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        foreach ($this->result_bearing_methods() as $method) {
+            $request = ['id' => 1, 'method' => $method] + $this->arguments_for($method);
+
+            $modern = dispatcher::handle($request, $token, $this->headers([
+                'protocolversion' => dispatcher::MODERN_VERSION,
+            ]));
+            $legacy = dispatcher::handle($request, $token, $this->headers([
+                'protocolversion' => dispatcher::LEGACY_VERSION,
+            ]));
+
+            $this->assertSame('complete', ((array) $modern['body']['result'])['resultType'] ?? null, $method);
+            $this->assertArrayNotHasKey('resultType', (array) $legacy['body']['result'], $method);
+        }
+    }
+
+    /**
+     * Auch der Fehlerzweig von tools/call - er war der Ausloeser (#466) und
+     * ist der einzige result-Zweig, den die abgeleitete Liste oben nicht
+     * erreicht: sie ruft jede Methode auf ihrem Erfolgsweg auf.
+     */
+    public function test_tool_error_result_carries_resulttype(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $request = [
+            'id' => 1,
+            'method' => 'tools/call',
+            'params' => [
+                'name' => 'kurspilot_export_questions_xml',
+                'arguments' => ['questionids' => []],
+            ],
+        ];
+
+        $modern = dispatcher::handle($request, $token, $this->headers([
+            'protocolversion' => dispatcher::MODERN_VERSION,
+        ]));
+        $legacy = dispatcher::handle($request, $token, $this->headers([
+            'protocolversion' => dispatcher::LEGACY_VERSION,
+        ]));
+
+        $this->assertTrue($modern['body']['result']['isError']);
+        $this->assertTrue($legacy['body']['result']['isError']);
+        $this->assertSame('complete', $modern['body']['result']['resultType']);
+        $this->assertArrayNotHasKey('resultType', $legacy['body']['result']);
+        // Caching-Felder gehoeren nicht an tools/call (#458) - auch nicht an
+        // die Fehlerantwort.
+        $this->assertArrayNotHasKey('ttlMs', $modern['body']['result']);
+        $this->assertArrayNotHasKey('cacheScope', $modern['body']['result']);
+    }
+
+    /**
+     * Die JSON-RPC-Methoden, die der Dispatcher mit einem 'result'
+     * beantwortet - abgelesen an seinen case-Labels.
+     *
+     * @return string[]
+     */
+    private function result_bearing_methods(): array {
+        $source = file_get_contents(__DIR__ . '/../classes/dispatcher.php');
+        preg_match_all("/case '([a-z\/]+)':/", $source, $matches);
+        $methods = array_values(array_unique($matches[1]));
+
+        // Benachrichtigungen beantwortet JSON-RPC gar nicht (202, leerer
+        // Rumpf) - sie sind der einzige zulaessige Fall ohne 'result'.
+        $withoutresult = ['notifications/initialized', 'notifications/cancelled'];
+
+        $this->assertNotEmpty($methods, 'Keine case-Labels im Dispatcher gefunden');
+
+        return array_values(array_diff($methods, $withoutresult));
+    }
+
+    /**
+     * Die Parameter, die eine Methode zum Gelingen braucht - leer fuer alle,
+     * die ohne auskommen.
+     *
+     * @param string $method
+     * @return array
+     */
+    private function arguments_for(string $method): array {
+        if ($method === 'tools/call') {
+            return ['params' => ['name' => 'kurspilot_list_courses']];
+        }
+        return [];
+    }
+
+    /**
+     * Eine Antwort ohne Inhalt bleibt ein JSON-Objekt, kein leeres Array.
+     *
+     * ping liefert laut Spezifikation ein leeres Ergebnisobjekt. In der
+     * Legacy-Aera kommen keine Metadaten dazu - wer dafuer ein leeres PHP-
+     * Array nimmt, verschickt "[]" statt "{}" und bricht das Schema.
+     */
+    public function test_ping_result_stays_an_object_in_the_legacy_era(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $response = dispatcher::handle(
+            ['id' => 1, 'method' => 'ping'],
+            $token,
+            $this->headers(['protocolversion' => dispatcher::LEGACY_VERSION])
+        );
+
+        $this->assertStringContainsString(
+            '"result":{}',
+            json_encode($response['body'])
+        );
+    }
+
+    /**
      * Die Ergebnis-Metadaten der Revision 2026-07-28 (resultType/ttlMs/
      * cacheScope) gehen nur an Clients, die genau diese Revision aushandeln.
      *

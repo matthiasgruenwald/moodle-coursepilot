@@ -62,6 +62,14 @@ final class dispatcher {
     private const EXTRA_ALLOWED_ORIGINS = ['https://claude.ai', 'https://chatgpt.com'];
 
     /**
+     * Frischehinweis fuer Listenantworten in Millisekunden (fuenf Minuten).
+     *
+     * Gilt fuer alle vier Listen gleich - die Werkzeugliste dieses Plugins
+     * aendert sich nur bei einem Plugin-Upgrade, die drei leeren Listen nie.
+     */
+    private const LIST_TTL_MS = 300000;
+
+    /**
      * Die Seam: bearbeitet eine MCP-Anfrage vollstaendig und liefert das
      * Ergebnis als Wert zurueck statt es auszugeben.
      *
@@ -193,7 +201,7 @@ final class dispatcher {
                         'capabilities' => ['tools' => new \stdClass()],
                         'serverInfo' => $serverinfo,
                         'instructions' => self::HANDSHAKE_INSTRUCTIONS,
-                    ],
+                    ] + self::resultmeta($headers, 'complete'),
                 ]);
 
             case 'notifications/initialized':
@@ -201,7 +209,15 @@ final class dispatcher {
                 return self::result(202, [], null);
 
             case 'ping':
-                return self::result(200, [], ['jsonrpc' => '2.0', 'id' => $id, 'result' => new \stdClass()]);
+                // Leeres Ergebnisobjekt - in der Legacy-Aera bleibt es leer.
+                // Dann muss es ein Objekt sein, kein leeres Array: json_encode
+                // schriebe daraus "[]" statt "{}".
+                $pingresult = self::resultmeta($headers, 'complete');
+                return self::result(200, [], [
+                    'jsonrpc' => '2.0',
+                    'id' => $id,
+                    'result' => $pingresult === [] ? new \stdClass() : $pingresult,
+                ]);
 
             // Moderne Aera: Discovery statt Handshake.
             case 'server/discover':
@@ -213,7 +229,7 @@ final class dispatcher {
                         'capabilities' => ['tools' => new \stdClass()],
                         'serverInfo' => $serverinfo,
                         'instructions' => self::HANDSHAKE_INSTRUCTIONS,
-                    ],
+                    ] + self::resultmeta($headers, 'complete'),
                 ]);
 
             case 'tools/list':
@@ -226,7 +242,7 @@ final class dispatcher {
                         // gueltiger Wert ("Unsupported result type 'data' for
                         // tools/list") - die Liste ist vollstaendig, nicht
                         // paginiert, also 'complete'.
-                    ] + self::resultmeta($headers, 'complete', 300000),
+                    ] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
                 ]);
 
             case 'tools/call':
@@ -240,21 +256,21 @@ final class dispatcher {
                 return self::result(200, [], [
                     'jsonrpc' => '2.0',
                     'id' => $id,
-                    'result' => ['resources' => []] + self::resultmeta($headers, 'complete', 300000),
+                    'result' => ['resources' => []] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
                 ]);
 
             case 'resources/templates/list':
                 return self::result(200, [], [
                     'jsonrpc' => '2.0',
                     'id' => $id,
-                    'result' => ['resourceTemplates' => []] + self::resultmeta($headers, 'complete', 300000),
+                    'result' => ['resourceTemplates' => []] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
                 ]);
 
             case 'prompts/list':
                 return self::result(200, [], [
                     'jsonrpc' => '2.0',
                     'id' => $id,
-                    'result' => ['prompts' => []] + self::resultmeta($headers, 'complete', 300000),
+                    'result' => ['prompts' => []] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
                 ]);
 
             default:
@@ -285,10 +301,16 @@ final class dispatcher {
             return self::result(200, [], [
                 'jsonrpc' => '2.0',
                 'id' => $id,
+                // Auch der Fehlerzweig braucht die Ergebnis-Metadaten (#466):
+                // ohne 'resultType' verwirft ein 2026-07-28-Client die
+                // Antwort als ungueltig und zeigt der Lehrkraft einen
+                // Protokollfehler statt der Meldung des Werkzeugs. Ein
+                // 'isError'-Ergebnis ist vollstaendig geliefert, also
+                // 'complete' wie im Erfolgsfall.
                 'result' => [
                     'isError' => true,
                     'content' => [['type' => 'text', 'text' => $message]],
-                ],
+                ] + self::resultmeta($headers, 'complete'),
             ]);
         }
 
@@ -391,13 +413,21 @@ final class dispatcher {
      * resultType - die Revision kennt fuer einen erfolgreichen Aufruf nur
      * 'complete', daneben 'input_required' fuer das MRTR-Muster, das wir nicht
      * anbieten. Und die Caching-Felder gehoeren laut Spezifikation an
-     * tools/list, prompts/list, resources/list und resources/read, nicht an
+     * tools/list, prompts/list, resources/list, resources/templates/list und
+     * resources/read - also an die Listen, die wir bedienen -, nicht an
      * tools/call: ein ttlMs auf einem Schreibvorgang legt einem Client nahe,
      * ihn zu cachen. Deshalb ist $ttlms fuer tools/call null.
      *
+     * #466: die Revision macht 'resultType' fuer JEDES Ergebnis zur Pflicht,
+     * nicht nur fuer tools/call - jeder Zweig mit einem 'result' ruft das hier
+     * auf. Der Ausloeser war ein einzelner vergessener Zweig (der Fehlerpfad
+     * von tools/call), der jede Meldung dieses Servers unlesbar machte.
+     * initialize und server/discover liegen vor der Aushandlung: fehlt der
+     * Header dort, greift ohnehin die Legacy-Zeile oben.
+     *
      * @param array{protocolversion?: ?string} $headers
      * @param string $resulttype 'complete' - der einzige Erfolgswert, den die
-     *        Revision kennt, fuer tools/call wie fuer tools/list.
+     *        Revision kennt, fuer jedes Ergebnis.
      * @param int|null $ttlms Freshness-Hinweis in Millisekunden - nur fuer
      *        Listenantworten. Null laesst die Caching-Felder ganz weg.
      * @return array<string, mixed> Leer ausserhalb der modernen Aera.
