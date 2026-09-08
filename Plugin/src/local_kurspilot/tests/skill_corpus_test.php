@@ -174,4 +174,30 @@ final class skill_corpus_test extends \advanced_testcase {
             );
         }
     }
+
+    /**
+     * Und die Gegenrichtung (Issue #464): jedes Werkzeug aus der
+     * Werkzeugliste muss im Korpus mindestens einmal vorkommen. Ein
+     * Werkzeug, das der Korpus nicht nennt, existiert fuer ein Modell
+     * nicht - es raet Name und Parameter und raet falsch.
+     */
+    public function test_every_registered_tool_is_mentioned_in_the_corpus(): void {
+        $corpus = '';
+        foreach (skill_corpus::list() as $entry) {
+            $corpus .= (string) file_get_contents($entry['path']);
+        }
+
+        $missing = [];
+        foreach (array_keys(tool_registry::allowed_tools()) as $name) {
+            if (!str_contains($corpus, $name)) {
+                $missing[] = $name;
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $missing,
+            'Diese Werkzeuge kommen im Skill-Korpus nicht vor: ' . implode(', ', $missing)
+        );
+    }
 }
