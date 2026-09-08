@@ -546,6 +546,9 @@ class update_module_settings extends external_api {
                 throw new coding_exception('felder_json muss ein JSON-Objekt sein, kein Array.');
             }
             if (in_array($fieldname, $blocklist, true)) {
+                // Vervollstaendigungsfelder zuerst: sie sind nicht nur
+                // gesperrt, sie haben einen Weg (Ticket #461).
+                shared_block::assert_not_completion_field($fieldname);
                 throw new moodle_exception(
                     'blockedfield',
                     'local_kurspilot',

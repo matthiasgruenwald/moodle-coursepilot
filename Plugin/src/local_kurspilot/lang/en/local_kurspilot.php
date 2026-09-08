@@ -243,6 +243,7 @@ $string['sectionnotmovable'] = 'Section "{$a->sectionnum}" does not exist or is 
 
 // Write core: set_completion (#392).
 $string['completionunknownfield'] = 'Unknown completion field "{$a->field}". Allowed for this activity type: {$a->erlaubt}. Nothing was written.';
+$string['completionfieldviasetcompletion'] = 'The completion field "{$a->field}" is not set through a field patch but exclusively through set_completion (cmid, felder_json) - otherwise Moodle silently discards it or wipes the learners\' completion data. Nothing was written.';
 $string['completionfieldnotformodname'] = 'The completion field "{$a->field}" only exists for the activity types {$a->modnames}, not for "{$a->modname}". Nothing was written.';
 $string['completioninvalidfieldvalue'] = 'Invalid value "{$a->value}" for completion field "{$a->field}". Nothing was written.';
 $string['completionnotenabled'] = 'Completion tracking is disabled for this course (or the whole site). Moodle would silently discard these fields either way. Enable completion tracking for the course first. Nothing was written.';

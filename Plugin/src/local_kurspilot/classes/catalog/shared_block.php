@@ -92,6 +92,45 @@ final class shared_block {
         ]);
     }
 
+    /**
+     * Die Vervollstaendigungsfelder, die ausschliesslich {@see
+     * \local_kurspilot\external\set_completion} schreibt - die sieben
+     * generischen course_modules-Spalten samt "completionunlocked" und die
+     * modulspezifischen aus set_completion::MODULE_SPECIFIC_FIELDS. Sie stehen
+     * ohnehin auf einer Sperrliste; die eigene Meldung nennt zusaetzlich den
+     * Weg, der funktioniert (Ticket #461: im Abnahmelauf scheiterte ein Modell
+     * fuenfmal, weil "gesperrt" nicht sagte, wohin stattdessen).
+     *
+     * @var string[]
+     */
+    public const COMPLETION_FIELDS_VIA_SET_COMPLETION = [
+        'completion',
+        'completionview',
+        'completionexpected',
+        'completiongradeitemnumber',
+        'completionusegrade',
+        'completionpassgrade',
+        'completionunlocked',
+        'completionsubmit',
+    ];
+
+    /**
+     * Wirft, wenn $fieldname ein Vervollstaendigungsfeld ist - mit dem
+     * Wegweiser auf set_completion statt der blossen Sperrmeldung.
+     *
+     * @param string $fieldname
+     * @return void
+     * @throws \moodle_exception completionfieldviasetcompletion
+     */
+    public static function assert_not_completion_field(string $fieldname): void {
+        if (!in_array($fieldname, self::COMPLETION_FIELDS_VIA_SET_COMPLETION, true)) {
+            return;
+        }
+        throw new \moodle_exception('completionfieldviasetcompletion', 'local_kurspilot', '', [
+            'field' => $fieldname,
+        ]);
+    }
+
     public const BLOCKLIST = [
         'timemodified',
         'timecreated',

@@ -89,7 +89,9 @@ final class set_completion_test extends \advanced_testcase {
                 update_module_settings::execute($page->cmid, json_encode([$field => 1]));
                 $this->fail('Erwartete moodle_exception blieb aus fuer Feld "' . $field . '".');
             } catch (\moodle_exception $e) {
+                $this->assertSame('completionfieldviasetcompletion', $e->errorcode);
                 $this->assertStringContainsString($field, $e->getMessage());
+                $this->assertStringContainsString('set_completion', $e->getMessage());
             }
         }
     }
@@ -138,7 +140,9 @@ final class set_completion_test extends \advanced_testcase {
             ]));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
+            $this->assertSame('completionfieldviasetcompletion', $e->errorcode);
             $this->assertStringContainsString('completionview', $e->getMessage());
+            $this->assertStringContainsString('set_completion', $e->getMessage());
         }
     }
 
@@ -524,7 +528,9 @@ final class set_completion_test extends \advanced_testcase {
                 update_module_settings::execute($cmid, json_encode(['completionsubmit' => 1]));
                 $this->fail('Erwartete moodle_exception blieb aus fuer "' . $modname . '".');
             } catch (\moodle_exception $e) {
+                $this->assertSame('completionfieldviasetcompletion', $e->errorcode);
                 $this->assertStringContainsString('completionsubmit', $e->getMessage());
+                $this->assertStringContainsString('set_completion', $e->getMessage());
             }
         }
     }

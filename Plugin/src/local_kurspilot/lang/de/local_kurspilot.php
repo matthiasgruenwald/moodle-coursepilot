@@ -240,6 +240,7 @@ $string['sectionnotmovable'] = 'Abschnitt "{$a->sectionnum}" existiert nicht ode
 
 // Schreibkern: set_completion (#392).
 $string['completionunknownfield'] = 'Unbekanntes Vervollständigungsfeld "{$a->field}". Erlaubt für diese Aktivitätsart: {$a->erlaubt}. Nichts wurde geschrieben.';
+$string['completionfieldviasetcompletion'] = 'Das Vervollständigungsfeld "{$a->field}" wird nicht per Feld-Patch gesetzt, sondern ausschließlich über set_completion (cmid, felder_json) - Moodle verwirft es sonst still oder löscht die Abschlussdaten der Lernenden. Nichts wurde geschrieben.';
 $string['completionfieldnotformodname'] = 'Das Vervollständigungsfeld "{$a->field}" gibt es nur bei den Aktivitätsarten {$a->modnames}, nicht bei "{$a->modname}". Nichts wurde geschrieben.';
 $string['completioninvalidfieldvalue'] = 'Ungültiger Wert "{$a->value}" für Vervollständigungsfeld "{$a->field}". Nichts wurde geschrieben.';
 $string['completionnotenabled'] = 'Die Abschlussverfolgung ist für diesen Kurs (oder die gesamte Moodle-Instanz) deaktiviert. Moodle würde diese Felder ohnehin still verwerfen. Aktivieren Sie zuerst die Abschlussverfolgung im Kurs. Nichts wurde geschrieben.';
