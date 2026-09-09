@@ -15,14 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * WEGWERF-PROTOTYP zu Issue #473 (Karte #467) - kein Produktionscode.
+ * WEGWERF-PROTOTYP zu Issue #473 (Karte #467) – kein Produktionscode.
  *
- * Drei strukturell verschiedene Varianten der Ordnerauswahl fuer den externen
- * WebDAV-Speicher, umschaltbar ueber ?variant=a|b|c, dazu Faelle ueber
- * ?fall=ok|leer|keineinstanz|langsam|fehler|echt.
+ * Zweite Runde nach der Rückmeldung vom 09.09.2026: Variante C (Vorschlagsliste)
+ * ist raus, Variante A (Dateifenster) trägt und hat dazugelernt –
+ * Fortschrittsband über beiden Zielen, Ordner anlegen, Unterordner „kurspilot"
+ * für den Kontextbereich.
  *
- * Daten sind bis auf ?fall=echt erfunden; nichts wird gespeichert, nichts
- * geschrieben. Die Seite wird nach der Entscheidung wieder geloescht.
+ * Umschaltbar über ?variant=a|b und ?fall=ok|leer|keineinstanz|langsam|fehler|echt.
+ * Daten sind bis auf ?fall=echt erfunden; es wird nichts geschrieben und nichts
+ * gespeichert – auch ein „angelegter" Ordner entsteht nur auf dem Bildschirm.
  *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
@@ -33,7 +35,7 @@ require(__DIR__ . '/../../config.php');
 
 require_login(null, false);
 
-global $USER, $PAGE, $OUTPUT;
+global $USER, $PAGE, $OUTPUT, $CFG;
 
 $usercontext = context_user::instance($USER->id);
 $PAGE->set_context($usercontext);
@@ -46,80 +48,68 @@ $variant = optional_param('variant', 'a', PARAM_ALPHA);
 $fall    = optional_param('fall', 'ok', PARAM_ALPHA);
 $instanz = optional_param('instanz', 0, PARAM_INT);
 $pfad    = trim(optional_param('pfad', '/', PARAM_RAW));
-$ziel    = optional_param('ziel', 'kontext', PARAM_ALPHA);   // Variante A: Reiter.
-$schritt = optional_param('schritt', 1, PARAM_INT);          // Variante B: Assistentenschritt.
-$wahl    = trim(optional_param('wahl', '', PARAM_RAW));      // Gewaehlter Ordner -> Ergebnispanel.
-$kontextwahl = trim(optional_param('kontextwahl', '', PARAM_RAW));
+$ziel    = optional_param('ziel', 'kontext', PARAM_ALPHA);
+$schritt = optional_param('schritt', 1, PARAM_INT);
 
-if (!in_array($variant, ['a', 'b', 'c'], true)) {
+// Getroffene Wahl, je Ziel getrennt – der Kern der Reiter-Frage.
+$kontextwahl  = trim(optional_param('kontextwahl', '', PARAM_RAW));
+$materialwahl = trim(optional_param('materialwahl', '', PARAM_RAW));
+// Unterordner „kurspilot" unter der Kontextwahl anlegen statt den Ordner direkt nehmen.
+$unterordner  = optional_param('unterordner', 1, PARAM_INT);
+// Im Prototyp „angelegte" Ordner: durch | getrennte Pfadliste, rein zur Anzeige.
+$neu          = trim(optional_param('neu', '', PARAM_RAW));
+$fertig       = optional_param('fertig', 0, PARAM_INT);
+
+if (!in_array($variant, ['a', 'b'], true)) {
     $variant = 'a';
 }
 if (!in_array($fall, ['ok', 'leer', 'keineinstanz', 'langsam', 'fehler', 'echt'], true)) {
     $fall = 'ok';
 }
 
+$KURSPILOT_ORDNER = 'kurspilot';
+
+/** Pfad immer mit führendem und abschließendem Schrägstrich. */
+function kp_norm(string $p): string {
+    $p = '/' . trim($p, '/');
+    return $p === '/' ? '/' : $p . '/';
+}
+$pfad = kp_norm($pfad);
+$neuliste = array_values(array_filter(explode('|', $neu)));
+
 // --------------------------------------------------------------------------
-// Erfundene Serverantworten. Ordner und Dateien getrennt, so wie get_listing()
-// sie liefert.
+// Erfundene Serverantworten. Ordner tragen Anzeigename und vollen Pfad
+// getrennt – der Stolperstein aus der ersten Runde: der Titel aus
+// get_listing() ist relativ zur aktuellen Ebene, navigiert wird über 'path'.
 // --------------------------------------------------------------------------
 
 $stubinstanzen = [
-    1 => ['name' => 'Nextcloud Schule', 'server' => 'cloud.igs-musterstadt.de', 'typ' => 'webdav'],
-    2 => ['name' => 'IServ Dateien',    'server' => 'iserv.igs-musterstadt.de', 'typ' => 'webdav'],
+    1 => ['name' => 'Nextcloud Schule', 'server' => 'cloud.igs-musterstadt.de'],
+    2 => ['name' => 'IServ Dateien',    'server' => 'iserv.igs-musterstadt.de'],
 ];
 
 $stubbaum = [
     1 => [
-        '/' => [
-            'ordner' => ['Dokumente', 'Unterricht', 'Fotos', 'Vorlagen', 'Talk'],
-            'dateien' => ['Notizen.odt', 'Stundenplan.pdf'],
-        ],
-        '/Unterricht' => [
-            'ordner' => ['Bio 7a', 'Bio 9b', 'NW 5c', 'Archiv 2024', 'Kurspilot'],
+        '/' => ['ordner' => ['Dokumente', 'Unterricht', 'Fotos', 'Vorlagen'], 'dateien' => ['Notizen.odt']],
+        '/Unterricht/' => [
+            'ordner' => ['Bio 7a', 'Bio 9b', 'NW 5c', 'Archiv 2024'],
             'dateien' => ['Jahresplanung.xlsx'],
         ],
-        '/Unterricht/Bio 7a' => [
-            'ordner' => ['Arbeitsblaetter', 'Bilder', 'Klassenarbeiten'],
-            'dateien' => ['Zellen-AB.docx', 'Mikroskop.jpg', 'Verlaufsplan.md'],
+        '/Unterricht/Bio 7a/' => [
+            'ordner' => ['Arbeitsblätter', 'Bilder', 'kurspilot'],
+            'dateien' => ['Zellen-AB.docx', 'Mikroskop.jpg'],
         ],
-        '/Unterricht/Bio 7a/Bilder' => [
-            'ordner' => [],
-            'dateien' => ['zelle-1.jpg', 'zelle-2.jpg', 'mikroskop-schema.png'],
-        ],
-        '/Unterricht/Kurspilot' => [
-            'ordner' => ['kontext', 'material'],
-            'dateien' => [],
-        ],
+        '/Unterricht/Bio 7a/Bilder/' => ['ordner' => [], 'dateien' => ['zelle-1.jpg', 'zelle-2.jpg']],
+        '/Dokumente/' => ['ordner' => ['Privat', 'Steuer'], 'dateien' => ['Lebenslauf.pdf']],
     ],
     2 => [
-        '/' => [
-            'ordner' => ['Eigene Dateien', 'Gruppen'],
-            'dateien' => [],
-        ],
-        '/Eigene Dateien' => [
-            'ordner' => ['Bio', 'Vertretung'],
-            'dateien' => ['Adressliste.csv'],
-        ],
+        '/' => ['ordner' => ['Files', 'Groups'], 'dateien' => []],
+        '/Files/' => ['ordner' => ['Desktop', 'Downloads', 'Unterricht'], 'dateien' => ['Adressliste.csv']],
+        '/Groups/' => ['ordner' => ['Fachschaft Bio', 'Jahrgang 7'], 'dateien' => []],
     ],
 ];
 
-/**
- * Erfundenes get_listing(). Gibt Ordner und Dateien der Ebene zurueck.
- */
-$listing = function (int $inst, string $path) use ($stubbaum, $fall, $stubinstanzen): array {
-    if ($fall === 'echt') {
-        return echt_listing($inst, $path);
-    }
-    if ($fall === 'leer') {
-        return ['ordner' => [], 'dateien' => []];
-    }
-    return $stubbaum[$inst][$path] ?? ['ordner' => [], 'dateien' => []];
-};
-
-/**
- * Echte Instanzen der angemeldeten Person - nur im Fall ?fall=echt.
- */
-function echt_instanzen(): array {
+function kp_echt_instanzen(): array {
     global $USER, $CFG;
     require_once($CFG->dirroot . '/repository/lib.php');
     $out = [];
@@ -132,7 +122,6 @@ function echt_instanzen(): array {
             $out[(int) $inst->id] = [
                 'name' => $inst->get_name(),
                 'server' => (string) $inst->get_option('webdav_server'),
-                'typ' => 'webdav',
             ];
         }
     } catch (Throwable $e) {
@@ -141,48 +130,71 @@ function echt_instanzen(): array {
     return $out;
 }
 
-function echt_listing(int $inst, string $path): array {
+function kp_echt_listing(int $inst, string $path): array {
     global $USER, $CFG;
     require_once($CFG->dirroot . '/repository/lib.php');
+    $ordner = [];
+    $dateien = [];
     try {
         $repo = repository::get_repository_by_id($inst, context_user::instance($USER->id));
-        $listing = $repo->get_listing($path === '/' ? '' : $path);
-        $ordner = [];
-        $dateien = [];
+        $listing = $repo->get_listing($path);
         foreach (($listing['list'] ?? []) as $item) {
-            if (!empty($item['children']) || (isset($item['path']) && empty($item['source']))) {
-                $ordner[] = (string) $item['title'];
+            if (isset($item['children'])) {
+                $ordner[] = [
+                    'titel' => trim((string) $item['title'], '/'),
+                    'pfad' => kp_norm((string) ($item['path'] ?? $item['title'])),
+                ];
             } else {
                 $dateien[] = (string) $item['title'];
             }
         }
-        return ['ordner' => $ordner, 'dateien' => $dateien];
     } catch (Throwable $e) {
         return ['ordner' => [], 'dateien' => [], 'fehler' => $e->getMessage()];
     }
+    return ['ordner' => $ordner, 'dateien' => $dateien];
 }
 
-$instanzen = $fall === 'keineinstanz' ? [] : ($fall === 'echt' ? echt_instanzen() : $stubinstanzen);
+$listing = function (int $inst, string $path) use ($stubbaum, $fall, $neuliste): array {
+    $path = kp_norm($path);
+    if ($fall === 'echt') {
+        $l = kp_echt_listing($inst, $path);
+    } else if ($fall === 'leer') {
+        $l = ['ordner' => [], 'dateien' => []];
+    } else {
+        $roh = $stubbaum[$inst][$path] ?? ['ordner' => [], 'dateien' => []];
+        $l = ['ordner' => [], 'dateien' => $roh['dateien']];
+        foreach ($roh['ordner'] as $name) {
+            $l['ordner'][] = ['titel' => $name, 'pfad' => $path . $name . '/'];
+        }
+    }
+    // Im Prototyp angelegte Ordner erscheinen wie echte, nur markiert.
+    foreach ($neuliste as $n) {
+        $n = kp_norm($n);
+        if (dirname(rtrim($n, '/')) . '/' === $path || (dirname(rtrim($n, '/')) === '/' && $path === '/')) {
+            $l['ordner'][] = ['titel' => basename(rtrim($n, '/')), 'pfad' => $n, 'neu' => true];
+        }
+    }
+    return $l;
+};
+
+$instanzen = $fall === 'keineinstanz' ? [] : ($fall === 'echt' ? kp_echt_instanzen() : $stubinstanzen);
 if ($instanz === 0 && $instanzen) {
     $instanz = (int) array_key_first($instanzen);
 }
 
 // --------------------------------------------------------------------------
-// Hilfen fuer Links und Bausteine.
+// Links und Bausteine.
 // --------------------------------------------------------------------------
 
-$url = function (array $extra = []) use ($variant, $fall, $instanz, $pfad, $ziel, $schritt, $wahl, $kontextwahl): string {
+$url = function (array $extra = []) use (
+    $variant, $fall, $instanz, $pfad, $ziel, $schritt, $kontextwahl, $materialwahl, $unterordner, $neu, $fertig
+): string {
     $params = array_merge([
-        'variant' => $variant,
-        'fall' => $fall,
-        'instanz' => $instanz,
-        'pfad' => $pfad,
-        'ziel' => $ziel,
-        'schritt' => $schritt,
-        'wahl' => $wahl,
-        'kontextwahl' => $kontextwahl,
+        'variant' => $variant, 'fall' => $fall, 'instanz' => $instanz, 'pfad' => $pfad,
+        'ziel' => $ziel, 'schritt' => $schritt, 'kontextwahl' => $kontextwahl,
+        'materialwahl' => $materialwahl, 'unterordner' => $unterordner, 'neu' => $neu, 'fertig' => $fertig,
     ], $extra);
-    $params = array_filter($params, static fn($v) => $v !== '' && $v !== null);
+    $params = array_filter($params, static fn($v) => $v !== '' && $v !== null && $v !== 0 && $v !== '0');
     return (new moodle_url('/local/kurspilot/prototype_ortswahl.php', $params))->out(false);
 };
 
@@ -196,45 +208,66 @@ $breadcrumb = function (string $path) use ($url): string {
     $acc = '';
     foreach ($teile as $t) {
         $acc .= '/' . $t;
-        $out .= ' <span class="text-muted">/</span> <a href="' . $url(['pfad' => $acc]) . '">' . s($t) . '</a>';
+        $out .= ' <span class="text-muted">/</span> <a href="' . $url(['pfad' => $acc . '/']) . '">' . s($t) . '</a>';
     }
     return $out;
 };
 
-$parent = function (string $path): string {
-    $p = rtrim(substr($path, 0, (int) strrpos($path, '/')), '/');
-    return $p === '' ? '/' : $p;
-};
-
-$join = static function (string $path, string $name): string {
-    return ($path === '/' ? '' : rtrim($path, '/')) . '/' . $name;
+$eltern = static function (string $path): string {
+    $p = rtrim($path, '/');
+    $p = substr($p, 0, (int) strrpos($p, '/'));
+    return kp_norm($p === '' ? '/' : $p);
 };
 
 /**
- * Ergebnispanel: was der Kontextpointer nach dieser Wahl traegt (Frage 5).
+ * Der Ort, den die Kontextwahl tatsächlich ergibt – mit oder ohne Unterordner.
  */
-$pointerpanel = function (array $felder) use ($instanzen, $instanz): string {
+$kontextort = function () use ($kontextwahl, $unterordner, $KURSPILOT_ORDNER): string {
+    if ($kontextwahl === '') {
+        return '';
+    }
+    return $unterordner ? kp_norm($kontextwahl) . $KURSPILOT_ORDNER . '/' : kp_norm($kontextwahl);
+};
+
+$pointerpanel = function (array $felder, array $anlegen = []) use ($instanzen, $instanz): string {
     $inst = $instanzen[$instanz] ?? ['name' => '?', 'server' => '?'];
     $daten = array_merge([
         'speicher' => [
             'instanzid' => $instanz,
             'instanzname' => $inst['name'],
             'server' => $inst['server'],
-            'pruefmerkmal' => 'sha1(' . $inst['server'] . '|' . $inst['name'] . ')',
+            'prüfmerkmal' => 'sha1(' . $inst['server'] . '|' . $inst['name'] . ')',
         ],
     ], $felder);
     $json = json_encode($daten, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    return '<div class="card mt-3"><div class="card-body">'
-        . '<h5 class="card-title">Was gespeichert wuerde <span class="badge bg-secondary">.kurspilot-ort.json</span></h5>'
-        . '<pre class="mb-2" style="white-space:pre-wrap">' . s($json) . '</pre>'
-        . '<p class="text-muted mb-0">Frage 5: Der Pointer traegt heute nur Pfade. Hier kaeme die Instanz dazu '
-        . '- plus ein Pruefmerkmal, weil eine geloeschte oder umkonfigurierte Instanz kein Signal sendet (#468).</p>'
+    $out = '<div class="card mt-3 border-success"><div class="card-body">'
+        . '<h5 class="card-title">Was gespeichert würde <span class="badge bg-secondary">.kurspilot-ort.json</span></h5>';
+    if ($anlegen) {
+        $out .= '<p>Vorher angelegt: ' . implode(', ', array_map(static fn($p) => '<code>' . s($p) . '</code>', $anlegen)) . '</p>';
+    }
+    $out .= '<pre class="mb-2" style="white-space:pre-wrap">' . s($json) . '</pre>'
+        . '<p class="text-muted mb-0">Frage 5: Der Pointer trägt heute nur Pfade. Hier kämen Instanz und '
+        . 'Prüfmerkmal dazu – eine gelöschte oder umkonfigurierte Instanz sendet kein Signal (#468).</p>'
         . '</div></div>';
+    return $out;
 };
 
-$fehlerpanel = static function (string $wortlaut, string $optionen): string {
-    return '<div class="alert alert-danger"><strong>' . $wortlaut . '</strong><div class="mt-2">' . $optionen . '</div></div>';
-};
+// Neuen Ordner "anlegen": vor jeder Ausgabe, damit redirect() sauber greift.
+// Im Prototyp entsteht kein Ordner auf dem Server - der Pfad wandert nur in
+// die Merkliste und wird in der Ordnerliste als "wird angelegt" gezeigt.
+$neuname = trim(optional_param('neuname', '', PARAM_RAW));
+$neuvon  = trim(optional_param('neuvon', '', PARAM_RAW));
+if ($neuname !== '' && $neuvon !== '') {
+    $neupfad = kp_norm(kp_norm($neuvon) . trim($neuname, '/'));
+    if (!in_array($neupfad, $neuliste, true)) {
+        $neuliste[] = $neupfad;
+    }
+    redirect(new moodle_url('/local/kurspilot/prototype_ortswahl.php', array_filter([
+        'variant' => $variant, 'fall' => $fall, 'instanz' => $instanz, 'ziel' => $ziel,
+        'pfad' => $neupfad, 'kontextwahl' => $kontextwahl, 'materialwahl' => $materialwahl,
+        'unterordner' => $unterordner, 'neu' => implode('|', $neuliste),
+    ], static fn($v) => $v !== '' && $v !== null)));
+}
 
 // --------------------------------------------------------------------------
 // Ausgabe.
@@ -243,16 +276,16 @@ $fehlerpanel = static function (string $wortlaut, string $optionen): string {
 echo $OUTPUT->header();
 
 echo '<div class="alert alert-warning"><strong>Wegwerf-Prototyp zu Issue #473.</strong> '
-    . 'Erfundene Daten (ausser Fall <code>echt</code>), nichts wird gespeichert. '
-    . 'Unten umschalten: Variante und Fall.</div>';
+    . 'Erfundene Daten (außer Fall <code>echte Instanzen</code>), nichts wird gespeichert – '
+    . 'auch „Ordner anlegen" passiert nur auf dem Bildschirm. Umschalten in der Leiste unten.</div>';
 
 $timeout = ($fall === 'langsam');
 
 if ($timeout) {
-    echo '<div id="wartepanel" class="alert alert-info d-flex align-items-center gap-3">'
+    echo '<div id="wartepanel" class="alert alert-info d-flex align-items-center" style="gap:1rem">'
         . '<div class="spinner-border spinner-border-sm" role="status"></div>'
-        . '<div>Verbindung zu <strong>cloud.igs-musterstadt.de</strong> wird aufgebaut '
-        . '&hellip; <span id="wartezeit">0</span> s</div>'
+        . '<div>Verbindung zu <strong>cloud.igs-musterstadt.de</strong> wird aufgebaut … '
+        . '<span id="wartezeit">0</span> s</div>'
         . '<a class="btn btn-sm btn-outline-secondary ms-auto" href="' . $url(['fall' => 'ok']) . '">Abbrechen</a>'
         . '</div>';
 }
@@ -260,12 +293,10 @@ if ($timeout) {
 echo '<div id="inhalt"' . ($timeout ? ' style="opacity:.25;pointer-events:none"' : '') . '>';
 
 // ==========================================================================
-// VARIANTE A - Dateifenster: Instanzen links, Ordner rechts, Reiter je Ziel.
+// VARIANTE A – Dateifenster mit Fortschrittsband.
 // ==========================================================================
 if ($variant === 'a') {
     echo '<h3>Variante A &mdash; Dateifenster</h3>';
-    echo '<p class="text-muted">Zwei Reiter, zwei Ziele: Kontextbereich und Materialbestand werden nacheinander '
-        . 'im selben Fenster gewaehlt. Navigation wie im Filepicker, gewaehlt wird die <em>aktuelle Ebene</em>.</p>';
 
     if (!$instanzen) {
         echo '<div class="card"><div class="card-body text-center py-5">'
@@ -273,15 +304,54 @@ if ($variant === 'a') {
             . '<p class="text-muted">Kurspilot benutzt einen Speicher, den Sie in Moodle selbst anlegen &mdash; '
             . 'Kurspilot verwaltet keine Zugangsdaten.</p>'
             . '<a class="btn btn-primary" href="' . $verwaltungsurl . '">Speicher in Moodle anlegen</a>'
-            . '<p class="mt-3 mb-0"><a href="' . $url(['fall' => 'ok']) . '">Zurueck (Prototyp: Fall &bdquo;ok&ldquo;)</a></p>'
+            . '<p class="mt-3 mb-0 text-muted"><small>Offen (aus der Rückmeldung): Ist das Anlegen von der Schule gar '
+            . 'nicht freigegeben, führt dieser Knopf ins Leere &mdash; dann braucht es hier stattdessen den Text '
+            . 'für die Administration.</small></p>'
+            . '<p class="mt-2 mb-0"><a href="' . $url(['fall' => 'ok']) . '">Zurück (Prototyp)</a></p>'
             . '</div></div>';
     } else {
+        $ort = $kontextort();
+        $fertigbeides = ($kontextwahl !== '' && $materialwahl !== '');
+
+        // Fortschrittsband: beide Ziele immer sichtbar, gewählt wird grün.
+        $band = function (string $label, string $wert, string $key) use ($ziel, $url): string {
+            $gewaehlt = $wert !== '';
+            $stil = $gewaehlt ? 'border-success bg-success-subtle' : 'border-secondary';
+            $aktiv = $ziel === $key ? ' shadow-sm' : '';
+            $inhalt = $gewaehlt
+                ? '<span class="text-success">&#10003;</span> <code>' . s($wert) . '</code>'
+                : '<span class="text-muted">noch nicht gewählt</span>';
+            return '<div class="border rounded p-2 flex-grow-1 ' . $stil . $aktiv . '">'
+                . '<small class="text-uppercase text-muted">' . $label . '</small><br>' . $inhalt
+                . ' <a class="small ms-2" href="' . $url(['ziel' => $key, 'pfad' => '/', 'fertig' => 0]) . '">'
+                . ($gewaehlt ? 'ändern' : 'jetzt wählen') . '</a></div>';
+        };
+
+        echo '<div class="d-flex align-items-stretch mb-3" style="gap:.75rem">';
+        echo $band('Kontextbereich', $ort, 'kontext');
+        echo $band('Materialbestand', $materialwahl, 'material');
+        echo '<div class="d-flex align-items-center">';
+        if ($fertigbeides) {
+            echo '<a class="btn btn-success" href="' . $url(['fertig' => 1]) . '">Einrichten abschließen</a>';
+        } else {
+            echo '<button class="btn btn-success" disabled title="Erst wenn beide Orte gewählt sind">'
+                . 'Einrichten abschließen</button>';
+        }
+        echo '</div></div>';
+
+        if (!$fertigbeides) {
+            $offen = $kontextwahl === '' ? 'Kontextbereich' : 'Materialbestand';
+            echo '<div class="alert alert-info py-2">Beide Orte werden gebraucht &mdash; es fehlt noch: '
+                . '<strong>' . $offen . '</strong>.</div>';
+        }
+
         echo '<ul class="nav nav-tabs mb-3">';
         foreach (['kontext' => 'Kontextbereich', 'material' => 'Materialbestand'] as $key => $label) {
             $aktiv = ($ziel === $key) ? ' active' : '';
-            $haken = ($key === 'kontext' && $kontextwahl !== '') ? ' &#10003;' : '';
+            $haken = (($key === 'kontext' && $kontextwahl !== '') || ($key === 'material' && $materialwahl !== ''))
+                ? ' <span class="text-success">&#10003;</span>' : '';
             echo '<li class="nav-item"><a class="nav-link' . $aktiv . '" href="'
-                . $url(['ziel' => $key, 'pfad' => '/', 'wahl' => '']) . '">' . $label . $haken . '</a></li>';
+                . $url(['ziel' => $key, 'pfad' => '/', 'fertig' => 0]) . '">' . $label . $haken . '</a></li>';
         }
         echo '</ul>';
 
@@ -292,241 +362,178 @@ if ($variant === 'a') {
         echo '<h6 class="text-uppercase text-muted px-2">Speicher</h6><ul class="list-unstyled mb-0">';
         foreach ($instanzen as $id => $inst) {
             $aktiv = ($id === $instanz) ? ' fw-bold' : '';
-            echo '<li class="px-2 py-1' . $aktiv . '"><a href="' . $url(['instanz' => $id, 'pfad' => '/', 'wahl' => '']) . '">'
+            echo '<li class="px-2 py-1' . $aktiv . '"><a href="' . $url(['instanz' => $id, 'pfad' => '/']) . '">'
                 . '&#128193; ' . s($inst['name']) . '</a><br><small class="text-muted">' . s($inst['server']) . '</small></li>';
         }
         echo '</ul><hr><a class="small" href="' . $verwaltungsurl . '">+ weiteren Speicher anlegen</a>';
         echo '</div></div>';
 
-        // Rechte Spalte: Ordnerliste.
+        // Rechte Spalte: Ordnerliste plus Anlegen.
         echo '<div class="card flex-grow-1"><div class="card-body">';
         echo '<div class="mb-2">' . $breadcrumb($pfad) . '</div>';
         $l = $listing($instanz, $pfad);
-        echo '<div class="border rounded" style="max-height:22rem;overflow:auto">';
+        echo '<div class="border rounded" style="max-height:20rem;overflow:auto">';
         if ($pfad !== '/') {
-            echo '<div class="px-3 py-2 border-bottom"><a href="' . $url(['pfad' => $parent($pfad)]) . '">&#8617; eine Ebene hoeher</a></div>';
+            echo '<div class="px-3 py-2 border-bottom"><a href="' . $url(['pfad' => $eltern($pfad)]) . '">&#8617; eine Ebene höher</a></div>';
         }
         if (!$l['ordner'] && !$l['dateien']) {
             echo '<div class="px-3 py-4 text-center text-muted">Dieser Ordner ist leer. '
-                . 'Er kann trotzdem gewaehlt werden &mdash; Kurspilot legt darin an, was es braucht.</div>';
+                . 'Er kann trotzdem gewählt werden.</div>';
         }
         foreach ($l['ordner'] as $o) {
-            echo '<div class="px-3 py-2 border-bottom"><a href="' . $url(['pfad' => $join($pfad, $o)]) . '">'
-                . '&#128193; ' . s($o) . '</a></div>';
+            $marke = !empty($o['neu']) ? ' <span class="badge bg-info">wird angelegt</span>' : '';
+            echo '<div class="px-3 py-2 border-bottom"><a href="' . $url(['pfad' => $o['pfad']]) . '">'
+                . '&#128193; ' . s($o['titel']) . '</a>' . $marke . '</div>';
         }
         foreach ($l['dateien'] as $d) {
-            echo '<div class="px-3 py-2 border-bottom text-muted">&#128196; ' . s($d) . ' <small>(Datei &mdash; nicht waehlbar)</small></div>';
+            echo '<div class="px-3 py-2 border-bottom text-muted">&#128196; ' . s($d)
+                . ' <small>(Datei &mdash; nicht wählbar)</small></div>';
         }
         echo '</div>';
-        echo '<div class="d-flex justify-content-between align-items-center mt-3">';
-        echo '<div><small class="text-muted">Ziel:</small> <code>' . s($pfad) . '</code></div>';
-        echo '<a class="btn btn-primary" href="' . $url(['wahl' => $pfad]) . '">Diesen Ordner waehlen</a>';
-        echo '</div>';
-        echo '</div></div>';
+
+        // Neuen Ordner anlegen – aufklappbar, direkt in der Liste verankert.
+        echo '<details class="mt-2"' . (optional_param('anlegen', 0, PARAM_INT) ? ' open' : '') . '>'
+            . '<summary>&#10133; Neuen Ordner hier anlegen</summary>'
+            . '<form method="get" class="d-flex mt-2" style="gap:.5rem">';
+        foreach ([
+            'variant' => $variant, 'fall' => $fall, 'instanz' => $instanz, 'ziel' => $ziel,
+            'kontextwahl' => $kontextwahl, 'materialwahl' => $materialwahl, 'unterordner' => $unterordner,
+            'anlegen' => 1,
+        ] as $k => $v) {
+            echo '<input type="hidden" name="' . $k . '" value="' . s((string) $v) . '">';
+        }
+        echo '<input type="hidden" name="neuvon" value="' . s($pfad) . '">'
+            . '<input class="form-control" name="neuname" placeholder="z. B. Kurspilot" required>'
+            . '<button class="btn btn-outline-primary">Anlegen</button></form>'
+            . '<small class="text-muted">Wird beim Abschließen auf dem Speicher erzeugt &mdash; '
+            . 'im Prototyp nur angezeigt.</small></details>';
+
+        // Wählen – je Ziel eigener Abschluss.
+        echo '<div class="border-top mt-3 pt-3">';
+        echo '<div class="mb-2"><small class="text-muted">Aktuelle Ebene:</small> <code>' . s($pfad) . '</code></div>';
+
+        if ($ziel === 'kontext') {
+            $vorhanden = false;
+            foreach ($l['ordner'] as $o) {
+                if (strtolower($o['titel']) === $KURSPILOT_ORDNER) {
+                    $vorhanden = true;
+                }
+            }
+            echo '<div class="mb-2">';
+            echo '<div class="form-check"><input class="form-check-input" type="radio" checked disabled>'
+                . '<label class="form-check-label">Unterordner <code>' . $KURSPILOT_ORDNER . '</code> in diesem Ordner benutzen '
+                . ($vorhanden
+                    ? '<span class="badge bg-success">ist schon da &mdash; wird verwendet</span>'
+                    : '<span class="badge bg-info">wird angelegt</span>')
+                . '</label></div>';
+            echo '<div class="form-check"><input class="form-check-input" type="radio" disabled>'
+                . '<label class="form-check-label text-muted">Diesen Ordner direkt benutzen</label></div>';
+            echo '<small class="text-muted">Im Prototyp fest auf „Unterordner"; die Umschaltung ist die Frage, '
+                . 'nicht die Mechanik.</small></div>';
+            echo '<a class="btn btn-primary" href="' . $url(['kontextwahl' => $pfad, 'ziel' => 'material', 'pfad' => '/'])
+                . '">Diesen Ordner als Kontextbereich wählen</a>';
+        } else {
+            echo '<a class="btn btn-primary" href="' . $url(['materialwahl' => $pfad])
+                . '">Diesen Ordner als Materialbestand wählen</a>';
+            echo '<div class="mt-2"><small class="text-muted">Der Materialbestand wird serverseitig nur gelesen '
+                . '(#472) &mdash; hier wird nichts angelegt außer einem Ordner, den Sie selbst erzeugen.</small></div>';
+        }
         echo '</div>';
 
-        if ($wahl !== '') {
-            if ($ziel === 'kontext') {
-                echo '<div class="alert alert-success mt-3">Kontextbereich steht auf <code>' . s($wahl) . '</code>. '
-                    . '<a class="btn btn-sm btn-primary ms-2" href="'
-                    . $url(['ziel' => 'material', 'pfad' => '/', 'wahl' => '', 'kontextwahl' => $wahl])
-                    . '">Weiter zum Materialbestand</a></div>';
-            } else {
-                echo $pointerpanel([
-                    'kontextbereich' => $kontextwahl !== '' ? $kontextwahl : '(noch nicht gewaehlt)',
-                    'materialbestand' => $wahl,
-                ]);
+        echo '</div></div>'; // rechte Karte
+        echo '</div>'; // Spalten
+
+        if ($fertig && $fertigbeides) {
+            $anlegen = [];
+            foreach ($neuliste as $n) {
+                $anlegen[] = $n;
             }
+            if ($unterordner && $ort !== '' && !in_array($ort, $anlegen, true)) {
+                $anlegen[] = $ort . '  (falls noch nicht vorhanden)';
+            }
+            echo $pointerpanel([
+                'kontextbereich' => $ort,
+                'materialbestand' => $materialwahl,
+            ], $anlegen);
         }
     }
 }
 
 // ==========================================================================
-// VARIANTE B - Assistent: ein Ordner, beide Ziele daraus abgeleitet.
+// VARIANTE B – Assistent (bleibt zum Vergleich stehen).
 // ==========================================================================
 if ($variant === 'b') {
     echo '<h3>Variante B &mdash; Assistent, ein Ordner</h3>';
-    echo '<p class="text-muted">Die Lehrkraft waehlt <em>einen</em> Ordner. Der Kontextbereich wird daraus '
-        . 'abgeleitet (Unterordner <code>kurspilot</code>), der Materialbestand ist der Ordner selbst. '
-        . 'Drei Schritte, eine Entscheidung pro Bild.</p>';
-
-    $schritte = ['Speicher', 'Ordner', 'Bestaetigen'];
-    echo '<ol class="list-unstyled d-flex mb-4" style="gap:2rem">';
-    foreach ($schritte as $i => $name) {
-        $n = $i + 1;
-        $stil = $n === $schritt ? 'fw-bold' : 'text-muted';
-        echo '<li class="' . $stil . '">' . $n . '. ' . $name . '</li>';
-    }
-    echo '</ol>';
+    echo '<p class="text-muted">Eine Wahl: der Materialordner. Der Kontextbereich wird als Unterordner '
+        . '<code>kurspilot</code> daraus abgeleitet.</p>';
 
     if (!$instanzen) {
         echo '<div class="card"><div class="card-body">'
             . '<h4>Schritt 1: Welcher Speicher?</h4>'
-            . '<div class="alert alert-secondary mt-3 mb-3">Sie haben noch keinen Speicher in Moodle angelegt. '
-            . 'Kurspilot kann keinen anlegen &mdash; es benutzt nur, was Sie selbst eingerichtet haben.</div>'
-            . '<ol><li>&bdquo;Meine Dateien&ldquo; &rarr; Repositories verwalten</li>'
-            . '<li>WebDAV-Instanz anlegen: Serveradresse, Benutzername, Passwort</li>'
-            . '<li>Hierher zurueckkommen</li></ol>'
+            . '<div class="alert alert-secondary mt-3">Sie haben noch keinen Speicher in Moodle angelegt.</div>'
             . '<a class="btn btn-primary" href="' . $verwaltungsurl . '">Zur Repository-Verwaltung</a>'
-            . ' <a class="btn btn-link" href="' . $url(['fall' => 'ok']) . '">Zurueck (Prototyp)</a>'
             . '</div></div>';
     } else if ($schritt <= 1) {
-        echo '<div class="card"><div class="card-body">';
-        echo '<h4>Schritt 1: Welcher Speicher?</h4>';
+        echo '<div class="card"><div class="card-body"><h4>Schritt 1: Welcher Speicher?</h4>';
         foreach ($instanzen as $id => $inst) {
             echo '<a class="d-block border rounded p-3 mb-2 text-decoration-none" href="'
                 . $url(['instanz' => $id, 'schritt' => 2, 'pfad' => '/']) . '">'
                 . '<strong>' . s($inst['name']) . '</strong><br>'
                 . '<small class="text-muted">' . s($inst['server']) . ' &middot; WebDAV</small></a>';
         }
-        echo '<p class="mt-3 mb-0"><a href="' . $verwaltungsurl . '">Ein anderer Speicher fehlt?</a></p>';
         echo '</div></div>';
     } else if ($schritt === 2) {
         $l = $listing($instanz, $pfad);
         echo '<div class="card"><div class="card-body">';
         echo '<h4>Schritt 2: In welchem Ordner soll Kurspilot arbeiten?</h4>';
-        echo '<p class="text-muted">Am besten der Ordner, in dem Ihr Unterrichtsmaterial schon liegt.</p>';
-        echo '<div class="mb-2">' . $breadcrumb($pfad) . '</div>';
-        echo '<div class="list-group mb-3">';
+        echo '<div class="mb-2">' . $breadcrumb($pfad) . '</div><div class="list-group mb-3">';
         if ($pfad !== '/') {
-            echo '<a class="list-group-item" href="' . $url(['pfad' => $parent($pfad)]) . '">&#8617; zurueck</a>';
+            echo '<a class="list-group-item" href="' . $url(['pfad' => $eltern($pfad)]) . '">&#8617; zurück</a>';
         }
         foreach ($l['ordner'] as $o) {
-            $kind = $join($pfad, $o);
             echo '<div class="list-group-item d-flex justify-content-between align-items-center">'
-                . '<a href="' . $url(['pfad' => $kind]) . '">&#128193; ' . s($o) . '</a>'
-                . '<a class="btn btn-sm btn-outline-primary" href="' . $url(['pfad' => $kind, 'schritt' => 3, 'wahl' => $kind]) . '">waehlen</a>'
-                . '</div>';
+                . '<a href="' . $url(['pfad' => $o['pfad']]) . '">&#128193; ' . s($o['titel']) . '</a>'
+                . '<a class="btn btn-sm btn-outline-primary" href="'
+                . $url(['pfad' => $o['pfad'], 'schritt' => 3, 'materialwahl' => $o['pfad']]) . '">wählen</a></div>';
         }
         if (!$l['ordner']) {
             echo '<div class="list-group-item text-muted">Keine Unterordner hier.</div>';
         }
-        echo '</div>';
-        echo '<a class="btn btn-primary" href="' . $url(['schritt' => 3, 'wahl' => $pfad]) . '">Diesen Ordner nehmen: <code>'
-            . s($pfad) . '</code></a>';
+        echo '</div><a class="btn btn-primary" href="' . $url(['schritt' => 3, 'materialwahl' => $pfad])
+            . '">Diesen Ordner nehmen: <code>' . s($pfad) . '</code></a>';
         echo '</div></div>';
     } else {
-        $gewaehlt = $wahl !== '' ? $wahl : $pfad;
-        $kontext = rtrim($gewaehlt, '/') . '/kurspilot';
-        echo '<div class="card"><div class="card-body">';
-        echo '<h4>Schritt 3: Passt das so?</h4>';
+        $gewaehlt = $materialwahl !== '' ? kp_norm($materialwahl) : $pfad;
+        $kontext = $gewaehlt . $KURSPILOT_ORDNER . '/';
+        echo '<div class="card"><div class="card-body"><h4>Schritt 3: Passt das so?</h4>';
         echo '<table class="table"><tbody>'
-            . '<tr><th style="width:16rem">Ihr Material liegt in</th><td><code>' . s($gewaehlt) . '</code>'
-            . '<br><small class="text-muted">wird nur gelesen, nie veraendert</small></td></tr>'
+            . '<tr><th style="width:18rem">Ihr Material liegt in</th><td><code>' . s($gewaehlt) . '</code>'
+            . '<br><small class="text-muted">wird nur gelesen, nie verändert</small></td></tr>'
             . '<tr><th>Kurspilot legt seine Notizen in</th><td><code>' . s($kontext) . '</code>'
-            . '<br><small class="text-muted">wird angelegt, falls noch nicht da</small></td></tr>'
-            . '<tr><th>Chat-Anhaenge und Zuschnitte</th><td>bleiben in Moodle (Werkbank)</td></tr>'
+            . '<br><small class="text-muted">wird angelegt, falls noch nicht vorhanden</small></td></tr>'
+            . '<tr><th>Chat-Anhänge und Zuschnitte</th><td>bleiben in Moodle (Werkbank)</td></tr>'
             . '</tbody></table>';
         echo '<a class="btn btn-success" href="' . $url(['schritt' => 4]) . '">So einrichten</a> '
-            . '<a class="btn btn-link" href="' . $url(['schritt' => 2, 'wahl' => '']) . '">anderen Ordner waehlen</a>';
+            . '<a class="btn btn-link" href="' . $url(['schritt' => 2, 'materialwahl' => '']) . '">anderen Ordner wählen</a>';
         echo '</div></div>';
         if ($schritt >= 4) {
-            echo $pointerpanel(['kontextbereich' => $kontext, 'materialbestand' => $gewaehlt]);
-        }
-    }
-}
-
-// ==========================================================================
-// VARIANTE C - Vorschlaege: keine Navigation, Kurspilot schlaegt vor.
-// ==========================================================================
-if ($variant === 'c') {
-    echo '<h3>Variante C &mdash; Vorschlagsliste</h3>';
-    echo '<p class="text-muted">Kein Baum. Kurspilot sieht sich den Speicher einmal an und schlaegt Ordner vor; '
-        . 'die Lehrkraft kreuzt an. Navigieren ist der Ausweichweg, nicht der Hauptweg.</p>';
-
-    if (!$instanzen) {
-        echo '<div class="card"><div class="card-body">'
-            . '<h4>Kurspilot findet keinen Speicher</h4>'
-            . '<p>Damit Kurspilot Vorschlaege machen kann, braucht es einen Speicher, den Sie in Moodle '
-            . 'eingerichtet haben. Bis dahin bleibt alles in Moodle liegen.</p>'
-            . '<a class="btn btn-primary" href="' . $verwaltungsurl . '">Speicher einrichten</a> '
-            . '<a class="btn btn-outline-secondary" href="#">Vorerst in Moodle lassen</a>'
-            . '<p class="mt-3 mb-0"><a href="' . $url(['fall' => 'ok']) . '">Zurueck (Prototyp)</a></p>'
-            . '</div></div>';
-    } else {
-        // Vorschlaege: Wurzelebene plus eine Ebene tiefer, gewichtet nach Namen.
-        $vorschlaege = [];
-        $wurzel = $listing($instanz, '/');
-        foreach ($wurzel['ordner'] as $o) {
-            $p = '/' . $o;
-            $tiefer = $listing($instanz, $p);
-            $treffer = preg_match('/unterricht|schule|material|kurspilot|bio|dateien/i', $o);
-            $vorschlaege[] = [
-                'pfad' => $p,
-                'unter' => count($tiefer['ordner']),
-                'dateien' => count($tiefer['dateien']),
-                'empfohlen' => (bool) $treffer,
-            ];
-            foreach (array_slice($tiefer['ordner'], 0, 3) as $u) {
-                $vorschlaege[] = [
-                    'pfad' => $join($p, $u),
-                    'unter' => count($listing($instanz, $join($p, $u))['ordner']),
-                    'dateien' => count($listing($instanz, $join($p, $u))['dateien']),
-                    'empfohlen' => false,
-                ];
-            }
-        }
-        usort($vorschlaege, static fn($x, $y) => ($y['empfohlen'] <=> $x['empfohlen']) ?: ($y['dateien'] <=> $x['dateien']));
-        $vorschlaege = array_slice($vorschlaege, 0, 6);
-
-        echo '<div class="mb-3"><label class="me-2">Speicher:</label><select class="form-select d-inline-block" '
-            . 'style="width:auto" onchange="location=this.value">';
-        foreach ($instanzen as $id => $inst) {
-            echo '<option value="' . $url(['instanz' => $id, 'wahl' => '']) . '"' . ($id === $instanz ? ' selected' : '') . '>'
-                . s($inst['name']) . ' (' . s($inst['server']) . ')</option>';
-        }
-        echo '</select></div>';
-
-        if (!$vorschlaege) {
-            echo '<div class="alert alert-secondary">Auf diesem Speicher liegt noch nichts. '
-                . 'Kurspilot kann einen Ordner anlegen:</div>'
-                . '<a class="btn btn-primary" href="' . $url(['wahl' => '/Kurspilot']) . '">'
-                . 'Ordner <code>/Kurspilot</code> anlegen und nehmen</a>';
-        } else {
-            echo '<div class="list-group mb-3">';
-            foreach ($vorschlaege as $v) {
-                $badge = $v['empfohlen'] ? ' <span class="badge bg-success">passt vermutlich</span>' : '';
-                echo '<a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" href="'
-                    . $url(['wahl' => $v['pfad']]) . '">'
-                    . '<span><strong>' . s($v['pfad']) . '</strong>' . $badge
-                    . '<br><small class="text-muted">' . $v['unter'] . ' Unterordner, ' . $v['dateien'] . ' Dateien</small></span>'
-                    . '<span class="btn btn-sm btn-outline-primary">nehmen</span></a>';
-            }
-            echo '</div>';
-        }
-
-        echo '<details class="mb-3"><summary>Anderer Ordner &hellip;</summary>'
-            . '<div class="border rounded p-3 mt-2">'
-            . '<form method="get" class="d-flex" style="gap:.5rem">'
-            . '<input type="hidden" name="variant" value="c"><input type="hidden" name="fall" value="' . s($fall) . '">'
-            . '<input type="hidden" name="instanz" value="' . $instanz . '">'
-            . '<input class="form-control" name="wahl" placeholder="/Unterricht/Bio 7a" value="">'
-            . '<button class="btn btn-outline-primary">nehmen</button></form>'
-            . '<small class="text-muted">Der Ausweichweg &mdash; genau das Tippen, das die Frage vermeiden will.</small>'
-            . '</div></details>';
-
-        if ($wahl !== '') {
-            echo $pointerpanel([
-                'kontextbereich' => rtrim($wahl, '/') . '/kurspilot',
-                'materialbestand' => $wahl,
-            ]);
+            echo $pointerpanel(['kontextbereich' => $kontext, 'materialbestand' => $gewaehlt], [$kontext]);
         }
     }
 }
 
 echo '</div>'; // #inhalt
 
-// Fall "fehler": Server antwortet nicht - variantenspezifisch.
 if ($fall === 'fehler') {
-    $optionen = '<a class="btn btn-sm btn-outline-light me-2" href="' . $url([]) . '">Erneut versuchen</a>'
-        . '<a class="btn btn-sm btn-outline-light me-2" href="' . $verwaltungsurl . '">Zugangsdaten pruefen</a>'
-        . '<a class="btn btn-sm btn-outline-light" href="' . $url(['fall' => 'ok']) . '">Spaeter</a>';
-    echo $fehlerpanel('cloud.igs-musterstadt.de antwortet nicht (Zeitueberschreitung nach 8 Sekunden).', $optionen);
-    echo '<p class="text-muted">Frage 3: Bis hierher ist nichts gespeichert &mdash; die Lehrkraft kann die Seite '
-        . 'einfach verlassen. Genau das ginge im Zustimmungsdialog nicht.</p>';
+    echo '<div class="alert alert-danger"><strong>cloud.igs-musterstadt.de antwortet nicht '
+        . '(Zeitüberschreitung nach 8 Sekunden).</strong><div class="mt-2">'
+        . '<a class="btn btn-sm btn-outline-light me-2" href="' . $url([]) . '">Erneut versuchen</a>'
+        . '<a class="btn btn-sm btn-outline-light me-2" href="' . $verwaltungsurl . '">Zugangsdaten prüfen</a>'
+        . '<a class="btn btn-sm btn-outline-light" href="' . $url(['fall' => 'ok']) . '">Später</a></div></div>'
+        . '<p class="text-muted">Frage 3: Bis hierher ist nichts gespeichert &mdash; die Seite kann einfach '
+        . 'verlassen werden. Im Zustimmungsdialog ginge das nicht.</p>';
 }
 
-// Fall "langsam": nach 8 s in die Zeitueberschreitung laufen.
 if ($timeout) {
     $wiederholen = $url(['fall' => 'ok']);
     echo <<<HTML
@@ -535,16 +542,14 @@ if ($timeout) {
     <strong>Keine Antwort von cloud.igs-musterstadt.de.</strong>
     <p class="mb-2">Nach 8 Sekunden abgebrochen. Nichts wurde gespeichert.</p>
     <a class="btn btn-sm btn-primary" href="{$wiederholen}">Nochmal versuchen</a>
-    <a class="btn btn-sm btn-outline-secondary" href="{$verwaltungsurl}">Zugangsdaten pruefen</a>
+    <a class="btn btn-sm btn-outline-secondary" href="{$verwaltungsurl}">Zugangsdaten prüfen</a>
   </div>
 </div>
 <script>
 (function () {
-  var t = 0;
-  var feld = document.getElementById('wartezeit');
+  var t = 0, feld = document.getElementById('wartezeit');
   var iv = setInterval(function () {
-    t += 1;
-    feld.textContent = t;
+    t += 1; feld.textContent = t;
     if (t >= 8) {
       clearInterval(iv);
       document.getElementById('wartepanel').style.display = 'none';
@@ -558,17 +563,13 @@ HTML;
 }
 
 // --------------------------------------------------------------------------
-// Schaltleiste (Prototyp-Moebel, nicht Teil des Entwurfs).
+// Schaltleiste (Prototyp-Möbel, nicht Teil des Entwurfs).
 // --------------------------------------------------------------------------
 
-$varianten = ['a' => 'Dateifenster', 'b' => 'Assistent', 'c' => 'Vorschlagsliste'];
+$varianten = ['a' => 'Dateifenster', 'b' => 'Assistent'];
 $faelle = [
-    'ok' => 'alles da',
-    'leer' => 'Ordner leer',
-    'keineinstanz' => 'keine Instanz',
-    'langsam' => 'Server langsam',
-    'fehler' => 'Server tot',
-    'echt' => 'echte Instanzen',
+    'ok' => 'alles da', 'leer' => 'Ordner leer', 'keineinstanz' => 'keine Instanz',
+    'langsam' => 'Server langsam', 'fehler' => 'Server tot', 'echt' => 'echte Instanzen',
 ];
 
 echo '<div style="position:fixed;left:50%;transform:translateX(-50%);bottom:1rem;z-index:1050;'
@@ -577,17 +578,19 @@ echo '<div style="position:fixed;left:50%;transform:translateX(-50%);bottom:1rem
 echo '<span style="opacity:.6">PROTOTYP</span>';
 foreach ($varianten as $key => $label) {
     $stil = $key === $variant ? 'background:#fff;color:#111;' : 'color:#fff;';
-    echo '<a href="' . $url(['variant' => $key, 'schritt' => 1, 'wahl' => '', 'kontextwahl' => '', 'pfad' => '/', 'ziel' => 'kontext'])
-        . '" style="' . $stil . 'padding:.15rem .6rem;border-radius:1rem;text-decoration:none">'
+    echo '<a href="' . $url([
+        'variant' => $key, 'schritt' => 1, 'pfad' => '/', 'ziel' => 'kontext',
+        'kontextwahl' => '', 'materialwahl' => '', 'neu' => '', 'fertig' => 0,
+    ]) . '" style="' . $stil . 'padding:.15rem .6rem;border-radius:1rem;text-decoration:none">'
         . strtoupper($key) . ' ' . $label . '</a>';
 }
 echo '<span style="opacity:.4">|</span>';
 echo '<select onchange="location=this.value" style="background:#222;color:#fff;border:0;border-radius:1rem;padding:.15rem .5rem">';
 foreach ($faelle as $key => $label) {
-    echo '<option value="' . $url(['fall' => $key, 'wahl' => '', 'pfad' => '/', 'schritt' => 1]) . '"'
-        . ($key === $fall ? ' selected' : '') . '>' . $label . '</option>';
+    echo '<option value="' . $url([
+        'fall' => $key, 'pfad' => '/', 'schritt' => 1, 'kontextwahl' => '', 'materialwahl' => '', 'neu' => '', 'fertig' => 0,
+    ]) . '"' . ($key === $fall ? ' selected' : '') . '>' . $label . '</option>';
 }
-echo '</select>';
-echo '</div>';
+echo '</select></div>';
 
 echo $OUTPUT->footer();
