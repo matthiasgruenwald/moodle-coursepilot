@@ -67,12 +67,11 @@ class delete_material_files extends external_api {
         // Erst alle Dateien aufloesen (jeder fehlende Pfad bricht komplett
         // ab), dann erst loeschen - kein Teilerfolg bei einem Tippfehler in
         // der Liste.
-        $fs = get_file_storage();
         $targets = [];
         foreach ($params['paths'] as $path) {
             [$directory, $filename] = material_files::resolve_file($path);
-            $file = $fs->get_file($context->id, material_files::COMPONENT, material_files::FILEAREA, material_files::ITEMID, $directory, $filename);
-            if (!$file) {
+            $info = material_files::read_content($directory, $filename);
+            if ($info === null) {
                 throw new \moodle_exception(
                     'materialdeletefilenotfound',
                     'local_kurspilot',
@@ -80,15 +79,15 @@ class delete_material_files extends external_api {
                     material_files::relative_file($directory, $filename)
                 );
             }
-            $targets[] = $file;
+            $targets[] = [$directory, $filename, $info['size']];
         }
 
         $deleted = [];
         $freedbytes = 0;
-        foreach ($targets as $file) {
-            $deleted[] = material_files::relative_file($file->get_filepath(), $file->get_filename());
-            $freedbytes += (int) $file->get_filesize();
-            $file->delete();
+        foreach ($targets as [$directory, $filename, $size]) {
+            material_files::delete($directory, $filename);
+            $deleted[] = material_files::relative_file($directory, $filename);
+            $freedbytes += $size;
         }
 
         return [

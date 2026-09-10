@@ -197,16 +197,10 @@ final class export_questions_xml extends external_api {
 
         [$directory, $filename] = material_files::resolve_file($targetpath);
 
-        $existing = get_file_storage()->get_file(
-            $context->id,
-            material_files::COMPONENT,
-            material_files::FILEAREA,
-            material_files::ITEMID,
-            $directory,
-            $filename
-        ) ?: null;
+        $existing = material_files::read_content($directory, $filename);
+        $oldsize = $existing !== null ? $existing['size'] : 0;
 
-        $warning = material_files::write($context->id, $directory, $filename, $content, $existing);
+        $warning = material_files::write($directory, $filename, $content, $oldsize);
 
         return [material_files::relative_file($directory, $filename), $warning];
     }

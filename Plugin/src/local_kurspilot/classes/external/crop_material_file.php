@@ -113,16 +113,8 @@ class crop_material_file extends external_api {
         [$sourcedir, $sourcefilename] = material_files::resolve_file($params['sourcepath']);
         $sourcerelative = material_files::relative_file($sourcedir, $sourcefilename);
 
-        $fs = get_file_storage();
-        $sourcefile = $fs->get_file(
-            $context->id,
-            material_files::COMPONENT,
-            material_files::FILEAREA,
-            material_files::ITEMID,
-            $sourcedir,
-            $sourcefilename
-        );
-        if (!$sourcefile) {
+        $sourcestored = material_files::read_content($sourcedir, $sourcefilename);
+        if ($sourcestored === null) {
             throw new \moodle_exception('materialfilenotfound', 'local_kurspilot', '', $sourcerelative);
         }
 
@@ -142,20 +134,13 @@ class crop_material_file extends external_api {
         // Gleichzeitigkeitsschutz auf der Zieldatei vor dem eigentlichen
         // Zuschnitt pruefen (wie bei upload_material_file: erst alle
         // Absagen, dann genau ein - hier: der teuerste - Arbeitsschritt).
-        $existing = $fs->get_file(
-            $context->id,
-            material_files::COMPONENT,
-            material_files::FILEAREA,
-            material_files::ITEMID,
-            $targetdir,
-            $targetfilename
-        ) ?: null;
+        $existing = material_files::read_content($targetdir, $targetfilename);
         if ($params['expected_contenthash'] !== ''
-                && (!$existing || $existing->get_contenthash() !== $params['expected_contenthash'])) {
+                && ($existing === null || $existing['contenthash'] !== $params['expected_contenthash'])) {
             throw new \moodle_exception('materialfilechanged', 'local_kurspilot', '', $params['targetpath']);
         }
 
-        $source = @imagecreatefromstring($sourcefile->get_content());
+        $source = @imagecreatefromstring($sourcestored['content']);
         if ($source === false) {
             // Bildendung, aber GD kann die Bytes nicht lesen (defekte Datei) -
             // dieselbe erklaerte Nichtverfuegbarkeit wie preview_material_file.
@@ -174,23 +159,19 @@ class crop_material_file extends external_api {
         );
         imagedestroy($source);
         $newsize = strlen($content);
-        $oldsize = $existing ? (int) $existing->get_filesize() : 0;
+        $oldsize = $existing !== null ? $existing['size'] : 0;
 
-        $additionalbytes = $newsize - $oldsize;
-        material_files::require_quota($additionalbytes);
-        $warning = material_files::quota_warning($additionalbytes);
-
-        $filerecord = material_files::filerecord($context->id, $targetdir, $targetfilename);
         // Moodle erwartet im `source`-Feld entweder einen leeren String oder ein
         // serialisiertes Objekt (unserialize_object() in moodlelib.php) - ein roher
         // Pfad loest bei jedem spaeteren Core-Zugriff auf die Datei (Dateimanager,
         // Draft-Handling) eine unserialize()-Warnung aus (Fund #431-Nachtest).
-        $filerecord['source'] = serialize((object) ['original' => $sourcerelative]);
-        material_files::replace($existing, $filerecord, $content);
+        $warning = material_files::write($targetdir, $targetfilename, $content, $oldsize, [
+            'source' => serialize((object) ['original' => $sourcerelative]),
+        ]);
 
         $targetrelative = material_files::relative_file($targetdir, $targetfilename);
         $message = get_string(
-            $existing ? 'materialcropoverwritten' : 'materialcropcreated',
+            $existing !== null ? 'materialcropoverwritten' : 'materialcropcreated',
             'local_kurspilot',
             (object) ['path' => $targetrelative, 'source' => $sourcerelative, 'width' => $width, 'height' => $height]
         );
@@ -201,7 +182,7 @@ class crop_material_file extends external_api {
         return [
             'path' => $targetrelative,
             'source' => $sourcerelative,
-            'created' => !$existing,
+            'created' => $existing === null,
             'width' => $width,
             'height' => $height,
             'size' => $newsize,

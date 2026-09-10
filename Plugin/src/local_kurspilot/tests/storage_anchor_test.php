@@ -450,6 +450,85 @@ final class storage_anchor_test extends \advanced_testcase {
     }
 
     /**
+     * Rekursive Listung (Issue #488): ein Treffer in einem Unterordner traegt
+     * seinen vollen Verzeichnispfad, keinen Ordnereintrag daneben (anders als
+     * {@see storage_anchor::list_entries()}, die nur eine Ebene sieht).
+     */
+    public function test_list_entries_recursive_finds_nested_file(): void {
+        $this->resetAfterTest();
+        $area = $this->second_place();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $contextid = storage_anchor::own_context()->id;
+        $directory = storage_anchor::resolve_directory($area, '');
+        get_file_storage()->create_file_from_string(
+            storage_anchor::filerecord($contextid, $directory . 'unterordner/', 'tief.txt'),
+            'tiefer Inhalt'
+        );
+
+        $entries = storage_anchor::list_entries_recursive($directory);
+
+        $this->assertCount(1, $entries);
+        $this->assertSame('tief.txt', $entries[0]['name']);
+        $this->assertSame($directory . 'unterordner/', $entries[0]['directory']);
+        $this->assertSame(strlen('tiefer Inhalt'), $entries[0]['size']);
+        $this->assertSame(sha1('tiefer Inhalt'), $entries[0]['contenthash']);
+        $this->assertGreaterThan(0, $entries[0]['timecreated']);
+    }
+
+    public function test_list_entries_recursive_returns_empty_for_empty_directory(): void {
+        $this->resetAfterTest();
+        $area = $this->second_place();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $this->assertSame([], storage_anchor::list_entries_recursive(storage_anchor::resolve_directory($area, '')));
+    }
+
+    public function test_delete_removes_existing_file(): void {
+        $this->resetAfterTest();
+        $area = $this->second_place();
+        $this->setUser($this->getDataGenerator()->create_user());
+        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'notiz.txt');
+        storage_anchor::write($directory, $filename, 'Inhalt');
+
+        $this->assertTrue(storage_anchor::delete($directory, $filename));
+        $this->assertNull(storage_anchor::read_content($directory, $filename));
+    }
+
+    public function test_delete_returns_false_for_missing_file(): void {
+        $this->resetAfterTest();
+        $area = $this->second_place();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $directory = storage_anchor::resolve_directory($area, '');
+
+        $this->assertFalse(storage_anchor::delete($directory, 'nichtvorhanden.txt'));
+    }
+
+    /**
+     * Zusatzfelder im Dateisatz (Issue #488, z.B. das `source`-Feld eines
+     * Bildausschnitts) landen unveraendert auf der geschriebenen Datei, ohne
+     * dass der Aufrufer selbst einen Dateisatz zusammenbaut.
+     */
+    public function test_write_applies_record_overrides(): void {
+        $this->resetAfterTest();
+        $area = $this->second_place();
+        $this->setUser($this->getDataGenerator()->create_user());
+        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'notiz.txt');
+
+        storage_anchor::write($directory, $filename, 'Inhalt', ['source' => 'herkunft']);
+
+        $stored = get_file_storage()->get_file(
+            storage_anchor::own_context()->id,
+            storage_anchor::COMPONENT,
+            storage_anchor::FILEAREA,
+            storage_anchor::ITEMID,
+            $directory,
+            $filename
+        );
+        $this->assertNotFalse($stored);
+        $this->assertSame('herkunft', $stored->get_source());
+    }
+
+    /**
      * @param array $entries
      * @param string $name
      * @return array|null

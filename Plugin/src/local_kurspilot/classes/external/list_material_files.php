@@ -22,7 +22,6 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_kurspilot\material_files;
-use local_kurspilot\storage_anchor;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -61,45 +60,11 @@ class list_material_files extends external_api {
 
         $directory = material_files::resolve_directory($params['path']);
 
-        $entries = [];
-        $fs = get_file_storage();
-        foreach ($fs->get_directory_files(
-            $context->id,
-            material_files::COMPONENT,
-            material_files::FILEAREA,
-            material_files::ITEMID,
-            $directory,
-            false,
-            true,
-            'filepath, filename'
-        ) as $file) {
-            if (!$file->is_directory() && $file->get_filename() === storage_anchor::POINTER_FILENAME) {
-                // Der Kontextpointer (Issue #445) liegt physisch im
-                // Kontextbereich-Anker, nicht hier - dieselbe Ausnahme aus
-                // Konsistenzgruenden, falls Anker und Materialordner je
-                // zusammenfallen.
-                continue;
-            }
-            if ($file->is_directory()) {
-                $entries[] = [
-                    'name' => trim(substr($file->get_filepath(), strlen($directory)), '/'),
-                    'type' => 'folder',
-                    'size' => 0,
-                    'mimetype' => '',
-                    'contenthash' => '',
-                    'timemodified' => 0,
-                ];
-                continue;
-            }
-            $entries[] = [
-                'name' => $file->get_filename(),
-                'type' => 'file',
-                'size' => (int) $file->get_filesize(),
-                'mimetype' => (string) ($file->get_mimetype() ?? ''),
-                'contenthash' => $file->get_contenthash(),
-                'timemodified' => (int) $file->get_timemodified(),
-            ];
-        }
+        // Der Kontextpointer (Issue #445) liegt physisch im
+        // Kontextbereich-Anker, nicht hier - list_entries() schliesst ihn
+        // aus Konsistenzgruenden trotzdem aus, falls Anker und Materialordner
+        // je zusammenfallen.
+        $entries = material_files::list_entries($directory);
 
         $remaining = material_files::remaining_quota();
 

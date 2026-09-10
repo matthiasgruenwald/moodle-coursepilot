@@ -460,18 +460,65 @@ final class storage_anchor {
         return ($file && !$file->is_directory()) ? $file : null;
     }
 
-    public static function list_entries(string $directory): array {
+    /**
+     * Listet einen Verzeichnisbaum rekursiv, nur Dateien (keine Ordner) -
+     * ortsneutral (Issue #488): fuer den Aufraeumbericht
+     * ({@see \local_kurspilot\external\report_loose_material_files}), der
+     * jede Datei unter der Wurzel braucht, unabhaengig von der Ordnertiefe.
+     * Anders als {@see list_entries()} traegt jeder Eintrag `timecreated`
+     * statt `timemodified` (Alter seit Anlage, nicht seit letzter Aenderung)
+     * und den vollen Verzeichnispfad, weil ein rekursiver Treffer aus jeder
+     * Tiefe stammen kann - der Aufrufer bildet daraus mit
+     * {@see relative_file()} den Client-Pfad. Der Kontextpointer wird hier
+     * bewusst nicht ausgefiltert (Altverhalten unveraendert): er kann nur im
+     * Anker-Wurzelordner liegen, den der Materialordner-Aufraeumbericht nicht
+     * durchsucht.
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @return array<int, array{directory: string, name: string, size: int,
+     *         contenthash: string, timecreated: int}>
+     */
+    public static function list_entries_recursive(string $directory): array {
         $entries = [];
-        foreach (get_file_storage()->get_directory_files(
+        foreach (self::directory_files($directory, true, false) as $file) {
+            $entries[] = [
+                'directory' => $file->get_filepath(),
+                'name' => $file->get_filename(),
+                'size' => (int) $file->get_filesize(),
+                'contenthash' => $file->get_contenthash(),
+                'timecreated' => (int) $file->get_timecreated(),
+            ];
+        }
+        return $entries;
+    }
+
+    /**
+     * Der eine `get_directory_files()`-Aufruf, den sich {@see list_entries()}
+     * und {@see list_entries_recursive()} teilen (Issue #488 Standards-Review) -
+     * nur `$recursive`/`$includedirs` und die Ergebnisform unterscheiden die
+     * beiden Aufrufer.
+     *
+     * @param string $directory
+     * @param bool $recursive
+     * @param bool $includedirs
+     * @return \stored_file[]
+     */
+    private static function directory_files(string $directory, bool $recursive, bool $includedirs): array {
+        return get_file_storage()->get_directory_files(
             self::own_context()->id,
             self::COMPONENT,
             self::FILEAREA,
             self::ITEMID,
             $directory,
-            false,
-            true,
+            $recursive,
+            $includedirs,
             'filepath, filename'
-        ) as $file) {
+        );
+    }
+
+    public static function list_entries(string $directory): array {
+        $entries = [];
+        foreach (self::directory_files($directory, false, true) as $file) {
             if (!$file->is_directory() && $file->get_filename() === self::POINTER_FILENAME) {
                 continue;
             }
@@ -534,11 +581,36 @@ final class storage_anchor {
      * @param string $directory Ergebnis von {@see resolve_directory()}.
      * @param string $filename
      * @param string $content Vollstaendiger neuer Inhalt.
+     * @param array $recordoverrides Zusaetzliche/ueberschreibende Felder fuer
+     *        den Dateisatz (Issue #488) - z.B. das `source`-Feld eines
+     *        Bildausschnitts ({@see \local_kurspilot\external\crop_material_file}).
+     *        Leer laesst den gewoehnlichen Dateisatz aus {@see filerecord()}
+     *        unveraendert.
      */
-    public static function write(string $directory, string $filename, string $content): void {
+    public static function write(string $directory, string $filename, string $content, array $recordoverrides = []): void {
         $contextid = self::own_context()->id;
         $existing = self::find_file($directory, $filename);
-        self::replace($existing, self::filerecord($contextid, $directory, $filename), $content);
+        $filerecord = array_merge(self::filerecord($contextid, $directory, $filename), $recordoverrides);
+        self::replace($existing, $filerecord, $content);
+    }
+
+    /**
+     * Loescht eine Datei, falls sie existiert - ortsneutral (Issue #488).
+     * Absagen (Recht, "alle Pfade existieren" vorab) sind Sache des
+     * Aufrufers, der dafuer den bisherigen Stand ueber {@see read_content()}
+     * prueft, bevor er hier loescht.
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $filename
+     * @return bool true, wenn eine Datei geloescht wurde; false, wenn keine existierte.
+     */
+    public static function delete(string $directory, string $filename): bool {
+        $file = self::find_file($directory, $filename);
+        if (!$file) {
+            return false;
+        }
+        $file->delete();
+        return true;
     }
 
     /**

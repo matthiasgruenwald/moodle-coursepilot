@@ -69,16 +69,8 @@ class preview_material_file extends external_api {
         [$directory, $filename] = material_files::resolve_file($params['path']);
         $relativepath = material_files::relative_file($directory, $filename);
 
-        $fs = get_file_storage();
-        $file = $fs->get_file(
-            $context->id,
-            material_files::COMPONENT,
-            material_files::FILEAREA,
-            material_files::ITEMID,
-            $directory,
-            $filename
-        );
-        if (!$file) {
+        $stored = material_files::read_content($directory, $filename);
+        if ($stored === null) {
             throw new \moodle_exception('materialfilenotfound', 'local_kurspilot', '', $relativepath);
         }
 
@@ -108,7 +100,7 @@ class preview_material_file extends external_api {
         // statt Fehler") - image_preview::build() wirft dafuer
         // materialpreviewunsupported, hier abgefangen statt durchgereicht.
         try {
-            $preview = image_preview::build($file->get_content());
+            $preview = image_preview::build($stored['content']);
         } catch (\moodle_exception $e) {
             return [
                 'path' => $relativepath,

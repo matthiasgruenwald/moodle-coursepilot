@@ -336,15 +336,8 @@ final class import_questions_xml extends external_api {
     private static function read_material_binary(string $path): string {
         [$directory, $filename] = material_files::resolve_file($path);
 
-        $file = get_file_storage()->get_file(
-            material_files::own_context()->id,
-            material_files::COMPONENT,
-            material_files::FILEAREA,
-            material_files::ITEMID,
-            $directory,
-            $filename
-        );
-        if (!$file || $file->is_directory()) {
+        $stored = material_files::read_content($directory, $filename);
+        if ($stored === null) {
             throw new \moodle_exception(
                 'materialfilenotfound',
                 'local_kurspilot',
@@ -353,7 +346,7 @@ final class import_questions_xml extends external_api {
             );
         }
 
-        return $file->get_content();
+        return $stored['content'];
     }
 
     /**

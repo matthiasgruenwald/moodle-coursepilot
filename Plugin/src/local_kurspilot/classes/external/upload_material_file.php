@@ -86,28 +86,20 @@ class upload_material_file extends external_api {
 
         self::guard_server_size_limit($newsize);
 
-        $fs = get_file_storage();
-        $existing = $fs->get_file(
-            $context->id,
-            material_files::COMPONENT,
-            material_files::FILEAREA,
-            material_files::ITEMID,
-            $directory,
-            $filename
-        ) ?: null;
-        $oldsize = $existing ? (int) $existing->get_filesize() : 0;
+        $existing = material_files::read_content($directory, $filename);
+        $oldsize = $existing !== null ? $existing['size'] : 0;
 
         // Gleichzeitigkeitsschutz ohne Locks (Spec 0016 §5.3, hier
         // uebernommen): eine fehlende Datei ist ebenfalls ein Konflikt.
         if ($params['expected_contenthash'] !== ''
-                && (!$existing || $existing->get_contenthash() !== $params['expected_contenthash'])) {
+                && ($existing === null || $existing['contenthash'] !== $params['expected_contenthash'])) {
             throw new \moodle_exception('materialfilechanged', 'local_kurspilot', '', $params['path']);
         }
 
-        $warning = material_files::write($context->id, $directory, $filename, $content, $existing);
+        $warning = material_files::write($directory, $filename, $content, $oldsize);
 
         $relativepath = material_files::relative_file($directory, $filename);
-        $message = $existing
+        $message = $existing !== null
             ? get_string('materialfileoverwritten', 'local_kurspilot', (object) [
                 'path' => $relativepath,
                 'before' => $oldsize,
@@ -120,7 +112,7 @@ class upload_material_file extends external_api {
 
         return [
             'path' => $relativepath,
-            'created' => !$existing,
+            'created' => $existing === null,
             'size' => $newsize,
             'message' => $message,
         ];

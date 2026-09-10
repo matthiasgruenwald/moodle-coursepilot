@@ -179,6 +179,52 @@ final class material_files {
     }
 
     /**
+     * Listet eine Ebene des Materialordners - ortsneutral (Issue #488).
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @return array<int, array{name: string, type: string, size: int, mimetype: string,
+     *         contenthash: string, timemodified: int}>
+     */
+    public static function list_entries(string $directory): array {
+        return storage_anchor::list_entries($directory);
+    }
+
+    /**
+     * Listet den Materialordner rekursiv, nur Dateien - ortsneutral (Issue
+     * #488), fuer {@see \local_kurspilot\external\report_loose_material_files}.
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @return array<int, array{directory: string, name: string, size: int,
+     *         contenthash: string, timecreated: int}>
+     */
+    public static function list_entries_recursive(string $directory): array {
+        return storage_anchor::list_entries_recursive($directory);
+    }
+
+    /**
+     * Liest den Inhalt einer Materialdatei - ortsneutral (Issue #488).
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $filename
+     * @return array{content: string, mimetype: string, size: int, contenthash: string,
+     *         timemodified: int}|null null, wenn die Datei fehlt oder ein Ordner ist.
+     */
+    public static function read_content(string $directory, string $filename): ?array {
+        return storage_anchor::read_content($directory, $filename);
+    }
+
+    /**
+     * Loescht eine Materialdatei, falls sie existiert - ortsneutral (Issue #488).
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $filename
+     * @return bool true, wenn eine Datei geloescht wurde; false, wenn keine existierte.
+     */
+    public static function delete(string $directory, string $filename): bool {
+        return storage_anchor::delete($directory, $filename);
+    }
+
+    /**
      * Alle zulaessigen Dateiendungen (Spec 0018 §6), Vereinigung beider
      * Whitelists.
      *
@@ -351,8 +397,8 @@ final class material_files {
         foreach ($paths as $entry) {
             [$path, $targetdirectory] = self::split_draft_entry($entry);
             [$directory, $filename] = self::resolve_file($path);
-            $source = $fs->get_file($usercontext->id, self::COMPONENT, self::FILEAREA, self::ITEMID, $directory, $filename);
-            if (!$source) {
+            $source = self::read_content($directory, $filename);
+            if ($source === null) {
                 throw new \moodle_exception(
                     'materialfilenotfound',
                     'local_kurspilot',
@@ -366,14 +412,24 @@ final class material_files {
                 // Gleicher Dateiname erneut referenziert - juengste Version gewinnt.
                 $existing->delete();
             }
-            $fs->create_file_from_storedfile([
+            // ponytail: read_content() gibt bewusst kein stored_file zurueck
+            // (Issue #487/#488, siehe storage_anchor::read_content()) - der
+            // Kopiervorgang traegt deshalb nur noch Mimetype explizit weiter,
+            // nicht Lizenz/Autor des Originals (Moodle-Defaults gelten dann
+            // fuer den Entwurf). In der Praxis identisch, weil Materialdateien
+            // ausschliesslich ueber diese Werkzeuge angelegt werden und dabei
+            // ohnehin nie eine eigene Lizenz/einen eigenen Autor setzen.
+            // Aufwerten (stored_file-Kopie mit vollen Metadaten), sobald ein
+            // echter Fall auftritt, in dem das einen Unterschied macht.
+            $fs->create_file_from_string([
                 'contextid' => $usercontext->id,
                 'component' => 'user',
                 'filearea' => 'draft',
                 'itemid' => $draftitemid,
                 'filepath' => $targetdirectory,
                 'filename' => $filename,
-            ], $source);
+                'mimetype' => $source['mimetype'] !== '' ? $source['mimetype'] : null,
+            ], $source['content']);
         }
 
         return $draftitemid;
@@ -489,29 +545,30 @@ final class material_files {
      * war diese Groessen-/Quote-/Schreib-Choreografie in beiden Endpunkten
      * dupliziert (Ticket #437 Standards-Review).
      *
-     * @param int $contextid
      * @param string $directory Ergebnis von {@see resolve_file()}/{@see resolve_writable_file()}.
      * @param string $filename
      * @param string $content Vollstaendiger neuer Inhalt.
-     * @param \stored_file|null $existing Bisherige Datei, falls vorhanden (Aufrufer kennt sie meist
-     *        schon, z.B. fuer eine eigene Gleichzeitigkeits- oder "created"-Pruefung).
+     * @param int $oldsize Bisherige Dateigroesse in Byte, 0 wenn die Datei noch nicht existiert
+     *        (Aufrufer kennt sie meist schon, z.B. fuer eine eigene Gleichzeitigkeits- oder
+     *        "created"-Pruefung ueber {@see read_content()}).
+     * @param array $recordoverrides Zusaetzliche/ueberschreibende Dateisatz-Felder, siehe
+     *        {@see storage_anchor::write()} - z.B. das `source`-Feld eines Bildausschnitts.
      * @return string|null Quotenwarnung, oder null wenn keine Warnung noetig ist.
      * @throws \moodle_exception materialquotaexceeded
      */
     public static function write(
-        int $contextid,
         string $directory,
         string $filename,
         string $content,
-        ?\stored_file $existing
+        int $oldsize,
+        array $recordoverrides = []
     ): ?string {
-        $oldsize = $existing ? (int) $existing->get_filesize() : 0;
         $additionalbytes = strlen($content) - $oldsize;
 
         self::require_quota($additionalbytes);
         $warning = self::quota_warning($additionalbytes);
 
-        self::replace($existing, self::filerecord($contextid, $directory, $filename), $content);
+        storage_anchor::write($directory, $filename, $content, $recordoverrides);
 
         return $warning;
     }

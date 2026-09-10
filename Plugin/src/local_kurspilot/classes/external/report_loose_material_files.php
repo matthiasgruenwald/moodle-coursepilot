@@ -69,27 +69,17 @@ class report_loose_material_files extends external_api {
         $entries = [];
         $totalsize = 0;
         $now = time();
-        $fs = get_file_storage();
-        foreach ($fs->get_directory_files(
-            $context->id,
-            material_files::COMPONENT,
-            material_files::FILEAREA,
-            material_files::ITEMID,
-            material_files::resolve_directory(''),
-            true,
-            false,
-            'filepath, filename'
-        ) as $file) {
-            if (in_array($file->get_contenthash(), $usedcontenthashes, true)) {
+        foreach (material_files::list_entries_recursive(material_files::resolve_directory('')) as $file) {
+            if (in_array($file['contenthash'], $usedcontenthashes, true)) {
                 continue;
             }
-            $size = (int) $file->get_filesize();
+            $size = $file['size'];
             $totalsize += $size;
             $entries[] = [
-                'path' => material_files::relative_file($file->get_filepath(), $file->get_filename()),
+                'path' => material_files::relative_file($file['directory'], $file['name']),
                 'size' => $size,
-                'age_days' => (int) floor(max(0, $now - $file->get_timecreated()) / DAYSECS),
-                'contenthash' => $file->get_contenthash(),
+                'age_days' => (int) floor(max(0, $now - $file['timecreated']) / DAYSECS),
+                'contenthash' => $file['contenthash'],
             ];
         }
 
