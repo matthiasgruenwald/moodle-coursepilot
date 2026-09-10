@@ -245,9 +245,9 @@ $pointerpanel = function (array $felder, array $anlegen = []) use ($instanzen, $
     if ($anlegen) {
         $out .= '<p>Vorher angelegt: ' . implode(', ', array_map(static fn($p) => '<code>' . s($p) . '</code>', $anlegen)) . '</p>';
     }
-    $out .= '<pre class="mb-2" style="white-space:pre-wrap">' . s($json) . '</pre>'
-        . '<p class="text-muted mb-0">Frage 5: Der Pointer trägt heute nur Pfade. Hier kämen Instanz und '
-        . 'Prüfmerkmal dazu – eine gelöschte oder umkonfigurierte Instanz sendet kein Signal (#468).</p>'
+    $out .= '<pre class="mb-2 text-wrap">' . s($json) . '</pre>'
+        . '<p class="form-text mb-0">Frage 5: Instanz und Prüfmerkmal kommen zu den Pfaden dazu &mdash; '
+        . 'eine gelöschte oder umkonfigurierte Instanz sendet kein Signal (#468).</p>'
         . '</div></div>';
     return $out;
 };
@@ -275,14 +275,13 @@ if ($neuname !== '' && $neuvon !== '') {
 
 echo $OUTPUT->header();
 
-echo '<div class="alert alert-warning"><strong>Wegwerf-Prototyp zu Issue #473.</strong> '
-    . 'Erfundene Daten (außer Fall <code>echte Instanzen</code>), nichts wird gespeichert – '
-    . 'auch „Ordner anlegen" passiert nur auf dem Bildschirm. Umschalten in der Leiste unten.</div>';
+echo '<div class="alert alert-warning py-2 small"><strong>Wegwerf-Prototyp zu #473.</strong> '
+    . 'Nichts wird gespeichert, „Ordner anlegen" passiert nur am Bildschirm. Umschalten: Leiste unten.</div>';
 
 $timeout = ($fall === 'langsam');
 
 if ($timeout) {
-    echo '<div id="wartepanel" class="alert alert-info d-flex align-items-center" style="gap:1rem">'
+    echo '<div id="wartepanel" class="alert alert-info d-flex align-items-center gap-3">'
         . '<div class="spinner-border spinner-border-sm" role="status"></div>'
         . '<div>Verbindung zu <strong>cloud.igs-musterstadt.de</strong> wird aufgebaut … '
         . '<span id="wartezeit">0</span> s</div>'
@@ -290,7 +289,7 @@ if ($timeout) {
         . '</div>';
 }
 
-echo '<div id="inhalt"' . ($timeout ? ' style="opacity:.25;pointer-events:none"' : '') . '>';
+echo '<div id="inhalt"' . ($timeout ? ' class="opacity-25 pe-none"' : '') . '>';
 
 // ==========================================================================
 // VARIANTE A – Dateifenster mit Fortschrittsband.
@@ -327,7 +326,7 @@ if ($variant === 'a') {
                 . ($gewaehlt ? 'ändern' : 'jetzt wählen') . '</a></div>';
         };
 
-        echo '<div class="d-flex align-items-stretch mb-3" style="gap:.75rem">';
+        echo '<div class="d-flex align-items-stretch gap-2 mb-3">';
         echo $band('Kontextbereich', $ort, 'kontext');
         echo $band('Materialbestand', $materialwahl, 'material');
         echo '<div class="d-flex align-items-center">';
@@ -341,8 +340,7 @@ if ($variant === 'a') {
 
         if (!$fertigbeides) {
             $offen = $kontextwahl === '' ? 'Kontextbereich' : 'Materialbestand';
-            echo '<div class="alert alert-info py-2">Beide Orte werden gebraucht &mdash; es fehlt noch: '
-                . '<strong>' . $offen . '</strong>.</div>';
+            echo '<div class="alert alert-info py-1 px-2 small">Es fehlt noch: <strong>' . $offen . '</strong>.</div>';
         }
 
         echo '<ul class="nav nav-tabs mb-3">';
@@ -355,46 +353,46 @@ if ($variant === 'a') {
         }
         echo '</ul>';
 
-        echo '<div class="d-flex" style="gap:1rem;align-items:flex-start">';
+        echo '<div class="row g-3">';
 
         // Linke Spalte: Instanzen als Wurzeln.
-        echo '<div class="card" style="min-width:14rem"><div class="card-body p-2">';
+        echo '<div class="col-md-3"><div class="card"><div class="card-body p-2">';
         echo '<h6 class="text-uppercase text-muted px-2">Speicher</h6><ul class="list-unstyled mb-0">';
         foreach ($instanzen as $id => $inst) {
             $aktiv = ($id === $instanz) ? ' fw-bold' : '';
             echo '<li class="px-2 py-1' . $aktiv . '"><a href="' . $url(['instanz' => $id, 'pfad' => '/']) . '">'
                 . '&#128193; ' . s($inst['name']) . '</a><br><small class="text-muted">' . s($inst['server']) . '</small></li>';
         }
-        echo '</ul><hr><a class="small" href="' . $verwaltungsurl . '">+ weiteren Speicher anlegen</a>';
-        echo '</div></div>';
+        echo '</ul><hr class="my-2"><a class="small" href="' . $verwaltungsurl . '">+ weiteren Speicher anlegen</a>';
+        echo '</div></div></div>';
 
         // Rechte Spalte: Ordnerliste plus Anlegen.
-        echo '<div class="card flex-grow-1"><div class="card-body">';
+        echo '<div class="col-md-9"><div class="card"><div class="card-body">';
         echo '<div class="mb-2">' . $breadcrumb($pfad) . '</div>';
         $l = $listing($instanz, $pfad);
-        echo '<div class="border rounded" style="max-height:20rem;overflow:auto">';
+        echo '<div class="list-group list-group-flush border rounded overflow-auto" style="max-height:18rem">';
         if ($pfad !== '/') {
-            echo '<div class="px-3 py-2 border-bottom"><a href="' . $url(['pfad' => $eltern($pfad)]) . '">&#8617; eine Ebene höher</a></div>';
+            echo '<a class="list-group-item list-group-item-action py-1" href="' . $url(['pfad' => $eltern($pfad)])
+                . '">&#8617; eine Ebene höher</a>';
         }
         if (!$l['ordner'] && !$l['dateien']) {
-            echo '<div class="px-3 py-4 text-center text-muted">Dieser Ordner ist leer. '
-                . 'Er kann trotzdem gewählt werden.</div>';
+            echo '<div class="list-group-item text-center text-muted py-3">Dieser Ordner ist leer &mdash; '
+                . 'er kann trotzdem gewählt werden.</div>';
         }
         foreach ($l['ordner'] as $o) {
             $marke = !empty($o['neu']) ? ' <span class="badge bg-info">wird angelegt</span>' : '';
-            echo '<div class="px-3 py-2 border-bottom"><a href="' . $url(['pfad' => $o['pfad']]) . '">'
-                . '&#128193; ' . s($o['titel']) . '</a>' . $marke . '</div>';
+            echo '<a class="list-group-item list-group-item-action py-1" href="' . $url(['pfad' => $o['pfad']]) . '">'
+                . '&#128193; ' . s($o['titel']) . $marke . '</a>';
         }
         foreach ($l['dateien'] as $d) {
-            echo '<div class="px-3 py-2 border-bottom text-muted">&#128196; ' . s($d)
-                . ' <small>(Datei &mdash; nicht wählbar)</small></div>';
+            echo '<div class="list-group-item text-muted py-1">&#128196; ' . s($d) . '</div>';
         }
         echo '</div>';
 
         // Neuen Ordner anlegen – aufklappbar, direkt in der Liste verankert.
         echo '<details class="mt-2"' . (optional_param('anlegen', 0, PARAM_INT) ? ' open' : '') . '>'
             . '<summary>&#10133; Neuen Ordner hier anlegen</summary>'
-            . '<form method="get" class="d-flex mt-2" style="gap:.5rem">';
+            . '<form method="get" class="d-flex gap-2 mt-2">';
         foreach ([
             'variant' => $variant, 'fall' => $fall, 'instanz' => $instanz, 'ziel' => $ziel,
             'kontextwahl' => $kontextwahl, 'materialwahl' => $materialwahl, 'unterordner' => $unterordner,
@@ -405,12 +403,11 @@ if ($variant === 'a') {
         echo '<input type="hidden" name="neuvon" value="' . s($pfad) . '">'
             . '<input class="form-control" name="neuname" placeholder="z. B. Kurspilot" required>'
             . '<button class="btn btn-outline-primary">Anlegen</button></form>'
-            . '<small class="text-muted">Wird beim Abschließen auf dem Speicher erzeugt &mdash; '
-            . 'im Prototyp nur angezeigt.</small></details>';
+            . '<div class="form-text">Wird beim Abschließen erzeugt.</div></details>';
 
         // Wählen – je Ziel eigener Abschluss.
-        echo '<div class="border-top mt-3 pt-3">';
-        echo '<div class="mb-2"><small class="text-muted">Aktuelle Ebene:</small> <code>' . s($pfad) . '</code></div>';
+        echo '<div class="border-top mt-3 pt-2">';
+        echo '<div class="mb-2 small text-muted">Aktuelle Ebene: <code>' . s($pfad) . '</code></div>';
 
         if ($ziel === 'kontext') {
             $vorhanden = false;
@@ -428,20 +425,18 @@ if ($variant === 'a') {
                 . '</label></div>';
             echo '<div class="form-check"><input class="form-check-input" type="radio" disabled>'
                 . '<label class="form-check-label text-muted">Diesen Ordner direkt benutzen</label></div>';
-            echo '<small class="text-muted">Im Prototyp fest auf „Unterordner"; die Umschaltung ist die Frage, '
-                . 'nicht die Mechanik.</small></div>';
+            echo '</div>';
             echo '<a class="btn btn-primary" href="' . $url(['kontextwahl' => $pfad, 'ziel' => 'material', 'pfad' => '/'])
                 . '">Diesen Ordner als Kontextbereich wählen</a>';
         } else {
             echo '<a class="btn btn-primary" href="' . $url(['materialwahl' => $pfad])
                 . '">Diesen Ordner als Materialbestand wählen</a>';
-            echo '<div class="mt-2"><small class="text-muted">Der Materialbestand wird serverseitig nur gelesen '
-                . '(#472) &mdash; hier wird nichts angelegt außer einem Ordner, den Sie selbst erzeugen.</small></div>';
+            echo '<div class="form-text">Wird nur gelesen, nie verändert (#472).</div>';
         }
         echo '</div>';
 
-        echo '</div></div>'; // rechte Karte
-        echo '</div>'; // Spalten
+        echo '</div></div></div>'; // rechte Karte
+        echo '</div>'; // Grid
 
         if ($fertig && $fertigbeides) {
             $anlegen = [];
@@ -507,7 +502,7 @@ if ($variant === 'b') {
         $kontext = $gewaehlt . $KURSPILOT_ORDNER . '/';
         echo '<div class="card"><div class="card-body"><h4>Schritt 3: Passt das so?</h4>';
         echo '<table class="table"><tbody>'
-            . '<tr><th style="width:18rem">Ihr Material liegt in</th><td><code>' . s($gewaehlt) . '</code>'
+            . '<tr><th class="w-25">Ihr Material liegt in</th><td><code>' . s($gewaehlt) . '</code>'
             . '<br><small class="text-muted">wird nur gelesen, nie verändert</small></td></tr>'
             . '<tr><th>Kurspilot legt seine Notizen in</th><td><code>' . s($kontext) . '</code>'
             . '<br><small class="text-muted">wird angelegt, falls noch nicht vorhanden</small></td></tr>'
@@ -537,7 +532,7 @@ if ($fall === 'fehler') {
 if ($timeout) {
     $wiederholen = $url(['fall' => 'ok']);
     echo <<<HTML
-<div id="timeoutpanel" style="display:none">
+<div id="timeoutpanel" hidden>
   <div class="alert alert-danger">
     <strong>Keine Antwort von cloud.igs-musterstadt.de.</strong>
     <p class="mb-2">Nach 8 Sekunden abgebrochen. Nichts wurde gespeichert.</p>
@@ -552,9 +547,9 @@ if ($timeout) {
     t += 1; feld.textContent = t;
     if (t >= 8) {
       clearInterval(iv);
-      document.getElementById('wartepanel').style.display = 'none';
-      document.getElementById('inhalt').style.display = 'none';
-      document.getElementById('timeoutpanel').style.display = 'block';
+      document.getElementById('wartepanel').hidden = true;
+      document.getElementById('inhalt').hidden = true;
+      document.getElementById('timeoutpanel').hidden = false;
     }
   }, 1000);
 })();
@@ -572,20 +567,18 @@ $faelle = [
     'langsam' => 'Server langsam', 'fehler' => 'Server tot', 'echt' => 'echte Instanzen',
 ];
 
-echo '<div style="position:fixed;left:50%;transform:translateX(-50%);bottom:1rem;z-index:1050;'
-    . 'background:#111;color:#fff;border-radius:2rem;padding:.5rem 1rem;box-shadow:0 4px 16px rgba(0,0,0,.4);'
-    . 'display:flex;gap:.75rem;align-items:center;font-size:.9rem">';
-echo '<span style="opacity:.6">PROTOTYP</span>';
+echo '<div class="position-fixed bottom-0 start-50 translate-middle-x mb-3 z-3 '
+    . 'bg-dark text-white rounded-pill shadow px-3 py-2 d-flex align-items-center gap-2 small">';
+echo '<span class="opacity-50">PROTOTYP</span>';
 foreach ($varianten as $key => $label) {
-    $stil = $key === $variant ? 'background:#fff;color:#111;' : 'color:#fff;';
-    echo '<a href="' . $url([
+    $stil = $key === $variant ? 'btn-light' : 'btn-dark';
+    echo '<a class="btn btn-sm rounded-pill ' . $stil . '" href="' . $url([
         'variant' => $key, 'schritt' => 1, 'pfad' => '/', 'ziel' => 'kontext',
         'kontextwahl' => '', 'materialwahl' => '', 'neu' => '', 'fertig' => 0,
-    ]) . '" style="' . $stil . 'padding:.15rem .6rem;border-radius:1rem;text-decoration:none">'
-        . strtoupper($key) . ' ' . $label . '</a>';
+    ]) . '">' . strtoupper($key) . ' ' . $label . '</a>';
 }
-echo '<span style="opacity:.4">|</span>';
-echo '<select onchange="location=this.value" style="background:#222;color:#fff;border:0;border-radius:1rem;padding:.15rem .5rem">';
+echo '<span class="opacity-25">|</span>';
+echo '<select class="form-select form-select-sm w-auto rounded-pill" onchange="location=this.value">';
 foreach ($faelle as $key => $label) {
     echo '<option value="' . $url([
         'fall' => $key, 'pfad' => '/', 'schritt' => 1, 'kontextwahl' => '', 'materialwahl' => '', 'neu' => '', 'fertig' => 0,
