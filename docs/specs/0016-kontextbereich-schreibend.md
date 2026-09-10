@@ -95,6 +95,11 @@ dessen, was der Core-Provider kennt. Der Plugin-eigene Privacy-Provider müsste 
 Löschung für diese Dateien dann selbst führen, statt sich wie bisher auf den Core zu
 verlassen.
 
+Beantwortet in [#471](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/471) und
+ADR 0021. Die Isolierung zwischen Lehrkräften trägt am externen Ort das **Instanzeigentum**,
+nicht das Pfadpräfix, und der Plugin-Provider führt die externen Dateien nicht selbst. Er
+deklariert sie als externen Ort, weil Moodle dort weder exportieren noch löschen kann.
+
 ---
 
 ## 2. Leseendpunkte: contenthash + timemodified

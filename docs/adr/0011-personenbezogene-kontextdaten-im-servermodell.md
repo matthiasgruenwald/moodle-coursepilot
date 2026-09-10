@@ -105,3 +105,6 @@ gekennzeichnet (Spezifikation 0010, Abschnitt "Weitergabe").
   Kursinhalten - insbesondere `availability`-JSON vom Typ `profile`, das
   Klarnamen im Klartext enthalten kann. Das betrifft die Tool-Oberflaeche auf
   Feldebene und wird gesondert entschieden.
+- Fortgeschrieben durch ADR 0021 für den externen Ablageort (WebDAV): Isolierung aus dem
+  Instanzeigentum, Schreibsperre für markierte Dateien am nicht zugelassenen Speicher.
+  Der Schalter `allowpersonaldata` gilt dort unverändert.
