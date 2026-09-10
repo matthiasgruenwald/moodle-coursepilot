@@ -172,6 +172,53 @@ final class context_files {
     }
 
     /**
+     * Listet eine Ebene des Kontextbereichs - ortsneutral (Issue #487).
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @return array<int, array{name: string, type: string, size: int, mimetype: string,
+     *         contenthash: string, timemodified: int}>
+     */
+    public static function list_entries(string $directory): array {
+        return storage_anchor::list_entries($directory);
+    }
+
+    /**
+     * Liest den Inhalt einer Kontextdatei - ortsneutral (Issue #487).
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $filename
+     * @return array{content: string, mimetype: string, size: int, contenthash: string,
+     *         timemodified: int}|null null, wenn die Datei fehlt oder ein Ordner ist.
+     */
+    public static function read_content(string $directory, string $filename): ?array {
+        return storage_anchor::read_content($directory, $filename);
+    }
+
+    /**
+     * Legt eine Kontextdatei an oder ersetzt ihren Inhalt vollstaendig -
+     * ortsneutral (Issue #487).
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $filename
+     * @param string $content Vollstaendiger neuer Inhalt.
+     */
+    public static function write(string $directory, string $filename, string $content): void {
+        storage_anchor::write($directory, $filename, $content);
+    }
+
+    /**
+     * Haengt Inhalt an eine Kontextdatei an - ortsneutral (Issue #487).
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $filename
+     * @param string $content Anzuhaengender Inhalt.
+     * @return int Gesamtgroesse der Datei nach dem Anhaengen, in Byte.
+     */
+    public static function append(string $directory, string $filename, string $content): int {
+        return storage_anchor::append($directory, $filename, $content);
+    }
+
+    /**
      * Standard-Nutzerrecht auf die eigenen Dateien (Spec 0016 §1.1) - fuer
      * die Schreibendpunkte aus Phase 2. Seit dem Umzug auf `user/private`
      * schreibt Kurspilot in denselben Bereich wie "Meine Dateien", also gilt

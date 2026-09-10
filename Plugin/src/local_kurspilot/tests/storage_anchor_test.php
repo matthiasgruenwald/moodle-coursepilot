@@ -310,4 +310,156 @@ final class storage_anchor_test extends \advanced_testcase {
             $this->assertStringContainsString(storage_anchor::POINTER_FILENAME, $e->getMessage());
         }
     }
+
+    /**
+     * Die neuen Dateioperationen (Issue #487): list_entries()/read_content()/
+     * write()/append() sind ortsneutral - kein stored_file verlaesst sie, nur
+     * Werte. Der Zweitort-Beweis laeuft ueber denselben, nur im Test
+     * definierten {@see second_place()}, wie die restlichen Zweitort-Tests
+     * oben: die Operationen selbst nehmen gar keinen storage_area entgegen,
+     * sie arbeiten auf einem bereits aufgeloesten Verzeichnis - das beweist
+     * die Bereichsunabhaengigkeit staerker als eine gleichlautende Signatur.
+     */
+    public function test_list_entries_returns_location_neutral_file_and_folder_entries(): void {
+        $this->resetAfterTest();
+        $area = $this->second_place();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $contextid = storage_anchor::own_context()->id;
+        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'notiz.txt');
+        storage_anchor::replace(null, storage_anchor::filerecord($contextid, $directory, $filename), 'Inhalt');
+        get_file_storage()->create_file_from_string(
+            storage_anchor::filerecord($contextid, $directory . 'unterordner/', 'tief.txt'),
+            'tief'
+        );
+
+        $entries = storage_anchor::list_entries($directory);
+
+        $file = $this->find_entry($entries, 'notiz.txt');
+        $this->assertNotNull($file);
+        $this->assertSame('file', $file['type']);
+        $this->assertSame(strlen('Inhalt'), $file['size']);
+        $this->assertSame(sha1('Inhalt'), $file['contenthash']);
+        $this->assertGreaterThan(0, $file['timemodified']);
+        $this->assertArrayNotHasKey('locked', $file);
+
+        $folder = $this->find_entry($entries, 'unterordner');
+        $this->assertNotNull($folder);
+        $this->assertSame('folder', $folder['type']);
+        $this->assertSame('', $folder['contenthash']);
+        $this->assertSame(0, $folder['timemodified']);
+    }
+
+    public function test_list_entries_excludes_the_context_pointer_file(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->put_pointer(json_encode([
+            'kontextbereich' => 'kurspilot',
+            'materialordner' => 'kurspilot-material',
+        ]));
+
+        $entries = storage_anchor::list_entries(context_files::resolve_directory(''));
+
+        $this->assertNull($this->find_entry($entries, storage_anchor::POINTER_FILENAME));
+    }
+
+    public function test_read_content_returns_null_for_missing_file(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $area = $this->second_place();
+
+        $this->assertNull(storage_anchor::read_content(
+            storage_anchor::resolve_directory($area, ''),
+            'nichtvorhanden.txt'
+        ));
+    }
+
+    public function test_read_content_returns_no_stored_file_object(): void {
+        $this->resetAfterTest();
+        $area = $this->second_place();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $contextid = storage_anchor::own_context()->id;
+        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'notiz.txt');
+        storage_anchor::replace(null, storage_anchor::filerecord($contextid, $directory, $filename), 'Zweitort-Inhalt');
+
+        $result = storage_anchor::read_content($directory, $filename);
+
+        $this->assertSame('Zweitort-Inhalt', $result['content']);
+        $this->assertSame(sha1('Zweitort-Inhalt'), $result['contenthash']);
+        $this->assertSame(strlen('Zweitort-Inhalt'), $result['size']);
+        $this->assertGreaterThan(0, $result['timemodified']);
+        foreach ($result as $value) {
+            $this->assertNotInstanceOf(\stored_file::class, $value);
+        }
+    }
+
+    public function test_write_creates_new_file_at_the_second_place(): void {
+        $this->resetAfterTest();
+        $area = $this->second_place();
+        $this->setUser($this->getDataGenerator()->create_user());
+        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'notiz.txt');
+
+        storage_anchor::write($directory, $filename, 'frischer Inhalt');
+
+        $this->assertSame('frischer Inhalt', storage_anchor::read_content($directory, $filename)['content']);
+    }
+
+    public function test_write_replaces_existing_content(): void {
+        $this->resetAfterTest();
+        $area = $this->second_place();
+        $this->setUser($this->getDataGenerator()->create_user());
+        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'notiz.txt');
+        storage_anchor::write($directory, $filename, 'alt');
+
+        storage_anchor::write($directory, $filename, 'neu');
+
+        $this->assertSame('neu', storage_anchor::read_content($directory, $filename)['content']);
+    }
+
+    public function test_append_creates_new_file_when_none_exists(): void {
+        $this->resetAfterTest();
+        $area = $this->second_place();
+        $this->setUser($this->getDataGenerator()->create_user());
+        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'journal.txt');
+
+        $newsize = storage_anchor::append($directory, $filename, 'erster Eintrag');
+
+        $this->assertSame('erster Eintrag', storage_anchor::read_content($directory, $filename)['content']);
+        $this->assertSame(strlen('erster Eintrag'), $newsize);
+    }
+
+    /**
+     * append() meldet die tatsaechlich geschriebene Gesamtgroesse, nicht eine
+     * vom Aufrufer aus einem frueheren Lesen hochgerechnete - siehe Docblock
+     * von {@see storage_anchor::append()}.
+     */
+    public function test_append_adds_to_existing_content(): void {
+        $this->resetAfterTest();
+        $area = $this->second_place();
+        $this->setUser($this->getDataGenerator()->create_user());
+        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'journal.txt');
+        storage_anchor::write($directory, $filename, 'erster Eintrag');
+
+        $newsize = storage_anchor::append($directory, $filename, ' zweiter Eintrag');
+
+        $this->assertSame(strlen('erster Eintrag zweiter Eintrag'), $newsize);
+
+        $this->assertSame(
+            'erster Eintrag zweiter Eintrag',
+            storage_anchor::read_content($directory, $filename)['content']
+        );
+    }
+
+    /**
+     * @param array $entries
+     * @param string $name
+     * @return array|null
+     */
+    private function find_entry(array $entries, string $name): ?array {
+        foreach ($entries as $entry) {
+            if ($entry['name'] === $name) {
+                return $entry;
+            }
+        }
+        return null;
+    }
 }

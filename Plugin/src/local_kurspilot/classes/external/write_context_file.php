@@ -94,16 +94,8 @@ class write_context_file extends external_api {
             throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $params['path']);
         }
 
-        $fs = get_file_storage();
-        $existing = $fs->get_file(
-            $context->id,
-            context_files::COMPONENT,
-            context_files::FILEAREA,
-            context_files::ITEMID,
-            $directory,
-            $filename
-        ) ?: null;
-        $oldsize = $existing ? (int) $existing->get_filesize() : 0;
+        $existing = context_files::read_content($directory, $filename);
+        $oldsize = $existing ? $existing['size'] : 0;
 
         // Auch die Zieldatei zaehlt: eine personenbezogen markierte Datei ist
         // bei ausgeschaltetem Schalter nicht lesbar - sie darf dann erst
@@ -111,24 +103,20 @@ class write_context_file extends external_api {
         // dem zerstoerenden Weg offen, den sie auf dem lesenden schliesst
         // (dieselbe Begruendung wie Spec 0016 §4.2 fuer Append).
         if ($existing && !personal_data::allowed()
-                && personal_data::is_marked($existing->get_content())) {
+                && personal_data::is_marked($existing['content'])) {
             throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $params['path']);
         }
 
         // Gleichzeitigkeitsschutz ohne Locks (Spec 0016 §5.3): eine fehlende
         // Datei ist ebenfalls ein Konflikt - sie wurde zwischendurch geloescht.
         if ($params['expected_contenthash'] !== ''
-                && (!$existing || $existing->get_contenthash() !== $params['expected_contenthash'])) {
+                && (!$existing || $existing['contenthash'] !== $params['expected_contenthash'])) {
             throw new \moodle_exception('contextfilechanged', 'local_kurspilot', '', $params['path']);
         }
 
         context_files::require_quota($newsize - $oldsize);
 
-        context_files::replace(
-            $existing,
-            context_files::filerecord($context->id, $directory, $filename),
-            $content
-        );
+        context_files::write($directory, $filename, $content);
 
         $relativepath = context_files::relative_file($directory, $filename);
         $message = $existing

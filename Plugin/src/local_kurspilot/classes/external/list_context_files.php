@@ -22,7 +22,6 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_kurspilot\context_files;
-use local_kurspilot\storage_anchor;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -69,36 +68,9 @@ class list_context_files extends external_api {
         $directory = context_files::resolve_directory($params['path']);
 
         $entries = [];
-        $fs = get_file_storage();
-        foreach ($fs->get_directory_files(
-            $context->id,
-            context_files::COMPONENT,
-            context_files::FILEAREA,
-            context_files::ITEMID,
-            $directory,
-            false,
-            true,
-            'filepath, filename'
-        ) as $file) {
-            if (!$file->is_directory() && $file->get_filename() === storage_anchor::POINTER_FILENAME) {
-                // Der Kontextpointer (Issue #445) ist keine Arbeitsdatei - er
-                // wird vom Anker aufgeloest, nicht von den
-                // Kontextdatei-Werkzeugen, und taucht deshalb hier nicht auf.
-                continue;
-            }
-            if ($file->is_directory()) {
-                // get_directory_files() schliesst den eigenen Ordner-
-                // Platzhalter (":dirid") bereits aus - hier landen nur
-                // unmittelbare Unterordner.
-                $entries[] = [
-                    'name' => trim(substr($file->get_filepath(), strlen($directory)), '/'),
-                    'type' => 'folder',
-                    'size' => 0,
-                    'mimetype' => '',
-                    'locked' => false,
-                    'contenthash' => '',
-                    'timemodified' => 0,
-                ];
+        foreach (context_files::list_entries($directory) as $entry) {
+            if ($entry['type'] === 'folder') {
+                $entries[] = $entry + ['locked' => false];
                 continue;
             }
             // Schalter fuer personenbezogene Kontextdaten (#344, ADR 0011):
@@ -111,19 +83,15 @@ class list_context_files extends external_api {
             // steht ausschliesslich im Frontmatter einer Markdown-Datei. Ohne
             // diese Grenze laese die Auflistung jede fremde Datei des Ordners
             // vollstaendig in den Speicher.
-            $ismarkdown = strtolower(pathinfo($file->get_filename(), PATHINFO_EXTENSION)) === 'md';
-            $locked = $ismarkdown
-                && \local_kurspilot\personal_data::is_marked($file->get_content())
-                && !\local_kurspilot\personal_data::allowed();
-            $entries[] = [
-                'name' => $file->get_filename(),
-                'type' => 'file',
-                'size' => (int) $file->get_filesize(),
-                'mimetype' => (string) ($file->get_mimetype() ?? ''),
-                'locked' => $locked,
-                'contenthash' => $file->get_contenthash(),
-                'timemodified' => (int) $file->get_timemodified(),
-            ];
+            $ismarkdown = strtolower(pathinfo($entry['name'], PATHINFO_EXTENSION)) === 'md';
+            $locked = false;
+            if ($ismarkdown) {
+                $content = context_files::read_content($directory, $entry['name']);
+                $locked = $content !== null
+                    && \local_kurspilot\personal_data::is_marked($content['content'])
+                    && !\local_kurspilot\personal_data::allowed();
+            }
+            $entries[] = $entry + ['locked' => $locked];
         }
 
         return [

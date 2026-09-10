@@ -41,8 +41,9 @@ defined('MOODLE_INTERNAL') || die();
  * gleichzeitige Appends koennen einander daher weiterhin verlieren. Der
  * Kontextbereich gehoert genau einer Person, gleichzeitiges Schreiben ist dort
  * der Ausnahmefall, und ein Lock waere die teurere Antwort darauf. Die
- * Transaktion in {@see context_files::replace()} sichert nur das Naheliegende
- * zu: kein halb geschriebener Zustand aus einem abgebrochenen Vorgang.
+ * Transaktion in {@see \local_kurspilot\storage_anchor::replace()} (aufgerufen
+ * ueber {@see context_files::append()}) sichert nur das Naheliegende zu: kein
+ * halb geschriebener Zustand aus einem abgebrochenen Vorgang.
  *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
@@ -91,15 +92,7 @@ class append_context_file extends external_api {
             ]);
         }
 
-        $fs = get_file_storage();
-        $existing = $fs->get_file(
-            $context->id,
-            context_files::COMPONENT,
-            context_files::FILEAREA,
-            context_files::ITEMID,
-            $directory,
-            $filename
-        ) ?: null;
+        $existing = context_files::read_content($directory, $filename);
 
         // Geprueft wird die Markierung der Zieldatei, nicht das Anhaengsel
         // (Spec 0016 §5.5): ohne diesen Schritt liesse sich die #344-Grenze
@@ -109,20 +102,14 @@ class append_context_file extends external_api {
         // ponytail: kein Frontmatter-Test auf dem Anhaengsel - Spec 0016 §5.5
         // beauftragt ausdruecklich nur die Zieldatei.
         if ($existing && !personal_data::allowed()
-                && personal_data::is_marked($existing->get_content())) {
+                && personal_data::is_marked($existing['content'])) {
             throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $params['path']);
         }
 
         context_files::require_quota($addedsize);
 
-        $newcontent = $existing ? $existing->get_content() . $content : $content;
-        context_files::replace(
-            $existing,
-            context_files::filerecord($context->id, $directory, $filename),
-            $newcontent
-        );
+        $newsize = context_files::append($directory, $filename, $content);
 
-        $newsize = strlen($newcontent);
         $relativepath = context_files::relative_file($directory, $filename);
         $message = $existing
             ? get_string('contextfileappended', 'local_kurspilot', (object) [

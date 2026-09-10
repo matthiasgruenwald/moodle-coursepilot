@@ -65,35 +65,26 @@ class read_context_file extends external_api {
 
         [$directory, $filename] = context_files::resolve_file($params['path']);
 
-        $file = get_file_storage()->get_file(
-            $context->id,
-            context_files::COMPONENT,
-            context_files::FILEAREA,
-            context_files::ITEMID,
-            $directory,
-            $filename
-        );
-        if (!$file || $file->is_directory()) {
+        $file = context_files::read_content($directory, $filename);
+        if ($file === null) {
             throw new \moodle_exception('contextfilenotfound', 'local_kurspilot', '', $params['path']);
         }
-
-        $content = $file->get_content();
 
         // Schalter fuer personenbezogene Kontextdaten (#344, ADR 0011):
         // wirkt auf der Frontmatter-Markierung, nicht auf dem Inhalt -
         // siehe local_kurspilot\personal_data.
-        if (\local_kurspilot\personal_data::is_marked($content) && !\local_kurspilot\personal_data::allowed()) {
+        if (\local_kurspilot\personal_data::is_marked($file['content']) && !\local_kurspilot\personal_data::allowed()) {
             throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $params['path']);
         }
 
         return [
             'path' => context_files::relative_file($directory, $filename),
             'filename' => $filename,
-            'mimetype' => (string) ($file->get_mimetype() ?? ''),
-            'size' => (int) $file->get_filesize(),
-            'content' => $content,
-            'contenthash' => $file->get_contenthash(),
-            'timemodified' => (int) $file->get_timemodified(),
+            'mimetype' => $file['mimetype'],
+            'size' => $file['size'],
+            'content' => $file['content'],
+            'contenthash' => $file['contenthash'],
+            'timemodified' => $file['timemodified'],
         ];
     }
 

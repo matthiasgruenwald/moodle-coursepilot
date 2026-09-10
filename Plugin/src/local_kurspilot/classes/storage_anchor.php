@@ -425,6 +425,149 @@ final class storage_anchor {
     }
 
     /**
+     * Listet eine Ebene eines aufgeloesten Verzeichnisses - ortsneutral
+     * (Issue #487): Name, Typ, Groesse, MIME-Typ, `contenthash` und
+     * Aenderungszeit je Eintrag, kein Moodle-Dateiobjekt verlaesst diese
+     * Methode. Der Kontextpointer ({@see POINTER_FILENAME}) ist keine
+     * Arbeitsdatei und bleibt wie bisher aussen vor.
+     *
+     * Bewusst ohne Personenbezugs-Markierung ("locked") - das ist eine
+     * Policy des Kontextbereichs (ADR 0011), nicht des Ankers. Ein Aufrufer,
+     * der sie braucht, liest sie ueber {@see read_content()} je Eintrag nach.
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @return array<int, array{name: string, type: string, size: int, mimetype: string,
+     *         contenthash: string, timemodified: int}>
+     */
+    /**
+     * Die Moodle-Datei hinter Verzeichnis+Dateiname, oder null - der eine
+     * Nachschlagevorgang, den sich {@see read_content()}, {@see write()} und
+     * {@see append()} teilen.
+     *
+     * @param string $directory
+     * @param string $filename
+     * @return \stored_file|null Nie ein Ordner-Platzhalter.
+     */
+    private static function find_file(string $directory, string $filename): ?\stored_file {
+        $file = get_file_storage()->get_file(
+            self::own_context()->id,
+            self::COMPONENT,
+            self::FILEAREA,
+            self::ITEMID,
+            $directory,
+            $filename
+        );
+        return ($file && !$file->is_directory()) ? $file : null;
+    }
+
+    public static function list_entries(string $directory): array {
+        $entries = [];
+        foreach (get_file_storage()->get_directory_files(
+            self::own_context()->id,
+            self::COMPONENT,
+            self::FILEAREA,
+            self::ITEMID,
+            $directory,
+            false,
+            true,
+            'filepath, filename'
+        ) as $file) {
+            if (!$file->is_directory() && $file->get_filename() === self::POINTER_FILENAME) {
+                continue;
+            }
+            if ($file->is_directory()) {
+                // get_directory_files() schliesst den eigenen Ordner-
+                // Platzhalter (":dirid") bereits aus - hier landen nur
+                // unmittelbare Unterordner.
+                $entries[] = [
+                    'name' => trim(substr($file->get_filepath(), strlen($directory)), '/'),
+                    'type' => 'folder',
+                    'size' => 0,
+                    'mimetype' => '',
+                    'contenthash' => '',
+                    'timemodified' => 0,
+                ];
+                continue;
+            }
+            $entries[] = [
+                'name' => $file->get_filename(),
+                'type' => 'file',
+                'size' => (int) $file->get_filesize(),
+                'mimetype' => (string) ($file->get_mimetype() ?? ''),
+                'contenthash' => $file->get_contenthash(),
+                'timemodified' => (int) $file->get_timemodified(),
+            ];
+        }
+        return $entries;
+    }
+
+    /**
+     * Liest den Inhalt einer Datei - ortsneutral (Issue #487): kein Moodle-
+     * Dateiobjekt verlaesst diese Methode, nur seine Werte.
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $filename
+     * @return array{content: string, mimetype: string, size: int, contenthash: string,
+     *         timemodified: int}|null null, wenn die Datei fehlt oder ein Ordner ist.
+     */
+    public static function read_content(string $directory, string $filename): ?array {
+        $file = self::find_file($directory, $filename);
+        if (!$file) {
+            return null;
+        }
+        return [
+            'content' => $file->get_content(),
+            'mimetype' => (string) ($file->get_mimetype() ?? ''),
+            'size' => (int) $file->get_filesize(),
+            'contenthash' => $file->get_contenthash(),
+            'timemodified' => (int) $file->get_timemodified(),
+        ];
+    }
+
+    /**
+     * Legt eine Datei an oder ersetzt ihren Inhalt vollstaendig - ortsneutral
+     * (Issue #487). Absagen (Pfad, Endung, Groesse, Personenbezug,
+     * Gleichzeitigkeit, Quote) sind Sache des Aufrufers, der dafuer den
+     * bisherigen Stand ueber {@see read_content()} liest, bevor er hier
+     * schreibt; diese Methode fuehrt nur noch den einen Schreibvorgang aus.
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $filename
+     * @param string $content Vollstaendiger neuer Inhalt.
+     */
+    public static function write(string $directory, string $filename, string $content): void {
+        $contextid = self::own_context()->id;
+        $existing = self::find_file($directory, $filename);
+        self::replace($existing, self::filerecord($contextid, $directory, $filename), $content);
+    }
+
+    /**
+     * Haengt Inhalt an eine Datei an, legt sie an, falls sie noch nicht
+     * existiert - ortsneutral (Issue #487). Wie bei {@see write()} sind
+     * Absagen Sache des Aufrufers; diese Methode liest den bisherigen Inhalt
+     * selbst noch einmal, um ihn mit dem Anhaengsel zusammenzufuegen - der
+     * Aufrufer bekam seinen eigenen Stand zuvor nur als Wertekopie ueber
+     * {@see read_content()}, kein stored_file, das sich hier wiederverwenden
+     * liesse. Gibt die tatsaechlich geschriebene Gesamtgroesse zurueck, nicht
+     * die aus dem fruehreren Lesen des Aufrufers hochgerechnete - die beiden
+     * koennen bei echter Gleichzeitigkeit auseinanderlaufen (Spec 0016 §5.3
+     * verbietet ohnehin Locks), und die Antwort soll immer den tatsaechlich
+     * geschriebenen Stand melden.
+     *
+     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $filename
+     * @param string $content Anzuhaengender Inhalt.
+     * @return int Gesamtgroesse der Datei nach dem Anhaengen, in Byte.
+     */
+    public static function append(string $directory, string $filename, string $content): int {
+        $contextid = self::own_context()->id;
+        $existing = self::find_file($directory, $filename);
+        $newcontent = $existing ? $existing->get_content() . $content : $content;
+        self::replace($existing, self::filerecord($contextid, $directory, $filename), $newcontent);
+        return strlen($newcontent);
+    }
+
+    /**
      * Setzt den Inhalt einer Datei neu - der eine Schreibvorgang, den sich
      * alle Schreibendpunkte teilen.
      *
