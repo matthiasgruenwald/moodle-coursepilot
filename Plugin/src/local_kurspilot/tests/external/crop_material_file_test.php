@@ -18,6 +18,9 @@ namespace local_kurspilot\external;
 
 use local_kurspilot\gd_support;
 use local_kurspilot\material_files;
+use local_kurspilot\storage_anchor;
+use local_kurspilot\tests\webdav\webdav_instance_fixture;
+use local_kurspilot\webdav\webdav_instance;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -33,6 +36,12 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(crop_material_file::class)]
 final class crop_material_file_test extends \advanced_testcase {
+    use webdav_instance_fixture;
+
+    protected function tearDown(): void {
+        webdav_instance::use_test_transport(null);
+        parent::tearDown();
+    }
 
     /**
      * @param string $filename
@@ -276,6 +285,95 @@ final class crop_material_file_test extends \advanced_testcase {
             $this->assertSame('materialgdmissing', $e->errorcode);
         } finally {
             gd_support::override_for_testing(null);
+        }
+    }
+
+    /**
+     * @return string PNG-Bytes eines 1000x1000-Bilds.
+     */
+    private function build_png(int $width = 1000, int $height = 1000): string {
+        $image = imagecreatetruecolor($width, $height);
+        imagefill($image, 0, 0, imagecolorallocate($image, 10, 120, 200));
+        ob_start();
+        imagepng($image);
+        $png = ob_get_clean();
+        imagedestroy($image);
+        return $png;
+    }
+
+    /**
+     * Die Quelle (Issue #495) kommt aus dem externen Materialbestand, das
+     * Ergebnis landet trotzdem auf der Werkbank (Abnahmekriterium 2/6).
+     */
+    public function test_reads_source_from_external_material_and_writes_result_to_workbench(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_material();
+        $fake->seed_folder('/Kurspilot/Material');
+        $fake->seed_file('/Kurspilot/Material/buchseite.png', $this->build_png(1000, 1000));
+
+        $result = crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
+
+        $this->assertSame(500, $result['width']);
+        $this->assertStringStartsWith('bestand:buchseite.png', $result['source']);
+
+        $stored = get_file_storage()->get_file(
+            material_files::own_context()->id,
+            material_files::COMPONENT,
+            material_files::FILEAREA,
+            material_files::ITEMID,
+            '/kurspilot-material/',
+            'ausschnitt.png'
+        );
+        $this->assertNotFalse($stored, 'Das Ergebnis muss auf der Werkbank (Moodle) liegen.');
+    }
+
+    /**
+     * "source" nennt Ort und Pruefmerkmal (Groesse, Aenderungszeit) - kein
+     * contenthash, den der Materialbestand nicht traegt.
+     */
+    public function test_source_field_names_ort_and_fingerprint(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->store_png('buchseite.png', 1000, 1000);
+
+        $result = crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
+
+        $this->assertMatchesRegularExpression(
+            '/^bestand:buchseite\.png \(\d+ Byte, geändert \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\)$/u',
+            $result['source']
+        );
+    }
+
+    public function test_unknown_ort_value_is_rejected(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->store_png('buchseite.png', 1000, 1000);
+
+        try {
+            crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5, '', 'woanders');
+            $this->fail('Ein unbekannter Ort-Wert haette werfen muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidmaterialort', $e->errorcode);
+        }
+    }
+
+    /**
+     * Liegt der Kontextbereich im Bestand, weist der Zuschnitt eine Quelle
+     * darunter ab (Issue #495, Abnahmekriterium 4).
+     */
+    public function test_rejects_source_path_under_kontextbereich(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        storage_anchor::write_pointer_document([
+            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'kurspilot-material/kontext'],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'kurspilot-material'],
+        ]);
+
+        try {
+            crop_material_file::execute('kontext/buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
+            $this->fail('Eine Quelle unter dem Kontextbereich haette werfen muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialpathiskontext', $e->errorcode);
         }
     }
 }

@@ -968,6 +968,12 @@ final class tool_registry {
             'schema' => [
                 'properties' => [
                     'path' => ['type' => 'string', 'description' => 'Optionaler Unterordner, leer fuer die Wurzel'],
+                    'ort' => [
+                        'type' => 'string',
+                        'enum' => ['bestand', 'werkbank'],
+                        'description' => '"bestand" (Standard, der gewachsene Materialbestand der Lehrkraft, nur '
+                            . 'lesend) oder "werkbank" (Kurspilots eigene Zwischenstation)',
+                    ],
                 ],
             ],
             'capability' => null,
@@ -1012,6 +1018,12 @@ final class tool_registry {
             'schema' => [
                 'properties' => [
                     'path' => ['type' => 'string', 'description' => 'Dateipfad relativ zum Materialordner, z.B. "screenshot.png"'],
+                    'ort' => [
+                        'type' => 'string',
+                        'enum' => ['bestand', 'werkbank'],
+                        'description' => '"bestand" (Standard, der gewachsene Materialbestand der Lehrkraft, nur '
+                            . 'lesend) oder "werkbank" (Kurspilots eigene Zwischenstation)',
+                    ],
                 ],
                 'required' => ['path'],
             ],
@@ -1043,6 +1055,13 @@ final class tool_registry {
                     'expected_contenthash' => [
                         'type' => 'string',
                         'description' => 'Optional: contenthash der Zieldatei aus dem letzten Auflisten - passt er nicht, bricht der Vorgang ab',
+                    ],
+                    'ort' => [
+                        'type' => 'string',
+                        'enum' => ['bestand', 'werkbank'],
+                        'description' => 'Ort der Quelldatei: "bestand" (Standard, der gewachsene Materialbestand '
+                            . 'der Lehrkraft) oder "werkbank" (Kurspilots eigene Zwischenstation) - das Ergebnis '
+                            . 'liegt immer auf der Werkbank',
                     ],
                 ],
                 'required' => ['sourcepath', 'targetpath', 'x0', 'y0', 'x1', 'y1'],

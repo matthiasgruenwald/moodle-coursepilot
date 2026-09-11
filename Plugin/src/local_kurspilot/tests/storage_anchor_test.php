@@ -184,7 +184,15 @@ final class storage_anchor_test extends \advanced_testcase {
         $this->assertSame('/kurspilot-material/', material_files::resolve_directory(''));
     }
 
-    public function test_valid_pointer_redirects_both_areas_together(): void {
+    /**
+     * Der Kontextbereich folgt dem Kontextpointer wie bisher; die Werkbank
+     * (material_files::resolve_directory(), Issue #495) bleibt dagegen immer
+     * an der konfigurierten Standardwurzel - sie ignoriert den
+     * Materialbestand-Pointer, weil sie am Anker liegen bleibt
+     * (CONTEXT.md "Werkbank"). Den pointerbewussten Materialbestand deckt
+     * {@see \local_kurspilot\external\list_material_files_test} ab.
+     */
+    public function test_valid_pointer_redirects_context_but_not_workbench(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
         $this->put_pointer(json_encode([
@@ -193,7 +201,7 @@ final class storage_anchor_test extends \advanced_testcase {
         ]));
 
         $this->assertSame('/custom-context/', context_files::resolve_directory(''));
-        $this->assertSame('/custom-material/', material_files::resolve_directory(''));
+        $this->assertSame('/kurspilot-material/', material_files::resolve_directory(''));
     }
 
     public function test_unreadable_pointer_throws_named_error_without_fallback(): void {
@@ -227,8 +235,10 @@ final class storage_anchor_test extends \advanced_testcase {
 
     /**
      * write_pointer() (Issue #446) legt eine Pointer-Datei an, die
-     * resolve_pointer() (ueber context_files/material_files) unveraendert
-     * zurueckliest - derselbe Mechanismus, den der Zustimmungsdialog nutzt.
+     * resolve_pointer() (ueber context_files) unveraendert zurueckliest -
+     * derselbe Mechanismus, den der Zustimmungsdialog nutzt. Die Werkbank
+     * (material_files::resolve_directory(), Issue #495) ignoriert den
+     * Materialbestand-Pointer, siehe {@see test_valid_pointer_redirects_context_but_not_workbench()}.
      */
     public function test_write_pointer_is_readable_back_via_resolve_directory(): void {
         $this->resetAfterTest();
@@ -237,7 +247,7 @@ final class storage_anchor_test extends \advanced_testcase {
         storage_anchor::write_pointer('mein-kontext', 'mein-material');
 
         $this->assertSame('/mein-kontext/', context_files::resolve_directory(''));
-        $this->assertSame('/mein-material/', material_files::resolve_directory(''));
+        $this->assertSame('/kurspilot-material/', material_files::resolve_directory(''));
     }
 
     /**
@@ -379,6 +389,10 @@ final class storage_anchor_test extends \advanced_testcase {
      * Ein Pointer der zweiten Fassung mit Ziel *in Moodle* loest genauso auf
      * wie die erste Fassung - nur die Struktur ist neu.
      */
+    /**
+     * Wie {@see test_valid_pointer_redirects_context_but_not_workbench()},
+     * nur mit einem Pointer der zweiten Fassung.
+     */
     public function test_v2_pointer_with_moodle_target_resolves_like_legacy(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
@@ -388,7 +402,7 @@ final class storage_anchor_test extends \advanced_testcase {
         ]));
 
         $this->assertSame('/mein-kontext/', context_files::resolve_directory(''));
-        $this->assertSame('/mein-material/', material_files::resolve_directory(''));
+        $this->assertSame('/kurspilot-material/', material_files::resolve_directory(''));
     }
 
     /**

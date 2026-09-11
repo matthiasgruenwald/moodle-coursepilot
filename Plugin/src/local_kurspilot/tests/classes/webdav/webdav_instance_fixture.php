@@ -197,4 +197,25 @@ trait webdav_instance_fixture {
 
         return [$user, $fake];
     }
+
+    /**
+     * Gegenstueck zu {@see set_up_external_context()} fuer den externen
+     * Materialbestand (Issue #495): richtet den Materialbestand per Pointer
+     * der zweiten Fassung auf den Ordner "Material" aus, der Kontextbereich
+     * bleibt *in Moodle*.
+     *
+     * @return array{0: \stdClass, 1: fake_webdav_transport}
+     */
+    protected function set_up_external_material(): array {
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $this->write_v2_pointer($user, 'materialbestand', $instanceid, 'Material');
+
+        $fake = new fake_webdav_transport();
+        \local_kurspilot\webdav\webdav_instance::use_test_transport($fake);
+
+        return [$user, $fake];
+    }
 }

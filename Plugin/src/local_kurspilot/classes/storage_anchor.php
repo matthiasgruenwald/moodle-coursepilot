@@ -185,6 +185,25 @@ final class storage_anchor {
     }
 
     /**
+     * Der aufgeloeste Ort eines Bereichs, nie `null` (Issue #495): wie
+     * {@see resolve_pointer_location()}, aber ein *offener* Zustand (kein
+     * Pointer) wird direkt zu einem {@see pointer_location::moodle()} an der
+     * konfigurierten Standardwurzel aufgeloest - fuer Aufrufer, die einen
+     * Vergleichsschluessel ({@see pointer_location::comparison_key()}) bauen
+     * wollen und dafuer immer einen Ort brauchen, nie die Sonderbedeutung
+     * "offen".
+     *
+     * @param storage_area $area
+     * @return pointer_location
+     * @throws \moodle_exception pointerunreadable/pointerincomplete/pointerunreachable/
+     *         materialbestandimkontext
+     */
+    public static function effective_location(storage_area $area): pointer_location {
+        return self::resolve_pointer_location($area)
+            ?? pointer_location::moodle(self::configured_root($area->rootsetting, $area->defaultroot));
+    }
+
+    /**
      * Die per Plugin-Einstellung konfigurierte Standardwurzel eines Ortes -
      * ohne Pointer-Aufloesung. Wird sowohl fuer die Standardwurzel eines
      * Bereichs als auch fuer den Anker selbst benutzt (Issue #445).

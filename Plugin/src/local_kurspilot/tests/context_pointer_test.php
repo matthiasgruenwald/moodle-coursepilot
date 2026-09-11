@@ -146,6 +146,74 @@ final class context_pointer_test extends \advanced_testcase {
         context_pointer::resolve_target($decoded, 'kontextbereich');
     }
 
+    /**
+     * Aufloesungspruefung 7 (Issue #495, Spec #486 §2): der Materialbestand
+     * darf nie im Kontextbereich liegen - hier ein Moodle-Unterordner des
+     * Kontextbereichs.
+     */
+    public function test_material_inside_context_is_rejected(): void {
+        $decoded = [
+            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'kurspilot'],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'kurspilot/material'],
+        ];
+
+        try {
+            context_pointer::resolve_target($decoded, 'materialordner');
+            $this->fail('materialbestandimkontext haette geworfen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialbestandimkontext', $e->errorcode);
+        }
+    }
+
+    /**
+     * Auflosungspruefung 7 gilt auch fuer denselben Ordner.
+     */
+    public function test_material_in_the_same_folder_as_context_is_rejected(): void {
+        $decoded = [
+            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'geteilt'],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'geteilt'],
+        ];
+
+        $this->expectException(\moodle_exception::class);
+        context_pointer::resolve_target($decoded, 'materialordner');
+    }
+
+    /**
+     * Die umgekehrte Richtung ist erlaubt: der Kontextbereich darf im
+     * Materialbestand liegen (CONTEXT.md "Materialbestand").
+     */
+    public function test_context_inside_material_is_allowed(): void {
+        $decoded = [
+            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'material/kontext'],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'material'],
+        ];
+
+        $location = context_pointer::resolve_target($decoded, 'materialordner');
+
+        $this->assertSame('/material/', $location->path);
+    }
+
+    /**
+     * Auflosungspruefung 7 ist ortsunabhaengig: ein Moodle-Kontextbereich und
+     * ein extern liegender Materialbestand ueberschneiden sich nie - anderer
+     * Ort, anderer Vergleichsschluessel.
+     */
+    public function test_external_material_never_overlaps_a_moodle_context(): void {
+        $decoded = [
+            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'kurspilot'],
+            'materialbestand' => [
+                'ort' => 'extern',
+                'instanzid' => 3,
+                'pfad' => 'kurspilot',
+                'pruefmerkmal' => ['server' => 's', 'basispfad' => 'b', 'konto' => 'k'],
+            ],
+        ];
+
+        $location = context_pointer::resolve_target($decoded, 'materialordner');
+
+        $this->assertSame(pointer_location::EXTERN, $location->kind);
+    }
+
     public function test_v2_pointer_extern_target_rejects_zero_instance_id(): void {
         $decoded = [
             'kontextbereich' => [

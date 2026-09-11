@@ -64,4 +64,37 @@ final class pointer_location {
     public static function extern(int $instanceid, string $relativepath, array $fingerprint): self {
         return new self(self::EXTERN, instanceid: $instanceid, relativepath: $relativepath, fingerprint: $fingerprint);
     }
+
+    /**
+     * Vergleichsschluessel fuer die Ueberschneidungspruefung zwischen
+     * Kontextbereich und Materialbestand (Issue #495, Spec #486 §2 Pruefung
+     * 7): Server + Konto + effektiver Pfad, normalisiert mit abschliessendem
+     * "/" - ortsunabhaengig, ein Moodle-Ziel und ein externes Ziel ueberschneiden
+     * sich nie (unterschiedliches Praefix). Zwei Moodle-Ziele teilen sich
+     * dieselbe Person/denselben Server per Definition (beide Bereiche liegen
+     * immer in den Private Files derselben Lehrkraft).
+     *
+     * @param string $subpath Zusaetzlicher Unterpfad ab diesem Ort, bereits
+     *        segmentgeprueft (z.B. ueber {@see storage_anchor::normalise_client_path()}).
+     * @return string
+     */
+    public function comparison_key(string $subpath = ''): string {
+        if ($this->kind === self::MOODLE) {
+            return 'moodle|' . self::normalised_path((string) $this->path, $subpath);
+        }
+        $server = strtolower((string) ($this->fingerprint['server'] ?? ''));
+        $konto = (string) ($this->fingerprint['konto'] ?? '');
+        return 'extern|' . $server . '|' . $konto . '|' . self::normalised_path((string) $this->relativepath, $subpath);
+    }
+
+    /**
+     * @param string $base
+     * @param string $subpath
+     * @return string Immer mit fuehrendem und abschliessendem "/", Wurzel als "/".
+     */
+    private static function normalised_path(string $base, string $subpath): string {
+        $combined = trim($base, '/') . ($subpath !== '' ? '/' . trim($subpath, '/') : '');
+        $trimmed = trim($combined, '/');
+        return $trimmed === '' ? '/' : '/' . $trimmed . '/';
+    }
 }

@@ -74,6 +74,7 @@ $string['contextfilelocked'] = 'Datei gesperrt: {$a} — personenbezogen markier
 $string['pointerunreadable'] = 'Kontextpointer nicht lesbar: {$a} enthält kein gültiges JSON-Objekt.';
 $string['pointerincomplete'] = 'Kontextpointer unvollständig: {$a} muss die Felder "kontextbereich" und "materialordner" enthalten.';
 $string['pointerunreachable'] = 'Kontextpointer verweist auf einen nicht erreichbaren Ort: {$a} enthält einen ungültigen Pfad.';
+$string['materialbestandimkontext'] = 'Der Materialbestand liegt im Kontextbereich oder im selben Ordner — das ist nicht zulässig. Bitte auf der Ortswahlseite einen anderen Ordner für den Materialbestand oder den Kontextbereich wählen.';
 
 // Kontextpointer, zweite Fassung: externe Orte (Issue #490, Spec: Kontextbereich
 // und Materialbestand im WebDAV-Speicher der Lehrkraft #486 §2/§3/§12). Keine
@@ -177,6 +178,8 @@ $string['materialquotawarning'] = 'Hinweis: nur noch {$a} MB Speicherplatz frei.
 $string['materialfilecreated'] = '{$a} neu angelegt.';
 $string['materialfileoverwritten'] = '{$a->path} überschrieben (vorher: {$a->before} Byte, jetzt: {$a->after} Byte).';
 $string['materialfilenotfound'] = 'Keine Materialdatei unter "{$a}" gefunden — erwarteter Pfad im Materialordner. Erst mit upload_material_file ablegen, dann verweisen.';
+$string['invalidmaterialort'] = 'Unbekannter Ort "{$a}" — gültig sind "bestand" und "werkbank".';
+$string['materialpathiskontext'] = 'Dieser Pfad gehört zum Kontextbereich, nicht zum Materialbestand — über die Materialwerkzeuge nicht erreichbar. Bitte stattdessen list_context_files/read_context_file nutzen.';
 $string['materialgdmissing'] = 'Bildvorschau und Bildzuschnitt sind auf diesem Server gesperrt — die PHP-Erweiterung GD fehlt. Hochladen und Einbetten funktionieren weiterhin.';
 $string['materialpreviewnotanimage'] = '"{$a}" ist keine Bilddatei — dafür gibt es keine Vorschau.';
 $string['materialpreviewunsupported'] = 'Diese Datei lässt sich nicht als Bild lesen (z. B. SVG oder beschädigte Bilddaten) — dafür gibt es keine Vorschau.';

@@ -18,6 +18,9 @@ namespace local_kurspilot\external;
 
 use local_kurspilot\gd_support;
 use local_kurspilot\material_files;
+use local_kurspilot\storage_anchor;
+use local_kurspilot\tests\webdav\webdav_instance_fixture;
+use local_kurspilot\webdav\webdav_instance;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -33,6 +36,12 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(preview_material_file::class)]
 final class preview_material_file_test extends \advanced_testcase {
+    use webdav_instance_fixture;
+
+    protected function tearDown(): void {
+        webdav_instance::use_test_transport(null);
+        parent::tearDown();
+    }
 
     /**
      * @param string $filename
@@ -157,5 +166,60 @@ final class preview_material_file_test extends \advanced_testcase {
         $this->assertFalse($result['available']);
         $this->assertNotEmpty($result['message']);
         $this->assertNull($result['image_base64']);
+    }
+
+    /**
+     * Der Parameter "ort" (Issue #495) liest aus dem externen Materialbestand,
+     * statt aus Moodle - dieselbe Vorschau wie im Moodle-Zweig.
+     */
+    public function test_ort_bestand_reads_from_external_material(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_material();
+        $fake->seed_folder('/Kurspilot/Material');
+        $image = imagecreatetruecolor(1600, 100);
+        imagefill($image, 0, 0, imagecolorallocate($image, 10, 120, 200));
+        ob_start();
+        imagepng($image);
+        $png = ob_get_clean();
+        imagedestroy($image);
+        $fake->seed_file('/Kurspilot/Material/bild.png', $png);
+
+        $result = preview_material_file::execute('bild.png');
+
+        $this->assertTrue($result['available']);
+        $this->assertSame(768, $result['width']);
+    }
+
+    public function test_unknown_ort_value_is_rejected(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->store_png('bild.png');
+
+        try {
+            preview_material_file::execute('bild.png', 'woanders');
+            $this->fail('Ein unbekannter Ort-Wert haette werfen muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidmaterialort', $e->errorcode);
+        }
+    }
+
+    /**
+     * Liegt der Kontextbereich im Bestand, weist die Vorschau einen Pfad
+     * darunter ab (Issue #495, Abnahmekriterium 4).
+     */
+    public function test_rejects_path_under_kontextbereich(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        storage_anchor::write_pointer_document([
+            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'kurspilot-material/kontext'],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'kurspilot-material'],
+        ]);
+
+        try {
+            preview_material_file::execute('kontext/plan.png');
+            $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialpathiskontext', $e->errorcode);
+        }
     }
 }

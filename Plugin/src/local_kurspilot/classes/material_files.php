@@ -46,6 +46,12 @@ namespace local_kurspilot;
  */
 final class material_files {
 
+    /** @var string Ort-Parameterwert "Materialbestand" (Issue #495, Default) - pointerbewusst, nur lesend. */
+    public const ORT_BESTAND = 'bestand';
+
+    /** @var string Ort-Parameterwert "Werkbank" - fest am Anker, ignoriert den Pointer, einziges Schreibziel. */
+    public const ORT_WERKBANK = 'werkbank';
+
     /** @var string Moodle-Dateikomponente - Moodles Private Files (Spec 0018 §2.1). */
     public const COMPONENT = storage_anchor::COMPONENT;
 
@@ -124,6 +130,32 @@ final class material_files {
     }
 
     /**
+     * Die Bereichsdefinition der Werkbank (Issue #495, CONTEXT.md "Werkbank"):
+     * derselbe Wertesatz wie {@see area()}, aber ohne Pointer-Feld - die
+     * Werkbank bleibt immer am Anker, unabhaengig davon, wo der Kontextpointer
+     * den Materialbestand gerade verortet (in Moodle oder extern). Jedes
+     * schreibende Materialwerkzeug loest ausschliesslich ueber diesen Bereich
+     * auf ({@see resolve_directory()}/{@see resolve_file()}/{@see resolve_writable_file()}
+     * und ihre relative_*()-Gegenstuecke) - der Materialbestand ({@see area()})
+     * ist nur ueber die eigenen pointerbewussten Lesemethoden erreichbar
+     * ({@see list_entries_for_ort()}/{@see read_content_for_ort()}), nie als
+     * Schreibziel.
+     *
+     * @return storage_area
+     */
+    public static function werkbank_area(): storage_area {
+        $area = self::area();
+        return new storage_area(
+            rootsetting: $area->rootsetting,
+            defaultroot: $area->defaultroot,
+            invalidpathkey: $area->invalidpathkey,
+            quotaerrorkey: $area->quotaerrorkey,
+            checkwritablename: $area->checkwritablename,
+            pointerkey: null,
+        );
+    }
+
+    /**
      * Der eigene Nutzerkontext der angemeldeten Person - niemals aus
      * Client-Eingaben ableitbar.
      *
@@ -135,13 +167,14 @@ final class material_files {
 
     /**
      * Loest einen optionalen Client-Unterordner zu einem vollstaendigen
-     * Moodle-Dateipfad innerhalb des Materialordners auf.
+     * Moodle-Dateipfad innerhalb der Werkbank auf (Issue #495: die Werkbank
+     * ignoriert den Kontextpointer, siehe {@see werkbank_area()}).
      *
      * @param string $path Relativer Unterordner, z.B. "" oder "faecher/mathe".
      * @return string Immer mit fuehrendem und abschliessendem "/".
      */
     public static function resolve_directory(string $path): string {
-        return storage_anchor::resolve_directory(self::area(), $path);
+        return storage_anchor::resolve_directory(self::werkbank_area(), $path);
     }
 
     /**
@@ -152,7 +185,7 @@ final class material_files {
      * @return string
      */
     public static function relative_directory(string $directory): string {
-        return storage_anchor::relative_directory(self::area(), $directory);
+        return storage_anchor::relative_directory(self::werkbank_area(), $directory);
     }
 
     /**
@@ -164,7 +197,7 @@ final class material_files {
      * @return string
      */
     public static function relative_file(string $directory, string $filename): string {
-        return storage_anchor::relative_file(self::area(), $directory, $filename);
+        return storage_anchor::relative_file(self::werkbank_area(), $directory, $filename);
     }
 
     /**
@@ -175,7 +208,7 @@ final class material_files {
      * @return array{0: string, 1: string} [Ordnerpfad, Dateiname]
      */
     public static function resolve_file(string $path): array {
-        return storage_anchor::resolve_file(self::area(), $path);
+        return storage_anchor::resolve_file(self::werkbank_area(), $path);
     }
 
     /**
@@ -280,7 +313,139 @@ final class material_files {
      * @throws \moodle_exception invalidmaterialpath / materialfiledisallowedtype
      */
     public static function resolve_writable_file(string $path): array {
-        return storage_anchor::resolve_writable_file(self::area(), $path);
+        return storage_anchor::resolve_writable_file(self::werkbank_area(), $path);
+    }
+
+    /**
+     * Listet eine Ebene des angefragten Orts (Issue #495, Spec #486 §2/§7):
+     * "werkbank" bleibt die bisherige, pointerfreie Auflistung; "bestand"
+     * (Default) folgt dem Kontextpointer (Moodle oder extern, siehe
+     * {@see pointer_reader::list_entries()}). Beide Zweige weisen einen Pfad
+     * am oder unter dem Kontextbereich ab (ortsunabhaengig) und markieren
+     * einen unmittelbaren Kindordner, der selbst der Kontextbereich ist, als
+     * Eintragstyp "kontextbereich" statt "folder".
+     *
+     * @param string $ort {@see ORT_BESTAND}/{@see ORT_WERKBANK}.
+     * @param string $path
+     * @return array{directory: string, entries: array}
+     * @throws \moodle_exception invalidmaterialort, materialpathiskontext, sowie
+     *         wie {@see pointer_reader::list_entries()}.
+     */
+    public static function list_entries_for_ort(string $ort, string $path): array {
+        $location = self::location_for_ort($ort);
+        $kontext = storage_anchor::effective_location(context_files::area());
+        $normalisedpath = self::normalise_path($path);
+        self::guard_not_kontextbereich($location, $kontext, $normalisedpath);
+
+        if ($ort === self::ORT_WERKBANK) {
+            $directory = self::resolve_directory($path);
+            $result = ['directory' => self::relative_directory($directory), 'entries' => self::list_entries($directory)];
+        } else {
+            $result = pointer_reader::list_entries(self::area(), $path);
+        }
+
+        $result['entries'] = array_map(
+            static fn (array $entry): array => self::mark_kontextbereich_entry($entry, $location, $kontext, $normalisedpath),
+            $result['entries']
+        );
+        return $result;
+    }
+
+    /**
+     * Liest eine Datei des angefragten Orts (Issue #495) - siehe
+     * {@see list_entries_for_ort()} fuer die Ort-/Kontextbereich-Logik.
+     *
+     * @param string $ort {@see ORT_BESTAND}/{@see ORT_WERKBANK}.
+     * @param string $path
+     * @return array{path: string, content: string, mimetype: string, size: int,
+     *         contenthash: string, timemodified: int}|null
+     * @throws \moodle_exception invalidmaterialort, materialpathiskontext, sowie
+     *         wie {@see pointer_reader::read_content()}.
+     */
+    public static function read_content_for_ort(string $ort, string $path): ?array {
+        $location = self::location_for_ort($ort);
+        $kontext = storage_anchor::effective_location(context_files::area());
+        $normalisedpath = self::normalise_path($path);
+        self::guard_not_kontextbereich($location, $kontext, $normalisedpath);
+
+        if ($ort === self::ORT_WERKBANK) {
+            [$directory, $filename] = self::resolve_file($path);
+            $content = self::read_content($directory, $filename);
+            return $content === null ? null : ($content + ['path' => self::relative_file($directory, $filename)]);
+        }
+        return pointer_reader::read_content(self::area(), $path);
+    }
+
+    /**
+     * Der Client-Pfad, segmentgeprueft, aber nicht an eine Wurzel gebunden -
+     * fuer Fehlermeldungen und Vergleichsschluessel, bevor feststeht, ob der
+     * Pfad ueberhaupt aufloesbar ist.
+     *
+     * @param string $path
+     * @return string
+     * @throws \moodle_exception invalidmaterialpath
+     */
+    public static function normalise_path(string $path): string {
+        return storage_anchor::normalise_client_path(self::area(), $path);
+    }
+
+    /**
+     * @param string $ort
+     * @return pointer_location
+     * @throws \moodle_exception invalidmaterialort
+     */
+    private static function location_for_ort(string $ort): pointer_location {
+        if (!in_array($ort, [self::ORT_BESTAND, self::ORT_WERKBANK], true)) {
+            throw new \moodle_exception('invalidmaterialort', 'local_kurspilot', '', $ort);
+        }
+        return $ort === self::ORT_WERKBANK
+            ? storage_anchor::effective_location(self::werkbank_area())
+            : storage_anchor::effective_location(self::area());
+    }
+
+    /**
+     * Materialwege lehnen jeden Pfad am oder unter dem Kontextbereich ab
+     * (Issue #495, Spec #486 §2/§7) - ortsunabhaengig, ueber den
+     * Vergleichsschluessel aus {@see pointer_location::comparison_key()}.
+     *
+     * @param pointer_location $location Ort, an dem $subpath aufgeloest wird.
+     * @param pointer_location $kontext Aufgeloester Kontextbereich.
+     * @param string $subpath Bereits segmentgeprueft, siehe {@see normalise_path()}.
+     * @throws \moodle_exception materialpathiskontext
+     */
+    private static function guard_not_kontextbereich(pointer_location $location, pointer_location $kontext, string $subpath): void {
+        if (str_starts_with($location->comparison_key($subpath), $kontext->comparison_key())) {
+            throw new \moodle_exception('materialpathiskontext', 'local_kurspilot');
+        }
+    }
+
+    /**
+     * Markiert einen unmittelbaren Kindordner, der selbst der Kontextbereich
+     * ist, als eigenen Eintragstyp "kontextbereich" statt "folder" (Issue
+     * #495, Spec #486 §2/§7) - sichtbar gelistet, aber ueber die Materialwege
+     * nicht zu betreten (das erzwingt {@see guard_not_kontextbereich()} beim
+     * naechsten Zugriff).
+     *
+     * @param array $entry
+     * @param pointer_location $location Ort, an dem $parentpath liegt.
+     * @param pointer_location $kontext Aufgeloester Kontextbereich.
+     * @param string $parentpath Aufgeloester Elternpfad, segmentgeprueft.
+     * @return array
+     */
+    private static function mark_kontextbereich_entry(
+        array $entry,
+        pointer_location $location,
+        pointer_location $kontext,
+        string $parentpath
+    ): array {
+        if ($entry['type'] !== 'folder') {
+            return $entry;
+        }
+        $childpath = $parentpath === '' ? $entry['name'] : $parentpath . '/' . $entry['name'];
+        if ($location->comparison_key($childpath) === $kontext->comparison_key()) {
+            $entry['type'] = 'kontextbereich';
+        }
+        return $entry;
     }
 
     /**

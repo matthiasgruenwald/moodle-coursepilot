@@ -63,48 +63,48 @@ final class context_pointer {
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
     public static function resolve_target(array $decoded, string $pointerkey): pointer_location {
-        if (self::is_legacy($decoded)) {
-            return self::resolve_legacy($decoded, $pointerkey);
+        $pair = self::is_legacy($decoded) ? self::resolve_pair_legacy($decoded) : self::resolve_pair_v2($decoded);
+
+        // Aufloesungspruefung 7 (Issue #495, Spec #486 §2): der Materialbestand
+        // darf nie im Kontextbereich oder im selben Ordner liegen - egal,
+        // welches der beiden Ziele hier gerade angefragt wird, denn beide
+        // muessen ohnehin zusammen aufgeloest werden (Pruefung 1). Ein
+        // Vergleichsschluessel aus Server+Konto+Pfad (ortsunabhaengig, siehe
+        // {@see pointer_location::comparison_key()}) haelt das fest: liegt der
+        // Materialbestand-Schluessel unter (oder gleich) dem Kontextbereich-
+        // Schluessel, ist der Bestand nicht erreichbar, ohne versehentlich in
+        // den Kontextbereich hineinzulesen.
+        if (str_starts_with($pair['materialbestand']->comparison_key(), $pair['kontextbereich']->comparison_key())) {
+            throw new \moodle_exception('materialbestandimkontext', 'local_kurspilot');
         }
-        return self::resolve_v2($decoded, $pointerkey);
-    }
 
-    /**
-     * Erste Fassung erkennen: "kontextbereich" ist ein flacher String, keine
-     * Struktur (Spec §2: "Ein Pointer der ersten Fassung mit zwei Pfaden
-     * gilt als in Moodle an diesen Pfaden").
-     *
-     * @param array $decoded
-     * @return bool
-     */
-    private static function is_legacy(array $decoded): bool {
-        return is_string($decoded['kontextbereich'] ?? null);
+        $field = self::TARGET_FIELD[$pointerkey] ?? $pointerkey;
+        return $pair[$field];
     }
 
     /**
      * @param array $decoded
-     * @param string $pointerkey
-     * @return pointer_location
+     * @return array{kontextbereich: pointer_location, materialbestand: pointer_location}
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
-    private static function resolve_legacy(array $decoded, string $pointerkey): pointer_location {
+    private static function resolve_pair_legacy(array $decoded): array {
         foreach (self::LEGACY_KEYS as $key) {
             if (!is_string($decoded[$key] ?? null)) {
                 self::incomplete();
             }
         }
-        return pointer_location::moodle('/' . self::validate_path($decoded[$pointerkey]) . '/');
+        return [
+            'kontextbereich' => pointer_location::moodle('/' . self::validate_path($decoded['kontextbereich']) . '/'),
+            'materialbestand' => pointer_location::moodle('/' . self::validate_path($decoded['materialordner']) . '/'),
+        ];
     }
 
     /**
      * @param array $decoded
-     * @param string $pointerkey
-     * @return pointer_location
+     * @return array{kontextbereich: pointer_location, materialbestand: pointer_location}
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
-    private static function resolve_v2(array $decoded, string $pointerkey): pointer_location {
-        $field = self::TARGET_FIELD[$pointerkey] ?? $pointerkey;
-
+    private static function resolve_pair_v2(array $decoded): array {
         // Vollstaendigkeit (Pruefung 1, Spec §2): beide Ziele muessen als
         // gueltige Struktur vorliegen, unabhaengig davon, welches gerade
         // aufgeloest wird - dieselbe Regel wie bei der ersten Fassung.
@@ -114,7 +114,19 @@ final class context_pointer {
             }
         }
 
-        $target = $decoded[$field];
+        $pair = [];
+        foreach (self::TARGET_FIELD as $targetfield) {
+            $pair[$targetfield] = self::resolve_single_v2($decoded[$targetfield]);
+        }
+        return $pair;
+    }
+
+    /**
+     * @param array $target
+     * @return pointer_location
+     * @throws \moodle_exception pointerincomplete/pointerunreachable
+     */
+    private static function resolve_single_v2(array $target): pointer_location {
         $ort = $target['ort'] ?? null;
 
         if ($ort === 'moodle') {
@@ -129,6 +141,18 @@ final class context_pointer {
         }
 
         self::incomplete();
+    }
+
+    /**
+     * Erste Fassung erkennen: "kontextbereich" ist ein flacher String, keine
+     * Struktur (Spec §2: "Ein Pointer der ersten Fassung mit zwei Pfaden
+     * gilt als in Moodle an diesen Pfaden").
+     *
+     * @param array $decoded
+     * @return bool
+     */
+    private static function is_legacy(array $decoded): bool {
+        return is_string($decoded['kontextbereich'] ?? null);
     }
 
     /**

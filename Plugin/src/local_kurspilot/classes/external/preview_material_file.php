@@ -51,28 +51,36 @@ class preview_material_file extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'path' => new external_value(PARAM_PATH, 'Dateipfad relativ zum Materialordner, z.B. "screenshot.png"'),
+            'ort' => new external_value(
+                PARAM_ALPHA,
+                '"bestand" (Standard, der gewachsene Materialbestand der Lehrkraft, nur lesend) '
+                    . 'oder "werkbank" (Kurspilots eigene Zwischenstation)',
+                VALUE_DEFAULT,
+                material_files::ORT_BESTAND
+            ),
         ]);
     }
 
     /**
      * @param string $path
+     * @param string $ort
      * @return array
-     * @throws \moodle_exception invalidmaterialpath, materialfilenotfound,
-     *         materialgdmissing, materialpreviewunsupported
+     * @throws \moodle_exception invalidmaterialpath, invalidmaterialort,
+     *         materialpathiskontext, materialfilenotfound, materialgdmissing,
+     *         materialpreviewunsupported
      */
-    public static function execute(string $path): array {
-        $params = self::validate_parameters(self::execute_parameters(), ['path' => $path]);
+    public static function execute(string $path, string $ort = material_files::ORT_BESTAND): array {
+        $params = self::validate_parameters(self::execute_parameters(), ['path' => $path, 'ort' => $ort]);
 
         $context = material_files::own_context();
         self::validate_context($context);
 
-        [$directory, $filename] = material_files::resolve_file($params['path']);
-        $relativepath = material_files::relative_file($directory, $filename);
-
-        $stored = material_files::read_content($directory, $filename);
+        $stored = material_files::read_content_for_ort($params['ort'], $params['path']);
         if ($stored === null) {
-            throw new \moodle_exception('materialfilenotfound', 'local_kurspilot', '', $relativepath);
+            throw new \moodle_exception('materialfilenotfound', 'local_kurspilot', '', material_files::normalise_path($params['path']));
         }
+        $relativepath = $stored['path'];
+        $filename = basename($relativepath);
 
         // Vor der Nicht-Bild-Absage: fehlt GD ganz, ist die Faehigkeit
         // gesperrt, unabhaengig vom Dateityp (Spec 0018 §3.3).

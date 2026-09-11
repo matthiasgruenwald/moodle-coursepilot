@@ -66,11 +66,19 @@ class crop_material_file extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
+            'ort' => new external_value(
+                PARAM_ALPHA,
+                'Ort der Quelldatei: "bestand" (Standard, der gewachsene Materialbestand der Lehrkraft) '
+                    . 'oder "werkbank" (Kurspilots eigene Zwischenstation) - das Ergebnis liegt immer auf der Werkbank',
+                VALUE_DEFAULT,
+                material_files::ORT_BESTAND
+            ),
         ]);
     }
 
     /**
      * @param string $sourcepath
+     * @param string $ort
      * @param string $targetpath
      * @param float $x0
      * @param float $y0
@@ -78,7 +86,8 @@ class crop_material_file extends external_api {
      * @param float $y1
      * @param string $expectedcontenthash
      * @return array
-     * @throws \moodle_exception invalidmaterialpath, materialfilenotfound,
+     * @throws \moodle_exception invalidmaterialpath, invalidmaterialort,
+     *         materialpathiskontext, materialfilenotfound,
      *         materialgdmissing, materialcropsourceunsupported,
      *         materialcropoutputunsupported, materialcropinvalidcoordinates,
      *         materialfiledisallowedtype, materialfilechanged, materialquotaexceeded
@@ -90,10 +99,12 @@ class crop_material_file extends external_api {
         float $y0,
         float $x1,
         float $y1,
-        string $expectedcontenthash = ''
+        string $expectedcontenthash = '',
+        string $ort = material_files::ORT_BESTAND
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'sourcepath' => $sourcepath,
+            'ort' => $ort,
             'targetpath' => $targetpath,
             'x0' => $x0,
             'y0' => $y0,
@@ -110,13 +121,17 @@ class crop_material_file extends external_api {
             throw new \moodle_exception('materialgdmissing', 'local_kurspilot');
         }
 
-        [$sourcedir, $sourcefilename] = material_files::resolve_file($params['sourcepath']);
-        $sourcerelative = material_files::relative_file($sourcedir, $sourcefilename);
-
-        $sourcestored = material_files::read_content($sourcedir, $sourcefilename);
+        $sourcestored = material_files::read_content_for_ort($params['ort'], $params['sourcepath']);
         if ($sourcestored === null) {
-            throw new \moodle_exception('materialfilenotfound', 'local_kurspilot', '', $sourcerelative);
+            throw new \moodle_exception(
+                'materialfilenotfound',
+                'local_kurspilot',
+                '',
+                material_files::normalise_path($params['sourcepath'])
+            );
         }
+        $sourcerelative = $sourcestored['path'];
+        $sourcefilename = basename($sourcerelative);
 
         $sourceextension = strtolower(pathinfo($sourcefilename, PATHINFO_EXTENSION));
         if (!in_array($sourceextension, gd_support::RASTER_IMAGE_EXTENSIONS, true)) {
@@ -181,7 +196,11 @@ class crop_material_file extends external_api {
 
         return [
             'path' => $targetrelative,
-            'source' => $sourcerelative,
+            // Ort + Pruefmerkmal (Groesse, Aenderungszeit) statt eines
+            // reinen Pfads (Issue #495): der Materialbestand traegt keinen
+            // contenthash, dieser Fingerabdruck ist deshalb das einzige, was
+            // die KI ueber "was genau wurde zugeschnitten" mitnehmen kann.
+            'source' => self::describe_source($params['ort'], $sourcerelative, $sourcestored),
             'created' => $existing === null,
             'width' => $width,
             'height' => $height,
@@ -196,13 +215,38 @@ class crop_material_file extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'path' => new external_value(PARAM_TEXT, 'Aufgeloester Zielpfad des Ausschnitts, relativ zum Materialordner'),
-            'source' => new external_value(PARAM_TEXT, 'Materialordner-Pfad der Quelldatei - Klartext, waehrend das source-Feld der Zieldatei denselben Pfad serialisiert traegt'),
+            'source' => new external_value(
+                PARAM_TEXT,
+                'Ort und Pruefmerkmal der Quelldatei: "<ort>:<pfad> (<Groesse> Byte, geändert <Zeitpunkt>)" - '
+                    . 'der Materialbestand traegt keinen contenthash, dieses Pruefmerkmal ersetzt ihn hier'
+            ),
             'created' => new external_value(PARAM_BOOL, 'true, wenn der Ausschnitt neu angelegt wurde'),
             'width' => new external_value(PARAM_INT, 'Breite des Ausschnitts in Pixeln, aus dem Original berechnet'),
             'height' => new external_value(PARAM_INT, 'Hoehe des Ausschnitts in Pixeln, aus dem Original berechnet'),
             'size' => new external_value(PARAM_INT, 'Groesse des Ausschnitts in Byte'),
             'message' => new external_value(PARAM_RAW, 'Aenderungsmeldung in Lehrkraft-Deutsch, inkl. Quotenwarnung falls zutreffend'),
         ]);
+    }
+
+    /**
+     * "Ort und Pruefmerkmal (Groesse und Aenderungszeit)" der Quelldatei
+     * (Issue #495) - fuer eine externe Bestandsdatei gibt es keinen
+     * contenthash zum Vergleichen (Spec #486 §7: "contenthash bleibt leer"),
+     * dieser Fingerabdruck ist der Ersatz.
+     *
+     * @param string $ort
+     * @param string $path
+     * @param array{size: int, timemodified: int} $stored
+     * @return string
+     */
+    private static function describe_source(string $ort, string $path, array $stored): string {
+        return sprintf(
+            '%s:%s (%d Byte, geändert %s)',
+            $ort,
+            $path,
+            $stored['size'],
+            gmdate('Y-m-d\TH:i:s\Z', $stored['timemodified'])
+        );
     }
 
     /**
