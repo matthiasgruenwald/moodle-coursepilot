@@ -17,6 +17,9 @@
 namespace local_kurspilot\external;
 
 use core_external\external_api;
+use local_kurspilot\ausstand_notice;
+use local_kurspilot\tests\webdav\fake_webdav_transport;
+use local_kurspilot\webdav\webdav_instance;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 defined('MOODLE_INTERNAL') || die();
@@ -66,5 +69,52 @@ final class list_skills_test extends \advanced_testcase {
 
         $this->expectException(\required_capability_exception::class);
         list_skills::execute();
+    }
+
+    /**
+     * Ohne offene Ausstaende liefert das Feld ein leeres Array, nie null
+     * (Issue #492, ADR 0023 Punkt 4).
+     */
+    public function test_ausstaende_field_is_empty_by_default(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->setUser($user);
+
+        $result = list_skills::execute();
+        $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
+
+        $this->assertSame([], $result['ausstaende']);
+    }
+
+    /**
+     * Offene Ausstaende sind je Zieldatei gebuendelt, die aeltesten zuerst
+     * (Issue #492, ADR 0023 Punkt 4) - und der Handshake sieht dabei keinen
+     * Netzzugriff: der WebDAV-Fake protokolliert keine Anfrage.
+     */
+    public function test_ausstaende_bundled_by_path_oldest_first_without_network_access(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->setUser($user);
+
+        $fake = new fake_webdav_transport();
+        webdav_instance::use_test_transport($fake);
+        try {
+            $aelter = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll');
+            $neuer = ausstand_notice::record('plan.md', 'überschreiben', 'nicht erreichbar');
+            ausstand_notice::record('journal.md', 'anhängen', 'Anmeldung abgelehnt');
+
+            $result = list_skills::execute();
+            $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
+
+            $this->assertSame([], $fake->requests(), 'kurspilot_list_skills darf den externen Speicher nicht erreichen.');
+            $this->assertCount(2, $result['ausstaende']);
+            $this->assertSame('plan.md', $result['ausstaende'][0]['pfad']);
+            $this->assertSame([$aelter, $neuer], array_column($result['ausstaende'][0]['eintraege'], 'kennung'));
+            $this->assertSame('journal.md', $result['ausstaende'][1]['pfad']);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
     }
 }

@@ -22,6 +22,7 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_kurspilot\ausstand_notice;
 use local_kurspilot\skill_corpus;
 
 defined('MOODLE_INTERNAL') || die();
@@ -31,6 +32,10 @@ defined('MOODLE_INTERNAL') || die();
  * Art (adapter/referenz) und Umfang je Eintrag - kein Inhalt, das liefert
  * {@see get_skill}. Nicht kursgebunden: geprüft wird lediglich
  * 'local/kurspilot:use' im Systemkontext, keine Kurs-Zustimmung.
+ *
+ * Meldet zusaetzlich die offenen Eintraege der Ausstandsnotiz (`ausstaende`,
+ * Issue #492, ADR 0023 Punkt 4: "Der Server meldet, nicht die KI") -
+ * gebuendelt je Zieldatei, aeltester Eintrag zuerst, ohne Netzzugriff.
  *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
@@ -60,7 +65,7 @@ final class list_skills extends external_api {
             'umfang' => $entry['umfang'],
         ], skill_corpus::list());
 
-        return ['skills' => $skills];
+        return ['skills' => $skills, 'ausstaende' => ausstand_notice::list_grouped()];
     }
 
     /**
@@ -75,6 +80,22 @@ final class list_skills extends external_api {
                     'art' => new external_value(PARAM_TEXT, '"adapter" oder "referenz"'),
                     'umfang' => new external_value(PARAM_INT, 'Umfang des Inhalts in Zeichen'),
                 ])
+            ),
+            'ausstaende' => new external_multiple_structure(
+                new external_single_structure([
+                    'pfad' => new external_value(PARAM_TEXT, 'Relativer Zieldateipfad im Kontextbereich'),
+                    'eintraege' => new external_multiple_structure(
+                        new external_single_structure([
+                            'kennung' => new external_value(PARAM_ALPHANUMEXT, 'Kennung, fuer ausstand=<Kennung> oder kurspilot_dismiss_ausstand'),
+                            'zeitpunkt' => new external_value(PARAM_INT, 'Unix-Zeitstempel des gescheiterten Vorgangs'),
+                            'vorgang' => new external_value(PARAM_TEXT, '"anlegen", "überschreiben" oder "anhängen"'),
+                            'fehlerklasse' => new external_value(PARAM_TEXT, 'Benannte Fehlerklasse, nie ein Freitext'),
+                        ])
+                    ),
+                ]),
+                'Offene Ausstaende, gebuendelt je Zieldatei, die aeltesten zuerst (ADR 0023)',
+                VALUE_DEFAULT,
+                []
             ),
         ]);
     }

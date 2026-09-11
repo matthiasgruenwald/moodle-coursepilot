@@ -17,8 +17,9 @@ Grundlage: Spec 0016 §7/§8 (`docs/specs/0016-kontextbereich-schreibend.md`).
 |---|---|---|
 | `kurspilot_list_context_files` | Ordnerinhalt auflisten | je Eintrag `contenthash`, `timemodified`, `locked` |
 | `kurspilot_read_context_file` | Datei lesen | `content`, `contenthash`, `timemodified` |
-| `kurspilot_write_context_file` | Anlegen/vollstaendig ueberschreiben, optional `expected_contenthash` | Meldung "neu angelegt" / "ueberschrieben"; bei Konflikt Fehler `contextfilechanged` |
-| `kurspilot_append_context_file` | Anhaengen in einem Serveraufruf, kein `expected_contenthash` (kein vorheriges Lesen noetig) | Meldung "angehaengt" / "neu angelegt", ggf. Rotationshinweis |
+| `kurspilot_write_context_file` | Anlegen/vollstaendig ueberschreiben, optional `expected_contenthash`, optional `ausstand` (Kennung) | Meldung "neu angelegt" / "ueberschrieben"; bei Konflikt Fehler `contextfilechanged` |
+| `kurspilot_append_context_file` | Anhaengen in einem Serveraufruf, kein `expected_contenthash` (kein vorheriges Lesen noetig), optional `ausstand` (Kennung) | Meldung "angehaengt" / "neu angelegt", ggf. Rotationshinweis |
+| `kurspilot_dismiss_ausstand` | Einen Eintrag der Ausstandsnotiz ausdruecklich verwerfen (`kennung`) | Bestaetigung |
 
 Nur `.md`-Dateien; Pfadsegmente `[A-Za-z0-9_-]`, kein `.`/`..`.
 
@@ -156,6 +157,26 @@ den Inhalt — die Klarnamen-Grenze selbst ist reine Skill-Regel:
 - Ist eine Datei nicht markiert und der Inhalt braucht Personenbezug, entweder
   die Markierung ergaenzen (mit Lehrkraftfreigabe, da das den #344-Schalter
   aktiviert) oder anonymisiert/pseudonymisiert schreiben (Kuerzel statt Name).
+
+## Ausfall am externen Speicher: Ausstand und Nachtragen (ADR 0023, Issue #492)
+
+Scheitert ein gueltiger `kurspilot_write_context_file`/`kurspilot_append_context_file`-
+Aufruf am externen Speicher, der Verbindung oder dem Ort (nicht bei einem
+Konflikt), legt das Plugin selbst einen Eintrag in der **Ausstandsnotiz** an
+und meldet eine Kennung — der Inhalt liegt nirgendwo, es gibt keinen
+Rueckfall. Die Antwort nennt Pfad und Vorgang, die Ursache und die Kennung.
+
+- Den Inhalt im Gespraech behalten, nicht verwerfen.
+- Sobald die Verbindung wieder steht, denselben Aufruf erneut senden, diesmal
+  mit `ausstand=<Kennung>` — gelingt er, verschwindet der Eintrag im selben
+  Aufruf (**Nachtragen**).
+- `kurspilot_list_skills` meldet zu Sitzungsbeginn offene Eintraege im Feld
+  `ausstaende`, gebuendelt je Zieldatei. Soll ein Eintrag nicht mehr
+  nachgetragen werden, vorher eine Rekonstruktion anbieten (z.B. aus dem
+  Aenderungsverlauf einer Aktivitaet), dann erst `kurspilot_dismiss_ausstand`
+  aufrufen — nie ohne ausdrueckliches Wort der Lehrkraft.
+- "Ausstand" ist ein interner Bezeichner; zur Lehrkraft heisst es "noch nicht
+  gespeichert".
 
 ## Aufraeumfrage nach Aufbau (Spec 0018 §8.3, Issue #439)
 

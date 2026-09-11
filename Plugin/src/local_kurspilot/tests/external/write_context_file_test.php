@@ -437,9 +437,213 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ein voller externer Speicher (507) ergibt `Speicher voll`.
+     * Ein voller externer Speicher (507) ist ein Ausfall im Sinne von ADR
+     * 0023 (Issue #492): die Antwort nennt Pfad+Vorgang, die Ursache in
+     * Lehrkraftsprache, "noch nicht gespeichert" mit Kennung, eine Anweisung
+     * an die KI und Verbindung (Instanzname + Host) - nie einen HTTP-Code
+     * oder Antwortrumpf. Zusaetzlich entsteht ein Eintrag in der
+     * Ausstandsnotiz.
      */
-    public function test_external_storage_full_reports_speicher_voll(): void {
+    public function test_external_storage_full_records_ausstand_with_five_part_message(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->fill_storage();
+
+        $message = '';
+        try {
+            $this->write('plan.md', '# Plan');
+            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $message = $e->getMessage();
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertCount(1, $ausstaende);
+        $this->assertSame('plan.md', $ausstaende[0]['pfad']);
+        $this->assertCount(1, $ausstaende[0]['eintraege']);
+        $this->assertSame('anlegen', $ausstaende[0]['eintraege'][0]['vorgang']);
+        $this->assertSame(
+            \local_kurspilot\webdav\webdav_error::STORAGE_FULL,
+            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+        );
+
+        // Sprachneutral: die variablen Teile muessen auftauchen, unabhaengig
+        // davon, welches Sprachpaket die PHPUnit-Instanz aufloest (Englisch,
+        // siehe test_german_messages_carry_the_required_wording()).
+        $kennung = $ausstaende[0]['eintraege'][0]['kennung'];
+        $this->assertStringContainsString('plan.md', $message);
+        $this->assertStringContainsString('anlegen', $message);
+        $this->assertStringContainsString($kennung, $message);
+        $this->assertStringContainsString('Meine Cloud', $message);
+        $this->assertStringContainsString($this->fixtureserver, $message);
+        // Geheimnis-Test (Spec #486 Testing Decisions): kein HTTP-Code, kein
+        // Antwortrumpf, kein Passwort.
+        $this->assertStringNotContainsString('507', $message);
+        $this->assertStringNotContainsString($fake->secret(), $message);
+    }
+
+    /**
+     * Ueberschreiben einer bestehenden externen Datei traegt den Vorgang
+     * "überschreiben" in den Ausstand ein, nicht "anlegen".
+     */
+    public function test_external_overwrite_failure_records_ueberschreiben_operation(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/plan.md', 'alt');
+
+        // Nur PUT scheitert - MKCOL (Ordner existiert bereits) und PROPFIND
+        // (Existenzpruefung, entscheidet "anlegen" vs. "ueberschreiben")
+        // laufen normal durch. fake_webdav_transport::fill_storage() liesse
+        // sich hier nicht nutzen: es blockt MKCOL VOR der Existenzpruefung
+        // pauschal, bevor pointer_writer ueberhaupt weiss, ob die Datei
+        // schon da ist (siehe test_external_storage_full_records_ausstand_with_five_part_message
+        // fuer den "anlegen"-Fall, der genau das ausnutzt).
+        $onlyputfails = new class($fake) implements \local_kurspilot\webdav\webdav_transport {
+            public function __construct(private readonly fake_webdav_transport $inner) {
+            }
+
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_kurspilot\webdav\webdav_response {
+                if ($method === 'PUT') {
+                    return new \local_kurspilot\webdav\webdav_response(507, [], '');
+                }
+                return $this->inner->request($method, $url, $headers, $body);
+            }
+        };
+        webdav_instance::use_test_transport($onlyputfails);
+
+        try {
+            $this->write('plan.md', '# Neuer Plan');
+            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertSame('überschreiben', $ausstaende[0]['eintraege'][0]['vorgang']);
+    }
+
+    /**
+     * Eine geloeschte WebDAV-Instanz (ADR 0023: "eine geloeschte Instanz")
+     * legt ebenfalls einen Ausstand an - nicht nur ein {@see \local_kurspilot\webdav\webdav_error}.
+     */
+    public function test_deleted_webdav_instance_records_ausstand(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $pointerlocation = context_files::resolve_pointer_location();
+        $DB->delete_records('repository_instances', ['id' => $pointerlocation->instanceid]);
+
+        try {
+            $this->write('plan.md', '# Plan');
+            $this->fail('Geloeschte Instanz haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertCount(1, $ausstaende);
+        $this->assertSame('webdavinstancemissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+    }
+
+    /**
+     * Eine entzogene WebDAV-Freischaltung (ADR 0023: "eine entzogene
+     * Freischaltung") legt ebenfalls einen Ausstand an.
+     */
+    public function test_revoked_webdav_freischaltung_records_ausstand(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $DB->delete_records('role_capabilities', ['capability' => 'repository/webdav:view']);
+        accesslib_clear_all_caches_for_unit_testing();
+
+        try {
+            $this->write('plan.md', '# Plan');
+            $this->fail('Entzogene Freischaltung haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertSame('webdavnotenabled', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+    }
+
+    /**
+     * Ein geaendertes Pruefmerkmal (ADR 0023: "ein geaendertes
+     * Pruefmerkmal") legt ebenfalls einen Ausstand an.
+     */
+    public function test_changed_fingerprint_records_ausstand(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $DB->set_field(
+            'repository_instance_config',
+            'value',
+            'anderer-server.test',
+            ['name' => 'webdav_server']
+        );
+
+        try {
+            $this->write('plan.md', '# Plan');
+            $this->fail('Geaendertes Pruefmerkmal haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertSame('webdavfingerprintchanged', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+    }
+
+    /**
+     * Konflikt (412) legt ausdruecklich keinen Ausstand an (ADR 0023 Punkt
+     * 2: "Ausgenommen sind Aufruffehler und Konflikt").
+     */
+    public function test_external_conflict_records_no_ausstand_entry(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/plan.md', 'alt');
+
+        $decorator = new \local_kurspilot\tests\webdav\stale_read_transport($fake, '/Kurspilot/Kontext/plan.md', $fake);
+        webdav_instance::use_test_transport($decorator);
+
+        try {
+            $this->write('plan.md', '# Neuer Plan');
+            $this->fail('Konflikt haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+        }
+
+        $this->assertSame([], \local_kurspilot\ausstand_notice::list_grouped());
+    }
+
+    /**
+     * Ein Aufruffehler (hier: zu grosser Inhalt) legt keinen Ausstand an
+     * (ADR 0023 Punkt 2) - der Inhalt liegt noch im Gespraech.
+     */
+    public function test_call_error_records_no_ausstand_entry(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        $this->expectException(\moodle_exception::class);
+        try {
+            $this->write('plan.md', str_repeat('x', 1024 * 1024 + 1));
+        } finally {
+            $this->assertSame([], \local_kurspilot\ausstand_notice::list_grouped());
+        }
+    }
+
+    /**
+     * `ausstand=<Kennung>` an einem erfolgreichen Schreibvorgang hakt den
+     * Eintrag im selben Aufruf ab (ADR 0023 Punkt 3: Nachtragen).
+     */
+    public function test_ausstand_parameter_dismisses_entry_on_successful_retry(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->set_up_external_context();
         $fake->seed_folder('/Kurspilot/Kontext');
@@ -449,11 +653,20 @@ final class write_context_file_test extends \advanced_testcase {
             $this->write('plan.md', '# Plan');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertStringContainsString(
-                \local_kurspilot\webdav\webdav_error::STORAGE_FULL,
-                $e->getMessage()
-            );
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
+        $kennung = \local_kurspilot\ausstand_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+
+        // Neuer Fake statt des vollen - "der Speicher antwortet wieder".
+        $fake2 = new \local_kurspilot\tests\webdav\fake_webdav_transport();
+        $fake2->seed_folder('/Kurspilot/Kontext');
+        webdav_instance::use_test_transport($fake2);
+
+        $result = write_context_file::execute('plan.md', '# Plan', '', $kennung);
+        $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
+
+        $this->assertTrue($result['created']);
+        $this->assertSame([], \local_kurspilot\ausstand_notice::list_grouped());
     }
 
     /**
@@ -523,6 +736,19 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertStringContainsString('{$a->after}', $string['contextfileoverwritten']);
         $this->assertStringContainsString('neu lesen', $string['contextfilechanged']);
         $this->assertStringContainsString('MB', $string['contextquotaexceeded']);
+
+        // Fuenfteilige Ausfallantwort (Issue #492, ADR 0023): Pfad+Vorgang,
+        // Ursache, "noch nicht gespeichert" mit Kennung, Anweisung an die
+        // KI, Instanzname+Host - echte Umlaute, kein ae/oe/ue-Ersatz.
+        $this->assertStringContainsString('{$a->path}', $string['ausstandwritefailed']);
+        $this->assertStringContainsString('{$a->operation}', $string['ausstandwritefailed']);
+        $this->assertStringContainsString('{$a->reason}', $string['ausstandwritefailed']);
+        $this->assertStringContainsString('Noch nicht gespeichert', $string['ausstandwritefailed']);
+        $this->assertStringContainsString('Kennung {$a->kennung}', $string['ausstandwritefailed']);
+        $this->assertStringContainsString('ausstand="{$a->kennung}"', $string['ausstandwritefailed']);
+        $this->assertStringContainsString('{$a->target}', $string['ausstandwritefailed']);
+        $this->assertStringContainsString('voll', $string['ausstandnotewritefailed']);
+        $this->assertStringContainsString('Speicherplatz', $string['ausstandnotequotaexceeded']);
     }
 
     /**
@@ -545,7 +771,7 @@ final class write_context_file_test extends \advanced_testcase {
      */
     public function test_execute_parameters_expose_no_area_selector(): void {
         $this->assertSame(
-            ['path', 'content', 'expected_contenthash'],
+            ['path', 'content', 'expected_contenthash', 'ausstand'],
             array_keys(write_context_file::execute_parameters()->keys)
         );
     }

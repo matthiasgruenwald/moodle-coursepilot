@@ -422,6 +422,21 @@ final class storage_anchor_test extends \advanced_testcase {
         $this->assertNull($this->find_entry($entries, storage_anchor::POINTER_FILENAME));
     }
 
+    /**
+     * Die Ausstandsnotiz (Issue #492, ADR 0023) liegt wie der Kontextpointer
+     * im Anker, aber ausserhalb der Auflistung - dieselbe Begruendung
+     * (keine Arbeitsdatei).
+     */
+    public function test_list_entries_excludes_the_ausstand_notice_file(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        \local_kurspilot\ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll');
+
+        $entries = storage_anchor::list_entries(context_files::resolve_directory(''));
+
+        $this->assertNull($this->find_entry($entries, storage_anchor::AUSSTAND_FILENAME));
+    }
+
     public function test_read_content_returns_null_for_missing_file(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());

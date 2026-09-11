@@ -275,7 +275,7 @@ final class append_context_file_test extends \advanced_testcase {
      */
     public function test_execute_parameters_need_no_prior_read(): void {
         $this->assertSame(
-            ['path', 'content'],
+            ['path', 'content', 'ausstand'],
             array_keys(append_context_file::execute_parameters()->keys)
         );
     }
@@ -382,9 +382,11 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ein voller externer Speicher (507) ergibt `Speicher voll`.
+     * Ein voller externer Speicher (507) ist ein Ausfall (Issue #492, ADR
+     * 0023): der Vorgang "anhängen" wird vermerkt, nicht "anlegen"/
+     * "überschreiben", und die Antwort ist die fuenfteilige Ausfallmeldung.
      */
-    public function test_external_append_storage_full_reports_speicher_voll(): void {
+    public function test_external_append_storage_full_records_ausstand(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->set_up_external_context();
         $fake->seed_folder('/Kurspilot/Kontext');
@@ -394,11 +396,48 @@ final class append_context_file_test extends \advanced_testcase {
             $this->append('journal.md', 'x');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertStringContainsString(
-                \local_kurspilot\webdav\webdav_error::STORAGE_FULL,
-                $e->getMessage()
-            );
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertStringContainsString('journal.md', $e->getMessage());
+            $this->assertStringContainsString('Kennung', $e->getMessage());
         }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertCount(1, $ausstaende);
+        $this->assertSame('journal.md', $ausstaende[0]['pfad']);
+        $this->assertSame('anhängen', $ausstaende[0]['eintraege'][0]['vorgang']);
+        $this->assertSame(
+            \local_kurspilot\webdav\webdav_error::STORAGE_FULL,
+            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+        );
+    }
+
+    /**
+     * `ausstand=<Kennung>` hakt den Eintrag beim erfolgreichen Nachtragen
+     * per Anhaengen ab (ADR 0023 Punkt 3).
+     */
+    public function test_ausstand_parameter_dismisses_entry_on_successful_append(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->fill_storage();
+
+        try {
+            $this->append('journal.md', 'x');
+            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+        $kennung = \local_kurspilot\ausstand_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+
+        $fake2 = new \local_kurspilot\tests\webdav\fake_webdav_transport();
+        $fake2->seed_folder('/Kurspilot/Kontext');
+        webdav_instance::use_test_transport($fake2);
+
+        $result = append_context_file::execute('journal.md', 'x', $kennung);
+        $result = external_api::clean_returnvalue(append_context_file::execute_returns(), $result);
+
+        $this->assertTrue($result['created']);
+        $this->assertSame([], \local_kurspilot\ausstand_notice::list_grouped());
     }
 
     /**

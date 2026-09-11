@@ -903,7 +903,11 @@ final class tool_registry {
                 . 'ueberschreibt sie vollstaendig, z.B. "plan.md". Der uebergebene Inhalt ersetzt die Datei ganz - '
                 . 'zum Fortschreiben eines Journals nicht geeignet. "expected_contenthash" aus dem letzten Lesen '
                 . 'mitgeben, damit eine zwischenzeitliche Handaenderung nicht ueberschrieben wird. Die Antwort sagt, '
-                . 'ob die Datei neu angelegt oder ueberschrieben wurde.',
+                . 'ob die Datei neu angelegt oder ueberschrieben wurde. Scheitert ein gueltiger Schreibversuch am '
+                . 'externen Speicher, der Verbindung oder dem Ort, wird nichts abgelegt - die Antwort nennt eine '
+                . 'Kennung und die Anweisung, den Inhalt im Gespraech zu behalten und mit "ausstand" erneut zu '
+                . 'schreiben, sobald die Verbindung wieder steht. "ausstand" mit genau dieser Kennung mitgeben, um '
+                . 'einen offenen Ausstand (aus kurspilot_list_skills) im selben Aufruf abzuhaken.',
             'schema' => [
                 'properties' => [
                     'path' => ['type' => 'string', 'description' => 'Dateipfad relativ zur Wurzel, nur .md, z.B. "plan.md"'],
@@ -911,6 +915,11 @@ final class tool_registry {
                     'expected_contenthash' => [
                         'type' => 'string',
                         'description' => 'Optional: contenthash aus dem letzten Lesen - passt er nicht, bricht der Vorgang ab',
+                    ],
+                    'ausstand' => [
+                        'type' => 'string',
+                        'description' => 'Optional: Kennung eines offenen Ausstands (aus kurspilot_list_skills) - '
+                            . 'gelingt das Schreiben, verschwindet der Eintrag im selben Aufruf',
                     ],
                 ],
                 'required' => ['path', 'content'],
@@ -928,11 +937,20 @@ final class tool_registry {
                 . 'dafuer die Datei nicht vorher lesen, das Anhaengen passiert in einem Vorgang auf dem Server. '
                 . 'Fehlt die Zieldatei, wird sie angelegt, und die Antwort sagt das ausdruecklich, damit ein '
                 . 'Tippfehler im Pfad auffaellt. Wird die Datei groesser als 1 MB, empfiehlt die Antwort eine '
-                . 'Rotation (neues Journalarchiv anlegen).',
+                . 'Rotation (neues Journalarchiv anlegen). Scheitert ein gueltiger Anhaengversuch am externen '
+                . 'Speicher, der Verbindung oder dem Ort, wird nichts abgelegt - die Antwort nennt eine Kennung und '
+                . 'die Anweisung, den Inhalt im Gespraech zu behalten und mit "ausstand" erneut anzuhaengen, sobald '
+                . 'die Verbindung wieder steht. "ausstand" mit genau dieser Kennung mitgeben, um einen offenen '
+                . 'Ausstand (aus kurspilot_list_skills) im selben Aufruf abzuhaken.',
             'schema' => [
                 'properties' => [
                     'path' => ['type' => 'string', 'description' => 'Dateipfad relativ zur Wurzel, nur .md, z.B. "journal.md"'],
                     'content' => ['type' => 'string', 'description' => 'Anzuhaengender Inhalt, hoechstens 1 MB'],
+                    'ausstand' => [
+                        'type' => 'string',
+                        'description' => 'Optional: Kennung eines offenen Ausstands (aus kurspilot_list_skills) - '
+                            . 'gelingt das Schreiben, verschwindet der Eintrag im selben Aufruf',
+                    ],
                 ],
                 'required' => ['path', 'content'],
             ],
@@ -1150,6 +1168,25 @@ final class tool_registry {
                 'required' => ['name'],
             ],
             'capability' => 'local/kurspilot:use',
+        ],
+        'kurspilot_dismiss_ausstand' => [
+            'function' => 'local_kurspilot_dismiss_ausstand',
+            'classname' => 'local_kurspilot\external\dismiss_ausstand',
+            'wsdescription' => 'Explicitly discards one entry of the calling teacher\'s Ausstandsnotiz (pending-'
+                . 'write journal at the context anchor, own working area only) by Kennung.',
+            'description' => 'Verwirft einen Eintrag der Ausstandsnotiz ausdruecklich (Kennung aus '
+                . 'kurspilot_list_skills, Feld "ausstaende") - fuer Inhalt, der nicht mehr nachgetragen werden soll. '
+                . 'Vor dem Verwerfen anbieten, den Inhalt zu rekonstruieren, wo das moeglich ist (z.B. aus dem '
+                . 'Aenderungsverlauf einer Aktivitaet). Ein Nachtragen mit "ausstand=<Kennung>" an '
+                . 'write_context_file/append_context_file hakt einen Eintrag stattdessen automatisch ab.',
+            'schema' => [
+                'properties' => [
+                    'kennung' => ['type' => 'string', 'description' => 'Kennung des Ausstands, aus kurspilot_list_skills'],
+                ],
+                'required' => ['kennung'],
+            ],
+            'capability' => null,
+            'write' => true,
         ],
     ];
 

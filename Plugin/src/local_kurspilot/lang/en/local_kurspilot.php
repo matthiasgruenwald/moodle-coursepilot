@@ -86,10 +86,18 @@ $string['webdavnotenabled'] = 'Your school has not yet enabled external storage 
 $string['webdavauthunsupported'] = 'This WebDAV connection no longer uses https with basic authentication — Kurspilot does not support that. Please fix it on the location page ({$a}).';
 $string['webdavfingerprintchanged'] = 'The server, base path, or account of this WebDAV connection has changed. Please choose again on the location page ({$a}).';
 $string['webdavexternalerror'] = 'The external storage could not be read ({$a->errorclass}). Please try again later, or check the location page ({$a->page}).';
-$string['webdavexternalwriteerror'] = 'The external storage could not be written to ({$a->errorclass}). Please try again later, or check the location page ({$a->page}).';
 $string['webdavstep1instruction'] = 'The administration must enable the "WebDAV" repository type under Site administration ▸ Plugins ▸ Repositories.';
 $string['webdavstep2instruction'] = 'The administration must turn on "Allow user instances" for the "WebDAV" repository type.';
 $string['webdavstep3instruction'] = 'The administration must grant the teacher the "repository/webdav:view" capability in their own user context (recommended via a dedicated system role).';
+
+// Pending-write note "Ausstandsnotiz" (issue #492, ADR 0023, spec #486 §8/§10):
+// never an absolute server path, username, password, HTTP code, or response
+// body (secrecy test) — the raw code goes into the access log instead.
+$string['ausstandwritefailed'] = '{$a->path} ({$a->operation}): {$a->reason}. Not saved yet, noted (Kennung {$a->kennung}). Please keep the content in the conversation and repeat the same call with ausstand="{$a->kennung}" once the connection is back. Connection: {$a->target}.';
+$string['ausstandnotewritefailed'] = '{$a->path} ({$a->operation}) was not written, and the pending-write note could not be created either — your private files are full. Please free up space and try again, or the content will be lost.';
+$string['ausstandnotequotaexceeded'] = 'The pending-write note could not be written — there is not enough space left in your private files.';
+$string['ausstandunknown'] = 'No pending entry with Kennung {$a}.';
+$string['ausstanddismissed'] = 'Discarded pending entry {$a}.';
 
 // Writing to the context area (#408, spec 0016 §4.1).
 $string['contextfilenotmarkdown'] = 'Only .md files can be written to the context area: {$a}';

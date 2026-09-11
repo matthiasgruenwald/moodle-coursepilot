@@ -59,21 +59,30 @@ class append_context_file extends external_api {
         return new external_function_parameters([
             'path' => new external_value(PARAM_PATH, 'Dateipfad relativ zum Kontextbereich, z.B. "journal.md"'),
             'content' => new external_value(PARAM_RAW, 'Anzuhaengender Inhalt'),
+            'ausstand' => new external_value(
+                PARAM_ALPHANUMEXT,
+                'Optional: Kennung eines offenen Ausstands (aus kurspilot_list_skills) - gelingt das Schreiben, '
+                    . 'verschwindet der Eintrag im selben Aufruf',
+                VALUE_DEFAULT,
+                ''
+            ),
         ]);
     }
 
     /**
      * @param string $path
      * @param string $content
+     * @param string $ausstand
      * @return array
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
      *         contextfiletoolarge, contextfilelocked, contextquotaexceeded
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
-    public static function execute(string $path, string $content): array {
+    public static function execute(string $path, string $content, string $ausstand = ''): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'path' => $path,
             'content' => $content,
+            'ausstand' => $ausstand,
         ]);
 
         $context = context_files::own_context();
@@ -95,7 +104,7 @@ class append_context_file extends external_api {
         // fuer die Begruendung der getrennten Zweige.
         $location = context_files::resolve_pointer_location();
         if ($location !== null && $location->kind === pointer_location::EXTERN) {
-            return self::execute_external($params['path'], $content);
+            return self::execute_external($params['path'], $content, $params['ausstand']);
         }
 
         context_files::require_manage_own_files();
@@ -119,6 +128,7 @@ class append_context_file extends external_api {
         context_files::require_quota($addedsize);
 
         $newsize = context_files::append($directory, $filename, $content);
+        self::dismiss_ausstand($params['ausstand']);
 
         $relativepath = context_files::relative_file($directory, $filename);
         $message = $existing
@@ -156,15 +166,17 @@ class append_context_file extends external_api {
      *
      * @param string $path
      * @param string $content
+     * @param string $ausstand Optional: siehe {@see execute()}.
      * @return array
      */
-    private static function execute_external(string $path, string $content): array {
+    private static function execute_external(string $path, string $content, string $ausstand): array {
         $existing = context_files::read_content_pointer_aware($path);
         if ($existing && !personal_data::allowed() && personal_data::is_marked($existing['content'])) {
             throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $path);
         }
 
         $result = context_files::append_pointer_aware($path, $content);
+        self::dismiss_ausstand($ausstand);
 
         $message = $result['created']
             ? get_string('contextfilecreated', 'local_kurspilot', $result['path'])
@@ -180,6 +192,19 @@ class append_context_file extends external_api {
             'size' => $result['size'],
             'message' => $message,
         ];
+    }
+
+    /**
+     * Hakt einen offenen Ausstand im selben Aufruf ab, in dem er gelingt
+     * (Issue #492, ADR 0023 Punkt 3) - fuer beide Orte identisch, deshalb
+     * hier statt in execute()/execute_external() dupliziert.
+     *
+     * @param string $ausstand Kennung oder leer (kein Nachtragen).
+     */
+    private static function dismiss_ausstand(string $ausstand): void {
+        if ($ausstand !== '') {
+            \local_kurspilot\ausstand_notice::dismiss($ausstand);
+        }
     }
 
     /**

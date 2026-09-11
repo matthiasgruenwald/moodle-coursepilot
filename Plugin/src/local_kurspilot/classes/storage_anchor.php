@@ -74,6 +74,15 @@ final class storage_anchor {
     public const POINTER_FILENAME = '.kurspilot-ort.json';
 
     /**
+     * @var string Dateiname der Ausstandsnotiz im Anker-Ordner (Issue #492,
+     *      ADR 0023, Spec #486 §8/§10): liegt neben dem Kontextpointer,
+     *      denselben Gruenden folgend - fuehrender Punkt und `.json`-Endung
+     *      halten sie ausserhalb der `.md`-Regel des Kontextbereichs und der
+     *      Auflistung ({@see list_entries()}).
+     */
+    public const AUSSTAND_FILENAME = '.kurspilot-ausstand.json';
+
+    /**
      * Der eigene Nutzerkontext der angemeldeten Person - niemals aus
      * Client-Eingaben ableitbar.
      *
@@ -187,6 +196,16 @@ final class storage_anchor {
     private static function configured_root(string $settingname, string $defaultvalue): string {
         $configured = trim((string) (get_config('local_kurspilot', $settingname) ?: $defaultvalue), '/');
         return $configured === '' ? '/' : '/' . $configured . '/';
+    }
+
+    /**
+     * Der feste Anker-Ordner selbst - fuer alles, was direkt darin liegt
+     * (Kontextpointer, Ausstandsnotiz), nicht in einem Bereich darunter.
+     *
+     * @return string Immer mit fuehrendem und abschliessendem "/".
+     */
+    public static function anchor_root(): string {
+        return self::configured_root(self::ANCHOR_ROOTSETTING, self::ANCHOR_DEFAULT_ROOT);
     }
 
     /**
@@ -540,7 +559,8 @@ final class storage_anchor {
     public static function list_entries(string $directory): array {
         $entries = [];
         foreach (self::directory_files($directory, false, true) as $file) {
-            if (!$file->is_directory() && $file->get_filename() === self::POINTER_FILENAME) {
+            if (!$file->is_directory()
+                    && ($file->get_filename() === self::POINTER_FILENAME || $file->get_filename() === self::AUSSTAND_FILENAME)) {
                 continue;
             }
             if ($file->is_directory()) {

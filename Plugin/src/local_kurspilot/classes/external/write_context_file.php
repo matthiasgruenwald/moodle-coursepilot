@@ -53,6 +53,13 @@ class write_context_file extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
+            'ausstand' => new external_value(
+                PARAM_ALPHANUMEXT,
+                'Optional: Kennung eines offenen Ausstands (aus kurspilot_list_skills) - gelingt das Schreiben, '
+                    . 'verschwindet der Eintrag im selben Aufruf',
+                VALUE_DEFAULT,
+                ''
+            ),
         ]);
     }
 
@@ -66,11 +73,12 @@ class write_context_file extends external_api {
      *         contextquotaexceeded
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
-    public static function execute(string $path, string $content, string $expectedcontenthash = ''): array {
+    public static function execute(string $path, string $content, string $expectedcontenthash = '', string $ausstand = ''): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'path' => $path,
             'content' => $content,
             'expected_contenthash' => $expectedcontenthash,
+            'ausstand' => $ausstand,
         ]);
 
         $context = context_files::own_context();
@@ -99,7 +107,7 @@ class write_context_file extends external_api {
         // die beiden Zweige bleiben deshalb getrennt statt ineinander verwoben.
         $location = context_files::resolve_pointer_location();
         if ($location !== null && $location->kind === pointer_location::EXTERN) {
-            return self::execute_external($params['path'], $content);
+            return self::execute_external($params['path'], $content, $params['ausstand']);
         }
 
         context_files::require_manage_own_files();
@@ -129,6 +137,7 @@ class write_context_file extends external_api {
         context_files::require_quota($newsize - $oldsize);
 
         context_files::write($directory, $filename, $content);
+        self::dismiss_ausstand($params['ausstand']);
 
         $relativepath = context_files::relative_file($directory, $filename);
         $message = $existing
@@ -155,10 +164,12 @@ class write_context_file extends external_api {
      *
      * @param string $path
      * @param string $content
+     * @param string $ausstand Optional: siehe {@see execute()}.
      * @return array
      */
-    private static function execute_external(string $path, string $content): array {
+    private static function execute_external(string $path, string $content, string $ausstand): array {
         $result = context_files::write_pointer_aware($path, $content);
+        self::dismiss_ausstand($ausstand);
 
         $message = $result['created']
             ? get_string('contextfilecreated', 'local_kurspilot', $result['path'])
@@ -174,6 +185,19 @@ class write_context_file extends external_api {
             'size' => $result['size'],
             'message' => $message,
         ];
+    }
+
+    /**
+     * Hakt einen offenen Ausstand im selben Aufruf ab, in dem er gelingt
+     * (Issue #492, ADR 0023 Punkt 3) - fuer beide Orte identisch, deshalb
+     * hier statt in execute()/execute_external() dupliziert.
+     *
+     * @param string $ausstand Kennung oder leer (kein Nachtragen).
+     */
+    private static function dismiss_ausstand(string $ausstand): void {
+        if ($ausstand !== '') {
+            \local_kurspilot\ausstand_notice::dismiss($ausstand);
+        }
     }
 
     /**

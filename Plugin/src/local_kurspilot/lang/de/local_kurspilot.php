@@ -86,10 +86,18 @@ $string['webdavnotenabled'] = 'Ihre Schule hat externe Speicher (WebDAV) für Si
 $string['webdavauthunsupported'] = 'Diese WebDAV-Verbindung nutzt nicht mehr https mit Basic-Anmeldung — das unterstützt Kurspilot nicht. Bitte auf der Ortswahlseite ({$a}) korrigieren.';
 $string['webdavfingerprintchanged'] = 'Server, Basispfad oder Konto dieser WebDAV-Verbindung haben sich geändert. Bitte auf der Ortswahlseite ({$a}) neu wählen.';
 $string['webdavexternalerror'] = 'Der externe Speicher konnte nicht gelesen werden ({$a->errorclass}). Bitte später erneut versuchen oder auf der Ortswahlseite ({$a->page}) nachsehen.';
-$string['webdavexternalwriteerror'] = 'Der externe Speicher konnte nicht beschrieben werden ({$a->errorclass}). Bitte später erneut versuchen oder auf der Ortswahlseite ({$a->page}) nachsehen.';
 $string['webdavstep1instruction'] = 'Die Administration muss den Repository-Typ "WebDAV" in Website-Administration ▸ Plugins ▸ Repositories aktivieren.';
 $string['webdavstep2instruction'] = 'Die Administration muss beim Repository-Typ "WebDAV" die Option "Nutzerinstanzen erlauben" einschalten.';
 $string['webdavstep3instruction'] = 'Die Administration muss der Lehrkraft das Recht "repository/webdav:view" im eigenen Nutzerkontext zuweisen (empfohlen über eine eigene Systemrolle).';
+
+// Ausstandsnotiz (Issue #492, ADR 0023, Spec #486 §8/§10): kein absoluter
+// Serverpfad, kein Benutzername, kein Passwort, kein HTTP-Code, kein
+// Antwortrumpf (Geheimnis-Test) — der Rohcode geht ins Zugriffsprotokoll.
+$string['ausstandwritefailed'] = '{$a->path} ({$a->operation}): {$a->reason}. Noch nicht gespeichert, vermerkt (Kennung {$a->kennung}). Bitte den Inhalt im Gespräch behalten und denselben Aufruf mit ausstand="{$a->kennung}" wiederholen, sobald die Verbindung wieder steht. Verbindung: {$a->target}.';
+$string['ausstandnotewritefailed'] = '{$a->path} ({$a->operation}) nicht geschrieben, und die Ausstandsnotiz konnte ebenfalls nicht angelegt werden — Ihre Private Files sind voll. Bitte Platz schaffen und erneut versuchen, sonst geht der Inhalt verloren.';
+$string['ausstandnotequotaexceeded'] = 'Die Ausstandsnotiz konnte nicht geschrieben werden — der Speicherplatz in Ihren Private Files reicht nicht.';
+$string['ausstandunknown'] = 'Kein offener Ausstand mit der Kennung {$a}.';
+$string['ausstanddismissed'] = 'Ausstand {$a} verworfen.';
 
 // Schreiben in den Kontextbereich (#408, Spec 0016 §4.1).
 $string['contextfilenotmarkdown'] = 'In den Kontextbereich lassen sich nur .md-Dateien schreiben: {$a}';

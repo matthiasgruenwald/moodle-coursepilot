@@ -301,6 +301,27 @@ final class read_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Ein Leseausfall liefert eine Meldung, legt aber keinen Ausstand an
+     * (Issue #492, CONTEXT.md "Ausstand": "kein Ausstand ist ... ein
+     * Leseausfall ... denn es ist nichts verloren gegangen").
+     */
+    public function test_read_failure_creates_no_ausstand_entry(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->deny_auth();
+
+        try {
+            read_context_file::execute('vorlagen.md');
+            $this->fail('Anmeldung abgelehnt haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('webdavexternalerror', $e->errorcode);
+        }
+
+        $this->assertSame([], \local_kurspilot\ausstand_notice::list_grouped());
+    }
+
+    /**
      * Weder Werkzeugname noch -antwort verraten den Speicherort (Spec §6/§15).
      */
     public function test_external_read_response_reveals_no_storage_location(): void {

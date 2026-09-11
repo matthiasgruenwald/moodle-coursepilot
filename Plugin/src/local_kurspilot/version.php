@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_kurspilot';
-$plugin->version   = 2026090305;
+$plugin->version   = 2026091100;
 // Nur Moodle 5.0 wird zugesagt (#300, Punkt 10). Keine aeltere Version.
 $plugin->requires  = 2025041400;
 $plugin->maturity  = MATURITY_ALPHA;
