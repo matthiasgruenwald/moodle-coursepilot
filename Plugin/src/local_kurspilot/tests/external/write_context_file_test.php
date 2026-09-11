@@ -265,6 +265,78 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Eine personenbezogen markierte Datei geht extern nicht an einen nicht
+     * zugelassenen Speicher, auch wenn der #344-Schalter an ist (Issue #493,
+     * ADR 0021 §3) - und es entsteht kein PUT.
+     */
+    public function test_rejects_marked_content_at_disallowed_external_host(): void {
+        $this->resetAfterTest();
+        set_config('allowpersonaldata', 1, 'local_kurspilot');
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        try {
+            $this->write('lerngruppe.md', $this->marked_content());
+            $this->fail('Nicht zugelassener Speicher haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilehostnotallowed', $e->errorcode);
+        }
+
+        $this->assertSame([], array_values(array_filter(
+            $fake->requests(),
+            static fn (array $r): bool => $r['method'] === 'PUT'
+        )));
+    }
+
+    /**
+     * Am zugelassenen Speicher (Domain samt Unterdomain) geht dieselbe
+     * markierte Datei durch.
+     */
+    public function test_accepts_marked_content_at_allowed_external_host(): void {
+        $this->resetAfterTest();
+        set_config('allowpersonaldata', 1, 'local_kurspilot');
+        set_config('personaldatahosts', 'example.test', 'local_kurspilot');
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        $result = $this->write('lerngruppe.md', $this->marked_content());
+
+        $this->assertTrue($result['created']);
+    }
+
+    /**
+     * Bei ausgeschaltetem #344-Schalter greift weiterhin "contextfilelocked",
+     * nicht die Speicher-Zulassungspruefung - beide Gruende sind unabhaengig
+     * voneinander.
+     */
+    public function test_marked_content_at_disallowed_host_with_switch_off_reports_locked(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        try {
+            $this->write('lerngruppe.md', $this->marked_content());
+            $this->fail('Personenbezug haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilelocked', $e->errorcode);
+        }
+    }
+
+    /**
+     * Unmarkierter Inhalt geht an jeden Speicher, unabhaengig von
+     * `personaldatahosts` - die Pruefung gilt nur der Markierung.
+     */
+    public function test_unmarked_content_ignores_host_allowlist(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        $result = $this->write('plan.md', '# Unmarkiert');
+
+        $this->assertTrue($result['created']);
+    }
+
+    /**
      * Ohne moodle/user:manageownfiles kein Schreibzugriff (Spec 0016 §1.1).
      */
     public function test_rejects_missing_manageownfiles_capability(): void {
@@ -749,6 +821,14 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertStringContainsString('{$a->target}', $string['ausstandwritefailed']);
         $this->assertStringContainsString('voll', $string['ausstandnotewritefailed']);
         $this->assertStringContainsString('Speicherplatz', $string['ausstandnotequotaexceeded']);
+
+        // Der Fehlertext fuer einen nicht zugelassenen Speicher (Issue #493,
+        // ADR 0021 §3) lautet wortwoertlich "Dieser Speicher ist für
+        // personenbezogene Daten nicht zugelassen".
+        $this->assertStringContainsString(
+            'Dieser Speicher ist für personenbezogene Daten nicht zugelassen',
+            $string['contextfilehostnotallowed']
+        );
     }
 
     /**

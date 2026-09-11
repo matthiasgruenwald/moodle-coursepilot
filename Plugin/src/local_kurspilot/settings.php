@@ -92,6 +92,22 @@ if ($hassiteconfig) {
         0
     ));
 
+    // Zugelassene Speicher fuer personenbezogene Kontextdaten (#493, ADR 0021
+    // §3): eine Datei mit "kurspilot.personenbezug: true" schreibt Kurspilot
+    // nur in einen hier genannten Speicher - Private Files sind immer
+    // zugelassen. Ein Eintrag gilt fuer eine Domain samt Unterdomains,
+    // getrennt wird nur an Punkten, ohne "*"; Eintraege mit nur einem
+    // Namensteil werden beim Speichern abgelehnt (siehe
+    // local_kurspilot\admin\personaldatahosts_setting). Standard leer - nur
+    // Private Files.
+    $settings->add(new \local_kurspilot\admin\personaldatahosts_setting(
+        'local_kurspilot/personaldatahosts',
+        get_string('settingpersonaldatahosts', 'local_kurspilot'),
+        get_string('settingpersonaldatahosts_desc', 'local_kurspilot'),
+        '',
+        PARAM_RAW
+    ));
+
     // Loeschfrist des Aenderungsverlaufs (#387, Spec 0015 §10.7): Standard
     // 1 Jahr, verkuerzbar bis auf 1 Tag - "keine Frist" ist ausgeschlossen
     // (Speicherplatz). Reines Zahlenfeld ohne Unlimited-Kaestchen; die

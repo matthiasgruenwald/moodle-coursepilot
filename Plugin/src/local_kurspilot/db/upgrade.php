@@ -226,5 +226,27 @@ function xmldb_local_kurspilot_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026090202, 'local', 'kurspilot');
     }
 
+    if ($oldversion < 2026091101) {
+        // Markierungsgedaechtnis (#493, Spec #486 §6): nur das Bit "markiert
+        // ja/nein" je Kontextdatei, Schluessel aus Pfad, Groesse,
+        // Aenderungszeit und ETag - siehe local_kurspilot\mark_memory.
+        $marktable = new xmldb_table('local_kurspilot_context_mark');
+        $marktable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+        $marktable->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $marktable->add_field('path', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL);
+        $marktable->add_field('pathhash', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL);
+        $marktable->add_field('filesize', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $marktable->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $marktable->add_field('etag', XMLDB_TYPE_CHAR, '255');
+        $marktable->add_field('ismarked', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $marktable->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $marktable->add_index('userid_pathhash', XMLDB_INDEX_UNIQUE, ['userid', 'pathhash']);
+        if (!$dbman->table_exists($marktable)) {
+            $dbman->create_table($marktable);
+        }
+
+        upgrade_plugin_savepoint(true, 2026091101, 'local', 'kurspilot');
+    }
+
     return true;
 }

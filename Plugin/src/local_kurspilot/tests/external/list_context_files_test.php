@@ -366,6 +366,67 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
+     * Markierungsgedaechtnis (Issue #493, Spec #486 §6): eine zweite
+     * Auflistung ohne Aenderung holt die `.md`-Datei nicht erneut - genau ein
+     * GET ueber beide Aufrufe hinweg.
+     */
+    public function test_second_listing_without_change_does_not_refetch_marked_file(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $this->marked_content());
+
+        list_context_files::execute();
+        list_context_files::execute();
+
+        $gets = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'GET'));
+        $this->assertCount(1, $gets);
+    }
+
+    /**
+     * Eine geaenderte Datei (neuer Inhalt, damit neue Groesse/ETag) wird bei
+     * der naechsten Auflistung neu gelesen - das Gedaechtnis erkennt den
+     * veralteten Schluessel.
+     */
+    public function test_changed_file_is_refetched_on_next_listing(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $this->marked_content());
+
+        $first = list_context_files::execute();
+        $first = external_api::clean_returnvalue(list_context_files::execute_returns(), $first);
+        $this->assertTrue($this->find_entry($first['entries'], 'lerngruppe.md')['locked']);
+
+        // Handaenderung: die Markierung entfaellt, Groesse und ETag aendern sich.
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', '# Unmarkiert, neu geschrieben');
+
+        $second = list_context_files::execute();
+        $second = external_api::clean_returnvalue(list_context_files::execute_returns(), $second);
+        $this->assertFalse($this->find_entry($second['entries'], 'lerngruppe.md')['locked']);
+
+        $gets = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'GET'));
+        $this->assertCount(2, $gets);
+    }
+
+    /**
+     * Bei eingeschaltetem #344-Schalter entfaellt die Pruefung ganz - kein
+     * GET fuer die `.md`-Datei, weil "locked" ohnehin immer false ist.
+     */
+    public function test_switch_on_never_fetches_marked_file_content(): void {
+        $this->resetAfterTest();
+        set_config('allowpersonaldata', 1, 'local_kurspilot');
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $this->marked_content());
+
+        list_context_files::execute();
+
+        $gets = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'GET'));
+        $this->assertCount(0, $gets);
+    }
+
+    /**
      * @return string Kontextdatei-Inhalt mit Frontmatter-Markierung
      *         "kurspilot.personenbezug: true".
      */

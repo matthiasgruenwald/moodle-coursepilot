@@ -93,19 +93,28 @@ class write_context_file extends external_api {
             ]);
         }
 
-        // Schalter fuer personenbezogene Kontextdaten (#344, ADR 0011):
-        // geprueft wird die Markierung im zu schreibenden Inhalt, nicht der
-        // Inhalt selbst (Spec 0016 §5.5) - fuer beide Orte identisch (Spec
-        // #486 §6: "allowpersonaldata wirkt unveraendert am Inhalt").
-        if (personal_data::is_marked($content) && !personal_data::allowed()) {
-            throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $params['path']);
-        }
-
         // Zeigerbewusst (Issue #491, Spec #486 §6): der externe Zweig kennt
         // weder Nutzerquote noch moodle/user:manageownfiles - "fuer den
         // Kontextbereich in Moodle bleibt alles wie heute" gilt wortwoertlich,
         // die beiden Zweige bleiben deshalb getrennt statt ineinander verwoben.
         $location = context_files::resolve_pointer_location();
+
+        // Schalter fuer personenbezogene Kontextdaten (#344, ADR 0011):
+        // geprueft wird die Markierung im zu schreibenden Inhalt, nicht der
+        // Inhalt selbst (Spec 0016 §5.5) - fuer beide Orte identisch (Spec
+        // #486 §6: "allowpersonaldata wirkt unveraendert am Inhalt").
+        //
+        // Zugelassener Speicher (Issue #493, ADR 0021 §3): unabhaengig vom
+        // Schalter - eine markierte Datei geht nur in einen zugelassenen
+        // Speicher, Private Files sind immer zugelassen (kein Zweig hier
+        // noetig, sie sind nie EXTERN).
+        if (personal_data::is_marked($content)) {
+            if (!personal_data::allowed()) {
+                throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $params['path']);
+            }
+            \local_kurspilot\personal_data_hosts::require_allowed_location($location, $params['path']);
+        }
+
         if ($location !== null && $location->kind === pointer_location::EXTERN) {
             return self::execute_external($params['path'], $content, $params['ausstand']);
         }

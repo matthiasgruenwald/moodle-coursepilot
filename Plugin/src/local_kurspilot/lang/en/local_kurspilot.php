@@ -143,6 +143,12 @@ $string['materialdeletefilenotfound'] = 'Not deleted: no material file found at 
 $string['settingallowpersonaldata'] = 'Transfer personal context data';
 $string['settingallowpersonaldata_desc'] = 'Acts on the marking (frontmatter "personenbezug: true"), not on the content. While off, files marked this way are unreadable by any read tool and appear in listings as locked, not omitted. Default: off.';
 
+// Approved external storage for personal context data (#493, ADR 0021 §3).
+$string['settingpersonaldatahosts'] = 'Approved storage for personal data';
+$string['settingpersonaldatahosts_desc'] = 'A file marked "personenbezug: true" is only ever written to one of these storage locations (Private Files are always approved). One entry per line: a domain covers itself and all its subdomains, separated only at dots, no "*". Entries with only one name part are rejected on save. Empty list = Private Files only.';
+$string['personaldatahostsinvalid'] = 'Invalid entry: "{$a}" — one entry must be a domain of at least two name parts (e.g. "cloud.example.org"), without "*".';
+$string['contextfilehostnotallowed'] = 'File {$a}: this storage is not approved for personal data.';
+
 // Change history: retention/deletion deadline (#387).
 $string['settinghistoryretentiondays'] = 'Change history retention period (days)';
 $string['settinghistoryretentiondays_desc'] = 'How long change-history states are kept per activity before being deleted on the next write to that same activity. No cron needed - cleanup runs alongside every write. At least 1 day; "no limit" is not an option.';
@@ -233,6 +239,10 @@ $string['privacy:metadata:cm_version:userid'] = 'The user id of the teacher the 
 $string['privacy:metadata:cm_version:timecreated'] = 'Time of the write.';
 $string['privacy:metadata:cm_version_file'] = 'Links a history state to the files the activity had at that time (metadata only, see local_kurspilot_cm_file). Deleted along with its state.';
 $string['privacy:metadata:cm_file'] = 'Deduplicated file metadata (name, size, path) for the change history, without file content.';
+$string['privacy:metadata:context_mark'] = 'Marking memory (#493): per context file, only the "marked yes/no" bit plus the key used to detect changes (path, size, modification time, ETag) — never any file content.';
+$string['privacy:metadata:context_mark:userid'] = 'The user id of the teacher this entry belongs to.';
+$string['privacy:metadata:context_mark:path'] = 'Client path of the context file this entry is about.';
+$string['privacy:metadata:context_mark:ismarked'] = 'Whether the file was last found to be marked as containing personal data.';
 
 // Field catalog (#379).
 $string['unknownmodname'] = 'Unknown activity type "{$a->modname}". Kurspilot catalogs: {$a->aktivitaetsarten}.';

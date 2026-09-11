@@ -72,13 +72,21 @@ class list_context_files extends external_api {
 
         $entries = [];
         foreach ($result['entries'] as $entry) {
+            $etag = $entry['etag'] ?? null;
+            unset($entry['etag']);
+
             if ($entry['type'] === 'folder') {
                 $entries[] = $entry + ['locked' => false];
                 continue;
             }
+
             // Schalter fuer personenbezogene Kontextdaten (#344, ADR 0011):
             // ein gesperrter Eintrag erscheint sichtbar gesperrt, nicht
-            // weggelassen - siehe local_kurspilot\personal_data.
+            // weggelassen - siehe local_kurspilot\personal_data. Bei
+            // eingeschaltetem Schalter ist "locked" ohnehin immer false, die
+            // Pruefung entfaellt dann ganz (Issue #493, Spec #486 §6:
+            // "Ist der Schalter an, entfaellt die Pruefung ganz.") - kein
+            // Markierungsgedaechtnis-Zugriff, kein Nachlesen der Datei.
             //
             // Nur .md-Dateien werden dafuer eingelesen: seit dem Umzug auf
             // Moodles Private Files (#407) kann die Lehrkraft hier ueber
@@ -88,12 +96,20 @@ class list_context_files extends external_api {
             // vollstaendig in den Speicher.
             $ismarkdown = strtolower(pathinfo($entry['name'], PATHINFO_EXTENSION)) === 'md';
             $locked = false;
-            if ($ismarkdown) {
+            if ($ismarkdown && !\local_kurspilot\personal_data::allowed()) {
                 $relativepath = $result['directory'] === '' ? $entry['name'] : $result['directory'] . '/' . $entry['name'];
-                $content = context_files::read_content_pointer_aware($relativepath);
-                $locked = $content !== null
-                    && \local_kurspilot\personal_data::is_marked($content['content'])
-                    && !\local_kurspilot\personal_data::allowed();
+
+                // Markierungsgedaechtnis (Issue #493, Spec #486 §6): erspart
+                // das Nachlesen jeder .md-Datei, solange sich Groesse,
+                // Aenderungszeit und ETag nicht geaendert haben - extern
+                // sonst 1+N Zugriffe je Auflistung.
+                $marked = \local_kurspilot\mark_memory::lookup($relativepath, $entry['size'], $entry['timemodified'], $etag);
+                if ($marked === null) {
+                    $content = context_files::read_content_pointer_aware($relativepath);
+                    $marked = $content !== null && \local_kurspilot\personal_data::is_marked($content['content']);
+                    \local_kurspilot\mark_memory::remember($relativepath, $entry['size'], $entry['timemodified'], $etag, $marked);
+                }
+                $locked = $marked;
             }
             $entries[] = $entry + ['locked' => $locked];
         }

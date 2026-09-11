@@ -120,6 +120,14 @@ final class provider implements
         $collection->add_database_table('local_kurspilot_cm_version_file', [], 'privacy:metadata:cm_version_file');
         $collection->add_database_table('local_kurspilot_cm_file', [], 'privacy:metadata:cm_file');
 
+        // Markierungsgedaechtnis (#493, Spec #486 §6): traegt userid und den
+        // Client-Pfad einer Kontextdatei, siehe local_kurspilot\mark_memory.
+        $collection->add_database_table('local_kurspilot_context_mark', [
+            'userid' => 'privacy:metadata:context_mark:userid',
+            'path' => 'privacy:metadata:context_mark:path',
+            'ismarked' => 'privacy:metadata:context_mark:ismarked',
+        ], 'privacy:metadata:context_mark');
+
         return $collection;
     }
 
@@ -138,7 +146,7 @@ final class provider implements
         }
 
         $usercontext = \context_user::instance($userid);
-        if (self::context_user_has_files($usercontext)) {
+        if (self::context_user_has_data($usercontext)) {
             $contextlist->add_user_context($userid);
         }
 
@@ -157,22 +165,28 @@ final class provider implements
             return;
         }
 
-        if ($context instanceof \context_user && self::context_user_has_files($context)) {
+        if ($context instanceof \context_user && self::context_user_has_data($context)) {
             $userlist->add_user($context->instanceid);
         }
     }
 
     /**
-     * Ob im Nutzerkontext tatsaechlich Kontextdateien liegen - anders als
-     * core_user::get_users_in_context() (die den Kontexteigentuemer blind
-     * hinzufuegt) prueft dieser Provider den echten Dateibestand, damit ein
-     * beliebiger Nutzerkontext ohne Kontextdateien nicht faelschlich
-     * auftaucht.
+     * Ob im Nutzerkontext tatsaechlich Kontextdateien oder Eintraege im
+     * Markierungsgedaechtnis liegen - anders als core_user::get_users_in_context()
+     * (die den Kontexteigentuemer blind hinzufuegt) prueft dieser Provider den
+     * echten Bestand, damit ein beliebiger Nutzerkontext ohne Daten nicht
+     * faelschlich auftaucht.
      *
      * @param \context_user $context
      * @return bool
      */
-    private static function context_user_has_files(\context_user $context): bool {
+    private static function context_user_has_data(\context_user $context): bool {
+        global $DB;
+
+        if ($DB->record_exists('local_kurspilot_context_mark', ['userid' => $context->instanceid])) {
+            return true;
+        }
+
         $fs = get_file_storage();
         $files = $fs->get_area_files(
             $context->id,
@@ -203,6 +217,18 @@ final class provider implements
                     context_files::LEGACY_FILEAREA,
                     context_files::ITEMID
                 );
+
+                $markrecords = $DB->get_records('local_kurspilot_context_mark', ['userid' => $userid]);
+                $exportedmarks = array_map(static fn($record): \stdClass => (object) [
+                    'path' => $record->path,
+                    'ismarked' => transform::yesno($record->ismarked),
+                ], array_values($markrecords));
+                if ($exportedmarks) {
+                    writer::with_context($context)->export_data(
+                        [get_string('pluginname', 'local_kurspilot'), get_string('privacy:metadata:context_mark', 'local_kurspilot')],
+                        (object) ['entries' => $exportedmarks]
+                    );
+                }
                 continue;
             }
 
@@ -253,17 +279,23 @@ final class provider implements
     }
 
     /**
-     * Loescht alle Kontextdateien (#343) im gegebenen Nutzerkontext.
+     * Loescht alle Kontextdateien (#343) und das Markierungsgedaechtnis
+     * (#493) im gegebenen Nutzerkontext.
      *
      * @param \context $context
      */
     private static function delete_context_files(\context $context): void {
+        global $DB;
+
         get_file_storage()->delete_area_files(
             $context->id,
             context_files::LEGACY_COMPONENT,
             context_files::LEGACY_FILEAREA,
             context_files::ITEMID
         );
+        if ($context instanceof \context_user) {
+            $DB->delete_records('local_kurspilot_context_mark', ['userid' => $context->instanceid]);
+        }
     }
 
     /**

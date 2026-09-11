@@ -85,6 +85,11 @@ final class pointer_reader {
                 'mimetype' => $entry['mimetype'],
                 'contenthash' => '',
                 'timemodified' => $entry['timemodified'],
+                // Nur intern verwendet (Markierungsgedaechtnis, Issue #493) -
+                // {@see \local_kurspilot\external\list_context_files} entfernt
+                // dieses Feld wieder, bevor die Antwort die Werkzeuggrenze
+                // erreicht (execute_returns() kennt es nicht).
+                'etag' => $entry['etag'],
             ], $raw),
         ];
     }

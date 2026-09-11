@@ -143,6 +143,12 @@ $string['materialdeletefilenotfound'] = 'Nicht gelöscht: keine Materialdatei un
 $string['settingallowpersonaldata'] = 'Personenbezogene Kontextdaten übertragen';
 $string['settingallowpersonaldata_desc'] = 'Wirkt auf der Markierung (Frontmatter „personenbezug: true"), nicht auf dem Inhalt. Solange aus, sind so markierte Kontextdateien für kein Lese-Werkzeug lesbar und erscheinen in Listen als gesperrt statt weggelassen. Standard: aus.';
 
+// Zugelassene externe Speicher für personenbezogene Kontextdaten (#493, ADR 0021 §3).
+$string['settingpersonaldatahosts'] = 'Zugelassene Speicher für personenbezogene Daten';
+$string['settingpersonaldatahosts_desc'] = 'Eine Datei mit Markierung „personenbezug: true" wird nur in einen dieser Speicher geschrieben (Private Files sind immer zugelassen). Ein Eintrag je Zeile: eine Domain gilt samt Unterdomains, getrennt wird nur an Punkten, ohne „*". Einträge mit nur einem Namensteil werden beim Speichern abgelehnt. Leere Liste = nur Private Files.';
+$string['personaldatahostsinvalid'] = 'Ungültiger Eintrag: „{$a}" — ein Eintrag muss eine Domain mit mindestens zwei Namensteilen sein (z. B. „cloud.beispielschule.de"), ohne „*".';
+$string['contextfilehostnotallowed'] = 'Datei {$a}: Dieser Speicher ist für personenbezogene Daten nicht zugelassen.';
+
 // Aenderungsverlauf: Aufbewahrung/Loeschfrist (#387).
 $string['settinghistoryretentiondays'] = 'Aufbewahrungsfrist des Aenderungsverlaufs (Tage)';
 $string['settinghistoryretentiondays_desc'] = 'Wie lange Staende des Aenderungsverlaufs je Aktivitaet aufbewahrt werden, bevor sie beim naechsten Schreibvorgang derselben Aktivitaet geloescht werden. Kein Cron noetig - die Bereinigung laeuft mit jedem Schreibvorgang mit. Mindestens 1 Tag; „keine Frist" ist ausgeschlossen.';
@@ -233,6 +239,10 @@ $string['privacy:metadata:cm_version:userid'] = 'Die Nutzer-ID der Lehrkraft, un
 $string['privacy:metadata:cm_version:timecreated'] = 'Zeitpunkt des Schreibvorgangs.';
 $string['privacy:metadata:cm_version_file'] = 'Verknuepfung eines Verlaufs-Standes mit den zu diesem Zeitpunkt vorhandenen Dateien der Aktivitaet (nur Metadaten, siehe local_kurspilot_cm_file). Faellt zusammen mit dem zugehoerigen Stand weg.';
 $string['privacy:metadata:cm_file'] = 'Deduplizierte Datei-Metadaten (Name, Groesse, Pfad) des Aenderungsverlaufs, ohne Dateiinhalt.';
+$string['privacy:metadata:context_mark'] = 'Markierungsgedaechtnis (#493): je Kontextdatei nur das Bit "markiert ja/nein" sowie der Schluessel zur Aenderungserkennung (Pfad, Groesse, Aenderungszeit, ETag) - nie Dateiinhalt.';
+$string['privacy:metadata:context_mark:userid'] = 'Die Nutzer-ID der Lehrkraft, zu der dieser Eintrag gehoert.';
+$string['privacy:metadata:context_mark:path'] = 'Client-Pfad der Kontextdatei, auf die sich dieser Eintrag bezieht.';
+$string['privacy:metadata:context_mark:ismarked'] = 'Ob die Datei zuletzt als personenbezogen markiert erkannt wurde.';
 
 // Feldkatalog (#379).
 $string['unknownmodname'] = 'Unbekannte Aktivitätsart "{$a->modname}". Kurspilot führt: {$a->aktivitaetsarten}.';

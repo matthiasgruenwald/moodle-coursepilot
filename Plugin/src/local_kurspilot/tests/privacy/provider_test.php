@@ -121,6 +121,31 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
+     * Legt einen Eintrag im Markierungsgedaechtnis an (Issue #493), wie es
+     * classes/mark_memory.php tut.
+     *
+     * @param int $userid
+     * @param string $path
+     * @param bool $marked
+     * @return \stdClass
+     */
+    private function create_mark_entry(int $userid, string $path, bool $marked = true): \stdClass {
+        global $DB;
+
+        $record = (object) [
+            'userid' => $userid,
+            'path' => $path,
+            'pathhash' => sha1($path),
+            'filesize' => 42,
+            'timemodified' => 100,
+            'etag' => 'etag-1',
+            'ismarked' => $marked ? 1 : 0,
+        ];
+        $record->id = $DB->insert_record('local_kurspilot_context_mark', $record);
+        return $record;
+    }
+
+    /**
      * Auskunft enthaelt die Kontextdateien der Person - die eigentliche
      * Luecke, die dieses Issue schliesst.
      */
@@ -158,6 +183,80 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $emptyuserlist = new userlist(\context_user::instance($withoutfile->id), 'local_kurspilot');
         provider::get_users_in_context($emptyuserlist);
         $this->assertEquals([], $emptyuserlist->get_userids());
+    }
+
+    /**
+     * Der Nutzerkontext taucht auch dann auf, wenn dort nur Eintraege im
+     * Markierungsgedaechtnis liegen, keine Kontextdateien (Issue #493) - das
+     * Gedaechtnis fuehrt der Datenschutz-Provider mit.
+     */
+    public function test_get_contexts_for_userid_finds_mark_memory_only_context(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->create_mark_entry($user->id, 'lerngruppe.md');
+
+        $context = \context_user::instance($user->id);
+        $contextlist = $this->get_contexts_for_userid($user->id, 'local_kurspilot');
+
+        $this->assertContains($context->id, array_map('intval', $contextlist->get_contextids()));
+    }
+
+    /**
+     * get_users_in_context findet dieselbe Person ueber das
+     * Markierungsgedaechtnis, auch ohne Kontextdateien.
+     */
+    public function test_get_users_in_context_finds_mark_memory_only_user(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->create_mark_entry($user->id, 'lerngruppe.md');
+
+        $userlist = new userlist(\context_user::instance($user->id), 'local_kurspilot');
+        provider::get_users_in_context($userlist);
+
+        $this->assertEquals([$user->id], $userlist->get_userids());
+    }
+
+    /**
+     * Die Auskunft enthaelt die Eintraege des Markierungsgedaechtnisses -
+     * nie den Dateiinhalt, nur Pfad und Bit.
+     */
+    public function test_export_contains_mark_memory_entries(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->create_mark_entry($user->id, 'lerngruppe.md');
+        $context = \context_user::instance($user->id);
+
+        $this->export_context_data_for_user($user->id, $context, 'local_kurspilot');
+
+        $data = writer::with_context($context)->get_data(
+            [get_string('pluginname', 'local_kurspilot'), get_string('privacy:metadata:context_mark', 'local_kurspilot')]
+        );
+        $this->assertNotEmpty($data->entries);
+        $this->assertSame('lerngruppe.md', $data->entries[0]->path);
+    }
+
+    /**
+     * Loeschung entfernt auch das Markierungsgedaechtnis der betroffenen
+     * Person, laesst eine zweite Person unberuehrt.
+     */
+    public function test_delete_data_for_user_removes_mark_memory_and_spares_others(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $target = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $this->create_mark_entry($target->id, 'lerngruppe.md');
+        $this->create_mark_entry($other->id, 'lerngruppe.md');
+
+        $contextlist = $this->get_contexts_for_userid($target->id, 'local_kurspilot');
+        $approvedcontextlist = new \core_privacy\tests\request\approved_contextlist(
+            \core_user::get_user($target->id),
+            'local_kurspilot',
+            $contextlist->get_contextids()
+        );
+        provider::delete_data_for_user($approvedcontextlist);
+
+        $this->assertFalse($DB->record_exists('local_kurspilot_context_mark', ['userid' => $target->id]));
+        $this->assertTrue($DB->record_exists('local_kurspilot_context_mark', ['userid' => $other->id]));
     }
 
     /**

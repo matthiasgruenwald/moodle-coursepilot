@@ -224,6 +224,61 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Anhaengen an eine bereits markierte externe Zieldatei ist an einem
+     * nicht zugelassenen Speicher abgewiesen (Issue #493, ADR 0021 §3) - auch
+     * wenn der #344-Schalter an ist.
+     */
+    public function test_rejects_append_to_marked_file_at_disallowed_external_host(): void {
+        $this->resetAfterTest();
+        set_config('allowpersonaldata', 1, 'local_kurspilot');
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $this->marked_content());
+
+        try {
+            $this->append('lerngruppe.md', "\n- Notiz");
+            $this->fail('Nicht zugelassener Speicher haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilehostnotallowed', $e->errorcode);
+        }
+    }
+
+    /**
+     * Auch eine neu entstehende Datei, deren Anhaengsel selbst schon
+     * markiert ist, geht nicht an einen nicht zugelassenen Speicher -
+     * "geprueft wird die ganze entstehende Datei" (Spec #486 §6).
+     */
+    public function test_rejects_append_creating_marked_file_at_disallowed_external_host(): void {
+        $this->resetAfterTest();
+        set_config('allowpersonaldata', 1, 'local_kurspilot');
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        try {
+            $this->append('lerngruppe.md', $this->marked_content());
+            $this->fail('Nicht zugelassener Speicher haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilehostnotallowed', $e->errorcode);
+        }
+    }
+
+    /**
+     * Am zugelassenen Speicher geht dasselbe Anhaengen durch.
+     */
+    public function test_accepts_append_to_marked_file_at_allowed_external_host(): void {
+        $this->resetAfterTest();
+        set_config('allowpersonaldata', 1, 'local_kurspilot');
+        set_config('personaldatahosts', 'example.test', 'local_kurspilot');
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $this->marked_content());
+
+        $result = $this->append('lerngruppe.md', "\n- Notiz");
+
+        $this->assertFalse($result['created']);
+    }
+
+    /**
      * Ohne moodle/user:manageownfiles kein Schreibzugriff (Spec 0016 §1.1).
      */
     public function test_rejects_missing_manageownfiles_capability(): void {

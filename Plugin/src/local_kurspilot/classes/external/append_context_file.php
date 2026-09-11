@@ -175,6 +175,18 @@ class append_context_file extends external_api {
             throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $path);
         }
 
+        // Zugelassener Speicher (Issue #493, ADR 0021 §3): geprueft wird die
+        // ganze entstehende Datei, nicht nur der bisherige Bestand - ein neu
+        // angelegtes Anhaengsel kann die Markierung selbst erst mitbringen
+        // (der Fall $existing === null).
+        $finalcontent = ($existing['content'] ?? '') . $content;
+        if (personal_data::is_marked($finalcontent)) {
+            \local_kurspilot\personal_data_hosts::require_allowed_location(
+                context_files::resolve_pointer_location(),
+                $path
+            );
+        }
+
         $result = context_files::append_pointer_aware($path, $content);
         self::dismiss_ausstand($ausstand);
 

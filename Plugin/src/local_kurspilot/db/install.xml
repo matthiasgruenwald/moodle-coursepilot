@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/kurspilot/db" VERSION="20260828" COMMENT="local_kurspilot: OAuth-Client-Registrierung (#335), Autorisierungscodes und Token (#336), Aenderungsverlauf-Schnappschuesse (#385), Aufbewahrung/Loeschfrist (#387)"
+<XMLDB PATH="local/kurspilot/db" VERSION="20260911" COMMENT="local_kurspilot: OAuth-Client-Registrierung (#335), Autorisierungscodes und Token (#336), Aenderungsverlauf-Schnappschuesse (#385), Aufbewahrung/Loeschfrist (#387), Markierungsgedaechtnis (#493)"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -116,6 +116,24 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="versionid" UNIQUE="false" FIELDS="versionid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_kurspilot_context_mark" COMMENT="Markierungsgedaechtnis (#493, Spec #486 Paragraph 6): nur das Bit 'markiert ja/nein' je Kontextdatei, Schluessel aus Pfad, Groesse, Aenderungszeit und ETag.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="path" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Client-Pfad der Datei, relativ zum Kontextbereich."/>
+        <FIELD NAME="pathhash" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false" COMMENT="sha1(path) - traegt den Unique-Index, damit er unabhaengig von der Pfadlaenge kurz bleibt."/>
+        <FIELD NAME="filesize" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="etag" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="NULL, wenn der Speicher keine ETags liefert (IServ-Modus)."/>
+        <FIELD NAME="ismarked" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = Frontmatter traegt 'kurspilot.personenbezug: true'."/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_pathhash" UNIQUE="true" FIELDS="userid, pathhash"/>
       </INDEXES>
     </TABLE>
   </TABLES>
