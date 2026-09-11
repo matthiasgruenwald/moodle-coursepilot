@@ -99,6 +99,15 @@ final class update_mc_question extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            'ort' => new external_value(
+                PARAM_ALPHA,
+                'Ort der Materialordner-Pfade in questiontext_bilder/feedback_bilder (Issue #496): "bestand" '
+                    . '(Standard, der gewachsene Materialbestand der Lehrkraft) oder "werkbank" (Kurspilots eigene '
+                    . 'Zwischenstation) - das Bild geht direkt ueber den Entwurfsbereich in die Frage, ohne Umweg '
+                    . 'ueber die Werkbank.',
+                VALUE_DEFAULT,
+                material_files::ORT_BESTAND
+            ),
         ]);
     }
 
@@ -106,15 +115,22 @@ final class update_mc_question extends external_api {
      * @param int $questionid
      * @param string $felderjson
      * @param bool $bestaetigt
+     * @param string $ort
      * @return array
      */
-    public static function execute(int $questionid, string $felderjson, bool $bestaetigt = false): array {
+    public static function execute(
+        int $questionid,
+        string $felderjson,
+        bool $bestaetigt = false,
+        string $ort = material_files::ORT_BESTAND
+    ): array {
         global $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionid' => $questionid,
             'felder_json' => $felderjson,
             'bestaetigt' => $bestaetigt,
+            'ort' => $ort,
         ]);
 
         [$question, $category, $context] = export_questions_xml::resolve_native_question($params['questionid']);
@@ -149,7 +165,7 @@ final class update_mc_question extends external_api {
         // materialfilenotfound bereits hier, wenn eine referenzierte Datei
         // fehlt.
         [$questiontextdraftitemid, $answerfeedbackdraftitemids] =
-            self::prepare_image_drafts($context, $questiontextimages, $answerfeedbackimages);
+            self::prepare_image_drafts($context, $questiontextimages, $answerfeedbackimages, $params['ort']);
         self::apply_patch($question, $patch);
 
         $categoryid = (int) $category->id;
@@ -393,15 +409,19 @@ final class update_mc_question extends external_api {
      * @param \context $context Kategoriekontext (Ziel der Dateiablage).
      * @param string[] $questiontextimages Materialordner-Pfade fuer questiontext.
      * @param array<int, string[]> $answerfeedbackimages Antwortindex => Materialordner-Pfade.
+     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     *        Quelle der Pfade (Issue #496).
      * @return array{0: int|null, 1: array<int, int>} [Entwurfs-Itemid fuer questiontext (null ohne Anfrage),
      *         Antwortindex => Entwurfs-Itemid fuer answerfeedback]
-     * @throws moodle_exception materialfiledisallowedtype / materialfilenotfound / invalidmaterialpath
+     * @throws moodle_exception materialfiledisallowedtype / materialfilenotfound / invalidmaterialpath /
+     *         invalidmaterialort / materialpathiskontext / materialembedtoolarge
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
     private static function prepare_image_drafts(
         \context $context,
         array $questiontextimages,
-        array $answerfeedbackimages
+        array $answerfeedbackimages,
+        string $ort
     ): array {
         if (empty($questiontextimages) && empty($answerfeedbackimages)) {
             return [null, []];
@@ -415,12 +435,12 @@ final class update_mc_question extends external_api {
 
         $questiontextdraftitemid = empty($questiontextimages)
             ? null
-            : material_files::resolve_into_draft($context->id, 'question', 'questiontext', 0, $questiontextimages);
+            : material_files::resolve_into_draft($context->id, 'question', 'questiontext', 0, $questiontextimages, $ort);
 
         $answerfeedbackdraftitemids = [];
         foreach ($answerfeedbackimages as $index => $images) {
             $answerfeedbackdraftitemids[$index] =
-                material_files::resolve_into_draft($context->id, 'question', 'answerfeedback', 0, $images);
+                material_files::resolve_into_draft($context->id, 'question', 'answerfeedback', 0, $images, $ort);
         }
 
         return [$questiontextdraftitemid, $answerfeedbackdraftitemids];

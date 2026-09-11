@@ -173,6 +173,7 @@ $string['invalidmaterialpath'] = 'Ungültiger Pfad.';
 $string['materialfiledisallowedtype'] = 'Dateityp nicht zulässig: {$a->filename} — erlaubt sind: {$a->allowed}.';
 $string['materialfilechanged'] = 'Nicht geschrieben: {$a} wurde seit dem letzten Lesen geändert — bitte die Datei neu lesen und den Vorgang wiederholen.';
 $string['materialfiletoolarge'] = 'Datei zu groß: {$a->size} Byte, der Server erlaubt höchstens {$a->max} Byte je Upload (post_max_size/upload_max_filesize).';
+$string['materialembedtoolarge'] = 'Datei zu groß für die Einbettung: {$a->size} Byte, erlaubt sind höchstens {$a->max} Byte je Datei ($CFG->maxbytes).';
 $string['materialquotaexceeded'] = 'Nicht geschrieben: der Speicherplatz reicht nicht — benötigt {$a->needed} MB, frei sind noch {$a->remaining} MB.';
 $string['materialquotawarning'] = 'Hinweis: nur noch {$a} MB Speicherplatz frei.';
 $string['materialfilecreated'] = '{$a} neu angelegt.';

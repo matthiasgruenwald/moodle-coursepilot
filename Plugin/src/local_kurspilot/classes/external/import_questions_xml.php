@@ -129,6 +129,14 @@ final class import_questions_xml extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
+            'ort' => new external_value(
+                PARAM_ALPHA,
+                'Ort der Materialordner-Pfade in xmlpath und in material="..."-Attributen von <file>-Bloecken in '
+                    . 'xmlcontent (Issue #496): "bestand" (Standard, der gewachsene Materialbestand der Lehrkraft) '
+                    . 'oder "werkbank" (Kurspilots eigene Zwischenstation).',
+                VALUE_DEFAULT,
+                material_files::ORT_BESTAND
+            ),
         ]);
     }
 
@@ -137,13 +145,15 @@ final class import_questions_xml extends external_api {
      * @param string $xmlcontent
      * @param bool $bestaetigt
      * @param string $xmlpath
+     * @param string $ort
      * @return array
      */
     public static function execute(
         int $categoryid,
         string $xmlcontent = '',
         bool $bestaetigt = false,
-        string $xmlpath = ''
+        string $xmlpath = '',
+        string $ort = material_files::ORT_BESTAND
     ): array {
         global $DB;
 
@@ -152,6 +162,7 @@ final class import_questions_xml extends external_api {
             'xmlcontent' => $xmlcontent,
             'bestaetigt' => $bestaetigt,
             'xmlpath' => $xmlpath,
+            'ort' => $ort,
         ]);
 
         $category = $DB->get_record('question_categories', ['id' => $params['categoryid']], '*', MUST_EXIST);
@@ -160,7 +171,7 @@ final class import_questions_xml extends external_api {
         require_capability('local/kurspilot:use', $context);
         require_capability('moodle/question:add', $context);
 
-        $xml = self::resolve_door($params['xmlcontent'], $params['xmlpath']);
+        $xml = self::resolve_door($params['xmlcontent'], $params['xmlpath'], $params['ort']);
 
         // Groessenschranke (Spec 0017 "Bilder und Groessen", Ticket #416) -
         // VOR dem Parsen/Schreiben. Eingebettete Dateien sind seit Spec 0018
@@ -253,10 +264,12 @@ final class import_questions_xml extends external_api {
      *
      * @param string $xmlcontent Textuer-Angabe (leer, wenn nicht genutzt)
      * @param string $xmlpath Verweistuer-Angabe (leer, wenn nicht genutzt)
+     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     *        Quelle der Materialordner-Pfade in beiden Tueren (Issue #496).
      * @return string
      * @throws \invalid_parameter_exception weder oder beide Angaben gesetzt
      */
-    private static function resolve_door(string $xmlcontent, string $xmlpath): string {
+    private static function resolve_door(string $xmlcontent, string $xmlpath, string $ort): string {
         $xmlcontent = trim($xmlcontent);
         $xmlpath = trim($xmlpath);
 
@@ -278,12 +291,12 @@ final class import_questions_xml extends external_api {
             // (z.B. ein fremder Moodle-Export) und traegt echtes Base64 in
             // ihren <file>-Bloecken - rein serverseitig gelesen, kein Byte
             // passiert den KI-Kontext.
-            return self::read_material_binary($xmlpath);
+            return self::read_material_binary($xmlpath, $ort);
         }
 
         // Textuer: die KI hat die XML selbst geschrieben. <file>-Bloecke
         // tragen statt echtem Base64 einen Materialordner-Verweis.
-        return self::resolve_material_file_references($xmlcontent);
+        return self::resolve_material_file_references($xmlcontent, $ort);
     }
 
     /**
@@ -293,13 +306,15 @@ final class import_questions_xml extends external_api {
      * <file>-Bloecke ohne dieses Attribut bleiben unangetastet.
      *
      * @param string $xmlcontent
+     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     *        Quelle der referenzierten Pfade (Issue #496).
      * @return string
      * @throws \moodle_exception materialfilenotfound, wenn ein Verweis ins Leere zeigt
      */
-    private static function resolve_material_file_references(string $xmlcontent): string {
+    private static function resolve_material_file_references(string $xmlcontent, string $ort): string {
         $resolved = preg_replace_callback(
             '/<file\b([^>]*)>(.*?)<\/file>/s',
-            static function (array $matches): string {
+            static function (array $matches) use ($ort): string {
                 $attributes = $matches[1];
                 if (!preg_match('/\bmaterial=(["\'])(.*?)\1/', $attributes, $materialmatch)) {
                     // Kein Materialordner-Verweis - unveraendert lassen
@@ -308,7 +323,7 @@ final class import_questions_xml extends external_api {
                 }
 
                 $materialpath = html_entity_decode($materialmatch[2], ENT_QUOTES | ENT_XML1);
-                $base64 = base64_encode(self::read_material_binary($materialpath));
+                $base64 = base64_encode(self::read_material_binary($materialpath, $ort));
 
                 $cleanattributes = trim(preg_replace(
                     ['/\bmaterial=(["\']).*?\1/', '/\bencoding=(["\']).*?\1/'],
@@ -330,19 +345,18 @@ final class import_questions_xml extends external_api {
      * XML-Datei selbst; Textuer: je referenzierte Einzeldatei).
      *
      * @param string $path Materialordner-Pfad, z.B. "export.xml" oder "diagramme/skizze.png".
+     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} (Issue #496).
      * @return string
-     * @throws \moodle_exception materialfilenotfound
+     * @throws \moodle_exception materialfilenotfound / invalidmaterialort / materialpathiskontext
      */
-    private static function read_material_binary(string $path): string {
-        [$directory, $filename] = material_files::resolve_file($path);
-
-        $stored = material_files::read_content($directory, $filename);
+    private static function read_material_binary(string $path, string $ort = material_files::ORT_BESTAND): string {
+        $stored = material_files::read_content_for_ort($ort, $path);
         if ($stored === null) {
             throw new \moodle_exception(
                 'materialfilenotfound',
                 'local_kurspilot',
                 '',
-                material_files::relative_file($directory, $filename)
+                material_files::normalise_path($path)
             );
         }
 

@@ -183,6 +183,15 @@ final class create_module extends external_api {
                     . 'gemischt (Spec 0015 §2.4: Buendel sind kein Endpunkt-Parameter) - ein Buendelwert gilt nur '
                     . 'fuer Felder, die dieses Objekt nicht schon selbst nennt.'
             ),
+            'ort' => new external_value(
+                PARAM_ALPHA,
+                'Ort der Materialordner-Pfade in Verweis-Pseudofeldern wie "files" (Issue #496): "bestand" '
+                    . '(Standard, der gewachsene Materialbestand der Lehrkraft) oder "werkbank" (Kurspilots eigene '
+                    . 'Zwischenstation) - die Datei geht direkt ueber den Entwurfsbereich in die Aktivitaet, ohne '
+                    . 'Umweg ueber die Werkbank.',
+                VALUE_DEFAULT,
+                material_files::ORT_BESTAND
+            ),
         ]);
     }
 
@@ -191,9 +200,16 @@ final class create_module extends external_api {
      * @param int $sectionnum
      * @param string $modname
      * @param string $felderjson
+     * @param string $ort
      * @return array
      */
-    public static function execute(int $courseid, int $sectionnum, string $modname, string $felderjson): array {
+    public static function execute(
+        int $courseid,
+        int $sectionnum,
+        string $modname,
+        string $felderjson,
+        string $ort = material_files::ORT_BESTAND
+    ): array {
         global $CFG;
 
         $params = self::validate_parameters(self::execute_parameters(), [
@@ -201,6 +217,7 @@ final class create_module extends external_api {
             'sectionnum' => $sectionnum,
             'modname' => $modname,
             'felder_json' => $felderjson,
+            'ort' => $ort,
         ]);
 
         $coursecontext = context_course::instance($params['courseid']);
@@ -242,7 +259,7 @@ final class create_module extends external_api {
         self::drop_empty_material_reference_pseudofields($modname, $merged);
         self::assert_no_required_field_missing($modname, $catalogclass, $merged);
         self::assert_stealth_allowed($merged);
-        self::resolve_material_reference_pseudofields($modname, $coursecontext, $merged);
+        self::resolve_material_reference_pseudofields($modname, $coursecontext, $merged, $params['ort']);
 
         $course = get_course($params['courseid']);
         require_once($CFG->dirroot . '/course/modlib.php');
@@ -343,11 +360,19 @@ final class create_module extends external_api {
      *        file_prepare_draft_area() - der Modulkontext existiert beim
      *        Anlegen noch nicht.
      * @param array $merged Wird in-place ersetzt: Pfadliste -> Entwurfs-Itemid.
+     * @param string $ort {@see \local_kurspilot\material_files::ORT_BESTAND}/{@see \local_kurspilot\material_files::ORT_WERKBANK}
+     *        - Quelle der Pfade (Issue #496).
      * @return void
-     * @throws moodle_exception materialfilenotfound / invalidmaterialpath / invalidmaterialreferencelist
+     * @throws moodle_exception materialfilenotfound / invalidmaterialpath / invalidmaterialort /
+     *         materialpathiskontext / invalidmaterialreferencelist / materialembedtoolarge
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
-    private static function resolve_material_reference_pseudofields(string $modname, context_course $coursecontext, array &$merged): void {
+    private static function resolve_material_reference_pseudofields(
+        string $modname,
+        context_course $coursecontext,
+        array &$merged,
+        string $ort
+    ): void {
         $specs = self::MATERIAL_REFERENCE_PSEUDOFIELDS[$modname] ?? [];
         $relevant = array_intersect_key($specs, $merged);
         if (!$relevant) {
@@ -364,7 +389,8 @@ final class create_module extends external_api {
                 $spec['component'],
                 $spec['filearea'],
                 0,
-                $merged[$fieldname]
+                $merged[$fieldname],
+                $ort
             );
         }
     }

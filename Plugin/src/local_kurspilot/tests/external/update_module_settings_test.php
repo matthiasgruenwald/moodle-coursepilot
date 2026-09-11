@@ -18,6 +18,8 @@ namespace local_kurspilot\external;
 
 use core_external\external_api;
 use local_kurspilot\catalog\registry;
+use local_kurspilot\tests\webdav\webdav_instance_fixture;
+use local_kurspilot\webdav\webdav_instance;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -29,6 +31,12 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(update_module_settings::class)]
 final class update_module_settings_test extends \advanced_testcase {
+    use webdav_instance_fixture;
+
+    protected function tearDown(): void {
+        webdav_instance::use_test_transport(null);
+        parent::tearDown();
+    }
 
     /**
      * @return array{0: \stdClass, 1: \stdClass} Kurs, Lehrkraft (editingteacher).
@@ -621,6 +629,121 @@ final class update_module_settings_test extends \advanced_testcase {
             $filerecord['filename']
         );
         \local_kurspilot\material_files::replace($existing ?: null, $filerecord, $content);
+    }
+
+    /**
+     * Richtet den externen Materialbestand (WebDAV-Fake) fuer eine bereits
+     * angemeldete Lehrkraft ein - anders als
+     * {@see webdav_instance_fixture::set_up_external_material()} (das seine
+     * eigene Person anlegt) fuer eine schon im Kurs eingeschriebene
+     * Lehrkraft, damit derselbe Aufruf zugleich Kurs-Schreibrechte hat
+     * (Issue #496).
+     *
+     * @param \stdClass $teacher
+     * @return \local_kurspilot\tests\webdav\fake_webdav_transport
+     */
+    private function set_up_external_material_for(\stdClass $teacher): \local_kurspilot\tests\webdav\fake_webdav_transport {
+        $this->grant_webdav_capability($teacher);
+        $instanceid = $this->create_webdav_instance($teacher);
+        $this->write_v2_pointer($teacher, 'materialbestand', $instanceid, 'Material');
+
+        $fake = new \local_kurspilot\tests\webdav\fake_webdav_transport();
+        webdav_instance::use_test_transport($fake);
+        return $fake;
+    }
+
+    /**
+     * Einbettung direkt aus dem externen Materialbestand (Issue #496, Spec
+     * #486 §7): "ort" = "bestand" liest ueber den WebDAV-Transport-Fake und
+     * kopiert die Datei ueber den Entwurfsbereich in die Aktivitaet, ohne
+     * Umweg ueber die Werkbank.
+     */
+    public function test_introattachments_reference_attaches_material_file_from_external_bestand(): void {
+        $this->resetAfterTest();
+        [$course, $teacher] = $this->course_with_editing_teacher();
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance(['course' => $course->id]);
+        $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
+        $fake = $this->set_up_external_material_for($teacher);
+        $fake->seed_file('/Kurspilot/Material/arbeitsblatt.pdf', 'Arbeitsblattinhalt');
+
+        $result = external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($cmid, json_encode(['introattachments' => ['arbeitsblatt.pdf']]))
+        );
+
+        $this->assertStringContainsString('introattachments', $result['meldung']);
+        $modulecontext = \context_module::instance($cmid);
+        $attached = get_file_storage()->get_file(
+            $modulecontext->id,
+            'mod_assign',
+            'introattachment',
+            0,
+            '/',
+            'arbeitsblatt.pdf'
+        );
+        $this->assertNotFalse($attached);
+        $this->assertSame('Arbeitsblattinhalt', $attached->get_content());
+    }
+
+    /**
+     * Explizit "ort" = "werkbank" greift weiterhin auf die Werkbank zu, auch
+     * wenn der Materialbestand extern liegt (Issue #496) - derselbe Vertrag
+     * wie bei den lesenden Materialwerkzeugen (Issue #495).
+     */
+    public function test_introattachments_reference_with_ort_werkbank_ignores_external_bestand(): void {
+        $this->resetAfterTest();
+        [$course, $teacher] = $this->course_with_editing_teacher();
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance(['course' => $course->id]);
+        $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
+        $fake = $this->set_up_external_material_for($teacher);
+        $fake->seed_file('/Kurspilot/Material/nur-extern.pdf', 'extern');
+        $this->create_material_file('werkbankdatei.pdf', 'aus der Werkbank');
+
+        $result = external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute(
+                $cmid,
+                json_encode(['introattachments' => ['werkbankdatei.pdf']]),
+                \local_kurspilot\material_files::ORT_WERKBANK
+            )
+        );
+
+        $this->assertStringContainsString('introattachments', $result['meldung']);
+        $modulecontext = \context_module::instance($cmid);
+        $attached = get_file_storage()->get_file($modulecontext->id, 'mod_assign', 'introattachment', 0, '/', 'werkbankdatei.pdf');
+        $this->assertNotFalse($attached);
+        $this->assertSame('aus der Werkbank', $attached->get_content());
+    }
+
+    /**
+     * Die Sperre unterhalb eines Eintrags vom Typ "kontextbereich" (Issue
+     * #495, Spec #486 §2/§7) greift auch an der Einbettung (Issue #496) -
+     * kein zweiter Zugang zu Kontextdateien am Personenbezug-Schalter vorbei.
+     */
+    public function test_introattachments_reference_under_kontextbereich_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course, $teacher] = $this->course_with_editing_teacher();
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance(['course' => $course->id]);
+        $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
+        \local_kurspilot\storage_anchor::write_pointer_document([
+            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'kurspilot-material/kontext'],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'kurspilot-material'],
+        ]);
+        get_file_storage()->create_file_from_string([
+            'contextid' => \local_kurspilot\material_files::own_context()->id,
+            'component' => \local_kurspilot\material_files::COMPONENT,
+            'filearea' => \local_kurspilot\material_files::FILEAREA,
+            'itemid' => \local_kurspilot\material_files::ITEMID,
+            'filepath' => '/kurspilot-material/kontext/',
+            'filename' => 'plan.md',
+        ], '# Plan');
+
+        try {
+            update_module_settings::execute($cmid, json_encode(['introattachments' => ['kontext/plan.md']]));
+            $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialpathiskontext', $e->errorcode);
+        }
     }
 
     /**

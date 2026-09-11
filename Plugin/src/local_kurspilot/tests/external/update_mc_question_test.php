@@ -17,6 +17,8 @@
 namespace local_kurspilot\external;
 
 use core_external\external_api;
+use local_kurspilot\tests\webdav\webdav_instance_fixture;
+use local_kurspilot\webdav\webdav_instance;
 
 /**
  * Read-modify-write plus idnumber-Backfill fuer MC-Fragen (Spec 0017 §7.1,
@@ -28,6 +30,12 @@ use core_external\external_api;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(update_mc_question::class)]
 final class update_mc_question_test extends \advanced_testcase {
+    use webdav_instance_fixture;
+
+    protected function tearDown(): void {
+        webdav_instance::use_test_transport(null);
+        parent::tearDown();
+    }
 
     /**
      * Kerntest: ein Patch, der nur "questiontext" nennt, laesst Name,
@@ -447,9 +455,9 @@ final class update_mc_question_test extends \advanced_testcase {
 
     /**
      * Baut Kurs + Lehrkraft + Fragensammlung + Kategorie auf und liefert
-     * [$course, $categoryid].
+     * [$course, $categoryid, $teacher].
      *
-     * @return array{0: \stdClass, 1: int}
+     * @return array{0: \stdClass, 1: int, 2: \stdClass}
      */
     private function setup_course_and_category(): array {
         $course = $this->getDataGenerator()->create_course();
@@ -463,6 +471,105 @@ final class update_mc_question_test extends \advanced_testcase {
         $category = ensure_question_category::execute('Kategorie', (int) $bank['topcategoryid']);
         $category = external_api::clean_returnvalue(ensure_question_category::execute_returns(), $category);
 
-        return [$course, (int) $category['id']];
+        return [$course, (int) $category['id'], $teacher];
+    }
+
+    /**
+     * Richtet den externen Materialbestand (WebDAV-Fake) fuer eine bereits
+     * angemeldete Lehrkraft ein (Issue #496) - siehe
+     * {@see \local_kurspilot\external\update_module_settings_test::set_up_external_material_for()}.
+     *
+     * @param \stdClass $teacher
+     * @return \local_kurspilot\tests\webdav\fake_webdav_transport
+     */
+    private function set_up_external_material_for(\stdClass $teacher): \local_kurspilot\tests\webdav\fake_webdav_transport {
+        $this->grant_webdav_capability($teacher);
+        $instanceid = $this->create_webdav_instance($teacher);
+        $this->write_v2_pointer($teacher, 'materialbestand', $instanceid, 'Material');
+
+        $fake = new \local_kurspilot\tests\webdav\fake_webdav_transport();
+        webdav_instance::use_test_transport($fake);
+        return $fake;
+    }
+
+    /**
+     * Einbettung direkt aus dem externen Materialbestand (Issue #496, Spec
+     * #486 §7, Default "ort" = "bestand"): kein Umweg ueber die Werkbank.
+     */
+    public function test_embeds_material_image_from_external_bestand_into_questiontext(): void {
+        $this->resetAfterTest();
+        global $DB;
+
+        [, $categoryid, $teacher] = $this->setup_course_and_category();
+        $fake = $this->set_up_external_material_for($teacher);
+        $fake->seed_file('/Kurspilot/Material/diagramm.png', 'Bildinhalt-1');
+
+        $created = create_mc_question::execute(
+            $categoryid,
+            'Diagrammfrage',
+            'Alter Fragetext',
+            'single',
+            [
+                ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
+                ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],
+            ]
+        );
+        $created = external_api::clean_returnvalue(create_mc_question::execute_returns(), $created);
+
+        $result = update_mc_question::execute(
+            $created['questionid'],
+            json_encode([
+                'questiontext' => '<p>Werte das Diagramm aus:</p>'
+                    . '<img src="@@PLUGINFILE@@/diagramm.png" alt="Saeulendiagramm der Messreihe">',
+                'questiontext_bilder' => ['diagramm.png'],
+            ])
+        );
+        $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
+
+        $this->assertSame('aktualisiert', $result['status']);
+        $stored = $this->stored_question_file('question', 'questiontext', $result['questionid'], 'diagramm.png');
+        $this->assertNotFalse($stored, 'Datei liegt physisch in der question/questiontext-Filearea.');
+        $this->assertSame('Bildinhalt-1', $stored->get_content());
+    }
+
+    /**
+     * Explizit "ort" = "werkbank" greift weiterhin auf die Werkbank zu, auch
+     * wenn der Materialbestand extern liegt (Issue #496).
+     */
+    public function test_embeds_material_image_with_ort_werkbank_ignores_external_bestand(): void {
+        $this->resetAfterTest();
+
+        [, $categoryid, $teacher] = $this->setup_course_and_category();
+        $fake = $this->set_up_external_material_for($teacher);
+        $fake->seed_file('/Kurspilot/Material/nur-extern.png', 'extern');
+        $this->upload_material('werkbank.png', 'aus der Werkbank');
+
+        $created = create_mc_question::execute(
+            $categoryid,
+            'Diagrammfrage',
+            'Alter Fragetext',
+            'single',
+            [
+                ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
+                ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],
+            ]
+        );
+        $created = external_api::clean_returnvalue(create_mc_question::execute_returns(), $created);
+
+        $result = update_mc_question::execute(
+            $created['questionid'],
+            json_encode([
+                'questiontext' => '<img src="@@PLUGINFILE@@/werkbank.png" alt="aus der Werkbank">',
+                'questiontext_bilder' => ['werkbank.png'],
+            ]),
+            false,
+            \local_kurspilot\material_files::ORT_WERKBANK
+        );
+        $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
+
+        $this->assertSame('aktualisiert', $result['status']);
+        $stored = $this->stored_question_file('question', 'questiontext', $result['questionid'], 'werkbank.png');
+        $this->assertNotFalse($stored);
+        $this->assertSame('aus der Werkbank', $stored->get_content());
     }
 }

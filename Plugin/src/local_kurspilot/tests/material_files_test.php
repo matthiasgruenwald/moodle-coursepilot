@@ -551,4 +551,97 @@ final class material_files_test extends \advanced_testcase {
             [['zielordner' => 'unterordner']]
         );
     }
+
+    /**
+     * Der Entwurf belastet die Nutzerquote nicht, stattdessen gilt
+     * $CFG->maxbytes je Datei (Spec #486 §7, Issue #496) - eine zu grosse
+     * Quelldatei scheitert VOR dem Kopieren, egal wie viel Quote noch frei
+     * waere.
+     */
+    public function test_resolve_into_draft_rejects_file_larger_than_cfg_maxbytes(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        material_files::replace(
+            null,
+            material_files::filerecord(material_files::own_context()->id, '/kurspilot-material/', 'gross.pdf'),
+            'zwoelf Byte!'
+        );
+        $CFG->maxbytes = 5;
+
+        try {
+            material_files::resolve_into_draft(
+                \context_system::instance()->id,
+                'mod_assign',
+                'introattachment',
+                0,
+                ['gross.pdf']
+            );
+            $this->fail('Erwartete moodle_exception wegen $CFG->maxbytes blieb aus.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialembedtoolarge', $e->errorcode);
+        }
+    }
+
+    /**
+     * Die $CFG->maxbytes-Grenze gilt nur fuer "bestand" (Spec #486 §7 spricht
+     * nur vom "Entwurf" der Bestand-Einbettung) - eine Werkbank-Datei blieb
+     * schon vor Issue #496 nur an der Servergrenze beim Hochladen
+     * (upload_material_file, get_max_upload_file_size()) begrenzt. Eine
+     * zusaetzliche $CFG->maxbytes-Pruefung hier wuerde eine bereits liegende,
+     * groessere Werkbank-Datei nachtraeglich am Einbetten hindern - kein
+     * Ziel dieses Tickets (Review-Fund).
+     */
+    public function test_resolve_into_draft_ignores_cfg_maxbytes_for_werkbank_source(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        material_files::replace(
+            null,
+            material_files::filerecord(material_files::own_context()->id, '/kurspilot-material/', 'gross.pdf'),
+            'zwoelf Byte!'
+        );
+        $CFG->maxbytes = 5;
+
+        $draftitemid = material_files::resolve_into_draft(
+            \context_system::instance()->id,
+            'mod_assign',
+            'introattachment',
+            0,
+            ['gross.pdf'],
+            material_files::ORT_WERKBANK
+        );
+
+        $this->assertNotFalse(get_file_storage()->get_file(
+            material_files::own_context()->id, 'user', 'draft', $draftitemid, '/', 'gross.pdf'));
+    }
+
+    /**
+     * $CFG->maxbytes <= 0 bedeutet "keine eigene Grenze" (Moodle-Konvention).
+     */
+    public function test_resolve_into_draft_allows_any_size_when_cfg_maxbytes_is_zero(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        material_files::replace(
+            null,
+            material_files::filerecord(material_files::own_context()->id, '/kurspilot-material/', 'blatt.pdf'),
+            'Arbeitsblattinhalt'
+        );
+        $CFG->maxbytes = 0;
+
+        $draftitemid = material_files::resolve_into_draft(
+            \context_system::instance()->id,
+            'mod_assign',
+            'introattachment',
+            0,
+            ['blatt.pdf']
+        );
+
+        $this->assertNotFalse(get_file_storage()->get_file(
+            material_files::own_context()->id, 'user', 'draft', $draftitemid, '/', 'blatt.pdf'));
+    }
 }

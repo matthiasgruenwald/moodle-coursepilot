@@ -207,6 +207,15 @@ class update_module_settings extends external_api {
                 PARAM_RAW,
                 'JSON-Objekt Feldname => neuer Wert - nur die zu aendernden Felder (Patch, kein Vollstand)'
             ),
+            'ort' => new external_value(
+                PARAM_ALPHA,
+                'Ort der Materialordner-Pfade in Verweis-Pseudofeldern wie "introattachments"/"files"/"introimages" '
+                    . '(Issue #496): "bestand" (Standard, der gewachsene Materialbestand der Lehrkraft) oder '
+                    . '"werkbank" (Kurspilots eigene Zwischenstation) - die Datei geht direkt ueber den '
+                    . 'Entwurfsbereich in die Aktivitaet, ohne Umweg ueber die Werkbank.',
+                VALUE_DEFAULT,
+                material_files::ORT_BESTAND
+            ),
         ]);
     }
 
@@ -243,14 +252,16 @@ class update_module_settings extends external_api {
     /**
      * @param int $cmid
      * @param string $felderjson
+     * @param string $ort
      * @return array
      */
-    public static function execute(int $cmid, string $felderjson): array {
+    public static function execute(int $cmid, string $felderjson, string $ort = material_files::ORT_BESTAND): array {
         global $CFG;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
             'felder_json' => $felderjson,
+            'ort' => $ort,
         ]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
@@ -290,8 +301,8 @@ class update_module_settings extends external_api {
         // Formularweg-Feldobjekt, das ueberlagert und zurueckgeschrieben wird.
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
         pseudofield_carry_forward::apply($modname, $catalogclass, $moduleinfo, $before, $cm, $patch);
-        self::resolve_material_reference_pseudofields($modname, $context, $patch);
-        self::resolve_intro_image_pseudofield($modname, $context, $moduleinfo, $patch);
+        self::resolve_material_reference_pseudofields($modname, $context, $patch, $params['ort']);
+        self::resolve_intro_image_pseudofield($modname, $context, $moduleinfo, $patch, $params['ort']);
         foreach ($patch as $fieldname => $value) {
             $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
         }
@@ -344,11 +355,19 @@ class update_module_settings extends external_api {
      * @param string $modname
      * @param \context_module $context Modulkontext - Ziel der Dateiablage.
      * @param array $patch Wird in-place ersetzt: Pfadliste -> Entwurfs-Itemid.
+     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     *        Quelle der Pfade (Issue #496).
      * @return void
-     * @throws moodle_exception materialfilenotfound / invalidmaterialpath
+     * @throws moodle_exception materialfilenotfound / invalidmaterialpath / invalidmaterialort /
+     *         materialpathiskontext / materialembedtoolarge
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
-    private static function resolve_material_reference_pseudofields(string $modname, \context_module $context, array &$patch): void {
+    private static function resolve_material_reference_pseudofields(
+        string $modname,
+        \context_module $context,
+        array &$patch,
+        string $ort
+    ): void {
         $specs = self::MATERIAL_REFERENCE_PSEUDOFIELDS[$modname] ?? [];
         $relevant = array_intersect_key($specs, $patch);
         if (!$relevant) {
@@ -366,7 +385,8 @@ class update_module_settings extends external_api {
                 $spec['component'],
                 $spec['filearea'],
                 0,
-                $patch[$fieldname]
+                $patch[$fieldname],
+                $ort
             );
         }
     }
@@ -389,15 +409,19 @@ class update_module_settings extends external_api {
      * @param \context_module $context
      * @param \stdClass $moduleinfo Wird in-place ergaenzt (introeditor-Itemid).
      * @param array $patch Wird in-place bereinigt: introimages entfernt.
+     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     *        Quelle der Pfade (Issue #496).
      * @return void
      * @throws moodle_exception invalidmaterialreferencelist / materialfiledisallowedtype /
-     *         materialfilenotfound / invalidmaterialpath
+     *         materialfilenotfound / invalidmaterialpath / invalidmaterialort / materialpathiskontext /
+     *         materialembedtoolarge
      */
     private static function resolve_intro_image_pseudofield(
         string $modname,
         \context_module $context,
         \stdClass $moduleinfo,
-        array &$patch
+        array &$patch,
+        string $ort
     ): void {
         $fieldname = self::INTRO_IMAGE_PSEUDOFIELDS[$modname] ?? null;
         if ($fieldname === null || !array_key_exists($fieldname, $patch)) {
@@ -428,7 +452,8 @@ class update_module_settings extends external_api {
 
         $introspec = ['component' => 'mod_' . $modname, 'filearea' => 'intro'];
         self::trash_files_about_to_be_replaced($context, $introspec, $paths);
-        $draftitemid = material_files::resolve_into_draft($context->id, $introspec['component'], $introspec['filearea'], 0, $paths);
+        $draftitemid = material_files::resolve_into_draft(
+            $context->id, $introspec['component'], $introspec['filearea'], 0, $paths, $ort);
         if (!isset($moduleinfo->introeditor) || !is_array($moduleinfo->introeditor)) {
             $moduleinfo->introeditor = ['text' => $moduleinfo->intro ?? '', 'format' => $moduleinfo->introformat ?? FORMAT_HTML];
         }

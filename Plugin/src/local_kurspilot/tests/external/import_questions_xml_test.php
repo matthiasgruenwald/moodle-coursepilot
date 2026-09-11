@@ -18,6 +18,8 @@ namespace local_kurspilot\external;
 
 use core_external\external_api;
 use local_kurspilot\material_files;
+use local_kurspilot\tests\webdav\webdav_instance_fixture;
+use local_kurspilot\webdav\webdav_instance;
 
 /**
  * Der XML-Kern (Spec 0017 §7.1, Ticket #415).
@@ -28,6 +30,12 @@ use local_kurspilot\material_files;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(import_questions_xml::class)]
 final class import_questions_xml_test extends \advanced_testcase {
+    use webdav_instance_fixture;
+
+    protected function tearDown(): void {
+        webdav_instance::use_test_transport(null);
+        parent::tearDown();
+    }
 
     /**
      * Erstimport ohne idnumber: legt einen neuen Bank-Eintrag mit
@@ -279,6 +287,99 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
+     * Einbettung direkt aus dem externen Materialbestand (Issue #496, Spec
+     * #486 §7, Default "ort" = "bestand") - Textuer: ein material="..."-
+     * Attribut liest ueber den WebDAV-Transport-Fake, ohne Umweg ueber die
+     * Werkbank.
+     */
+    public function test_text_door_resolves_material_reference_from_external_bestand(): void {
+        $this->resetAfterTest();
+
+        [, $categoryid, $teacher] = $this->setup_course_and_category();
+        $fake = $this->set_up_external_material_for($teacher);
+        $fake->seed_file('/Kurspilot/Material/diagramm.png', self::PNG_BYTES);
+
+        $xml = self::multichoice_xml_with_material_file('Frage mit Bild', 'Fragetext', 'Feedback');
+
+        $result = import_questions_xml::execute($categoryid, $xml);
+        $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
+
+        $this->assertSame('erstimport', $result['questions'][0]['status']);
+    }
+
+    /**
+     * Einbettung direkt aus dem externen Materialbestand (Issue #496) -
+     * Verweistuer: xmlpath liest ueber den WebDAV-Transport-Fake.
+     */
+    public function test_xmlpath_door_imports_from_external_bestand(): void {
+        $this->resetAfterTest();
+
+        [, $categoryid, $teacher] = $this->setup_course_and_category();
+        $fake = $this->set_up_external_material_for($teacher);
+        $fake->seed_file('/Kurspilot/Material/export.xml', self::multichoice_xml_with_embedded_base64(
+            'Frage aus Verweistuer (Bestand)', 'Fragetext', 'Feedback'
+        ));
+
+        $result = import_questions_xml::execute($categoryid, '', false, 'export.xml');
+        $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
+
+        $this->assertSame('erstimport', $result['questions'][0]['status']);
+        $this->assertSame('Frage aus Verweistuer (Bestand)', $result['questions'][0]['name']);
+    }
+
+    /**
+     * Explizit "ort" = "werkbank" greift weiterhin auf die Werkbank zu, auch
+     * wenn der Materialbestand extern liegt (Issue #496).
+     */
+    public function test_xmlpath_door_with_ort_werkbank_ignores_external_bestand(): void {
+        $this->resetAfterTest();
+
+        [, $categoryid, $teacher] = $this->setup_course_and_category();
+        $fake = $this->set_up_external_material_for($teacher);
+        $fake->seed_file('/Kurspilot/Material/export.xml', 'nicht das, was gelesen werden soll');
+        $this->place_material_file('export.xml', self::multichoice_xml_with_embedded_base64(
+            'Frage aus der Werkbank', 'Fragetext', 'Feedback'
+        ));
+
+        $result = import_questions_xml::execute(
+            $categoryid, '', false, 'export.xml', material_files::ORT_WERKBANK);
+        $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
+
+        $this->assertSame('erstimport', $result['questions'][0]['status']);
+        $this->assertSame('Frage aus der Werkbank', $result['questions'][0]['name']);
+    }
+
+    /**
+     * Die Sperre unterhalb eines Eintrags vom Typ "kontextbereich" (Issue
+     * #495, Spec #486 §2/§7) greift auch an der Verweistuer der Einbettung
+     * (Issue #496) - kein zweiter Zugang zu Kontextdateien.
+     */
+    public function test_xmlpath_door_under_kontextbereich_is_rejected(): void {
+        $this->resetAfterTest();
+
+        [, $categoryid] = $this->setup_course_and_category();
+        \local_kurspilot\storage_anchor::write_pointer_document([
+            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'kurspilot-material/kontext'],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'kurspilot-material'],
+        ]);
+        get_file_storage()->create_file_from_string([
+            'contextid' => material_files::own_context()->id,
+            'component' => material_files::COMPONENT,
+            'filearea' => material_files::FILEAREA,
+            'itemid' => material_files::ITEMID,
+            'filepath' => '/kurspilot-material/kontext/',
+            'filename' => 'export.xml',
+        ], self::multichoice_xml_with_embedded_base64('Frage', 'Text', 'Feedback'));
+
+        try {
+            import_questions_xml::execute($categoryid, '', false, 'kontext/export.xml');
+            $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialpathiskontext', $e->errorcode);
+        }
+    }
+
+    /**
      * Verweistuer: ein Verweis auf eine fehlende Materialdatei bricht mit
      * klarer Meldung ab, kein Teilimport.
      */
@@ -471,9 +572,9 @@ final class import_questions_xml_test extends \advanced_testcase {
 
     /**
      * Baut Kurs + Lehrkraft + Fragensammlung + Kategorie auf und liefert
-     * [$course, $categoryid].
+     * [$course, $categoryid, $teacher].
      *
-     * @return array{0: \stdClass, 1: int}
+     * @return array{0: \stdClass, 1: int, 2: \stdClass}
      */
     private function setup_course_and_category(): array {
         $course = $this->getDataGenerator()->create_course();
@@ -487,7 +588,25 @@ final class import_questions_xml_test extends \advanced_testcase {
         $category = ensure_question_category::execute('Kategorie', (int) $bank['topcategoryid']);
         $category = external_api::clean_returnvalue(ensure_question_category::execute_returns(), $category);
 
-        return [$course, (int) $category['id']];
+        return [$course, (int) $category['id'], $teacher];
+    }
+
+    /**
+     * Richtet den externen Materialbestand (WebDAV-Fake) fuer eine bereits
+     * angemeldete Lehrkraft ein (Issue #496) - siehe
+     * {@see \local_kurspilot\external\update_module_settings_test::set_up_external_material_for()}.
+     *
+     * @param \stdClass $teacher
+     * @return \local_kurspilot\tests\webdav\fake_webdav_transport
+     */
+    private function set_up_external_material_for(\stdClass $teacher): \local_kurspilot\tests\webdav\fake_webdav_transport {
+        $this->grant_webdav_capability($teacher);
+        $instanceid = $this->create_webdav_instance($teacher);
+        $this->write_v2_pointer($teacher, 'materialbestand', $instanceid, 'Material');
+
+        $fake = new \local_kurspilot\tests\webdav\fake_webdav_transport();
+        webdav_instance::use_test_transport($fake);
+        return $fake;
     }
 
     /**

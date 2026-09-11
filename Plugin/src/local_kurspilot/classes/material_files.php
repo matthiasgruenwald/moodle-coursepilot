@@ -505,6 +505,32 @@ final class material_files {
     }
 
     /**
+     * Groessengrenze je Datei fuer {@see resolve_into_draft()} (Spec #486 §7,
+     * Issue #496): der Entwurf zaehlt nicht gegen die Nutzerquote (eine
+     * Bestandsdatei durchlaeuft nie {@see require_quota()}), stattdessen gilt
+     * $CFG->maxbytes - dieselbe Grenze, die Moodles eigener Formularweg
+     * (Dateimanager/-picker) fuer Uploads in eine Aktivitaet anlegt.
+     * $CFG->maxbytes <= 0 bedeutet "keine eigene Grenze" (Moodle-Konvention,
+     * siehe get_max_upload_file_size()).
+     *
+     * @param int $bytes
+     * @return void
+     * @throws \moodle_exception materialembedtoolarge
+     */
+    private static function guard_embed_size(int $bytes): void {
+        global $CFG;
+
+        $maxbytes = (int) ($CFG->maxbytes ?? 0);
+        if ($maxbytes <= 0 || $bytes <= $maxbytes) {
+            return;
+        }
+        throw new \moodle_exception('materialembedtoolarge', 'local_kurspilot', '', (object) [
+            'size' => $bytes,
+            'max' => $maxbytes,
+        ]);
+    }
+
+    /**
      * Moodle-Dateisatz fuer eine Datei im Materialordner.
      *
      * @param int $contextid
@@ -538,21 +564,34 @@ final class material_files {
      * durchlaeuft dieselbe Segmentpruefung wie ein Materialordner-Pfad
      * (kein separates Regelwerk fuer den Draft-Zielpfad).
      *
+     * Seit Issue #496 (Spec #486 §7) liest die Quelle ueber
+     * {@see read_content_for_ort()} statt fest ueber die Werkbank - "bestand"
+     * (Default) kopiert also direkt aus dem gewachsenen Materialbestand der
+     * Lehrkraft, ohne Umweg ueber die Werkbank. Fuer diesen Zweig zaehlt der
+     * Entwurf nicht gegen die Nutzerquote (Spec #486 §7: "Der Entwurf
+     * belastet die Nutzerquote nicht"), stattdessen gilt je Datei die Grenze
+     * {@see self::guard_embed_size()} ($CFG->maxbytes) - eine Werkbank-Datei
+     * bleibt bei ihrer bestehenden Grenze (Servergrenze beim Hochladen ueber
+     * upload_material_file), keine neue Grenze durch diesen Kopiervorgang.
+     *
      * @param int $targetcontextid Kontext der Zielaktivitaet (Modulkontext).
      * @param string $component z.B. "mod_assign".
      * @param string $filearea z.B. "introattachment".
      * @param int $itemid
      * @param array $paths Materialordner-Pfade, z.B. ["arbeitsblatt.pdf"], oder
      *        `['pfad' => ..., 'zielordner' => ...]`-Objekte.
+     * @param string $ort {@see ORT_BESTAND}/{@see ORT_WERKBANK} - Quelle der Pfade (Issue #496).
      * @return int Entwurfs-Itemid, direkt als *_update_instance()-Feldwert nutzbar.
-     * @throws \moodle_exception invalidmaterialpath / materialfilenotfound
+     * @throws \moodle_exception invalidmaterialpath / invalidmaterialort / materialpathiskontext /
+     *         materialfilenotfound / materialembedtoolarge
      */
     public static function resolve_into_draft(
         int $targetcontextid,
         string $component,
         string $filearea,
         int $itemid,
-        array $paths
+        array $paths,
+        string $ort = self::ORT_BESTAND
     ): int {
         $fs = get_file_storage();
         $draftitemid = 0;
@@ -561,16 +600,26 @@ final class material_files {
         $usercontext = self::own_context();
         foreach ($paths as $entry) {
             [$path, $targetdirectory] = self::split_draft_entry($entry);
-            [$directory, $filename] = self::resolve_file($path);
-            $source = self::read_content($directory, $filename);
+            $source = self::read_content_for_ort($ort, $path);
             if ($source === null) {
                 throw new \moodle_exception(
                     'materialfilenotfound',
                     'local_kurspilot',
                     '',
-                    self::relative_file($directory, $filename)
+                    self::normalise_path($path)
                 );
             }
+            if ($ort === self::ORT_BESTAND) {
+                // Nur der Bestand-Zweig braucht diese Grenze (Spec #486 §7):
+                // eine Werkbank-Datei durchlief bereits die Servergrenze von
+                // upload_material_file (get_max_upload_file_size()) beim
+                // Hochladen - eine zusaetzliche $CFG->maxbytes-Pruefung hier
+                // wuerde eine bereits abgelegte, groessere Werkbank-Datei
+                // nachtraeglich am Einbetten hindern (Verhaltensaenderung
+                // ohne Grundlage in der Spec, Review-Fund zu Issue #496).
+                self::guard_embed_size(strlen($source['content']));
+            }
+            $filename = basename($source['path']);
 
             $existing = $fs->get_file($usercontext->id, 'user', 'draft', $draftitemid, $targetdirectory, $filename);
             if ($existing) {
