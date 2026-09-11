@@ -18,13 +18,17 @@ namespace local_kurspilot\external;
 
 use core_external\external_api;
 use local_kurspilot\context_files;
+use local_kurspilot\tests\webdav\webdav_instance_fixture;
+use local_kurspilot\webdav\webdav_instance;
 
 defined('MOODLE_INTERNAL') || die();
 
 /**
  * Anhaengen im Kontextbereich (Issue #409, Spec 0016 Paragraph 4.2).
  * Happy-Path, Neuanlegen, Personenbezug der Zieldatei, das weiche
- * 1-MB-Signal und die Alles-oder-nichts-Zusage.
+ * 1-MB-Signal und die Alles-oder-nichts-Zusage. Seit Issue #491 zusaetzlich
+ * der externe Zweig: Read-modify-write mit `If-Match`, verpflichtender
+ * Rotationshinweis.
  *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
@@ -32,6 +36,12 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(append_context_file::class)]
 final class append_context_file_test extends \advanced_testcase {
+    use webdav_instance_fixture;
+
+    protected function tearDown(): void {
+        webdav_instance::use_test_transport(null);
+        parent::tearDown();
+    }
 
     /**
      * Anhaengen an eine bestehende Datei: der Inhalt waechst, die Antwort
@@ -315,6 +325,104 @@ final class append_context_file_test extends \advanced_testcase {
         $this->assertStringContainsString('angehängt', $string['contextfileappended']);
         $this->assertStringContainsString('{$a->size}', $string['contextfileappended']);
         $this->assertStringContainsString('Rotation', $string['contextfilerotation']);
+    }
+
+    /**
+     * Extern haengt {@see append_context_file} per Read-modify-write mit
+     * `If-Match` an (Issue #491, Spec #486 §4/§6).
+     */
+    public function test_appends_to_existing_external_file_with_if_match(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $seeded = $fake->seed_file('/Kurspilot/Kontext/journal.md', "# Journal\n");
+
+        $result = $this->append('journal.md', "- Stunde 1\n");
+
+        $this->assertFalse($result['created']);
+        $this->assertSame(21, $result['size']);
+        $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
+        $this->assertCount(1, $puts);
+        $this->assertSame($seeded['etag'], $puts[0]['headers']['If-Match'] ?? null);
+        $this->assertSame("# Journal\n- Stunde 1\n", $puts[0]['body']);
+    }
+
+    /**
+     * Fehlt die Zieldatei extern, entsteht sie ueber `If-None-Match: *`.
+     */
+    public function test_creates_missing_external_file(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        $result = $this->append('journal.md', '# Journal');
+
+        $this->assertTrue($result['created']);
+        $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
+        $this->assertSame('*', $puts[0]['headers']['If-None-Match'] ?? null);
+    }
+
+    /**
+     * Der Rotationshinweis gilt extern als Pflicht (Spec #486 §6) - anders
+     * als in Moodle steht er in jeder Antwort, nicht erst ab 1 MB, weil jedes
+     * externe Anhaengen die ganze Datei zweimal uebertraegt.
+     */
+    public function test_external_append_always_carries_rotation_hint(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/journal.md', 'kurz');
+
+        $result = $this->append('journal.md', 'x');
+
+        $this->assertStringContainsString(
+            get_string('contextfilerotation', 'local_kurspilot'),
+            $result['message']
+        );
+    }
+
+    /**
+     * Ein voller externer Speicher (507) ergibt `Speicher voll`.
+     */
+    public function test_external_append_storage_full_reports_speicher_voll(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->fill_storage();
+
+        try {
+            $this->append('journal.md', 'x');
+            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertStringContainsString(
+                \local_kurspilot\webdav\webdav_error::STORAGE_FULL,
+                $e->getMessage()
+            );
+        }
+    }
+
+    /**
+     * `moodle/user:manageownfiles` und die Nutzerquote wirken extern nicht
+     * (Issue #491, Spec #486 §6).
+     */
+    public function test_external_append_ignores_moodle_quota_and_capability(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $CFG->userquota = 1;
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability(
+            'moodle/user:manageownfiles',
+            CAP_PROHIBIT,
+            $roleid,
+            \context_user::instance($user->id)->id,
+            true
+        );
+
+        $result = $this->append('journal.md', str_repeat('x', 4096));
+
+        $this->assertTrue($result['created']);
     }
 
     /**

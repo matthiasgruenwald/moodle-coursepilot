@@ -65,7 +65,7 @@ final class pointer_reader {
         // (Spec §2: "dasselbe Koordinatensystem") - genau wie im Moodle-Zweig
         // nie der Bereichs-Wurzelordner selbst im Ergebnis auftaucht.
         $clientdirectory = storage_anchor::normalise_client_path($area, $path);
-        $webdavdirectory = self::joined_relative_path($area, $location, $path);
+        $webdavdirectory = storage_anchor::external_relative_path($area, $location, $path);
         $instance = webdav_instance::resolve($location);
         try {
             $raw = $instance->client()->propfind($instance->directory_url($webdavdirectory), 1);
@@ -116,7 +116,7 @@ final class pointer_reader {
         if ($clientpath === '') {
             throw new \moodle_exception($area->invalidpathkey, 'local_kurspilot');
         }
-        $webdavpath = self::joined_relative_path($area, $location, $path);
+        $webdavpath = storage_anchor::external_relative_path($area, $location, $path);
 
         $instance = webdav_instance::resolve($location);
         $client = $instance->client();
@@ -141,25 +141,6 @@ final class pointer_reader {
             'contenthash' => '',
             'timemodified' => $entry['timemodified'] ?? 0,
         ];
-    }
-
-    /**
-     * Der volle relative Pfad innerhalb einer WebDAV-Nutzerinstanz: der im
-     * Pointer gewaehlte Ordner ({@see pointer_location::$relativepath}) plus
-     * der vom Aufrufer gewuenschte Unterpfad, beide segmentweise geprueft.
-     *
-     * @param storage_area $area
-     * @param pointer_location $location
-     * @param string $path
-     * @return string
-     */
-    private static function joined_relative_path(storage_area $area, pointer_location $location, string $path): string {
-        $base = trim((string) $location->relativepath, '/');
-        $extra = storage_anchor::normalise_client_path($area, $path);
-        if ($base === '') {
-            return $extra;
-        }
-        return $extra === '' ? $base : $base . '/' . $extra;
     }
 
     /**

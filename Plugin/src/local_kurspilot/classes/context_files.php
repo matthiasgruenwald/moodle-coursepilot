@@ -221,6 +221,46 @@ final class context_files {
     }
 
     /**
+     * Der aufgeloeste Pointer-Zustand des Kontextbereichs (Issue #491) - fuer
+     * die Schreibendpunkte, die vor jedem Schreibvorgang wissen muessen, ob
+     * der Moodle- oder der externe Zweig gilt (unterschiedliche Policy:
+     * Nutzerrecht, Quote). `null` heisst *offen* - dieselbe Bedeutung wie bei
+     * {@see \local_kurspilot\storage_anchor::resolve_pointer_location()}.
+     *
+     * @return pointer_location|null
+     * @throws \moodle_exception pointerunreadable/pointerincomplete/pointerunreachable
+     */
+    public static function resolve_pointer_location(): ?pointer_location {
+        return storage_anchor::resolve_pointer_location(self::area());
+    }
+
+    /**
+     * Legt eine externe Kontextdatei an oder ueberschreibt sie bedingt
+     * (Issue #491, Spec #486 §4/§6) - siehe {@see pointer_writer::write()}.
+     * Nur fuer einen bereits als *extern* erkannten Pointer-Zustand
+     * ({@see resolve_pointer_location()}).
+     *
+     * @param string $path
+     * @param string $content
+     * @return array{path: string, created: bool, size: int, oldsize: int}
+     */
+    public static function write_pointer_aware(string $path, string $content): array {
+        return pointer_writer::write(self::area(), $path, $content);
+    }
+
+    /**
+     * Haengt an eine externe Kontextdatei an (Issue #491, Spec #486 §4/§6) -
+     * siehe {@see pointer_writer::append()}.
+     *
+     * @param string $path
+     * @param string $content
+     * @return array{path: string, created: bool, size: int}
+     */
+    public static function append_pointer_aware(string $path, string $content): array {
+        return pointer_writer::append(self::area(), $path, $content);
+    }
+
+    /**
      * Legt eine Kontextdatei an oder ersetzt ihren Inhalt vollstaendig -
      * ortsneutral (Issue #487).
      *

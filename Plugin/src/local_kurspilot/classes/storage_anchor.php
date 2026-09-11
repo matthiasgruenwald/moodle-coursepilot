@@ -318,19 +318,57 @@ final class storage_anchor {
      * @throws \moodle_exception invalidpathkey des Bereichs / bereichseigener Namensfehler
      */
     public static function resolve_writable_file(storage_area $area, string $path): array {
-        [$directory, $filename] = self::resolve_file($area, $path);
+        [$folders, $filename] = self::writable_segments($area, $path);
+        return [self::resolve_directory($area, implode('/', $folders)), $filename];
+    }
 
-        // Nur die Ordnersegmente - der Dateiname darf als einziger einen
-        // Punkt tragen und wird gleich mit seiner eigenen Regel geprueft.
-        $folders = self::segments($area, $path);
-        array_pop($folders);
-        foreach ($folders as $segment) {
+    /**
+     * Die engeren Schreibregeln aus {@see resolve_writable_file()}, aber ohne
+     * Wurzelaufloesung - fuer den externen Schreibzweig (Issue #491), der
+     * keinen Moodle-Verzeichnispfad braucht und deshalb nie {@see root()}
+     * beruehrt (die dort fuer externe Ziele wirft). Ordnersegmente nur aus
+     * `[A-Za-z0-9_-]`, Dateiname geprueft ueber die bereichseigene Namensregel
+     * ({@see storage_area::$checkwritablename}).
+     *
+     * @param storage_area $area
+     * @param string $path z.B. "plan.md" oder "faecher/mathe/profil.md".
+     * @return array{0: string[], 1: string} [Ordnersegmente, Dateiname]
+     * @throws \moodle_exception invalidpathkey des Bereichs / bereichseigener Namensfehler
+     */
+    public static function writable_segments(storage_area $area, string $path): array {
+        $segments = self::segments($area, $path);
+        if (empty($segments)) {
+            throw new \moodle_exception($area->invalidpathkey, 'local_kurspilot');
+        }
+        $filename = array_pop($segments);
+        foreach ($segments as $segment) {
             if (!preg_match('/^[A-Za-z0-9_-]+$/', $segment)) {
                 throw new \moodle_exception($area->invalidpathkey, 'local_kurspilot');
             }
         }
         ($area->checkwritablename)($filename);
-        return [$directory, $filename];
+        return [$segments, $filename];
+    }
+
+    /**
+     * Der volle relative Pfad innerhalb einer WebDAV-Nutzerinstanz: der im
+     * Pointer gewaehlte Ordner ({@see pointer_location::$relativepath}) plus
+     * der vom Aufrufer gewuenschte Unterpfad, beide segmentweise geprueft.
+     * Geteilt von {@see pointer_reader} und {@see pointer_writer} - lesender
+     * und schreibender Zweig bauen dieselbe Adresse.
+     *
+     * @param storage_area $area
+     * @param pointer_location $location
+     * @param string $path
+     * @return string
+     */
+    public static function external_relative_path(storage_area $area, pointer_location $location, string $path): string {
+        $base = trim((string) $location->relativepath, '/');
+        $extra = self::normalise_client_path($area, $path);
+        if ($base === '') {
+            return $extra;
+        }
+        return $extra === '' ? $base : $base . '/' . $extra;
     }
 
     /**
@@ -375,9 +413,16 @@ final class storage_anchor {
         if ($remaining === null || $additionalbytes <= $remaining) {
             return;
         }
+        // ponytail: 'page' wird fuer jeden Bereich mitgegeben, auch fuer
+        // materialquotaexceeded, das {$a->page} (noch) nicht nutzt - ein
+        // bereichsspezifisches Umschalten waere hier mehr Code als der
+        // ungenutzte Objektschluessel kostet (get_string() ignoriert ihn
+        // stillschweigend). Aufteilen, sobald ein zweiter Bereich die Seite
+        // ausdruecklich NICHT nennen soll.
         throw new \moodle_exception($area->quotaerrorkey, 'local_kurspilot', '', (object) [
             'remaining' => format_float($remaining / 1048576, 1),
             'needed' => format_float($additionalbytes / 1048576, 1),
+            'page' => webdav_setup_steps::ORTSWAHL_PAGE,
         ]);
     }
 

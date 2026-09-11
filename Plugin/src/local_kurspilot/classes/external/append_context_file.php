@@ -22,6 +22,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_kurspilot\context_files;
 use local_kurspilot\personal_data;
+use local_kurspilot\pointer_location;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -77,9 +78,7 @@ class append_context_file extends external_api {
 
         $context = context_files::own_context();
         self::validate_context($context);
-        context_files::require_manage_own_files();
 
-        [$directory, $filename] = context_files::resolve_writable_file($params['path']);
         $content = $params['content'];
         $addedsize = strlen($content);
 
@@ -91,6 +90,17 @@ class append_context_file extends external_api {
                 'max' => context_files::MAX_WRITE_BYTES,
             ]);
         }
+
+        // Zeigerbewusst (Issue #491, Spec #486 §6): siehe write_context_file
+        // fuer die Begruendung der getrennten Zweige.
+        $location = context_files::resolve_pointer_location();
+        if ($location !== null && $location->kind === pointer_location::EXTERN) {
+            return self::execute_external($params['path'], $content);
+        }
+
+        context_files::require_manage_own_files();
+
+        [$directory, $filename] = context_files::resolve_writable_file($params['path']);
 
         $existing = context_files::read_content($directory, $filename);
 
@@ -129,6 +139,45 @@ class append_context_file extends external_api {
             'path' => $relativepath,
             'created' => !$existing,
             'size' => $newsize,
+            'message' => $message,
+        ];
+    }
+
+    /**
+     * Der externe Zweig (Issue #491, Spec #486 §4/§6): Read-modify-write mit
+     * `If-Match`, siehe {@see \local_kurspilot\pointer_writer::append()}.
+     * Personenbezug der Zieldatei wird ueber den pointer-bewussten Lesezweig
+     * geprueft, denselben, den auch `read_context_file` benutzt.
+     *
+     * Der Rotationshinweis gilt extern als Pflicht (Spec §6): jedes Anhaengen
+     * ueberträgt die ganze Datei zweimal, das weiche 1-MB-Signal des
+     * Moodle-Zweigs reicht dafuer nicht - die Antwort traegt ihn deshalb bei
+     * jedem externen Anhaengen, nicht erst ab der Groessengrenze.
+     *
+     * @param string $path
+     * @param string $content
+     * @return array
+     */
+    private static function execute_external(string $path, string $content): array {
+        $existing = context_files::read_content_pointer_aware($path);
+        if ($existing && !personal_data::allowed() && personal_data::is_marked($existing['content'])) {
+            throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $path);
+        }
+
+        $result = context_files::append_pointer_aware($path, $content);
+
+        $message = $result['created']
+            ? get_string('contextfilecreated', 'local_kurspilot', $result['path'])
+            : get_string('contextfileappended', 'local_kurspilot', (object) [
+                'path' => $result['path'],
+                'size' => $result['size'],
+            ]);
+        $message .= ' ' . get_string('contextfilerotation', 'local_kurspilot');
+
+        return [
+            'path' => $result['path'],
+            'created' => $result['created'],
+            'size' => $result['size'],
             'message' => $message,
         ];
     }

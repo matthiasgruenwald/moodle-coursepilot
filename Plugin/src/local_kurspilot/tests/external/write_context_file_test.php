@@ -18,13 +18,19 @@ namespace local_kurspilot\external;
 
 use core_external\external_api;
 use local_kurspilot\context_files;
+use local_kurspilot\tests\webdav\fake_webdav_transport;
+use local_kurspilot\tests\webdav\webdav_instance_fixture;
+use local_kurspilot\webdav\webdav_instance;
 
 defined('MOODLE_INTERNAL') || die();
 
 /**
  * Schreiben in den Kontextbereich (Issue #408, Spec 0016 Paragraph 4.1).
  * Neben dem Happy-Path die Absagen, die das Werkzeug eng halten: Pfad,
- * Dateiendung, Groesse, Gleichzeitigkeit, Personenbezug, Quote.
+ * Dateiendung, Groesse, Gleichzeitigkeit, Personenbezug, Quote. Seit Issue
+ * #491 zusaetzlich der externe Zweig: bedingtes Anlegen/Ueberschreiben ueber
+ * WebDAV, Nextcloud-Modus (mit ETag) und IServ-Modus (ohne ETag), Konflikt,
+ * fehlende Ordnerebenen, voller Speicher, keine Moodle-Quote/-Capability.
  *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
@@ -32,6 +38,12 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(write_context_file::class)]
 final class write_context_file_test extends \advanced_testcase {
+    use webdav_instance_fixture;
+
+    protected function tearDown(): void {
+        webdav_instance::use_test_transport(null);
+        parent::tearDown();
+    }
 
     /**
      * Eine neue Datei entsteht, und die Antwort sagt ausdruecklich "neu
@@ -276,7 +288,9 @@ final class write_context_file_test extends \advanced_testcase {
 
     /**
      * Reicht die Nutzerquote nicht, nennt die Absage den Restplatz in MB
-     * (Spec 0016 §1.3).
+     * (Spec 0016 §1.3) und verweist auf die Ortswahlseite (Issue #491, Spec
+     * #486 §6: "Scheitert dort ein Schreibvorgang an der Quote, verweist die
+     * Meldung auf die Ortswahlseite.").
      */
     public function test_rejects_when_user_quota_exceeded(): void {
         global $CFG;
@@ -289,7 +303,208 @@ final class write_context_file_test extends \advanced_testcase {
             $this->fail('Quotenueberschreitung haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString('MB', $e->getMessage());
+            $this->assertStringContainsString(
+                \local_kurspilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE,
+                $e->getMessage()
+            );
         }
+    }
+
+    /**
+     * Extern legt {@see write_context_file} mit `If-None-Match: *` an
+     * (Issue #491, Spec #486 §4/§6) - Nextcloud-Modus, der Fake liefert ETags.
+     */
+    public function test_creates_new_external_file_with_if_none_match_star(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        $result = $this->write('plan.md', '# Plan');
+
+        $this->assertTrue($result['created']);
+        $this->assertSame('plan.md', $result['path']);
+        $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
+        $this->assertCount(1, $puts);
+        $this->assertSame('*', $puts[0]['headers']['If-None-Match'] ?? null);
+        $this->assertArrayNotHasKey('If-Match', $puts[0]['headers']);
+    }
+
+    /**
+     * Extern ueberschreibt {@see write_context_file} mit `If-Match: <ETag>`
+     * (Nextcloud-Modus).
+     */
+    public function test_overwrites_existing_external_file_with_if_match(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $seeded = $fake->seed_file('/Kurspilot/Kontext/plan.md', 'alt');
+
+        $result = $this->write('plan.md', '# Neuer Plan');
+
+        $this->assertFalse($result['created']);
+        $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
+        $this->assertCount(1, $puts);
+        $this->assertSame($seeded['etag'], $puts[0]['headers']['If-Match'] ?? null);
+    }
+
+    /**
+     * Ohne ETag (IServ) dient `getlastmodified` als schwacher Ersatz -
+     * dasselbe Werkzeug, ohne dass der Aufrufer etwas davon merkt.
+     */
+    public function test_overwrites_existing_external_file_without_etag_iserv_mode(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->without_etags();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/plan.md', 'alt');
+
+        $result = $this->write('plan.md', '# Neuer Plan');
+
+        $this->assertFalse($result['created']);
+        $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
+        $this->assertCount(1, $puts);
+        $this->assertArrayNotHasKey('If-Match', $puts[0]['headers']);
+    }
+
+    /**
+     * Fehlende Ordnerebenen werden per MKCOL angelegt (Issue #491, Spec #486 §4).
+     */
+    public function test_creates_missing_folder_levels_via_mkcol(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        $this->write('faecher/mathe/profil.md', '# Mathe');
+
+        $mkcols = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'MKCOL'));
+        $this->assertNotEmpty($mkcols);
+        $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
+        $this->assertCount(1, $puts);
+    }
+
+    /**
+     * Ein 412 (Konflikt zwischen Lesen und Schreiben) ergibt `Konflikt` mit
+     * der Anweisung, neu zu lesen und zusammenzufuehren - und legt keinen
+     * Ausstand an (Issue #491, Spec #486 §4/§6). Der Inhalt bleibt dabei
+     * unangetastet.
+     */
+    public function test_external_conflict_reports_konflikt_and_leaves_content_unchanged(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/plan.md', 'alt');
+
+        $decorator = new \local_kurspilot\tests\webdav\stale_read_transport($fake, '/Kurspilot/Kontext/plan.md', $fake);
+        webdav_instance::use_test_transport($decorator);
+
+        try {
+            $this->write('plan.md', '# Neuer Plan');
+            $this->fail('Konflikt haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+        }
+
+        // Weder der alte noch der neu versuchte Inhalt kommt vom
+        // fehlgeschlagenen PUT - stehen bleibt die "Handaenderung", die der
+        // Decorator zwischen Lesen und Schreiben simuliert hat.
+        $this->assertSame('handaenderung', $this->external_content($fake, '/Kurspilot/Kontext/plan.md'));
+    }
+
+    /**
+     * Anlegen ({@see \local_kurspilot\pointer_writer::write()} liest die
+     * Datei zunaechst als fehlend, faehrt dann `put_new()` mit
+     * `If-None-Match: *`) gegen eine inzwischen angelegte Datei ergibt 412 -
+     * `Konflikt`, und der zwischenzeitlich entstandene Inhalt bleibt
+     * unangetastet (Issue #491 Testvorgabe: "Ein Anlegen auf eine vorhandene
+     * Datei ergibt 412 und laesst den Inhalt unveraendert.").
+     */
+    public function test_external_create_conflicts_when_file_appears_meanwhile(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        $decorator = new \local_kurspilot\tests\webdav\stale_read_transport($fake, '/Kurspilot/Kontext/plan.md', $fake);
+        webdav_instance::use_test_transport($decorator);
+
+        try {
+            $this->write('plan.md', '# Neuer Plan');
+            $this->fail('Konflikt haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+        }
+
+        $this->assertSame('handaenderung', $this->external_content($fake, '/Kurspilot/Kontext/plan.md'));
+    }
+
+    /**
+     * Ein voller externer Speicher (507) ergibt `Speicher voll`.
+     */
+    public function test_external_storage_full_reports_speicher_voll(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->fill_storage();
+
+        try {
+            $this->write('plan.md', '# Plan');
+            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertStringContainsString(
+                \local_kurspilot\webdav\webdav_error::STORAGE_FULL,
+                $e->getMessage()
+            );
+        }
+    }
+
+    /**
+     * Extern meldet die Restquote "keine Grenze" - die Moodle-Quotenpruefung
+     * wirkt nicht (Issue #491, Spec #486 §6).
+     */
+    public function test_external_write_ignores_moodle_quota(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $CFG->userquota = 1;
+
+        $result = $this->write('plan.md', str_repeat('x', 4096));
+
+        $this->assertTrue($result['created']);
+    }
+
+    /**
+     * `moodle/user:manageownfiles` wirkt extern nicht (Issue #491, Spec #486 §6).
+     */
+    public function test_external_write_succeeds_without_manageownfiles_capability(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability(
+            'moodle/user:manageownfiles',
+            CAP_PROHIBIT,
+            $roleid,
+            \context_user::instance($user->id)->id,
+            true
+        );
+
+        $result = $this->write('plan.md', '# Plan');
+
+        $this->assertTrue($result['created']);
+    }
+
+    /**
+     * @param fake_webdav_transport $fake
+     * @param string $path
+     * @return string
+     */
+    private function external_content(fake_webdav_transport $fake, string $path): string {
+        // Kein oeffentlicher Lesezugriff auf den internen Speicher des Fakes -
+        // ueber den Client selbst nachlesen, exakt wie ein echter Aufrufer.
+        $client = new \local_kurspilot\webdav\webdav_client($fake);
+        return $client->get('https://fake.example' . $path);
     }
 
     /**

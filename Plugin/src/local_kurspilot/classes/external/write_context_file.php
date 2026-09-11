@@ -22,6 +22,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_kurspilot\context_files;
 use local_kurspilot\personal_data;
+use local_kurspilot\pointer_location;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -74,12 +75,9 @@ class write_context_file extends external_api {
 
         $context = context_files::own_context();
         self::validate_context($context);
-        context_files::require_manage_own_files();
 
-        [$directory, $filename] = context_files::resolve_writable_file($params['path']);
         $content = $params['content'];
         $newsize = strlen($content);
-
         if ($newsize > context_files::MAX_WRITE_BYTES) {
             throw new \moodle_exception('contextfiletoolarge', 'local_kurspilot', '', (object) [
                 'size' => $newsize,
@@ -89,10 +87,24 @@ class write_context_file extends external_api {
 
         // Schalter fuer personenbezogene Kontextdaten (#344, ADR 0011):
         // geprueft wird die Markierung im zu schreibenden Inhalt, nicht der
-        // Inhalt selbst (Spec 0016 §5.5).
+        // Inhalt selbst (Spec 0016 §5.5) - fuer beide Orte identisch (Spec
+        // #486 §6: "allowpersonaldata wirkt unveraendert am Inhalt").
         if (personal_data::is_marked($content) && !personal_data::allowed()) {
             throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $params['path']);
         }
+
+        // Zeigerbewusst (Issue #491, Spec #486 §6): der externe Zweig kennt
+        // weder Nutzerquote noch moodle/user:manageownfiles - "fuer den
+        // Kontextbereich in Moodle bleibt alles wie heute" gilt wortwoertlich,
+        // die beiden Zweige bleiben deshalb getrennt statt ineinander verwoben.
+        $location = context_files::resolve_pointer_location();
+        if ($location !== null && $location->kind === pointer_location::EXTERN) {
+            return self::execute_external($params['path'], $content);
+        }
+
+        context_files::require_manage_own_files();
+
+        [$directory, $filename] = context_files::resolve_writable_file($params['path']);
 
         $existing = context_files::read_content($directory, $filename);
         $oldsize = $existing ? $existing['size'] : 0;
@@ -131,6 +143,35 @@ class write_context_file extends external_api {
             'path' => $relativepath,
             'created' => !$existing,
             'size' => $newsize,
+            'message' => $message,
+        ];
+    }
+
+    /**
+     * Der externe Zweig (Issue #491, Spec #486 §4/§6): bedingtes Anlegen/
+     * Ueberschreiben ueber WebDAV, siehe {@see \local_kurspilot\pointer_writer::write()}.
+     * Groessen- und Personenbezugspruefung sind bereits im Aufrufer erledigt -
+     * fuer beide Orte identisch, deshalb dort statt hier.
+     *
+     * @param string $path
+     * @param string $content
+     * @return array
+     */
+    private static function execute_external(string $path, string $content): array {
+        $result = context_files::write_pointer_aware($path, $content);
+
+        $message = $result['created']
+            ? get_string('contextfilecreated', 'local_kurspilot', $result['path'])
+            : get_string('contextfileoverwritten', 'local_kurspilot', (object) [
+                'path' => $result['path'],
+                'before' => $result['oldsize'],
+                'after' => $result['size'],
+            ]);
+
+        return [
+            'path' => $result['path'],
+            'created' => $result['created'],
+            'size' => $result['size'],
             'message' => $message,
         ];
     }
