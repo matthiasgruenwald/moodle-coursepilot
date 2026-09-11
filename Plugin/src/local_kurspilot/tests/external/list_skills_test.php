@@ -18,7 +18,9 @@ namespace local_kurspilot\external;
 
 use core_external\external_api;
 use local_kurspilot\ausstand_notice;
+use local_kurspilot\storage_anchor;
 use local_kurspilot\tests\webdav\fake_webdav_transport;
+use local_kurspilot\tests\webdav\webdav_instance_fixture;
 use local_kurspilot\webdav\webdav_instance;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -34,6 +36,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(list_skills::class)]
 final class list_skills_test extends \advanced_testcase {
+    use webdav_instance_fixture;
 
     /**
      * Nennt je Eintrag Name, Auslöser, Art und Umfang - keinen Inhalt, ohne
@@ -116,5 +119,67 @@ final class list_skills_test extends \advanced_testcase {
         } finally {
             webdav_instance::use_test_transport(null);
         }
+    }
+
+    /**
+     * Ohne WebDAV-Freischaltung fehlt der Ortswahl-Hinweisfakt (Issue #494
+     * Akzeptanzkriterium) - 'hinweise' bleibt ein leeres Array, nie null.
+     */
+    public function test_hinweise_field_is_empty_without_webdav_freischaltung(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->setUser($user);
+
+        $result = list_skills::execute();
+        $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
+
+        $this->assertSame([], $result['hinweise']);
+    }
+
+    /**
+     * Mit Freischaltung und noch offener Ortswahl (kein Kontextpointer)
+     * nennt 'hinweise' den Fakt samt Link zur Ortswahlseite - ohne
+     * Netzzugriff (Issue #494 Akzeptanzkriterium).
+     */
+    public function test_hinweise_field_names_open_ortswahl_when_enabled_and_no_pointer(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->setUser($user);
+        $this->enable_webdav_repository_type();
+        $this->grant_webdav_capability($user);
+
+        $fake = new fake_webdav_transport();
+        webdav_instance::use_test_transport($fake);
+        try {
+            $result = list_skills::execute();
+            $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
+
+            $this->assertSame([], $fake->requests(), 'kurspilot_list_skills darf den externen Speicher nicht erreichen.');
+            $this->assertCount(1, $result['hinweise']);
+            $this->assertStringContainsString('/local/kurspilot/ortswahl.php', $result['hinweise'][0]['link']);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    /**
+     * Sobald ein Kontextpointer existiert, gilt die Ortswahl nicht mehr als
+     * offen - der Fakt verschwindet, obwohl die Freischaltung weiterbesteht.
+     */
+    public function test_hinweise_field_is_empty_once_a_pointer_exists(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->setUser($user);
+        $this->enable_webdav_repository_type();
+        $this->grant_webdav_capability($user);
+        storage_anchor::write_pointer('mein-kontext', 'mein-material');
+
+        $result = list_skills::execute();
+        $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
+
+        $this->assertSame([], $result['hinweise']);
     }
 }

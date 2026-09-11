@@ -33,6 +33,8 @@
 require(__DIR__ . '/../../../config.php');
 
 use local_kurspilot\oauth_lib;
+use local_kurspilot\ortswahl_lib;
+use local_kurspilot\webdav\webdav_setup_steps;
 
 require_login(null, false);
 
@@ -79,17 +81,6 @@ if ($action === 'deny') {
 if ($action === 'allow') {
     require_sesskey();
 
-    // Ortswahl (#446): der Dialog ist der Anlass, der Kontextpointer ihr
-    // Speicher. Bestaetigen ohne Aenderung schreibt hier nichts - siehe
-    // oauth_lib::apply_storage_location_choice(). Nur dieser Zweig (die
-    // bewusste "Erlauben"-Bestaetigung) darf den Pointer schreiben - kein
-    // anderer $action-Wert loest das aus (Spec: Ablageort als eine Sache
-    // #442 §3: "nie die Nebenwirkung eines anderen Vorgangs").
-    oauth_lib::apply_storage_location_choice(
-        optional_param('kontextbereich', '', PARAM_RAW_TRIMMED),
-        optional_param('materialordner', '', PARAM_RAW_TRIMMED)
-    );
-
     global $USER;
     $code = oauth_lib::issue_code(
         $params['client_id'],
@@ -121,13 +112,24 @@ echo html_writer::div(
     'kurspilot-consent'
 );
 
-// Ortswahl (#446, Spec: Ablageort als eine Sache #442 §3): der aufgeloeste
-// Ort, vorausgewaehlt mit dem heutigen Zustand. Nur die Erlauben-Form traegt
-// diese Felder - Ablehnen schreibt nie einen Pointer.
-$location = oauth_lib::current_storage_location();
+// Ortswahl (#446, #494): der Dialog zeigt den aufgeloesten Ort nur noch an
+// und verlinkt zur Ortswahlseite - er schreibt selbst keinen Kontextpointer
+// mehr (das war Issue #446, abgeloest durch die eigene Ortswahlseite #494).
 echo $OUTPUT->heading(get_string('consentlocationheading', 'local_kurspilot'), 3);
 echo html_writer::div(get_string('consentlocationintro', 'local_kurspilot'), 'kurspilot-consent-location-intro');
-echo html_writer::div(get_string('consentlocationnomove', 'local_kurspilot'), 'kurspilot-consent-location-nomove');
+$kontextbereich = ortswahl_lib::current('kontextbereich');
+$materialbestand = ortswahl_lib::current('materialbestand');
+echo html_writer::start_tag('ul');
+echo html_writer::tag('li', get_string('consentlocationkontextbereichcurrent', 'local_kurspilot', $kontextbereich['display']));
+echo html_writer::tag('li', get_string('consentlocationmaterialbestandcurrent', 'local_kurspilot', $materialbestand['display']));
+echo html_writer::end_tag('ul');
+echo html_writer::link(
+    new moodle_url(webdav_setup_steps::ORTSWAHL_PAGE),
+    get_string('consentlocationchangelink', 'local_kurspilot'),
+    ['class' => 'btn btn-link p-0']
+);
+echo html_writer::empty_tag('br');
+echo html_writer::empty_tag('br');
 
 $formurl = new moodle_url('/local/kurspilot/oauth/authorize.php');
 foreach (['allow' => 'consentconfirm', 'deny' => 'consentdeny'] as $actionvalue => $labelstring) {
@@ -138,18 +140,6 @@ foreach (['allow' => 'consentconfirm', 'deny' => 'consentdeny'] as $actionvalue 
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'state', 'value' => $state]);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => $actionvalue]);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-    if ($actionvalue === 'allow') {
-        echo html_writer::tag('label', get_string('consentlocationkontextbereich', 'local_kurspilot'), ['for' => 'id_kontextbereich']);
-        echo html_writer::empty_tag('input', [
-            'type' => 'text', 'id' => 'id_kontextbereich', 'name' => 'kontextbereich',
-            'value' => $location['kontextbereich'], 'size' => 20,
-        ]);
-        echo html_writer::tag('label', get_string('consentlocationmaterialordner', 'local_kurspilot'), ['for' => 'id_materialordner']);
-        echo html_writer::empty_tag('input', [
-            'type' => 'text', 'id' => 'id_materialordner', 'name' => 'materialordner',
-            'value' => $location['materialordner'], 'size' => 20,
-        ]);
-    }
     echo html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string($labelstring, 'local_kurspilot')]);
     echo html_writer::end_tag('form');
 }

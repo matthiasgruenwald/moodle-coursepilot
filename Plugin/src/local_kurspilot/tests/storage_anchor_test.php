@@ -279,6 +279,53 @@ final class storage_anchor_test extends \advanced_testcase {
     }
 
     /**
+     * default_root() (Issue #494) liefert die konfigurierte Standardwurzel
+     * ohne Pointer-Aufloesung - unveraendert, selbst wenn ein Pointer
+     * bereits auf einen anderen Ort zeigt (die Ortswahlseite braucht genau
+     * diesen von der Pointer-Aufloesung unabhaengigen Wert fuer "in Moodle
+     * lassen").
+     */
+    public function test_default_root_ignores_an_existing_pointer(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        storage_anchor::write_pointer('woanders', 'auch-woanders');
+
+        $this->assertSame('kurspilot', storage_anchor::default_root(context_files::area()));
+        $this->assertSame('kurspilot-material', storage_anchor::default_root(material_files::area()));
+    }
+
+    /**
+     * read_raw_pointer() (Issue #494) liest dasselbe Dokument wie die interne
+     * Aufloesung, oeffentlich - null ohne Pointer-Datei.
+     */
+    public function test_read_raw_pointer_is_null_without_pointer_file(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $this->assertNull(storage_anchor::read_raw_pointer());
+    }
+
+    /**
+     * write_pointer_document() (Issue #494) schreibt ein vollstaendiges
+     * Dokument der zweiten Fassung, read_raw_pointer() liest es unveraendert
+     * zurueck - der Schreibweg der Ortswahlseite, getrennt von
+     * write_pointer() (der ersten, zweifeldigen Fassung).
+     */
+    public function test_write_pointer_document_is_readable_back_via_read_raw_pointer(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $document = [
+            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'kurspilot'],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'kurspilot-material'],
+            'ortsverlauf' => [['datum' => 123, 'ziel' => 'kontextbereich', 'von' => 'a', 'nach' => 'b']],
+        ];
+        storage_anchor::write_pointer_document($document);
+
+        $this->assertSame($document, storage_anchor::read_raw_pointer());
+    }
+
+    /**
      * Dieselbe Normalisierung beim Lesen: ein von Hand mit Backslash
      * geschriebener Pointer faellt nicht still auf den Standard zurueck,
      * sondern wirft benannt wie jeder andere unerreichbare Ort.

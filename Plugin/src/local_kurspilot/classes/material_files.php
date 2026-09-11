@@ -105,7 +105,7 @@ final class material_files {
      *
      * @return storage_area
      */
-    private static function area(): storage_area {
+    public static function area(): storage_area {
         return new storage_area(
             rootsetting: 'materialroot',
             defaultroot: self::DEFAULT_ROOT,

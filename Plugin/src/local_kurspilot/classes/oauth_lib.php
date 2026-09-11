@@ -533,56 +533,6 @@ final class oauth_lib {
     }
 
     /**
-     * Aktueller Ablageort (Issue #446, Spec: Ablageort als eine Sache #442
-     * §3): die zwei Ordnernamen, wie sie der Zustimmungsdialog vorausgewaehlt
-     * zeigt - identisch mit dem, was jeder andere Aufrufer heute bekaeme
-     * (Pointer oder Standardwurzel, macht fuer die Anzeige keinen Unterschied).
-     *
-     * @return array{kontextbereich: string, materialordner: string}
-     */
-    public static function current_storage_location(): array {
-        return [
-            'kontextbereich' => trim(context_files::resolve_directory(''), '/'),
-            'materialordner' => trim(material_files::resolve_directory(''), '/'),
-        ];
-    }
-
-    /**
-     * Wendet die Ortswahl aus dem Zustimmungsdialog an (Issue #446, Spec:
-     * Ablageort als eine Sache #442 §3): der Dialog ist der Anlass der Wahl,
-     * der Kontextpointer ihr Speicher. Schreibt den Pointer nur, wenn sich
-     * mindestens einer der beiden Ordnernamen vom aktuell aufgeloesten Ort
-     * unterscheidet - Bestaetigen ohne Aenderung ruft diese Methode zwar auf,
-     * loest aber keinen Schreibvorgang aus: kein Pointer wird angelegt, keiner
-     * geaendert. Bewegt nie eine Datei, egal ob geschrieben wird oder nicht.
-     *
-     * Ein leeres Feld heisst "unveraendert", nicht "kein Ort": es wird mit dem
-     * heute aufgeloesten Wert aufgefuellt. Sonst scheiterte der gesamte
-     * Verbindungsaufbau an einer pointerincomplete-Ausnahme, sobald die
-     * Lehrkraft ein vorausgefuelltes Feld leert oder ein Client die beiden
-     * Felder gar nicht erst mitschickt - der Dialog wird hier nie zum
-     * Hindernis fuer die Verbindung selbst.
-     *
-     * @param string $kontextbereich Leer = heutigen Ort beibehalten.
-     * @param string $materialordner Leer = heutigen Ort beibehalten.
-     * @return bool true, wenn tatsaechlich ein Pointer geschrieben wurde.
-     * @throws \moodle_exception pointerunreachable bei ungueltigen
-     *         Ordnernamen (siehe {@see storage_anchor::write_pointer()}).
-     */
-    public static function apply_storage_location_choice(string $kontextbereich, string $materialordner): bool {
-        $current = self::current_storage_location();
-        $wanted = [
-            'kontextbereich' => trim($kontextbereich, '/') ?: $current['kontextbereich'],
-            'materialordner' => trim($materialordner, '/') ?: $current['materialordner'],
-        ];
-        if ($wanted === $current) {
-            return false;
-        }
-        storage_anchor::write_pointer($wanted['kontextbereich'], $wanted['materialordner']);
-        return true;
-    }
-
-    /**
      * PKCE-S256-Verifikation (RFC 7636, 4.6): BASE64URL(SHA256(verifier))
      * muss der bei der Autorisierungsanfrage hinterlegten Challenge
      * entsprechen. hash_equals() gegen Timing-Angriffe.

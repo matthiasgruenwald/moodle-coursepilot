@@ -80,7 +80,7 @@ final class context_files {
      *
      * @return storage_area
      */
-    private static function area(): storage_area {
+    public static function area(): storage_area {
         return new storage_area(
             rootsetting: storage_anchor::ANCHOR_ROOTSETTING,
             defaultroot: storage_anchor::ANCHOR_DEFAULT_ROOT,

@@ -23,7 +23,9 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_kurspilot\ausstand_notice;
+use local_kurspilot\ortswahl_lib;
 use local_kurspilot\skill_corpus;
+use local_kurspilot\webdav\webdav_setup_steps;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -65,7 +67,19 @@ final class list_skills extends external_api {
             'umfang' => $entry['umfang'],
         ], skill_corpus::list());
 
-        return ['skills' => $skills, 'ausstaende' => ausstand_notice::list_grouped()];
+        global $USER;
+        $hinweise = [];
+        if (ortswahl_lib::open_with_access((int) $USER->id)) {
+            // Ortswahl offen und Freischaltung vorhanden (Issue #494
+            // Akzeptanzkriterium) - ohne Netzzugriff, kein Fakt ohne
+            // Freischaltung.
+            $hinweise[] = [
+                'text' => get_string('listskillsortswahlhint', 'local_kurspilot', webdav_setup_steps::ORTSWAHL_PAGE),
+                'link' => (new \moodle_url(webdav_setup_steps::ORTSWAHL_PAGE))->out(false),
+            ];
+        }
+
+        return ['skills' => $skills, 'ausstaende' => ausstand_notice::list_grouped(), 'hinweise' => $hinweise];
     }
 
     /**
@@ -94,6 +108,15 @@ final class list_skills extends external_api {
                     ),
                 ]),
                 'Offene Ausstaende, gebuendelt je Zieldatei, die aeltesten zuerst (ADR 0023)',
+                VALUE_DEFAULT,
+                []
+            ),
+            'hinweise' => new external_multiple_structure(
+                new external_single_structure([
+                    'text' => new external_value(PARAM_TEXT, 'Hinweistext, Deutsch'),
+                    'link' => new external_value(PARAM_URL, 'Zielseite des Hinweises'),
+                ]),
+                'Ohne Netzzugriff ermittelte Hinweise, z.B. offene Ortswahl bei vorhandener Freischaltung (Issue #494)',
                 VALUE_DEFAULT,
                 []
             ),

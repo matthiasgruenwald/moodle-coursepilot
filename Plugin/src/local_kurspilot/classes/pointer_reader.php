@@ -154,10 +154,14 @@ final class pointer_reader {
      * Antwortrumpf (Geheimnis-Test, Spec #486 Testing Decisions), nur die
      * benannte Fehlerklasse und der Verweis auf die Ortswahlseite.
      *
+     * Oeffentlich, weil auch {@see \local_kurspilot\ortswahl_lib} (Issue
+     * #494: Auflisten/Anlegen auf der Ortswahlseite) denselben Fehlertext
+     * braucht - eine Uebersetzung statt zwei fast identischer Kopien.
+     *
      * @param webdav_error $e
      * @return \moodle_exception
      */
-    private static function webdav_exception(webdav_error $e): \moodle_exception {
+    public static function webdav_exception(webdav_error $e): \moodle_exception {
         return new \moodle_exception('webdavexternalerror', 'local_kurspilot', '', (object) [
             'errorclass' => $e->errorclass,
             'page' => webdav_setup_steps::ORTSWAHL_PAGE,

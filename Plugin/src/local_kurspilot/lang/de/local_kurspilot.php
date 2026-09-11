@@ -90,6 +90,61 @@ $string['webdavstep1instruction'] = 'Die Administration muss den Repository-Typ 
 $string['webdavstep2instruction'] = 'Die Administration muss beim Repository-Typ "WebDAV" die Option "Nutzerinstanzen erlauben" einschalten.';
 $string['webdavstep3instruction'] = 'Die Administration muss der Lehrkraft das Recht "repository/webdav:view" im eigenen Nutzerkontext zuweisen (empfohlen über eine eigene Systemrolle).';
 
+// Ortswahlseite (Issue #494, Spec #486 §5/§10).
+$string['ortswahl'] = 'Ortswahl';
+$string['ortswahltitle'] = 'Wo Kontextbereich und Materialbestand liegen';
+$string['ortswahlheading'] = 'Wo Kontextbereich und Materialbestand liegen';
+$string['ortswahlintro'] = 'Wählen Sie je Ziel einen Ordner in einer Ihrer WebDAV-Verbindungen, oder lassen Sie es in Moodle.';
+$string['ortswahltabkontextbereich'] = 'Kontextbereich';
+$string['ortswahltabmaterialbestand'] = 'Materialbestand';
+$string['ortswahlkontexthint'] = 'Empfehlung: ein eigener Ordner nur für Kurspilot — nicht mitten in bereits genutzten Unterlagen.';
+$string['ortswahlkeepmoodle'] = 'In Moodle lassen';
+$string['ortswahlchooseinstance'] = 'Verbindung wählen';
+$string['ortswahlselectfolder'] = 'Diesen Ordner wählen';
+$string['ortswahlbreadcrumbroot'] = 'Wurzel';
+$string['ortswahlloading'] = 'Wird geladen …';
+$string['ortswahlcreatefolder'] = 'Ordner anlegen';
+$string['ortswahlnewfoldername'] = 'Name des neuen Ordners';
+$string['ortswahlprogresschosen'] = '{$a}';
+$string['ortswahlprogressopen'] = 'noch offen: {$a}';
+$string['ortswahlfinishbutton'] = 'Einrichten abschließen';
+$string['ortswahlfinishsuccess'] = 'Gespeichert. Geänderte Ziele: {$a}.';
+$string['ortswahlfinishnochange'] = 'Keine Änderung — der bisherige Ort bleibt bestehen.';
+$string['ortswahlselectionincomplete'] = 'Bitte für jedes Ziel eine Antwort wählen, bevor Sie abschließen.';
+$string['ortswahlselectioninvalid'] = 'Ungültige Auswahl — bitte den Ordner im Dateifenster erneut wählen.';
+$string['ortswahltimeouttitle'] = 'Keine Antwort';
+$string['ortswahltimeouttext'] = 'Der Speicher antwortet nicht innerhalb von 8 Sekunden. Nichts wurde gespeichert.';
+$string['ortswahlretry'] = 'Erneut versuchen';
+$string['ortswahlcheckcredentials'] = 'Zugangsdaten prüfen';
+$string['ortswahllater'] = 'Später';
+$string['ortswahlcurrentheading'] = 'Aktueller Ort';
+$string['ortswahlcurrentkontextbereich'] = 'Kontextbereich: {$a}';
+$string['ortswahlcurrentmaterialbestand'] = 'Materialbestand: {$a}';
+$string['ortswahlhistoryheading'] = 'Bisherige Orte';
+$string['ortswahlhistoryempty'] = 'Noch keine Änderungen.';
+$string['ortswahlhistorydate'] = 'Datum';
+$string['ortswahlhistorytarget'] = 'Ziel';
+$string['ortswahlhistoryfrom'] = 'Von';
+$string['ortswahlhistoryto'] = 'Nach';
+$string['ortswahllocationmoodle'] = 'in Moodle ({$a})';
+$string['ortswahllocationextern'] = '{$a->instance} / {$a->path}';
+$string['ortswahllocationexternroot'] = '{$a} (Wurzel)';
+$string['ortswahlinstanceunknown'] = 'unbekannte Verbindung';
+$string['ortswahlnoinstanceheading'] = 'Noch keine eigene WebDAV-Verbindung';
+$string['ortswahlnoinstanceintro'] = 'Ihre Schule hat externe Speicher freigeschaltet, Sie haben aber noch keine eigene Verbindung eingerichtet:';
+$string['ortswahlnoinstancestep1'] = '1. Öffnen Sie den Dateipicker (z. B. beim Hochladen einer Datei), wählen Sie "WebDAV" und dann "Repository konfigurieren".';
+$string['ortswahlnoinstancestep2'] = '2. Tragen Sie Server, Pfad und Ihre Zugangsdaten ein und speichern Sie.';
+$string['ortswahlnoinstancestep3'] = '3. Kehren Sie auf diese Seite zurück — die neue Verbindung erscheint hier automatisch.';
+$string['ortswahlschoolhintheading'] = 'Hinweis Ihrer Schule';
+$string['ortswahlnotenabledheading'] = 'Externe Speicher noch nicht freigegeben';
+$string['ortswahlnotenabledtext'] = 'Ihre Schule hat externe Speicher noch nicht freigegeben. Bis dahin liegt alles in Moodle.';
+$string['ortswahlmissingstepsheading'] = 'Text für die Administration';
+$string['ortswahlmissingstepsintro'] = 'Kopieren Sie den Text und schicken Sie ihn an Ihre Moodle-Administration:';
+$string['ortswahlcoresupportlink'] = 'Support-Kontakt Ihrer Moodle-Instanz';
+$string['settingwebdavhint'] = 'Hinweis der Schule (Ortswahl)';
+$string['settingwebdavhint_desc'] = 'Optionaler Freitext, der Lehrkräften ohne eigene WebDAV-Verbindung auf der Ortswahlseite zusätzlich zu den drei Einrichtungsschritten angezeigt wird — z. B. eine Empfehlung, welchen Cloud-Dienst die Schule stellt.';
+$string['listskillsortswahlhint'] = 'Die Lehrkraft kann Kontextbereich und Materialbestand statt in Moodle in einem eigenen WebDAV-Speicher ablegen — Ortswahl unter {$a}.';
+
 // Ausstandsnotiz (Issue #492, ADR 0023, Spec #486 §8/§10): kein absoluter
 // Serverpfad, kein Benutzername, kein Passwort, kein HTTP-Code, kein
 // Antwortrumpf (Geheimnis-Test) — der Rohcode geht ins Zugriffsprotokoll.
@@ -205,12 +260,12 @@ $string['consentpersonaldataon'] = 'Diese Moodle-Instanz überträgt <strong>auc
 $string['consentabbreviate'] = 'Welche personenbezogenen Angaben Sie in Kontextdateien ablegen dürfen, richtet sich nach den Vorgaben Ihrer Schule und den Bestimmungen Ihres Landesdatenschutzes. Kurspilot prüft das nicht. Wo es für die Planung ausreicht, verwenden Sie Kürzel statt Namen.';
 $string['consentrevoke'] = 'Sie können diese Verbindung jederzeit unter Profil → Meine Kurspilot-Verbindungen widerrufen.';
 
-// Ortswahl beim Verbindungsaufbau (Issue #446, Spec: Ablageort als eine Sache #442 §3).
+// Ortswahl beim Verbindungsaufbau (Issue #446, seit Issue #494 nur noch Anzeige).
 $string['consentlocationheading'] = 'Wo Ihr Kurspilot-Bereich liegt';
-$string['consentlocationintro'] = 'Kurspilot legt Ihre Journale, Pläne und Materialien in zwei Ordnern in Ihrem eigenen Moodle-Dateibereich ("Meine Dateien") ab. Die Felder unten zeigen den heutigen Ort und sind bereits so ausgefüllt — wer nichts ändern möchte, bestätigt einfach unten.';
-$string['consentlocationkontextbereich'] = 'Ordner für Journale und Pläne';
-$string['consentlocationmaterialordner'] = 'Ordner für Materialdateien';
-$string['consentlocationnomove'] = 'Ein geänderter Ordnername verschiebt keine Dateien: Vorhandenes bleibt am bisherigen Ort liegen und ist weiterhin über „Meine Dateien" erreichbar. Nur neu geschriebene Dateien landen im neuen Ordner.';
+$string['consentlocationintro'] = 'Kurspilot legt Ihre Journale, Pläne und Materialien an den unten genannten Orten ab.';
+$string['consentlocationkontextbereichcurrent'] = 'Journale und Pläne: {$a}';
+$string['consentlocationmaterialbestandcurrent'] = 'Materialdateien: {$a}';
+$string['consentlocationchangelink'] = 'Ort ändern';
 
 // classes/privacy/provider.php (#336).
 $string['privacy:metadata:oauth_code'] = 'Kurzlebige, PKCE-gebundene Autorisierungscodes für den OAuth-Zustimmungsdialog.';

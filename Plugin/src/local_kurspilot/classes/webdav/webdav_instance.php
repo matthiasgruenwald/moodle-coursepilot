@@ -82,6 +82,31 @@ final class webdav_instance {
      *         webdavauthunsupported/webdavfingerprintchanged
      */
     public static function resolve(pointer_location $location): resolved_webdav_instance {
+        $resolved = self::resolve_owned((int) $location->instanceid);
+
+        $options = self::fresh_options((int) $location->instanceid);
+        if (self::fingerprint($options) !== self::normalised_fingerprint($location->fingerprint ?? [])) {
+            throw new \moodle_exception('webdavfingerprintchanged', 'local_kurspilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * Loest eine WebDAV-Nutzerinstanz per ID auf, ohne ein Pruefmerkmal zu
+     * verlangen (Issue #494): Existenz, Instanzeigentum (inkl. "Login as"),
+     * WebDAV-Freischaltung, https+Basic - dieselben Pruefungen 2-5 wie
+     * {@see resolve()}, nur ohne Pruefung 6 (Pruefmerkmal), weil die
+     * Ortswahlseite eine Instanz durchsucht, bevor ueberhaupt ein
+     * Kontextpointer mit einem gespeicherten Pruefmerkmal existiert. Das
+     * frisch gelesene Pruefmerkmal dieses Aufrufs ist es, das die Ortswahl
+     * beim Abschliessen erst in den Pointer schreibt ({@see fingerprint_of()}).
+     *
+     * @param int $instanceid
+     * @return resolved_webdav_instance
+     * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/webdavauthunsupported
+     */
+    public static function resolve_owned(int $instanceid): resolved_webdav_instance {
         global $DB, $USER;
 
         $record = $DB->get_record_sql(
@@ -89,7 +114,7 @@ final class webdav_instance {
                FROM {repository_instances} ri
                JOIN {repository} r ON r.id = ri.typeid
               WHERE ri.id = :id AND r.type = :type',
-            ['id' => $location->instanceid, 'type' => self::REPOSITORY_TYPE]
+            ['id' => $instanceid, 'type' => self::REPOSITORY_TYPE]
         );
         if (!$record) {
             throw new \moodle_exception('webdavinstancemissing', 'local_kurspilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
@@ -104,14 +129,10 @@ final class webdav_instance {
             throw new \moodle_exception('webdavnotenabled', 'local_kurspilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
         }
 
-        $options = self::fresh_options((int) $location->instanceid);
+        $options = self::fresh_options($instanceid);
 
         if ((int) ($options['webdav_type'] ?? 0) !== 1 || ($options['webdav_auth'] ?? '') !== 'basic') {
             throw new \moodle_exception('webdavauthunsupported', 'local_kurspilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
-        }
-
-        if (self::fingerprint($options) !== self::normalised_fingerprint($location->fingerprint ?? [])) {
-            throw new \moodle_exception('webdavfingerprintchanged', 'local_kurspilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
         }
 
         $transport = self::$testtransport ?? new curl_transport(
@@ -120,6 +141,17 @@ final class webdav_instance {
             (string) ($options['webdav_password'] ?? '')
         );
         return new resolved_webdav_instance(self::base_url($options), $transport);
+    }
+
+    /**
+     * Das frisch gelesene Pruefmerkmal einer Instanz (Issue #494) - was die
+     * Ortswahl beim Abschliessen in den Kontextpointer schreibt.
+     *
+     * @param int $instanceid
+     * @return array{server: string, basispfad: string, konto: string}
+     */
+    public static function fingerprint_of(int $instanceid): array {
+        return self::fingerprint(self::fresh_options($instanceid));
     }
 
     /**

@@ -199,6 +199,46 @@ final class storage_anchor {
     }
 
     /**
+     * Die konfigurierte Standardwurzel eines Bereichs, ohne fuehrenden/
+     * abschliessenden Schraegstrich - fuer die Ortswahlseite (Issue #494):
+     * der Pfad, den ein "in Moodle lassen" fuer diesen Bereich in den
+     * Kontextpointer schreibt.
+     *
+     * @param storage_area $area
+     * @return string
+     */
+    public static function default_root(storage_area $area): string {
+        return trim(self::configured_root($area->rootsetting, $area->defaultroot), '/');
+    }
+
+    /**
+     * Liest den rohen Kontextpointer, oeffentlich (Issue #494) - die
+     * Ortswahlseite braucht das vollstaendige Dokument (inkl. Ortsverlauf),
+     * nicht nur ein aufgeloestes Ziel wie {@see resolve_pointer_location()}.
+     *
+     * @return array|null null, wenn keine Pointer-Datei existiert.
+     * @throws \moodle_exception pointerunreadable
+     */
+    public static function read_raw_pointer(): ?array {
+        return self::raw_pointer();
+    }
+
+    /**
+     * Schreibt ein vollstaendiges Pointer-Dokument der zweiten Fassung neu
+     * (Issue #494) - der Schreibweg der Ortswahlseite, getrennt von
+     * {@see write_pointer()} (dem alten, zweifeldigen Schreibweg des
+     * Zustimmungsdialogs, der mit Issue #494 keinen Aufrufer mehr hat, aber
+     * unveraendert bleibt). Bewegt keine Datei, wie {@see write_pointer()}.
+     *
+     * @param array $document Vollstaendiges Pointer-Dokument (kontextbereich,
+     *        materialbestand, ortsverlauf).
+     */
+    public static function write_pointer_document(array $document): void {
+        $content = json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        self::write_pointer_file($content);
+    }
+
+    /**
      * Der feste Anker-Ordner selbst - fuer alles, was direkt darin liegt
      * (Kontextpointer, Ausstandsnotiz), nicht in einem Bereich darunter.
      *
@@ -231,6 +271,17 @@ final class storage_anchor {
             'materialordner' => context_pointer::validate_path($materialordner),
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
+        self::write_pointer_file($content);
+    }
+
+    /**
+     * Der eine Schreibvorgang der Pointer-Datei selbst, geteilt von
+     * {@see write_pointer()} (erste Fassung) und
+     * {@see write_pointer_document()} (zweite Fassung, Issue #494).
+     *
+     * @param string $content Bereits fertig kodierter JSON-Inhalt.
+     */
+    private static function write_pointer_file(string $content): void {
         $anchor = self::configured_root(self::ANCHOR_ROOTSETTING, self::ANCHOR_DEFAULT_ROOT);
         $contextid = self::own_context()->id;
         $existing = get_file_storage()->get_file(

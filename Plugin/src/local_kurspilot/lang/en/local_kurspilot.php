@@ -90,6 +90,61 @@ $string['webdavstep1instruction'] = 'The administration must enable the "WebDAV"
 $string['webdavstep2instruction'] = 'The administration must turn on "Allow user instances" for the "WebDAV" repository type.';
 $string['webdavstep3instruction'] = 'The administration must grant the teacher the "repository/webdav:view" capability in their own user context (recommended via a dedicated system role).';
 
+// Location page "Ortswahl" (issue #494, spec #486 §5/§10).
+$string['ortswahl'] = 'Location';
+$string['ortswahltitle'] = 'Where the context area and material stock live';
+$string['ortswahlheading'] = 'Where the context area and material stock live';
+$string['ortswahlintro'] = 'Choose a folder in one of your WebDAV connections for each target, or leave it in Moodle.';
+$string['ortswahltabkontextbereich'] = 'Context area';
+$string['ortswahltabmaterialbestand'] = 'Material stock';
+$string['ortswahlkontexthint'] = 'Recommendation: a dedicated folder just for Kurspilot — not mixed in with documents you already use.';
+$string['ortswahlkeepmoodle'] = 'Leave in Moodle';
+$string['ortswahlchooseinstance'] = 'Choose a connection';
+$string['ortswahlselectfolder'] = 'Choose this folder';
+$string['ortswahlbreadcrumbroot'] = 'Root';
+$string['ortswahlloading'] = 'Loading …';
+$string['ortswahlcreatefolder'] = 'Create folder';
+$string['ortswahlnewfoldername'] = 'New folder name';
+$string['ortswahlprogresschosen'] = '{$a}';
+$string['ortswahlprogressopen'] = 'still open: {$a}';
+$string['ortswahlfinishbutton'] = 'Finish setup';
+$string['ortswahlfinishsuccess'] = 'Saved. Changed targets: {$a}.';
+$string['ortswahlfinishnochange'] = 'No change — the previous location stays.';
+$string['ortswahlselectionincomplete'] = 'Please choose an answer for every target before finishing.';
+$string['ortswahlselectioninvalid'] = 'Invalid selection — please choose the folder in the file window again.';
+$string['ortswahltimeouttitle'] = 'No response';
+$string['ortswahltimeouttext'] = 'The storage did not respond within 8 seconds. Nothing was saved.';
+$string['ortswahlretry'] = 'Try again';
+$string['ortswahlcheckcredentials'] = 'Check credentials';
+$string['ortswahllater'] = 'Later';
+$string['ortswahlcurrentheading'] = 'Current location';
+$string['ortswahlcurrentkontextbereich'] = 'Context area: {$a}';
+$string['ortswahlcurrentmaterialbestand'] = 'Material stock: {$a}';
+$string['ortswahlhistoryheading'] = 'Previous locations';
+$string['ortswahlhistoryempty'] = 'No changes yet.';
+$string['ortswahlhistorydate'] = 'Date';
+$string['ortswahlhistorytarget'] = 'Target';
+$string['ortswahlhistoryfrom'] = 'From';
+$string['ortswahlhistoryto'] = 'To';
+$string['ortswahllocationmoodle'] = 'in Moodle ({$a})';
+$string['ortswahllocationextern'] = '{$a->instance} / {$a->path}';
+$string['ortswahllocationexternroot'] = '{$a} (root)';
+$string['ortswahlinstanceunknown'] = 'unknown connection';
+$string['ortswahlnoinstanceheading'] = 'No WebDAV connection yet';
+$string['ortswahlnoinstanceintro'] = 'Your school has enabled external storage, but you have not set up a connection yet:';
+$string['ortswahlnoinstancestep1'] = '1. Open the file picker (e.g. when uploading a file), choose "WebDAV", then "Configure the repository".';
+$string['ortswahlnoinstancestep2'] = '2. Enter server, path and your credentials, then save.';
+$string['ortswahlnoinstancestep3'] = '3. Come back to this page — the new connection appears here automatically.';
+$string['ortswahlschoolhintheading'] = 'Hint from your school';
+$string['ortswahlnotenabledheading'] = 'External storage not yet enabled';
+$string['ortswahlnotenabledtext'] = 'Your school has not yet enabled external storage. Until then, everything stays in Moodle.';
+$string['ortswahlmissingstepsheading'] = 'Text for the administration';
+$string['ortswahlmissingstepsintro'] = 'Copy this text and send it to your Moodle administration:';
+$string['ortswahlcoresupportlink'] = 'Support contact of your Moodle site';
+$string['settingwebdavhint'] = 'School hint (location page)';
+$string['settingwebdavhint_desc'] = 'Optional free text shown to teachers without their own WebDAV connection on the location page, in addition to the three setup steps — e.g. a recommendation which cloud service the school provides.';
+$string['listskillsortswahlhint'] = 'The teacher can store the context area and material stock in their own WebDAV storage instead of Moodle — location page at {$a}.';
+
 // Pending-write note "Ausstandsnotiz" (issue #492, ADR 0023, spec #486 §8/§10):
 // never an absolute server path, username, password, HTTP code, or response
 // body (secrecy test) — the raw code goes into the access log instead.
@@ -205,12 +260,12 @@ $string['consentpersonaldataon'] = 'This Moodle site <strong>also</strong> trans
 $string['consentabbreviate'] = 'What personal information you may put in context files is governed by your school and your jurisdiction\'s data protection rules. Kurspilot does not check this. Use abbreviations instead of names where that suffices for planning.';
 $string['consentrevoke'] = 'You can revoke this connection at any time under Profile → My Kurspilot connections.';
 
-// Location choice at connection time (Issue #446, Spec: Ablageort als eine Sache #442 §3).
+// Location choice at connection time (Issue #446, display-only since Issue #494).
 $string['consentlocationheading'] = 'Where your Kurspilot area lives';
-$string['consentlocationintro'] = 'Kurspilot stores your journals, plans and materials in two folders inside your own Moodle file area ("My files"). The fields below show today\'s location and are already filled in — if you do not want to change anything, just confirm below.';
-$string['consentlocationkontextbereich'] = 'Folder for journals and plans';
-$string['consentlocationmaterialordner'] = 'Folder for material files';
-$string['consentlocationnomove'] = 'A changed folder name does not move any files: existing files stay where they are and remain reachable via "My files". Only newly written files land in the new folder.';
+$string['consentlocationintro'] = 'Kurspilot stores your journals, plans and materials at the locations named below.';
+$string['consentlocationkontextbereichcurrent'] = 'Journals and plans: {$a}';
+$string['consentlocationmaterialbestandcurrent'] = 'Material files: {$a}';
+$string['consentlocationchangelink'] = 'Change location';
 
 // classes/privacy/provider.php (#336).
 $string['privacy:metadata:oauth_code'] = 'Short-lived, PKCE-bound authorization codes for the OAuth consent dialog.';

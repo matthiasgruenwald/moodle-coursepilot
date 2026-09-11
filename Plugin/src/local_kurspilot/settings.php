@@ -121,6 +121,17 @@ if ($hassiteconfig) {
         PARAM_INT
     ));
 
+    // Hinweis der Schule auf der Ortswahlseite (#494): optionaler Freitext,
+    // zusaetzlich zu den drei Einrichtungsschritten im Leerzustand "keine
+    // Instanz" - siehe local_kurspilot\ortswahl_lib::school_hint().
+    $settings->add(new admin_setting_configtextarea(
+        'local_kurspilot/webdavhint',
+        get_string('settingwebdavhint', 'local_kurspilot'),
+        get_string('settingwebdavhint_desc', 'local_kurspilot'),
+        '',
+        PARAM_TEXT
+    ));
+
     // Administrationsuebersicht (#338): eigene externe Seite, damit sie im
     // Administrationsbaum erscheint und dort bereits require-capability-
     // geschuetzt ist ('moodle/site:config') - admin/connections.php prueft

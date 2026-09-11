@@ -53,6 +53,18 @@ function local_kurspilot_myprofile_navigation(
         new moodle_url('/local/kurspilot/connections.php')
     );
     $tree->add_node($node);
+
+    // Ortswahlseite (#494), neben "Meine Verbindungen" - nur in der eigenen
+    // Profilansicht, aus demselben Grund wie oben.
+    $ortswahlnode = new \core_user\output\myprofile\node(
+        'miscellaneous',
+        'local_kurspilot_ortswahl',
+        get_string('ortswahl', 'local_kurspilot'),
+        null,
+        new moodle_url(\local_kurspilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE)
+    );
+    $tree->add_node($ortswahlnode);
+
     return true;
 }
 
