@@ -65,10 +65,13 @@ class list_context_files extends external_api {
         $context = context_files::own_context();
         self::validate_context($context);
 
-        $directory = context_files::resolve_directory($params['path']);
+        // Zeigerbewusst (Issue #490): folgt dem Kontextpointer nach Moodle
+        // oder extern (WebDAV) - der Aufrufer hier kennt den Unterschied
+        // nicht, das Ergebnis hat in beiden Faellen dieselbe Form.
+        $result = context_files::list_entries_pointer_aware($params['path']);
 
         $entries = [];
-        foreach (context_files::list_entries($directory) as $entry) {
+        foreach ($result['entries'] as $entry) {
             if ($entry['type'] === 'folder') {
                 $entries[] = $entry + ['locked' => false];
                 continue;
@@ -86,7 +89,8 @@ class list_context_files extends external_api {
             $ismarkdown = strtolower(pathinfo($entry['name'], PATHINFO_EXTENSION)) === 'md';
             $locked = false;
             if ($ismarkdown) {
-                $content = context_files::read_content($directory, $entry['name']);
+                $relativepath = $result['directory'] === '' ? $entry['name'] : $result['directory'] . '/' . $entry['name'];
+                $content = context_files::read_content_pointer_aware($relativepath);
                 $locked = $content !== null
                     && \local_kurspilot\personal_data::is_marked($content['content'])
                     && !\local_kurspilot\personal_data::allowed();
@@ -95,7 +99,7 @@ class list_context_files extends external_api {
         }
 
         return [
-            'path' => context_files::relative_directory($directory),
+            'path' => $result['directory'],
             'entries' => $entries,
         ];
     }

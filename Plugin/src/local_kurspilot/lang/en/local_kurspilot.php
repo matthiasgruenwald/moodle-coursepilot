@@ -75,6 +75,21 @@ $string['pointerunreadable'] = 'Context pointer unreadable: {$a} does not contai
 $string['pointerincomplete'] = 'Context pointer incomplete: {$a} must contain both the "kontextbereich" and "materialordner" fields.';
 $string['pointerunreachable'] = 'Context pointer points to an unreachable location: {$a} contains an invalid path.';
 
+// Context pointer, second edition: external locations (issue #490, spec: Context
+// area and material stock in the teacher's WebDAV storage #486 §2/§3/§12). No
+// message names server, path, account, or password — the storage location stays
+// hidden (spec §15, secrecy test).
+$string['pointerexternalnotsupported'] = 'This area is external — this operation does not yet support external locations. Please switch to "in Moodle" on the location page ({$a}), or wait for external write support to follow.';
+$string['webdavinstancemissing'] = 'The context pointer refers to a WebDAV connection that no longer exists. Please set it up again on the location page ({$a}).';
+$string['webdavinstanceforeign'] = 'The context pointer refers to a WebDAV connection that does not belong to you, or you are logged in as another user. Please set it up again on the location page ({$a}).';
+$string['webdavnotenabled'] = 'Your school has not yet enabled external storage (WebDAV) for you. Please check the location page ({$a}).';
+$string['webdavauthunsupported'] = 'This WebDAV connection no longer uses https with basic authentication — Kurspilot does not support that. Please fix it on the location page ({$a}).';
+$string['webdavfingerprintchanged'] = 'The server, base path, or account of this WebDAV connection has changed. Please choose again on the location page ({$a}).';
+$string['webdavexternalerror'] = 'The external storage could not be read ({$a->errorclass}). Please try again later, or check the location page ({$a->page}).';
+$string['webdavstep1instruction'] = 'The administration must enable the "WebDAV" repository type under Site administration ▸ Plugins ▸ Repositories.';
+$string['webdavstep2instruction'] = 'The administration must turn on "Allow user instances" for the "WebDAV" repository type.';
+$string['webdavstep3instruction'] = 'The administration must grant the teacher the "repository/webdav:view" capability in their own user context (recommended via a dedicated system role).';
+
 // Writing to the context area (#408, spec 0016 §4.1).
 $string['contextfilenotmarkdown'] = 'Only .md files can be written to the context area: {$a}';
 $string['contextfiletoolarge'] = 'Content too large: {$a->size} bytes, at most {$a->max} bytes per write.';

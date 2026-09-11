@@ -16,6 +16,8 @@
 
 namespace local_kurspilot;
 
+use local_kurspilot\webdav\webdav_setup_steps;
+
 /**
  * Gemeinsamer Ablageort-Anker (Issue #444, Spec: Ablageort als eine Sache
  * #442 §1/§4/§5): haelt, was
@@ -72,14 +74,6 @@ final class storage_anchor {
     public const POINTER_FILENAME = '.kurspilot-ort.json';
 
     /**
-     * @var string[] Pflichtfelder des Kontextpointers. Beide werden bei jedem
-     *      Lesen validiert, unabhaengig davon, welcher Bereich gerade
-     *      aufloest - Kontextbereich und Materialordner ziehen gemeinsam um,
-     *      ein Pointer mit nur einem der beiden Felder ist immer unvollstaendig.
-     */
-    private const POINTER_KEYS = ['kontextbereich', 'materialordner'];
-
-    /**
      * Der eigene Nutzerkontext der angemeldeten Person - niemals aus
      * Client-Eingaben ableitbar.
      *
@@ -107,44 +101,50 @@ final class storage_anchor {
      */
     private static function root(storage_area $area): string {
         $configured = self::configured_root($area->rootsetting, $area->defaultroot);
-        if ($area->pointerkey === null) {
+        $location = self::resolve_pointer_location($area);
+        if ($location === null) {
             return $configured;
         }
-
-        $pointer = self::resolve_pointer();
-        return $pointer[$area->pointerkey] ?? $configured;
+        if ($location->kind === pointer_location::EXTERN) {
+            // Dieser Aufrufer (Schreiben/Material) kennt noch keine externen
+            // Orte (Issue #490 baut nur den Lesepfad) - ein stiller
+            // Rueckfall auf die Standardwurzel legte einen zweiten, halben
+            // Bereich an, deshalb ein benannter Fehler statt dessen.
+            throw new \moodle_exception('pointerexternalnotsupported', 'local_kurspilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
+        }
+        return $location->path;
     }
 
     /**
-     * Die per Plugin-Einstellung konfigurierte Standardwurzel eines Ortes -
-     * ohne Pointer-Aufloesung. Wird sowohl fuer die Standardwurzel eines
-     * Bereichs als auch fuer den Anker selbst benutzt (Issue #445).
+     * Der aufgeloeste Pointer-Zustand eines Bereichs (Issue #490, Spec #486
+     * §2), ohne Netz: liest den rohen Pointer aus dem Anker und deutet ihn
+     * ueber {@see context_pointer}. `null` heisst *offen* - kein Pointer,
+     * die Standardwurzel gilt.
      *
-     * @param string $settingname
-     * @param string $defaultvalue
-     * @return string Immer mit fuehrendem und abschliessendem "/".
-     */
-    private static function configured_root(string $settingname, string $defaultvalue): string {
-        $configured = trim((string) (get_config('local_kurspilot', $settingname) ?: $defaultvalue), '/');
-        return $configured === '' ? '/' : '/' . $configured . '/';
-    }
-
-    /**
-     * Liest und validiert den Kontextpointer aus dem festen Anker-Ordner
-     * (Issue #445). Fehlt die Datei, gilt das als "kein Pointer" - der
-     * einzige Fall, der auf die Standardwurzel zurueckfaellt (siehe
-     * {@see root()}). Jeder andere Fehler (kein gueltiges JSON-Objekt, ein
-     * Pflichtfeld fehlt/ist leer, ein Feldwert enthaelt einen unerreichbaren
-     * Pfad) wirft eine benannte moodle_exception - bewusst **ohne**
-     * Rueckfall: ein stiller Rueckfall legte einen zweiten, halben
-     * Kontextbereich an.
-     *
-     * @return array<string, string>|null Feldname => aufgeloeste Wurzel (mit
-     *         fuehrendem/abschliessendem "/"), oder null wenn kein Pointer
-     *         existiert.
+     * @param storage_area $area
+     * @return pointer_location|null
      * @throws \moodle_exception pointerunreadable/pointerincomplete/pointerunreachable
      */
-    private static function resolve_pointer(): ?array {
+    public static function resolve_pointer_location(storage_area $area): ?pointer_location {
+        if ($area->pointerkey === null) {
+            return null;
+        }
+        $decoded = self::raw_pointer();
+        if ($decoded === null) {
+            return null;
+        }
+        return context_pointer::resolve_target($decoded, $area->pointerkey);
+    }
+
+    /**
+     * Liest die rohe Pointer-Datei aus dem festen Anker-Ordner und dekodiert
+     * sie als JSON-Objekt - reine Dateizugriffslogik, die Deutung
+     * (erste/zweite Fassung, Feldpruefung) uebernimmt {@see context_pointer}.
+     *
+     * @return array|null null, wenn keine Pointer-Datei existiert (*offen*).
+     * @throws \moodle_exception pointerunreadable
+     */
+    private static function raw_pointer(): ?array {
         global $USER;
 
         // Ohne angemeldete Person gibt es keine "eigenen" Private Files, in
@@ -172,45 +172,21 @@ final class storage_anchor {
         if (!is_array($decoded) || json_last_error() !== JSON_ERROR_NONE || array_is_list($decoded)) {
             throw new \moodle_exception('pointerunreadable', 'local_kurspilot', '', self::POINTER_FILENAME);
         }
-
-        $resolved = [];
-        foreach (self::POINTER_KEYS as $key) {
-            $resolved[$key] = '/' . self::validate_pointer_field($decoded[$key] ?? null) . '/';
-        }
-        return $resolved;
+        return $decoded;
     }
 
     /**
-     * Prueft einen einzelnen Pointer-Feldwert - geteilt zwischen dem Lesen
-     * ({@see resolve_pointer()}) und dem Schreiben ({@see write_pointer()},
-     * Issue #446): nicht leer, keine `.`/`..`-Segmente. Dieselben Regeln, die
-     * ein von Hand kaputt bearbeiteter Pointer beim Lesen verletzt, weist der
-     * Zustimmungsdialog schon beim Schreiben ab - kein ungueltiger Pointer
-     * entsteht dort, wo er vorher nicht entstehen konnte.
+     * Die per Plugin-Einstellung konfigurierte Standardwurzel eines Ortes -
+     * ohne Pointer-Aufloesung. Wird sowohl fuer die Standardwurzel eines
+     * Bereichs als auch fuer den Anker selbst benutzt (Issue #445).
      *
-     * Backslashes gelten wie in {@see segments()} als Pfadtrenner. Ohne diese
-     * Normalisierung passierte `..\etc` die Segmentpruefung als ein einziges,
-     * harmlos aussehendes Segment.
-     *
-     * @param mixed $value
-     * @return string Getrimmter Pfad, ohne fuehrenden/abschliessenden Schraegstrich.
-     * @throws \moodle_exception pointerincomplete/pointerunreachable
+     * @param string $settingname
+     * @param string $defaultvalue
+     * @return string Immer mit fuehrendem und abschliessendem "/".
      */
-    private static function validate_pointer_field($value): string {
-        if (!is_string($value)) {
-            throw new \moodle_exception('pointerincomplete', 'local_kurspilot', '', self::POINTER_FILENAME);
-        }
-        $normalised = str_replace('\\', '/', $value);
-        if (trim($normalised, '/') === '') {
-            throw new \moodle_exception('pointerincomplete', 'local_kurspilot', '', self::POINTER_FILENAME);
-        }
-        $trimmed = trim($normalised, '/');
-        foreach (explode('/', $trimmed) as $segment) {
-            if ($segment === '' || $segment === '.' || $segment === '..') {
-                throw new \moodle_exception('pointerunreachable', 'local_kurspilot', '', self::POINTER_FILENAME);
-            }
-        }
-        return $trimmed;
+    private static function configured_root(string $settingname, string $defaultvalue): string {
+        $configured = trim((string) (get_config('local_kurspilot', $settingname) ?: $defaultvalue), '/');
+        return $configured === '' ? '/' : '/' . $configured . '/';
     }
 
     /**
@@ -232,8 +208,8 @@ final class storage_anchor {
      */
     public static function write_pointer(string $kontextbereich, string $materialordner): void {
         $content = json_encode([
-            'kontextbereich' => self::validate_pointer_field($kontextbereich),
-            'materialordner' => self::validate_pointer_field($materialordner),
+            'kontextbereich' => context_pointer::validate_path($kontextbereich),
+            'materialordner' => context_pointer::validate_path($materialordner),
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
         $anchor = self::configured_root(self::ANCHOR_ROOTSETTING, self::ANCHOR_DEFAULT_ROOT);
@@ -672,5 +648,20 @@ final class storage_anchor {
         $new = $fs->create_file_from_string($temprecord, $content);
         $existing->delete();
         $new->rename($filerecord['filepath'], $filerecord['filename']);
+    }
+
+    /**
+     * Der Client-Pfad, so wie er in jedem Endpunkt entgegengenommen wird -
+     * geprueft (keine `.`/`..`-Segmente), aber nicht an eine Wurzel gebunden.
+     * Fuer Moodle- und WebDAV-Ort identisch (Spec #486 §2: "dasselbe
+     * Koordinatensystem"), deshalb hier statt in einem der beiden Zweige von
+     * {@see list_pointer_aware()}/{@see read_pointer_aware()}.
+     *
+     * @param storage_area $area
+     * @param string $path
+     * @return string
+     */
+    public static function normalise_client_path(storage_area $area, string $path): string {
+        return implode('/', self::segments($area, $path));
     }
 }

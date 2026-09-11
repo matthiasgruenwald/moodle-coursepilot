@@ -63,9 +63,10 @@ class read_context_file extends external_api {
         $context = context_files::own_context();
         self::validate_context($context);
 
-        [$directory, $filename] = context_files::resolve_file($params['path']);
-
-        $file = context_files::read_content($directory, $filename);
+        // Zeigerbewusst (Issue #490): folgt dem Kontextpointer nach Moodle
+        // oder extern (WebDAV) - der Aufrufer hier kennt den Unterschied
+        // nicht, das Ergebnis hat in beiden Faellen dieselbe Form.
+        $file = context_files::read_content_pointer_aware($params['path']);
         if ($file === null) {
             throw new \moodle_exception('contextfilenotfound', 'local_kurspilot', '', $params['path']);
         }
@@ -78,8 +79,8 @@ class read_context_file extends external_api {
         }
 
         return [
-            'path' => context_files::relative_file($directory, $filename),
-            'filename' => $filename,
+            'path' => $file['path'],
+            'filename' => basename($file['path']),
             'mimetype' => $file['mimetype'],
             'size' => $file['size'],
             'content' => $file['content'],

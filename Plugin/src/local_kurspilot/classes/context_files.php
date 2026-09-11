@@ -183,6 +183,20 @@ final class context_files {
     }
 
     /**
+     * Listet eine Ebene des Kontextbereichs zeigerbewusst (Issue #490, Spec
+     * #486 §2/§6) - folgt dem Kontextpointer nach Moodle oder extern. Anders
+     * als {@see list_entries()} nimmt diese Methode den noch unaufgeloesten
+     * Client-Pfad entgegen, weil erst die Pointer-Aufloesung entscheidet, ob
+     * ueberhaupt ein Moodle-Verzeichnis existiert.
+     *
+     * @param string $path
+     * @return array{directory: string, entries: array}
+     */
+    public static function list_entries_pointer_aware(string $path): array {
+        return pointer_reader::list_entries(self::area(), $path);
+    }
+
+    /**
      * Liest den Inhalt einer Kontextdatei - ortsneutral (Issue #487).
      *
      * @param string $directory Ergebnis von {@see resolve_directory()}.
@@ -192,6 +206,18 @@ final class context_files {
      */
     public static function read_content(string $directory, string $filename): ?array {
         return storage_anchor::read_content($directory, $filename);
+    }
+
+    /**
+     * Liest eine Kontextdatei zeigerbewusst (Issue #490, Spec #486 §2/§6) -
+     * siehe {@see list_entries_pointer_aware()}.
+     *
+     * @param string $path
+     * @return array{path: string, content: string, mimetype: string, size: int,
+     *         contenthash: string, timemodified: int}|null
+     */
+    public static function read_content_pointer_aware(string $path): ?array {
+        return pointer_reader::read_content(self::area(), $path);
     }
 
     /**

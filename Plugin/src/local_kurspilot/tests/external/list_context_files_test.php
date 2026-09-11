@@ -18,13 +18,16 @@ namespace local_kurspilot\external;
 
 use core_external\external_api;
 use local_kurspilot\context_files;
+use local_kurspilot\tests\webdav\webdav_instance_fixture;
+use local_kurspilot\webdav\webdav_instance;
 
 defined('MOODLE_INTERNAL') || die();
 
 /**
  * Auflisten des Kontextbereichs (Issue #343). Sicherheitsrelevant: gedeckt
  * werden neben dem Happy-Path echte Angriffstests fuer Pfadausbruch und
- * Personen-Isolation.
+ * Personen-Isolation. Seit Issue #490 zusaetzlich der externe Zweig ueber
+ * einen Kontextpointer der zweiten Fassung und den WebDAV-Transport-Fake.
  *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
@@ -32,6 +35,12 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(list_context_files::class)]
 final class list_context_files_test extends \advanced_testcase {
+    use webdav_instance_fixture;
+
+    protected function tearDown(): void {
+        webdav_instance::use_test_transport(null);
+        parent::tearDown();
+    }
 
     /**
      * Die Vorlagendatei an der Wurzel ist ohne Sonderweg erreichbar - der
@@ -286,6 +295,74 @@ final class list_context_files_test extends \advanced_testcase {
         $names = array_column($result['entries'], 'name');
         $this->assertContains('vorlagen.md', $names);
         $this->assertNotContains(\local_kurspilot\storage_anchor::POINTER_FILENAME, $names);
+    }
+
+    /**
+     * Der externe Kontextbereich (Issue #490, Spec #486 §2/§6) listet ueber
+     * den WebDAV-Client, statt ueber Moodles Dateispeicher - dieselbe
+     * Werkzeugantwort wie im Moodle-Zweig.
+     */
+    public function test_lists_external_context_files_via_webdav(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/vorlagen.md', '# Extern gemerkt');
+
+        $result = list_context_files::execute();
+        $result = external_api::clean_returnvalue(list_context_files::execute_returns(), $result);
+
+        $this->assertContains('vorlagen.md', array_column($result['entries'], 'name'));
+    }
+
+    /**
+     * Eine noch nicht angelegte externe Ebene ist leer, nie ein Fehler -
+     * dieselbe Bedeutung wie eine fehlende Moodle-Wurzel.
+     */
+    public function test_listing_missing_external_directory_is_empty(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        // "/Kurspilot/Kontext" bleibt unangelegt.
+
+        $result = list_context_files::execute();
+        $result = external_api::clean_returnvalue(list_context_files::execute_returns(), $result);
+
+        $this->assertSame([], $result['entries']);
+    }
+
+    /**
+     * Die Personenbezug-Prüfung wirkt extern am Inhalt genauso wie in
+     * Moodle (Spec §6) - ein markierter Eintrag erscheint gesperrt gelistet.
+     */
+    public function test_personal_data_marked_file_appears_locked_in_external_listing(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $this->marked_content());
+
+        $result = list_context_files::execute();
+        $result = external_api::clean_returnvalue(list_context_files::execute_returns(), $result);
+
+        $entry = $this->find_entry($result['entries'], 'lerngruppe.md');
+        $this->assertNotNull($entry);
+        $this->assertTrue($entry['locked']);
+    }
+
+    /**
+     * Weder Werkzeugname noch -antwort verraten den Speicherort (Spec §6/§15):
+     * kein Server, kein Konto, keine Instanz-ID in der Antwort.
+     */
+    public function test_external_listing_response_reveals_no_storage_location(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/vorlagen.md', '# Extern');
+
+        $result = list_context_files::execute();
+        $result = external_api::clean_returnvalue(list_context_files::execute_returns(), $result);
+        $encoded = json_encode($result);
+
+        $this->assertStringNotContainsString($this->fixtureserver, $encoded);
+        $this->assertStringNotContainsString($this->fixturekonto, $encoded);
     }
 
     /**

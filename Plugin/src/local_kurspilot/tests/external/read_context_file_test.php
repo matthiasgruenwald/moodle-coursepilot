@@ -18,6 +18,8 @@ namespace local_kurspilot\external;
 
 use core_external\external_api;
 use local_kurspilot\context_files;
+use local_kurspilot\tests\webdav\webdav_instance_fixture;
+use local_kurspilot\webdav\webdav_instance;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -25,6 +27,8 @@ defined('MOODLE_INTERNAL') || die();
  * Lesen aus dem Kontextbereich (Issue #343). Sicherheitsrelevant: neben dem
  * Happy-Path echte Angriffstests fuer Pfadausbruch, fremde Bereiche und
  * Personen-Isolation; ausserdem der Beleg, dass kein Schreibpfad existiert.
+ * Seit Issue #490 zusaetzlich der externe Zweig ueber einen Kontextpointer
+ * der zweiten Fassung und den WebDAV-Transport-Fake.
  *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
@@ -32,6 +36,12 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(read_context_file::class)]
 final class read_context_file_test extends \advanced_testcase {
+    use webdav_instance_fixture;
+
+    protected function tearDown(): void {
+        webdav_instance::use_test_transport(null);
+        parent::tearDown();
+    }
 
     /**
      * Die Vorlagendatei an der Wurzel ist mit demselben Vertrag lesbar wie
@@ -225,6 +235,86 @@ final class read_context_file_test extends \advanced_testcase {
         $resulton = read_context_file::execute('sachtext.md');
         $resulton = external_api::clean_returnvalue(read_context_file::execute_returns(), $resulton);
         $this->assertSame($content, $resulton['content']);
+    }
+
+    /**
+     * Der externe Kontextbereich (Issue #490, Spec #486 §2/§6) liest ueber
+     * den WebDAV-Client - dieselbe Werkzeugantwort wie im Moodle-Zweig.
+     */
+    public function test_reads_external_context_file_via_webdav(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/vorlagen.md', '# Extern gemerkt');
+
+        $result = read_context_file::execute('vorlagen.md');
+        $result = external_api::clean_returnvalue(read_context_file::execute_returns(), $result);
+
+        $this->assertSame('# Extern gemerkt', $result['content']);
+        $this->assertSame('vorlagen.md', $result['path']);
+        $this->assertSame('vorlagen.md', $result['filename']);
+    }
+
+    /**
+     * Eine fehlende externe Datei ist "nicht gefunden" - dieselbe Meldung
+     * wie im Moodle-Zweig, kein anderer Fehlertyp.
+     */
+    public function test_missing_external_file_throws_contextfilenotfound(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        try {
+            read_context_file::execute('vorlagen.md');
+            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilenotfound', $e->errorcode);
+        }
+    }
+
+    /**
+     * Die Personenbezug-Prüfung wirkt extern am Inhalt genauso wie in
+     * Moodle (Spec §6).
+     */
+    public function test_personal_data_marked_file_unreadable_when_external_and_switch_off(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $this->marked_content());
+
+        $this->expectException(\moodle_exception::class);
+        read_context_file::execute('lerngruppe.md');
+    }
+
+    public function test_personal_data_marked_file_readable_when_external_and_switch_on(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $content = $this->marked_content();
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $content);
+        set_config('allowpersonaldata', 1, 'local_kurspilot');
+
+        $result = read_context_file::execute('lerngruppe.md');
+        $result = external_api::clean_returnvalue(read_context_file::execute_returns(), $result);
+
+        $this->assertSame($content, $result['content']);
+    }
+
+    /**
+     * Weder Werkzeugname noch -antwort verraten den Speicherort (Spec §6/§15).
+     */
+    public function test_external_read_response_reveals_no_storage_location(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/vorlagen.md', '# Extern');
+
+        $result = read_context_file::execute('vorlagen.md');
+        $result = external_api::clean_returnvalue(read_context_file::execute_returns(), $result);
+        $encoded = json_encode($result);
+
+        $this->assertStringNotContainsString($this->fixtureserver, $encoded);
+        $this->assertStringNotContainsString($this->fixturekonto, $encoded);
     }
 
     /**

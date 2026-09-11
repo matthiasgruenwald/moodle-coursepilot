@@ -312,6 +312,66 @@ final class storage_anchor_test extends \advanced_testcase {
     }
 
     /**
+     * Kontextpointer, zweite Fassung (Issue #490, Spec #486 §2): ein Pointer
+     * der ersten Fassung (zwei Pfade) gilt vollstaendig als *in Moodle* -
+     * kein Upgrade-Schritt schreibt ihn um, resolve_directory() liest ihn
+     * unveraendert wie vor Issue #490.
+     */
+    public function test_legacy_pointer_still_resolves_as_moodle_location(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->put_pointer(json_encode([
+            'kontextbereich' => 'custom-context',
+            'materialordner' => 'custom-material',
+        ]));
+
+        $this->assertSame('/custom-context/', context_files::resolve_directory(''));
+    }
+
+    /**
+     * Ein Pointer der zweiten Fassung mit Ziel *in Moodle* loest genauso auf
+     * wie die erste Fassung - nur die Struktur ist neu.
+     */
+    public function test_v2_pointer_with_moodle_target_resolves_like_legacy(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->put_pointer(json_encode([
+            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'mein-kontext'],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'mein-material'],
+        ]));
+
+        $this->assertSame('/mein-kontext/', context_files::resolve_directory(''));
+        $this->assertSame('/mein-material/', material_files::resolve_directory(''));
+    }
+
+    /**
+     * Ein extern liegendes Ziel unterstuetzt {@see storage_anchor::resolve_directory()}
+     * (und damit Schreiben/Materialbestand) in diesem Issue noch nicht - ein
+     * benannter Fehler statt eines stillen Rueckfalls auf die Standardwurzel
+     * (Spec §2: "nie ein stiller Rueckfall").
+     */
+    public function test_external_pointer_target_rejects_root_resolution_with_named_error(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->put_pointer(json_encode([
+            'kontextbereich' => [
+                'ort' => 'extern',
+                'instanzid' => 3,
+                'pfad' => 'Kontext',
+                'pruefmerkmal' => ['server' => 's', 'basispfad' => 'b', 'konto' => 'k'],
+            ],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'mein-material'],
+        ]));
+
+        try {
+            context_files::resolve_directory('');
+            $this->fail('Ein externes Ziel haette hier werfen muessen, statt auf die Standardwurzel zurueckzufallen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('pointerexternalnotsupported', $e->errorcode);
+        }
+    }
+
+    /**
      * Die neuen Dateioperationen (Issue #487): list_entries()/read_content()/
      * write()/append() sind ortsneutral - kein stored_file verlaesst sie, nur
      * Werte. Der Zweitort-Beweis laeuft ueber denselben, nur im Test

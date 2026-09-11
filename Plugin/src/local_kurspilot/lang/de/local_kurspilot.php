@@ -75,6 +75,21 @@ $string['pointerunreadable'] = 'Kontextpointer nicht lesbar: {$a} enthält kein 
 $string['pointerincomplete'] = 'Kontextpointer unvollständig: {$a} muss die Felder "kontextbereich" und "materialordner" enthalten.';
 $string['pointerunreachable'] = 'Kontextpointer verweist auf einen nicht erreichbaren Ort: {$a} enthält einen ungültigen Pfad.';
 
+// Kontextpointer, zweite Fassung: externe Orte (Issue #490, Spec: Kontextbereich
+// und Materialbestand im WebDAV-Speicher der Lehrkraft #486 §2/§3/§12). Keine
+// Meldung nennt Server, Pfad, Konto oder Passwort — der Speicherort bleibt
+// verborgen (Spec §15, Geheimnis-Test).
+$string['pointerexternalnotsupported'] = 'Dieser Bereich liegt extern — dieser Vorgang unterstützt externe Orte noch nicht. Bitte auf der Ortswahlseite ({$a}) auf "in Moodle" umstellen, oder abwarten, bis die externe Schreibunterstützung folgt.';
+$string['webdavinstancemissing'] = 'Der Kontextpointer verweist auf eine WebDAV-Verbindung, die nicht mehr existiert. Bitte auf der Ortswahlseite ({$a}) neu einrichten.';
+$string['webdavinstanceforeign'] = 'Der Kontextpointer verweist auf eine WebDAV-Verbindung, die nicht Ihnen gehört, oder Sie sind über "als Nutzer/in anmelden" angemeldet. Bitte auf der Ortswahlseite ({$a}) neu einrichten.';
+$string['webdavnotenabled'] = 'Ihre Schule hat externe Speicher (WebDAV) für Sie noch nicht freigeschaltet. Bitte auf der Ortswahlseite ({$a}) nachsehen.';
+$string['webdavauthunsupported'] = 'Diese WebDAV-Verbindung nutzt nicht mehr https mit Basic-Anmeldung — das unterstützt Kurspilot nicht. Bitte auf der Ortswahlseite ({$a}) korrigieren.';
+$string['webdavfingerprintchanged'] = 'Server, Basispfad oder Konto dieser WebDAV-Verbindung haben sich geändert. Bitte auf der Ortswahlseite ({$a}) neu wählen.';
+$string['webdavexternalerror'] = 'Der externe Speicher konnte nicht gelesen werden ({$a->errorclass}). Bitte später erneut versuchen oder auf der Ortswahlseite ({$a->page}) nachsehen.';
+$string['webdavstep1instruction'] = 'Die Administration muss den Repository-Typ "WebDAV" in Website-Administration ▸ Plugins ▸ Repositories aktivieren.';
+$string['webdavstep2instruction'] = 'Die Administration muss beim Repository-Typ "WebDAV" die Option "Nutzerinstanzen erlauben" einschalten.';
+$string['webdavstep3instruction'] = 'Die Administration muss der Lehrkraft das Recht "repository/webdav:view" im eigenen Nutzerkontext zuweisen (empfohlen über eine eigene Systemrolle).';
+
 // Schreiben in den Kontextbereich (#408, Spec 0016 §4.1).
 $string['contextfilenotmarkdown'] = 'In den Kontextbereich lassen sich nur .md-Dateien schreiben: {$a}';
 $string['contextfiletoolarge'] = 'Inhalt zu groß: {$a->size} Byte, erlaubt sind höchstens {$a->max} Byte je Schreibvorgang.';
