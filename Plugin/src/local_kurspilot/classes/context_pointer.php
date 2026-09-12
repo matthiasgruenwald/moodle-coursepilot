@@ -227,9 +227,7 @@ final class context_pointer {
 
     /**
      * Dieselbe Segmentpruefung wie die erste Fassung (Issue #445): nicht
-     * leer, keine `.`/`..`-Segmente, Backslash zaehlt als Pfadtrenner. Auch
-     * von {@see storage_anchor::write_pointer()} genutzt - derselbe
-     * Maßstab gilt beim Schreiben wie beim Lesen.
+     * leer, keine `.`/`..`-Segmente, Backslash zaehlt als Pfadtrenner.
      *
      * @param string $value
      * @return string Getrimmter Pfad, ohne fuehrenden/abschliessenden Schraegstrich.

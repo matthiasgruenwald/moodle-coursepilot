@@ -797,4 +797,44 @@ final class oauth_lib_test extends \advanced_testcase {
         $this->assertContains((int) $personb->id, $userids);
     }
 
+    /**
+     * Der gewaehlte Ablageort haengt an der Pointer-Datei im Anker
+     * (storage_anchor), nicht an einem Token: Tokenrotation, eine zweite
+     * Verbindung eines anderen Clients und der Sammelwiderruf aller
+     * Verbindungen fassen keine der beiden an. Bereits mit #446 belegt,
+     * beim Umbau der Ortswahl auf die eigene Seite (#494) verloren gegangen
+     * (Issue #509) - hier mit dem heutigen Schreibweg
+     * (storage_anchor::write_pointer_document()) wiederhergestellt.
+     */
+    public function test_storage_location_survives_rotation_second_client_and_mass_revocation(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        global $USER;
+
+        storage_anchor::write_pointer_document([
+            'kontextbereich' => 'mein-ort',
+            'materialordner' => 'mein-material',
+        ]);
+        $assertlocationunchanged = function (): void {
+            $this->assertSame('/mein-ort/', context_files::resolve_directory(''));
+            $this->assertSame('/mein-material/', storage_anchor::resolve_pointer_location(material_files::area())->path);
+        };
+        $assertlocationunchanged();
+
+        // Tokenrotation.
+        $fixture = $this->registered_client_with_pkce();
+        $code = oauth_lib::issue_code($fixture['clientid'], (int) $USER->id, $fixture['redirecturi'], $fixture['challenge']);
+        $tokens = oauth_lib::exchange_code($code, $fixture['clientid'], $fixture['redirecturi'], $fixture['verifier']);
+        oauth_lib::rotate_refresh_token($tokens['refresh_token'], $fixture['clientid']);
+        $assertlocationunchanged();
+
+        // Zweite Verbindung, anderer Client.
+        $this->issue_token((int) $USER->id, 'ein-zweiter-client');
+        $assertlocationunchanged();
+
+        // Sammelwiderruf aller Verbindungen.
+        oauth_lib::revoke_all_tokens();
+        $assertlocationunchanged();
+    }
+
 }

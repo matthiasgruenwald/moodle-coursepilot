@@ -234,61 +234,6 @@ final class storage_anchor_test extends \advanced_testcase {
     }
 
     /**
-     * write_pointer() (Issue #446) legt eine Pointer-Datei an, die
-     * resolve_pointer() (ueber context_files) unveraendert zurueckliest -
-     * derselbe Mechanismus, den der Zustimmungsdialog nutzt. Die Werkbank
-     * (material_files::resolve_directory(), Issue #495) ignoriert den
-     * Materialbestand-Pointer, siehe {@see test_valid_pointer_redirects_context_but_not_workbench()}.
-     */
-    public function test_write_pointer_is_readable_back_via_resolve_directory(): void {
-        $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
-
-        storage_anchor::write_pointer('mein-kontext', 'mein-material');
-
-        $this->assertSame('/mein-kontext/', context_files::resolve_directory(''));
-        $this->assertSame('/kurspilot-material/', material_files::resolve_directory(''));
-    }
-
-    /**
-     * write_pointer() wendet dieselbe Segmentpruefung wie resolve_pointer()
-     * an - ein Ortswechsel mit Traversal-Segment scheitert sofort beim
-     * Schreiben, statt erst beim naechsten Lesen.
-     */
-    public function test_write_pointer_rejects_traversal_segment(): void {
-        $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
-
-        $this->expectException(\moodle_exception::class);
-        storage_anchor::write_pointer('../etc', 'mein-material');
-    }
-
-    /**
-     * write_pointer() weist einen leeren Ordnernamen ab statt eine kaputte
-     * Pointer-Datei anzulegen.
-     */
-    public function test_write_pointer_rejects_empty_value(): void {
-        $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
-
-        $this->expectException(\moodle_exception::class);
-        storage_anchor::write_pointer('', 'mein-material');
-    }
-
-    /**
-     * Backslashes zaehlen als Pfadtrenner - genau wie in {@see segments()}
-     * fuer Client-Pfade. Ohne diese Normalisierung passierte "..\etc" die
-     * Segmentpruefung als ein einziges, harmlos aussehendes Segment.
-     */
-    public function test_write_pointer_rejects_backslash_traversal_segment(): void {
-        $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
-
-        $this->expectException(\moodle_exception::class);
-        storage_anchor::write_pointer('..\\etc', 'mein-material');
-    }
-
-    /**
      * default_root() (Issue #494) liefert die konfigurierte Standardwurzel
      * ohne Pointer-Aufloesung - unveraendert, selbst wenn ein Pointer
      * bereits auf einen anderen Ort zeigt (die Ortswahlseite braucht genau
@@ -298,7 +243,10 @@ final class storage_anchor_test extends \advanced_testcase {
     public function test_default_root_ignores_an_existing_pointer(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
-        storage_anchor::write_pointer('woanders', 'auch-woanders');
+        storage_anchor::write_pointer_document([
+            'kontextbereich' => 'woanders',
+            'materialordner' => 'auch-woanders',
+        ]);
 
         $this->assertSame('kurspilot', storage_anchor::default_root(context_files::area()));
         $this->assertSame('kurspilot-material', storage_anchor::default_root(material_files::area()));
@@ -318,8 +266,8 @@ final class storage_anchor_test extends \advanced_testcase {
     /**
      * write_pointer_document() (Issue #494) schreibt ein vollstaendiges
      * Dokument der zweiten Fassung, read_raw_pointer() liest es unveraendert
-     * zurueck - der Schreibweg der Ortswahlseite, getrennt von
-     * write_pointer() (der ersten, zweifeldigen Fassung).
+     * zurueck - der einzige Schreibweg des Pointers, genutzt von der
+     * Ortswahlseite ({@see \local_kurspilot\ortswahl_lib}).
      */
     public function test_write_pointer_document_is_readable_back_via_read_raw_pointer(): void {
         $this->resetAfterTest();

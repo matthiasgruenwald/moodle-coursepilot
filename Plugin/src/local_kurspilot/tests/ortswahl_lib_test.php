@@ -601,7 +601,10 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->grant_webdav_capability($user);
         $this->assertTrue(ortswahl_lib::open_with_access((int) $user->id), 'Freigeschaltet, Ortswahl offen.');
 
-        storage_anchor::write_pointer('mein-kontext', 'mein-material');
+        storage_anchor::write_pointer_document([
+            'kontextbereich' => 'mein-kontext',
+            'materialordner' => 'mein-material',
+        ]);
         $this->assertFalse(ortswahl_lib::open_with_access((int) $user->id), 'Ortswahl nicht mehr offen, sobald ein Pointer existiert.');
     }
 

@@ -243,11 +243,14 @@ final class storage_anchor {
     }
 
     /**
-     * Schreibt ein vollstaendiges Pointer-Dokument der zweiten Fassung neu
-     * (Issue #494) - der Schreibweg der Ortswahlseite, getrennt von
-     * {@see write_pointer()} (dem alten, zweifeldigen Schreibweg des
-     * Zustimmungsdialogs, der mit Issue #494 keinen Aufrufer mehr hat, aber
-     * unveraendert bleibt). Bewegt keine Datei, wie {@see write_pointer()}.
+     * Schreibt ein vollstaendiges Pointer-Dokument neu (Issue #494) - der
+     * einzige Schreibweg des Pointers, aufgerufen ausschliesslich von der
+     * bewussten Ortswahl auf ihrer eigenen Seite im Moodle-Profil
+     * ({@see \local_kurspilot\ortswahl_lib}, Spec #442 §3), nie im
+     * Zustimmungsdialog und nie im Chat (CONTEXT.md, Issue #476). Kein
+     * Kurspilot-Endpunkt ruft dies auf. Bewegt keine Datei - schreibt
+     * ausschliesslich die kleine Pointer-Datei selbst, per {@see replace()}
+     * mit der ueblichen Zwischendatei-Choreografie.
      *
      * @param array $document Vollstaendiges Pointer-Dokument (kontextbereich,
      *        materialbestand, ortsverlauf).
@@ -268,35 +271,8 @@ final class storage_anchor {
     }
 
     /**
-     * Schreibt den Kontextpointer im festen Anker neu (Issue #446, Spec:
-     * Ablageort als eine Sache #442 §3): der einzige Schreibweg fuer den
-     * Pointer, aufgerufen ausschliesslich von der bewussten Ortswahl im
-     * Zustimmungsdialog beim Verbindungsaufbau (oauth_lib::apply_storage_location_choice()).
-     * Kein Kurspilot-Endpunkt ruft dies auf - die Verwaltung des Pointers
-     * ausserhalb dieses einen Dialogs bleibt beim Moodle-Core ("Meine
-     * Dateien"), wo er von Hand loeschbar ist.
-     *
-     * Bewegt keine Datei - schreibt ausschliesslich die kleine Pointer-Datei
-     * selbst, per {@see replace()} mit der ueblichen Zwischendatei-Choreografie.
-     *
-     * @param string $kontextbereich
-     * @param string $materialordner
-     * @throws \moodle_exception pointerincomplete/pointerunreachable bei
-     *         ungueltigen Ordnernamen.
-     */
-    public static function write_pointer(string $kontextbereich, string $materialordner): void {
-        $content = json_encode([
-            'kontextbereich' => context_pointer::validate_path($kontextbereich),
-            'materialordner' => context_pointer::validate_path($materialordner),
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-
-        self::write_pointer_file($content);
-    }
-
-    /**
-     * Der eine Schreibvorgang der Pointer-Datei selbst, geteilt von
-     * {@see write_pointer()} (erste Fassung) und
-     * {@see write_pointer_document()} (zweite Fassung, Issue #494).
+     * Der eine Schreibvorgang der Pointer-Datei selbst, genutzt von
+     * {@see write_pointer_document()}.
      *
      * @param string $content Bereits fertig kodierter JSON-Inhalt.
      */

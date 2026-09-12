@@ -175,7 +175,10 @@ final class list_skills_test extends \advanced_testcase {
         $this->setUser($user);
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
-        storage_anchor::write_pointer('mein-kontext', 'mein-material');
+        storage_anchor::write_pointer_document([
+            'kontextbereich' => 'mein-kontext',
+            'materialordner' => 'mein-material',
+        ]);
 
         $result = list_skills::execute();
         $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
