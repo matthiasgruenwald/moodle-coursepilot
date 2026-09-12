@@ -197,6 +197,20 @@ final class context_files {
     }
 
     /**
+     * Listet eine Ebene des vorherigen Ortes (Issue #498, Spec #486 §6/§9) -
+     * der Nur-Lese-Schalter fuer den Altbestand: derselbe Lesezweig wie
+     * {@see list_entries_pointer_aware()}, nur mit einem anderen, vom
+     * Aufrufer bereits aufgeloesten Ort statt der aktiven Pointer-Aufloesung.
+     *
+     * @param string $path
+     * @param pointer_location $location Aus {@see \local_kurspilot\altbestand::require_open_location()}.
+     * @return array{directory: string, entries: array}
+     */
+    public static function list_entries_previous_location(string $path, pointer_location $location): array {
+        return pointer_reader::list_entries(self::area(), $path, $location);
+    }
+
+    /**
      * Liest den Inhalt einer Kontextdatei - ortsneutral (Issue #487).
      *
      * @param string $directory Ergebnis von {@see resolve_directory()}.
@@ -221,6 +235,19 @@ final class context_files {
     }
 
     /**
+     * Liest eine Datei des vorherigen Ortes (Issue #498, Spec #486 §6/§9) -
+     * siehe {@see list_entries_previous_location()}.
+     *
+     * @param string $path
+     * @param pointer_location $location Aus {@see \local_kurspilot\altbestand::require_open_location()}.
+     * @return array{path: string, content: string, mimetype: string, size: int,
+     *         contenthash: string, timemodified: int}|null
+     */
+    public static function read_content_previous_location(string $path, pointer_location $location): ?array {
+        return pointer_reader::read_content(self::area(), $path, $location);
+    }
+
+    /**
      * Der aufgeloeste Pointer-Zustand des Kontextbereichs (Issue #491) - fuer
      * die Schreibendpunkte, die vor jedem Schreibvorgang wissen muessen, ob
      * der Moodle- oder der externe Zweig gilt (unterschiedliche Policy:
@@ -242,10 +269,12 @@ final class context_files {
      *
      * @param string $path
      * @param string $content
+     * @param bool $createonly Nur anlegen, nie ueberschreiben (Issue #498,
+     *        Spec #486 §9: Kopieren aus dem Altbestand).
      * @return array{path: string, created: bool, size: int, oldsize: int}
      */
-    public static function write_pointer_aware(string $path, string $content): array {
-        return pointer_writer::write(self::area(), $path, $content);
+    public static function write_pointer_aware(string $path, string $content, bool $createonly = false): array {
+        return pointer_writer::write(self::area(), $path, $content, $createonly);
     }
 
     /**

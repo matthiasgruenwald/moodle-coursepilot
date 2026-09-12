@@ -157,6 +157,14 @@ $string['settingwebdavhint'] = 'School hint (location page)';
 $string['settingwebdavhint_desc'] = 'Optional free text shown to teachers without their own WebDAV connection on the location page, in addition to the three setup steps — e.g. a recommendation which cloud service the school provides.';
 $string['listskillsortswahlhint'] = 'The teacher can store the context area and material stock in their own WebDAV storage instead of Moodle — location page at {$a}.';
 
+// Legacy holdings "Altbestand" (issue #498, spec #486 §9/§10): the previous
+// location after a context area location change — read-only, ends explicitly.
+$string['ortswahlaltbestandopen'] = 'Not everything from the earlier location has been taken over yet.';
+$string['listskillsaltbestandhint'] = 'Context files still remain at the previous location of the context area (Altbestand). Offer to copy them — location page at {$a}.';
+$string['altbestandclosed'] = 'There is no open Altbestand (legacy holdings).';
+$string['altbestanddismissed'] = 'Altbestand closed — the previous location will no longer be mentioned.';
+$string['contextfilealreadyexists'] = '{$a} already exists at the new location — not overwritten (copying only creates, never overwrites).';
+
 // Pending-write note "Ausstandsnotiz" (issue #492, ADR 0023, spec #486 §8/§10):
 // never an absolute server path, username, password, HTTP code, or response
 // body (secrecy test) — the raw code goes into the access log instead.

@@ -46,17 +46,35 @@ final class pointer_reader {
      *
      * @param storage_area $area
      * @param string $path
+     * @param pointer_location|null $location Ueberschreibt die normale
+     *        Pointer-Aufloesung - fuer den Nur-Lese-Schalter des vorherigen
+     *        Ortes (Issue #498, Spec #486 §6/§9), der denselben Lesezweig
+     *        auf einem anderen Ort braucht. Weglassen loest wie bisher ueber
+     *        {@see storage_anchor::resolve_pointer_location()} auf.
      * @return array{directory: string, entries: array}
      * @throws \moodle_exception pointerunreadable/pointerincomplete/pointerunreachable/
      *         webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/
      *         webdavauthunsupported/webdavfingerprintchanged/webdavexternalerror
      */
-    public static function list_entries(storage_area $area, string $path): array {
-        $location = storage_anchor::resolve_pointer_location($area);
-        if ($location === null || $location->kind === pointer_location::MOODLE) {
+    public static function list_entries(storage_area $area, string $path, ?pointer_location $location = null): array {
+        $location = $location ?? storage_anchor::resolve_pointer_location($area);
+        if ($location === null) {
             $directory = storage_anchor::resolve_directory($area, $path);
             return [
                 'directory' => storage_anchor::relative_directory($area, $directory),
+                'entries' => storage_anchor::list_entries($directory),
+            ];
+        }
+        if ($location->kind === pointer_location::MOODLE) {
+            // Der Ort ist bereits aufgeloest (regulaer oder ueberschrieben,
+            // Issue #498) - die Wurzel kommt aus $location, nicht erneut aus
+            // der aktiven Pointer-Aufloesung, sonst wuerde eine ueberschriebene
+            // Wurzel (vorheriger Ort) hier stillschweigend ignoriert.
+            $relative = storage_anchor::normalise_client_path($area, $path);
+            $root = rtrim((string) $location->path, '/') . '/';
+            $directory = $relative === '' ? $root : $root . $relative . '/';
+            return [
+                'directory' => $relative,
                 'entries' => storage_anchor::list_entries($directory),
             ];
         }
@@ -102,19 +120,39 @@ final class pointer_reader {
      *
      * @param storage_area $area
      * @param string $path
+     * @param pointer_location|null $location Ueberschreibt die normale
+     *        Pointer-Aufloesung, siehe {@see list_entries()}.
      * @return array{path: string, content: string, mimetype: string, size: int,
      *         contenthash: string, timemodified: int}|null
      * @throws \moodle_exception invalidpathkey des Bereichs, sowie wie {@see list_entries()}.
      */
-    public static function read_content(storage_area $area, string $path): ?array {
-        $location = storage_anchor::resolve_pointer_location($area);
-        if ($location === null || $location->kind === pointer_location::MOODLE) {
+    public static function read_content(storage_area $area, string $path, ?pointer_location $location = null): ?array {
+        $location = $location ?? storage_anchor::resolve_pointer_location($area);
+        if ($location === null) {
             [$directory, $filename] = storage_anchor::resolve_file($area, $path);
             $content = storage_anchor::read_content($directory, $filename);
             if ($content === null) {
                 return null;
             }
             return $content + ['path' => storage_anchor::relative_file($area, $directory, $filename)];
+        }
+        if ($location->kind === pointer_location::MOODLE) {
+            // Siehe list_entries(): die Wurzel kommt aus $location, nicht
+            // erneut aus der aktiven Pointer-Aufloesung (Issue #498).
+            $relative = storage_anchor::normalise_client_path($area, $path);
+            if ($relative === '') {
+                throw new \moodle_exception($area->invalidpathkey, 'local_kurspilot');
+            }
+            $segments = explode('/', $relative);
+            $filename = array_pop($segments);
+            $root = rtrim((string) $location->path, '/') . '/';
+            $directorypart = implode('/', $segments);
+            $directory = $directorypart === '' ? $root : $root . $directorypart . '/';
+            $content = storage_anchor::read_content($directory, $filename);
+            if ($content === null) {
+                return null;
+            }
+            return $content + ['path' => $relative];
         }
 
         $clientpath = storage_anchor::normalise_client_path($area, $path);

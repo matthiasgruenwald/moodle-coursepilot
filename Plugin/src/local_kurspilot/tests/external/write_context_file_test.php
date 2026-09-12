@@ -851,9 +851,64 @@ final class write_context_file_test extends \advanced_testcase {
      */
     public function test_execute_parameters_expose_no_area_selector(): void {
         $this->assertSame(
-            ['path', 'content', 'expected_contenthash', 'ausstand'],
+            ['path', 'content', 'expected_contenthash', 'ausstand', 'nur_anlegen'],
             array_keys(write_context_file::execute_parameters()->keys)
         );
+    }
+
+    /**
+     * "nur_anlegen" schuetzt eine vorhandene Moodle-Datei vor Ueberschreiben -
+     * die Garantie fuer das Kopieren aus dem Altbestand (Issue #498, Spec
+     * #486 §9: "am neuen Ort wird also nie ueberschrieben").
+     */
+    public function test_nur_anlegen_rejects_existing_moodle_file(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/kurspilot/', 'plan.md', 'alt');
+
+        try {
+            write_context_file::execute('plan.md', '# Neu', '', '', true);
+            $this->fail('Ueberschreiben haette mit nur_anlegen abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilealreadyexists', $e->errorcode);
+        }
+
+        $this->assertSame('alt', $this->read_stored($user, '/kurspilot/', 'plan.md'));
+    }
+
+    /**
+     * Ohne vorhandene Datei legt "nur_anlegen" ganz normal an.
+     */
+    public function test_nur_anlegen_creates_new_moodle_file(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $result = write_context_file::execute('plan.md', '# Neu', '', '', true);
+        $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
+
+        $this->assertTrue($result['created']);
+    }
+
+    /**
+     * Extern schuetzt "nur_anlegen" ebenso vor Ueberschreiben - kein PUT auf
+     * die vorhandene Datei.
+     */
+    public function test_nur_anlegen_rejects_existing_external_file(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/plan.md', 'alt');
+
+        try {
+            write_context_file::execute('plan.md', '# Neu', '', '', true);
+            $this->fail('Ueberschreiben haette mit nur_anlegen abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilealreadyexists', $e->errorcode);
+        }
+
+        $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
+        $this->assertSame([], $puts);
     }
 
     /**

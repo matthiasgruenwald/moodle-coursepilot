@@ -218,4 +218,31 @@ trait webdav_instance_fixture {
 
         return [$user, $fake];
     }
+
+    /**
+     * Schreibt einen Kontextpointer der zweiten Fassung mit offenem
+     * Altbestand (Issue #498, Spec #486 §9) - beide regulaeren Ziele bleiben
+     * *in Moodle* an ihrer Standardwurzel, der vorherige Ort ist ebenfalls
+     * *in Moodle*. Geteilt von allen Testklassen, die einen offenen
+     * Altbestand voraussetzen, statt vier fast identischer Kopien.
+     *
+     * @param \stdClass $user
+     * @param string $pfad Wurzel des vorherigen Ortes, relativ zu den Private Files.
+     */
+    protected function write_pointer_with_vorheriger_ort(\stdClass $user, string $pfad = 'alter-kontext'): void {
+        $document = [
+            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'kurspilot'],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'kurspilot-material'],
+            'ortsverlauf' => [],
+            'vorheriger_ort' => ['ort' => 'moodle', 'pfad' => $pfad],
+        ];
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_user::instance($user->id)->id,
+            'component' => 'user',
+            'filearea' => 'private',
+            'itemid' => 0,
+            'filepath' => '/kurspilot/',
+            'filename' => '.kurspilot-ort.json',
+        ], json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
 }

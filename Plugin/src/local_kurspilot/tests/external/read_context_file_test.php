@@ -140,8 +140,62 @@ final class read_context_file_test extends \advanced_testcase {
      */
     public function test_execute_parameters_expose_no_area_selector(): void {
         $definition = read_context_file::execute_parameters()->keys;
-        $this->assertSame(['path'], array_keys($definition));
+        $this->assertSame(['path', 'vorheriger_ort'], array_keys($definition));
     }
+
+    /**
+     * "vorheriger_ort" ohne offenen Altbestand ist ein benannter Fehler
+     * (Issue #498, Spec #486 §6).
+     */
+    public function test_vorheriger_ort_switch_without_open_altbestand_is_rejected(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        try {
+            read_context_file::execute('plan.md', true);
+            $this->fail('Ohne offenen Altbestand haette der Schalter abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('altbestandclosed', $e->errorcode);
+        }
+    }
+
+    /**
+     * Mit offenem Altbestand liest der Schalter vom vorherigen Ort, nicht
+     * vom aktuellen - beide Dateien heissen hier gleich, der Inhalt
+     * unterscheidet sie.
+     */
+    public function test_vorheriger_ort_switch_reads_from_the_previous_location(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/kurspilot/', 'plan.md', '# Aktuell');
+        $this->create_context_file($user, '/altbestand/', 'plan.md', '# Alt');
+        $this->write_pointer_with_vorheriger_ort($user, 'altbestand');
+
+        $current = read_context_file::execute('plan.md');
+        $current = external_api::clean_returnvalue(read_context_file::execute_returns(), $current);
+        $this->assertSame('# Aktuell', $current['content']);
+
+        $previous = read_context_file::execute('plan.md', true);
+        $previous = external_api::clean_returnvalue(read_context_file::execute_returns(), $previous);
+        $this->assertSame('# Alt', $previous['content']);
+    }
+
+    /**
+     * Personenbezug-Sperre und alle Auflösungsprüfungen gelten auch für den
+     * vorherigen Ort (Issue #498 Akzeptanzkriterium).
+     */
+    public function test_vorheriger_ort_switch_still_locks_marked_content(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/altbestand/', 'lerngruppe.md', $this->marked_content());
+        $this->write_pointer_with_vorheriger_ort($user, 'altbestand');
+
+        $this->expectException(\moodle_exception::class);
+        read_context_file::execute('lerngruppe.md', true);
+    }
+
 
     /**
      * Der Kontextbereich hat genau zwei Schreibpfade (#408/#409, Spec 0016

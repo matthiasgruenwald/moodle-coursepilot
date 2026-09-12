@@ -298,6 +298,15 @@ final class ortswahl_lib {
 
         $changed = [];
         $ortsverlauf = self::history();
+        // Altbestand (Issue #498, Spec #486 §9): der bisherige vorherige Ort
+        // bleibt unveraendert, ausser der Kontextbereich wechselt UND am
+        // alten Ort liegen nachweisbar Kontextdateien - "es gibt immer nur
+        // einen", ein neuer Wechsel verdraengt ihn (Spec §5: "Wer trotzdem
+        // abschliesst, verdraengt ihn, und seine Dateien bleiben unberuehrt
+        // liegen"). Ein Wechsel nur des Materialbestands laesst dieses Feld
+        // unangetastet (Spec §9: "Ein Wechsel nur des Materialbestands
+        // erzeugt nichts").
+        $vorherigerort = altbestand::current();
         foreach (self::TARGETS as $target) {
             if (self::same_place($current[$target], $wanted[$target])) {
                 continue;
@@ -309,19 +318,72 @@ final class ortswahl_lib {
                 'von' => self::describe_pointer_value($current[$target]),
                 'nach' => self::describe_pointer_value($wanted[$target]),
             ];
+            if ($target === 'kontextbereich' && self::old_location_has_entries($current[$target])) {
+                $vorherigerort = $current[$target];
+            }
         }
 
         if (empty($changed)) {
             return [];
         }
 
-        storage_anchor::write_pointer_document([
+        $document = [
             'kontextbereich' => $wanted['kontextbereich'],
             'materialbestand' => $wanted['materialbestand'],
             'ortsverlauf' => $ortsverlauf,
-        ]);
+        ];
+        if ($vorherigerort !== null) {
+            $document['vorheriger_ort'] = $vorherigerort;
+        }
+        storage_anchor::write_pointer_document($document);
 
         return $changed;
+    }
+
+    /**
+     * @var string[] Fehlerschluessel, bei denen der alte Ort selbst nicht
+     *      mehr gueltig ist (geloeschte/fremde Instanz, entzogene
+     *      Freischaltung, nicht mehr unterstuetzte Anmeldeart) - dieselbe
+     *      Liste wie {@see \local_kurspilot\pointer_writer::LOCATION_FAILURE_CODES}.
+     *      Gilt dann als "kein nachweisbarer Altbestand" statt den Abschluss
+     *      daran scheitern zu lassen. Ein echter Verbindungsausfall
+     *      ("webdavexternalerror") ist dagegen kein Sonderfall des alten
+     *      Ortes, sondern ein Ausfall wie jeder andere im Ablauf - er laeuft
+     *      ungefangen durch und scheitert den gesamten Abschluss, statt
+     *      stillschweigend einen Altbestand zu verlieren (Spec §5: "Scheitert
+     *      das, wird nichts gespeichert").
+     */
+    private const OLD_LOCATION_INVALID_CODES = [
+        'webdavinstancemissing',
+        'webdavinstanceforeign',
+        'webdavnotenabled',
+        'webdavauthunsupported',
+    ];
+
+    /**
+     * Ob am (verlassenen) alten Kontextbereich-Ort nachweisbar Eintraege
+     * liegen - Grundlage fuer den Altbestand (Issue #498, Spec §5: "prueft
+     * die Seite, ob am alten Ort Kontextdateien liegen. Sie spricht in
+     * diesem Moment ohnehin mit beiden Speichern.").
+     *
+     * @param array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array} $old
+     * @return bool
+     * @throws \moodle_exception webdavexternalerror bei einem echten Ausfall
+     *         (nicht bei einem nicht mehr gueltigen alten Ort).
+     */
+    private static function old_location_has_entries(array $old): bool {
+        if ($old['ort'] === pointer_location::MOODLE) {
+            $directory = '/' . trim((string) $old['pfad'], '/') . '/';
+            return !empty(storage_anchor::list_entries($directory));
+        }
+        try {
+            return self::browse((int) $old['instanzid'], (string) $old['pfad'])['entrycount'] > 0;
+        } catch (\moodle_exception $e) {
+            if (in_array($e->errorcode, self::OLD_LOCATION_INVALID_CODES, true)) {
+                return false;
+            }
+            throw $e;
+        }
     }
 
     /**

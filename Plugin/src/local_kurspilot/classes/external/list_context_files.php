@@ -43,17 +43,26 @@ class list_context_files extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'path' => new external_value(PARAM_PATH, 'Relativer Unterordner, leer fuer die Wurzel', VALUE_DEFAULT, ''),
+            'vorheriger_ort' => new external_value(
+                PARAM_BOOL,
+                'Optional: true listet den vorherigen Ort statt des aktuellen (Nur-Lese-Schalter fuer den '
+                    . 'Altbestand, Issue #498) - wirkt nur, solange ein Altbestand offen ist',
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
     /**
      * @param string $path
+     * @param bool $vorherigerort
      * @return array
      * @throws \moodle_exception invalidcontextpath, wenn $path ein "."/".."-
-     *         Segment enthaelt.
+     *         Segment enthaelt; altbestandclosed, wenn "vorheriger_ort" ohne
+     *         offenen Altbestand gesetzt ist.
      */
-    public static function execute(string $path = ''): array {
-        $params = self::validate_parameters(self::execute_parameters(), ['path' => $path]);
+    public static function execute(string $path = '', bool $vorherigerort = false): array {
+        $params = self::validate_parameters(self::execute_parameters(), ['path' => $path, 'vorheriger_ort' => $vorherigerort]);
 
         // Kein zusaetzliches 'local/kurspilot:use' o.ae. (anders als
         // list_courses/get_course_catalog): der Kontextbereich ist an die
@@ -68,7 +77,14 @@ class list_context_files extends external_api {
         // Zeigerbewusst (Issue #490): folgt dem Kontextpointer nach Moodle
         // oder extern (WebDAV) - der Aufrufer hier kennt den Unterschied
         // nicht, das Ergebnis hat in beiden Faellen dieselbe Form.
-        $result = context_files::list_entries_pointer_aware($params['path']);
+        //
+        // Nur-Lese-Schalter fuer den vorherigen Ort (Issue #498, Spec #486
+        // §6/§9): loest denselben Lesezweig auf einem anderen, bereits
+        // aufgeloesten Ort - alle Aufloesungspruefungen (Instanzbesitz,
+        // Freischaltung, Pruefmerkmal, IServ) gelten auch hier.
+        $result = $params['vorheriger_ort']
+            ? context_files::list_entries_previous_location($params['path'], \local_kurspilot\altbestand::require_open_location())
+            : context_files::list_entries_pointer_aware($params['path']);
 
         $entries = [];
         foreach ($result['entries'] as $entry) {

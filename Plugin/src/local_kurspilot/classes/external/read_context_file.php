@@ -41,17 +41,27 @@ class read_context_file extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'path' => new external_value(PARAM_PATH, 'Dateipfad relativ zum Kontextbereich, z.B. "vorlagen.md"'),
+            'vorheriger_ort' => new external_value(
+                PARAM_BOOL,
+                'Optional: true liest vom vorherigen Ort statt vom aktuellen (Nur-Lese-Schalter fuer den '
+                    . 'Altbestand, Issue #498) - wirkt nur, solange ein Altbestand offen ist',
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
     /**
      * @param string $path
+     * @param bool $vorherigerort
      * @return array
      * @throws \moodle_exception invalidcontextpath fuer einen leeren Pfad oder
-     *         ein "."/".."-Segment; contextfilenotfound, wenn die Datei fehlt.
+     *         ein "."/".."-Segment; contextfilenotfound, wenn die Datei fehlt;
+     *         altbestandclosed, wenn "vorheriger_ort" ohne offenen Altbestand
+     *         gesetzt ist.
      */
-    public static function execute(string $path): array {
-        $params = self::validate_parameters(self::execute_parameters(), ['path' => $path]);
+    public static function execute(string $path, bool $vorherigerort = false): array {
+        $params = self::validate_parameters(self::execute_parameters(), ['path' => $path, 'vorheriger_ort' => $vorherigerort]);
 
         // Kein zusaetzliches 'local/kurspilot:use' o.ae. (anders als
         // list_courses/get_course_catalog): der Kontextbereich ist an die
@@ -66,7 +76,12 @@ class read_context_file extends external_api {
         // Zeigerbewusst (Issue #490): folgt dem Kontextpointer nach Moodle
         // oder extern (WebDAV) - der Aufrufer hier kennt den Unterschied
         // nicht, das Ergebnis hat in beiden Faellen dieselbe Form.
-        $file = context_files::read_content_pointer_aware($params['path']);
+        //
+        // Nur-Lese-Schalter fuer den vorherigen Ort (Issue #498, Spec #486
+        // §6/§9): siehe list_context_files fuer die Begruendung.
+        $file = $params['vorheriger_ort']
+            ? context_files::read_content_previous_location($params['path'], \local_kurspilot\altbestand::require_open_location())
+            : context_files::read_content_pointer_aware($params['path']);
         if ($file === null) {
             throw new \moodle_exception('contextfilenotfound', 'local_kurspilot', '', $params['path']);
         }

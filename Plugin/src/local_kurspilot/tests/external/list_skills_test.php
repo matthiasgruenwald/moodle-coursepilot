@@ -182,4 +182,49 @@ final class list_skills_test extends \advanced_testcase {
 
         $this->assertSame([], $result['hinweise']);
     }
+
+    /**
+     * Ohne offenen Altbestand fehlt der Hinweisfakt.
+     */
+    public function test_hinweise_field_has_no_altbestand_hint_by_default(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->setUser($user);
+
+        $result = list_skills::execute();
+        $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
+
+        $this->assertSame([], $result['hinweise']);
+    }
+
+    /**
+     * Ein offener Altbestand (Issue #498, Spec #486 §9/§10) erscheint als
+     * Fakt in 'hinweise', ohne Zaehlung - der Hinweistext nennt keine Anzahl.
+     */
+    public function test_hinweise_field_names_open_altbestand_without_counting(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->setUser($user);
+        $this->write_pointer_with_vorheriger_ort($user);
+
+        $result = list_skills::execute();
+        $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
+
+        $this->assertCount(1, $result['hinweise']);
+        $this->assertSame(
+            get_string(
+                'listskillsaltbestandhint',
+                'local_kurspilot',
+                \local_kurspilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE
+            ),
+            $result['hinweise'][0]['text']
+        );
+        // Kein Zaehlwert (Issue #498 Akzeptanzkriterium: "ohne Zaehlung") -
+        // am deutschen Sprachpaket geprueft, echte Umlaute, keine Ziffern.
+        $string = [];
+        require(__DIR__ . '/../../lang/de/local_kurspilot.php');
+        $this->assertDoesNotMatchRegularExpression('/\d/', $string['listskillsaltbestandhint']);
+    }
 }

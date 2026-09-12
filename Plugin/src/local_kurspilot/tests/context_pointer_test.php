@@ -291,4 +291,49 @@ final class context_pointer_test extends \advanced_testcase {
         $this->expectException(\moodle_exception::class);
         context_pointer::resolve_target($decoded, 'kontextbereich');
     }
+
+    // --- resolve_previous() (Issue #498, Spec #486 §9) ---
+
+    public function test_resolve_previous_moodle_value(): void {
+        $location = context_pointer::resolve_previous(['ort' => 'moodle', 'pfad' => 'alter-kontext']);
+
+        $this->assertSame(pointer_location::MOODLE, $location->kind);
+        $this->assertSame('/alter-kontext/', $location->path);
+    }
+
+    public function test_resolve_previous_extern_value(): void {
+        $location = context_pointer::resolve_previous([
+            'ort' => 'extern',
+            'instanzid' => 3,
+            'pfad' => 'Unterricht/Alt',
+            'pruefmerkmal' => ['server' => 'cloud.example.test', 'basispfad' => 'Kurspilot', 'konto' => 'lehrerin'],
+        ]);
+
+        $this->assertSame(pointer_location::EXTERN, $location->kind);
+        $this->assertSame(3, $location->instanceid);
+        $this->assertSame('Unterricht/Alt', $location->relativepath);
+    }
+
+    /**
+     * "Alle Aufloesungspruefungen gelten auch fuer den vorherigen Ort"
+     * (Issue #498 Akzeptanzkriterium) - hier Pruefung 8 (IServ).
+     */
+    public function test_resolve_previous_enforces_iserv_files_only(): void {
+        try {
+            context_pointer::resolve_previous([
+                'ort' => 'extern',
+                'instanzid' => 3,
+                'pfad' => 'Groups/Alt',
+                'pruefmerkmal' => ['server' => 's', 'basispfad' => 'b', 'konto' => 'k', 'iserv' => true],
+            ]);
+            $this->fail('webdaviservfilesonly haette geworfen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('webdaviservfilesonly', $e->errorcode);
+        }
+    }
+
+    public function test_resolve_previous_incomplete_value_is_incomplete(): void {
+        $this->expectException(\moodle_exception::class);
+        context_pointer::resolve_previous(['ort' => 'moodle']);
+    }
 }

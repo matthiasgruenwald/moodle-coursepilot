@@ -212,7 +212,46 @@ final class list_context_files_test extends \advanced_testcase {
      */
     public function test_execute_parameters_expose_no_area_selector(): void {
         $definition = list_context_files::execute_parameters()->keys;
-        $this->assertSame(['path'], array_keys($definition));
+        $this->assertSame(['path', 'vorheriger_ort'], array_keys($definition));
+    }
+
+    /**
+     * "vorheriger_ort" ohne offenen Altbestand ist ein benannter Fehler,
+     * kein stilles leeres Ergebnis (Issue #498, Spec #486 §6: "wirkt nur,
+     * solange Altbestand offen ist").
+     */
+    public function test_vorheriger_ort_switch_without_open_altbestand_is_rejected(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        try {
+            list_context_files::execute('', true);
+            $this->fail('Ohne offenen Altbestand haette der Schalter abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('altbestandclosed', $e->errorcode);
+        }
+    }
+
+    /**
+     * Mit offenem Altbestand listet der Schalter den vorherigen Ort, nicht
+     * den aktuellen.
+     */
+    public function test_vorheriger_ort_switch_lists_the_previous_location(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/kurspilot/', 'aktuell.md', '# Aktuell');
+        $this->create_context_file($user, '/altbestand/', 'alt.md', '# Alt');
+        $this->write_pointer_with_vorheriger_ort($user, 'altbestand');
+
+        $current = list_context_files::execute();
+        $current = external_api::clean_returnvalue(list_context_files::execute_returns(), $current);
+        $this->assertContains('aktuell.md', array_column($current['entries'], 'name'));
+
+        $previous = list_context_files::execute('', true);
+        $previous = external_api::clean_returnvalue(list_context_files::execute_returns(), $previous);
+        $this->assertContains('alt.md', array_column($previous['entries'], 'name'));
+        $this->assertNotContains('aktuell.md', array_column($previous['entries'], 'name'));
     }
 
     /**

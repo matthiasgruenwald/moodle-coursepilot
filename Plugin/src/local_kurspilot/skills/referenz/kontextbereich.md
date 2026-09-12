@@ -15,13 +15,26 @@ Grundlage: Spec 0016 §7/§8 (`docs/specs/0016-kontextbereich-schreibend.md`).
 
 | Tool | Zweck | Antwort enthaelt |
 |---|---|---|
-| `kurspilot_list_context_files` | Ordnerinhalt auflisten | je Eintrag `contenthash`, `timemodified`, `locked` |
-| `kurspilot_read_context_file` | Datei lesen | `content`, `contenthash`, `timemodified` |
-| `kurspilot_write_context_file` | Anlegen/vollstaendig ueberschreiben, optional `expected_contenthash`, optional `ausstand` (Kennung) | Meldung "neu angelegt" / "ueberschrieben"; bei Konflikt Fehler `contextfilechanged` |
+| `kurspilot_list_context_files` | Ordnerinhalt auflisten, optional `vorheriger_ort` (Altbestand) | je Eintrag `contenthash`, `timemodified`, `locked` |
+| `kurspilot_read_context_file` | Datei lesen, optional `vorheriger_ort` (Altbestand) | `content`, `contenthash`, `timemodified` |
+| `kurspilot_write_context_file` | Anlegen/vollstaendig ueberschreiben, optional `expected_contenthash`, optional `ausstand` (Kennung), optional `nur_anlegen` (Kopieren aus dem Altbestand) | Meldung "neu angelegt" / "ueberschrieben"; bei Konflikt Fehler `contextfilechanged`/`contextfilealreadyexists` |
 | `kurspilot_append_context_file` | Anhaengen in einem Serveraufruf, kein `expected_contenthash` (kein vorheriges Lesen noetig), optional `ausstand` (Kennung) | Meldung "angehaengt" / "neu angelegt", ggf. Rotationshinweis |
 | `kurspilot_dismiss_ausstand` | Einen Eintrag der Ausstandsnotiz ausdruecklich verwerfen (`kennung`) | Bestaetigung |
+| `kurspilot_dismiss_altbestand` | Den Altbestand (vorheriger Ort) ausdruecklich beenden, kein Parameter | Bestaetigung |
 
 Nur `.md`-Dateien; Pfadsegmente `[A-Za-z0-9_-]`, kein `.`/`..`.
+
+## Altbestand (vorheriger Ort)
+
+`kurspilot_list_skills` nennt ohne Zaehlung den Fakt "Altbestand offen", wenn
+nach einem Ortswechsel des Kontextbereichs am fruheren Ort noch
+Kontextdateien liegen. `kurspilot_list_context_files`/`kurspilot_read_context_file`
+mit `vorheriger_ort: true` lesen diesen alten Ort — nur lesend, nie
+schreibend. Zum Kopieren: gelesenen Inhalt per `kurspilot_write_context_file`
+mit `nur_anlegen: true` an den neuen Ort schreiben — legt nur an, ueberschreibt
+nie. Nach dem Kopieren (oder wenn die Lehrkraft auf den Rest verzichtet)
+`kurspilot_dismiss_altbestand` aufrufen, um ihn ausdruecklich zu beenden. Der
+Altbestand endet nie von selbst durch Zeitablauf oder Namensgleichheit.
 
 ## Ablageordnung — Wurzel und relative Pfade (Spec 0012 §5, Spec 0010)
 

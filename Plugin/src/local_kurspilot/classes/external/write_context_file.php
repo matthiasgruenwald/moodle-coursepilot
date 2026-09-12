@@ -60,6 +60,13 @@ class write_context_file extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
+            'nur_anlegen' => new external_value(
+                PARAM_BOOL,
+                'Optional: true legt nur an und ueberschreibt nie - fuer das Kopieren aus dem Altbestand '
+                    . '(vorheriger Ort, aus kurspilot_list_context_files/read_context_file) an den neuen Ort',
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
@@ -67,18 +74,27 @@ class write_context_file extends external_api {
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash
+     * @param string $ausstand
+     * @param bool $nuranlegen
      * @return array
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
      *         contextfiletoolarge, contextfilelocked, contextfilechanged,
-     *         contextquotaexceeded
+     *         contextfilealreadyexists, contextquotaexceeded
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
-    public static function execute(string $path, string $content, string $expectedcontenthash = '', string $ausstand = ''): array {
+    public static function execute(
+        string $path,
+        string $content,
+        string $expectedcontenthash = '',
+        string $ausstand = '',
+        bool $nuranlegen = false
+    ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'path' => $path,
             'content' => $content,
             'expected_contenthash' => $expectedcontenthash,
             'ausstand' => $ausstand,
+            'nur_anlegen' => $nuranlegen,
         ]);
 
         $context = context_files::own_context();
@@ -116,7 +132,7 @@ class write_context_file extends external_api {
         }
 
         if ($location !== null && $location->kind === pointer_location::EXTERN) {
-            return self::execute_external($params['path'], $content, $params['ausstand']);
+            return self::execute_external($params['path'], $content, $params['ausstand'], $params['nur_anlegen']);
         }
 
         context_files::require_manage_own_files();
@@ -125,6 +141,13 @@ class write_context_file extends external_api {
 
         $existing = context_files::read_content($directory, $filename);
         $oldsize = $existing ? $existing['size'] : 0;
+
+        // Kopieren aus dem Altbestand (Issue #498, Spec #486 §9): am neuen
+        // Ort wird nie ueberschrieben - dieselbe Garantie, die der externe
+        // Zweig ueber "If-None-Match: *" bereits hat.
+        if ($existing && $params['nur_anlegen']) {
+            throw new \moodle_exception('contextfilealreadyexists', 'local_kurspilot', '', $params['path']);
+        }
 
         // Auch die Zieldatei zaehlt: eine personenbezogen markierte Datei ist
         // bei ausgeschaltetem Schalter nicht lesbar - sie darf dann erst
@@ -174,10 +197,11 @@ class write_context_file extends external_api {
      * @param string $path
      * @param string $content
      * @param string $ausstand Optional: siehe {@see execute()}.
+     * @param bool $createonly Optional: siehe {@see execute()}.
      * @return array
      */
-    private static function execute_external(string $path, string $content, string $ausstand): array {
-        $result = context_files::write_pointer_aware($path, $content);
+    private static function execute_external(string $path, string $content, string $ausstand, bool $createonly = false): array {
+        $result = context_files::write_pointer_aware($path, $content, $createonly);
         self::dismiss_ausstand($ausstand);
 
         $message = $result['created']

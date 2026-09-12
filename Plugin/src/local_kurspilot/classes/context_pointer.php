@@ -33,10 +33,13 @@ namespace local_kurspilot;
  *   unveraendert weiterreicht: die Zuordnung passiert hier in
  *   {@see TARGET_FIELD}.
  *
- * "Vorheriger Ort" und "Ortsverlauf" (Spec §2) sind im Pointer vorgesehen,
- * aber diese Klasse liest sie noch nicht - beide Felder gehoeren keinem
- * Auflosungspfad dieses Issues (#490), erst der Altbestand (spaeteres Issue)
- * braucht sie.
+ * "Ortsverlauf" (Spec §2) wird von dieser Klasse weiterhin nicht gedeutet -
+ * die Ortswahlseite ({@see \local_kurspilot\ortswahl_lib}) haengt Zeilen an
+ * und liest sie roh zurueck, keine Aufloesung noetig. "Vorheriger Ort" (Feld
+ * `vorheriger_ort`, Issue #498, Spec #486 §9) wird dagegen hier gedeutet -
+ * {@see resolve_previous()} - denn der Altbestand-Nur-Lese-Zweig
+ * ({@see \local_kurspilot\altbestand}) braucht dieselbe Struktur- und
+ * IServ-Pruefung wie die beiden regulaeren Ziele.
  *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
@@ -154,6 +157,30 @@ final class context_pointer {
         }
 
         self::incomplete();
+    }
+
+    /**
+     * Deutet den vorherigen Ort des Altbestands (Issue #498, Spec #486 §9) -
+     * dieselbe Struktur wie ein regulaeres Ziel der zweiten Fassung, deshalb
+     * ueber {@see resolve_single_v2()} statt einer eigenen Deutung. Traegt
+     * die IServ-Pruefung (Pruefung 8) mit, die auch fuer den vorherigen Ort
+     * gilt ("alle Aufloesungspruefungen gelten auch fuer den vorherigen
+     * Ort") - die Verschachtelungspruefung (Pruefung 7) dagegen nicht: der
+     * vorherige Ort wird nie gegen den aktuellen Materialbestand verglichen.
+     *
+     * @param array $value Der Wert des Feldes "vorheriger_ort" im Pointer-Dokument.
+     * @return pointer_location
+     * @throws \moodle_exception pointerincomplete/pointerunreachable/webdaviservfilesonly
+     */
+    public static function resolve_previous(array $value): pointer_location {
+        $location = self::resolve_single_v2($value);
+        if ($location->kind === pointer_location::EXTERN && ($location->fingerprint['iserv'] ?? false) === true) {
+            $first = strtok((string) $location->relativepath, '/');
+            if ($first !== \local_kurspilot\webdav\webdav_instance::ISERV_FILES_AREA) {
+                throw new \moodle_exception('webdaviservfilesonly', 'local_kurspilot', '', \local_kurspilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE);
+            }
+        }
+        return $location;
     }
 
     /**

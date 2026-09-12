@@ -78,6 +78,15 @@ final class list_skills extends external_api {
                 'link' => (new \moodle_url(webdav_setup_steps::ORTSWAHL_PAGE))->out(false),
             ];
         }
+        if (\local_kurspilot\altbestand::open()) {
+            // Altbestand offen (Issue #498, Spec #486 §9/§10): ohne
+            // Netzzugriff, ohne Zaehlung - nur der Fakt "es gibt einen
+            // vorherigen Ort".
+            $hinweise[] = [
+                'text' => get_string('listskillsaltbestandhint', 'local_kurspilot', webdav_setup_steps::ORTSWAHL_PAGE),
+                'link' => (new \moodle_url(webdav_setup_steps::ORTSWAHL_PAGE))->out(false),
+            ];
+        }
 
         return ['skills' => $skills, 'ausstaende' => ausstand_notice::list_grouped(), 'hinweise' => $hinweise];
     }

@@ -852,10 +852,17 @@ final class tool_registry {
             'wsdescription' => 'Lists the calling teacher\'s Kurspilot context area (own working area only).',
             'description' => 'Listet den eigenen Kontextbereich der angemeldeten Lehrkraft auf '
                 . '(Lerngruppenprofile, Fachprofile, gemerkte Vorlagen). "path" waehlt optional einen Unterordner, leer '
-                . 'liefert die Wurzel. Nur der eigene Bereich der aufrufenden Person ist erreichbar.',
+                . 'liefert die Wurzel. Nur der eigene Bereich der aufrufenden Person ist erreichbar. '
+                . '"vorheriger_ort": true listet stattdessen den Altbestand (vorheriger Ort nach einem Ortswechsel, '
+                . 'aus kurspilot_list_skills als "Altbestand offen" erkennbar) - nur lesbar, wirkt nur solange offen.',
             'schema' => [
                 'properties' => [
                     'path' => ['type' => 'string', 'description' => 'Optionaler Unterordner, leer fuer die Wurzel'],
+                    'vorheriger_ort' => [
+                        'type' => 'boolean',
+                        'description' => 'true listet den vorherigen Ort (Altbestand) statt des aktuellen - '
+                            . 'wirkt nur, solange Altbestand offen ist',
+                    ],
                 ],
             ],
             'capability' => null,
@@ -885,10 +892,18 @@ final class tool_registry {
                 . 'area only).',
             'description' => 'Liest eine einzelne Datei aus dem eigenen Kontextbereich der angemeldeten '
                 . 'Lehrkraft, z.B. "vorlagen.md" an der Wurzel fuer gemerkte Vorlagenentscheidungen. Rein lesend - '
-                . 'Schreiben ist ueber dieses Werkzeug nicht moeglich.',
+                . 'Schreiben ist ueber dieses Werkzeug nicht moeglich. "vorheriger_ort": true liest stattdessen vom '
+                . 'Altbestand (vorheriger Ort nach einem Ortswechsel) - nur lesbar, wirkt nur solange offen. Zum '
+                . 'Kopieren die gelesenen Inhalte anschliessend ueber kurspilot_write_context_file mit '
+                . '"nur_anlegen": true an den neuen Ort schreiben.',
             'schema' => [
                 'properties' => [
                     'path' => ['type' => 'string', 'description' => 'Dateipfad relativ zur Wurzel, z.B. "vorlagen.md"'],
+                    'vorheriger_ort' => [
+                        'type' => 'boolean',
+                        'description' => 'true liest vom vorherigen Ort (Altbestand) statt vom aktuellen - '
+                            . 'wirkt nur, solange Altbestand offen ist',
+                    ],
                 ],
                 'required' => ['path'],
             ],
@@ -907,7 +922,10 @@ final class tool_registry {
                 . 'externen Speicher, der Verbindung oder dem Ort, wird nichts abgelegt - die Antwort nennt eine '
                 . 'Kennung und die Anweisung, den Inhalt im Gespraech zu behalten und mit "ausstand" erneut zu '
                 . 'schreiben, sobald die Verbindung wieder steht. "ausstand" mit genau dieser Kennung mitgeben, um '
-                . 'einen offenen Ausstand (aus kurspilot_list_skills) im selben Aufruf abzuhaken.',
+                . 'einen offenen Ausstand (aus kurspilot_list_skills) im selben Aufruf abzuhaken. "nur_anlegen": '
+                . 'true legt nur an und ueberschreibt nie - fuer das Kopieren aus dem Altbestand (vorheriger Ort, '
+                . 'aus kurspilot_list_context_files/kurspilot_read_context_file mit "vorheriger_ort": true '
+                . 'gelesen) an den neuen Ort.',
             'schema' => [
                 'properties' => [
                     'path' => ['type' => 'string', 'description' => 'Dateipfad relativ zur Wurzel, nur .md, z.B. "plan.md"'],
@@ -920,6 +938,11 @@ final class tool_registry {
                         'type' => 'string',
                         'description' => 'Optional: Kennung eines offenen Ausstands (aus kurspilot_list_skills) - '
                             . 'gelingt das Schreiben, verschwindet der Eintrag im selben Aufruf',
+                    ],
+                    'nur_anlegen' => [
+                        'type' => 'boolean',
+                        'description' => 'Optional: true legt nur an und ueberschreibt nie - fuer das Kopieren aus '
+                            . 'dem Altbestand an den neuen Ort',
                     ],
                 ],
                 'required' => ['path', 'content'],
@@ -1204,6 +1227,19 @@ final class tool_registry {
                 ],
                 'required' => ['kennung'],
             ],
+            'capability' => null,
+            'write' => true,
+        ],
+        'kurspilot_dismiss_altbestand' => [
+            'function' => 'local_kurspilot_dismiss_altbestand',
+            'classname' => 'local_kurspilot\external\dismiss_altbestand',
+            'wsdescription' => 'Explicitly ends the calling teacher\'s Altbestand (legacy holdings at the '
+                . 'previous context area location, own working area only).',
+            'description' => 'Beendet den Altbestand ausdruecklich (vorheriger Ort des Kontextbereichs nach einem '
+                . 'Ortswechsel, aus kurspilot_list_skills als "Altbestand offen" erkennbar) - nach dem Kopieren, '
+                . 'oder wenn die Lehrkraft auf den Rest verzichtet. Ruehrt nie an den Dateien des vorherigen Ortes '
+                . 'selbst, nur am Merkmal "offen". Kein Parameter - es gibt immer nur einen vorherigen Ort.',
+            'schema' => null,
             'capability' => null,
             'write' => true,
         ],

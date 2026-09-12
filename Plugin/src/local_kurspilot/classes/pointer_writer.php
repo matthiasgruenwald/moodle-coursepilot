@@ -101,14 +101,19 @@ final class pointer_writer {
      * @param storage_area $area
      * @param string $path Client-Pfad, z.B. "plan.md" oder "faecher/mathe/profil.md".
      * @param string $content Vollstaendiger neuer Inhalt.
+     * @param bool $createonly Nur anlegen, nie ueberschreiben (Issue #498,
+     *        Spec #486 §9: Kopieren aus dem Altbestand am neuen Ort) - eine
+     *        bereits vorhandene Datei wird abgewiesen (Aufruffehler, kein
+     *        Ausstand), statt sie bedingt zu ueberschreiben.
      * @return array{path: string, created: bool, size: int, oldsize: int}
      * @throws \moodle_exception invalidpathkey/contextfilenotmarkdown des Bereichs,
-     *         contextfileexternalconflict bei 412, sonst ausstandwritefailed
+     *         contextfileexternalconflict bei 412, contextfilealreadyexists bei
+     *         $createonly und vorhandener Datei, sonst ausstandwritefailed
      *         (Issue #492, Ausfall an Speicher/Verbindung/Ort - legt einen
      *         Eintrag in der Ausstandsnotiz an) bzw. ausstandnotewritefailed,
      *         wenn selbst die Notiz nicht mehr geschrieben werden kann.
      */
-    public static function write(storage_area $area, string $path, string $content): array {
+    public static function write(storage_area $area, string $path, string $content, bool $createonly = false): array {
         $location = self::resolve_external_location($area);
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = self::client_path($folders, $filename);
@@ -120,6 +125,9 @@ final class pointer_writer {
             $client = $instance->client();
             self::ensure_directory($instance, $location, $folders);
             $existing = self::current_entry($client, $fileurl);
+            if ($existing !== null && $createonly) {
+                throw new \moodle_exception('contextfilealreadyexists', 'local_kurspilot', '', $clientpath);
+            }
             if ($existing === null) {
                 $client->put_new($fileurl, $content);
             } else {

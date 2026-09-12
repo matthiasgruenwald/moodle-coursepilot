@@ -79,6 +79,15 @@ if ($finishresult !== null) {
 
 echo html_writer::tag('p', get_string('ortswahlintro', 'local_kurspilot'));
 
+if (\local_kurspilot\altbestand::open()) {
+    // Issue #498, Spec #486 §5: "Ist beim Wechsel noch Altbestand offen,
+    // warnt die Seite" - angezeigt unabhaengig davon, ob gerade ein neuer
+    // Wechsel bevorsteht; ein Abschliessen trotz dieser Warnung verdraengt
+    // den offenen Altbestand (ortswahl_lib::apply()), seine Dateien bleiben
+    // dabei unberuehrt.
+    echo $OUTPUT->notification(get_string('ortswahlaltbestandopen', 'local_kurspilot'), \core\output\notification::NOTIFY_WARNING);
+}
+
 $state = ortswahl_lib::setup_state((int) $USER->id);
 
 if ($state['state'] === 'not_enabled') {

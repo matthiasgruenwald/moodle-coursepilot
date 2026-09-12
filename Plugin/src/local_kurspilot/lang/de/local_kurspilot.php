@@ -158,6 +158,14 @@ $string['settingwebdavhint'] = 'Hinweis der Schule (Ortswahl)';
 $string['settingwebdavhint_desc'] = 'Optionaler Freitext, der Lehrkräften ohne eigene WebDAV-Verbindung auf der Ortswahlseite zusätzlich zu den drei Einrichtungsschritten angezeigt wird — z. B. eine Empfehlung, welchen Cloud-Dienst die Schule stellt.';
 $string['listskillsortswahlhint'] = 'Die Lehrkraft kann Kontextbereich und Materialbestand statt in Moodle in einem eigenen WebDAV-Speicher ablegen — Ortswahl unter {$a}.';
 
+// Altbestand (Issue #498, Spec #486 §9/§10): der vorherige Ort nach einem
+// Ortswechsel des Kontextbereichs — nur lesbar, endet ausdrücklich.
+$string['ortswahlaltbestandopen'] = 'Vom früheren Ort ist noch nicht alles übernommen.';
+$string['listskillsaltbestandhint'] = 'Am vorherigen Ort des Kontextbereichs liegen noch Kontextdateien (Altbestand). Anbieten, sie zu kopieren — Ortswahl unter {$a}.';
+$string['altbestandclosed'] = 'Es liegt kein offener Altbestand vor.';
+$string['altbestanddismissed'] = 'Altbestand abgeschlossen — der vorherige Ort wird nicht mehr erwähnt.';
+$string['contextfilealreadyexists'] = '{$a} existiert am neuen Ort bereits — nicht überschrieben (Kopieren legt nur an, nie überschreibend).';
+
 // Ausstandsnotiz (Issue #492, ADR 0023, Spec #486 §8/§10): kein absoluter
 // Serverpfad, kein Benutzername, kein Passwort, kein HTTP-Code, kein
 // Antwortrumpf (Geheimnis-Test) — der Rohcode geht ins Zugriffsprotokoll.
