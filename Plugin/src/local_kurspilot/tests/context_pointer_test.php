@@ -48,6 +48,17 @@ final class context_pointer_test extends \advanced_testcase {
         context_pointer::resolve_target(['kontextbereich' => 'custom-context'], 'kontextbereich');
     }
 
+    /**
+     * validate_path() weist einen leeren Ordnernamen ab (Issue #509 -
+     * dieselbe Absicherung, die {@see storage_anchor::write_pointer()}
+     * vor seiner Entfernung indirekt mitpruefte, hier direkt am
+     * eigentlichen Pruefungsort).
+     */
+    public function test_validate_path_rejects_empty_value(): void {
+        $this->expectException(\moodle_exception::class);
+        context_pointer::validate_path('');
+    }
+
     public function test_v2_pointer_resolves_moodle_target(): void {
         $decoded = [
             'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'mein-kontext'],
