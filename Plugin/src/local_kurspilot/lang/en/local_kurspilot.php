@@ -218,6 +218,13 @@ $string['materialcropoverwritten'] = '{$a->path} overwritten, cropped from {$a->
 $string['materialfilesdeleted'] = '{$a->count} file(s) deleted, {$a->freed} MB freed.';
 $string['materialdeletefilenotfound'] = 'Not deleted: no material file found at "{$a}" — please check the path list (typo?).';
 
+// One-time download link for Werkbank files (Issue #501, Spec #486 §13).
+$string['werkbankticketinvalid'] = 'This download link is invalid or already used — each link is valid for one retrieval only.';
+$string['werkbankticketexpired'] = 'This download link has expired — links are valid for 15 minutes.';
+$string['werkbankticketconnectionrevoked'] = 'The connection that issued this download link no longer exists.';
+$string['werkbankticketaccountinactive'] = 'The associated Moodle account is no longer active.';
+$string['werkbankticketcontentchanged'] = 'The file has changed since this download link was issued — please request a new link.';
+
 // Switch for personal context data (#344, ADR 0011).
 $string['settingallowpersonaldata'] = 'Transfer personal context data';
 $string['settingallowpersonaldata_desc'] = 'Acts on the marking (frontmatter "personenbezug: true"), not on the content. While off, files marked this way are unreadable by any read tool and appear in listings as locked, not omitted. Default: off.';
@@ -339,6 +346,13 @@ $string['privacy:metadata:context_mark'] = 'Marking memory (#493): per context f
 $string['privacy:metadata:context_mark:userid'] = 'The user id of the teacher this entry belongs to.';
 $string['privacy:metadata:context_mark:path'] = 'Client path of the context file this entry is about.';
 $string['privacy:metadata:context_mark:ismarked'] = 'Whether the file was last found to be marked as containing personal data.';
+$string['privacy:metadata:werkbank_ticket'] = 'One-time download ticket for a Werkbank file (#501): only the hash of the ticket secret is stored, never the secret itself.';
+$string['privacy:metadata:werkbank_ticket:userid'] = 'The user id of the teacher the ticket was issued for.';
+$string['privacy:metadata:werkbank_ticket:path'] = 'Path of the Werkbank file, relative to the Werkbank root.';
+$string['privacy:metadata:werkbank_ticket:contenthash'] = 'Content checksum of the file at issuance time.';
+$string['privacy:metadata:werkbank_ticket:oauthtokenid'] = 'Reference to the issuing connection (local_kurspilot_oauth_token).';
+$string['privacy:metadata:werkbank_ticket:expires'] = 'Expiry time of the ticket.';
+$string['privacy:metadata:werkbank_ticket:timecreated'] = 'Issuance time.';
 
 // classes/privacy/provider.php: external location (#500, ADR 0021).
 $string['privacy:metadata:webdav_external_storage'] = 'The context area and material store can live on the external WebDAV storage the teacher chose via the location picker - outside Moodle and outside this plugin. Kurspilot reads and writes there directly, without keeping its own copy in Moodle.';

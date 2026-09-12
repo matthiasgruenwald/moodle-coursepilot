@@ -69,6 +69,7 @@ Materialordners; das Werkzeug heisst den Pfad ueberall `path`, nie `course_id`.
 | `kurspilot_crop_material_file` | Bild auf einen Ausschnitt zuschneiden (`sourcepath`, `targetpath`, `x0`/`y0`/`x1`/`y1` relativ 0–1 auf die Vorschau) |
 | `kurspilot_report_loose_material_files` | Dateien melden, die in keiner Aktivitaet verwendet werden – liest nur |
 | `kurspilot_delete_material_files` | Genau die genannten Pfade loeschen (`paths`) – nur nach ausdruecklicher Bestaetigung der Lehrkraft |
+| `kurspilot_create_werkbank_download_links` | Je Werkbankdatei einen 15 Minuten gueltigen Einmal-Downloadlink ausstellen (`paths`) – fuer einen Client mit Shell (curl), ohne OAuth-Bearer-Header; liefert URL, Name, Groesse, SHA-1, keine fertige Abrufzeile |
 
 Aktivitaetstyp-Auswahl (welcher `modname` fuer welche Situation) steht in
 `kurspilot_get_skill("implementierungsplan-workflow")`.

@@ -1230,6 +1230,28 @@ final class tool_registry {
             'capability' => null,
             'write' => true,
         ],
+        'kurspilot_create_werkbank_download_links' => [
+            'function' => 'local_kurspilot_create_werkbank_download_links',
+            'classname' => 'local_kurspilot\external\create_werkbank_download_links',
+            'wsdescription' => 'Issues one 15-minute, single-use download ticket per given Werkbank file - a '
+                . 'shell client (curl) can then fetch the original bytes without an OAuth bearer header. '
+                . 'Read-only, no ready-made retrieval line.',
+            'description' => 'Stellt je angegebener Werkbankdatei einen 15 Minuten gueltigen Einmal-Downloadlink '
+                . 'aus - ein Client mit Shell (curl) kann die Originalbytes damit abrufen, ohne einen '
+                . 'OAuth-Bearer-Header zu setzen, z.B. fuer den Merkzettelpunkt "Werkbank -> Bestand" am Laptop. '
+                . 'Liefert je Datei URL, Name, Groesse und SHA-1 - keine fertige Abrufzeile. Rein lesend.',
+            'schema' => [
+                'properties' => [
+                    'paths' => [
+                        'type' => 'array',
+                        'items' => ['type' => 'string'],
+                        'description' => 'Dateipfade relativ zur Werkbankwurzel, z.B. ["blatt.pdf"]',
+                    ],
+                ],
+                'required' => ['paths'],
+            ],
+            'capability' => null,
+        ],
         'kurspilot_dismiss_altbestand' => [
             'function' => 'local_kurspilot_dismiss_altbestand',
             'classname' => 'local_kurspilot\external\dismiss_altbestand',

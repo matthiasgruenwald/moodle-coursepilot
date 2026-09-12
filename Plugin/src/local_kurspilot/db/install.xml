@@ -136,5 +136,23 @@
         <INDEX NAME="userid_pathhash" UNIQUE="true" FIELDS="userid, pathhash"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="local_kurspilot_werkbank_ticket" COMMENT="Einmal-Downloadticket fuer eine Werkbankdatei (#501, Spec #486 Paragraph 13): gebunden an Person, Pfad und contenthash, 15 Minuten gueltig, gespeichert wird nur der Hash des Tickets selbst.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="path" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Client-Pfad der Werkbankdatei, relativ zur Werkbankwurzel."/>
+        <FIELD NAME="contenthash" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false" COMMENT="Bei Abruf gegen den aktuellen Dateiinhalt geprueft - Aenderung seit Ausstellung wird abgelehnt."/>
+        <FIELD NAME="tickethash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="sha256(Ticketgeheimnis) - das Geheimnis selbst wird nie gespeichert."/>
+        <FIELD NAME="oauthtokenid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="local_kurspilot_oauth_token.id der ausstellenden Verbindung, NULL wenn keine bekannt war."/>
+        <FIELD NAME="expires" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="tickethash" UNIQUE="true" FIELDS="tickethash"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>

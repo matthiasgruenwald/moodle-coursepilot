@@ -152,6 +152,18 @@ final class provider implements
         // gedeckt, wie im Klassenkommentar oben begruendet. Hier wird nur der
         // externe Ort selbst benannt, den eine Auskunft sonst verschweigen
         // wuerde.
+        // Werkbank-Downloadticket (#501, Spec #486 §13): system-kontextgebunden
+        // wie die OAuth-Tabellen (kein Kurs-/Modulbezug), nur der Hash des
+        // Ticketgeheimnisses wird gefuehrt, siehe local_kurspilot\werkbank_ticket.
+        $collection->add_database_table('local_kurspilot_werkbank_ticket', [
+            'userid' => 'privacy:metadata:werkbank_ticket:userid',
+            'path' => 'privacy:metadata:werkbank_ticket:path',
+            'contenthash' => 'privacy:metadata:werkbank_ticket:contenthash',
+            'oauthtokenid' => 'privacy:metadata:werkbank_ticket:oauthtokenid',
+            'expires' => 'privacy:metadata:werkbank_ticket:expires',
+            'timecreated' => 'privacy:metadata:werkbank_ticket:timecreated',
+        ], 'privacy:metadata:werkbank_ticket');
+
         $collection->add_external_location_link('webdav_external_storage', [
             'path' => 'privacy:metadata:webdav_external_storage:path',
             'content' => 'privacy:metadata:webdav_external_storage:content',
@@ -169,7 +181,8 @@ final class provider implements
 
         $contextlist = new contextlist();
         $hasoauthdata = $DB->record_exists('local_kurspilot_oauth_code', ['userid' => $userid])
-            || $DB->record_exists('local_kurspilot_oauth_token', ['userid' => $userid]);
+            || $DB->record_exists('local_kurspilot_oauth_token', ['userid' => $userid])
+            || $DB->record_exists('local_kurspilot_werkbank_ticket', ['userid' => $userid]);
         if ($hasoauthdata) {
             $contextlist->add_system_context();
         }
@@ -191,6 +204,7 @@ final class provider implements
         if ($context instanceof \context_system) {
             $userlist->add_from_sql('userid', 'SELECT userid FROM {local_kurspilot_oauth_code}', []);
             $userlist->add_from_sql('userid', 'SELECT userid FROM {local_kurspilot_oauth_token}', []);
+            $userlist->add_from_sql('userid', 'SELECT userid FROM {local_kurspilot_werkbank_ticket}', []);
             return;
         }
 
@@ -282,9 +296,20 @@ final class provider implements
                 'timecreated' => transform::datetime($record->timecreated),
             ], array_values($tokens));
 
+            $tickets = $DB->get_records('local_kurspilot_werkbank_ticket', ['userid' => $userid]);
+            $exportedtickets = array_map(static fn($record): \stdClass => (object) [
+                'path' => $record->path,
+                'expires' => transform::datetime($record->expires),
+                'timecreated' => transform::datetime($record->timecreated),
+            ], array_values($tickets));
+
             writer::with_context($context)->export_data(
                 [get_string('pluginname', 'local_kurspilot')],
-                (object) ['oauth_codes' => $exportedcodes, 'oauth_tokens' => $exportedtokens]
+                (object) [
+                    'oauth_codes' => $exportedcodes,
+                    'oauth_tokens' => $exportedtokens,
+                    'werkbank_tickets' => $exportedtickets,
+                ]
             );
         }
     }
@@ -305,6 +330,7 @@ final class provider implements
         }
         $DB->delete_records('local_kurspilot_oauth_code');
         $DB->delete_records('local_kurspilot_oauth_token');
+        $DB->delete_records('local_kurspilot_werkbank_ticket');
     }
 
     /**
@@ -345,6 +371,7 @@ final class provider implements
         }
         $DB->delete_records('local_kurspilot_oauth_code', ['userid' => $userid]);
         $DB->delete_records('local_kurspilot_oauth_token', ['userid' => $userid]);
+        $DB->delete_records('local_kurspilot_werkbank_ticket', ['userid' => $userid]);
     }
 
     /**
@@ -366,5 +393,6 @@ final class provider implements
         [$insql, $inparams] = $DB->get_in_or_equal($userlist->get_userids(), SQL_PARAMS_NAMED);
         $DB->delete_records_select('local_kurspilot_oauth_code', "userid $insql", $inparams);
         $DB->delete_records_select('local_kurspilot_oauth_token', "userid $insql", $inparams);
+        $DB->delete_records_select('local_kurspilot_werkbank_ticket', "userid $insql", $inparams);
     }
 }

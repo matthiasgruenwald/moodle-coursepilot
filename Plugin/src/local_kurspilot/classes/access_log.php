@@ -76,14 +76,25 @@ final class access_log {
      * @param string|null $path Dateipfad, wenn das Werkzeug einen berührt hat
      *        (Spec 0018 §9.2) - z.B. Kontext- oder Materialordner-Pfad aus der
      *        Werkzeugantwort. Null, wenn das Werkzeug keinen Dateipfad kennt.
+     * @param int|null $userid Ueberschreibt den protokollierten Nutzer (#501):
+     *        der Werkbank-Downloadendpunkt laeuft ohne Moodle-Login/$USER
+     *        (das Ticket ist der Berechtigungsnachweis) und muss den
+     *        Ticket-Eigentuemer explizit angeben, statt sich auf das
+     *        Event-Default $USER->id zu verlassen. Null (Standard) laesst
+     *        core\event\base sein Default anwenden - unveraendertes
+     *        Verhalten fuer jeden bisherigen Aufrufer (dispatcher.php).
      * @return void
      */
-    public static function log_success(string $toolname, bool $iswrite = false, ?string $path = null): void {
+    public static function log_success(string $toolname, bool $iswrite = false, ?string $path = null, ?int $userid = null): void {
         $threshold = $iswrite ? self::LEVEL_ERRORS : self::LEVEL_READS;
         if (self::current_level() < $threshold) {
             return;
         }
-        tool_access_succeeded::create(['other' => ['toolname' => $toolname, 'path' => $path]])->trigger();
+        $data = ['other' => ['toolname' => $toolname, 'path' => $path]];
+        if ($userid !== null) {
+            $data['userid'] = $userid;
+        }
+        tool_access_succeeded::create($data)->trigger();
     }
 
     /**
@@ -92,12 +103,23 @@ final class access_log {
      *
      * @param string $reason Kurze, geheimnisfreie Fehlerbeschreibung.
      * @param string|null $toolname
+     * @param string|null $path Dateipfad, wenn der gescheiterte Zugriff einen
+     *        berührt hat und er noch bekannt war (#501: ein Werkbank-
+     *        Downloadticket kann den Pfad schon verloren haben, wenn erst
+     *        eine spätere Prüfung scheitert - siehe
+     *        {@see \local_kurspilot\werkbank_ticket_redemption_failed}).
+     *        Null, wenn kein Pfad bekannt ist.
+     * @param int|null $userid Siehe {@see log_success()}.
      * @return void
      */
-    public static function log_failure(string $reason, ?string $toolname = null): void {
+    public static function log_failure(string $reason, ?string $toolname = null, ?string $path = null, ?int $userid = null): void {
         if (self::current_level() < self::LEVEL_ERRORS) {
             return;
         }
-        tool_access_failed::create(['other' => ['reason' => $reason, 'toolname' => $toolname]])->trigger();
+        $data = ['other' => ['reason' => $reason, 'toolname' => $toolname, 'path' => $path]];
+        if ($userid !== null) {
+            $data['userid'] = $userid;
+        }
+        tool_access_failed::create($data)->trigger();
     }
 }

@@ -54,6 +54,18 @@ final class oauth_lib {
     public const REFRESH_TOKEN_TTL = 30 * 24 * 3600;
 
     /**
+     * @var int|null Datensatz-ID des zuletzt per {@see authenticate_access_token()}
+     *      erfolgreich aufgeloesten Access-Tokens (#501) - die "ausstellende
+     *      Verbindung" eines waehrend dieser Anfrage ausgestellten
+     *      Werkbank-Downloadtickets ({@see \local_kurspilot\werkbank_ticket::issue()}).
+     *      Prozessweites Request-Gedaechtnis wie $USER, kein DB-Zustand -
+     *      ponytail: keine Dependency-Injection-Kette durch dispatcher ->
+     *      external_api::call_external_function() -> Werkzeug, nur damit ein
+     *      einzelner Wert durchgereicht wird.
+     */
+    private static ?int $currenttokenid = null;
+
+    /**
      * Autorisierungsserver-Metadaten (RFC 8414). Reine Funktion des
      * Ausstellers - kein globaler Zugriff, damit ohne Moodle-Bootstrap
      * pruefbar.
@@ -659,7 +671,46 @@ final class oauth_lib {
         if (!$record || (int) $record->revoked === 1 || $record->expires < time()) {
             return null;
         }
+        self::$currenttokenid = (int) $record->id;
         return (int) $record->userid;
+    }
+
+    /**
+     * Die Datensatz-ID der Verbindung, die die laufende Anfrage authentifiziert
+     * hat - siehe {@see $currenttokenid}. Null ausserhalb einer per
+     * {@see authenticate_access_token()} authentifizierten Anfrage (z.B. ein
+     * Werkzeugtest, der die externe Funktion direkt aufruft).
+     *
+     * @return int|null
+     */
+    public static function current_token_id(): ?int {
+        return self::$currenttokenid;
+    }
+
+    /**
+     * Ob eine Verbindung (ein Access-/Refresh-Token-Paar) noch besteht - nicht
+     * widerrufen ist (#501, Spec #486 §13: "Bestand der ausstellenden
+     * Verbindung"). Bewusst ohne Ablaufpruefung: ein Werkbank-Downloadticket
+     * traegt seine eigene, kuerzere Gueltigkeit (15 Minuten), unabhaengig von
+     * der Restlaufzeit des Zugriffstokens, das es ausgestellt hat.
+     *
+     * @param int $id local_kurspilot_oauth_token.id
+     * @return bool
+     */
+    public static function connection_active(int $id): bool {
+        global $DB;
+
+        return $DB->record_exists(self::TOKEN_TABLE, ['id' => $id, 'revoked' => 0]);
+    }
+
+    /**
+     * Setzt {@see $currenttokenid} zurueck - nur fuer Tests, die mehrere,
+     * voneinander unabhaengige Anfragen im selben PHPUnit-Prozess simulieren.
+     *
+     * @return void
+     */
+    public static function reset_current_token_id(): void {
+        self::$currenttokenid = null;
     }
 
     /**

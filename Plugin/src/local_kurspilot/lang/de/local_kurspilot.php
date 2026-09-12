@@ -222,6 +222,13 @@ $string['materialcropoverwritten'] = '{$a->path} zugeschnitten aus {$a->source} 
 $string['materialfilesdeleted'] = '{$a->count} Datei(en) gelöscht, {$a->freed} MB freigeworden.';
 $string['materialdeletefilenotfound'] = 'Nicht gelöscht: keine Materialdatei unter "{$a}" gefunden — bitte die Pfadliste prüfen (Tippfehler?).';
 
+// Einmal-Downloadlink für Werkbankdateien (Issue #501, Spec #486 §13).
+$string['werkbankticketinvalid'] = 'Dieser Downloadlink ist ungültig oder bereits verbraucht — jeder Link gilt nur für einen Abruf.';
+$string['werkbankticketexpired'] = 'Dieser Downloadlink ist abgelaufen — Links gelten 15 Minuten.';
+$string['werkbankticketconnectionrevoked'] = 'Die Verbindung, die diesen Downloadlink ausgestellt hat, besteht nicht mehr.';
+$string['werkbankticketaccountinactive'] = 'Das zugehörige Moodle-Konto ist nicht mehr aktiv.';
+$string['werkbankticketcontentchanged'] = 'Die Datei wurde seit dem Ausstellen des Downloadlinks geändert — bitte einen neuen Link anfordern.';
+
 // Schalter für personenbezogene Kontextdaten (#344, ADR 0011).
 $string['settingallowpersonaldata'] = 'Personenbezogene Kontextdaten übertragen';
 $string['settingallowpersonaldata_desc'] = 'Wirkt auf der Markierung (Frontmatter „personenbezug: true"), nicht auf dem Inhalt. Solange aus, sind so markierte Kontextdateien für kein Lese-Werkzeug lesbar und erscheinen in Listen als gesperrt statt weggelassen. Standard: aus.';
@@ -343,6 +350,13 @@ $string['privacy:metadata:context_mark'] = 'Markierungsgedaechtnis (#493): je Ko
 $string['privacy:metadata:context_mark:userid'] = 'Die Nutzer-ID der Lehrkraft, zu der dieser Eintrag gehoert.';
 $string['privacy:metadata:context_mark:path'] = 'Client-Pfad der Kontextdatei, auf die sich dieser Eintrag bezieht.';
 $string['privacy:metadata:context_mark:ismarked'] = 'Ob die Datei zuletzt als personenbezogen markiert erkannt wurde.';
+$string['privacy:metadata:werkbank_ticket'] = 'Einmal-Downloadticket fuer eine Werkbankdatei (#501): gespeichert wird nur der Hash des Ticketgeheimnisses, nie das Geheimnis selbst.';
+$string['privacy:metadata:werkbank_ticket:userid'] = 'Die Nutzer-ID der Lehrkraft, fuer die das Ticket ausgestellt wurde.';
+$string['privacy:metadata:werkbank_ticket:path'] = 'Pfad der Werkbankdatei, relativ zur Werkbankwurzel.';
+$string['privacy:metadata:werkbank_ticket:contenthash'] = 'Inhaltspruefsumme der Datei zum Ausstellungszeitpunkt.';
+$string['privacy:metadata:werkbank_ticket:oauthtokenid'] = 'Verweis auf die ausstellende Verbindung (local_kurspilot_oauth_token).';
+$string['privacy:metadata:werkbank_ticket:expires'] = 'Ablaufzeitpunkt des Tickets.';
+$string['privacy:metadata:werkbank_ticket:timecreated'] = 'Ausstellungszeitpunkt.';
 
 // classes/privacy/provider.php: externer Ablageort (#500, ADR 0021).
 $string['privacy:metadata:webdav_external_storage'] = 'Kontextbereich und Materialbestand können am externen WebDAV-Speicher liegen, den die Lehrkraft über die Ortswahl gewählt hat - außerhalb von Moodle und außerhalb dieses Plugins. Kurspilot schreibt und liest dort direkt, ohne eigene Kopie in Moodle.';

@@ -29,6 +29,8 @@ namespace local_kurspilot\event;
  * @property-read array $other {
  *      - string reason: kurze Fehlerbeschreibung (kein Geheimnis).
  *      - string|null toolname: Name des betroffenen Werkzeugs, falls bekannt.
+ *      - string|null path: Dateipfad, wenn der gescheiterte Zugriff einen
+ *        berührt hat und er noch bekannt war (#501), sonst null.
  * }
  *
  * @package    local_kurspilot

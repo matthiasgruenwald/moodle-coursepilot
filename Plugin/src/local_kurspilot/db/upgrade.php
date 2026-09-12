@@ -248,5 +248,28 @@ function xmldb_local_kurspilot_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026091101, 'local', 'kurspilot');
     }
 
+    if ($oldversion < 2026091202) {
+        // Einmal-Downloadticket fuer Werkbankdateien (#501, Spec #486 §13):
+        // gebunden an Person, Pfad und contenthash, 15 Minuten gueltig,
+        // gespeichert wird nur der Hash des Tickets - siehe
+        // local_kurspilot\werkbank_ticket.
+        $tickettable = new xmldb_table('local_kurspilot_werkbank_ticket');
+        $tickettable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+        $tickettable->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $tickettable->add_field('path', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL);
+        $tickettable->add_field('contenthash', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL);
+        $tickettable->add_field('tickethash', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL);
+        $tickettable->add_field('oauthtokenid', XMLDB_TYPE_INTEGER, '10');
+        $tickettable->add_field('expires', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $tickettable->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $tickettable->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $tickettable->add_index('tickethash', XMLDB_INDEX_UNIQUE, ['tickethash']);
+        if (!$dbman->table_exists($tickettable)) {
+            $dbman->create_table($tickettable);
+        }
+
+        upgrade_plugin_savepoint(true, 2026091202, 'local', 'kurspilot');
+    }
+
     return true;
 }
