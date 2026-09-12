@@ -295,6 +295,38 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
+     * Issue #508: jedes Werkzeug, das den Parameter "ort" in seinem
+     * tools/list-Schema zeigt, bezieht Wertebereich und Beschreibung aus
+     * {@see material_files::ort_schema()} - eine Quelle statt je Werkzeug
+     * einer eigenen, auseinanderlaufenden Kopie.
+     */
+    public function test_tools_list_ort_parameter_uses_shared_definition_everywhere(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $response = dispatcher::handle(['id' => 1, 'method' => 'tools/list'], $token, $this->headers());
+        $tools = $response['body']['result']['tools'];
+
+        $toolswithort = [];
+        foreach ($tools as $tool) {
+            $properties = $tool['inputSchema']['properties'];
+            $ort = is_array($properties) ? ($properties['ort'] ?? null) : null;
+            if ($ort !== null) {
+                $toolswithort[$tool['name']] = $ort;
+                $this->assertSame(
+                    material_files::ort_schema(),
+                    $ort,
+                    "Werkzeug {$tool['name']} weicht von material_files::ort_schema() ab."
+                );
+            }
+        }
+
+        // Beleg, dass der Test nicht mangels Treffern grün ist (mind. die drei
+        // lesenden Materialwerkzeuge zeigen "ort" in tools/list).
+        $this->assertGreaterThanOrEqual(3, count($toolswithort));
+    }
+
+    /**
      * kurspilot_get_course_catalog ist per tools/call tatsaechlich aufrufbar,
      * nicht nur gelistet (#341).
      */

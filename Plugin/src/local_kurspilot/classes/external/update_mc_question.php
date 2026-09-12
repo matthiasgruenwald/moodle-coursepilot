@@ -99,15 +99,7 @@ final class update_mc_question extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
-            'ort' => new external_value(
-                PARAM_ALPHA,
-                'Ort der Materialordner-Pfade in questiontext_bilder/feedback_bilder (Issue #496): "bestand" '
-                    . '(Standard, der gewachsene Materialbestand der Lehrkraft) oder "werkbank" (Kurspilots eigene '
-                    . 'Zwischenstation) - das Bild geht direkt ueber den Entwurfsbereich in die Frage, ohne Umweg '
-                    . 'ueber die Werkbank.',
-                VALUE_DEFAULT,
-                material_files::ORT_BESTAND
-            ),
+            'ort' => material_files::ort_parameter(),
         ]);
     }
 

@@ -51,13 +51,7 @@ class preview_material_file extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'path' => new external_value(PARAM_PATH, 'Dateipfad relativ zum Materialordner, z.B. "screenshot.png"'),
-            'ort' => new external_value(
-                PARAM_ALPHA,
-                '"bestand" (Standard, der gewachsene Materialbestand der Lehrkraft, nur lesend) '
-                    . 'oder "werkbank" (Kurspilots eigene Zwischenstation)',
-                VALUE_DEFAULT,
-                material_files::ORT_BESTAND
-            ),
+            'ort' => material_files::ort_parameter(),
         ]);
     }
 

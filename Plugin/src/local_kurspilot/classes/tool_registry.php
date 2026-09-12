@@ -993,9 +993,8 @@ final class tool_registry {
                     'path' => ['type' => 'string', 'description' => 'Optionaler Unterordner, leer fuer die Wurzel'],
                     'ort' => [
                         'type' => 'string',
-                        'enum' => ['bestand', 'werkbank'],
-                        'description' => '"bestand" (Standard, der gewachsene Materialbestand der Lehrkraft, nur '
-                            . 'lesend) oder "werkbank" (Kurspilots eigene Zwischenstation)',
+                        'enum' => [material_files::ORT_BESTAND, material_files::ORT_WERKBANK],
+                        'description' => material_files::ORT_DESCRIPTION,
                     ],
                 ],
             ],
@@ -1043,9 +1042,8 @@ final class tool_registry {
                     'path' => ['type' => 'string', 'description' => 'Dateipfad relativ zum Materialordner, z.B. "screenshot.png"'],
                     'ort' => [
                         'type' => 'string',
-                        'enum' => ['bestand', 'werkbank'],
-                        'description' => '"bestand" (Standard, der gewachsene Materialbestand der Lehrkraft, nur '
-                            . 'lesend) oder "werkbank" (Kurspilots eigene Zwischenstation)',
+                        'enum' => [material_files::ORT_BESTAND, material_files::ORT_WERKBANK],
+                        'description' => material_files::ORT_DESCRIPTION,
                     ],
                 ],
                 'required' => ['path'],
@@ -1081,10 +1079,8 @@ final class tool_registry {
                     ],
                     'ort' => [
                         'type' => 'string',
-                        'enum' => ['bestand', 'werkbank'],
-                        'description' => 'Ort der Quelldatei: "bestand" (Standard, der gewachsene Materialbestand '
-                            . 'der Lehrkraft) oder "werkbank" (Kurspilots eigene Zwischenstation) - das Ergebnis '
-                            . 'liegt immer auf der Werkbank',
+                        'enum' => [material_files::ORT_BESTAND, material_files::ORT_WERKBANK],
+                        'description' => material_files::ORT_DESCRIPTION,
                     ],
                 ],
                 'required' => ['sourcepath', 'targetpath', 'x0', 'y0', 'x1', 'y1'],

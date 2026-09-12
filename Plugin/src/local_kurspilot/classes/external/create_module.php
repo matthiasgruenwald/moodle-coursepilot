@@ -183,15 +183,7 @@ final class create_module extends external_api {
                     . 'gemischt (Spec 0015 §2.4: Buendel sind kein Endpunkt-Parameter) - ein Buendelwert gilt nur '
                     . 'fuer Felder, die dieses Objekt nicht schon selbst nennt.'
             ),
-            'ort' => new external_value(
-                PARAM_ALPHA,
-                'Ort der Materialordner-Pfade in Verweis-Pseudofeldern wie "files" (Issue #496): "bestand" '
-                    . '(Standard, der gewachsene Materialbestand der Lehrkraft) oder "werkbank" (Kurspilots eigene '
-                    . 'Zwischenstation) - die Datei geht direkt ueber den Entwurfsbereich in die Aktivitaet, ohne '
-                    . 'Umweg ueber die Werkbank.',
-                VALUE_DEFAULT,
-                material_files::ORT_BESTAND
-            ),
+            'ort' => material_files::ort_parameter(),
         ]);
     }
 

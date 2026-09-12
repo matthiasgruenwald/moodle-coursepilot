@@ -129,14 +129,7 @@ final class import_questions_xml extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
-            'ort' => new external_value(
-                PARAM_ALPHA,
-                'Ort der Materialordner-Pfade in xmlpath und in material="..."-Attributen von <file>-Bloecken in '
-                    . 'xmlcontent (Issue #496): "bestand" (Standard, der gewachsene Materialbestand der Lehrkraft) '
-                    . 'oder "werkbank" (Kurspilots eigene Zwischenstation).',
-                VALUE_DEFAULT,
-                material_files::ORT_BESTAND
-            ),
+            'ort' => material_files::ort_parameter(),
         ]);
     }
 

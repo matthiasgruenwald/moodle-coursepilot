@@ -644,4 +644,30 @@ final class material_files_test extends \advanced_testcase {
         $this->assertNotFalse(get_file_storage()->get_file(
             material_files::own_context()->id, 'user', 'draft', $draftitemid, '/', 'blatt.pdf'));
     }
+
+    /**
+     * Issue #508: eine Quelle fuer den Webservice-Parameter "ort" - Typ,
+     * Default und Beschreibung kommen aus derselben Konstante wie das
+     * tools/list-Schema.
+     */
+    public function test_ort_parameter_uses_shared_default_and_description(): void {
+        $param = material_files::ort_parameter();
+
+        $this->assertSame(PARAM_ALPHA, $param->type);
+        $this->assertSame(material_files::ORT_BESTAND, $param->default);
+        $this->assertSame(material_files::ORT_DESCRIPTION, $param->desc);
+        $this->assertSame(VALUE_DEFAULT, $param->required);
+    }
+
+    /**
+     * Issue #508: dieselbe Beschreibung, derselbe Wertebereich - fuer die
+     * KI-Werkzeugliste (tool_registry-Schemas) wie fuer den Webservice.
+     */
+    public function test_ort_schema_matches_shared_description_and_values(): void {
+        $schema = material_files::ort_schema();
+
+        $this->assertSame('string', $schema['type']);
+        $this->assertSame([material_files::ORT_BESTAND, material_files::ORT_WERKBANK], $schema['enum']);
+        $this->assertSame(material_files::ORT_DESCRIPTION, $schema['description']);
+    }
 }

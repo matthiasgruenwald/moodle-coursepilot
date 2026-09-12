@@ -16,6 +16,8 @@
 
 namespace local_kurspilot;
 
+use core_external\external_value;
+
 /**
  * Anker des Materialordners (Spec 0018 §2, Issue #428): Geschwisterordner zu
  * {@see context_files} in denselben Private Files der aufrufenden Lehrkraft -
@@ -51,6 +53,16 @@ final class material_files {
 
     /** @var string Ort-Parameterwert "Werkbank" - fest am Anker, ignoriert den Pointer, einziges Schreibziel. */
     public const ORT_WERKBANK = 'werkbank';
+
+    /**
+     * Gemeinsame KI-Beschreibung des Parameters "ort" (Issue #508, Spec 0486 §7)
+     * - eine Quelle fuer alle Material- und Einbettungswerkzeuge, damit eine
+     * Aenderung an Wertebereich oder Beschreibung alle zugleich trifft.
+     *
+     * @var string
+     */
+    public const ORT_DESCRIPTION = '"bestand" (Standard, der gewachsene Materialbestand der Lehrkraft, nur lesend) '
+        . 'oder "werkbank" (Kurspilots eigene Zwischenstation)';
 
     /** @var string Moodle-Dateikomponente - Moodles Private Files (Spec 0018 §2.1). */
     public const COMPONENT = storage_anchor::COMPONENT;
@@ -102,6 +114,31 @@ final class material_files {
      * Anteil der Nutzerquote, unter dem eine Warnung erscheint (Spec 0018 §8.1).
      */
     private const QUOTA_WARNING_RATIO = 0.1;
+
+    /**
+     * Gemeinsamer "ort"-Webservice-Parameter (Issue #508): Wertebereich,
+     * Default und KI-Beschreibung an einer Stelle statt je Werkzeug einer
+     * eigenen, leicht auseinanderlaufenden Kopie.
+     *
+     * @return external_value
+     */
+    public static function ort_parameter(): external_value {
+        return new external_value(PARAM_ALPHA, self::ORT_DESCRIPTION, VALUE_DEFAULT, self::ORT_BESTAND);
+    }
+
+    /**
+     * Dieselbe Definition als Rohdaten fuer tool_registry-Schemas, die die
+     * KI-Werkzeugliste bilden (Issue #508).
+     *
+     * @return array{type: string, enum: string[], description: string}
+     */
+    public static function ort_schema(): array {
+        return [
+            'type' => 'string',
+            'enum' => [self::ORT_BESTAND, self::ORT_WERKBANK],
+            'description' => self::ORT_DESCRIPTION,
+        ];
+    }
 
     /**
      * Die Bereichsdefinition des Materialordners (Issue #444): Wurzel-

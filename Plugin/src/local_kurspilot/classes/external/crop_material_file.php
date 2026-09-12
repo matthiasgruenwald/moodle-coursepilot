@@ -66,13 +66,7 @@ class crop_material_file extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
-            'ort' => new external_value(
-                PARAM_ALPHA,
-                'Ort der Quelldatei: "bestand" (Standard, der gewachsene Materialbestand der Lehrkraft) '
-                    . 'oder "werkbank" (Kurspilots eigene Zwischenstation) - das Ergebnis liegt immer auf der Werkbank',
-                VALUE_DEFAULT,
-                material_files::ORT_BESTAND
-            ),
+            'ort' => material_files::ort_parameter(),
         ]);
     }
 

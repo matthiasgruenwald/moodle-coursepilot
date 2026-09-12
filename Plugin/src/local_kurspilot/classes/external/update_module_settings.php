@@ -207,15 +207,7 @@ class update_module_settings extends external_api {
                 PARAM_RAW,
                 'JSON-Objekt Feldname => neuer Wert - nur die zu aendernden Felder (Patch, kein Vollstand)'
             ),
-            'ort' => new external_value(
-                PARAM_ALPHA,
-                'Ort der Materialordner-Pfade in Verweis-Pseudofeldern wie "introattachments"/"files"/"introimages" '
-                    . '(Issue #496): "bestand" (Standard, der gewachsene Materialbestand der Lehrkraft) oder '
-                    . '"werkbank" (Kurspilots eigene Zwischenstation) - die Datei geht direkt ueber den '
-                    . 'Entwurfsbereich in die Aktivitaet, ohne Umweg ueber die Werkbank.',
-                VALUE_DEFAULT,
-                material_files::ORT_BESTAND
-            ),
+            'ort' => material_files::ort_parameter(),
         ]);
     }
 
