@@ -24,17 +24,47 @@ Grundlage: Spec 0016 §7/§8 (`docs/specs/0016-kontextbereich-schreibend.md`).
 
 Nur `.md`-Dateien; Pfadsegmente `[A-Za-z0-9_-]`, kein `.`/`..`.
 
+## Offene Ortswahl (Issue #494)
+
+Solange die Lehrkraft noch keinen Ort gewaehlt hat und die Schule externe
+Speicher freigeschaltet hat, liefert `kurspilot_list_skills` im Feld
+`hinweise` einen Satz mit Link zur Ortswahlseite. Diesen Satz **genau einmal
+je Sitzung** an die Lehrkraft weitergeben. Antwortet sie mit "spaeter" (oder
+sinngemaess), in derselben Sitzung nicht erneut ansprechen — eine offene
+Ortswahl sperrt ohnehin nichts, Kurspilot arbeitet einfach weiter.
+
 ## Altbestand (vorheriger Ort)
 
-`kurspilot_list_skills` nennt ohne Zaehlung den Fakt "Altbestand offen", wenn
-nach einem Ortswechsel des Kontextbereichs am fruheren Ort noch
-Kontextdateien liegen. `kurspilot_list_context_files`/`kurspilot_read_context_file`
-mit `vorheriger_ort: true` lesen diesen alten Ort — nur lesend, nie
-schreibend. Zum Kopieren: gelesenen Inhalt per `kurspilot_write_context_file`
-mit `nur_anlegen: true` an den neuen Ort schreiben — legt nur an, ueberschreibt
-nie. Nach dem Kopieren (oder wenn die Lehrkraft auf den Rest verzichtet)
-`kurspilot_dismiss_altbestand` aufrufen, um ihn ausdruecklich zu beenden. Der
-Altbestand endet nie von selbst durch Zeitablauf oder Namensgleichheit.
+`kurspilot_list_skills` nennt im selben Feld `hinweise` — nach den
+`ausstaende` gemeldet, also erst wenn offene Ausstaende schon benannt sind —
+ohne Zaehlung den Fakt "Altbestand offen", wenn nach einem Ortswechsel des
+Kontextbereichs am fruheren Ort noch Kontextdateien liegen.
+`kurspilot_list_context_files`/`kurspilot_read_context_file` mit
+`vorheriger_ort: true` lesen diesen alten Ort — nur lesend, nie schreibend
+(**Nur-Lese-Schalter**). Zum Kopieren: gelesenen Inhalt per
+`kurspilot_write_context_file` mit `nur_anlegen: true` an den neuen Ort
+schreiben — legt nur an, ueberschreibt nie. Nach dem Kopieren (oder wenn die
+Lehrkraft auf den Rest verzichtet) `kurspilot_dismiss_altbestand` aufrufen,
+um ihn ausdruecklich zu beenden. Der Altbestand endet nie von selbst durch
+Zeitablauf oder Namensgleichheit.
+
+**Das Altbestandsangebot:**
+
+- Anzahl der am alten Ort liegenden Dateien nennen (aus
+  `kurspilot_list_context_files` mit `vorheriger_ort: true`), dann **eine**
+  Bestaetigung fuer alle einholen — nicht Datei fuer Datei fragen.
+  Uebernommen wird nur nach dieser Bestaetigung.
+- Existiert eine Datei am neuen Ort bereits (`contextfilealreadyexists`),
+  wird sie **nicht** ueberschrieben; die uebersprungenen Namen der Lehrkraft
+  nennen, statt sie stillschweigend auszulassen.
+- Loeschen ist Sache der Lehrkraft, nie von Kurspilot. Das **einmal** sagen
+  (in "Meine Dateien" bzw. der eigenen Cloud) — nicht bei jedem weiteren
+  Altbestand-Kontakt derselben Sitzung wiederholen.
+- Geht der Weg zurueck nach Moodle (externe Quelle → Kontextbereich in
+  Moodle), vor dem Kopieren die Groesse des Altbestands als **reinen
+  Faktenvergleich** nennen (z.B. "der Altbestand ist 3,4 MB, in Moodle sind
+  aktuell 8 MB frei") — Moodle hat eine Quote, der externe Speicher praktisch
+  nicht. Das ist eine Information, keine Empfehlung gegen den Umzug.
 
 ## Ablageordnung — Wurzel und relative Pfade (Spec 0012 §5, Spec 0010)
 
@@ -171,25 +201,62 @@ den Inhalt — die Klarnamen-Grenze selbst ist reine Skill-Regel:
   die Markierung ergaenzen (mit Lehrkraftfreigabe, da das den #344-Schalter
   aktiviert) oder anonymisiert/pseudonymisiert schreiben (Kuerzel statt Name).
 
-## Ausfall am externen Speicher: Ausstand und Nachtragen (ADR 0023, Issue #492)
+## Wenn der Speicher nicht antwortet (ADR 0023, Issue #492/#495)
+
+Der Kontextbereich kann in Moodle oder an einem externen WebDAV-Speicher der
+Lehrkraft liegen (Ortswahl, siehe unten) — was folgt, gilt fuer beide
+gleichermassen und benennt nie den Ort.
+
+### Ausstand und Nachtragen (Schreibausfall)
 
 Scheitert ein gueltiger `kurspilot_write_context_file`/`kurspilot_append_context_file`-
-Aufruf am externen Speicher, der Verbindung oder dem Ort (nicht bei einem
-Konflikt), legt das Plugin selbst einen Eintrag in der **Ausstandsnotiz** an
-und meldet eine Kennung — der Inhalt liegt nirgendwo, es gibt keinen
-Rueckfall. Die Antwort nennt Pfad und Vorgang, die Ursache und die Kennung.
+Aufruf am Speicher, der Verbindung oder dem Ort (nicht bei einem Konflikt und
+nicht bei einem Aufruffehler wie der `.md`-Regel oder der Personenbezug-Sperre),
+legt das Plugin selbst einen Eintrag in der **Ausstandsnotiz** an und meldet
+eine Kennung — der Inhalt liegt nirgendwo, es gibt keinen Rueckfall. Die
+Antwort nennt Pfad und Vorgang, die Ursache und die Kennung.
 
 - Den Inhalt im Gespraech behalten, nicht verwerfen.
 - Sobald die Verbindung wieder steht, denselben Aufruf erneut senden, diesmal
   mit `ausstand=<Kennung>` — gelingt er, verschwindet der Eintrag im selben
-  Aufruf (**Nachtragen**).
+  Aufruf (**Nachtragen**). Ein Nachtragen ueberschreibt nie einen inzwischen
+  gewachsenen Bestand.
 - `kurspilot_list_skills` meldet zu Sitzungsbeginn offene Eintraege im Feld
   `ausstaende`, gebuendelt je Zieldatei. Soll ein Eintrag nicht mehr
-  nachgetragen werden, vorher eine Rekonstruktion anbieten (z.B. aus dem
-  Aenderungsverlauf einer Aktivitaet), dann erst `kurspilot_dismiss_ausstand`
-  aufrufen — nie ohne ausdrueckliches Wort der Lehrkraft.
+  nachgetragen werden: **erst** eine Rekonstruktion anbieten, wo eine
+  moeglich ist (z.B. aus dem Aenderungsverlauf einer Aktivitaet), **danach
+  erst** `kurspilot_dismiss_ausstand` aufrufen — nie ohne ausdrueckliches
+  Wort der Lehrkraft.
 - "Ausstand" ist ein interner Bezeichner; zur Lehrkraft heisst es "noch nicht
-  gespeichert".
+  gespeichert", nie "Ausstand".
+
+### Kontext-Lücke (Leseausfall)
+
+Ist der Kontextbereich nicht lesbar, obwohl Moodle antwortet, ist das eine
+**Kontext-Lücke** — kein Ausstand, denn es ist nichts verloren gegangen:
+
+- Einmal je Sitzung ausdruecklich ansagen, dass gerade ohne Journal, Profile
+  und Plan gearbeitet wird — danach nicht wiederholen.
+- Weiterplanen im Gespraech bleibt erlaubt, ebenso das Schreiben in Moodle.
+- Gesperrt ist nur, was an einer ungelesenen Datei haengt: Soll ein
+  **gespeicherter** Plan umgesetzt werden und ist er gerade nicht lesbar,
+  nicht aus der Erinnerung umsetzen, sondern die Luecke benennen und auf das
+  erneute Lesen warten.
+- Ein Plan, der im selben Gespraech entstanden und freigegeben ist (also nie
+  gelesen werden musste), traegt die Umsetzung trotzdem.
+
+### Konflikt beim Schreiben
+
+Meldet `kurspilot_write_context_file` einen Konflikt (`contextfilechanged`;
+am externen Speicher dieselbe Fehlerklasse "Konflikt"): die Datei neu lesen,
+die Aenderungen mit dem eigenen Stand zusammenfuehren und erst dann erneut
+schreiben. Kein Ausstand, kein Aufgeben.
+
+### Quotenfehler
+
+Scheitert ein Schreibvorgang am Speicherplatz (`contextquotaexceeded`), steht
+in der Fehlermeldung bereits ein Verweis auf die Ortswahlseite — diesen Satz
+an die Lehrkraft weitergeben, statt selbst einen Ausweg zu erfinden.
 
 ## Aufraeumfrage nach Aufbau (Spec 0018 §8.3, Issue #439)
 
@@ -223,6 +290,45 @@ bleiben liegen, ohne dass die Frage in derselben Sitzung wiederholt wird.
 Diese Regel ist eine Skill-Regel, kein Serververhalten (Spec 0016 §7: „der
 Server hat kein Session-Konzept"), und gilt daher unveraendert fuer jeden
 Client, der `kurspilot-umsetzen` ausfuehrt — Claude Desktop wie Codex.
+
+## Materialbestand: `ort`, Eintragstyp `kontextbereich` und Sperre (Issue #495)
+
+Die lesenden Materialwerkzeuge (`kurspilot_list_material_files`,
+`kurspilot_preview_material_file`, die Quelle von `kurspilot_crop_material_file`,
+Materialpfade bei `kurspilot_create_module`/`kurspilot_update_module_settings`)
+nehmen den Parameter `ort` mit den Werten `bestand` (Standard, der gewachsene
+Materialordner der Lehrkraft — nur gelesen) und `werkbank` (Chat-Anhaenge,
+Zuschnitte — hier wird auch geschrieben). Liegt der Materialbestand in
+Moodle, zeigen beide Werte auf denselben Ort; schreibende Materialwerkzeuge
+kennen `ort` nicht, sie zielen immer auf die Werkbank.
+
+Liegt der Kontextbereich innerhalb des Materialbestands, erscheint sein
+Ordner beim Auflisten (`ort: bestand`) als eigener Eintragstyp
+`kontextbereich`, nicht als `folder` — sichtbar, aber ueber die Materialwege
+nicht zu betreten. Ein Versuch, einen Pfad darin oder darunter zu lesen oder
+aufzulisten, scheitert mit einer benannten Sperrmeldung
+(`materialpathiskontext`), die auf `kurspilot_list_context_files`/
+`kurspilot_read_context_file` verweist — dorthin umlenken, nicht selbst einen
+Workaround suchen.
+
+## Planen an einem nicht zugelassenen Speicher
+
+Liegt der Kontextbereich an einem externen Speicher, den die Schule nicht als
+**zugelassenen Speicher** fuer personenbezogene Daten fuehrt (ADR 0021 §3),
+scheitert ein Schreiben mit `kurspilot.personenbezug: true` ausdruecklich
+("Dieser Speicher ist für personenbezogene Daten nicht zugelassen") — ein
+Aufruffehler, kein Ausstand. Geplant wird trotzdem weiter, nur ohne
+Klarnamen in der Datei:
+
+- Kuerzel statt Klarnamen verwenden (wie in "Keine Klarnamen in unmarkierten
+  Dateien" oben).
+- Einzelheiten, die ohne Personenbezug nicht sinnvoll sind, weglassen statt
+  erzwungen zu anonymisieren.
+- Wo eine vollstaendige Notiz nicht ohne Klarnamen geht, in geringerem Detail
+  schreiben statt gar nicht.
+- **Lerngruppenprofile entstehen an einem solchen Speicher trotzdem** — als
+  gewoehnliche, unmarkierte Kontextdatei mit Kuerzeln statt Namen. Sie
+  bleiben nur inhaltlich schwaecher, nicht ungeschrieben.
 
 ## Was hier nicht gilt
 

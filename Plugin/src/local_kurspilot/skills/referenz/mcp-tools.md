@@ -61,15 +61,42 @@ Der eigene Materialordner der Lehrkraft – Bilder und Dokumente, die in
 Aktivitaeten eingebettet werden. Alle Pfade sind relativ zur Wurzel des
 Materialordners; das Werkzeug heisst den Pfad ueberall `path`, nie `course_id`.
 
+Die lesenden Werkzeuge (`kurspilot_list_material_files`,
+`kurspilot_preview_material_file`, Quelle von `kurspilot_crop_material_file`)
+nehmen zusaetzlich `ort`: `bestand` (Standard, gewachsener Materialordner der
+Lehrkraft, nur lesend) oder `werkbank` (Chat-Anhaenge, Zuschnitte). Details
+zum Eintragstyp `kontextbereich` und zur Sperre am Kontextbereich stehen in
+`kurspilot_get_skill("kontextbereich")`.
+
 | Tool | Verwendung |
 |---|---|
-| `kurspilot_list_material_files` | Materialordner auflisten (optional `path` fuer einen Unterordner, leer = Wurzel) – Groesse, `contenthash`, Restspeicher |
-| `kurspilot_upload_material_file` | Datei anlegen oder ersetzen (`path`, `content_base64`) |
-| `kurspilot_preview_material_file` | Verkleinerte Vorschau eines Bildes ansehen (`path`) – damit ein Ausschnitt oder ein Alt-Text nicht geraten wird |
-| `kurspilot_crop_material_file` | Bild auf einen Ausschnitt zuschneiden (`sourcepath`, `targetpath`, `x0`/`y0`/`x1`/`y1` relativ 0–1 auf die Vorschau) |
-| `kurspilot_report_loose_material_files` | Dateien melden, die in keiner Aktivitaet verwendet werden – liest nur |
-| `kurspilot_delete_material_files` | Genau die genannten Pfade loeschen (`paths`) – nur nach ausdruecklicher Bestaetigung der Lehrkraft |
+| `kurspilot_list_material_files` | Materialordner auflisten (optional `path` fuer einen Unterordner, leer = Wurzel, optional `ort`) – Groesse, `contenthash`, Restspeicher |
+| `kurspilot_upload_material_file` | Datei anlegen oder ersetzen (`path`, `content_base64`) – immer auf der Werkbank, kein `ort` |
+| `kurspilot_preview_material_file` | Verkleinerte Vorschau eines Bildes ansehen (`path`, optional `ort`) – damit ein Ausschnitt oder ein Alt-Text nicht geraten wird |
+| `kurspilot_crop_material_file` | Bild auf einen Ausschnitt zuschneiden (`sourcepath`, `targetpath`, `x0`/`y0`/`x1`/`y1` relativ 0–1 auf die Vorschau) – Ziel immer Werkbank |
+| `kurspilot_report_loose_material_files` | Dateien melden, die in keiner Aktivitaet verwendet werden – liest nur, nur Werkbank |
+| `kurspilot_delete_material_files` | Genau die genannten Pfade loeschen (`paths`) – nur nach ausdruecklicher Bestaetigung der Lehrkraft, nur Werkbank |
 | `kurspilot_create_werkbank_download_links` | Je Werkbankdatei einen 15 Minuten gueltigen Einmal-Downloadlink ausstellen (`paths`) – fuer einen Client mit Shell (curl), ohne OAuth-Bearer-Header; liefert URL, Name, Groesse, SHA-1, keine fertige Abrufzeile |
 
 Aktivitaetstyp-Auswahl (welcher `modname` fuer welche Situation) steht in
 `kurspilot_get_skill("implementierungsplan-workflow")`.
+
+## Kontextbereich
+
+Arbeitsdateien (`plan.md`, `status.md`, Journal, Materialnotizen,
+Kontextprofile). Zwei Parameter: `ausstand=<Kennung>` an
+`kurspilot_write_context_file`/`kurspilot_append_context_file` traegt einen
+offenen Eintrag der Ausstandsnotiz nach; `vorheriger_ort: true` an
+`kurspilot_list_context_files`/`kurspilot_read_context_file` ist der
+**Nur-Lese-Schalter** fuer den Altbestand (wirkt nur, solange einer offen
+ist). Alle Ausfall-/Konflikt-/Ortswahl-Regeln stehen vollstaendig in
+`kurspilot_get_skill("kontextbereich")`, hier nur die Namen zum Nachschlagen:
+
+| Tool | Verwendung |
+|---|---|
+| `kurspilot_list_context_files` | Ordnerinhalt auflisten, optional `vorheriger_ort` (Nur-Lese-Schalter fuer den Altbestand) |
+| `kurspilot_read_context_file` | Datei lesen, optional `vorheriger_ort` |
+| `kurspilot_write_context_file` | Anlegen/vollstaendig ueberschreiben, optional `ausstand` (Nachtragen einer Kennung), optional `nur_anlegen` (Kopieren aus dem Altbestand) |
+| `kurspilot_append_context_file` | Anhaengen, optional `ausstand` |
+| `kurspilot_dismiss_ausstand` | Einen Eintrag der Ausstandsnotiz ausdruecklich verwerfen |
+| `kurspilot_dismiss_altbestand` | Den Altbestand (vorheriger Ort) ausdruecklich beenden |

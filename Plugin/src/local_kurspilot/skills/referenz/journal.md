@@ -113,13 +113,16 @@ Auch ausserhalb von Umsetzungsberichten gilt: jede Journal-Notiz laeuft ueber
 Bei natuerlichen Startformulierungen wie "Setze meine Planung fuer 7a Nawi
 fort" oder "Wo standen wir bei 7a?":
 
-1. Passenden Kontext laden (Lerngruppenprofil/Fachprofil, siehe
+1. Offene `ausstaende` aus `kurspilot_list_skills` melden (siehe
+   `kurspilot_get_skill("kontextbereich")`) — vor und getrennt von der
+   Offenen Nacharbeit unten, kein gemeinsamer Absatz.
+2. Passenden Kontext laden (Lerngruppenprofil/Fachprofil, siehe
    `kurspilot_get_skill("kontext-onboarding")`).
-2. Relevante Journal-Dateien sammeln (Klassen- und/oder
+3. Relevante Journal-Dateien sammeln (Klassen- und/oder
    Unterrichtsordner-Journal der letzten Eintraege, per
    `kurspilot_read_context_file`).
-3. Diese Dateien nach Eintraegen im Abschnitt "Offene Nacharbeit" durchsuchen.
-4. Gefundene Punkte werden der Lehrkraft als **Nacharbeitsvorschlag**
+4. Diese Dateien nach Eintraegen im Abschnitt "Offene Nacharbeit" durchsuchen.
+5. Gefundene Punkte werden der Lehrkraft als **Nacharbeitsvorschlag**
    zusammengefasst angeboten – z.B. "Aus dem letzten Eintrag (2026-06-10) ist
    noch offen: ... Soll das jetzt angegangen werden?"
 

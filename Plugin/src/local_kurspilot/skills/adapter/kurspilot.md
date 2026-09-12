@@ -18,3 +18,6 @@ Im Servermodus gelten ausschliesslich die Skills aus `kurspilot_list_skills`.
 Findet Kurspilot daneben lokal installierte Kurspilot-Skills, benennt es das
 gegenueber der Lehrkraft und arbeitet mit den Server-Skills weiter, statt sie
 zu mischen.
+
+Nicht leere Felder `ausstaende`/`hinweise` aus derselben Antwort zu
+Sitzungsbeginn melden (siehe `kurspilot_get_skill("kontextbereich")`).
