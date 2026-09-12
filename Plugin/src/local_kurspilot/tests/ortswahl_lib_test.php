@@ -125,6 +125,86 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->assertSame('kurspilot-material', $material['pfad']);
     }
 
+    /**
+     * "Zugelassen" fuer die Anzeige (Issue #500, ADR 0021 §3): Private
+     * Files sind immer zugelassen, ohne dass `personaldatahosts` etwas
+     * dazu sagen muss.
+     */
+    public function test_current_marks_moodle_location_as_allowed(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $kontext = ortswahl_lib::current('kontextbereich');
+
+        $this->assertTrue($kontext['zugelassen']);
+        $this->assertSame(
+            get_string('ortswahlzugelassenja', 'local_kurspilot'),
+            ortswahl_lib::zugelassen_label($kontext)
+        );
+    }
+
+    /**
+     * Ein externer Ort ist nur zugelassen, wenn sein Server in
+     * `personaldatahosts` steht (Issue #500, ADR 0021 §3) - dieselbe
+     * Pruefung wie {@see \local_kurspilot\admin\connection_ablageort}, hier
+     * je Ziel fuer Zustimmungsdialog/"Meine Verbindungen"/Ortswahlseite.
+     */
+    public function test_current_marks_extern_location_as_not_allowed_without_configured_host(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Kontext');
+        // personaldatahosts bleibt leer - der Instanzserver ist damit nicht zugelassen.
+
+        $kontext = ortswahl_lib::current('kontextbereich');
+
+        $this->assertFalse($kontext['zugelassen']);
+        $this->assertSame(
+            get_string('ortswahlzugelassennein', 'local_kurspilot'),
+            ortswahl_lib::zugelassen_label($kontext)
+        );
+    }
+
+    /**
+     * Gegenstueck: ein externer Ort mit zugelassenem Server gilt als
+     * zugelassen (Issue #500).
+     */
+    public function test_current_marks_extern_location_as_allowed_with_configured_host(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Kontext');
+        set_config('personaldatahosts', $this->fixtureserver, 'local_kurspilot');
+
+        $kontext = ortswahl_lib::current('kontextbereich');
+
+        $this->assertTrue($kontext['zugelassen']);
+    }
+
+    /**
+     * Der geteilte Datenschutz-Informationstext (Issue #500, Spec #486 §11),
+     * der im Zustimmungsdialog, auf "Meine Verbindungen" und in der
+     * Beschreibung von `personaldatahosts` erscheint, nennt alle vier
+     * geforderten Fakten - ein Aenderungsrisiko an einer zentralen Stelle
+     * statt eines stillen Auseinanderdriftens der drei Anzeigen.
+     */
+    public function test_external_location_privacy_info_names_all_four_facts(): void {
+        // Die Testinstanz laeuft mit der Standardsprache "en" (kein
+        // installiertes deutsches Sprachpaket) - get_string() liefert daher
+        // den englischen Text von lang/en/local_kurspilot.php, dessen vier
+        // Fakten wortgleich zu lang/de/ formuliert sind.
+        $text = get_string('externallocationprivacyinfo', 'local_kurspilot');
+
+        $this->assertStringContainsString('AI', $text);
+        $this->assertStringContainsString('write lock', $text);
+        $this->assertStringContainsString('no read lock', $text);
+        $this->assertStringContainsString('Mounted shares', $text);
+        $this->assertStringContainsString('cannot be told apart', $text);
+        $this->assertStringContainsString('app password', $text);
+    }
+
     public function test_history_is_empty_without_pointer(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());

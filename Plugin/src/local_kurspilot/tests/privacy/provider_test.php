@@ -16,6 +16,8 @@
 
 namespace local_kurspilot\privacy;
 
+use core_privacy\local\metadata\collection;
+use core_privacy\local\metadata\types\external_location;
 use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
@@ -39,6 +41,27 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(provider::class)]
 final class provider_test extends \core_privacy\tests\provider_testcase {
+
+    /**
+     * Der Datenschutz-Provider benennt den externen Ablageort per
+     * `add_external_location_link` (Issue #500, ADR 0021, Spec #486 §11) -
+     * eine Auskunft darf ihn nicht verschweigen, auch wenn Kurspilot dort
+     * selbst nichts exportiert (das WebDAV-Ziel liegt ausserhalb Moodles).
+     */
+    public function test_metadata_declares_the_external_webdav_location(): void {
+        $collection = provider::get_metadata(new collection('local_kurspilot'));
+
+        $externallocations = array_values(array_filter(
+            $collection->get_collection(),
+            static fn ($type): bool => $type instanceof external_location
+        ));
+
+        $this->assertCount(1, $externallocations);
+        $this->assertSame('webdav_external_storage', $externallocations[0]->get_name());
+        $this->assertSame('privacy:metadata:webdav_external_storage', $externallocations[0]->get_summary());
+        $this->assertArrayHasKey('path', $externallocations[0]->get_privacy_fields());
+        $this->assertArrayHasKey('content', $externallocations[0]->get_privacy_fields());
+    }
 
     /**
      * Legt einen OAuth-Token-Datensatz an (analog zu oauth_lib_test).

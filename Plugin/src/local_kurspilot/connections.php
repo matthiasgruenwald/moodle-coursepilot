@@ -33,6 +33,8 @@
 require(__DIR__ . '/../../config.php');
 
 use local_kurspilot\oauth_lib;
+use local_kurspilot\ortswahl_lib;
+use local_kurspilot\webdav\webdav_setup_steps;
 
 require_login(null, false);
 
@@ -56,6 +58,26 @@ $tokens = oauth_lib::active_tokens_for_user((int) $USER->id);
 
 echo $OUTPUT->header();
 echo html_writer::tag('p', get_string('myconnectionsintro', 'local_kurspilot'));
+
+// Aktueller Ort je Ziel und ob er zugelassen ist (Issue #500, Spec #486
+// §11) - dieselbe Formel wie im Zustimmungsdialog und auf der
+// Ortswahlseite, hier auf der Selbstverwaltungsseite der Verbindungen.
+echo $OUTPUT->heading(get_string('ortswahlcurrentheading', 'local_kurspilot'), 4);
+$kontextbereich = ortswahl_lib::current('kontextbereich');
+$materialbestand = ortswahl_lib::current('materialbestand');
+echo html_writer::start_tag('ul');
+echo html_writer::tag('li', get_string('ortswahlcurrentkontextbereich', 'local_kurspilot', $kontextbereich['display'])
+    . ' — ' . ortswahl_lib::zugelassen_label($kontextbereich));
+echo html_writer::tag('li', get_string('ortswahlcurrentmaterialbestand', 'local_kurspilot', $materialbestand['display'])
+    . ' — ' . ortswahl_lib::zugelassen_label($materialbestand));
+echo html_writer::end_tag('ul');
+echo html_writer::div(get_string('externallocationprivacyinfo', 'local_kurspilot'), 'small text-muted mb-2');
+echo html_writer::link(
+    new moodle_url(webdav_setup_steps::ORTSWAHL_PAGE),
+    get_string('consentlocationchangelink', 'local_kurspilot'),
+    ['class' => 'btn btn-link p-0 mb-3']
+);
+echo html_writer::empty_tag('br');
 
 if (!$tokens) {
     echo $OUTPUT->notification(

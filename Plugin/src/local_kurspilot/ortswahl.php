@@ -124,8 +124,10 @@ echo $OUTPUT->heading(get_string('ortswahlcurrentheading', 'local_kurspilot'), 4
 $kontextbereich = ortswahl_lib::current('kontextbereich');
 $materialbestand = ortswahl_lib::current('materialbestand');
 echo html_writer::start_tag('ul');
-echo html_writer::tag('li', get_string('ortswahlcurrentkontextbereich', 'local_kurspilot', $kontextbereich['display']));
-echo html_writer::tag('li', get_string('ortswahlcurrentmaterialbestand', 'local_kurspilot', $materialbestand['display']));
+echo html_writer::tag('li', get_string('ortswahlcurrentkontextbereich', 'local_kurspilot', $kontextbereich['display'])
+    . ' — ' . ortswahl_lib::zugelassen_label($kontextbereich));
+echo html_writer::tag('li', get_string('ortswahlcurrentmaterialbestand', 'local_kurspilot', $materialbestand['display'])
+    . ' — ' . ortswahl_lib::zugelassen_label($materialbestand));
 echo html_writer::end_tag('ul');
 
 echo $OUTPUT->heading(get_string('ortswahlhistoryheading', 'local_kurspilot'), 4);

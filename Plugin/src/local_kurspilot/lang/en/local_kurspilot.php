@@ -49,6 +49,10 @@ $string['historydatalossconfirm'] = '{$a} Really continue and delete existing co
 $string['historyquizhint'] = 'Note: on quizzes, questions always show in their latest version, no version is pinned retroactively.';
 $string['historybacktolist'] = 'Back to activity list';
 
+// Plugin description on the settings page (Issue #500, Spec #486 §11).
+$string['settingintroheading'] = 'About Kurspilot';
+$string['settingintroheading_desc'] = 'On a teacher\'s behalf, Kurspilot can send names and images from their material store to the AI, and, with an external storage location, write there without a read lock — details below and in the admin guide (Issue #481, in preparation).';
+
 // Remote access governance (#338).
 $string['remoteaccessdisabled'] = 'Remote access has been temporarily disabled by the administration.';
 $string['settingremoteaccessenabled'] = 'Allow remote access';
@@ -220,7 +224,7 @@ $string['settingallowpersonaldata_desc'] = 'Acts on the marking (frontmatter "pe
 
 // Approved external storage for personal context data (#493, ADR 0021 §3).
 $string['settingpersonaldatahosts'] = 'Approved storage for personal data';
-$string['settingpersonaldatahosts_desc'] = 'A file marked "personenbezug: true" is only ever written to one of these storage locations (Private Files are always approved). One entry per line: a domain covers itself and all its subdomains, separated only at dots, no "*". Entries with only one name part are rejected on save. Empty list = Private Files only.';
+$string['settingpersonaldatahosts_desc'] = 'A file marked "personenbezug: true" is only ever written to one of these storage locations (Private Files are always approved). One entry per line: a domain covers itself and all its subdomains, separated only at dots, no "*". Entries with only one name part are rejected on save. Empty list = Private Files only. {$a}';
 $string['personaldatahostsinvalid'] = 'Invalid entry: "{$a}" — one entry must be a domain of at least two name parts (e.g. "cloud.example.org"), without "*".';
 $string['contextfilehostnotallowed'] = 'File {$a}: this storage is not approved for personal data.';
 
@@ -287,6 +291,14 @@ $string['consentlocationkontextbereichcurrent'] = 'Journals and plans: {$a}';
 $string['consentlocationmaterialbestandcurrent'] = 'Material files: {$a}';
 $string['consentlocationchangelink'] = 'Change location';
 
+// External location privacy notice (Issue #500, ADR 0021, Spec #486 §11) -
+// same wording everywhere a teacher sees it before or during an external
+// location choice: consent dialog, "My connections", the "personaldatahosts"
+// setting description.
+$string['externallocationprivacyinfo'] = 'If the context area or material store is external: names and images from the store can be sent to the AI on request. External context files have a write lock but no read lock. Mounted shares (e.g. IServ groups, Nextcloud shares) cannot be told apart from the outside. Use an app password instead of your main password for the connection.';
+$string['ortswahlzugelassenja'] = 'approved storage for personal data';
+$string['ortswahlzugelassennein'] = 'not an approved storage for personal data';
+
 // classes/privacy/provider.php (#336).
 $string['privacy:metadata:oauth_code'] = 'Short-lived, PKCE-bound authorization codes for the OAuth consent dialog.';
 $string['privacy:metadata:oauth_code:clientid'] = 'The AI client id the code was issued for.';
@@ -313,11 +325,25 @@ $string['privacy:metadata:cm_version:courseid'] = 'The course this activity belo
 $string['privacy:metadata:cm_version:userid'] = 'The user id of the teacher the write ran under.';
 $string['privacy:metadata:cm_version:timecreated'] = 'Time of the write.';
 $string['privacy:metadata:cm_version_file'] = 'Links a history state to the files the activity had at that time (metadata only, see local_kurspilot_cm_file). Deleted along with its state.';
+$string['privacy:metadata:cm_version_file:versionid'] = 'The history state this file belongs to.';
+$string['privacy:metadata:cm_version_file:fileid'] = 'The referenced file metadata row (local_kurspilot_cm_file).';
+$string['privacy:metadata:cm_version_file:gap'] = 'Whether the file content is outside the description and cannot be written back.';
 $string['privacy:metadata:cm_file'] = 'Deduplicated file metadata (name, size, path) for the change history, without file content.';
+$string['privacy:metadata:cm_file:pathnamehash'] = 'Hash of the file pathname, used for deduplication.';
+$string['privacy:metadata:cm_file:contenthash'] = 'Hash of the file content, used for deduplication.';
+$string['privacy:metadata:cm_file:filepath'] = 'Folder path of the file within the activity.';
+$string['privacy:metadata:cm_file:filename'] = 'File name.';
+$string['privacy:metadata:cm_file:filesize'] = 'File size in bytes.';
+$string['privacy:metadata:cm_file:timemodified'] = 'Last modification time of the file.';
 $string['privacy:metadata:context_mark'] = 'Marking memory (#493): per context file, only the "marked yes/no" bit plus the key used to detect changes (path, size, modification time, ETag) — never any file content.';
 $string['privacy:metadata:context_mark:userid'] = 'The user id of the teacher this entry belongs to.';
 $string['privacy:metadata:context_mark:path'] = 'Client path of the context file this entry is about.';
 $string['privacy:metadata:context_mark:ismarked'] = 'Whether the file was last found to be marked as containing personal data.';
+
+// classes/privacy/provider.php: external location (#500, ADR 0021).
+$string['privacy:metadata:webdav_external_storage'] = 'The context area and material store can live on the external WebDAV storage the teacher chose via the location picker - outside Moodle and outside this plugin. Kurspilot reads and writes there directly, without keeping its own copy in Moodle.';
+$string['privacy:metadata:webdav_external_storage:path'] = 'The file and folder path on the external storage.';
+$string['privacy:metadata:webdav_external_storage:content'] = 'The file content, including any marked personal data such as names from learning group profiles.';
 
 // Field catalog (#379).
 $string['unknownmodname'] = 'Unknown activity type "{$a->modname}". Kurspilot catalogs: {$a->aktivitaetsarten}.';

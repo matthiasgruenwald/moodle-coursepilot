@@ -237,11 +237,44 @@ final class ortswahl_lib {
      * Aenderungswunsch heisst schlicht: die konfigurierte Standardwurzel.
      *
      * @param string $target "kontextbereich" oder "materialbestand".
-     * @return array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array, display: string}
+     * @return array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array, display: string, zugelassen: bool}
      */
     public static function current(string $target): array {
         $value = self::current_pointer_value($target);
-        return $value + ['display' => self::describe_pointer_value($value)];
+        return $value + [
+            'display' => self::describe_pointer_value($value),
+            'zugelassen' => self::is_allowed($value),
+        ];
+    }
+
+    /**
+     * Ob der aufgeloeste Ort eines Ziels ein zugelassener Speicher fuer
+     * personenbezogene Daten ist (Issue #500, ADR 0021 §3): Private Files
+     * (Ort *in Moodle*) sind immer zugelassen, ein externer Ort nur, wenn
+     * sein Server in `personaldatahosts` steht - dieselbe Pruefung wie
+     * {@see \local_kurspilot\personal_data_hosts::allowed()}, hier aber je
+     * Ziel fuer die Anzeige statt als Aufruffehler.
+     *
+     * @param array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array} $value
+     * @return bool
+     */
+    private static function is_allowed(array $value): bool {
+        if ($value['ort'] !== pointer_location::EXTERN) {
+            return true;
+        }
+        return personal_data_hosts::allowed((string) ($value['pruefmerkmal']['server'] ?? ''));
+    }
+
+    /**
+     * Formatiert den Zugelassen-Hinweis eines aufgeloesten Ortswerts (Issue
+     * #500, Spec #486 §11): dieselbe Formel im Zustimmungsdialog, auf
+     * "Meine Verbindungen" und auf der Ortswahlseite.
+     *
+     * @param array{zugelassen: bool} $value Ergebnis von {@see current()}.
+     * @return string
+     */
+    public static function zugelassen_label(array $value): string {
+        return get_string($value['zugelassen'] ? 'ortswahlzugelassenja' : 'ortswahlzugelassennein', 'local_kurspilot');
     }
 
     /**

@@ -49,6 +49,10 @@ $string['historydatalossconfirm'] = '{$a} Wirklich fortsetzen und dabei bestehen
 $string['historyquizhint'] = 'Hinweis: Fragen erscheinen bei Tests in der jeweils neuesten Fassung, keine Version wird nachträglich gepinnt.';
 $string['historybacktolist'] = 'Zurück zur Aktivitätenliste';
 
+// Plugin-Beschreibung auf der Einstellungsseite (Issue #500, Spec #486 §11).
+$string['settingintroheading'] = 'Über Kurspilot';
+$string['settingintroheading_desc'] = 'Kurspilot kann im Auftrag einer Lehrkraft Namen und Bilder aus deren Materialbestand an die KI übertragen und, bei externem Ablageort, dort ohne Lesesperre schreiben — Einzelheiten weiter unten und in der Admin-Anleitung (Issue #481, in Vorbereitung).';
+
 // Fernzugriffs-Steuerung (#338).
 $string['remoteaccessdisabled'] = 'Der Fernzugriff ist durch die Administration vorübergehend gesperrt.';
 $string['settingremoteaccessenabled'] = 'Fernzugriff erlauben';
@@ -224,7 +228,7 @@ $string['settingallowpersonaldata_desc'] = 'Wirkt auf der Markierung (Frontmatte
 
 // Zugelassene externe Speicher für personenbezogene Kontextdaten (#493, ADR 0021 §3).
 $string['settingpersonaldatahosts'] = 'Zugelassene Speicher für personenbezogene Daten';
-$string['settingpersonaldatahosts_desc'] = 'Eine Datei mit Markierung „personenbezug: true" wird nur in einen dieser Speicher geschrieben (Private Files sind immer zugelassen). Ein Eintrag je Zeile: eine Domain gilt samt Unterdomains, getrennt wird nur an Punkten, ohne „*". Einträge mit nur einem Namensteil werden beim Speichern abgelehnt. Leere Liste = nur Private Files.';
+$string['settingpersonaldatahosts_desc'] = 'Eine Datei mit Markierung „personenbezug: true" wird nur in einen dieser Speicher geschrieben (Private Files sind immer zugelassen). Ein Eintrag je Zeile: eine Domain gilt samt Unterdomains, getrennt wird nur an Punkten, ohne „*". Einträge mit nur einem Namensteil werden beim Speichern abgelehnt. Leere Liste = nur Private Files. {$a}';
 $string['personaldatahostsinvalid'] = 'Ungültiger Eintrag: „{$a}" — ein Eintrag muss eine Domain mit mindestens zwei Namensteilen sein (z. B. „cloud.beispielschule.de"), ohne „*".';
 $string['contextfilehostnotallowed'] = 'Datei {$a}: Dieser Speicher ist für personenbezogene Daten nicht zugelassen.';
 
@@ -291,6 +295,14 @@ $string['consentlocationkontextbereichcurrent'] = 'Journale und Pläne: {$a}';
 $string['consentlocationmaterialbestandcurrent'] = 'Materialdateien: {$a}';
 $string['consentlocationchangelink'] = 'Ort ändern';
 
+// Datenschutz-Informationstext zum externen Ablageort (Issue #500, ADR 0021,
+// Spec #486 §11) - dieselbe Formel an allen Stellen, die eine Lehrkraft vor
+// oder bei einer externen Ortswahl sieht: Zustimmungsdialog, "Meine
+// Verbindungen", Beschreibung der Einstellung "personaldatahosts".
+$string['externallocationprivacyinfo'] = 'Liegt Kontextbereich oder Materialbestand extern: Namen und Bilder aus dem Bestand können bei einer Anfrage an die KI übertragen werden. Für externe Kontextdateien gilt eine Schreibsperre, aber keine Lesesperre. Eingehängte Freigaben (etwa IServ-Gruppen, Nextcloud-Freigaben) sind von außen nicht als solche erkennbar. Verwenden Sie für die Verbindung ein App-Passwort statt Ihres Hauptpassworts.';
+$string['ortswahlzugelassenja'] = 'zugelassener Speicher für personenbezogene Daten';
+$string['ortswahlzugelassennein'] = 'kein zugelassener Speicher für personenbezogene Daten';
+
 // classes/privacy/provider.php (#336).
 $string['privacy:metadata:oauth_code'] = 'Kurzlebige, PKCE-gebundene Autorisierungscodes für den OAuth-Zustimmungsdialog.';
 $string['privacy:metadata:oauth_code:clientid'] = 'Die Kennung des KI-Clients, für den der Code ausgestellt wurde.';
@@ -317,11 +329,25 @@ $string['privacy:metadata:cm_version:courseid'] = 'Der Kurs, zu dem diese Aktivi
 $string['privacy:metadata:cm_version:userid'] = 'Die Nutzer-ID der Lehrkraft, unter der der Schreibvorgang lief.';
 $string['privacy:metadata:cm_version:timecreated'] = 'Zeitpunkt des Schreibvorgangs.';
 $string['privacy:metadata:cm_version_file'] = 'Verknuepfung eines Verlaufs-Standes mit den zu diesem Zeitpunkt vorhandenen Dateien der Aktivitaet (nur Metadaten, siehe local_kurspilot_cm_file). Faellt zusammen mit dem zugehoerigen Stand weg.';
+$string['privacy:metadata:cm_version_file:versionid'] = 'Der Verlaufs-Stand, zu dem diese Datei gehoert.';
+$string['privacy:metadata:cm_version_file:fileid'] = 'Die referenzierte Datei-Metadaten-Zeile (local_kurspilot_cm_file).';
+$string['privacy:metadata:cm_version_file:gap'] = 'Ob der Dateiinhalt ausserhalb der Beschreibung liegt und nicht rueckschreibbar ist.';
 $string['privacy:metadata:cm_file'] = 'Deduplizierte Datei-Metadaten (Name, Groesse, Pfad) des Aenderungsverlaufs, ohne Dateiinhalt.';
+$string['privacy:metadata:cm_file:pathnamehash'] = 'Hash des Datei-Pfadnamens, zur Deduplizierung.';
+$string['privacy:metadata:cm_file:contenthash'] = 'Hash des Dateiinhalts, zur Deduplizierung.';
+$string['privacy:metadata:cm_file:filepath'] = 'Ordnerpfad der Datei innerhalb der Aktivitaet.';
+$string['privacy:metadata:cm_file:filename'] = 'Dateiname.';
+$string['privacy:metadata:cm_file:filesize'] = 'Dateigroesse in Byte.';
+$string['privacy:metadata:cm_file:timemodified'] = 'Letzter Aenderungszeitpunkt der Datei.';
 $string['privacy:metadata:context_mark'] = 'Markierungsgedaechtnis (#493): je Kontextdatei nur das Bit "markiert ja/nein" sowie der Schluessel zur Aenderungserkennung (Pfad, Groesse, Aenderungszeit, ETag) - nie Dateiinhalt.';
 $string['privacy:metadata:context_mark:userid'] = 'Die Nutzer-ID der Lehrkraft, zu der dieser Eintrag gehoert.';
 $string['privacy:metadata:context_mark:path'] = 'Client-Pfad der Kontextdatei, auf die sich dieser Eintrag bezieht.';
 $string['privacy:metadata:context_mark:ismarked'] = 'Ob die Datei zuletzt als personenbezogen markiert erkannt wurde.';
+
+// classes/privacy/provider.php: externer Ablageort (#500, ADR 0021).
+$string['privacy:metadata:webdav_external_storage'] = 'Kontextbereich und Materialbestand können am externen WebDAV-Speicher liegen, den die Lehrkraft über die Ortswahl gewählt hat - außerhalb von Moodle und außerhalb dieses Plugins. Kurspilot schreibt und liest dort direkt, ohne eigene Kopie in Moodle.';
+$string['privacy:metadata:webdav_external_storage:path'] = 'Der Datei- und Ordnerpfad am externen Speicher.';
+$string['privacy:metadata:webdav_external_storage:content'] = 'Der Dateiinhalt, einschließlich markierter personenbezogener Angaben wie Namen aus Lerngruppenprofilen.';
 
 // Feldkatalog (#379).
 $string['unknownmodname'] = 'Unbekannte Aktivitätsart "{$a->modname}". Kurspilot führt: {$a->aktivitaetsarten}.';

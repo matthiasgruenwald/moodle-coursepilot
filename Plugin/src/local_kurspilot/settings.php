@@ -29,6 +29,17 @@ if ($hassiteconfig) {
     $settings = new admin_settingpage('local_kurspilot', get_string('pluginname', 'local_kurspilot'));
     $ADMIN->add('localplugins', $settings);
 
+    // Plugin-Beschreibung (Issue #500, Spec #486 §11): ein Satz zum externen
+    // Ablageort, oben auf der Einstellungsseite, bevor die einzelnen
+    // Einstellungen folgen. Die ausfuehrliche Admin-Erstanleitung ist noch
+    // nicht geschrieben (Issue #481) - deshalb hier nur der eine Satz statt
+    // eines Links auf eine noch nicht existierende Seite.
+    $settings->add(new admin_setting_heading(
+        'local_kurspilot/introheading',
+        get_string('settingintroheading', 'local_kurspilot'),
+        get_string('settingintroheading_desc', 'local_kurspilot')
+    ));
+
     // Notbremse (#338): sperrt jeden weiteren MCP-Zugriff sofort, ohne den
     // normalen Moodle-Login zu beruehren - siehe dispatcher::handle_authorized().
     // Default aktiviert (1), damit ein frisch installiertes Plugin nutzbar bleibt.
@@ -129,7 +140,7 @@ if ($hassiteconfig) {
     $settings->add(new \local_kurspilot\admin\personaldatahosts_setting(
         'local_kurspilot/personaldatahosts',
         get_string('settingpersonaldatahosts', 'local_kurspilot'),
-        get_string('settingpersonaldatahosts_desc', 'local_kurspilot'),
+        get_string('settingpersonaldatahosts_desc', 'local_kurspilot', get_string('externallocationprivacyinfo', 'local_kurspilot')),
         '',
         PARAM_RAW
     ));

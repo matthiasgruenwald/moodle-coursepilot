@@ -120,9 +120,15 @@ echo html_writer::div(get_string('consentlocationintro', 'local_kurspilot'), 'ku
 $kontextbereich = ortswahl_lib::current('kontextbereich');
 $materialbestand = ortswahl_lib::current('materialbestand');
 echo html_writer::start_tag('ul');
-echo html_writer::tag('li', get_string('consentlocationkontextbereichcurrent', 'local_kurspilot', $kontextbereich['display']));
-echo html_writer::tag('li', get_string('consentlocationmaterialbestandcurrent', 'local_kurspilot', $materialbestand['display']));
+echo html_writer::tag('li', get_string('consentlocationkontextbereichcurrent', 'local_kurspilot', $kontextbereich['display'])
+    . ' — ' . ortswahl_lib::zugelassen_label($kontextbereich));
+echo html_writer::tag('li', get_string('consentlocationmaterialbestandcurrent', 'local_kurspilot', $materialbestand['display'])
+    . ' — ' . ortswahl_lib::zugelassen_label($materialbestand));
 echo html_writer::end_tag('ul');
+// Datenschutz-Informationstext (Issue #500, Spec #486 §11): was am externen
+// Ort gilt und was nicht - dieselbe Formel wie auf "Meine Verbindungen" und
+// bei der Einstellung "personaldatahosts".
+echo html_writer::div(get_string('externallocationprivacyinfo', 'local_kurspilot'), 'small text-muted mb-2');
 echo html_writer::link(
     new moodle_url(webdav_setup_steps::ORTSWAHL_PAGE),
     get_string('consentlocationchangelink', 'local_kurspilot'),

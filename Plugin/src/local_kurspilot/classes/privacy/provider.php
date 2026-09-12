@@ -117,8 +117,23 @@ final class provider implements
             'userid' => 'privacy:metadata:cm_version:userid',
             'timecreated' => 'privacy:metadata:cm_version:timecreated',
         ], 'privacy:metadata:cm_version');
-        $collection->add_database_table('local_kurspilot_cm_version_file', [], 'privacy:metadata:cm_version_file');
-        $collection->add_database_table('local_kurspilot_cm_file', [], 'privacy:metadata:cm_file');
+        // Beide Tabellen tragen keine userid, nur die Dateibeschreibung eines
+        // Standes (siehe Klassenkommentar oben) - trotzdem mit Feldern statt
+        // [] deklariert, sonst warnt Moodle-Core bei jedem get_metadata()-
+        // Aufruf ("Table '...' was supplied without any fields").
+        $collection->add_database_table('local_kurspilot_cm_version_file', [
+            'versionid' => 'privacy:metadata:cm_version_file:versionid',
+            'fileid' => 'privacy:metadata:cm_version_file:fileid',
+            'gap' => 'privacy:metadata:cm_version_file:gap',
+        ], 'privacy:metadata:cm_version_file');
+        $collection->add_database_table('local_kurspilot_cm_file', [
+            'pathnamehash' => 'privacy:metadata:cm_file:pathnamehash',
+            'contenthash' => 'privacy:metadata:cm_file:contenthash',
+            'filepath' => 'privacy:metadata:cm_file:filepath',
+            'filename' => 'privacy:metadata:cm_file:filename',
+            'filesize' => 'privacy:metadata:cm_file:filesize',
+            'timemodified' => 'privacy:metadata:cm_file:timemodified',
+        ], 'privacy:metadata:cm_file');
 
         // Markierungsgedaechtnis (#493, Spec #486 §6): traegt userid und den
         // Client-Pfad einer Kontextdatei, siehe local_kurspilot\mark_memory.
@@ -127,6 +142,20 @@ final class provider implements
             'path' => 'privacy:metadata:context_mark:path',
             'ismarked' => 'privacy:metadata:context_mark:ismarked',
         ], 'privacy:metadata:context_mark');
+
+        // Externer Ablageort (#500, ADR 0021, Spec #486 §11): Kontextbereich
+        // und Materialbestand koennen am WebDAV-Speicher der Lehrkraft
+        // liegen, ausserhalb jedes Moodle-Loesch-/Exportmechanismus. Pointer
+        // (Kontextpointer-Datei), Ausstandsnotiz und Werkbank bleiben davon
+        // unberuehrt - sie liegen weiter in `user/private` und sind ueber
+        // Moodle-Cores eigenen Provider (user/classes/privacy/provider.php)
+        // gedeckt, wie im Klassenkommentar oben begruendet. Hier wird nur der
+        // externe Ort selbst benannt, den eine Auskunft sonst verschweigen
+        // wuerde.
+        $collection->add_external_location_link('webdav_external_storage', [
+            'path' => 'privacy:metadata:webdav_external_storage:path',
+            'content' => 'privacy:metadata:webdav_external_storage:content',
+        ], 'privacy:metadata:webdav_external_storage');
 
         return $collection;
     }
