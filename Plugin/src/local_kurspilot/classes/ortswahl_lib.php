@@ -46,6 +46,9 @@ final class ortswahl_lib {
     /** @var string[] Die beiden Ziele, wie sie im Kontextpointer-Dokument heissen (Spec §2). */
     public const TARGETS = ['kontextbereich', 'materialbestand'];
 
+    /** @var int Wie viele Eintragsnamen die Uebergabe-Bestaetigung (Issue #497) hoechstens zeigt. */
+    private const ENTRY_PREVIEW_COUNT = 5;
+
     /**
      * Der Leerzustand/Bereitschaftszustand der Seite (Issue #494): fehlt die
      * Freischaltung, gilt sie vor "keine Instanz" - eine Lehrkraft ohne
@@ -68,9 +71,12 @@ final class ortswahl_lib {
 
     /**
      * Die eigenen WebDAV-Nutzerinstanzen der angemeldeten Person - Wurzeln
-     * des Dateifensters (Issue #494).
+     * des Dateifensters (Issue #494). Traegt seit Issue #497 zusaetzlich, ob
+     * eine Instanz ueberhaupt waehlbar ist: https+Basic ist Pflicht (Spec
+     * §2 Pruefung 5/§3) - eine Instanz ohne das erscheint mit Begruendung,
+     * statt einfach zu fehlen.
      *
-     * @return array<int, array{id: int, name: string}>
+     * @return array<int, array{id: int, name: string, selectable: bool, reason: string}>
      */
     public static function own_instances(): array {
         global $DB;
@@ -85,7 +91,15 @@ final class ortswahl_lib {
             ['contextid' => $contextid, 'type' => 'webdav']
         );
         return array_values(array_map(
-            static fn (\stdClass $r): array => ['id' => (int) $r->id, 'name' => (string) $r->name],
+            static function (\stdClass $r): array {
+                $selectable = webdav_instance::has_supported_auth((int) $r->id);
+                return [
+                    'id' => (int) $r->id,
+                    'name' => (string) $r->name,
+                    'selectable' => $selectable,
+                    'reason' => $selectable ? '' : get_string('ortswahlinstanceauthunsupported', 'local_kurspilot'),
+                ];
+            },
             $records
         ));
     }
@@ -119,14 +133,21 @@ final class ortswahl_lib {
     }
 
     /**
-     * Listet eine Ebene einer eigenen WebDAV-Nutzerinstanz - nur Ordner (das
-     * Dateifenster waehlt einen Ort, keine Datei). Ohne Netzzugriff wird nie
-     * gespeichert, protokolliert oder sonst irgendwohin gereicht (Spec §5:
-     * "nie an die KI").
+     * Listet eine Ebene einer eigenen WebDAV-Nutzerinstanz - nur Ordner
+     * navigierbar (das Dateifenster waehlt einen Ort, keine Datei). Ohne
+     * Netzzugriff wird nie gespeichert, protokolliert oder sonst irgendwohin
+     * gereicht (Spec §5: "nie an die KI").
+     *
+     * Traegt seit Issue #497 zusaetzlich die Sperren der Ortswahlseite: ob
+     * die gerade gebrowste Ebene ueberhaupt waehlbar ist (Wurzel, IServ
+     * ausserhalb `Files/`) und - fuer die Uebergabe-Bestaetigung eines
+     * gefuellten Ordners (Spec §5) - Gesamtzahl und erste Namen *aller*
+     * Eintraege dieser Ebene (Dateien und Ordner).
      *
      * @param int $instanceid
      * @param string $path Relativ zur Instanzwurzel, z.B. "" oder "Unterricht/Kontext".
-     * @return array{path: string, folders: array<int, array{name: string}>}
+     * @return array{path: string, folders: array<int, array{name: string}>, iserv: bool,
+     *         selectable: bool, reason: string, entrycount: int, entrynames: string[]}
      * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/
      *         webdavauthunsupported/webdavexternalerror/invalidcontextpath
      */
@@ -139,9 +160,10 @@ final class ortswahl_lib {
             $raw = $instance->client()->propfind($instance->directory_url($relative), 1);
         } catch (webdav_error $e) {
             if ($e->errorclass === webdav_error::NOT_FOUND) {
-                return ['path' => $relative, 'folders' => []];
+                $raw = [];
+            } else {
+                throw pointer_reader::webdav_exception($e);
             }
-            throw pointer_reader::webdav_exception($e);
         }
 
         $folders = array_values(array_map(
@@ -150,7 +172,62 @@ final class ortswahl_lib {
         ));
         usort($folders, static fn (array $a, array $b): int => strnatcasecmp($a['name'], $b['name']));
 
-        return ['path' => $relative, 'folders' => $folders];
+        $iserv = self::iserv_root($segments, $instance, $raw);
+        [$selectable, $reason] = self::selectability($segments, $iserv);
+
+        $names = array_values(array_map(static fn (array $entry): string => $entry['name'], $raw));
+        usort($names, 'strnatcasecmp');
+
+        return [
+            'path' => $relative,
+            'folders' => $folders,
+            'iserv' => $iserv,
+            'selectable' => $selectable,
+            'reason' => $reason,
+            'entrycount' => count($raw),
+            'entrynames' => array_slice($names, 0, self::ENTRY_PREVIEW_COUNT),
+        ];
+    }
+
+    /**
+     * IServ-Erkennung fuer eine gebrowste Ebene (Issue #497, Spec #486 §5):
+     * an der Wurzel selbst steht die Antwort schon in `$rootlisting`, tiefer
+     * braucht es ein zusaetzliches PROPFIND auf die Wurzel - ein Netzfehler
+     * dabei gilt als "nicht erkannt" (die eigentliche Auflistung ist ja
+     * bereits gegluecht, das Browsen soll daran nicht scheitern).
+     *
+     * @param string[] $segments
+     * @param \local_kurspilot\webdav\resolved_webdav_instance $instance
+     * @param array $rootlisting Nur gueltig, wenn `$segments` leer ist.
+     * @return bool
+     */
+    private static function iserv_root(array $segments, \local_kurspilot\webdav\resolved_webdav_instance $instance, array $rootlisting): bool {
+        if (empty($segments)) {
+            return webdav_instance::is_iserv_listing($rootlisting);
+        }
+        try {
+            return webdav_instance::is_iserv_listing($instance->client()->propfind($instance->directory_url(''), 1));
+        } catch (webdav_error $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Waehlbarkeit einer Ebene (Issue #497, Spec #486 §5): weder die Wurzel
+     * einer Instanz noch - bei IServ - etwas ausserhalb von `Files/`.
+     *
+     * @param string[] $segments
+     * @param bool $iserv
+     * @return array{0: bool, 1: string} [waehlbar, Begruendung (leer wenn waehlbar)]
+     */
+    private static function selectability(array $segments, bool $iserv): array {
+        if (empty($segments)) {
+            return [false, get_string('ortswahlrootnotselectable', 'local_kurspilot')];
+        }
+        if ($iserv && $segments[0] !== webdav_instance::ISERV_FILES_AREA) {
+            return [false, get_string('ortswahliservfilesonly', 'local_kurspilot')];
+        }
+        return [true, ''];
     }
 
     /**
@@ -202,6 +279,12 @@ final class ortswahl_lib {
             $wanted[$target] = self::build_target($target, $selection[$target] ?? ['type' => 'moodle']);
             $current[$target] = self::current_pointer_value($target);
         }
+
+        // Verschachtelung (Issue #497, Spec §2 Pruefung 7): vor jedem
+        // Schreibzugriff geprueft, nicht erst bei der naechsten Auflosung -
+        // sonst liesse sich eine ungueltige Kombination erst gar nicht
+        // abschliessen, ohne dass die Seite das sofort sagt.
+        self::assert_no_overlap($wanted['kontextbereich'], $wanted['materialbestand']);
 
         // Nur ein Ziel, das sich wirklich aendert, braucht einen neuen
         // Ordner - ein unveraenderter Ort existiert per Definition schon
@@ -302,14 +385,60 @@ final class ortswahl_lib {
         // Wirft bei fremder/fehlender/nicht freigeschalteter Instanz - die
         // Instanz-ID kommt aus einer Formulareingabe, nie ungeprueft nutzen.
         webdav_instance::resolve_owned($instanceid);
-        $path = implode('/', self::validate_segments((string) ($selection['path'] ?? '')));
+        $segments = self::validate_segments((string) ($selection['path'] ?? ''));
+
+        // Wurzel nie waehlbar (Issue #497, Spec §5).
+        if (empty($segments)) {
+            throw new \moodle_exception('ortswahlrootnotselectable', 'local_kurspilot');
+        }
+
+        // IServ-Erkennung als Ja/Nein-Pruefung, frisch bei jeder Wahl (Issue
+        // #497, Spec §5/§2 Pruefung 8) - das Ergebnis wandert gleich mit ins
+        // Pruefmerkmal, damit spaetere Auflosungen ohne Netz pruefen koennen.
+        try {
+            $iserv = webdav_instance::detect_iserv_root($instanceid);
+        } catch (webdav_error $e) {
+            throw pointer_reader::webdav_exception($e);
+        }
+        if ($iserv && $segments[0] !== webdav_instance::ISERV_FILES_AREA) {
+            throw new \moodle_exception('ortswahliservfilesonly', 'local_kurspilot');
+        }
 
         return [
             'ort' => pointer_location::EXTERN,
             'instanzid' => $instanceid,
-            'pfad' => $path,
-            'pruefmerkmal' => webdav_instance::fingerprint_of($instanceid),
+            'pfad' => implode('/', $segments),
+            'pruefmerkmal' => webdav_instance::fingerprint_of($instanceid) + ['iserv' => $iserv],
         ];
+    }
+
+    /**
+     * Verschachtelung (Issue #497, Spec §2 Pruefung 7, wiederverwendet der
+     * Vergleichsschluessel aus Issue #495): der Materialbestand darf nicht im
+     * Kontextbereich oder im selben Ordner liegen - gilt fuer die neu
+     * gewaehlten Ziele, bevor irgendetwas angelegt oder gespeichert wird.
+     *
+     * @param array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array} $kontextbereich
+     * @param array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array} $materialbestand
+     * @throws \moodle_exception materialbestandimkontext
+     */
+    private static function assert_no_overlap(array $kontextbereich, array $materialbestand): void {
+        $kontextkey = self::to_pointer_location($kontextbereich)->comparison_key();
+        $materialkey = self::to_pointer_location($materialbestand)->comparison_key();
+        if (str_starts_with($materialkey, $kontextkey)) {
+            throw new \moodle_exception('materialbestandimkontext', 'local_kurspilot');
+        }
+    }
+
+    /**
+     * @param array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array} $value
+     * @return pointer_location
+     */
+    private static function to_pointer_location(array $value): pointer_location {
+        if ($value['ort'] === pointer_location::MOODLE) {
+            return pointer_location::moodle('/' . trim((string) $value['pfad'], '/') . '/');
+        }
+        return pointer_location::extern((int) $value['instanzid'], (string) $value['pfad'], (array) ($value['pruefmerkmal'] ?? []));
     }
 
     /**

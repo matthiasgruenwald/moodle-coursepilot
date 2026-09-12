@@ -86,6 +86,7 @@ $string['webdavinstanceforeign'] = 'Der Kontextpointer verweist auf eine WebDAV-
 $string['webdavnotenabled'] = 'Ihre Schule hat externe Speicher (WebDAV) für Sie noch nicht freigeschaltet. Bitte auf der Ortswahlseite ({$a}) nachsehen.';
 $string['webdavauthunsupported'] = 'Diese WebDAV-Verbindung nutzt nicht mehr https mit Basic-Anmeldung — das unterstützt Kurspilot nicht. Bitte auf der Ortswahlseite ({$a}) korrigieren.';
 $string['webdavfingerprintchanged'] = 'Server, Basispfad oder Konto dieser WebDAV-Verbindung haben sich geändert. Bitte auf der Ortswahlseite ({$a}) neu wählen.';
+$string['webdaviservfilesonly'] = 'Bei IServ ist nur unterhalb von „Files/“ wählbar. Bitte auf der Ortswahlseite ({$a}) einen Ordner dort wählen.';
 $string['webdavexternalerror'] = 'Der externe Speicher konnte nicht gelesen werden ({$a->errorclass}). Bitte später erneut versuchen oder auf der Ortswahlseite ({$a->page}) nachsehen.';
 $string['webdavstep1instruction'] = 'Die Administration muss den Repository-Typ "WebDAV" in Website-Administration ▸ Plugins ▸ Repositories aktivieren.';
 $string['webdavstep2instruction'] = 'Die Administration muss beim Repository-Typ "WebDAV" die Option "Nutzerinstanzen erlauben" einschalten.';
@@ -142,6 +143,17 @@ $string['ortswahlnotenabledtext'] = 'Ihre Schule hat externe Speicher noch nicht
 $string['ortswahlmissingstepsheading'] = 'Text für die Administration';
 $string['ortswahlmissingstepsintro'] = 'Kopieren Sie den Text und schicken Sie ihn an Ihre Moodle-Administration:';
 $string['ortswahlcoresupportlink'] = 'Support-Kontakt Ihrer Moodle-Instanz';
+
+// Sperren und Uebergabe (Issue #497, Spec #486 §5).
+$string['ortswahlrootnotselectable'] = 'Die Wurzel dieser Verbindung ist nicht wählbar — bitte einen Ordner darunter wählen.';
+$string['ortswahliservfilesonly'] = 'Bei IServ ist nur unterhalb von „Files/“ wählbar.';
+$string['ortswahlinstanceauthunsupported'] = 'Diese Verbindung nutzt kein https mit Basic-Anmeldung und ist deshalb nicht wählbar.';
+$string['ortswahloverlaplocked'] = 'Der Materialbestand liegt im Kontextbereich oder im selben Ordner — bitte einen anderen Ordner wählen.';
+$string['ortswahlconfirmheading'] = 'Ordner ist nicht leer';
+$string['ortswahlconfirmcount'] = '{$a} Einträge liegen hier bereits, unter anderem:';
+$string['ortswahlconfirmtext'] = 'Kurspilot legt hier Markdown-Dateien an und kann gleichnamige Markdown-Dateien überschreiben. Löschen oder verschieben kann es nichts.';
+$string['ortswahlconfirmbutton'] = 'Das ist mein Kurspilot-Ordner';
+$string['ortswahlconfirmcancel'] = 'Abbrechen';
 $string['settingwebdavhint'] = 'Hinweis der Schule (Ortswahl)';
 $string['settingwebdavhint_desc'] = 'Optionaler Freitext, der Lehrkräften ohne eigene WebDAV-Verbindung auf der Ortswahlseite zusätzlich zu den drei Einrichtungsschritten angezeigt wird — z. B. eine Empfehlung, welchen Cloud-Dienst die Schule stellt.';
 $string['listskillsortswahlhint'] = 'Die Lehrkraft kann Kontextbereich und Materialbestand statt in Moodle in einem eigenen WebDAV-Speicher ablegen — Ortswahl unter {$a}.';

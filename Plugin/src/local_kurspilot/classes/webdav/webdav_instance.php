@@ -52,6 +52,16 @@ final class webdav_instance {
     ];
 
     /**
+     * @var string[] Die IServ-Bereichsnamen, sortiert (Issue #497, Spec #486
+     *      §5/§2 Pruefung 8): besteht die Wurzelebene einer Instanz genau aus
+     *      diesen fuenf Namen, gilt sie als IServ erkannt.
+     */
+    /** @var string Der einzige IServ-Bereich, unter dem bei IServ gewaehlt werden darf (Issue #497, Spec §5). */
+    public const ISERV_FILES_AREA = 'Files';
+
+    private const ISERV_AREAS = [self::ISERV_FILES_AREA, 'Groups', 'Print', 'Temp', 'Windows'];
+
+    /**
      * @var webdav_transport|null Test-Seam (Spec #486 Testing Decisions):
      *      ersetzt {@see curl_transport} durch den In-Memory-Fake. Nur ueber
      *      {@see use_test_transport()} setzbar, die ausserhalb von PHPUnit
@@ -131,7 +141,7 @@ final class webdav_instance {
 
         $options = self::fresh_options($instanceid);
 
-        if ((int) ($options['webdav_type'] ?? 0) !== 1 || ($options['webdav_auth'] ?? '') !== 'basic') {
+        if (!self::auth_supported($options)) {
             throw new \moodle_exception('webdavauthunsupported', 'local_kurspilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
         }
 
@@ -152,6 +162,62 @@ final class webdav_instance {
      */
     public static function fingerprint_of(int $instanceid): array {
         return self::fingerprint(self::fresh_options($instanceid));
+    }
+
+    /**
+     * Ob eine Instanz https+Basic erfuellt, ohne bei Verstoss zu werfen
+     * (Issue #497) - anders als {@see resolve_owned()}, das genau deshalb
+     * hier nicht wiederverwendet wird: die Ortswahlseite muss eine nicht
+     * waehlbare Instanz weiterhin *anzeigen* (mit Begruendung), statt beim
+     * Auflisten aller eigenen Instanzen abzubrechen.
+     *
+     * @param int $instanceid
+     * @return bool
+     */
+    public static function has_supported_auth(int $instanceid): bool {
+        return self::auth_supported(self::fresh_options($instanceid));
+    }
+
+    /**
+     * Das eine Praedikat "https+Basic", geteilt von {@see resolve_owned()}
+     * (wirft) und {@see has_supported_auth()} (wirft nicht) - Issue #497
+     * Standards-Review: beide kannten die Bedingung zuvor je einmal, invertiert.
+     *
+     * @param array<string, string|null> $options
+     * @return bool
+     */
+    private static function auth_supported(array $options): bool {
+        return (int) ($options['webdav_type'] ?? 0) === 1 && ($options['webdav_auth'] ?? '') === 'basic';
+    }
+
+    /**
+     * IServ-Erkennung als Ja/Nein-Pruefung (Issue #497, Spec #486 §5): die
+     * Wurzelebene einer Instanz besteht genau aus den fuenf IServ-Bereichen.
+     * Braucht Netz (ein PROPFIND auf die Instanzwurzel) - das Ergebnis
+     * gehoert danach ins Pruefmerkmal des Pointers, damit die spaetere
+     * Auflosung ohne Netz prueft (§2, Pruefung 8).
+     *
+     * @param int $instanceid
+     * @return bool
+     * @throws \moodle_exception wie {@see resolve_owned()}.
+     * @throws \local_kurspilot\webdav\webdav_error bei einem Netzfehler - vom Aufrufer zu behandeln.
+     */
+    public static function detect_iserv_root(int $instanceid): bool {
+        $resolved = self::resolve_owned($instanceid);
+        return self::is_iserv_listing($resolved->client()->propfind($resolved->directory_url(''), 1));
+    }
+
+    /**
+     * @param array<int, array{name: string, type: string}> $entries Wurzelebene, {@see webdav_client::propfind()}.
+     * @return bool
+     */
+    public static function is_iserv_listing(array $entries): bool {
+        $names = array_values(array_map(
+            static fn (array $entry): string => $entry['name'],
+            array_filter($entries, static fn (array $entry): bool => $entry['type'] === 'folder')
+        ));
+        sort($names);
+        return $names === self::ISERV_AREAS;
     }
 
     /**

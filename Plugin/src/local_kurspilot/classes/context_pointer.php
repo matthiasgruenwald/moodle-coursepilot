@@ -78,6 +78,19 @@ final class context_pointer {
             throw new \moodle_exception('materialbestandimkontext', 'local_kurspilot');
         }
 
+        // Aufloesungspruefung 8 (Issue #497, Spec #486 §2/§5): bei einer als
+        // IServ erkannten Instanz (Pruefmerkmal, ohne Netz) ist nur unterhalb
+        // von "Files/" erreichbar - fuer beide Ziele, unabhaengig davon,
+        // welches hier gerade angefragt wird (derselbe Grund wie bei Pruefung 7).
+        foreach ($pair as $location) {
+            if ($location->kind === pointer_location::EXTERN && ($location->fingerprint['iserv'] ?? false) === true) {
+                $first = strtok((string) $location->relativepath, '/');
+                if ($first !== \local_kurspilot\webdav\webdav_instance::ISERV_FILES_AREA) {
+                    throw new \moodle_exception('webdaviservfilesonly', 'local_kurspilot', '', \local_kurspilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE);
+                }
+            }
+        }
+
         $field = self::TARGET_FIELD[$pointerkey] ?? $pointerkey;
         return $pair[$field];
     }
@@ -179,6 +192,9 @@ final class context_pointer {
             'server' => $fingerprint['server'],
             'basispfad' => $fingerprint['basispfad'],
             'konto' => $fingerprint['konto'],
+            // IServ-Erkennung (Issue #497, Spec #486 §2 Pruefung 8) - optional,
+            // ein Pointer vor #497 kennt das Feld noch nicht und gilt dann als "nein".
+            'iserv' => (bool) ($fingerprint['iserv'] ?? false),
         ]);
     }
 

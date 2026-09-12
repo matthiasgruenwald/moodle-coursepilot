@@ -24,7 +24,12 @@
         // Segmente, die im Browser als "angelegt" markiert wurden, aber auf
         // dem Server noch nicht existieren - je Instanz eine Menge von
         // Pfaden, damit sie ohne Netzzugriff sofort betretbar sind.
-        pendingFolders: {}
+        pendingFolders: {},
+        // Letztes browse()-Ergebnis der aktuellen Ebene (Issue #497): traegt
+        // Waehlbarkeit/Begruendung und Eintragszahl fuer die Uebergabe-
+        // Bestaetigung eines gefuellten Ordners. Ein im Fenster angelegter
+        // Ordner braucht keine Rueckfrage (Spec §5) - dafuer gilt er als leer.
+        lastResult: null
     };
 
     var selections = {
@@ -73,6 +78,33 @@
         return sel.display || sel.path;
     }
 
+    // Naeherung des Vergleichsschluessels (Issue #495, #497): fuer zwei
+    // *live* auf dieser Seite gewaehlte Ziele reicht Instanz-Gleichheit
+    // (bzw. beide "in Moodle") plus Pfad-Praefix - beide teilen sich
+    // ohnehin dasselbe Konto/denselben Server. Die verbindliche Pruefung mit
+    // dem echten Vergleichsschluessel laeuft serverseitig beim Abschliessen
+    // (ortswahl_lib::apply()); dies ist nur der fruehe UI-Hinweis am Knopf.
+    function normalisedPath(path) {
+        var trimmed = (path || '').replace(/^\/+|\/+$/g, '');
+        return trimmed === '' ? '/' : '/' + trimmed + '/';
+    }
+
+    function overlapsSameRoot(kontext, material) {
+        if (kontext.type === 'moodle' && material.type === 'moodle') {
+            return true;
+        }
+        return kontext.type === 'extern' && material.type === 'extern' && String(kontext.instanceid) === String(material.instanceid);
+    }
+
+    function computeOverlapLock() {
+        var kontext = selections.kontextbereich;
+        var material = selections.materialbestand;
+        if (!kontext.type || !material.type || !overlapsSameRoot(kontext, material)) {
+            return false;
+        }
+        return normalisedPath(material.path).indexOf(normalisedPath(kontext.path)) === 0;
+    }
+
     function renderProgress() {
         var container = el('kurspilot-ortswahl-progress');
         container.innerHTML = '';
@@ -86,7 +118,13 @@
                 : config.strings.progressopen.replace('%s', targetLabel(target)));
             container.appendChild(badge);
         });
-        el('kurspilot-ortswahl-finish').disabled = !(selections.kontextbereich.type && selections.materialbestand.type);
+
+        var overlapLocked = computeOverlapLock();
+        var overlapEl = el('kurspilot-ortswahl-overlaplock');
+        overlapEl.hidden = !overlapLocked;
+        overlapEl.textContent = overlapLocked ? config.strings.overlaplocked : '';
+
+        el('kurspilot-ortswahl-finish').disabled = !(selections.kontextbereich.type && selections.materialbestand.type) || overlapLocked;
     }
 
     function applySelection(target, selection) {
@@ -164,8 +202,14 @@
         config.instances.forEach(function (instance) {
             var item = document.createElement('button');
             item.type = 'button';
+            var selectable = instance.selectable !== false;
             item.className = 'list-group-item list-group-item-action' + (state.instanceid === instance.id ? ' active' : '');
             item.textContent = instance.name;
+            if (!selectable) {
+                item.disabled = true;
+                item.title = instance.reason || '';
+                item.className += ' text-muted';
+            }
             item.addEventListener('click', function () {
                 state.instanceid = instance.id;
                 state.path = '';
@@ -230,6 +274,9 @@
                 if (isPending(state.instanceid, state.path)) {
                     renderBreadcrumb();
                     renderFolders([]);
+                    // Im Fenster angelegter Ordner: immer leer und waehlbar,
+                    // keine Uebergabe-Rueckfrage noetig (Spec §5).
+                    applyBrowseResult({ path: state.path, folders: [], selectable: true, reason: '', entrycount: 0, entrynames: [] });
                 } else {
                     browse();
                 }
@@ -282,6 +329,18 @@
         container.appendChild(box);
     }
 
+    // --- Sperren einer Ebene (Issue #497, Spec §5): Wurzel, IServ ---------
+
+    function applyBrowseResult(result) {
+        state.lastResult = result;
+        var locked = result.selectable === false;
+        var reasonEl = el('kurspilot-ortswahl-modal-reason');
+        reasonEl.hidden = !locked;
+        reasonEl.textContent = locked ? (result.reason || '') : '';
+        el('kurspilot-ortswahl-confirmfolder').disabled = locked;
+        el('kurspilot-ortswahl-createfolder').disabled = locked;
+    }
+
     function browse() {
         if (state.instanceid === null) {
             return;
@@ -321,6 +380,7 @@
                     return;
                 }
                 renderFolders(result.folders || []);
+                applyBrowseResult(result);
             })
             .catch(function () {
                 clearTimeout(timer);
@@ -349,12 +409,22 @@
         renderFolders([]);
     });
 
-    // --- Ordner waehlen ----------------------------------------------------
+    // --- Ordner waehlen, mit Uebergabe-Bestaetigung eines gefuellten Ordners
+    // (Issue #497, Spec §5: nur der Kontextbereich fragt nach; ein leerer
+    // oder im Fenster angelegter Ordner braucht keine Rueckfrage) ----------
 
-    el('kurspilot-ortswahl-confirmfolder').addEventListener('click', function () {
-        if (state.target === null || state.instanceid === null) {
-            return;
+    var confirmModalEl = el('kurspilot-ortswahl-confirm-modal');
+    var bsConfirmModal = (window.bootstrap && window.bootstrap.Modal) ? new window.bootstrap.Modal(confirmModalEl) : null;
+
+    function closeConfirmModal() {
+        if (bsConfirmModal) {
+            bsConfirmModal.hide();
+        } else {
+            confirmModalEl.style.display = 'none';
         }
+    }
+
+    function finalizeFolderSelection() {
         var instance = config.instances.filter(function (i) {
             return i.id === state.instanceid;
         })[0];
@@ -366,6 +436,31 @@
             display: display
         });
         closeModal();
+    }
+
+    el('kurspilot-ortswahl-confirmfolder').addEventListener('click', function () {
+        if (state.target === null || state.instanceid === null) {
+            return;
+        }
+        var result = state.lastResult;
+        var needsHandover = state.target === 'kontextbereich' && result && result.entrycount > 0;
+        if (!needsHandover) {
+            finalizeFolderSelection();
+            return;
+        }
+        var names = (result.entrynames || []).join(', ');
+        el('kurspilot-ortswahl-confirm-count').textContent =
+            config.strings.confirmcount.replace('%s', result.entrycount) + (names !== '' ? ' ' + names + ' …' : '');
+        if (bsConfirmModal) {
+            bsConfirmModal.show();
+        } else {
+            confirmModalEl.style.display = 'block';
+        }
+    });
+
+    el('kurspilot-ortswahl-confirmfolder-ack').addEventListener('click', function () {
+        closeConfirmModal();
+        finalizeFolderSelection();
     });
 
     // --- Abschliessen: Client-seitige Vollstaendigkeitspruefung ----------

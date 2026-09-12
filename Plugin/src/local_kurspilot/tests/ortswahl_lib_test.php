@@ -274,21 +274,200 @@ final class ortswahl_lib_test extends \advanced_testcase {
         ]);
     }
 
-    public function test_apply_root_of_instance_is_a_valid_selection(): void {
+    public function test_apply_rejects_root_of_instance_as_selection(): void {
+        // Issue #497, Spec #486 §5: "Die Wurzel jeder Instanz ist nicht
+        // waehlbar" - revidiert das fruehere Verhalten (Issue #494 liess die
+        // Wurzel noch zu, die Sperre kam erst in diesem Ticket).
         $this->resetAfterTest();
         [$user, $fake] = $this->prepare_instance();
         $instanceid = $this->lastinstanceid;
 
         try {
-            $changed = ortswahl_lib::apply([
+            $this->expectException(\moodle_exception::class);
+            ortswahl_lib::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => ''],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+        } finally {
+            $this->assertNull(storage_anchor::read_raw_pointer());
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    // --- Issue #497: Sperren, IServ-Erkennung, Uebergabe eines gefuellten Ordners ---
+
+    public function test_browse_root_is_not_selectable(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+
+        try {
+            $result = ortswahl_lib::browse($this->lastinstanceid, '');
+            $this->assertFalse($result['selectable']);
+            $this->assertNotSame('', $result['reason']);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    public function test_browse_reports_iserv_no_in_nextcloud_mode(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Unterricht');
+
+        try {
+            $root = ortswahl_lib::browse($this->lastinstanceid, '');
+            $this->assertFalse($root['iserv']);
+
+            $level = ortswahl_lib::browse($this->lastinstanceid, 'Unterricht');
+            $this->assertFalse($level['iserv']);
+            $this->assertTrue($level['selectable']);
+            $this->assertSame('', $level['reason']);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    public function test_browse_reports_iserv_yes_and_locks_everything_outside_files(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $fake->as_iserv_root('/' . $this->fixturebasispfad);
+        $fake->without_etags();
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Files');
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Files/Unterricht');
+
+        try {
+            $root = ortswahl_lib::browse($this->lastinstanceid, '');
+            $this->assertTrue($root['iserv']);
+            $this->assertFalse($root['selectable'], 'Die Wurzel bleibt zusaetzlich immer gesperrt.');
+            $this->assertSame(
+                ['Files', 'Groups', 'Print', 'Temp', 'Windows'],
+                array_map(static fn (array $f): string => $f['name'], $root['folders'])
+            );
+
+            $groups = ortswahl_lib::browse($this->lastinstanceid, 'Groups');
+            $this->assertTrue($groups['iserv']);
+            $this->assertFalse($groups['selectable'], 'Ausserhalb von Files/ ist bei IServ nichts waehlbar.');
+            $this->assertNotSame('', $groups['reason']);
+
+            $files = ortswahl_lib::browse($this->lastinstanceid, 'Files');
+            $this->assertTrue($files['iserv']);
+            $this->assertTrue($files['selectable'], 'Unterhalb von Files/ bleibt bei IServ waehlbar.');
+
+            $nested = ortswahl_lib::browse($this->lastinstanceid, 'Files/Unterricht');
+            $this->assertTrue($nested['selectable']);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    public function test_browse_reports_entrycount_and_first_names_for_confirmation(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Unterricht');
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Unterricht/b-ordner');
+        $fake->seed_file('/' . $this->fixturebasispfad . '/Unterricht/a-datei.md', 'Inhalt');
+
+        try {
+            $result = ortswahl_lib::browse($this->lastinstanceid, 'Unterricht');
+            $this->assertSame(2, $result['entrycount']);
+            $this->assertSame(['a-datei.md', 'b-ordner'], $result['entrynames']);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    public function test_browse_of_empty_folder_has_no_entries_to_confirm(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Leer');
+
+        try {
+            $result = ortswahl_lib::browse($this->lastinstanceid, 'Leer');
+            $this->assertSame(0, $result['entrycount']);
+            $this->assertSame([], $result['entrynames']);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    public function test_own_instances_marks_instance_without_https_basic_as_not_selectable(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $this->create_webdav_instance($user, ['webdav_auth' => 'digest']);
+
+        $instances = ortswahl_lib::own_instances();
+
+        $this->assertCount(1, $instances);
+        $this->assertFalse($instances[0]['selectable']);
+        $this->assertNotSame('', $instances[0]['reason']);
+    }
+
+    public function test_own_instances_marks_valid_instance_as_selectable(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $this->create_webdav_instance($user);
+
+        $instances = ortswahl_lib::own_instances();
+
+        $this->assertTrue($instances[0]['selectable']);
+        $this->assertSame('', $instances[0]['reason']);
+    }
+
+    public function test_apply_rejects_iserv_path_outside_files(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $fake->as_iserv_root('/' . $this->fixturebasispfad);
+        $instanceid = $this->lastinstanceid;
+
+        try {
+            $this->expectException(\moodle_exception::class);
+            ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Groups'],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+        } finally {
+            $this->assertNull(storage_anchor::read_raw_pointer());
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    public function test_apply_accepts_iserv_path_under_files_and_stores_iserv_flag(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $fake->as_iserv_root('/' . $this->fixturebasispfad);
+        $instanceid = $this->lastinstanceid;
+
+        try {
+            $changed = ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Files/Unterricht'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
             $this->assertSame(['kontextbereich'], $changed);
-            $mkcols = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'MKCOL'));
-            $this->assertCount(0, $mkcols, 'Die Instanzwurzel selbst braucht kein MKCOL.');
+            $document = storage_anchor::read_raw_pointer();
+            $this->assertTrue($document['kontextbereich']['pruefmerkmal']['iserv']);
         } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    public function test_apply_rejects_materialbestand_inside_kontextbereich(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $instanceid = $this->lastinstanceid;
+
+        try {
+            $this->expectException(\moodle_exception::class);
+            ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Unterricht'],
+                'materialbestand' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Unterricht/Material'],
+            ]);
+        } finally {
+            $this->assertNull(storage_anchor::read_raw_pointer());
             webdav_instance::use_test_transport(null);
         }
     }

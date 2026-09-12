@@ -85,6 +85,7 @@ $string['webdavinstanceforeign'] = 'The context pointer refers to a WebDAV conne
 $string['webdavnotenabled'] = 'Your school has not yet enabled external storage (WebDAV) for you. Please check the location page ({$a}).';
 $string['webdavauthunsupported'] = 'This WebDAV connection no longer uses https with basic authentication — Kurspilot does not support that. Please fix it on the location page ({$a}).';
 $string['webdavfingerprintchanged'] = 'The server, base path, or account of this WebDAV connection has changed. Please choose again on the location page ({$a}).';
+$string['webdaviservfilesonly'] = 'On IServ, only locations below "Files/" are reachable. Please choose a folder there on the location page ({$a}).';
 $string['webdavexternalerror'] = 'The external storage could not be read ({$a->errorclass}). Please try again later, or check the location page ({$a->page}).';
 $string['webdavstep1instruction'] = 'The administration must enable the "WebDAV" repository type under Site administration ▸ Plugins ▸ Repositories.';
 $string['webdavstep2instruction'] = 'The administration must turn on "Allow user instances" for the "WebDAV" repository type.';
@@ -141,6 +142,17 @@ $string['ortswahlnotenabledtext'] = 'Your school has not yet enabled external st
 $string['ortswahlmissingstepsheading'] = 'Text for the administration';
 $string['ortswahlmissingstepsintro'] = 'Copy this text and send it to your Moodle administration:';
 $string['ortswahlcoresupportlink'] = 'Support contact of your Moodle site';
+
+// Locks and handover (issue #497, spec #486 §5).
+$string['ortswahlrootnotselectable'] = 'The root of this connection is not selectable — please choose a folder below it.';
+$string['ortswahliservfilesonly'] = 'On IServ, only locations below "Files/" are selectable.';
+$string['ortswahlinstanceauthunsupported'] = 'This connection does not use https with basic authentication and is therefore not selectable.';
+$string['ortswahloverlaplocked'] = 'The material stock lies inside the context area or in the same folder — please choose a different folder.';
+$string['ortswahlconfirmheading'] = 'Folder is not empty';
+$string['ortswahlconfirmcount'] = '{$a} entries already exist here, including:';
+$string['ortswahlconfirmtext'] = 'Kurspilot creates markdown files here and can overwrite markdown files with the same name. It cannot delete or move anything.';
+$string['ortswahlconfirmbutton'] = 'This is my Kurspilot folder';
+$string['ortswahlconfirmcancel'] = 'Cancel';
 $string['settingwebdavhint'] = 'School hint (location page)';
 $string['settingwebdavhint_desc'] = 'Optional free text shown to teachers without their own WebDAV connection on the location page, in addition to the three setup steps — e.g. a recommendation which cloud service the school provides.';
 $string['listskillsortswahlhint'] = 'The teacher can store the context area and material stock in their own WebDAV storage instead of Moodle — location page at {$a}.';

@@ -76,7 +76,7 @@ final class context_pointer_test extends \advanced_testcase {
         $this->assertSame(3, $location->instanceid);
         $this->assertSame('Unterricht/Kontext', $location->relativepath);
         $this->assertSame(
-            ['server' => 'cloud.example.test', 'basispfad' => 'Kurspilot', 'konto' => 'lehrerin'],
+            ['server' => 'cloud.example.test', 'basispfad' => 'Kurspilot', 'konto' => 'lehrerin', 'iserv' => false],
             $location->fingerprint
         );
     }
@@ -212,6 +212,69 @@ final class context_pointer_test extends \advanced_testcase {
         $location = context_pointer::resolve_target($decoded, 'materialordner');
 
         $this->assertSame(pointer_location::EXTERN, $location->kind);
+    }
+
+    /**
+     * Aufloesungspruefung 8 (Issue #497, Spec #486 §2/§5): bei einer als
+     * IServ erkannten Instanz (Pruefmerkmal "iserv", ohne Netz) ist nur
+     * unterhalb von "Files/" erreichbar.
+     */
+    public function test_iserv_path_outside_files_is_rejected_without_network(): void {
+        $decoded = [
+            'kontextbereich' => [
+                'ort' => 'extern',
+                'instanzid' => 3,
+                'pfad' => 'Groups/Klasse7a',
+                'pruefmerkmal' => ['server' => 's', 'basispfad' => 'b', 'konto' => 'k', 'iserv' => true],
+            ],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'mein-material'],
+        ];
+
+        try {
+            context_pointer::resolve_target($decoded, 'kontextbereich');
+            $this->fail('webdaviservfilesonly haette geworfen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('webdaviservfilesonly', $e->errorcode);
+        }
+    }
+
+    /**
+     * Unterhalb von "Files/" bleibt eine als IServ erkannte Instanz erreichbar.
+     */
+    public function test_iserv_path_under_files_is_allowed(): void {
+        $decoded = [
+            'kontextbereich' => [
+                'ort' => 'extern',
+                'instanzid' => 3,
+                'pfad' => 'Files/Unterricht/Kontext',
+                'pruefmerkmal' => ['server' => 's', 'basispfad' => 'b', 'konto' => 'k', 'iserv' => true],
+            ],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'mein-material'],
+        ];
+
+        $location = context_pointer::resolve_target($decoded, 'kontextbereich');
+
+        $this->assertSame('Files/Unterricht/Kontext', $location->relativepath);
+    }
+
+    /**
+     * Fehlt das Feld "iserv" im Pruefmerkmal (Pointer vor Issue #497), gilt
+     * das als "nein" - kein stiller Fehlschlag fuer Altbestand.
+     */
+    public function test_missing_iserv_field_defaults_to_no_restriction(): void {
+        $decoded = [
+            'kontextbereich' => [
+                'ort' => 'extern',
+                'instanzid' => 3,
+                'pfad' => 'Beliebig',
+                'pruefmerkmal' => ['server' => 's', 'basispfad' => 'b', 'konto' => 'k'],
+            ],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'mein-material'],
+        ];
+
+        $location = context_pointer::resolve_target($decoded, 'kontextbereich');
+
+        $this->assertSame('Beliebig', $location->relativepath);
     }
 
     public function test_v2_pointer_extern_target_rejects_zero_instance_id(): void {

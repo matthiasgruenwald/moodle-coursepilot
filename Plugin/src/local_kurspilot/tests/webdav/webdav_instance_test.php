@@ -17,6 +17,7 @@
 namespace local_kurspilot\webdav;
 
 use local_kurspilot\pointer_location;
+use local_kurspilot\tests\webdav\fake_webdav_transport;
 use local_kurspilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -261,6 +262,119 @@ final class webdav_instance_test extends \advanced_testcase {
             } catch (\moodle_exception $e) {
                 $this->assertStringNotContainsString($password, $e->getMessage());
             }
+        }
+    }
+
+    // --- Issue #497: has_supported_auth(), IServ-Erkennung ---
+
+    public function test_has_supported_auth_is_true_for_https_basic_instance(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+
+        $this->assertTrue(webdav_instance::has_supported_auth($instanceid));
+    }
+
+    public function test_has_supported_auth_is_false_without_https(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user, ['webdav_type' => 0]);
+
+        $this->assertFalse(webdav_instance::has_supported_auth($instanceid));
+    }
+
+    public function test_has_supported_auth_is_false_for_digest(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user, ['webdav_auth' => 'digest']);
+
+        $this->assertFalse(webdav_instance::has_supported_auth($instanceid));
+    }
+
+    public function test_has_supported_auth_is_false_for_none(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user, ['webdav_auth' => 'none']);
+
+        $this->assertFalse(webdav_instance::has_supported_auth($instanceid));
+    }
+
+    public function test_is_iserv_listing_is_true_for_exactly_the_five_areas(): void {
+        $entries = [
+            ['name' => 'Windows', 'type' => 'folder'],
+            ['name' => 'Files', 'type' => 'folder'],
+            ['name' => 'Groups', 'type' => 'folder'],
+            ['name' => 'Print', 'type' => 'folder'],
+            ['name' => 'Temp', 'type' => 'folder'],
+        ];
+
+        $this->assertTrue(webdav_instance::is_iserv_listing($entries));
+    }
+
+    public function test_is_iserv_listing_is_false_for_a_regular_nextcloud_root(): void {
+        $entries = [
+            ['name' => 'Dokumente', 'type' => 'folder'],
+            ['name' => 'Fotos', 'type' => 'folder'],
+        ];
+
+        $this->assertFalse(webdav_instance::is_iserv_listing($entries));
+    }
+
+    public function test_is_iserv_listing_is_false_with_an_extra_folder(): void {
+        $entries = [
+            ['name' => 'Files', 'type' => 'folder'],
+            ['name' => 'Groups', 'type' => 'folder'],
+            ['name' => 'Print', 'type' => 'folder'],
+            ['name' => 'Temp', 'type' => 'folder'],
+            ['name' => 'Windows', 'type' => 'folder'],
+            ['name' => 'Extra', 'type' => 'folder'],
+        ];
+
+        $this->assertFalse(webdav_instance::is_iserv_listing($entries));
+    }
+
+    public function test_detect_iserv_root_reads_the_instance_root_over_the_network(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+
+        $fake = new fake_webdav_transport();
+        $fake->as_iserv_root('/' . $this->fixturebasispfad);
+        webdav_instance::use_test_transport($fake);
+
+        try {
+            $this->assertTrue(webdav_instance::detect_iserv_root($instanceid));
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    public function test_detect_iserv_root_is_false_for_a_regular_nextcloud_instance(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+
+        $fake = new fake_webdav_transport();
+        $fake->seed_folder('/' . $this->fixturebasispfad);
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Unterricht');
+        webdav_instance::use_test_transport($fake);
+
+        try {
+            $this->assertFalse(webdav_instance::detect_iserv_root($instanceid));
+        } finally {
+            webdav_instance::use_test_transport(null);
         }
     }
 }

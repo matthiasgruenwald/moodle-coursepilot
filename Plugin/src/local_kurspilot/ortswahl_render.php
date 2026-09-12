@@ -74,6 +74,12 @@ function local_kurspilot_render_ortswahl_editor(\moodle_page $page, \stdClass $u
             'retry' => get_string('ortswahlretry', 'local_kurspilot'),
             'checkcredentials' => get_string('ortswahlcheckcredentials', 'local_kurspilot'),
             'later' => get_string('ortswahllater', 'local_kurspilot'),
+            'confirmheading' => get_string('ortswahlconfirmheading', 'local_kurspilot'),
+            'confirmcount' => get_string('ortswahlconfirmcount', 'local_kurspilot', '%s'),
+            'confirmtext' => get_string('ortswahlconfirmtext', 'local_kurspilot'),
+            'confirmbutton' => get_string('ortswahlconfirmbutton', 'local_kurspilot'),
+            'confirmcancel' => get_string('ortswahlconfirmcancel', 'local_kurspilot'),
+            'overlaplocked' => get_string('ortswahloverlaplocked', 'local_kurspilot'),
         ],
     ];
 
@@ -90,6 +96,9 @@ function local_kurspilot_render_ortswahl_editor(\moodle_page $page, \stdClass $u
 
     // Fortschrittsband.
     echo html_writer::div('', 'mb-3 d-flex gap-2 flex-wrap', ['id' => 'kurspilot-ortswahl-progress']);
+    // Sperr-Begruendung des "Einrichten abschliessen"-Knopfs (Issue #497,
+    // Spec §5: Materialbestand im Kontextbereich/im selben Ordner).
+    echo html_writer::div('', 'mb-2 small text-danger', ['id' => 'kurspilot-ortswahl-overlaplock', 'hidden' => 'hidden']);
 
     // Reiter.
     echo html_writer::start_tag('ul', ['class' => 'nav nav-tabs', 'role' => 'tablist']);
@@ -158,9 +167,35 @@ function local_kurspilot_render_ortswahl_editor(\moodle_page $page, \stdClass $u
     echo html_writer::end_div();
     echo html_writer::end_div();
     echo html_writer::end_div();
-    echo html_writer::start_div('modal-footer');
+    echo html_writer::start_div('modal-footer flex-column align-items-stretch');
+    echo html_writer::div('', 'small text-danger mb-2', ['id' => 'kurspilot-ortswahl-modal-reason', 'hidden' => 'hidden']);
     echo html_writer::tag('button', $data['strings']['selectfolder'], [
-        'type' => 'button', 'class' => 'btn btn-primary', 'id' => 'kurspilot-ortswahl-confirmfolder',
+        'type' => 'button', 'class' => 'btn btn-primary align-self-end', 'id' => 'kurspilot-ortswahl-confirmfolder',
+    ]);
+    echo html_writer::end_div();
+    echo html_writer::end_div();
+    echo html_writer::end_div();
+    echo html_writer::end_div();
+
+    // Uebergabe-Bestaetigung eines gefuellten Ordners (Issue #497, Spec §5) -
+    // eigenes, kleines Modal, nur fuer den Reiter Kontextbereich.
+    echo html_writer::start_div('modal', ['id' => 'kurspilot-ortswahl-confirm-modal', 'tabindex' => '-1']);
+    echo html_writer::start_div('modal-dialog');
+    echo html_writer::start_div('modal-content');
+    echo html_writer::start_div('modal-header');
+    echo html_writer::tag('h5', $data['strings']['confirmheading'], ['class' => 'modal-title']);
+    echo html_writer::tag('button', '', ['type' => 'button', 'class' => 'btn-close', 'data-bs-dismiss' => 'modal']);
+    echo html_writer::end_div();
+    echo html_writer::start_div('modal-body');
+    echo html_writer::tag('p', '', ['id' => 'kurspilot-ortswahl-confirm-count']);
+    echo html_writer::tag('p', s($data['strings']['confirmtext']));
+    echo html_writer::end_div();
+    echo html_writer::start_div('modal-footer');
+    echo html_writer::tag('button', $data['strings']['confirmcancel'], [
+        'type' => 'button', 'class' => 'btn btn-outline-secondary', 'data-bs-dismiss' => 'modal',
+    ]);
+    echo html_writer::tag('button', $data['strings']['confirmbutton'], [
+        'type' => 'button', 'class' => 'btn btn-success', 'id' => 'kurspilot-ortswahl-confirmfolder-ack',
     ]);
     echo html_writer::end_div();
     echo html_writer::end_div();
