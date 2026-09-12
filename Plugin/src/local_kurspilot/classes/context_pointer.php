@@ -145,14 +145,14 @@ final class context_pointer {
     private static function resolve_single_v2(array $target): pointer_location {
         $ort = $target['ort'] ?? null;
 
-        if ($ort === 'moodle') {
+        if ($ort === pointer_location::MOODLE) {
             if (!is_string($target['pfad'] ?? null)) {
                 self::incomplete();
             }
             return pointer_location::moodle('/' . self::validate_path($target['pfad']) . '/');
         }
 
-        if ($ort === 'extern') {
+        if ($ort === pointer_location::EXTERN) {
             return self::resolve_extern($target);
         }
 

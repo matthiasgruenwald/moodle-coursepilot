@@ -49,7 +49,7 @@ final class connection_ablageort {
             $targets[$target] = get_string('ablageorttarget' . $target, 'local_kurspilot')
                 . ': ' . self::state_label($state);
 
-            if ($state['state'] === 'extern' && $state['host'] !== null && !personal_data_hosts::allowed($state['host'])) {
+            if ($state['state'] === pointer_scan::STATE_EXTERN && $state['host'] !== null && !personal_data_hosts::allowed($state['host'])) {
                 $hostblocked = true;
             }
             if ($state['defect'] !== null) {
@@ -80,22 +80,22 @@ final class connection_ablageort {
      */
     private static function state_label(array $state): string {
         return match ($state['state']) {
-            'moodle' => get_string('ablageortmoodle', 'local_kurspilot'),
-            'extern' => get_string('ablageortextern', 'local_kurspilot', $state['host']),
-            'kaputt' => get_string('ablageortdefektungueltig', 'local_kurspilot'),
+            pointer_scan::STATE_MOODLE => get_string('ablageortmoodle', 'local_kurspilot'),
+            pointer_scan::STATE_EXTERN => get_string('ablageortextern', 'local_kurspilot', $state['host']),
+            pointer_scan::STATE_BROKEN => get_string('ablageortdefektungueltig', 'local_kurspilot'),
             default => get_string('ablageortoffen', 'local_kurspilot'),
         };
     }
 
     /**
-     * @param string $defect "instanzfehlt"|"fremdeinstanz"|"http"|"ungueltig"
+     * @param string $defect Einer der {@see pointer_scan}-`DEFECT_*`-Werte.
      * @return string
      */
     private static function defect_label(string $defect): string {
         return match ($defect) {
-            'instanzfehlt' => get_string('ablageortdefektinstanzfehlt', 'local_kurspilot'),
-            'fremdeinstanz' => get_string('ablageortdefektfremdeinstanz', 'local_kurspilot'),
-            'http' => get_string('ablageortdefekthttp', 'local_kurspilot'),
+            pointer_scan::DEFECT_INSTANCE_MISSING => get_string('ablageortdefektinstanzfehlt', 'local_kurspilot'),
+            pointer_scan::DEFECT_FOREIGN_INSTANCE => get_string('ablageortdefektfremdeinstanz', 'local_kurspilot'),
+            pointer_scan::DEFECT_HTTP => get_string('ablageortdefekthttp', 'local_kurspilot'),
             default => get_string('ablageortdefektungueltig', 'local_kurspilot'),
         };
     }

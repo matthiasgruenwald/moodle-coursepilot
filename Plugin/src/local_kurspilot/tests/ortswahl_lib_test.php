@@ -34,6 +34,19 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class ortswahl_lib_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
+    /**
+     * Issue #507 (Spec #486, Review von #486): die Seitenzustaende und die
+     * Zeitgrenze des Dateifenster-Abrufs sind benannte Konstanten statt
+     * roher Werte - {@see ortswahl_lib::setup_state()} und
+     * {@see \ortswahl_render.php} nutzen sie.
+     */
+    public function test_state_and_timeout_constants_have_the_expected_values(): void {
+        $this->assertSame('not_enabled', ortswahl_lib::STATE_NOT_ENABLED);
+        $this->assertSame('no_instance', ortswahl_lib::STATE_NO_INSTANCE);
+        $this->assertSame('ready', ortswahl_lib::STATE_READY);
+        $this->assertSame(8000, ortswahl_lib::BROWSE_TIMEOUT_MS);
+    }
+
     public function test_setup_state_is_not_enabled_without_freischaltung(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();

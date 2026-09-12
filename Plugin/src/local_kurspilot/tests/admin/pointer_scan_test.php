@@ -32,6 +32,22 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class pointer_scan_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
+    /**
+     * Issue #507 (Spec #486, Review von #486): die Ablageort-Zustaende und
+     * -Defekte sind benannte Konstanten statt roher Zeichenketten - genutzt
+     * von {@see pointer_scan} selbst und von {@see connection_ablageort}.
+     */
+    public function test_state_and_defect_constants_have_the_expected_values(): void {
+        $this->assertSame('offen', pointer_scan::STATE_OPEN);
+        $this->assertSame('moodle', pointer_scan::STATE_MOODLE);
+        $this->assertSame('extern', pointer_scan::STATE_EXTERN);
+        $this->assertSame('kaputt', pointer_scan::STATE_BROKEN);
+        $this->assertSame('instanzfehlt', pointer_scan::DEFECT_INSTANCE_MISSING);
+        $this->assertSame('fremdeinstanz', pointer_scan::DEFECT_FOREIGN_INSTANCE);
+        $this->assertSame('http', pointer_scan::DEFECT_HTTP);
+        $this->assertSame('ungueltig', pointer_scan::DEFECT_INVALID);
+    }
+
     public function test_raw_pointer_for_is_null_without_pointer_file(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();

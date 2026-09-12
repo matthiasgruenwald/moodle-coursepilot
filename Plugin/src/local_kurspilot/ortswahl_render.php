@@ -20,6 +20,10 @@
  * bleibt - reines Rendering, keine Entscheidungslogik (die lebt vollstaendig
  * in {@see \local_kurspilot\ortswahl_lib}).
  *
+ * Issue #507 (Spec #486, Review von #486): in kleine Funktionen unter 50
+ * Zeilen zerlegt - eine je Markup-Baustein, damit sich einzelne Bausteine
+ * ohne Seiteneffekte auf den Rest aendern lassen.
+ *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -39,11 +43,40 @@ use local_kurspilot\ortswahl_lib;
  * @param \stdClass $user
  */
 function local_kurspilot_render_ortswahl_editor(\moodle_page $page, \stdClass $user): void {
-    global $OUTPUT;
+    $data = local_kurspilot_ortswahl_editor_data();
+    local_kurspilot_render_ortswahl_data_script($data);
 
-    $instances = ortswahl_lib::own_instances();
-    $data = [
-        'instances' => $instances,
+    echo html_writer::start_div('kurspilot-ortswahl', ['id' => 'kurspilot-ortswahl']);
+    echo html_writer::start_tag('form', ['method' => 'post', 'action' => (new moodle_url('/local/kurspilot/ortswahl.php'))->out(false), 'id' => 'kurspilot-ortswahl-form']);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'finish', 'value' => '1']);
+
+    local_kurspilot_render_ortswahl_progress_band();
+    local_kurspilot_render_ortswahl_tabs($data);
+    local_kurspilot_render_ortswahl_hidden_target_fields();
+    local_kurspilot_render_ortswahl_browse_modal($data);
+    local_kurspilot_render_ortswahl_confirm_modal($data);
+
+    echo html_writer::tag('button', $data['strings']['finishbutton'], [
+        'type' => 'submit', 'class' => 'btn btn-success mt-3', 'id' => 'kurspilot-ortswahl-finish', 'disabled' => 'disabled',
+    ]);
+    echo html_writer::end_tag('form');
+    echo html_writer::end_div();
+
+    $page->requires->js(new moodle_url('/local/kurspilot/javascript/ortswahl.js'), true);
+}
+
+/**
+ * Die Daten fuer {@see ortswahl.js} - Instanzen, aktuelle Ziele und die
+ * uebersetzten Strings, die das JS ohne weitere `get_string()`-Aufrufe
+ * braucht.
+ *
+ * @return array{instances: array, targets: array, browseurl: string,
+ *         manageinstancesurl: string, sesskey: string, timeoutms: int, strings: array<string, string>}
+ */
+function local_kurspilot_ortswahl_editor_data(): array {
+    return [
+        'instances' => ortswahl_lib::own_instances(),
         'targets' => [
             'kontextbereich' => ortswahl_lib::current('kontextbereich'),
             'materialbestand' => ortswahl_lib::current('materialbestand'),
@@ -53,54 +86,72 @@ function local_kurspilot_render_ortswahl_editor(\moodle_page $page, \stdClass $u
             'contextid' => \local_kurspilot\storage_anchor::own_context()->id,
         ]))->out(false),
         'sesskey' => sesskey(),
-        'timeoutms' => 8000,
-        'strings' => [
-            'tabkontextbereich' => get_string('ortswahltabkontextbereich', 'local_kurspilot'),
-            'tabmaterialbestand' => get_string('ortswahltabmaterialbestand', 'local_kurspilot'),
-            'kontexthint' => get_string('ortswahlkontexthint', 'local_kurspilot'),
-            'keepmoodle' => get_string('ortswahlkeepmoodle', 'local_kurspilot'),
-            'chooseinstance' => get_string('ortswahlchooseinstance', 'local_kurspilot'),
-            'selectfolder' => get_string('ortswahlselectfolder', 'local_kurspilot'),
-            'breadcrumbroot' => get_string('ortswahlbreadcrumbroot', 'local_kurspilot'),
-            'loading' => get_string('ortswahlloading', 'local_kurspilot'),
-            'createfolder' => get_string('ortswahlcreatefolder', 'local_kurspilot'),
-            'newfoldername' => get_string('ortswahlnewfoldername', 'local_kurspilot'),
-            'progresschosen' => get_string('ortswahlprogresschosen', 'local_kurspilot', '%s'),
-            'progressopen' => get_string('ortswahlprogressopen', 'local_kurspilot', '%s'),
-            'finishbutton' => get_string('ortswahlfinishbutton', 'local_kurspilot'),
-            'selectionincomplete' => get_string('ortswahlselectionincomplete', 'local_kurspilot'),
-            'timeouttitle' => get_string('ortswahltimeouttitle', 'local_kurspilot'),
-            'timeouttext' => get_string('ortswahltimeouttext', 'local_kurspilot'),
-            'retry' => get_string('ortswahlretry', 'local_kurspilot'),
-            'checkcredentials' => get_string('ortswahlcheckcredentials', 'local_kurspilot'),
-            'later' => get_string('ortswahllater', 'local_kurspilot'),
-            'confirmheading' => get_string('ortswahlconfirmheading', 'local_kurspilot'),
-            'confirmcount' => get_string('ortswahlconfirmcount', 'local_kurspilot', '%s'),
-            'confirmtext' => get_string('ortswahlconfirmtext', 'local_kurspilot'),
-            'confirmbutton' => get_string('ortswahlconfirmbutton', 'local_kurspilot'),
-            'confirmcancel' => get_string('ortswahlconfirmcancel', 'local_kurspilot'),
-            'overlaplocked' => get_string('ortswahloverlaplocked', 'local_kurspilot'),
-        ],
+        'timeoutms' => ortswahl_lib::BROWSE_TIMEOUT_MS,
+        'strings' => local_kurspilot_ortswahl_editor_strings(),
     ];
+}
 
+/**
+ * @return array<string, string>
+ */
+function local_kurspilot_ortswahl_editor_strings(): array {
+    return [
+        'tabkontextbereich' => get_string('ortswahltabkontextbereich', 'local_kurspilot'),
+        'tabmaterialbestand' => get_string('ortswahltabmaterialbestand', 'local_kurspilot'),
+        'kontexthint' => get_string('ortswahlkontexthint', 'local_kurspilot'),
+        'keepmoodle' => get_string('ortswahlkeepmoodle', 'local_kurspilot'),
+        'chooseinstance' => get_string('ortswahlchooseinstance', 'local_kurspilot'),
+        'selectfolder' => get_string('ortswahlselectfolder', 'local_kurspilot'),
+        'breadcrumbroot' => get_string('ortswahlbreadcrumbroot', 'local_kurspilot'),
+        'loading' => get_string('ortswahlloading', 'local_kurspilot'),
+        'createfolder' => get_string('ortswahlcreatefolder', 'local_kurspilot'),
+        'newfoldername' => get_string('ortswahlnewfoldername', 'local_kurspilot'),
+        'progresschosen' => get_string('ortswahlprogresschosen', 'local_kurspilot', '%s'),
+        'progressopen' => get_string('ortswahlprogressopen', 'local_kurspilot', '%s'),
+        'finishbutton' => get_string('ortswahlfinishbutton', 'local_kurspilot'),
+        'selectionincomplete' => get_string('ortswahlselectionincomplete', 'local_kurspilot'),
+        'timeouttitle' => get_string('ortswahltimeouttitle', 'local_kurspilot'),
+        'timeouttext' => get_string('ortswahltimeouttext', 'local_kurspilot'),
+        'retry' => get_string('ortswahlretry', 'local_kurspilot'),
+        'checkcredentials' => get_string('ortswahlcheckcredentials', 'local_kurspilot'),
+        'later' => get_string('ortswahllater', 'local_kurspilot'),
+        'confirmheading' => get_string('ortswahlconfirmheading', 'local_kurspilot'),
+        'confirmcount' => get_string('ortswahlconfirmcount', 'local_kurspilot', '%s'),
+        'confirmtext' => get_string('ortswahlconfirmtext', 'local_kurspilot'),
+        'confirmbutton' => get_string('ortswahlconfirmbutton', 'local_kurspilot'),
+        'confirmcancel' => get_string('ortswahlconfirmcancel', 'local_kurspilot'),
+        'overlaplocked' => get_string('ortswahloverlaplocked', 'local_kurspilot'),
+    ];
+}
+
+/**
+ * @param array $data Ergebnis von {@see local_kurspilot_ortswahl_editor_data()}.
+ */
+function local_kurspilot_render_ortswahl_data_script(array $data): void {
     echo html_writer::tag(
         'script',
         json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG),
         ['type' => 'application/json', 'id' => 'kurspilot-ortswahl-data']
     );
+}
 
-    echo html_writer::start_div('kurspilot-ortswahl', ['id' => 'kurspilot-ortswahl']);
-    echo html_writer::start_tag('form', ['method' => 'post', 'action' => (new moodle_url('/local/kurspilot/ortswahl.php'))->out(false), 'id' => 'kurspilot-ortswahl-form']);
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'finish', 'value' => '1']);
-
-    // Fortschrittsband.
+/**
+ * Fortschrittsband und die Sperr-Begruendung des "Einrichten abschliessen"-
+ * Knopfs (Issue #497, Spec §5: Materialbestand im Kontextbereich/im selben
+ * Ordner) - beide vom JS befuellt, leer im Markup.
+ */
+function local_kurspilot_render_ortswahl_progress_band(): void {
     echo html_writer::div('', 'mb-3 d-flex gap-2 flex-wrap', ['id' => 'kurspilot-ortswahl-progress']);
-    // Sperr-Begruendung des "Einrichten abschliessen"-Knopfs (Issue #497,
-    // Spec §5: Materialbestand im Kontextbereich/im selben Ordner).
     echo html_writer::div('', 'mb-2 small text-danger', ['id' => 'kurspilot-ortswahl-overlaplock', 'hidden' => 'hidden']);
+}
 
-    // Reiter.
+/**
+ * Die Reiter Kontextbereich/Materialbestand mit ihren "Bei Moodle
+ * bleiben"/"Instanz waehlen"-Knoepfen.
+ *
+ * @param array $data Ergebnis von {@see local_kurspilot_ortswahl_editor_data()}.
+ */
+function local_kurspilot_render_ortswahl_tabs(array $data): void {
     echo html_writer::start_tag('ul', ['class' => 'nav nav-tabs', 'role' => 'tablist']);
     foreach (ortswahl_lib::TARGETS as $index => $target) {
         $labelkey = $target === 'kontextbereich' ? 'tabkontextbereich' : 'tabmaterialbestand';
@@ -132,16 +183,28 @@ function local_kurspilot_render_ortswahl_editor(\moodle_page $page, \stdClass $u
         echo html_writer::end_div();
     }
     echo html_writer::end_div();
+}
 
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'kontextbereich_type', 'id' => 'kurspilot-ortswahl-kontextbereich_type']);
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'kontextbereich_instanceid', 'id' => 'kurspilot-ortswahl-kontextbereich_instanceid']);
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'kontextbereich_path', 'id' => 'kurspilot-ortswahl-kontextbereich_path']);
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'materialbestand_type', 'id' => 'kurspilot-ortswahl-materialbestand_type']);
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'materialbestand_instanceid', 'id' => 'kurspilot-ortswahl-materialbestand_instanceid']);
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'materialbestand_path', 'id' => 'kurspilot-ortswahl-materialbestand_path']);
+/**
+ * Die versteckten Formularfelder, die das JS je Ziel mit der getroffenen
+ * Wahl befuellt (Typ, Instanz-ID, Pfad) - eines der beiden Ziele bleibt bei
+ * "moodle", wenn nie ein anderer Ort gewaehlt wird.
+ */
+function local_kurspilot_render_ortswahl_hidden_target_fields(): void {
+    foreach (ortswahl_lib::TARGETS as $target) {
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $target . '_type', 'id' => 'kurspilot-ortswahl-' . $target . '_type']);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $target . '_instanceid', 'id' => 'kurspilot-ortswahl-' . $target . '_instanceid']);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $target . '_path', 'id' => 'kurspilot-ortswahl-' . $target . '_path']);
+    }
+}
 
-    // Das Dateifenster (Bootstrap-Modal, vom JS befuellt) - leeres Geruest,
-    // nie serverseitig mit Auflistungsinhalt gerendert.
+/**
+ * Das Dateifenster (Bootstrap-Modal, vom JS befuellt) - leeres Geruest, nie
+ * serverseitig mit Auflistungsinhalt gerendert.
+ *
+ * @param array $data Ergebnis von {@see local_kurspilot_ortswahl_editor_data()}.
+ */
+function local_kurspilot_render_ortswahl_browse_modal(array $data): void {
     echo html_writer::start_div('modal', ['id' => 'kurspilot-ortswahl-modal', 'tabindex' => '-1']);
     echo html_writer::start_div('modal-dialog modal-lg');
     echo html_writer::start_div('modal-content');
@@ -176,9 +239,15 @@ function local_kurspilot_render_ortswahl_editor(\moodle_page $page, \stdClass $u
     echo html_writer::end_div();
     echo html_writer::end_div();
     echo html_writer::end_div();
+}
 
-    // Uebergabe-Bestaetigung eines gefuellten Ordners (Issue #497, Spec §5) -
-    // eigenes, kleines Modal, nur fuer den Reiter Kontextbereich.
+/**
+ * Uebergabe-Bestaetigung eines gefuellten Ordners (Issue #497, Spec §5) -
+ * eigenes, kleines Modal, nur fuer den Reiter Kontextbereich.
+ *
+ * @param array $data Ergebnis von {@see local_kurspilot_ortswahl_editor_data()}.
+ */
+function local_kurspilot_render_ortswahl_confirm_modal(array $data): void {
     echo html_writer::start_div('modal', ['id' => 'kurspilot-ortswahl-confirm-modal', 'tabindex' => '-1']);
     echo html_writer::start_div('modal-dialog');
     echo html_writer::start_div('modal-content');
@@ -201,12 +270,4 @@ function local_kurspilot_render_ortswahl_editor(\moodle_page $page, \stdClass $u
     echo html_writer::end_div();
     echo html_writer::end_div();
     echo html_writer::end_div();
-
-    echo html_writer::tag('button', $data['strings']['finishbutton'], [
-        'type' => 'submit', 'class' => 'btn btn-success mt-3', 'id' => 'kurspilot-ortswahl-finish', 'disabled' => 'disabled',
-    ]);
-    echo html_writer::end_tag('form');
-    echo html_writer::end_div();
-
-    $page->requires->js(new moodle_url('/local/kurspilot/javascript/ortswahl.js'), true);
 }

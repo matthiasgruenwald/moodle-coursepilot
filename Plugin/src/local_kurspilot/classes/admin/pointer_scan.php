@@ -36,6 +36,30 @@ final class pointer_scan {
     /** @var string[] Die beiden Pointer-Ziele, wie {@see \local_kurspilot\ortswahl_lib::TARGETS}. */
     public const TARGETS = ['kontextbereich', 'materialbestand'];
 
+    /** @var string Zustand: kein Kontextpointer vorhanden. */
+    public const STATE_OPEN = 'offen';
+
+    /** @var string Zustand: Ziel liegt in Moodles Private Files. */
+    public const STATE_MOODLE = pointer_location::MOODLE;
+
+    /** @var string Zustand: Ziel liegt in einer WebDAV-Nutzerinstanz. */
+    public const STATE_EXTERN = pointer_location::EXTERN;
+
+    /** @var string Zustand: Pointer strukturell defekt (nicht aufloesbar). */
+    public const STATE_BROKEN = 'kaputt';
+
+    /** @var string Defekt: die referenzierte Instanz existiert nicht mehr. */
+    public const DEFECT_INSTANCE_MISSING = 'instanzfehlt';
+
+    /** @var string Defekt: die Instanz gehoert einer anderen Person. */
+    public const DEFECT_FOREIGN_INSTANCE = 'fremdeinstanz';
+
+    /** @var string Defekt: die Instanz nutzt HTTP statt HTTPS+Basic. */
+    public const DEFECT_HTTP = 'http';
+
+    /** @var string Defekt: die Pointer-Struktur selbst ist ungueltig. */
+    public const DEFECT_INVALID = 'ungueltig';
+
     /**
      * Alle Personen mit einer nicht-leeren Kontextpointer-Datei - eine reine
      * DB-Abfrage ueber die Dateitabelle, ohne jede Datei zu lesen.
@@ -175,22 +199,22 @@ final class pointer_scan {
      */
     public static function target_state(int $userid, ?array $decoded, string $target): array {
         if ($decoded === null) {
-            return ['state' => 'offen', 'host' => null, 'defect' => null];
+            return ['state' => self::STATE_OPEN, 'host' => null, 'defect' => null];
         }
 
         $pointerkey = $target === 'materialbestand' ? 'materialordner' : $target;
         try {
             $location = context_pointer::resolve_target($decoded, $pointerkey);
         } catch (\moodle_exception $e) {
-            return ['state' => 'kaputt', 'host' => null, 'defect' => 'ungueltig'];
+            return ['state' => self::STATE_BROKEN, 'host' => null, 'defect' => self::DEFECT_INVALID];
         }
 
         if ($location->kind === pointer_location::MOODLE) {
-            return ['state' => 'moodle', 'host' => null, 'defect' => null];
+            return ['state' => self::STATE_MOODLE, 'host' => null, 'defect' => null];
         }
 
         $host = (string) ($location->fingerprint['server'] ?? '');
-        return ['state' => 'extern', 'host' => $host, 'defect' => self::extern_defect($userid, $location)];
+        return ['state' => self::STATE_EXTERN, 'host' => $host, 'defect' => self::extern_defect($userid, $location)];
     }
 
     /**
@@ -217,16 +241,16 @@ final class pointer_scan {
             ['id' => $location->instanceid, 'type' => 'webdav']
         );
         if (!$record) {
-            return 'instanzfehlt';
+            return self::DEFECT_INSTANCE_MISSING;
         }
         if ((int) $record->contextid !== \context_user::instance($userid)->id) {
-            return 'fremdeinstanz';
+            return self::DEFECT_FOREIGN_INSTANCE;
         }
         $webdavtype = $DB->get_field(
             'repository_instance_config',
             'value',
             ['instanceid' => $location->instanceid, 'name' => 'webdav_type']
         );
-        return ((int) $webdavtype === 1) ? null : 'http';
+        return ((int) $webdavtype === 1) ? null : self::DEFECT_HTTP;
     }
 }

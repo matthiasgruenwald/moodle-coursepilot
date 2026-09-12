@@ -49,6 +49,22 @@ final class ortswahl_lib {
     /** @var int Wie viele Eintragsnamen die Uebergabe-Bestaetigung (Issue #497) hoechstens zeigt. */
     private const ENTRY_PREVIEW_COUNT = 5;
 
+    /** @var string Seitenzustand: die WebDAV-Freischaltung fehlt noch. */
+    public const STATE_NOT_ENABLED = 'not_enabled';
+
+    /** @var string Seitenzustand: freigeschaltet, aber keine eigene Instanz. */
+    public const STATE_NO_INSTANCE = 'no_instance';
+
+    /** @var string Seitenzustand: das Dateifenster kann angezeigt werden. */
+    public const STATE_READY = 'ready';
+
+    /**
+     * @var int Zeitgrenze in Millisekunden fuer einen Dateifenster-Abruf
+     *      ({@see \ortswahl_render.php}, `ortswahl.js`) - danach zeigt das
+     *      Dateifenster den Zeitueberschreitungs-Hinweis statt endlos zu laden.
+     */
+    public const BROWSE_TIMEOUT_MS = 8000;
+
     /**
      * Der Leerzustand/Bereitschaftszustand der Seite (Issue #494): fehlt die
      * Freischaltung, gilt sie vor "keine Instanz" - eine Lehrkraft ohne
@@ -61,12 +77,12 @@ final class ortswahl_lib {
     public static function setup_state(int $userid): array {
         $steps = webdav_setup_steps::catalog($userid);
         if (!$steps[webdav_setup_steps::STEP_CAPABILITY]['ok']) {
-            return ['state' => 'not_enabled', 'steps' => $steps];
+            return ['state' => self::STATE_NOT_ENABLED, 'steps' => $steps];
         }
         if (empty(self::own_instances())) {
-            return ['state' => 'no_instance', 'steps' => $steps];
+            return ['state' => self::STATE_NO_INSTANCE, 'steps' => $steps];
         }
-        return ['state' => 'ready', 'steps' => $steps];
+        return ['state' => self::STATE_READY, 'steps' => $steps];
     }
 
     /**
@@ -307,12 +323,8 @@ final class ortswahl_lib {
      * @throws \moodle_exception bei ungueltiger Auswahl oder einem Ausfall beim Ordner-Anlegen.
      */
     public static function apply(array $selection): array {
-        $wanted = [];
-        $current = [];
-        foreach (self::TARGETS as $target) {
-            $wanted[$target] = self::build_target($target, $selection[$target] ?? ['type' => 'moodle']);
-            $current[$target] = self::current_pointer_value($target);
-        }
+        $wanted = self::resolve_wanted_targets($selection);
+        $current = self::resolve_current_targets();
 
         // Verschachtelung (Issue #497, Spec §2 Pruefung 7): vor jedem
         // Schreibzugriff geprueft, nicht erst bei der naechsten Auflosung -
@@ -320,26 +332,82 @@ final class ortswahl_lib {
         // abschliessen, ohne dass die Seite das sofort sagt.
         self::assert_no_overlap($wanted['kontextbereich'], $wanted['materialbestand']);
 
-        // Nur ein Ziel, das sich wirklich aendert, braucht einen neuen
-        // Ordner - ein unveraenderter Ort existiert per Definition schon
-        // (Spec: "der neu gewaehlte Ordner"). Erst alles anlegen, dann erst
-        // (weiter unten) etwas speichern.
+        self::create_new_external_folders($wanted, $current);
+
+        ['changed' => $changed, 'ortsverlauf' => $ortsverlauf, 'vorherigerort' => $vorherigerort]
+            = self::record_changes($wanted, $current);
+        if (empty($changed)) {
+            return [];
+        }
+
+        self::save_pointer_document($wanted, $ortsverlauf, $vorherigerort);
+        return $changed;
+    }
+
+    /**
+     * Die neu gewuenschten Ziele, aufgeloest und geprueft (Wurzelverbot,
+     * IServ, Freischaltung - {@see build_target()}).
+     *
+     * @param array<string, array{type?: string, instanceid?: int, path?: string}> $selection
+     * @return array<string, array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array}>
+     */
+    private static function resolve_wanted_targets(array $selection): array {
+        $wanted = [];
         foreach (self::TARGETS as $target) {
-            if ($wanted[$target]['ort'] === 'extern' && !self::same_place($current[$target], $wanted[$target])) {
+            $wanted[$target] = self::build_target($target, $selection[$target] ?? ['type' => pointer_location::MOODLE]);
+        }
+        return $wanted;
+    }
+
+    /**
+     * Die derzeit im Kontextpointer stehenden Ziele.
+     *
+     * @return array<string, array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array}>
+     */
+    private static function resolve_current_targets(): array {
+        $current = [];
+        foreach (self::TARGETS as $target) {
+            $current[$target] = self::current_pointer_value($target);
+        }
+        return $current;
+    }
+
+    /**
+     * Legt fuer jedes wirklich geaenderte externe Ziel den Ordner an - nur ein
+     * Ziel, das sich wirklich aendert, braucht einen neuen Ordner (ein
+     * unveraenderter Ort existiert per Definition schon, Spec: "der neu
+     * gewaehlte Ordner"). Erst alles anlegen, dann erst (in {@see apply()})
+     * etwas speichern.
+     *
+     * @param array<string, array{ort: string, pfad: string, instanzid?: int}> $wanted
+     * @param array<string, array{ort: string, pfad: string, instanzid?: int}> $current
+     */
+    private static function create_new_external_folders(array $wanted, array $current): void {
+        foreach (self::TARGETS as $target) {
+            if ($wanted[$target]['ort'] === pointer_location::EXTERN && !self::same_place($current[$target], $wanted[$target])) {
                 self::ensure_directory((int) $wanted[$target]['instanzid'], (string) $wanted[$target]['pfad']);
             }
         }
+    }
 
+    /**
+     * Ermittelt je Ziel, ob es sich wirklich aendert - und baut dabei
+     * Ortsverlauf und Altbestand mit auf (Issue #498, Spec §486 §9): der
+     * bisherige vorherige Ort bleibt unveraendert, ausser der Kontextbereich
+     * wechselt UND am alten Ort liegen nachweisbar Kontextdateien - "es gibt
+     * immer nur einen", ein neuer Wechsel verdraengt ihn (Spec §5: "Wer
+     * trotzdem abschliesst, verdraengt ihn, und seine Dateien bleiben
+     * unberuehrt liegen"). Ein Wechsel nur des Materialbestands laesst dieses
+     * Feld unangetastet (Spec §9: "Ein Wechsel nur des Materialbestands
+     * erzeugt nichts").
+     *
+     * @param array<string, array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array}> $wanted
+     * @param array<string, array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array}> $current
+     * @return array{changed: string[], ortsverlauf: array, vorherigerort: ?array}
+     */
+    private static function record_changes(array $wanted, array $current): array {
         $changed = [];
         $ortsverlauf = self::history();
-        // Altbestand (Issue #498, Spec #486 §9): der bisherige vorherige Ort
-        // bleibt unveraendert, ausser der Kontextbereich wechselt UND am
-        // alten Ort liegen nachweisbar Kontextdateien - "es gibt immer nur
-        // einen", ein neuer Wechsel verdraengt ihn (Spec §5: "Wer trotzdem
-        // abschliesst, verdraengt ihn, und seine Dateien bleiben unberuehrt
-        // liegen"). Ein Wechsel nur des Materialbestands laesst dieses Feld
-        // unangetastet (Spec §9: "Ein Wechsel nur des Materialbestands
-        // erzeugt nichts").
         $vorherigerort = altbestand::current();
         foreach (self::TARGETS as $target) {
             if (self::same_place($current[$target], $wanted[$target])) {
@@ -356,11 +424,18 @@ final class ortswahl_lib {
                 $vorherigerort = $current[$target];
             }
         }
+        return ['changed' => $changed, 'ortsverlauf' => $ortsverlauf, 'vorherigerort' => $vorherigerort];
+    }
 
-        if (empty($changed)) {
-            return [];
-        }
-
+    /**
+     * Schreibt den neuen Kontextpointer - nur erreicht, wenn mindestens ein
+     * Ziel sich wirklich aendert ({@see apply()}).
+     *
+     * @param array<string, array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array}> $wanted
+     * @param array $ortsverlauf
+     * @param ?array $vorherigerort
+     */
+    private static function save_pointer_document(array $wanted, array $ortsverlauf, ?array $vorherigerort): void {
         $document = [
             'kontextbereich' => $wanted['kontextbereich'],
             'materialbestand' => $wanted['materialbestand'],
@@ -370,8 +445,6 @@ final class ortswahl_lib {
             $document['vorheriger_ort'] = $vorherigerort;
         }
         storage_anchor::write_pointer_document($document);
-
-        return $changed;
     }
 
     /**
