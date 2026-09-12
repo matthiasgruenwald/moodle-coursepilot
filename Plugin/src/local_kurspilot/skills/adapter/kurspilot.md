@@ -21,3 +21,7 @@ zu mischen.
 
 Nicht leere Felder `ausstaende`/`hinweise` aus derselben Antwort zu
 Sitzungsbeginn melden (siehe `kurspilot_get_skill("kontextbereich")`).
+
+Bei einer Bestandsaenderung, die gerade nicht ausfuehrbar ist, oder bei
+einem Client mit lokalen Dateiwerkzeugen zu Sitzungsbeginn:
+`kurspilot_get_skill("merkzettel")`.

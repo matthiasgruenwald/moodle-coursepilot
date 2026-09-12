@@ -13,7 +13,8 @@ zusaetzlich: beim Aufbau oder der Vorschau des Implementierungsplans
 Quiz oder einer Fragensammlung `kurspilot_get_skill("quiz-und-fragenbank")`,
 geht es dabei um einen unbekannten Fragetyp zusaetzlich
 `kurspilot_get_skill("fragetypen")`, beim Dokumentieren einer
-Planungsentscheidung `kurspilot_get_skill("journal")`.
+Planungsentscheidung `kurspilot_get_skill("journal")`, bei einer gerade nicht
+ausfuehrbaren Bestandsaenderung `kurspilot_get_skill("merkzettel")`.
 
 `plan.md`, `status.md` und Vorlagen werden nur nach dem Schreibangebot
 geschrieben (`kurspilot_write_context_file`), nie still.
