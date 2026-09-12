@@ -67,6 +67,11 @@ final class ausstand_notice {
      * Verwerfen durch die Lehrkraft ({@see \local_kurspilot\external\dismiss_ausstand}):
      * dieselbe Operation, zwei Anlaesse (ADR 0023 Punkt 3).
      *
+     * Eine leere oder unbekannte Kennung ist ein folgenloser No-Op (Issue
+     * #506) - `write_context_file`/`append_context_file` rufen deshalb direkt
+     * durch, ohne den optionalen "ausstand"-Parameter selbst erst auf "" zu
+     * pruefen.
+     *
      * @param string $kennung
      * @return bool true, wenn ein Eintrag mit dieser Kennung existierte und entfernt wurde.
      */

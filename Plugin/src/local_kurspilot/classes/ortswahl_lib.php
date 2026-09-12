@@ -159,11 +159,7 @@ final class ortswahl_lib {
         try {
             $raw = $instance->client()->propfind($instance->directory_url($relative), 1);
         } catch (webdav_error $e) {
-            if ($e->errorclass === webdav_error::NOT_FOUND) {
-                $raw = [];
-            } else {
-                throw pointer_reader::webdav_exception($e);
-            }
+            $raw = webdav_error::empty_when_missing($e, [], [pointer_reader::class, 'webdav_exception']);
         }
 
         $folders = array_values(array_map(
@@ -208,6 +204,11 @@ final class ortswahl_lib {
         try {
             return webdav_instance::is_iserv_listing($instance->client()->propfind($instance->directory_url(''), 1));
         } catch (webdav_error $e) {
+            // Ein Netzfehler hier gilt bewusst als "nein" (die eigentliche
+            // Auflistung ist ja schon gegluecht, das Browsen soll daran nicht
+            // scheitern) - aber nicht mehr kommentarlos: Issue #506 verlangt,
+            // dass jedes bewusste "nein" protokolliert wird.
+            access_log::log_failure('WebDAV ' . $e->errorclass . ' bei IServ-Erkennung: ' . $e->getMessage());
             return false;
         }
     }

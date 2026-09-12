@@ -314,6 +314,25 @@ final class context_files {
     }
 
     /**
+     * Harte Groessengrenze je Schreibvorgang (Spec 0016 §5.2) - gilt fuer das
+     * jeweils uebertragene Stueck (voller Inhalt bei write, nur das
+     * Anhaengsel bei append), nicht fuer die Zieldatei. Bis Issue #506 in
+     * `write_context_file`/`append_context_file` wortgleich dupliziert.
+     *
+     * @param string $content
+     * @throws \moodle_exception contextfiletoolarge
+     */
+    public static function require_size_within_limit(string $content): void {
+        $size = strlen($content);
+        if ($size > self::MAX_WRITE_BYTES) {
+            throw new \moodle_exception('contextfiletoolarge', 'local_kurspilot', '', (object) [
+                'size' => $size,
+                'max' => self::MAX_WRITE_BYTES,
+            ]);
+        }
+    }
+
+    /**
      * Standard-Nutzerrecht auf die eigenen Dateien (Spec 0016 §1.1) - fuer
      * die Schreibendpunkte aus Phase 2. Seit dem Umzug auf `user/private`
      * schreibt Kurspilot in denselben Bereich wie "Meine Dateien", also gilt

@@ -88,10 +88,11 @@ final class pointer_reader {
         try {
             $raw = $instance->client()->propfind($instance->directory_url($webdavdirectory), 1);
         } catch (webdav_error $e) {
-            if ($e->errorclass === webdav_error::NOT_FOUND) {
-                return ['directory' => $clientdirectory, 'entries' => []];
-            }
-            throw self::webdav_exception($e);
+            return webdav_error::empty_when_missing(
+                $e,
+                ['directory' => $clientdirectory, 'entries' => []],
+                [self::class, 'webdav_exception']
+            );
         }
 
         return [
@@ -168,10 +169,7 @@ final class pointer_reader {
             $meta = $client->propfind($fileurl, 0);
             $content = $client->get($fileurl);
         } catch (webdav_error $e) {
-            if ($e->errorclass === webdav_error::NOT_FOUND) {
-                return null;
-            }
-            throw self::webdav_exception($e);
+            return webdav_error::empty_when_missing($e, null, [self::class, 'webdav_exception']);
         }
 
         $entry = $meta[0] ?? null;

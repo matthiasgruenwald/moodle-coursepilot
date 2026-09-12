@@ -97,50 +97,71 @@ class write_context_file extends external_api {
             'nur_anlegen' => $nuranlegen,
         ]);
 
-        $context = context_files::own_context();
-        self::validate_context($context);
+        self::validate_context(context_files::own_context());
 
         $content = $params['content'];
-        $newsize = strlen($content);
-        if ($newsize > context_files::MAX_WRITE_BYTES) {
-            throw new \moodle_exception('contextfiletoolarge', 'local_kurspilot', '', (object) [
-                'size' => $newsize,
-                'max' => context_files::MAX_WRITE_BYTES,
-            ]);
-        }
+        context_files::require_size_within_limit($content);
 
         // Zeigerbewusst (Issue #491, Spec #486 §6): der externe Zweig kennt
         // weder Nutzerquote noch moodle/user:manageownfiles - "fuer den
         // Kontextbereich in Moodle bleibt alles wie heute" gilt wortwoertlich,
         // die beiden Zweige bleiben deshalb getrennt statt ineinander verwoben.
         $location = context_files::resolve_pointer_location();
-
-        // Schalter fuer personenbezogene Kontextdaten (#344, ADR 0011):
-        // geprueft wird die Markierung im zu schreibenden Inhalt, nicht der
-        // Inhalt selbst (Spec 0016 §5.5) - fuer beide Orte identisch (Spec
-        // #486 §6: "allowpersonaldata wirkt unveraendert am Inhalt").
-        //
-        // Zugelassener Speicher (Issue #493, ADR 0021 §3): unabhaengig vom
-        // Schalter - eine markierte Datei geht nur in einen zugelassenen
-        // Speicher, Private Files sind immer zugelassen (kein Zweig hier
-        // noetig, sie sind nie EXTERN).
-        if (personal_data::is_marked($content)) {
-            if (!personal_data::allowed()) {
-                throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $params['path']);
-            }
-            \local_kurspilot\personal_data_hosts::require_allowed_location($location, $params['path']);
-        }
+        self::require_personal_data_allowed($content, $location, $params['path']);
 
         if ($location !== null && $location->kind === pointer_location::EXTERN) {
             return self::execute_external($params['path'], $content, $params['ausstand'], $params['nur_anlegen']);
         }
 
+        return self::execute_moodle($params, $content);
+    }
+
+    /**
+     * Schalter fuer personenbezogene Kontextdaten (#344, ADR 0011): geprueft
+     * wird die Markierung im zu schreibenden Inhalt, nicht der Inhalt selbst
+     * (Spec 0016 §5.5) - fuer beide Orte identisch (Spec #486 §6:
+     * "allowpersonaldata wirkt unveraendert am Inhalt").
+     *
+     * Zugelassener Speicher (Issue #493, ADR 0021 §3): unabhaengig vom
+     * Schalter - eine markierte Datei geht nur in einen zugelassenen
+     * Speicher, Private Files sind immer zugelassen (kein Zweig hier noetig,
+     * sie sind nie EXTERN).
+     *
+     * @param string $content
+     * @param pointer_location|null $location
+     * @param string $path
+     * @throws \moodle_exception contextfilelocked
+     */
+    private static function require_personal_data_allowed(string $content, ?pointer_location $location, string $path): void {
+        if (!personal_data::is_marked($content)) {
+            return;
+        }
+        if (!personal_data::allowed()) {
+            throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $path);
+        }
+        \local_kurspilot\personal_data_hosts::require_allowed_location($location, $path);
+    }
+
+    /**
+     * Der Moodle-Zweig (Spec #486 §6: "fuer den Kontextbereich in Moodle
+     * bleibt alles wie heute") - Groessen- und Personenbezugspruefung sind
+     * bereits im Aufrufer erledigt.
+     *
+     * @param array $params Ergebnis von {@see self::validate_parameters()}.
+     * @param string $content
+     * @return array
+     * @throws \moodle_exception contextfilealreadyexists, contextfilelocked,
+     *         contextfilechanged, contextquotaexceeded
+     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     */
+    private static function execute_moodle(array $params, string $content): array {
         context_files::require_manage_own_files();
 
         [$directory, $filename] = context_files::resolve_writable_file($params['path']);
 
         $existing = context_files::read_content($directory, $filename);
         $oldsize = $existing ? $existing['size'] : 0;
+        $newsize = strlen($content);
 
         // Kopieren aus dem Altbestand (Issue #498, Spec #486 §9): am neuen
         // Ort wird nie ueberschrieben - dieselbe Garantie, die der externe
@@ -169,7 +190,7 @@ class write_context_file extends external_api {
         context_files::require_quota($newsize - $oldsize);
 
         context_files::write($directory, $filename, $content);
-        self::dismiss_ausstand($params['ausstand']);
+        \local_kurspilot\ausstand_notice::dismiss($params['ausstand']);
 
         $relativepath = context_files::relative_file($directory, $filename);
         $message = $existing
@@ -202,7 +223,7 @@ class write_context_file extends external_api {
      */
     private static function execute_external(string $path, string $content, string $ausstand, bool $createonly = false): array {
         $result = context_files::write_pointer_aware($path, $content, $createonly);
-        self::dismiss_ausstand($ausstand);
+        \local_kurspilot\ausstand_notice::dismiss($ausstand);
 
         $message = $result['created']
             ? get_string('contextfilecreated', 'local_kurspilot', $result['path'])
@@ -218,19 +239,6 @@ class write_context_file extends external_api {
             'size' => $result['size'],
             'message' => $message,
         ];
-    }
-
-    /**
-     * Hakt einen offenen Ausstand im selben Aufruf ab, in dem er gelingt
-     * (Issue #492, ADR 0023 Punkt 3) - fuer beide Orte identisch, deshalb
-     * hier statt in execute()/execute_external() dupliziert.
-     *
-     * @param string $ausstand Kennung oder leer (kein Nachtragen).
-     */
-    private static function dismiss_ausstand(string $ausstand): void {
-        if ($ausstand !== '') {
-            \local_kurspilot\ausstand_notice::dismiss($ausstand);
-        }
     }
 
     /**

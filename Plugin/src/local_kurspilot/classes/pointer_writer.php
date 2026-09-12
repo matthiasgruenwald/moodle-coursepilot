@@ -256,15 +256,12 @@ final class pointer_writer {
         try {
             $meta = $client->propfind($fileurl, 0);
         } catch (webdav_error $e) {
-            if ($e->errorclass === webdav_error::NOT_FOUND) {
-                return null;
-            }
             // Jeder andere Fehler bleibt unuebersetzt - der Aufrufer (write()/
             // append()) faengt webdav_error ohnehin selbst ab, uebersetzt und
             // vermerkt ihn als Ausstand (Issue #492). Wuerde hier schon
             // uebersetzt, waere die Ausnahme dort keine webdav_error mehr und
             // liefe am Ausstand-Fang vorbei.
-            throw $e;
+            return webdav_error::empty_when_missing($e, null, static fn (webdav_error $err): webdav_error => $err);
         }
         $entry = $meta[0] ?? null;
         if ($entry === null) {

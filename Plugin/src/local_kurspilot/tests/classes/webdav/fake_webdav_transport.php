@@ -58,6 +58,9 @@ final class fake_webdav_transport implements webdav_transport {
     /** @var int|null 401 oder 403, falls jede Anfrage abgelehnt werden soll (Anmeldung abgelehnt). */
     private ?int $denyauthstatus = null;
 
+    /** @var array{path: string, statuscode: int}|null Naechste Anfrage an diesen Pfad antwortet einmalig mit diesem Status. */
+    private ?array $failonce = null;
+
     /** @var int Fortlaufender Zeitstempel-Takt, damit Aenderungszeiten deterministisch auseinanderliegen. */
     private int $clocktick = 1_700_000_000;
 
@@ -156,6 +159,20 @@ final class fake_webdav_transport implements webdav_transport {
         $this->denyauthstatus = $statuscode;
     }
 
+    /**
+     * Genau die naechste Anfrage an `$path` (egal welches Verb) antwortet
+     * einmalig mit `$statuscode`, danach wieder normal - anders als
+     * {@see deny_auth()}/{@see throttle()}, die jede Anfrage treffen. Damit
+     * lassen sich zwei Anfragen in Folge unterscheiden (z.B. eine gelingende
+     * Hauptauflistung und eine scheiternde IServ-Erkennung auf der Wurzel).
+     *
+     * @param string $path z.B. "/Kurspilot".
+     * @param int $statuscode
+     */
+    public function fail_once(string $path, int $statuscode = 401): void {
+        $this->failonce = ['path' => $this->normalise($path), 'statuscode' => $statuscode];
+    }
+
     public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
         $this->log[] = ['method' => $method, 'url' => $url, 'headers' => $headers, 'body' => $body];
 
@@ -168,6 +185,11 @@ final class fake_webdav_transport implements webdav_transport {
         }
 
         $path = $this->normalise($this->path_of($url));
+        if ($this->failonce !== null && $this->failonce['path'] === $path) {
+            $statuscode = $this->failonce['statuscode'];
+            $this->failonce = null;
+            return new webdav_response($statuscode, [], '');
+        }
         return match ($method) {
             'PROPFIND' => $this->handle_propfind($url, $path, $headers['Depth'] ?? '1'),
             'GET' => $this->handle_get($path),

@@ -62,4 +62,33 @@ final class webdav_error extends \RuntimeException {
     ) {
         parent::__construct($message !== '' ? $message : $errorclass);
     }
+
+    /**
+     * Das eine Fehlerbild des WebDAV-Speichers (Issue #506): "nicht
+     * gefunden" heisst leer, jeder andere Fehler bleibt ein benannter Fehler.
+     * Vorher an vier fast identischen Stellen dupliziert
+     * ({@see \local_kurspilot\pointer_reader::list_entries()}/read_content(),
+     * {@see \local_kurspilot\pointer_writer}, {@see \local_kurspilot\ortswahl_lib}) -
+     * jetzt die eine Stelle, die alle vier benutzen. Was "jeder andere
+     * Fehler" konkret bedeutet, bleibt Sache des Aufrufers: `pointer_reader`
+     * uebersetzt sofort in eine Lehrkraft-Meldung, `pointer_writer` reicht den
+     * rohen Fehler unveraendert weiter (sein eigener Ausstand-Fang muss ihn
+     * noch als {@see webdav_error} erkennen).
+     *
+     * @template T
+     * @param self $e
+     * @param T $whenmissing Rueckgabewert, wenn $e "nicht gefunden" ist.
+     * @param callable(self): \Throwable $onfailure Baut die Ausnahme fuer
+     *        jeden anderen Fehler - oder reicht $e unveraendert durch
+     *        ({@see \local_kurspilot\pointer_writer}, dessen eigener
+     *        Ausstand-Fang die rohe {@see webdav_error} noch erkennen muss).
+     * @return T
+     * @throws \Throwable Das Ergebnis von $onfailure($e).
+     */
+    public static function empty_when_missing(self $e, mixed $whenmissing, callable $onfailure): mixed {
+        if ($e->errorclass === self::NOT_FOUND) {
+            return $whenmissing;
+        }
+        throw $onfailure($e);
+    }
 }

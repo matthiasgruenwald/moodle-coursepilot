@@ -407,6 +407,31 @@ final class ortswahl_lib_test extends \advanced_testcase {
         }
     }
 
+    public function test_browse_logs_when_iserv_detection_fails_and_reports_no(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Unterricht');
+        // Nur die zusaetzliche IServ-Erkennung auf der Wurzel scheitert - die
+        // Hauptauflistung von "Unterricht" gelingt normal (Issue #506: ein
+        // Netzfehler hier gilt als "nein", muss aber protokolliert werden).
+        $fake->fail_once('/' . $this->fixturebasispfad, 401);
+        $sink = $this->redirectEvents();
+
+        try {
+            $level = ortswahl_lib::browse($this->lastinstanceid, 'Unterricht');
+            $this->assertFalse($level['iserv']);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+
+        $failures = array_filter($sink->get_events(), fn ($e) => $e instanceof \local_kurspilot\event\tool_access_failed);
+        $sink->close();
+        $this->assertNotEmpty(
+            $failures,
+            'Ein gescheiterter IServ-Check muss protokolliert werden, nicht schweigend als "nein" gelten.'
+        );
+    }
+
     public function test_browse_reports_iserv_yes_and_locks_everything_outside_files(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->prepare_instance();

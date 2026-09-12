@@ -85,20 +85,10 @@ class append_context_file extends external_api {
             'ausstand' => $ausstand,
         ]);
 
-        $context = context_files::own_context();
-        self::validate_context($context);
+        self::validate_context(context_files::own_context());
 
         $content = $params['content'];
-        $addedsize = strlen($content);
-
-        // Harte Grenze je Vorgang - sie gilt fuer das Anhaengsel, nicht fuer
-        // die Zieldatei (Spec 0016 §5.2).
-        if ($addedsize > context_files::MAX_WRITE_BYTES) {
-            throw new \moodle_exception('contextfiletoolarge', 'local_kurspilot', '', (object) [
-                'size' => $addedsize,
-                'max' => context_files::MAX_WRITE_BYTES,
-            ]);
-        }
+        context_files::require_size_within_limit($content);
 
         // Zeigerbewusst (Issue #491, Spec #486 §6): siehe write_context_file
         // fuer die Begruendung der getrennten Zweige.
@@ -107,6 +97,20 @@ class append_context_file extends external_api {
             return self::execute_external($params['path'], $content, $params['ausstand']);
         }
 
+        return self::execute_moodle($params, $content);
+    }
+
+    /**
+     * Der Moodle-Zweig (Spec #486 §6) - Groessenpruefung des Anhaengsels ist
+     * bereits im Aufrufer erledigt.
+     *
+     * @param array $params Ergebnis von {@see self::validate_parameters()}.
+     * @param string $content Anzuhaengender Inhalt.
+     * @return array
+     * @throws \moodle_exception contextfilelocked, contextquotaexceeded
+     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     */
+    private static function execute_moodle(array $params, string $content): array {
         context_files::require_manage_own_files();
 
         [$directory, $filename] = context_files::resolve_writable_file($params['path']);
@@ -125,10 +129,10 @@ class append_context_file extends external_api {
             throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $params['path']);
         }
 
-        context_files::require_quota($addedsize);
+        context_files::require_quota(strlen($content));
 
         $newsize = context_files::append($directory, $filename, $content);
-        self::dismiss_ausstand($params['ausstand']);
+        \local_kurspilot\ausstand_notice::dismiss($params['ausstand']);
 
         $relativepath = context_files::relative_file($directory, $filename);
         $message = $existing
@@ -188,7 +192,7 @@ class append_context_file extends external_api {
         }
 
         $result = context_files::append_pointer_aware($path, $content);
-        self::dismiss_ausstand($ausstand);
+        \local_kurspilot\ausstand_notice::dismiss($ausstand);
 
         $message = $result['created']
             ? get_string('contextfilecreated', 'local_kurspilot', $result['path'])
@@ -204,19 +208,6 @@ class append_context_file extends external_api {
             'size' => $result['size'],
             'message' => $message,
         ];
-    }
-
-    /**
-     * Hakt einen offenen Ausstand im selben Aufruf ab, in dem er gelingt
-     * (Issue #492, ADR 0023 Punkt 3) - fuer beide Orte identisch, deshalb
-     * hier statt in execute()/execute_external() dupliziert.
-     *
-     * @param string $ausstand Kennung oder leer (kein Nachtragen).
-     */
-    private static function dismiss_ausstand(string $ausstand): void {
-        if ($ausstand !== '') {
-            \local_kurspilot\ausstand_notice::dismiss($ausstand);
-        }
     }
 
     /**
