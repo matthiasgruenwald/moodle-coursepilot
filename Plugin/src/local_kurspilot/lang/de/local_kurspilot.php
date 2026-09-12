@@ -389,3 +389,39 @@ $string['driftstatusbrauchtarbeit'] = 'Braucht Arbeit: der Feldkatalog weicht vo
 // Spec 0017: clone_activity (#421).
 $string['clonenobackupsupport'] = 'Aktivitätsart "{$a->modname}" unterstützt keinen Aktivitäts-Export (kein FEATURE_BACKUP_MOODLE2) und kann deshalb nicht geklont werden.';
 $string['clonefailed'] = 'Das Klonen der Aktivität ist fehlgeschlagen - Moodle hat nach Backup/Restore keine neue Aktivität gemeldet. Es bleibt nichts Nutzbares zurück.';
+
+// Administration: WebDAV-Statusprüfungen, Spalte Ablageort, Einstellungsblock (#499, Spec #486 §12).
+$string['webdavcheckactionlink'] = 'Jetzt öffnen';
+$string['webdavcheck1name'] = 'Kurspilot: WebDAV-Repository aktiv';
+$string['webdavcheck1ok'] = 'Der Repository-Typ „WebDAV" ist aktiv.';
+$string['webdavcheck1infooptional'] = 'Der Repository-Typ „WebDAV" ist nicht aktiv. Das ist unbedenklich, solange niemand einen externen Ablageort gewählt hat.';
+$string['webdavcheck1warning'] = 'Der Repository-Typ „WebDAV" ist nicht aktiv, aber {$a} Person(en) zeigen mit ihrem Kontextpointer bereits auf einen externen Ort. Diese Orte sind gerade unerreichbar.';
+$string['webdavcheck2name'] = 'Kurspilot: Nutzerinstanzen erlaubt';
+$string['webdavcheck2na'] = 'Nicht anwendbar, solange der Repository-Typ „WebDAV" nicht aktiv ist.';
+$string['webdavcheck2ok'] = 'Nutzerinstanzen des Repository-Typs „WebDAV" sind erlaubt.';
+$string['webdavcheck2warning'] = 'Nutzerinstanzen des Repository-Typs „WebDAV" sind nicht erlaubt — Lehrkräfte können keine eigene Verbindung anlegen. Empfehlung beim Anlegen: ein App-Passwort statt des eigentlichen Kontopassworts.';
+$string['webdavcheck3name'] = 'Kurspilot: WebDAV-Recht im Nutzerkontext';
+$string['webdavcheck3na'] = 'Nicht anwendbar: entweder ist der Repository-Typ „WebDAV" nicht aktiv, oder niemand hat gerade eine aktive Kurspilot-Verbindung.';
+$string['webdavcheck3ok'] = 'Alle Personen mit aktiver Kurspilot-Verbindung haben das Recht „repository/webdav:view" im eigenen Nutzerkontext.';
+$string['webdavcheck3warning'] = '{$a->missing} von {$a->total} verbundenen Lehrkräften fehlt das Recht „repository/webdav:view" im eigenen Nutzerkontext.';
+$string['webdavcheck4name'] = 'Kurspilot: Zugelassene Speicher für personenbezogene Daten';
+$string['webdavcheck4info'] = 'Keine externen Speicher zugelassen — als personenbezogen markierte Dateien bleiben in Moodle.';
+$string['webdavcheck4ok'] = 'Zugelassene externe Speicher sind konfiguriert.';
+
+$string['connectionablageort'] = 'Ablageort';
+$string['ablageorttargetkontextbereich'] = 'Kontextbereich';
+$string['ablageorttargetmaterialbestand'] = 'Materialbestand';
+$string['ablageortoffen'] = 'offen';
+$string['ablageortmoodle'] = 'in Moodle';
+$string['ablageortextern'] = 'extern: {$a}';
+$string['ablageortdefektungueltig'] = 'Pointer ungültig';
+$string['ablageortdefektinstanzfehlt'] = 'Instanz fehlt';
+$string['ablageortdefektfremdeinstanz'] = 'gehört jemand anderem';
+$string['ablageortdefekthttp'] = 'http';
+$string['ablageortmarkernichtzugelassen'] = 'nicht zugelassener Speicher';
+$string['ablageortmarkerausstand'] = 'offener Ausstand';
+$string['ablageortmarkeraltbestand'] = 'offener Altbestand';
+$string['ablageortmarkerdefekt'] = 'defekter Pointer ({$a})';
+
+$string['settingwebdavheading'] = 'Externer Ablageort (WebDAV)';
+$string['settingwebdavheading_desc'] = 'Was die Schule über den externen Ablageort wissen sollte: Namen und Bilder aus dem Materialbestand können an die KI gehen. Eine WebDAV-Nutzerinstanz speichert das Passwort im Klartext — ein separates App-Passwort statt des eigentlichen Kontopassworts wird empfohlen. Core-Lücke: der Repository-Provider für Auskunft/Löschung sucht über „userid", Nutzerinstanzen tragen aber „userid = 0" und werden dadurch nicht gefunden. Für externe Kontextdateien gilt eine Schreibsperre, aber keine Lesesperre. Der aktuelle Stand der vier zugehörigen Statusprüfungen steht im <a href="{$a}">Systemstatus</a>.';

@@ -80,12 +80,24 @@ final class local_kurspilot_lib_test extends advanced_testcase {
     public function test_status_checks_return_one_check_per_catalogued_activity_type(): void {
         $checks = local_kurspilot_status_checks();
 
-        $this->assertCount(count(\local_kurspilot\catalog\registry::known_modnames()), $checks);
-        foreach ($checks as $check) {
-            $this->assertInstanceOf(\local_kurspilot\check\activity_drift::class, $check);
-        }
+        $driftchecks = array_filter($checks, static fn ($check): bool => $check instanceof \local_kurspilot\check\activity_drift);
+        $this->assertCount(count(\local_kurspilot\catalog\registry::known_modnames()), $driftchecks);
 
         $ids = array_map(static fn (\core\check\check $check): string => $check->get_id(), $checks);
         $this->assertSame($ids, array_unique($ids), 'Check-IDs muessen eindeutig sein.');
+    }
+
+    /**
+     * Die vier WebDAV-Statusprüfungen des Schrittkatalogs (Issue #499, Spec
+     * #486 §12) sind neben den Aktivitätsart-Prüfungen registriert.
+     */
+    public function test_status_checks_include_the_four_webdav_checks(): void {
+        $checks = local_kurspilot_status_checks();
+
+        $classes = array_map(static fn ($check): string => get_class($check), $checks);
+        $this->assertContains(\local_kurspilot\check\webdav_repository_check::class, $classes);
+        $this->assertContains(\local_kurspilot\check\webdav_user_instances_check::class, $classes);
+        $this->assertContains(\local_kurspilot\check\webdav_capability_check::class, $classes);
+        $this->assertContains(\local_kurspilot\check\personal_data_hosts_check::class, $classes);
     }
 }

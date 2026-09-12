@@ -108,8 +108,18 @@ function local_kurspilot_extend_navigation_course(
  * @return \core\check\check[]
  */
 function local_kurspilot_status_checks(): array {
-    return array_map(
-        static fn (string $modname): \local_kurspilot\check\activity_drift => new \local_kurspilot\check\activity_drift($modname),
-        \local_kurspilot\catalog\registry::known_modnames()
+    return array_merge(
+        array_map(
+            static fn (string $modname): \local_kurspilot\check\activity_drift => new \local_kurspilot\check\activity_drift($modname),
+            \local_kurspilot\catalog\registry::known_modnames()
+        ),
+        [
+            // Die vier WebDAV-Statusprüfungen (Issue #499, Spec #486 §12) -
+            // eine je Schritt des Schrittkatalogs plus die zugelassenen Speicher.
+            new \local_kurspilot\check\webdav_repository_check(),
+            new \local_kurspilot\check\webdav_user_instances_check(),
+            new \local_kurspilot\check\webdav_capability_check(),
+            new \local_kurspilot\check\personal_data_hosts_check(),
+        ]
     );
 }

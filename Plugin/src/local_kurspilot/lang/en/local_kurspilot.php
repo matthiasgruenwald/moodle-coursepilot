@@ -391,3 +391,39 @@ $string['roundtripmismatch'] = 'Round-trip check failed after writing: field "{$
 // Spec 0017: clone_activity (#421).
 $string['clonenobackupsupport'] = 'Activity type "{$a->modname}" does not support activity export (no FEATURE_BACKUP_MOODLE2) and cannot be cloned.';
 $string['clonefailed'] = 'Cloning the activity failed - Moodle did not report the new activity after the backup/restore. Nothing usable was left behind.';
+
+// Administration: WebDAV status checks, Ablageort column, settings block (#499, Spec #486 §12).
+$string['webdavcheckactionlink'] = 'Open now';
+$string['webdavcheck1name'] = 'Kurspilot: WebDAV repository active';
+$string['webdavcheck1ok'] = 'The "WebDAV" repository type is active.';
+$string['webdavcheck1infooptional'] = 'The "WebDAV" repository type is not active. That is harmless as long as nobody has chosen an external storage location.';
+$string['webdavcheck1warning'] = 'The "WebDAV" repository type is not active, but {$a} person(s) already point their context pointer at an external location. Those locations are currently unreachable.';
+$string['webdavcheck2name'] = 'Kurspilot: User instances allowed';
+$string['webdavcheck2na'] = 'Not applicable while the "WebDAV" repository type is inactive.';
+$string['webdavcheck2ok'] = 'User instances of the "WebDAV" repository type are allowed.';
+$string['webdavcheck2warning'] = 'User instances of the "WebDAV" repository type are not allowed — teachers cannot create their own connection. Recommendation when creating one: an app password instead of the actual account password.';
+$string['webdavcheck3name'] = 'Kurspilot: WebDAV capability in the user context';
+$string['webdavcheck3na'] = 'Not applicable: either the "WebDAV" repository type is inactive, or nobody currently has an active Kurspilot connection.';
+$string['webdavcheck3ok'] = 'All persons with an active Kurspilot connection have the "repository/webdav:view" capability in their own user context.';
+$string['webdavcheck3warning'] = '{$a->missing} of {$a->total} connected teachers are missing the "repository/webdav:view" capability in their own user context.';
+$string['webdavcheck4name'] = 'Kurspilot: Approved storage for personal data';
+$string['webdavcheck4info'] = 'No external storage approved — files marked as containing personal data stay in Moodle.';
+$string['webdavcheck4ok'] = 'Approved external storage locations are configured.';
+
+$string['connectionablageort'] = 'Storage location';
+$string['ablageorttargetkontextbereich'] = 'Context area';
+$string['ablageorttargetmaterialbestand'] = 'Material store';
+$string['ablageortoffen'] = 'open';
+$string['ablageortmoodle'] = 'in Moodle';
+$string['ablageortextern'] = 'external: {$a}';
+$string['ablageortdefektungueltig'] = 'Pointer invalid';
+$string['ablageortdefektinstanzfehlt'] = 'instance missing';
+$string['ablageortdefektfremdeinstanz'] = 'belongs to someone else';
+$string['ablageortdefekthttp'] = 'http';
+$string['ablageortmarkernichtzugelassen'] = 'storage not approved';
+$string['ablageortmarkerausstand'] = 'pending write';
+$string['ablageortmarkeraltbestand'] = 'previous location still open';
+$string['ablageortmarkerdefekt'] = 'broken pointer ({$a})';
+
+$string['settingwebdavheading'] = 'External storage location (WebDAV)';
+$string['settingwebdavheading_desc'] = 'What the school should know about the external storage location: names and images from the material store can go to the AI. A WebDAV user instance stores the password in plain text — an app password instead of the actual account password is recommended. Core gap: the repository provider for data access/deletion searches by "userid", but user instances carry "userid = 0" and are therefore not found. External context files have a write lock but no read lock. The current state of the four related status checks is on the <a href="{$a}">system status</a> page.';

@@ -32,6 +32,7 @@
 
 require(__DIR__ . '/../../../config.php');
 
+use local_kurspilot\admin\connection_ablageort;
 use local_kurspilot\oauth_lib;
 
 require_login();
@@ -86,6 +87,7 @@ if (!$tokens) {
         get_string('connectionclient', 'local_kurspilot'),
         get_string('connectionsince', 'local_kurspilot'),
         get_string('connectionexpires', 'local_kurspilot'),
+        get_string('connectionablageort', 'local_kurspilot'),
         '',
     ];
     foreach ($tokens as $tokenrecord) {
@@ -93,11 +95,14 @@ if (!$tokens) {
             'revoke' => $tokenrecord->id,
             'sesskey' => sesskey(),
         ]);
+        $ablageort = connection_ablageort::describe((int) $tokenrecord->userid);
+        $ablageortlines = array_merge(array_values($ablageort['targets']), $ablageort['markers']);
         $table->data[] = [
             s(fullname($tokenrecord) . ' (' . $tokenrecord->email . ')'),
             s($tokenrecord->clientname ?: $tokenrecord->clientid),
             userdate($tokenrecord->timecreated),
             userdate($tokenrecord->expires),
+            html_writer::alist(array_map('s', $ablageortlines), ['class' => 'unlist m-0']),
             html_writer::link($revokeurl, get_string('connectionrevoke', 'local_kurspilot')),
         ];
     }
