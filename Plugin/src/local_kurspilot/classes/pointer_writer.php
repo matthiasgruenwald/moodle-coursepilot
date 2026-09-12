@@ -85,6 +85,7 @@ final class pointer_writer {
         webdav_error::UNREACHABLE => 'der Speicher ist gerade nicht erreichbar',
         webdav_error::STORAGE_FULL => 'der Speicher ist voll',
         webdav_error::BLOCKED => 'der Zugriff auf den Speicher ist gesperrt',
+        webdav_error::REDIRECTED => 'der Speicher hat auf eine andere Adresse umgeleitet',
         'webdavinstancemissing' => 'die Verbindung existiert nicht mehr',
         'webdavinstanceforeign' => 'die Verbindung gehört nicht mehr zu Ihnen',
         'webdavnotenabled' => 'externe Speicher sind für Sie nicht mehr freigeschaltet',

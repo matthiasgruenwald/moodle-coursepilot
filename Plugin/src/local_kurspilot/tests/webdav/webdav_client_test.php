@@ -318,6 +318,121 @@ final class webdav_client_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * @return array<string, array{0: int}>
+     */
+    public static function redirect_statuscodes(): array {
+        return ['301' => [301], '302' => [302], '303' => [303], '307' => [307], '308' => [308]];
+    }
+
+    /**
+     * Jede 3xx-Antwort ist ein benannter Fehler (Issue #510) - der Client
+     * folgt keiner Weiterleitung, sonst koennten Anmeldedaten an eine vom
+     * Server bestimmte, moeglicherweise unverschluesselte Adresse gelangen.
+     *
+     * @dataProvider redirect_statuscodes
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('redirect_statuscodes')]
+    public function test_3xx_response_is_a_named_redirected_error_and_is_not_followed(int $statuscode): void {
+        $transport = new class ($statuscode) implements webdav_transport {
+            public int $calls = 0;
+            public function __construct(private readonly int $statuscode) {
+            }
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
+                $this->calls++;
+                return new webdav_response($this->statuscode, ['location' => 'https://anderswo.example/dav/'], '');
+            }
+        };
+        $client = new webdav_client($transport, static fn (): float => 0.0, static function (float $s): void {
+        });
+
+        try {
+            $client->get('https://fake.example/dav/x.md');
+            $this->fail('REDIRECTED erwartet.');
+        } catch (webdav_error $e) {
+            $this->assertSame(webdav_error::REDIRECTED, $e->errorclass);
+        }
+        // Genau eine Anfrage - keine automatische Weiterleitung, keine stille Wiederholung.
+        $this->assertSame(1, $transport->calls);
+    }
+
+    /**
+     * Eine 2xx-Antwort auf PROPFIND, deren Rumpf nicht als XML lesbar ist,
+     * gilt als "unklar" - nie als leerer Ordner (Issue #510, sonst entfallen
+     * Uebergabe-Hinweis und Altbestand-Erkennung still).
+     */
+    /**
+     * Spec §"kein PUT landet an einer Adresse, die der Server bestimmt"
+     * (Issue #510): eine 3xx-Antwort auf PUT ist derselbe benannte Fehler wie
+     * bei GET, nie ein zweiter PUT an die vom Server genannte `Location`.
+     */
+    public function test_put_on_3xx_is_redirected_and_never_repeated_at_the_server_chosen_address(): void {
+        $transport = new class implements webdav_transport {
+            public int $calls = 0;
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
+                $this->calls++;
+                return new webdav_response(302, ['location' => 'https://anderswo.example/dav/x.md'], '');
+            }
+        };
+        $client = new webdav_client($transport, static fn (): float => 0.0, static function (float $s): void {
+        });
+
+        try {
+            $client->put_new('https://fake.example/dav/x.md', 'Inhalt');
+            $this->fail('REDIRECTED erwartet.');
+        } catch (webdav_error $e) {
+            $this->assertSame(webdav_error::REDIRECTED, $e->errorclass);
+        }
+        $this->assertSame(1, $transport->calls, 'Kein zweiter PUT an die vom Server genannte Adresse.');
+    }
+
+    public function test_propfind_with_unreadable_body_on_2xx_is_unclear_not_an_empty_folder(): void {
+        $transport = new class implements webdav_transport {
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
+                return new webdav_response(207, [], 'kein XML');
+            }
+        };
+        $client = new webdav_client($transport, static fn (): float => 0.0, static function (float $s): void {
+        });
+
+        try {
+            $client->propfind('https://fake.example/dav/ordner', 1);
+            $this->fail('UNCLEAR erwartet, keine leere Liste.');
+        } catch (webdav_error $e) {
+            $this->assertSame(webdav_error::UNCLEAR, $e->errorclass);
+        }
+    }
+
+    /**
+     * XML-Parsing laedt nichts aus dem Netz (Issue #510): ein PROPFIND-Rumpf
+     * mit einer externen Entity darf keinen Netzzugriff ausloesen. Ohne echten
+     * Netzzugriff im Testlauf laesst sich ein unterbliebener Fetch nicht am
+     * Ergebnis, aber an der Laufzeit erkennen - ein Versuch, die Adresse
+     * aufzuloesen, wuerde die Anfrage spuerbar verzoegern oder haengen lassen.
+     */
+    public function test_propfind_never_resolves_an_external_entity_in_the_body(): void {
+        $xxe = '<?xml version="1.0"?>'
+            . '<!DOCTYPE d:multistatus [<!ENTITY xxe SYSTEM "https://angreifer.invalid/loot">]>'
+            . '<d:multistatus xmlns:d="DAV:"><d:response><d:href>&xxe;</d:href></d:response></d:multistatus>';
+        $transport = new class ($xxe) implements webdav_transport {
+            public function __construct(private readonly string $body) {
+            }
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
+                return new webdav_response(207, [], $this->body);
+            }
+        };
+        $client = new webdav_client($transport, static fn (): float => 0.0, static function (float $s): void {
+        });
+
+        $start = microtime(true);
+        try {
+            $client->propfind('https://fake.example/dav/ordner', 1);
+        } catch (webdav_error $e) {
+            $this->assertSame(webdav_error::UNCLEAR, $e->errorclass);
+        }
+        $this->assertLessThan(2.0, microtime(true) - $start, 'Kein Netzversuch darf die Antwort verzoegern.');
+    }
+
     public function test_http_urls_are_rejected(): void {
         [$client] = $this->client(new fake_webdav_transport());
 
@@ -372,6 +487,32 @@ final class webdav_client_test extends \advanced_testcase {
                 $client->put_new('https://fake.example/dav/da.md', 'neu');
             },
         ];
+    }
+
+    /**
+     * Wie {@see secret_leak_scenarios()}, aber fuer REDIRECTED, das keinen
+     * eigenen Fake-Zustand hat, sondern einen eigenen Transport braucht -
+     * der In-Memory-Fake kann kein 3xx liefern.
+     */
+    public function test_secret_never_leaks_via_a_redirected_error(): void {
+        $secret = 'g3h31m-' . uniqid();
+        $transport = new class ($secret) implements webdav_transport {
+            public function __construct(private readonly string $secret) {
+            }
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
+                return new webdav_response(302, ['location' => 'https://anderswo.example/' . $this->secret], '');
+            }
+        };
+        $client = new webdav_client($transport, static fn (): float => 0.0, static function (float $s): void {
+        });
+
+        try {
+            $client->get('https://fake.example/dav/x.md');
+            $this->fail('REDIRECTED erwartet.');
+        } catch (webdav_error $e) {
+            $this->assertStringNotContainsString($secret, $e->getMessage());
+            $this->assertStringNotContainsString($secret, $e->errorclass);
+        }
     }
 
     public function test_secret_never_leaks_across_any_error_class(): void {

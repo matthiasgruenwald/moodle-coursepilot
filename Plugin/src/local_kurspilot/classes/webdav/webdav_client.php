@@ -263,7 +263,14 @@ final class webdav_client {
         if ($code === 404) {
             return $this->is_dav_xml_body($response) ? webdav_error::NOT_FOUND : webdav_error::UNCLEAR;
         }
-        // 429, 503 und jeder nicht benannte Status: still wiederholbar, nie stillschweigend Erfolg.
+        if ($code >= 300 && $code < 400) {
+            // Der Transport folgt keiner Weiterleitung (curl_transport::transport_options()) -
+            // eine 3xx-Antwort ist deshalb ein benannter Fehler, nie still wiederholbar: sonst
+            // koennten Anmeldedaten an eine vom Server bestimmte, moeglicherweise unverschluesselte
+            // Adresse gelangen (Issue #510).
+            return webdav_error::REDIRECTED;
+        }
+        // 429, 503 und jeder andere nicht benannte Status: still wiederholbar, nie stillschweigend Erfolg.
         return webdav_error::UNCLEAR;
     }
 
@@ -301,13 +308,18 @@ final class webdav_client {
      * @param int $depth
      * @return array<int, array{name: string, type: string, size: int,
      *         timemodified: int, etag: ?string, mimetype: string}>
+     * @throws webdav_error UNCLEAR, wenn der Rumpf trotz 2xx-Status nicht als
+     *         XML lesbar ist - nie stillschweigend ein leerer Ordner (Issue #510),
+     *         sonst entfallen Uebergabe-Hinweis und Altbestand-Erkennung.
      */
     private function parse_multistatus(string $body, string $requesturl, int $depth): array {
         $previous = libxml_use_internal_errors(true);
-        $sxe = simplexml_load_string($body);
+        // LIBXML_NONET: kein Netzzugriff beim Parsen, auch nicht fuer eine im
+        // Rumpf verlinkte externe DTD/Entity (Issue #510).
+        $sxe = simplexml_load_string($body, \SimpleXMLElement::class, LIBXML_NONET);
         libxml_use_internal_errors($previous);
         if ($sxe === false) {
-            return [];
+            throw new webdav_error(webdav_error::UNCLEAR, 'PROPFIND-Rumpf trotz Erfolgsstatus nicht als XML lesbar.');
         }
 
         $requestpath = $this->normalised_path($requesturl);

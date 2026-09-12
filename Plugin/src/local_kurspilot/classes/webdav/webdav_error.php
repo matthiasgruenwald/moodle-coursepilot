@@ -19,7 +19,7 @@ namespace local_kurspilot\webdav;
 /**
  * Eine benannte Fehlerklasse statt eines nackten Statuscodes (Issue #489,
  * Spec #486 §4, ADR 0022). Jeder Aufrufer von {@see webdav_client}
- * unterscheidet nur diese sieben Klassen, nie einen HTTP-Code.
+ * unterscheidet nur diese acht Klassen, nie einen HTTP-Code.
  *
  * Traegt bewusst nie Benutzername, Passwort, Anmeldekopf, Serverpfad oder
  * Antwortrumpf in der Meldung (Spec §3/§8, Geheimnis-Test).
@@ -50,6 +50,9 @@ final class webdav_error extends \RuntimeException {
 
     /** @var string Moodles Hostsperre. */
     public const BLOCKED = 'gesperrt';
+
+    /** @var string 3xx-Antwort - der Client folgt keiner Weiterleitung (Issue #510). */
+    public const REDIRECTED = 'Weiterleitung abgelehnt';
 
     /**
      * @param string $errorclass Eine der Konstanten dieser Klasse.

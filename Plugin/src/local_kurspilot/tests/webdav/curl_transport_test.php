@@ -85,6 +85,34 @@ final class curl_transport_test extends \advanced_testcase {
         $this->assertDebuggingCalled();
     }
 
+    /**
+     * Sicherheitsbefund HIGH (Issue #510): Moodles `\curl` schaltet die
+     * Zertifikatspruefung standardmaessig ab und folgt Weiterleitungen - ohne
+     * Gegeneinstellung koennte das Basic-Passwort ueber eine unverschluesselte
+     * oder fremde Adresse mitgelesen werden. Da `\curl::mock_response()` den
+     * echten Optionsaufbau umgeht (Moodle liefert die gemockte Antwort vor
+     * `apply_opt()`), belegt dieser Test die von {@see curl_transport}
+     * gebauten Optionen direkt per Reflection auf die private Methode.
+     */
+    public function test_transport_options_verify_certificate_forbid_redirects_and_limit_time_and_size(): void {
+        $curl = new \curl();
+        $transport = new curl_transport($curl, 'lehrkraft', 'pw');
+
+        $method = new \ReflectionMethod(curl_transport::class, 'transport_options');
+        $options = $method->invoke($transport, []);
+
+        $this->assertTrue($options['CURLOPT_SSL_VERIFYPEER']);
+        $this->assertSame(2, $options['CURLOPT_SSL_VERIFYHOST']);
+        $this->assertSame(0, $options['CURLOPT_FOLLOWLOCATION']);
+        $this->assertGreaterThan(0, $options['CURLOPT_TIMEOUT']);
+        $this->assertGreaterThan(0, $options['CURLOPT_MAXFILESIZE']);
+        // Fortschritts-Abbruch als Ergaenzung zu CURLOPT_MAXFILESIZE (das nur
+        // bei vorab bekannter Content-Length greift) - begrenzt auch einen
+        // Server ohne Content-Length (Issue #510).
+        $this->assertFalse($options['CURLOPT_NOPROGRESS']);
+        $this->assertIsCallable($options['CURLOPT_XFERINFOFUNCTION']);
+    }
+
     public function test_successful_response_is_wrapped_unmodified(): void {
         $this->resetAfterTest();
         \curl::mock_response('Hallo Welt');
