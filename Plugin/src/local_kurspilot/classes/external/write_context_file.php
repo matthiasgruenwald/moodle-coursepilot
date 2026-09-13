@@ -67,6 +67,13 @@ class write_context_file extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            'courseid' => new external_value(
+                PARAM_INT,
+                'Optional: Kurs-ID, wenn der Inhalt zu einem bestimmten Kurs gehoert - dient nur einem etwaigen '
+                    . 'Eintrag der Notiz "noch nicht gespeichert", falls der Speicher/die Verbindung/der Ort scheitert',
+                VALUE_DEFAULT,
+                0
+            ),
         ]);
     }
 
@@ -76,6 +83,7 @@ class write_context_file extends external_api {
      * @param string $expectedcontenthash
      * @param string $ausstand
      * @param bool $nuranlegen
+     * @param int $courseid
      * @return array
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
      *         contextfiletoolarge, contextfilelocked, contextfilechanged,
@@ -87,7 +95,8 @@ class write_context_file extends external_api {
         string $content,
         string $expectedcontenthash = '',
         string $ausstand = '',
-        bool $nuranlegen = false
+        bool $nuranlegen = false,
+        int $courseid = 0
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'path' => $path,
@@ -95,6 +104,7 @@ class write_context_file extends external_api {
             'expected_contenthash' => $expectedcontenthash,
             'ausstand' => $ausstand,
             'nur_anlegen' => $nuranlegen,
+            'courseid' => $courseid,
         ]);
 
         self::validate_context(context_files::own_context());
@@ -106,7 +116,33 @@ class write_context_file extends external_api {
         // weder Nutzerquote noch moodle/user:manageownfiles - "fuer den
         // Kontextbereich in Moodle bleibt alles wie heute" gilt wortwoertlich,
         // die beiden Zweige bleiben deshalb getrennt statt ineinander verwoben.
-        $location = context_files::resolve_pointer_location();
+        try {
+            $location = context_files::resolve_pointer_location();
+        } catch (\moodle_exception $e) {
+            // Pruefung 8 (IServ-Bereich, Issue #516, Spec #486 §2/§8) scheitert
+            // schon bei der reinen Pointer-Aufloesung, bevor ein Ort feststeht -
+            // trotzdem ein Ausfall am Ort, kein Aufruffehler: direkt in den
+            // externen Zweig, dessen eigene Aufloesung (pointer_writer) denselben
+            // Fehler noch einmal trifft, dort aber faengt und einen Eintrag in
+            // der Ausstandsnotiz anlegt (statt hier schon unuebersetzt abzubrechen).
+            if ($e->errorcode === 'webdaviservfilesonly') {
+                // Mit $location === null bleiben Existenz-Peek und Zugelassener-
+                // Speicher-Pruefung wirkungslos (beide an einen Ort gebunden, den
+                // es hier nicht gibt) - der reine Inhalts-Gate ("ist der Inhalt
+                // markiert, obwohl der Schalter aus ist?") bleibt aber in Kraft,
+                // exakt dieselbe Pruefung wie im regulaeren externen Zweig unten.
+                self::require_personal_data_allowed($content, null, $params['path'], $params['nur_anlegen']);
+                return self::execute_external(
+                    $params['path'],
+                    $content,
+                    $params['expected_contenthash'],
+                    $params['ausstand'],
+                    $params['nur_anlegen'],
+                    $params['courseid']
+                );
+            }
+            throw $e;
+        }
         self::require_personal_data_allowed($content, $location, $params['path'], $params['nur_anlegen']);
 
         if ($location !== null && $location->kind === pointer_location::EXTERN) {
@@ -115,7 +151,8 @@ class write_context_file extends external_api {
                 $content,
                 $params['expected_contenthash'],
                 $params['ausstand'],
-                $params['nur_anlegen']
+                $params['nur_anlegen'],
+                $params['courseid']
             );
         }
 
@@ -258,6 +295,7 @@ class write_context_file extends external_api {
      * @param string $expectedcontenthash Optional: siehe {@see execute()}.
      * @param string $ausstand Optional: siehe {@see execute()}.
      * @param bool $createonly Optional: siehe {@see execute()}.
+     * @param int $courseid Optional: siehe {@see execute()}.
      * @return array
      */
     private static function execute_external(
@@ -265,9 +303,17 @@ class write_context_file extends external_api {
         string $content,
         string $expectedcontenthash,
         string $ausstand,
-        bool $createonly = false
+        bool $createonly = false,
+        int $courseid = 0
     ): array {
-        $result = context_files::write_pointer_aware($path, $content, $createonly, $expectedcontenthash, $ausstand !== '');
+        $result = context_files::write_pointer_aware(
+            $path,
+            $content,
+            $createonly,
+            $expectedcontenthash,
+            $ausstand !== '',
+            $courseid
+        );
         \local_kurspilot\ausstand_notice::dismiss($ausstand);
 
         $message = $result['created']

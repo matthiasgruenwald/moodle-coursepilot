@@ -335,7 +335,7 @@ final class append_context_file_test extends \advanced_testcase {
      */
     public function test_execute_parameters_expose_expected_contenthash_for_the_external_branch(): void {
         $this->assertSame(
-            ['path', 'content', 'ausstand', 'expected_contenthash'],
+            ['path', 'content', 'ausstand', 'expected_contenthash', 'courseid'],
             array_keys(append_context_file::execute_parameters()->keys)
         );
     }
@@ -601,6 +601,59 @@ final class append_context_file_test extends \advanced_testcase {
             \local_kurspilot\webdav\webdav_error::STORAGE_FULL,
             $ausstaende[0]['eintraege'][0]['fehlerklasse']
         );
+    }
+
+    /**
+     * Jeder Eintrag der Ausstandsnotiz nennt die Kurs-ID (Issue #516
+     * Akzeptanzkriterium) - auch beim Anhaengen.
+     */
+    public function test_ausstand_entry_carries_course_id(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->fill_storage();
+
+        try {
+            append_context_file::execute('journal.md', 'x', '', '', 42);
+            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertSame(42, $ausstaende[0]['eintraege'][0]['kursid']);
+    }
+
+    /**
+     * Pruefung 8 (IServ-Bereich, Issue #497/#516, Spec #486 §2/§8) erzeugt
+     * beim Anhaengen ebenfalls einen Ausstand.
+     */
+    public function test_iserv_pruefung_8_records_ausstand_on_append(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Groups/Klasse7a', [
+            'server' => $this->fixtureserver,
+            'basispfad' => $this->fixturebasispfad,
+            'konto' => $this->fixturekonto,
+            'iserv' => true,
+        ]);
+        $fake = new fake_webdav_transport();
+        webdav_instance::use_test_transport($fake);
+
+        try {
+            $this->append('journal.md', 'x');
+            $this->fail('Pfad ausserhalb von "Files/" haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertCount(1, $ausstaende);
+        $this->assertSame('webdaviservfilesonly', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame([], $fake->requests());
     }
 
     /**

@@ -76,6 +76,25 @@ final class pointer_writer {
         'webdavauthunsupported',
         'webdavfingerprintchanged',
         'contextrootmissing',
+        // Pruefung 8 (Issue #516, Spec #486 §2/§8): "Scheitert ein
+        // Schreibvorgang an einer der Pruefungen 2 bis 6 oder 8, entsteht ein
+        // Ausstand." Pruefung 1 (Pointer unlesbar/unvollstaendig) und
+        // Pruefung 7 (Verschachtelung) bleiben bewusst aussen vor - beides
+        // sind Aufruffehler, keine Ausfaelle an Speicher/Verbindung/Ort.
+        'webdaviservfilesonly',
+    ];
+
+    /**
+     * @var string[] Fehlerklassen/-schluessel, deren Ursache sich "spaeter"
+     *      von selbst loest (voruebergehend) statt an der Verbindung der
+     *      Lehrkraft zu haengen - Teil 2 der fuenfteiligen Ausfallantwort
+     *      (Issue #516, Spec #486 §8: "spaeter nachtragen" vs. "an Ihrem
+     *      Speicher ist etwas zu tun"). Jede andere Fehlerklasse gilt als
+     *      "an Ihrem Speicher ist etwas zu tun".
+     */
+    private const LATER_CLASSES = [
+        webdav_error::UNCLEAR,
+        webdav_error::UNREACHABLE,
     ];
 
     /**
@@ -98,6 +117,7 @@ final class pointer_writer {
         'webdavfingerprintchanged' => 'Server, Pfad oder Konto der Verbindung haben sich geändert',
         'contextrootmissing' => 'der gewählte Kontextbereich ist dort nicht mehr vorhanden (verschoben, gelöscht'
             . ' oder umbenannt) — bitte auf der Ortswahlseite neu wählen',
+        'webdaviservfilesonly' => 'der gewählte Pfad liegt bei IServ außerhalb von „Files/“',
     ];
 
     /**
@@ -123,6 +143,9 @@ final class pointer_writer {
      *        gilt dann selbst als `Konflikt`, statt gewachsenen Bestand
      *        ungeprueft zu ersetzen. Wirkungslos, solange die Datei noch
      *        fehlt - "anlegen" ist ueber `If-None-Match: *` bereits sicher.
+     * @param int $courseid Kurs-ID, nur fuer einen etwaigen Eintrag der
+     *        Ausstandsnotiz (Issue #516, Spec #486 §8) - 0, wenn der Aufruf
+     *        keinem Kurs zugeordnet ist.
      * @return array{path: string, created: bool, size: int, oldsize: int}
      * @throws \moodle_exception invalidpathkey/contextfilenotmarkdown des Bereichs,
      *         contextfileexternalconflict bei 412 sowie bei einem nicht mehr
@@ -139,14 +162,16 @@ final class pointer_writer {
         string $content,
         bool $createonly = false,
         string $expectedcontenthash = '',
-        bool $requirecheckvalue = false
+        bool $requirecheckvalue = false,
+        int $courseid = 0
     ): array {
-        $location = self::resolve_external_location($area);
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = self::client_path($folders, $filename);
         $operation = self::OP_CREATE;
+        $location = null;
 
         try {
+            $location = self::resolve_external_location($area);
             $instance = webdav_instance::resolve($location);
             $fileurl = $instance->file_url(storage_anchor::external_relative_path($area, $location, $clientpath));
             $client = $instance->client();
@@ -163,9 +188,9 @@ final class pointer_writer {
                 $client->put_overwrite($fileurl, $content, $existing['etag'], $existing['timemodified']);
             }
         } catch (webdav_error $e) {
-            throw self::translate_or_record($e, $clientpath, $location, $operation);
+            throw self::translate_or_record($e, $clientpath, $location, $operation, $courseid);
         } catch (\moodle_exception $e) {
-            throw self::record_location_failure($e, $clientpath, $location, $operation);
+            throw self::record_location_failure($e, $clientpath, $location, $operation, $courseid);
         }
 
         return [
@@ -190,6 +215,9 @@ final class pointer_writer {
      *        write geprueft statt vor einem einzelnen PUT.
      * @param bool $requirecheckvalue Nachtragen (`ausstand=`, Issue #513) -
      *        siehe {@see write()}.
+     * @param int $courseid Kurs-ID, nur fuer einen etwaigen Eintrag der
+     *        Ausstandsnotiz (Issue #516, Spec #486 §8) - 0, wenn der Aufruf
+     *        keinem Kurs zugeordnet ist.
      * @return array{path: string, created: bool, size: int}
      * @throws \moodle_exception invalidpathkey/contextfilenotmarkdown des Bereichs,
      *         contextfileexternalconflict bei 412 sowie bei einem nicht mehr
@@ -204,13 +232,15 @@ final class pointer_writer {
         string $path,
         string $content,
         string $expectedcontenthash = '',
-        bool $requirecheckvalue = false
+        bool $requirecheckvalue = false,
+        int $courseid = 0
     ): array {
-        $location = self::resolve_external_location($area);
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = self::client_path($folders, $filename);
+        $location = null;
 
         try {
+            $location = self::resolve_external_location($area);
             $instance = webdav_instance::resolve($location);
             $fileurl = $instance->file_url(storage_anchor::external_relative_path($area, $location, $clientpath));
             $client = $instance->client();
@@ -225,9 +255,9 @@ final class pointer_writer {
             $newcontent = $client->get($fileurl) . $content;
             $client->put_overwrite($fileurl, $newcontent, $existing['etag'], $existing['timemodified']);
         } catch (webdav_error $e) {
-            throw self::translate_or_record($e, $clientpath, $location, self::OP_APPEND);
+            throw self::translate_or_record($e, $clientpath, $location, self::OP_APPEND, $courseid);
         } catch (\moodle_exception $e) {
-            throw self::record_location_failure($e, $clientpath, $location, self::OP_APPEND);
+            throw self::record_location_failure($e, $clientpath, $location, self::OP_APPEND, $courseid);
         }
 
         return ['path' => $clientpath, 'created' => false, 'size' => strlen($newcontent)];
@@ -393,54 +423,83 @@ final class pointer_writer {
      *
      * @param webdav_error $e
      * @param string $clientpath
-     * @param pointer_location $location
+     * @param pointer_location $location Nie null: ein {@see webdav_error} kann
+     *        erst entstehen, nachdem der Pointer bereits erfolgreich aufgeloest wurde.
      * @param string $operation Eine der OP_*-Konstanten.
+     * @param int $courseid Siehe {@see write()}.
      * @return \moodle_exception
      */
     private static function translate_or_record(
         webdav_error $e,
         string $clientpath,
         pointer_location $location,
-        string $operation
+        string $operation,
+        int $courseid
     ): \moodle_exception {
         if ($e->errorclass === webdav_error::CONFLICT) {
             return new \moodle_exception('contextfileexternalconflict', 'local_kurspilot', '', $clientpath);
         }
-        return self::fail($e->errorclass, $e->getMessage(), $clientpath, $location, $operation);
+        return self::fail(
+            $e->errorclass,
+            $e->getMessage(),
+            $clientpath,
+            $operation,
+            (string) ($location->fingerprint['server'] ?? ''),
+            $location->instanceid,
+            $courseid
+        );
     }
 
     /**
-     * Ort-Ausfaelle aus {@see \local_kurspilot\webdav\webdav_instance::resolve()}
-     * (Issue #492: "eine geloeschte Instanz, eine entzogene Freischaltung,
-     * ein geaendertes Pruefmerkmal") legen ebenfalls einen Ausstand an - jeder
-     * andere moodle_exception-Fehlerschluessel laeuft unveraendert weiter, er
-     * gehoert nicht zu diesem Zweig.
+     * Ort-Ausfaelle legen ebenfalls einen Ausstand an - jeder andere
+     * moodle_exception-Fehlerschluessel laeuft unveraendert weiter, er gehoert
+     * nicht zu diesem Zweig. Zwei Quellen (Issue #516): die ersten sechs
+     * Codes aus {@see \local_kurspilot\webdav\webdav_instance::resolve()}
+     * (Pruefungen 2-6: "eine geloeschte Instanz, eine entzogene
+     * Freischaltung, ein geaendertes Pruefmerkmal", dazu #514s
+     * "contextrootmissing") - dort ist der Pointer bereits aufgeloest,
+     * $location also gesetzt; `webdaviservfilesonly` (Pruefung 8) dagegen
+     * kommt aus {@see \local_kurspilot\context_pointer::resolve_target()}
+     * *waehrend* der Pointer-Aufloesung selbst - $location ist dort noch
+     * `null`, Host und Instanz-ID kommen dann aus dem $a der Ausnahme.
      *
      * @param \moodle_exception $e
      * @param string $clientpath
-     * @param pointer_location $location
+     * @param pointer_location|null $location null bei `webdaviservfilesonly`.
      * @param string $operation Eine der OP_*-Konstanten.
+     * @param int $courseid Siehe {@see write()}.
      * @return \moodle_exception
      */
     private static function record_location_failure(
         \moodle_exception $e,
         string $clientpath,
-        pointer_location $location,
-        string $operation
+        ?pointer_location $location,
+        string $operation,
+        int $courseid
     ): \moodle_exception {
         if (!in_array($e->errorcode, self::LOCATION_FAILURE_CODES, true)) {
             return $e;
         }
-        return self::fail($e->errorcode, $e->getMessage(), $clientpath, $location, $operation);
+        if ($location !== null) {
+            $host = (string) ($location->fingerprint['server'] ?? '');
+            $instanceid = $location->instanceid;
+        } else {
+            $host = (string) ($e->a->server ?? '');
+            $instanceid = is_numeric($e->a->instanceid ?? null) ? (int) $e->a->instanceid : null;
+        }
+        return self::fail($e->errorcode, $e->getMessage(), $clientpath, $operation, $host, $instanceid, $courseid);
     }
 
     /**
      * Vermerkt einen Ausstand ({@see ausstand_notice::record()}) und baut die
-     * fuenfteilige Ausfallantwort (Issue #492, Spec #486 §8/§10): Pfad und
-     * Vorgang; Ursache in Lehrkraftsprache; "noch nicht gespeichert, vermerkt
-     * (Kennung ...)"; Anweisung an die KI; Instanzname und Host. Nie ein
-     * absoluter Serverpfad, Benutzername, Passwort, HTTP-Code oder
-     * Antwortrumpf (Geheimnis-Test) - der Rohcode ($rawmessage, z.B.
+     * fuenfteilige Ausfallantwort (Issue #492/#516, Spec #486 §8/§10): (1)
+     * Pfad und Vorgang; (2) Ursache in Lehrkraftsprache, mit dem Hinweis
+     * "spaeter nachtragen" oder "an Ihrem Speicher ist etwas zu tun" (Issue
+     * #516); (3) "noch nicht gespeichert, vermerkt (Kennung ...)"; (4) die
+     * Anweisung an die KI, den Inhalt zu behalten, mit `ausstand=`
+     * nachzutragen und keinen anderen Ort zu nehmen; (5) Instanzname und
+     * Host. Nie ein absoluter Serverpfad, Benutzername, Passwort, HTTP-Code
+     * oder Antwortrumpf (Geheimnis-Test) - der Rohcode ($rawmessage, z.B.
      * "HTTP 507") geht stattdessen ins Zugriffsprotokoll.
      *
      * Kann die Notiz selbst nicht geschrieben werden (Private-Files-Quote
@@ -450,21 +509,25 @@ final class pointer_writer {
      * @param string $errorclass webdav_error-Konstante oder ein Fehlerschluessel aus LOCATION_FAILURE_CODES.
      * @param string $rawmessage Interne, entwicklerorientierte Meldung (z.B. "HTTP 507") - nur fuers Zugriffsprotokoll.
      * @param string $clientpath
-     * @param pointer_location $location
      * @param string $operation Eine der OP_*-Konstanten.
+     * @param string $host
+     * @param int|null $instanceid
+     * @param int $courseid Kurs-ID des Eintrags in der Ausstandsnotiz (Issue #516).
      * @return \moodle_exception
      */
     private static function fail(
         string $errorclass,
         string $rawmessage,
         string $clientpath,
-        pointer_location $location,
-        string $operation
+        string $operation,
+        string $host,
+        ?int $instanceid,
+        int $courseid
     ): \moodle_exception {
         access_log::log_failure('WebDAV ' . $errorclass . ': ' . $rawmessage);
 
         try {
-            $kennung = ausstand_notice::record($clientpath, $operation, $errorclass);
+            $kennung = ausstand_notice::record($clientpath, $operation, $errorclass, $courseid);
         } catch (\moodle_exception $quotaerror) {
             if ($quotaerror->errorcode !== 'ausstandnotequotaexceeded') {
                 throw $quotaerror;
@@ -475,13 +538,30 @@ final class pointer_writer {
             ]);
         }
 
+        $reason = self::REASONS[$errorclass] ?? ('Fehlerklasse "' . $errorclass . '"');
+        $reason .= ' – ' . self::classify($errorclass);
+
         return new \moodle_exception('ausstandwritefailed', 'local_kurspilot', '', (object) [
             'path' => $clientpath,
             'operation' => $operation,
-            'reason' => self::REASONS[$errorclass] ?? ('Fehlerklasse "' . $errorclass . '"'),
+            'reason' => $reason,
             'kennung' => $kennung,
-            'target' => self::describe_target($location),
+            'target' => self::describe_target($host, $instanceid),
         ]);
+    }
+
+    /**
+     * Teil 2 der Ausfallantwort (Issue #516, Spec #486 §8): "spaeter
+     * nachtragen" fuer eine Ursache, die sich voraussichtlich von selbst
+     * loest, sonst "an Ihrem Speicher ist etwas zu tun".
+     *
+     * @param string $errorclass
+     * @return string
+     */
+    private static function classify(string $errorclass): string {
+        return in_array($errorclass, self::LATER_CLASSES, true)
+            ? 'das lässt sich später nachtragen'
+            : 'an Ihrem Speicher ist etwas zu tun';
     }
 
     /**
@@ -490,17 +570,17 @@ final class pointer_writer {
      * das Pruefmerkmal im Pointer traegt aber bereits nur den Host, kein
      * Geheimnis. Der Instanzname kommt frisch aus der Datenbank, weil eine
      * geloeschte Instanz (webdavinstancemissing) keinen mehr hat - dann
-     * bleibt nur der im Pointer gespeicherte Host.
+     * bleibt nur der uebergebene Host.
      *
-     * @param pointer_location $location
+     * @param string $host
+     * @param int|null $instanceid
      * @return string
      */
-    private static function describe_target(pointer_location $location): string {
+    private static function describe_target(string $host, ?int $instanceid): string {
         global $DB;
 
-        $host = (string) ($location->fingerprint['server'] ?? '');
-        $name = $location->instanceid !== null
-            ? $DB->get_field('repository_instances', 'name', ['id' => $location->instanceid])
+        $name = $instanceid !== null
+            ? $DB->get_field('repository_instances', 'name', ['id' => $instanceid])
             : false;
 
         if ($name === false || $name === null || $name === '') {

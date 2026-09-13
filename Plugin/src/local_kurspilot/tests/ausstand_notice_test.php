@@ -37,7 +37,7 @@ final class ausstand_notice_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $kennung = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll');
+        $kennung = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
 
         $this->assertNotSame('', $kennung);
         $groups = ausstand_notice::list_grouped();
@@ -48,6 +48,7 @@ final class ausstand_notice_test extends \advanced_testcase {
             'zeitpunkt' => $groups[0]['eintraege'][0]['zeitpunkt'],
             'vorgang' => 'anlegen',
             'fehlerklasse' => 'Speicher voll',
+            'kursid' => 7,
         ], $groups[0]['eintraege'][0]);
     }
 
@@ -60,8 +61,8 @@ final class ausstand_notice_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $erste = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll');
-        $zweite = ausstand_notice::record('plan.md', 'überschreiben', 'nicht erreichbar');
+        $erste = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
+        $zweite = ausstand_notice::record('plan.md', 'überschreiben', 'nicht erreichbar', 7);
 
         $this->assertNotSame($erste, $zweite);
         $groups = ausstand_notice::list_grouped();
@@ -76,7 +77,7 @@ final class ausstand_notice_test extends \advanced_testcase {
     public function test_dismiss_removes_entry_and_reports_unknown_kennung(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
-        $kennung = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll');
+        $kennung = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
 
         $this->assertTrue(ausstand_notice::dismiss($kennung));
         $this->assertSame([], ausstand_notice::list_grouped());
@@ -94,7 +95,7 @@ final class ausstand_notice_test extends \advanced_testcase {
         $teacherb = $this->getDataGenerator()->create_user();
 
         $this->setUser($teachera);
-        ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll');
+        ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
 
         $this->setUser($teacherb);
         $this->assertSame([], ausstand_notice::list_grouped());
@@ -113,7 +114,7 @@ final class ausstand_notice_test extends \advanced_testcase {
         $this->setUser($this->getDataGenerator()->create_user());
 
         try {
-            ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll');
+            ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
             $this->fail('Quotenueberschreitung haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $this->assertSame('ausstandnotequotaexceeded', $e->errorcode);

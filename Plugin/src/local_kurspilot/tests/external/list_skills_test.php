@@ -104,9 +104,9 @@ final class list_skills_test extends \advanced_testcase {
         $fake = new fake_webdav_transport();
         webdav_instance::use_test_transport($fake);
         try {
-            $aelter = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll');
-            $neuer = ausstand_notice::record('plan.md', 'überschreiben', 'nicht erreichbar');
-            ausstand_notice::record('journal.md', 'anhängen', 'Anmeldung abgelehnt');
+            $aelter = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
+            $neuer = ausstand_notice::record('plan.md', 'überschreiben', 'nicht erreichbar', 0);
+            ausstand_notice::record('journal.md', 'anhängen', 'Anmeldung abgelehnt', 0);
 
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);

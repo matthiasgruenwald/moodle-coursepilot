@@ -80,6 +80,13 @@ class append_context_file extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
+            'courseid' => new external_value(
+                PARAM_INT,
+                'Optional: Kurs-ID, wenn der Inhalt zu einem bestimmten Kurs gehoert - dient nur einem etwaigen '
+                    . 'Eintrag der Notiz "noch nicht gespeichert", falls der Speicher/die Verbindung/der Ort scheitert',
+                VALUE_DEFAULT,
+                0
+            ),
         ]);
     }
 
@@ -88,18 +95,26 @@ class append_context_file extends external_api {
      * @param string $content
      * @param string $ausstand
      * @param string $expectedcontenthash
+     * @param int $courseid
      * @return array
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
      *         contextfiletoolarge, contextfilelocked, contextquotaexceeded,
      *         contextfileexternalconflict (extern, Issue #513)
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
-    public static function execute(string $path, string $content, string $ausstand = '', string $expectedcontenthash = ''): array {
+    public static function execute(
+        string $path,
+        string $content,
+        string $ausstand = '',
+        string $expectedcontenthash = '',
+        int $courseid = 0
+    ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'path' => $path,
             'content' => $content,
             'ausstand' => $ausstand,
             'expected_contenthash' => $expectedcontenthash,
+            'courseid' => $courseid,
         ]);
 
         self::validate_context(context_files::own_context());
@@ -109,9 +124,30 @@ class append_context_file extends external_api {
 
         // Zeigerbewusst (Issue #491, Spec #486 §6): siehe write_context_file
         // fuer die Begruendung der getrennten Zweige.
-        $location = context_files::resolve_pointer_location();
+        try {
+            $location = context_files::resolve_pointer_location();
+        } catch (\moodle_exception $e) {
+            // Pruefung 8 (IServ-Bereich, Issue #516, Spec #486 §2/§8) - siehe
+            // write_context_file::execute() fuer die Begruendung.
+            if ($e->errorcode === 'webdaviservfilesonly') {
+                return self::execute_external(
+                    $params['path'],
+                    $content,
+                    $params['ausstand'],
+                    $params['expected_contenthash'],
+                    $params['courseid']
+                );
+            }
+            throw $e;
+        }
         if ($location !== null && $location->kind === pointer_location::EXTERN) {
-            return self::execute_external($params['path'], $content, $params['ausstand'], $params['expected_contenthash']);
+            return self::execute_external(
+                $params['path'],
+                $content,
+                $params['ausstand'],
+                $params['expected_contenthash'],
+                $params['courseid']
+            );
         }
 
         return self::execute_moodle($params, $content);
@@ -189,10 +225,29 @@ class append_context_file extends external_api {
      * @param string $content
      * @param string $ausstand Optional: siehe {@see execute()}.
      * @param string $expectedcontenthash Optional: siehe {@see execute()}.
+     * @param int $courseid Optional: siehe {@see execute()}.
      * @return array
      */
-    private static function execute_external(string $path, string $content, string $ausstand, string $expectedcontenthash): array {
-        $existing = context_files::read_content_pointer_aware($path);
+    private static function execute_external(
+        string $path,
+        string $content,
+        string $ausstand,
+        string $expectedcontenthash,
+        int $courseid = 0
+    ): array {
+        try {
+            $existing = context_files::read_content_pointer_aware($path);
+        } catch (\moodle_exception $e) {
+            // Pruefung 8 (IServ-Bereich, Issue #516, Spec #486 §2/§8): der Ort
+            // ist nicht aufloesbar - der folgende Schreibversuch
+            // (append_pointer_aware) scheitert ohnehin und legt den Eintrag in
+            // der Ausstandsnotiz an; die Personenbezugs-Vorpruefungen hier sind
+            // dann gegenstandslos, nicht ihrerseits ein zweiter Fehler.
+            if ($e->errorcode !== 'webdaviservfilesonly') {
+                throw $e;
+            }
+            $existing = null;
+        }
         if ($existing && !personal_data::allowed() && personal_data::is_marked($existing['content'])) {
             throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $path);
         }
@@ -203,13 +258,20 @@ class append_context_file extends external_api {
         // (der Fall $existing === null).
         $finalcontent = ($existing['content'] ?? '') . $content;
         if (personal_data::is_marked($finalcontent)) {
-            \local_kurspilot\personal_data_hosts::require_allowed_location(
-                context_files::resolve_pointer_location(),
-                $path
-            );
+            try {
+                \local_kurspilot\personal_data_hosts::require_allowed_location(
+                    context_files::resolve_pointer_location(),
+                    $path
+                );
+            } catch (\moodle_exception $e) {
+                if ($e->errorcode !== 'webdaviservfilesonly') {
+                    throw $e;
+                }
+                // Siehe oben: der folgende Schreibversuch scheitert ohnehin.
+            }
         }
 
-        $result = context_files::append_pointer_aware($path, $content, $expectedcontenthash, $ausstand !== '');
+        $result = context_files::append_pointer_aware($path, $content, $expectedcontenthash, $ausstand !== '', $courseid);
         \local_kurspilot\ausstand_notice::dismiss($ausstand);
 
         $message = $result['created']

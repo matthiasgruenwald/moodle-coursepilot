@@ -150,6 +150,12 @@ final class tool_registry_context_tools {
                         'description' => 'Optional: true legt nur an und ueberschreibt nie - fuer das Kopieren aus '
                             . 'dem Altbestand an den neuen Ort',
                     ],
+                    'courseid' => [
+                        'type' => 'number',
+                        'description' => 'Optional: Kurs-ID, wenn der Inhalt zu einem bestimmten Kurs gehoert - '
+                            . 'dient nur einem etwaigen Eintrag der Notiz "noch nicht gespeichert", falls der '
+                            . 'Speicher, die Verbindung oder der Ort scheitert.',
+                    ],
                 ],
                 'required' => ['path', 'content'],
             ],
@@ -190,6 +196,12 @@ final class tool_registry_context_tools {
                             . 'letzten Lesen oder Auflisten - passt er nicht mehr, bricht der Vorgang mit '
                             . '"Konflikt" ab. Ohne ETag (IServ) beruht der Vergleich auf der Aenderungszeit '
                             . '(Sekundenaufloesung).',
+                    ],
+                    'courseid' => [
+                        'type' => 'number',
+                        'description' => 'Optional: Kurs-ID, wenn der Inhalt zu einem bestimmten Kurs gehoert - '
+                            . 'dient nur einem etwaigen Eintrag der Notiz "noch nicht gespeichert", falls der '
+                            . 'Speicher, die Verbindung oder der Ort scheitert.',
                     ],
                 ],
                 'required' => ['path', 'content'],

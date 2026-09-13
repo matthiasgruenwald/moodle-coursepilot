@@ -439,7 +439,7 @@ final class storage_anchor_test extends \advanced_testcase {
     public function test_list_entries_excludes_the_ausstand_notice_file(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
-        \local_kurspilot\ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll');
+        \local_kurspilot\ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
 
         $entries = storage_anchor::list_entries(context_files::resolve_directory(''));
 

@@ -404,9 +404,27 @@ final class read_context_file_test extends \advanced_testcase {
             $this->fail('Anmeldung abgelehnt haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavexternalerror', $e->errorcode);
+            // Issue #516 Akzeptanzkriterium: ein Leseausfall nennt der KI
+            // ausdruecklich die Kontext-Luecke - sprachneutral geprueft
+            // (die PHPUnit-Instanz loest nur Englisch auf, siehe
+            // write_context_file_test::test_german_messages_carry_the_required_wording()
+            // fuer die deutsche Formulierung).
+            $this->assertStringContainsString('context gap', $e->getMessage());
         }
 
         $this->assertSame([], \local_kurspilot\ausstand_notice::list_grouped());
+    }
+
+    /**
+     * Die deutsche Formulierung nennt ausdruecklich "Kontext-Lücke" und nie
+     * das Wort "Ausstand" (Issue #516 Akzeptanzkriterium, CONTEXT.md).
+     */
+    public function test_german_read_failure_message_names_the_context_gap(): void {
+        $string = [];
+        require(__DIR__ . '/../../lang/de/local_kurspilot.php');
+
+        $this->assertStringContainsString('Kontext-Lücke', $string['webdavexternalerror']);
+        $this->assertStringNotContainsString('Ausstand', $string['webdavexternalerror']);
     }
 
     /**

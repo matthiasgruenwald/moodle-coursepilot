@@ -275,6 +275,8 @@ final class context_files {
      *        (Issue #513) - siehe {@see pointer_writer::write()}.
      * @param bool $requirecheckvalue Nachtragen (`ausstand=`, Issue #513) -
      *        siehe {@see pointer_writer::write()}.
+     * @param int $courseid Kurs-ID, nur fuer einen etwaigen Eintrag der
+     *        Ausstandsnotiz (Issue #516) - siehe {@see pointer_writer::write()}.
      * @return array{path: string, created: bool, size: int, oldsize: int}
      */
     public static function write_pointer_aware(
@@ -282,9 +284,10 @@ final class context_files {
         string $content,
         bool $createonly = false,
         string $expectedcontenthash = '',
-        bool $requirecheckvalue = false
+        bool $requirecheckvalue = false,
+        int $courseid = 0
     ): array {
-        return pointer_writer::write(self::area(), $path, $content, $createonly, $expectedcontenthash, $requirecheckvalue);
+        return pointer_writer::write(self::area(), $path, $content, $createonly, $expectedcontenthash, $requirecheckvalue, $courseid);
     }
 
     /**
@@ -297,15 +300,18 @@ final class context_files {
      *        (Issue #513) - siehe {@see pointer_writer::append()}.
      * @param bool $requirecheckvalue Nachtragen (`ausstand=`, Issue #513) -
      *        siehe {@see pointer_writer::append()}.
+     * @param int $courseid Kurs-ID, nur fuer einen etwaigen Eintrag der
+     *        Ausstandsnotiz (Issue #516) - siehe {@see pointer_writer::append()}.
      * @return array{path: string, created: bool, size: int}
      */
     public static function append_pointer_aware(
         string $path,
         string $content,
         string $expectedcontenthash = '',
-        bool $requirecheckvalue = false
+        bool $requirecheckvalue = false,
+        int $courseid = 0
     ): array {
-        return pointer_writer::append(self::area(), $path, $content, $expectedcontenthash, $requirecheckvalue);
+        return pointer_writer::append(self::area(), $path, $content, $expectedcontenthash, $requirecheckvalue, $courseid);
     }
 
     /**

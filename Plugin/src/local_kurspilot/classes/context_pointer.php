@@ -89,7 +89,7 @@ final class context_pointer {
             if ($location->kind === pointer_location::EXTERN && ($location->fingerprint['iserv'] ?? false) === true) {
                 $first = strtok((string) $location->relativepath, '/');
                 if ($first !== \local_kurspilot\webdav\webdav_instance::ISERV_FILES_AREA) {
-                    throw new \moodle_exception('webdaviservfilesonly', 'local_kurspilot', '', \local_kurspilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE);
+                    throw self::iserv_files_only_exception($location);
                 }
             }
         }
@@ -177,10 +177,29 @@ final class context_pointer {
         if ($location->kind === pointer_location::EXTERN && ($location->fingerprint['iserv'] ?? false) === true) {
             $first = strtok((string) $location->relativepath, '/');
             if ($first !== \local_kurspilot\webdav\webdav_instance::ISERV_FILES_AREA) {
-                throw new \moodle_exception('webdaviservfilesonly', 'local_kurspilot', '', \local_kurspilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE);
+                throw self::iserv_files_only_exception($location);
             }
         }
         return $location;
+    }
+
+    /**
+     * Baut die `webdaviservfilesonly`-Ausnahme (Pruefung 8) mit Host und
+     * Instanz-ID im $a-Objekt (Issue #516, Spec #486 §8) - so kann
+     * {@see \local_kurspilot\pointer_writer} "Instanzname und Host" (Teil 5
+     * der Ausfallantwort) auch dann noch nennen, wenn der Pointer selbst nie
+     * bis zu einem fertigen {@see pointer_location} kam (Pruefung 8 scheitert
+     * *waehrend* der Aufloesung).
+     *
+     * @param pointer_location $location Bereits als EXTERN/iserv erkannt.
+     * @return \moodle_exception
+     */
+    private static function iserv_files_only_exception(pointer_location $location): \moodle_exception {
+        return new \moodle_exception('webdaviservfilesonly', 'local_kurspilot', '', (object) [
+            'page' => \local_kurspilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE,
+            'server' => $location->fingerprint['server'] ?? '',
+            'instanceid' => $location->instanceid,
+        ]);
     }
 
     /**

@@ -113,6 +113,7 @@ final class list_skills extends external_api {
                             'zeitpunkt' => new external_value(PARAM_INT, 'Unix-Zeitstempel des gescheiterten Vorgangs'),
                             'vorgang' => new external_value(PARAM_TEXT, '"anlegen", "überschreiben" oder "anhängen"'),
                             'fehlerklasse' => new external_value(PARAM_TEXT, 'Benannte Fehlerklasse, nie ein Freitext'),
+                            'kursid' => new external_value(PARAM_INT, 'Kurs-ID, 0 wenn der Aufruf keinem Kurs zugeordnet war'),
                         ])
                     ),
                 ]),

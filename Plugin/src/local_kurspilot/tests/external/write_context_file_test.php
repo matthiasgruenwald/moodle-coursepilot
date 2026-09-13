@@ -882,16 +882,21 @@ final class write_context_file_test extends \advanced_testcase {
         $pointerlocation = context_files::resolve_pointer_location();
         $DB->delete_records('repository_instances', ['id' => $pointerlocation->instanceid]);
 
+        $message = '';
         try {
             $this->write('plan.md', '# Plan');
             $this->fail('Geloeschte Instanz haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
+            $message = $e->getMessage();
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
         $this->assertSame('webdavinstancemissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        // Issue #516 Akzeptanzkriterium: "Instanz gelöscht" fuehrt zu "an
+        // Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
+        $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
     }
 
     /**
@@ -906,15 +911,20 @@ final class write_context_file_test extends \advanced_testcase {
         $DB->delete_records('role_capabilities', ['capability' => 'repository/webdav:view']);
         accesslib_clear_all_caches_for_unit_testing();
 
+        $message = '';
         try {
             $this->write('plan.md', '# Plan');
             $this->fail('Entzogene Freischaltung haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
+            $message = $e->getMessage();
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
         $this->assertSame('webdavnotenabled', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        // Issue #516 Akzeptanzkriterium: "Freischaltung entzogen" fuehrt zu
+        // "an Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
+        $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
     }
 
     /**
@@ -933,15 +943,236 @@ final class write_context_file_test extends \advanced_testcase {
             ['name' => 'webdav_server']
         );
 
+        $message = '';
         try {
             $this->write('plan.md', '# Plan');
             $this->fail('Geaendertes Pruefmerkmal haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
+            $message = $e->getMessage();
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
         $this->assertSame('webdavfingerprintchanged', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        // Issue #516 Akzeptanzkriterium: "Prüfmerkmal geändert" fuehrt zu
+        // "an Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
+        $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
+    }
+
+    /**
+     * Anmeldung abgelehnt (401/403, ADR 0022: benannte Fehlerklasse
+     * "Anmeldung abgelehnt") fuehrt ebenfalls zu "an Ihrem Speicher ist
+     * etwas zu tun" (Issue #516 Akzeptanzkriterium, Test je Klasse).
+     */
+    public function test_auth_rejected_classifies_as_etwas_zu_tun(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        $onlyputfails401 = new class($fake) implements \local_kurspilot\webdav\webdav_transport {
+            public function __construct(private readonly fake_webdav_transport $inner) {
+            }
+
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_kurspilot\webdav\webdav_response {
+                if ($method === 'PUT') {
+                    return new \local_kurspilot\webdav\webdav_response(401, [], '');
+                }
+                return $this->inner->request($method, $url, $headers, $body);
+            }
+        };
+        webdav_instance::use_test_transport($onlyputfails401);
+
+        $message = '';
+        try {
+            $this->write('plan.md', '# Plan');
+            $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $message = $e->getMessage();
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertSame(
+            \local_kurspilot\webdav\webdav_error::AUTH_REJECTED,
+            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+        );
+        $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
+    }
+
+    /**
+     * "nicht erreichbar" (Zeitueberschreitung/DNS-Fehler, ADR 0022) fuehrt
+     * zu "spaeter nachtragen" (Issue #516 Akzeptanzkriterium, Test je Klasse).
+     */
+    public function test_unreachable_classifies_as_spaeter_nachtragen(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        // Nur PUT scheitert - PROPFIND (Existenzpruefung, Personenbezug-Peek)
+        // laeuft normal ueber den echten Fake, sonst schluege der Aufruf schon
+        // vorher als Leseausfall fehl statt beim eigentlichen Schreiben.
+        $onlyputfails = new class($fake) implements \local_kurspilot\webdav\webdav_transport {
+            public function __construct(private readonly fake_webdav_transport $inner) {
+            }
+
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_kurspilot\webdav\webdav_response {
+                if ($method === 'PUT') {
+                    throw new \local_kurspilot\webdav\webdav_transport_exception('DNS-Aufloesung fehlgeschlagen (Simuliert).');
+                }
+                return $this->inner->request($method, $url, $headers, $body);
+            }
+        };
+        webdav_instance::use_test_transport($onlyputfails);
+
+        $message = '';
+        try {
+            $this->write('plan.md', '# Plan');
+            $this->fail('Nicht erreichbarer Speicher haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $message = $e->getMessage();
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertSame(
+            \local_kurspilot\webdav\webdav_error::UNREACHABLE,
+            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+        );
+        $this->assertStringContainsString('später nachtragen', $message);
+    }
+
+    /**
+     * "unklar/gedrosselt" (jeder nicht benannte Status, ADR 0022) fuehrt
+     * ebenfalls zu "spaeter nachtragen" (Issue #516 Akzeptanzkriterium, Test
+     * je Klasse) - nach Ablauf der stillen Wiederholung (hoechstens 5s).
+     */
+    public function test_unclear_classifies_as_spaeter_nachtragen(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        // Nur PUT scheitert - siehe test_unreachable_classifies_as_spaeter_nachtragen().
+        $onlyputfails = new class($fake) implements \local_kurspilot\webdav\webdav_transport {
+            public function __construct(private readonly fake_webdav_transport $inner) {
+            }
+
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_kurspilot\webdav\webdav_response {
+                if ($method === 'PUT') {
+                    return new \local_kurspilot\webdav\webdav_response(500, [], '');
+                }
+                return $this->inner->request($method, $url, $headers, $body);
+            }
+        };
+        webdav_instance::use_test_transport($onlyputfails);
+
+        $message = '';
+        try {
+            $this->write('plan.md', '# Plan');
+            $this->fail('Unklarer Speicherzustand haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $message = $e->getMessage();
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertSame(
+            \local_kurspilot\webdav\webdav_error::UNCLEAR,
+            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+        );
+        $this->assertStringContainsString('später nachtragen', $message);
+    }
+
+    /**
+     * Pruefung 8 (IServ-Bereich, Issue #497/#516, Spec #486 §2/§8): ein Pfad
+     * ausserhalb von "Files/" scheitert beim Schreiben genauso wie die
+     * Pruefungen 2-6 - mit Ausstand, nicht nur mit einem benannten Fehler.
+     */
+    public function test_iserv_pruefung_8_records_ausstand_on_write(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Groups/Klasse7a', [
+            'server' => $this->fixtureserver,
+            'basispfad' => $this->fixturebasispfad,
+            'konto' => $this->fixturekonto,
+            'iserv' => true,
+        ]);
+        $fake = new fake_webdav_transport();
+        webdav_instance::use_test_transport($fake);
+
+        $message = '';
+        try {
+            $this->write('plan.md', '# Plan');
+            $this->fail('Pfad ausserhalb von "Files/" haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $message = $e->getMessage();
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertCount(1, $ausstaende);
+        $this->assertSame('webdaviservfilesonly', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame('anlegen', $ausstaende[0]['eintraege'][0]['vorgang']);
+        $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
+        // Kein Netzzugriff: Pruefung 8 scheitert schon bei der reinen
+        // Pointer-Aufloesung, bevor ueberhaupt eine WebDAV-Anfrage entsteht.
+        $this->assertSame([], $fake->requests());
+    }
+
+    /**
+     * Personenbezug-Inhaltspruefung bleibt auch dann in Kraft, wenn Pruefung
+     * 8 den Ort unaufloesbar macht (Issue #516 Befund aus dem Standards-/
+     * Spec-Review): "ist der Inhalt markiert, obwohl der Schalter aus ist?"
+     * ist ein reiner Inhalts-Gate ohne Ortsbezug und darf nicht durch einen
+     * unaufloesbaren Ort umgangen werden - kein Ausstand, ein Aufruffehler.
+     */
+    public function test_iserv_pruefung_8_still_rejects_marked_content_when_switch_off(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Groups/Klasse7a', [
+            'server' => $this->fixtureserver,
+            'basispfad' => $this->fixturebasispfad,
+            'konto' => $this->fixturekonto,
+            'iserv' => true,
+        ]);
+        $fake = new fake_webdav_transport();
+        webdav_instance::use_test_transport($fake);
+
+        try {
+            $this->write('lerngruppe.md', $this->marked_content());
+            $this->fail('Personenbezogener Inhalt bei ausgeschaltetem Schalter haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilelocked', $e->errorcode);
+        }
+
+        $this->assertSame([], \local_kurspilot\ausstand_notice::list_grouped());
+        $this->assertSame([], $fake->requests());
+    }
+
+    /**
+     * Jeder Eintrag der Ausstandsnotiz nennt die Kurs-ID (Issue #516
+     * Akzeptanzkriterium) - nie Inhalt, Hash oder Serverdaten.
+     */
+    public function test_ausstand_entry_carries_course_id(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->fill_storage();
+
+        try {
+            write_context_file::execute('plan.md', '# Plan', '', '', false, 42);
+            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertSame(42, $ausstaende[0]['eintraege'][0]['kursid']);
     }
 
     /**
@@ -1095,6 +1326,24 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertStringContainsString('voll', $string['ausstandnotewritefailed']);
         $this->assertStringContainsString('Speicherplatz', $string['ausstandnotequotaexceeded']);
 
+        // Teil (4): die Anweisung an die KI nennt ausdruecklich "ausstand="
+        // zum Nachtragen und verbietet einen anderen Ort (Issue #516
+        // Akzeptanzkriterium).
+        $this->assertStringContainsString('keinesfalls an einem anderen Ort ablegen', $string['ausstandwritefailed']);
+
+        // Kein Text an die Lehrkraft nennt das Wort "Ausstand" (Issue #516
+        // Akzeptanzkriterium, CONTEXT.md).
+        foreach ([
+            'ausstandwritefailed',
+            'ausstandnotewritefailed',
+            'ausstandnotequotaexceeded',
+            'ausstandunknown',
+            'ausstanddismissed',
+            'ablageortmarkerausstand',
+        ] as $key) {
+            $this->assertStringNotContainsString('Ausstand', $string[$key], "\"$key\" darf nicht \"Ausstand\" enthalten.");
+        }
+
         // Der Fehlertext fuer einen nicht zugelassenen Speicher (Issue #493,
         // ADR 0021 §3) lautet wortwoertlich "Dieser Speicher ist für
         // personenbezogene Daten nicht zugelassen".
@@ -1124,7 +1373,7 @@ final class write_context_file_test extends \advanced_testcase {
      */
     public function test_execute_parameters_expose_no_area_selector(): void {
         $this->assertSame(
-            ['path', 'content', 'expected_contenthash', 'ausstand', 'nur_anlegen'],
+            ['path', 'content', 'expected_contenthash', 'ausstand', 'nur_anlegen', 'courseid'],
             array_keys(write_context_file::execute_parameters()->keys)
         );
     }

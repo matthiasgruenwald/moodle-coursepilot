@@ -23,9 +23,9 @@ namespace local_kurspilot;
  * Kurspilot auch dann schreiben kann, wenn der externe Speicher schweigt
  * (CONTEXT.md "Ausstandsnotiz").
  *
- * Ein Eintrag je gescheitertem Vorgang, nie den Inhalt: Kennung, Zeitpunkt,
- * relativer Pfad, Vorgang (anlegen/ueberschreiben/anhaengen) und
- * Fehlerklasse. Verschwindet nur ausdruecklich - durch Nachtragen
+ * Ein Eintrag je gescheitertem Vorgang, nie den Inhalt: Kennung, Kurs-ID,
+ * Zeitpunkt, relativer Pfad, Vorgang (anlegen/ueberschreiben/anhaengen) und
+ * Fehlerklasse (Issue #516, Spec #486 §8). Verschwindet nur ausdruecklich - durch Nachtragen
  * ({@see pointer_writer}, ueber `ausstand=<Kennung>`) oder durch
  * ausdrueckliches Verwerfen ({@see \local_kurspilot\external\dismiss_ausstand}) -
  * nie durch Zeitablauf.
@@ -44,11 +44,13 @@ final class ausstand_notice {
      * @param string $operation "anlegen", "ueberschreiben" oder "anhaengen".
      * @param string $errorclass Fehlerklasse (z.B. {@see \local_kurspilot\webdav\webdav_error}-Konstante
      *        oder ein webdavinstance*-Fehlerschluessel), nie ein Freitext.
+     * @param int $courseid Kurs-ID (Issue #516, Spec #486 §8) - 0, wenn der
+     *        gescheiterte Aufruf keinem Kurs zugeordnet war.
      * @return string Neu vergebene Kennung.
      * @throws \moodle_exception ausstandnotequotaexceeded, wenn die Notiz selbst
      *         nicht mehr geschrieben werden kann (Private-Files-Quote voll).
      */
-    public static function record(string $path, string $operation, string $errorclass): string {
+    public static function record(string $path, string $operation, string $errorclass, int $courseid): string {
         $entries = self::all();
         $kennung = self::generate_kennung($entries);
         $entries[$kennung] = [
@@ -56,6 +58,7 @@ final class ausstand_notice {
             'pfad' => $path,
             'vorgang' => $operation,
             'fehlerklasse' => $errorclass,
+            'kursid' => $courseid,
         ];
         self::save($entries);
         return $kennung;
@@ -91,7 +94,7 @@ final class ausstand_notice {
      * lokal, ohne Netzzugriff: liest ausschliesslich die Notizdatei selbst.
      *
      * @return array<int, array{pfad: string, eintraege: array<int, array{
-     *         kennung: string, zeitpunkt: int, vorgang: string, fehlerklasse: string}>}>
+     *         kennung: string, zeitpunkt: int, vorgang: string, fehlerklasse: string, kursid: int}>}>
      */
     public static function list_grouped(): array {
         $bypath = [];
@@ -101,6 +104,9 @@ final class ausstand_notice {
                 'zeitpunkt' => $entry['zeitpunkt'],
                 'vorgang' => $entry['vorgang'],
                 'fehlerklasse' => $entry['fehlerklasse'],
+                // Rueckwaertskompatibel (Issue #516): ein vor diesem Issue
+                // geschriebener Eintrag kennt das Feld noch nicht.
+                'kursid' => $entry['kursid'] ?? 0,
             ];
         }
 
