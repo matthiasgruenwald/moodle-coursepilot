@@ -24,6 +24,10 @@
  * Zeilen zerlegt - eine je Markup-Baustein, damit sich einzelne Bausteine
  * ohne Seiteneffekte auf den Rest aendern lassen.
  *
+ * Issue #511 (Review von #486, Sicherheitsbefund HIGH): auch von
+ * {@see connections.php} genutzt, damit die Kontextbereich-/Materialbestand-
+ * Zeilen nur einmal escaped werden muessen statt an zwei Stellen getrennt.
+ *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -133,6 +137,25 @@ function local_kurspilot_render_ortswahl_data_script(array $data): void {
         json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG),
         ['type' => 'application/json', 'id' => 'kurspilot-ortswahl-data']
     );
+}
+
+/**
+ * Die <li>-Zeilen fuer Kontextbereich und Materialbestand (Issue #494,
+ * #500) - geteilt zwischen der Ortswahlseite und "Meine Verbindungen"
+ * (Issue #511). Der Anzeigename ist Speicherinhalt (ein Ordner- oder
+ * Instanzname, auch aus einer fremd geteilten Freigabe) und wird deshalb
+ * vor der Einbettung ins Markup escaped - ohne dieses `s()` fuehrte ein
+ * praeparierter Name auf beiden Seiten Skript aus (Sicherheitsbefund HIGH).
+ *
+ * @return string HTML der beiden <li>-Zeilen, ohne umschliessendes <ul>.
+ */
+function local_kurspilot_current_locations_list_items(): string {
+    $kontextbereich = ortswahl_lib::current('kontextbereich');
+    $materialbestand = ortswahl_lib::current('materialbestand');
+    return html_writer::tag('li', s(get_string('ortswahlcurrentkontextbereich', 'local_kurspilot', $kontextbereich['display']))
+            . ' — ' . ortswahl_lib::zugelassen_label($kontextbereich))
+        . html_writer::tag('li', s(get_string('ortswahlcurrentmaterialbestand', 'local_kurspilot', $materialbestand['display']))
+            . ' — ' . ortswahl_lib::zugelassen_label($materialbestand));
 }
 
 /**

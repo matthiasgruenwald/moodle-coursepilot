@@ -200,20 +200,16 @@ function local_kurspilot_render_ortswahl_no_instance(): void {
 }
 
 /**
- * Die aktuellen Orte beider Ziele (Issue #494).
+ * Die aktuellen Orte beider Ziele (Issue #494). Das Markup selbst - inklusive
+ * Escaping der Anzeigenamen (Issue #511, Sicherheitsbefund HIGH) - teilt sich
+ * {@see local_kurspilot_current_locations_list_items()} mit connections.php.
  */
 function local_kurspilot_render_ortswahl_current_locations(): void {
     global $OUTPUT;
 
+    require_once(__DIR__ . '/ortswahl_render.php');
     echo $OUTPUT->heading(get_string('ortswahlcurrentheading', 'local_kurspilot'), 4);
-    $kontextbereich = ortswahl_lib::current('kontextbereich');
-    $materialbestand = ortswahl_lib::current('materialbestand');
-    echo html_writer::start_tag('ul');
-    echo html_writer::tag('li', get_string('ortswahlcurrentkontextbereich', 'local_kurspilot', $kontextbereich['display'])
-        . ' — ' . ortswahl_lib::zugelassen_label($kontextbereich));
-    echo html_writer::tag('li', get_string('ortswahlcurrentmaterialbestand', 'local_kurspilot', $materialbestand['display'])
-        . ' — ' . ortswahl_lib::zugelassen_label($materialbestand));
-    echo html_writer::end_tag('ul');
+    echo html_writer::tag('ul', local_kurspilot_current_locations_list_items());
 }
 
 /**
