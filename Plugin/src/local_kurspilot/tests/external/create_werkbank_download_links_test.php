@@ -61,7 +61,15 @@ final class create_werkbank_download_links_test extends \advanced_testcase {
 
     public function test_ticket_actually_delivers_the_same_bytes(): void {
         $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        // Ohne bekannte Verbindung braucht die Einloesung ersatzweise
+        // irgendeine noch bestehende Verbindung der Person (#512) - dieser
+        // Aufruf simuliert wie die anderen Tests hier den externen
+        // Funktionsaufruf ohne MCP-Dispatcher davor (oauthtokenid am
+        // Ticket bleibt null).
+        $this->issue_connection((int) $user->id);
+        oauth_lib::reset_current_token_id();
         $this->store('blatt.pdf', 'originalbytes');
 
         $link = create_werkbank_download_links::execute(['blatt.pdf'])['links'][0];
@@ -88,6 +96,21 @@ final class create_werkbank_download_links_test extends \advanced_testcase {
 
         $this->expectException(\moodle_exception::class);
         create_werkbank_download_links::execute(['nichtvorhanden.pdf']);
+    }
+
+    private function issue_connection(int $userid): int {
+        global $DB;
+
+        $record = new \stdClass();
+        $record->accesstoken = oauth_lib::random_token(32);
+        $record->refreshtoken = oauth_lib::random_token(32);
+        $record->clientid = 'test-client';
+        $record->userid = $userid;
+        $record->expires = time() + oauth_lib::ACCESS_TOKEN_TTL;
+        $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
+        $record->revoked = 0;
+        $record->timecreated = time();
+        return (int) $DB->insert_record('local_kurspilot_oauth_token', $record);
     }
 
     private function store(string $path, string $content): void {

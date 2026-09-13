@@ -704,6 +704,23 @@ final class oauth_lib {
     }
 
     /**
+     * Ob eine Person ueberhaupt noch irgendeine Kurspilot-Verbindung hat -
+     * fuer ein Werkbank-Ticket, das ohne bekannte ausstellende Verbindung
+     * ausgestellt wurde (#512, Nachtrag zu Spec #486 §13: "nie staerker als
+     * seine Verbindung", auch wenn beim Ausstellen keine Verbindungskennung
+     * vorlag). Ohne diese Pruefung waere ein solches Ticket der einzige Weg
+     * an eine Werkbankdatei, der einen Sammelwiderruf (#338) ueberlebt.
+     *
+     * @param int $userid
+     * @return bool
+     */
+    public static function has_active_connection(int $userid): bool {
+        global $DB;
+
+        return $DB->record_exists(self::TOKEN_TABLE, ['userid' => $userid, 'revoked' => 0]);
+    }
+
+    /**
      * Setzt {@see $currenttokenid} zurueck - nur fuer Tests, die mehrere,
      * voneinander unabhaengige Anfragen im selben PHPUnit-Prozess simulieren.
      *

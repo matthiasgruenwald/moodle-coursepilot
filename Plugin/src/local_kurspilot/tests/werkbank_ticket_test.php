@@ -37,7 +37,9 @@ final class werkbank_ticket_test extends \advanced_testcase {
 
     public function test_issue_and_redeem_delivers_original_bytes_with_matching_sha1(): void {
         $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->issue_connection((int) $user->id);
         $this->store('blatt.pdf', 'hallo welt');
 
         $link = werkbank_ticket::issue('blatt.pdf');
@@ -55,7 +57,9 @@ final class werkbank_ticket_test extends \advanced_testcase {
 
     public function test_second_redemption_is_rejected(): void {
         $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->issue_connection((int) $user->id);
         $this->store('blatt.pdf', 'inhalt');
         $secret = $this->secret_from_url(werkbank_ticket::issue('blatt.pdf')['url']);
 
@@ -84,6 +88,7 @@ final class werkbank_ticket_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
+        $this->issue_connection((int) $user->id);
         $this->store('blatt.pdf', 'urspruenglich');
         $secret = $this->secret_from_url(werkbank_ticket::issue('blatt.pdf')['url']);
 
@@ -107,6 +112,7 @@ final class werkbank_ticket_test extends \advanced_testcase {
         $other = $this->getDataGenerator()->create_user();
 
         $this->setUser($teacher);
+        $this->issue_connection((int) $teacher->id);
         $this->store('blatt.pdf', 'gehoert teacher');
         $secret = $this->secret_from_url(werkbank_ticket::issue('blatt.pdf')['url']);
 
@@ -156,6 +162,7 @@ final class werkbank_ticket_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
+        $this->issue_connection((int) $user->id);
         $this->store('blatt.pdf', 'inhalt');
         $secret = $this->secret_from_url(werkbank_ticket::issue('blatt.pdf')['url']);
 
@@ -176,6 +183,7 @@ final class werkbank_ticket_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
+        $this->issue_connection((int) $user->id);
         $this->store('blatt.pdf', 'inhalt');
         $secret = $this->secret_from_url(werkbank_ticket::issue('blatt.pdf')['url']);
 
@@ -186,19 +194,133 @@ final class werkbank_ticket_test extends \advanced_testcase {
         werkbank_ticket::redeem($secret);
     }
 
-    public function test_redeems_without_a_known_issuing_connection(): void {
-        // Kein authenticate_access_token()-Aufruf vorher - genau der Fall
-        // eines PHPUnit-Aufrufs der externen Funktion ohne MCP-Dispatcher
-        // davor. oauthtokenid bleibt null, die Verbindungspruefung greift
-        // dann nicht.
+    /**
+     * Kein authenticate_access_token()-Aufruf vorher - genau der Fall eines
+     * PHPUnit-Aufrufs der externen Funktion ohne MCP-Dispatcher davor.
+     * oauthtokenid bleibt null. Ein solches Ticket ist nie staerker als
+     * seine Verbindung (#512, Spec #486 §13): ohne bekannte ausstellende
+     * Verbindung verlangt die Einloesung ersatzweise irgendeine noch
+     * bestehende Verbindung der Person - hat sie gar keine, scheitert sie.
+     */
+    public function test_redemption_without_a_known_issuing_connection_needs_some_active_connection(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
         $this->store('blatt.pdf', 'inhalt');
         $secret = $this->secret_from_url(werkbank_ticket::issue('blatt.pdf')['url']);
 
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('werkbankticketconnectionrevoked', 'local_kurspilot'), '/') . '/'
+        );
+        werkbank_ticket::redeem($secret);
+    }
+
+    /**
+     * Gegenprobe zum Test oben: dieselbe Ausgangslage (kein oauthtokenid am
+     * Ticket), aber die Person hat eine andere, noch bestehende Verbindung -
+     * dann loest das Ticket trotzdem ein.
+     */
+    public function test_redemption_without_a_known_issuing_connection_succeeds_with_another_active_connection(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->store('blatt.pdf', 'inhalt');
+        $secret = $this->secret_from_url(werkbank_ticket::issue('blatt.pdf')['url']);
+
+        // Verbindung erst NACH dem Ausstellen angelegt, ohne
+        // authenticate_access_token() fuer diese Anfrage aufzurufen -
+        // oauthtokenid am Ticket bleibt null.
+        $this->issue_connection((int) $user->id);
+        oauth_lib::reset_current_token_id();
+
         $delivery = werkbank_ticket::redeem($secret);
 
         $this->assertSame('inhalt', $delivery['content']);
+    }
+
+    /**
+     * Zwei gleichzeitige Einloeseversuche desselben Tickets duerfen die
+     * Datei hoechstens einmal liefern (#512). Echte parallele Datenbank-
+     * verbindungen sind in dieser PHPUnit-Umgebung nicht praktikabel - dieser
+     * Test prueft deshalb nur den Ausgang (zwei sequenzielle Abrufe, der
+     * zweite scheitert), nicht den Mechanismus selbst. Der eigentliche
+     * Beweis der Nebenlaeufigkeitssicherheit steckt im naechsten Test.
+     */
+    public function test_concurrent_redemption_delivers_file_at_most_once(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->issue_connection((int) $user->id);
+        $this->store('blatt.pdf', 'inhalt');
+        $secret = $this->secret_from_url(werkbank_ticket::issue('blatt.pdf')['url']);
+
+        $first = werkbank_ticket::redeem($secret);
+        $this->assertSame('inhalt', $first['content'], 'Der erste Abruf muss die Datei liefern.');
+
+        try {
+            werkbank_ticket::redeem($secret);
+            $this->fail('Der zweite, gleichzeitige Abruf haette scheitern muessen.');
+        } catch (werkbank_ticket_redemption_failed $e) {
+            $this->assertSame(
+                'werkbankticketinvalid',
+                $e->errorcode,
+                'Der zweite Abruf muss dasselbe "unbekannt" sehen wie ein nie ausgestelltes Ticket.'
+            );
+        }
+    }
+
+    /**
+     * Belegt den eigentlichen Mechanismus hinter der Nebenlaeufigkeits-
+     * sicherheit (#512, Review-Befund zum ersten Entwurf dieses Tickets):
+     * echte parallele Prozesse lassen sich in PHPUnit nicht erzeugen, aber
+     * der Effekt eines Gleichzeitigkeitsrennens - eine andere Verbindung
+     * beansprucht dieselbe Zeile im selben Moment - laesst sich exakt
+     * nachstellen, indem genau die Anweisung nachgeahmt wird, die
+     * {@see werkbank_ticket::claim()} selbst fuer den Claim verwendet (ein
+     * UPDATE mit dem alten Tickethash in der WHERE-Klausel). Direkt danach
+     * hat unser eigener Abruf keine passende Zeile mehr - nicht weil eine
+     * zweite Anfrage sequenziell zuerst dran war (das prueft der Test oben),
+     * sondern weil das Claim-UPDATE selbst atomar ist: eine SELECT-dann-
+     * DELETE-Implementierung (der vorherige Stand) haette hier faelschlich
+     * noch die Ticketdaten gefunden und die Datei ausgeliefert.
+     */
+    public function test_claim_loses_to_a_rival_update_that_already_changed_the_tickethash(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->issue_connection((int) $user->id);
+        $this->store('blatt.pdf', 'inhalt');
+        $secret = $this->secret_from_url(werkbank_ticket::issue('blatt.pdf')['url']);
+        $hash = hash('sha256', $secret);
+
+        // Simuliert den Sieger eines echten Gleichzeitigkeitsrennens: eine
+        // andere Verbindung hat im selben Moment per UPDATE denselben Claim
+        // ausgefuehrt, den auch werkbank_ticket::claim() verwenden wuerde.
+        $rivalclaim = hash('sha256', 'rival');
+        $DB->set_field_select(
+            werkbank_ticket::TABLE,
+            'tickethash',
+            $rivalclaim,
+            'tickethash = :hash',
+            ['hash' => $hash]
+        );
+
+        try {
+            werkbank_ticket::redeem($secret);
+            $this->fail('Der Abruf haette am bereits geaenderten Tickethash scheitern muessen.');
+        } catch (werkbank_ticket_redemption_failed $e) {
+            $this->assertSame('werkbankticketinvalid', $e->errorcode);
+        }
+
+        // Die "gewinnende" Zeile (des simulierten Rivalen) blieb unberuehrt -
+        // unser gescheiterter Versuch hat weder sie geloescht noch ihre Daten
+        // gelesen.
+        $this->assertTrue(
+            $DB->record_exists(werkbank_ticket::TABLE, ['tickethash' => $rivalclaim]),
+            'Der gescheiterte Abruf darf die Zeile des Rennsiegers nicht anfassen.'
+        );
     }
 
     private function secret_from_url(string $url): string {

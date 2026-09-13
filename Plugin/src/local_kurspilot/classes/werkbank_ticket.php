@@ -27,12 +27,13 @@ namespace local_kurspilot;
  * Gebunden an Person, Pfad und `contenthash`, oeffnet nur die Werkbank (jeder
  * Pfad laeuft ueber {@see material_files::resolve_file()}, das immer die
  * Werkbank auflöst und einen Ausbruch per "."/".." bereits ablehnt). Gilt
- * einmal ab dem ersten Abruf - die Zeile verschwindet beim Nachschlagen,
- * unabhaengig davon, ob die anschliessenden Pruefungen bestehen (ponytail:
- * keine Transaktions-/Concurrency-Sicherung fuer echte Gleichzeitigkeit,
- * ausreichend fuer den beschriebenen sequentiellen Fall). Fest 15 Minuten
- * gueltig, ohne Range-Unterstuetzung (das setzt der Endpunkt um, der nie auf
- * einen Range-Header eingeht).
+ * einmal ab dem ersten Abruf - die Zeile wird beim Nachschlagen atomar per
+ * Compare-and-Swap beansprucht ({@see claim()}, #512), unabhaengig davon, ob
+ * die anschliessenden Pruefungen bestehen: zwei gleichzeitige Abrufe
+ * desselben Tickets liefern die Datei hoechstens einmal, auch wenn beide
+ * Anfragen exakt im selben Moment eintreffen. Fest 15 Minuten gueltig, ohne
+ * Range-Unterstuetzung (das setzt der Endpunkt um, der nie auf einen
+ * Range-Header eingeht).
  *
  * Gespeichert wird nur der Hash des Tickets ({@see issue()}/{@see redeem()}),
  * nie das Geheimnis selbst. Abgelaufene Zeilen werden opportunistisch beim
@@ -120,22 +121,32 @@ final class werkbank_ticket {
             throw new werkbank_ticket_redemption_failed('remoteaccessdisabled', null);
         }
 
-        $ticket = $DB->get_record(self::TABLE, ['tickethash' => hash('sha256', $secret)]);
+        $ticket = self::claim(hash('sha256', $secret));
         if (!$ticket) {
-            // Kein Pfad bekannt - das Ticket selbst war schon unbekannt.
+            // Kein Pfad bekannt - entweder war das Ticket nie ausgestellt,
+            // oder ein gleichzeitiger Abruf hat es uns per {@see claim()}
+            // bereits vor der Nase weggeschnappt. Aus Sicht dieser Anfrage
+            // ununterscheidbar, und das ist gewollt (kein Zeitkanal).
             throw new werkbank_ticket_redemption_failed('werkbankticketinvalid', null);
         }
-        // Verbraucht, bevor eine weitere Pruefung stattfindet - "gilt einmal
-        // ab Beginn der Auslieferung" (Spec #486 §13): ein zweiter Abruf mit
-        // demselben Ticket trifft immer auf "unbekannt", auch wenn dieser
-        // erste Abruf gleich darauf selbst noch scheitert.
-        $DB->delete_records(self::TABLE, ['id' => $ticket->id]);
 
         if ((int) $ticket->expires < time()) {
             throw new werkbank_ticket_redemption_failed('werkbankticketexpired', $ticket->path);
         }
 
-        if ($ticket->oauthtokenid !== null && !oauth_lib::connection_active((int) $ticket->oauthtokenid)) {
+        // Nie staerker als seine Verbindung (Spec #486 §13): ein Ticket mit
+        // bekannter ausstellenden Verbindung braucht sie noch bestehend.
+        // Ein Ticket OHNE bekannte Verbindung (#512: z.B. weil die
+        // ausstellende Anfrage nie durch den OAuth-Dispatcher lief) ist
+        // deshalb nicht automatisch staerker - es verlangt ersatzweise
+        // irgendeine noch bestehende Verbindung der Person. Ausstellbar ist
+        // es damit weiterhin (kein zusaetzlicher Ausstellungs-Check noetig),
+        // aber es ueberlebt einen Sammelwiderruf (#338) genauso wenig wie
+        // ein Ticket mit bekannter Verbindung.
+        $hasconnection = $ticket->oauthtokenid !== null
+            ? oauth_lib::connection_active((int) $ticket->oauthtokenid)
+            : oauth_lib::has_active_connection((int) $ticket->userid);
+        if (!$hasconnection) {
             throw new werkbank_ticket_redemption_failed('werkbankticketconnectionrevoked', $ticket->path);
         }
 
@@ -166,6 +177,45 @@ final class werkbank_ticket {
             'content' => $file->get_content(),
             'size' => (int) $file->get_filesize(),
         ];
+    }
+
+    /**
+     * Beansprucht die Ticketzeile zum gegebenen Tickethash atomar und liefert
+     * sie zurueck - oder null, wenn keine (mehr) existiert (#512).
+     *
+     * Vorher stand hier ein SELECT nach `tickethash`, gefolgt von einem
+     * DELETE nach `id`: zwei getrennte Anweisungen mit einer Luecke
+     * dazwischen. Zwei gleichzeitige Abrufe desselben Tickets konnten beide
+     * das SELECT bestehen, bevor eine von beiden das DELETE ausfuehrte -
+     * beide haetten die Datei ausgeliefert. Diese Methode ersetzt das durch
+     * eine einzige atomare UPDATE-Anweisung mit dem alten Tickethash in der
+     * WHERE-Klausel (Compare-and-Swap): die Datenbank sperrt die betroffene
+     * Zeile fuer die Dauer der Anweisung, ein zeitgleiches zweites UPDATE mit
+     * derselben WHERE-Bedingung sieht danach den bereits geaenderten Wert und
+     * trifft keine Zeile mehr. Das gilt fuer jede SQL-Datenbank mit
+     * zeilenweiser Sperrung bei UPDATE (MySQL/InnoDB, PostgreSQL) und braucht
+     * keine von Moodles DB-Abstraktion nicht angebotene Rueckgabe der Anzahl
+     * betroffener Zeilen: der Erfolg zeigt sich daran, ob die Zeile danach
+     * unter dem eigenen, aus dem Prozess frischen Anspruchsmarker auffindbar
+     * ist - kein anderer Prozess kennt ihn.
+     *
+     * @param string $tickethash sha256 des Ticketgeheimnisses.
+     * @return \stdClass|null Die beanspruchte Zeile, oder null.
+     */
+    private static function claim(string $tickethash): ?\stdClass {
+        global $DB;
+
+        $claim = hash('sha256', $tickethash . '|' . random_string(20));
+        $DB->set_field_select(self::TABLE, 'tickethash', $claim, 'tickethash = :hash', ['hash' => $tickethash]);
+
+        $ticket = $DB->get_record(self::TABLE, ['tickethash' => $claim]);
+        if (!$ticket) {
+            return null;
+        }
+        // Beansprucht, ab hier weg - unabhaengig vom Ausgang der folgenden
+        // Pruefungen (Ablauf, Verbindung, Konto, contenthash).
+        $DB->delete_records(self::TABLE, ['id' => $ticket->id]);
+        return $ticket;
     }
 
     /**
