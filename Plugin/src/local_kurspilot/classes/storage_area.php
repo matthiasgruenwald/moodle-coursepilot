@@ -47,6 +47,11 @@ final class storage_area {
      *        (Issue #445), z.B. "kontextbereich"/"materialordner". `null`, wenn
      *        der Bereich den Pointer nicht kennt (z.B. ein reiner Testbereich) -
      *        dann gilt immer die per Einstellung konfigurierte Standardwurzel.
+     * @param bool $externalfallback Bei einem Pointer-Ziel *extern* auf die
+     *        konfigurierte Standardwurzel zurueckfallen, statt zu werfen
+     *        (Issue #520, Spec #486 §1: die Werkbank kennt noch keine externen
+     *        Ziele und bleibt am Anker, waehrend der Materialbestand selbst
+     *        weiterhin benannt scheitert, siehe {@see storage_anchor::root()}).
      */
     public function __construct(
         public readonly string $rootsetting,
@@ -55,6 +60,7 @@ final class storage_area {
         public readonly string $quotaerrorkey,
         public readonly \Closure $checkwritablename,
         public readonly ?string $pointerkey = null,
+        public readonly bool $externalfallback = false,
     ) {
     }
 }

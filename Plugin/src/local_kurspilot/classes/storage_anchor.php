@@ -115,6 +115,13 @@ final class storage_anchor {
             return $configured;
         }
         if ($location->kind === pointer_location::EXTERN) {
+            if ($area->externalfallback) {
+                // Werkbank (Issue #520, Spec #486 §1): bleibt bei einem
+                // externen Materialbestand an der Standardwurzel im Anker -
+                // kein benannter Fehler, denn die Werkbank ist nie das Ziel,
+                // das der Pointer beschreibt.
+                return $configured;
+            }
             // Dieser Aufrufer (Schreiben/Material) kennt noch keine externen
             // Orte (Issue #490 baut nur den Lesepfad) - ein stiller
             // Rueckfall auf die Standardwurzel legte einen zweiten, halben
@@ -199,8 +206,18 @@ final class storage_anchor {
      *         materialbestandimkontext
      */
     public static function effective_location(storage_area $area): pointer_location {
-        return self::resolve_pointer_location($area)
-            ?? pointer_location::moodle(self::configured_root($area->rootsetting, $area->defaultroot));
+        $location = self::resolve_pointer_location($area);
+        if ($location === null) {
+            return pointer_location::moodle(self::configured_root($area->rootsetting, $area->defaultroot));
+        }
+        if ($location->kind === pointer_location::EXTERN && $area->externalfallback) {
+            // Werkbank (Issue #520): bleibt bei einem externen Materialbestand
+            // an der Standardwurzel im Anker, deckungsgleich mit {@see root()} -
+            // sonst wiche der hier gemeldete Ort vom tatsaechlich
+            // aufgeloesten Verzeichnis ab.
+            return pointer_location::moodle(self::configured_root($area->rootsetting, $area->defaultroot));
+        }
+        return $location;
     }
 
     /**

@@ -167,14 +167,19 @@ final class material_files {
     }
 
     /**
-     * Die Bereichsdefinition der Werkbank (Issue #495, CONTEXT.md "Werkbank"):
-     * derselbe Wertesatz wie {@see area()}, aber ohne Pointer-Feld - die
-     * Werkbank bleibt immer am Anker, unabhaengig davon, wo der Kontextpointer
-     * den Materialbestand gerade verortet (in Moodle oder extern). Jedes
-     * schreibende Materialwerkzeug loest ausschliesslich ueber diesen Bereich
-     * auf ({@see resolve_directory()}/{@see resolve_file()}/{@see resolve_writable_file()}
-     * und ihre relative_*()-Gegenstuecke) - der Materialbestand ({@see area()})
-     * ist nur ueber die eigenen pointerbewussten Lesemethoden erreichbar
+     * Die Bereichsdefinition der Werkbank (Issue #495, angepasst in Issue #520,
+     * Spec #486 §1): derselbe Wertesatz wie {@see area()} - liegt der
+     * Materialbestand in Moodle, auch mit eigenem Pfad aus einem
+     * Kontextpointer, ist die Werkbank derselbe Ordner (Chat-Anhaenge bleiben
+     * so im gewohnten Ordner fuer Aufraeumen/Loeschen erreichbar). Nur bei
+     * *externem* Materialbestand faellt die Werkbank auf die konfigurierte
+     * Standardwurzel im Anker zurueck ({@see storage_area::$externalfallback}) -
+     * ein externes Ziel kennt noch kein schreibendes Materialwerkzeug (Issue
+     * #490 baut nur den Lesepfad). Jedes schreibende Materialwerkzeug loest
+     * ausschliesslich ueber diesen Bereich auf ({@see resolve_directory()}/
+     * {@see resolve_file()}/{@see resolve_writable_file()} und ihre
+     * relative_*()-Gegenstuecke) - der Materialbestand ({@see area()}) ist nur
+     * ueber die eigenen pointerbewussten Lesemethoden erreichbar
      * ({@see list_entries_for_ort()}/{@see read_content_for_ort()}), nie als
      * Schreibziel.
      *
@@ -188,7 +193,8 @@ final class material_files {
             invalidpathkey: $area->invalidpathkey,
             quotaerrorkey: $area->quotaerrorkey,
             checkwritablename: $area->checkwritablename,
-            pointerkey: null,
+            pointerkey: $area->pointerkey,
+            externalfallback: true,
         );
     }
 
@@ -204,8 +210,9 @@ final class material_files {
 
     /**
      * Loest einen optionalen Client-Unterordner zu einem vollstaendigen
-     * Moodle-Dateipfad innerhalb der Werkbank auf (Issue #495: die Werkbank
-     * ignoriert den Kontextpointer, siehe {@see werkbank_area()}).
+     * Moodle-Dateipfad innerhalb der Werkbank auf (Issue #520: die Werkbank
+     * folgt dem Materialbestand-Pointer, solange dieser in Moodle liegt,
+     * siehe {@see werkbank_area()}).
      *
      * @param string $path Relativer Unterordner, z.B. "" oder "faecher/mathe".
      * @return string Immer mit fuehrendem und abschliessendem "/".

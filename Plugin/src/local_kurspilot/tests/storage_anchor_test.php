@@ -185,14 +185,13 @@ final class storage_anchor_test extends \advanced_testcase {
     }
 
     /**
-     * Der Kontextbereich folgt dem Kontextpointer wie bisher; die Werkbank
-     * (material_files::resolve_directory(), Issue #495) bleibt dagegen immer
-     * an der konfigurierten Standardwurzel - sie ignoriert den
-     * Materialbestand-Pointer, weil sie am Anker liegen bleibt
-     * (CONTEXT.md "Werkbank"). Den pointerbewussten Materialbestand deckt
-     * {@see \local_kurspilot\external\list_material_files_test} ab.
+     * Kontextbereich und Werkbank folgen beide dem Kontextpointer (Issue #520,
+     * Spec #486 §1): liegt der Materialbestand in Moodle, auch mit eigenem
+     * Pfad, ist die Werkbank derselbe Ordner. Den externen Sonderfall (Issue
+     * #495/#520: Werkbank bleibt an der Standardwurzel) deckt
+     * {@see \local_kurspilot\external\list_material_files_test::test_ort_werkbank_stays_in_moodle_when_material_is_external()} ab.
      */
-    public function test_valid_pointer_redirects_context_but_not_workbench(): void {
+    public function test_valid_pointer_redirects_both_areas_together(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
         $this->put_pointer(json_encode([
@@ -201,7 +200,7 @@ final class storage_anchor_test extends \advanced_testcase {
         ]));
 
         $this->assertSame('/custom-context/', context_files::resolve_directory(''));
-        $this->assertSame('/kurspilot-material/', material_files::resolve_directory(''));
+        $this->assertSame('/custom-material/', material_files::resolve_directory(''));
     }
 
     public function test_unreadable_pointer_throws_named_error_without_fallback(): void {
@@ -335,11 +334,9 @@ final class storage_anchor_test extends \advanced_testcase {
 
     /**
      * Ein Pointer der zweiten Fassung mit Ziel *in Moodle* loest genauso auf
-     * wie die erste Fassung - nur die Struktur ist neu.
-     */
-    /**
-     * Wie {@see test_valid_pointer_redirects_context_but_not_workbench()},
-     * nur mit einem Pointer der zweiten Fassung.
+     * wie die erste Fassung - nur die Struktur ist neu. Wie
+     * {@see test_valid_pointer_redirects_both_areas_together()}, nur mit
+     * einem Pointer der zweiten Fassung.
      */
     public function test_v2_pointer_with_moodle_target_resolves_like_legacy(): void {
         $this->resetAfterTest();
@@ -350,7 +347,7 @@ final class storage_anchor_test extends \advanced_testcase {
         ]));
 
         $this->assertSame('/mein-kontext/', context_files::resolve_directory(''));
-        $this->assertSame('/kurspilot-material/', material_files::resolve_directory(''));
+        $this->assertSame('/mein-material/', material_files::resolve_directory(''));
     }
 
     /**

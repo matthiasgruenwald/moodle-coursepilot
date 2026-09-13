@@ -179,6 +179,39 @@ final class list_material_files_test extends \advanced_testcase {
         $this->assertSame(array_column($bestand['entries'], 'name'), array_column($werkbank['entries'], 'name'));
     }
 
+    /**
+     * Bei einem Pointer der ersten Fassung mit eigenem Materialpfad zeigen
+     * "bestand" und "werkbank" weiterhin auf denselben Ordner (Issue #520,
+     * Spec #486 §1) - der Kontextpointer verschiebt beide Orte gemeinsam,
+     * statt die Werkbank an der Standardwurzel zurueckzulassen.
+     */
+    public function test_ort_bestand_and_ort_werkbank_follow_legacy_pointer_together(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        get_file_storage()->create_file_from_string([
+            'contextid' => storage_anchor::own_context()->id,
+            'component' => storage_anchor::COMPONENT,
+            'filearea' => storage_anchor::FILEAREA,
+            'itemid' => storage_anchor::ITEMID,
+            'filepath' => '/' . storage_anchor::ANCHOR_DEFAULT_ROOT . '/',
+            'filename' => storage_anchor::POINTER_FILENAME,
+        ], json_encode(['kontextbereich' => 'kurspilot', 'materialordner' => 'eigener-materialpfad']));
+        get_file_storage()->create_file_from_string([
+            'contextid' => material_files::own_context()->id,
+            'component' => material_files::COMPONENT,
+            'filearea' => material_files::FILEAREA,
+            'itemid' => material_files::ITEMID,
+            'filepath' => '/eigener-materialpfad/',
+            'filename' => 'blatt.pdf',
+        ], 'Inhalt');
+
+        $bestand = list_material_files::execute('', material_files::ORT_BESTAND);
+        $werkbank = list_material_files::execute('', material_files::ORT_WERKBANK);
+
+        $this->assertSame(['blatt.pdf'], array_column($bestand['entries'], 'name'));
+        $this->assertSame(array_column($bestand['entries'], 'name'), array_column($werkbank['entries'], 'name'));
+    }
+
     public function test_unknown_ort_value_is_rejected(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
