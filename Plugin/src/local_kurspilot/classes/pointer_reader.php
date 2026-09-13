@@ -51,12 +51,22 @@ final class pointer_reader {
      *        Ortes (Issue #498, Spec #486 §6/§9), der denselben Lesezweig
      *        auf einem anderen Ort braucht. Weglassen loest wie bisher ueber
      *        {@see storage_anchor::resolve_pointer_location()} auf.
+     * @param string $errorstringkey Sprachstring fuer einen echten Lesefehler
+     *        (Issue #526, Spec #486 §5/§8): der Kontext-Lücken-Text
+     *        ("webdavexternalerror") passt nur zu den Lesewerkzeugen des
+     *        Kontextbereichs - {@see \local_kurspilot\material_files} uebergibt
+     *        hier "materialexternalerror" statt des Default.
      * @return array{directory: string, entries: array}
      * @throws \moodle_exception pointerunreadable/pointerincomplete/pointerunreachable/
      *         webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/
      *         webdavauthunsupported/webdavfingerprintchanged/webdavexternalerror
      */
-    public static function list_entries(storage_area $area, string $path, ?pointer_location $location = null): array {
+    public static function list_entries(
+        storage_area $area,
+        string $path,
+        ?pointer_location $location = null,
+        string $errorstringkey = 'webdavexternalerror'
+    ): array {
         $location = $location ?? storage_anchor::resolve_pointer_location($area);
         if ($location === null) {
             $directory = storage_anchor::resolve_directory($area, $path);
@@ -79,7 +89,7 @@ final class pointer_reader {
             ];
         }
 
-        return self::list_entries_external($area, $path, $location);
+        return self::list_entries_external($area, $path, $location, $errorstringkey);
     }
 
     /**
@@ -90,9 +100,15 @@ final class pointer_reader {
      * @param storage_area $area
      * @param string $path
      * @param pointer_location $location
+     * @param string $errorstringkey Siehe {@see list_entries()}.
      * @return array{directory: string, entries: array}
      */
-    private static function list_entries_external(storage_area $area, string $path, pointer_location $location): array {
+    private static function list_entries_external(
+        storage_area $area,
+        string $path,
+        pointer_location $location,
+        string $errorstringkey
+    ): array {
         // Der Client-Pfad bleibt frei vom intern gewaehlten WebDAV-Ordner
         // (Spec §2: "dasselbe Koordinatensystem") - genau wie im Moodle-Zweig
         // nie der Bereichs-Wurzelordner selbst im Ergebnis auftaucht.
@@ -105,7 +121,7 @@ final class pointer_reader {
             return webdav_error::empty_when_missing(
                 $e,
                 ['directory' => $clientdirectory, 'entries' => []],
-                [self::class, 'webdav_exception']
+                static fn (webdav_error $e): \moodle_exception => self::webdav_exception($e, $errorstringkey)
             );
         }
 
@@ -142,11 +158,17 @@ final class pointer_reader {
      * @param string $path
      * @param pointer_location|null $location Ueberschreibt die normale
      *        Pointer-Aufloesung, siehe {@see list_entries()}.
+     * @param string $errorstringkey Siehe {@see list_entries()}.
      * @return array{path: string, content: string, mimetype: string, size: int,
      *         contenthash: string, timemodified: int}|null
      * @throws \moodle_exception invalidpathkey des Bereichs, sowie wie {@see list_entries()}.
      */
-    public static function read_content(storage_area $area, string $path, ?pointer_location $location = null): ?array {
+    public static function read_content(
+        storage_area $area,
+        string $path,
+        ?pointer_location $location = null,
+        string $errorstringkey = 'webdavexternalerror'
+    ): ?array {
         $location = $location ?? storage_anchor::resolve_pointer_location($area);
         if ($location === null) {
             [$directory, $filename] = storage_anchor::resolve_file($area, $path);
@@ -160,7 +182,7 @@ final class pointer_reader {
             return self::read_content_moodle($area, $path, $location);
         }
 
-        return self::read_content_external($area, $path, $location);
+        return self::read_content_external($area, $path, $location, $errorstringkey);
     }
 
     /**
@@ -198,9 +220,15 @@ final class pointer_reader {
      * @param storage_area $area
      * @param string $path
      * @param pointer_location $location
+     * @param string $errorstringkey Siehe {@see list_entries()}.
      * @return array|null
      */
-    private static function read_content_external(storage_area $area, string $path, pointer_location $location): ?array {
+    private static function read_content_external(
+        storage_area $area,
+        string $path,
+        pointer_location $location,
+        string $errorstringkey
+    ): ?array {
         $clientpath = storage_anchor::normalise_client_path($area, $path);
         if ($clientpath === '') {
             throw new \moodle_exception($area->invalidpathkey, 'local_kurspilot');
@@ -214,7 +242,11 @@ final class pointer_reader {
             $meta = $client->propfind($fileurl, 0);
             $content = $client->get($fileurl);
         } catch (webdav_error $e) {
-            return webdav_error::empty_when_missing($e, null, [self::class, 'webdav_exception']);
+            return webdav_error::empty_when_missing(
+                $e,
+                null,
+                static fn (webdav_error $e): \moodle_exception => self::webdav_exception($e, $errorstringkey)
+            );
         }
 
         $entry = $meta[0] ?? null;
@@ -267,11 +299,20 @@ final class pointer_reader {
      * #494: Auflisten/Anlegen auf der Ortswahlseite) denselben Fehlertext
      * braucht - eine Uebersetzung statt zwei fast identischer Kopien.
      *
+     * Der Sprachstring ist seit Issue #526 (Spec #486 §5/§8) waehlbar: der
+     * Default "webdavexternalerror" ist an die KI gerichtet (Kontext-Lücke),
+     * passt aber weder auf die Ortswahlseite selbst (an die Lehrkraft
+     * gerichtet, keine KI-Anweisung) noch auf die Materialwerkzeuge (kein
+     * Kontextbereich betroffen) - {@see \local_kurspilot\ortswahl_lib} und
+     * {@see \local_kurspilot\material_files} uebergeben hier ihren eigenen
+     * Schluessel.
+     *
      * @param webdav_error $e
+     * @param string $stringkey
      * @return \moodle_exception
      */
-    public static function webdav_exception(webdav_error $e): \moodle_exception {
-        return new \moodle_exception('webdavexternalerror', 'local_kurspilot', '', (object) [
+    public static function webdav_exception(webdav_error $e, string $stringkey = 'webdavexternalerror'): \moodle_exception {
+        return new \moodle_exception($stringkey, 'local_kurspilot', '', (object) [
             'errorclass' => $e->errorclass,
             'page' => webdav_setup_steps::ORTSWAHL_PAGE,
         ]);

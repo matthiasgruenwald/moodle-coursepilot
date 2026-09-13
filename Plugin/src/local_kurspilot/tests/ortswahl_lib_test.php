@@ -107,6 +107,29 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->assertStringNotContainsString('Nutzerinstanzen erlauben', $text);
     }
 
+    /**
+     * Issue #528 (Spec #486 §5, Befund #11 aus der Live-Abnahme #505): ein
+     * ausgeschaltetes Repository (Schritt 1) darf nicht auch Schritt 2 und 3
+     * als fehlend melden, wenn deren Konfiguration/Recht bereits gesetzt
+     * sind - der Text an die Administration nennt sonst erledigte Schritte.
+     */
+    public function test_missing_steps_text_omits_already_satisfied_steps_when_step_one_is_off(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_webdav_instance($user);
+        $this->grant_webdav_capability($user);
+
+        global $DB;
+        $DB->set_field('repository', 'visible', 0, ['type' => 'webdav']);
+
+        $text = ortswahl_lib::missing_steps_text((int) $user->id);
+
+        $this->assertStringContainsString('Repositories', $text);
+        $this->assertStringNotContainsString('Nutzerinstanzen erlauben', $text);
+        $this->assertStringNotContainsString('repository/webdav:view', $text);
+    }
+
     public function test_own_instances_excludes_foreign_instances(): void {
         $this->resetAfterTest();
         $owner = $this->getDataGenerator()->create_user();
@@ -136,6 +159,41 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->assertSame('kurspilot', $kontext['pfad']);
         $this->assertSame('moodle', $material['ort']);
         $this->assertSame('kurspilot-material', $material['pfad']);
+    }
+
+    /**
+     * "chosen" (Issue #525, Spec §5): ohne Pointer ("erste Einrichtung")
+     * gilt kein Ziel als ausdruecklich gewaehlt, obwohl current() bereits
+     * die Standardwurzel als Anzeigewert liefert - das Dateifenster-JS soll
+     * hier weiterhin eine ausdrueckliche Wahl verlangen.
+     */
+    public function test_current_marks_target_as_not_chosen_without_pointer(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $kontext = ortswahl_lib::current('kontextbereich');
+        $material = ortswahl_lib::current('materialbestand');
+
+        $this->assertFalse($kontext['chosen']);
+        $this->assertFalse($material['chosen']);
+    }
+
+    /**
+     * Gegenstueck: ein Ziel, das der Pointer bereits ausdruecklich aufloest
+     * (in Moodle oder extern), gilt als gewaehlt (Issue #525).
+     */
+    public function test_current_marks_target_as_chosen_with_pointer(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Kontext');
+
+        $kontext = ortswahl_lib::current('kontextbereich');
+        $material = ortswahl_lib::current('materialbestand');
+
+        $this->assertTrue($kontext['chosen']);
+        $this->assertTrue($material['chosen']);
     }
 
     /**

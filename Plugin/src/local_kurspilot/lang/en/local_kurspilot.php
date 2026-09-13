@@ -92,12 +92,15 @@ $string['webdavfingerprintchanged'] = 'The server, base path, or account of this
 $string['contextrootmissing'] = 'The chosen context area no longer exists at the external location (moved, deleted, or renamed). Please choose again on the location page ({$a}).';
 $string['webdaviservfilesonly'] = 'On IServ, only locations below "Files/" are reachable. Please choose a folder there on the location page ({$a->page}).';
 $string['webdavexternalerror'] = 'The external storage could not be read ({$a->errorclass}). This is a context gap: the journal, profiles, and plan are not readable right now - please say so explicitly to the teacher once per session and keep working without those files, instead of continuing from memory. Please try again later, or check the location page ({$a->page}).';
+$string['materialexternalerror'] = 'The material collection could not be read ({$a->errorclass}). Please try again later, or check the location page ({$a->page}).';
+$string['ortswahlexternalerror'] = 'The external storage is not responding right now ({$a->errorclass}). Please try again later, or check the connection\'s credentials.';
 $string['webdavstep1instruction'] = 'The administration must enable the "WebDAV" repository type under Site administration ▸ Plugins ▸ Repositories.';
 $string['webdavstep2instruction'] = 'The administration must turn on "Allow user instances" for the "WebDAV" repository type.';
 $string['webdavstep3instruction'] = 'The administration must grant the teacher the "repository/webdav:view" capability in their own user context (recommended via a dedicated system role).';
 
 // Location page "Ortswahl" (issue #494, spec #486 §5/§10).
-$string['ortswahl'] = 'Location';
+$string['ortswahl'] = 'Kurspilot: locations for context area and material collection';
+$string['kurspilotsettingsheading'] = 'Kurspilot';
 $string['ortswahltitle'] = 'Where the context area and material stock live';
 $string['ortswahlheading'] = 'Where the context area and material stock live';
 $string['ortswahlintro'] = 'Choose a folder in one of your WebDAV connections for each target, or leave it in Moodle.';

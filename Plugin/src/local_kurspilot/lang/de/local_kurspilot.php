@@ -93,12 +93,15 @@ $string['webdavfingerprintchanged'] = 'Server, Basispfad oder Konto dieser WebDA
 $string['contextrootmissing'] = 'Der gewählte Kontextbereich ist am externen Ort nicht mehr vorhanden (verschoben, gelöscht oder umbenannt). Bitte auf der Ortswahlseite ({$a}) neu wählen.';
 $string['webdaviservfilesonly'] = 'Bei IServ ist nur unterhalb von „Files/“ wählbar. Bitte auf der Ortswahlseite ({$a->page}) einen Ordner dort wählen.';
 $string['webdavexternalerror'] = 'Der externe Speicher konnte nicht gelesen werden ({$a->errorclass}). Das ist eine Kontext-Lücke: Journal, Profile und Plan sind gerade nicht lesbar - bitte das der Lehrkraft einmal je Sitzung ausdrücklich ansagen und ohne diese Dateien weiterarbeiten, statt aus der Erinnerung fortzuschreiben. Bitte später erneut versuchen oder auf der Ortswahlseite ({$a->page}) nachsehen.';
+$string['materialexternalerror'] = 'Der Materialbestand konnte nicht gelesen werden ({$a->errorclass}). Bitte später erneut versuchen oder auf der Ortswahlseite ({$a->page}) nachsehen.';
+$string['ortswahlexternalerror'] = 'Der externe Speicher antwortet gerade nicht ({$a->errorclass}). Bitte später erneut versuchen oder die Zugangsdaten der Verbindung prüfen.';
 $string['webdavstep1instruction'] = 'Die Administration muss den Repository-Typ "WebDAV" in Website-Administration ▸ Plugins ▸ Repositories aktivieren.';
 $string['webdavstep2instruction'] = 'Die Administration muss beim Repository-Typ "WebDAV" die Option "Nutzerinstanzen erlauben" einschalten.';
 $string['webdavstep3instruction'] = 'Die Administration muss der Lehrkraft das Recht "repository/webdav:view" im eigenen Nutzerkontext zuweisen (empfohlen über eine eigene Systemrolle).';
 
 // Ortswahlseite (Issue #494, Spec #486 §5/§10).
-$string['ortswahl'] = 'Ortswahl';
+$string['ortswahl'] = 'Kurspilot: Ablageorte für Kontextbereich und Materialbestand';
+$string['kurspilotsettingsheading'] = 'Kurspilot';
 $string['ortswahltitle'] = 'Wo Kontextbereich und Materialbestand liegen';
 $string['ortswahlheading'] = 'Wo Kontextbereich und Materialbestand liegen';
 $string['ortswahlintro'] = 'Wählen Sie je Ziel einen Ordner in einer Ihrer WebDAV-Verbindungen, oder lassen Sie es in Moodle.';

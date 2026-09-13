@@ -54,4 +54,47 @@ final class webdav_setup_steps_test extends \advanced_testcase {
 
         $this->assertIsBool($steps[webdav_setup_steps::STEP_CAPABILITY]['ok']);
     }
+
+    /**
+     * Issue #528: Schritt 2 (Nutzerinstanzen erlaubt) und Schritt 3 (Recht)
+     * werten unabhaengig von Schritt 1 (Repository aktiv) aus - ein
+     * ausgeschaltetes Repository darf die bereits gesetzte Konfiguration von
+     * Schritt 2 nicht als "fehlend" melden.
+     */
+    public function test_step_two_and_three_stay_ok_when_step_one_is_off(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->create_webdav_instance($user);
+        $this->grant_webdav_capability($user);
+        // has_capability() im Katalog prueft ohne dritten Parameter $USER,
+        // nicht $userid (dieselbe Konvention wie die drei WebDAV-Checks) -
+        // die angemeldete Testperson muss deshalb die geprüfte sein.
+        $this->setUser($user);
+
+        global $DB;
+        $DB->set_field('repository', 'visible', 0, ['type' => 'webdav']);
+
+        $steps = webdav_setup_steps::catalog((int) $user->id);
+
+        $this->assertFalse($steps[webdav_setup_steps::STEP_REPOSITORY_ACTIVE]['ok']);
+        $this->assertTrue($steps[webdav_setup_steps::STEP_USER_INSTANCES]['ok']);
+        $this->assertTrue($steps[webdav_setup_steps::STEP_CAPABILITY]['ok']);
+    }
+
+    /**
+     * enabled_for_user() bleibt trotz der Entkopplung in {@see catalog()}
+     * die UND-Verknuepfung aller drei Schritte (Issue #528).
+     */
+    public function test_enabled_for_user_still_requires_all_three_steps(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->create_webdav_instance($user);
+        $this->grant_webdav_capability($user);
+        $this->setUser($user);
+
+        global $DB;
+        $DB->set_field('repository', 'visible', 0, ['type' => 'webdav']);
+
+        $this->assertFalse(webdav_setup_steps::enabled_for_user((int) $user->id));
+    }
 }

@@ -100,4 +100,78 @@ final class local_kurspilot_lib_test extends advanced_testcase {
         $this->assertContains(\local_kurspilot\check\webdav_capability_check::class, $classes);
         $this->assertContains(\local_kurspilot\check\personal_data_hosts_check::class, $classes);
     }
+
+    /**
+     * local_kurspilot_extend_navigation_user_settings() (Issue #524, Spec
+     * #486 §5, Befund #12 aus der Live-Abnahme #505): auf der eigenen
+     * Einstellungsseite erscheint mit dem Kurspilot-Recht ein eigener
+     * Kurspilot-Block mit Links zur Ortswahl und zu den Verbindungen.
+     */
+    public function test_settings_navigation_adds_kurspilot_block_for_own_page(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->setUser($user);
+        $course = $this->getDataGenerator()->create_course();
+
+        $navigation = new navigation_node('root');
+        local_kurspilot_extend_navigation_user_settings(
+            $navigation,
+            $user,
+            \context_user::instance($user->id),
+            $course,
+            \context_course::instance($course->id)
+        );
+
+        $block = $navigation->get('local_kurspilot_settings');
+        $this->assertNotFalse($block);
+        $this->assertNotFalse($block->get('local_kurspilot_settings_ortswahl'));
+        $this->assertNotFalse($block->get('local_kurspilot_settings_connections'));
+    }
+
+    /**
+     * Ohne das Kurspilot-Recht bleibt die Einstellungsseite unveraendert.
+     */
+    public function test_settings_navigation_adds_nothing_without_capability(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $course = $this->getDataGenerator()->create_course();
+
+        $navigation = new navigation_node('root');
+        local_kurspilot_extend_navigation_user_settings(
+            $navigation,
+            $user,
+            \context_user::instance($user->id),
+            $course,
+            \context_course::instance($course->id)
+        );
+
+        $this->assertFalse($navigation->get('local_kurspilot_settings'));
+    }
+
+    /**
+     * Auf einer fremden Einstellungsseite (z.B. eine Administrationsperson
+     * betrachtet die Einstellungen einer Lehrkraft) erscheint der Block
+     * nicht - auch nicht fuer die betrachtete Person selbst faelschlich.
+     */
+    public function test_settings_navigation_adds_nothing_for_foreign_profile(): void {
+        $this->resetAfterTest();
+        $viewer = $this->getDataGenerator()->create_user();
+        $viewed = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->role_assign('editingteacher', $viewed->id, \context_system::instance()->id);
+        $this->setUser($viewer);
+        $course = $this->getDataGenerator()->create_course();
+
+        $navigation = new navigation_node('root');
+        local_kurspilot_extend_navigation_user_settings(
+            $navigation,
+            $viewed,
+            \context_user::instance($viewed->id),
+            $course,
+            \context_course::instance($course->id)
+        );
+
+        $this->assertFalse($navigation->get('local_kurspilot_settings'));
+    }
 }

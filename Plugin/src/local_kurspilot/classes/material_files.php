@@ -385,7 +385,10 @@ final class material_files {
             $directory = self::resolve_directory($path);
             $result = ['directory' => self::relative_directory($directory), 'entries' => self::list_entries($directory)];
         } else {
-            $result = pointer_reader::list_entries(self::area(), $path);
+            // Eigener Fehlertext statt des KI-gerichteten Kontext-Lücken-
+            // Textes (Issue #526, Spec #486 §8): der Materialbestand ist
+            // keine Kontext-Lücke im Sinne der Spec.
+            $result = pointer_reader::list_entries(self::area(), $path, null, 'materialexternalerror');
         }
 
         $result['entries'] = array_map(
@@ -417,7 +420,8 @@ final class material_files {
             $content = self::read_content($directory, $filename);
             return $content === null ? null : ($content + ['path' => self::relative_file($directory, $filename)]);
         }
-        return pointer_reader::read_content(self::area(), $path);
+        // Siehe list_entries_for_ort(): eigener Fehlertext, keine Kontext-Lücke.
+        return pointer_reader::read_content(self::area(), $path, null, 'materialexternalerror');
     }
 
     /**

@@ -48,7 +48,14 @@ final class webdav_setup_steps {
     public const STEP_CAPABILITY = 'capability';
 
     /**
-     * Die drei Schritte, live ausgewertet fuer eine bestimmte Person.
+     * Die drei Schritte, live ausgewertet fuer eine bestimmte Person - jeder
+     * Schritt fuer sich (Issue #528, Spec #486 §5): vorher koppelte diese
+     * Methode `ok` an die vorherigen Schritte ("Schritt 1 aus" liess 2 und 3
+     * automatisch als fehlend gelten), obwohl Konfiguration und
+     * Rollenzuweisung unabhaengig voneinander gesetzt sein koennen. Der
+     * kopierbare Text an die Administration ({@see \local_kurspilot\ortswahl_lib::missing_steps_text()})
+     * nennt dadurch nur, was tatsaechlich fehlt. Die tatsaechliche Wirkung
+     * (alle drei zusammen) bleibt {@see enabled_for_user()} vorbehalten.
      *
      * @param int $userid
      * @return array<string, array{ok: bool, instruction: string, targeturl: \moodle_url}>
@@ -58,12 +65,11 @@ final class webdav_setup_steps {
 
         $repositoryrecord = $DB->get_record('repository', ['type' => self::REPOSITORY_TYPE]);
         $repositoryactive = $repositoryrecord !== false && (int) $repositoryrecord->visible === 1;
-        $userinstancesallowed = $repositoryactive && (bool) get_config(self::REPOSITORY_TYPE, 'enableuserinstances');
+        $userinstancesallowed = (bool) get_config(self::REPOSITORY_TYPE, 'enableuserinstances');
         // $userid > 0 vor dem Kontextzugriff (Issue #505 Befund #1): die CLI
         // ruft mit $USER->id = 0 auf, context_user::instance(0) wirft dort
         // dml_missing_record. Ohne Person ist die Capability ohnehin "nein".
-        $hascapability = $userinstancesallowed && $userid > 0
-            && has_capability(self::CAPABILITY, \context_user::instance($userid));
+        $hascapability = $userid > 0 && has_capability(self::CAPABILITY, \context_user::instance($userid));
 
         return [
             self::STEP_REPOSITORY_ACTIVE => [
@@ -86,13 +92,18 @@ final class webdav_setup_steps {
 
     /**
      * Ob alle drei Schritte fuer diese Person erfuellt sind - die
-     * WebDAV-Freischaltung aus Spec §2 Pruefung 4.
+     * WebDAV-Freischaltung aus Spec §2 Pruefung 4. Seit Issue #528 werten
+     * die drei Schritte in {@see catalog()} unabhaengig voneinander aus,
+     * deshalb hier die ausdrueckliche UND-Verknuepfung statt sich auf eine
+     * bereits gekoppelte `ok`-Angabe zu verlassen.
      *
      * @param int $userid
      * @return bool
      */
     public static function enabled_for_user(int $userid): bool {
         $steps = self::catalog($userid);
-        return $steps[self::STEP_CAPABILITY]['ok'] === true;
+        return $steps[self::STEP_REPOSITORY_ACTIVE]['ok']
+            && $steps[self::STEP_USER_INSTANCES]['ok']
+            && $steps[self::STEP_CAPABILITY]['ok'];
     }
 }

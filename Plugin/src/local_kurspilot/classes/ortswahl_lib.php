@@ -76,7 +76,10 @@ final class ortswahl_lib {
      */
     public static function setup_state(int $userid): array {
         $steps = webdav_setup_steps::catalog($userid);
-        if (!$steps[webdav_setup_steps::STEP_CAPABILITY]['ok']) {
+        // Nicht mehr nur $steps[STEP_CAPABILITY]['ok'] (Issue #528): die drei
+        // Schritte werten seither unabhaengig aus, die Wirkung braucht
+        // deshalb die ausdrueckliche UND-Verknuepfung aus enabled_for_user().
+        if (!webdav_setup_steps::enabled_for_user($userid)) {
             return ['state' => self::STATE_NOT_ENABLED, 'steps' => $steps];
         }
         if (empty(self::own_instances())) {
@@ -165,7 +168,7 @@ final class ortswahl_lib {
      * @return array{path: string, folders: array<int, array{name: string}>, iserv: bool,
      *         selectable: bool, reason: string, entrycount: int, entrynames: string[]}
      * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/
-     *         webdavauthunsupported/webdavexternalerror/invalidcontextpath
+     *         webdavauthunsupported/ortswahlexternalerror/invalidcontextpath
      */
     public static function browse(int $instanceid, string $path): array {
         $segments = self::validate_segments($path);
@@ -210,7 +213,14 @@ final class ortswahl_lib {
         try {
             return $instance->client()->propfind($instance->directory_url($relative), 1);
         } catch (webdav_error $e) {
-            return webdav_error::empty_when_missing($e, [], [pointer_reader::class, 'webdav_exception']);
+            // Eigener, an die Lehrkraft gerichteter Fehlertext statt des
+            // KI-gerichteten Kontext-Lücken-Textes (Issue #526, Spec #486
+            // §5/§8): dieser Fehler erscheint direkt auf der Ortswahlseite.
+            return webdav_error::empty_when_missing(
+                $e,
+                [],
+                static fn (webdav_error $e): \moodle_exception => pointer_reader::webdav_exception($e, 'ortswahlexternalerror')
+            );
         }
     }
 
@@ -300,7 +310,8 @@ final class ortswahl_lib {
      * Aenderungswunsch heisst schlicht: die konfigurierte Standardwurzel.
      *
      * @param string $target "kontextbereich" oder "materialbestand".
-     * @return array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array, display: string, zugelassen: bool}
+     * @return array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array,
+     *         chosen: bool, display: string, zugelassen: bool}
      */
     public static function current(string $target): array {
         $value = self::current_pointer_value($target);
@@ -514,7 +525,7 @@ final class ortswahl_lib {
      *      Liste wie {@see \local_kurspilot\pointer_writer::LOCATION_FAILURE_CODES}.
      *      Gilt dann als "kein nachweisbarer Altbestand" statt den Abschluss
      *      daran scheitern zu lassen. Ein echter Verbindungsausfall
-     *      ("webdavexternalerror") ist dagegen kein Sonderfall des alten
+     *      ("ortswahlexternalerror") ist dagegen kein Sonderfall des alten
      *      Ortes, sondern ein Ausfall wie jeder andere im Ablauf - er laeuft
      *      ungefangen durch und scheitert den gesamten Abschluss, statt
      *      stillschweigend einen Altbestand zu verlieren (Spec §5: "Scheitert
@@ -535,7 +546,7 @@ final class ortswahl_lib {
      *
      * @param array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array} $old
      * @return bool
-     * @throws \moodle_exception webdavexternalerror bei einem echten Ausfall
+     * @throws \moodle_exception ortswahlexternalerror bei einem echten Ausfall
      *         (nicht bei einem nicht mehr gueltigen alten Ort).
      */
     private static function old_location_has_entries(array $old): bool {
@@ -582,17 +593,24 @@ final class ortswahl_lib {
     private static function current_pointer_value(string $target): array {
         $area = self::area($target);
         $location = storage_anchor::resolve_pointer_location($area);
+        // "chosen" (Issue #525, Spec §5): ob dieses Ziel bereits ausdruecklich
+        // aufgeloest ist (Pointer vorhanden) oder nur die Standardwurzel
+        // angezeigt wird, weil noch nie gewaehlt wurde ("erste Einrichtung").
+        // Das Dateifenster-JS nutzt dieses Merkmal, um ein bereits gewaehltes
+        // Ziel als erledigt vorzubelegen, ohne die erste Einrichtung zu
+        // uebergehen.
         if ($location === null) {
-            return ['ort' => pointer_location::MOODLE, 'pfad' => storage_anchor::default_root($area)];
+            return ['ort' => pointer_location::MOODLE, 'pfad' => storage_anchor::default_root($area), 'chosen' => false];
         }
         if ($location->kind === pointer_location::MOODLE) {
-            return ['ort' => pointer_location::MOODLE, 'pfad' => trim((string) $location->path, '/')];
+            return ['ort' => pointer_location::MOODLE, 'pfad' => trim((string) $location->path, '/'), 'chosen' => true];
         }
         return [
             'ort' => pointer_location::EXTERN,
             'instanzid' => (int) $location->instanceid,
             'pfad' => (string) $location->relativepath,
             'pruefmerkmal' => $location->fingerprint,
+            'chosen' => true,
         ];
     }
 
@@ -629,7 +647,7 @@ final class ortswahl_lib {
         try {
             $iserv = webdav_instance::detect_iserv_root($instanceid);
         } catch (webdav_error $e) {
-            throw pointer_reader::webdav_exception($e);
+            throw pointer_reader::webdav_exception($e, 'ortswahlexternalerror');
         }
         if ($iserv && $segments[0] !== webdav_instance::ISERV_FILES_AREA) {
             throw new \moodle_exception('ortswahliservfilesonly', 'local_kurspilot');
@@ -710,7 +728,7 @@ final class ortswahl_lib {
      *
      * @param int $instanceid
      * @param string $path
-     * @throws \moodle_exception webdavexternalerror, oder wie {@see webdav_instance::resolve_owned()}.
+     * @throws \moodle_exception ortswahlexternalerror, oder wie {@see webdav_instance::resolve_owned()}.
      */
     private static function ensure_directory(int $instanceid, string $path): void {
         $segments = self::validate_segments($path);
@@ -721,7 +739,7 @@ final class ortswahl_lib {
         try {
             $instance->client()->mkcol_chain($instance->directory_url(''), $segments);
         } catch (webdav_error $e) {
-            throw pointer_reader::webdav_exception($e);
+            throw pointer_reader::webdav_exception($e, 'ortswahlexternalerror');
         }
     }
 

@@ -69,6 +69,65 @@ function local_kurspilot_myprofile_navigation(
 }
 
 /**
+ * Verlinkt die Ortswahl- und die Verbindungsseite zusaetzlich auf der
+ * Einstellungsseite der eigenen Person (Issue #524, Spec #486 §5, gefunden
+ * in der Live-Abnahme #505 Befund #12): bislang standen beide Links nur im
+ * eigenen Profil unter "Verschiedenes" - dort, wo eine Lehrkraft nach
+ * Konfiguration sucht (`/user/preferences.php`), fehlte jeder Eintrag.
+ *
+ * Nur in der eigenen Ansicht und nur mit dem Recht, das auch die
+ * Ortswahlseite selbst verlangt (`local/kurspilot:useremote`) - Moodle ruft
+ * diesen Callback auch beim Betrachten fremder Einstellungsseiten
+ * (Administration) auf, $user/$usercontext beziehen sich dann auf die
+ * betrachtete, nicht die angemeldete Person.
+ *
+ * @param \navigation_node $navigation
+ * @param \stdClass $user
+ * @param \context_user $usercontext
+ * @param \stdClass $course
+ * @param \context_course $coursecontext
+ * @return void
+ */
+function local_kurspilot_extend_navigation_user_settings(
+    \navigation_node $navigation,
+    \stdClass $user,
+    \context_user $usercontext,
+    \stdClass $course,
+    \context_course $coursecontext
+): void {
+    global $USER;
+
+    if ((int) $user->id !== (int) $USER->id) {
+        return;
+    }
+    if (!has_capability('local/kurspilot:useremote', \context_system::instance())) {
+        return;
+    }
+
+    $kurspilot = $navigation->add(
+        get_string('kurspilotsettingsheading', 'local_kurspilot'),
+        null,
+        \navigation_node::TYPE_CONTAINER,
+        null,
+        'local_kurspilot_settings'
+    );
+    $kurspilot->add(
+        get_string('ortswahl', 'local_kurspilot'),
+        new moodle_url(\local_kurspilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE),
+        \navigation_node::TYPE_SETTING,
+        null,
+        'local_kurspilot_settings_ortswahl'
+    );
+    $kurspilot->add(
+        get_string('myconnections', 'local_kurspilot'),
+        new moodle_url('/local/kurspilot/connections.php'),
+        \navigation_node::TYPE_SETTING,
+        null,
+        'local_kurspilot_settings_connections'
+    );
+}
+
+/**
  * Verlinkt die Verlaufsseite (#397, Spec 0015 §10.6/§10.7) in der
  * Kursnavigation - nur sichtbar mit local/kurspilot:viewhistory, damit die
  * Seite fuer Nutzer ohne diese Faehigkeit gar nicht erst als Link auftaucht

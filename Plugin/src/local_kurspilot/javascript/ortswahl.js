@@ -32,10 +32,40 @@
         lastResult: null
     };
 
+    // Vorbelegung bereits gewaehlter Ziele (Issue #525, Spec #486 §5): nur
+    // ein Ziel, das der Pointer schon ausdruecklich aufloest ("chosen"),
+    // gilt als erledigt - bei der ersten Einrichtung (kein Pointer, nur die
+    // angezeigte Standardwurzel) bleibt "Einrichten abschliessen" wie bisher
+    // gesperrt, bis beide Ziele ausdruecklich gewaehlt wurden. Die vom
+    // Server gelieferten Feldnamen ("ort"/"pfad"/"instanzid") wandern dabei
+    // auf die im restlichen Skript verwendeten ("type"/"path"/"instanceid").
+    function initialSelection(target) {
+        var current = config.targets[target];
+        if (!current.chosen) {
+            return { type: null };
+        }
+        return {
+            type: current.ort,
+            instanceid: current.instanzid,
+            path: current.pfad,
+            display: current.display
+        };
+    }
+
     var selections = {
-        kontextbereich: Object.assign({}, config.targets.kontextbereich),
-        materialbestand: Object.assign({}, config.targets.materialbestand)
+        kontextbereich: initialSelection('kontextbereich'),
+        materialbestand: initialSelection('materialbestand')
     };
+
+    // Die versteckten Formularfelder tragen erst nach einer Interaktion
+    // einen Wert (applySelection()) - ein bereits gewaehltes Ziel muss aber
+    // auch ohne erneute Interaktion mitgeschickt werden, sonst verwirft das
+    // Abschliessen (ortswahl.php) eine unveraenderte Auswahl als ungueltig.
+    ['kontextbereich', 'materialbestand'].forEach(function (target) {
+        if (selections[target].type) {
+            applySelection(target, selections[target]);
+        }
+    });
 
     function el(id) {
         return document.getElementById(id);
@@ -141,7 +171,7 @@
     document.querySelectorAll('[data-action="keep-moodle"]').forEach(function (btn) {
         btn.addEventListener('click', function () {
             var target = btn.getAttribute('data-target');
-            applySelection(target, { type: 'moodle', path: config.targets[target].path, display: config.targets[target].display });
+            applySelection(target, { type: 'moodle', path: config.targets[target].pfad, display: config.targets[target].display });
         });
     });
 
