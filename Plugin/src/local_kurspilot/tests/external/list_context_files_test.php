@@ -354,6 +354,46 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
+     * Konfliktschutz (Issue #513, Spec #486 §4/§6): Auflisten liefert extern
+     * einen nicht leeren Pruefwert - ohne ihn koennte die KI beim Schreiben
+     * nie ein "expected_contenthash" mitgeben, das den externen Speicher
+     * tatsaechlich prueft.
+     */
+    public function test_external_listing_returns_a_nonempty_checkvalue(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/vorlagen.md', '# Extern gemerkt');
+
+        $result = list_context_files::execute();
+        $result = external_api::clean_returnvalue(list_context_files::execute_returns(), $result);
+
+        $entry = $this->find_entry($result['entries'], 'vorlagen.md');
+        $this->assertNotNull($entry);
+        $this->assertNotSame('', $entry['contenthash']);
+    }
+
+    /**
+     * Ohne ETag (IServ) traegt der Pruefwert die Aenderungszeit - schwaecher,
+     * aber ebenfalls nicht leer (Issue #513, Spec §4: "getlastmodified als
+     * schwacher Ersatz").
+     */
+    public function test_external_listing_returns_a_nonempty_checkvalue_without_etag(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->without_etags();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/vorlagen.md', '# Extern gemerkt');
+
+        $result = list_context_files::execute();
+        $result = external_api::clean_returnvalue(list_context_files::execute_returns(), $result);
+
+        $entry = $this->find_entry($result['entries'], 'vorlagen.md');
+        $this->assertNotNull($entry);
+        $this->assertNotSame('', $entry['contenthash']);
+    }
+
+    /**
      * Eine noch nicht angelegte externe Ebene ist leer, nie ein Fehler -
      * dieselbe Bedeutung wie eine fehlende Moodle-Wurzel.
      */

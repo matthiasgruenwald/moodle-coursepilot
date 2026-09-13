@@ -110,7 +110,13 @@ class write_context_file extends external_api {
         self::require_personal_data_allowed($content, $location, $params['path']);
 
         if ($location !== null && $location->kind === pointer_location::EXTERN) {
-            return self::execute_external($params['path'], $content, $params['ausstand'], $params['nur_anlegen']);
+            return self::execute_external(
+                $params['path'],
+                $content,
+                $params['expected_contenthash'],
+                $params['ausstand'],
+                $params['nur_anlegen']
+            );
         }
 
         return self::execute_moodle($params, $content);
@@ -215,14 +221,27 @@ class write_context_file extends external_api {
      * Groessen- und Personenbezugspruefung sind bereits im Aufrufer erledigt -
      * fuer beide Orte identisch, deshalb dort statt hier.
      *
+     * Konfliktschutz mit dem gelesenen Pruefwert (Issue #513): der Aufrufer
+     * gibt "expected_contenthash" unveraendert durch; "ausstand" wirkt
+     * zusaetzlich als Schranke gegen ungeprueftes Nachtragen - eine bereits
+     * gewachsene Zieldatei ohne mitgegebenen Pruefwert wird dann selbst zum
+     * Konflikt (siehe {@see \local_kurspilot\pointer_writer::write()}).
+     *
      * @param string $path
      * @param string $content
+     * @param string $expectedcontenthash Optional: siehe {@see execute()}.
      * @param string $ausstand Optional: siehe {@see execute()}.
      * @param bool $createonly Optional: siehe {@see execute()}.
      * @return array
      */
-    private static function execute_external(string $path, string $content, string $ausstand, bool $createonly = false): array {
-        $result = context_files::write_pointer_aware($path, $content, $createonly);
+    private static function execute_external(
+        string $path,
+        string $content,
+        string $expectedcontenthash,
+        string $ausstand,
+        bool $createonly = false
+    ): array {
+        $result = context_files::write_pointer_aware($path, $content, $createonly, $expectedcontenthash, $ausstand !== '');
         \local_kurspilot\ausstand_notice::dismiss($ausstand);
 
         $message = $result['created']

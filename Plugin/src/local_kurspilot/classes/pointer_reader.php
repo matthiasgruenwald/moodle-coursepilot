@@ -102,6 +102,11 @@ final class pointer_reader {
                 'type' => $entry['type'],
                 'size' => $entry['size'],
                 'mimetype' => $entry['mimetype'],
+                // Bleibt hier bewusst leer: material_files::list_entries_pointer_aware()
+                // teilt sich diese Methode (Spec §7: "contenthash bleibt leer, weil
+                // WebDAV keinen kennt") - der Kontextbereich-Pruefwert (Issue #513) wird
+                // deshalb erst in list_context_files::annotate_locked() aus dem
+                // ebenfalls durchgereichten "etag"-Feld gebildet, nicht hier.
                 'contenthash' => '',
                 'timemodified' => $entry['timemodified'],
                 // Nur intern verwendet (Markierungsgedaechtnis, Issue #493) -
@@ -181,7 +186,35 @@ final class pointer_reader {
             'size' => $entry !== null ? $entry['size'] : strlen($content),
             'contenthash' => '',
             'timemodified' => $entry['timemodified'] ?? 0,
+            // Nur intern verwendet (Issue #513, wie das gleichnamige Feld in
+            // list_entries()) - read_context_file::execute() bildet daraus
+            // den Pruefwert und entfernt dieses Feld wieder, bevor die
+            // Antwort die Werkzeuggrenze erreicht (execute_returns() kennt
+            // es nicht).
+            'etag' => $entry['etag'] ?? null,
         ];
+    }
+
+    /**
+     * Der aus ETag oder `getlastmodified` abgeleitete Pruefwert (Issue #513,
+     * Spec #486 §4/§6) - was {@see list_entries()}/{@see read_content()} als
+     * `contenthash` zurueckgeben und was {@see pointer_writer::write()}/
+     * {@see pointer_writer::append()} als `expected_contenthash` wieder
+     * entgegennehmen und gegen den dann aktuellen Stand pruefen.
+     *
+     * Kein Moodle-`contenthash`: WebDAV kennt keinen Inhalts-Hash, dieser
+     * Wert ist ein rein opakes Vergleichsmerkmal. Ein ETag hat Vorrang
+     * (Nextcloud); fehlt er (IServ), tritt `getlastmodified` als schwacher
+     * Ersatz ein - Sekundenaufloesung, die Werkzeugbeschreibung nennt diese
+     * Grenze.
+     *
+     * @param string|null $etag
+     * @param int $timemodified
+     * @return string 40-stelliger Hexwert (sha1) - PARAM_ALPHANUMEXT-sicher,
+     *         anders als ein roher ETag, der haeufig Anfuehrungszeichen traegt.
+     */
+    public static function external_checkvalue(?string $etag, int $timemodified): string {
+        return $etag !== null ? sha1('etag:' . $etag) : sha1('mtime:' . $timemodified);
     }
 
     /**

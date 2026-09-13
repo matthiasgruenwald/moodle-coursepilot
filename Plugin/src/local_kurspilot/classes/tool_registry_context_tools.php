@@ -132,12 +132,18 @@ final class tool_registry_context_tools {
                     'content' => ['type' => 'string', 'description' => 'Vollstaendiger neuer Dateiinhalt, hoechstens 1 MB'],
                     'expected_contenthash' => [
                         'type' => 'string',
-                        'description' => 'Optional: contenthash aus dem letzten Lesen - passt er nicht, bricht der Vorgang ab',
+                        'description' => 'Optional: contenthash aus dem letzten Lesen oder Auflisten - passt er '
+                            . 'nicht mehr zum aktuellen Stand, bricht der Vorgang mit "Konflikt" ab (neu lesen, '
+                            . 'zusammenfuehren, erneut schreiben). Ohne ETag am externen Ort (IServ) beruht der '
+                            . 'Vergleich auf der Aenderungszeit (Sekundenaufloesung) - ein sehr knapp zeitgleicher '
+                            . 'zweiter Schreibvorgang kann dort unerkannt bleiben.',
                     ],
                     'ausstand' => [
                         'type' => 'string',
                         'description' => 'Optional: Kennung eines offenen Ausstands (aus kurspilot_list_skills) - '
-                            . 'gelingt das Schreiben, verschwindet der Eintrag im selben Aufruf',
+                            . 'gelingt das Schreiben, verschwindet der Eintrag im selben Aufruf. Am externen Ort '
+                            . 'zusaetzlich zu einer bereits vorhandenen Zieldatei "expected_contenthash" mitgeben - '
+                            . 'ohne Pruefwert wird beim Nachtragen nie ueberschrieben.',
                     ],
                     'nur_anlegen' => [
                         'type' => 'boolean',
@@ -164,7 +170,9 @@ final class tool_registry_context_tools {
                 . 'Speicher, der Verbindung oder dem Ort, wird nichts abgelegt - die Antwort nennt eine Kennung und '
                 . 'die Anweisung, den Inhalt im Gespraech zu behalten und mit "ausstand" erneut anzuhaengen, sobald '
                 . 'die Verbindung wieder steht. "ausstand" mit genau dieser Kennung mitgeben, um einen offenen '
-                . 'Ausstand (aus kurspilot_list_skills) im selben Aufruf abzuhaken.',
+                . 'Ausstand (aus kurspilot_list_skills) im selben Aufruf abzuhaken. "expected_contenthash" wirkt '
+                . 'nur am externen Ort: gegen eine bereits vorhandene Zieldatei mitgeben, um eine zwischenzeitliche '
+                . 'Handaenderung zu erkennen (nicht noetig, wenn die Datei noch fehlt).',
             'schema' => [
                 'properties' => [
                     'path' => ['type' => 'string', 'description' => 'Dateipfad relativ zur Wurzel, nur .md, z.B. "journal.md"'],
@@ -172,7 +180,16 @@ final class tool_registry_context_tools {
                     'ausstand' => [
                         'type' => 'string',
                         'description' => 'Optional: Kennung eines offenen Ausstands (aus kurspilot_list_skills) - '
-                            . 'gelingt das Schreiben, verschwindet der Eintrag im selben Aufruf',
+                            . 'gelingt das Schreiben, verschwindet der Eintrag im selben Aufruf. Am externen Ort '
+                            . 'zusaetzlich zu einer bereits vorhandenen Zieldatei "expected_contenthash" mitgeben - '
+                            . 'ohne Pruefwert wird beim Nachtragen nie angehaengt.',
+                    ],
+                    'expected_contenthash' => [
+                        'type' => 'string',
+                        'description' => 'Optional, wirkt nur am externen Ort: contenthash der Zieldatei aus dem '
+                            . 'letzten Lesen oder Auflisten - passt er nicht mehr, bricht der Vorgang mit '
+                            . '"Konflikt" ab. Ohne ETag (IServ) beruht der Vergleich auf der Aenderungszeit '
+                            . '(Sekundenaufloesung).',
                     ],
                 ],
                 'required' => ['path', 'content'],

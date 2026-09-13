@@ -18,6 +18,7 @@ namespace local_kurspilot\external;
 
 use core_external\external_api;
 use local_kurspilot\context_files;
+use local_kurspilot\tests\webdav\fake_webdav_transport;
 use local_kurspilot\tests\webdav\webdav_instance_fixture;
 use local_kurspilot\webdav\webdav_instance;
 
@@ -324,13 +325,17 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Der Append laeuft in einem einzigen Serveraufruf: kein Parameter
-     * verlangt den vorher gelesenen Inhalt oder contenthash, es gibt also
-     * kein Read-Modify-Write auf Anwendungsebene (Spec 0016 §4.2/§5.3).
+     * Der Moodle-Zweig braucht keinen vorher gelesenen Stand: Lesen,
+     * Zusammenfuegen und Schreiben passieren dort in einem Serveraufruf
+     * (Spec 0016 §4.2/§5.3). "expected_contenthash" existiert trotzdem als
+     * Parameter - er wirkt nur extern (Issue #513, Spec #486 §6: "Anhaengen
+     * nutzt den Pruefwert ebenso"), weil dort tatsaechlich ein fruehes Lesen
+     * vorausgehen kann. Befund aus Issue #513: der urspruengliche Test
+     * (`['path', 'content', 'ausstand']`) galt vor diesem Parameter.
      */
-    public function test_execute_parameters_need_no_prior_read(): void {
+    public function test_execute_parameters_expose_expected_contenthash_for_the_external_branch(): void {
         $this->assertSame(
-            ['path', 'content', 'ausstand'],
+            ['path', 'content', 'ausstand', 'expected_contenthash'],
             array_keys(append_context_file::execute_parameters()->keys)
         );
     }
@@ -400,6 +405,91 @@ final class append_context_file_test extends \advanced_testcase {
         $this->assertCount(1, $puts);
         $this->assertSame($seeded['etag'], $puts[0]['headers']['If-Match'] ?? null);
         $this->assertSame("# Journal\n- Stunde 1\n", $puts[0]['body']);
+    }
+
+    /**
+     * Konfliktschutz mit dem gelesenen Pruefwert (Issue #513, Spec #486
+     * §4/§6): Ein zweiter Chat schreibt zwischen dem Lesen und dem Anhaengen
+     * des ersten - die Handaenderung passiert direkt am Fake-Speicher, lange
+     * vor dem eigentlichen Aufruf, kein Decorator noetig.
+     */
+    public function test_stale_checkvalue_from_earlier_read_is_rejected_as_conflict(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/journal.md', "# Journal\n");
+
+        $gelesen = read_context_file::execute('journal.md');
+        $gelesen = external_api::clean_returnvalue(read_context_file::execute_returns(), $gelesen);
+
+        $fake->seed_file('/Kurspilot/Kontext/journal.md', "# Journal\n- Handaenderung\n");
+
+        try {
+            $this->append('journal.md', "- Stunde 1\n", $gelesen['contenthash']);
+            $this->fail('Konflikt haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+        }
+
+        $this->assertSame(
+            "# Journal\n- Handaenderung\n",
+            $this->external_content($fake, '/Kurspilot/Kontext/journal.md')
+        );
+    }
+
+    /**
+     * Passt der mitgegebene Pruefwert zum aktuellen Stand, geht das
+     * Anhaengen wie gewohnt durch (Issue #513).
+     */
+    public function test_matching_checkvalue_allows_append(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/journal.md', "# Journal\n");
+
+        $gelesen = read_context_file::execute('journal.md');
+        $gelesen = external_api::clean_returnvalue(read_context_file::execute_returns(), $gelesen);
+
+        $this->append('journal.md', "- Stunde 1\n", $gelesen['contenthash']);
+
+        $this->assertSame(
+            "# Journal\n- Stunde 1\n",
+            $this->external_content($fake, '/Kurspilot/Kontext/journal.md')
+        );
+    }
+
+    /**
+     * Nachtragen mit "ausstand=" ueberschreibt nie ungeprueft (Entscheidung
+     * zu Issue #513): Fehlt der Pruefwert, obwohl die Zieldatei bereits
+     * existiert, geht das Nachtragen als Konflikt zurueck statt gewachsenen
+     * Bestand stillschweigend zu erweitern.
+     */
+    public function test_ausstand_retry_without_checkvalue_is_rejected_when_file_exists(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->fill_storage();
+
+        try {
+            $this->append('journal.md', 'x');
+            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+        $kennung = \local_kurspilot\ausstand_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+
+        $fake2 = new \local_kurspilot\tests\webdav\fake_webdav_transport();
+        $fake2->seed_folder('/Kurspilot/Kontext');
+        $fake2->seed_file('/Kurspilot/Kontext/journal.md', 'inzwischen gewachsen');
+        webdav_instance::use_test_transport($fake2);
+
+        try {
+            append_context_file::execute('journal.md', 'x', $kennung);
+            $this->fail('Nachtragen ohne Pruefwert haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+        }
+        $this->assertSame('inzwischen gewachsen', $this->external_content($fake2, '/Kurspilot/Kontext/journal.md'));
     }
 
     /**
@@ -539,9 +629,21 @@ final class append_context_file_test extends \advanced_testcase {
      * @param string $content
      * @return array Bereinigte Antwort des Endpunkts.
      */
-    private function append(string $path, string $content): array {
-        $result = append_context_file::execute($path, $content);
+    private function append(string $path, string $content, string $expectedcontenthash = ''): array {
+        $result = append_context_file::execute($path, $content, '', $expectedcontenthash);
         return external_api::clean_returnvalue(append_context_file::execute_returns(), $result);
+    }
+
+    /**
+     * @param fake_webdav_transport $fake
+     * @param string $path
+     * @return string
+     */
+    private function external_content(fake_webdav_transport $fake, string $path): string {
+        // Kein oeffentlicher Lesezugriff auf den internen Speicher des Fakes -
+        // ueber den Client selbst nachlesen, exakt wie ein echter Aufrufer.
+        $client = new \local_kurspilot\webdav\webdav_client($fake);
+        return $client->get('https://fake.example' . $path);
     }
 
     /**

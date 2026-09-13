@@ -310,6 +310,40 @@ final class read_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Konfliktschutz (Issue #513, Spec #486 §4/§6): Lesen liefert extern
+     * einen nicht leeren Pruefwert - dasselbe Muster wie bei
+     * list_context_files, hier fuer den Einzeldatei-Lesezweig.
+     */
+    public function test_external_read_returns_a_nonempty_checkvalue(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/vorlagen.md', '# Extern gemerkt');
+
+        $result = read_context_file::execute('vorlagen.md');
+        $result = external_api::clean_returnvalue(read_context_file::execute_returns(), $result);
+
+        $this->assertNotSame('', $result['contenthash']);
+    }
+
+    /**
+     * Ohne ETag (IServ) traegt der Pruefwert die Aenderungszeit - schwaecher,
+     * aber ebenfalls nicht leer (Issue #513, Spec §4).
+     */
+    public function test_external_read_returns_a_nonempty_checkvalue_without_etag(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->without_etags();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/vorlagen.md', '# Extern gemerkt');
+
+        $result = read_context_file::execute('vorlagen.md');
+        $result = external_api::clean_returnvalue(read_context_file::execute_returns(), $result);
+
+        $this->assertNotSame('', $result['contenthash']);
+    }
+
+    /**
      * Eine fehlende externe Datei ist "nicht gefunden" - dieselbe Meldung
      * wie im Moodle-Zweig, kein anderer Fehlertyp.
      */

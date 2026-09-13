@@ -271,10 +271,20 @@ final class context_files {
      * @param string $content
      * @param bool $createonly Nur anlegen, nie ueberschreiben (Issue #498,
      *        Spec #486 §9: Kopieren aus dem Altbestand).
+     * @param string $expectedcontenthash Pruefwert aus einem frueheren Lesen
+     *        (Issue #513) - siehe {@see pointer_writer::write()}.
+     * @param bool $requirecheckvalue Nachtragen (`ausstand=`, Issue #513) -
+     *        siehe {@see pointer_writer::write()}.
      * @return array{path: string, created: bool, size: int, oldsize: int}
      */
-    public static function write_pointer_aware(string $path, string $content, bool $createonly = false): array {
-        return pointer_writer::write(self::area(), $path, $content, $createonly);
+    public static function write_pointer_aware(
+        string $path,
+        string $content,
+        bool $createonly = false,
+        string $expectedcontenthash = '',
+        bool $requirecheckvalue = false
+    ): array {
+        return pointer_writer::write(self::area(), $path, $content, $createonly, $expectedcontenthash, $requirecheckvalue);
     }
 
     /**
@@ -283,10 +293,19 @@ final class context_files {
      *
      * @param string $path
      * @param string $content
+     * @param string $expectedcontenthash Pruefwert aus einem frueheren Lesen
+     *        (Issue #513) - siehe {@see pointer_writer::append()}.
+     * @param bool $requirecheckvalue Nachtragen (`ausstand=`, Issue #513) -
+     *        siehe {@see pointer_writer::append()}.
      * @return array{path: string, created: bool, size: int}
      */
-    public static function append_pointer_aware(string $path, string $content): array {
-        return pointer_writer::append(self::area(), $path, $content);
+    public static function append_pointer_aware(
+        string $path,
+        string $content,
+        string $expectedcontenthash = '',
+        bool $requirecheckvalue = false
+    ): array {
+        return pointer_writer::append(self::area(), $path, $content, $expectedcontenthash, $requirecheckvalue);
     }
 
     /**

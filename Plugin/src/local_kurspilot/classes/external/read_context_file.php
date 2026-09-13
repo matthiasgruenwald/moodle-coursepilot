@@ -99,9 +99,28 @@ class read_context_file extends external_api {
             'mimetype' => $file['mimetype'],
             'size' => $file['size'],
             'content' => $file['content'],
-            'contenthash' => $file['contenthash'],
+            'contenthash' => self::checkvalue($file),
             'timemodified' => $file['timemodified'],
         ];
+    }
+
+    /**
+     * Konfliktschutz (Issue #513, Spec #486 §4/§6): am externen Ort traegt
+     * {@see context_files::read_content_pointer_aware()}/{@see \local_kurspilot\pointer_reader::read_content()}
+     * zusaetzlich ein internes "etag"-Feld (auch mit Wert null, IServ) - nur
+     * dann bildet diese Methode daraus den Pruefwert, den
+     * "write_context_file"/"append_context_file" als "expected_contenthash"
+     * wieder entgegennehmen. Am Moodle-Ort (kein "etag"-Feld) bleibt der
+     * bereits mitgelieferte, echte Moodle-Contenthash unangetastet.
+     *
+     * @param array $file
+     * @return string
+     */
+    private static function checkvalue(array $file): string {
+        if (!array_key_exists('etag', $file)) {
+            return $file['contenthash'];
+        }
+        return \local_kurspilot\pointer_reader::external_checkvalue($file['etag'], $file['timemodified']);
     }
 
     /**

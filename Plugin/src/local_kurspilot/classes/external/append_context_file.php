@@ -34,9 +34,15 @@ defined('MOODLE_INTERNAL') || die();
  * (Pfad, Endung, Groesse, Personenbezug der Zieldatei, Quote), dann genau
  * ein Schreibvorgang. Der Unterschied zum Schreiben ist die Stelle, an der
  * gelesen wird: Lesen, Zusammenfuegen und Schreiben passieren in einem
- * Serveraufruf, die Lehrkraft muss die Datei also nicht vorher lesen. Deshalb
- * auch kein `expected_contenthash` - der Aufrufer hat keinen Stand, gegen den
- * er pruefen koennte.
+ * Serveraufruf, die Lehrkraft muss die Datei also nicht vorher lesen. Im
+ * Moodle-Zweig bleibt `expected_contenthash` deshalb wirkungslos - der
+ * Aufrufer hat dort keinen Stand, gegen den er pruefen koennte.
+ *
+ * Extern ist das anders (Issue #513, Spec #486 §6: "Anhaengen nutzt den
+ * Pruefwert ebenso"): ein frueheres Lesen liefert dort einen echten
+ * Pruefwert, und `expected_contenthash` schuetzt den Read-modify-write in
+ * {@see \local_kurspilot\pointer_writer::append()} gegen eine Handaenderung,
+ * die lange vor diesem Aufruf geschah.
  *
  * Was das *nicht* heisst: Spec 0016 §5.3 verbietet Locks, zwei wirklich
  * gleichzeitige Appends koennen einander daher weiterhin verlieren. Der
@@ -66,6 +72,14 @@ class append_context_file extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
+            'expected_contenthash' => new external_value(
+                PARAM_ALPHANUMEXT,
+                'Optional, wirkt nur am externen Ort: contenthash der Zieldatei aus dem letzten Lesen - passt er '
+                    . 'nicht, bricht der Vorgang ab. Ohne ETag (IServ) beruht der Vergleich auf der Aenderungszeit '
+                    . '(Sekundenaufloesung).',
+                VALUE_DEFAULT,
+                ''
+            ),
         ]);
     }
 
@@ -73,16 +87,19 @@ class append_context_file extends external_api {
      * @param string $path
      * @param string $content
      * @param string $ausstand
+     * @param string $expectedcontenthash
      * @return array
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
-     *         contextfiletoolarge, contextfilelocked, contextquotaexceeded
+     *         contextfiletoolarge, contextfilelocked, contextquotaexceeded,
+     *         contextfileexternalconflict (extern, Issue #513)
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
-    public static function execute(string $path, string $content, string $ausstand = ''): array {
+    public static function execute(string $path, string $content, string $ausstand = '', string $expectedcontenthash = ''): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'path' => $path,
             'content' => $content,
             'ausstand' => $ausstand,
+            'expected_contenthash' => $expectedcontenthash,
         ]);
 
         self::validate_context(context_files::own_context());
@@ -94,7 +111,7 @@ class append_context_file extends external_api {
         // fuer die Begruendung der getrennten Zweige.
         $location = context_files::resolve_pointer_location();
         if ($location !== null && $location->kind === pointer_location::EXTERN) {
-            return self::execute_external($params['path'], $content, $params['ausstand']);
+            return self::execute_external($params['path'], $content, $params['ausstand'], $params['expected_contenthash']);
         }
 
         return self::execute_moodle($params, $content);
@@ -171,9 +188,10 @@ class append_context_file extends external_api {
      * @param string $path
      * @param string $content
      * @param string $ausstand Optional: siehe {@see execute()}.
+     * @param string $expectedcontenthash Optional: siehe {@see execute()}.
      * @return array
      */
-    private static function execute_external(string $path, string $content, string $ausstand): array {
+    private static function execute_external(string $path, string $content, string $ausstand, string $expectedcontenthash): array {
         $existing = context_files::read_content_pointer_aware($path);
         if ($existing && !personal_data::allowed() && personal_data::is_marked($existing['content'])) {
             throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $path);
@@ -191,7 +209,7 @@ class append_context_file extends external_api {
             );
         }
 
-        $result = context_files::append_pointer_aware($path, $content);
+        $result = context_files::append_pointer_aware($path, $content, $expectedcontenthash, $ausstand !== '');
         \local_kurspilot\ausstand_notice::dismiss($ausstand);
 
         $message = $result['created']

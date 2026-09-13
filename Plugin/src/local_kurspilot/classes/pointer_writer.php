@@ -106,15 +106,34 @@ final class pointer_writer {
      *        Spec #486 §9: Kopieren aus dem Altbestand am neuen Ort) - eine
      *        bereits vorhandene Datei wird abgewiesen (Aufruffehler, kein
      *        Ausstand), statt sie bedingt zu ueberschreiben.
+     * @param string $expectedcontenthash Pruefwert aus einem frueheren Lesen
+     *        (Issue #513, {@see pointer_reader::external_checkvalue()}) -
+     *        passt er nicht zum inzwischen aktuellen Stand, wird ein
+     *        `Konflikt` gemeldet, statt die Handaenderung zu ueberschreiben.
+     *        Leer heisst: ohne Pruefwert wird wie bisher ueberschrieben.
+     * @param bool $requirecheckvalue Nachtragen (`ausstand=`, Issue #513) -
+     *        eine bereits vorhandene Zieldatei ohne mitgegebenen Pruefwert
+     *        gilt dann selbst als `Konflikt`, statt gewachsenen Bestand
+     *        ungeprueft zu ersetzen. Wirkungslos, solange die Datei noch
+     *        fehlt - "anlegen" ist ueber `If-None-Match: *` bereits sicher.
      * @return array{path: string, created: bool, size: int, oldsize: int}
      * @throws \moodle_exception invalidpathkey/contextfilenotmarkdown des Bereichs,
-     *         contextfileexternalconflict bei 412, contextfilealreadyexists bei
-     *         $createonly und vorhandener Datei, sonst ausstandwritefailed
-     *         (Issue #492, Ausfall an Speicher/Verbindung/Ort - legt einen
-     *         Eintrag in der Ausstandsnotiz an) bzw. ausstandnotewritefailed,
-     *         wenn selbst die Notiz nicht mehr geschrieben werden kann.
+     *         contextfileexternalconflict bei 412 sowie bei einem nicht mehr
+     *         passenden oder (beim Nachtragen) fehlenden Pruefwert,
+     *         contextfilealreadyexists bei $createonly und vorhandener Datei,
+     *         sonst ausstandwritefailed (Issue #492, Ausfall an Speicher/
+     *         Verbindung/Ort - legt einen Eintrag in der Ausstandsnotiz an)
+     *         bzw. ausstandnotewritefailed, wenn selbst die Notiz nicht mehr
+     *         geschrieben werden kann.
      */
-    public static function write(storage_area $area, string $path, string $content, bool $createonly = false): array {
+    public static function write(
+        storage_area $area,
+        string $path,
+        string $content,
+        bool $createonly = false,
+        string $expectedcontenthash = '',
+        bool $requirecheckvalue = false
+    ): array {
         $location = self::resolve_external_location($area);
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = self::client_path($folders, $filename);
@@ -133,6 +152,7 @@ final class pointer_writer {
                 $client->put_new($fileurl, $content);
             } else {
                 $operation = self::OP_OVERWRITE;
+                self::require_checkvalue_match($existing, $expectedcontenthash, $requirecheckvalue, $clientpath);
                 $client->put_overwrite($fileurl, $content, $existing['etag'], $existing['timemodified']);
             }
         } catch (webdav_error $e) {
@@ -158,14 +178,27 @@ final class pointer_writer {
      * @param storage_area $area
      * @param string $path
      * @param string $content Anzuhaengender Inhalt.
+     * @param string $expectedcontenthash Pruefwert aus einem frueheren Lesen
+     *        (Issue #513) - siehe {@see write()}, hier vor dem Read-modify-
+     *        write geprueft statt vor einem einzelnen PUT.
+     * @param bool $requirecheckvalue Nachtragen (`ausstand=`, Issue #513) -
+     *        siehe {@see write()}.
      * @return array{path: string, created: bool, size: int}
      * @throws \moodle_exception invalidpathkey/contextfilenotmarkdown des Bereichs,
-     *         contextfileexternalconflict bei 412, sonst ausstandwritefailed
-     *         (Issue #492, Ausfall an Speicher/Verbindung/Ort - legt einen
-     *         Eintrag in der Ausstandsnotiz an) bzw. ausstandnotewritefailed,
-     *         wenn selbst die Notiz nicht mehr geschrieben werden kann.
+     *         contextfileexternalconflict bei 412 sowie bei einem nicht mehr
+     *         passenden oder (beim Nachtragen) fehlenden Pruefwert, sonst
+     *         ausstandwritefailed (Issue #492, Ausfall an Speicher/
+     *         Verbindung/Ort - legt einen Eintrag in der Ausstandsnotiz an)
+     *         bzw. ausstandnotewritefailed, wenn selbst die Notiz nicht mehr
+     *         geschrieben werden kann.
      */
-    public static function append(storage_area $area, string $path, string $content): array {
+    public static function append(
+        storage_area $area,
+        string $path,
+        string $content,
+        string $expectedcontenthash = '',
+        bool $requirecheckvalue = false
+    ): array {
         $location = self::resolve_external_location($area);
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = self::client_path($folders, $filename);
@@ -181,6 +214,7 @@ final class pointer_writer {
                 return ['path' => $clientpath, 'created' => true, 'size' => strlen($content)];
             }
 
+            self::require_checkvalue_match($existing, $expectedcontenthash, $requirecheckvalue, $clientpath);
             $newcontent = $client->get($fileurl) . $content;
             $client->put_overwrite($fileurl, $newcontent, $existing['etag'], $existing['timemodified']);
         } catch (webdav_error $e) {
@@ -269,6 +303,45 @@ final class pointer_writer {
             return null;
         }
         return ['etag' => $entry['etag'], 'timemodified' => $entry['timemodified'], 'size' => $entry['size']];
+    }
+
+    /**
+     * Der eigentliche Konfliktschutz mit dem gelesenen Pruefwert (Issue
+     * #513): anders als das transportnahe `If-Match`/`getlastmodified` in
+     * {@see \local_kurspilot\webdav\webdav_client::put_overwrite()} - das nur
+     * eine Handaenderung *innerhalb* dieses Aufrufs sieht, weil {@see current_entry()}
+     * ihren Stand unmittelbar vorher frisch liest - vergleicht diese Methode
+     * gegen einen Stand, den die KI womoeglich lange vor diesem Aufruf gelesen
+     * hat.
+     *
+     * Ohne mitgegebenen Pruefwert bleibt der Vertrag wie bisher (Entscheidung
+     * zu Issue #513: "ohne Pruefwert wird wie heute ueberschrieben") - ausser
+     * beim Nachtragen (`$requirecheckvalue`): dort ist ein fehlender
+     * Pruefwert gegen eine bereits vorhandene Datei selbst ein Konflikt, denn
+     * Nachtragen darf gewachsenen Bestand nie ungeprueft ersetzen.
+     *
+     * @param array{etag: ?string, timemodified: int, size: int} $existing
+     * @param string $expectedcontenthash
+     * @param bool $requirecheckvalue
+     * @param string $clientpath
+     * @throws \moodle_exception contextfileexternalconflict
+     */
+    private static function require_checkvalue_match(
+        array $existing,
+        string $expectedcontenthash,
+        bool $requirecheckvalue,
+        string $clientpath
+    ): void {
+        if ($expectedcontenthash === '') {
+            if ($requirecheckvalue) {
+                throw new \moodle_exception('contextfileexternalconflict', 'local_kurspilot', '', $clientpath);
+            }
+            return;
+        }
+        $actual = pointer_reader::external_checkvalue($existing['etag'], $existing['timemodified']);
+        if ($actual !== $expectedcontenthash) {
+            throw new \moodle_exception('contextfileexternalconflict', 'local_kurspilot', '', $clientpath);
+        }
     }
 
     /**

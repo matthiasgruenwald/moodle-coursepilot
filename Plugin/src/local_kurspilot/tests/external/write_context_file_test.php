@@ -439,6 +439,145 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Konfliktschutz mit dem gelesenen Pruefwert (Issue #513, Spec #486
+     * §4/§6): Ein zweiter Chat schreibt zwischen dem Lesen und dem Schreiben
+     * des ersten - nicht innerhalb des Schreibaufrufs, sondern lange davor
+     * (Transport-Fake: die Handaenderung passiert direkt am Fake-Speicher,
+     * kein Decorator noetig). Der mitgegebene "expected_contenthash" aus dem
+     * fruehen Lesen passt dann nicht mehr zum aktuellen Stand - `Konflikt`,
+     * der urspruengliche Inhalt bleibt die Handaenderung, nicht der Versuch.
+     */
+    public function test_stale_checkvalue_from_earlier_read_is_rejected_as_conflict(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/plan.md', 'alt');
+
+        $gelesen = read_context_file::execute('plan.md');
+        $gelesen = external_api::clean_returnvalue(read_context_file::execute_returns(), $gelesen);
+
+        // Der zweite Chat schreibt, lange bevor der erste ueberhaupt zum
+        // Schreiben kommt - nicht im Aufruf selbst.
+        $fake->seed_file('/Kurspilot/Kontext/plan.md', 'handaenderung');
+
+        try {
+            $this->write('plan.md', '# Neuer Plan', $gelesen['contenthash']);
+            $this->fail('Konflikt haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+        }
+
+        $this->assertSame('handaenderung', $this->external_content($fake, '/Kurspilot/Kontext/plan.md'));
+    }
+
+    /**
+     * Passt der mitgegebene Pruefwert zum aktuellen Stand, geht das
+     * Ueberschreiben wie gewohnt durch (Issue #513).
+     */
+    public function test_matching_checkvalue_allows_overwrite(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/plan.md', 'alt');
+
+        $gelesen = read_context_file::execute('plan.md');
+        $gelesen = external_api::clean_returnvalue(read_context_file::execute_returns(), $gelesen);
+
+        $result = $this->write('plan.md', '# Neuer Plan', $gelesen['contenthash']);
+
+        $this->assertFalse($result['created']);
+        $this->assertSame('# Neuer Plan', $this->external_content($fake, '/Kurspilot/Kontext/plan.md'));
+    }
+
+    /**
+     * Ohne ETag (IServ) wirkt der Vergleich ueber die Aenderungszeit (Issue
+     * #513, Spec §4) - derselbe Konfliktschutz, nur mit dem schwaecheren
+     * Ersatzmerkmal.
+     */
+    public function test_stale_checkvalue_without_etag_is_rejected_as_conflict_iserv_mode(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->without_etags();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/plan.md', 'alt');
+
+        $gelesen = read_context_file::execute('plan.md');
+        $gelesen = external_api::clean_returnvalue(read_context_file::execute_returns(), $gelesen);
+
+        $fake->seed_file('/Kurspilot/Kontext/plan.md', 'handaenderung');
+
+        try {
+            $this->write('plan.md', '# Neuer Plan', $gelesen['contenthash']);
+            $this->fail('Konflikt haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+        }
+    }
+
+    /**
+     * Nachtragen mit "ausstand=" ueberschreibt nie ungeprueft (Entscheidung
+     * zu Issue #513): Fehlt der Pruefwert, obwohl die Zieldatei bereits
+     * existiert, geht das Nachtragen als Konflikt zurueck statt gewachsenen
+     * Bestand stillschweigend zu ersetzen.
+     */
+    public function test_ausstand_retry_without_checkvalue_is_rejected_when_file_exists(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->fill_storage();
+
+        try {
+            $this->write('plan.md', '# Plan');
+            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+        $kennung = \local_kurspilot\ausstand_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+
+        $fake2 = new \local_kurspilot\tests\webdav\fake_webdav_transport();
+        $fake2->seed_folder('/Kurspilot/Kontext');
+        $fake2->seed_file('/Kurspilot/Kontext/plan.md', 'inzwischen gewachsen');
+        webdav_instance::use_test_transport($fake2);
+
+        try {
+            write_context_file::execute('plan.md', '# Plan', '', $kennung);
+            $this->fail('Nachtragen ohne Pruefwert haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+        }
+        $this->assertSame('inzwischen gewachsen', $this->external_content($fake2, '/Kurspilot/Kontext/plan.md'));
+    }
+
+    /**
+     * Nachtragen auf eine weiterhin fehlende Zieldatei braucht keinen
+     * Pruefwert - "anlegen" ist ueber "If-None-Match: *" bereits sicher.
+     */
+    public function test_ausstand_retry_creates_missing_file_without_checkvalue(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->fill_storage();
+
+        try {
+            $this->write('plan.md', '# Plan');
+            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+        $kennung = \local_kurspilot\ausstand_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+
+        $fake2 = new \local_kurspilot\tests\webdav\fake_webdav_transport();
+        $fake2->seed_folder('/Kurspilot/Kontext');
+        webdav_instance::use_test_transport($fake2);
+
+        $result = write_context_file::execute('plan.md', '# Plan', '', $kennung);
+        $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
+
+        $this->assertTrue($result['created']);
+        $this->assertSame([], \local_kurspilot\ausstand_notice::list_grouped());
+    }
+
+    /**
      * Fehlende Ordnerebenen werden per MKCOL angelegt (Issue #491, Spec #486 §4).
      */
     public function test_creates_missing_folder_levels_via_mkcol(): void {

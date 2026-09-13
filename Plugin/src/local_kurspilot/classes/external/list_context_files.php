@@ -103,14 +103,27 @@ class list_context_files extends external_api {
      * @param array $entry Ein Eintrag aus {@see context_files::list_entries_pointer_aware()}
      *        (traegt noch das interne "etag"-Feld).
      * @param string $directory Ergebnis-Ordner, siehe {@see execute()}.
-     * @return array Derselbe Eintrag ohne "etag", mit "locked".
+     * @return array Derselbe Eintrag ohne "etag", mit "locked" und (extern,
+     *         Dateien) einem gefuellten "contenthash".
      */
     private static function annotate_locked(array $entry, string $directory): array {
         $etag = $entry['etag'] ?? null;
+        // Nur der externe Zweig traegt ueberhaupt ein "etag"-Feld (auch mit
+        // Wert null, IServ) - {@see \local_kurspilot\pointer_reader::list_entries()}.
+        // Der Moodle-Zweig hat gar kein solches Feld, sein "contenthash" ist
+        // bereits der echte Moodle-Contenthash und bleibt unangetastet.
+        $isexternal = array_key_exists('etag', $entry);
         unset($entry['etag']);
 
         if ($entry['type'] === 'folder') {
             return $entry + ['locked' => false];
+        }
+
+        if ($isexternal) {
+            // Konfliktschutz (Issue #513, Spec #486 §4/§6): der Pruefwert,
+            // den write_context_file/append_context_file als
+            // "expected_contenthash" wieder entgegennehmen.
+            $entry['contenthash'] = \local_kurspilot\pointer_reader::external_checkvalue($etag, $entry['timemodified']);
         }
 
         // Schalter fuer personenbezogene Kontextdaten (#344, ADR 0011): ein
