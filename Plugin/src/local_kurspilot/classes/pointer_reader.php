@@ -236,4 +236,52 @@ final class pointer_reader {
             'page' => webdav_setup_steps::ORTSWAHL_PAGE,
         ]);
     }
+
+    /**
+     * Nur der reine Inhalt einer externen Zieldatei, ohne PROPFIND (Issue
+     * #515) - fuer den Personenbezugs-Schutz beim Ueberschreiben:
+     * {@see \local_kurspilot\external\write_context_file} muss wissen, ob
+     * eine bereits vorhandene Zieldatei markiert ist, *bevor* der eigentliche
+     * Schreibversuch beginnt. Bewusst kein zweites PROPFIND vorweg: das
+     * wuerde {@see pointer_writer::write()}'s eigene, unmittelbar vor dem PUT
+     * ausgefuehrte Existenzpruefung vorziehen und damit den in
+     * `write_context_file_test` nachgestellten Wettlauf zwischen Lesen und
+     * Schreiben verfaelschen (der Test beobachtet dort das *erste* PROPFIND
+     * auf den Pfad). Ein einzelnes GET beruehrt diesen Wettlauf nicht.
+     *
+     * Eine geloeschte Instanz, entzogene Freischaltung oder ein geaendertes
+     * Pruefmerkmal ({@see \local_kurspilot\webdav\webdav_instance::resolve()})
+     * liefert ebenfalls still `null`: dieser Zustand ist ortsfest, nicht
+     * launenhaft - der unmittelbar folgende echte Schreibversuch loest
+     * denselben Ort erneut auf und meldet denselben Fehler dann vollstaendig
+     * (Ausstandsnotiz, ADR 0023). Ein `webdav_error` dagegen wird **nicht**
+     * verschluckt (ausser bei einer tatsaechlich fehlenden Datei): ein
+     * fluechtiger Ausfall genau dieses einen GET waere sonst ein
+     * stillschweigendes "kein Personenbezug" fuer eine in Wahrheit weiterhin
+     * gesperrte Datei - das widerspraeche dem in
+     * {@see \local_kurspilot\webdav\webdav_client} dokumentierten Grundsatz
+     * "nie stillschweigend Erfolg" (Issue #515). Stattdessen bricht der ganze
+     * Schreibversuch ab, uebersetzt wie jeder andere Lesefehler (siehe
+     * {@see read_content()}) - ohne Ausstandsnotiz, weil auch andere
+     * Lesefehler keine bekommen.
+     *
+     * @param storage_area $area
+     * @param string $path Client-Pfad, bereits als extern erkannt.
+     * @param pointer_location $location Muss bereits als EXTERN erkannt sein.
+     * @return string|null null, wenn die Datei fehlt oder der Ort gerade nicht aufloesbar ist.
+     * @throws \moodle_exception webdavexternalerror bei einem echten Lesefehler (nicht: fehlende Datei).
+     */
+    public static function peek_external_content(storage_area $area, string $path, pointer_location $location): ?string {
+        try {
+            $webdavpath = storage_anchor::external_relative_path($area, $location, $path);
+            $instance = webdav_instance::resolve($location);
+        } catch (\moodle_exception $e) {
+            return null;
+        }
+        try {
+            return $instance->client()->get($instance->file_url($webdavpath));
+        } catch (webdav_error $e) {
+            return webdav_error::empty_when_missing($e, null, [self::class, 'webdav_exception']);
+        }
+    }
 }

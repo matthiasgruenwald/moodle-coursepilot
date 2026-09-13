@@ -107,7 +107,7 @@ class write_context_file extends external_api {
         // Kontextbereich in Moodle bleibt alles wie heute" gilt wortwoertlich,
         // die beiden Zweige bleiben deshalb getrennt statt ineinander verwoben.
         $location = context_files::resolve_pointer_location();
-        self::require_personal_data_allowed($content, $location, $params['path']);
+        self::require_personal_data_allowed($content, $location, $params['path'], $params['nur_anlegen']);
 
         if ($location !== null && $location->kind === pointer_location::EXTERN) {
             return self::execute_external(
@@ -133,12 +133,38 @@ class write_context_file extends external_api {
      * Speicher, Private Files sind immer zugelassen (kein Zweig hier noetig,
      * sie sind nie EXTERN).
      *
+     * Auch die externe Zieldatei zaehlt (Issue #515): eine personenbezogen
+     * markierte Datei ist bei ausgeschaltetem Schalter nicht lesbar - sie
+     * darf dann erst recht nicht ueberschrieben werden, extern genauso wie
+     * in Moodle (siehe die entsprechende Pruefung in {@see execute_moodle()}).
+     * Dieselbe Reihenfolge wie dort gilt auch hier: "nur_anlegen" gegen eine
+     * bereits vorhandene Zieldatei ist ein Aufruffehler (Kopieren aus dem
+     * Altbestand, Issue #498), unabhaengig davon, ob diese Zieldatei
+     * markiert ist - "contextfilealreadyexists" geht deshalb vor
+     * "contextfilelocked".
+     *
      * @param string $content
      * @param pointer_location|null $location
      * @param string $path
-     * @throws \moodle_exception contextfilelocked
+     * @param bool $nuranlegen
+     * @throws \moodle_exception contextfilelocked, contextfilealreadyexists
      */
-    private static function require_personal_data_allowed(string $content, ?pointer_location $location, string $path): void {
+    private static function require_personal_data_allowed(
+        string $content,
+        ?pointer_location $location,
+        string $path,
+        bool $nuranlegen
+    ): void {
+        if ($location !== null && $location->kind === pointer_location::EXTERN && !personal_data::allowed()) {
+            $existing = \local_kurspilot\pointer_reader::peek_external_content(context_files::area(), $path, $location);
+            if ($existing !== null && $nuranlegen) {
+                throw new \moodle_exception('contextfilealreadyexists', 'local_kurspilot', '', $path);
+            }
+            if ($existing !== null && personal_data::is_marked($existing)) {
+                throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $path);
+            }
+        }
+
         if (!personal_data::is_marked($content)) {
             return;
         }

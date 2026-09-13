@@ -323,6 +323,99 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Was bei ausgeschaltetem Schalter nicht lesbar ist, darf auch am
+     * externen Ort nicht ueberschrieben werden - dieselbe Garantie wie
+     * {@see test_rejects_overwriting_a_marked_file_when_switch_off()} fuer
+     * Moodle (Issue #515, Spec #486 §6: "allowpersonaldata wirkt unveraendert
+     * am Inhalt"). Vor dieser Korrektur reichte der externe Zweig neuen,
+     * unmarkierten Inhalt ungeprueft an {@see \local_kurspilot\pointer_writer::write()}
+     * durch.
+     */
+    public function test_rejects_overwriting_a_marked_external_file_when_switch_off(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $this->marked_content());
+
+        try {
+            $this->write('lerngruppe.md', '# harmlos');
+            $this->fail('Ueberschreiben haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilelocked', $e->errorcode);
+        }
+
+        $this->assertSame(
+            $this->marked_content(),
+            $this->external_content($fake, '/Kurspilot/Kontext/lerngruppe.md')
+        );
+        $this->assertSame([], array_values(array_filter(
+            $fake->requests(),
+            static fn (array $r): bool => $r['method'] === 'PUT'
+        )));
+    }
+
+    /**
+     * Ein veraltetes Markierungsgedaechtnis (Issue #493, hier zweckentfremdet
+     * fuer den Test) darf die Sperre nicht aushebeln - entschieden wird am
+     * tatsaechlichen Inhalt der externen Zieldatei, nicht am gemerkten Bit
+     * (Issue #515, Akzeptanzkriterium 3).
+     */
+    public function test_stale_mark_memory_cannot_bypass_the_external_lock(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $seeded = $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $this->marked_content());
+
+        // Das Gedaechtnis behauptet "nicht markiert" fuer genau diesen
+        // Schluessel (Pfad, Groesse, Aenderungszeit, ETag) - waere die
+        // Sperre darauf angewiesen, ginge das Ueberschreiben durch.
+        \local_kurspilot\mark_memory::remember(
+            'lerngruppe.md',
+            strlen($this->marked_content()),
+            $seeded['lastmodified'],
+            $seeded['etag'],
+            false
+        );
+
+        try {
+            $this->write('lerngruppe.md', '# harmlos');
+            $this->fail('Das veraltete Markierungsgedaechtnis haette die Sperre nicht aushebeln duerfen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilelocked', $e->errorcode);
+        }
+
+        $this->assertSame(
+            $this->marked_content(),
+            $this->external_content($fake, '/Kurspilot/Kontext/lerngruppe.md')
+        );
+    }
+
+    /**
+     * Anhaengen bei ausgeschaltetem Schalter greift auf der externen
+     * Zieldatei ebenso (Issue #515, Akzeptanzkriterium 2) - siehe
+     * {@see \local_kurspilot\external\append_context_file::execute_external()}.
+     * Dieser Test dokumentiert das bereits vorhandene Verhalten dort.
+     */
+    public function test_appending_to_a_marked_external_file_when_switch_off_is_rejected_too(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $this->marked_content());
+
+        try {
+            append_context_file::execute('lerngruppe.md', "\n- Notiz");
+            $this->fail('Anhaengen haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilelocked', $e->errorcode);
+        }
+
+        $this->assertSame(
+            $this->marked_content(),
+            $this->external_content($fake, '/Kurspilot/Kontext/lerngruppe.md')
+        );
+    }
+
+    /**
      * Unmarkierter Inhalt geht an jeden Speicher, unabhaengig von
      * `personaldatahosts` - die Pruefung gilt nur der Markierung.
      */
@@ -1089,6 +1182,70 @@ final class write_context_file_test extends \advanced_testcase {
 
         $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
         $this->assertSame([], $puts);
+    }
+
+    /**
+     * Ist die vorhandene externe Zieldatei zusaetzlich markiert und der
+     * #344-Schalter aus, geht "contextfilealreadyexists" trotzdem vor
+     * "contextfilelocked" - dieselbe Reihenfolge wie im Moodle-Zweig (Issue
+     * #515, siehe die Docblock-Begruendung an
+     * {@see write_context_file::require_personal_data_allowed()}).
+     */
+    public function test_nur_anlegen_reports_already_exists_even_for_a_marked_external_file(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $this->marked_content());
+
+        try {
+            write_context_file::execute('lerngruppe.md', '# Neu', '', '', true);
+            $this->fail('Ueberschreiben haette mit nur_anlegen abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilealreadyexists', $e->errorcode);
+        }
+
+        $this->assertSame(
+            $this->marked_content(),
+            $this->external_content($fake, '/Kurspilot/Kontext/lerngruppe.md')
+        );
+    }
+
+    /**
+     * Ein echter Lesefehler beim Vorab-Blick auf die externe Zieldatei
+     * (Issue #515) bricht das Schreiben ab, statt die Sperre stillschweigend
+     * zu umgehen: anders als eine tatsaechlich fehlende Datei (404, sicher
+     * "kein Personenbezug") darf ein unklarer Fehler nie als Erfolg gelten
+     * (Grundsatz aus {@see \local_kurspilot\webdav\webdav_client}, "nie
+     * stillschweigend Erfolg").
+     */
+    public function test_peek_read_failure_aborts_the_write_instead_of_bypassing_the_lock(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/lerngruppe.md', $this->marked_content());
+
+        $getfails = new class($fake) implements \local_kurspilot\webdav\webdav_transport {
+            public function __construct(private readonly fake_webdav_transport $inner) {
+            }
+
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_kurspilot\webdav\webdav_response {
+                if ($method === 'GET') {
+                    return new \local_kurspilot\webdav\webdav_response(503, [], '');
+                }
+                return $this->inner->request($method, $url, $headers, $body);
+            }
+        };
+        webdav_instance::use_test_transport($getfails);
+
+        $this->expectException(\moodle_exception::class);
+        try {
+            $this->write('lerngruppe.md', '# harmlos');
+        } finally {
+            $this->assertSame(
+                $this->marked_content(),
+                $this->external_content($fake, '/Kurspilot/Kontext/lerngruppe.md')
+            );
+        }
     }
 
     /**
