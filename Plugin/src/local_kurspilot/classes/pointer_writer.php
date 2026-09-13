@@ -527,7 +527,7 @@ final class pointer_writer {
         access_log::log_failure('WebDAV ' . $errorclass . ': ' . $rawmessage);
 
         try {
-            $kennung = ausstand_notice::record($clientpath, $operation, $errorclass, $courseid);
+            $identifier = ausstand_notice::record($clientpath, $operation, $errorclass, $courseid);
         } catch (\moodle_exception $quotaerror) {
             if ($quotaerror->errorcode !== 'ausstandnotequotaexceeded') {
                 throw $quotaerror;
@@ -545,7 +545,7 @@ final class pointer_writer {
             'path' => $clientpath,
             'operation' => $operation,
             'reason' => $reason,
-            'kennung' => $kennung,
+            'kennung' => $identifier,
             'target' => self::describe_target($host, $instanceid),
         ]);
     }

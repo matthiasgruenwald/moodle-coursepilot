@@ -235,6 +235,24 @@ class append_context_file extends external_api {
         string $expectedcontenthash,
         int $courseid = 0
     ): array {
+        self::guard_personal_data_external($path, $content);
+
+        $result = context_files::append_pointer_aware($path, $content, $expectedcontenthash, $ausstand !== '', $courseid);
+        \local_kurspilot\ausstand_notice::dismiss($ausstand);
+
+        return self::build_append_response($result);
+    }
+
+    /**
+     * Personenbezugs-Vorpruefung fuer den externen Zweig (Issue #523: aus
+     * execute_external() ausgelagert, um die Funktion unter der
+     * 50-Zeilen-Grenze zu halten): sperrt eine bereits markierte Zieldatei
+     * und prueft bei neuer Markierung den zugelassenen Speicher.
+     *
+     * @param string $path
+     * @param string $content
+     */
+    private static function guard_personal_data_external(string $path, string $content): void {
         try {
             $existing = context_files::read_content_pointer_aware($path);
         } catch (\moodle_exception $e) {
@@ -270,10 +288,16 @@ class append_context_file extends external_api {
                 // Siehe oben: der folgende Schreibversuch scheitert ohnehin.
             }
         }
+    }
 
-        $result = context_files::append_pointer_aware($path, $content, $expectedcontenthash, $ausstand !== '', $courseid);
-        \local_kurspilot\ausstand_notice::dismiss($ausstand);
-
+    /**
+     * Baut die Antwort des externen Zweigs mit dem Rotationshinweis (Issue
+     * #523: aus execute_external() ausgelagert).
+     *
+     * @param array{path: string, created: bool, size: int} $result
+     * @return array
+     */
+    private static function build_append_response(array $result): array {
         $message = $result['created']
             ? get_string('contextfilecreated', 'local_kurspilot', $result['path'])
             : get_string('contextfileappended', 'local_kurspilot', (object) [

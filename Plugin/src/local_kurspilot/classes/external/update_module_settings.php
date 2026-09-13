@@ -257,6 +257,42 @@ class update_module_settings extends external_api {
         ]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
+        $context = self::authorise($cm);
+
+        $modname = (string) $cm->modname;
+        $catalogclass = self::catalog_for($modname);
+        // Billigteil der Selbstfreigabe (Spec 0015 §11, ADR 0017, Ticket #399):
+        // sperrt nur DIESE Aktivitaetsart, wenn ein erkannter Moodle-Versionswechsel
+        // eine Katalogabweichung ergeben hat. Lesen bleibt unberuehrt (kein
+        // Lese-Werkzeug ruft assert_writable() auf).
+        write_gate::assert_writable($modname);
+
+        [$patch, $before] = self::decode_and_validate_patch($modname, $catalogclass, $cmid, $params['felder_json']);
+
+        $course = get_course((int) $cm->course);
+        require_once($CFG->dirroot . '/course/modlib.php');
+        self::apply_patch_to_module($cm, $course, $modname, $catalogclass, $context, $before, $patch, $params['ort']);
+
+        $after = self::read_settings($cmid);
+        [$changes, $sideeffects] = self::diff_and_side_effects($modname, $patch, $before, $after);
+
+        return [
+            'cmid' => (int) $cmid,
+            'modname' => $modname,
+            'meldung' => self::build_message($changes, $sideeffects, self::written_pseudofields($catalogclass, $patch)),
+            'aenderungen' => $changes,
+            'nebenwirkungen' => $sideeffects,
+        ];
+    }
+
+    /**
+     * Prueft Kontext und Capabilities (Issue #523: aus execute() ausgelagert,
+     * um die Funktion unter der 50-Zeilen-Grenze zu halten).
+     *
+     * @param \stdClass $cm
+     * @return \context_module
+     */
+    private static function authorise(\stdClass $cm): \context_module {
         $context = context_module::instance($cm->id);
         self::validate_context($context);
         require_capability('local/kurspilot:use', $context);
@@ -269,32 +305,71 @@ class update_module_settings extends external_api {
         // Feldvalidierungsmeldung versteckt bleibt.
         require_capability('moodle/course:manageactivities', $context);
 
-        $modname = (string) $cm->modname;
-        $catalogclass = self::catalog_for($modname);
-        // Billigteil der Selbstfreigabe (Spec 0015 §11, ADR 0017, Ticket #399):
-        // sperrt nur DIESE Aktivitaetsart, wenn ein erkannter Moodle-Versionswechsel
-        // eine Katalogabweichung ergeben hat. Lesen bleibt unberuehrt (kein
-        // Lese-Werkzeug ruft assert_writable() auf).
-        write_gate::assert_writable($modname);
+        return $context;
+    }
 
-        $patch = json_decode($params['felder_json'], true);
+    /**
+     * Dekodiert felder_json und validiert den Patch (Issue #523: aus
+     * execute() ausgelagert).
+     *
+     * @param string $modname
+     * @param class-string<module_catalog> $catalogclass
+     * @param int $cmid
+     * @param string $felderjson
+     * @return array{0: array, 1: array} [Patch, aktuelle Einstellungen vor dem Patch]
+     */
+    private static function decode_and_validate_patch(
+        string $modname,
+        string $catalogclass,
+        int $cmid,
+        string $felderjson
+    ): array {
+        $patch = json_decode($felderjson, true);
         if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
             throw new moodle_exception('invalidpatchjson', 'local_kurspilot');
         }
 
         pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $patch);
+        // Issue #523: einmal gelesen und an execute() zurueckgegeben, statt
+        // dort ein zweites Mal denselben Stand zu lesen (Review-Fund am
+        // Extraktions-Schnitt: reiner Performance-/DRY-Fund, keine
+        // Verhaltensaenderung).
         $before = self::read_settings($cmid);
         self::validate_patch($modname, $catalogclass, $before, $patch);
 
-        $course = get_course((int) $cm->course);
-        require_once($CFG->dirroot . '/course/modlib.php');
+        return [$patch, $before];
+    }
+
+    /**
+     * Wendet den Patch auf das native Formularweg-Objekt an und schreibt es
+     * (Issue #523: aus execute() ausgelagert).
+     *
+     * @param \stdClass $cm
+     * @param \stdClass $course
+     * @param string $modname
+     * @param class-string<module_catalog> $catalogclass
+     * @param \context_module $context
+     * @param array $before
+     * @param array $patch
+     * @param string $ort
+     */
+    private static function apply_patch_to_module(
+        \stdClass $cm,
+        \stdClass $course,
+        string $modname,
+        string $catalogclass,
+        \context_module $context,
+        array $before,
+        array $patch,
+        string $ort
+    ): void {
         // get_moduleinfo_data() gibt das Tupel [cm, context, module, data, cw]
         // zurueck (course/modlib.php) - "data" (Positon 3) ist das
         // Formularweg-Feldobjekt, das ueberlagert und zurueckgeschrieben wird.
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
         pseudofield_carry_forward::apply($modname, $catalogclass, $moduleinfo, $before, $cm, $patch);
-        self::resolve_material_reference_pseudofields($modname, $context, $patch, $params['ort']);
-        self::resolve_intro_image_pseudofield($modname, $context, $moduleinfo, $patch, $params['ort']);
+        self::resolve_material_reference_pseudofields($modname, $context, $patch, $ort);
+        self::resolve_intro_image_pseudofield($modname, $context, $moduleinfo, $patch, $ort);
         foreach ($patch as $fieldname => $value) {
             $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
         }
@@ -304,17 +379,6 @@ class update_module_settings extends external_api {
         pseudofield_carry_forward::sync_intro_editor_from_patch($moduleinfo, $patch);
 
         \update_moduleinfo($cm, $moduleinfo, $course);
-
-        $after = self::read_settings($cmid);
-        [$changes, $sideeffects] = self::diff_and_side_effects($modname, $patch, $before, $after);
-
-        return [
-            'cmid' => (int) $cmid,
-            'modname' => $modname,
-            'meldung' => self::build_message($changes, $sideeffects, self::written_pseudofields($catalogclass, $patch)),
-            'aenderungen' => $changes,
-            'nebenwirkungen' => $sideeffects,
-        ];
     }
 
     /**
@@ -559,46 +623,56 @@ class update_module_settings extends external_api {
         }
 
         foreach ($patch as $fieldname => $value) {
-            if (!is_string($fieldname)) {
-                throw new coding_exception('felder_json muss ein JSON-Objekt sein, kein Array.');
-            }
-            if (in_array($fieldname, $blocklist, true)) {
-                // Vervollstaendigungsfelder zuerst: sie sind nicht nur
-                // gesperrt, sie haben einen Weg (Ticket #461).
-                shared_block::assert_not_completion_field($fieldname);
-                throw new moodle_exception(
-                    'blockedfield',
-                    'local_kurspilot',
-                    '',
-                    ['field' => $fieldname, 'modname' => $modname]
-                );
-            }
-            if (in_array($fieldname, self::PATCH_BLOCKED_PSEUDOFIELDS[$modname] ?? [], true)) {
-                throw new moodle_exception('folderfilespatchunsupported', 'local_kurspilot');
-            }
-            shared_block::assert_not_read_only_vocabulary($fieldname, $modname);
-            if (!array_key_exists($fieldname, $fieldsbyname)) {
-                throw new moodle_exception(
-                    'unknownfield',
-                    'local_kurspilot',
-                    '',
-                    ['field' => $fieldname, 'modname' => $modname]
-                );
-            }
-
-            $field = $fieldsbyname[$fieldname];
-            if ($field->values !== null && !in_array($value, $field->values, false)) {
-                throw new moodle_exception(
-                    'invalidfieldvalue',
-                    'local_kurspilot',
-                    '',
-                    ['field' => $fieldname, 'modname' => $modname, 'value' => json_encode($value)]
-                );
-            }
+            self::validate_patch_field($modname, $fieldname, $value, $blocklist, $fieldsbyname);
         }
 
         self::validate_combination_rules($modname, $before, $patch);
         self::assert_stealth_allowed($patch);
+    }
+
+    /**
+     * Prueft ein einzelnes Patch-Feld (Issue #523: aus validate_patch()
+     * ausgelagert, um die Funktion unter der 50-Zeilen-Grenze zu halten).
+     *
+     * @param string $modname
+     * @param mixed $fieldname
+     * @param mixed $value
+     * @param string[] $blocklist
+     * @param array $fieldsbyname
+     */
+    private static function validate_patch_field(
+        string $modname,
+        $fieldname,
+        $value,
+        array $blocklist,
+        array $fieldsbyname
+    ): void {
+        if (!is_string($fieldname)) {
+            throw new coding_exception('felder_json muss ein JSON-Objekt sein, kein Array.');
+        }
+        if (in_array($fieldname, $blocklist, true)) {
+            // Vervollstaendigungsfelder zuerst: sie sind nicht nur
+            // gesperrt, sie haben einen Weg (Ticket #461).
+            shared_block::assert_not_completion_field($fieldname);
+            throw new moodle_exception('blockedfield', 'local_kurspilot', '', ['field' => $fieldname, 'modname' => $modname]);
+        }
+        if (in_array($fieldname, self::PATCH_BLOCKED_PSEUDOFIELDS[$modname] ?? [], true)) {
+            throw new moodle_exception('folderfilespatchunsupported', 'local_kurspilot');
+        }
+        shared_block::assert_not_read_only_vocabulary($fieldname, $modname);
+        if (!array_key_exists($fieldname, $fieldsbyname)) {
+            throw new moodle_exception('unknownfield', 'local_kurspilot', '', ['field' => $fieldname, 'modname' => $modname]);
+        }
+
+        $field = $fieldsbyname[$fieldname];
+        if ($field->values !== null && !in_array($value, $field->values, false)) {
+            throw new moodle_exception(
+                'invalidfieldvalue',
+                'local_kurspilot',
+                '',
+                ['field' => $fieldname, 'modname' => $modname, 'value' => json_encode($value)]
+            );
+        }
     }
 
     /**

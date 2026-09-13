@@ -53,15 +53,18 @@ class read_context_file extends external_api {
 
     /**
      * @param string $path
-     * @param bool $vorherigerort
+     * @param bool $previouslocation
      * @return array
      * @throws \moodle_exception invalidcontextpath fuer einen leeren Pfad oder
      *         ein "."/".."-Segment; contextfilenotfound, wenn die Datei fehlt;
      *         altbestandclosed, wenn "vorheriger_ort" ohne offenen Altbestand
      *         gesetzt ist.
      */
-    public static function execute(string $path, bool $vorherigerort = false): array {
-        $params = self::validate_parameters(self::execute_parameters(), ['path' => $path, 'vorheriger_ort' => $vorherigerort]);
+    public static function execute(string $path, bool $previouslocation = false): array {
+        $params = self::validate_parameters(
+            self::execute_parameters(),
+            ['path' => $path, 'vorheriger_ort' => $previouslocation]
+        );
 
         // Kein zusaetzliches 'local/kurspilot:use' o.ae. (anders als
         // list_courses/get_course_catalog): der Kontextbereich ist an die

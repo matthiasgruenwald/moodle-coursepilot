@@ -115,6 +115,30 @@ class crop_material_file extends external_api {
             throw new \moodle_exception('materialgdmissing', 'local_kurspilot');
         }
 
+        [$sourcestored, $sourcerelative] = self::resolve_source($params);
+        self::guard_coordinates($params['x0'], $params['y0'], $params['x1'], $params['y1']);
+        [$targetdir, $targetfilename, $targetextension, $existing] = self::resolve_target($params);
+
+        return self::crop_and_write(
+            $params,
+            $sourcestored,
+            $sourcerelative,
+            $targetdir,
+            $targetfilename,
+            $targetextension,
+            $existing
+        );
+    }
+
+    /**
+     * Liest und prueft die Quelldatei (Issue #523: aus execute() ausgelagert,
+     * um die Funktion unter der 50-Zeilen-Grenze zu halten).
+     *
+     * @param array $params Validierte Parameter von execute().
+     * @return array{0: array{content: string, path: string, size: int, timemodified: int}, 1: string}
+     *         [Quelldatei-Inhalt, aufgeloester Quellpfad]
+     */
+    private static function resolve_source(array $params): array {
         $sourcestored = material_files::read_content_for_ort($params['ort'], $params['sourcepath']);
         if ($sourcestored === null) {
             throw new \moodle_exception(
@@ -125,15 +149,23 @@ class crop_material_file extends external_api {
             );
         }
         $sourcerelative = $sourcestored['path'];
-        $sourcefilename = basename($sourcerelative);
-
-        $sourceextension = strtolower(pathinfo($sourcefilename, PATHINFO_EXTENSION));
+        $sourceextension = strtolower(pathinfo(basename($sourcerelative), PATHINFO_EXTENSION));
         if (!in_array($sourceextension, gd_support::RASTER_IMAGE_EXTENSIONS, true)) {
             throw new \moodle_exception('materialcropsourceunsupported', 'local_kurspilot', '', $sourcerelative);
         }
 
-        self::guard_coordinates($params['x0'], $params['y0'], $params['x1'], $params['y1']);
+        return [$sourcestored, $sourcerelative];
+    }
 
+    /**
+     * Loest die Zieldatei auf und prueft den Gleichzeitigkeitsschutz (Issue
+     * #523: aus execute() ausgelagert).
+     *
+     * @param array $params Validierte Parameter von execute().
+     * @return array{0: string, 1: string, 2: string, 3: ?array} [Zielordner, Zieldateiname,
+     *         Zielendung, bestehende Datei oder null]
+     */
+    private static function resolve_target(array $params): array {
         [$targetdir, $targetfilename] = material_files::resolve_writable_file($params['targetpath']);
         $targetextension = strtolower(pathinfo($targetfilename, PATHINFO_EXTENSION));
         if (!in_array($targetextension, gd_support::RASTER_IMAGE_EXTENSIONS, true)) {
@@ -149,24 +181,32 @@ class crop_material_file extends external_api {
             throw new \moodle_exception('materialfilechanged', 'local_kurspilot', '', $params['targetpath']);
         }
 
-        $source = @imagecreatefromstring($sourcestored['content']);
-        if ($source === false) {
-            // Bildendung, aber GD kann die Bytes nicht lesen (defekte Datei) -
-            // dieselbe erklaerte Nichtverfuegbarkeit wie preview_material_file.
-            throw new \moodle_exception('materialcropsourceunsupported', 'local_kurspilot', '', $sourcerelative);
-        }
+        return [$targetdir, $targetfilename, $targetextension, $existing];
+    }
 
-        [$content, $width, $height] = self::crop(
-            $source,
-            imagesx($source),
-            imagesy($source),
-            $params['x0'],
-            $params['y0'],
-            $params['x1'],
-            $params['y1'],
-            $targetextension
-        );
-        imagedestroy($source);
+    /**
+     * Schneidet zu, schreibt die Zieldatei und baut die Antwort (Issue #523:
+     * aus execute() ausgelagert).
+     *
+     * @param array $params Validierte Parameter von execute().
+     * @param array{content: string, path: string, size: int, timemodified: int} $sourcestored
+     * @param string $sourcerelative
+     * @param string $targetdir
+     * @param string $targetfilename
+     * @param string $targetextension
+     * @param ?array $existing
+     * @return array
+     */
+    private static function crop_and_write(
+        array $params,
+        array $sourcestored,
+        string $sourcerelative,
+        string $targetdir,
+        string $targetfilename,
+        string $targetextension,
+        ?array $existing
+    ): array {
+        [$content, $width, $height] = self::load_and_crop($params, $sourcestored, $sourcerelative, $targetextension);
         $newsize = strlen($content);
         $oldsize = $existing !== null ? $existing['size'] : 0;
 
@@ -178,6 +218,87 @@ class crop_material_file extends external_api {
             'source' => serialize((object) ['original' => $sourcerelative]),
         ]);
 
+        return self::build_crop_response(
+            $params,
+            $sourcestored,
+            $sourcerelative,
+            $targetdir,
+            $targetfilename,
+            $existing,
+            $width,
+            $height,
+            $newsize,
+            $warning
+        );
+    }
+
+    /**
+     * Laedt die Quelldatei als GD-Bild und schneidet zu (Issue #523: aus
+     * crop_and_write() ausgelagert, um die Funktion unter der
+     * 50-Zeilen-Grenze zu halten).
+     *
+     * @param array $params Validierte Parameter von execute().
+     * @param array{content: string, path: string, size: int, timemodified: int} $sourcestored
+     * @param string $sourcerelative
+     * @param string $targetextension
+     * @return array{0: string, 1: int, 2: int} [Inhalt, Breite, Hoehe]
+     */
+    private static function load_and_crop(
+        array $params,
+        array $sourcestored,
+        string $sourcerelative,
+        string $targetextension
+    ): array {
+        $source = @imagecreatefromstring($sourcestored['content']);
+        if ($source === false) {
+            // Bildendung, aber GD kann die Bytes nicht lesen (defekte Datei) -
+            // dieselbe erklaerte Nichtverfuegbarkeit wie preview_material_file.
+            throw new \moodle_exception('materialcropsourceunsupported', 'local_kurspilot', '', $sourcerelative);
+        }
+
+        $result = self::crop(
+            $source,
+            imagesx($source),
+            imagesy($source),
+            $params['x0'],
+            $params['y0'],
+            $params['x1'],
+            $params['y1'],
+            $targetextension
+        );
+        imagedestroy($source);
+
+        return $result;
+    }
+
+    /**
+     * Baut die Zuschnitt-Antwort (Issue #523: aus crop_and_write()
+     * ausgelagert, um die Funktion unter der 50-Zeilen-Grenze zu halten).
+     *
+     * @param array $params Validierte Parameter von execute().
+     * @param array{content: string, path: string, size: int, timemodified: int} $sourcestored
+     * @param string $sourcerelative
+     * @param string $targetdir
+     * @param string $targetfilename
+     * @param ?array $existing
+     * @param int $width
+     * @param int $height
+     * @param int $newsize
+     * @param ?string $warning
+     * @return array
+     */
+    private static function build_crop_response(
+        array $params,
+        array $sourcestored,
+        string $sourcerelative,
+        string $targetdir,
+        string $targetfilename,
+        ?array $existing,
+        int $width,
+        int $height,
+        int $newsize,
+        ?string $warning
+    ): array {
         $targetrelative = material_files::relative_file($targetdir, $targetfilename);
         $message = get_string(
             $existing !== null ? 'materialcropoverwritten' : 'materialcropcreated',
@@ -286,6 +407,32 @@ class crop_material_file extends external_api {
         float $y1,
         string $targetextension
     ): array {
+        [$px0, $py0, $width, $height] = self::pixel_rect($origwidth, $origheight, $x0, $y0, $x1, $y1);
+
+        $canvas = self::render_canvas($source, $px0, $py0, $width, $height, $targetextension);
+
+        ob_start();
+        self::output_canvas($canvas, $targetextension);
+        $content = ob_get_clean();
+        imagedestroy($canvas);
+
+        return [$content, $width, $height];
+    }
+
+    /**
+     * Rechnet die relativen Koordinaten auf ein Pixel-Rechteck um (Issue
+     * #523: aus crop() ausgelagert).
+     *
+     * @return array{0: int, 1: int, 2: int, 3: int} [px0, py0, width, height]
+     */
+    private static function pixel_rect(
+        int $origwidth,
+        int $origheight,
+        float $x0,
+        float $y0,
+        float $x1,
+        float $y1
+    ): array {
         $px0 = (int) round($x0 * $origwidth);
         $py0 = (int) round($y0 * $origheight);
         $px1 = (int) round($x1 * $origwidth);
@@ -300,6 +447,21 @@ class crop_material_file extends external_api {
         $width = max(1, min($origwidth - $px0, $px1 - $px0));
         $height = max(1, min($origheight - $py0, $py1 - $py0));
 
+        return [$px0, $py0, $width, $height];
+    }
+
+    /**
+     * Baut die Ziel-Leinwand und kopiert den Ausschnitt hinein (Issue #523:
+     * aus crop() ausgelagert).
+     */
+    private static function render_canvas(
+        \GdImage $source,
+        int $px0,
+        int $py0,
+        int $width,
+        int $height,
+        string $targetextension
+    ): \GdImage {
         $canvas = imagecreatetruecolor($width, $height);
         $isjpeg = in_array($targetextension, ['jpg', 'jpeg'], true);
         if ($isjpeg) {
@@ -312,7 +474,14 @@ class crop_material_file extends external_api {
         }
         imagecopy($canvas, $source, 0, 0, $px0, $py0, $width, $height);
 
-        ob_start();
+        return $canvas;
+    }
+
+    /**
+     * Gibt die Leinwand im Zielformat auf den Output-Buffer aus (Issue #523:
+     * aus crop() ausgelagert).
+     */
+    private static function output_canvas(\GdImage $canvas, string $targetextension): void {
         switch ($targetextension) {
             case 'jpg':
             case 'jpeg':
@@ -328,9 +497,5 @@ class crop_material_file extends external_api {
                 imagepng($canvas);
                 break;
         }
-        $content = ob_get_clean();
-        imagedestroy($canvas);
-
-        return [$content, $width, $height];
     }
 }

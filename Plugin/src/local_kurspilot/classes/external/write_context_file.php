@@ -112,6 +112,19 @@ class write_context_file extends external_api {
         $content = $params['content'];
         context_files::require_size_within_limit($content);
 
+        return self::dispatch($params, $content);
+    }
+
+    /**
+     * Loest den Kontextpointer auf und verzweigt in den externen oder den
+     * Moodle-Zweig (Issue #523: aus execute() ausgelagert, um die Funktion
+     * unter der 50-Zeilen-Grenze zu halten).
+     *
+     * @param array $params Validierte Parameter von execute().
+     * @param string $content
+     * @return array
+     */
+    private static function dispatch(array $params, string $content): array {
         // Zeigerbewusst (Issue #491, Spec #486 §6): der externe Zweig kennt
         // weder Nutzerquote noch moodle/user:manageownfiles - "fuer den
         // Kontextbereich in Moodle bleibt alles wie heute" gilt wortwoertlich,
@@ -212,26 +225,15 @@ class write_context_file extends external_api {
     }
 
     /**
-     * Der Moodle-Zweig (Spec #486 §6: "fuer den Kontextbereich in Moodle
-     * bleibt alles wie heute") - Groessen- und Personenbezugspruefung sind
-     * bereits im Aufrufer erledigt.
+     * Kopier-/Konfliktschutz vor dem Schreiben im Moodle-Zweig (Issue #523:
+     * aus execute_moodle() ausgelagert, um die Funktion unter der
+     * 50-Zeilen-Grenze zu halten).
      *
-     * @param array $params Ergebnis von {@see self::validate_parameters()}.
-     * @param string $content
-     * @return array
-     * @throws \moodle_exception contextfilealreadyexists, contextfilelocked,
-     *         contextfilechanged, contextquotaexceeded
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     * @param array $params
+     * @param array|null $existing
+     * @throws \moodle_exception contextfilealreadyexists, contextfilelocked, contextfilechanged
      */
-    private static function execute_moodle(array $params, string $content): array {
-        context_files::require_manage_own_files();
-
-        [$directory, $filename] = context_files::resolve_writable_file($params['path']);
-
-        $existing = context_files::read_content($directory, $filename);
-        $oldsize = $existing ? $existing['size'] : 0;
-        $newsize = strlen($content);
-
+    private static function guard_moodle_write(array $params, ?array $existing): void {
         // Kopieren aus dem Altbestand (Issue #498, Spec #486 §9): am neuen
         // Ort wird nie ueberschrieben - dieselbe Garantie, die der externe
         // Zweig ueber "If-None-Match: *" bereits hat.
@@ -255,6 +257,30 @@ class write_context_file extends external_api {
                 && (!$existing || $existing['contenthash'] !== $params['expected_contenthash'])) {
             throw new \moodle_exception('contextfilechanged', 'local_kurspilot', '', $params['path']);
         }
+    }
+
+    /**
+     * Der Moodle-Zweig (Spec #486 §6: "fuer den Kontextbereich in Moodle
+     * bleibt alles wie heute") - Groessen- und Personenbezugspruefung sind
+     * bereits im Aufrufer erledigt.
+     *
+     * @param array $params Ergebnis von {@see self::validate_parameters()}.
+     * @param string $content
+     * @return array
+     * @throws \moodle_exception contextfilealreadyexists, contextfilelocked,
+     *         contextfilechanged, contextquotaexceeded
+     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     */
+    private static function execute_moodle(array $params, string $content): array {
+        context_files::require_manage_own_files();
+
+        [$directory, $filename] = context_files::resolve_writable_file($params['path']);
+
+        $existing = context_files::read_content($directory, $filename);
+        $oldsize = $existing ? $existing['size'] : 0;
+        $newsize = strlen($content);
+
+        self::guard_moodle_write($params, $existing);
 
         context_files::require_quota($newsize - $oldsize);
 

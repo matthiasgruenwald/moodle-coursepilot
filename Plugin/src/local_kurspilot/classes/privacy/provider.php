@@ -91,6 +91,26 @@ final class provider implements
      * @return collection
      */
     public static function get_metadata(collection $collection): collection {
+        $collection = self::describe_oauth_and_version_tables($collection);
+        $collection = self::describe_context_and_werkbank_tables($collection);
+
+        $collection->add_external_location_link('webdav_external_storage', [
+            'path' => 'privacy:metadata:webdav_external_storage:path',
+            'content' => 'privacy:metadata:webdav_external_storage:content',
+        ], 'privacy:metadata:webdav_external_storage');
+
+        return $collection;
+    }
+
+    /**
+     * Registriert die OAuth- und Aktivitaetsstand-Tabellen (Issue #523: aus
+     * get_metadata() ausgelagert, um die Funktion unter der
+     * 50-Zeilen-Grenze zu halten).
+     *
+     * @param collection $collection
+     * @return collection
+     */
+    private static function describe_oauth_and_version_tables(collection $collection): collection {
         $collection->add_database_table('local_kurspilot_oauth_code', [
             'clientid' => 'privacy:metadata:oauth_code:clientid',
             'userid' => 'privacy:metadata:oauth_code:userid',
@@ -135,6 +155,17 @@ final class provider implements
             'timemodified' => 'privacy:metadata:cm_file:timemodified',
         ], 'privacy:metadata:cm_file');
 
+        return $collection;
+    }
+
+    /**
+     * Registriert das Markierungsgedaechtnis und das Werkbank-Downloadticket
+     * (Issue #523: aus get_metadata() ausgelagert).
+     *
+     * @param collection $collection
+     * @return collection
+     */
+    private static function describe_context_and_werkbank_tables(collection $collection): collection {
         // Markierungsgedaechtnis (#493, Spec #486 §6): traegt userid und den
         // Client-Pfad einer Kontextdatei, siehe local_kurspilot\mark_memory.
         $collection->add_database_table('local_kurspilot_context_mark', [
@@ -163,11 +194,6 @@ final class provider implements
             'expires' => 'privacy:metadata:werkbank_ticket:expires',
             'timecreated' => 'privacy:metadata:werkbank_ticket:timecreated',
         ], 'privacy:metadata:werkbank_ticket');
-
-        $collection->add_external_location_link('webdav_external_storage', [
-            'path' => 'privacy:metadata:webdav_external_storage:path',
-            'content' => 'privacy:metadata:webdav_external_storage:content',
-        ], 'privacy:metadata:webdav_external_storage');
 
         return $collection;
     }
@@ -249,69 +275,92 @@ final class provider implements
      * @param approved_contextlist $contextlist
      */
     public static function export_user_data(approved_contextlist $contextlist): void {
-        global $DB;
-
         $userid = (int) $contextlist->get_user()->id;
         foreach ($contextlist->get_contexts() as $context) {
             if ($context instanceof \context_user && (int) $context->instanceid === $userid) {
-                writer::with_context($context)->export_area_files(
-                    [get_string('pluginname', 'local_kurspilot')],
-                    context_files::LEGACY_COMPONENT,
-                    context_files::LEGACY_FILEAREA,
-                    context_files::ITEMID
-                );
-
-                $markrecords = $DB->get_records('local_kurspilot_context_mark', ['userid' => $userid]);
-                $exportedmarks = array_map(static fn($record): \stdClass => (object) [
-                    'path' => $record->path,
-                    'ismarked' => transform::yesno($record->ismarked),
-                ], array_values($markrecords));
-                if ($exportedmarks) {
-                    writer::with_context($context)->export_data(
-                        [get_string('pluginname', 'local_kurspilot'), get_string('privacy:metadata:context_mark', 'local_kurspilot')],
-                        (object) ['entries' => $exportedmarks]
-                    );
-                }
+                self::export_user_context($context, $userid);
                 continue;
             }
 
-            if (!$context instanceof \context_system) {
-                continue;
+            if ($context instanceof \context_system) {
+                self::export_system_context($context, $userid);
             }
+        }
+    }
 
-            $codes = $DB->get_records('local_kurspilot_oauth_code', ['userid' => $userid]);
-            $exportedcodes = array_map(static fn($record): \stdClass => (object) [
-                'clientid' => $record->clientid,
-                'redirecturi' => $record->redirecturi,
-                'expires' => transform::datetime($record->expires),
-                'used' => transform::yesno($record->used),
-            ], array_values($codes));
+    /**
+     * Exportiert Kontextdateien und Markierungsgedaechtnis fuer den eigenen
+     * Nutzerkontext (Issue #523: aus export_user_data() ausgelagert, um die
+     * Funktion unter der 50-Zeilen-Grenze zu halten).
+     *
+     * @param \context_user $context
+     * @param int $userid
+     */
+    private static function export_user_context(\context_user $context, int $userid): void {
+        global $DB;
 
-            $tokens = $DB->get_records('local_kurspilot_oauth_token', ['userid' => $userid]);
-            $exportedtokens = array_map(static fn($record): \stdClass => (object) [
-                'clientid' => $record->clientid,
-                'expires' => transform::datetime($record->expires),
-                'refreshexpires' => transform::datetime($record->refreshexpires),
-                'revoked' => transform::yesno($record->revoked),
-                'timecreated' => transform::datetime($record->timecreated),
-            ], array_values($tokens));
+        writer::with_context($context)->export_area_files(
+            [get_string('pluginname', 'local_kurspilot')],
+            context_files::LEGACY_COMPONENT,
+            context_files::LEGACY_FILEAREA,
+            context_files::ITEMID
+        );
 
-            $tickets = $DB->get_records('local_kurspilot_werkbank_ticket', ['userid' => $userid]);
-            $exportedtickets = array_map(static fn($record): \stdClass => (object) [
-                'path' => $record->path,
-                'expires' => transform::datetime($record->expires),
-                'timecreated' => transform::datetime($record->timecreated),
-            ], array_values($tickets));
-
+        $markrecords = $DB->get_records('local_kurspilot_context_mark', ['userid' => $userid]);
+        $exportedmarks = array_map(static fn($record): \stdClass => (object) [
+            'path' => $record->path,
+            'ismarked' => transform::yesno($record->ismarked),
+        ], array_values($markrecords));
+        if ($exportedmarks) {
             writer::with_context($context)->export_data(
-                [get_string('pluginname', 'local_kurspilot')],
-                (object) [
-                    'oauth_codes' => $exportedcodes,
-                    'oauth_tokens' => $exportedtokens,
-                    'werkbank_tickets' => $exportedtickets,
-                ]
+                [get_string('pluginname', 'local_kurspilot'), get_string('privacy:metadata:context_mark', 'local_kurspilot')],
+                (object) ['entries' => $exportedmarks]
             );
         }
+    }
+
+    /**
+     * Exportiert OAuth-Codes/-Tokens und Werkbank-Downloadtickets fuer den
+     * Systemkontext (Issue #523: aus export_user_data() ausgelagert).
+     *
+     * @param \context_system $context
+     * @param int $userid
+     */
+    private static function export_system_context(\context_system $context, int $userid): void {
+        global $DB;
+
+        $codes = $DB->get_records('local_kurspilot_oauth_code', ['userid' => $userid]);
+        $exportedcodes = array_map(static fn($record): \stdClass => (object) [
+            'clientid' => $record->clientid,
+            'redirecturi' => $record->redirecturi,
+            'expires' => transform::datetime($record->expires),
+            'used' => transform::yesno($record->used),
+        ], array_values($codes));
+
+        $tokens = $DB->get_records('local_kurspilot_oauth_token', ['userid' => $userid]);
+        $exportedtokens = array_map(static fn($record): \stdClass => (object) [
+            'clientid' => $record->clientid,
+            'expires' => transform::datetime($record->expires),
+            'refreshexpires' => transform::datetime($record->refreshexpires),
+            'revoked' => transform::yesno($record->revoked),
+            'timecreated' => transform::datetime($record->timecreated),
+        ], array_values($tokens));
+
+        $tickets = $DB->get_records('local_kurspilot_werkbank_ticket', ['userid' => $userid]);
+        $exportedtickets = array_map(static fn($record): \stdClass => (object) [
+            'path' => $record->path,
+            'expires' => transform::datetime($record->expires),
+            'timecreated' => transform::datetime($record->timecreated),
+        ], array_values($tickets));
+
+        writer::with_context($context)->export_data(
+            [get_string('pluginname', 'local_kurspilot')],
+            (object) [
+                'oauth_codes' => $exportedcodes,
+                'oauth_tokens' => $exportedtokens,
+                'werkbank_tickets' => $exportedtickets,
+            ]
+        );
     }
 
     /**

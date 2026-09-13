@@ -96,10 +96,33 @@ class upload_material_file extends external_api {
             throw new \moodle_exception('materialfilechanged', 'local_kurspilot', '', $params['path']);
         }
 
+        return self::write_and_build_response($directory, $filename, $content, $oldsize, $newsize, $existing !== null);
+    }
+
+    /**
+     * Schreibt die Datei und baut die Antwort (Issue #523: aus execute()
+     * ausgelagert, um die Funktion unter der 50-Zeilen-Grenze zu halten).
+     *
+     * @param string $directory
+     * @param string $filename
+     * @param string $content
+     * @param int $oldsize
+     * @param int $newsize
+     * @param bool $overwritten
+     * @return array
+     */
+    private static function write_and_build_response(
+        string $directory,
+        string $filename,
+        string $content,
+        int $oldsize,
+        int $newsize,
+        bool $overwritten
+    ): array {
         $warning = material_files::write($directory, $filename, $content, $oldsize);
 
         $relativepath = material_files::relative_file($directory, $filename);
-        $message = $existing !== null
+        $message = $overwritten
             ? get_string('materialfileoverwritten', 'local_kurspilot', (object) [
                 'path' => $relativepath,
                 'before' => $oldsize,
@@ -112,7 +135,7 @@ class upload_material_file extends external_api {
 
         return [
             'path' => $relativepath,
-            'created' => $existing === null,
+            'created' => !$overwritten,
             'size' => $newsize,
             'message' => $message,
         ];

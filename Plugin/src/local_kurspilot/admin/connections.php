@@ -95,14 +95,14 @@ if (!$tokens) {
             'revoke' => $tokenrecord->id,
             'sesskey' => sesskey(),
         ]);
-        $ablageort = connection_ablageort::describe((int) $tokenrecord->userid);
-        $ablageortlines = array_merge(array_values($ablageort['targets']), $ablageort['markers']);
+        $storagelocation = connection_ablageort::describe((int) $tokenrecord->userid);
+        $storagelocationlines = array_merge(array_values($storagelocation['targets']), $storagelocation['markers']);
         $table->data[] = [
             s(fullname($tokenrecord) . ' (' . $tokenrecord->email . ')'),
             s($tokenrecord->clientname ?: $tokenrecord->clientid),
             userdate($tokenrecord->timecreated),
             userdate($tokenrecord->expires),
-            html_writer::alist(array_map('s', $ablageortlines), ['class' => 'unlist m-0']),
+            html_writer::alist(array_map('s', $storagelocationlines), ['class' => 'unlist m-0']),
             html_writer::link($revokeurl, get_string('connectionrevoke', 'local_kurspilot')),
         ];
     }

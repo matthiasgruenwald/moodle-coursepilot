@@ -116,8 +116,6 @@ final class update_mc_question extends external_api {
         bool $bestaetigt = false,
         string $ort = material_files::ORT_BESTAND
     ): array {
-        global $DB;
-
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionid' => $questionid,
             'felder_json' => $felderjson,
@@ -125,7 +123,65 @@ final class update_mc_question extends external_api {
             'ort' => $ort,
         ]);
 
-        [$question, $category, $context] = export_questions_xml::resolve_native_question($params['questionid']);
+        [$question, $category, $context] = self::resolve_and_authorise($params['questionid']);
+        [$patch, $questiontextdraftitemid, $answerfeedbackdraftitemids] =
+            self::apply_field_patch($question, $context, $params);
+
+        $categoryid = (int) $category->id;
+        $entry = get_question_bank_entry((int) $question->id);
+        $write = self::persist_new_version($question, $category, $context, $categoryid, $entry, $params['bestaetigt']);
+        $result = $write['result'];
+
+        if ($result['status'] === 'verdachtsfall') {
+            return self::build_suspect_response($result);
+        }
+
+        return self::build_success_response(
+            $entry,
+            $context,
+            $write,
+            $questiontextdraftitemid,
+            $answerfeedbackdraftitemids,
+            $question
+        );
+    }
+
+    /**
+     * Antwort fuer den Verdachtsfall-Zweig (Issue #523: aus execute()
+     * ausgelagert) - kann nur bei einem gleichzeitigen fremden Eingriff auf
+     * denselben Bank-Eintrag auftreten (die soeben zugewiesene idnumber
+     * passt per Konstruktion) - dasselbe Antwortformat wie create_mc_question.
+     *
+     * @param array $result
+     * @return array
+     */
+    private static function build_suspect_response(array $result): array {
+        return [
+            'name' => $result['name'],
+            'questionid' => 0,
+            'questionbankentryid' => 0,
+            'version' => 0,
+            'status' => 'verdachtsfall',
+            'idnumber_nachgetragen' => false,
+            'meldung' => $result['meldung'],
+            'idnumber' => $result['idnumber'],
+            'categoryid' => $result['categoryid'],
+            'candidates' => $result['candidates'],
+            'questiontext_old' => $result['questiontext_old'],
+            'questiontext_new' => $result['questiontext_new'],
+        ];
+    }
+
+    /**
+     * Loest die native Frage auf und prueft Kontext/Capabilities/qtype
+     * (Issue #523: aus execute() ausgelagert, um die Funktion unter der
+     * 50-Zeilen-Grenze zu halten).
+     *
+     * @param int $questionid
+     * @return array{0: \stdClass, 1: \stdClass, 2: \context}
+     */
+    private static function resolve_and_authorise(int $questionid): array {
+        [$question, $category, $context] = export_questions_xml::resolve_native_question($questionid);
         self::validate_context($context);
         require_capability('local/kurspilot:use', $context);
         // Dieselbe Capability wie fuer eine neue Version in import_questions_xml/
@@ -139,6 +195,20 @@ final class update_mc_question extends external_api {
                     . 'diese Frage ist "' . $question->qtype . '".');
         }
 
+        return [$question, $category, $context];
+    }
+
+    /**
+     * Dekodiert den Patch, loest eingebettete Bilder in Entwuerfe auf und
+     * wendet den Patch auf das native Fragenobjekt an (Issue #523: aus
+     * execute() ausgelagert).
+     *
+     * @param \stdClass $question
+     * @param \context $context
+     * @param array $params Validierte Parameter von execute().
+     * @return array{0: array, 1: ?int, 2: array<int, int>}
+     */
+    private static function apply_field_patch(\stdClass $question, \context $context, array $params): array {
         $patch = self::decode_patch($params['felder_json']);
         // Vor apply_patch() abgezweigt (Issue #435): questiontext_bilder ist
         // kein Feld des nativen Fragenobjekts, und feedback_bilder je
@@ -160,8 +230,30 @@ final class update_mc_question extends external_api {
             self::prepare_image_drafts($context, $questiontextimages, $answerfeedbackimages, $params['ort']);
         self::apply_patch($question, $patch);
 
-        $categoryid = (int) $category->id;
-        $entry = get_question_bank_entry((int) $question->id);
+        return [$patch, $questiontextdraftitemid, $answerfeedbackdraftitemids];
+    }
+
+    /**
+     * Schreibt die neue Fragenversion in einer Transaktion, mit optionalem
+     * idnumber-Backfill (Issue #523: aus execute() ausgelagert).
+     *
+     * @param \stdClass $question
+     * @param \stdClass $category
+     * @param \context $context
+     * @param int $categoryid
+     * @param \stdClass $entry
+     * @param bool $confirmed
+     * @return array{result: array, backfilled: bool, idnumber: string, missingfiles: string[]}
+     */
+    private static function persist_new_version(
+        \stdClass $question,
+        \stdClass $category,
+        \context $context,
+        int $categoryid,
+        \stdClass $entry,
+        bool $confirmed
+    ): array {
+        global $DB;
 
         // Kein eigenes try/catch+rollback hier: import_questions_xml::execute()
         // rollt seine EIGENE (verschachtelte) Transaktion bei einem
@@ -188,50 +280,57 @@ final class update_mc_question extends external_api {
         [$xml, $missingfiles] = export_questions_xml::question_to_xml($question, $category, $context);
         $wrapped = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<quiz>\n" . $xml . "\n</quiz>\n";
 
-        $imported = import_questions_xml::execute($categoryid, $wrapped, $params['bestaetigt']);
+        $imported = import_questions_xml::execute($categoryid, $wrapped, $confirmed);
         $imported = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $imported);
 
         $transaction->allow_commit();
 
-        $result = $imported['questions'][0];
+        return [
+            'result' => $imported['questions'][0],
+            'backfilled' => $backfilled,
+            'idnumber' => $idnumber,
+            'missingfiles' => $missingfiles,
+        ];
+    }
 
-        if ($result['status'] === 'verdachtsfall') {
-            // Kann nur bei einem gleichzeitigen fremden Eingriff auf denselben
-            // Bank-Eintrag auftreten (die soeben zugewiesene idnumber passt
-            // per Konstruktion) - dasselbe Antwortformat wie create_mc_question.
-            return [
-                'name' => $result['name'],
-                'questionid' => 0,
-                'questionbankentryid' => 0,
-                'version' => 0,
-                'status' => 'verdachtsfall',
-                'idnumber_nachgetragen' => false,
-                'meldung' => $result['meldung'],
-                'idnumber' => $result['idnumber'],
-                'categoryid' => $result['categoryid'],
-                'candidates' => $result['candidates'],
-                'questiontext_old' => $result['questiontext_old'],
-                'questiontext_new' => $result['questiontext_new'],
-            ];
-        }
-
+    /**
+     * Bettet die (bereits aufgeloesten) Bild-Entwuerfe in die neue Version
+     * ein und baut die Erfolgsantwort (Issue #523: aus execute() ausgelagert).
+     *
+     * @param \stdClass $entry
+     * @param \context $context
+     * @param array{result: array, backfilled: bool, idnumber: string, missingfiles: string[]} $write
+     * @param ?int $questiontextdraftitemid
+     * @param array<int, int> $answerfeedbackdraftitemids
+     * @param \stdClass $question
+     * @return array
+     */
+    private static function build_success_response(
+        \stdClass $entry,
+        \context $context,
+        array $write,
+        ?int $questiontextdraftitemid,
+        array $answerfeedbackdraftitemids,
+        \stdClass $question
+    ): array {
+        $result = $write['result'];
         $latest = question_suspect_gate::latest_version_question((int) $entry->id);
 
         if ($questiontextdraftitemid !== null || !empty($answerfeedbackdraftitemids)) {
             self::embed_images($context, (int) $latest->id, $questiontextdraftitemid, $answerfeedbackdraftitemids);
         }
 
-        $meldung = 'MC-Frage "' . $question->name . '" aktualisiert (Bank-Eintrag ' . $result['questionbankentryid']
+        $message = 'MC-Frage "' . $question->name . '" aktualisiert (Bank-Eintrag ' . $result['questionbankentryid']
             . ', neue Version ' . $result['version'] . ').';
-        if ($backfilled) {
-            $meldung .= ' idnumber "' . $idnumber . '" wurde nachtraeglich vergeben (Frage hatte zuvor keine).';
+        if ($write['backfilled']) {
+            $message .= ' idnumber "' . $write['idnumber'] . '" wurde nachtraeglich vergeben (Frage hatte zuvor keine).';
         }
-        if (!empty($missingfiles)) {
+        if (!empty($write['missingfiles'])) {
             // Gleiche Transparenzpflicht wie export_questions_xml: eingebettete
             // Dateien werden NICHT stillschweigend verloren, sondern die
             // Meldung nennt sie ausdruecklich.
-            $meldung .= ' ACHTUNG: Die Frage enthielt eingebettete Dateien, die dabei entfernt wurden: '
-                . implode(', ', $missingfiles) . '.';
+            $message .= ' ACHTUNG: Die Frage enthielt eingebettete Dateien, die dabei entfernt wurden: '
+                . implode(', ', $write['missingfiles']) . '.';
         }
 
         return array_merge(
@@ -241,8 +340,8 @@ final class update_mc_question extends external_api {
                 'questionbankentryid' => (int) $result['questionbankentryid'],
                 'version' => (int) $result['version'],
                 'status' => 'aktualisiert',
-                'idnumber_nachgetragen' => $backfilled,
-                'meldung' => $meldung,
+                'idnumber_nachgetragen' => $write['backfilled'],
+                'meldung' => $message,
             ],
             question_suspect_gate::empty_result()
         );

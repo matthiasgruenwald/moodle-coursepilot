@@ -79,6 +79,20 @@ final class pointer_reader {
             ];
         }
 
+        return self::list_entries_external($area, $path, $location);
+    }
+
+    /**
+     * Der externe (WebDAV-)Zweig von {@see list_entries()} (Issue #523: aus
+     * list_entries() ausgelagert, um die Funktion unter der 50-Zeilen-Grenze
+     * zu halten).
+     *
+     * @param storage_area $area
+     * @param string $path
+     * @param pointer_location $location
+     * @return array{directory: string, entries: array}
+     */
+    private static function list_entries_external(storage_area $area, string $path, pointer_location $location): array {
         // Der Client-Pfad bleibt frei vom intern gewaehlten WebDAV-Ordner
         // (Spec §2: "dasselbe Koordinatensystem") - genau wie im Moodle-Zweig
         // nie der Bereichs-Wurzelordner selbst im Ergebnis auftaucht.
@@ -143,24 +157,50 @@ final class pointer_reader {
             return $content + ['path' => storage_anchor::relative_file($area, $directory, $filename)];
         }
         if ($location->kind === pointer_location::MOODLE) {
-            // Siehe list_entries(): die Wurzel kommt aus $location, nicht
-            // erneut aus der aktiven Pointer-Aufloesung (Issue #498).
-            $relative = storage_anchor::normalise_client_path($area, $path);
-            if ($relative === '') {
-                throw new \moodle_exception($area->invalidpathkey, 'local_kurspilot');
-            }
-            $segments = explode('/', $relative);
-            $filename = array_pop($segments);
-            $root = rtrim((string) $location->path, '/') . '/';
-            $directorypart = implode('/', $segments);
-            $directory = $directorypart === '' ? $root : $root . $directorypart . '/';
-            $content = storage_anchor::read_content($directory, $filename);
-            if ($content === null) {
-                return null;
-            }
-            return $content + ['path' => $relative];
+            return self::read_content_moodle($area, $path, $location);
         }
 
+        return self::read_content_external($area, $path, $location);
+    }
+
+    /**
+     * Der Moodle-Zweig von {@see read_content()} (Issue #523: ausgelagert,
+     * um die Funktion unter der 50-Zeilen-Grenze zu halten).
+     *
+     * @param storage_area $area
+     * @param string $path
+     * @param pointer_location $location
+     * @return array|null
+     */
+    private static function read_content_moodle(storage_area $area, string $path, pointer_location $location): ?array {
+        // Siehe list_entries(): die Wurzel kommt aus $location, nicht
+        // erneut aus der aktiven Pointer-Aufloesung (Issue #498).
+        $relative = storage_anchor::normalise_client_path($area, $path);
+        if ($relative === '') {
+            throw new \moodle_exception($area->invalidpathkey, 'local_kurspilot');
+        }
+        $segments = explode('/', $relative);
+        $filename = array_pop($segments);
+        $root = rtrim((string) $location->path, '/') . '/';
+        $directorypart = implode('/', $segments);
+        $directory = $directorypart === '' ? $root : $root . $directorypart . '/';
+        $content = storage_anchor::read_content($directory, $filename);
+        if ($content === null) {
+            return null;
+        }
+        return $content + ['path' => $relative];
+    }
+
+    /**
+     * Der externe (WebDAV-)Zweig von {@see read_content()} (Issue #523:
+     * ausgelagert).
+     *
+     * @param storage_area $area
+     * @param string $path
+     * @param pointer_location $location
+     * @return array|null
+     */
+    private static function read_content_external(storage_area $area, string $path, pointer_location $location): ?array {
         $clientpath = storage_anchor::normalise_client_path($area, $path);
         if ($clientpath === '') {
             throw new \moodle_exception($area->invalidpathkey, 'local_kurspilot');

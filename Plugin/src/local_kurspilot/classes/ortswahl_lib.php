@@ -375,13 +375,13 @@ final class ortswahl_lib {
 
         self::create_new_external_folders($wanted, $current);
 
-        ['changed' => $changed, 'ortsverlauf' => $ortsverlauf, 'vorherigerort' => $vorherigerort]
+        ['changed' => $changed, 'ortsverlauf' => $locationhistory, 'vorherigerort' => $previouslocation]
             = self::record_changes($wanted, $current);
         if (empty($changed)) {
             return [];
         }
 
-        self::save_pointer_document($wanted, $ortsverlauf, $vorherigerort);
+        self::save_pointer_document($wanted, $locationhistory, $previouslocation);
         return $changed;
     }
 
@@ -448,14 +448,14 @@ final class ortswahl_lib {
      */
     private static function record_changes(array $wanted, array $current): array {
         $changed = [];
-        $ortsverlauf = self::history();
-        $vorherigerort = altbestand::current();
+        $locationhistory = self::history();
+        $previouslocation = altbestand::current();
         foreach (self::TARGETS as $target) {
             if (self::same_place($current[$target], $wanted[$target])) {
                 continue;
             }
             $changed[] = $target;
-            $ortsverlauf[] = [
+            $locationhistory[] = [
                 'datum' => time(),
                 'ziel' => $target,
                 'von' => self::describe_pointer_value($current[$target]),
@@ -468,10 +468,10 @@ final class ortswahl_lib {
                 // Verdraengen wuerde A->B->A bei leerem B den Altbestand aus
                 // dem ersten Wechsel stehen lassen, der dann auf den gerade
                 // wieder aktuellen Ort A zeigen wuerde.
-                $vorherigerort = self::old_location_has_entries($current[$target]) ? $current[$target] : null;
+                $previouslocation = self::old_location_has_entries($current[$target]) ? $current[$target] : null;
             }
         }
-        return ['changed' => $changed, 'ortsverlauf' => $ortsverlauf, 'vorherigerort' => $vorherigerort];
+        return ['changed' => $changed, 'ortsverlauf' => $locationhistory, 'vorherigerort' => $previouslocation];
     }
 
     /**
@@ -479,17 +479,17 @@ final class ortswahl_lib {
      * Ziel sich wirklich aendert ({@see apply()}).
      *
      * @param array<string, array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array}> $wanted
-     * @param array $ortsverlauf
-     * @param ?array $vorherigerort
+     * @param array $locationhistory
+     * @param ?array $previouslocation
      */
-    private static function save_pointer_document(array $wanted, array $ortsverlauf, ?array $vorherigerort): void {
+    private static function save_pointer_document(array $wanted, array $locationhistory, ?array $previouslocation): void {
         $document = [
             'kontextbereich' => $wanted['kontextbereich'],
             'materialbestand' => $wanted['materialbestand'],
-            'ortsverlauf' => $ortsverlauf,
+            'ortsverlauf' => $locationhistory,
         ];
-        if ($vorherigerort !== null) {
-            $document['vorheriger_ort'] = $vorherigerort;
+        if ($previouslocation !== null) {
+            $document['vorheriger_ort'] = $previouslocation;
         }
         storage_anchor::write_pointer_document($document);
     }

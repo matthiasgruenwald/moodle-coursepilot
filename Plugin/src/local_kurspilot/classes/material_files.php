@@ -643,54 +643,70 @@ final class material_files {
 
         $usercontext = self::own_context();
         foreach ($paths as $entry) {
-            [$path, $targetdirectory] = self::split_draft_entry($entry);
-            $source = self::read_content_for_ort($ort, $path);
-            if ($source === null) {
-                throw new \moodle_exception(
-                    'materialfilenotfound',
-                    'local_kurspilot',
-                    '',
-                    self::normalise_path($path)
-                );
-            }
-            if ($ort === self::ORT_BESTAND) {
-                // Nur der Bestand-Zweig braucht diese Grenze (Spec #486 §7):
-                // eine Werkbank-Datei durchlief bereits die Servergrenze von
-                // upload_material_file (get_max_upload_file_size()) beim
-                // Hochladen - eine zusaetzliche $CFG->maxbytes-Pruefung hier
-                // wuerde eine bereits abgelegte, groessere Werkbank-Datei
-                // nachtraeglich am Einbetten hindern (Verhaltensaenderung
-                // ohne Grundlage in der Spec, Review-Fund zu Issue #496).
-                self::guard_embed_size(strlen($source['content']));
-            }
-            $filename = basename($source['path']);
-
-            $existing = $fs->get_file($usercontext->id, 'user', 'draft', $draftitemid, $targetdirectory, $filename);
-            if ($existing) {
-                // Gleicher Dateiname erneut referenziert - juengste Version gewinnt.
-                $existing->delete();
-            }
-            // ponytail: read_content() gibt bewusst kein stored_file zurueck
-            // (Issue #487/#488, siehe storage_anchor::read_content()) - der
-            // Kopiervorgang traegt deshalb nur noch Mimetype explizit weiter,
-            // nicht Lizenz/Autor des Originals (Moodle-Defaults gelten dann
-            // fuer den Entwurf). In der Praxis identisch, weil Materialdateien
-            // ausschliesslich ueber diese Werkzeuge angelegt werden und dabei
-            // ohnehin nie eine eigene Lizenz/einen eigenen Autor setzen.
-            // Aufwerten (stored_file-Kopie mit vollen Metadaten), sobald ein
-            // echter Fall auftritt, in dem das einen Unterschied macht.
-            $fs->create_file_from_string([
-                'contextid' => $usercontext->id,
-                'component' => 'user',
-                'filearea' => 'draft',
-                'itemid' => $draftitemid,
-                'filepath' => $targetdirectory,
-                'filename' => $filename,
-                'mimetype' => $source['mimetype'] !== '' ? $source['mimetype'] : null,
-            ], $source['content']);
+            self::embed_draft_entry($fs, $usercontext->id, $draftitemid, $entry, $ort);
         }
 
         return $draftitemid;
+    }
+
+    /**
+     * Loest einen einzelnen Listeneintrag auf und kopiert ihn in den Entwurf
+     * (Issue #523: aus resolve_into_draft() ausgelagert, um die Funktion
+     * unter der 50-Zeilen-Grenze zu halten).
+     *
+     * @param \file_storage $fs
+     * @param int $usercontextid
+     * @param int $draftitemid
+     * @param string|array $entry
+     * @param string $ort
+     */
+    private static function embed_draft_entry(
+        \file_storage $fs,
+        int $usercontextid,
+        int $draftitemid,
+        $entry,
+        string $ort
+    ): void {
+        [$path, $targetdirectory] = self::split_draft_entry($entry);
+        $source = self::read_content_for_ort($ort, $path);
+        if ($source === null) {
+            throw new \moodle_exception('materialfilenotfound', 'local_kurspilot', '', self::normalise_path($path));
+        }
+        if ($ort === self::ORT_BESTAND) {
+            // Nur der Bestand-Zweig braucht diese Grenze (Spec #486 §7):
+            // eine Werkbank-Datei durchlief bereits die Servergrenze von
+            // upload_material_file (get_max_upload_file_size()) beim
+            // Hochladen - eine zusaetzliche $CFG->maxbytes-Pruefung hier
+            // wuerde eine bereits abgelegte, groessere Werkbank-Datei
+            // nachtraeglich am Einbetten hindern (Verhaltensaenderung
+            // ohne Grundlage in der Spec, Review-Fund zu Issue #496).
+            self::guard_embed_size(strlen($source['content']));
+        }
+        $filename = basename($source['path']);
+
+        $existing = $fs->get_file($usercontextid, 'user', 'draft', $draftitemid, $targetdirectory, $filename);
+        if ($existing) {
+            // Gleicher Dateiname erneut referenziert - juengste Version gewinnt.
+            $existing->delete();
+        }
+        // ponytail: read_content() gibt bewusst kein stored_file zurueck
+        // (Issue #487/#488, siehe storage_anchor::read_content()) - der
+        // Kopiervorgang traegt deshalb nur noch Mimetype explizit weiter,
+        // nicht Lizenz/Autor des Originals (Moodle-Defaults gelten dann
+        // fuer den Entwurf). In der Praxis identisch, weil Materialdateien
+        // ausschliesslich ueber diese Werkzeuge angelegt werden und dabei
+        // ohnehin nie eine eigene Lizenz/einen eigenen Autor setzen.
+        // Aufwerten (stored_file-Kopie mit vollen Metadaten), sobald ein
+        // echter Fall auftritt, in dem das einen Unterschied macht.
+        $fs->create_file_from_string([
+            'contextid' => $usercontextid,
+            'component' => 'user',
+            'filearea' => 'draft',
+            'itemid' => $draftitemid,
+            'filepath' => $targetdirectory,
+            'filename' => $filename,
+            'mimetype' => $source['mimetype'] !== '' ? $source['mimetype'] : null,
+        ], $source['content']);
     }
 
     /**

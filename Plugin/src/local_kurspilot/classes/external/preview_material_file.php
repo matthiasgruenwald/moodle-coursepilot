@@ -84,17 +84,26 @@ class preview_material_file extends external_api {
 
         $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
         if (!in_array($extension, gd_support::RASTER_IMAGE_EXTENSIONS, true)) {
-            return [
-                'path' => $relativepath,
-                'available' => false,
-                'message' => get_string('materialpreviewnotanimage', 'local_kurspilot', $relativepath),
-                'mimetype' => null,
-                'image_base64' => null,
-                'width' => null,
-                'height' => null,
-            ];
+            return self::unavailable_response(
+                $relativepath,
+                get_string('materialpreviewnotanimage', 'local_kurspilot', $relativepath)
+            );
         }
 
+        return self::build_preview_response($relativepath, $stored['content']);
+    }
+
+    /**
+     * Baut die Antwort fuer eine erfolgreich erzeugte Vorschau, oder die
+     * erklaerte Nichtverfuegbarkeit, wenn GD die Bytes nicht als Rasterbild
+     * lesen kann (Issue #523: aus execute() ausgelagert, um die Funktion
+     * unter der 50-Zeilen-Grenze zu halten).
+     *
+     * @param string $relativepath
+     * @param string $content
+     * @return array
+     */
+    private static function build_preview_response(string $relativepath, string $content): array {
         // Wie die Nicht-Bild-Absage oben: eine Datei mit Bildendung, die GD
         // trotzdem nicht als Rasterbild lesen kann (z.B. defekte Bytes,
         // getarnte SVG), ist ebenfalls kein Fehler, sondern eine erklaerte
@@ -102,17 +111,9 @@ class preview_material_file extends external_api {
         // statt Fehler") - image_preview::build() wirft dafuer
         // materialpreviewunsupported, hier abgefangen statt durchgereicht.
         try {
-            $preview = image_preview::build($stored['content']);
+            $preview = image_preview::build($content);
         } catch (\moodle_exception $e) {
-            return [
-                'path' => $relativepath,
-                'available' => false,
-                'message' => get_string('materialpreviewunsupported', 'local_kurspilot'),
-                'mimetype' => null,
-                'image_base64' => null,
-                'width' => null,
-                'height' => null,
-            ];
+            return self::unavailable_response($relativepath, get_string('materialpreviewunsupported', 'local_kurspilot'));
         }
 
         return [
@@ -123,6 +124,26 @@ class preview_material_file extends external_api {
             'image_base64' => $preview['image_base64'],
             'width' => $preview['width'],
             'height' => $preview['height'],
+        ];
+    }
+
+    /**
+     * Die gemeinsame "nicht verfuegbar"-Antwortform (Issue #523: aus
+     * execute() ausgelagert).
+     *
+     * @param string $relativepath
+     * @param string $message
+     * @return array
+     */
+    private static function unavailable_response(string $relativepath, string $message): array {
+        return [
+            'path' => $relativepath,
+            'available' => false,
+            'message' => $message,
+            'mimetype' => null,
+            'image_base64' => null,
+            'width' => null,
+            'height' => null,
         ];
     }
 

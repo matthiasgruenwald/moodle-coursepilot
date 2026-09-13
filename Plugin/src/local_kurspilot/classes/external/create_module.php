@@ -212,7 +212,43 @@ final class create_module extends external_api {
             'ort' => $ort,
         ]);
 
-        $coursecontext = context_course::instance($params['courseid']);
+        $coursecontext = self::authorise($params['courseid']);
+
+        $modname = $params['modname'];
+        $catalogclass = self::catalog_for($modname);
+        // Billigteil der Selbstfreigabe (Spec 0015 §11, ADR 0017, Ticket #399):
+        // sperrt nur DIESE Aktivitaetsart, wenn ein erkannter Moodle-Versionswechsel
+        // eine Katalogabweichung ergeben hat. Lesen bleibt unberuehrt.
+        write_gate::assert_writable($modname);
+
+        $merged = self::prepare_merged_fields($modname, $catalogclass, $coursecontext, $params);
+
+        $course = get_course($params['courseid']);
+        require_once($CFG->dirroot . '/course/modlib.php');
+        $cmid = self::create_activity($course, $modname, $catalogclass, $params['sectionnum'], $merged);
+
+        $after = self::read_settings($cmid);
+        [$createdfields, $sideeffects] = self::report_and_side_effects($modname, $merged, $after);
+
+        return [
+            'cmid' => $cmid,
+            'modname' => $modname,
+            'meldung' => self::build_message($modname, $createdfields, $sideeffects),
+            'angelegte_felder' => $createdfields,
+            'nebenwirkungen' => $sideeffects,
+        ];
+    }
+
+    /**
+     * Prueft Kontext und Capabilities fuer den Kurs (Issue #523: aus
+     * execute() ausgelagert, um die Funktion unter der 50-Zeilen-Grenze zu
+     * halten).
+     *
+     * @param int $courseid
+     * @return \context_course
+     */
+    private static function authorise(int $courseid): \context_course {
+        $coursecontext = context_course::instance($courseid);
         self::validate_context($coursecontext);
         require_capability('local/kurspilot:use', $coursecontext);
         // Native Berechtigungspruefung vorgezogen (Spec 0015 §3.4, wie
@@ -222,13 +258,26 @@ final class create_module extends external_api {
         // hinter einer Feldvalidierungsmeldung versteckt bleibt.
         require_capability('moodle/course:manageactivities', $coursecontext);
 
-        $modname = $params['modname'];
-        $catalogclass = self::catalog_for($modname);
-        // Billigteil der Selbstfreigabe (Spec 0015 §11, ADR 0017, Ticket #399):
-        // sperrt nur DIESE Aktivitaetsart, wenn ein erkannter Moodle-Versionswechsel
-        // eine Katalogabweichung ergeben hat. Lesen bleibt unberuehrt.
-        write_gate::assert_writable($modname);
+        return $coursecontext;
+    }
 
+    /**
+     * Dekodiert und validiert die Felder-JSON, loest Pseudofelder auf (Issue
+     * #523: aus execute() ausgelagert, um die Funktion unter der
+     * 50-Zeilen-Grenze zu halten).
+     *
+     * @param string $modname
+     * @param class-string<module_catalog> $catalogclass
+     * @param \context_course $coursecontext
+     * @param array $params Validierte Parameter von execute().
+     * @return array Die gepatchten Felder, bereit fuer add_moduleinfo().
+     */
+    private static function prepare_merged_fields(
+        string $modname,
+        string $catalogclass,
+        \context_course $coursecontext,
+        array $params
+    ): array {
         $merged = json_decode($params['felder_json'], true);
         if (!is_array($merged) || json_last_error() !== JSON_ERROR_NONE) {
             throw new moodle_exception('invalidpatchjson', 'local_kurspilot');
@@ -253,35 +302,42 @@ final class create_module extends external_api {
         self::assert_stealth_allowed($merged);
         self::resolve_material_reference_pseudofields($modname, $coursecontext, $merged, $params['ort']);
 
-        $course = get_course($params['courseid']);
-        require_once($CFG->dirroot . '/course/modlib.php');
+        return $merged;
+    }
+
+    /**
+     * Legt die Aktivitaet nativ an (Issue #523: aus execute() ausgelagert).
+     *
+     * @param \stdClass $course
+     * @param string $modname
+     * @param class-string<module_catalog> $catalogclass
+     * @param int $sectionnum
+     * @param array $merged
+     * @return int Die neue Kursmodul-ID.
+     */
+    private static function create_activity(
+        \stdClass $course,
+        string $modname,
+        string $catalogclass,
+        int $sectionnum,
+        array $merged
+    ): int {
         // can_add_moduleinfo() prueft die native Capability (s.o.), ermittelt
         // die Modul-ID und legt den Zielabschnitt bei Bedarf an
         // (course/modlib.php).
-        [$module] = \can_add_moduleinfo($course, $modname, $params['sectionnum']);
+        [$module] = \can_add_moduleinfo($course, $modname, $sectionnum);
 
         $moduleinfo = new \stdClass();
         $moduleinfo->modulename = $modname;
         $moduleinfo->module = (int) $module->id;
-        $moduleinfo->section = $params['sectionnum'];
+        $moduleinfo->section = $sectionnum;
         self::fill_form_defaults($modname, $catalogclass, $moduleinfo, $merged);
         foreach ($merged as $fieldname => $value) {
             $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
         }
 
         $created = \add_moduleinfo($moduleinfo, $course);
-
-        $cmid = (int) $created->coursemodule;
-        $after = self::read_settings($cmid);
-        [$angelegtefelder, $sideeffects] = self::report_and_side_effects($modname, $merged, $after);
-
-        return [
-            'cmid' => $cmid,
-            'modname' => $modname,
-            'meldung' => self::build_message($modname, $angelegtefelder, $sideeffects),
-            'angelegte_felder' => $angelegtefelder,
-            'nebenwirkungen' => $sideeffects,
-        ];
+        return (int) $created->coursemodule;
     }
 
     /**
@@ -745,13 +801,13 @@ final class create_module extends external_api {
      * @return array{0: array, 1: string[]}
      */
     private static function report_and_side_effects(string $modname, array $merged, array $after): array {
-        $angelegtefelder = [];
+        $createdfields = [];
         $sideeffects = [];
         $triggers = self::SIDE_EFFECT_TRIGGERS[$modname] ?? [];
 
         foreach (array_keys($merged) as $fieldname) {
             $value = $after[$fieldname] ?? null;
-            $angelegtefelder[] = [
+            $createdfields[] = [
                 'feld' => $fieldname,
                 'wert_json' => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ];
@@ -761,7 +817,7 @@ final class create_module extends external_api {
             }
         }
 
-        return [$angelegtefelder, $sideeffects];
+        return [$createdfields, $sideeffects];
     }
 
     /**
@@ -769,14 +825,14 @@ final class create_module extends external_api {
      * die Aenderungsmeldung").
      *
      * @param string $modname
-     * @param array $angelegtefelder
+     * @param array $createdfields
      * @param string[] $sideeffects
      * @return string
      */
-    private static function build_message(string $modname, array $angelegtefelder, array $sideeffects): string {
+    private static function build_message(string $modname, array $createdfields, array $sideeffects): string {
         $parts = [];
-        foreach ($angelegtefelder as $feld) {
-            $parts[] = '"' . $feld['feld'] . '" = ' . $feld['wert_json'];
+        foreach ($createdfields as $field) {
+            $parts[] = '"' . $field['feld'] . '" = ' . $field['wert_json'];
         }
         $message = 'Aktivität "' . $modname . '" angelegt';
         $message .= $parts ? (': ' . implode(', ', $parts) . '.') : '.';

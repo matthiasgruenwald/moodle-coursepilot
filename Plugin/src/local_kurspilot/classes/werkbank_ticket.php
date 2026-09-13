@@ -130,6 +130,32 @@ final class werkbank_ticket {
             throw new werkbank_ticket_redemption_failed('werkbankticketinvalid', null);
         }
 
+        self::assert_still_valid($ticket);
+
+        [$directory, $filename] = material_files::resolve_file($ticket->path);
+        $file = self::resolve_ticket_file($ticket, $directory, $filename);
+
+        return [
+            'userid' => (int) $ticket->userid,
+            'path' => $ticket->path,
+            'filename' => $filename,
+            'mimetype' => (string) ($file->get_mimetype() ?: 'application/octet-stream'),
+            'content' => $file->get_content(),
+            'size' => (int) $file->get_filesize(),
+        ];
+    }
+
+    /**
+     * Prueft Ablauf, Verbindung und Konto des Ticket-Inhabers (Issue #523:
+     * aus redeem() ausgelagert, um die Funktion unter der 50-Zeilen-Grenze
+     * zu halten).
+     *
+     * @param \stdClass $ticket
+     * @throws werkbank_ticket_redemption_failed
+     */
+    private static function assert_still_valid(\stdClass $ticket): void {
+        global $DB;
+
         if ((int) $ticket->expires < time()) {
             throw new werkbank_ticket_redemption_failed('werkbankticketexpired', $ticket->path);
         }
@@ -154,8 +180,19 @@ final class werkbank_ticket {
         if (!$user) {
             throw new werkbank_ticket_redemption_failed('werkbankticketaccountinactive', $ticket->path);
         }
+    }
 
-        [$directory, $filename] = material_files::resolve_file($ticket->path);
+    /**
+     * Loest die Werkbankdatei auf und prueft den Contenthash (Issue #523:
+     * aus redeem() ausgelagert).
+     *
+     * @param \stdClass $ticket
+     * @param string $directory
+     * @param string $filename
+     * @return \stored_file
+     * @throws werkbank_ticket_redemption_failed
+     */
+    private static function resolve_ticket_file(\stdClass $ticket, string $directory, string $filename): \stored_file {
         $contextid = \context_user::instance((int) $ticket->userid)->id;
         $file = get_file_storage()->get_file(
             $contextid,
@@ -169,14 +206,7 @@ final class werkbank_ticket {
             throw new werkbank_ticket_redemption_failed('werkbankticketcontentchanged', $ticket->path);
         }
 
-        return [
-            'userid' => (int) $ticket->userid,
-            'path' => $ticket->path,
-            'filename' => $filename,
-            'mimetype' => (string) ($file->get_mimetype() ?: 'application/octet-stream'),
-            'content' => $file->get_content(),
-            'size' => (int) $file->get_filesize(),
-        ];
+        return $file;
     }
 
     /**

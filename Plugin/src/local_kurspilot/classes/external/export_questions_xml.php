@@ -131,21 +131,35 @@ final class export_questions_xml extends external_api {
                 'xml' => $xml,
                 'pfad' => '',
                 'anzahl' => count($ids),
-                'meldung' => self::build_meldung(count($ids), $missing, true),
+                'meldung' => self::build_message(count($ids), $missing, true),
             ];
         }
 
-        [$pfad, $warning] = self::write_material_file($params['targetpath'], $xml);
-        $meldung = self::build_meldung(count($ids), [], false) . ' Datei: ' . $pfad . '.';
+        return self::write_and_report($params['targetpath'], $xml, count($ids));
+    }
+
+    /**
+     * Schreibt das Export-XML in den Materialordner und baut die
+     * Standard-Modus-Antwort (Issue #523: aus execute() ausgelagert, um die
+     * Funktion unter der Zeilengrenze zu halten).
+     *
+     * @param string $targetpath
+     * @param string $xml
+     * @param int $count
+     * @return array{xml: string, pfad: string, anzahl: int, meldung: string}
+     */
+    private static function write_and_report(string $targetpath, string $xml, int $count): array {
+        [$path, $warning] = self::write_material_file($targetpath, $xml);
+        $message = self::build_message($count, [], false) . ' Datei: ' . $path . '.';
         if ($warning !== null) {
-            $meldung .= ' ' . $warning;
+            $message .= ' ' . $warning;
         }
 
         return [
             'xml' => '',
-            'pfad' => $pfad,
-            'anzahl' => count($ids),
-            'meldung' => $meldung,
+            'pfad' => $path,
+            'anzahl' => $count,
+            'meldung' => $message,
         ];
     }
 
@@ -323,7 +337,7 @@ final class export_questions_xml extends external_api {
      * @param bool $platzhalter
      * @return string
      */
-    private static function build_meldung(int $count, array $missing, bool $platzhalter): string {
+    private static function build_message(int $count, array $missing, bool $platzhalter): string {
         $base = $count === 1 ? '1 Frage exportiert.' : $count . ' Fragen exportiert.';
 
         if ($platzhalter) {

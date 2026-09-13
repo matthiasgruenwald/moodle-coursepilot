@@ -52,8 +52,8 @@ final class ausstand_notice {
      */
     public static function record(string $path, string $operation, string $errorclass, int $courseid): string {
         $entries = self::all();
-        $kennung = self::generate_kennung($entries);
-        $entries[$kennung] = [
+        $identifier = self::generate_identifier($entries);
+        $entries[$identifier] = [
             'zeitpunkt' => time(),
             'pfad' => $path,
             'vorgang' => $operation,
@@ -61,7 +61,7 @@ final class ausstand_notice {
             'kursid' => $courseid,
         ];
         self::save($entries);
-        return $kennung;
+        return $identifier;
     }
 
     /**
@@ -75,15 +75,15 @@ final class ausstand_notice {
      * durch, ohne den optionalen "ausstand"-Parameter selbst erst auf "" zu
      * pruefen.
      *
-     * @param string $kennung
+     * @param string $identifier
      * @return bool true, wenn ein Eintrag mit dieser Kennung existierte und entfernt wurde.
      */
-    public static function dismiss(string $kennung): bool {
+    public static function dismiss(string $identifier): bool {
         $entries = self::all();
-        if (!isset($entries[$kennung])) {
+        if (!isset($entries[$identifier])) {
             return false;
         }
-        unset($entries[$kennung]);
+        unset($entries[$identifier]);
         self::save($entries);
         return true;
     }
@@ -98,9 +98,9 @@ final class ausstand_notice {
      */
     public static function list_grouped(): array {
         $bypath = [];
-        foreach (self::all() as $kennung => $entry) {
+        foreach (self::all() as $identifier => $entry) {
             $bypath[$entry['pfad']][] = [
-                'kennung' => $kennung,
+                'kennung' => $identifier,
                 'zeitpunkt' => $entry['zeitpunkt'],
                 'vorgang' => $entry['vorgang'],
                 'fehlerklasse' => $entry['fehlerklasse'],
@@ -111,9 +111,9 @@ final class ausstand_notice {
         }
 
         $groups = [];
-        foreach ($bypath as $pfad => $eintraege) {
-            usort($eintraege, static fn (array $a, array $b): int => $a['zeitpunkt'] <=> $b['zeitpunkt']);
-            $groups[] = ['pfad' => $pfad, 'eintraege' => $eintraege];
+        foreach ($bypath as $path => $entriesforpath) {
+            usort($entriesforpath, static fn (array $a, array $b): int => $a['zeitpunkt'] <=> $b['zeitpunkt']);
+            $groups[] = ['pfad' => $path, 'eintraege' => $entriesforpath];
         }
         usort($groups, static fn (array $a, array $b): int => $a['eintraege'][0]['zeitpunkt'] <=> $b['eintraege'][0]['zeitpunkt']);
         return $groups;
@@ -187,10 +187,10 @@ final class ausstand_notice {
      * @param array<string, mixed> $existing Bereits vergebene Kennungen (Schluessel).
      * @return string
      */
-    private static function generate_kennung(array $existing): string {
+    private static function generate_identifier(array $existing): string {
         do {
-            $kennung = strtoupper(random_string(8));
-        } while (isset($existing[$kennung]));
-        return $kennung;
+            $identifier = strtoupper(random_string(8));
+        } while (isset($existing[$identifier]));
+        return $identifier;
     }
 }

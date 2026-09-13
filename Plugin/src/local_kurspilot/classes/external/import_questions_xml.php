@@ -148,8 +148,6 @@ final class import_questions_xml extends external_api {
         string $xmlpath = '',
         string $ort = material_files::ORT_BESTAND
     ): array {
-        global $DB;
-
         $params = self::validate_parameters(self::execute_parameters(), [
             'categoryid' => $categoryid,
             'xmlcontent' => $xmlcontent,
@@ -157,6 +155,22 @@ final class import_questions_xml extends external_api {
             'xmlpath' => $xmlpath,
             'ort' => $ort,
         ]);
+
+        [$category, $context, $questions] = self::resolve_and_parse($params);
+
+        return ['questions' => self::import_all($category, $context, $questions, $params['bestaetigt'])];
+    }
+
+    /**
+     * Prueft Kontext/Capabilities, loest das XML auf und parst die Fragen
+     * (Issue #523: aus execute() ausgelagert, um die Funktion unter der
+     * 50-Zeilen-Grenze zu halten).
+     *
+     * @param array $params Validierte Parameter von execute().
+     * @return array{0: \stdClass, 1: \context, 2: array}
+     */
+    private static function resolve_and_parse(array $params): array {
+        global $DB;
 
         $category = $DB->get_record('question_categories', ['id' => $params['categoryid']], '*', MUST_EXIST);
         $context = context::instance_by_id((int) $category->contextid);
@@ -176,6 +190,22 @@ final class import_questions_xml extends external_api {
         // BEVOR irgendetwas geschrieben wird - kein Teilergebnis moeglich.
         $questions = self::parse($category, $context, $xml);
 
+        return [$category, $context, $questions];
+    }
+
+    /**
+     * Importiert alle geparsten Fragen in einer Transaktion (Issue #523:
+     * aus execute() ausgelagert).
+     *
+     * @param \stdClass $category
+     * @param \context $context
+     * @param array $questions
+     * @param bool $confirmed
+     * @return array
+     */
+    private static function import_all(\stdClass $category, \context $context, array $questions, bool $confirmed): array {
+        global $DB;
+
         // moodle_transaction hat keinen Destruktor - anders als in
         // manchen anderen Endpunkten muss hier explizit zurueckgerollt
         // werden, weil Fehler (Round-Trip-Abweichung) bewusst ERST NACH dem
@@ -185,7 +215,7 @@ final class import_questions_xml extends external_api {
         try {
             $results = [];
             foreach ($questions as $question) {
-                $results[] = self::import_one($category, $context, $question, $params['bestaetigt']);
+                $results[] = self::import_one($category, $context, $question, $confirmed);
             }
         } catch (\Throwable $e) {
             $transaction->rollback($e);
@@ -193,7 +223,7 @@ final class import_questions_xml extends external_api {
 
         $transaction->allow_commit();
 
-        return ['questions' => $results];
+        return $results;
     }
 
     /**
@@ -499,35 +529,54 @@ final class import_questions_xml extends external_api {
         }
 
         if (!$bestaetigt) {
-            // Verdachtsfall: mitgebrachte idnumber ohne Treffer in der
-            // Zielkategorie - nichts wird geschrieben (ADR 0015, Spec 0017 §7.1).
-            $candidates = question_suspect_gate::find_name_candidates((int) $category->id, $name);
-            $newquestiontext = self::text_of($question->questiontext ?? '');
-
-            return array_merge(
-                [
-                    'name' => $name,
-                    'questionbankentryid' => 0,
-                    'version' => 0,
-                    'status' => 'verdachtsfall',
-                    'meldung' => 'Verdachtsfall: Die mitgebrachte idnumber "' . $xmlidnumber . '" hat keinen '
-                        . 'Treffer in der Zielkategorie. Nichts wurde importiert. Zum Anlegen als neuer Eintrag '
-                        . 'trotzdem erneut mit bestaetigt=true aufrufen.',
-                ],
-                [
-                    'idnumber' => $xmlidnumber,
-                    'categoryid' => (int) $category->id,
-                    'candidates' => $candidates,
-                    'questiontext_old' => '',
-                    'questiontext_new' => $newquestiontext,
-                ]
-            );
+            return self::unmatched_idnumber_response($category, $question, $name, $xmlidnumber);
         }
 
         // Bestaetigter Verdachtsfall: neuer Eintrag mit der mitgebrachten idnumber.
         $saved = self::save($category, $context, $question, null, $xmlidnumber);
         self::verify_roundtrip($category, $context, $question, $saved, $xmlidnumber);
         return self::result($saved, 'erstimport', $name);
+    }
+
+    /**
+     * Verdachtsfall-Antwort: mitgebrachte idnumber ohne Treffer in der
+     * Zielkategorie - nichts wird geschrieben (ADR 0015, Spec 0017 §7.1).
+     * Issue #523: aus import_one() ausgelagert, um die Funktion unter der
+     * 50-Zeilen-Grenze zu halten.
+     *
+     * @param \stdClass $category
+     * @param \stdClass $question
+     * @param string $name
+     * @param string $xmlidnumber
+     * @return array
+     */
+    private static function unmatched_idnumber_response(
+        \stdClass $category,
+        \stdClass $question,
+        string $name,
+        string $xmlidnumber
+    ): array {
+        $candidates = question_suspect_gate::find_name_candidates((int) $category->id, $name);
+        $newquestiontext = self::text_of($question->questiontext ?? '');
+
+        return array_merge(
+            [
+                'name' => $name,
+                'questionbankentryid' => 0,
+                'version' => 0,
+                'status' => 'verdachtsfall',
+                'meldung' => 'Verdachtsfall: Die mitgebrachte idnumber "' . $xmlidnumber . '" hat keinen '
+                    . 'Treffer in der Zielkategorie. Nichts wurde importiert. Zum Anlegen als neuer Eintrag '
+                    . 'trotzdem erneut mit bestaetigt=true aufrufen.',
+            ],
+            [
+                'idnumber' => $xmlidnumber,
+                'categoryid' => (int) $category->id,
+                'candidates' => $candidates,
+                'questiontext_old' => '',
+                'questiontext_new' => $newquestiontext,
+            ]
+        );
     }
 
     /**
@@ -635,6 +684,26 @@ final class import_questions_xml extends external_api {
         \stdClass $saved,
         string $expectedidnumber
     ): void {
+        $wrapped = self::rewrite_saved_question($category, $context, $saved);
+        $reparsedquestion = self::reparse($category, $context, $wrapped);
+
+        $mismatch = self::find_mismatch($original, $reparsedquestion, $expectedidnumber);
+        if ($mismatch !== null) {
+            throw self::roundtrip_exception($mismatch);
+        }
+    }
+
+    /**
+     * Laedt die gespeicherte Frage neu und schreibt sie ueber qformat_xml
+     * zurueck (Issue #523: aus verify_roundtrip() ausgelagert, um die
+     * Funktion unter der 50-Zeilen-Grenze zu halten).
+     *
+     * @param \stdClass $category
+     * @param \context $context
+     * @param \stdClass $saved
+     * @return string Das in ein <quiz>-Wurzelelement gewickelte XML.
+     */
+    private static function rewrite_saved_question(\stdClass $category, \context $context, \stdClass $saved): string {
         global $DB;
 
         $reloaded = $DB->get_record('question', ['id' => $saved->id], '*', MUST_EXIST);
@@ -656,8 +725,19 @@ final class import_questions_xml extends external_api {
 
         // writequestion() liefert nur den <question>-Block, readquestions()
         // erwartet aber ein <quiz>-Wurzelelement (xmlize-Struktur $xml['quiz']).
-        $wrapped = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<quiz>\n" . $xml . "\n</quiz>";
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<quiz>\n" . $xml . "\n</quiz>";
+    }
 
+    /**
+     * Parst das zurueckgeschriebene XML erneut und liefert die eine
+     * enthaltene Frage (Issue #523: aus verify_roundtrip() ausgelagert).
+     *
+     * @param \stdClass $category
+     * @param \context $context
+     * @param string $wrapped
+     * @return \stdClass
+     */
+    private static function reparse(\stdClass $category, \context $context, string $wrapped): \stdClass {
         $reparser = new qformat_xml();
         $reparser->setCategory($category);
         $reparser->setContexts([$context]);
@@ -683,10 +763,7 @@ final class import_questions_xml extends external_api {
             throw self::roundtrip_exception('parse', 'keine Frage im zurueckgelesenen XML');
         }
 
-        $mismatch = self::find_mismatch($original, $reparsedquestion, $expectedidnumber);
-        if ($mismatch !== null) {
-            throw self::roundtrip_exception($mismatch);
-        }
+        return $reparsedquestion;
     }
 
     /**
@@ -803,7 +880,7 @@ final class import_questions_xml extends external_api {
         global $DB;
 
         $version = $DB->get_record('question_versions', ['questionid' => $saved->id], '*', MUST_EXIST);
-        $meldung = $status === 'erstimport'
+        $message = $status === 'erstimport'
             ? 'Frage "' . $name . '" neu angelegt (Version ' . $version->version . ').'
             : 'Frage "' . $name . '" als neue Version (Version ' . $version->version . ') desselben Bank-Eintrags importiert.';
 
@@ -813,7 +890,7 @@ final class import_questions_xml extends external_api {
                 'questionbankentryid' => (int) $version->questionbankentryid,
                 'version' => (int) $version->version,
                 'status' => $status,
-                'meldung' => $meldung,
+                'meldung' => $message,
             ],
             question_suspect_gate::empty_result()
         );

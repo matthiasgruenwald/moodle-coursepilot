@@ -90,10 +90,10 @@ final class pointer_location {
             return 'moodle|' . self::normalised_path((string) $this->path, $subpath);
         }
         $server = strtolower((string) ($this->fingerprint['server'] ?? ''));
-        $konto = (string) ($this->fingerprint['konto'] ?? '');
-        $basispfad = (string) ($this->fingerprint['basispfad'] ?? '');
-        $effectivepath = trim($basispfad, '/') . '/' . trim((string) $this->relativepath, '/');
-        return 'extern|' . $server . '|' . $konto . '|' . self::normalised_path($effectivepath, $subpath);
+        $account = (string) ($this->fingerprint['konto'] ?? '');
+        $basepath = (string) ($this->fingerprint['basispfad'] ?? '');
+        $effectivepath = trim($basepath, '/') . '/' . trim((string) $this->relativepath, '/');
+        return 'extern|' . $server . '|' . $account . '|' . self::normalised_path($effectivepath, $subpath);
     }
 
     /**

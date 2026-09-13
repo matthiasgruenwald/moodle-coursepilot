@@ -55,14 +55,17 @@ class list_context_files extends external_api {
 
     /**
      * @param string $path
-     * @param bool $vorherigerort
+     * @param bool $previouslocation
      * @return array
      * @throws \moodle_exception invalidcontextpath, wenn $path ein "."/".."-
      *         Segment enthaelt; altbestandclosed, wenn "vorheriger_ort" ohne
      *         offenen Altbestand gesetzt ist.
      */
-    public static function execute(string $path = '', bool $vorherigerort = false): array {
-        $params = self::validate_parameters(self::execute_parameters(), ['path' => $path, 'vorheriger_ort' => $vorherigerort]);
+    public static function execute(string $path = '', bool $previouslocation = false): array {
+        $params = self::validate_parameters(
+            self::execute_parameters(),
+            ['path' => $path, 'vorheriger_ort' => $previouslocation]
+        );
 
         // Kein zusaetzliches 'local/kurspilot:use' o.ae. (anders als
         // list_courses/get_course_catalog): der Kontextbereich ist an die
@@ -145,6 +148,20 @@ class list_context_files extends external_api {
             return $entry + ['locked' => false];
         }
 
+        return $entry + ['locked' => self::is_marked_cached($entry, $directory, $etag)];
+    }
+
+    /**
+     * Prueft (mit Markierungsgedaechtnis) ob eine .md-Datei personenbezogen
+     * markiert ist (Issue #523: aus annotate_locked() ausgelagert, um die
+     * Funktion unter der 50-Zeilen-Grenze zu halten).
+     *
+     * @param array $entry
+     * @param string $directory
+     * @param string|null $etag
+     * @return bool
+     */
+    private static function is_marked_cached(array $entry, string $directory, ?string $etag): bool {
         $relativepath = $directory === '' ? $entry['name'] : $directory . '/' . $entry['name'];
 
         // Markierungsgedaechtnis (Issue #493, Spec #486 §6): erspart das
@@ -156,7 +173,8 @@ class list_context_files extends external_api {
             $marked = $content !== null && \local_kurspilot\personal_data::is_marked($content['content']);
             \local_kurspilot\mark_memory::remember($relativepath, $entry['size'], $entry['timemodified'], $etag, $marked);
         }
-        return $entry + ['locked' => $marked];
+
+        return $marked;
     }
 
     /**
