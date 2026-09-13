@@ -90,6 +90,7 @@ $string['webdavinstanceforeign'] = 'Der Kontextpointer verweist auf eine WebDAV-
 $string['webdavnotenabled'] = 'Ihre Schule hat externe Speicher (WebDAV) für Sie noch nicht freigeschaltet. Bitte auf der Ortswahlseite ({$a}) nachsehen.';
 $string['webdavauthunsupported'] = 'Diese WebDAV-Verbindung nutzt nicht mehr https mit Basic-Anmeldung — das unterstützt Kurspilot nicht. Bitte auf der Ortswahlseite ({$a}) korrigieren.';
 $string['webdavfingerprintchanged'] = 'Server, Basispfad oder Konto dieser WebDAV-Verbindung haben sich geändert. Bitte auf der Ortswahlseite ({$a}) neu wählen.';
+$string['contextrootmissing'] = 'Der gewählte Kontextbereich ist am externen Ort nicht mehr vorhanden (verschoben, gelöscht oder umbenannt). Bitte auf der Ortswahlseite ({$a}) neu wählen.';
 $string['webdaviservfilesonly'] = 'Bei IServ ist nur unterhalb von „Files/“ wählbar. Bitte auf der Ortswahlseite ({$a}) einen Ordner dort wählen.';
 $string['webdavexternalerror'] = 'Der externe Speicher konnte nicht gelesen werden ({$a->errorclass}). Bitte später erneut versuchen oder auf der Ortswahlseite ({$a->page}) nachsehen.';
 $string['webdavstep1instruction'] = 'Die Administration muss den Repository-Typ "WebDAV" in Website-Administration ▸ Plugins ▸ Repositories aktivieren.';

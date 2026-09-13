@@ -19,6 +19,7 @@ namespace local_kurspilot;
 use local_kurspilot\webdav\resolved_webdav_instance;
 use local_kurspilot\webdav\webdav_error;
 use local_kurspilot\webdav\webdav_instance;
+use local_kurspilot\webdav\webdav_setup_steps;
 
 /**
  * Schreibt in einen externen Bereich (Issue #491, Spec #486 §4/§6) - das
@@ -57,11 +58,14 @@ final class pointer_writer {
     private const OP_APPEND = 'anhängen';
 
     /**
-     * @var string[] moodle_exception-Fehlerschluessel aus
-     *      {@see \local_kurspilot\webdav\webdav_instance::resolve()} - Ort-
-     *      Ausfaelle im Sinne von ADR 0023 (geloeschte Instanz, entzogene
-     *      Freischaltung, geaendertes Pruefmerkmal, u.a.), die genauso einen
-     *      Ausstand anlegen wie ein {@see webdav_error}. Jeder andere
+     * @var string[] moodle_exception-Fehlerschluessel, die genauso einen
+     *      Ausstand anlegen wie ein {@see webdav_error} - Ort-Ausfaelle im
+     *      Sinne von ADR 0023. Die ersten fuenf kommen aus
+     *      {@see \local_kurspilot\webdav\webdav_instance::resolve()}
+     *      (geloeschte Instanz, entzogene Freischaltung, geaendertes
+     *      Pruefmerkmal, u.a.); `contextrootmissing` kommt dagegen aus
+     *      {@see require_root_exists()} selbst (Issue #514: die
+     *      Kontextbereich-Wurzel fehlt am externen Ort). Jeder andere
      *      moodle_exception-Fehlerschluessel, der aus diesem Zweig entkommt,
      *      ist ein Programmierfehler und laeuft unveraendert weiter.
      */
@@ -71,6 +75,7 @@ final class pointer_writer {
         'webdavnotenabled',
         'webdavauthunsupported',
         'webdavfingerprintchanged',
+        'contextrootmissing',
     ];
 
     /**
@@ -91,6 +96,8 @@ final class pointer_writer {
         'webdavnotenabled' => 'externe Speicher sind für Sie nicht mehr freigeschaltet',
         'webdavauthunsupported' => 'die Verbindung nutzt eine nicht mehr unterstützte Anmeldeart',
         'webdavfingerprintchanged' => 'Server, Pfad oder Konto der Verbindung haben sich geändert',
+        'contextrootmissing' => 'der gewählte Kontextbereich ist dort nicht mehr vorhanden (verschoben, gelöscht'
+            . ' oder umbenannt) — bitte auf der Ortswahlseite neu wählen',
     ];
 
     /**
@@ -256,24 +263,57 @@ final class pointer_writer {
     }
 
     /**
-     * Baut fehlende Ordnerebenen per MKCOL (Spec §4) - Basisordner des
-     * Pointers plus die vom Aufrufer gewuenschten Unterordner, Ebene fuer
-     * Ebene. Ein bereits vorhandenes Verzeichnis gilt als Erfolg
-     * ({@see \local_kurspilot\webdav\webdav_client::mkcol()}), diese Methode
-     * prueft also nie selbst, was schon existiert.
+     * Baut fehlende Unterordner *innerhalb* des Kontextbereichs per MKCOL
+     * (Spec §4) - Ebene fuer Ebene. Ein bereits vorhandenes Verzeichnis gilt
+     * als Erfolg ({@see \local_kurspilot\webdav\webdav_client::mkcol()}),
+     * diese Methode prueft also nie selbst, was schon existiert.
+     *
+     * Die Wurzel des Kontextbereichs selbst - der Pointer-Pfad
+     * ({@see $location}) - wird hier bewusst **nie** mitgebaut (Issue #514):
+     * bis dahin war sie Teil derselben MKCOL-Kette wie die Unterordner und
+     * entstand so still neu, wenn die Lehrkraft den Ordner verschoben,
+     * geloescht oder umbenannt hatte - ein leerer zweiter Kontextbereich statt
+     * eines benannten Fehlers. {@see require_root_exists()} prueft die Wurzel
+     * deshalb vorab nur, legt sie aber nie an.
      *
      * @param resolved_webdav_instance $instance
      * @param pointer_location $location
-     * @param string[] $folders
+     * @param string[] $folders Vom Aufrufer gewuenschte Unterordner, relativ zur Wurzel.
+     * @throws \moodle_exception contextrootmissing, wenn die Wurzel fehlt.
      * @throws webdav_error
      */
     private static function ensure_directory(resolved_webdav_instance $instance, pointer_location $location, array $folders): void {
         $base = array_values(array_filter(explode('/', trim((string) $location->relativepath, '/')), static fn (string $s): bool => $s !== ''));
-        $segments = [...$base, ...$folders];
-        if (empty($segments)) {
+        self::require_root_exists($instance, $base);
+        if (empty($folders)) {
             return;
         }
-        $instance->client()->mkcol_chain($instance->directory_url(''), $segments);
+        $instance->client()->mkcol_chain($instance->directory_url(implode('/', $base)), $folders);
+    }
+
+    /**
+     * Prueft, dass die Kontextbereich-Wurzel am externen Ort tatsaechlich
+     * existiert - ein reines PROPFIND, nie ein MKCOL (Issue #514, siehe
+     * {@see ensure_directory()}). "Serverseitig geschrieben wird
+     * ausschliesslich im Kontextbereich" gilt damit woertlich: fehlt die
+     * Wurzel, entsteht nichts, weder sie selbst noch ein Unterordner darin.
+     *
+     * @param resolved_webdav_instance $instance
+     * @param string[] $base Segmente des Pointer-Pfades.
+     * @throws \moodle_exception contextrootmissing, wenn die Wurzel fehlt.
+     * @throws webdav_error jeder andere Ausfall - unuebersetzt, der Aufrufer
+     *         (write()/append()) faengt ihn selbst, uebersetzt und vermerkt
+     *         ihn als Ausstand (Issue #492).
+     */
+    private static function require_root_exists(resolved_webdav_instance $instance, array $base): void {
+        try {
+            $instance->client()->propfind($instance->directory_url(implode('/', $base)), 0);
+        } catch (webdav_error $e) {
+            if ($e->errorclass !== webdav_error::NOT_FOUND) {
+                throw $e;
+            }
+            throw new \moodle_exception('contextrootmissing', 'local_kurspilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
+        }
     }
 
     /**

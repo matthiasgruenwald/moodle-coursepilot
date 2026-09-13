@@ -89,6 +89,7 @@ $string['webdavinstanceforeign'] = 'The context pointer refers to a WebDAV conne
 $string['webdavnotenabled'] = 'Your school has not yet enabled external storage (WebDAV) for you. Please check the location page ({$a}).';
 $string['webdavauthunsupported'] = 'This WebDAV connection no longer uses https with basic authentication — Kurspilot does not support that. Please fix it on the location page ({$a}).';
 $string['webdavfingerprintchanged'] = 'The server, base path, or account of this WebDAV connection has changed. Please choose again on the location page ({$a}).';
+$string['contextrootmissing'] = 'The chosen context area no longer exists at the external location (moved, deleted, or renamed). Please choose again on the location page ({$a}).';
 $string['webdaviservfilesonly'] = 'On IServ, only locations below "Files/" are reachable. Please choose a folder there on the location page ({$a}).';
 $string['webdavexternalerror'] = 'The external storage could not be read ({$a->errorclass}). Please try again later, or check the location page ({$a->page}).';
 $string['webdavstep1instruction'] = 'The administration must enable the "WebDAV" repository type under Site administration ▸ Plugins ▸ Repositories.';

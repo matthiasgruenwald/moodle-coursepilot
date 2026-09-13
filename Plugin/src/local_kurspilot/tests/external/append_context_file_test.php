@@ -508,6 +508,53 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Fehlt die Kontextbereich-Wurzel am externen Ort, legt auch Anhaengen
+     * nichts an - derselbe Schutz wie beim Schreiben (Issue #514, siehe
+     * {@see \local_kurspilot\external\write_context_file_test::test_rejects_write_when_context_root_is_missing_and_creates_no_folder()}).
+     */
+    public function test_rejects_append_when_context_root_is_missing_and_creates_no_folder(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        // Bewusst kein $fake->seed_folder('/Kurspilot/Kontext') - die Wurzel fehlt.
+
+        try {
+            $this->append('journal.md', '# Journal');
+            $this->fail('Fehlende Kontextbereich-Wurzel haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertSame('contextrootmissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame([], array_values(array_filter(
+            $fake->requests(),
+            static fn (array $r): bool => in_array($r['method'], ['PUT', 'MKCOL'], true)
+        )));
+    }
+
+    /**
+     * Fehlende Ordnerebenen werden auch beim Anhaengen per MKCOL angelegt,
+     * die Kontextbereich-Wurzel selbst aber nie mitgebaut (Issue #514,
+     * Akzeptanzkriterium 2+3 - Gegenstueck zu
+     * {@see \local_kurspilot\external\write_context_file_test::test_creates_missing_folder_levels_via_mkcol()}
+     * fuer den Anhaeng-Endpunkt).
+     */
+    public function test_creates_missing_folder_levels_via_mkcol_without_touching_the_root(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+
+        $this->append('faecher/mathe/journal.md', '# Mathe');
+
+        $mkcols = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'MKCOL'));
+        $this->assertNotEmpty($mkcols);
+        $roottargets = array_filter($mkcols, static function (array $r): bool {
+            return rtrim((string) parse_url($r['url'], PHP_URL_PATH), '/') === '/Kurspilot/Kontext';
+        });
+        $this->assertSame([], array_values($roottargets));
+    }
+
+    /**
      * Der Rotationshinweis gilt extern als Pflicht (Spec #486 §6) - anders
      * als in Moodle steht er in jeder Antwort, nicht erst ab 1 MB, weil jedes
      * externe Anhaengen die ganze Datei zweimal uebertraegt.

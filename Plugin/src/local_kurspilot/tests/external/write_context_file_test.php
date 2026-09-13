@@ -591,6 +591,47 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertNotEmpty($mkcols);
         $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
         $this->assertCount(1, $puts);
+
+        // Issue #514, Akzeptanzkriterium 3: kein MKCOL trifft die
+        // Kontextbereich-Wurzel selbst ("/Kurspilot/Kontext" ohne
+        // abschliessenden Schraegstrich) - nur Unterordner darin.
+        $roottargets = array_filter($mkcols, static function (array $r): bool {
+            return rtrim((string) parse_url($r['url'], PHP_URL_PATH), '/') === '/Kurspilot/Kontext';
+        });
+        $this->assertSame([], array_values($roottargets));
+    }
+
+    /**
+     * Fehlt die Kontextbereich-Wurzel am externen Ort (verschoben, geloescht,
+     * umbenannt), legt das Schreiben nichts an - weder die Wurzel noch einen
+     * Unterordner darin (Issue #514, Akzeptanzkriterium 1+3). Es entsteht
+     * weder ein PUT noch ein MKCOL, dafuer ein benannter Fehler und ein
+     * Ausstand.
+     */
+    public function test_rejects_write_when_context_root_is_missing_and_creates_no_folder(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        // Bewusst kein $fake->seed_folder('/Kurspilot/Kontext') - die Wurzel fehlt.
+
+        $message = '';
+        try {
+            $this->write('faecher/mathe/profil.md', '# Mathe');
+            $this->fail('Fehlende Kontextbereich-Wurzel haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $message = $e->getMessage();
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $this->assertStringContainsString('Ortswahlseite', $message);
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertCount(1, $ausstaende);
+        $this->assertSame('contextrootmissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+
+        $this->assertSame([], array_values(array_filter(
+            $fake->requests(),
+            static fn (array $r): bool => in_array($r['method'], ['PUT', 'MKCOL'], true)
+        )));
     }
 
     /**
