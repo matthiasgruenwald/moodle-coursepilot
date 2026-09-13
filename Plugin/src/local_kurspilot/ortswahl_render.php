@@ -67,7 +67,8 @@ function local_kurspilot_render_ortswahl_editor(\moodle_page $page, \stdClass $u
     echo html_writer::end_tag('form');
     echo html_writer::end_div();
 
-    $page->requires->js(new moodle_url('/local/kurspilot/javascript/ortswahl.js'), true);
+    // Footer, not head: this runs after $OUTPUT->header(), a head script would be silently dropped.
+    $page->requires->js(new moodle_url('/local/kurspilot/javascript/ortswahl.js'));
 }
 
 /**
@@ -237,7 +238,7 @@ function local_kurspilot_render_ortswahl_browse_modal(array $data): void {
     echo html_writer::start_div('modal-content');
     echo html_writer::start_div('modal-header');
     echo html_writer::tag('h5', '', ['class' => 'modal-title', 'id' => 'kurspilot-ortswahl-modal-title']);
-    echo html_writer::tag('button', '', ['type' => 'button', 'class' => 'btn-close', 'data-bs-dismiss' => 'modal']);
+    echo html_writer::tag('button', '', ['type' => 'button', 'class' => 'btn-close', 'data-kurspilot-dismiss' => 'modal']);
     echo html_writer::end_div();
     echo html_writer::start_div('modal-body');
     echo html_writer::start_div('row');
@@ -280,7 +281,7 @@ function local_kurspilot_render_ortswahl_confirm_modal(array $data): void {
     echo html_writer::start_div('modal-content');
     echo html_writer::start_div('modal-header');
     echo html_writer::tag('h5', $data['strings']['confirmheading'], ['class' => 'modal-title']);
-    echo html_writer::tag('button', '', ['type' => 'button', 'class' => 'btn-close', 'data-bs-dismiss' => 'modal']);
+    echo html_writer::tag('button', '', ['type' => 'button', 'class' => 'btn-close', 'data-kurspilot-dismiss' => 'modal']);
     echo html_writer::end_div();
     echo html_writer::start_div('modal-body');
     echo html_writer::tag('p', '', ['id' => 'kurspilot-ortswahl-confirm-count']);
@@ -288,7 +289,7 @@ function local_kurspilot_render_ortswahl_confirm_modal(array $data): void {
     echo html_writer::end_div();
     echo html_writer::start_div('modal-footer');
     echo html_writer::tag('button', $data['strings']['confirmcancel'], [
-        'type' => 'button', 'class' => 'btn btn-outline-secondary', 'data-bs-dismiss' => 'modal',
+        'type' => 'button', 'class' => 'btn btn-outline-secondary', 'data-kurspilot-dismiss' => 'modal',
     ]);
     echo html_writer::tag('button', $data['strings']['confirmbutton'], [
         'type' => 'button', 'class' => 'btn btn-success', 'id' => 'kurspilot-ortswahl-confirmfolder-ack',

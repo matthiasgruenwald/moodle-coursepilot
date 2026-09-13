@@ -145,6 +145,10 @@ final class webdav_instance {
             throw new \moodle_exception('webdavauthunsupported', 'local_kurspilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
         }
 
+        // \curl (lib/filelib.php) is not autoloaded - plain pages like
+        // ortswahl_browse.php would fail with "Class curl not found".
+        global $CFG;
+        require_once($CFG->libdir . '/filelib.php');
         $transport = self::$testtransport ?? new curl_transport(
             new \curl(),
             (string) ($options['webdav_user'] ?? ''),
@@ -269,8 +273,9 @@ final class webdav_instance {
      * @return string https-Adresse der Instanz inkl. Basispfad, mit abschliessendem "/".
      */
     private static function base_url(array $options): string {
-        $port = trim((string) ($options['webdav_port'] ?? ''));
-        $host = $options['webdav_server'] . ($port !== '' ? ':' . $port : '');
+        // Moodle's WebDAV form stores "default port" as '0'.
+        $port = (int) ($options['webdav_port'] ?? 0);
+        $host = $options['webdav_server'] . ($port > 0 ? ':' . $port : '');
         $path = trim((string) ($options['webdav_path'] ?? ''), '/');
         return 'https://' . $host . '/' . ($path !== '' ? $path . '/' : '');
     }

@@ -54,6 +54,34 @@ final class webdav_instance_test extends \advanced_testcase {
         );
     }
 
+    /**
+     * Moodles WebDAV-Formular speichert "kein Port" als '0' - das darf nie als
+     * ":0" in der Adresse landen (Live-Abnahme #505: jede Anfrage lief in den Timeout).
+     */
+    public function test_port_zero_means_default_port(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user, ['webdav_port' => '0']);
+
+        $resolved = webdav_instance::resolve($this->location($instanceid));
+
+        $this->assertSame('https://cloud.example.test/Kurspilot/Kurspilot-Kontext', $resolved->file_url('Kurspilot-Kontext'));
+    }
+
+    public function test_explicit_port_is_kept(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user, ['webdav_port' => '8443']);
+
+        $resolved = webdav_instance::resolve($this->location($instanceid));
+
+        $this->assertSame('https://cloud.example.test:8443/Kurspilot/Kurspilot-Kontext', $resolved->file_url('Kurspilot-Kontext'));
+    }
+
     public function test_missing_instance_throws_named_error(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();

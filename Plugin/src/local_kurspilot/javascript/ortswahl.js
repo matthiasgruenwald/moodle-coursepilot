@@ -149,6 +149,11 @@
 
     var modalEl = el('kurspilot-ortswahl-modal');
     var bsModal = (window.bootstrap && window.bootstrap.Modal) ? new window.bootstrap.Modal(modalEl) : null;
+    // Own dismiss attribute: Moodle 5.0 has no window.bootstrap, and its data-bs-dismiss
+    // handler cannot close a modal it never opened.
+    modalEl.querySelectorAll('[data-kurspilot-dismiss="modal"]').forEach(function (btn) {
+        btn.addEventListener('click', closeModal);
+    });
 
     function closeModal() {
         if (bsModal) {
@@ -416,6 +421,9 @@
 
     var confirmModalEl = el('kurspilot-ortswahl-confirm-modal');
     var bsConfirmModal = (window.bootstrap && window.bootstrap.Modal) ? new window.bootstrap.Modal(confirmModalEl) : null;
+    confirmModalEl.querySelectorAll('[data-kurspilot-dismiss="modal"]').forEach(function (btn) {
+        btn.addEventListener('click', closeConfirmModal);
+    });
 
     function closeConfirmModal() {
         if (bsConfirmModal) {
