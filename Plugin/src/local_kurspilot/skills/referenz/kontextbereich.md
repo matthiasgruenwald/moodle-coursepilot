@@ -7,13 +7,13 @@ description: Lies diese Datei, wenn eine Arbeitsdatei der Lehrkraft (plan.md, st
 
 Arbeitsdateien (`plan.md`, `status.md`, Journal, Materialnotizen,
 Kontextprofile) liegen serverseitig im Kontextbereich der Lehrkraft. Es gibt
-keinen lokalen Dateipfad und keinen lokal auszufuehrenden Code — jede
-Arbeitsdatei-Operation läuft ausschliesslich über die vier Werkzeuge unten.
+keinen lokalen Dateipfad und keinen lokal auszuführenden Code — jede
+Arbeitsdatei-Operation läuft ausschließlich über die vier Werkzeuge unten.
 Grundlage: Spec 0016 §7/§8 (`docs/specs/0016-kontextbereich-schreibend.md`).
 
 ## Werkzeuge
 
-| Tool | Zweck | Antwort enthaelt |
+| Tool | Zweck | Antwort enthält |
 |---|---|---|
 | `kurspilot_list_context_files` | Ordnerinhalt auflisten, optional `vorheriger_ort` (Altbestand) | je Eintrag `contenthash`, `timemodified`, `locked` |
 | `kurspilot_read_context_file` | Datei lesen, optional `vorheriger_ort` (Altbestand) | `content`, `contenthash`, `timemodified` |
@@ -38,7 +38,7 @@ Ortswahl sperrt ohnehin nichts, Kurspilot arbeitet einfach weiter.
 `kurspilot_list_skills` nennt im selben Feld `hinweise` — nach den
 `ausstände` gemeldet, also erst wenn offene Ausstände schon benannt sind —
 ohne Zählung den Fakt "Altbestand offen", wenn nach einem Ortswechsel des
-Kontextbereichs am fruheren Ort noch Kontextdateien liegen.
+Kontextbereichs am früheren Ort noch Kontextdateien liegen.
 `kurspilot_list_context_files`/`kurspilot_read_context_file` mit
 `vorheriger_ort: true` lesen diesen alten Ort — nur lesend, nie schreibend
 (**Nur-Lese-Schalter**). Zum Kopieren: gelesenen Inhalt per
@@ -68,16 +68,17 @@ Zeitablauf oder Namensgleichheit.
 
 ## Ablageordnung — Wurzel und relative Pfade (Spec 0012 §5, Spec 0010)
 
-Der Kontextbereich hat **eine** Wurzel. Wie ihr Ordner heisst und wo er
-liegt, loest das Plugin selbst auf — aus seiner Einstellung, oder aus dem
-Ablageort, den die Lehrkraft beim Verbindungsaufbau gewählt hat. Der
-Wurzelname ist damit nichts, was hier festgeschrieben werden koennte, und
-nichts, was ein Werkzeugaufruf kennen muesste.
+Der Kontextbereich hat **eine** Wurzel. Wie ihr Ordner heißt und wo er
+liegt, löst das Plugin selbst auf — aus seiner Einstellung, oder aus dem
+Ort, den die Lehrkraft auf der Ortswahlseite gewählt hat (siehe „Offene
+Ortswahl" oben) — unabhängig davon, wie die KI-Anbindung selbst eingerichtet
+wurde. Der Wurzelname ist damit nichts, was hier festgeschrieben werden
+könnte, und nichts, was ein Werkzeugaufruf kennen müsste.
 
 **Jeder Pfad, den ein Werkzeug bekommt, ist relativ zu dieser Wurzel** —
 `fragetypen/match.md`, nie mit einem Wurzelordner davor. Ein vorangestellter
 Wurzelname legt die Datei eine Ebene zu tief ab (`<wurzel>/<wurzel>/…`) und
-ist immer ein Fehler. Dasselbe gilt für die Rueckgaben: der `path` einer
+ist immer ein Fehler. Dasselbe gilt für die Rückgaben: der `path` einer
 Auflistung ist ebenfalls relativ zur Wurzel, die Wurzel selbst ist der leere
 Pfad.
 
@@ -86,7 +87,7 @@ An der Wurzel liegen:
 | Eintrag | Was |
 |---|---|
 | `index.md` | globale Uebersicht über die Vorhaben (Spec 0010) |
-| `vorlagen.md` | gemerkte Aktivitaetsvorlagen (Spec 0013/0012 §5) |
+| `vorlagen.md` | gemerkte Aktivitätsvorlagen (Spec 0013/0012 §5) |
 | `fragetypen/` | ein `<fragetyp>.md` je erschlossenem Fragetyp (`kurspilot_get_skill("fragetypen")`) |
 | `<schuljahr>/<klasse-oder-lerngruppe>/<fach>/<vorhaben>/` | die eigentliche Arbeitsablage: Profile, `plan.md`, `status.md`, Journal, Material |
 
@@ -96,7 +97,7 @@ zweiter, thematisch sortierter Ordnerbaum.
 ## Schreibangebot für plan/status/vorlagen (Spec 0016 §8.2)
 
 `plan.md`, `status.md`, Vorlagen und Profildateien werden nie still
-geschrieben. An natuerlichen Haltepunkten (Planungsrunde abgeschlossen,
+geschrieben. An natürlichen Haltepunkten (Planungsrunde abgeschlossen,
 Freigabe erteilt) fasst Kurspilot das Vereinbarte zusammen und fragt, ob es
 jetzt per `kurspilot_write_context_file` geschrieben werden soll. Erst nach
 Bestätigung wird geschrieben. Nichts Vereinbartes bleibt ungeschrieben liegen.
@@ -108,11 +109,12 @@ per `kurspilot_append_context_file`, sobald die einmalige
 Sitzungs-Kontextfreigabe (siehe `CONTEXT.md`, Glossareintrag "Kontextfreigabe")
 zu Sitzungsbeginn erteilt ist — keine Einzelbestätigung je Eintrag.
 
-## Handaenderungs-Routine (Spec 0016 §7)
+## Handänderungs-Routine (Spec 0016 §7)
 
-Die Lehrkraft kann jede Datei jederzeit in "Meine Dateien" selbst bearbeiten.
-Kurspilot merkt sich je gelesener Datei den zuletzt gesehenen `contenthash`
-und prüft ihn:
+Die Lehrkraft kann jede Datei jederzeit an ihrem Ablageort selbst bearbeiten
+— in Moodle über "Meine Dateien", am externen Speicher über dessen eigene
+Oberfläche. Kurspilot merkt sich je gelesener Datei den zuletzt gesehenen
+`contenthash` und prüft ihn:
 
 1. **Bei Sitzungsstart**, für alle Dateien, die diese Sitzung voraussichtlich
    braucht: `kurspilot_list_context_files` (oder erneutes
@@ -122,7 +124,7 @@ und prüft ihn:
    geschrieben wird.
 
 Weicht der `contenthash` ab: Datei neu lesen, der Lehrkraft die Aenderung
-kurz benennen ("Die Datei wurde seit dem letzten Lesen extern geaendert") und
+kurz benennen ("Die Datei wurde seit dem letzten Lesen extern geändert") und
 fragen, ob mit dem neuen Stand weitergearbeitet werden soll, bevor irgendetwas
 geschrieben wird. Kein Verlauf alter Versionen — nur der zuletzt gelesene
 `contenthash` wird vorgehalten.
@@ -132,12 +134,12 @@ zuletzt gelesenen `contenthash` als `expected_contenthash` mitgeben. Bricht
 der Server mit `contextfilechanged` ab, ist das derselbe Fall — neu lesen,
 nachfragen. `kurspilot_append_context_file` kennt kein
 `expected_contenthash` (kein vorheriges Lesen im Vertrag); die Skill-seitige
-Pruefung vor dem Aufruf bleibt hier die einzige Absicherung.
+Prüfung vor dem Aufruf bleibt hier die einzige Absicherung.
 
 ## Journal-Rotation (Spec 0016 §8.4)
 
-Antwortet `kurspilot_append_context_file` mit dem Zusatz "... ueberschreitet
-1 MB — Rotation empfohlen" (Wortlaut laut Plugin: "Die Datei ueberschreitet
+Antwortet `kurspilot_append_context_file` mit dem Zusatz "... überschreitet
+1 MB — Rotation empfohlen" (Wortlaut laut Plugin: "Die Datei überschreitet
 1 MB — Rotation empfohlen."), legt Kurspilot **nicht**
 automatisch eine neue Datei an. Es benennt den Hinweis der Lehrkraft und
 schlägt einen Archivnamen vor (z.B. `journal-2026-06.md` für das laufende
@@ -145,67 +147,67 @@ Archiv, neu `journal-2026-07.md`). Stimmt die Lehrkraft zu:
 
 1. Neue Journaldatei per `kurspilot_write_context_file` anlegen (leer oder mit
    Header).
-2. Kuenftige Appends für diesen Kontext auf die neue Datei umstellen.
+2. Künftige Appends für diesen Kontext auf die neue Datei umstellen.
 3. Die bisherige Datei bleibt unverändert liegen — kein Löschen, kein
-   Zusammenfuehren.
+   Zusammenführen.
 
-## Lerndatei: ersetzen statt anhaengen (Spec 0020 §7)
+## Lerndatei: ersetzen statt anhängen (Spec 0020 §7)
 
 Eine Lerndatei (`fragetypen/<typ>.md` — feste Gliederung, Schreibregel siehe
 `kurspilot_get_skill("fragetypen")` — sowie `vorlagen.md`) darf sonst zu
-Schicht auf Schicht wachsen: Anhängen fuehlt sich sicher an, Löschen
-riskant, und der Kontext wird mit jeder Sitzung teurer und widerspruechlicher.
+Schicht auf Schicht wachsen: Anhängen fühlt sich sicher an, Löschen
+riskant, und der Kontext wird mit jeder Sitzung teurer und widersprüchlicher.
 
 Deshalb geht eine neue Erkenntnis in den **vorhandenen Abschnitt** und ersetzt
-dort die schwaechere Formulierung, statt inhaltlich ans Dateiende angehängt
+dort die schwächere Formulierung, statt inhaltlich ans Dateiende angehängt
 zu werden. Geschrieben wird technisch ohnehin immer per
 `kurspilot_write_context_file` (Vollersatz, siehe Schreibregel in
 `kurspilot_get_skill("fragetypen")`) — "Anhängen" meint hier den Inhalt, nicht
 das Werkzeug. Inhaltlich blindes Anhängen ist der Ausnahmefall (z. B.
-`vorlagen.md`, das als freie Liste ohne feste Gliederung gefuehrt wird und wo
-ein neuer Eintrag deshalb regulaer dazukommt statt einen Abschnitt zu
+`vorlagen.md`, das als freie Liste ohne feste Gliederung geführt wird und wo
+ein neuer Eintrag deshalb regulär dazukommt statt einen Abschnitt zu
 ersetzen) und wird als solcher benannt, wenn er eintritt.
 
-Vor jeder Ergaenzung einer Lerndatei gilt dieselbe Pruefung wie für den
+Vor jeder Ergänzung einer Lerndatei gilt dieselbe Prüfung wie für den
 Skill-Korpus selbst (Spec 0020 §8):
 
 > Ändert diese Zeile gegenüber dem Default Verhalten, und sagt sie etwas, das
 > nicht schon woanders steht?
 
-Eine Zeile, die diese Pruefung nicht besteht, wird nicht geschrieben — weder
+Eine Zeile, die diese Prüfung nicht besteht, wird nicht geschrieben — weder
 neu noch als Ersatz.
 
 ## Verdichtungsangebot bei wachsender Lerndatei (Spec 0020 §7)
 
 `kurspilot_write_context_file` und `kurspilot_append_context_file` melden bei
 jedem Schreibvorgang die neue Dateigröße (`size`, in Byte). Bei einer
-Lerndatei ist diese Pruefung bei jeder Ergaenzung das Arbeitsmittel — nicht
+Lerndatei ist diese Prüfung bei jeder Ergänzung das Arbeitsmittel — nicht
 erst die 1-MB-Grenze aus Spec 0016 §5.2, die der harte Fangnetzwert bleibt.
-Waechst eine Lerndatei spuerbar, bietet Kurspilot an, sie zu verdichten
-(Dopplungen, veraltete Stolpersteine oder ueberholte Ausbaustufen
+Wächst eine Lerndatei spürbar, bietet Kurspilot an, sie zu verdichten
+(Dopplungen, veraltete Stolpersteine oder überholte Ausbaustufen
 zusammenfassen) — analog zur Journal-Rotation, aber als Angebot statt als
 Umbenennung: Die Lehrkraft entscheidet, ob und wann verdichtet wird.
 
 ## Keine Klarnamen in unmarkierten Dateien (Spec 0016 §8.3)
 
-Schuelernamen, Schueler-IDs und anderer Personenbezug gehoeren ausschliesslich
+Schülernamen, Schüler-IDs und anderer Personenbezug gehören ausschließlich
 in Dateien mit Frontmatter `kurspilot.personenbezug: true`. Das Plugin prüft
 nur die Markierung (Schreibsperre bei ausgeschaltetem #344-Schalter), nicht
 den Inhalt — die Klarnamen-Grenze selbst ist reine Skill-Regel:
 
-- Vor jedem Schreiben/Anhängen mit Personenbezug pruefen, ob die Zieldatei
+- Vor jedem Schreiben/Anhängen mit Personenbezug prüfen, ob die Zieldatei
   bereits `kurspilot.personenbezug: true` trägt; falls nicht, das
-  Frontmatter beim naechsten `kurspilot_write_context_file` ergaenzen statt
+  Frontmatter beim nächsten `kurspilot_write_context_file` ergänzen statt
   Klarnamen unmarkiert abzulegen.
 - Ist eine Datei nicht markiert und der Inhalt braucht Personenbezug, entweder
-  die Markierung ergaenzen (mit Lehrkraftfreigabe, da das den #344-Schalter
+  die Markierung ergänzen (mit Lehrkraftfreigabe, da das den #344-Schalter
   aktiviert) oder anonymisiert/pseudonymisiert schreiben (Kürzel statt Name).
 
 ## Wenn der Speicher nicht antwortet (ADR 0023, Issue #492/#495)
 
 Der Kontextbereich kann in Moodle oder an einem externen WebDAV-Speicher der
 Lehrkraft liegen (Ortswahl, siehe unten) — was folgt, gilt für beide
-gleichermassen und benennt nie den Ort.
+gleichermaßen und benennt nie den Ort.
 
 ### Ausstand und Nachtragen (Schreibausfall)
 
@@ -216,7 +218,10 @@ legt das Plugin selbst einen Eintrag in der **Ausstandsnotiz** an und meldet
 eine Kennung — der Inhalt liegt nirgendwo, es gibt keinen Rückfall. Die
 Antwort nennt Pfad und Vorgang, die Ursache und die Kennung.
 
-- Den Inhalt im Gespräch behalten, nicht verwerfen.
+- Den Inhalt im Gespräch behalten, nicht verwerfen. Die Anweisung an die KI:
+  **keinen anderen Ort nehmen** — also nicht ausweichend in eine andere
+  Kontextdatei oder ein anderes Verzeichnis schreiben, auch nicht
+  vorübergehend.
 - Sobald die Verbindung wieder steht, denselben Aufruf erneut senden, diesmal
   mit `ausstand=<Kennung>` — gelingt er, verschwindet der Eintrag im selben
   Aufruf (**Nachtragen**). Ein Nachtragen überschreibt nie einen inzwischen
@@ -227,7 +232,7 @@ Antwort nennt Pfad und Vorgang, die Ursache und die Kennung.
   möglich ist (z.B. aus dem Aenderungsverlauf einer Aktivität), **danach
   erst** `kurspilot_dismiss_ausstand` aufrufen — nie ohne ausdrückliches
   Wort der Lehrkraft.
-- "Ausstand" ist ein interner Bezeichner; zur Lehrkraft heisst es "noch nicht
+- "Ausstand" ist ein interner Bezeichner; zur Lehrkraft heißt es "noch nicht
   gespeichert", nie "Ausstand".
 
 ### Kontext-Lücke (Leseausfall)
@@ -258,7 +263,7 @@ Scheitert ein Schreibvorgang am Speicherplatz (`contextquotaexceeded`), steht
 in der Fehlermeldung bereits ein Verweis auf die Ortswahlseite — diesen Satz
 an die Lehrkraft weitergeben, statt selbst einen Ausweg zu erfinden.
 
-## Aufraeumfrage nach Aufbau (Spec 0018 §8.3, Issue #439)
+## Aufräumfrage nach Aufbau (Spec 0018 §8.3, Issue #439)
 
 Am Ende eines abgeschlossenen Aufbaus (mindestens ein Moodle-Schreibzugriff
 dieser Sitzung abgeschlossen, kein offener Blocker) ruft `kurspilot-umsetzen`
@@ -271,7 +276,7 @@ einmal `kurspilot_report_loose_material_files` auf und prüft die Antwort:
   keiner Aktivität verwendet werden: `altes-blatt.pdf` (1,1 MB, 40 Tage),
   `entwurf.png` (0,3 MB, 12 Tage), `screenshot-quelle.jpg` (2,8 MB, 3 Tage —
   Original eines bereits eingebetteten Zuschnitts). Löschen?"* — Anzahl,
-  Gesamtgroesse (`total_size`, in Byte geliefert, für die Anzeige in MB
+  Gesamtgröße (`total_size`, in Byte geliefert, für die Anzeige in MB
   umrechnen) und jede einzelne Datei mit Pfad und Größe werden genannt,
   nicht nur die Zahl.
 - Ist `remaining_quota_mb` gesetzt und knapp (Restplatz niedrig gemessen an
@@ -281,15 +286,15 @@ einmal `kurspilot_report_loose_material_files` auf und prüft die Antwort:
   Restplatz in MB), nennt die Frage zusätzlich den Restplatz, z.B. „…
   löschen? Aktuell nur noch 8,4 MB Restplatz."
 
-Geloescht wird ausschliesslich auf ausdrückliche Antwort ("ja", eine
+Gelöscht wird ausschließlich auf ausdrückliche Antwort ("ja", eine
 Teilauswahl der genannten Dateien o.ae.) per `kurspilot_delete_material_files`
 mit genau den bestätigten Pfaden — nie automatisch, keine Altersregel als
-Loeschgrund. Eine Ablehnung oder keine Antwort löscht nichts; die Dateien
+Löschgrund. Eine Ablehnung oder keine Antwort löscht nichts; die Dateien
 bleiben liegen, ohne dass die Frage in derselben Sitzung wiederholt wird.
 
 Diese Regel ist eine Skill-Regel, kein Serververhalten (Spec 0016 §7: „der
 Server hat kein Session-Konzept"), und gilt daher unverändert für jeden
-Client, der `kurspilot-umsetzen` ausfuehrt — Claude Desktop wie Codex.
+Client, der `kurspilot-umsetzen` ausführt — Claude Desktop wie Codex.
 
 ## Materialbestand: `ort`, Eintragstyp `kontextbereich` und Sperre (Issue #495)
 
@@ -333,9 +338,9 @@ Klarnamen in der Datei:
 ## Was hier nicht gilt
 
 Ein lokaler Arbeitsbereich, eine lokale Konfigurationsdatei oder lokal
-auszufuehrender Code gelten für den Kontextbereich nicht — es gibt keinen
-lokalen Pfad, den sie aufloesen koennten. Planstrenge, Ein-Plan-Regel und
-Statuspruefung vor Schreibzugriff (siehe `kurspilot_get_skill("kurspilot-core")`,
+auszuführender Code gelten für den Kontextbereich nicht — es gibt keinen
+lokalen Pfad, den sie auflösen könnten. Planstrenge, Ein-Plan-Regel und
+Statusprüfung vor Schreibzugriff (siehe `kurspilot_get_skill("kurspilot-core")`,
 Ankerbegriffe) gelten inhaltlich unverändert weiter, nur das *wie* des
-Lesens/Schreibens der Arbeitsdateien läuft ausschliesslich über diese vier
+Lesens/Schreibens der Arbeitsdateien läuft ausschließlich über diese vier
 Tools.

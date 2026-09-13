@@ -68,11 +68,15 @@ selbst":
   automatische Ausführung; die KI schlägt einen konkreten Schritt vor und
   wartet auf Bestätigung.
 
-Beim Wechsel des Bestands (Altbestand, `kurspilot_get_skill("kontextbereich")`)
-werden offene Merkzettelpunkte mitübertragen, nicht verworfen. **Der
-Merkzettel ist der Zustand**, was noch aussteht — **das Journal ist die
-Geschichte**, was bereits entschieden oder erledigt wurde. Ein abgearbeiteter
-Punkt wandert vom Merkzettel in einen Journal-Eintrag, nicht umgekehrt.
+Wechselt der Materialbestand über die Ortswahl den Ort, werden offene
+Merkzettelpunkte mitübertragen, nicht verworfen. Das ist ein eigener
+Vorgang, kein Altbestand: den Altbestand (vorheriger Ort,
+`kurspilot_get_skill("kontextbereich")`) kennt nur der Kontextbereich, der
+Materialbestand hat keinen — sein alter Ort bleibt einfach liegen, ohne
+eigenen Übernahmeschritt. **Der Merkzettel ist der Zustand**, was noch
+aussteht — **das Journal ist die Geschichte**, was bereits entschieden oder
+erledigt wurde. Ein abgearbeiteter Punkt wandert vom Merkzettel in einen
+Journal-Eintrag, nicht umgekehrt.
 
 ## Werkbank → Bestand (Spec #486 §13/§14, Issue #484)
 

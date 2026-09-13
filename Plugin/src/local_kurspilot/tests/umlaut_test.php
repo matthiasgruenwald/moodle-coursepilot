@@ -21,6 +21,13 @@
  * Plugin-Beschreibung beschreibt die externe Isolierung korrekt
  * (Schreibsperre, keine Lesesperre - Spec #486 §12) und verweist auf #481.
  *
+ * Issue #522 (weitere Review-Nacharbeit zu #486): die Referenzteile
+ * `kontextbereich` und `merkzettel` bleiben ortsneutral - echte Umlaute,
+ * kein Verbindungsaufbau-Satz fuer die Ortswahl, keine Festlegung auf
+ * "Meine Dateien", Altbestand (nur Kontextbereich) und Wechsel des
+ * Materialbestands getrennt beschrieben, "keinen anderen Ort nehmen" beim
+ * Ausstand benannt.
+ *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -45,10 +52,56 @@ final class local_kurspilot_umlaut_test extends advanced_testcase {
             $root . 'skills/adapter/kurspilot-umsetzen.md' => ['Aktivitaet', 'Anhaengen', 'Einzelbestaetigung', 'fuer', 'zusaetzlich'],
             $root . 'skills/adapter/kurspilot.md' => ['Bestandsaenderung', 'ausfuehrbar', 'ausstaende', 'fuer', 'ueber', 'zusaetzlich'],
             $root . 'skills/referenz/journal.md' => ['Aktivitaetstyp', 'Bestaetigung', 'Eintraege', 'Eintraegen', 'angehaengt', 'ausstaende', 'fuer', 'haelt', 'laeuft', 'spaeter', 'ueber', 'ueberschrieben', 'zusaetzlich'],
-            $root . 'skills/referenz/kontextbereich.md' => ['Aktivitaet', 'Anhaenge', 'Anhaengen', 'Ausstaende', 'Bestaetigung', 'Dateigroesse', 'Eintraege', 'Einzelbestaetigung', 'Gespraech', 'Groesse', 'Kuerzel', 'Kuerzeln', 'Loeschen', 'Luecke', 'Rueckfall', 'Zaehlung', 'angehaengt', 'ausdruecklich', 'ausdrueckliche', 'ausdrueckliches', 'ausstaende', 'bestaetigten', 'fuehrt', 'fuer', 'gebuendelt', 'gewaehlt', 'gewoehnliche', 'gueltiger', 'haengt', 'laeuft', 'loeschen', 'loescht', 'moeglich', 'noetig', 'prueft', 'schlaegt', 'schwaecher', 'sinngemaess', 'spaeter', 'traegt', 'ueber', 'ueberschreiben', 'ueberschreibt', 'ueberschrieben', 'uebersprungenen', 'unveraendert', 'vollstaendig', 'vollstaendige', 'zurueck', 'zusaetzlich', 'zusammenfuehren'],
+            $root . 'skills/referenz/kontextbereich.md' => ['Aktivitaet', 'Anhaenge', 'Anhaengen', 'Ausstaende', 'Bestaetigung', 'Dateigroesse', 'Eintraege', 'Einzelbestaetigung', 'Gespraech', 'Groesse', 'Kuerzel', 'Kuerzeln', 'Loeschen', 'Luecke', 'Rueckfall', 'Zaehlung', 'angehaengt', 'ausdruecklich', 'ausdrueckliche', 'ausdrueckliches', 'ausstaende', 'bestaetigten', 'fuehrt', 'fuer', 'gebuendelt', 'gewaehlt', 'gewoehnliche', 'gueltiger', 'haengt', 'laeuft', 'loeschen', 'loescht', 'moeglich', 'noetig', 'prueft', 'schlaegt', 'schwaecher', 'sinngemaess', 'spaeter', 'traegt', 'ueber', 'ueberschreiben', 'ueberschreibt', 'ueberschrieben', 'uebersprungenen', 'unveraendert', 'vollstaendig', 'vollstaendige', 'zurueck', 'zusaetzlich', 'zusammenfuehren',
+                // Issue #522: weitere Ersatzschreibweisen, von #521 nicht erfasst.
+                'enthaelt', 'Aktivitaetsvorlagen', 'Aufraeumfrage', 'Ergaenzung', 'Geloescht', 'Gesamtgroesse', 'Handaenderungs', 'Kuenftige', 'Loeschgrund', 'Pruefung', 'Rueckgaben', 'Schueler', 'Schuelernamen', 'Statuspruefung', 'Waechst', 'Zusammenfuehren', 'anhaengen', 'aufloesen', 'ausfuehrt', 'auszufuehrenden', 'auszufuehrender', 'ergaenzen', 'fuehlt', 'geaendert', 'gefuehrt', 'gehoeren', 'koennte', 'koennten', 'loest', 'muesste', 'naechsten', 'natuerlichen', 'pruefen', 'regulaer', 'schwaechere', 'spuerbar', 'ueberholte', 'ueberschreitet', 'widerspruechlicher', 'ausschliesslich', 'heisst', 'gleichermassen', 'fruheren'],
             $root . 'skills/referenz/mcp-tools.md' => ['Aktivitaet', 'Aktivitaetsart', 'Aktivitaetstyp', 'Anhaenge', 'Anhaengen', 'Bestaetigung', 'Groesse', 'ausdruecklich', 'ausdruecklicher', 'fuer', 'gueltigen', 'loeschen', 'loescht', 'traegt', 'ueberschreiben', 'vollstaendig', 'waehlt', 'zusaetzlich'],
             $root . 'skills/referenz/merkzettel.md' => ['Anhaenge', 'Ausfuehrung', 'Bestaetigung', 'Bestandsaenderung', 'Faellen', 'Fuer', 'Gespraech', 'Loesung', 'Originalqualitaet', 'Pruefsumme', 'Rueckfrage', 'ankuendigen', 'ausdruecklich', 'ausfuehrbar', 'ausfuehren', 'bestaetigten', 'entfaellt', 'fuer', 'gewoehnliche', 'haelt', 'laedt', 'laengst', 'laeuft', 'loeschen', 'mituebertragen', 'moeglich', 'prueft', 'schlaegt', 'schreibgeschuetzt', 'traegt', 'ueber', 'ueberein', 'unveraendert'],
         ];
+    }
+
+    /**
+     * Issue #522: der Ablageort wird nicht mehr "beim Verbindungsaufbau"
+     * gewaehlt (das war die MCP-Anbindung), sondern auf der Ortswahlseite -
+     * unabhaengig davon, wie die KI-Anbindung eingerichtet ist.
+     */
+    public function test_kontextbereich_replaces_verbindungsaufbau_sentence(): void {
+        $content = file_get_contents(__DIR__ . '/../skills/referenz/kontextbereich.md');
+        $this->assertStringNotContainsString('beim Verbindungsaufbau gewählt', $content);
+        $this->assertStringContainsString('Ortswahlseite', $content);
+    }
+
+    /**
+     * Issue #522: die Handaenderungs-Routine legt den Ablageort nicht auf
+     * Moodles "Meine Dateien" fest - der Kontextbereich bleibt ortsneutral
+     * (Spec #486 §14).
+     */
+    public function test_kontextbereich_does_not_fix_handaenderung_to_meine_dateien(): void {
+        $content = file_get_contents(__DIR__ . '/../skills/referenz/kontextbereich.md');
+        $this->assertStringNotContainsString(
+            'kann jede Datei jederzeit in "Meine Dateien" selbst bearbeiten',
+            $content
+        );
+    }
+
+    /**
+     * Issue #522: der Ausstand-Ablauf nennt ausdruecklich, keinen anderen
+     * Ort fuer den nicht gespeicherten Inhalt zu nehmen (Spec #486 §14/§8).
+     */
+    public function test_kontextbereich_ausstand_forbids_taking_another_location(): void {
+        $content = file_get_contents(__DIR__ . '/../skills/referenz/kontextbereich.md');
+        $this->assertStringContainsString('keinen anderen Ort', $content);
+    }
+
+    /**
+     * Issue #522: der Materialbestand kennt keinen Altbestand (siehe
+     * `\local_kurspilot\altbestand`) - der Merkzettel-Text darf den Wechsel
+     * des Materialbestands nicht als Altbestand-Vorgang beschreiben.
+     */
+    public function test_merkzettel_separates_altbestand_from_materialbestand_wechsel(): void {
+        $content = file_get_contents(__DIR__ . '/../skills/referenz/merkzettel.md');
+        $this->assertStringNotContainsString('Wechsel des Bestands (Altbestand', $content);
+        $this->assertStringContainsString('kein Altbestand', $content);
     }
 
     public function test_no_ascii_umlaut_substitutes_in_chain_texts(): void {
