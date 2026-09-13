@@ -37,7 +37,7 @@ final class tool_registry {
     /**
      * Ein Eintrag je Werkzeug: MCP-Toolname => Webservice-Funktionsname,
      * externe Klasse, Moodle-Dienstbeschreibung, MCP-Beschreibung,
-     * inputSchema (properties/required) und Capability fuer
+     * inputSchema (properties/required) und Capability für
      * db/services.php.
      *
      * wsdescription vs. description: unterschiedliche Zielgruppen, nicht
@@ -48,11 +48,11 @@ final class tool_registry {
      * CLAUDE.md: UI-/CLI-sichtbare Strings deutsch).
      *
      * Erster (Kurs/Quiz/Fragen) von zwei Teilen (Issue #509, Vorab-Umbau vor
-     * Spec #486-Review): diese Datei lag ueber 1000 Zeilen, ein reiner
-     * Zeilengrenzen-Schnitt, keine Verhaltensaenderung. Der zweite Teil
+     * Spec #486-Review): diese Datei lag über 1000 Zeilen, ein reiner
+     * Zeilengrenzen-Schnitt, keine Verhaltensänderung. Der zweite Teil
      * (Kontextbereich, Materialbestand, Klonen, Skills, Ausstand,
      * Altbestand) liegt in {@see tool_registry_context_tools::TOOLS};
-     * {@see all()} fuegt beide zusammen.
+     * {@see all()} fügt beide zusammen.
      *
      * @var array<string, array{
      *     function: string,
@@ -84,12 +84,12 @@ final class tool_registry {
                 . 'Eine Beschraenkung auf ein Profilmerkmal (z.B. Fachgruppe) erscheint maskiert: Typ, Feld und Operator '
                 . 'bleiben sichtbar, der Wert ist ersetzt. Gruppennamen werden nie geliefert, nur Gruppenmodus und '
                 . 'Kennungen (cmid/sectionnum) - eine Gruppierung ist nur dann anzunehmen, wenn die Lehrkraft sie '
-                . 'ausdruecklich nennt, niemals erraten.',
+                . 'ausdrücklich nennt, niemals erraten.',
             'schema' => [
                 'properties' => [
                     'courseid' => ['type' => 'number', 'description' => 'Kurs-ID'],
                     'sectionnum' => ['type' => 'number', 'description' => 'Abschnittsnummer (0-basiert, -1 = alle Abschnitte)'],
-                    'modname' => ['type' => 'string', 'description' => 'Optionaler Aktivitaetstyp-Filter, z.B. page, label, assign, quiz, url'],
+                    'modname' => ['type' => 'string', 'description' => 'Optionaler Aktivitätstyp-Filter, z.B. page, label, assign, quiz, url'],
                     'detail' => ['type' => 'string', 'enum' => ['compact', 'full'], 'description' => 'compact = Vorschau, full = Vollinhalte'],
                 ],
                 'required' => ['courseid'],
@@ -100,8 +100,8 @@ final class tool_registry {
             'function' => 'local_kurspilot_get_modules',
             'classname' => 'local_kurspilot\external\get_modules',
             'wsdescription' => 'Lists the activities of a course or section (cmid, type, name) for targeted access.',
-            'description' => 'Gibt alle Aktivitaeten eines Kurses oder Abschnitts zurueck - mit cmid, Typ und '
-                . 'Name. Verwenden um cmids fuer gezielte Zugriffe zu ermitteln.',
+            'description' => 'Gibt alle Aktivitaeten eines Kurses oder Abschnitts zurück - mit cmid, Typ und '
+                . 'Name. Verwenden um cmids für gezielte Zugriffe zu ermitteln.',
             'schema' => [
                 'properties' => [
                     'courseid' => ['type' => 'number', 'description' => 'Kurs-ID'],
@@ -116,7 +116,7 @@ final class tool_registry {
             'classname' => 'local_kurspilot\external\get_module_settings',
             'wsdescription' => 'Reads the full current state of one activity as get_moduleinfo_data() would '
                 . 'return it, for update_module_settings to build a patch on top of.',
-            'description' => 'Liefert den vollstaendigen Ist-Stand einer einzelnen Aktivitaet als JSON - '
+            'description' => 'Liefert den vollstaendigen Ist-Stand einer einzelnen Aktivität als JSON - '
                 . 'dieselbe Form, die eine spaetere Aenderung zuruecknimmt. Kein eigenes Kurspilot-Schema, keine '
                 . 'Markdown-Zusammenfassung: die KI liest die rohen Moodle-Feldnamen. coursepagevisibility, '
                 . 'visibleoncoursepage und availability_status heissen wie in get_course_catalog/get_modules. '
@@ -125,7 +125,7 @@ final class tool_registry {
                 . 'anzunehmen.',
             'schema' => [
                 'properties' => [
-                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivitaet'],
+                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivität'],
                 ],
                 'required' => ['cmid'],
             ],
@@ -136,7 +136,7 @@ final class tool_registry {
             'classname' => 'local_kurspilot\external\list_activity_versions',
             'wsdescription' => 'Lists all recorded versions of an activity with a server-computed, teacher-'
                 . 'readable one-line change description against the direct predecessor.',
-            'description' => 'Listet alle erfassten Versionen einer Aktivitaet - je Version eine serverseitig '
+            'description' => 'Listet alle erfassten Versionen einer Aktivität - je Version eine serverseitig '
                 . 'aus den Vollstaenden berechnete Lehrkraft-deutsche Zeile gegenueber dem direkten Vorgaenger '
                 . '(wer, wann, wodurch). Version 1 ist als "vorgefunden" erkennbar, wenn sie rueckwirkend vor '
                 . 'Kurspilot angelegt wurde. Enthaelt einen festen Hinweis auf die strukturellen Luecken des '
@@ -144,7 +144,7 @@ final class tool_registry {
                 . 'Datenbankschreibungen). Rein lesend.',
             'schema' => [
                 'properties' => [
-                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivitaet'],
+                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivität'],
                 ],
                 'required' => ['cmid'],
             ],
@@ -155,13 +155,13 @@ final class tool_registry {
             'classname' => 'local_kurspilot\external\compare_activity_versions',
             'wsdescription' => 'Compares two freely chosen recorded versions of an activity - full field and '
                 . 'file diff, computed on read, not stored.',
-            'description' => 'Vergleicht zwei frei gewaehlte Staende einer Aktivitaet - nicht nur benachbarte. '
+            'description' => 'Vergleicht zwei frei gewaehlte Staende einer Aktivität - nicht nur benachbarte. '
                 . 'Liefert je unterschiedlichem Feld den Wert im Von- und im Nach-Stand sowie hinzugekommene/'
                 . 'weggefallene Dateien. Das Diff wird beim Ansehen berechnet, nicht gespeichert. Enthaelt '
                 . 'denselben festen Luecken-Hinweis wie list_activity_versions. Rein lesend.',
             'schema' => [
                 'properties' => [
-                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivitaet'],
+                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivität'],
                     'von_version' => ['type' => 'number', 'description' => 'Erste zu vergleichende Versionsnummer'],
                     'nach_version' => ['type' => 'number', 'description' => 'Zweite zu vergleichende Versionsnummer'],
                 ],
@@ -176,22 +176,22 @@ final class tool_registry {
                 . 'latest version, via update_module_settings/set_completion - no rollback, no duplicate activity.',
             'description' => '„Vor drei Versionen war das besser" - schreibt einen frueheren erfassten Stand als '
                 . 'neue juengste Version fort. Kein Rueckspulen, keine Sicherungskopie: die cmid bleibt stabil, es '
-                . 'entsteht keine zusaetzliche Aktivitaet, Links und Voraussetzungen auf die Aktivitaet bleiben '
-                . 'gueltig. Zurueckgeschrieben wird ausschliesslich ueber update_module_settings/set_completion - '
-                . 'kein eigener Schreibmechanismus. Abschlussfelder (completion*) laufen ueber denselben Zweitakt '
-                . 'wie set_completion: wuerde das Zurueckschreiben bestehende Abschlussdaten von Lernenden loeschen, '
+                . 'entsteht keine zusaetzliche Aktivität, Links und Voraussetzungen auf die Aktivität bleiben '
+                . 'gueltig. Zurueckgeschrieben wird ausschliesslich über update_module_settings/set_completion - '
+                . 'kein eigener Schreibmechanismus. Abschlussfelder (completion*) laufen über denselben Zweitakt '
+                . 'wie set_completion: wuerde das Zurueckschreiben bestehende Abschlussdaten von Lernenden löschen, '
                 . 'meldet der erste Aufruf das (Anzahl betroffener Lernender) und laesst die Abschlussfelder aussen '
-                . 'vor - erst ein zweiter Aufruf mit "bestaetigt": true schreibt sie ebenfalls zurueck. Ohne '
+                . 'vor - erst ein zweiter Aufruf mit "bestaetigt": true schreibt sie ebenfalls zurück. Ohne '
                 . 'Datenverlustrisiko laufen sie sofort mit durch. Die Antwort nennt Vorher- und Nachher-Wert je '
-                . 'tatsaechlich geaendertem Feld. Geprueft wird eine eigene Faehigkeit fuer diese Rueckkehr '
-                . 'zusaetzlich zur nativen Moodle-Bearbeiten-Berechtigung im Kurs.',
+                . 'tatsächlich geaendertem Feld. Geprüft wird eine eigene Faehigkeit für diese Rueckkehr '
+                . 'zusätzlich zur nativen Moodle-Bearbeiten-Berechtigung im Kurs.',
             'schema' => [
                 'properties' => [
-                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivitaet'],
+                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivität'],
                     'zielversion' => ['type' => 'number', 'description' => 'Versionsnummer, auf die zurueckgeschrieben werden soll'],
                     'bestaetigt' => [
                         'type' => 'boolean',
-                        'description' => 'true bestaetigt ausdruecklich das Loeschen bestehender Abschlussdaten, '
+                        'description' => 'true bestaetigt ausdrücklich das Löschen bestehender Abschlussdaten, '
                             . 'falls das Zurueckschreiben der Abschlussfelder das ausloesen wuerde. Beim ersten Aufruf weglassen',
                     ],
                 ],
@@ -205,17 +205,17 @@ final class tool_registry {
             'classname' => 'local_kurspilot\external\update_module_settings',
             'wsdescription' => 'Patches individual settings of an existing activity via update_moduleinfo() - '
                 . 'only the transmitted fields change, everything else survives untouched.',
-            'description' => 'Aendert einzelne Einstellungen einer bestehenden Aktivitaet - ein Patch: nur die '
+            'description' => 'Aendert einzelne Einstellungen einer bestehenden Aktivität - ein Patch: nur die '
                 . 'uebergebenen Felder aendern sich, alle uebrigen bleiben unangetastet. Vorher get_module_settings '
                 . 'aufrufen statt einen Wert zu erraten. Unbekannter Feldname, unerlaubter Wert, gesperrtes Feld '
                 . 'oder verletzte Kombinationsregel: nichts wird geschrieben, die Meldung nennt das betroffene Feld '
                 . 'und verweist auf describe_module_fields. Die Antwort nennt Vorher- und Nachher-Wert je '
-                . 'geaendertem Feld und spricht ausgeloeste Nebenwirkungen ausdruecklich aus (z.B. "Alle '
-                . 'Kursteilnehmenden wurden fuer dieses Forum abonniert"). Geprueft wird die native '
+                . 'geaendertem Feld und spricht ausgeloeste Nebenwirkungen ausdrücklich aus (z.B. "Alle '
+                . 'Kursteilnehmenden wurden für dieses Forum abonniert"). Geprüft wird die native '
                 . 'Moodle-Bearbeiten-Berechtigung im Kurs, keine eigene Kurspilot-Schreibrechte.',
             'schema' => [
                 'properties' => [
-                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivitaet'],
+                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivität'],
                     'felder_json' => [
                         'type' => 'string',
                         'description' => 'JSON-Objekt Feldname => neuer Wert, nur die zu aendernden Felder',
@@ -232,26 +232,26 @@ final class tool_registry {
             'wsdescription' => 'Creates a new activity via add_moduleinfo() - missing fields are filled with the '
                 . 'catalog\'s FORM default (not the DB default), so a submitted assignment keeps active submission '
                 . 'types and an external link keeps its parameters even if the teacher did not name them.',
-            'description' => 'Legt eine neue Aktivitaet in einem Abschnitt an. Nicht genannte Felder kommen aus '
+            'description' => 'Legt eine neue Aktivität in einem Abschnitt an. Nicht genannte Felder kommen aus '
                 . 'dem Feldkatalog-Formular-Default - eine Aufgabe ohne genannte Abgabe-Einstellungen bekommt '
                 . 'trotzdem aktive Abgabemoeglichkeiten, ein externer Link ohne genannte Parameter behaelt sie. '
-                . 'Ein Feldbuendel aus describe_module_fields (z.B. "zuteilung") vorher selbst in felder_json '
-                . 'mischen - ein Buendelwert gilt nur fuer Felder, die felder_json nicht schon selbst nennt. '
+                . 'Ein Feldbündel aus describe_module_fields (z.B. "zuteilung") vorher selbst in felder_json '
+                . 'mischen - ein Buendelwert gilt nur für Felder, die felder_json nicht schon selbst nennt. '
                 . '"resource" ist bis Spec 0018 gesperrt (kaputte Seite ohne Hauptdatei) - "folder" bleibt '
                 . 'anlegbar. Ein Pflichtfeld ganz ohne Formular-Default muss die Lehrkraft nennen, sonst scheitert '
-                . 'das Anlegen mit einer Meldung, die das Feld nennt. Die Antwort nennt jedes tatsaechlich gesetzte '
-                . 'Feld mit seinem persistierten Wert und spricht ausgeloeste Nebenwirkungen ausdruecklich aus. '
-                . 'Geprueft wird die native Moodle-Bearbeiten-Berechtigung im Kurskontext, keine eigene '
+                . 'das Anlegen mit einer Meldung, die das Feld nennt. Die Antwort nennt jedes tatsächlich gesetzte '
+                . 'Feld mit seinem persistierten Wert und spricht ausgeloeste Nebenwirkungen ausdrücklich aus. '
+                . 'Geprüft wird die native Moodle-Bearbeiten-Berechtigung im Kurskontext, keine eigene '
                 . 'Kurspilot-Schreibrechte.',
             'schema' => [
                 'properties' => [
                     'courseid' => ['type' => 'number', 'description' => 'Kurs-ID'],
-                    'sectionnum' => ['type' => 'number', 'description' => 'Abschnittsnummer (0-basiert), in die die Aktivitaet kommt'],
-                    'modname' => ['type' => 'string', 'description' => 'Aktivitaetstyp, z.B. page, label, url, choice, forum, assign'],
+                    'sectionnum' => ['type' => 'number', 'description' => 'Abschnittsnummer (0-basiert), in die die Aktivität kommt'],
+                    'modname' => ['type' => 'string', 'description' => 'Aktivitätstyp, z.B. page, label, url, choice, forum, assign'],
                     'felder_json' => [
                         'type' => 'string',
                         'description' => 'JSON-Objekt Feldname => Wert - fehlende Felder kommen aus dem Formular-Default; '
-                            . 'ein gewaehltes Feldbuendel vorher selbst hineinmischen',
+                            . 'ein gewaehltes Feldbündel vorher selbst hineinmischen',
                     ],
                 ],
                 'required' => ['courseid', 'sectionnum', 'modname', 'felder_json'],
@@ -268,12 +268,12 @@ final class tool_registry {
             'description' => 'Legt einen Test (Quiz) an. Ein Modus ("mini-check", "lernstandscheck" oder '
                 . '"abschlusstest") nennt die didaktische Absicht statt zwanzig Einzeleinstellungen - die '
                 . 'Bedeutung und Einstellungen jedes Modus liefert describe_module_fields(modname: "quiz"). Ein '
-                . 'Buendelwert gilt nur fuer Felder, die felder_json nicht bereits selbst nennt. Pflichtfelder ohne '
+                . 'Buendelwert gilt nur für Felder, die felder_json nicht bereits selbst nennt. Pflichtfelder ohne '
                 . 'Formular-Default muessen genannt werden: "name", "intro", "subnet" (leer = keine '
                 . 'Einschraenkung), "browsersecurity" ("-" = keine Einschraenkung). Die maximale Bewertung kommt '
-                . 'ueber den eigenen Parameter "grade" (Moodles eigener Bewertungsweg), nicht ueber felder_json - '
-                . '"grade"/"sumgrades" sind dort gesperrt. Die Antwort nennt jedes tatsaechlich gesetzte Feld mit '
-                . 'seinem persistierten Wert. Geprueft wird die native Moodle-Bearbeiten-Berechtigung im '
+                . 'über den eigenen Parameter "grade" (Moodles eigener Bewertungsweg), nicht über felder_json - '
+                . '"grade"/"sumgrades" sind dort gesperrt. Die Antwort nennt jedes tatsächlich gesetzte Feld mit '
+                . 'seinem persistierten Wert. Geprüft wird die native Moodle-Bearbeiten-Berechtigung im '
                 . 'Kurskontext, keine eigene Kurspilot-Schreibrechte.',
             'schema' => [
                 'properties' => [
@@ -299,15 +299,15 @@ final class tool_registry {
                 . 'counterpart to update_module_settings for quiz (Spec 0015 §5).',
             'description' => 'Aendert einzelne Einstellungen eines bestehenden Tests (Quiz) - ein Patch: nur die '
                 . 'uebergebenen Felder aendern sich. Ohne "feedbacktext" im Patch bleibt bestehendes Gesamtfeedback '
-                . 'erhalten (Moodle wuerde es sonst still loeschen) - genauso fuer Passwort und Review-Einstellungen. '
-                . 'Ein Modus-Buendel ("mini-check", "lernstandscheck", "abschlusstest") gilt nur fuer Felder, die '
-                . 'felder_json nicht bereits selbst nennt. Die maximale Bewertung kommt ueber den eigenen Parameter '
+                . 'erhalten (Moodle wuerde es sonst still löschen) - genauso für Passwort und Review-Einstellungen. '
+                . 'Ein Modus-Buendel ("mini-check", "lernstandscheck", "abschlusstest") gilt nur für Felder, die '
+                . 'felder_json nicht bereits selbst nennt. Die maximale Bewertung kommt über den eigenen Parameter '
                 . '"grade" (Moodles eigener Bewertungsweg, skaliert Versuchsnoten und Gesamtfeedback-Grenzen '
                 . 'automatisch um) - "grade"/"sumgrades" sind in felder_json gesperrt. Unbekannter Feldname, '
                 . 'unerlaubter Wert oder verletzte Kombinationsregel: nichts wird geschrieben. Die Antwort nennt '
                 . 'Vorher- und Nachher-Wert je geaendertem Feld sowie ausgeloeste Nebenwirkungen (z.B. '
                 . 'Kalendereintraege). Die Anordnung (Fragen/Seiten/Abschnitte) ist nicht Teil dieses Werkzeugs. '
-                . 'Geprueft wird die native Moodle-Bearbeiten-Berechtigung im Kurskontext, keine eigene '
+                . 'Geprüft wird die native Moodle-Bearbeiten-Berechtigung im Kurskontext, keine eigene '
                 . 'Kurspilot-Schreibrechte.',
             'schema' => [
                 'properties' => [
@@ -317,7 +317,7 @@ final class tool_registry {
                         'description' => 'JSON-Objekt Feldname => neuer Wert, nur die zu aendernden Felder',
                     ],
                     'mode' => ['type' => 'string', 'enum' => ['mini-check', 'lernstandscheck', 'abschlusstest'], 'description' => 'Optionales Modus-Buendel, leer = kein Moduswechsel'],
-                    'grade' => ['type' => 'number', 'description' => 'Neue maximale Bewertung. Weglassen = unveraendert'],
+                    'grade' => ['type' => 'number', 'description' => 'Neue maximale Bewertung. Weglassen = unverändert'],
                 ],
                 'required' => ['cmid', 'felder_json'],
             ],
@@ -330,21 +330,21 @@ final class tool_registry {
             'wsdescription' => 'Writes the completion tracking fields of an activity via update_moduleinfo() - '
                 . 'the only path for these fields, in a named two-step confirmation when it would delete learner '
                 . 'completion data.',
-            'description' => 'Setzt die Abschlussverfolgung einer Aktivitaet - "completion" (0=aus, 1=manuell, '
+            'description' => 'Setzt die Abschlussverfolgung einer Aktivität - "completion" (0=aus, 1=manuell, '
                 . '2=automatisch), "completionview", "completionusegrade", "completionpassgrade", '
                 . '"completionexpected" und - nur bei "assign" und "choice" - "completionsubmit" (1 = "Abgabe '
                 . 'erforderlich" bzw. "Abstimmung abgegeben"; die uebliche Abschlussbedingung einer Aufgabe). '
-                . 'Der einzige Schreibweg fuer diese Felder: update_module_settings und '
+                . 'Der einzige Schreibweg für diese Felder: update_module_settings und '
                 . 'create_module sperren sie, weil Moodle sie ohne "completionunlocked" still verwirft und mit '
-                . '"completionunlocked" die Abschlussdaten der Lernenden loescht. Wuerde die Aenderung bestehende '
-                . 'Abschlussdaten loeschen, meldet der erste Aufruf das (Anzahl betroffener Lernender) und schreibt '
-                . 'nichts - erst ein zweiter Aufruf mit "bestaetigt": true fuehrt aus. Ohne Datenverlustrisiko '
-                . '(keine vorhandenen Daten, oder nur "completionexpected" geaendert) laeuft der Aufruf sofort '
-                . 'durch. Geprueft wird die native Moodle-Bearbeiten-Berechtigung im Kurskontext, keine eigene '
+                . '"completionunlocked" die Abschlussdaten der Lernenden löscht. Wuerde die Aenderung bestehende '
+                . 'Abschlussdaten löschen, meldet der erste Aufruf das (Anzahl betroffener Lernender) und schreibt '
+                . 'nichts - erst ein zweiter Aufruf mit "bestaetigt": true führt aus. Ohne Datenverlustrisiko '
+                . '(keine vorhandenen Daten, oder nur "completionexpected" geaendert) läuft der Aufruf sofort '
+                . 'durch. Geprüft wird die native Moodle-Bearbeiten-Berechtigung im Kurskontext, keine eigene '
                 . 'Kurspilot-Schreibrechte.',
             'schema' => [
                 'properties' => [
-                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivitaet'],
+                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivität'],
                     'felder_json' => [
                         'type' => 'string',
                         'description' => 'JSON-Objekt mit "completion", "completionview", "completionusegrade", '
@@ -353,7 +353,7 @@ final class tool_registry {
                     ],
                     'bestaetigt' => [
                         'type' => 'boolean',
-                        'description' => 'true bestaetigt ausdruecklich das Loeschen bestehender Abschlussdaten '
+                        'description' => 'true bestaetigt ausdrücklich das Löschen bestehender Abschlussdaten '
                             . '(zweiter Aufruf des Zweitakts). Beim ersten Aufruf weglassen',
                     ],
                 ],
@@ -367,19 +367,19 @@ final class tool_registry {
             'classname' => 'local_kurspilot\external\set_restriction',
             'wsdescription' => 'Writes an activity\'s availability restriction via update_moduleinfo(), built from '
                 . 'teacher-understandable arguments instead of raw JSON.',
-            'description' => 'Setzt Voraussetzungen einer Aktivitaet ("erst nach bestandenem Lerncheck", "ab '
+            'description' => 'Setzt Voraussetzungen einer Aktivität ("erst nach bestandenem Lerncheck", "ab '
                 . 'Datum X", "nur Gruppe Y") aus lehrkraftverstaendlichen Argumenten - kein rohes '
                 . 'Verfuegbarkeits-JSON. "bedingungen_json" ist ein JSON-Array; leer entfernt alle Voraussetzungen, '
-                . 'mehrere Eintraege muessen alle gleichzeitig erfuellt sein. Je Eintrag "typ": "abschluss" '
+                . 'mehrere Einträge muessen alle gleichzeitig erfuellt sein. Je Eintrag "typ": "abschluss" '
                 . '(Felder "aktivitaet_cmid", "status": abgeschlossen|nicht_abgeschlossen|bestanden|'
                 . 'nicht_bestanden), "datum" (Felder "richtung": ab|bis, "zeitstempel": Unix-Zeit) oder "gruppe" '
                 . '(Feld "gruppen_id", weglassen = beliebige Gruppe). Eine ungueltige Bedingung scheitert mit einer '
                 . 'Meldung, die das betroffene Feld nennt - nichts wird geschrieben, die Kursseite bleibt '
-                . 'aufrufbar. Geprueft wird die native Moodle-Bearbeiten-Berechtigung im Kurskontext, keine eigene '
+                . 'aufrufbar. Geprüft wird die native Moodle-Bearbeiten-Berechtigung im Kurskontext, keine eigene '
                 . 'Kurspilot-Schreibrechte.',
             'schema' => [
                 'properties' => [
-                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivitaet'],
+                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der Aktivität'],
                     'bedingungen_json' => [
                         'type' => 'string',
                         'description' => 'JSON-Array von Voraussetzungen (leer = alle entfernen), siehe Werkzeugbeschreibung',
@@ -476,7 +476,7 @@ final class tool_registry {
             'function' => 'local_kurspilot_get_sections',
             'classname' => 'local_kurspilot\external\get_sections',
             'wsdescription' => 'Lists the sections of a course (id, number, name) for targeted access.',
-            'description' => 'Gibt alle Abschnitte eines Moodle-Kurses zurueck (Name, Nummer, ID).',
+            'description' => 'Gibt alle Abschnitte eines Moodle-Kurses zurück (Name, Nummer, ID).',
             'schema' => [
                 'properties' => [
                     'courseid' => ['type' => 'number', 'description' => 'Die Kurs-ID (steht in der URL: ?id=XX)'],
@@ -490,12 +490,12 @@ final class tool_registry {
             'classname' => 'local_kurspilot\external\ensure_question_bank',
             'wsdescription' => 'Creates a named question bank activity in a course or reuses an existing one '
                 . 'with the same name - idempotent, a repeated call never creates a second bank.',
-            'description' => 'Legt eine benannte Fragensammlung (Fragenbank-Aktivitaet) im Kurs an oder '
+            'description' => 'Legt eine benannte Fragensammlung (Fragenbank-Aktivität) im Kurs an oder '
                 . 'verwendet eine gleichnamige bestehende wieder - idempotent, ein zweiter Aufruf mit demselben '
                 . 'Namen erzeugt keine zweite Bank. Die Antwort nennt Bank-ID (questionbankid), Kontext-ID, die '
-                . 'oberste Kategorie (topcategoryid, Startpunkt fuer ensure_question_category) sowie "angelegt": '
-                . 'true/false, damit ein Tippfehler im Namen auffaellt statt still eine zweite Bank zu erzeugen. '
-                . 'Geprueft wird die native Moodle-Bearbeiten-Berechtigung im Kurskontext, keine eigene '
+                . 'oberste Kategorie (topcategoryid, Startpunkt für ensure_question_category) sowie "angelegt": '
+                . 'true/false, damit ein Tippfehler im Namen auffällt statt still eine zweite Bank zu erzeugen. '
+                . 'Geprüft wird die native Moodle-Bearbeiten-Berechtigung im Kurskontext, keine eigene '
                 . 'Kurspilot-Schreibrechte.',
             'schema' => [
                 'properties' => [
@@ -515,10 +515,10 @@ final class tool_registry {
             'description' => 'Findet eine gleichnamige Fragenbank-Kategorie unter derselben Elternkategorie oder '
                 . 'legt sie an - idempotent, ein zweiter Aufruf mit demselben Namen/Elternteil erzeugt keine '
                 . 'zweite Kategorie. "parent" ist die ID einer bestehenden Kategorie, z.B. die topcategoryid aus '
-                . 'ensure_question_bank fuer eine Kategorie direkt unter der Fragensammlung, oder eine zuvor '
-                . 'angelegte Unterkategorie fuer verschachtelte Kategorien. Eine gleichnamige Kategorie unter '
+                . 'ensure_question_bank für eine Kategorie direkt unter der Fragensammlung, oder eine zuvor '
+                . 'angelegte Unterkategorie für verschachtelte Kategorien. Eine gleichnamige Kategorie unter '
                 . 'einer anderen Elternkategorie zaehlt nicht als Treffer. Die Antwort nennt "angelegt": true/false, '
-                . 'damit ein Tippfehler im Namen auffaellt statt still eine zweite Kategorie zu erzeugen. Geprueft '
+                . 'damit ein Tippfehler im Namen auffällt statt still eine zweite Kategorie zu erzeugen. Geprüft '
                 . 'wird die native Moodle-Berechtigung zum Verwalten von Fragenbank-Kategorien im Kontext der '
                 . 'Elternkategorie, keine eigene Kurspilot-Schreibrechte.',
             'schema' => [
@@ -536,12 +536,12 @@ final class tool_registry {
             'classname' => 'local_kurspilot\external\update_question_category',
             'wsdescription' => 'Renames and/or moves a question category subtree without touching questions or '
                 . 'versions - creation is done exclusively via ensure_question_category.',
-            'description' => 'Benennt eine Fragenbank-Kategorie um und/oder haengt sie unter eine andere '
-                . 'Elternkategorie - Fragen und ihre Versionen bleiben unangetastet. Legt niemals neu an (dafuer '
-                . 'ist ensure_question_category da). "name" leer laesst den Namen unveraendert, "parent" 0 laesst '
-                . 'die Elternkategorie unveraendert. Verschiebt der Aufruf in eine andere Fragensammlung, wandert '
+            'description' => 'Benennt eine Fragenbank-Kategorie um und/oder hängt sie unter eine andere '
+                . 'Elternkategorie - Fragen und ihre Versionen bleiben unangetastet. Legt niemals neu an (dafür '
+                . 'ist ensure_question_category da). "name" leer laesst den Namen unverändert, "parent" 0 laesst '
+                . 'die Elternkategorie unverändert. Verschiebt der Aufruf in eine andere Fragensammlung, wandert '
                 . 'der gesamte Unterbaum mit. Die oberste Kategorie einer Fragensammlung kann nicht umbenannt oder '
-                . 'verschoben werden, ebenso wenig in eine ihrer eigenen Unterkategorien. Geprueft wird die native '
+                . 'verschoben werden, ebenso wenig in eine ihrer eigenen Unterkategorien. Geprüft wird die native '
                 . 'Moodle-Berechtigung zum Verwalten von Fragenbank-Kategorien im Kontext der Quell- (und ggf. '
                 . 'Ziel-)Kategorie, keine eigene Kurspilot-Schreibrechte.',
             'schema' => [
@@ -562,12 +562,12 @@ final class tool_registry {
                 . 'an idnumber collision in the target category before the move instead of letting the core '
                 . 'silently suffix it.',
             'description' => 'Verschiebt eine Frage samt aller Versionen in eine andere Fragenbank-Kategorie - '
-                . 'die questionbankentryid bleibt dabei unveraendert. Gibt es in der Zielkategorie bereits einen '
+                . 'die questionbankentryid bleibt dabei unverändert. Gibt es in der Zielkategorie bereits einen '
                 . 'Eintrag mit derselben idnumber, wird NICHTS verschoben ("status": "verdachtsfall"); die '
                 . 'Antwort nennt die idnumber, die Zielkategorie, den nahen Kandidaten sowie dessen und den '
-                . 'eigenen Fragetext zum Vergleich. Erst ein erneuter Aufruf mit "bestaetigt": true fuehrt den '
-                . 'Umzug trotzdem aus - Moodle haengt der idnumber dann einen Zahlen-Suffix an, statt sie still zu '
-                . 'verlieren. Geprueft wird die native Moodle-Berechtigung zum Anlegen von Fragen im '
+                . 'eigenen Fragetext zum Vergleich. Erst ein erneuter Aufruf mit "bestaetigt": true führt den '
+                . 'Umzug trotzdem aus - Moodle hängt der idnumber dann einen Zahlen-Suffix an, statt sie still zu '
+                . 'verlieren. Geprüft wird die native Moodle-Berechtigung zum Anlegen von Fragen im '
                 . 'Zielkategorie-Kontext, keine eigene Kurspilot-Schreibrechte.',
             'schema' => [
                 'properties' => [
@@ -587,14 +587,14 @@ final class tool_registry {
                 . 'builds the XML server-side from a fixed template and writes it via import_questions_xml, '
                 . 'including the round-trip check and rollback. The AI never writes XML for multiple-choice.',
             'description' => 'Legt eine Multiple-Choice-Frage aus schlichten Feldern an - die Lehrkraft sieht nie '
-                . 'XML. Der Server baut die XML serverseitig aus einer festen Vorlage und schreibt sie ueber '
+                . 'XML. Der Server baut die XML serverseitig aus einer festen Vorlage und schreibt sie über '
                 . 'denselben Kern wie import_questions_xml (inkl. Round-Trip-Pruefung und Rollback). Die neue '
                 . 'Frage bekommt eine generierte, stabile idnumber. Gibt es in der Zielkategorie bereits einen '
                 . 'gleichnamigen Eintrag, wird NICHTS angelegt ("status": "verdachtsfall") - eine Neuanlage bringt '
                 . 'nie eine idnumber mit, gegen die gematcht werden koennte, deshalb zaehlt hier bereits der Name '
                 . 'als Verdachtsfall. Erst ein erneuter Aufruf mit "bestaetigt": true legt die Frage trotzdem als '
                 . 'neuen Eintrag an. Die Antwort nennt den Bank-Eintrag (questionbankentryid) und die '
-                . 'Versionsnummer (initial 1). Geprueft wird die native Moodle-Berechtigung zum Anlegen von Fragen '
+                . 'Versionsnummer (initial 1). Geprüft wird die native Moodle-Berechtigung zum Anlegen von Fragen '
                 . 'im Kategorie-Kontext, keine eigene Kurspilot-Schreibrechte.',
             'schema' => [
                 'properties' => [
@@ -635,12 +635,12 @@ final class tool_registry {
                 . 'import_questions_xml - fields not mentioned in the patch are preserved unchanged. Backfills a '
                 . 'missing idnumber on exactly this one question, on first write.',
             'description' => 'Aendert einzelne Felder einer bestehenden Multiple-Choice-Frage, ohne die uebrigen '
-                . 'zu verlieren: liest die Frage zuerst aus, ueberschreibt nur die in felder_json genannten Felder '
-                . '(Patch, kein Vollstand) und schreibt den Vollstand ueber denselben Kern wie '
-                . 'import_questions_xml zurueck (inkl. Round-Trip-Pruefung und Rollback). Das Ergebnis ist eine '
+                . 'zu verlieren: liest die Frage zuerst aus, überschreibt nur die in felder_json genannten Felder '
+                . '(Patch, kein Vollstand) und schreibt den Vollstand über denselben Kern wie '
+                . 'import_questions_xml zurück (inkl. Round-Trip-Pruefung und Rollback). Das Ergebnis ist eine '
                 . 'neue Version DESSELBEN Bank-Eintrags, kein neuer Eintrag. Hat die vorgefundene Frage noch keine '
-                . 'idnumber (z.B. aus einem Fremdbestand), wird beim ersten Schreibzugriff genau fuer DIESE eine '
-                . 'Frage eine generiert - kein Massenlauf ueber Kategorie oder Fragenbank. Geprueft wird die '
+                . 'idnumber (z.B. aus einem Fremdbestand), wird beim ersten Schreibzugriff genau für DIESE eine '
+                . 'Frage eine generiert - kein Massenlauf über Kategorie oder Fragenbank. Geprüft wird die '
                 . 'native Moodle-Berechtigung zum Anlegen von Fragen im Kategorie-Kontext, keine eigene '
                 . 'Kurspilot-Schreibrechte.',
             'schema' => [
@@ -666,7 +666,7 @@ final class tool_registry {
                 . 'question_type::save_question() with a round-trip check in the same transaction - '
                 . 'importprocess() is not used.',
             'description' => 'Importiert Moodle-XML-Fragen beliebigen Typs (auch STACK, oder Exporte aus anderen '
-                . 'Moodle-Instanzen) - der Kern, ueber den auch die MC-Fassaden schreiben. Nach dem Schreiben '
+                . 'Moodle-Instanzen) - der Kern, über den auch die MC-Fassaden schreiben. Nach dem Schreiben '
                 . 'liest der Server die frisch angelegte Frage in derselben Transaktion wieder aus und vergleicht '
                 . 'ihre Kernfelder (Name, idnumber, Fragetext, Antwortoptionen mit Bruchteilen, Feedbacktexte, '
                 . 'allgemeines Feedback) mit der Eingabe - weicht etwas ab oder fliegt eine Ausnahme, wird '
@@ -677,9 +677,9 @@ final class tool_registry {
                 . 'generierter idnumber. Bringt das XML eine idnumber mit, die in der Zielkategorie keinen '
                 . 'Treffer hat, ist das ein Verdachtsfall ("status": "verdachtsfall") - nichts wird geschrieben, '
                 . 'die Antwort nennt die idnumber, die Zielkategorie und nahe (gleichnamige) Kandidaten. Erst ein '
-                . 'erneuter Aufruf mit "bestaetigt": true legt die Frage trotzdem als neuen Eintrag an. Geprueft '
+                . 'erneuter Aufruf mit "bestaetigt": true legt die Frage trotzdem als neuen Eintrag an. Geprüft '
                 . 'wird die native Moodle-Berechtigung zum Anlegen von Fragen im Kategorie-Kontext, keine eigene '
-                . 'Kurspilot-Schreibrechte. Zwei Tueren fuer eingebettete Dateien (genau eine je Aufruf): '
+                . 'Kurspilot-Schreibrechte. Zwei Tueren für eingebettete Dateien (genau eine je Aufruf): '
                 . 'xmlcontent - <file>-Bloecke tragen ein material="<materialordner-pfad>"-Attribut statt echtem '
                 . 'Base64, der Server loest es auf; xmlpath - Verweis auf eine XML-Datei im Materialordner mit '
                 . 'echtem Base64 in ihren <file>-Bloecken (Massenimport eines fremden Exports), rein serverseitig '
@@ -689,16 +689,16 @@ final class tool_registry {
                     'categoryid' => ['type' => 'number', 'description' => 'ID der Ziel-Fragenbank-Kategorie'],
                     'xmlcontent' => [
                         'type' => 'string',
-                        'description' => 'Textuer: Moodle-XML-Fragenexport als Text - vollstaendig, mit '
+                        'description' => 'Textuer: Moodle-XML-Fragenexport als Text - vollständig, mit '
                             . 'umschliessendem <quiz>-Element (ein nackter <question>-Block ist nicht '
-                            . 'importierbar), hoechstens 5 MB. <file>-Bloecke tragen statt echtem Base64 ein '
+                            . 'importierbar), höchstens 5 MB. <file>-Bloecke tragen statt echtem Base64 ein '
                             . 'material="<materialordner-pfad>"-Attribut. Genau eins von xmlcontent/xmlpath '
                             . 'angeben.',
                     ],
                     'xmlpath' => [
                         'type' => 'string',
                         'description' => 'Verweistuer: Pfad einer XML-Datei im Materialordner, z.B. "export.xml" - '
-                            . 'fuer Massenimporte mit echtem Base64 in <file>-Bloecken. Genau eins von '
+                            . 'für Massenimporte mit echtem Base64 in <file>-Bloecken. Genau eins von '
                             . 'xmlcontent/xmlpath angeben.',
                     ],
                     'bestaetigt' => [
@@ -720,16 +720,16 @@ final class tool_registry {
                 . 'path, no image byte returned. Optional placeholder switch (platzhalter=true) returns the old '
                 . 'inline XML with named comment placeholders instead of files, for template purposes only.',
             'description' => 'Liest eine oder mehrere bestehende Fragen als Moodle-XML - derselbe Formatter, den '
-                . 'auch der XML-Kern fuer die Round-Trip-Pruefung nutzt. Standard-Modus (Default): die '
-                . 'vollstaendige, standardkonforme XML - mit echtem Base64 in <file>-Bloecken - wird unter '
+                . 'auch der XML-Kern für die Round-Trip-Pruefung nutzt. Standard-Modus (Default): die '
+                . 'vollständige, standardkonforme XML - mit echtem Base64 in <file>-Bloecken - wird unter '
                 . '"targetpath" in den Materialordner geschrieben, die Antwort nennt nur den Pfad, kein Bildbyte '
                 . 'passiert den Kontext. Diese Datei ist in jedes andere Moodle importierbar (Weitergabe an eine '
-                . 'Kollegin) und ueber die Verweistuer von import_questions_xml wieder einlesbar (Rundlauf). '
+                . 'Kollegin) und über die Verweistuer von import_questions_xml wieder einlesbar (Rundlauf). '
                 . 'Platzhalter-Modus (platzhalter=true): liefert wie bisher die XML direkt in der Antwort, '
                 . 'eingebettete Dateien durch einen benannten Kommentar-Platzhalter ersetzt - NICHT zur '
                 . 'Weitergabe geeignet, nur um sich selbst eine Vorlage aus dem eigenen Bestand zu holen (Struktur '
-                . 'lernen, nicht 400 KB Bild). Geprueft wird die native Moodle-Leseberechtigung im Kategoriekontext '
-                . 'jeder Frage (moodle/question:viewall); im Standard-Modus zusaetzlich das Schreibrecht auf den '
+                . 'lernen, nicht 400 KB Bild). Geprüft wird die native Moodle-Leseberechtigung im Kategoriekontext '
+                . 'jeder Frage (moodle/question:viewall); im Standard-Modus zusätzlich das Schreibrecht auf den '
                 . 'eigenen Materialordner (moodle/user:manageownfiles).',
             'schema' => [
                 'properties' => [
@@ -761,7 +761,7 @@ final class tool_registry {
                 . 'duplication.',
             'description' => 'Listet alle Fragenbank-Kategorien der ausgewaehlten benannten '
                 . 'Kurs-/Projekt-Fragensammlung (inkl. der Top-Kategorie) mit id, Name und uebergeordneter '
-                . 'Kategorie-ID - fuer Wiederverwendung statt Doppelanlage.',
+                . 'Kategorie-ID - für Wiederverwendung statt Doppelanlage.',
             'schema' => [
                 'properties' => [
                     'courseid' => ['type' => 'number', 'description' => 'Kurs-ID'],
@@ -794,9 +794,9 @@ final class tool_registry {
             'wsdescription' => 'Builds a manual, non-destructive cleanup plan for obsolete quiz slots - names '
                 . 'findings and links, deletes nothing.',
             'description' => 'Plant eine manuelle Bereinigung, wenn eine neue Quizversion weniger '
-                . 'Fragen enthaelt. Kurspilot loescht weder Quiz-Slots noch Fragen: Die Antwort nennt jeden '
+                . 'Fragen enthaelt. Kurspilot löscht weder Quiz-Slots noch Fragen: Die Antwort nennt jeden '
                 . 'betroffenen Slot, Frage und Kategorie sowie den direkten Moodle-Link. Dort nur aus dem Quiz '
-                . 'entfernen, nicht aus der Fragensammlung loeschen; die Fragen bleiben wiederverwendbar.',
+                . 'entfernen, nicht aus der Fragensammlung löschen; die Fragen bleiben wiederverwendbar.',
             'schema' => [
                 'properties' => [
                     'cmid' => ['type' => 'number', 'description' => 'Course module ID des Quiz'],
@@ -816,13 +816,13 @@ final class tool_registry {
             'wsdescription' => 'Appends questions to a quiz in the given order via quiz_add_quiz_question() - '
                 . 'a question already in the quiz (matched by questionbankentryid) is skipped, not duplicated. '
                 . 'Refuses entirely if the quiz already has attempts.',
-            'description' => 'Haengt Fragen in der genannten Reihenfolge an einen Test an. Eine Frage, die schon '
+            'description' => 'Hängt Fragen in der genannten Reihenfolge an einen Test an. Eine Frage, die schon '
                 . 'im Test steckt (gleicher Bank-Eintrag), wird uebersprungen statt doppelt eingefuegt - die '
-                . 'Antwort weist das je Frage aus ("added": false). Die Antwort nennt zusaetzlich den entstandenen '
+                . 'Antwort weist das je Frage aus ("added": false). Die Antwort nennt zusätzlich den entstandenen '
                 . 'Slot-Stand mit Bank-Eintrag, aktuellster Fragen-Version und Versionsnummer je Slot, damit sich '
                 . 'der Test pruefen laesst, ohne ihn zu oeffnen. Gibt es im Test bereits Versuche, wird GAR NICHTS '
                 . 'geaendert - kein Teilerfolg, keine halb gefuellte Slot-Liste. Entfernen, Umsortieren und '
-                . 'Seitenumbrueche sind nicht Teil dieses Werkzeugs (Moodle-Oberflaeche). Geprueft wird die native '
+                . 'Seitenumbrueche sind nicht Teil dieses Werkzeugs (Moodle-Oberflaeche). Geprüft wird die native '
                 . 'Moodle-Bearbeiten-Berechtigung des Tests sowie die Nutzungsberechtigung je Frage, keine eigene '
                 . 'Kurspilot-Schreibrechte.',
             'schema' => [
@@ -856,7 +856,7 @@ final class tool_registry {
     ];
 
     /**
-     * Alle Werkzeugeintraege, beide Teile zusammengefuegt (Issue #509): erst
+     * Alle Werkzeugeinträge, beide Teile zusammengefügt (Issue #509): erst
      * {@see CORE_TOOLS} (Kurs/Quiz/Fragen), dann
      * {@see tool_registry_context_tools::TOOLS} (Kontextbereich,
      * Materialbestand, Klonen, Skills, Ausstand, Altbestand) - dieselbe
@@ -912,7 +912,7 @@ final class tool_registry {
     }
 
     /**
-     * $functions-Array fuer db/services.php.
+     * $functions-Array für db/services.php.
      *
      * @return array<string, array<string, mixed>>
      */
@@ -945,7 +945,7 @@ final class tool_registry {
     }
 
     /**
-     * Webservice-Funktionsnamen in Registrierungsreihenfolge, fuer
+     * Webservice-Funktionsnamen in Registrierungsreihenfolge, für
      * $services['Kurspilot']['functions'] in db/services.php.
      *
      * @return string[]

@@ -18,15 +18,15 @@ namespace local_kurspilot;
 
 /**
  * Zweiter Teil der Werkzeug-Registrierung (Issue #509, Vorab-Umbau vor
- * Spec #486-Review): {@see tool_registry} lag ueber 1000 Zeilen, ein reiner
+ * Spec #486-Review): {@see tool_registry} lag über 1000 Zeilen, ein reiner
  * Zeilengrenzen-Schnitt derselben TOOLS-Datenstruktur, keine Verhaltens-
- * aenderung. Diese Haelfte traegt Kontextbereich, Materialbestand,
- * Aktivitaets-Klonen, Skills, Ausstand und Altbestand -
- * {@see tool_registry::all()} fuegt sie mit dem ersten Teil
+ * änderung. Diese Hälfte trägt Kontextbereich, Materialbestand,
+ * Aktivitäts-Klonen, Skills, Ausstand und Altbestand -
+ * {@see tool_registry::all()} fügt sie mit dem ersten Teil
  * (Kurs/Quiz/Fragen, {@see tool_registry::CORE_TOOLS}) zusammen.
  *
  * Gleiche Eintragsform wie {@see tool_registry::CORE_TOOLS} - siehe dort
- * fuer die Feldbeschreibung.
+ * für die Feldbeschreibung.
  *
  * @package    local_kurspilot
  * @copyright  2026 Kurspilot
@@ -51,13 +51,13 @@ final class tool_registry_context_tools {
             'classname' => 'local_kurspilot\external\list_context_files',
             'wsdescription' => 'Lists the calling teacher\'s Kurspilot context area (own working area only).',
             'description' => 'Listet den eigenen Kontextbereich der angemeldeten Lehrkraft auf '
-                . '(Lerngruppenprofile, Fachprofile, gemerkte Vorlagen). "path" waehlt optional einen Unterordner, leer '
+                . '(Lerngruppenprofile, Fachprofile, gemerkte Vorlagen). "path" wählt optional einen Unterordner, leer '
                 . 'liefert die Wurzel. Nur der eigene Bereich der aufrufenden Person ist erreichbar. '
                 . '"vorheriger_ort": true listet stattdessen den Altbestand (vorheriger Ort nach einem Ortswechsel, '
                 . 'aus kurspilot_list_skills als "Altbestand offen" erkennbar) - nur lesbar, wirkt nur solange offen.',
             'schema' => [
                 'properties' => [
-                    'path' => ['type' => 'string', 'description' => 'Optionaler Unterordner, leer fuer die Wurzel'],
+                    'path' => ['type' => 'string', 'description' => 'Optionaler Unterordner, leer für die Wurzel'],
                     'vorheriger_ort' => [
                         'type' => 'boolean',
                         'description' => 'true listet den vorherigen Ort (Altbestand) statt des aktuellen - '
@@ -72,15 +72,15 @@ final class tool_registry_context_tools {
             'classname' => 'local_kurspilot\external\describe_module_fields',
             'wsdescription' => 'Reads the field catalog for a module type (fields, presets) or, without a '
                 . 'modname, the list of module types Kurspilot catalogs at all.',
-            'description' => 'Liefert den Feldkatalog: was eine Aktivitaetsart einstellen kann, mit deutscher '
-                . 'Bedeutung je Feld statt englischer Namen ohne Erklaerung. Ohne "modname" die Liste der von '
-                . 'Kurspilot gefuehrten Aktivitaetsarten (z.B. label). Mit "modname" die haeufig gesetzten Felder '
-                . 'plus Feldbuendel und einen Hinweis, dass es mehr gibt; mit "vollstaendig": true zusaetzlich '
+            'description' => 'Liefert den Feldkatalog: was eine Aktivitätsart einstellen kann, mit deutscher '
+                . 'Bedeutung je Feld statt englischer Namen ohne Erklärung. Ohne "modname" die Liste der von '
+                . 'Kurspilot geführten Aktivitätsarten (z.B. label). Mit "modname" die häufig gesetzten Felder '
+                . 'plus Feldbündel und einen Hinweis, dass es mehr gibt; mit "vollständig": true zusätzlich '
                 . 'Pseudofelder, Sperrliste, Kombinationsregeln und Nebenwirkungsvermerke. Rein lesend.',
             'schema' => [
                 'properties' => [
-                    'modname' => ['type' => 'string', 'description' => 'Aktivitaetstyp, z.B. label. Leer fuer die Liste der gefuehrten Arten'],
-                    'vollstaendig' => ['type' => 'boolean', 'description' => 'true fuer alle fuenf Katalogkategorien'],
+                    'modname' => ['type' => 'string', 'description' => 'Aktivitätstyp, z.B. label. Leer für die Liste der geführten Arten'],
+                    'vollständig' => ['type' => 'boolean', 'description' => 'true für alle fünf Katalogkategorien'],
                 ],
             ],
             'capability' => null,
@@ -91,10 +91,10 @@ final class tool_registry_context_tools {
             'wsdescription' => 'Reads one file from the calling teacher\'s Kurspilot context area (own working '
                 . 'area only).',
             'description' => 'Liest eine einzelne Datei aus dem eigenen Kontextbereich der angemeldeten '
-                . 'Lehrkraft, z.B. "vorlagen.md" an der Wurzel fuer gemerkte Vorlagenentscheidungen. Rein lesend - '
-                . 'Schreiben ist ueber dieses Werkzeug nicht moeglich. "vorheriger_ort": true liest stattdessen vom '
+                . 'Lehrkraft, z.B. "vorlagen.md" an der Wurzel für gemerkte Vorlagenentscheidungen. Rein lesend - '
+                . 'Schreiben ist über dieses Werkzeug nicht möglich. "vorheriger_ort": true liest stattdessen vom '
                 . 'Altbestand (vorheriger Ort nach einem Ortswechsel) - nur lesbar, wirkt nur solange offen. Zum '
-                . 'Kopieren die gelesenen Inhalte anschliessend ueber kurspilot_write_context_file mit '
+                . 'Kopieren die gelesenen Inhalte anschliessend über kurspilot_write_context_file mit '
                 . '"nur_anlegen": true an den neuen Ort schreiben.',
             'schema' => [
                 'properties' => [
@@ -115,44 +115,44 @@ final class tool_registry_context_tools {
             'wsdescription' => 'Creates or fully overwrites one .md file in the calling teacher\'s Kurspilot '
                 . 'context area (own working area only).',
             'description' => 'Legt eine .md-Datei im eigenen Kontextbereich der angemeldeten Lehrkraft an oder '
-                . 'ueberschreibt sie vollstaendig, z.B. "plan.md". Der uebergebene Inhalt ersetzt die Datei ganz - '
+                . 'überschreibt sie vollständig, z.B. "plan.md". Der übergebene Inhalt ersetzt die Datei ganz - '
                 . 'zum Fortschreiben eines Journals nicht geeignet. "expected_contenthash" aus dem letzten Lesen '
-                . 'mitgeben, damit eine zwischenzeitliche Handaenderung nicht ueberschrieben wird. Die Antwort sagt, '
-                . 'ob die Datei neu angelegt oder ueberschrieben wurde. Scheitert ein gueltiger Schreibversuch am '
+                . 'mitgeben, damit eine zwischenzeitliche Handänderung nicht überschrieben wird. Die Antwort sagt, '
+                . 'ob die Datei neu angelegt oder überschrieben wurde. Scheitert ein gültiger Schreibversuch am '
                 . 'externen Speicher, der Verbindung oder dem Ort, wird nichts abgelegt - die Antwort nennt eine '
-                . 'Kennung und die Anweisung, den Inhalt im Gespraech zu behalten und mit "ausstand" erneut zu '
+                . 'Kennung und die Anweisung, den Inhalt im Gespräch zu behalten und mit "ausstand" erneut zu '
                 . 'schreiben, sobald die Verbindung wieder steht. "ausstand" mit genau dieser Kennung mitgeben, um '
                 . 'einen offenen Ausstand (aus kurspilot_list_skills) im selben Aufruf abzuhaken. "nur_anlegen": '
-                . 'true legt nur an und ueberschreibt nie - fuer das Kopieren aus dem Altbestand (vorheriger Ort, '
+                . 'true legt nur an und überschreibt nie - für das Kopieren aus dem Altbestand (vorheriger Ort, '
                 . 'aus kurspilot_list_context_files/kurspilot_read_context_file mit "vorheriger_ort": true '
                 . 'gelesen) an den neuen Ort.',
             'schema' => [
                 'properties' => [
                     'path' => ['type' => 'string', 'description' => 'Dateipfad relativ zur Wurzel, nur .md, z.B. "plan.md"'],
-                    'content' => ['type' => 'string', 'description' => 'Vollstaendiger neuer Dateiinhalt, hoechstens 1 MB'],
+                    'content' => ['type' => 'string', 'description' => 'Vollständiger neuer Dateiinhalt, höchstens 1 MB'],
                     'expected_contenthash' => [
                         'type' => 'string',
                         'description' => 'Optional: contenthash aus dem letzten Lesen oder Auflisten - passt er '
                             . 'nicht mehr zum aktuellen Stand, bricht der Vorgang mit "Konflikt" ab (neu lesen, '
-                            . 'zusammenfuehren, erneut schreiben). Ohne ETag am externen Ort (IServ) beruht der '
-                            . 'Vergleich auf der Aenderungszeit (Sekundenaufloesung) - ein sehr knapp zeitgleicher '
+                            . 'zusammenführen, erneut schreiben). Ohne ETag am externen Ort (IServ) beruht der '
+                            . 'Vergleich auf der Aenderungszeit (Sekundenauflösung) - ein sehr knapp zeitgleicher '
                             . 'zweiter Schreibvorgang kann dort unerkannt bleiben.',
                     ],
                     'ausstand' => [
                         'type' => 'string',
                         'description' => 'Optional: Kennung eines offenen Ausstands (aus kurspilot_list_skills) - '
                             . 'gelingt das Schreiben, verschwindet der Eintrag im selben Aufruf. Am externen Ort '
-                            . 'zusaetzlich zu einer bereits vorhandenen Zieldatei "expected_contenthash" mitgeben - '
-                            . 'ohne Pruefwert wird beim Nachtragen nie ueberschrieben.',
+                            . 'zusätzlich zu einer bereits vorhandenen Zieldatei "expected_contenthash" mitgeben - '
+                            . 'ohne Prüfwert wird beim Nachtragen nie überschrieben.',
                     ],
                     'nur_anlegen' => [
                         'type' => 'boolean',
-                        'description' => 'Optional: true legt nur an und ueberschreibt nie - fuer das Kopieren aus '
+                        'description' => 'Optional: true legt nur an und überschreibt nie - für das Kopieren aus '
                             . 'dem Altbestand an den neuen Ort',
                     ],
                     'courseid' => [
                         'type' => 'number',
-                        'description' => 'Optional: Kurs-ID, wenn der Inhalt zu einem bestimmten Kurs gehoert - '
+                        'description' => 'Optional: Kurs-ID, wenn der Inhalt zu einem bestimmten Kurs gehört - '
                             . 'dient nur einem etwaigen Eintrag der Notiz "noch nicht gespeichert", falls der '
                             . 'Speicher, die Verbindung oder der Ort scheitert.',
                     ],
@@ -167,39 +167,39 @@ final class tool_registry_context_tools {
             'classname' => 'local_kurspilot\external\append_context_file',
             'wsdescription' => 'Appends content to one .md file in the calling teacher\'s Kurspilot '
                 . 'context area in a single server call (own working area only).',
-            'description' => 'Haengt Inhalt an eine .md-Datei im eigenen Kontextbereich der angemeldeten '
+            'description' => 'Hängt Inhalt an eine .md-Datei im eigenen Kontextbereich der angemeldeten '
                 . 'Lehrkraft an, z.B. einen Journaleintrag an "journal.md". Vorhandener Inhalt bleibt stehen - '
-                . 'dafuer die Datei nicht vorher lesen, das Anhaengen passiert in einem Vorgang auf dem Server. '
-                . 'Fehlt die Zieldatei, wird sie angelegt, und die Antwort sagt das ausdruecklich, damit ein '
-                . 'Tippfehler im Pfad auffaellt. Wird die Datei groesser als 1 MB, empfiehlt die Antwort eine '
-                . 'Rotation (neues Journalarchiv anlegen). Scheitert ein gueltiger Anhaengversuch am externen '
+                . 'dafür die Datei nicht vorher lesen, das Anhängen passiert in einem Vorgang auf dem Server. '
+                . 'Fehlt die Zieldatei, wird sie angelegt, und die Antwort sagt das ausdrücklich, damit ein '
+                . 'Tippfehler im Pfad auffällt. Wird die Datei größer als 1 MB, empfiehlt die Antwort eine '
+                . 'Rotation (neues Journalarchiv anlegen). Scheitert ein gültiger Anhängversuch am externen '
                 . 'Speicher, der Verbindung oder dem Ort, wird nichts abgelegt - die Antwort nennt eine Kennung und '
-                . 'die Anweisung, den Inhalt im Gespraech zu behalten und mit "ausstand" erneut anzuhaengen, sobald '
+                . 'die Anweisung, den Inhalt im Gespräch zu behalten und mit "ausstand" erneut anzuhängen, sobald '
                 . 'die Verbindung wieder steht. "ausstand" mit genau dieser Kennung mitgeben, um einen offenen '
                 . 'Ausstand (aus kurspilot_list_skills) im selben Aufruf abzuhaken. "expected_contenthash" wirkt '
                 . 'nur am externen Ort: gegen eine bereits vorhandene Zieldatei mitgeben, um eine zwischenzeitliche '
-                . 'Handaenderung zu erkennen (nicht noetig, wenn die Datei noch fehlt).',
+                . 'Handänderung zu erkennen (nicht nötig, wenn die Datei noch fehlt).',
             'schema' => [
                 'properties' => [
                     'path' => ['type' => 'string', 'description' => 'Dateipfad relativ zur Wurzel, nur .md, z.B. "journal.md"'],
-                    'content' => ['type' => 'string', 'description' => 'Anzuhaengender Inhalt, hoechstens 1 MB'],
+                    'content' => ['type' => 'string', 'description' => 'Anzuhängender Inhalt, höchstens 1 MB'],
                     'ausstand' => [
                         'type' => 'string',
                         'description' => 'Optional: Kennung eines offenen Ausstands (aus kurspilot_list_skills) - '
                             . 'gelingt das Schreiben, verschwindet der Eintrag im selben Aufruf. Am externen Ort '
-                            . 'zusaetzlich zu einer bereits vorhandenen Zieldatei "expected_contenthash" mitgeben - '
-                            . 'ohne Pruefwert wird beim Nachtragen nie angehaengt.',
+                            . 'zusätzlich zu einer bereits vorhandenen Zieldatei "expected_contenthash" mitgeben - '
+                            . 'ohne Prüfwert wird beim Nachtragen nie angehängt.',
                     ],
                     'expected_contenthash' => [
                         'type' => 'string',
                         'description' => 'Optional, wirkt nur am externen Ort: contenthash der Zieldatei aus dem '
                             . 'letzten Lesen oder Auflisten - passt er nicht mehr, bricht der Vorgang mit '
                             . '"Konflikt" ab. Ohne ETag (IServ) beruht der Vergleich auf der Aenderungszeit '
-                            . '(Sekundenaufloesung).',
+                            . '(Sekundenauflösung).',
                     ],
                     'courseid' => [
                         'type' => 'number',
-                        'description' => 'Optional: Kurs-ID, wenn der Inhalt zu einem bestimmten Kurs gehoert - '
+                        'description' => 'Optional: Kurs-ID, wenn der Inhalt zu einem bestimmten Kurs gehört - '
                             . 'dient nur einem etwaigen Eintrag der Notiz "noch nicht gespeichert", falls der '
                             . 'Speicher, die Verbindung oder der Ort scheitert.',
                     ],
@@ -215,11 +215,11 @@ final class tool_registry_context_tools {
             'wsdescription' => 'Lists the calling teacher\'s Kurspilot material folder (own working area '
                 . 'only): path, size, contenthash, last modified, and remaining storage quota.',
             'description' => 'Listet den eigenen Materialordner der angemeldeten Lehrkraft auf - hochgeladene '
-                . 'Bilder und Dokumente mit Groesse, contenthash, Aenderungszeit sowie den verbleibenden '
-                . 'Speicherplatz. "path" waehlt optional einen Unterordner, leer liefert die Wurzel.',
+                . 'Bilder und Dokumente mit Größe, contenthash, Aenderungszeit sowie den verbleibenden '
+                . 'Speicherplatz. "path" wählt optional einen Unterordner, leer liefert die Wurzel.',
             'schema' => [
                 'properties' => [
-                    'path' => ['type' => 'string', 'description' => 'Optionaler Unterordner, leer fuer die Wurzel'],
+                    'path' => ['type' => 'string', 'description' => 'Optionaler Unterordner, leer für die Wurzel'],
                     'ort' => [
                         'type' => 'string',
                         'enum' => [material_files::ORT_BESTAND, material_files::ORT_WERKBANK],
@@ -236,10 +236,10 @@ final class tool_registry_context_tools {
                 . 'material folder (own working area only). No own size limit - checked against the server\'s '
                 . 'upload configuration.',
             'description' => 'Legt eine Datei im eigenen Materialordner der angemeldeten Lehrkraft an oder '
-                . 'ueberschreibt sie vollstaendig, z.B. "screenshot.png". "content_base64" ist der Dateiinhalt '
+                . 'überschreibt sie vollständig, z.B. "screenshot.png". "content_base64" ist der Dateiinhalt '
                 . 'base64-kodiert. Erlaubte Endungen: PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, HTML, TXT, CSV, ZIP sowie '
                 . 'PNG/JPG/GIF/SVG/WEBP. "expected_contenthash" aus dem letzten Auflisten mitgeben, damit eine '
-                . 'zwischenzeitliche Handaenderung nicht ueberschrieben wird. Die Antwort warnt, wenn nach dem '
+                . 'zwischenzeitliche Handänderung nicht überschrieben wird. Die Antwort warnt, wenn nach dem '
                 . 'Schreiben weniger als 10% des Speicherplatzes frei bleiben.',
             'schema' => [
                 'properties' => [
@@ -261,10 +261,10 @@ final class tool_registry_context_tools {
             'wsdescription' => 'Returns a shrunk preview (longest edge 768px, JPEG) of an image in the calling '
                 . 'teacher\'s Kurspilot material folder, so the model can actually see it - choose a crop, '
                 . 'suggest alt text. Non-image files return a clear message instead of an error.',
-            'description' => 'Zeigt eine verkleinerte Vorschau (laengste Kante 768px, JPEG) einer Bilddatei aus '
-                . 'dem eigenen Materialordner - damit das Modell den Inhalt tatsaechlich sieht, einen Ausschnitt '
-                . 'waehlen und einen Alt-Text vorschlagen kann. Uebertragen wird nur die Vorschau, nie das '
-                . 'Original. Bei einer Nicht-Bilddatei liefert "available": false mit erklaerender Meldung statt '
+            'description' => 'Zeigt eine verkleinerte Vorschau (längste Kante 768px, JPEG) einer Bilddatei aus '
+                . 'dem eigenen Materialordner - damit das Modell den Inhalt tatsächlich sieht, einen Ausschnitt '
+                . 'wählen und einen Alt-Text vorschlagen kann. Uebertragen wird nur die Vorschau, nie das '
+                . 'Original. Bei einer Nicht-Bilddatei liefert "available": false mit erklärender Meldung statt '
                 . 'eines Fehlers.',
             'schema' => [
                 'properties' => [
@@ -287,12 +287,12 @@ final class tool_registry_context_tools {
                 . 'Coordinates are relative (0-1) against the preview image, but the crop is taken from the '
                 . 'full-resolution original. The origin is recorded in the result file\'s standard Moodle "source" '
                 . 'field.',
-            'description' => 'Schneidet ein Bild aus dem eigenen Materialordner auf den fachlich benoetigten '
-                . 'Ausschnitt zu (Gezielter Bildausschnitt) und legt das Ergebnis als neue oder ueberschriebene '
+            'description' => 'Schneidet ein Bild aus dem eigenen Materialordner auf den fachlich benötigten '
+                . 'Ausschnitt zu (Gezielter Bildausschnitt) und legt das Ergebnis als neue oder überschriebene '
                 . 'Datei im selben Ordner ab - eigener Endpunkt statt Upload-Parameter, damit ein zweiter Versuch '
                 . 'nur einen Aufruf kostet statt eines zweiten Uploads. "x0"/"y0"/"x1"/"y1" sind relative '
                 . 'Koordinaten (0-1) auf die von preview_material_file gezeigte Vorschau; geschnitten wird aus dem '
-                . 'Original in voller Aufloesung. SVG-Quellen werden abgewiesen (GD ist raster-only). Die Herkunft '
+                . 'Original in voller Auflösung. SVG-Quellen werden abgewiesen (GD ist raster-only). Die Herkunft '
                 . 'steht danach im source-Feld der Zieldatei.',
             'schema' => [
                 'properties' => [
@@ -323,11 +323,11 @@ final class tool_registry_context_tools {
             'wsdescription' => 'Reports material folder files whose contenthash does not appear in any activity '
                 . 'filearea of the calling teacher\'s own courses ("loose"): path, size, age in days, total '
                 . 'reclaimable space and remaining quota. Writes nothing.',
-            'description' => 'Listet Materialdateien, die in keiner Aktivitaet der eigenen Kurse verwendet werden '
-                . '("lose") - Pfad, Groesse, Alter in Tagen, Summe des freiwerdenden Platzes, Restquote. '
-                . '"Verwendet" wird per contenthash-Abgleich geprueft, nicht geraten: ein Original bleibt nach '
-                . 'einem Zuschnitt zurecht lose, sobald nur der Ausschnitt eingebettet ist. Liest nur, loescht '
-                . 'nichts - der Loeschweg ist delete_material_files.',
+            'description' => 'Listet Materialdateien, die in keiner Aktivität der eigenen Kurse verwendet werden '
+                . '("lose") - Pfad, Größe, Alter in Tagen, Summe des freiwerdenden Platzes, Restquote. '
+                . '"Verwendet" wird per contenthash-Abgleich geprüft, nicht geraten: ein Original bleibt nach '
+                . 'einem Zuschnitt zurecht lose, sobald nur der Ausschnitt eingebettet ist. Liest nur, löscht '
+                . 'nichts - der Löschweg ist delete_material_files.',
             'schema' => null,
             'capability' => null,
         ],
@@ -337,8 +337,8 @@ final class tool_registry_context_tools {
             'wsdescription' => 'Deletes exactly the given material folder paths - nothing is deleted without an '
                 . 'explicit list, no automatic deletion, no age-based rule. Intended to follow an explicit '
                 . 'confirmation after report_loose_material_files.',
-            'description' => 'Loescht genau die angegebenen Pfade im Materialordner - nichts ohne ausdrueckliche '
-                . 'Liste, kein automatisches Loeschen, keine Altersregel. Erst nach Bestaetigung durch die '
+            'description' => 'Löscht genau die angegebenen Pfade im Materialordner - nichts ohne ausdrückliche '
+                . 'Liste, kein automatisches Löschen, keine Altersregel. Erst nach Bestätigung durch die '
                 . 'Lehrkraft aufrufen, i.d.R. im Anschluss an report_loose_material_files. Bricht komplett ab, '
                 . 'wenn ein Pfad nicht existiert - kein Teilerfolg bei einem Tippfehler.',
             'schema' => [
@@ -346,7 +346,7 @@ final class tool_registry_context_tools {
                     'paths' => [
                         'type' => 'array',
                         'items' => ['type' => 'string'],
-                        'description' => 'Zu loeschende Dateipfade, relativ zum Materialordner, z.B. ["altes-blatt.pdf"]',
+                        'description' => 'Zu löschende Dateipfade, relativ zum Materialordner, z.B. ["altes-blatt.pdf"]',
                     ],
                 ],
                 'required' => ['paths'],
@@ -363,23 +363,23 @@ final class tool_registry_context_tools {
                 . 'based on targetcourseid. Title is always set explicitly (no "(copy)" suffix), visibility is '
                 . 'always set explicitly. Cross-course clones: a completion condition Moodle could not translate '
                 . 'into the target course (cmid set to 0) is detected and removed, named in the response.',
-            'description' => 'Dupliziert eine Aktivitaet - im selben Kurs oder in einen anderen, je nachdem, ob '
+            'description' => 'Dupliziert eine Aktivität - im selben Kurs oder in einen anderen, je nachdem, ob '
                 . '"targetcourseid" gesetzt und vom Quellkurs verschieden ist. Der Titel wird immer explizit '
-                . 'gesetzt (kein "(Kopie)"-Suffix), die Sichtbarkeit ebenso. Beim kursuebergreifenden Klon kann '
-                . 'Moodle Verweise in Abschlussbedingungen nicht in den Zielkurs uebersetzen - eine solche kaputte '
-                . 'Bedingung wird erkannt, entfernt und in der Meldung im Klartext genannt (sonst waere die '
-                . 'Aktivitaet moeglicherweise fuer niemanden sichtbar). Geprueft wird die native '
-                . 'Bearbeiten-Berechtigung in Quell- und Zielkurs, kursuebergreifend zusaetzlich die Backup-/'
+                . 'gesetzt (kein "(Kopie)"-Suffix), die Sichtbarkeit ebenso. Beim kursübergreifenden Klon kann '
+                . 'Moodle Verweise in Abschlussbedingungen nicht in den Zielkurs übersetzen - eine solche kaputte '
+                . 'Bedingung wird erkannt, entfernt und in der Meldung im Klartext genannt (sonst wäre die '
+                . 'Aktivität möglicherweise für niemanden sichtbar). Geprüft wird die native '
+                . 'Bearbeiten-Berechtigung in Quell- und Zielkurs, kursübergreifend zusätzlich die Backup-/'
                 . 'Restore-Rechte.',
             'schema' => [
                 'properties' => [
-                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der zu klonenden Aktivitaet'],
-                    'title' => ['type' => 'string', 'description' => 'Titel der geklonten Aktivitaet, immer explizit gesetzt'],
+                    'cmid' => ['type' => 'number', 'description' => 'Course module ID der zu klonenden Aktivität'],
+                    'title' => ['type' => 'string', 'description' => 'Titel der geklonten Aktivität, immer explizit gesetzt'],
                     'targetcourseid' => [
                         'type' => 'number',
                         'description' => 'Ziel-Kurs-ID; weggelassen oder gleich dem Quellkurs = Klon im selben Kurs',
                     ],
-                    'visible' => ['type' => 'boolean', 'description' => 'Sichtbarkeit der geklonten Aktivitaet (Default: true)'],
+                    'visible' => ['type' => 'boolean', 'description' => 'Sichtbarkeit der geklonten Aktivität (Default: true)'],
                 ],
                 'required' => ['cmid', 'title'],
             ],
@@ -395,10 +395,10 @@ final class tool_registry_context_tools {
             'description' => 'Meldet je Frage eines Tests (i.d.R. das Ergebnis eines vorherigen clone_activity), '
                 . 'ob eine eigene Kopie entstanden ist oder die Fragereferenz weiterhin auf den Bank-Eintrag im '
                 . 'Quellkurs zeigt ("eigene_kopie" vs. "geteilte_referenz") - wichtig, weil eine Korrektur an einer '
-                . 'geteilten Referenz auch den Quellkurs veraendert. Reines Lesen ueber die Fragereferenzen: es '
-                . 'wird nichts geschrieben, keine idnumber nachgetragen, keine Frage oder Referenz veraendert. Die '
-                . 'Anbindung an eine Fragenidentitaet geschieht weiterhin erst beim ersten echten Schreibzugriff '
-                . 'auf die einzelne Frage. Geprueft wird die native Moodle-Leseberechtigung im Testkontext '
+                . 'geteilten Referenz auch den Quellkurs verändert. Reines Lesen über die Fragereferenzen: es '
+                . 'wird nichts geschrieben, keine idnumber nachgetragen, keine Frage oder Referenz verändert. Die '
+                . 'Anbindung an eine Fragenidentität geschieht weiterhin erst beim ersten echten Schreibzugriff '
+                . 'auf die einzelne Frage. Geprüft wird die native Moodle-Leseberechtigung im Testkontext '
                 . '(moodle/question:viewall), keine eigene Kurspilot-Schreibrechte.',
             'schema' => [
                 'properties' => [
@@ -415,7 +415,7 @@ final class tool_registry_context_tools {
                 . '(adapter/reference) and size in characters per entry - catalog only, no content.',
             'description' => 'Listet den mit dem Plugin ausgelieferten Skill-Korpus: je Eintrag Name, Auslöser, '
                 . 'Art ("adapter" oder "referenz") und Umfang in Zeichen - kein Inhalt. '
-                . dispatcher::HANDSHAKE_INSTRUCTIONS . ' Danach kurspilot_get_skill(name) fuer den eigentlichen Text.',
+                . dispatcher::HANDSHAKE_INSTRUCTIONS . ' Danach kurspilot_get_skill(name) für den eigentlichen Text.',
             'schema' => null,
             'capability' => 'local/kurspilot:use',
         ],
@@ -427,7 +427,7 @@ final class tool_registry_context_tools {
                 . 'error names the valid names.',
             'description' => 'Liefert einen Eintrag aus dem Skill-Korpus per Name (aus kurspilot_list_skills): '
                 . 'Inhalt (Markdown), die Namen darin referenzierter Teile und den Korpus-Stand (Plugin-Version). '
-                . 'Ein unbekannter oder pfadartiger Name wird abgewiesen, die Meldung nennt die gueltigen Namen.',
+                . 'Ein unbekannter oder pfadartiger Name wird abgewiesen, die Meldung nennt die gültigen Namen.',
             'schema' => [
                 'properties' => [
                     'name' => ['type' => 'string', 'description' => 'Skill-Name aus kurspilot_list_skills, kein Pfad'],
@@ -441,10 +441,10 @@ final class tool_registry_context_tools {
             'classname' => 'local_kurspilot\external\dismiss_ausstand',
             'wsdescription' => 'Explicitly discards one entry of the calling teacher\'s Ausstandsnotiz (pending-'
                 . 'write journal at the context anchor, own working area only) by Kennung.',
-            'description' => 'Verwirft einen Eintrag der Ausstandsnotiz ausdruecklich (Kennung aus '
-                . 'kurspilot_list_skills, Feld "ausstaende") - fuer Inhalt, der nicht mehr nachgetragen werden soll. '
-                . 'Vor dem Verwerfen anbieten, den Inhalt zu rekonstruieren, wo das moeglich ist (z.B. aus dem '
-                . 'Aenderungsverlauf einer Aktivitaet). Ein Nachtragen mit "ausstand=<Kennung>" an '
+            'description' => 'Verwirft einen Eintrag der Ausstandsnotiz ausdrücklich (Kennung aus '
+                . 'kurspilot_list_skills, Feld "ausstände") - für Inhalt, der nicht mehr nachgetragen werden soll. '
+                . 'Vor dem Verwerfen anbieten, den Inhalt zu rekonstruieren, wo das möglich ist (z.B. aus dem '
+                . 'Aenderungsverlauf einer Aktivität). Ein Nachtragen mit "ausstand=<Kennung>" an '
                 . 'write_context_file/append_context_file hakt einen Eintrag stattdessen automatisch ab.',
             'schema' => [
                 'properties' => [
@@ -461,10 +461,10 @@ final class tool_registry_context_tools {
             'wsdescription' => 'Issues one 15-minute, single-use download ticket per given Werkbank file - a '
                 . 'shell client (curl) can then fetch the original bytes without an OAuth bearer header. '
                 . 'Read-only, no ready-made retrieval line.',
-            'description' => 'Stellt je angegebener Werkbankdatei einen 15 Minuten gueltigen Einmal-Downloadlink '
+            'description' => 'Stellt je angegebener Werkbankdatei einen 15 Minuten gültigen Einmal-Downloadlink '
                 . 'aus - ein Client mit Shell (curl) kann die Originalbytes damit abrufen, ohne einen '
-                . 'OAuth-Bearer-Header zu setzen, z.B. fuer den Merkzettelpunkt "Werkbank -> Bestand" am Laptop. '
-                . 'Liefert je Datei URL, Name, Groesse und SHA-1 - keine fertige Abrufzeile. Rein lesend.',
+                . 'OAuth-Bearer-Header zu setzen, z.B. für den Merkzettelpunkt "Werkbank -> Bestand" am Laptop. '
+                . 'Liefert je Datei URL, Name, Größe und SHA-1 - keine fertige Abrufzeile. Rein lesend.',
             'schema' => [
                 'properties' => [
                     'paths' => [
@@ -482,9 +482,9 @@ final class tool_registry_context_tools {
             'classname' => 'local_kurspilot\external\dismiss_altbestand',
             'wsdescription' => 'Explicitly ends the calling teacher\'s Altbestand (legacy holdings at the '
                 . 'previous context area location, own working area only).',
-            'description' => 'Beendet den Altbestand ausdruecklich (vorheriger Ort des Kontextbereichs nach einem '
+            'description' => 'Beendet den Altbestand ausdrücklich (vorheriger Ort des Kontextbereichs nach einem '
                 . 'Ortswechsel, aus kurspilot_list_skills als "Altbestand offen" erkennbar) - nach dem Kopieren, '
-                . 'oder wenn die Lehrkraft auf den Rest verzichtet. Ruehrt nie an den Dateien des vorherigen Ortes '
+                . 'oder wenn die Lehrkraft auf den Rest verzichtet. Rührt nie an den Dateien des vorherigen Ortes '
                 . 'selbst, nur am Merkmal "offen". Kein Parameter - es gibt immer nur einen vorherigen Ort.',
             'schema' => null,
             'capability' => null,

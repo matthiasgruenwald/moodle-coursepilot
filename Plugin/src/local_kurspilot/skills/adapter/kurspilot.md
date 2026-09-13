@@ -5,11 +5,11 @@ description: Kurspilot-Einstieg. Nutze diesen Skill bei der Formulierung "Mach m
 
 # kurspilot
 
-Lies zuerst `kurspilot_get_skill("kurspilot-core")`. Bei Mehrdeutigkeit ueber
-Klasse, Fach oder Thema zusaetzlich `kurspilot_get_skill("kontext-onboarding")`.
+Lies zuerst `kurspilot_get_skill("kurspilot-core")`. Bei Mehrdeutigkeit über
+Klasse, Fach oder Thema zusätzlich `kurspilot_get_skill("kontext-onboarding")`.
 
 Benenne transparent den passenden Modus (`kurspilot-planen` oder
-`kurspilot-umsetzen`) und den Grund fuer den Wechsel. Halte die Planstrenge
+`kurspilot-umsetzen`) und den Grund für den Wechsel. Halte die Planstrenge
 aus dem Kern ein.
 
 ## Servermodus
@@ -19,9 +19,9 @@ Findet Kurspilot daneben lokal installierte Kurspilot-Skills, benennt es das
 gegenueber der Lehrkraft und arbeitet mit den Server-Skills weiter, statt sie
 zu mischen.
 
-Nicht leere Felder `ausstaende`/`hinweise` aus derselben Antwort zu
+Nicht leere Felder `ausstände`/`hinweise` aus derselben Antwort zu
 Sitzungsbeginn melden (siehe `kurspilot_get_skill("kontextbereich")`).
 
-Bei einer Bestandsaenderung, die gerade nicht ausfuehrbar ist, oder bei
+Bei einer Bestandsänderung, die gerade nicht ausführbar ist, oder bei
 einem Client mit lokalen Dateiwerkzeugen zu Sitzungsbeginn:
 `kurspilot_get_skill("merkzettel")`.

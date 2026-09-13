@@ -51,7 +51,7 @@ $string['historybacktolist'] = 'Zurück zur Aktivitätenliste';
 
 // Plugin-Beschreibung auf der Einstellungsseite (Issue #500, Spec #486 §11).
 $string['settingintroheading'] = 'Über Kurspilot';
-$string['settingintroheading_desc'] = 'Kurspilot kann im Auftrag einer Lehrkraft Namen und Bilder aus deren Materialbestand an die KI übertragen und, bei externem Ablageort, dort ohne Lesesperre schreiben — Einzelheiten weiter unten und in der Admin-Anleitung (Issue #481, in Vorbereitung).';
+$string['settingintroheading_desc'] = 'Kurspilot kann im Auftrag einer Lehrkraft Namen und Bilder aus deren Materialbestand an die KI übertragen. Bei externem Ablageort gilt für Kontextdateien eine Schreibsperre, aber keine Lesesperre — Einzelheiten weiter unten und in der Admin-Anleitung (Issue #481, in Vorbereitung).';
 
 // Fernzugriffs-Steuerung (#338).
 $string['remoteaccessdisabled'] = 'Der Fernzugriff ist durch die Administration vorübergehend gesperrt.';
@@ -244,7 +244,7 @@ $string['contextfilehostnotallowed'] = 'Datei {$a}: Dieser Speicher ist für per
 
 // Aenderungsverlauf: Aufbewahrung/Loeschfrist (#387).
 $string['settinghistoryretentiondays'] = 'Aufbewahrungsfrist des Aenderungsverlaufs (Tage)';
-$string['settinghistoryretentiondays_desc'] = 'Wie lange Staende des Aenderungsverlaufs je Aktivitaet aufbewahrt werden, bevor sie beim naechsten Schreibvorgang derselben Aktivitaet geloescht werden. Kein Cron noetig - die Bereinigung laeuft mit jedem Schreibvorgang mit. Mindestens 1 Tag; „keine Frist" ist ausgeschlossen.';
+$string['settinghistoryretentiondays_desc'] = 'Wie lange Staende des Aenderungsverlaufs je Aktivität aufbewahrt werden, bevor sie beim naechsten Schreibvorgang derselben Aktivität geloescht werden. Kein Cron nötig - die Bereinigung läuft mit jedem Schreibvorgang mit. Mindestens 1 Tag; „keine Frist" ist ausgeschlossen.';
 
 $string['connections'] = 'Kurspilot-Verbindungen';
 $string['connectionsintro'] = 'Alle aktiven Fernzugriffsverbindungen dieser Instanz. Ein Widerruf entwertet das zugehörige Token sofort — ein weiterer Zugriff damit schlägt danach fehl.';
@@ -333,30 +333,30 @@ $string['privacy:metadata:oauth_token:timecreated'] = 'Ausstellungszeitpunkt.';
 $string['privacy:metadata:core_files'] = 'Kurspilot-Kontextdateien im privaten Dateibereich der Lehrkraft.';
 
 // classes/privacy/provider.php: Aenderungsverlauf (#385/#386/#387).
-$string['privacy:metadata:cm_version'] = 'Aenderungsverlauf von Aktivitaeten: je Schreibvorgang ein Vollstand der Einstellungen, mit der Nutzer-ID der Lehrkraft, die den Schreibvorgang ausgeloest hat. Wird spaetestens 1 Jahr nach dem Schreibvorgang automatisch geloescht (admin-seitig verkuerzbar, Einstellung "Aufbewahrungsfrist des Aenderungsverlaufs"), sowie sofort beim Loeschen der Aktivitaet oder des Kurses.';
-$string['privacy:metadata:cm_version:cmid'] = 'Die Aktivitaet, zu der dieser Stand gehoert.';
-$string['privacy:metadata:cm_version:courseid'] = 'Der Kurs, zu dem diese Aktivitaet zum Zeitpunkt des Schreibvorgangs gehoerte.';
+$string['privacy:metadata:cm_version'] = 'Aenderungsverlauf von Aktivitaeten: je Schreibvorgang ein Vollstand der Einstellungen, mit der Nutzer-ID der Lehrkraft, die den Schreibvorgang ausgeloest hat. Wird spaetestens 1 Jahr nach dem Schreibvorgang automatisch geloescht (admin-seitig verkuerzbar, Einstellung "Aufbewahrungsfrist des Aenderungsverlaufs"), sowie sofort beim Löschen der Aktivität oder des Kurses.';
+$string['privacy:metadata:cm_version:cmid'] = 'Die Aktivität, zu der dieser Stand gehört.';
+$string['privacy:metadata:cm_version:courseid'] = 'Der Kurs, zu dem diese Aktivität zum Zeitpunkt des Schreibvorgangs gehoerte.';
 $string['privacy:metadata:cm_version:userid'] = 'Die Nutzer-ID der Lehrkraft, unter der der Schreibvorgang lief.';
 $string['privacy:metadata:cm_version:timecreated'] = 'Zeitpunkt des Schreibvorgangs.';
-$string['privacy:metadata:cm_version_file'] = 'Verknuepfung eines Verlaufs-Standes mit den zu diesem Zeitpunkt vorhandenen Dateien der Aktivitaet (nur Metadaten, siehe local_kurspilot_cm_file). Faellt zusammen mit dem zugehoerigen Stand weg.';
-$string['privacy:metadata:cm_version_file:versionid'] = 'Der Verlaufs-Stand, zu dem diese Datei gehoert.';
+$string['privacy:metadata:cm_version_file'] = 'Verknuepfung eines Verlaufs-Standes mit den zu diesem Zeitpunkt vorhandenen Dateien der Aktivität (nur Metadaten, siehe local_kurspilot_cm_file). Faellt zusammen mit dem zugehoerigen Stand weg.';
+$string['privacy:metadata:cm_version_file:versionid'] = 'Der Verlaufs-Stand, zu dem diese Datei gehört.';
 $string['privacy:metadata:cm_version_file:fileid'] = 'Die referenzierte Datei-Metadaten-Zeile (local_kurspilot_cm_file).';
-$string['privacy:metadata:cm_version_file:gap'] = 'Ob der Dateiinhalt ausserhalb der Beschreibung liegt und nicht rueckschreibbar ist.';
-$string['privacy:metadata:cm_file'] = 'Deduplizierte Datei-Metadaten (Name, Groesse, Pfad) des Aenderungsverlaufs, ohne Dateiinhalt.';
+$string['privacy:metadata:cm_version_file:gap'] = 'Ob der Dateiinhalt ausserhalb der Beschreibung liegt und nicht rückschreibbar ist.';
+$string['privacy:metadata:cm_file'] = 'Deduplizierte Datei-Metadaten (Name, Größe, Pfad) des Aenderungsverlaufs, ohne Dateiinhalt.';
 $string['privacy:metadata:cm_file:pathnamehash'] = 'Hash des Datei-Pfadnamens, zur Deduplizierung.';
 $string['privacy:metadata:cm_file:contenthash'] = 'Hash des Dateiinhalts, zur Deduplizierung.';
-$string['privacy:metadata:cm_file:filepath'] = 'Ordnerpfad der Datei innerhalb der Aktivitaet.';
+$string['privacy:metadata:cm_file:filepath'] = 'Ordnerpfad der Datei innerhalb der Aktivität.';
 $string['privacy:metadata:cm_file:filename'] = 'Dateiname.';
-$string['privacy:metadata:cm_file:filesize'] = 'Dateigroesse in Byte.';
+$string['privacy:metadata:cm_file:filesize'] = 'Dateigröße in Byte.';
 $string['privacy:metadata:cm_file:timemodified'] = 'Letzter Aenderungszeitpunkt der Datei.';
-$string['privacy:metadata:context_mark'] = 'Markierungsgedaechtnis (#493): je Kontextdatei nur das Bit "markiert ja/nein" sowie der Schluessel zur Aenderungserkennung (Pfad, Groesse, Aenderungszeit, ETag) - nie Dateiinhalt.';
-$string['privacy:metadata:context_mark:userid'] = 'Die Nutzer-ID der Lehrkraft, zu der dieser Eintrag gehoert.';
+$string['privacy:metadata:context_mark'] = 'Markierungsgedächtnis (#493): je Kontextdatei nur das Bit "markiert ja/nein" sowie der Schlüssel zur Aenderungserkennung (Pfad, Größe, Aenderungszeit, ETag) - nie Dateiinhalt.';
+$string['privacy:metadata:context_mark:userid'] = 'Die Nutzer-ID der Lehrkraft, zu der dieser Eintrag gehört.';
 $string['privacy:metadata:context_mark:path'] = 'Client-Pfad der Kontextdatei, auf die sich dieser Eintrag bezieht.';
 $string['privacy:metadata:context_mark:ismarked'] = 'Ob die Datei zuletzt als personenbezogen markiert erkannt wurde.';
-$string['privacy:metadata:werkbank_ticket'] = 'Einmal-Downloadticket fuer eine Werkbankdatei (#501): gespeichert wird nur der Hash des Ticketgeheimnisses, nie das Geheimnis selbst.';
-$string['privacy:metadata:werkbank_ticket:userid'] = 'Die Nutzer-ID der Lehrkraft, fuer die das Ticket ausgestellt wurde.';
+$string['privacy:metadata:werkbank_ticket'] = 'Einmal-Downloadticket für eine Werkbankdatei (#501): gespeichert wird nur der Hash des Ticketgeheimnisses, nie das Geheimnis selbst.';
+$string['privacy:metadata:werkbank_ticket:userid'] = 'Die Nutzer-ID der Lehrkraft, für die das Ticket ausgestellt wurde.';
 $string['privacy:metadata:werkbank_ticket:path'] = 'Pfad der Werkbankdatei, relativ zur Werkbankwurzel.';
-$string['privacy:metadata:werkbank_ticket:contenthash'] = 'Inhaltspruefsumme der Datei zum Ausstellungszeitpunkt.';
+$string['privacy:metadata:werkbank_ticket:contenthash'] = 'Inhaltsprüfsumme der Datei zum Ausstellungszeitpunkt.';
 $string['privacy:metadata:werkbank_ticket:oauthtokenid'] = 'Verweis auf die ausstellende Verbindung (local_kurspilot_oauth_token).';
 $string['privacy:metadata:werkbank_ticket:expires'] = 'Ablaufzeitpunkt des Tickets.';
 $string['privacy:metadata:werkbank_ticket:timecreated'] = 'Ausstellungszeitpunkt.';
@@ -376,10 +376,10 @@ $string['unknownskillname'] = 'Unbekannter Skill-Name "{$a->name}". Gültige Nam
 $string['writevehicleblocked'] = '"{$a->modname}" wird nicht über update_module_settings geschrieben, sondern über {$a->schreibweg}. Nichts wurde geschrieben.';
 $string['invalidpatchjson'] = 'felder_json ist kein gültiges JSON-Objekt. Nichts wurde geschrieben.';
 $string['invalideditorpseudofield'] = 'Das Feld "{$a->field}" braucht den Inhalt als Text oder als Objekt mit "text" - angegeben war {$a->value}. Ohne "text" bliebe der Inhalt leer, deshalb wurde nichts geschrieben.';
-$string['unknownfield'] = 'Unbekanntes Feld "{$a->field}" für Aktivitätsart "{$a->modname}". describe_module_fields(modname: "{$a->modname}", vollstaendig: true) zeigt die erlaubten Felder. Nichts wurde geschrieben.';
-$string['blockedfield'] = 'Feld "{$a->field}" ist für Aktivitätsart "{$a->modname}" gesperrt und kann nicht per Patch gesetzt werden. describe_module_fields(modname: "{$a->modname}", vollstaendig: true) zeigt die Sperrliste. Nichts wurde geschrieben.';
-$string['invalidfieldvalue'] = 'Ungültiger Wert "{$a->value}" für Feld "{$a->field}" bei Aktivitätsart "{$a->modname}". describe_module_fields(modname: "{$a->modname}", vollstaendig: true) zeigt den Wertebereich. Nichts wurde geschrieben.';
-$string['combinationruleviolation'] = 'Kombinationsregel verletzt für Aktivitätsart "{$a->modname}": {$a->message} describe_module_fields(modname: "{$a->modname}", vollstaendig: true) zeigt alle Kombinationsregeln. Nichts wurde geschrieben.';
+$string['unknownfield'] = 'Unbekanntes Feld "{$a->field}" für Aktivitätsart "{$a->modname}". describe_module_fields(modname: "{$a->modname}", vollständig: true) zeigt die erlaubten Felder. Nichts wurde geschrieben.';
+$string['blockedfield'] = 'Feld "{$a->field}" ist für Aktivitätsart "{$a->modname}" gesperrt und kann nicht per Patch gesetzt werden. describe_module_fields(modname: "{$a->modname}", vollständig: true) zeigt die Sperrliste. Nichts wurde geschrieben.';
+$string['invalidfieldvalue'] = 'Ungültiger Wert "{$a->value}" für Feld "{$a->field}" bei Aktivitätsart "{$a->modname}". describe_module_fields(modname: "{$a->modname}", vollständig: true) zeigt den Wertebereich. Nichts wurde geschrieben.';
+$string['combinationruleviolation'] = 'Kombinationsregel verletzt für Aktivitätsart "{$a->modname}": {$a->message} describe_module_fields(modname: "{$a->modname}", vollständig: true) zeigt alle Kombinationsregeln. Nichts wurde geschrieben.';
 
 // Sichtbarkeit/Stealth/Gruppenmodus über den gemeinsamen Block (#390).
 $string['stealthnotallowed'] = 'Stealth ("visibleoncoursepage" = 0) ist auf dieser Moodle-Instanz abgeschaltet (Einstellung "allowstealth"). Die Aktivität kann verborgen (visible = 0) oder sichtbar geschaltet werden, aber nicht unsichtbar auf der Kursseite bei gleichzeitiger Erreichbarkeit. Nichts wurde geschrieben.';

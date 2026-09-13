@@ -1,25 +1,25 @@
 ---
 name: journal
-description: Lies diese Datei, wenn eine dokumentationswuerdige Entscheidung festgehalten werden soll oder eine Sitzung mit "Setze meine Planung fuer ... fort" weiterarbeitet.
+description: Lies diese Datei, wenn eine dokumentationswuerdige Entscheidung festgehalten werden soll oder eine Sitzung mit "Setze meine Planung für ... fort" weiterarbeitet.
 ---
 
 # Referenz: Journal und Weiterarbeiten
 
 Lies diese Datei, wenn eine dokumentationswuerdige Entscheidung festgehalten
-werden soll oder eine Sitzung mit "Setze meine Planung fuer ... fort"
+werden soll oder eine Sitzung mit "Setze meine Planung für ... fort"
 weiterarbeitet.
 
-Das **Journal** (siehe CONTEXT.md) haelt Planungen, Freigaben,
+Das **Journal** (siehe CONTEXT.md) hält Planungen, Freigaben,
 Moodle-Aenderungen und Kontextaenderungen in datierten, nie ueberschriebenen
 Markdown-Dateien im Kontextbereich fest – als Gedaechtnis ohne Git. Gelesen
-und geschrieben wird ausschliesslich ueber die Werkzeuge aus
+und geschrieben wird ausschliesslich über die Werkzeuge aus
 `kurspilot_get_skill("kontextbereich")`.
 
 ## Dokumentationsroutine waehrend der Arbeit
 
 Wie beim `grill-with-docs`-Skill werden geklaerte Begriffe und Entscheidungen
 nicht erst am Sitzungsende gesammelt, sondern sofort dokumentiert, sobald sie
-fuer spaetere Unterrichtsplanung wiederverwendbar sind. Der Chatverlauf ist
+für spaetere Unterrichtsplanung wiederverwendbar sind. Der Chatverlauf ist
 kein verlaessliches Gedaechtnis.
 
 Als dokumentationswuerdig gelten insbesondere:
@@ -34,7 +34,7 @@ Als dokumentationswuerdig gelten insbesondere:
   Planabweichungen, Freigabe-Voraussetzungen, digitale Abgaben,
   bewusst verworfene Alternativen.
 - Kontextentscheidungen: welche Klasse, Teilgruppe, Fachprofil oder welcher
-  Unterrichtsordner fuer eine Planung gilt.
+  Unterrichtsordner für eine Planung gilt.
 
 Vorgehen:
 
@@ -43,23 +43,23 @@ Vorgehen:
 2. Fehlt der noetige Kontext, nicht still ohne Gedaechtnis weiterarbeiten:
    kurz den **Pflichtkontext** klaeren und ein niedrigschwelliges
    **Erklaerendes Setup** mit Vorschau anbieten (siehe
-   `kurspilot_get_skill("kontext-onboarding")`). Nach Bestaetigung werden die
+   `kurspilot_get_skill("kontext-onboarding")`). Nach Bestätigung werden die
    passenden `CONTEXT.md`-Dateien angelegt und die Notiz direkt ins Journal
    geschrieben.
 3. Die Notiz als eigenen Journal-Eintrag per `kurspilot_append_context_file`
-   an die passende Journal-Datei anhaengen (siehe Journal-Ablage unten fuer
+   an die passende Journal-Datei anhaengen (siehe Journal-Ablage unten für
    den Scope: Lerngruppe -> Klassenjournal; Unterricht, Material, Test,
    Moodle-Planung -> Unterrichtsordner-Journal; Kontext je nach vorhandener
    Fachzuordnung). Bestehende Journal- oder Kontextdateien werden nie direkt
-   ueberschrieben.
-4. Wenn die Entscheidung einen kanonischen Produkt-/Domainbegriff fuer
-   Kurspilot selbst klaert, stattdessen oder zusaetzlich `CONTEXT.md` im Repo
+   überschrieben.
+4. Wenn die Entscheidung einen kanonischen Produkt-/Domainbegriff für
+   Kurspilot selbst klaert, stattdessen oder zusätzlich `CONTEXT.md` im Repo
    aktualisieren. ADRs nur sparsam nutzen, wenn die Entscheidung schwer
    rueckgaengig, ohne Kontext ueberraschend und das Ergebnis eines echten
    Trade-offs ist.
 
-Eintraege knapp, aber spaeter nutzbar formulieren: Was wurde entschieden,
-warum, fuer welche Lerngruppe oder welches Unterthema, und was bleibt offen?
+Einträge knapp, aber später nutzbar formulieren: Was wurde entschieden,
+warum, für welche Lerngruppe oder welches Unterthema, und was bleibt offen?
 
 ## Journal-Ablage
 
@@ -76,9 +76,9 @@ echter Mehrdeutigkeit (z.B. unklar, ob eine Notiz die ganze Klasse oder nur
 ein Fach betrifft) kurz nachfragen – sonst automatisch entscheiden. Ein
 Schuljahresjournal ist kein Standard.
 
-## Wann entstehen Journal-Eintraege?
+## Wann entstehen Journal-Einträge?
 
-Journal-Eintraege entstehen waehrend des gesamten Workflows, nicht nur nach
+Journal-Einträge entstehen waehrend des gesamten Workflows, nicht nur nach
 Moodle-Schreibzugriff:
 
 - direkt nach jeder dokumentationswuerdigen Lerngruppen-, Fach-, Material-,
@@ -89,10 +89,10 @@ Moodle-Schreibzugriff:
 
 Nach jedem freigegebenen und ausgefuehrten Implementierungsplan (siehe
 `kurspilot_get_skill("implementierungsplan-workflow")`) wird automatisch ein
-**Umsetzungsbericht** als neuer Journal-Eintrag angehaengt:
+**Umsetzungsbericht** als neuer Journal-Eintrag angehängt:
 
 1. Der Bericht wird als Markdown mit den Abschnitten "Erfolge", "Fehler" und
-   "Offene Nacharbeit" formatiert. Erfolge nennen Aktivitaetstyp und
+   "Offene Nacharbeit" formatiert. Erfolge nennen Aktivitätstyp und
    Aktivitaetsname zuerst; Moodle-IDs/Links stehen nur als technische
    Referenz dahinter. Interne Tool- oder MCP-Korrekturen gehoeren nicht in
    den Bericht, solange sie keine Auswirkung auf Ergebnis, Unsicherheit oder
@@ -101,27 +101,27 @@ Nach jedem freigegebenen und ausgefuehrten Implementierungsplan (siehe
    Textseite ist sichtbar, alter Merkkasten ist verborgen" statt "847
    sichtbar, 362 verborgen".
 2. Der Bericht wird per `kurspilot_append_context_file` an die Journal-Datei
-   des Tages angehaengt. Existiert die Datei noch nicht, wird sie neu
-   angelegt. Bestehende Eintraege werden **nie** ueberschrieben, auch nicht
-   bei mehreren Eintraegen am selben Tag.
+   des Tages angehängt. Existiert die Datei noch nicht, wird sie neu
+   angelegt. Bestehende Einträge werden **nie** überschrieben, auch nicht
+   bei mehreren Einträgen am selben Tag.
 
-Auch ausserhalb von Umsetzungsberichten gilt: jede Journal-Notiz laeuft ueber
+Auch ausserhalb von Umsetzungsberichten gilt: jede Journal-Notiz läuft über
 `kurspilot_append_context_file`, nie durch direktes Ueberschreiben der Datei.
 
 ## Weiterarbeiten-Routine (Sitzungsstart)
 
-Bei natuerlichen Startformulierungen wie "Setze meine Planung fuer 7a Nawi
+Bei natuerlichen Startformulierungen wie "Setze meine Planung für 7a Nawi
 fort" oder "Wo standen wir bei 7a?":
 
-1. Offene `ausstaende` aus `kurspilot_list_skills` melden (siehe
+1. Offene `ausstände` aus `kurspilot_list_skills` melden (siehe
    `kurspilot_get_skill("kontextbereich")`) — vor und getrennt von der
    Offenen Nacharbeit unten, kein gemeinsamer Absatz.
 2. Passenden Kontext laden (Lerngruppenprofil/Fachprofil, siehe
    `kurspilot_get_skill("kontext-onboarding")`).
 3. Relevante Journal-Dateien sammeln (Klassen- und/oder
-   Unterrichtsordner-Journal der letzten Eintraege, per
+   Unterrichtsordner-Journal der letzten Einträge, per
    `kurspilot_read_context_file`).
-4. Diese Dateien nach Eintraegen im Abschnitt "Offene Nacharbeit" durchsuchen.
+4. Diese Dateien nach Einträgen im Abschnitt "Offene Nacharbeit" durchsuchen.
 5. Gefundene Punkte werden der Lehrkraft als **Nacharbeitsvorschlag**
    zusammengefasst angeboten – z.B. "Aus dem letzten Eintrag (2026-06-10) ist
    noch offen: ... Soll das jetzt angegangen werden?"
