@@ -132,6 +132,7 @@
         el('kurspilot-ortswahl-' + target + '_type').value = selection.type;
         el('kurspilot-ortswahl-' + target + '_instanceid').value = selection.instanceid || '';
         el('kurspilot-ortswahl-' + target + '_path').value = selection.path || '';
+        el('kurspilot-ortswahl-' + target + '_confirmed').value = selection.confirmed ? '1' : '';
         renderProgress();
     }
 
@@ -424,7 +425,7 @@
         }
     }
 
-    function finalizeFolderSelection() {
+    function finalizeFolderSelection(confirmed) {
         var instance = config.instances.filter(function (i) {
             return i.id === state.instanceid;
         })[0];
@@ -433,7 +434,8 @@
             type: 'extern',
             instanceid: state.instanceid,
             path: state.path,
-            display: display
+            display: display,
+            confirmed: !!confirmed
         });
         closeModal();
     }
@@ -445,7 +447,7 @@
         var result = state.lastResult;
         var needsHandover = state.target === 'kontextbereich' && result && result.entrycount > 0;
         if (!needsHandover) {
-            finalizeFolderSelection();
+            finalizeFolderSelection(false);
             return;
         }
         var names = (result.entrynames || []).join(', ');
@@ -460,7 +462,7 @@
 
     el('kurspilot-ortswahl-confirmfolder-ack').addEventListener('click', function () {
         closeConfirmModal();
-        finalizeFolderSelection();
+        finalizeFolderSelection(true);
     });
 
     // --- Abschliessen: Client-seitige Vollstaendigkeitspruefung ----------

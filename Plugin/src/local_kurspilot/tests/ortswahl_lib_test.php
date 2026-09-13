@@ -311,6 +311,101 @@ final class ortswahl_lib_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Issue #518, Spec §5: die ausdrueckliche Uebergabe eines gefuellten
+     * Kontextbereich-Ordners wird serverseitig geprueft, nicht nur im
+     * Seitenskript - ein Aufruf ohne die Bestaetigung scheitert benannt.
+     */
+    public function test_apply_rejects_filled_context_folder_without_explicit_confirmation(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $instanceid = $this->lastinstanceid;
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Unterricht');
+        $fake->seed_file('/' . $this->fixturebasispfad . '/Unterricht/notiz.md', 'Inhalt');
+
+        try {
+            ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Unterricht'],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+            $this->fail('ortswahlfolderconfirmrequired haette geworfen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ortswahlfolderconfirmrequired', $e->errorcode);
+        } finally {
+            $this->assertNull(storage_anchor::read_raw_pointer());
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    /**
+     * Gegenstueck: mit der ausdruecklichen Bestaetigung schliesst dieselbe
+     * Auswahl erfolgreich ab.
+     */
+    public function test_apply_accepts_filled_context_folder_with_explicit_confirmation(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $instanceid = $this->lastinstanceid;
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Unterricht');
+        $fake->seed_file('/' . $this->fixturebasispfad . '/Unterricht/notiz.md', 'Inhalt');
+
+        try {
+            $changed = ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Unterricht', 'confirmed' => true],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+
+            $this->assertSame(['kontextbereich'], $changed);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    /**
+     * Ein leerer Ordner braucht keine Bestaetigung (Spec §5: "ein leerer ...
+     * Ordner braucht keine Rueckfrage").
+     */
+    public function test_apply_accepts_empty_context_folder_without_confirmation(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $instanceid = $this->lastinstanceid;
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Leer');
+
+        try {
+            $changed = ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Leer'],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+
+            $this->assertSame(['kontextbereich'], $changed);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    /**
+     * Ein erneutes Abschliessen ohne Ortswechsel braucht keine erneute
+     * Bestaetigung (Spec §5 gilt nur fuer "der neu gewaehlte Ordner").
+     */
+    public function test_apply_repeat_of_unchanged_filled_context_folder_needs_no_confirmation(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $instanceid = $this->lastinstanceid;
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Unterricht');
+        $fake->seed_file('/' . $this->fixturebasispfad . '/Unterricht/notiz.md', 'Inhalt');
+        $selection = [
+            'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Unterricht', 'confirmed' => true],
+            'materialbestand' => ['type' => 'moodle'],
+        ];
+
+        try {
+            $this->assertSame(['kontextbereich'], ortswahl_lib::apply($selection));
+            $selection['kontextbereich']['confirmed'] = false;
+            $this->assertSame([], ortswahl_lib::apply($selection));
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
     public function test_apply_is_a_noop_and_does_not_duplicate_history_on_repeat(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->prepare_instance();
@@ -712,15 +807,17 @@ final class ortswahl_lib_test extends \advanced_testcase {
 
         try {
             // Moodle -> Erst: kein alter Moodle-Ort mit Dateien -> kein Altbestand.
+            // "Erst" enthaelt bereits eine Datei -> Uebergabe-Bestaetigung noetig (Issue #518).
             ortswahl_lib::apply([
-                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Erst'],
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Erst', 'confirmed' => true],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
             $this->assertArrayNotHasKey('vorheriger_ort', storage_anchor::read_raw_pointer());
 
             // Erst -> Zweit: "Erst" enthaelt eine Datei -> wird zum Altbestand.
+            // "Zweit" enthaelt ebenfalls bereits eine Datei -> Bestaetigung noetig.
             ortswahl_lib::apply([
-                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Zweit'],
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Zweit', 'confirmed' => true],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
             $document = storage_anchor::read_raw_pointer();
@@ -874,8 +971,10 @@ final class ortswahl_lib_test extends \advanced_testcase {
         webdav_instance::use_test_transport($fake);
 
         try {
+            // "Alt" enthaelt bereits einen Unterordner und eine Datei ->
+            // Uebergabe-Bestaetigung noetig (Issue #518); "Neu" ist leer.
             ortswahl_lib::apply([
-                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Alt'],
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Alt', 'confirmed' => true],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
             ortswahl_lib::apply([

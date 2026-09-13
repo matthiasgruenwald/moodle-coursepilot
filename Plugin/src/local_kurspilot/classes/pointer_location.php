@@ -74,6 +74,13 @@ final class pointer_location {
      * dieselbe Person/denselben Server per Definition (beide Bereiche liegen
      * immer in den Private Files derselben Lehrkraft).
      *
+     * Der effektive Pfad einer externen Instanz ist ihr Basispfad plus der
+     * gewaehlte relative Pfad (Issue #518, Spec §2 Pruefung 7) - ohne den
+     * Basispfad wuerden zwei Instanzen mit gleichem Server/Konto, aber
+     * unterschiedlichem Basispfad, faelschlich als derselbe Ort verglichen
+     * (oder eine echte Verschachtelung uebersehen), sobald sich ihre
+     * relativen Pfade zufaellig gleichen bzw. unterscheiden.
+     *
      * @param string $subpath Zusaetzlicher Unterpfad ab diesem Ort, bereits
      *        segmentgeprueft (z.B. ueber {@see storage_anchor::normalise_client_path()}).
      * @return string
@@ -84,7 +91,9 @@ final class pointer_location {
         }
         $server = strtolower((string) ($this->fingerprint['server'] ?? ''));
         $konto = (string) ($this->fingerprint['konto'] ?? '');
-        return 'extern|' . $server . '|' . $konto . '|' . self::normalised_path((string) $this->relativepath, $subpath);
+        $basispfad = (string) ($this->fingerprint['basispfad'] ?? '');
+        $effectivepath = trim($basispfad, '/') . '/' . trim((string) $this->relativepath, '/');
+        return 'extern|' . $server . '|' . $konto . '|' . self::normalised_path($effectivepath, $subpath);
     }
 
     /**

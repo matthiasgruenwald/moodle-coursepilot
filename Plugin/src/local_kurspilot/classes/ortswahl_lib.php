@@ -349,9 +349,11 @@ final class ortswahl_lib {
      * neue Ortsverlauf-Zeile; ohne echte Aenderung wird der Pointer gar
      * nicht erst angefasst.
      *
-     * @param array<string, array{type: string, instanceid?: int, path?: string}> $selection
+     * @param array<string, array{type: string, instanceid?: int, path?: string, confirmed?: bool}> $selection
      *        Je Ziel entweder ['type' => 'moodle'] oder
-     *        ['type' => 'extern', 'instanceid' => int, 'path' => string].
+     *        ['type' => 'extern', 'instanceid' => int, 'path' => string, 'confirmed' => bool].
+     *        `confirmed` gilt nur fuer "kontextbereich" (Issue #518, Spec §5):
+     *        die ausdrueckliche Uebergabe eines gefuellten Ordners.
      * @return string[] Die tatsaechlich geaenderten Ziele.
      * @throws \moodle_exception bei ungueltiger Auswahl oder einem Ausfall beim Ordner-Anlegen.
      */
@@ -364,6 +366,12 @@ final class ortswahl_lib {
         // sonst liesse sich eine ungueltige Kombination erst gar nicht
         // abschliessen, ohne dass die Seite das sofort sagt.
         self::assert_no_overlap($wanted['kontextbereich'], $wanted['materialbestand']);
+
+        // Uebergabe-Bestaetigung eines gefuellten Kontextbereich-Ordners
+        // (Issue #518, Spec §5): serverseitig geprueft, nicht nur im
+        // Seitenskript - ein direkter Aufruf ohne die Bestaetigung der Seite
+        // darf nicht abschliessen koennen.
+        self::assert_folder_handover_confirmed($wanted, $current, $selection);
 
         self::create_new_external_folders($wanted, $current);
 
@@ -637,6 +645,37 @@ final class ortswahl_lib {
         $materialkey = self::to_pointer_location($materialbestand)->comparison_key();
         if (str_starts_with($materialkey, $kontextkey)) {
             throw new \moodle_exception('materialbestandimkontext', 'local_kurspilot');
+        }
+    }
+
+    /**
+     * Erzwingt die ausdrueckliche Uebergabe eines gefuellten Ordners als
+     * Kontextbereich (Issue #518, Spec §5: "Wird ein Ordner mit Inhalt
+     * gewaehlt, fragt die Seite ausdruecklich nach") auf dem Server, nicht
+     * nur im Seitenskript - eine leere oder unveraenderte Auswahl braucht
+     * keine Bestaetigung, nur ein wirklicher Wechsel auf einen gefuellten
+     * externen Ordner.
+     *
+     * Gilt nur fuer "kontextbereich" - Spec §5 fragt ausdruecklich nur dort
+     * nach, ein Wechsel des Materialbestands braucht keine Bestaetigung.
+     *
+     * @param array<string, array{ort: string, pfad: string, instanzid?: int}> $wanted
+     * @param array<string, array{ort: string, pfad: string, instanzid?: int}> $current
+     * @param array<string, array{confirmed?: bool}> $selection Roh, wie an {@see apply()} uebergeben.
+     * @throws \moodle_exception ortswahlfolderconfirmrequired
+     */
+    private static function assert_folder_handover_confirmed(array $wanted, array $current, array $selection): void {
+        $target = 'kontextbereich';
+        if ($wanted[$target]['ort'] !== pointer_location::EXTERN || self::same_place($current[$target], $wanted[$target])) {
+            return;
+        }
+        if (!empty($selection[$target]['confirmed'] ?? false)) {
+            return;
+        }
+        $instance = webdav_instance::resolve_owned((int) $wanted[$target]['instanzid']);
+        $relative = (string) $wanted[$target]['pfad'];
+        if (count(self::fetch_raw_entries($instance, $relative)) > 0) {
+            throw new \moodle_exception('ortswahlfolderconfirmrequired', 'local_kurspilot');
         }
     }
 

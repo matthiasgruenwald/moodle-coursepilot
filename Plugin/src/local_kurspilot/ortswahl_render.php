@@ -210,14 +210,18 @@ function local_kurspilot_render_ortswahl_tabs(array $data): void {
 
 /**
  * Die versteckten Formularfelder, die das JS je Ziel mit der getroffenen
- * Wahl befuellt (Typ, Instanz-ID, Pfad) - eines der beiden Ziele bleibt bei
- * "moodle", wenn nie ein anderer Ort gewaehlt wird.
+ * Wahl befuellt (Typ, Instanz-ID, Pfad, Uebergabe-Bestaetigung) - eines der
+ * beiden Ziele bleibt bei "moodle", wenn nie ein anderer Ort gewaehlt wird.
+ * `_confirmed` traegt die Uebergabe-Bestaetigung eines gefuellten Ordners
+ * (Issue #518, Spec §5) - serverseitig ausgewertet nur fuer "kontextbereich"
+ * ({@see \local_kurspilot\ortswahl_lib::apply()}).
  */
 function local_kurspilot_render_ortswahl_hidden_target_fields(): void {
     foreach (ortswahl_lib::TARGETS as $target) {
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $target . '_type', 'id' => 'kurspilot-ortswahl-' . $target . '_type']);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $target . '_instanceid', 'id' => 'kurspilot-ortswahl-' . $target . '_instanceid']);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $target . '_path', 'id' => 'kurspilot-ortswahl-' . $target . '_path']);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $target . '_confirmed', 'id' => 'kurspilot-ortswahl-' . $target . '_confirmed']);
     }
 }
 

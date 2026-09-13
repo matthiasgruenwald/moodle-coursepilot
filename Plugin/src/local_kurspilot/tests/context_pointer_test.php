@@ -226,6 +226,65 @@ final class context_pointer_test extends \advanced_testcase {
     }
 
     /**
+     * Issue #518, Spec #486 §2 Pruefung 7: zwei Instanzen mit gleichem
+     * Server/Konto, aber unterschiedlichem Basispfad, sind unterschiedliche
+     * Orte - der Vergleich muss den Basispfad einbeziehen, sonst wuerden
+     * zufaellig gleiche relative Pfade faelschlich als Ueberschneidung
+     * gelten.
+     */
+    public function test_extern_targets_with_different_base_paths_are_not_falsely_flagged_as_overlapping(): void {
+        $decoded = [
+            'kontextbereich' => [
+                'ort' => 'extern',
+                'instanzid' => 1,
+                'pfad' => 'Ordner1',
+                'pruefmerkmal' => ['server' => 's', 'basispfad' => 'TeamA', 'konto' => 'k'],
+            ],
+            'materialbestand' => [
+                'ort' => 'extern',
+                'instanzid' => 2,
+                'pfad' => 'Ordner1',
+                'pruefmerkmal' => ['server' => 's', 'basispfad' => 'TeamB', 'konto' => 'k'],
+            ],
+        ];
+
+        $location = context_pointer::resolve_target($decoded, 'materialordner');
+
+        $this->assertSame(pointer_location::EXTERN, $location->kind);
+    }
+
+    /**
+     * Gegenstueck (Issue #518): derselbe physische Ort, einmal ueber eine
+     * Instanz mit Basispfad "Team" plus Unterordner "A/B" erreicht, einmal
+     * ueber eine zweite Instanz, deren Basispfad direkt "Team/A" ist, mit
+     * Unterordner "B" - der effektive Pfad ist identisch, die Verschachtelung
+     * muss trotz unterschiedlicher Instanz-ID erkannt werden.
+     */
+    public function test_extern_targets_nested_via_different_base_paths_are_rejected(): void {
+        $decoded = [
+            'kontextbereich' => [
+                'ort' => 'extern',
+                'instanzid' => 1,
+                'pfad' => 'A/B',
+                'pruefmerkmal' => ['server' => 's', 'basispfad' => 'Team', 'konto' => 'k'],
+            ],
+            'materialbestand' => [
+                'ort' => 'extern',
+                'instanzid' => 2,
+                'pfad' => 'B',
+                'pruefmerkmal' => ['server' => 's', 'basispfad' => 'Team/A', 'konto' => 'k'],
+            ],
+        ];
+
+        try {
+            context_pointer::resolve_target($decoded, 'materialordner');
+            $this->fail('materialbestandimkontext haette geworfen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialbestandimkontext', $e->errorcode);
+        }
+    }
+
+    /**
      * Aufloesungspruefung 8 (Issue #497, Spec #486 §2/§5): bei einer als
      * IServ erkannten Instanz (Pruefmerkmal "iserv", ohne Netz) ist nur
      * unterhalb von "Files/" erreichbar.

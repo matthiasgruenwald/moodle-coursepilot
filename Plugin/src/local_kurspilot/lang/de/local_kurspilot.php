@@ -154,6 +154,7 @@ $string['ortswahlrootnotselectable'] = 'Die Wurzel dieser Verbindung ist nicht w
 $string['ortswahliservfilesonly'] = 'Bei IServ ist nur unterhalb von „Files/“ wählbar.';
 $string['ortswahlinstanceauthunsupported'] = 'Diese Verbindung nutzt kein https mit Basic-Anmeldung und ist deshalb nicht wählbar.';
 $string['ortswahloverlaplocked'] = 'Der Materialbestand liegt im Kontextbereich oder im selben Ordner — bitte einen anderen Ordner wählen.';
+$string['ortswahlfolderconfirmrequired'] = 'Der gewählte Ordner für den Kontextbereich ist nicht leer — bitte die Übergabe im Dateifenster ausdrücklich bestätigen.';
 $string['ortswahlconfirmheading'] = 'Ordner ist nicht leer';
 $string['ortswahlconfirmcount'] = '{$a} Einträge liegen hier bereits, unter anderem:';
 $string['ortswahlconfirmtext'] = 'Kurspilot legt hier Markdown-Dateien an und kann gleichnamige Markdown-Dateien überschreiben. Löschen oder verschieben kann es nichts.';

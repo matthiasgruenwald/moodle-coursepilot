@@ -83,7 +83,7 @@ function local_kurspilot_handle_ortswahl_finish(): ?array {
  * Liest die Formulareingabe je Ziel - roh, {@see \local_kurspilot\ortswahl_lib::apply()}
  * validiert Instanz, Pfad und Sperren.
  *
- * @return array<string, array{type: string, instanceid: int, path: string}>
+ * @return array<string, array{type: string, instanceid: int, path: string, confirmed: bool}>
  * @throws moodle_exception ortswahlselectioninvalid bei einem unbekannten Typ.
  */
 function local_kurspilot_read_ortswahl_selection(): array {
@@ -94,6 +94,7 @@ function local_kurspilot_read_ortswahl_selection(): array {
             'type' => $type,
             'instanceid' => optional_param($target . '_instanceid', 0, PARAM_INT),
             'path' => optional_param($target . '_path', '', PARAM_RAW_TRIMMED),
+            'confirmed' => optional_param($target . '_confirmed', 0, PARAM_BOOL),
         ];
         if ($type !== pointer_location::MOODLE && $type !== pointer_location::EXTERN) {
             throw new moodle_exception('ortswahlselectioninvalid', 'local_kurspilot');

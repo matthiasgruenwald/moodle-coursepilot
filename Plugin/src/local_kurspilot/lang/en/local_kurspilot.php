@@ -153,6 +153,7 @@ $string['ortswahlrootnotselectable'] = 'The root of this connection is not selec
 $string['ortswahliservfilesonly'] = 'On IServ, only locations below "Files/" are selectable.';
 $string['ortswahlinstanceauthunsupported'] = 'This connection does not use https with basic authentication and is therefore not selectable.';
 $string['ortswahloverlaplocked'] = 'The material stock lies inside the context area or in the same folder — please choose a different folder.';
+$string['ortswahlfolderconfirmrequired'] = 'The chosen context area folder is not empty — please explicitly confirm the handover in the file window.';
 $string['ortswahlconfirmheading'] = 'Folder is not empty';
 $string['ortswahlconfirmcount'] = '{$a} entries already exist here, including:';
 $string['ortswahlconfirmtext'] = 'Kurspilot creates markdown files here and can overwrite markdown files with the same name. It cannot delete or move anything.';
