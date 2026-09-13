@@ -769,6 +769,127 @@ final class ortswahl_lib_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * A -> B -> A: nach der Rueckkehr darf kein Altbestand mehr auf den
+     * jetzt aktuellen Ort zeigen, auch wenn B leer war (Issue #517, Spec §9:
+     * "Wer erneut wechselt, verdraengt ihn - auch wenn am verlassenen Ort
+     * nichts lag").
+     */
+    public function test_apply_clears_previous_location_that_would_point_at_the_current_place(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_user::instance($user->id)->id,
+            'component' => 'user',
+            'filearea' => 'private',
+            'itemid' => 0,
+            'filepath' => '/kurspilot/',
+            'filename' => 'vorlagen.md',
+        ], '# A');
+        $fake = new fake_webdav_transport();
+        $fake->seed_folder('/' . $this->fixturebasispfad);
+        webdav_instance::use_test_transport($fake);
+
+        try {
+            // A (Moodle, mit Datei) -> B (extern, leer): A wird zum Altbestand.
+            ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'B'],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+            $document = storage_anchor::read_raw_pointer();
+            $this->assertSame('moodle', $document['vorheriger_ort']['ort']);
+            $this->assertSame('kurspilot', $document['vorheriger_ort']['pfad']);
+
+            // B (extern, leer) -> A (Moodle): B ist leer, verdraengt den
+            // Altbestand trotzdem - sonst zeigte er wieder auf A, den jetzt
+            // aktuellen Ort.
+            ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'moodle'],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+            $document = storage_anchor::read_raw_pointer();
+            $this->assertArrayNotHasKey('vorheriger_ort', $document);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    /**
+     * Ein Ordner (z.B. der Unterrichtsordner, User Story 15) oder eine
+     * andere Datei am alten Ort erzeugen fuer sich allein keinen Altbestand -
+     * nur eine `.md`-Kontextdatei zaehlt (Issue #517, Spec §9).
+     */
+    public function test_apply_records_no_previous_location_when_old_location_has_only_non_context_entries(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_user::instance($user->id)->id,
+            'component' => 'user',
+            'filearea' => 'private',
+            'itemid' => 0,
+            'filepath' => '/kurspilot/unterricht/',
+            'filename' => 'arbeitsblatt.pdf',
+        ], 'x');
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_user::instance($user->id)->id,
+            'component' => 'user',
+            'filearea' => 'private',
+            'itemid' => 0,
+            'filepath' => '/kurspilot/',
+            'filename' => 'notizen.txt',
+        ], 'x');
+
+        try {
+            ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+
+            $document = storage_anchor::read_raw_pointer();
+            $this->assertArrayNotHasKey('vorheriger_ort', $document);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    /**
+     * Dasselbe wie oben, nur am alten *externen* Ort: ein Unterordner und
+     * eine andere Datei erzeugen ebenfalls keinen Altbestand (Issue #517).
+     */
+    public function test_apply_records_no_previous_location_when_old_external_location_has_only_non_context_entries(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $fake = new fake_webdav_transport();
+        $fake->seed_folder('/' . $this->fixturebasispfad);
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Alt');
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Alt/unterricht');
+        $fake->seed_file('/' . $this->fixturebasispfad . '/Alt/notizen.txt', 'x');
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Neu');
+        webdav_instance::use_test_transport($fake);
+
+        try {
+            ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Alt'],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+            ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Neu'],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+
+            $document = storage_anchor::read_raw_pointer();
+            $this->assertArrayNotHasKey('vorheriger_ort', $document);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
     /** @var int Instanz-ID der zuletzt von {@see prepare_instance()} angelegten Instanz. */
     private int $lastinstanceid = 0;
 

@@ -245,4 +245,42 @@ trait webdav_instance_fixture {
             'filename' => '.kurspilot-ort.json',
         ], json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
+
+    /**
+     * Gegenstueck zu {@see write_pointer_with_vorheriger_ort()} mit einem
+     * *externen* vorherigen Ort (Issue #517, Spec §6: `moodle/user:manageownfiles`
+     * wirkt extern nicht) - beide regulaeren Ziele bleiben *in Moodle*, nur
+     * der Altbestand selbst liegt in der WebDAV-Nutzerinstanz.
+     *
+     * @param \stdClass $user
+     * @param int $instanceid
+     * @param string $relativepath Wurzel des vorherigen Ortes in der Instanz.
+     * @param array|null $fingerprint Default: {@see fixture_fingerprint()}.
+     */
+    protected function write_pointer_with_external_vorheriger_ort(
+        \stdClass $user,
+        int $instanceid,
+        string $relativepath = 'Alt',
+        ?array $fingerprint = null
+    ): void {
+        $document = [
+            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'kurspilot'],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'kurspilot-material'],
+            'ortsverlauf' => [],
+            'vorheriger_ort' => [
+                'ort' => 'extern',
+                'instanzid' => $instanceid,
+                'pfad' => $relativepath,
+                'pruefmerkmal' => $fingerprint ?? $this->fixture_fingerprint(),
+            ],
+        ];
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_user::instance($user->id)->id,
+            'component' => 'user',
+            'filearea' => 'private',
+            'itemid' => 0,
+            'filepath' => '/kurspilot/',
+            'filename' => '.kurspilot-ort.json',
+        ], json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
 }

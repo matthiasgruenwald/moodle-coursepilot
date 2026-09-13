@@ -22,6 +22,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_kurspilot\altbestand;
 use local_kurspilot\context_files;
+use local_kurspilot\pointer_location;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -48,14 +49,25 @@ class dismiss_altbestand extends external_api {
     /**
      * @return array
      * @throws \moodle_exception altbestandclosed, wenn kein Altbestand offen ist.
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     * @throws \required_capability_exception ohne moodle/user:manageownfiles,
+     *         nur wenn der Altbestand selbst *in Moodle* liegt (Issue #517,
+     *         Spec §6: das Recht wirkt extern nicht).
      */
     public static function execute(): array {
         self::validate_parameters(self::execute_parameters(), []);
 
         $context = context_files::own_context();
         self::validate_context($context);
-        context_files::require_manage_own_files();
+
+        // Zeigerbewusst wie der Schreibzweig (Issue #491): das Recht gilt nur
+        // fuer Moodles Private Files, ein externer Altbestand kennt es nicht.
+        // Ohne offenen Altbestand (Ort unbekannt) bleibt die Pruefung wie
+        // zuvor bestehen - nur ein positiv erkannter externer Ort schaltet
+        // sie ab, kein blosses Fehlen.
+        $previouslocation = altbestand::current();
+        if ($previouslocation === null || $previouslocation['ort'] === pointer_location::MOODLE) {
+            context_files::require_manage_own_files();
+        }
 
         if (!altbestand::dismiss()) {
             throw new \moodle_exception('altbestandclosed', 'local_kurspilot');

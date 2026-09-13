@@ -171,12 +171,7 @@ final class ortswahl_lib {
         $segments = self::validate_segments($path);
         $relative = implode('/', $segments);
         $instance = webdav_instance::resolve_owned($instanceid);
-
-        try {
-            $raw = $instance->client()->propfind($instance->directory_url($relative), 1);
-        } catch (webdav_error $e) {
-            $raw = webdav_error::empty_when_missing($e, [], [pointer_reader::class, 'webdav_exception']);
-        }
+        $raw = self::fetch_raw_entries($instance, $relative);
 
         $folders = array_values(array_map(
             static fn (array $entry): array => ['name' => $entry['name']],
@@ -199,6 +194,44 @@ final class ortswahl_lib {
             'entrycount' => count($raw),
             'entrynames' => array_slice($names, 0, self::ENTRY_PREVIEW_COUNT),
         ];
+    }
+
+    /**
+     * Der eine PROPFIND-Aufruf, den sich {@see browse()} und
+     * {@see old_location_has_entries()} teilen (Issue #517) - ein
+     * Netzausfall gilt als leerer Ordner, nicht als Fehler (dieselbe Regel
+     * wie zuvor in {@see browse()}).
+     *
+     * @param \local_kurspilot\webdav\resolved_webdav_instance $instance
+     * @param string $relative
+     * @return array
+     */
+    private static function fetch_raw_entries(\local_kurspilot\webdav\resolved_webdav_instance $instance, string $relative): array {
+        try {
+            return $instance->client()->propfind($instance->directory_url($relative), 1);
+        } catch (webdav_error $e) {
+            return webdav_error::empty_when_missing($e, [], [pointer_reader::class, 'webdav_exception']);
+        }
+    }
+
+    /**
+     * Ob unter den obersten Eintraegen einer Ebene eine Kontextdatei
+     * (`.md`, keine Vorlage/Zwischendatei-Sonderfaelle) liegt - die einzigen
+     * Eintraege, die den Altbestand begruenden (Issue #517, Spec §9: "Als
+     * Altbestand zaehlt ein Ort nur, wenn dort Kontextdateien lagen"). Ein
+     * Ordner (z.B. der Unterrichtsordner aus User Story 15) oder eine andere
+     * Datei erzeugt fuer sich allein keinen Altbestand.
+     *
+     * @param array<int, array{name: string, type: string}> $entries
+     * @return bool
+     */
+    private static function has_context_file(array $entries): bool {
+        foreach ($entries as $entry) {
+            if (($entry['type'] ?? '') === 'file' && preg_match('/\.md$/i', (string) ($entry['name'] ?? '')) === 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -420,8 +453,14 @@ final class ortswahl_lib {
                 'von' => self::describe_pointer_value($current[$target]),
                 'nach' => self::describe_pointer_value($wanted[$target]),
             ];
-            if ($target === 'kontextbereich' && self::old_location_has_entries($current[$target])) {
-                $vorherigerort = $current[$target];
+            if ($target === 'kontextbereich') {
+                // Jeder echte Wechsel verdraengt den bisherigen Altbestand -
+                // auch wenn der verlassene Ort selbst leer war (Issue #517,
+                // Spec §9: "Wer erneut wechselt, verdraengt ihn"). Ohne dieses
+                // Verdraengen wuerde A->B->A bei leerem B den Altbestand aus
+                // dem ersten Wechsel stehen lassen, der dann auf den gerade
+                // wieder aktuellen Ort A zeigen wuerde.
+                $vorherigerort = self::old_location_has_entries($current[$target]) ? $current[$target] : null;
             }
         }
         return ['changed' => $changed, 'ortsverlauf' => $ortsverlauf, 'vorherigerort' => $vorherigerort];
@@ -481,10 +520,12 @@ final class ortswahl_lib {
     private static function old_location_has_entries(array $old): bool {
         if ($old['ort'] === pointer_location::MOODLE) {
             $directory = '/' . trim((string) $old['pfad'], '/') . '/';
-            return !empty(storage_anchor::list_entries($directory));
+            return self::has_context_file(storage_anchor::list_entries($directory));
         }
         try {
-            return self::browse((int) $old['instanzid'], (string) $old['pfad'])['entrycount'] > 0;
+            $instance = webdav_instance::resolve_owned((int) $old['instanzid']);
+            $relative = implode('/', self::validate_segments((string) $old['pfad']));
+            return self::has_context_file(self::fetch_raw_entries($instance, $relative));
         } catch (\moodle_exception $e) {
             if (in_array($e->errorcode, self::OLD_LOCATION_INVALID_CODES, true)) {
                 return false;

@@ -95,6 +95,36 @@ final class dismiss_altbestand_test extends \advanced_testcase {
     }
 
     /**
+     * Ein externer Altbestand laesst sich auch ohne moodle/user:manageownfiles
+     * beenden (Issue #517, Spec §6: das Recht wirkt extern nicht) - anders
+     * als beim Moodle-Altbestand oben.
+     */
+    public function test_dismisses_external_altbestand_without_manageownfiles_capability(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $this->write_pointer_with_external_vorheriger_ort($user, $instanceid);
+
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability(
+            'moodle/user:manageownfiles',
+            CAP_PROHIBIT,
+            $roleid,
+            \context_user::instance($user->id)->id,
+            true
+        );
+
+        $result = dismiss_altbestand::execute();
+        $result = external_api::clean_returnvalue(dismiss_altbestand::execute_returns(), $result);
+
+        $this->assertNotEmpty($result['message']);
+        $this->assertFalse(altbestand::open());
+    }
+
+    /**
      * Person A beendet nie den Altbestand von Person B.
      */
     public function test_person_a_cannot_dismiss_person_bs_altbestand(): void {
