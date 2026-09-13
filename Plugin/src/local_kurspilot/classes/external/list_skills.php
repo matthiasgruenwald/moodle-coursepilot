@@ -68,27 +68,57 @@ final class list_skills extends external_api {
         ], skill_corpus::list());
 
         global $USER;
+        $ortswahllink = (new \moodle_url(webdav_setup_steps::ORTSWAHL_PAGE))->out(false);
         $hinweise = [];
-        if (ortswahl_lib::open_with_access((int) $USER->id)) {
-            // Ortswahl offen und Freischaltung vorhanden (Issue #494
-            // Akzeptanzkriterium) - ohne Netzzugriff, kein Fakt ohne
-            // Freischaltung.
-            $hinweise[] = [
-                'text' => get_string('listskillsortswahlhint', 'local_kurspilot', webdav_setup_steps::ORTSWAHL_PAGE),
-                'link' => (new \moodle_url(webdav_setup_steps::ORTSWAHL_PAGE))->out(false),
-            ];
-        }
-        if (\local_kurspilot\altbestand::open()) {
-            // Altbestand offen (Issue #498, Spec #486 §9/§10): ohne
-            // Netzzugriff, ohne Zaehlung - nur der Fakt "es gibt einen
-            // vorherigen Ort".
-            $hinweise[] = [
-                'text' => get_string('listskillsaltbestandhint', 'local_kurspilot', webdav_setup_steps::ORTSWAHL_PAGE),
-                'link' => (new \moodle_url(webdav_setup_steps::ORTSWAHL_PAGE))->out(false),
-            ];
+        try {
+            $document = \local_kurspilot\storage_anchor::read_raw_pointer();
+            if ($document !== null) {
+                // Vollstaendigkeitspruefung ueber die bestehende Aufloesung
+                // (Issue #519, Spec #486 §10: "unlesbar oder unvollstaendig") -
+                // wirft pointerincomplete/pointerunreachable/
+                // materialbestandimkontext bei einem unvollstaendigen Pointer,
+                // denselben Fall wie "unlesbar", ohne die Pruefung hier zu
+                // duplizieren. Das aufgeloeste Ziel selbst wird nicht
+                // gebraucht.
+                \local_kurspilot\context_pointer::resolve_target($document, 'kontextbereich');
+            }
+            if (ortswahl_lib::open_with_access((int) $USER->id)) {
+                // Ortswahl offen und Freischaltung vorhanden (Issue #494
+                // Akzeptanzkriterium) - ohne Netzzugriff, kein Fakt ohne
+                // Freischaltung.
+                $hinweise[] = self::hinweis('listskillsortswahlhint', $ortswahllink);
+            }
+            if (\local_kurspilot\altbestand::open()) {
+                // Altbestand offen (Issue #498, Spec #486 §9/§10): ohne
+                // Netzzugriff, ohne Zaehlung - nur der Fakt "es gibt einen
+                // vorherigen Ort".
+                $hinweise[] = self::hinweis('listskillsaltbestandhint', $ortswahllink);
+            }
+        } catch (\moodle_exception $e) {
+            // Kaputter Kontextpointer (unlesbar oder unvollstaendig, Issue
+            // #519, Spec #486 §10) darf den Handshake nicht scheitern lassen -
+            // der Skillkatalog kommt trotzdem, dazu ein benannter Hinweis statt
+            // der beiden obigen Fakten, weiterhin ohne Netzzugriff.
+            $hinweise = [self::hinweis('listskillspointerbrokenhint', $ortswahllink)];
         }
 
         return ['skills' => $skills, 'ausstaende' => ausstand_notice::list_grouped(), 'hinweise' => $hinweise];
+    }
+
+    /**
+     * Baut einen Eintrag fuer 'hinweise' (Code-Review Issue #519): Text aus
+     * dem Sprachpaket, Link stets die Ortswahlseite - gemeinsam fuer alle
+     * drei Fakten dieser Methode.
+     *
+     * @param string $stringkey Schluessel im Sprachpaket local_kurspilot.
+     * @param string $link Bereits aufgeloester Link zur Ortswahlseite.
+     * @return array{text: string, link: string}
+     */
+    private static function hinweis(string $stringkey, string $link): array {
+        return [
+            'text' => get_string($stringkey, 'local_kurspilot', webdav_setup_steps::ORTSWAHL_PAGE),
+            'link' => $link,
+        ];
     }
 
     /**

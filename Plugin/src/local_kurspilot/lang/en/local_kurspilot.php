@@ -162,6 +162,7 @@ $string['ortswahlconfirmcancel'] = 'Cancel';
 $string['settingwebdavhint'] = 'School hint (location page)';
 $string['settingwebdavhint_desc'] = 'Optional free text shown to teachers without their own WebDAV connection on the location page, in addition to the three setup steps — e.g. a recommendation which cloud service the school provides.';
 $string['listskillsortswahlhint'] = 'The teacher can store the context area and material stock in their own WebDAV storage instead of Moodle — location page at {$a}.';
+$string['listskillspointerbrokenhint'] = 'The context pointer is unreadable or incomplete. The teacher must complete the location choice again — location page at {$a}.';
 
 // Legacy holdings "Altbestand" (issue #498, spec #486 §9/§10): the previous
 // location after a context area location change — read-only, ends explicitly.

@@ -230,4 +230,93 @@ final class list_skills_test extends \advanced_testcase {
         require(__DIR__ . '/../../lang/de/local_kurspilot.php');
         $this->assertDoesNotMatchRegularExpression('/\d/', $string['listskillsaltbestandhint']);
     }
+
+    /**
+     * Ein kaputter Kontextpointer (kein gueltiges JSON-Objekt) darf den
+     * Handshake nicht scheitern lassen (Issue #519, Spec #486 §10): der
+     * Skillkatalog kommt trotzdem, dazu ein benannter Hinweis auf die
+     * Ortswahlseite - ohne Netzzugriff.
+     */
+    public function test_broken_pointer_still_returns_skills_with_named_hint_and_no_network(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->setUser($user);
+        $this->enable_webdav_repository_type();
+        $this->grant_webdav_capability($user);
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_user::instance($user->id)->id,
+            'component' => 'user',
+            'filearea' => 'private',
+            'itemid' => 0,
+            'filepath' => '/kurspilot/',
+            'filename' => '.kurspilot-ort.json',
+        ], 'kein json');
+
+        $fake = new fake_webdav_transport();
+        webdav_instance::use_test_transport($fake);
+        try {
+            $result = list_skills::execute();
+            $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
+
+            $this->assertSame([], $fake->requests(), 'kurspilot_list_skills darf den externen Speicher nicht erreichen.');
+            $this->assertNotEmpty($result['skills']);
+            $this->assertCount(1, $result['hinweise']);
+            $this->assertSame(
+                get_string(
+                    'listskillspointerbrokenhint',
+                    'local_kurspilot',
+                    \local_kurspilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE
+                ),
+                $result['hinweise'][0]['text']
+            );
+            $this->assertStringContainsString('/local/kurspilot/ortswahl.php', $result['hinweise'][0]['link']);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    /**
+     * Ein unvollstaendiger Kontextpointer (gueltiges JSON-Objekt, aber ohne
+     * die Pflichtfelder) faellt unter denselben Fakt wie ein unlesbarer
+     * Pointer (Issue #519, Spec #486 §10: "unlesbar oder unvollstaendig") -
+     * derselbe benannte Hinweis, weiterhin ohne Netzzugriff.
+     */
+    public function test_incomplete_pointer_still_returns_skills_with_named_hint_and_no_network(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->setUser($user);
+        $this->enable_webdav_repository_type();
+        $this->grant_webdav_capability($user);
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_user::instance($user->id)->id,
+            'component' => 'user',
+            'filearea' => 'private',
+            'itemid' => 0,
+            'filepath' => '/kurspilot/',
+            'filename' => '.kurspilot-ort.json',
+        ], json_encode(['irgendwas' => 'ohne die Pflichtfelder']));
+
+        $fake = new fake_webdav_transport();
+        webdav_instance::use_test_transport($fake);
+        try {
+            $result = list_skills::execute();
+            $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
+
+            $this->assertSame([], $fake->requests(), 'kurspilot_list_skills darf den externen Speicher nicht erreichen.');
+            $this->assertNotEmpty($result['skills']);
+            $this->assertCount(1, $result['hinweise']);
+            $this->assertSame(
+                get_string(
+                    'listskillspointerbrokenhint',
+                    'local_kurspilot',
+                    \local_kurspilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE
+                ),
+                $result['hinweise'][0]['text']
+            );
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
 }
