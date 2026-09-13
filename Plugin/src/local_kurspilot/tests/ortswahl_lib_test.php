@@ -915,21 +915,14 @@ final class ortswahl_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Ordner (z.B. der Unterrichtsordner, User Story 15) oder eine
-     * andere Datei am alten Ort erzeugen fuer sich allein keinen Altbestand -
-     * nur eine `.md`-Kontextdatei zaehlt (Issue #517, Spec §9).
+     * Eine andere Datei (kein `.md`, kein Unterordner) am alten Ort erzeugt
+     * fuer sich allein keinen Altbestand (Issue #517, Spec §9) - das bleibt
+     * unveraendert (Issue #505 Befund #7 aendert nur den Unterordner-Fall,
+     * siehe {@see test_apply_records_previous_location_when_old_location_has_only_a_subfolder()}).
      */
     public function test_apply_records_no_previous_location_when_old_location_has_only_non_context_entries(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->prepare_instance();
-        get_file_storage()->create_file_from_string([
-            'contextid' => \context_user::instance($user->id)->id,
-            'component' => 'user',
-            'filearea' => 'private',
-            'itemid' => 0,
-            'filepath' => '/kurspilot/unterricht/',
-            'filename' => 'arbeitsblatt.pdf',
-        ], 'x');
         get_file_storage()->create_file_from_string([
             'contextid' => \context_user::instance($user->id)->id,
             'component' => 'user',
@@ -953,8 +946,8 @@ final class ortswahl_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Dasselbe wie oben, nur am alten *externen* Ort: ein Unterordner und
-     * eine andere Datei erzeugen ebenfalls keinen Altbestand (Issue #517).
+     * Dasselbe wie oben, nur am alten *externen* Ort: eine andere Datei ohne
+     * Unterordner erzeugt ebenfalls keinen Altbestand (Issue #517).
      */
     public function test_apply_records_no_previous_location_when_old_external_location_has_only_non_context_entries(): void {
         $this->resetAfterTest();
@@ -965,14 +958,13 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake = new fake_webdav_transport();
         $fake->seed_folder('/' . $this->fixturebasispfad);
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Alt');
-        $fake->seed_folder('/' . $this->fixturebasispfad . '/Alt/unterricht');
         $fake->seed_file('/' . $this->fixturebasispfad . '/Alt/notizen.txt', 'x');
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Neu');
         webdav_instance::use_test_transport($fake);
 
         try {
-            // "Alt" enthaelt bereits einen Unterordner und eine Datei ->
-            // Uebergabe-Bestaetigung noetig (Issue #518); "Neu" ist leer.
+            // "Alt" enthaelt nur eine Nicht-Kontextdatei, keinen Unterordner
+            // -> Uebergabe-Bestaetigung noetig (Issue #518); "Neu" ist leer.
             ortswahl_lib::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Alt', 'confirmed' => true],
                 'materialbestand' => ['type' => 'moodle'],
@@ -984,6 +976,79 @@ final class ortswahl_lib_test extends \advanced_testcase {
 
             $document = storage_anchor::read_raw_pointer();
             $this->assertArrayNotHasKey('vorheriger_ort', $document);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    /**
+     * Ein Unterordner am alten *Moodle*-Ort begruendet allein schon
+     * Altbestand (Issue #505 Befund #7): vorher wurde nur die oberste Ebene
+     * geprueft und ein Ordner dort zaehlte nicht - Kontextdateien, die
+     * ausschliesslich in Unterordnern lagen (z.B.
+     * `2026-27/9a/biologie/immunsystem/journal.md`), blieben beim
+     * Ortswechsel unbemerkt.
+     */
+    public function test_apply_records_previous_location_when_old_location_has_only_a_subfolder(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_user::instance($user->id)->id,
+            'component' => 'user',
+            'filearea' => 'private',
+            'itemid' => 0,
+            'filepath' => '/kurspilot/9a/biologie/',
+            'filename' => 'journal.md',
+        ], '# Journal');
+
+        try {
+            ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+
+            $document = storage_anchor::read_raw_pointer();
+            $this->assertSame('moodle', $document['vorheriger_ort']['ort']);
+            $this->assertSame('kurspilot', $document['vorheriger_ort']['pfad']);
+        } finally {
+            webdav_instance::use_test_transport(null);
+        }
+    }
+
+    /**
+     * Dasselbe am alten *externen* Ort (Issue #505 Befund #7): ein blosser
+     * Unterordner in der obersten Ebene begruendet Altbestand, ohne dass die
+     * oberste Ebene selbst hineingeschaut wird (Lehrkraft-Entscheidung: kein
+     * rekursives PROPFIND).
+     */
+    public function test_apply_records_previous_location_when_old_external_location_has_only_a_subfolder(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $fake = new fake_webdav_transport();
+        $fake->seed_folder('/' . $this->fixturebasispfad);
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Alt');
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Alt/9a');
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Neu');
+        webdav_instance::use_test_transport($fake);
+
+        try {
+            // "Alt" enthaelt nur einen Unterordner -> Uebergabe-Bestaetigung
+            // noetig (Issue #518); "Neu" ist leer.
+            ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Alt', 'confirmed' => true],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+            ortswahl_lib::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Neu'],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+
+            $document = storage_anchor::read_raw_pointer();
+            $this->assertSame('extern', $document['vorheriger_ort']['ort']);
+            $this->assertSame('Alt', $document['vorheriger_ort']['pfad']);
         } finally {
             webdav_instance::use_test_transport(null);
         }

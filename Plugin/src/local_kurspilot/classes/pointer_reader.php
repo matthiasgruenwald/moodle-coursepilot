@@ -298,18 +298,23 @@ final class pointer_reader {
      * verschluckt (ausser bei einer tatsaechlich fehlenden Datei): ein
      * fluechtiger Ausfall genau dieses einen GET waere sonst ein
      * stillschweigendes "kein Personenbezug" fuer eine in Wahrheit weiterhin
-     * gesperrte Datei - das widerspraeche dem in
-     * {@see \local_kurspilot\webdav\webdav_client} dokumentierten Grundsatz
-     * "nie stillschweigend Erfolg" (Issue #515). Stattdessen bricht der ganze
-     * Schreibversuch ab, uebersetzt wie jeder andere Lesefehler (siehe
-     * {@see read_content()}) - ohne Ausstandsnotiz, weil auch andere
-     * Lesefehler keine bekommen.
+     * gesperrte Datei, obwohl der anschliessende PUT durchgehen koennte -
+     * das widerspraeche dem in {@see \local_kurspilot\webdav\webdav_client}
+     * dokumentierten Grundsatz "nie stillschweigend Erfolg" (Issue #515).
+     *
+     * Die Aufrufer (Issue #505 Befund #10: {@see \local_kurspilot\external\write_context_file},
+     * {@see \local_kurspilot\external\append_context_file}) fangen diesen
+     * `webdav_error` selbst und uebersetzen ihn ueber
+     * {@see \local_kurspilot\pointer_writer::record_preread_failure()} in
+     * denselben Ausstand, den auch ein Ausfall beim echten Schreiben anlegen
+     * wuerde - der Vorgang bricht dabei bewusst *vor* dem Schreibversuch ab,
+     * statt zu ihm durchzureichen (siehe dort fuer die Begruendung).
      *
      * @param storage_area $area
      * @param string $path Client-Pfad, bereits als extern erkannt.
      * @param pointer_location $location Muss bereits als EXTERN erkannt sein.
      * @return string|null null, wenn die Datei fehlt oder der Ort gerade nicht aufloesbar ist.
-     * @throws \moodle_exception webdavexternalerror bei einem echten Lesefehler (nicht: fehlende Datei).
+     * @throws webdav_error bei einem echten Lesefehler (nicht: fehlende Datei) - roh, unuebersetzt.
      */
     public static function peek_external_content(storage_area $area, string $path, pointer_location $location): ?string {
         try {
@@ -321,7 +326,10 @@ final class pointer_reader {
         try {
             return $instance->client()->get($instance->file_url($webdavpath));
         } catch (webdav_error $e) {
-            return webdav_error::empty_when_missing($e, null, [self::class, 'webdav_exception']);
+            if ($e->errorclass === webdav_error::NOT_FOUND) {
+                return null;
+            }
+            throw $e;
         }
     }
 }

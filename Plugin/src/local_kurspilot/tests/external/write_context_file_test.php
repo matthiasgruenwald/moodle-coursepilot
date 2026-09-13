@@ -830,6 +830,36 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Eine abgelehnte Anmeldung (401) *beim Vorab-Lesen* (Personenbezugs-
+     * Vorpruefung der bereits vorhandenen Zieldatei) darf den Vorgang nicht
+     * ohne Ausstand abbrechen (Issue #505 Befund #10): derselbe Ausfall
+     * trifft den anschliessenden echten Schreibversuch erneut, der ihn dann
+     * vollstaendig behandelt.
+     */
+    public function test_external_write_records_ausstand_on_login_rejected_during_preread(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/plan.md', 'alt');
+        $fake->deny_auth();
+
+        try {
+            $this->write('plan.md', '# Neu');
+            $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertCount(1, $ausstaende);
+        $this->assertSame('plan.md', $ausstaende[0]['pfad']);
+        $this->assertSame(
+            \local_kurspilot\webdav\webdav_error::AUTH_REJECTED,
+            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+        );
+    }
+
+    /**
      * Ueberschreiben einer bestehenden externen Datei traegt den Vorgang
      * "überschreiben" in den Ausstand ein, nicht "anlegen".
      */

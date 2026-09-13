@@ -59,7 +59,10 @@ final class webdav_setup_steps {
         $repositoryrecord = $DB->get_record('repository', ['type' => self::REPOSITORY_TYPE]);
         $repositoryactive = $repositoryrecord !== false && (int) $repositoryrecord->visible === 1;
         $userinstancesallowed = $repositoryactive && (bool) get_config(self::REPOSITORY_TYPE, 'enableuserinstances');
-        $hascapability = $userinstancesallowed
+        // $userid > 0 vor dem Kontextzugriff (Issue #505 Befund #1): die CLI
+        // ruft mit $USER->id = 0 auf, context_user::instance(0) wirft dort
+        // dml_missing_record. Ohne Person ist die Capability ohnehin "nein".
+        $hascapability = $userinstancesallowed && $userid > 0
             && has_capability(self::CAPABILITY, \context_user::instance($userid));
 
         return [

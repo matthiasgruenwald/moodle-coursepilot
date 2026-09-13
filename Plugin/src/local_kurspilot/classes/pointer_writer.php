@@ -48,14 +48,19 @@ use local_kurspilot\webdav\webdav_setup_steps;
  */
 final class pointer_writer {
 
-    /** @var string Vorgang "anlegen" - Ausstandsnotiz-Vokabular (ADR 0023). */
-    private const OP_CREATE = 'anlegen';
+    /**
+     * @var string Vorgang "anlegen" - Ausstandsnotiz-Vokabular (ADR 0023).
+     *      Oeffentlich (Issue #505 Befund #10): die Personenbezugs-
+     *      Vorpruefungen der Schreibendpunkte brauchen dasselbe Vokabular fuer
+     *      {@see record_preread_failure()}.
+     */
+    public const OP_CREATE = 'anlegen';
 
     /** @var string Vorgang "ueberschreiben". */
-    private const OP_OVERWRITE = 'überschreiben';
+    public const OP_OVERWRITE = 'überschreiben';
 
     /** @var string Vorgang "anhaengen". */
-    private const OP_APPEND = 'anhängen';
+    public const OP_APPEND = 'anhängen';
 
     /**
      * @var string[] moodle_exception-Fehlerschluessel, die genauso einen
@@ -415,19 +420,46 @@ final class pointer_writer {
     }
 
     /**
-     * Uebersetzt einen {@see webdav_error} - `Konflikt` bekommt die
-     * bestehende, auf Zusammenfuehren gerichtete Meldung und legt **keinen**
-     * Ausstand an (ADR 0023 Punkt 2: Konflikt ist ein Aufruffehler, kein
-     * Ausfall); jeder andere Fehler ist ein Ausfall im Sinne der
-     * Ausstandsnotiz und laeuft ueber {@see fail()}.
+     * Uebersetzt einen Ausfall beim Vorab-Lesen genauso wie einen Ausfall
+     * beim echten Schreiben (Issue #505 Befund #10): dieselbe Ausstandsnotiz,
+     * derselbe fuenfteilige Text. Genutzt von den Personenbezugs-
+     * Vorpruefungen der Schreibendpunkte ({@see \local_kurspilot\external\write_context_file},
+     * {@see \local_kurspilot\external\append_context_file}), wenn das GET vor
+     * dem eigentlichen Schreibversuch an Verbindung/Ort scheitert (abgelehnte
+     * Anmeldung, nicht erreichbar, unklar/gedrosselt, ...).
+     *
+     * Bricht bewusst *vor* dem eigentlichen Schreibversuch ab, statt einfach
+     * durchzureichen: bei einer echten Ausfallklasse (dieselbe, die auch der
+     * anschliessende Schreibversuch treffen wuerde) bleibt dadurch nichts
+     * geschrieben. Wuerde man stattdessen unbesehen zum Schreibversuch
+     * durchreichen, koennte eine markierte Zieldatei ungeprueft ueberschrieben
+     * werden, falls ausgerechnet nur dieses eine Vorab-GET scheitert, der
+     * anschliessende PUT aber durchgeht - genau der Fall, den
+     * {@see \local_kurspilot\pointer_reader::peek_external_content()} laut
+     * Issue #515 nicht stillschweigend uebergehen darf.
      *
      * @param webdav_error $e
+     * @param pointer_location $location
      * @param string $clientpath
-     * @param pointer_location $location Nie null: ein {@see webdav_error} kann
-     *        erst entstehen, nachdem der Pointer bereits erfolgreich aufgeloest wurde.
      * @param string $operation Eine der OP_*-Konstanten.
      * @param int $courseid Siehe {@see write()}.
      * @return \moodle_exception
+     */
+    public static function record_preread_failure(
+        webdav_error $e,
+        pointer_location $location,
+        string $clientpath,
+        string $operation,
+        int $courseid
+    ): \moodle_exception {
+        return self::translate_or_record($e, $clientpath, $location, $operation, $courseid);
+    }
+
+    /**
+     * `Konflikt` bekommt die bestehende, auf Zusammenfuehren gerichtete
+     * Meldung und legt **keinen** Ausstand an (ADR 0023 Punkt 2: Konflikt ist
+     * ein Aufruffehler, kein Ausfall); jeder andere Fehler ist ein Ausfall im
+     * Sinne der Ausstandsnotiz und laeuft ueber {@see fail()}.
      */
     private static function translate_or_record(
         webdav_error $e,

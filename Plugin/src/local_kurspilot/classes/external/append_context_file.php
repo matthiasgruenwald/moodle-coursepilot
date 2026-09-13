@@ -216,10 +216,10 @@ class append_context_file extends external_api {
      * Personenbezug der Zieldatei wird ueber den pointer-bewussten Lesezweig
      * geprueft, denselben, den auch `read_context_file` benutzt.
      *
-     * Der Rotationshinweis gilt extern als Pflicht (Spec §6): jedes Anhaengen
-     * ueberträgt die ganze Datei zweimal, das weiche 1-MB-Signal des
-     * Moodle-Zweigs reicht dafuer nicht - die Antwort traegt ihn deshalb bei
-     * jedem externen Anhaengen, nicht erst ab der Groessengrenze.
+     * Der Rotationshinweis folgt extern derselben 1-MB-Grenze wie im
+     * Moodle-Zweig (Issue #505 Befund #9, siehe execute_moodle()): der Text
+     * nennt ausdruecklich "1 MB", eine unbedingte Anzeige waere bei kleinen
+     * Dateien irrefuehrend.
      *
      * @param string $path
      * @param string $content
@@ -235,7 +235,7 @@ class append_context_file extends external_api {
         string $expectedcontenthash,
         int $courseid = 0
     ): array {
-        self::guard_personal_data_external($path, $content);
+        self::guard_personal_data_external($path, $content, $courseid);
 
         $result = context_files::append_pointer_aware($path, $content, $expectedcontenthash, $ausstand !== '', $courseid);
         \local_kurspilot\ausstand_notice::dismiss($ausstand);
@@ -251,30 +251,19 @@ class append_context_file extends external_api {
      *
      * @param string $path
      * @param string $content
+     * @param int $courseid Siehe {@see execute()} - nur fuer einen etwaigen Ausstandseintrag.
      */
-    private static function guard_personal_data_external(string $path, string $content): void {
-        try {
-            $existing = context_files::read_content_pointer_aware($path);
-        } catch (\moodle_exception $e) {
-            // Pruefung 8 (IServ-Bereich, Issue #516, Spec #486 §2/§8): der Ort
-            // ist nicht aufloesbar - der folgende Schreibversuch
-            // (append_pointer_aware) scheitert ohnehin und legt den Eintrag in
-            // der Ausstandsnotiz an; die Personenbezugs-Vorpruefungen hier sind
-            // dann gegenstandslos, nicht ihrerseits ein zweiter Fehler.
-            if ($e->errorcode !== 'webdaviservfilesonly') {
-                throw $e;
-            }
-            $existing = null;
-        }
-        if ($existing && !personal_data::allowed() && personal_data::is_marked($existing['content'])) {
+    private static function guard_personal_data_external(string $path, string $content, int $courseid = 0): void {
+        $existingcontent = self::peek_existing_content($path, $courseid);
+        if ($existingcontent !== null && !personal_data::allowed() && personal_data::is_marked($existingcontent)) {
             throw new \moodle_exception('contextfilelocked', 'local_kurspilot', '', $path);
         }
 
         // Zugelassener Speicher (Issue #493, ADR 0021 §3): geprueft wird die
         // ganze entstehende Datei, nicht nur der bisherige Bestand - ein neu
         // angelegtes Anhaengsel kann die Markierung selbst erst mitbringen
-        // (der Fall $existing === null).
-        $finalcontent = ($existing['content'] ?? '') . $content;
+        // (der Fall $existingcontent === null).
+        $finalcontent = ($existingcontent ?? '') . $content;
         if (personal_data::is_marked($finalcontent)) {
             try {
                 \local_kurspilot\personal_data_hosts::require_allowed_location(
@@ -287,6 +276,57 @@ class append_context_file extends external_api {
                 }
                 // Siehe oben: der folgende Schreibversuch scheitert ohnehin.
             }
+        }
+    }
+
+    /**
+     * Liest die bereits vorhandene Zieldatei, tolerant gegen eine
+     * unaufloesbare Instanz/Verbindung (Issue #505 Befund #10) - eine
+     * geloeschte Instanz, entzogene Freischaltung o.ae. bricht die
+     * Vorpruefung nicht ab, der folgende echte Schreibversuch
+     * ({@see \local_kurspilot\context_files::append_pointer_aware()}) loest
+     * denselben Ort erneut auf und legt bei demselben Ausfall den Ausstand
+     * vollstaendig an.
+     *
+     * Ein Ausfall *waehrend* des eigentlichen GET (abgelehnte Anmeldung,
+     * nicht erreichbar, unklar/gedrosselt, ...) bricht dagegen bewusst hier
+     * ab, uebersetzt ueber {@see \local_kurspilot\pointer_writer::record_preread_failure()}
+     * in denselben Ausstand - siehe dort fuer die Begruendung (Issue #515:
+     * kein ungeprueftes Anhaengen an eine moeglicherweise markierte Datei,
+     * falls ausgerechnet nur dieses eine GET scheitert, der anschliessende
+     * Read-modify-write aber durchgeht).
+     *
+     * @param string $path
+     * @param int $courseid Siehe {@see guard_personal_data_external()}.
+     * @return string|null
+     */
+    private static function peek_existing_content(string $path, int $courseid = 0): ?string {
+        try {
+            $location = context_files::resolve_pointer_location();
+        } catch (\moodle_exception $e) {
+            // Pruefung 8 (IServ-Bereich, Issue #516, Spec #486 §2/§8): der Ort
+            // ist nicht aufloesbar - der folgende Schreibversuch scheitert
+            // ohnehin und legt den Eintrag in der Ausstandsnotiz an. Jeder
+            // andere Fehlerschluessel hier (pointerunreadable/pointerincomplete)
+            // ist dagegen ein echter Aufruffehler, kein Ausfall.
+            if ($e->errorcode !== 'webdaviservfilesonly') {
+                throw $e;
+            }
+            return null;
+        }
+        if ($location === null || $location->kind !== pointer_location::EXTERN) {
+            return null;
+        }
+        try {
+            return \local_kurspilot\pointer_reader::peek_external_content(context_files::area(), $path, $location);
+        } catch (\local_kurspilot\webdav\webdav_error $e) {
+            throw \local_kurspilot\pointer_writer::record_preread_failure(
+                $e,
+                $location,
+                $path,
+                \local_kurspilot\pointer_writer::OP_APPEND,
+                $courseid
+            );
         }
     }
 
@@ -304,7 +344,9 @@ class append_context_file extends external_api {
                 'path' => $result['path'],
                 'size' => $result['size'],
             ]);
-        $message .= ' ' . get_string('contextfilerotation', 'local_kurspilot');
+        if ($result['size'] > context_files::MAX_WRITE_BYTES) {
+            $message .= ' ' . get_string('contextfilerotation', 'local_kurspilot');
+        }
 
         return [
             'path' => $result['path'],

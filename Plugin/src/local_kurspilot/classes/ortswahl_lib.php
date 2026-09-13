@@ -215,19 +215,32 @@ final class ortswahl_lib {
     }
 
     /**
-     * Ob unter den obersten Eintraegen einer Ebene eine Kontextdatei
-     * (`.md`, keine Vorlage/Zwischendatei-Sonderfaelle) liegt - die einzigen
-     * Eintraege, die den Altbestand begruenden (Issue #517, Spec §9: "Als
-     * Altbestand zaehlt ein Ort nur, wenn dort Kontextdateien lagen"). Ein
-     * Ordner (z.B. der Unterrichtsordner aus User Story 15) oder eine andere
-     * Datei erzeugt fuer sich allein keinen Altbestand.
+     * Ob eine Ebene Altbestand begruendet (Issue #505 Befund #7, aendert
+     * Issue #517/Spec §9): eine Kontextdatei (`.md`) in der obersten Ebene
+     * *oder* mindestens ein Unterordner dort. Vorher zaehlte nur die
+     * Kontextdatei selbst - Kontextdateien, die ausschliesslich in
+     * Unterordnern lagen (z.B. `2026-27/9a/biologie/...`), blieben dadurch
+     * beim Ortswechsel unbemerkt: kein Altbestands-Hinweis, die KI bot nie an,
+     * sie zu kopieren.
+     *
+     * Bewusst weiterhin keine rekursive Suche (Lehrkraft-Entscheidung, Issue
+     * #505): eine Ordnerebene kostet bei WebDAV 1,2-1,7s, ein versehentlich zu
+     * hoch gewaehlter Ordner darf den Ortswechsel nicht 30s blockieren - ein
+     * Unterordner wird genannt, nicht durchsucht. Die Namen bleiben
+     * aussagekraeftig genug, {@see webdav_setup_steps} liefert dafuer den
+     * Hinweis `listskillsaltbestandhint`, die KI listet den vorherigen Ort
+     * bei Bedarf selbst per `kurspilot_list_context_files` auf.
      *
      * @param array<int, array{name: string, type: string}> $entries
      * @return bool
      */
     private static function has_context_file(array $entries): bool {
         foreach ($entries as $entry) {
-            if (($entry['type'] ?? '') === 'file' && preg_match('/\.md$/i', (string) ($entry['name'] ?? '')) === 1) {
+            $type = $entry['type'] ?? '';
+            if ($type === 'folder') {
+                return true;
+            }
+            if ($type === 'file' && preg_match('/\.md$/i', (string) ($entry['name'] ?? '')) === 1) {
                 return true;
             }
         }

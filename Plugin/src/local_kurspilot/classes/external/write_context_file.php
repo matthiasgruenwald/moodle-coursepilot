@@ -144,7 +144,7 @@ class write_context_file extends external_api {
                 // es hier nicht gibt) - der reine Inhalts-Gate ("ist der Inhalt
                 // markiert, obwohl der Schalter aus ist?") bleibt aber in Kraft,
                 // exakt dieselbe Pruefung wie im regulaeren externen Zweig unten.
-                self::require_personal_data_allowed($content, null, $params['path'], $params['nur_anlegen']);
+                self::require_personal_data_allowed($content, null, $params['path'], $params['nur_anlegen'], $params['courseid']);
                 return self::execute_external(
                     $params['path'],
                     $content,
@@ -156,7 +156,7 @@ class write_context_file extends external_api {
             }
             throw $e;
         }
-        self::require_personal_data_allowed($content, $location, $params['path'], $params['nur_anlegen']);
+        self::require_personal_data_allowed($content, $location, $params['path'], $params['nur_anlegen'], $params['courseid']);
 
         if ($location !== null && $location->kind === pointer_location::EXTERN) {
             return self::execute_external(
@@ -193,20 +193,40 @@ class write_context_file extends external_api {
      * markiert ist - "contextfilealreadyexists" geht deshalb vor
      * "contextfilelocked".
      *
+     * Ein Ausfall genau beim Vorab-Lesen (Issue #505 Befund #10: abgelehnte
+     * Anmeldung, nicht erreichbar, unklar/gedrosselt, ...) bricht ebenfalls
+     * ab, aber nicht mehr unuebersetzt: {@see \local_kurspilot\pointer_writer::record_preread_failure()}
+     * legt denselben Ausstand an, den auch der echte Schreibversuch anlegen
+     * wuerde - siehe dort fuer die Begruendung, warum bewusst *vor* dem
+     * Schreibversuch abgebrochen wird (Issue #515: kein ungeprueftes
+     * Ueberschreiben einer moeglicherweise markierten Datei).
+     *
      * @param string $content
      * @param pointer_location|null $location
      * @param string $path
      * @param bool $nuranlegen
-     * @throws \moodle_exception contextfilelocked, contextfilealreadyexists
+     * @param int $courseid Siehe execute() - nur fuer einen etwaigen Ausstandseintrag.
+     * @throws \moodle_exception contextfilelocked, contextfilealreadyexists, ausstandwritefailed
      */
     private static function require_personal_data_allowed(
         string $content,
         ?pointer_location $location,
         string $path,
-        bool $nuranlegen
+        bool $nuranlegen,
+        int $courseid = 0
     ): void {
         if ($location !== null && $location->kind === pointer_location::EXTERN && !personal_data::allowed()) {
-            $existing = \local_kurspilot\pointer_reader::peek_external_content(context_files::area(), $path, $location);
+            try {
+                $existing = \local_kurspilot\pointer_reader::peek_external_content(context_files::area(), $path, $location);
+            } catch (\local_kurspilot\webdav\webdav_error $e) {
+                throw \local_kurspilot\pointer_writer::record_preread_failure(
+                    $e,
+                    $location,
+                    $path,
+                    $nuranlegen ? \local_kurspilot\pointer_writer::OP_CREATE : \local_kurspilot\pointer_writer::OP_OVERWRITE,
+                    $courseid
+                );
+            }
             if ($existing !== null && $nuranlegen) {
                 throw new \moodle_exception('contextfilealreadyexists', 'local_kurspilot', '', $path);
             }

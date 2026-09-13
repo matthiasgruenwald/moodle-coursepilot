@@ -555,11 +555,30 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Der Rotationshinweis gilt extern als Pflicht (Spec #486 §6) - anders
-     * als in Moodle steht er in jeder Antwort, nicht erst ab 1 MB, weil jedes
-     * externe Anhaengen die ganze Datei zweimal uebertraegt.
+     * Der Rotationshinweis folgt extern derselben 1-MB-Grenze wie im
+     * Moodle-Zweig (Issue #505 Befund #9): der Text nennt ausdruecklich "1
+     * MB", eine unbedingte Anzeige waere bei kleinen Dateien irrefuehrend.
      */
-    public function test_external_append_always_carries_rotation_hint(): void {
+    public function test_external_append_over_limit_carries_rotation_hint(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->seed_file('/Kurspilot/Kontext/journal.md', str_repeat('x', 1024 * 1024));
+
+        $result = $this->append('journal.md', 'y');
+
+        $this->assertSame(1024 * 1024 + 1, $result['size']);
+        $this->assertStringContainsString(
+            get_string('contextfilerotation', 'local_kurspilot'),
+            $result['message']
+        );
+    }
+
+    /**
+     * Unterhalb der Grenze steht extern kein Rotationshinweis (Issue #505
+     * Befund #9).
+     */
+    public function test_external_append_under_limit_has_no_rotation_hint(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->set_up_external_context();
         $fake->seed_folder('/Kurspilot/Kontext');
@@ -567,7 +586,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         $result = $this->append('journal.md', 'x');
 
-        $this->assertStringContainsString(
+        $this->assertStringNotContainsString(
             get_string('contextfilerotation', 'local_kurspilot'),
             $result['message']
         );
@@ -601,6 +620,62 @@ final class append_context_file_test extends \advanced_testcase {
             \local_kurspilot\webdav\webdav_error::STORAGE_FULL,
             $ausstaende[0]['eintraege'][0]['fehlerklasse']
         );
+    }
+
+    /**
+     * Eine abgelehnte Anmeldung (401) *beim Vorab-Lesen* der Zieldatei
+     * (Personenbezugs-Vorpruefung) darf den Anhaengevorgang nicht ohne
+     * Ausstand abbrechen (Issue #505 Befund #10): derselbe Ausfall trifft
+     * den anschliessenden echten Schreibversuch erneut, der ihn dann
+     * vollstaendig behandelt - genau wie beim Ueberschreiben.
+     */
+    public function test_external_append_records_ausstand_on_login_rejected_during_preread(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $fake->deny_auth();
+
+        try {
+            $this->append('journal.md', 'x');
+            $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertCount(1, $ausstaende);
+        $this->assertSame('journal.md', $ausstaende[0]['pfad']);
+        $this->assertSame(
+            \local_kurspilot\webdav\webdav_error::AUTH_REJECTED,
+            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+        );
+    }
+
+    /**
+     * Eine geloeschte WebDAV-Instanz beim Vorab-Lesen legt beim Anhaengen
+     * ebenfalls einen Ausstand an (Issue #505 Befund #10) - anders als beim
+     * Ueberschreiben (write_context_file_test::test_deleted_webdav_instance_records_ausstand)
+     * fehlte diese Behandlung bislang: das Vorab-Lesen des Anhaengens nutzte
+     * einen Lesezweig ohne die dortige Ausfall-Toleranz.
+     */
+    public function test_external_append_records_ausstand_on_deleted_instance(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Kurspilot/Kontext');
+        $pointerlocation = context_files::resolve_pointer_location();
+        $DB->delete_records('repository_instances', ['id' => $pointerlocation->instanceid]);
+
+        try {
+            $this->append('journal.md', 'x');
+            $this->fail('Geloeschte Instanz haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_kurspilot\ausstand_notice::list_grouped();
+        $this->assertCount(1, $ausstaende);
+        $this->assertSame('webdavinstancemissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
     }
 
     /**
