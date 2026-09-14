@@ -327,18 +327,27 @@
             '<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>' + config.strings.loading + '</div>';
     }
 
-    function showTimeout() {
+    // Gemeinsame Fehlerbox fuer beide Ausfallarten beim Blaettern (Issue
+    // #526, Spec #486 §5/§8): der Client-Zeitueberschreitungsfall (8s ohne
+    // Antwort, kein Server-Text vorhanden) und ein vom Server tatsaechlich
+    // beantworteter Fehler (`{ok:false, error:...}`, z.B. Verbindungsausfall)
+    // - vorher zeigte browse() bei jedem `!result.ok` denselben Zeitueber-
+    // schreitungstext an, auch wenn der Server sofort und mit einem eigenen,
+    // an die Lehrkraft gerichteten Text geantwortet hatte (der dabei
+    // ignoriert wurde). Dieselben drei Ausweg-Aktionen passen fuer beide
+    // Faelle - browse() liefert ohnehin nur echte Speicherausfaelle.
+    function showBrowseError(title, text) {
         var container = el('kurspilot-ortswahl-folders');
         container.innerHTML = '';
         var box = document.createElement('div');
         box.className = 'alert alert-warning';
-        var title = document.createElement('strong');
-        title.textContent = config.strings.timeouttitle;
-        var text = document.createElement('p');
-        text.className = 'mb-2';
-        text.textContent = config.strings.timeouttext;
-        box.appendChild(title);
-        box.appendChild(text);
+        var titleEl = document.createElement('strong');
+        titleEl.textContent = title;
+        var textEl = document.createElement('p');
+        textEl.className = 'mb-2';
+        textEl.textContent = text;
+        box.appendChild(titleEl);
+        box.appendChild(textEl);
 
         var retry = document.createElement('button');
         retry.type = 'button';
@@ -363,6 +372,10 @@
         box.appendChild(later);
 
         container.appendChild(box);
+    }
+
+    function showTimeout() {
+        showBrowseError(config.strings.timeouttitle, config.strings.timeouttext);
     }
 
     // --- Sperren einer Ebene (Issue #497, Spec §5): Wurzel, IServ ---------
@@ -412,7 +425,11 @@
             .then(function (result) {
                 clearTimeout(timer);
                 if (!result.ok) {
-                    showTimeout();
+                    // Der Server hat geantwortet, aber mit einem Fehler
+                    // (Issue #526) - dessen eigener Text zeigt der Lehrkraft,
+                    // was los ist, statt immer nur die generische
+                    // Zeitueberschreitungs-Meldung.
+                    showBrowseError(config.strings.browseerrorheading, result.error || config.strings.timeouttext);
                     return;
                 }
                 renderFolders(result.folders || []);

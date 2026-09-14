@@ -124,6 +124,7 @@ $string['ortswahlselectionincomplete'] = 'Bitte für jedes Ziel eine Antwort wä
 $string['ortswahlselectioninvalid'] = 'Ungültige Auswahl — bitte den Ordner im Dateifenster erneut wählen.';
 $string['ortswahltimeouttitle'] = 'Keine Antwort';
 $string['ortswahltimeouttext'] = 'Der Speicher antwortet nicht innerhalb von 8 Sekunden. Nichts wurde gespeichert.';
+$string['ortswahlbrowseerrorheading'] = 'Fehler beim Laden';
 $string['ortswahlretry'] = 'Erneut versuchen';
 $string['ortswahlcheckcredentials'] = 'Zugangsdaten prüfen';
 $string['ortswahllater'] = 'Später';

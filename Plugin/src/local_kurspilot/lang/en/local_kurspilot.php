@@ -123,6 +123,7 @@ $string['ortswahlselectionincomplete'] = 'Please choose an answer for every targ
 $string['ortswahlselectioninvalid'] = 'Invalid selection — please choose the folder in the file window again.';
 $string['ortswahltimeouttitle'] = 'No response';
 $string['ortswahltimeouttext'] = 'The storage did not respond within 8 seconds. Nothing was saved.';
+$string['ortswahlbrowseerrorheading'] = 'Error loading';
 $string['ortswahlretry'] = 'Try again';
 $string['ortswahlcheckcredentials'] = 'Check credentials';
 $string['ortswahllater'] = 'Later';

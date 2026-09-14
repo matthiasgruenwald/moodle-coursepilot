@@ -117,6 +117,7 @@ function local_kurspilot_ortswahl_editor_strings(): array {
         'selectionincomplete' => get_string('ortswahlselectionincomplete', 'local_kurspilot'),
         'timeouttitle' => get_string('ortswahltimeouttitle', 'local_kurspilot'),
         'timeouttext' => get_string('ortswahltimeouttext', 'local_kurspilot'),
+        'browseerrorheading' => get_string('ortswahlbrowseerrorheading', 'local_kurspilot'),
         'retry' => get_string('ortswahlretry', 'local_kurspilot'),
         'checkcredentials' => get_string('ortswahlcheckcredentials', 'local_kurspilot'),
         'later' => get_string('ortswahllater', 'local_kurspilot'),
