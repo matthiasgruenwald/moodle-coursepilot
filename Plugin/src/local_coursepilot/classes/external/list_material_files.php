@@ -21,6 +21,7 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 
 defined('MOODLE_INTERNAL') || die();
@@ -65,20 +66,15 @@ class list_material_files extends external_api {
         // Der Kontextpointer (Issue #445) liegt physisch im
         // Kontextbereich-Anker, nicht hier - list_entries_for_ort() schliesst
         // ihn aus Konsistenzgruenden trotzdem aus, falls Anker und
-        // Materialordner je zusammenfallen.
-        $result = material_files::list_entries_for_ort($params['ort'], $params['path']);
-
-        $entries = [];
-        foreach ($result['entries'] as $entry) {
-            unset($entry['etag']);
-            $entries[] = $entry;
-        }
+        // Materialordner je zusammenfallen. material_area::list() entfernt
+        // das nur intern gebrauchte "etag"-Feld bereits ortsneutral (Issue #539).
+        $result = material_area::list($params['ort'], $params['path']);
 
         $remaining = material_files::remaining_quota();
 
         return [
             'path' => $result['directory'],
-            'entries' => $entries,
+            'entries' => $result['entries'],
             'remaining_quota_mb' => $remaining === null ? null : format_float($remaining / 1048576, 1),
         ];
     }

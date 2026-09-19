@@ -22,6 +22,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\gd_support;
 use local_coursepilot\image_preview;
+use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 
 defined('MOODLE_INTERNAL') || die();
@@ -69,7 +70,7 @@ class preview_material_file extends external_api {
         $context = material_files::own_context();
         self::validate_context($context);
 
-        $stored = material_files::read_content_for_ort($params['ort'], $params['path']);
+        $stored = material_area::read_for_ort($params['ort'], $params['path']);
         if ($stored === null) {
             throw new \moodle_exception('materialfilenotfound', 'local_coursepilot', '', material_files::normalise_path($params['path']));
         }

@@ -21,6 +21,7 @@ use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\gd_support;
+use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 
 defined('MOODLE_INTERNAL') || die();
@@ -139,7 +140,7 @@ class crop_material_file extends external_api {
      *         [Quelldatei-Inhalt, aufgeloester Quellpfad]
      */
     private static function resolve_source(array $params): array {
-        $sourcestored = material_files::read_content_for_ort($params['ort'], $params['sourcepath']);
+        $sourcestored = material_area::read_for_ort($params['ort'], $params['sourcepath']);
         if ($sourcestored === null) {
             throw new \moodle_exception(
                 'materialfilenotfound',

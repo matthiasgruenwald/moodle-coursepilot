@@ -21,6 +21,7 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 
 defined('MOODLE_INTERNAL') || die();
@@ -66,27 +67,28 @@ class delete_material_files extends external_api {
 
         // Erst alle Dateien aufloesen (jeder fehlende Pfad bricht komplett
         // ab), dann erst loeschen - kein Teilerfolg bei einem Tippfehler in
-        // der Liste.
+        // der Liste. Beides ueber den Anker (Issue #539, material_area::read()/
+        // delete() ueber den storage_port-Adapter), statt direkt ueber
+        // material_files/storage_anchor.
         $targets = [];
         foreach ($params['paths'] as $path) {
-            [$directory, $filename] = material_files::resolve_file($path);
-            $info = material_files::read_content($directory, $filename);
+            $info = material_area::read($path);
             if ($info === null) {
                 throw new \moodle_exception(
                     'materialdeletefilenotfound',
                     'local_coursepilot',
                     '',
-                    material_files::relative_file($directory, $filename)
+                    material_files::normalise_path($path)
                 );
             }
-            $targets[] = [$directory, $filename, $info['size']];
+            $targets[] = [$path, $info['size']];
         }
 
         $deleted = [];
         $freedbytes = 0;
-        foreach ($targets as [$directory, $filename, $size]) {
-            material_files::delete($directory, $filename);
-            $deleted[] = material_files::relative_file($directory, $filename);
+        foreach ($targets as [$path, $size]) {
+            material_area::delete($path);
+            $deleted[] = material_files::normalise_path($path);
             $freedbytes += $size;
         }
 

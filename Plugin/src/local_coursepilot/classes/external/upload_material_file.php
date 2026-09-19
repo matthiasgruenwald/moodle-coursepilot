@@ -20,6 +20,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 
 defined('MOODLE_INTERNAL') || die();
@@ -76,67 +77,42 @@ class upload_material_file extends external_api {
         self::validate_context($context);
         material_files::require_manage_own_files();
 
-        [$directory, $filename] = material_files::resolve_writable_file($params['path']);
-
         $content = base64_decode($params['content_base64'], true);
         if ($content === false) {
             throw new \invalid_parameter_exception('content_base64 ist kein gueltiges base64.');
         }
-        $newsize = strlen($content);
+        self::guard_server_size_limit(strlen($content));
 
-        self::guard_server_size_limit($newsize);
-
-        $existing = material_files::read_content($directory, $filename);
-        $oldsize = $existing !== null ? $existing['size'] : 0;
-
-        // Gleichzeitigkeitsschutz ohne Locks (Spec 0016 §5.3, hier
-        // uebernommen): eine fehlende Datei ist ebenfalls ein Konflikt.
-        if ($params['expected_contenthash'] !== ''
-                && ($existing === null || $existing['contenthash'] !== $params['expected_contenthash'])) {
-            throw new \moodle_exception('materialfilechanged', 'local_coursepilot', '', $params['path']);
-        }
-
-        return self::write_and_build_response($directory, $filename, $content, $oldsize, $newsize, $existing !== null);
+        // Pfad-, Endungs-, Gleichzeitigkeits- und Quotenpruefung sowie die
+        // Schreibchoreografie liegen im Anker (Issue #539, material_area::write()
+        // ueber den storage_port-Adapter), nicht mehr hier im Werkzeug.
+        return self::build_response(material_area::write($params['path'], $content, $params['expected_contenthash']));
     }
 
     /**
-     * Schreibt die Datei und baut die Antwort (Issue #523: aus execute()
-     * ausgelagert, um die Funktion unter der 50-Zeilen-Grenze zu halten).
+     * Baut die Antwort aus dem Ergebnis von {@see material_area::write()}
+     * (Issue #539, vormals #523: aus execute() ausgelagert, um die Funktion
+     * unter der 50-Zeilen-Grenze zu halten).
      *
-     * @param string $directory
-     * @param string $filename
-     * @param string $content
-     * @param int $oldsize
-     * @param int $newsize
-     * @param bool $overwritten
+     * @param array{path: string, created: bool, size: int, oldsize: int, warning: ?string} $written
      * @return array
      */
-    private static function write_and_build_response(
-        string $directory,
-        string $filename,
-        string $content,
-        int $oldsize,
-        int $newsize,
-        bool $overwritten
-    ): array {
-        $warning = material_files::write($directory, $filename, $content, $oldsize);
-
-        $relativepath = material_files::relative_file($directory, $filename);
-        $message = $overwritten
-            ? get_string('materialfileoverwritten', 'local_coursepilot', (object) [
-                'path' => $relativepath,
-                'before' => $oldsize,
-                'after' => $newsize,
-            ])
-            : get_string('materialfilecreated', 'local_coursepilot', $relativepath);
-        if ($warning !== null) {
-            $message .= ' ' . $warning;
+    private static function build_response(array $written): array {
+        $message = $written['created']
+            ? get_string('materialfilecreated', 'local_coursepilot', $written['path'])
+            : get_string('materialfileoverwritten', 'local_coursepilot', (object) [
+                'path' => $written['path'],
+                'before' => $written['oldsize'],
+                'after' => $written['size'],
+            ]);
+        if ($written['warning'] !== null) {
+            $message .= ' ' . $written['warning'];
         }
 
         return [
-            'path' => $relativepath,
-            'created' => !$overwritten,
-            'size' => $newsize,
+            'path' => $written['path'],
+            'created' => $written['created'],
+            'size' => $written['size'],
             'message' => $message,
         ];
     }
