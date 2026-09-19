@@ -108,9 +108,11 @@ greift auf interne Pointer-Dokumente zu.
 
 ## Further Notes
 
-Der Umbau fasst den Schreibweg echter Unterrichtsdaten an, während die Lehrkraft das Plugin
-produktiv nutzt. Deshalb gilt: vor Schema- oder Schreibwegänderungen ein Snapshot der
-Instanz, und die Abnahme läuft in einer echten Sitzung, nicht nur über die Testsuite.
+Der Umbau fasst den Schreibweg der Arbeitsdateien an. Der Produktivbetrieb beginnt
+**bewusst erst danach** — deshalb kann dieser Umbau ohne Rücksicht auf laufenden Unterricht
+gefahren werden und steht als erster in der Reihe. Unverändert gilt: vor Schema- oder
+Schreibwegänderungen ein Snapshot der Instanz, und die Abnahme läuft zusätzlich in einer
+echten Sitzung, nicht nur über die Testsuite.
 
 Der Report zum Architektur-Review nennt durchgehend die alten Namen `local_kurspilot` und
 `kurspilot_*`; seit ADR 0024 heißen Komponente und Werkzeuge `local_coursepilot` und
