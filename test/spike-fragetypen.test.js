@@ -51,9 +51,9 @@ test('Fragetyp-Ablage: verbindliche Gliederung ist vollstaendig benannt', () => 
 test('Fragetyp-Ablage: geschrieben mit write_context_file samt expected_contenthash, nicht append_context_file', () => {
   const reference = read(referenceFile);
 
-  assert.match(reference, /kurspilot_write_context_file/);
+  assert.match(reference, /coursepilot_write_context_file/);
   assert.match(reference, /expected_contenthash/);
-  assert.match(reference, /nicht[\s\S]{0,40}kurspilot_append_context_file/);
+  assert.match(reference, /nicht[\s\S]{0,40}coursepilot_append_context_file/);
 });
 
 test('Fragetyp-Ablage: geschrieben nur auf Schreibangebot, nie automatisch', () => {

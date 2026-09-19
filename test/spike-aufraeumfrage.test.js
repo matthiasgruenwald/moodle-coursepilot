@@ -13,7 +13,7 @@ function read(relativePath) {
 
 test('Aufraeumfrage: Bericht-Werkzeug wird vor der Frage aufgerufen', () => {
   const reference = read(referenceFile);
-  assert.match(reference, /kurspilot_report_loose_material_files/);
+  assert.match(reference, /coursepilot_report_loose_material_files/);
 });
 
 test('Aufraeumfrage: keine Frage, wenn keine losen Dateien vorliegen', () => {
@@ -31,7 +31,7 @@ test('Aufraeumfrage: die Frage nennt Anzahl, Gesamtgroesse und die einzelnen Dat
 test('Aufraeumfrage: geloescht wird nur auf ausdrueckliche Antwort, per delete_material_files', () => {
   const reference = read(referenceFile);
   assert.match(reference, /ausschliesslich auf ausdrueckliche Antwort/);
-  assert.match(reference, /kurspilot_delete_material_files/);
+  assert.match(reference, /coursepilot_delete_material_files/);
   assert.match(reference, /nie automatisch/);
 });
 

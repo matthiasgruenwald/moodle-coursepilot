@@ -1,7 +1,7 @@
 # Referenz: Kontextbereich ueber das native Server-MCP (Spike)
 
 Diese Datei gilt nur fuer `spike-planen`/`spike-umsetzen` gegen das native
-Plugin `local_kurspilot` (Branch `moodle-native-mcp`), **nicht** fuer die
+Plugin `local_coursepilot` (Branch `moodle-native-mcp`), **nicht** fuer die
 produktiven `kurspilot-*`-Skills. Dort liegen Arbeitsdateien lokal auf der
 Festplatte (Arbeitsbereich-Regel, siehe `skills/kurspilot-core.md`); hier
 liegen sie serverseitig im Kontextbereich. Es gibt keinen lokalen Dateipfad
@@ -13,10 +13,10 @@ unten. Grundlage: Spec 0016 §7/§8 (`docs/specs/0016-kontextbereich-schreibend.
 
 | Tool | Zweck | Antwort enthaelt |
 |---|---|---|
-| `kurspilot_list_context_files` | Ordnerinhalt auflisten | je Eintrag `contenthash`, `timemodified`, `locked` |
-| `kurspilot_read_context_file` | Datei lesen | `content`, `contenthash`, `timemodified` |
-| `kurspilot_write_context_file` | Anlegen/vollstaendig ueberschreiben, optional `expected_contenthash` | Meldung "neu angelegt" / "ueberschrieben"; bei Konflikt Fehler `contextfilechanged` |
-| `kurspilot_append_context_file` | Anhaengen in einem Serveraufruf, kein `expected_contenthash` (kein vorheriges Lesen noetig) | Meldung "angehaengt" / "neu angelegt", ggf. Rotationshinweis |
+| `coursepilot_list_context_files` | Ordnerinhalt auflisten | je Eintrag `contenthash`, `timemodified`, `locked` |
+| `coursepilot_read_context_file` | Datei lesen | `content`, `contenthash`, `timemodified` |
+| `coursepilot_write_context_file` | Anlegen/vollstaendig ueberschreiben, optional `expected_contenthash` | Meldung "neu angelegt" / "ueberschrieben"; bei Konflikt Fehler `contextfilechanged` |
+| `coursepilot_append_context_file` | Anhaengen in einem Serveraufruf, kein `expected_contenthash` (kein vorheriges Lesen noetig) | Meldung "angehaengt" / "neu angelegt", ggf. Rotationshinweis |
 
 Nur `.md`-Dateien; Pfadsegmente `[A-Za-z0-9_-]`, kein `.`/`..`.
 
@@ -52,13 +52,13 @@ zweiter, thematisch sortierter Ordnerbaum.
 `plan.md`, `status.md`, Vorlagen und Profildateien werden nie still
 geschrieben. An natuerlichen Haltepunkten (Planungsrunde abgeschlossen,
 Freigabe erteilt) fasst Kurspilot das Vereinbarte zusammen und fragt, ob es
-jetzt per `kurspilot_write_context_file` geschrieben werden soll. Erst nach
+jetzt per `coursepilot_write_context_file` geschrieben werden soll. Erst nach
 Bestaetigung wird geschrieben. Nichts Vereinbartes bleibt ungeschrieben liegen.
 
 ## Journal-Append unter der Sitzungs-Kontextfreigabe (Spec 0016 §8.1)
 
 Journal-Eintraege sind davon ausdruecklich ausgenommen: Sie laufen automatisch
-per `kurspilot_append_context_file`, sobald die einmalige
+per `coursepilot_append_context_file`, sobald die einmalige
 Sitzungs-Kontextfreigabe (siehe `CONTEXT.md`, Glossareintrag "Kontextfreigabe")
 zu Sitzungsbeginn erteilt ist — keine Einzelbestaetigung je Eintrag.
 
@@ -69,8 +69,8 @@ Kurspilot merkt sich je gelesener Datei den zuletzt gesehenen `contenthash`
 und prueft ihn:
 
 1. **Bei Sitzungsstart**, fuer alle Dateien, die diese Sitzung voraussichtlich
-   braucht: `kurspilot_list_context_files` (oder erneutes
-   `kurspilot_read_context_file`) gegen den zuletzt bekannten Stand
+   braucht: `coursepilot_list_context_files` (oder erneutes
+   `coursepilot_read_context_file`) gegen den zuletzt bekannten Stand
    vergleichen.
 2. **Vor jedem Schreibvorgang** (write und append) erneut, unmittelbar bevor
    geschrieben wird.
@@ -81,23 +81,23 @@ fragen, ob mit dem neuen Stand weitergearbeitet werden soll, bevor irgendetwas
 geschrieben wird. Kein Verlauf alter Versionen — nur der zuletzt gelesene
 `contenthash` wird vorgehalten.
 
-Bei `kurspilot_write_context_file` zusaetzlich technisch abgesichert: den
+Bei `coursepilot_write_context_file` zusaetzlich technisch abgesichert: den
 zuletzt gelesenen `contenthash` als `expected_contenthash` mitgeben. Bricht
 der Server mit `contextfilechanged` ab, ist das derselbe Fall — neu lesen,
-nachfragen. `kurspilot_append_context_file` kennt kein
+nachfragen. `coursepilot_append_context_file` kennt kein
 `expected_contenthash` (kein vorheriges Lesen im Vertrag); die Skill-seitige
 Pruefung vor dem Aufruf bleibt hier die einzige Absicherung.
 
 ## Journal-Rotation (Spec 0016 §8.4)
 
-Antwortet `kurspilot_append_context_file` mit dem Zusatz "... ueberschreitet
+Antwortet `coursepilot_append_context_file` mit dem Zusatz "... ueberschreitet
 1 MB — Rotation empfohlen" (Wortlaut laut Plugin: "Die Datei ueberschreitet
 1 MB — Rotation empfohlen."), legt Kurspilot **nicht**
 automatisch eine neue Datei an. Es benennt den Hinweis der Lehrkraft und
 schlaegt einen Archivnamen vor (z.B. `journal-2026-06.md` fuer das laufende
 Archiv, neu `journal-2026-07.md`). Stimmt die Lehrkraft zu:
 
-1. Neue Journaldatei per `kurspilot_write_context_file` anlegen (leer oder mit
+1. Neue Journaldatei per `coursepilot_write_context_file` anlegen (leer oder mit
    Header).
 2. Kuenftige Appends fuer diesen Kontext auf die neue Datei umstellen.
 3. Die bisherige Datei bleibt unveraendert liegen — kein Loeschen, kein
@@ -112,7 +112,7 @@ den Inhalt — die Klarnamen-Grenze selbst ist reine Skill-Regel:
 
 - Vor jedem Schreiben/Anhaengen mit Personenbezug pruefen, ob die Zieldatei
   bereits `kurspilot.personenbezug: true` traegt; falls nicht, das
-  Frontmatter beim naechsten `kurspilot_write_context_file` ergaenzen statt
+  Frontmatter beim naechsten `coursepilot_write_context_file` ergaenzen statt
   Klarnamen unmarkiert abzulegen.
 - Ist eine Datei nicht markiert und der Inhalt braucht Personenbezug, entweder
   die Markierung ergaenzen (mit Lehrkraftfreigabe, da das den #344-Schalter
@@ -122,7 +122,7 @@ den Inhalt — die Klarnamen-Grenze selbst ist reine Skill-Regel:
 
 Am Ende eines abgeschlossenen Aufbaus (mindestens ein Moodle-Schreibzugriff
 dieser Sitzung abgeschlossen, kein offener Blocker) ruft `spike-umsetzen`
-einmal `kurspilot_report_loose_material_files` auf und prueft die Antwort:
+einmal `coursepilot_report_loose_material_files` auf und prueft die Antwort:
 
 - **`files` ist leer:** keine Frage. Nichts liegt lose, also gibt es nichts zu
   entscheiden.
@@ -142,7 +142,7 @@ einmal `kurspilot_report_loose_material_files` auf und prueft die Antwort:
   loeschen? Aktuell nur noch 8,4 MB Restplatz."
 
 Geloescht wird ausschliesslich auf ausdrueckliche Antwort ("ja", eine
-Teilauswahl der genannten Dateien o.ae.) per `kurspilot_delete_material_files`
+Teilauswahl der genannten Dateien o.ae.) per `coursepilot_delete_material_files`
 mit genau den bestaetigten Pfaden — nie automatisch, keine Altersregel als
 Loeschgrund. Eine Ablehnung oder keine Antwort loescht nichts; die Dateien
 bleiben liegen, ohne dass die Frage in derselben Sitzung wiederholt wird.

@@ -1,7 +1,7 @@
 # Referenz: Fragetyp-Ablage und Lernschleife (Spike)
 
 Diese Datei gilt nur fuer `spike-planen`/`spike-umsetzen` gegen das native
-Plugin `local_kurspilot` (Branch `moodle-native-mcp`), **nicht** fuer die
+Plugin `local_coursepilot` (Branch `moodle-native-mcp`), **nicht** fuer die
 produktiven `kurspilot-*`-Skills. Grundlage: Spec 0017 §3 und §5
 (`docs/specs/0017-fragenbank-import-klonen.md`). Setzt den Kontextbereich aus
 `spike-kontextbereich.md` voraus (Werkzeuge, Schreibangebot,
@@ -42,7 +42,7 @@ Kuratierung — die Wartungslast ist die ausdrueckliche Grenze.
 
 Der Kopf ist die Verfallsanzeige: veraltet die Datei, merkt es die naechste
 Lernschleife (siehe Widerspruchspruefung unten). Die drei Versionsangaben
-werden **vor dem Schreiben** mit `kurspilot_get_version_info` geholt und im
+werden **vor dem Schreiben** mit `coursepilot_get_version_info` geholt und im
 Klartext eingetragen (Moodle-Release, `plugin_version`, `plugin_release`);
 "nicht ermittelt" ist keine zulaessige Fuellung — ohne Versionsstand kann die
 Widerspruchspruefung Veralterung nicht erkennen, und der Kopf ist genau
@@ -65,9 +65,9 @@ als keine.
 
 ### Schreibregel
 
-Geschrieben wird mit `kurspilot_write_context_file` samt
+Geschrieben wird mit `coursepilot_write_context_file` samt
 `expected_contenthash` — Vollersatz mit Konfliktschutz, **nicht**
-`kurspilot_append_context_file`. Grund: neues Wissen wird in den passenden
+`coursepilot_append_context_file`. Grund: neues Wissen wird in den passenden
 Abschnitt eingeordnet (ein Stolperstein wird eingereiht, eine Ausbaustufe als
 eigener Unterabschnitt ergaenzt), nicht ans Dateiende angehaengt — ein Append
 kann das nicht leisten.
@@ -87,8 +87,8 @@ Registry, keine Garantie.
 Ablauf, wenn Kurspilot einen Fragetyp bauen soll, den es nicht kennt:
 
 1. **Ablage lesen und Kopf abgleichen.** Gibt es `fragetypen/<typ>.md`
-   (`kurspilot_read_context_file`, mit Handaenderungs-Pruefung), wird der
-   Kopf **vor** dem Bauen mit `kurspilot_get_version_info` abgeglichen
+   (`coursepilot_read_context_file`, mit Handaenderungs-Pruefung), wird der
+   Kopf **vor** dem Bauen mit `coursepilot_get_version_info` abgeglichen
    (Versionsabweichung, siehe Widerspruchspruefung unten). Erst danach wird
    nach der Ablage gebaut.
 2. **Bestand durchsuchen.** Gibt es keine Ablage, sucht Kurspilot ueber

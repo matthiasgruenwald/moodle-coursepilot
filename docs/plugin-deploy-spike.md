@@ -1,9 +1,9 @@
 # Plugin-Deploy auf die Kurspilot-Spike-Instanz
 
-Schritt-für-Schritt-Anleitung, um Änderungen in `Plugin/src/local_kurspilot/`
+Schritt-für-Schritt-Anleitung, um Änderungen in `Plugin/src/local_coursepilot/`
 auf die native-MCP-Testinstanz (`https://spike.gruenwald.fun`) zu deployen.
 Gegenstück zu [`plugin-deploy.md`](plugin-deploy.md) (dort: `local_coursepilot`
-auf dem alten LXC-Container) — betrifft ausschließlich `local_kurspilot`,
+auf dem alten LXC-Container) — betrifft ausschließlich `local_coursepilot`,
 `local_coursepilot` bleibt unberührt.
 
 ## Voraussetzung: läuft nur auf der Kurspilot-Spike-LXC
@@ -23,7 +23,7 @@ bash scripts/deploy-plugin-spike.sh
 
 Macht (per Wrapper um `/opt/kurspilot-spike/scripts/deploy-plugin.sh`):
 
-1. rsync von `Plugin/src/local_kurspilot/` nach `/opt/plugins/local_kurspilot`
+1. rsync von `Plugin/src/local_coursepilot/` nach `/opt/plugins/local_coursepilot`
    (Bind-Mount des Spike-Containers) — inkl. `Plugin/src/well-known/`
    (RFC-8414/9728-Discovery-Pfade, Geschwisterverzeichnis).
 2. `docker compose up -d` im Spike-Stack.
@@ -31,14 +31,14 @@ Macht (per Wrapper um `/opt/kurspilot-spike/scripts/deploy-plugin.sh`):
    registriert neue/geänderte Webservices (`db/services.php`) und vor
    allem neue **Capabilities** (`db/access.php`). Genau dieser Schritt hat
    in der Vergangenheit gefehlt und zu `ErrorException: Capability
-   "local/kurspilot:viewhistory" was not found` geführt (Kursnavigation
+   "local/coursepilot:viewhistory" was not found` geführt (Kursnavigation
    *und* MCP-Tool-Aufrufe schlugen dadurch mit HTTP 500 fehl, siehe
-   `local_kurspilot_extend_navigation_course` in `lib.php`).
+   `local_coursepilot_extend_navigation_course` in `lib.php`).
 4. `admin/cli/purge_caches.php` **im Spike-Container** — `upgrade.php`
    räumt die Sprachdateien *nicht* ab, wenn sich die Plugin-Version nicht
    geändert hat. Geänderte Strings in `lang/de|en` bleiben sonst unsichtbar:
    der Endpunkt liefert weiter den alten Text oder, bei einem ganz neuen
-   String, den blanken Bezeichner (`local_kurspilot/readonlyvocabularyfield`).
+   String, den blanken Bezeichner (`local_coursepilot/readonlyvocabularyfield`).
    Im Codex-Livetest zu #400 sah das nach einem Plugin-Fehler aus, war aber
    nur der Cache — PHPUnit fällt darauf nie herein, weil die Testumgebung
    ihre Caches ohnehin frisch aufbaut.
@@ -64,7 +64,7 @@ Rollback bei kaputtem Zwischenstand:
 
 ## Wann ausführen
 
-Nach jeder Änderung an `Plugin/src/local_kurspilot/` (Code, `db/access.php`,
+Nach jeder Änderung an `Plugin/src/local_coursepilot/` (Code, `db/access.php`,
 `db/services.php`, `version.php`), bevor gegen die Spike-Instanz getestet
 wird — Codex-Sitzungen, PHPUnit (`scripts/phpunit.sh`) und manuelle
 MCP-Tool-Aufrufe sehen sonst einen veralteten Stand. Analog zum bestehenden
@@ -82,4 +82,4 @@ scripts/deploy-plugin-spike.sh` explizit ausführen.
 bash /opt/kurspilot-spike/scripts/phpunit.sh
 ```
 
-oder ein MCP-Tool-Aufruf aus Codex/Claude gegen `https://spike.gruenwald.fun/local/kurspilot/mcp.php`.
+oder ein MCP-Tool-Aufruf aus Codex/Claude gegen `https://spike.gruenwald.fun/local/coursepilot/mcp.php`.

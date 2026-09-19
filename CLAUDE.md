@@ -1,6 +1,11 @@
-# Kurspilot – CLAUDE.md
+# Coursepilot – CLAUDE.md
 
-Kurspilot ist die schulbezogene Weiterentwicklung von MoodleMCP: ein MCP-Server, der Claude Desktop/Codex per stdio mit der Moodle REST API verbindet (`local_coursepilot`-Plugin). Fork von [`jtuttas/MoodleMcp`](https://github.com/jtuttas/MoodleMcp), IGS-Arbeitsversion (siehe `docs/adr/0002-...`).
+Coursepilot ist die schulbezogene Weiterentwicklung von MoodleMCP. Es gibt zwei Linien, beide unter der Komponente `local_coursepilot`, aber nie auf derselben Instanz:
+
+- **Server-MCP (aktuell, Version 2):** `Plugin/src/local_coursepilot/` — das Moodle-Plugin ist selbst der MCP-Endpunkt, die Lehrkraft installiert nichts lokal. Hier findet alle Entwicklung statt. Läuft auf der Spike-Instanz.
+- **Lokaler stdio-Weg (Altstand 1.x, eingefroren):** `legacy/local_coursepilot/` plus `moodle-mcp.js` — Node-Server auf dem Laptop. Bleibt in Benutzung auf der 5.0-Instanz, bis der Schnitt fällt, und wird dann gelöscht (ADR 0024).
+
+Fork von [`jtuttas/MoodleMcp`](https://github.com/jtuttas/MoodleMcp), IGS-Arbeitsversion (siehe `docs/adr/0002-...`).
 
 - **Stack:** Node.js (≥24), keine npm-Laufzeit-Dependencies. PHP-Plugin für Moodle 5.0+. Ausnahme: `lib/image-crop.js` (Gezielter Bildausschnitt) benötigt das externe CLI-Tool ImageMagick (`convert`), siehe `docs/adr/0005-imagemagick-fuer-bildausschnitt.md`.
 - **GitHub:** `matthiasgruenwald/Kurspilot` (origin), `jtuttas/MoodleMcp` (upstream)
@@ -13,8 +18,9 @@ Kurspilot ist die schulbezogene Weiterentwicklung von MoodleMCP: ein MCP-Server,
 | Datei/Ordner | Zweck |
 |---|---|
 | `moodle-mcp.js` | Der gesamte MCP-Server – ein File, Tool-Definitionen + stdio-Loop |
-| `Plugin/src/local_coursepilot/` | PHP-Plugin-Source (echte Quelle, hier editieren) |
-| `Plugin/local_coursepilot.zip` | **Generiert** aus `Plugin/src/` via `npm run build:plugin` – nicht direkt editieren |
+| `Plugin/src/local_coursepilot/` | PHP-Plugin-Source des Server-MCP (echte Quelle, hier editieren) |
+| `legacy/local_coursepilot/` | Eingefrorener Altstand 1.x, versorgt die produktive 5.0-Instanz bis zum Schnitt |
+| `Plugin/local_coursepilot.zip` | **Generiert** aus `legacy/` via `npm run build:plugin` – nicht direkt editieren |
 | `SKILL.md` | Claude-Skill: baut Lernsituationen automatisch in Moodle auf |
 | `CONTEXT.md` | Domain-Glossar (Begriffe, Beziehungen, Beispieldialoge) |
 | `docs/adr/` | Architekturentscheidungen |
@@ -25,13 +31,9 @@ Kurspilot ist die schulbezogene Weiterentwicklung von MoodleMCP: ein MCP-Server,
 
 ## Plugin-Workflow
 
-PHP-Source liegt entpackt unter `Plugin/src/local_coursepilot/`. Nach Änderungen:
+Der Server-MCP liegt unter `Plugin/src/local_coursepilot/` und wird per rsync deployt (siehe Testing), nicht als ZIP gebaut.
 
-```bash
-npm run build:plugin   # baut Plugin/local_coursepilot.zip neu
-```
-
-Die `.zip` ist das Installationsartefakt für Moodle (siehe README) und bleibt im Repo getrackt – aber nur über `Plugin/src/` editieren, nie direkt im Zip.
+`npm run build:plugin` baut `Plugin/local_coursepilot.zip` aus **`legacy/`**, also dem eingefrorenen Altstand 1.x. Der Build für die neue Linie entsteht mit dem Release 2.0.0 (siehe `docs/plans/0004-umbenennung-auf-local-coursepilot.md`).
 
 ---
 
@@ -47,7 +49,7 @@ Die `.zip` ist das Installationsartefakt für Moodle (siehe README) und bleibt i
 ## Aufgabenhandling
 
 - Vor jedem Edit: Datei lesen. Vor Funktionsänderung: alle Aufrufer grep-en.
-- **Code-Sprache:** Bezeichner (Variablen, Funktionen, Kommentare) Englisch oder Deutsch gemischt ist im Bestand vorhanden – bei neuem Code: Bezeichner Englisch, UI-/CLI-sichtbare Strings (Fehlermeldungen, Tool-Beschreibungen für Lehrkräfte) Deutsch.
+- **Code-Sprache (ADR 0024, englische Basis):** Im Server-MCP sind Bezeichner, Klassennamen **und der Werkzeugvertrag** (Parameternamen, Rückgabeschlüssel, Werkzeugbeschreibungen) englisch. Moodle-Strings liegen ausschließlich in `lang/en/`; Übersetzungen laufen nach der Freigabe über AMOS. Ausnahme: der Skill-Korpus (`skills/`) bleibt vorerst deutsche Prosa für Lehrkräfte. Im `legacy/`-Altstand gilt die alte gemischte Regel unverändert – dort wird nichts mehr umgebaut.
 - Pläne gehören nach `docs/plans/` (versioniert).
 - Single-context Repo: `CONTEXT.md` im Root, `docs/adr/` für Architekturentscheidungen, `docs/specs/` für Produktspezifikationen.
 
@@ -74,15 +76,15 @@ npm run build:plugin
 bash scripts/deploy-plugin.sh
 ```
 
-Deployed `Plugin/src/local_coursepilot/` per rsync direkt auf den LXC und führt `upgrade.php` aus (SSH-Key: `~/.ssh/id_moodle_deploy`). Nach dem Deploy sind die neuen/geänderten Webservices sofort registriert. **Kein neues Token nötig** — bestehende Tokens bleiben gültig, da sich nur die Funktionsliste des Dienstes ändert, nicht die Token-Bindung.
+Deployed den **Altstand** `legacy/local_coursepilot/` per rsync direkt auf den LXC und führt `upgrade.php` aus (SSH-Key: `~/.ssh/id_moodle_deploy`). Nach dem Deploy sind die neuen/geänderten Webservices sofort registriert. **Kein neues Token nötig** — bestehende Tokens bleiben gültig, da sich nur die Funktionsliste des Dienstes ändert, nicht die Token-Bindung.
 
-### Plugin-Deploy auf die Kurspilot-Spike-Instanz (`local_kurspilot`)
+### Plugin-Deploy auf die Spike-Instanz (Server-MCP, `local_coursepilot`)
 
 ```bash
 bash scripts/deploy-plugin-spike.sh
 ```
 
-Gegenstück für `Plugin/src/local_kurspilot/` (native-MCP-Portierung) gegen `https://spike.gruenwald.fun` — läuft nur auf der Kurspilot-Spike-LXC selbst (kein SSH-Umweg), siehe [`docs/plugin-deploy-spike.md`](docs/plugin-deploy-spike.md). Führt ebenfalls `upgrade.php` aus — **Pflicht nach jeder Änderung an `db/access.php` oder `db/services.php`**, sonst schlagen Kursnavigation und MCP-Tool-Aufrufe mit HTTP 500 fehl (fehlende Capability). Bewusst kein automatischer Hook, da `upgrade.php`-Läufe nicht reversibel sind — vor Schema-Änderungen `/opt/kurspilot-spike/scripts/rollback.sh snapshot`.
+Gegenstück für `Plugin/src/local_coursepilot/` (Server-MCP) gegen `https://spike.gruenwald.fun` — läuft nur auf der Kurspilot-Spike-LXC selbst (kein SSH-Umweg), siehe [`docs/plugin-deploy-spike.md`](docs/plugin-deploy-spike.md). Führt ebenfalls `upgrade.php` aus — **Pflicht nach jeder Änderung an `db/access.php` oder `db/services.php`**, sonst schlagen Kursnavigation und MCP-Tool-Aufrufe mit HTTP 500 fehl (fehlende Capability). Bewusst kein automatischer Hook, da `upgrade.php`-Läufe nicht reversibel sind — vor Schema-Änderungen `/opt/kurspilot-spike/scripts/rollback.sh snapshot`.
 
 ### Integrationstests gegen Testmoodle
 

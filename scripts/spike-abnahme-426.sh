@@ -190,7 +190,7 @@ finish() {
 TOTAL_STAGES=9
 
 MOODLE_URL="${MOODLE_URL:-https://spike.gruenwald.fun}"
-MCP_URL="$MOODLE_URL/local/kurspilot/mcp.php"
+MCP_URL="$MOODLE_URL/local/coursepilot/mcp.php"
 CONTAINER="${KURSPILOT_SPIKE_CONTAINER:-moodle-kurspilot-spike-webserver-1}"
 SPIKE_USER="${KURSPILOT_SPIKE_USERNAME:-teacher_edit}"
 COURSE_ID="${MOODLE_TEST_COURSEID:-6}"
@@ -226,7 +226,7 @@ _snippet() {
 }
 
 _snippet ctx_list <<'PHP'
-$ctx = \local_kurspilot\context_files::own_context();
+$ctx = \local_coursepilot\context_files::own_context();
 $fs = get_file_storage();
 foreach ($fs->get_area_files($ctx->id, 'user', 'private', 0, 'filepath, filename', false) as $f) {
     printf("%s%s\t%s\t%s\n", $f->get_filepath(), $f->get_filename(),
@@ -235,20 +235,20 @@ foreach ($fs->get_area_files($ctx->id, 'user', 'private', 0, 'filepath, filename
 PHP
 
 _snippet ctx_get <<'PHP'
-$ctx = \local_kurspilot\context_files::own_context();
-[$dir, $name] = \local_kurspilot\context_files::resolve_file($argv[2]);
+$ctx = \local_coursepilot\context_files::own_context();
+[$dir, $name] = \local_coursepilot\context_files::resolve_file($argv[2]);
 $f = get_file_storage()->get_file($ctx->id, 'user', 'private', 0, $dir, $name);
 if (!$f) { fwrite(STDERR, "nicht vorhanden: $dir$name\n"); exit(1); }
 echo $f->get_content();
 PHP
 
 _snippet ctx_put <<'PHP'
-$ctx = \local_kurspilot\context_files::own_context();
-[$dir, $name] = \local_kurspilot\context_files::resolve_writable_file($argv[2]);
+$ctx = \local_coursepilot\context_files::own_context();
+[$dir, $name] = \local_coursepilot\context_files::resolve_writable_file($argv[2]);
 // get_file() liefert false, replace() erwartet ?stored_file.
 $existing = get_file_storage()->get_file($ctx->id, 'user', 'private', 0, $dir, $name) ?: null;
-\local_kurspilot\context_files::replace($existing,
-    \local_kurspilot\context_files::filerecord($ctx->id, $dir, $name),
+\local_coursepilot\context_files::replace($existing,
+    \local_coursepilot\context_files::filerecord($ctx->id, $dir, $name),
     base64_decode($argv[3]));
 echo "geschrieben: $dir$name\n";
 PHP
@@ -256,7 +256,7 @@ PHP
 # Loescht per rohem Moodle-Dateipfad (z.B. /kurspilot/fragetypen/ddwtos.md),
 # damit auch der Fehlpfad aus #425 F1 (/kurspilot/kurspilot/...) raeumbar ist.
 _snippet ctx_delete <<'PHP'
-$ctx = \local_kurspilot\context_files::own_context();
+$ctx = \local_coursepilot\context_files::own_context();
 $dir = dirname($argv[2]) . '/';
 $f = get_file_storage()->get_file($ctx->id, 'user', 'private', 0, $dir, basename($argv[2]));
 if (!$f) { echo "nicht vorhanden: {$argv[2]}\n"; exit(0); }
@@ -267,7 +267,7 @@ PHP
 _snippet log_tools <<'PHP'
 $since = (int) $argv[2];
 $rows = $DB->get_records_select('logstore_standard_log',
-    'component = :c AND timecreated >= :t', ['c' => 'local_kurspilot', 't' => $since],
+    'component = :c AND timecreated >= :t', ['c' => 'local_coursepilot', 't' => $since],
     'timecreated ASC', 'id, timecreated, eventname, other');
 foreach ($rows as $r) {
     $other = json_decode((string) $r->other, true);
@@ -353,7 +353,7 @@ fi
 # ── 3 ─────────────────────────────────────────────────────────────────────
 stage "Rauchprobe: traegt der ausgerollte Stand das Versionswerkzeug?"
 say "Diese Probe gehoert dem Wizard, nicht der Codex-Sitzung: sie prueft vorab,"
-say "ob kurspilot_get_version_info ueberhaupt da ist. Fehlt es, ist Pruefpunkt 2"
+say "ob coursepilot_get_version_info ueberhaupt da ist. Fehlt es, ist Pruefpunkt 2"
 say "nicht durchfuehrbar - besser jetzt gemerkt als mitten im Lauf."
 say ""
 TOKEN="$(bash "$REPO/scripts/spike-e2e-token.sh" "$SPIKE_USER")"
@@ -362,10 +362,10 @@ note "Token fuer die Probe ausgestellt (ersetzt den Browser-Flow, gilt eine Stun
 TOOLS="$(curl -s -X POST "$MCP_URL" -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')"
-if grep -q 'kurspilot_get_version_info' <<<"$TOOLS"; then
-  note "tools/list antwortet, kurspilot_get_version_info ist da (Voraussetzung fuer Pruefpunkt 2)."
+if grep -q 'coursepilot_get_version_info' <<<"$TOOLS"; then
+  note "tools/list antwortet, coursepilot_get_version_info ist da (Voraussetzung fuer Pruefpunkt 2)."
 else
-  warn "kurspilot_get_version_info fehlt in tools/list - Plugin-Stand ist zu alt."
+  warn "coursepilot_get_version_info fehlt in tools/list - Plugin-Stand ist zu alt."
   exit 1
 fi
 say ""

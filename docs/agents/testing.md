@@ -9,13 +9,13 @@
 
 - PHP-Quelle liegt in `Plugin/src/local_coursepilot/`.
 - `Plugin/local_coursepilot.zip` ist generiert und wird nie direkt editiert.
-- PHP-Quelle des Servermodell-Plugins liegt in `Plugin/src/local_kurspilot/`
+- PHP-Quelle des Servermodell-Plugins liegt in `Plugin/src/local_coursepilot/`
   (Branch `moodle-native-mcp`, Karte
   [#289](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/289)).
 
-## PHPUnit für `local_kurspilot`
+## PHPUnit für `local_coursepilot`
 
-`local_kurspilot` hat als erstes Kurspilot-Plugin ein Testfundament — der
+`local_coursepilot` hat als erstes Kurspilot-Plugin ein Testfundament — der
 Datenschutz-Vertrag wird ausschließlich per PHPUnit erzwungen, es gibt keinen
 Node-Test für dieses Plugin (Kartenentscheidung
 [#300](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/300),
@@ -31,7 +31,7 @@ Spike-Instanz werden nicht angefasst.
 # einmalig, und nach jedem Moodle-Upgrade der Spike-Instanz
 bash /opt/kurspilot-spike/scripts/phpunit.sh --init
 
-# Testlauf (spiegelt Plugin/src/local_kurspilot vorher in den Bind-Mount)
+# Testlauf (spiegelt Plugin/src/local_coursepilot vorher in den Bind-Mount)
 bash /opt/kurspilot-spike/scripts/phpunit.sh
 bash /opt/kurspilot-spike/scripts/phpunit.sh --filter privacy_surface_test
 ```
@@ -41,7 +41,7 @@ Ohne das Skript, direkt:
 ```bash
 set -a; source /opt/kurspilot-spike/docker/kurspilot-spike.env; set +a
 /opt/moodle-docker-kurspilot-spike/bin/moodle-docker-compose exec -T webserver \
-  vendor/bin/phpunit --testsuite local_kurspilot_testsuite
+  vendor/bin/phpunit --testsuite local_coursepilot_testsuite
 ```
 
 **Nur Moodle 5.0** wird zugesagt (`$plugin->requires = 2025041400`); die
@@ -76,8 +76,8 @@ Einzelne Tests (`--filter <name>`) laufen in Sekunden und brauchen das nicht.
 Der Vertragstest prüft nicht die Repo-Quelle, sondern die auf der laufenden
 Instanz registrierte Oberfläche — er fängt damit den Fall, den kein Repo-Test
 fangen kann: ein Admin hängt dem Dienst nachträglich eine Funktion an.
-Dieselbe Prüffunktion (`\local_kurspilot\privacy_surface::check()`) nutzen
-auch die Laufzeit (`mcp.php`) und die Anzeige (`/local/kurspilot/surface.php`).
+Dieselbe Prüffunktion (`\local_coursepilot\privacy_surface::check()`) nutzen
+auch die Laufzeit (`mcp.php`) und die Anzeige (`/local/coursepilot/surface.php`).
 
 ### Später: CI statt Container
 
@@ -113,10 +113,10 @@ Ohne `.env.e2e` werden Moodle-abhängige Specs übersprungen (Skip, kein Fehler)
 
 **Voraussetzung auf Moodle-Seite:** Das Plugin `local_coursepilot` muss installiert und die Webservices registriert sein (Site administration > Server > Web services > External services). Plugin-Updates auf das Testmoodle deployen und verifizieren: [plugin-deploy.md](../plugin-deploy.md).
 
-## Live-Tests gegen die Spike-Instanz (`local_kurspilot`)
+## Live-Tests gegen die Spike-Instanz (`local_coursepilot`)
 
 Das Servermodell-Plugin spricht kein Webservice-Token, sondern **OAuth**: der
-MCP-Endpunkt `/local/kurspilot/mcp.php` akzeptiert ausschließlich ein
+MCP-Endpunkt `/local/coursepilot/mcp.php` akzeptiert ausschließlich ein
 Zugriffstoken aus `oauth_lib`. Für Testläufe muss deshalb kein Browser-Flow
 durchlaufen werden:
 
@@ -135,7 +135,7 @@ Feste Testkonfiguration (Vorlage: `.env.e2e.spike.example`, ausgefüllt nach
 |---|---|
 | Instanz | `https://spike.gruenwald.fun` |
 | Testkurs | **ID 6** (`testkurs-mcp`) |
-| Nutzer | `teacher_edit` (eingeschrieben, `local/kurspilot:use`) |
+| Nutzer | `teacher_edit` (eingeschrieben, `local/coursepilot:use`) |
 | Login | Passwort in `/opt/moodle-devstack-secrets/kurspilot-spike.env` (LXC, 0600) |
 | Container | `moodle-kurspilot-spike-webserver-1` |
 
@@ -145,7 +145,7 @@ Beispielaufruf:
 
 ```bash
 TOK=$(bash scripts/spike-e2e-token.sh)
-curl -s -X POST https://spike.gruenwald.fun/local/kurspilot/mcp.php \
+curl -s -X POST https://spike.gruenwald.fun/local/coursepilot/mcp.php \
   -H "Authorization: Bearer $TOK" -H 'Content-Type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```

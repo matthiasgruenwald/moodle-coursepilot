@@ -1,11 +1,11 @@
 ---
 name: spike-planen
-description: Kurspilot-Planung gegen das native Server-MCP (Spike, local_kurspilot). Nutze diesen Skill statt kurspilot-planen, wenn die Lehrkraft ausdruecklich den nativen Kontextbereich (serverseitig, ueber die kurspilot_*_context_file-Tools) statt der lokalen Arbeitsdateien nutzt.
+description: Kurspilot-Planung gegen das native Server-MCP (Spike, local_coursepilot). Nutze diesen Skill statt kurspilot-planen, wenn die Lehrkraft ausdruecklich den nativen Kontextbereich (serverseitig, ueber die coursepilot_*_context_file-Tools) statt der lokalen Arbeitsdateien nutzt.
 ---
 
 # spike-planen
 
-Vorlaeufiger Name (Issue #410) fuer die Planung gegen `local_kurspilot`
+Vorlaeufiger Name (Issue #410) fuer die Planung gegen `local_coursepilot`
 (Branch `moodle-native-mcp`) — kein Ersatz fuer das produktive
 `kurspilot-planen`, das unveraendert lokal bleibt.
 
@@ -18,7 +18,7 @@ Arbeitsbereich-Regel entfaellt (siehe "Was hier nicht gilt" in
 themenbezogenen Referenzdateien aus der Uebersicht in `kurspilot-core.md`.
 
 `plan.md`, `status.md` und Vorlagen werden nur nach dem Schreibangebot
-geschrieben (`kurspilot_write_context_file`), nie still.
+geschrieben (`coursepilot_write_context_file`), nie still.
 
 Geht es in der Planung um einen Fragetyp fuer die Fragenbank, gilt
 zusaetzlich `../../../skills/spike-fragetypen.md` (Fragetyp-Ablage,
