@@ -3,6 +3,16 @@
 Status: **Entwurf, wartet auf Freigabe** (#301)
 Karte: [#289](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/289)
 
+> **Namensstand überholt (19.09.2026).** Die Komponente heißt seit
+> [ADR 0024](../adr/0024-englische-basis-und-komponente-coursepilot.md) `local_coursepilot`,
+> die Werkzeuge heißen `coursepilot_*`, die Endpunkte liegen unter `/local/coursepilot/`.
+> Überholt ist außerdem die CI-Aussage in [§8](#8-testinfrastruktur): Eingereicht wird nicht
+> mehr im Plugins Directory, sondern im [Moodle Marketplace](https://marketplace.moodle.com/),
+> dessen automatische Prüfung `moodle-plugin-ci` selbst fährt und bestanden sein muss.
+> Alles Fachliche — Transport, OAuth, Rechtemodell, Werkzeugoberfläche, Datenschutz,
+> Discovery — gilt unverändert. Der Wortlaut bleibt stehen; beim Lesen `kurspilot` durch
+> `coursepilot` ersetzen.
+
 ## Errata (2026-08-26)
 
 Diese Spec ist implementiert und abgenommen; ihr Wortlaut bleibt deshalb

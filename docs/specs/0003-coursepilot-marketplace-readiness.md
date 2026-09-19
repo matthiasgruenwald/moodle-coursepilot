@@ -1,5 +1,16 @@
 # Spezifikation: Coursepilot – Marketplace-Readiness und Umbenennung
 
+> **Überholt (19.09.2026).** Diese Spec beschreibt den Weg über das **Moodle Plugins
+> Directory** und das dafür nötige Spiegelrepository. Das Directory ist inzwischen im
+> [Moodle Marketplace](https://marketplace.moodle.com/) aufgegangen; eingereicht wird als
+> ZIP mit Formular, die GPL-Auflage für Plugins besteht nicht mehr, und das Spiegelrepo
+> entfällt mit dem Repo-Umbau. Gültig bleiben: öffentlicher Name **Coursepilot**,
+> Komponente `local_coursepilot`, Moodle 5.0+, keine Lernendendaten, Privacy-API.
+> Ersetzt durch [ADR 0024](../adr/0024-englische-basis-und-komponente-coursepilot.md),
+> [ADR 0025](../adr/0025-agpl-fuer-das-gesamte-projekt.md) und
+> [Plan 0004](../plans/0004-umbenennung-auf-local-coursepilot.md). Der Wortlaut bleibt als
+> Dokumentation des damaligen Stands stehen.
+
 > Zugehöriges Tracking-Issue: [#146](https://github.com/matthiasgruenwald/Kurspilot/issues/146).
 > Diese Datei ist die kanonische Produktspezifikation. Das Issue verfolgt spätere Umsetzungsscheiben und externe Entscheidungen.
 

@@ -93,8 +93,10 @@ ab — dort ist nichts einzeln nachzuziehen.
 
 `CLAUDE.md` (Code-Sprachregel auf englische Basis), `CONTEXT.md`, `AGENTS.md`, `README.md`,
 `RELEASE_NOTES.md`, `.agents/skills/spike-*`, `skills/spike-*.md`,
-`scripts/spike-abnahme-426.sh`, `docs/plugin-deploy-spike.md`. Spec 0003 und Spec 0012 §10
-werden als überholt markiert, nicht umgeschrieben.
+`scripts/spike-abnahme-426.sh`, `docs/plugin-deploy-spike.md`. Spec 0003 und Spec 0012
+bekommen einen Überholt-Vermerk im Kopf, werden aber nicht umgeschrieben: In Spec 0003 ist
+der Weg über das Plugins Directory samt Spiegelrepo überholt, in Spec 0012 der
+Komponentenname `local_kurspilot` und die CI-Aussage in §8.
 
 ## Danach
 
