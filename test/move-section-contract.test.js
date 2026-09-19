@@ -10,8 +10,7 @@ const SERVER_PATH = path.join(__dirname, '..', 'moodle-mcp-core.js');
 const SERVICES_PATH = path.join(
   __dirname,
   '..',
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'db',
   'services.php'
@@ -19,8 +18,7 @@ const SERVICES_PATH = path.join(
 const EXTERNAL_PATH = path.join(
   __dirname,
   '..',
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'classes',
   'external',
@@ -29,8 +27,7 @@ const EXTERNAL_PATH = path.join(
 const MODULE_EXTERNAL_PATH = path.join(
   __dirname,
   '..',
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'classes',
   'external',

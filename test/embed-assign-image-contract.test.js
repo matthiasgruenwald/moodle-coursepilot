@@ -6,15 +6,14 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const EXTERNAL_PATH = path.join(
   ROOT,
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'classes',
   'external',
   'upload_assign_intro_image.php'
 );
-const HELPER_PATH = path.join(ROOT, 'Plugin', 'src', 'local_coursepilot', 'classes', 'fileupload_helper.php');
-const SERVICES_PATH = path.join(ROOT, 'Plugin', 'src', 'local_coursepilot', 'db', 'services.php');
+const HELPER_PATH = path.join(ROOT, 'legacy', 'local_coursepilot', 'classes', 'fileupload_helper.php');
+const SERVICES_PATH = path.join(ROOT, 'legacy', 'local_coursepilot', 'db', 'services.php');
 const MCP_PATH = path.join(ROOT, 'lib', 'assign-tools.js');
 
 test('assignment intro images are embedded through the intro filearea', () => {

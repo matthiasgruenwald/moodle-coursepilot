@@ -39,7 +39,7 @@ const {
   findForbiddenNames,
 } = require('../lib/data-protection-allowlist');
 
-const PLUGIN_ROOT = path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot');
+const PLUGIN_ROOT = path.join(__dirname, '..', 'legacy', 'local_coursepilot');
 const SERVICES_PATH = path.join(PLUGIN_ROOT, 'db', 'services.php');
 const PRIVACY_PROVIDER_PATH = path.join(PLUGIN_ROOT, 'classes', 'privacy', 'provider.php');
 const LANG_PATH = path.join(PLUGIN_ROOT, 'lang', 'en', 'local_coursepilot.php');

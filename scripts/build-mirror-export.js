@@ -16,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const PLUGIN_SRC = path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot');
+const PLUGIN_SRC = path.join(__dirname, '..', 'legacy', 'local_coursepilot');
 const DEFAULT_OUTPUT = path.join(__dirname, '..', 'dist', 'mirror');
 
 function parseOutputDir(argv) {

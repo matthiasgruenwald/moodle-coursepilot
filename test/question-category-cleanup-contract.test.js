@@ -8,8 +8,7 @@ const SERVER_PATH = path.join(__dirname, '..', 'moodle-mcp.js');
 const SERVICES_PATH = path.join(
   __dirname,
   '..',
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'db',
   'services.php'

@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 /**
- * Baut local_coursepilot.zip aus Plugin/src/local_coursepilot/
+ * Baut local_coursepilot.zip aus legacy/local_coursepilot/
+ *
+ * Quelle ist der eingefrorene Altstand (Coursepilot 1.x). Der Build fuer die
+ * neue Linie entsteht mit dem Release 2.0.0.
  *
  * Optionale Argumente:
  *   --output <verzeichnis>  Zielverzeichnis der ZIP (Standard: Plugin/)
@@ -26,7 +29,7 @@ function parseOutputDir(argv) {
 }
 
 const pluginDir = path.join(__dirname, '..', 'Plugin');
-const srcDir = path.join(pluginDir, 'src');
+const srcDir = path.join(__dirname, '..', 'legacy');
 const outputDir = parseOutputDir(process.argv.slice(2));
 const zipPath = path.join(outputDir, 'local_coursepilot.zip');
 

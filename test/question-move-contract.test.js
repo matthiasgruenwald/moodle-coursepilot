@@ -7,9 +7,9 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const tools = fs.readFileSync(path.join(root, 'lib', 'question-bank-tools.js'), 'utf8');
-const services = fs.readFileSync(path.join(root, 'Plugin', 'src', 'local_coursepilot', 'db', 'services.php'), 'utf8');
-const external = path.join(root, 'Plugin', 'src', 'local_coursepilot', 'classes', 'external', 'move_question.php');
-const getQuestion = path.join(root, 'Plugin', 'src', 'local_coursepilot', 'classes', 'external', 'get_question.php');
+const services = fs.readFileSync(path.join(root, 'legacy', 'local_coursepilot', 'db', 'services.php'), 'utf8');
+const external = path.join(root, 'legacy', 'local_coursepilot', 'classes', 'external', 'move_question.php');
+const getQuestion = path.join(root, 'legacy', 'local_coursepilot', 'classes', 'external', 'get_question.php');
 
 test('moodle_move_question is a public write tool backed by the local move service', () => {
   assert.match(tools, /name:\s*"moodle_move_question"/);

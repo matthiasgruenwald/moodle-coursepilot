@@ -8,8 +8,7 @@ const path = require('node:path');
 const EXTERNAL_DIR = path.join(
   __dirname,
   '..',
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'classes',
   'external'
@@ -17,8 +16,7 @@ const EXTERNAL_DIR = path.join(
 const HELPER_PATH = path.join(
   __dirname,
   '..',
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'classes',
   'fileupload_helper.php'

@@ -21,7 +21,7 @@ const { CORE_TOOLS } = require('../lib/core-tools');
 const { ALLOWED_MCP_TOOLS, ALLOWED_WEBSERVICE_FUNCTIONS } = require('../lib/data-protection-allowlist');
 
 const ROOT = path.join(__dirname, '..');
-const SERVICES_PATH = path.join(ROOT, 'Plugin', 'src', 'local_coursepilot', 'db', 'services.php');
+const SERVICES_PATH = path.join(ROOT, 'legacy', 'local_coursepilot', 'db', 'services.php');
 
 function tool(name) {
   const match = CORE_TOOLS.find(candidate => candidate.name === name);

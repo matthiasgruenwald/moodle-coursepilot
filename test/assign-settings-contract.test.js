@@ -129,7 +129,7 @@ test('moodle_update_assign forwards every explicit submission-flow setting', asy
 });
 
 test('assignment create and update share snapshot patch settings and Moodle module lifecycle', () => {
-  const pluginRoot = path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes');
+  const pluginRoot = path.join(__dirname, '..', 'legacy', 'local_coursepilot', 'classes');
   const createSource = fs.readFileSync(path.join(pluginRoot, 'external', 'create_assign.php'), 'utf8');
   const updateSource = fs.readFileSync(path.join(pluginRoot, 'external', 'update_assign.php'), 'utf8');
 
@@ -142,7 +142,7 @@ test('assignment create and update share snapshot patch settings and Moodle modu
 });
 
 test('exercise preset is ungraded, editable and accepts explicit overrides', () => {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'assign_settings.php'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', 'legacy', 'local_coursepilot', 'classes', 'assign_settings.php'), 'utf8');
 
   assert.match(source, /\$moduleinfo->grade = \$params\['mode'\] === 'übung' \? 0 : 100/);
   assert.match(source, /\$moduleinfo->submissiondrafts = \$params\['mode'\] === 'übung' \? 0 : 1/);
@@ -152,7 +152,7 @@ test('exercise preset is ungraded, editable and accepts explicit overrides', () 
 });
 
 test('partial assignment updates retain the complete assignment and subplugin snapshot', () => {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'assign_settings.php'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', 'legacy', 'local_coursepilot', 'classes', 'assign_settings.php'), 'utf8');
 
   assert.match(source, /get_moduleinfo_data\(\$cm, \$course\)/);
   assert.match(source, /get_records\('assign_plugin_config', \['assignment' => \$moduleinfo->id\]\)/);
@@ -160,7 +160,7 @@ test('partial assignment updates retain the complete assignment and subplugin sn
 });
 
 test('assignment responses and fresh catalog reads expose stored base settings', () => {
-  const pluginRoot = path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes');
+  const pluginRoot = path.join(__dirname, '..', 'legacy', 'local_coursepilot', 'classes');
   const helper = fs.readFileSync(path.join(pluginRoot, 'assign_settings.php'), 'utf8');
   const catalog = fs.readFileSync(path.join(pluginRoot, 'external', 'get_course_catalog.php'), 'utf8');
 
@@ -171,7 +171,7 @@ test('assignment responses and fresh catalog reads expose stored base settings',
 });
 
 test('assignment attempt settings validate Moodle combinations before saving', () => {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'assign_settings.php'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', 'legacy', 'local_coursepilot', 'classes', 'assign_settings.php'), 'utf8');
 
   assert.match(source, /validate_attempt_settings/);
   assert.match(source, /manual', 'automatic', 'untilpass/);
@@ -183,8 +183,8 @@ test('assignment attempt settings validate Moodle combinations before saving', (
 });
 
 test('assignment attempt updates refuse frozen settings when submissions or grades exist', () => {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'assign_settings.php'), 'utf8');
-  const updateSource = fs.readFileSync(path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'external', 'update_assign.php'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', 'legacy', 'local_coursepilot', 'classes', 'assign_settings.php'), 'utf8');
+  const updateSource = fs.readFileSync(path.join(__dirname, '..', 'legacy', 'local_coursepilot', 'classes', 'external', 'update_assign.php'), 'utf8');
 
   assert.match(source, /assign_submission/);
   assert.match(source, /assign_grades/);
@@ -232,7 +232,7 @@ test('assignment core form groups are public, forwarded and read back without ge
     feedback_file_maxfiles: -1, feedback_file_maxsizebytes: -1, feedback_file_filetypes: '', feedback_offline_enabled: -1,
   });
 
-  const root = path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes');
+  const root = path.join(__dirname, '..', 'legacy', 'local_coursepilot', 'classes');
   const helper = fs.readFileSync(path.join(root, 'assign_settings.php'), 'utf8');
   const catalog = fs.readFileSync(path.join(root, 'external', 'get_course_catalog.php'), 'utf8');
   for (const field of [
@@ -255,7 +255,7 @@ test('assignment core form groups are public, forwarded and read back without ge
 test('assignment submission and feedback plugins are independently forwarded, snapshotted and catalogued', async () => {
   const createAssign = tool('moodle_create_assign');
   const updateAssign = tool('moodle_update_assign');
-  const pluginRoot = path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes');
+  const pluginRoot = path.join(__dirname, '..', 'legacy', 'local_coursepilot', 'classes');
   const helper = fs.readFileSync(path.join(pluginRoot, 'assign_settings.php'), 'utf8');
   const catalog = fs.readFileSync(path.join(pluginRoot, 'external', 'get_course_catalog.php'), 'utf8');
 

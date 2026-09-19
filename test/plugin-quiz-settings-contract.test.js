@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const PLUGIN_ROOT = path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot');
+const PLUGIN_ROOT = path.join(__dirname, '..', 'legacy', 'local_coursepilot');
 const CREATE_QUIZ_PATH = path.join(PLUGIN_ROOT, 'classes', 'external', 'create_quiz.php');
 const UPDATE_QUIZ_PATH = path.join(PLUGIN_ROOT, 'classes', 'external', 'update_quiz_settings.php');
 const QUIZ_SETTINGS_PATH = path.join(PLUGIN_ROOT, 'classes', 'quiz_settings.php');

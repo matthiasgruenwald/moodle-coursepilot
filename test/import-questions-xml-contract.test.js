@@ -17,11 +17,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const EXTERNAL_DIR = path.join(
-  __dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'external'
+  __dirname, '..', 'legacy', 'local_coursepilot', 'classes', 'external'
 );
 const IMPORT_PATH = path.join(EXTERNAL_DIR, 'import_questions_xml.php');
 const SERVICES_PATH = path.join(
-  __dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'db', 'services.php'
+  __dirname, '..', 'legacy', 'local_coursepilot', 'db', 'services.php'
 );
 
 test('import_questions_xml.php parst rein lesend ueber qformat_xml::readquestions() und bricht bei Parse-Fehlern komplett ab', () => {

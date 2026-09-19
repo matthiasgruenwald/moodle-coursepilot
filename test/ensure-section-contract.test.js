@@ -10,8 +10,7 @@ const MCP_PATH = path.join(__dirname, '..', 'lib', 'core-tools.js');
 const SERVICES_PATH = path.join(
   __dirname,
   '..',
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'db',
   'services.php'

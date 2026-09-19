@@ -6,8 +6,7 @@ const path = require('node:path');
 const UPLOAD_ASSIGNFILE_PATH = path.join(
   __dirname,
   '..',
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'classes',
   'external',
@@ -32,8 +31,7 @@ test('upload_assignfile determines the MIME type from decoded file content via f
   const helperPath = path.join(
     __dirname,
     '..',
-    'Plugin',
-    'src',
+    'legacy',
     'local_coursepilot',
     'classes',
     'fileupload_helper.php'

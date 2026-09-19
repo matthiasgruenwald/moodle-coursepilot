@@ -1,7 +1,7 @@
 # Mirror-Sync: Plugin-Quelle -> schreibgeschuetztes Marketplace-Repository.
 #
 # Dieser Workflow baut bei jedem Push auf `main`, der Dateien unter
-# `Plugin/src/local_coursepilot/` aendert, den Mirror-Root neu
+# `legacy/local_coursepilot/` aendert, den Mirror-Root neu
 # (scripts/build-mirror-export.js) und pusht ihn in das getrennte Repository
 # matthiasgruenwald/moodle-local_coursepilot. Der Mirror enthaelt das Plugin
 # als alleiniges Root (ohne MCP, Installer, Skills, Tests, docs, .github).
@@ -23,7 +23,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'Plugin/src/local_coursepilot/**'
+      - 'legacy/local_coursepilot/**'
   workflow_dispatch:
 
 # Serialisieren: keine parallelen Mirror-Pushes (Race-Schutz).

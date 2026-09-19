@@ -7,8 +7,8 @@ const path = require('node:path');
 const { QUIZ_TOOLS } = require('../lib/quiz-tools');
 
 const root = path.join(__dirname, '..');
-const external = path.join(root, 'Plugin', 'src', 'local_coursepilot', 'classes', 'external', 'get_quiz_cleanup_plan.php');
-const services = path.join(root, 'Plugin', 'src', 'local_coursepilot', 'db', 'services.php');
+const external = path.join(root, 'legacy', 'local_coursepilot', 'classes', 'external', 'get_quiz_cleanup_plan.php');
+const services = path.join(root, 'legacy', 'local_coursepilot', 'db', 'services.php');
 
 test('quiz cleanup plan blocks deletion and identifies every obsolete slot for manual removal', async () => {
   const tool = QUIZ_TOOLS.find(({ name }) => name === 'moodle_plan_quiz_cleanup');

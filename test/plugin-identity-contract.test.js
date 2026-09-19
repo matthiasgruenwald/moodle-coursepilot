@@ -25,7 +25,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const REPO_ROOT = path.join(__dirname, '..');
-const PLUGIN_ROOT = path.join(REPO_ROOT, 'Plugin', 'src', 'local_coursepilot');
+const PLUGIN_ROOT = path.join(REPO_ROOT, 'legacy', 'local_coursepilot');
 const VERSION_PATH = path.join(PLUGIN_ROOT, 'version.php');
 const SERVICES_PATH = path.join(PLUGIN_ROOT, 'db', 'services.php');
 const ACCESS_PATH = path.join(PLUGIN_ROOT, 'db', 'access.php');
