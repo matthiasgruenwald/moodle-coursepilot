@@ -96,6 +96,11 @@ interface storage_port {
      * @return array{path: string, created: bool, size: int, checksum: string}
      * @throws \moodle_exception invalidpathkey/eigener Namensfehler des Bereichs,
      *         quotaerrorkey des Bereichs
+     * @throws storage_conflict_exception bei einem Adapter, dessen Anhaengen als
+     *         Lesen-Aendern-Schreiben implementiert ist (z.B. WebDAV), falls der
+     *         Inhalt zwischen dem eigenen Lesen und dem bedingten Zurueckschreiben
+     *         von aussen geaendert wurde - ein echter, wenn auch seltener Konflikt,
+     *         kein Aufruffehler des Bereichs.
      */
     public function append(storage_area $area, string $path, string $content): array;
 
