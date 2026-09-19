@@ -25,7 +25,7 @@ $username = $argv[1] ?? '';
 $user = $DB->get_record('user', ['username' => $username, 'deleted' => 0], 'id', MUST_EXIST);
 
 $redirecturi = 'http://127.0.0.1/callback';
-$client = \local_kurspilot\oauth_lib::register_client([
+$client = \local_coursepilot\oauth_lib::register_client([
     'redirect_uris' => [$redirecturi],
     'client_name' => 'kurspilot-e2e',
 ]);
@@ -34,10 +34,10 @@ if (!empty($client['error'])) {
     exit(1);
 }
 
-$verifier = \local_kurspilot\oauth_lib::random_token(32);
+$verifier = \local_coursepilot\oauth_lib::random_token(32);
 $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
-$code = \local_kurspilot\oauth_lib::issue_code($client['client_id'], (int) $user->id, $redirecturi, $challenge);
-$pair = \local_kurspilot\oauth_lib::exchange_code($code, $client['client_id'], $redirecturi, $verifier);
+$code = \local_coursepilot\oauth_lib::issue_code($client['client_id'], (int) $user->id, $redirecturi, $challenge);
+$pair = \local_coursepilot\oauth_lib::exchange_code($code, $client['client_id'], $redirecturi, $verifier);
 if ($pair === null) {
     fwrite(STDERR, 'Code-Einloesung fehlgeschlagen.' . PHP_EOL);
     exit(1);

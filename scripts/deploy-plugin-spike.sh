@@ -2,7 +2,7 @@
 set -e
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PLUGIN_DIR="$REPO_ROOT/Plugin/src/local_kurspilot"
+PLUGIN_DIR="$REPO_ROOT/Plugin/src/local_coursepilot"
 SPIKE_DEPLOY=/opt/kurspilot-spike/scripts/deploy-plugin.sh
 
 if [[ ! -x "$SPIKE_DEPLOY" ]]; then
