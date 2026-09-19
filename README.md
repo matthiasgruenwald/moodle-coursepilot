@@ -1,40 +1,71 @@
-# Kurspilot
+# Coursepilot
 
 **Unterricht in Moodle planen und umsetzen.**
 
-Kurspilot ist die schulbezogene Weiterentwicklung des MoodleMCP-Ansatzes: ein lokaler MCP-Server plus Moodle-Plugin, mit dem Lehrkräfte bestehende Moodle-Kurse strukturiert befüllen können.
+Coursepilot ist die schulbezogene Weiterentwicklung des MoodleMCP-Ansatzes: Lehrkräfte
+bauen bestehende Moodle-Kurse im Gespräch mit einer KI auf, statt sie zu klicken.
 
-> **Herkunft:** Kurspilot verweist bewusst auf MoodleMCP: Dieses Repository ist ein
+> **Herkunft:** Coursepilot verweist bewusst auf MoodleMCP: Dieses Repository ist ein
 > schulbezogener Fork von [`jtuttas/MoodleMcp`](https://github.com/jtuttas/MoodleMcp),
 > der für Fortbildung, Testinstanz und IGS-Sprache eigenständig weiterentwickelt
 > wird (siehe `docs/adr/0002-use-an-igs-fork-as-training-version.md`). Begriffe wie
 > **Unterrichtseinheit**, **Unterthema** und **Lernpfad** ersetzen die im Upstream
 > verwendete BBS-Sprache (z.B. "Lernsituation").
 
-Claude Desktop spricht direkt mit der Moodle REST API und kann Kursabschnitte,
-Textseiten, Labels, Aufgaben, externe Links, Dateien, Verzeichnisse,
-Abstimmungen und Foren anlegen und bearbeiten.
+## Zwei Wege, ein Name
 
-Zusätzlich kann der Server lokal erzeugte Dateien (z.B. PDF/DOCX/XLSX) als
-"Zusätzliche Dateien" direkt in Moodle-Aufgaben hochladen.
+Coursepilot gibt es in zwei Ausführungen. Beide tragen die Moodle-Komponente
+`local_coursepilot`, laufen aber nie auf derselben Instanz.
 
-Außerdem unterstützt der Server das Setzen von **Abschlussverfolgung** und
-**Voraussetzungen/Verfügbarkeit** (Aktivität ist gesperrt, bis andere Aktivitäten
-abgeschlossen sind).
-
-Für Lehrkräfte heißt die Skill-Familie **Kurspilot**. `kurspilot` ist der sichtbare
-Einstieg und wechselt je nach Anliegen transparent in `kurspilot-einrichten`,
-`kurspilot-planen` oder `kurspilot-umsetzen`.
+| | **Server-Weg (aktuell, Version 2)** | **Lokaler Weg (Altstand 1.x)** |
+|---|---|---|
+| Wo läuft der MCP-Server? | im Moodle-Plugin selbst | als Node-Server auf dem Laptop |
+| Was installiert die Lehrkraft? | nichts | Node, Konfigurationsprogramm, Skills |
+| Anmeldung | OAuth im KI-Client, einmalig | Webservice-Token von Hand |
+| Skills | liefert der Server im Gespräch mit | Dateien im Benutzerprofil |
+| Quelle im Repo | `Plugin/src/local_coursepilot/` | `legacy/local_coursepilot/` + `moodle-mcp.js` |
+| Status | hier findet die Entwicklung statt | eingefroren, wird abgekündigt |
 
 ```
-Claude Desktop (stdio)
-       |
-  moodle-mcp.js          <- lokaler MCP Server (Node.js)
-       |
-  Moodle REST API        <- local_coursepilot Plugin
-       |
-  Moodle 5.0+
+Server-Weg                        Lokaler Weg (Altstand)
+KI-Client (Claude, Codex)         Claude Desktop (stdio)
+      | HTTPS + OAuth                    |
+Moodle: local_coursepilot           moodle-mcp.js  <- Node auf dem Laptop
+  (MCP-Endpunkt + Werkzeuge)              |
+      |                             Moodle REST API <- local_coursepilot 1.x
+Moodle 5.0+                               |
+                                    Moodle 5.0+
 ```
+
+### Server-Weg einrichten
+
+1. Plugin aus `Plugin/src/local_coursepilot/` nach `local/coursepilot` installieren
+   und das Moodle-Upgrade ausführen.
+2. Webservices und das REST-Protokoll aktivieren.
+3. Lehrkräften die Capability `local/coursepilot:use` geben.
+4. Im KI-Client einen Connector auf `https://<moodle>/local/coursepilot/mcp.php`
+   anlegen und einmal autorisieren. Discovery läuft nach RFC 8414 und RFC 9728 und
+   braucht keinen Eingriff am Webserver, solange `slasharguments` aktiv ist
+   (Moodle-Standard).
+
+Alles Weitere — Werkzeuge, Skills, Ortswahl für Kontextbereich und Materialbestand —
+erklärt der Server im Gespräch selbst. Details siehe
+[`docs/specs/0012-local-kurspilot-server-mcp.md`](docs/specs/0012-local-kurspilot-server-mcp.md)
+(trägt noch den alten Namen) und `Plugin/src/local_coursepilot/README.md`.
+
+---
+
+> **Ab hier beschreibt diese Datei den lokalen Altweg.** Er läuft unverändert weiter,
+> bis der Schnitt fällt, und wird dann samt `legacy/` entfernt. Für Lehrkräfte heißt
+> die Skill-Familie dort weiterhin `kurspilot`: `kurspilot` ist der sichtbare Einstieg
+> und wechselt je nach Anliegen in `kurspilot-einrichten`, `kurspilot-planen` oder
+> `kurspilot-umsetzen`.
+
+Im lokalen Weg spricht Claude Desktop über `moodle-mcp.js` mit der Moodle REST API und
+kann Kursabschnitte, Textseiten, Labels, Aufgaben, externe Links, Dateien,
+Verzeichnisse, Abstimmungen und Foren anlegen und bearbeiten. Er lädt lokal erzeugte
+Dateien (z.B. PDF/DOCX/XLSX) als "Zusätzliche Dateien" in Moodle-Aufgaben hoch und
+setzt **Abschlussverfolgung** sowie **Voraussetzungen/Verfügbarkeit**.
 
 ---
 
@@ -50,7 +81,7 @@ Claude Desktop (stdio)
 
 ## Schnellinstallation
 
-Der schnellste Weg für eine Lehrkraft, Kurspilot lokal lauffähig zu bekommen:
+Der schnellste Weg für eine Lehrkraft, Coursepilot lokal lauffähig zu bekommen:
 ein Einzeiler im Terminal (macOS/Linux) bzw. in PowerShell (Windows). Kein
 vorinstalliertes Node.js nötig und kein Homebrew/Chocolatey-Zwang – das
 Skript lädt bei Bedarf automatisch ein offizielles Node-Tarball von
@@ -72,7 +103,7 @@ powershell -ExecutionPolicy Bypass -Command "iwr -useb https://raw.githubusercon
 
 Beide Einzeiler holen bei jedem Start den aktuellen Stand von `main` aus
 diesem GitHub-Repository und starten daraus das
-**Kurspilot-Konfigurationsprogramm** (`scripts/setup-kurspilot.js`). Das ist
+**Coursepilot-Konfigurationsprogramm** (`scripts/setup-kurspilot.js`). Das ist
 dieselbe Browser-Seite, über die auch Moodle-URL/Token eingegeben werden.
 Damit folgt der Installationsweg bewusst direkt dem aktuellen Hauptbranch;
 bei einem geschlossenen, prüfsummenfixierten Release-Stand darf dieser
@@ -91,7 +122,7 @@ Einzeiler nicht verwendet werden.
 | **Manuelle Schritte 1–8 (unten)** | Entwicklung, Debugging, eigene Anpassungen am Setup | Node.js manuell vorhanden, technisches Verständnis |
 
 Schnellinstallation und manuelle Schritte führen am Ende zum selben Ziel:
-lokaler MCP-Server + Kurspilot-Konfigurationsprogramm. Die manuellen Schritte
+lokaler MCP-Server + Coursepilot-Konfigurationsprogramm. Die manuellen Schritte
 1–8 sind der granulare Unterbau, den die Schnellinstallation im Hintergrund
 nutzt – sie bleiben relevant für alle, die einzelne Schritte verstehen,
 anpassen oder debuggen wollen.
@@ -102,10 +133,13 @@ anpassen oder debuggen wollen.
 
 ### 1. Moodle-Plugin installieren
 
-Das Plugin `local_coursepilot` stellt die benötigten Webservice-Funktionen bereit.
+Das Plugin `local_coursepilot` in der Fassung 1.x stellt die benötigten
+Webservice-Funktionen bereit. Quelle ist `legacy/local_coursepilot/`; für den
+Server-Weg gilt stattdessen die Anleitung oben.
 
 1. `local_coursepilot.zip` herunterladen
-   (im Repository liegt die ZIP unter `Plugin/local_coursepilot.zip`)
+   (im Repository liegt die ZIP unter `Plugin/local_coursepilot.zip`, gebaut aus
+   `legacy/` über `npm run build:plugin`)
 2. In Moodle: **Website-Administration → Plugins → Plugin installieren**
 3. ZIP hochladen und Upgrade bestätigen
 
@@ -130,7 +164,7 @@ Das Plugin `local_coursepilot` stellt die benötigten Webservice-Funktionen bere
 
 **Website-Administration → Server → Webservices → Token verwalten → Token hinzufügen**
 
-- **Nutzer:** beliebiger Nutzer mit einem Token fuer den Dienst `Coursepilot`. Der Dienst hat keine Berechtigten-Liste (`restrictedusers=0`); eine eigene Kurspilot-Rolle gibt es nicht
+- **Nutzer:** beliebiger Nutzer mit einem Token fuer den Dienst `Coursepilot`. Der Dienst hat keine Berechtigten-Liste (`restrictedusers=0`); eine eigene Coursepilot-Rolle gibt es nicht
 - **Kursrechte:** ueber die API geht nur, was der Nutzer im Kurs ohnehin duerfte – normale Moodle-Rechte (z.B. Trainerrechte) plus die Capability `local/coursepilot:use` (Default fuer Trainer/innen)
 - **Dienst:** `Coursepilot`
 - Token kopieren – er wird nur einmal angezeigt!
@@ -189,7 +223,7 @@ args = ["/Users/dein-name/moodle-mcp/scripts/start-mcp.js", "--profile", "readon
 Ohne dieses Argument startet der Server im Vollprofil fuer die Umsetzung.
 
 Lege Moodle-URL und Token nicht in `.env` oder Codex-/Claude-Konfigurationsdateien
-ab. Fuer Kurspilot ist das Konfigurationsprogramm beziehungsweise
+ab. Fuer Coursepilot ist das Konfigurationsprogramm beziehungsweise
 `scripts/moodle-credentials.js` der Token-Speicherweg; der Startwrapper liest die
 Werte aus dem macOS-Schluesselbund und setzt sie nur fuer den laufenden
 MCP-Prozess.
@@ -208,16 +242,16 @@ Funktionstest ist:
 Rufe mit dem Moodle-MCP moodle_get_sections für Kurs-ID 2 auf.
 ```
 
-### 7. Kurspilot-Skills fuer Codex und Claude aktivieren
+### 7. Coursepilot-Skills fuer Codex und Claude aktivieren
 
-Das Kurspilot-Paket besteht aus einem gemeinsamen Kern und duennen
+Das Coursepilot-Paket besteht aus einem gemeinsamen Kern und duennen
 Anbieter-Adaptern:
 
-- Kanonischer Kurspilot-Kern: `skills/kurspilot-core.md`
+- Kanonischer Coursepilot-Kern: `skills/kurspilot-core.md`
 - Codex-Skills: `.agents/skills/kurspilot*/SKILL.md`
 - Claude-Skills: `.claude/skills/kurspilot*/SKILL.md`
 
-Fuer Lehrkraefte ist **Kurspilot** der sichtbare Name der Skill-Familie. Die
+Fuer Lehrkraefte ist **Coursepilot** der sichtbare Name der Skill-Familie. Die
 V1-Skills sind:
 
 - `kurspilot`: sichtbarer Einstieg, benennt den passenden Modus offen
@@ -229,7 +263,7 @@ In V1 gibt es kein separates `kurspilot-fortsetzen` und kein separates
 `kurspilot-materialien`. Weiterarbeit laeuft ueber den jeweils passenden
 Modus.
 
-Fuer die Paket-Skills gilt Planstrenge: Kurspilot plant und setzt nur um, was
+Fuer die Paket-Skills gilt Planstrenge: Coursepilot plant und setzt nur um, was
 aus Lehrkraftauftrag, bereitgestelltem Material, lokalem Kontext und dem
 freigegebenen Implementierungsplan nachvollziehbar folgt. Extras wie
 Ausgangssituations-Cards, farbkodierte Header, PDF-/Print-Hinweise,
@@ -245,7 +279,7 @@ Codex erkennt die Projekt-Skills in `.agents/skills/` in einem neuen Codex-Threa
 im vertrauten Repository. Teste die Erkennung mit:
 
 ```text
-Welche Kurspilot-Skills siehst du?
+Welche Coursepilot-Skills siehst du?
 ```
 
 Claude Code beziehungsweise Cowork erkennt die Projekt-Skills in
@@ -261,7 +295,7 @@ MCP-Server, die Moodle-Token-Konfiguration und bei Bildzuschnitt ImageMagick
 eingerichtet sein. Der Windows-first Kollegiums-Installer und Token-Speicher
 bleiben der gekoppelte Umsetzungspfad aus #5.
 
-#### Kurspilot-MCP-Eintraege automatisch einrichten (macOS)
+#### Coursepilot-MCP-Eintraege automatisch einrichten (macOS)
 
 Statt die Bloecke aus Schritt 5/6 von Hand einzutragen, kann
 `scripts/setup-mcp-config.js` die Planungs- (`kurspilot-planung`, Profil
@@ -282,11 +316,11 @@ Vorhandene fremde Eintraege in beiden Dateien bleiben erhalten; vor jeder
 Aenderung einer bestehenden Datei wird automatisch ein Backup mit
 Zeitstempel-Suffix (`*.bak-<timestamp>`) angelegt.
 
-#### Kurspilot-Skills nutzerweit installieren (Issue #66)
+#### Coursepilot-Skills nutzerweit installieren (Issue #66)
 
-Damit Kurspilot auch ohne geoeffnetes Projekt-Repository verfuegbar ist
-(**Nutzerweite Kurspilot-Installation**, siehe `CONTEXT.md`), kopiert
-`scripts/install-skills.js` die vier Kurspilot-Skill-Adapter plus den
+Damit Coursepilot auch ohne geoeffnetes Projekt-Repository verfuegbar ist
+(**Nutzerweite Coursepilot-Installation**, siehe `CONTEXT.md`), kopiert
+`scripts/install-skills.js` die vier Coursepilot-Skill-Adapter plus den
 gemeinsamen Kern in die nutzerweiten Skill-Verzeichnisse:
 
 ```bash
@@ -306,21 +340,21 @@ unter `~/.agents/skills/`; Claude erhält dafür Links (unter Windows Junctions)
 unter `~/.claude/skills/`. `~/.codex/skills/` ist ausschließlich ein alter
 Pfad, den der Installer vorsichtig bereinigt.
 
-Der gemeinsame Kurspilot-Kern und die thematischen Referenzdateien (alle
+Der gemeinsame Coursepilot-Kern und die thematischen Referenzdateien (alle
 `.md`-Dateien unter `skills/`, z.B. `kurspilot-core.md`, `html-vorlagen.md`,
 `quiz-und-fragenbank.md`) werden nach `<zielwurzel>/kurspilot-shared/`
 mitkopiert. Die installierten `SKILL.md`-Dateien verweisen relativ darauf,
 sodass die Skills ohne Repo-Checkout funktionieren. Der Lauf ist idempotent
-und ueberschreibt ausschliesslich Kurspilot-eigene Unterordner – fremde Skills
+und ueberschreibt ausschliesslich Coursepilot-eigene Unterordner – fremde Skills
 im selben Verzeichnis bleiben unberuehrt. Fuer Tests akzeptiert das Skript
 `--home <dir>` bzw. die Umgebungsvariable `KURSPILOT_INSTALL_HOME`.
 
-#### Kurspilot-Konfigurationsprogramm
+#### Coursepilot-Konfigurationsprogramm
 
 `scripts/setup-kurspilot.js` ist das wiederaufrufbare
-**Kurspilot-Konfigurationsprogramm** (siehe `CONTEXT.md`): es startet lokal
+**Coursepilot-Konfigurationsprogramm** (siehe `CONTEXT.md`): es startet lokal
 einen kurzlebigen Browser-Dienst auf `127.0.0.1`, waehlt den Port automatisch
-und zeigt Kurspilot-Status sowie Wartungsbereich-Auswahl in
+und zeigt Coursepilot-Status sowie Wartungsbereich-Auswahl in
 lehrkraftverstaendlicher Sprache. Der Dienst laesst sich ueber die Seite
 wieder beenden.
 
@@ -392,7 +426,7 @@ Unten links das Hammer-Symbol prüfen – dort sollten die Moodle-Tools erschein
 | `moodle_upload_assignfile` | Datei als "Zusätzliche Datei" in eine Aufgabe hochladen |
 | `moodle_embed_assign_image` | Bild direkt sichtbar in eine Aufgabenbeschreibung einbetten |
 | `moodle_create_quiz` | Quiz (mod_quiz) anlegen – Modus wählt Settings-Kombination (siehe unten) |
-| `moodle_update_quiz_settings` | Bestehendes Quiz nachträglich auf eine Kurspilot-Settings-Kombination umstellen |
+| `moodle_update_quiz_settings` | Bestehendes Quiz nachträglich auf eine Coursepilot-Settings-Kombination umstellen |
 | `moodle_add_questions_to_quiz` | Fragenbank-Fragen als Referenz auf die jeweils aktuellste Version zu einem Quiz hinzufügen |
 | `moodle_plan_quiz_cleanup` | Nicht-destruktiven Bereinigungsplan erstellen, wenn eine neue Quizversion weniger Fragen enthält (lesend, kein Delete) |
 | `moodle_ensure_question_bank` | Benannte Kurs-/Projekt-Fragensammlung anlegen oder wiederverwenden (idempotent) |
@@ -411,7 +445,7 @@ Unten links das Hammer-Symbol prüfen – dort sollten die Moodle-Tools erschein
 
 ### Quiz-Modi (`moodle_create_quiz`, `moodle_update_quiz_settings`)
 
-`moodle_create_quiz` und `moodle_update_quiz_settings` kennen drei Kurspilot-Modi
+`moodle_create_quiz` und `moodle_update_quiz_settings` kennen drei Coursepilot-Modi
 (Parameter `mode`). Jeder Modus setzt eine komplette, dokumentierte
 Settings-Kombination – Fragen werden anschließend separat hinzugefügt.
 `gradepass` und `timelimit` lassen sich pro Aufruf explizit setzen und
@@ -510,32 +544,42 @@ werden. Welche Inhalte die Lehrkraft an ihren KI-Client weitergibt, entscheidet
 sie selbst; das Moodle-Plugin sendet von sich aus nichts an einen externen
 Dienst.
 
-Die Moodle-Datenschutz-API (Privacy-API) des Plugins beschreibt dieses
-tatsächliche Verhalten: Das Plugin speichert keine personenbezogenen Daten und
-meldet über den `null_provider` bewusst keine Verarbeitung von Lernendendaten
-(`Plugin/src/local_coursepilot/classes/privacy/provider.php`).
+Die Moodle-Datenschutz-API (Privacy-API) beschreibt in beiden Wegen das tatsächliche
+Verhalten, allerdings unterschiedlich:
+
+- **Lokaler Weg (1.x):** Das Plugin speichert keine personenbezogenen Daten und meldet
+  über den `null_provider` bewusst keine Verarbeitung von Lernendendaten
+  (`legacy/local_coursepilot/classes/privacy/provider.php`).
+- **Server-Weg:** Hier gibt es plugin-eigene Tabellen — OAuth-Verbindungen und Tokens
+  der Lehrkraft, Markierungsgedächtnis, Werkbank-Tickets, Änderungsverlauf. Deshalb
+  implementiert das Plugin einen **vollen** Privacy-Provider mit Auskunft und Löschung
+  und benennt den externen WebDAV-Ablageort ausdrücklich
+  (`Plugin/src/local_coursepilot/classes/privacy/provider.php`).
 
 ---
 
 ## Sprachen und Übersetzungen
 
-Englisch ist die Basissprache des Plugins (`Plugin/src/local_coursepilot/lang/en/local_coursepilot.php`).
-Zusätzlich wird Deutsch in der Übergangsphase **vorübergehend** direkt mitgeliefert
-(`Plugin/src/local_coursepilot/lang/de/local_coursepilot.php`), damit deutschsprachige
-Moodle-Instanzen sofort eine vollständige Oberfläche sehen.
+Englisch ist die Basissprache. Das gilt seit
+[ADR 0024](docs/adr/0024-englische-basis-und-komponente-coursepilot.md) nicht nur für die
+Sprachdateien, sondern auch für den Werkzeugvertrag: Parameternamen, Rückgabeschlüssel und
+Werkzeugbeschreibungen sind englisch, damit das Plugin international nutzbar bleibt.
 
-Diese ausgelieferte deutsche Sprachdatei ist als Provisorium zu verstehen: Sobald die
-deutsche Übersetzung über **AMOS** (das Moodle-Übersetzungsportal, "Automatically-Maintained
-Open Strings") gepflegt wird, übernimmt AMOS die Pflege und die mitgelieferte deutsche
-Datei wird in einem frühen Release entfernt. Diese Regelung ist auch im Mirror-README des
-Plugins und in den `RELEASE_NOTES.md` dokumentiert, damit Marketplace-Reviewer den
-Übergangscharakter klar erkennen.
+Deutsch wird in der Übergangsphase **vorübergehend** direkt mitgeliefert
+(`lang/de/local_coursepilot.php`), damit deutschsprachige Moodle-Instanzen sofort eine
+vollständige Oberfläche sehen. Das ist ein Provisorium: Der Moodle Marketplace erwartet,
+dass nur englische Strings ausgeliefert werden und Übersetzungen nach der Freigabe über
+**AMOS** (das Moodle-Übersetzungsportal) gepflegt werden. Sobald AMOS die deutsche
+Übersetzung übernimmt, wird die mitgelieferte Datei entfernt.
+
+Der **Skill-Korpus** ist davon ausgenommen: Er ist Prosa für Lehrkräfte, kein Moodle-String,
+und bleibt vorerst deutsch. Eine zweisprachige Auslieferung ist als eigener Schritt geplant.
 
 ---
 
-## Kurspilot: Unterrichtseinheiten automatisch aufbauen
+## Coursepilot: Unterrichtseinheiten automatisch aufbauen
 
-Das Projekt enthält die Kurspilot-Skillfamilie als Installationspaket:
+Das Projekt enthält die Coursepilot-Skillfamilie als Installationspaket:
 [`skills/kurspilot-core.md`](skills/kurspilot-core.md) ist der gemeinsame Kern,
 `.agents/skills/` enthaelt die Codex-Adapter und `.claude/skills/` die
 Claude-Adapter. Detailwissen zu Tool-Regeln, HTML-Vorlagen und
@@ -543,7 +587,7 @@ Aktivitaetstypen steht in thematischen Referenzdateien unter `skills/`
 (z.B. `skills/html-vorlagen.md`, `skills/quiz-und-fragenbank.md`), auf die
 der Kern und die Adapter situationsbezogen verweisen.
 
-Kurspilot arbeitet mit bestehenden Moodle-Kursen und nutzt ausschliesslich den
+Coursepilot arbeitet mit bestehenden Moodle-Kursen und nutzt ausschliesslich den
 lokalen MCP-Server, keine Browser-Klicks.
 
 V1 umfasst diese vier Skills:
@@ -558,7 +602,7 @@ V1 umfasst diese vier Skills:
 - "Baue den Kurs in Moodle auf"
 - "Lege das Thema in Moodle an (Kurs-ID: ...)"
 
-Kurspilot setzt im freigegebenen Plan nur die fachlich begruendeten Elemente
+Coursepilot setzt im freigegebenen Plan nur die fachlich begruendeten Elemente
 um. Typische planbare Bausteine sind:
 - Abschnittsname und bei Bedarf ein fachlich begruendeter Abschnittseinstieg
 - Phasen-Trenner, wenn die Struktur im Plan sichtbar werden soll
@@ -566,17 +610,17 @@ um. Typische planbare Bausteine sind:
 - Externe Dokumentationslinks nur bei Materialbezug
 
 Abschnitt 0 beziehungsweise "Allgemeines" ist dabei ein normaler fachlicher
-Kursabschnitt, kein Kurspilot-Prozessspeicher. Kursueberblick, Regeln oder
+Kursabschnitt, kein Coursepilot-Prozessspeicher. Kursueberblick, Regeln oder
 allgemeine Materialien koennen dort fachlich geplant landen; Versionierung,
 Status, Debug-Hinweise und sonstige Prozessdaten bleiben im lokalen
-Kurspilot-Arbeitsbereich.
+Coursepilot-Arbeitsbereich.
 
 Materialordner duerfen einen sichtbaren Wegweiser enthalten. Der kanonische
 Dateiname dafuer ist ausschliesslich `KURSPILOT.md`. Dieser Wegweiser nennt den
 Startkontext fuer die aktuelle Materialordner-Ebene; er ist kein Index aller
 Kind-Unterrichtsvorhaben. `plan.md`, `status.md`, Journale und
 Materialnotizen werden nicht im Materialordner geschrieben, sondern bleiben nur
-im konfigurierten Kurspilot-Arbeitsbereich.
+im konfigurierten Coursepilot-Arbeitsbereich.
 
 In V1 gibt es kein separates `kurspilot-fortsetzen` und kein separates
 `kurspilot-materialien`; Weiterarbeit läuft je nach Stand über den passenden
@@ -658,23 +702,26 @@ die Abschlussverfolgung im Kurs (bzw. systemweit) aktiviert sein.
 Das Plugin funktioniert mit allen Moodle-Kursformaten (Topics, Weekly usw.).
 Die `sectionnum` ist immer 0-basiert (Abschnitt 0 = "Allgemeines"). Dieser
 Abschnitt ist ein normaler fachlicher Kursabschnitt und nicht der Default-Ort
-fuer Kurspilot-Status, Debug-Notizen oder andere Prozessdaten.
+fuer Coursepilot-Status, Debug-Notizen oder andere Prozessdaten.
 
 ---
 
 ## Projektstruktur
 
 ```
-moodle-mcp/
-├── moodle-mcp.js                  <- Lokaler MCP stdio Server
-├── README.md
-├── skills/
-│   ├── kurspilot-core.md          <- Gemeinsamer Kurspilot-Kern
-│   └── *.md                       <- Thematische Referenzdateien (situationsbezogen)
-├── .agents/skills/                <- Codex Kurspilot-Adapter
-├── .claude/skills/                <- Claude Kurspilot-Adapter
-└── Plugin/
-    └── local_coursepilot.zip  <- Moodle Plugin (Webservice-Funktionen)
+moodle-coursepilot/
+├── Plugin/src/local_coursepilot/  <- Server-MCP (aktuell): Plugin IST der MCP-Endpunkt
+│   ├── classes/external/          <- die Werkzeuge (coursepilot_*)
+│   ├── skills/                    <- Skill-Korpus, wird im Gespraech ausgeliefert
+│   └── tests/                     <- PHPUnit
+├── Plugin/src/well-known/         <- RFC-8414/9728-Pfade fuer die Discovery
+├── legacy/local_coursepilot/      <- Altstand 1.x, versorgt den lokalen Weg
+├── moodle-mcp.js                  <- Lokaler MCP stdio Server (Altweg)
+├── lib/, scripts/                 <- Node-Bausteine und Installer des Altwegs
+├── skills/                        <- Skill-Korpus des Altwegs (kurspilot-core.md u.a.)
+├── .agents/skills/, .claude/skills/  <- Skill-Adapter des Altwegs
+├── docs/adr/, docs/specs/, docs/plans/
+└── Plugin/local_coursepilot.zip   <- Installationsartefakt des Altstands
 ```
 
 ---
@@ -683,7 +730,7 @@ moodle-mcp/
 
 Das Repository hat bewusst keine npm-Dependencies fuer Installer-Werkzeuge.
 Plattformspezifische Installer nutzen die nativen Build-Werkzeuge der jeweiligen
-Build-Maschine. Wer nur an Kurspilot-Code, Moodle-Plugin oder macOS arbeitet,
+Build-Maschine. Wer nur an Coursepilot-Code, Moodle-Plugin oder macOS arbeitet,
 muss keine Windows-Installer-Werkzeuge installieren.
 
 Standard-Checks:
@@ -729,31 +776,29 @@ Kollegen noch in öffentliche Repositories, geteilte Ablagen oder andere Moodle-
 ## Lizenz
 
 Dieses Repository ist das **primäre Entwicklungs-, Support- und Issue-Repository**
-(MCP, Installer, Skills, Tests und Plugin-Quellbaum). Es gelten getrennte Lizenzen:
+(Server-MCP, Altweg, Skills, Tests). Es steht vollständig unter **AGPL-3.0-or-later**,
+einschließlich des Moodle-Plugins (siehe [`LICENSE`](LICENSE) und
+[ADR 0025](docs/adr/0025-agpl-fuer-das-gesamte-projekt.md)).
 
-- **MCP-Server, Installer, Skills und Entwicklungsmaterial:** AGPL-3.0-or-later
-  (siehe [`LICENSE`](LICENSE), Zusammenfassung in [`NOTICE`](NOTICE)).
-- **Moodle-Plugin `local_coursepilot` (inkl. Marketplace-ZIP):** GPL-3.0-or-later
-  (siehe [`Plugin/src/local_coursepilot/LICENSE`](Plugin/src/local_coursepilot/LICENSE)).
-- Teile des MCP-Projekts basieren auf
-  [`jtuttas/MoodleMcp`](https://github.com/jtuttas/MoodleMcp) und bleiben unter
-  dessen MIT-Lizenzhinweisen (siehe [`NOTICE`](NOTICE)).
+> Coursepilot steht unter der AGPL-3.0-or-later, nicht unter der GPL. Das ist eine
+> bewusste Entscheidung. Was für die Bildung gebaut wird, soll frei bleiben — auch
+> dann, wenn jemand es nur als Dienst betreibt, statt es auszuliefern. Wer Coursepilot
+> verändert und anderen zugänglich macht, gibt seine Änderungen an die Allgemeinheit
+> zurück.
 
-Für das Moodle Plugin Directory wird aus diesem Repository ein separates,
-**schreibgeschütztes** Quell-Repository
+Der Moodle Marketplace verlangt keine GPL für Plugins; GPL v3 wäre nur zwingend, wenn ein
+Plugin wesentliche Teile des Moodle-Quellcodes übernähme. Das tut Coursepilot nicht — es
+nutzt die Core-Schnittstellen.
+
+Teile des Altwegs basieren auf [`jtuttas/MoodleMcp`](https://github.com/jtuttas/MoodleMcp)
+und behalten dessen MIT-Lizenzhinweise (siehe [`NOTICE`](NOTICE)).
+
+**Veröffentlichung:** Das frühere Moodle Plugins Directory ist im
+[Moodle Marketplace](https://marketplace.moodle.com/) aufgegangen. Eingereicht wird dort
+als ZIP mit Formular; die Einreichung steht noch aus und erfolgt nach einigen Wochen
+Produktivbetrieb des Server-Wegs. Das bisherige Spiegelrepository
 [matthiasgruenwald/moodle-local_coursepilot](https://github.com/matthiasgruenwald/moodle-local_coursepilot)
-erzeugt, dessen Root ausschließlich das GPL-lizenzierte Moodle-Plugin enthält (ohne MCP,
-Installer, Skills oder Tests). Im Mirror sind Issues und Pull Requests deaktiviert.
-Entwicklung, Issues und Support bleiben ausschließlich hier im primären Repository
-[matthiasgruenwald/moodle-coursepilot](https://github.com/matthiasgruenwald/moodle-coursepilot).
-Den Export erzeugt `npm run release:plugin` (Plugin-ZIP + Mirror-Root, siehe
-[RELEASE_NOTES.md](RELEASE_NOTES.md)).
-
-Der Mirror-Sync läuft zusätzlich **automatisch**: Der GitHub-Actions-Workflow
-[`.github/workflows/mirror-sync.yml`](.github/workflows/mirror-sync.yml) baut bei
-jedem Push auf `main`, der Dateien unter `Plugin/src/local_coursepilot/` ändert,
-den Mirror-Root neu und pusht ihn nach `moodle-local_coursepilot` (nicht bei jedem
-Commit; manuell auslösbar über `workflow_dispatch`). Voraussetzung ist das
-Repository-Secret `MIRROR_PUSH_TOKEN` (Fine-Grained-PAT mit `Contents: Read and
-write` auf `moodle-local_coursepilot`); ohne es schlägt der Push-Schritt mit einer
-klaren Meldung fehl.
+und der Workflow
+[`.github/workflows/mirror-sync.yml`](.github/workflows/mirror-sync.yml) versorgen nur noch
+den eingefrorenen Altstand aus `legacy/` und entfallen mit dem Schnitt — künftig liegt das
+Plugin an der Wurzel dieses Repositories.
