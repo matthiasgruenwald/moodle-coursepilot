@@ -34,11 +34,15 @@ use local_coursepilot\webdav\webdav_error;
  * Parameter zu nehmen - noch kein zweiter Aufrufer braucht das (YAGNI, ADR
  * 0020).
  *
- * Fuer Private Files laeuft die eigentliche Ablage seit diesem Issue ueber
- * den {@see storage_port}-Adapter {@see private_files_storage_port} - fuer
- * den externen Ort unveraendert ueber {@see pointer_writer}/{@see pointer_reader}
- * (deren Ausfallbehandlung, ADR 0023, ist noch nicht Teil dieses Vertrags -
- * das ist Issue #540).
+ * Fuer Private Files laeuft die eigentliche Ablage seit Issue #538 ueber den
+ * {@see storage_port}-Adapter {@see private_files_storage_port} - fuer den
+ * externen Ort unveraendert ueber {@see pointer_writer}/{@see pointer_reader}.
+ * Die Ausfallbehandlung (ADR 0023, "Ausstandsnotiz und Nachtragen an beiden
+ * Orten") gilt seit Issue #540 fuer beide Zweige: extern weiterhin in
+ * {@see pointer_writer}, fuer Private Files hier selbst
+ * ({@see write_moodle()}/{@see append_moodle()}, ueber
+ * {@see ausstand_translation}, die dieselbe fuenfteilige Ausfallantwort
+ * ortsneutral baut).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -204,7 +208,7 @@ final class context_area {
         if ($external) {
             return context_files::write_pointer_aware($path, $content, $createonly, $expectedcontenthash, $ausstand !== '', $courseid);
         }
-        return self::write_moodle($path, $content, $expectedcontenthash, $createonly);
+        return self::write_moodle($path, $content, $expectedcontenthash, $ausstand !== '', $createonly, $courseid);
     }
 
     /**
@@ -288,16 +292,38 @@ final class context_area {
      * Schreibchoreografie (Issue #538, Spec 0021 Abnahmekriterium "Auch das
      * Schreiben in Private Files laeuft ueber den Anker").
      *
+     * Seit Issue #540 (Spec 0021, ADR 0023 "an beiden Orten") symmetrisch zum
+     * externen Zweig ({@see pointer_writer::write()}): ein Nachtragen
+     * (`$requirecheckvalue`, `ausstand=`) ueberschreibt eine bereits
+     * vorhandene Zieldatei nie ungeprueft, und ein echter Ausfall beim
+     * Persistieren selbst (nicht: Pfad-/Endungs-/Quotenpruefung, nicht: der
+     * hier bereits behandelte Pruefwert-Konflikt) vermerkt einen Ausstand,
+     * bevor der Fehler zurueckgeht - siehe {@see persist_moodle_write()}.
+     *
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash
+     * @param bool $requirecheckvalue Nachtragen (`ausstand=`) - siehe
+     *        {@see pointer_writer::write()}: eine bereits vorhandene
+     *        Zieldatei ohne mitgegebenen Pruefwert gilt dann selbst als
+     *        Konflikt, statt gewachsenen Bestand ungeprueft zu ersetzen.
      * @param bool $createonly
+     * @param int $courseid Kurs-ID, nur fuer einen etwaigen Eintrag der
+     *        Ausstandsnotiz - 0, wenn der Aufruf keinem Kurs zugeordnet ist.
      * @return array{path: string, created: bool, size: int, oldsize: int}
      * @throws \moodle_exception contextfilealreadyexists, contextfilelocked,
-     *         contextfilechanged, contextquotaexceeded
+     *         contextfilechanged, contextquotaexceeded, ausstandwritefailed,
+     *         ausstandnotewritefailed
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
-    private static function write_moodle(string $path, string $content, string $expectedcontenthash, bool $createonly): array {
+    private static function write_moodle(
+        string $path,
+        string $content,
+        string $expectedcontenthash,
+        bool $requirecheckvalue,
+        bool $createonly,
+        int $courseid
+    ): array {
         context_files::require_manage_own_files();
 
         $port = new private_files_storage_port();
@@ -307,11 +333,10 @@ final class context_area {
             throw new \moodle_exception('contextfilealreadyexists', 'local_coursepilot', '', $path);
         }
         self::guard_existing_locked($existing, $path);
-        if ($expectedcontenthash !== '' && (!$existing || $existing['checksum'] !== $expectedcontenthash)) {
-            throw new \moodle_exception('contextfilechanged', 'local_coursepilot', '', $path);
-        }
+        self::require_moodle_checkvalue_match($existing, $expectedcontenthash, $requirecheckvalue, $path);
 
-        $written = $port->write(context_files::area(), $path, $content);
+        $operation = $existing === null ? ausstand_translation::OP_CREATE : ausstand_translation::OP_OVERWRITE;
+        $written = self::persist_moodle_write($port, $path, $content, $operation, $courseid);
 
         return [
             'path' => $written['path'],
@@ -319,6 +344,126 @@ final class context_area {
             'size' => $written['size'],
             'oldsize' => $existing['size'] ?? 0,
         ];
+    }
+
+    /**
+     * Der Konfliktschutz des Moodle-Zweigs - dieselbe Zweiwegepruefung wie
+     * {@see pointer_writer}'s gleichnamiges Gegenstueck (Issue #540): ohne
+     * Pruefwert bleibt der Vertrag wie bisher ("ohne Pruefwert wird wie heute
+     * ueberschrieben"), ausser beim Nachtragen (`$requirecheckvalue`) - dort
+     * ist ein fehlender Pruefwert gegen eine bereits vorhandene Datei selbst
+     * ein Konflikt, denn Nachtragen darf gewachsenen Bestand nie ungeprueft
+     * ersetzen.
+     *
+     * @param array{checksum: string}|null $existing Ergebnis von {@see private_files_storage_port::read()}.
+     * @param string $expectedcontenthash
+     * @param bool $requirecheckvalue
+     * @param string $path
+     * @throws \moodle_exception contextfilechanged
+     */
+    private static function require_moodle_checkvalue_match(
+        ?array $existing,
+        string $expectedcontenthash,
+        bool $requirecheckvalue,
+        string $path
+    ): void {
+        if ($expectedcontenthash === '') {
+            if ($requirecheckvalue && $existing !== null) {
+                throw new \moodle_exception('contextfilechanged', 'local_coursepilot', '', $path);
+            }
+            return;
+        }
+        if (!$existing || $existing['checksum'] !== $expectedcontenthash) {
+            throw new \moodle_exception('contextfilechanged', 'local_coursepilot', '', $path);
+        }
+    }
+
+    /**
+     * Der eigentliche Schreibvorgang, umschlossen von der Ausfallbehandlung
+     * (Issue #540, ADR 0023 "an beiden Orten"): Pfad-, Endungs- und
+     * Quotenpruefung sowie ein Pruefwert-Konflikt laufen bereits vorher und
+     * bleiben unangetastet ({@see private_files_storage_port::write()} bekommt
+     * hier bewusst keinen Pruefwert mehr mitgegeben - der Vergleich ist schon
+     * erledigt); jeder andere Ausfall, der beim Persistieren selbst entsteht
+     * (z.B. Private-Files-Speicher/Datenbank), vermerkt einen Ausstand, bevor
+     * der Fehler zurueckgeht - nie roh durchgereicht.
+     *
+     * @param storage_port $port
+     * @param string $path
+     * @param string $content
+     * @param string $operation Eine der {@see ausstand_translation}-OP_*-Konstanten.
+     * @param int $courseid
+     * @return array{path: string, created: bool, size: int, checksum: string}
+     * @throws \moodle_exception contextquotaexceeded, ausstandwritefailed, ausstandnotewritefailed
+     */
+    private static function persist_moodle_write(
+        storage_port $port,
+        string $path,
+        string $content,
+        string $operation,
+        int $courseid
+    ): array {
+        try {
+            return $port->write(context_files::area(), $path, $content);
+        } catch (storage_conflict_exception $e) {
+            throw $e;
+        } catch (\moodle_exception $e) {
+            if (self::is_moodle_call_error($e)) {
+                throw $e;
+            }
+            throw self::record_moodle_storage_failure($e->errorcode, $e->getMessage(), $path, $operation, $courseid);
+        } catch (\Throwable $e) {
+            throw self::record_moodle_storage_failure(get_class($e), $e->getMessage(), $path, $operation, $courseid);
+        }
+    }
+
+    /**
+     * Aufruffehler, die {@see private_files_storage_port::write()}/{@see private_files_storage_port::append()}
+     * selbst noch werfen koennen (Pfad-/Endungs-/Quotenpruefung liegt dort,
+     * nicht schon vorher bei {@see write_moodle()}/{@see append_moodle()}) -
+     * zaehlen weiterhin nicht als Ausstand (Issue #540 Abnahmekriterium 2,
+     * ADR 0023 Punkt 2). Ohne diese Ausnahme wuerde z.B. eine falsche
+     * Dateiendung faelschlich als Speicherausfall vermerkt, nur weil sie erst
+     * beim tatsaechlichen Schreibversuch durchschlaegt statt vorher.
+     *
+     * @param \moodle_exception $e
+     * @return bool
+     */
+    private static function is_moodle_call_error(\moodle_exception $e): bool {
+        $area = context_files::area();
+        return in_array($e->errorcode, [$area->invalidpathkey, $area->quotaerrorkey, 'contextfilenotmarkdown'], true);
+    }
+
+    /**
+     * Vermerkt einen Ausstand fuer einen Ausfall beim Persistieren in Private
+     * Files (Issue #540, ADR 0023 "an beiden Orten") - dieselbe fuenfteilige
+     * Ausfallantwort wie extern ({@see pointer_writer}), nur ohne
+     * Instanzname/Host: es gibt keine Verbindung, die ausfallen koennte, nur
+     * die eigene Moodle-Ablage selbst.
+     *
+     * @param string $errorclass
+     * @param string $rawmessage
+     * @param string $path
+     * @param string $operation
+     * @param int $courseid
+     * @return \moodle_exception
+     */
+    private static function record_moodle_storage_failure(
+        string $errorclass,
+        string $rawmessage,
+        string $path,
+        string $operation,
+        int $courseid
+    ): \moodle_exception {
+        return ausstand_translation::record_and_translate(
+            $errorclass,
+            'Private Files ' . $errorclass . ': ' . $rawmessage,
+            $path,
+            $operation,
+            'Ihre privaten Dateien in Moodle sind gerade nicht beschreibbar – an Ihrem Speicher ist etwas zu tun',
+            'Ihre privaten Dateien in Moodle',
+            $courseid
+        );
     }
 
     /**
@@ -359,7 +504,7 @@ final class context_area {
         if (self::resolve_append_target($path, $content, $courseid)) {
             return context_files::append_pointer_aware($path, $content, $expectedcontenthash, $ausstand !== '', $courseid);
         }
-        return self::append_moodle($path, $content);
+        return self::append_moodle($path, $content, $courseid);
     }
 
     /**
@@ -451,21 +596,62 @@ final class context_area {
      * Der Moodle-Zweig von {@see append()} - laeuft ueber
      * {@see private_files_storage_port} (Issue #538).
      *
+     * Seit Issue #540 vermerkt ein Ausfall beim Persistieren selbst (nicht:
+     * Personenbezugs-Sperre, nicht: Quote) einen Ausstand, bevor der Fehler
+     * zurueckgeht - symmetrisch zu {@see write_moodle()}. Anders als dort kein
+     * Pruefwert-Konfliktschutz: `expected_contenthash` wirkt beim Anhaengen
+     * dokumentiert nur am externen Ort ({@see \local_coursepilot\external\append_context_file}),
+     * Spec 0016 §5.3 verbietet fuer Anhaengen ohnehin Locks.
+     *
      * @param string $path
      * @param string $content
+     * @param int $courseid Kurs-ID, nur fuer einen etwaigen Eintrag der
+     *        Ausstandsnotiz - 0, wenn der Aufruf keinem Kurs zugeordnet ist.
      * @return array{path: string, created: bool, size: int}
-     * @throws \moodle_exception contextfilelocked, contextquotaexceeded
+     * @throws \moodle_exception contextfilelocked, contextquotaexceeded,
+     *         ausstandwritefailed, ausstandnotewritefailed
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
-    private static function append_moodle(string $path, string $content): array {
+    private static function append_moodle(string $path, string $content, int $courseid = 0): array {
         context_files::require_manage_own_files();
 
         $port = new private_files_storage_port();
         $existing = $port->read(context_files::area(), $path);
         self::guard_existing_locked($existing, $path);
 
-        $result = $port->append(context_files::area(), $path, $content);
+        $result = self::persist_moodle_append($port, $path, $content, ausstand_translation::OP_APPEND, $courseid);
 
         return ['path' => $result['path'], 'created' => $result['created'], 'size' => $result['size']];
+    }
+
+    /**
+     * Der eigentliche Anhaengevorgang, umschlossen von der Ausfallbehandlung
+     * - siehe {@see persist_moodle_write()}.
+     *
+     * @param storage_port $port
+     * @param string $path
+     * @param string $content
+     * @param string $operation
+     * @param int $courseid
+     * @return array{path: string, created: bool, size: int, checksum: string}
+     * @throws \moodle_exception contextquotaexceeded, ausstandwritefailed, ausstandnotewritefailed
+     */
+    private static function persist_moodle_append(
+        storage_port $port,
+        string $path,
+        string $content,
+        string $operation,
+        int $courseid
+    ): array {
+        try {
+            return $port->append(context_files::area(), $path, $content);
+        } catch (\moodle_exception $e) {
+            if (self::is_moodle_call_error($e)) {
+                throw $e;
+            }
+            throw self::record_moodle_storage_failure($e->errorcode, $e->getMessage(), $path, $operation, $courseid);
+        } catch (\Throwable $e) {
+            throw self::record_moodle_storage_failure(get_class($e), $e->getMessage(), $path, $operation, $courseid);
+        }
     }
 }

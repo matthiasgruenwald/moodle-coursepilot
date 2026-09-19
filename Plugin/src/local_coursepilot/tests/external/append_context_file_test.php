@@ -116,8 +116,18 @@ final class append_context_file_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $this->expectException(\moodle_exception::class);
-        $this->append('notiz.txt', 'x');
+        // Genauer Fehlerschluessel, nicht nur "irgendeine moodle_exception"
+        // (Issue #540 Regressionsschutz, siehe das Gegenstueck in
+        // write_context_file_test): ohne die Ausnahme in
+        // context_area::is_moodle_call_error() wuerde die seit #540 neue
+        // Ausfallbehandlung das faelschlich als Ausstand vermerken.
+        try {
+            $this->append('notiz.txt', 'x');
+            $this->fail('Falsche Dateiendung haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilenotmarkdown', $e->errorcode);
+        }
+        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
     }
 
     /**

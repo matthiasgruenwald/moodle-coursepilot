@@ -130,8 +130,21 @@ final class write_context_file_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $this->expectException(\moodle_exception::class);
-        $this->write('notiz.txt', 'Text');
+        // Ausdruecklich der genaue Fehlerschluessel, nicht nur "irgendeine
+        // moodle_exception" (Issue #540 Regressionsschutz): die Endungs-
+        // pruefung liegt im private_files_storage_port-Adapter, tief innerhalb
+        // der seit #540 neu umschliessenden Ausfallbehandlung - ohne die
+        // Ausnahme in context_area::is_moodle_call_error() wuerde sie
+        // faelschlich als "ausstandwritefailed" statt als
+        // "contextfilenotmarkdown" zurueckkommen und dabei sogar einen
+        // Ausstand anlegen.
+        try {
+            $this->write('notiz.txt', 'Text');
+            $this->fail('Falsche Dateiendung haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilenotmarkdown', $e->errorcode);
+        }
+        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
     }
 
     /**
@@ -1541,6 +1554,63 @@ final class write_context_file_test extends \advanced_testcase {
 
         $this->assertNull($this->stored_file($teachera, '/coursepilot/', 'plan.md'));
         $this->assertSame('# B', $this->read_stored($teacherb, '/coursepilot/', 'plan.md'));
+    }
+
+    /**
+     * Nachtragen mit "ausstand=" ueberschreibt auch in Private Files nie
+     * ungeprueft (Issue #540, symmetrisch zu
+     * {@see test_ausstand_retry_without_checkvalue_is_rejected_when_file_exists()}
+     * fuer den externen Ort): Fehlt der Pruefwert, obwohl die Zieldatei
+     * bereits existiert, geht das Nachtragen als Konflikt zurueck statt
+     * gewachsenen Bestand stillschweigend zu ersetzen.
+     */
+    public function test_moodle_ausstand_retry_without_checkvalue_is_rejected_when_file_exists(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', 'inzwischen gewachsen');
+
+        try {
+            write_context_file::execute('plan.md', '# Plan', '', 'IRGENDEINEKENNUNG');
+            $this->fail('Nachtragen ohne Pruefwert haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilechanged', $e->errorcode);
+        }
+
+        $this->assertSame('inzwischen gewachsen', $this->read_stored($user, '/coursepilot/', 'plan.md'));
+    }
+
+    /**
+     * Nachtragen auf eine weiterhin fehlende Zieldatei braucht in Private
+     * Files ebenso keinen Pruefwert wie extern - "anlegen" ist bereits
+     * sicher, weil noch nichts da ist, das ueberschrieben werden koennte.
+     */
+    public function test_moodle_ausstand_retry_creates_missing_file_without_checkvalue(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $result = write_context_file::execute('plan.md', '# Plan', '', 'IRGENDEINEKENNUNG');
+        $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
+
+        $this->assertTrue($result['created']);
+    }
+
+    /**
+     * Ein erfolgreiches Nachtragen hakt den Eintrag im selben Aufruf ab,
+     * auch wenn der Kontextbereich der Lehrkraft in Moodle liegt (Issue #540
+     * Abnahmekriterium 3, "an beiden Orten") - unabhaengig davon, an welchem
+     * Ort der Ausstand urspruenglich entstand.
+     */
+    public function test_moodle_successful_write_dismisses_the_ausstand_entry(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $kennung = \local_coursepilot\ausstand_notice::record('plan.md', 'anlegen', 'irgendeinefehlerklasse', 0);
+
+        $result = write_context_file::execute('plan.md', '# Plan', '', $kennung);
+        $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
+
+        $this->assertTrue($result['created']);
+        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
     }
 
     /**

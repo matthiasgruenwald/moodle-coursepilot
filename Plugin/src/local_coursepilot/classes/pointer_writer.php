@@ -54,13 +54,13 @@ final class pointer_writer {
      *      Vorpruefungen der Schreibendpunkte brauchen dasselbe Vokabular fuer
      *      {@see record_preread_failure()}.
      */
-    public const OP_CREATE = 'anlegen';
+    public const OP_CREATE = ausstand_translation::OP_CREATE;
 
     /** @var string Vorgang "ueberschreiben". */
-    public const OP_OVERWRITE = 'überschreiben';
+    public const OP_OVERWRITE = ausstand_translation::OP_OVERWRITE;
 
     /** @var string Vorgang "anhaengen". */
-    public const OP_APPEND = 'anhängen';
+    public const OP_APPEND = ausstand_translation::OP_APPEND;
 
     /**
      * @var string[] moodle_exception-Fehlerschluessel, die genauso einen
@@ -556,30 +556,30 @@ final class pointer_writer {
         ?int $instanceid,
         int $courseid
     ): \moodle_exception {
-        access_log::log_failure('WebDAV ' . $errorclass . ': ' . $rawmessage);
+        return ausstand_translation::record_and_translate(
+            $errorclass,
+            'WebDAV ' . $errorclass . ': ' . $rawmessage,
+            $clientpath,
+            $operation,
+            self::reason_for($errorclass),
+            self::describe_target($host, $instanceid),
+            $courseid
+        );
+    }
 
-        try {
-            $identifier = ausstand_notice::record($clientpath, $operation, $errorclass, $courseid);
-        } catch (\moodle_exception $quotaerror) {
-            if ($quotaerror->errorcode !== 'ausstandnotequotaexceeded') {
-                throw $quotaerror;
-            }
-            return new \moodle_exception('ausstandnotewritefailed', 'local_coursepilot', '', (object) [
-                'path' => $clientpath,
-                'operation' => $operation,
-            ]);
-        }
-
+    /**
+     * Die Ursache in Lehrkraftsprache samt Teil 2 der Ausfallantwort (Issue
+     * #516, Spec #486 §8): "spaeter nachtragen" fuer eine Ursache, die sich
+     * voraussichtlich von selbst loest, sonst "an Ihrem Speicher ist etwas zu
+     * tun". Oeffentlich (Issue #540), weil {@see webdav_storage_port} dieselbe
+     * WebDAV-Ursachensprache braucht, ohne sie zweimal zu pflegen.
+     *
+     * @param string $errorclass
+     * @return string
+     */
+    public static function reason_for(string $errorclass): string {
         $reason = self::REASONS[$errorclass] ?? ('Fehlerklasse "' . $errorclass . '"');
-        $reason .= ' – ' . self::classify($errorclass);
-
-        return new \moodle_exception('ausstandwritefailed', 'local_coursepilot', '', (object) [
-            'path' => $clientpath,
-            'operation' => $operation,
-            'reason' => $reason,
-            'kennung' => $identifier,
-            'target' => self::describe_target($host, $instanceid),
-        ]);
+        return $reason . ' – ' . self::classify($errorclass);
     }
 
     /**
@@ -604,11 +604,14 @@ final class pointer_writer {
      * geloeschte Instanz (webdavinstancemissing) keinen mehr hat - dann
      * bleibt nur der uebergebene Host.
      *
+     * Oeffentlich (Issue #540), weil {@see webdav_storage_port} dieselbe
+     * Zielbeschreibung braucht, ohne sie zweimal zu pflegen.
+     *
      * @param string $host
      * @param int|null $instanceid
      * @return string
      */
-    private static function describe_target(string $host, ?int $instanceid): string {
+    public static function describe_target(string $host, ?int $instanceid): string {
         global $DB;
 
         $name = $instanceid !== null

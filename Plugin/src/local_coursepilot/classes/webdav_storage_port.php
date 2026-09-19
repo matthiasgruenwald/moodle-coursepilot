@@ -50,6 +50,21 @@ use local_coursepilot\webdav\webdav_instance;
 final class webdav_storage_port implements storage_port {
 
     /**
+     * @var string[] moodle_exception-Fehlerschluessel aus
+     *      {@see webdav_instance::resolve_owned()}, die genauso einen
+     *      Ausstand anlegen wie ein {@see webdav_error} (Issue #540, ADR
+     *      0023) - kein Pruefmerkmal-/Wurzel-/IServ-Check hier (dieser
+     *      Adapter kennt keinen Kontextpointer), deshalb kuerzer als
+     *      {@see pointer_writer}'s LOCATION_FAILURE_CODES.
+     */
+    private const LOCATION_FAILURE_CODES = [
+        'webdavinstancemissing',
+        'webdavinstanceforeign',
+        'webdavnotenabled',
+        'webdavauthunsupported',
+    ];
+
+    /**
      * @param int $instanceid Die WebDAV-Nutzerinstanz, ausschliesslich aus
      *        einer serverseitigen Quelle (nie aus einer Client-Eingabe) -
      *        Instanzeigentum prueft {@see webdav_instance::resolve_owned()}.
@@ -125,18 +140,30 @@ final class webdav_storage_port implements storage_port {
     public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = implode('/', [...$folders, $filename]);
-        $resolved = $this->resolved_instance();
-        $client = $resolved->client();
-        $fileurl = $resolved->file_url($this->relative_path($folders, $filename));
+        $operation = ausstand_translation::OP_CREATE;
 
-        $existing = $this->current_entry($client, $fileurl);
-        $this->require_checksum_match($existing, $expectedchecksum, $clientpath);
-        storage_anchor::require_quota($area, strlen($content) - ($existing['size'] ?? 0));
+        try {
+            $resolved = $this->resolved_instance();
+            $client = $resolved->client();
+            $fileurl = $resolved->file_url($this->relative_path($folders, $filename));
 
-        $this->ensure_directory($resolved, $folders);
-        $this->put($client, $fileurl, $content, $existing, $clientpath);
+            $existing = $this->current_entry($client, $fileurl);
+            $this->require_checksum_match($existing, $expectedchecksum, $clientpath);
+            storage_anchor::require_quota($area, strlen($content) - ($existing['size'] ?? 0));
+            if ($existing !== null) {
+                $operation = ausstand_translation::OP_OVERWRITE;
+            }
 
-        $written = $this->current_entry($client, $fileurl);
+            $this->ensure_directory($resolved, $folders);
+            $this->put($client, $fileurl, $content, $existing, $clientpath);
+
+            $written = $this->current_entry($client, $fileurl);
+        } catch (webdav_error $e) {
+            throw $this->fail($e->errorclass, $e->getMessage(), $clientpath, $operation);
+        } catch (\moodle_exception $e) {
+            throw $this->translate_location_failure($e, $clientpath, $operation);
+        }
+
         return [
             'path' => $clientpath,
             'created' => $existing === null,
@@ -151,24 +178,103 @@ final class webdav_storage_port implements storage_port {
     public function append(storage_area $area, string $path, string $content): array {
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = implode('/', [...$folders, $filename]);
-        $resolved = $this->resolved_instance();
-        $client = $resolved->client();
-        $fileurl = $resolved->file_url($this->relative_path($folders, $filename));
 
-        $existing = $this->current_entry($client, $fileurl);
-        storage_anchor::require_quota($area, strlen($content));
-        $this->ensure_directory($resolved, $folders);
+        try {
+            $resolved = $this->resolved_instance();
+            $client = $resolved->client();
+            $fileurl = $resolved->file_url($this->relative_path($folders, $filename));
 
-        $newcontent = $existing === null ? $content : ($client->get($fileurl) . $content);
-        $this->put($client, $fileurl, $newcontent, $existing, $clientpath);
+            $existing = $this->current_entry($client, $fileurl);
+            storage_anchor::require_quota($area, strlen($content));
+            $this->ensure_directory($resolved, $folders);
 
-        $written = $this->current_entry($client, $fileurl);
+            $newcontent = $existing === null ? $content : ($client->get($fileurl) . $content);
+            $this->put($client, $fileurl, $newcontent, $existing, $clientpath);
+
+            $written = $this->current_entry($client, $fileurl);
+        } catch (webdav_error $e) {
+            throw $this->fail($e->errorclass, $e->getMessage(), $clientpath, ausstand_translation::OP_APPEND);
+        } catch (\moodle_exception $e) {
+            throw $this->translate_location_failure($e, $clientpath, ausstand_translation::OP_APPEND);
+        }
+
         return [
             'path' => $clientpath,
             'created' => $existing === null,
             'size' => strlen($newcontent),
             'checksum' => pointer_reader::external_checkvalue($written['etag'] ?? null, $written['timemodified'] ?? 0),
         ];
+    }
+
+    /**
+     * Uebersetzt einen Ausfall beim Schreiben/Anhaengen (Issue #540, ADR
+     * 0023) genauso wie {@see pointer_writer}: vermerkt einen Ausstand, bevor
+     * der Fehler zurueckgeht - nie roh durchgereicht. `Konflikt` (412) ist
+     * hier bereits als {@see storage_conflict_exception} unterwegs (siehe
+     * {@see put()}), erreicht diese Methode also nie.
+     *
+     * @param string $errorclass
+     * @param string $rawmessage
+     * @param string $clientpath
+     * @param string $operation Eine der {@see ausstand_translation}-OP_*-Konstanten.
+     * @return \moodle_exception
+     */
+    private function fail(string $errorclass, string $rawmessage, string $clientpath, string $operation): \moodle_exception {
+        return ausstand_translation::record_and_translate(
+            $errorclass,
+            'WebDAV ' . $errorclass . ': ' . $rawmessage,
+            $clientpath,
+            $operation,
+            pointer_writer::reason_for($errorclass),
+            pointer_writer::describe_target($this->resolve_host(), $this->instanceid),
+            0
+        );
+    }
+
+    /**
+     * Ort-Ausfaelle aus {@see resolved_instance()} legen ebenfalls einen
+     * Ausstand an (Issue #540); jeder andere moodle_exception-Fehlerschluessel
+     * - insbesondere {@see storage_conflict_exception} und die Quotenpruefung
+     * des Bereichs - laeuft unveraendert weiter, er gehoert nicht zu diesem
+     * Zweig.
+     *
+     * @param \moodle_exception $e
+     * @param string $clientpath
+     * @param string $operation
+     * @return \moodle_exception
+     */
+    private function translate_location_failure(\moodle_exception $e, string $clientpath, string $operation): \moodle_exception {
+        if ($e instanceof storage_conflict_exception || !in_array($e->errorcode, self::LOCATION_FAILURE_CODES, true)) {
+            return $e;
+        }
+        return ausstand_translation::record_and_translate(
+            $e->errorcode,
+            'WebDAV ' . $e->errorcode . ': ' . $e->getMessage(),
+            $clientpath,
+            $operation,
+            pointer_writer::reason_for($e->errorcode),
+            // Instanz nicht mehr aufloesbar - kein frischer Host verfuegbar,
+            // anders als bei pointer_writer, der den Host aus dem Pointer-
+            // Pruefmerkmal kennt (dieser Adapter kennt keinen Pointer).
+            pointer_writer::describe_target('', $this->instanceid),
+            0
+        );
+    }
+
+    /**
+     * Der Host der Instanz, best-effort - fuer die Zielbeschreibung der
+     * Ausfallantwort. Leer, wenn die Instanz selbst nicht mehr aufloesbar ist
+     * (dann greift ohnehin {@see translate_location_failure()}, nicht diese
+     * Methode).
+     *
+     * @return string
+     */
+    private function resolve_host(): string {
+        try {
+            return (string) (webdav_instance::fingerprint_of($this->instanceid)['server'] ?? '');
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 
     /**
