@@ -214,6 +214,9 @@ $string['materialpreviewunsupported'] = 'This file cannot be read as an image (e
 $string['invalidmaterialreferencelist'] = 'Field "{$a}" expects a list of material folder paths (JSON array), e.g. ["worksheet.pdf"].';
 $string['folderfilespatchunsupported'] = 'Files cannot be added to an existing "folder" afterwards via update_module_settings (a Moodle quirk of folder_update_instance()). Create the folder with create_module and the "files" field instead, or create another folder for the extra files.';
 
+// Storage port (Ablage-Vertrag), issue #536, spec 0021.
+$string['storageconflict'] = 'Conflict: {$a} has changed since it was last read — please read it again, merge the changes, and write again.';
+
 // Image crop (Spec 0018 §5, Issue #431).
 $string['materialcropsourceunsupported'] = '"{$a}" cannot be cropped — GD is raster-only, SVG and corrupted image data are excluded.';
 $string['materialcropoutputunsupported'] = 'Target extension "{$a}" cannot hold a crop result — allowed: png, jpg, jpeg, gif, webp.';
