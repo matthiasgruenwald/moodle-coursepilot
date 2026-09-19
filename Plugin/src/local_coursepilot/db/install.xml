@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/coursepilot/db" VERSION="20260911" COMMENT="local_coursepilot: OAuth-Client-Registrierung (#335), Autorisierungscodes und Token (#336), Aenderungsverlauf-Schnappschuesse (#385), Aufbewahrung/Loeschfrist (#387), Markierungsgedaechtnis (#493)"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_coursepilot_oauth_client" COMMENT="Per DCR (RFC 7591) oder CIMD registrierte OAuth-Clients.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="clientid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Oeffentliche client_id, per DCR vergeben oder die CIMD-URL selbst."/>
+        <FIELD NAME="clientname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="redirecturis" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="JSON-Array erlaubter redirect_uris."/>
+        <FIELD NAME="tokenendpointauthmethod" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="none" SEQUENCE="false"/>
+        <FIELD NAME="clientsecret" TYPE="char" LENGTH="128" NOTNULL="false" SEQUENCE="false" COMMENT="Nur bei client_secret_post gesetzt."/>
+        <FIELD NAME="source" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="dcr" SEQUENCE="false" COMMENT="dcr oder cimd."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="clientid" UNIQUE="true" FIELDS="clientid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_coursepilot_oauth_code" COMMENT="Kurzlebige Autorisierungscodes, PKCE-gebunden, genau einmal einloesbar (#336).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="code" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="clientid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="redirecturi" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="codechallenge" TYPE="char" LENGTH="128" NOTNULL="true" SEQUENCE="false" COMMENT="PKCE-S256-Challenge des Clients."/>
+        <FIELD NAME="expires" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="used" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="code" UNIQUE="true" FIELDS="code"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_coursepilot_oauth_token" COMMENT="Access- und Refresh-Token, 1h/30d, Refresh-Rotation (#336).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="accesstoken" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="refreshtoken" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="clientid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="expires" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Ablauf des Access-Tokens."/>
+        <FIELD NAME="refreshexpires" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="revoked" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="accesstoken" UNIQUE="true" FIELDS="accesstoken"/>
+        <INDEX NAME="refreshtoken" UNIQUE="true" FIELDS="refreshtoken"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_coursepilot_cm_version" COMMENT="Vollstand eines course_modules-Schreibvorgangs (Formularweg, Handaenderung, Massenbearbeitung oder spaeter API), Anker die stabile cmid (#385, Spec 0015 §10).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Kurs zum Zeitpunkt des Schreibvorgangs - noetig fuer die Kurs-Kaskade (#387): course_modules ist beim course_deleted-Event bereits geloescht."/>
+        <FIELD NAME="version" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Fortlaufend je cmid, beginnend bei 1."/>
+        <FIELD NAME="source" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="moodle" SEQUENCE="false" COMMENT="Ursprung des Schreibvorgangs: moodle (nativer Schreibweg), vorgefunden (rueckwirkend beim ersten beobachteten Ereignis angelegter Vorher-Stand, #386) oder geklont (clone_activity, #421); spaetere API-Clients tragen einen eigenen Wert."/>
+        <FIELD NAME="sourcecmid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Quell-Modul-ID eines Klons (#421) - nur bei source=geklont gesetzt, sonst NULL."/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="moduleinfo_json" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="get_moduleinfo_data()-Feldobjekt (Instanz-Record, Tags, availability, gradepass/gradecat/Outcomes)."/>
+        <FIELD NAME="coursemodule_json" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Vollstaendige course_modules-Zeile zum Zeitpunkt des Schreibvorgangs."/>
+        <FIELD NAME="arrangement_json" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Anordnungs-Stand (quiz_slots+question_references, quiz_sections, quiz_feedback) - nur fuer quiz, sonst NULL (#396, Spec 0015 Paragraph 10)."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="cmid_version" UNIQUE="true" FIELDS="cmid, version"/>
+        <INDEX NAME="courseid" UNIQUE="false" FIELDS="courseid"/>
+        <INDEX NAME="cmid_timecreated" UNIQUE="false" FIELDS="cmid, timecreated" COMMENT="Traegt die opportunistische Loeschfrist-Bereinigung je cmid (#387)."/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_coursepilot_cm_file" COMMENT="Deduplizierte Datei-Metadaten (keine Bytes) je pathnamehash+contenthash; ein Datensatz kann von mehreren Staenden referenziert werden (#385).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="pathnamehash" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="contenthash" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="component" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="filearea" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="itemid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="filepath" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="filename" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="filesize" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="mimetype" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="pathnamehash_contenthash" UNIQUE="true" FIELDS="pathnamehash, contenthash"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_coursepilot_cm_version_file" COMMENT="Verknuepft einen Stand mit den zu diesem Zeitpunkt vorhandenen Dateien des Modulkontexts; gap markiert Dateien ausserhalb der Beschreibung als nicht rueckschreibbar (#385).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="versionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="fileid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="gap" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = Dateiinhalt ausserhalb der Beschreibung, nicht rueckschreibbar."/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="versionid" UNIQUE="false" FIELDS="versionid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_coursepilot_context_mark" COMMENT="Markierungsgedaechtnis (#493, Spec #486 Paragraph 6): nur das Bit 'markiert ja/nein' je Kontextdatei, Schluessel aus Pfad, Groesse, Aenderungszeit und ETag.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="path" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Client-Pfad der Datei, relativ zum Kontextbereich."/>
+        <FIELD NAME="pathhash" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false" COMMENT="sha1(path) - traegt den Unique-Index, damit er unabhaengig von der Pfadlaenge kurz bleibt."/>
+        <FIELD NAME="filesize" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="etag" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="NULL, wenn der Speicher keine ETags liefert (IServ-Modus)."/>
+        <FIELD NAME="ismarked" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = Frontmatter traegt 'coursepilot.personenbezug: true'."/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_pathhash" UNIQUE="true" FIELDS="userid, pathhash"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_coursepilot_werkbank_ticket" COMMENT="Einmal-Downloadticket fuer eine Werkbankdatei (#501, Spec #486 Paragraph 13): gebunden an Person, Pfad und contenthash, 15 Minuten gueltig, gespeichert wird nur der Hash des Tickets selbst.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="path" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Client-Pfad der Werkbankdatei, relativ zur Werkbankwurzel."/>
+        <FIELD NAME="contenthash" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false" COMMENT="Bei Abruf gegen den aktuellen Dateiinhalt geprueft - Aenderung seit Ausstellung wird abgelehnt."/>
+        <FIELD NAME="tickethash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="sha256(Ticketgeheimnis) - das Geheimnis selbst wird nie gespeichert."/>
+        <FIELD NAME="oauthtokenid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="local_coursepilot_oauth_token.id der ausstellenden Verbindung, NULL wenn keine bekannt war."/>
+        <FIELD NAME="expires" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="tickethash" UNIQUE="true" FIELDS="tickethash"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
