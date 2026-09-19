@@ -21,6 +21,7 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_coursepilot\context_area;
 use local_coursepilot\context_files;
 
 defined('MOODLE_INTERNAL') || die();
@@ -30,6 +31,10 @@ defined('MOODLE_INTERNAL') || die();
  * einziger, fest verdrahteter Dateibereich im eigenen privaten
  * Nutzerkontext - kein Parameter adressiert einen anderen Bereich, eine
  * andere Person oder einen anderen Ort ausserhalb dieses Bereichs.
+ *
+ * Ortsneutral seit Issue #538 (Spec 0021): {@see context_area::list()}
+ * liefert bereits denselben Feldsatz fuer beide Orte - dieses Werkzeug
+ * unterscheidet selbst nicht mehr zwischen Moodle und extern.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -77,104 +82,12 @@ class list_context_files extends external_api {
         $context = context_files::own_context();
         self::validate_context($context);
 
-        // Zeigerbewusst (Issue #490): folgt dem Kontextpointer nach Moodle
-        // oder extern (WebDAV) - der Aufrufer hier kennt den Unterschied
-        // nicht, das Ergebnis hat in beiden Faellen dieselbe Form.
-        //
-        // Nur-Lese-Schalter fuer den vorherigen Ort (Issue #498, Spec #486
-        // §6/§9): loest denselben Lesezweig auf einem anderen, bereits
-        // aufgeloesten Ort - alle Aufloesungspruefungen (Instanzbesitz,
-        // Freischaltung, Pruefmerkmal, IServ) gelten auch hier.
-        $result = $params['vorheriger_ort']
-            ? context_files::list_entries_previous_location($params['path'], \local_coursepilot\altbestand::require_open_location())
-            : context_files::list_entries_pointer_aware($params['path']);
+        $result = context_area::list($params['path'], $params['vorheriger_ort']);
 
         return [
             'path' => $result['directory'],
-            'entries' => array_map(
-                static fn (array $entry): array => self::annotate_locked($entry, $result['directory']),
-                $result['entries']
-            ),
+            'entries' => $result['entries'],
         ];
-    }
-
-    /**
-     * Ergaenzt einen Eintrag um "locked" - der Personenbezugs-Check aus dem
-     * Rumpf von {@see execute()} herausgezogen, damit execute() unter der
-     * 50-Zeilen-Grenze bleibt (Issue #506).
-     *
-     * @param array $entry Ein Eintrag aus {@see context_files::list_entries_pointer_aware()}
-     *        (traegt noch das interne "etag"-Feld).
-     * @param string $directory Ergebnis-Ordner, siehe {@see execute()}.
-     * @return array Derselbe Eintrag ohne "etag", mit "locked" und (extern,
-     *         Dateien) einem gefuellten "contenthash".
-     */
-    private static function annotate_locked(array $entry, string $directory): array {
-        $etag = $entry['etag'] ?? null;
-        // Nur der externe Zweig traegt ueberhaupt ein "etag"-Feld (auch mit
-        // Wert null, IServ) - {@see \local_coursepilot\pointer_reader::list_entries()}.
-        // Der Moodle-Zweig hat gar kein solches Feld, sein "contenthash" ist
-        // bereits der echte Moodle-Contenthash und bleibt unangetastet.
-        $isexternal = array_key_exists('etag', $entry);
-        unset($entry['etag']);
-
-        if ($entry['type'] === 'folder') {
-            return $entry + ['locked' => false];
-        }
-
-        if ($isexternal) {
-            // Konfliktschutz (Issue #513, Spec #486 §4/§6): der Pruefwert,
-            // den write_context_file/append_context_file als
-            // "expected_contenthash" wieder entgegennehmen.
-            $entry['contenthash'] = \local_coursepilot\pointer_reader::external_checkvalue($etag, $entry['timemodified']);
-        }
-
-        // Schalter fuer personenbezogene Kontextdaten (#344, ADR 0011): ein
-        // gesperrter Eintrag erscheint sichtbar gesperrt, nicht weggelassen -
-        // siehe local_coursepilot\personal_data. Bei eingeschaltetem Schalter
-        // ist "locked" ohnehin immer false, die Pruefung entfaellt dann ganz
-        // (Issue #493, Spec #486 §6: "Ist der Schalter an, entfaellt die
-        // Pruefung ganz.") - kein Markierungsgedaechtnis-Zugriff, kein
-        // Nachlesen der Datei.
-        //
-        // Nur .md-Dateien werden dafuer eingelesen: seit dem Umzug auf
-        // Moodles Private Files (#407) kann die Lehrkraft hier ueber "Meine
-        // Dateien" beliebige Dateien ablegen, und die Markierung steht
-        // ausschliesslich im Frontmatter einer Markdown-Datei. Ohne diese
-        // Grenze laese die Auflistung jede fremde Datei des Ordners
-        // vollstaendig in den Speicher.
-        $ismarkdown = strtolower(pathinfo($entry['name'], PATHINFO_EXTENSION)) === 'md';
-        if (!$ismarkdown || \local_coursepilot\personal_data::allowed()) {
-            return $entry + ['locked' => false];
-        }
-
-        return $entry + ['locked' => self::is_marked_cached($entry, $directory, $etag)];
-    }
-
-    /**
-     * Prueft (mit Markierungsgedaechtnis) ob eine .md-Datei personenbezogen
-     * markiert ist (Issue #523: aus annotate_locked() ausgelagert, um die
-     * Funktion unter der 50-Zeilen-Grenze zu halten).
-     *
-     * @param array $entry
-     * @param string $directory
-     * @param string|null $etag
-     * @return bool
-     */
-    private static function is_marked_cached(array $entry, string $directory, ?string $etag): bool {
-        $relativepath = $directory === '' ? $entry['name'] : $directory . '/' . $entry['name'];
-
-        // Markierungsgedaechtnis (Issue #493, Spec #486 §6): erspart das
-        // Nachlesen jeder .md-Datei, solange sich Groesse, Aenderungszeit und
-        // ETag nicht geaendert haben - extern sonst 1+N Zugriffe je Auflistung.
-        $marked = \local_coursepilot\mark_memory::lookup($relativepath, $entry['size'], $entry['timemodified'], $etag);
-        if ($marked === null) {
-            $content = context_files::read_content_pointer_aware($relativepath);
-            $marked = $content !== null && \local_coursepilot\personal_data::is_marked($content['content']);
-            \local_coursepilot\mark_memory::remember($relativepath, $entry['size'], $entry['timemodified'], $etag, $marked);
-        }
-
-        return $marked;
     }
 
     /**

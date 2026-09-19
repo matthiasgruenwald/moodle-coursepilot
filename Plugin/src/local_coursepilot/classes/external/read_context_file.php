@@ -20,7 +20,10 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_coursepilot\altbestand;
+use local_coursepilot\context_area;
 use local_coursepilot\context_files;
+use local_coursepilot\personal_data;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -28,6 +31,11 @@ defined('MOODLE_INTERNAL') || die();
  * Liest eine Datei aus dem Kontextbereich der aufrufenden Lehrkraft (Issue
  * #343). V1-Vertrag: nur lesen. Schreiben ist ueber diese Oberflaeche
  * technisch nicht moeglich - es gibt keine entsprechende Funktion.
+ *
+ * Ortsneutral seit Issue #538 (Spec 0021): dieses Werkzeug kennt kein
+ * "etag"-Sonderfeld mehr - {@see context_area::read()}/{@see context_area::read_previous_location()}
+ * liefern den Pruefwert bereits als "contenthash", gleich ob Moodle- oder
+ * externer Ort.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -76,15 +84,9 @@ class read_context_file extends external_api {
         $context = context_files::own_context();
         self::validate_context($context);
 
-        // Zeigerbewusst (Issue #490): folgt dem Kontextpointer nach Moodle
-        // oder extern (WebDAV) - der Aufrufer hier kennt den Unterschied
-        // nicht, das Ergebnis hat in beiden Faellen dieselbe Form.
-        //
-        // Nur-Lese-Schalter fuer den vorherigen Ort (Issue #498, Spec #486
-        // §6/§9): siehe list_context_files fuer die Begruendung.
         $file = $params['vorheriger_ort']
-            ? context_files::read_content_previous_location($params['path'], \local_coursepilot\altbestand::require_open_location())
-            : context_files::read_content_pointer_aware($params['path']);
+            ? context_area::read_previous_location($params['path'], altbestand::require_open_location())
+            : context_area::read($params['path']);
         if ($file === null) {
             throw new \moodle_exception('contextfilenotfound', 'local_coursepilot', '', $params['path']);
         }
@@ -92,7 +94,7 @@ class read_context_file extends external_api {
         // Schalter fuer personenbezogene Kontextdaten (#344, ADR 0011):
         // wirkt auf der Frontmatter-Markierung, nicht auf dem Inhalt -
         // siehe local_coursepilot\personal_data.
-        if (\local_coursepilot\personal_data::is_marked($file['content']) && !\local_coursepilot\personal_data::allowed()) {
+        if (personal_data::is_marked($file['content']) && !personal_data::allowed()) {
             throw new \moodle_exception('contextfilelocked', 'local_coursepilot', '', $params['path']);
         }
 
@@ -102,28 +104,9 @@ class read_context_file extends external_api {
             'mimetype' => $file['mimetype'],
             'size' => $file['size'],
             'content' => $file['content'],
-            'contenthash' => self::checkvalue($file),
+            'contenthash' => $file['contenthash'],
             'timemodified' => $file['timemodified'],
         ];
-    }
-
-    /**
-     * Konfliktschutz (Issue #513, Spec #486 §4/§6): am externen Ort traegt
-     * {@see context_files::read_content_pointer_aware()}/{@see \local_coursepilot\pointer_reader::read_content()}
-     * zusaetzlich ein internes "etag"-Feld (auch mit Wert null, IServ) - nur
-     * dann bildet diese Methode daraus den Pruefwert, den
-     * "write_context_file"/"append_context_file" als "expected_contenthash"
-     * wieder entgegennehmen. Am Moodle-Ort (kein "etag"-Feld) bleibt der
-     * bereits mitgelieferte, echte Moodle-Contenthash unangetastet.
-     *
-     * @param array $file
-     * @return string
-     */
-    private static function checkvalue(array $file): string {
-        if (!array_key_exists('etag', $file)) {
-            return $file['contenthash'];
-        }
-        return \local_coursepilot\pointer_reader::external_checkvalue($file['etag'], $file['timemodified']);
     }
 
     /**
