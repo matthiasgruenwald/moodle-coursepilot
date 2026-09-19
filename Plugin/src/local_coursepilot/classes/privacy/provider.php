@@ -415,7 +415,15 @@ final class provider implements
             }
         }
 
-        if (!in_array(SYSCONTEXTID, $contextlist->get_contextids(), true)) {
+        // Beide Seiten sind hier Zeichenketten, nicht Zahlen: Die Kontext-IDs
+        // stammen aus einer Datenbankabfrage (contextlist::add_from_sql()),
+        // und SYSCONTEXTID wird beim Aufbau der Moodle-Umgebung aus einem
+        // Datenbankfeld gesetzt - gemessen als string '1'. Ein strenger
+        // Vergleich ohne Umwandlung traf deshalb nie zu, und eine
+        // Loeschanfrage ueber den Nutzerkontext liess Verbindungen, Codes und
+        // Werkbank-Tickets stehen.
+        $contextids = array_map('intval', $contextlist->get_contextids());
+        if (!in_array((int) SYSCONTEXTID, $contextids, true)) {
             return;
         }
         $DB->delete_records('local_coursepilot_oauth_code', ['userid' => $userid]);
