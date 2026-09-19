@@ -193,7 +193,7 @@ trait webdav_instance_fixture {
         $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Kontext');
 
         $fake = new fake_webdav_transport();
-        \local_coursepilot\webdav\webdav_instance::use_test_transport($fake);
+        \local_coursepilot\webdav\webdav_instance::set_transport($fake);
 
         return [$user, $fake];
     }
@@ -214,7 +214,7 @@ trait webdav_instance_fixture {
         $this->write_v2_pointer($user, 'materialbestand', $instanceid, 'Material');
 
         $fake = new fake_webdav_transport();
-        \local_coursepilot\webdav\webdav_instance::use_test_transport($fake);
+        \local_coursepilot\webdav\webdav_instance::set_transport($fake);
 
         return [$user, $fake];
     }

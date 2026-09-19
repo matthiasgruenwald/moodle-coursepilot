@@ -40,7 +40,7 @@ final class append_context_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     protected function tearDown(): void {
-        webdav_instance::use_test_transport(null);
+        webdav_instance::set_transport(null);
         parent::tearDown();
     }
 
@@ -481,7 +481,7 @@ final class append_context_file_test extends \advanced_testcase {
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
         $fake2->seed_file('/Coursepilot/Kontext/journal.md', 'inzwischen gewachsen');
-        webdav_instance::use_test_transport($fake2);
+        webdav_instance::set_transport($fake2);
 
         try {
             append_context_file::execute('journal.md', 'x', $kennung);
@@ -716,7 +716,7 @@ final class append_context_file_test extends \advanced_testcase {
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
 
         try {
             $this->append('journal.md', 'x');
@@ -751,7 +751,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
-        webdav_instance::use_test_transport($fake2);
+        webdav_instance::set_transport($fake2);
 
         $result = append_context_file::execute('journal.md', 'x', $kennung);
         $result = external_api::clean_returnvalue(append_context_file::execute_returns(), $result);

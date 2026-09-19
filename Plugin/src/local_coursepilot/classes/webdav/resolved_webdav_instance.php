@@ -32,7 +32,7 @@ final class resolved_webdav_instance {
      * @param string $baseurl https-Adresse der Instanz inkl. Basispfad, mit abschliessendem "/".
      * @param webdav_transport $transport Im Betrieb {@see curl_transport} mit den frisch
      *        gelesenen Zugangsdaten, im Test der Transport-Fake
-     *        ({@see webdav_instance::use_test_transport()}) - dieselbe Austauschbarkeit,
+     *        ({@see webdav_instance::set_transport()}) - dieselbe Austauschbarkeit,
      *        die {@see webdav_client} selbst schon kennt (Spec #486 Testing Decisions).
      */
     public function __construct(

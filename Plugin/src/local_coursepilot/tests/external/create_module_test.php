@@ -34,7 +34,7 @@ final class create_module_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     protected function tearDown(): void {
-        webdav_instance::use_test_transport(null);
+        webdav_instance::set_transport(null);
         parent::tearDown();
     }
 
@@ -63,7 +63,7 @@ final class create_module_test extends \advanced_testcase {
         $this->write_v2_pointer($teacher, 'materialbestand', $instanceid, 'Material');
 
         $fake = new \local_coursepilot\tests\webdav\fake_webdav_transport();
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
         return $fake;
     }
 

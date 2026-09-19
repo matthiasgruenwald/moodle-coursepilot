@@ -294,7 +294,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $this->assertSame('', $result['path']);
             $this->assertSame([['name' => 'Unterricht']], $result['folders']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -306,7 +306,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $result = ortswahl_lib::browse($this->lastinstanceid, 'nicht-vorhanden');
             $this->assertSame([], $result['folders']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -365,7 +365,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $this->assertArrayHasKey('von', $document['ortsverlauf'][0]);
             $this->assertArrayHasKey('nach', $document['ortsverlauf'][0]);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -391,7 +391,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $this->assertSame('ortswahlfolderconfirmrequired', $e->errorcode);
         } finally {
             $this->assertNull(storage_anchor::read_raw_pointer());
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -414,7 +414,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
 
             $this->assertSame(['kontextbereich'], $changed);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -436,7 +436,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
 
             $this->assertSame(['kontextbereich'], $changed);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -460,7 +460,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $selection['kontextbereich']['confirmed'] = false;
             $this->assertSame([], ortswahl_lib::apply($selection));
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -480,7 +480,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $document = storage_anchor::read_raw_pointer();
             $this->assertCount(1, $document['ortsverlauf']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -498,7 +498,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             ]);
         } finally {
             $this->assertNull(storage_anchor::read_raw_pointer());
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -536,7 +536,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             ]);
         } finally {
             $this->assertNull(storage_anchor::read_raw_pointer());
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -551,7 +551,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $this->assertFalse($result['selectable']);
             $this->assertNotSame('', $result['reason']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -569,7 +569,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $this->assertTrue($level['selectable']);
             $this->assertSame('', $level['reason']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -587,7 +587,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $level = ortswahl_lib::browse($this->lastinstanceid, 'Unterricht');
             $this->assertFalse($level['iserv']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
 
         $failures = array_filter($sink->get_events(), fn ($e) => $e instanceof \local_coursepilot\event\tool_access_failed);
@@ -627,7 +627,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $nested = ortswahl_lib::browse($this->lastinstanceid, 'Files/Unterricht');
             $this->assertTrue($nested['selectable']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -643,7 +643,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $this->assertSame(2, $result['entrycount']);
             $this->assertSame(['a-datei.md', 'b-ordner'], $result['entrynames']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -657,7 +657,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $this->assertSame(0, $result['entrycount']);
             $this->assertSame([], $result['entrynames']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -702,7 +702,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             ]);
         } finally {
             $this->assertNull(storage_anchor::read_raw_pointer());
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -722,7 +722,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $document = storage_anchor::read_raw_pointer();
             $this->assertTrue($document['kontextbereich']['pruefmerkmal']['iserv']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -739,7 +739,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             ]);
         } finally {
             $this->assertNull(storage_anchor::read_raw_pointer());
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -791,7 +791,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $this->assertSame('moodle', $document['vorheriger_ort']['ort']);
             $this->assertSame('coursepilot', $document['vorheriger_ort']['pfad']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -811,7 +811,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $document = storage_anchor::read_raw_pointer();
             $this->assertArrayNotHasKey('vorheriger_ort', $document);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -841,7 +841,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $document = storage_anchor::read_raw_pointer();
             $this->assertArrayNotHasKey('vorheriger_ort', $document);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -861,7 +861,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake->seed_file('/' . $this->fixturebasispfad . '/Erst/datei.md', 'Erst');
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Zweit');
         $fake->seed_file('/' . $this->fixturebasispfad . '/Zweit/datei.md', 'Zweit');
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
 
         try {
             // Moodle -> Erst: kein alter Moodle-Ort mit Dateien -> kein Altbestand.
@@ -881,7 +881,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $document = storage_anchor::read_raw_pointer();
             $this->assertSame('Erst', $document['vorheriger_ort']['pfad']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -900,7 +900,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake = new fake_webdav_transport();
         $fake->seed_folder('/' . $this->fixturebasispfad);
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Alt');
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
 
         try {
             ortswahl_lib::apply([
@@ -920,7 +920,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $document = storage_anchor::read_raw_pointer();
             $this->assertArrayNotHasKey('vorheriger_ort', $document);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -946,7 +946,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         ], '# A');
         $fake = new fake_webdav_transport();
         $fake->seed_folder('/' . $this->fixturebasispfad);
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
 
         try {
             // A (Moodle, mit Datei) -> B (extern, leer): A wird zum Altbestand.
@@ -968,7 +968,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $document = storage_anchor::read_raw_pointer();
             $this->assertArrayNotHasKey('vorheriger_ort', $document);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -999,7 +999,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $document = storage_anchor::read_raw_pointer();
             $this->assertArrayNotHasKey('vorheriger_ort', $document);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -1018,7 +1018,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Alt');
         $fake->seed_file('/' . $this->fixturebasispfad . '/Alt/notizen.txt', 'x');
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Neu');
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
 
         try {
             // "Alt" enthaelt nur eine Nicht-Kontextdatei, keinen Unterordner
@@ -1035,7 +1035,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $document = storage_anchor::read_raw_pointer();
             $this->assertArrayNotHasKey('vorheriger_ort', $document);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -1069,7 +1069,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $this->assertSame('moodle', $document['vorheriger_ort']['ort']);
             $this->assertSame('coursepilot', $document['vorheriger_ort']['pfad']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -1090,7 +1090,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Alt');
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Alt/9a');
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Neu');
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
 
         try {
             // "Alt" enthaelt nur einen Unterordner -> Uebergabe-Bestaetigung
@@ -1108,7 +1108,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $this->assertSame('extern', $document['vorheriger_ort']['ort']);
             $this->assertSame('Alt', $document['vorheriger_ort']['pfad']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -1129,7 +1129,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         // bereits (von der Lehrkraft/Administration angelegt) - der Fake
         // startet leer und braucht ihn deshalb als Testvorbereitung.
         $fake->seed_folder('/' . $this->fixturebasispfad);
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
 
         return [$user, $fake];
     }

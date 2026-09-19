@@ -39,7 +39,7 @@ final class crop_material_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     protected function tearDown(): void {
-        webdav_instance::use_test_transport(null);
+        webdav_instance::set_transport(null);
         parent::tearDown();
     }
 

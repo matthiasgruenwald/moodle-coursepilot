@@ -102,7 +102,7 @@ final class list_skills_test extends \advanced_testcase {
         $this->setUser($user);
 
         $fake = new fake_webdav_transport();
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
         try {
             $aelter = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
             $neuer = ausstand_notice::record('plan.md', 'überschreiben', 'nicht erreichbar', 0);
@@ -117,7 +117,7 @@ final class list_skills_test extends \advanced_testcase {
             $this->assertSame([$aelter, $neuer], array_column($result['ausstaende'][0]['eintraege'], 'kennung'));
             $this->assertSame('journal.md', $result['ausstaende'][1]['pfad']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -151,7 +151,7 @@ final class list_skills_test extends \advanced_testcase {
         $this->grant_webdav_capability($user);
 
         $fake = new fake_webdav_transport();
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
         try {
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
@@ -160,7 +160,7 @@ final class list_skills_test extends \advanced_testcase {
             $this->assertCount(1, $result['hinweise']);
             $this->assertStringContainsString('/local/coursepilot/ortswahl.php', $result['hinweise'][0]['link']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -254,7 +254,7 @@ final class list_skills_test extends \advanced_testcase {
         ], 'kein json');
 
         $fake = new fake_webdav_transport();
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
         try {
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
@@ -272,7 +272,7 @@ final class list_skills_test extends \advanced_testcase {
             );
             $this->assertStringContainsString('/local/coursepilot/ortswahl.php', $result['hinweise'][0]['link']);
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -299,7 +299,7 @@ final class list_skills_test extends \advanced_testcase {
         ], json_encode(['irgendwas' => 'ohne die Pflichtfelder']));
 
         $fake = new fake_webdav_transport();
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
         try {
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
@@ -316,7 +316,7 @@ final class list_skills_test extends \advanced_testcase {
                 $result['hinweise'][0]['text']
             );
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 }

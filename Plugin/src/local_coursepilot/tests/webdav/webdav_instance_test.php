@@ -378,12 +378,12 @@ final class webdav_instance_test extends \advanced_testcase {
 
         $fake = new fake_webdav_transport();
         $fake->as_iserv_root('/' . $this->fixturebasispfad);
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
 
         try {
             $this->assertTrue(webdav_instance::detect_iserv_root($instanceid));
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 
@@ -397,12 +397,12 @@ final class webdav_instance_test extends \advanced_testcase {
         $fake = new fake_webdav_transport();
         $fake->seed_folder('/' . $this->fixturebasispfad);
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Unterricht');
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
 
         try {
             $this->assertFalse(webdav_instance::detect_iserv_root($instanceid));
         } finally {
-            webdav_instance::use_test_transport(null);
+            webdav_instance::set_transport(null);
         }
     }
 }

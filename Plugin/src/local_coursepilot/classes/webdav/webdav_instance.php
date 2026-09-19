@@ -62,27 +62,25 @@ final class webdav_instance {
     private const ISERV_AREAS = [self::ISERV_FILES_AREA, 'Groups', 'Print', 'Temp', 'Windows'];
 
     /**
-     * @var webdav_transport|null Test-Seam (Spec #486 Testing Decisions):
-     *      ersetzt {@see curl_transport} durch den In-Memory-Fake. Nur ueber
-     *      {@see use_test_transport()} setzbar, die ausserhalb von PHPUnit
-     *      wirft - im Betrieb gibt es genau einen Transport.
+     * @var webdav_transport|null Von aussen gesetzter Transport (Issue #535,
+     *      Spec #486 Testing Decisions): ersetzt {@see curl_transport}, z.B.
+     *      durch den In-Memory-Fake im Test. Nur ueber {@see set_transport()}
+     *      setzbar. `null` (Default) baut {@see resolve_owned()} den
+     *      Betriebstransport (Moodles \curl) selbst.
      */
-    private static ?webdav_transport $testtransport = null;
+    private static ?webdav_transport $transport = null;
 
     /**
-     * Test-Seam: laesst Tests den Betriebstransport (Moodles \curl) durch
-     * den In-Memory-WebDAV-Fake ersetzen, ohne dass storage_anchor oder die
-     * Kontextwerkzeuge davon wissen. `null` schaltet zurueck auf den
+     * Setzt den Transport von aussen (Issue #535): laesst Aufrufer - im
+     * Betrieb niemand, im Test die WebDAV-Tests - den Betriebstransport
+     * (Moodles \curl) durch einen eigenen ersetzen, ohne dass storage_anchor
+     * oder die Kontextwerkzeuge davon wissen. `null` schaltet zurueck auf den
      * Betriebstransport.
      *
      * @param webdav_transport|null $transport
-     * @throws \coding_exception ausserhalb von PHPUnit.
      */
-    public static function use_test_transport(?webdav_transport $transport): void {
-        if (!defined('PHPUNIT_TEST') || !PHPUNIT_TEST) {
-            throw new \coding_exception('webdav_instance::use_test_transport() ist nur in PHPUnit-Tests erlaubt.');
-        }
-        self::$testtransport = $transport;
+    public static function set_transport(?webdav_transport $transport): void {
+        self::$transport = $transport;
     }
 
     /**
@@ -149,7 +147,7 @@ final class webdav_instance {
         // ortswahl_browse.php would fail with "Class curl not found".
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
-        $transport = self::$testtransport ?? new curl_transport(
+        $transport = self::$transport ?? new curl_transport(
             new \curl(),
             (string) ($options['webdav_user'] ?? ''),
             (string) ($options['webdav_password'] ?? '')

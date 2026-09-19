@@ -41,7 +41,7 @@ final class write_context_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     protected function tearDown(): void {
-        webdav_instance::use_test_transport(null);
+        webdav_instance::set_transport(null);
         parent::tearDown();
     }
 
@@ -630,7 +630,7 @@ final class write_context_file_test extends \advanced_testcase {
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
         $fake2->seed_file('/Coursepilot/Kontext/plan.md', 'inzwischen gewachsen');
-        webdav_instance::use_test_transport($fake2);
+        webdav_instance::set_transport($fake2);
 
         try {
             write_context_file::execute('plan.md', '# Plan', '', $kennung);
@@ -661,7 +661,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
-        webdav_instance::use_test_transport($fake2);
+        webdav_instance::set_transport($fake2);
 
         $result = write_context_file::execute('plan.md', '# Plan', '', $kennung);
         $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
@@ -740,7 +740,7 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
 
         $decorator = new \local_coursepilot\tests\webdav\stale_read_transport($fake, '/Coursepilot/Kontext/plan.md', $fake);
-        webdav_instance::use_test_transport($decorator);
+        webdav_instance::set_transport($decorator);
 
         try {
             $this->write('plan.md', '# Neuer Plan');
@@ -769,7 +769,7 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_folder('/Coursepilot/Kontext');
 
         $decorator = new \local_coursepilot\tests\webdav\stale_read_transport($fake, '/Coursepilot/Kontext/plan.md', $fake);
-        webdav_instance::use_test_transport($decorator);
+        webdav_instance::set_transport($decorator);
 
         try {
             $this->write('plan.md', '# Neuer Plan');
@@ -887,7 +887,7 @@ final class write_context_file_test extends \advanced_testcase {
                 return $this->inner->request($method, $url, $headers, $body);
             }
         };
-        webdav_instance::use_test_transport($onlyputfails);
+        webdav_instance::set_transport($onlyputfails);
 
         try {
             $this->write('plan.md', '# Neuer Plan');
@@ -1010,7 +1010,7 @@ final class write_context_file_test extends \advanced_testcase {
                 return $this->inner->request($method, $url, $headers, $body);
             }
         };
-        webdav_instance::use_test_transport($onlyputfails401);
+        webdav_instance::set_transport($onlyputfails401);
 
         $message = '';
         try {
@@ -1052,7 +1052,7 @@ final class write_context_file_test extends \advanced_testcase {
                 return $this->inner->request($method, $url, $headers, $body);
             }
         };
-        webdav_instance::use_test_transport($onlyputfails);
+        webdav_instance::set_transport($onlyputfails);
 
         $message = '';
         try {
@@ -1093,7 +1093,7 @@ final class write_context_file_test extends \advanced_testcase {
                 return $this->inner->request($method, $url, $headers, $body);
             }
         };
-        webdav_instance::use_test_transport($onlyputfails);
+        webdav_instance::set_transport($onlyputfails);
 
         $message = '';
         try {
@@ -1130,7 +1130,7 @@ final class write_context_file_test extends \advanced_testcase {
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
 
         $message = '';
         try {
@@ -1171,7 +1171,7 @@ final class write_context_file_test extends \advanced_testcase {
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
-        webdav_instance::use_test_transport($fake);
+        webdav_instance::set_transport($fake);
 
         try {
             $this->write('lerngruppe.md', $this->marked_content());
@@ -1216,7 +1216,7 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
 
         $decorator = new \local_coursepilot\tests\webdav\stale_read_transport($fake, '/Coursepilot/Kontext/plan.md', $fake);
-        webdav_instance::use_test_transport($decorator);
+        webdav_instance::set_transport($decorator);
 
         try {
             $this->write('plan.md', '# Neuer Plan');
@@ -1266,7 +1266,7 @@ final class write_context_file_test extends \advanced_testcase {
         // Neuer Fake statt des vollen - "der Speicher antwortet wieder".
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
-        webdav_instance::use_test_transport($fake2);
+        webdav_instance::set_transport($fake2);
 
         $result = write_context_file::execute('plan.md', '# Plan', '', $kennung);
         $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
@@ -1514,7 +1514,7 @@ final class write_context_file_test extends \advanced_testcase {
                 return $this->inner->request($method, $url, $headers, $body);
             }
         };
-        webdav_instance::use_test_transport($getfails);
+        webdav_instance::set_transport($getfails);
 
         $this->expectException(\moodle_exception::class);
         try {
