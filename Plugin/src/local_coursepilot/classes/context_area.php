@@ -284,11 +284,16 @@ final class context_area {
             try {
                 $existing = pointer_reader::peek_external_content(context_files::area(), $path, $location);
             } catch (webdav_error $e) {
+                // Der Vorab-Lese-Check selbst ist gescheitert (Issue #561):
+                // ob am Ort schon etwas lag, ist damit unbekannt - nie
+                // binaer aus $createonly ableiten, das waere fuer den
+                // Regelfall (kein nur_anlegen) immer "ueberschreiben",
+                // selbst wenn dort noch nie etwas lag.
                 throw pointer_writer::record_preread_failure(
                     $e,
                     $location,
                     $path,
-                    $createonly ? pointer_writer::OP_CREATE : pointer_writer::OP_OVERWRITE,
+                    pointer_writer::OP_UNKNOWN,
                     $courseid
                 );
             }

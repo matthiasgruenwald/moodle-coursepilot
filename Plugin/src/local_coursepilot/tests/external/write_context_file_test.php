@@ -873,6 +873,35 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Issue #561: Schlaegt der Vorab-Lese-Check selbst fehl (hier: Anmeldung
+     * abgelehnt), weiss das System nicht, ob am Ort schon etwas lag. Anders
+     * als {@see test_external_write_records_ausstand_on_login_rejected_during_preread}
+     * (dort liegt am Ort bereits eine Datei) betrifft dieser Test einen Pfad,
+     * an dem nie zuvor etwas lag - ein normaler Schreibaufruf (kein
+     * `nur_anlegen`) darf den Vorgang trotzdem nicht als "überschreiben"
+     * vermerken, denn das waere hier schlicht falsch.
+     */
+    public function test_preread_failure_on_a_never_written_path_records_unknown_operation(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->deny_auth();
+
+        try {
+            $this->write('plan.md', '# Neu');
+            $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('ausstandwritefailed', $e->errorcode);
+        }
+
+        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $this->assertSame(
+            \local_coursepilot\ausstand_translation::OP_UNKNOWN,
+            $ausstaende[0]['eintraege'][0]['vorgang']
+        );
+    }
+
+    /**
      * Ueberschreiben einer bestehenden externen Datei traegt den Vorgang
      * "überschreiben" in den Ausstand ein, nicht "anlegen".
      */

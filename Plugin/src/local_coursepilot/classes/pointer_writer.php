@@ -63,6 +63,12 @@ final class pointer_writer {
     public const OP_APPEND = ausstand_translation::OP_APPEND;
 
     /**
+     * @var string Vorgang "unbekannt" (Issue #561) - siehe
+     *      {@see ausstand_translation::OP_UNKNOWN}.
+     */
+    public const OP_UNKNOWN = ausstand_translation::OP_UNKNOWN;
+
+    /**
      * @var string[] moodle_exception-Fehlerschluessel, die genauso einen
      *      Ausstand anlegen wie ein {@see webdav_error} - Ort-Ausfaelle im
      *      Sinne von ADR 0023. Die ersten fuenf kommen aus

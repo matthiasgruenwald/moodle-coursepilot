@@ -24,7 +24,7 @@ namespace local_coursepilot;
  * (CONTEXT.md "Ausstandsnotiz").
  *
  * Ein Eintrag je gescheitertem Vorgang, nie den Inhalt: Kennung, Kurs-ID,
- * Zeitpunkt, relativer Pfad, Vorgang (anlegen/ueberschreiben/anhaengen) und
+ * Zeitpunkt, relativer Pfad, Vorgang (anlegen/ueberschreiben/anhaengen/unbekannt) und
  * Fehlerklasse (Issue #516, Spec #486 §8). Verschwindet nur ausdruecklich - durch Nachtragen
  * ({@see pointer_writer}, ueber `ausstand=<Kennung>`) oder durch
  * ausdrueckliches Verwerfen ({@see \local_coursepilot\external\dismiss_ausstand}) -
@@ -41,7 +41,7 @@ final class ausstand_notice {
      * vergebene Kennung.
      *
      * @param string $path Relativer Client-Pfad der Zieldatei, nie der Inhalt.
-     * @param string $operation "anlegen", "ueberschreiben" oder "anhaengen".
+     * @param string $operation "anlegen", "ueberschreiben", "anhaengen" oder "unbekannt".
      * @param string $errorclass Fehlerklasse (z.B. {@see \local_coursepilot\webdav\webdav_error}-Konstante
      *        oder ein webdavinstance*-Fehlerschluessel), nie ein Freitext.
      * @param int $courseid Kurs-ID (Issue #516, Spec #486 §8) - 0, wenn der

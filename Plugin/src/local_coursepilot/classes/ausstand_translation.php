@@ -46,6 +46,14 @@ final class ausstand_translation {
     public const OP_APPEND = 'anhängen';
 
     /**
+     * @var string Vorgang "unbekannt" (Issue #561): der Vorab-Lese-Check vor
+     *      einem Schreibvorgang ist selbst mit einem Ausfall gescheitert -
+     *      ob am Ort schon etwas lag, ist damit unbekannt, nicht binaer
+     *      "anlegen" oder "ueberschreiben".
+     */
+    public const OP_UNKNOWN = 'unbekannt';
+
+    /**
      * Vermerkt einen Ausstand und baut die fuenfteilige Ausfallantwort (Issue
      * #492/#516/#540): (1) Pfad und Vorgang; (2) die vom Aufrufer bereits
      * fertige Ursache in Lehrkraftsprache; (3) "noch nicht gespeichert,
