@@ -20,7 +20,7 @@
  * fuer die angemeldete Lehrkraft und ihre eigenen WebDAV-Nutzerinstanzen.
  *
  * Duenne Schale (#334-Muster): die gesamte Logik lebt testbar in
- * {@see \local_coursepilot\ortswahl_lib}, diese Datei tut nur noch Ein-/Ausgabe
+ * {@see \local_coursepilot\location_selection}, diese Datei tut nur noch Ein-/Ausgabe
  * (Formular entgegennehmen, Markup rendern) - siehe Issue #494
  * Akzeptanzkriterium "ueber ihre Klasse getestet, nicht ueber die Seite".
  *
@@ -34,9 +34,9 @@
 
 require(__DIR__ . '/../../config.php');
 
-use local_coursepilot\altbestand;
+use local_coursepilot\previous_location;
 use local_coursepilot\oauth_lib;
-use local_coursepilot\ortswahl_lib;
+use local_coursepilot\location_selection;
 use local_coursepilot\pointer_location;
 use local_coursepilot\webdav\webdav_setup_steps;
 
@@ -102,7 +102,7 @@ function local_coursepilot_handle_ortswahl_finish(?array $oauthreturn): ?array {
     }
     require_sesskey();
     try {
-        $changed = ortswahl_lib::apply(local_coursepilot_read_ortswahl_selection());
+        $changed = location_selection::apply(local_coursepilot_read_ortswahl_selection());
         if ($oauthreturn !== null) {
             // Zurueck zur Zustimmungsseite (Issue #563) statt hier stehen zu
             // bleiben - egal ob sich etwas geaendert hat, die Lehrkraft war
@@ -120,7 +120,7 @@ function local_coursepilot_handle_ortswahl_finish(?array $oauthreturn): ?array {
 }
 
 /**
- * Liest die Formulareingabe je Ziel - roh, {@see \local_coursepilot\ortswahl_lib::apply()}
+ * Liest die Formulareingabe je Ziel - roh, {@see \local_coursepilot\location_selection::apply()}
  * validiert Instanz, Pfad und Sperren.
  *
  * @return array<string, array{type: string, instanceid: int, path: string, confirmed: bool}>
@@ -128,7 +128,7 @@ function local_coursepilot_handle_ortswahl_finish(?array $oauthreturn): ?array {
  */
 function local_coursepilot_read_ortswahl_selection(): array {
     $selection = [];
-    foreach (ortswahl_lib::TARGETS as $target) {
+    foreach (location_selection::TARGETS as $target) {
         $type = optional_param($target . '_type', pointer_location::MOODLE, PARAM_ALPHA);
         $selection[$target] = [
             'type' => $type,
@@ -189,18 +189,18 @@ function local_coursepilot_render_oauth_banner(?array $oauthreturn): void {
  * Warnt, wenn noch Altbestand offen ist (Issue #498, Spec §486 §5) -
  * angezeigt unabhaengig davon, ob gerade ein neuer Wechsel bevorsteht; ein
  * Abschliessen trotz dieser Warnung verdraengt den offenen Altbestand
- * ({@see \local_coursepilot\ortswahl_lib::apply()}), seine Dateien bleiben
+ * ({@see \local_coursepilot\location_selection::apply()}), seine Dateien bleiben
  * dabei unberuehrt.
  */
 function local_coursepilot_render_altbestand_warning(): void {
     global $OUTPUT;
-    if (altbestand::open()) {
+    if (previous_location::open()) {
         echo $OUTPUT->notification(get_string('ortswahlaltbestandopen', 'local_coursepilot'), \core\output\notification::NOTIFY_WARNING);
     }
 }
 
 /**
- * Rendert je Bereitschaftszustand ({@see ortswahl_lib::setup_state()}) den
+ * Rendert je Bereitschaftszustand ({@see location_selection::setup_state()}) den
  * passenden Leerzustand oder das Dateifenster.
  *
  * @param \stdClass $user
@@ -209,10 +209,10 @@ function local_coursepilot_render_altbestand_warning(): void {
 function local_coursepilot_render_ortswahl_setup_state(\stdClass $user, ?array $oauthreturn): void {
     global $PAGE;
 
-    $state = ortswahl_lib::setup_state((int) $user->id);
-    if ($state['state'] === ortswahl_lib::STATE_NOT_ENABLED) {
+    $state = location_selection::setup_state((int) $user->id);
+    if ($state['state'] === location_selection::STATE_NOT_ENABLED) {
         local_coursepilot_render_ortswahl_not_enabled($user);
-    } else if ($state['state'] === ortswahl_lib::STATE_NO_INSTANCE) {
+    } else if ($state['state'] === location_selection::STATE_NO_INSTANCE) {
         local_coursepilot_render_ortswahl_no_instance();
     } else {
         require_once(__DIR__ . '/ortswahl_render.php');
@@ -232,7 +232,7 @@ function local_coursepilot_render_ortswahl_not_enabled(\stdClass $user): void {
     echo $OUTPUT->notification(get_string('ortswahlnotenabledtext', 'local_coursepilot'), \core\output\notification::NOTIFY_WARNING);
     echo $OUTPUT->heading(get_string('ortswahlmissingstepsheading', 'local_coursepilot'), 4);
     echo html_writer::tag('p', get_string('ortswahlmissingstepsintro', 'local_coursepilot'));
-    echo html_writer::tag('textarea', s(ortswahl_lib::missing_steps_text((int) $user->id)), [
+    echo html_writer::tag('textarea', s(location_selection::missing_steps_text((int) $user->id)), [
         'class' => 'form-control', 'rows' => 4, 'readonly' => 'readonly', 'id' => 'coursepilot-ortswahl-missingsteps',
     ]);
     echo html_writer::link(
@@ -257,7 +257,7 @@ function local_coursepilot_render_ortswahl_no_instance(): void {
     echo html_writer::tag('li', get_string('ortswahlnoinstancestep3', 'local_coursepilot'));
     echo html_writer::end_tag('ol');
 
-    $hint = ortswahl_lib::school_hint();
+    $hint = location_selection::school_hint();
     if ($hint !== '') {
         echo $OUTPUT->heading(get_string('ortswahlschoolhintheading', 'local_coursepilot'), 5);
         echo html_writer::tag('p', s($hint));
@@ -284,7 +284,7 @@ function local_coursepilot_render_ortswahl_history(): void {
     global $OUTPUT;
 
     echo $OUTPUT->heading(get_string('ortswahlhistoryheading', 'local_coursepilot'), 4);
-    $history = ortswahl_lib::history();
+    $history = location_selection::history();
     if (empty($history)) {
         echo html_writer::tag('p', get_string('ortswahlhistoryempty', 'local_coursepilot'));
         return;

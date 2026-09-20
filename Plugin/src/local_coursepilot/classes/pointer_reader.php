@@ -295,7 +295,7 @@ final class pointer_reader {
      * Antwortrumpf (Geheimnis-Test, Spec #486 Testing Decisions), nur die
      * benannte Fehlerklasse und der Verweis auf die Ortswahlseite.
      *
-     * Oeffentlich, weil auch {@see \local_coursepilot\ortswahl_lib} (Issue
+     * Oeffentlich, weil auch {@see \local_coursepilot\location_selection} (Issue
      * #494: Auflisten/Anlegen auf der Ortswahlseite) denselben Fehlertext
      * braucht - eine Uebersetzung statt zwei fast identischer Kopien.
      *
@@ -303,7 +303,7 @@ final class pointer_reader {
      * Default "webdavexternalerror" ist an die KI gerichtet (Kontext-Lücke),
      * passt aber weder auf die Ortswahlseite selbst (an die Lehrkraft
      * gerichtet, keine KI-Anweisung) noch auf die Materialwerkzeuge (kein
-     * Kontextbereich betroffen) - {@see \local_coursepilot\ortswahl_lib} und
+     * Kontextbereich betroffen) - {@see \local_coursepilot\location_selection} und
      * {@see \local_coursepilot\material_files} uebergeben hier ihren eigenen
      * Schluessel.
      *

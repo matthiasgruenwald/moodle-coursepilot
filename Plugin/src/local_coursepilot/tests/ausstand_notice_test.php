@@ -26,7 +26,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(ausstand_notice::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(pending_write_notice::class)]
 final class ausstand_notice_test extends \advanced_testcase {
 
     /**
@@ -37,10 +37,10 @@ final class ausstand_notice_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $kennung = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
+        $kennung = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
 
         $this->assertNotSame('', $kennung);
-        $groups = ausstand_notice::list_grouped();
+        $groups = pending_write_notice::list_grouped();
         $this->assertCount(1, $groups);
         $this->assertSame('plan.md', $groups[0]['pfad']);
         $this->assertSame([
@@ -61,11 +61,11 @@ final class ausstand_notice_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $erste = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
-        $zweite = ausstand_notice::record('plan.md', 'überschreiben', 'nicht erreichbar', 7);
+        $erste = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
+        $zweite = pending_write_notice::record('plan.md', 'überschreiben', 'nicht erreichbar', 7);
 
         $this->assertNotSame($erste, $zweite);
-        $groups = ausstand_notice::list_grouped();
+        $groups = pending_write_notice::list_grouped();
         $this->assertCount(1, $groups);
         $this->assertCount(2, $groups[0]['eintraege']);
     }
@@ -77,12 +77,12 @@ final class ausstand_notice_test extends \advanced_testcase {
     public function test_dismiss_removes_entry_and_reports_unknown_kennung(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
-        $kennung = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
+        $kennung = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
 
-        $this->assertTrue(ausstand_notice::dismiss($kennung));
-        $this->assertSame([], ausstand_notice::list_grouped());
-        $this->assertFalse(ausstand_notice::dismiss($kennung));
-        $this->assertFalse(ausstand_notice::dismiss('NIEEXISTIERT'));
+        $this->assertTrue(pending_write_notice::dismiss($kennung));
+        $this->assertSame([], pending_write_notice::list_grouped());
+        $this->assertFalse(pending_write_notice::dismiss($kennung));
+        $this->assertFalse(pending_write_notice::dismiss('NIEEXISTIERT'));
     }
 
     /**
@@ -95,10 +95,10 @@ final class ausstand_notice_test extends \advanced_testcase {
         $teacherb = $this->getDataGenerator()->create_user();
 
         $this->setUser($teachera);
-        ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
+        pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
 
         $this->setUser($teacherb);
-        $this->assertSame([], ausstand_notice::list_grouped());
+        $this->assertSame([], pending_write_notice::list_grouped());
     }
 
     /**
@@ -114,7 +114,7 @@ final class ausstand_notice_test extends \advanced_testcase {
         $this->setUser($this->getDataGenerator()->create_user());
 
         try {
-            ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
+            pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 7);
             $this->fail('Quotenueberschreitung haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $this->assertSame('ausstandnotequotaexceeded', $e->errorcode);
@@ -127,6 +127,6 @@ final class ausstand_notice_test extends \advanced_testcase {
      */
     public function test_list_grouped_is_empty_without_logged_in_user(): void {
         $this->resetAfterTest();
-        $this->assertSame([], ausstand_notice::list_grouped());
+        $this->assertSame([], pending_write_notice::list_grouped());
     }
 }

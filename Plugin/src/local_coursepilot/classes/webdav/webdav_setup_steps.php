@@ -53,7 +53,7 @@ final class webdav_setup_steps {
      * Methode `ok` an die vorherigen Schritte ("Schritt 1 aus" liess 2 und 3
      * automatisch als fehlend gelten), obwohl Konfiguration und
      * Rollenzuweisung unabhaengig voneinander gesetzt sein koennen. Der
-     * kopierbare Text an die Administration ({@see \local_coursepilot\ortswahl_lib::missing_steps_text()})
+     * kopierbare Text an die Administration ({@see \local_coursepilot\location_selection::missing_steps_text()})
      * nennt dadurch nur, was tatsaechlich fehlt. Die tatsaechliche Wirkung
      * (alle drei zusammen) bleibt {@see enabled_for_user()} vorbehalten.
      *

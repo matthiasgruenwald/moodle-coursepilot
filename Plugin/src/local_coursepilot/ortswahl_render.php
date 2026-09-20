@@ -18,7 +18,7 @@
  * Markup-Helfer fuer {@see ortswahl.php} (Issue #494): nur Bootstrap-Klassen
  * des Themes, kein Eigenbau-CSS. Ausgelagert, damit ortswahl.php selbst kurz
  * bleibt - reines Rendering, keine Entscheidungslogik (die lebt vollstaendig
- * in {@see \local_coursepilot\ortswahl_lib}).
+ * in {@see \local_coursepilot\location_selection}).
  *
  * Issue #507 (Spec #486, Review von #486): in kleine Funktionen unter 50
  * Zeilen zerlegt - eine je Markup-Baustein, damit sich einzelne Bausteine
@@ -35,7 +35,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-use local_coursepilot\ortswahl_lib;
+use local_coursepilot\location_selection;
 
 /**
  * Rendert Reiter, Fortschrittsband, Dateifenster-Geruest und Abschliessen-
@@ -91,17 +91,17 @@ function local_coursepilot_render_ortswahl_editor(\moodle_page $page, \stdClass 
  */
 function local_coursepilot_ortswahl_editor_data(): array {
     return [
-        'instances' => ortswahl_lib::own_instances(),
+        'instances' => location_selection::own_instances(),
         'targets' => [
-            'kontextbereich' => ortswahl_lib::current('kontextbereich'),
-            'materialbestand' => ortswahl_lib::current('materialbestand'),
+            'kontextbereich' => location_selection::current('kontextbereich'),
+            'materialbestand' => location_selection::current('materialbestand'),
         ],
         'browseurl' => (new moodle_url('/local/coursepilot/ortswahl_browse.php'))->out(false),
         'manageinstancesurl' => (new moodle_url('/repository/manage_instances.php', [
             'contextid' => \local_coursepilot\storage_anchor::own_context()->id,
         ]))->out(false),
         'sesskey' => sesskey(),
-        'timeoutms' => ortswahl_lib::BROWSE_TIMEOUT_MS,
+        'timeoutms' => location_selection::BROWSE_TIMEOUT_MS,
         'strings' => local_coursepilot_ortswahl_editor_strings(),
     ];
 }
@@ -163,12 +163,12 @@ function local_coursepilot_render_ortswahl_data_script(array $data): void {
  * @return string HTML der beiden <li>-Zeilen, ohne umschliessendes <ul>.
  */
 function local_coursepilot_current_locations_list_items(): string {
-    $kontextbereich = ortswahl_lib::current('kontextbereich');
-    $materialbestand = ortswahl_lib::current('materialbestand');
+    $kontextbereich = location_selection::current('kontextbereich');
+    $materialbestand = location_selection::current('materialbestand');
     return html_writer::tag('li', s(get_string('ortswahlcurrentkontextbereich', 'local_coursepilot', $kontextbereich['display']))
-            . ' — ' . ortswahl_lib::zugelassen_label($kontextbereich))
+            . ' — ' . location_selection::zugelassen_label($kontextbereich))
         . html_writer::tag('li', s(get_string('ortswahlcurrentmaterialbestand', 'local_coursepilot', $materialbestand['display']))
-            . ' — ' . ortswahl_lib::zugelassen_label($materialbestand));
+            . ' — ' . location_selection::zugelassen_label($materialbestand));
 }
 
 /**
@@ -189,7 +189,7 @@ function local_coursepilot_render_ortswahl_progress_band(): void {
  */
 function local_coursepilot_render_ortswahl_tabs(array $data): void {
     echo html_writer::start_tag('ul', ['class' => 'nav nav-tabs', 'role' => 'tablist']);
-    foreach (ortswahl_lib::TARGETS as $index => $target) {
+    foreach (location_selection::TARGETS as $index => $target) {
         $labelkey = $target === 'kontextbereich' ? 'tabkontextbereich' : 'tabmaterialbestand';
         echo html_writer::tag('li', html_writer::link(
             '#coursepilot-ortswahl-pane-' . $target,
@@ -205,7 +205,7 @@ function local_coursepilot_render_ortswahl_tabs(array $data): void {
     echo html_writer::end_tag('ul');
 
     echo html_writer::start_div('tab-content border border-top-0 p-3');
-    foreach (ortswahl_lib::TARGETS as $index => $target) {
+    foreach (location_selection::TARGETS as $index => $target) {
         echo html_writer::start_div('tab-pane fade' . ($index === 0 ? ' show active' : ''), ['id' => 'coursepilot-ortswahl-pane-' . $target]);
         if ($target === 'kontextbereich') {
             echo html_writer::div($data['strings']['kontexthint'], 'text-muted small mb-2');
@@ -227,10 +227,10 @@ function local_coursepilot_render_ortswahl_tabs(array $data): void {
  * beiden Ziele bleibt bei "moodle", wenn nie ein anderer Ort gewaehlt wird.
  * `_confirmed` traegt die Uebergabe-Bestaetigung eines gefuellten Ordners
  * (Issue #518, Spec §5) - serverseitig ausgewertet nur fuer "kontextbereich"
- * ({@see \local_coursepilot\ortswahl_lib::apply()}).
+ * ({@see \local_coursepilot\location_selection::apply()}).
  */
 function local_coursepilot_render_ortswahl_hidden_target_fields(): void {
-    foreach (ortswahl_lib::TARGETS as $target) {
+    foreach (location_selection::TARGETS as $target) {
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $target . '_type', 'id' => 'coursepilot-ortswahl-' . $target . '_type']);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $target . '_instanceid', 'id' => 'coursepilot-ortswahl-' . $target . '_instanceid']);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $target . '_path', 'id' => 'coursepilot-ortswahl-' . $target . '_path']);

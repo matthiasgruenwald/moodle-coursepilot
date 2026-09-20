@@ -144,7 +144,7 @@ final class write_context_file_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilenotmarkdown', $e->errorcode);
         }
-        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
     }
 
     /**
@@ -638,7 +638,7 @@ final class write_context_file_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
-        $kennung = \local_coursepilot\ausstand_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['eintraege'][0]['kennung'];
 
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
@@ -670,7 +670,7 @@ final class write_context_file_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
-        $kennung = \local_coursepilot\ausstand_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['eintraege'][0]['kennung'];
 
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
@@ -680,7 +680,7 @@ final class write_context_file_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
 
         $this->assertTrue($result['created']);
-        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
     }
 
     /**
@@ -730,7 +730,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         $this->assertStringContainsString('Ortswahlseite', $message);
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
         $this->assertSame('contextrootmissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
 
@@ -817,7 +817,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
         $this->assertSame('plan.md', $ausstaende[0]['pfad']);
         $this->assertCount(1, $ausstaende[0]['eintraege']);
@@ -863,7 +863,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
         $this->assertSame('plan.md', $ausstaende[0]['pfad']);
         $this->assertSame(
@@ -894,9 +894,9 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame(
-            \local_coursepilot\ausstand_translation::OP_UNKNOWN,
+            \local_coursepilot\pending_write_translation::OP_UNKNOWN,
             $ausstaende[0]['eintraege'][0]['vorgang']
         );
     }
@@ -938,7 +938,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame('überschreiben', $ausstaende[0]['eintraege'][0]['vorgang']);
     }
 
@@ -963,7 +963,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
         $this->assertSame('webdavinstancemissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
         // Issue #516 Akzeptanzkriterium: "Instanz gelöscht" fuehrt zu "an
@@ -992,7 +992,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame('webdavnotenabled', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
         // Issue #516 Akzeptanzkriterium: "Freischaltung entzogen" fuehrt zu
         // "an Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
@@ -1024,7 +1024,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame('webdavfingerprintchanged', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
         // Issue #516 Akzeptanzkriterium: "Prüfmerkmal geändert" fuehrt zu
         // "an Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
@@ -1063,7 +1063,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::AUTH_REJECTED,
             $ausstaende[0]['eintraege'][0]['fehlerklasse']
@@ -1105,7 +1105,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::UNREACHABLE,
             $ausstaende[0]['eintraege'][0]['fehlerklasse']
@@ -1146,7 +1146,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::UNCLEAR,
             $ausstaende[0]['eintraege'][0]['fehlerklasse']
@@ -1183,7 +1183,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
         $this->assertSame('webdaviservfilesonly', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
         $this->assertSame('anlegen', $ausstaende[0]['eintraege'][0]['vorgang']);
@@ -1222,7 +1222,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('contextfilenotmarkdown', $e->errorcode);
         }
 
-        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
         $this->assertSame([], $fake->requests());
     }
 
@@ -1255,7 +1255,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('contextfilelocked', $e->errorcode);
         }
 
-        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
         $this->assertSame([], $fake->requests());
     }
 
@@ -1276,7 +1276,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame(42, $ausstaende[0]['eintraege'][0]['kursid']);
     }
 
@@ -1300,7 +1300,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('contextfileexternalconflict', $e->errorcode);
         }
 
-        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
     }
 
     /**
@@ -1316,7 +1316,7 @@ final class write_context_file_test extends \advanced_testcase {
         try {
             $this->write('plan.md', str_repeat('x', 1024 * 1024 + 1));
         } finally {
-            $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
+            $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
         }
     }
 
@@ -1336,7 +1336,7 @@ final class write_context_file_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
-        $kennung = \local_coursepilot\ausstand_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['eintraege'][0]['kennung'];
 
         // Neuer Fake statt des vollen - "der Speicher antwortet wieder".
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
@@ -1347,7 +1347,7 @@ final class write_context_file_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
 
         $this->assertTrue($result['created']);
-        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
     }
 
     /**
@@ -1666,13 +1666,13 @@ final class write_context_file_test extends \advanced_testcase {
     public function test_moodle_successful_write_dismisses_the_ausstand_entry(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
-        $kennung = \local_coursepilot\ausstand_notice::record('plan.md', 'anlegen', 'irgendeinefehlerklasse', 0);
+        $kennung = \local_coursepilot\pending_write_notice::record('plan.md', 'anlegen', 'irgendeinefehlerklasse', 0);
 
         $result = write_context_file::execute('plan.md', '# Plan', '', $kennung);
         $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
 
         $this->assertTrue($result['created']);
-        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
     }
 
     /**

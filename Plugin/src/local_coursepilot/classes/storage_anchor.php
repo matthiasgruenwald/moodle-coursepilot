@@ -263,7 +263,7 @@ final class storage_anchor {
      * Schreibt ein vollstaendiges Pointer-Dokument neu (Issue #494) - der
      * einzige Schreibweg des Pointers, aufgerufen ausschliesslich von der
      * bewussten Ortswahl auf ihrer eigenen Seite im Moodle-Profil
-     * ({@see \local_coursepilot\ortswahl_lib}, Spec #442 §3), nie im
+     * ({@see \local_coursepilot\location_selection}, Spec #442 §3), nie im
      * Zustimmungsdialog und nie im Chat (CONTEXT.md, Issue #476). Kein
      * Coursepilot-Endpunkt ruft dies auf. Bewegt keine Datei - schreibt
      * ausschliesslich die kleine Pointer-Datei selbst, per {@see replace()}

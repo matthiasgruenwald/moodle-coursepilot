@@ -33,7 +33,7 @@
 require(__DIR__ . '/../../../config.php');
 
 use local_coursepilot\oauth_lib;
-use local_coursepilot\ortswahl_lib;
+use local_coursepilot\location_selection;
 
 require_login(null, false);
 
@@ -116,13 +116,13 @@ echo html_writer::div(
 // mehr (das war Issue #446, abgeloest durch die eigene Ortswahlseite #494).
 echo $OUTPUT->heading(get_string('consentlocationheading', 'local_coursepilot'), 3);
 echo html_writer::div(get_string('consentlocationintro', 'local_coursepilot'), 'coursepilot-consent-location-intro');
-$kontextbereich = ortswahl_lib::current('kontextbereich');
-$materialbestand = ortswahl_lib::current('materialbestand');
+$kontextbereich = location_selection::current('kontextbereich');
+$materialbestand = location_selection::current('materialbestand');
 echo html_writer::start_tag('ul');
 echo html_writer::tag('li', get_string('consentlocationkontextbereichcurrent', 'local_coursepilot', $kontextbereich['display'])
-    . ' — ' . ortswahl_lib::zugelassen_label($kontextbereich));
+    . ' — ' . location_selection::zugelassen_label($kontextbereich));
 echo html_writer::tag('li', get_string('consentlocationmaterialbestandcurrent', 'local_coursepilot', $materialbestand['display'])
-    . ' — ' . ortswahl_lib::zugelassen_label($materialbestand));
+    . ' — ' . location_selection::zugelassen_label($materialbestand));
 echo html_writer::end_tag('ul');
 // Datenschutz-Informationstext (Issue #500, Spec #486 §11): was am externen
 // Ort gilt und was nicht - dieselbe Formel wie auf "Meine Verbindungen" und
@@ -131,7 +131,7 @@ echo html_writer::div(get_string('externallocationprivacyinfo', 'local_coursepil
 // Ortswahl-Link mit Ruecksprung (Issue #563, loest die mit #558 dokumentierte
 // Sackgasse auf): die OAuth-Anfrageparameter reisen als Querystring zur
 // Ortswahlseite mit; die Ortswahlseite validiert sie erneut selbst
-// ({@see ortswahl_lib} kennt sie nicht, nur oauth_lib) und fuehrt nach dem
+// ({@see location_selection} kennt sie nicht, nur oauth_lib) und fuehrt nach dem
 // Abschliessen genau hierher zurueck, statt zu Claude weiterzuleiten.
 $ortswahlurl = new moodle_url('/local/coursepilot/ortswahl.php', array_merge($params, [
     'state' => $state,

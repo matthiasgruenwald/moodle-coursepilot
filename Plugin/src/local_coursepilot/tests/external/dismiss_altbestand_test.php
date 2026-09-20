@@ -17,7 +17,7 @@
 namespace local_coursepilot\external;
 
 use core_external\external_api;
-use local_coursepilot\altbestand;
+use local_coursepilot\previous_location;
 use local_coursepilot\storage_anchor;
 use local_coursepilot\tests\webdav\webdav_instance_fixture;
 
@@ -49,7 +49,7 @@ final class dismiss_altbestand_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(dismiss_altbestand::execute_returns(), $result);
 
         $this->assertNotEmpty($result['message']);
-        $this->assertFalse(altbestand::open());
+        $this->assertFalse(previous_location::open());
         $document = storage_anchor::read_raw_pointer();
         $this->assertSame('coursepilot', $document['kontextbereich']['pfad']);
         $this->assertArrayNotHasKey('vorheriger_ort', $document);
@@ -121,7 +121,7 @@ final class dismiss_altbestand_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(dismiss_altbestand::execute_returns(), $result);
 
         $this->assertNotEmpty($result['message']);
-        $this->assertFalse(altbestand::open());
+        $this->assertFalse(previous_location::open());
     }
 
     /**
@@ -145,7 +145,7 @@ final class dismiss_altbestand_test extends \advanced_testcase {
         $this->assertTrue(true);
 
         $this->setUser($teachera);
-        $this->assertTrue(altbestand::open(), 'Der Altbestand von Person A darf unberuehrt bleiben.');
+        $this->assertTrue(previous_location::open(), 'Der Altbestand von Person A darf unberuehrt bleiben.');
     }
 
     /**

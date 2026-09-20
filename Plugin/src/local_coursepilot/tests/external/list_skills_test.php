@@ -17,7 +17,7 @@
 namespace local_coursepilot\external;
 
 use core_external\external_api;
-use local_coursepilot\ausstand_notice;
+use local_coursepilot\pending_write_notice;
 use local_coursepilot\storage_anchor;
 use local_coursepilot\tests\webdav\fake_webdav_transport;
 use local_coursepilot\tests\webdav\webdav_instance_fixture;
@@ -104,9 +104,9 @@ final class list_skills_test extends \advanced_testcase {
         $fake = new fake_webdav_transport();
         webdav_instance::set_transport($fake);
         try {
-            $aelter = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
-            $neuer = ausstand_notice::record('plan.md', 'überschreiben', 'nicht erreichbar', 0);
-            ausstand_notice::record('journal.md', 'anhängen', 'Anmeldung abgelehnt', 0);
+            $aelter = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
+            $neuer = pending_write_notice::record('plan.md', 'überschreiben', 'nicht erreichbar', 0);
+            pending_write_notice::record('journal.md', 'anhängen', 'Anmeldung abgelehnt', 0);
 
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);

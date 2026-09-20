@@ -34,7 +34,7 @@ namespace local_coursepilot;
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-final class ausstand_translation {
+final class pending_write_translation {
 
     /** @var string Vorgang "anlegen". */
     public const OP_CREATE = 'anlegen';
@@ -89,7 +89,7 @@ final class ausstand_translation {
         access_log::log_failure($logmessage);
 
         try {
-            $identifier = ausstand_notice::record($clientpath, $operation, $errorclass, $courseid);
+            $identifier = pending_write_notice::record($clientpath, $operation, $errorclass, $courseid);
         } catch (\moodle_exception $quotaerror) {
             if ($quotaerror->errorcode !== 'ausstandnotequotaexceeded') {
                 throw $quotaerror;

@@ -41,7 +41,7 @@ use local_coursepilot\webdav\webdav_error;
  * Orten") gilt seit Issue #540 fuer beide Zweige: extern weiterhin in
  * {@see pointer_writer}, fuer Private Files hier selbst
  * ({@see write_moodle()}/{@see append_moodle()}, ueber
- * {@see ausstand_translation}, die dieselbe fuenfteilige Ausfallantwort
+ * {@see pending_write_translation}, die dieselbe fuenfteilige Ausfallantwort
  * ortsneutral baut).
  *
  * @package    local_coursepilot
@@ -109,7 +109,7 @@ final class context_area {
      */
     public static function list(string $path, bool $previouslocation = false): array {
         $result = $previouslocation
-            ? context_files::list_entries_previous_location($path, altbestand::require_open_location())
+            ? context_files::list_entries_previous_location($path, previous_location::require_open_location())
             : context_files::list_entries_pointer_aware($path);
 
         return [
@@ -363,7 +363,7 @@ final class context_area {
         self::guard_existing_locked($existing, $path);
         self::require_moodle_checkvalue_match($existing, $expectedcontenthash, $requirecheckvalue, $path);
 
-        $operation = $existing === null ? ausstand_translation::OP_CREATE : ausstand_translation::OP_OVERWRITE;
+        $operation = $existing === null ? pending_write_translation::OP_CREATE : pending_write_translation::OP_OVERWRITE;
         $written = self::persist_moodle_write($port, $path, $content, $operation, $courseid);
 
         return [
@@ -419,7 +419,7 @@ final class context_area {
      * @param storage_port $port
      * @param string $path
      * @param string $content
-     * @param string $operation Eine der {@see ausstand_translation}-OP_*-Konstanten.
+     * @param string $operation Eine der {@see pending_write_translation}-OP_*-Konstanten.
      * @param int $courseid
      * @return array{path: string, created: bool, size: int, checksum: string}
      * @throws \moodle_exception contextquotaexceeded, ausstandwritefailed, ausstandnotewritefailed
@@ -483,7 +483,7 @@ final class context_area {
         string $operation,
         int $courseid
     ): \moodle_exception {
-        return ausstand_translation::record_and_translate(
+        return pending_write_translation::record_and_translate(
             $errorclass,
             'Private Files ' . $errorclass . ': ' . $rawmessage,
             $path,
@@ -651,7 +651,7 @@ final class context_area {
         $existing = $port->read(context_files::area(), $path);
         self::guard_existing_locked($existing, $path);
 
-        $result = self::persist_moodle_append($port, $path, $content, ausstand_translation::OP_APPEND, $courseid);
+        $result = self::persist_moodle_append($port, $path, $content, pending_write_translation::OP_APPEND, $courseid);
 
         return ['path' => $result['path'], 'created' => $result['created'], 'size' => $result['size']];
     }

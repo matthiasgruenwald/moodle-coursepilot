@@ -33,7 +33,7 @@ use local_coursepilot\storage_anchor;
  */
 final class pointer_scan {
 
-    /** @var string[] Die beiden Pointer-Ziele, wie {@see \local_coursepilot\ortswahl_lib::TARGETS}. */
+    /** @var string[] Die beiden Pointer-Ziele, wie {@see \local_coursepilot\location_selection::TARGETS}. */
     public const TARGETS = ['kontextbereich', 'materialbestand'];
 
     /** @var string Zustand: kein Kontextpointer vorhanden. */
@@ -112,7 +112,7 @@ final class pointer_scan {
 
     /**
      * Ob eine beliebige Person eine offene Ausstandsnotiz hat - dieselbe
-     * Toleranz wie {@see \local_coursepilot\ausstand_notice}, ohne $USER-Bezug.
+     * Toleranz wie {@see \local_coursepilot\pending_write_notice}, ohne $USER-Bezug.
      *
      * @param int $userid
      * @return bool
@@ -135,7 +135,7 @@ final class pointer_scan {
 
     /**
      * Ob ein bereits gelesener Kontextpointer offenen Altbestand traegt
-     * (Feld "vorheriger_ort", {@see \local_coursepilot\altbestand::current()}).
+     * (Feld "vorheriger_ort", {@see \local_coursepilot\previous_location::current()}).
      *
      * @param array|null $decoded
      * @return bool

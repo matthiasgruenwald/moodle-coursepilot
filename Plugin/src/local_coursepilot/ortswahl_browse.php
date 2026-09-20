@@ -17,7 +17,7 @@
 /**
  * JSON-Endpunkt fuer das Dateifenster der Ortswahlseite (Issue #494, Spec
  * #486 §5): listet eine Ebene einer eigenen WebDAV-Nutzerinstanz, ueber
- * {@see \local_coursepilot\ortswahl_lib::browse()} - nie serverseitig
+ * {@see \local_coursepilot\location_selection::browse()} - nie serverseitig
  * gespeichert oder protokolliert, nie an die KI gereicht (diese Seite ist
  * kein MCP-Endpunkt, nur die Ortswahlseite selbst ruft sie per fetch() auf).
  *
@@ -30,7 +30,7 @@
 
 require(__DIR__ . '/../../config.php');
 
-use local_coursepilot\ortswahl_lib;
+use local_coursepilot\location_selection;
 
 require_login(null, false);
 require_sesskey();
@@ -43,7 +43,7 @@ $instanceid = required_param('instanceid', PARAM_INT);
 $path = optional_param('path', '', PARAM_RAW_TRIMMED);
 
 try {
-    $result = ortswahl_lib::browse($instanceid, $path);
+    $result = location_selection::browse($instanceid, $path);
     echo json_encode(['ok' => true] + $result);
 } catch (moodle_exception $e) {
     http_response_code(400);

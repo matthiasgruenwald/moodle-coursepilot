@@ -17,7 +17,7 @@
 namespace local_coursepilot\external;
 
 use core_external\external_api;
-use local_coursepilot\ausstand_notice;
+use local_coursepilot\pending_write_notice;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -39,13 +39,13 @@ final class dismiss_ausstand_test extends \advanced_testcase {
     public function test_dismisses_existing_entry(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
-        $kennung = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
+        $kennung = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
 
         $result = dismiss_ausstand::execute($kennung);
         $result = external_api::clean_returnvalue(dismiss_ausstand::execute_returns(), $result);
 
         $this->assertSame($kennung, $result['kennung']);
-        $this->assertSame([], ausstand_notice::list_grouped());
+        $this->assertSame([], pending_write_notice::list_grouped());
     }
 
     /**
@@ -72,7 +72,7 @@ final class dismiss_ausstand_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
-        $kennung = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
+        $kennung = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
 
         $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
         assign_capability(
@@ -97,7 +97,7 @@ final class dismiss_ausstand_test extends \advanced_testcase {
         $teacherb = $this->getDataGenerator()->create_user();
 
         $this->setUser($teachera);
-        $kennung = ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
+        $kennung = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
 
         $this->setUser($teacherb);
         try {

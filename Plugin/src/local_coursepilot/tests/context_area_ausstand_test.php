@@ -54,18 +54,18 @@ final class context_area_ausstand_test extends \advanced_testcase {
         $port = $this->failing_port(new \RuntimeException('Platte voll (Simuliert)'));
 
         try {
-            $this->invoke_persist_write($port, 'plan.md', '# Plan', ausstand_translation::OP_CREATE, 7);
+            $this->invoke_persist_write($port, 'plan.md', '# Plan', pending_write_translation::OP_CREATE, 7);
             $this->fail('Der Ausfall haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
             $this->assertStringContainsString('plan.md', $e->getMessage());
         }
 
-        $ausstaende = ausstand_notice::list_grouped();
+        $ausstaende = pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
         $this->assertSame('plan.md', $ausstaende[0]['pfad']);
         $entry = $ausstaende[0]['eintraege'][0];
-        $this->assertSame(ausstand_translation::OP_CREATE, $entry['vorgang']);
+        $this->assertSame(pending_write_translation::OP_CREATE, $entry['vorgang']);
         $this->assertSame(7, $entry['kursid']);
     }
 
@@ -76,14 +76,14 @@ final class context_area_ausstand_test extends \advanced_testcase {
         $port = $this->failing_port(new \RuntimeException('Platte voll (Simuliert)'));
 
         try {
-            $this->invoke_persist_append($port, 'journal.md', 'Zeile', ausstand_translation::OP_APPEND, 0);
+            $this->invoke_persist_append($port, 'journal.md', 'Zeile', pending_write_translation::OP_APPEND, 0);
             $this->fail('Der Ausfall haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = ausstand_notice::list_grouped();
-        $this->assertSame(ausstand_translation::OP_APPEND, $ausstaende[0]['eintraege'][0]['vorgang']);
+        $ausstaende = pending_write_notice::list_grouped();
+        $this->assertSame(pending_write_translation::OP_APPEND, $ausstaende[0]['eintraege'][0]['vorgang']);
     }
 
     /**
@@ -98,13 +98,13 @@ final class context_area_ausstand_test extends \advanced_testcase {
         ]));
 
         try {
-            $this->invoke_persist_write($port, 'plan.md', '# Plan', ausstand_translation::OP_CREATE, 0);
+            $this->invoke_persist_write($port, 'plan.md', '# Plan', pending_write_translation::OP_CREATE, 0);
             $this->fail('Die Quotenpruefung haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextquotaexceeded', $e->errorcode);
         }
 
-        $this->assertSame([], ausstand_notice::list_grouped());
+        $this->assertSame([], pending_write_notice::list_grouped());
     }
 
     /**
@@ -115,13 +115,13 @@ final class context_area_ausstand_test extends \advanced_testcase {
         $port = $this->failing_port(new storage_conflict_exception('plan.md'));
 
         try {
-            $this->invoke_persist_write($port, 'plan.md', '# Plan', ausstand_translation::OP_OVERWRITE, 0);
+            $this->invoke_persist_write($port, 'plan.md', '# Plan', pending_write_translation::OP_OVERWRITE, 0);
             $this->fail('Der Konflikt haette abgewiesen werden muessen.');
         } catch (storage_conflict_exception $e) {
             // Erwartet.
         }
 
-        $this->assertSame([], ausstand_notice::list_grouped());
+        $this->assertSame([], pending_write_notice::list_grouped());
     }
 
     /**

@@ -20,7 +20,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
-use local_coursepilot\ausstand_notice;
+use local_coursepilot\pending_write_notice;
 use local_coursepilot\context_area;
 use local_coursepilot\context_files;
 
@@ -123,7 +123,7 @@ class write_context_file extends external_api {
             $params['nur_anlegen'],
             $params['courseid']
         );
-        ausstand_notice::dismiss($params['ausstand']);
+        pending_write_notice::dismiss($params['ausstand']);
 
         return self::build_response($result);
     }

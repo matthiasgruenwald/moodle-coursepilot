@@ -71,7 +71,7 @@ final class webdav_error extends \RuntimeException {
      * gefunden" heisst leer, jeder andere Fehler bleibt ein benannter Fehler.
      * Vorher an vier fast identischen Stellen dupliziert
      * ({@see \local_coursepilot\pointer_reader::list_entries()}/read_content(),
-     * {@see \local_coursepilot\pointer_writer}, {@see \local_coursepilot\ortswahl_lib}) -
+     * {@see \local_coursepilot\pointer_writer}, {@see \local_coursepilot\location_selection}) -
      * jetzt die eine Stelle, die alle vier benutzen. Was "jeder andere
      * Fehler" konkret bedeutet, bleibt Sache des Aufrufers: `pointer_reader`
      * uebersetzt sofort in eine Lehrkraft-Meldung, `pointer_writer` reicht den

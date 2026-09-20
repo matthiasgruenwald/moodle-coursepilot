@@ -20,7 +20,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
-use local_coursepilot\altbestand;
+use local_coursepilot\previous_location;
 use local_coursepilot\context_files;
 use local_coursepilot\pointer_location;
 
@@ -31,7 +31,7 @@ defined('MOODLE_INTERNAL') || die();
  * Muster von {@see dismiss_ausstand}: die KI schliesst ihn nach dem
  * Kopieren, oder die Lehrkraft verzichtet auf den Rest. Nie durch
  * Zeitablauf, nie durch Namensgleichheit. Ruehrt nie an den Dateien des
- * vorherigen Ortes selbst - siehe {@see altbestand::dismiss()}.
+ * vorherigen Ortes selbst - siehe {@see previous_location::dismiss()}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -64,12 +64,12 @@ class dismiss_altbestand extends external_api {
         // Ohne offenen Altbestand (Ort unbekannt) bleibt die Pruefung wie
         // zuvor bestehen - nur ein positiv erkannter externer Ort schaltet
         // sie ab, kein blosses Fehlen.
-        $previouslocation = altbestand::current();
+        $previouslocation = previous_location::current();
         if ($previouslocation === null || $previouslocation['ort'] === pointer_location::MOODLE) {
             context_files::require_manage_own_files();
         }
 
-        if (!altbestand::dismiss()) {
+        if (!previous_location::dismiss()) {
             throw new \moodle_exception('altbestandclosed', 'local_coursepilot');
         }
 

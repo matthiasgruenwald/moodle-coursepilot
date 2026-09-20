@@ -233,7 +233,7 @@ final class storage_anchor_test extends \advanced_testcase {
      * write_pointer_document() (Issue #494) schreibt ein vollstaendiges
      * Dokument der zweiten Fassung, read_raw_pointer() liest es unveraendert
      * zurueck - der einzige Schreibweg des Pointers, genutzt von der
-     * Ortswahlseite ({@see \local_coursepilot\ortswahl_lib}).
+     * Ortswahlseite ({@see \local_coursepilot\location_selection}).
      */
     public function test_write_pointer_document_is_readable_back_via_read_raw_pointer(): void {
         $this->resetAfterTest();
@@ -403,7 +403,7 @@ final class storage_anchor_test extends \advanced_testcase {
     public function test_list_entries_excludes_the_ausstand_notice_file(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
-        \local_coursepilot\ausstand_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
+        \local_coursepilot\pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
 
         $entries = storage_anchor::list_entries(context_files::resolve_directory(''));
 

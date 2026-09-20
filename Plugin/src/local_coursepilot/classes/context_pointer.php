@@ -34,11 +34,11 @@ namespace local_coursepilot;
  *   {@see TARGET_FIELD}.
  *
  * "Ortsverlauf" (Spec §2) wird von dieser Klasse weiterhin nicht gedeutet -
- * die Ortswahlseite ({@see \local_coursepilot\ortswahl_lib}) haengt Zeilen an
+ * die Ortswahlseite ({@see \local_coursepilot\location_selection}) haengt Zeilen an
  * und liest sie roh zurueck, keine Aufloesung noetig. "Vorheriger Ort" (Feld
  * `vorheriger_ort`, Issue #498, Spec #486 §9) wird dagegen hier gedeutet -
  * {@see resolve_previous()} - denn der Altbestand-Nur-Lese-Zweig
- * ({@see \local_coursepilot\altbestand}) braucht dieselbe Struktur- und
+ * ({@see \local_coursepilot\previous_location}) braucht dieselbe Struktur- und
  * IServ-Pruefung wie die beiden regulaeren Ziele.
  *
  * @package    local_coursepilot

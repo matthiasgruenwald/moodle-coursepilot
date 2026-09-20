@@ -20,7 +20,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
-use local_coursepilot\ausstand_notice;
+use local_coursepilot\pending_write_notice;
 use local_coursepilot\context_files;
 
 defined('MOODLE_INTERNAL') || die();
@@ -59,7 +59,7 @@ class dismiss_ausstand extends external_api {
         self::validate_context($context);
         context_files::require_manage_own_files();
 
-        if (!ausstand_notice::dismiss($params['kennung'])) {
+        if (!pending_write_notice::dismiss($params['kennung'])) {
             throw new \moodle_exception('ausstandunknown', 'local_coursepilot', '', $params['kennung']);
         }
 

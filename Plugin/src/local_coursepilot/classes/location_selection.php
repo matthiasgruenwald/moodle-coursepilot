@@ -41,7 +41,7 @@ use local_coursepilot\webdav\webdav_setup_steps;
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-final class ortswahl_lib {
+final class location_selection {
 
     /** @var string[] Die beiden Ziele, wie sie im Kontextpointer-Dokument heissen (Spec §2). */
     public const TARGETS = ['kontextbereich', 'materialbestand'];
@@ -473,7 +473,7 @@ final class ortswahl_lib {
     private static function record_changes(array $wanted, array $current): array {
         $changed = [];
         $locationhistory = self::history();
-        $previouslocation = altbestand::current();
+        $previouslocation = previous_location::current();
         foreach (self::TARGETS as $target) {
             if (self::same_place($current[$target], $wanted[$target])) {
                 continue;

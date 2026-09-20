@@ -34,7 +34,7 @@ namespace local_coursepilot;
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-final class ausstand_notice {
+final class pending_write_notice {
 
     /**
      * Vermerkt einen gescheiterten Schreibvorgang und liefert die neu

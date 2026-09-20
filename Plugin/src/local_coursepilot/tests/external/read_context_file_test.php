@@ -412,7 +412,7 @@ final class read_context_file_test extends \advanced_testcase {
             $this->assertStringContainsString('context gap', $e->getMessage());
         }
 
-        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
     }
 
     /**

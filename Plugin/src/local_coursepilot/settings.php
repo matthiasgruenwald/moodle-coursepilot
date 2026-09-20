@@ -147,7 +147,7 @@ if ($hassiteconfig) {
 
     // Hinweis der Schule auf der Ortswahlseite (#494): optionaler Freitext,
     // zusaetzlich zu den drei Einrichtungsschritten im Leerzustand "keine
-    // Instanz" - siehe local_coursepilot\ortswahl_lib::school_hint().
+    // Instanz" - siehe local_coursepilot\location_selection::school_hint().
     $settings->add(new admin_setting_configtextarea(
         'local_coursepilot/webdavhint',
         get_string('settingwebdavhint', 'local_coursepilot'),

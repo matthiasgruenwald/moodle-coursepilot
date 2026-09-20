@@ -24,18 +24,18 @@ namespace local_coursepilot;
  *
  * Kein eigener Speicherplatz: der vorherige Ort steht im Feld
  * `vorheriger_ort` des Kontextpointer-Dokuments ({@see storage_anchor::write_pointer_document()}),
- * geschrieben ausschliesslich von {@see ortswahl_lib::apply()} beim
+ * geschrieben ausschliesslich von {@see location_selection::apply()} beim
  * Abschliessen. Es gibt immer nur einen - ein neuer Wechsel verdraengt ihn,
  * die Dateien des verdraengten Ortes bleiben unberuehrt liegen (Spec §9).
  *
  * Endet nur ausdruecklich, ueber {@see dismiss()} - nie durch Zeitablauf,
- * nie durch Namensgleichheit (dasselbe Prinzip wie {@see ausstand_notice}).
+ * nie durch Namensgleichheit (dasselbe Prinzip wie {@see pending_write_notice}).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-final class altbestand {
+final class previous_location {
 
     /**
      * Der rohe Wert des Feldes "vorheriger_ort" im Kontextpointer-Dokument,

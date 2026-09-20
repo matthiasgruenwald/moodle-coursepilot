@@ -20,14 +20,14 @@ namespace local_coursepilot;
  * Der ortsneutrale Ausfall-Uebersetzer (Issue #540, ADR 0023): beide Orte -
  * {@see webdav_storage_port} und {@see context_area}'s Moodle-Zweig - sowie
  * unveraendert {@see pointer_writer} bauen ihre Ausstandsantwort ueber
- * {@see ausstand_translation::record_and_translate()}. Dieser Test deckt den
+ * {@see pending_write_translation::record_and_translate()}. Dieser Test deckt den
  * Uebersetzer isoliert ab, ohne WebDAV oder Private Files anzufassen.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(ausstand_translation::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(pending_write_translation::class)]
 final class ausstand_translation_test extends \advanced_testcase {
 
     protected function setUp(): void {
@@ -42,11 +42,11 @@ final class ausstand_translation_test extends \advanced_testcase {
      * fuenfteilige Ausfallantwort.
      */
     public function test_records_an_entry_and_builds_the_five_part_message(): void {
-        $exception = ausstand_translation::record_and_translate(
+        $exception = pending_write_translation::record_and_translate(
             'meinefehlerklasse',
             'interne Rohmeldung, nur fuers Zugriffsprotokoll',
             'plan.md',
-            ausstand_translation::OP_OVERWRITE,
+            pending_write_translation::OP_OVERWRITE,
             'die Ursache in Lehrkraftsprache',
             'das Ziel',
             42
@@ -60,11 +60,11 @@ final class ausstand_translation_test extends \advanced_testcase {
         $this->assertStringContainsString('das Ziel', $message);
         $this->assertStringNotContainsString('interne Rohmeldung', $message);
 
-        $ausstaende = ausstand_notice::list_grouped();
+        $ausstaende = pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
         $this->assertSame('plan.md', $ausstaende[0]['pfad']);
         $entry = $ausstaende[0]['eintraege'][0];
-        $this->assertSame(ausstand_translation::OP_OVERWRITE, $entry['vorgang']);
+        $this->assertSame(pending_write_translation::OP_OVERWRITE, $entry['vorgang']);
         $this->assertSame('meinefehlerklasse', $entry['fehlerklasse']);
         $this->assertSame(42, $entry['kursid']);
         $this->assertGreaterThan(0, $entry['zeitpunkt']);
@@ -80,17 +80,17 @@ final class ausstand_translation_test extends \advanced_testcase {
         global $CFG;
         $CFG->userquota = 1;
 
-        $exception = ausstand_translation::record_and_translate(
+        $exception = pending_write_translation::record_and_translate(
             'meinefehlerklasse',
             'interne Rohmeldung',
             'plan.md',
-            ausstand_translation::OP_CREATE,
+            pending_write_translation::OP_CREATE,
             'Ursache',
             'Ziel',
             0
         );
 
         $this->assertSame('ausstandnotewritefailed', $exception->errorcode);
-        $this->assertSame([], ausstand_notice::list_grouped());
+        $this->assertSame([], pending_write_notice::list_grouped());
     }
 }

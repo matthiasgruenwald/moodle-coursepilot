@@ -113,7 +113,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
             $this->assertStringContainsString('plan.md', $e->getMessage());
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
         $this->assertSame('plan.md', $ausstaende[0]['pfad']);
         $this->assertSame('anlegen', $ausstaende[0]['eintraege'][0]['vorgang']);
@@ -148,7 +148,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame('anhängen', $ausstaende[0]['eintraege'][0]['vorgang']);
     }
 
@@ -171,7 +171,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
             // Erwartet.
         }
 
-        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
     }
 
     /**
@@ -190,7 +190,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
         }
 
-        $ausstaende = \local_coursepilot\ausstand_notice::list_grouped();
+        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame('webdavinstancemissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
     }
 }

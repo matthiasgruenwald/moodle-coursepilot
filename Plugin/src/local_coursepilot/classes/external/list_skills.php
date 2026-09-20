@@ -22,8 +22,8 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
-use local_coursepilot\ausstand_notice;
-use local_coursepilot\ortswahl_lib;
+use local_coursepilot\pending_write_notice;
+use local_coursepilot\location_selection;
 use local_coursepilot\skill_corpus;
 use local_coursepilot\webdav\webdav_setup_steps;
 
@@ -82,13 +82,13 @@ final class list_skills extends external_api {
                 // gebraucht.
                 \local_coursepilot\context_pointer::resolve_target($document, 'kontextbereich');
             }
-            if (ortswahl_lib::open_with_access((int) $USER->id)) {
+            if (location_selection::open_with_access((int) $USER->id)) {
                 // Ortswahl offen und Freischaltung vorhanden (Issue #494
                 // Akzeptanzkriterium) - ohne Netzzugriff, kein Fakt ohne
                 // Freischaltung.
                 $hinweise[] = self::hinweis('listskillsortswahlhint', $ortswahllink);
             }
-            if (\local_coursepilot\altbestand::open()) {
+            if (\local_coursepilot\previous_location::open()) {
                 // Altbestand offen (Issue #498, Spec #486 §9/§10): ohne
                 // Netzzugriff, ohne Zaehlung - nur der Fakt "es gibt einen
                 // vorherigen Ort".
@@ -102,7 +102,7 @@ final class list_skills extends external_api {
             $hinweise = [self::hinweis('listskillspointerbrokenhint', $ortswahllink)];
         }
 
-        return ['skills' => $skills, 'ausstaende' => ausstand_notice::list_grouped(), 'hinweise' => $hinweise];
+        return ['skills' => $skills, 'ausstaende' => pending_write_notice::list_grouped(), 'hinweise' => $hinweise];
     }
 
     /**

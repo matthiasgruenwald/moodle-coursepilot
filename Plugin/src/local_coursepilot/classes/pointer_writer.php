@@ -54,19 +54,19 @@ final class pointer_writer {
      *      Vorpruefungen der Schreibendpunkte brauchen dasselbe Vokabular fuer
      *      {@see record_preread_failure()}.
      */
-    public const OP_CREATE = ausstand_translation::OP_CREATE;
+    public const OP_CREATE = pending_write_translation::OP_CREATE;
 
     /** @var string Vorgang "ueberschreiben". */
-    public const OP_OVERWRITE = ausstand_translation::OP_OVERWRITE;
+    public const OP_OVERWRITE = pending_write_translation::OP_OVERWRITE;
 
     /** @var string Vorgang "anhaengen". */
-    public const OP_APPEND = ausstand_translation::OP_APPEND;
+    public const OP_APPEND = pending_write_translation::OP_APPEND;
 
     /**
      * @var string Vorgang "unbekannt" (Issue #561) - siehe
-     *      {@see ausstand_translation::OP_UNKNOWN}.
+     *      {@see pending_write_translation::OP_UNKNOWN}.
      */
-    public const OP_UNKNOWN = ausstand_translation::OP_UNKNOWN;
+    public const OP_UNKNOWN = pending_write_translation::OP_UNKNOWN;
 
     /**
      * @var string[] moodle_exception-Fehlerschluessel, die genauso einen
@@ -519,7 +519,7 @@ final class pointer_writer {
     }
 
     /**
-     * Vermerkt einen Ausstand ({@see ausstand_notice::record()}) und baut die
+     * Vermerkt einen Ausstand ({@see pending_write_notice::record()}) und baut die
      * fuenfteilige Ausfallantwort (Issue #492/#516, Spec #486 §8/§10): (1)
      * Pfad und Vorgang; (2) Ursache in Lehrkraftsprache, mit dem Hinweis
      * "spaeter nachtragen" oder "an Ihrem Speicher ist etwas zu tun" (Issue
@@ -552,7 +552,7 @@ final class pointer_writer {
         ?int $instanceid,
         int $courseid
     ): \moodle_exception {
-        return ausstand_translation::record_and_translate(
+        return pending_write_translation::record_and_translate(
             $errorclass,
             'WebDAV ' . $errorclass . ': ' . $rawmessage,
             $clientpath,

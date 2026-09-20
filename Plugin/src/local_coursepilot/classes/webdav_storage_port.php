@@ -147,7 +147,7 @@ final class webdav_storage_port implements storage_port {
     public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = implode('/', [...$folders, $filename]);
-        $operation = ausstand_translation::OP_CREATE;
+        $operation = pending_write_translation::OP_CREATE;
 
         try {
             $resolved = $this->resolved_instance();
@@ -158,7 +158,7 @@ final class webdav_storage_port implements storage_port {
             $this->require_checksum_match($existing, $expectedchecksum, $clientpath);
             storage_anchor::require_quota($area, strlen($content) - ($existing['size'] ?? 0));
             if ($existing !== null) {
-                $operation = ausstand_translation::OP_OVERWRITE;
+                $operation = pending_write_translation::OP_OVERWRITE;
             }
 
             $this->ensure_directory($resolved, $folders);
@@ -200,9 +200,9 @@ final class webdav_storage_port implements storage_port {
 
             $written = $this->current_entry($client, $fileurl);
         } catch (webdav_error $e) {
-            throw $this->fail($e->errorclass, $e->getMessage(), $clientpath, ausstand_translation::OP_APPEND);
+            throw $this->fail($e->errorclass, $e->getMessage(), $clientpath, pending_write_translation::OP_APPEND);
         } catch (\moodle_exception $e) {
-            throw $this->translate_location_failure($e, $clientpath, ausstand_translation::OP_APPEND);
+            throw $this->translate_location_failure($e, $clientpath, pending_write_translation::OP_APPEND);
         }
 
         return [
@@ -223,11 +223,11 @@ final class webdav_storage_port implements storage_port {
      * @param string $errorclass
      * @param string $rawmessage
      * @param string $clientpath
-     * @param string $operation Eine der {@see ausstand_translation}-OP_*-Konstanten.
+     * @param string $operation Eine der {@see pending_write_translation}-OP_*-Konstanten.
      * @return \moodle_exception
      */
     private function fail(string $errorclass, string $rawmessage, string $clientpath, string $operation): \moodle_exception {
-        return ausstand_translation::record_and_translate(
+        return pending_write_translation::record_and_translate(
             $errorclass,
             'WebDAV ' . $errorclass . ': ' . $rawmessage,
             $clientpath,
@@ -254,7 +254,7 @@ final class webdav_storage_port implements storage_port {
         if ($e instanceof storage_conflict_exception || !in_array($e->errorcode, self::LOCATION_FAILURE_CODES, true)) {
             return $e;
         }
-        return ausstand_translation::record_and_translate(
+        return pending_write_translation::record_and_translate(
             $e->errorcode,
             'WebDAV ' . $e->errorcode . ': ' . $e->getMessage(),
             $clientpath,

@@ -95,7 +95,7 @@ final class local_coursepilot_umlaut_test extends advanced_testcase {
 
     /**
      * Issue #522: der Materialbestand kennt keinen Altbestand (siehe
-     * `\local_coursepilot\altbestand`) - der Merkzettel-Text darf den Wechsel
+     * `\local_coursepilot\previous_location`) - der Merkzettel-Text darf den Wechsel
      * des Materialbestands nicht als Altbestand-Vorgang beschreiben.
      */
     public function test_merkzettel_separates_altbestand_from_materialbestand_wechsel(): void {

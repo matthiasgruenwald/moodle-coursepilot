@@ -20,7 +20,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
-use local_coursepilot\altbestand;
+use local_coursepilot\previous_location;
 use local_coursepilot\context_area;
 use local_coursepilot\context_files;
 use local_coursepilot\personal_data;
@@ -85,7 +85,7 @@ class read_context_file extends external_api {
         self::validate_context($context);
 
         $file = $params['vorheriger_ort']
-            ? context_area::read_previous_location($params['path'], altbestand::require_open_location())
+            ? context_area::read_previous_location($params['path'], previous_location::require_open_location())
             : context_area::read($params['path']);
         if ($file === null) {
             throw new \moodle_exception('contextfilenotfound', 'local_coursepilot', '', $params['path']);

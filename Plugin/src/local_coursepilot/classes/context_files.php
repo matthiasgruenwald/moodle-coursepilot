@@ -162,7 +162,7 @@ final class context_files {
      * Aufrufer bereits aufgeloesten Ort statt der aktiven Pointer-Aufloesung.
      *
      * @param string $path
-     * @param pointer_location $location Aus {@see \local_coursepilot\altbestand::require_open_location()}.
+     * @param pointer_location $location Aus {@see \local_coursepilot\previous_location::require_open_location()}.
      * @return array{directory: string, entries: array}
      */
     public static function list_entries_previous_location(string $path, pointer_location $location): array {
@@ -186,7 +186,7 @@ final class context_files {
      * siehe {@see list_entries_previous_location()}.
      *
      * @param string $path
-     * @param pointer_location $location Aus {@see \local_coursepilot\altbestand::require_open_location()}.
+     * @param pointer_location $location Aus {@see \local_coursepilot\previous_location::require_open_location()}.
      * @return array{path: string, content: string, mimetype: string, size: int,
      *         contenthash: string, timemodified: int}|null
      */

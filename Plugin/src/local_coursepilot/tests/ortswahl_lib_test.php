@@ -30,21 +30,21 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-#[CoversClass(ortswahl_lib::class)]
+#[CoversClass(location_selection::class)]
 final class ortswahl_lib_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     /**
      * Issue #507 (Spec #486, Review von #486): die Seitenzustaende und die
      * Zeitgrenze des Dateifenster-Abrufs sind benannte Konstanten statt
-     * roher Werte - {@see ortswahl_lib::setup_state()} und
+     * roher Werte - {@see location_selection::setup_state()} und
      * {@see \ortswahl_render.php} nutzen sie.
      */
     public function test_state_and_timeout_constants_have_the_expected_values(): void {
-        $this->assertSame('not_enabled', ortswahl_lib::STATE_NOT_ENABLED);
-        $this->assertSame('no_instance', ortswahl_lib::STATE_NO_INSTANCE);
-        $this->assertSame('ready', ortswahl_lib::STATE_READY);
-        $this->assertSame(8000, ortswahl_lib::BROWSE_TIMEOUT_MS);
+        $this->assertSame('not_enabled', location_selection::STATE_NOT_ENABLED);
+        $this->assertSame('no_instance', location_selection::STATE_NO_INSTANCE);
+        $this->assertSame('ready', location_selection::STATE_READY);
+        $this->assertSame(8000, location_selection::BROWSE_TIMEOUT_MS);
     }
 
     public function test_setup_state_is_not_enabled_without_freischaltung(): void {
@@ -52,7 +52,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
 
-        $state = ortswahl_lib::setup_state((int) $user->id);
+        $state = location_selection::setup_state((int) $user->id);
 
         $this->assertSame('not_enabled', $state['state']);
     }
@@ -64,7 +64,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->grant_webdav_capability($user);
         $this->enable_webdav_repository_type();
 
-        $state = ortswahl_lib::setup_state((int) $user->id);
+        $state = location_selection::setup_state((int) $user->id);
 
         $this->assertSame('no_instance', $state['state']);
     }
@@ -76,7 +76,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->grant_webdav_capability($user);
         $this->create_webdav_instance($user);
 
-        $state = ortswahl_lib::setup_state((int) $user->id);
+        $state = location_selection::setup_state((int) $user->id);
 
         $this->assertSame('ready', $state['state']);
     }
@@ -89,7 +89,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         // nicht "keine Instanz".
         $this->enable_webdav_repository_type();
 
-        $state = ortswahl_lib::setup_state((int) $user->id);
+        $state = location_selection::setup_state((int) $user->id);
 
         $this->assertSame('not_enabled', $state['state']);
     }
@@ -101,7 +101,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->enable_webdav_repository_type();
         // Schritt 1+2 erfuellt, Schritt 3 (Capability) fehlt.
 
-        $text = ortswahl_lib::missing_steps_text((int) $user->id);
+        $text = location_selection::missing_steps_text((int) $user->id);
 
         $this->assertStringContainsString('repository/webdav:view', $text);
         $this->assertStringNotContainsString('Nutzerinstanzen erlauben', $text);
@@ -123,7 +123,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         global $DB;
         $DB->set_field('repository', 'visible', 0, ['type' => 'webdav']);
 
-        $text = ortswahl_lib::missing_steps_text((int) $user->id);
+        $text = location_selection::missing_steps_text((int) $user->id);
 
         $this->assertStringContainsString('Repositories', $text);
         $this->assertStringNotContainsString('Nutzerinstanzen erlauben', $text);
@@ -142,7 +142,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->create_webdav_instance($other);
         $this->setUser($owner);
 
-        $instances = ortswahl_lib::own_instances();
+        $instances = location_selection::own_instances();
 
         $this->assertCount(1, $instances);
         $this->assertSame($ownid, $instances[0]['id']);
@@ -152,8 +152,8 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $kontext = ortswahl_lib::current('kontextbereich');
-        $material = ortswahl_lib::current('materialbestand');
+        $kontext = location_selection::current('kontextbereich');
+        $material = location_selection::current('materialbestand');
 
         $this->assertSame('moodle', $kontext['ort']);
         $this->assertSame('coursepilot', $kontext['pfad']);
@@ -171,8 +171,8 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $kontext = ortswahl_lib::current('kontextbereich');
-        $material = ortswahl_lib::current('materialbestand');
+        $kontext = location_selection::current('kontextbereich');
+        $material = location_selection::current('materialbestand');
 
         $this->assertFalse($kontext['chosen']);
         $this->assertFalse($material['chosen']);
@@ -189,8 +189,8 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $instanceid = $this->create_webdav_instance($user);
         $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Kontext');
 
-        $kontext = ortswahl_lib::current('kontextbereich');
-        $material = ortswahl_lib::current('materialbestand');
+        $kontext = location_selection::current('kontextbereich');
+        $material = location_selection::current('materialbestand');
 
         $this->assertTrue($kontext['chosen']);
         $this->assertTrue($material['chosen']);
@@ -205,12 +205,12 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $kontext = ortswahl_lib::current('kontextbereich');
+        $kontext = location_selection::current('kontextbereich');
 
         $this->assertTrue($kontext['zugelassen']);
         $this->assertSame(
             get_string('ortswahlzugelassenja', 'local_coursepilot'),
-            ortswahl_lib::zugelassen_label($kontext)
+            location_selection::zugelassen_label($kontext)
         );
     }
 
@@ -228,12 +228,12 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Kontext');
         // personaldatahosts bleibt leer - der Instanzserver ist damit nicht zugelassen.
 
-        $kontext = ortswahl_lib::current('kontextbereich');
+        $kontext = location_selection::current('kontextbereich');
 
         $this->assertFalse($kontext['zugelassen']);
         $this->assertSame(
             get_string('ortswahlzugelassennein', 'local_coursepilot'),
-            ortswahl_lib::zugelassen_label($kontext)
+            location_selection::zugelassen_label($kontext)
         );
     }
 
@@ -249,7 +249,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Kontext');
         set_config('personaldatahosts', $this->fixtureserver, 'local_coursepilot');
 
-        $kontext = ortswahl_lib::current('kontextbereich');
+        $kontext = location_selection::current('kontextbereich');
 
         $this->assertTrue($kontext['zugelassen']);
     }
@@ -280,7 +280,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $this->assertSame([], ortswahl_lib::history());
+        $this->assertSame([], location_selection::history());
     }
 
     public function test_browse_lists_folders_only_and_ignores_files(): void {
@@ -290,7 +290,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake->seed_file('/' . $this->fixturebasispfad . '/notiz.md', 'Inhalt');
 
         try {
-            $result = ortswahl_lib::browse($this->lastinstanceid, '');
+            $result = location_selection::browse($this->lastinstanceid, '');
             $this->assertSame('', $result['path']);
             $this->assertSame([['name' => 'Unterricht']], $result['folders']);
         } finally {
@@ -303,7 +303,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         [$user, $fake] = $this->prepare_instance();
 
         try {
-            $result = ortswahl_lib::browse($this->lastinstanceid, 'nicht-vorhanden');
+            $result = location_selection::browse($this->lastinstanceid, 'nicht-vorhanden');
             $this->assertSame([], $result['folders']);
         } finally {
             webdav_instance::set_transport(null);
@@ -322,14 +322,14 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->grant_webdav_capability($attacker);
 
         $this->expectException(\moodle_exception::class);
-        ortswahl_lib::browse($instanceid, '');
+        location_selection::browse($instanceid, '');
     }
 
     public function test_apply_writes_nothing_when_both_targets_stay_in_moodle(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $changed = ortswahl_lib::apply([
+        $changed = location_selection::apply([
             'kontextbereich' => ['type' => 'moodle'],
             'materialbestand' => ['type' => 'moodle'],
         ]);
@@ -344,7 +344,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $instanceid = $this->lastinstanceid;
 
         try {
-            $changed = ortswahl_lib::apply([
+            $changed = location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Unterricht/Kontext'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
@@ -382,7 +382,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake->seed_file('/' . $this->fixturebasispfad . '/Unterricht/notiz.md', 'Inhalt');
 
         try {
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Unterricht'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
@@ -407,7 +407,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake->seed_file('/' . $this->fixturebasispfad . '/Unterricht/notiz.md', 'Inhalt');
 
         try {
-            $changed = ortswahl_lib::apply([
+            $changed = location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Unterricht', 'confirmed' => true],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
@@ -429,7 +429,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Leer');
 
         try {
-            $changed = ortswahl_lib::apply([
+            $changed = location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Leer'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
@@ -456,9 +456,9 @@ final class ortswahl_lib_test extends \advanced_testcase {
         ];
 
         try {
-            $this->assertSame(['kontextbereich'], ortswahl_lib::apply($selection));
+            $this->assertSame(['kontextbereich'], location_selection::apply($selection));
             $selection['kontextbereich']['confirmed'] = false;
-            $this->assertSame([], ortswahl_lib::apply($selection));
+            $this->assertSame([], location_selection::apply($selection));
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -474,8 +474,8 @@ final class ortswahl_lib_test extends \advanced_testcase {
         ];
 
         try {
-            $this->assertSame(['kontextbereich'], ortswahl_lib::apply($selection));
-            $this->assertSame([], ortswahl_lib::apply($selection));
+            $this->assertSame(['kontextbereich'], location_selection::apply($selection));
+            $this->assertSame([], location_selection::apply($selection));
 
             $document = storage_anchor::read_raw_pointer();
             $this->assertCount(1, $document['ortsverlauf']);
@@ -492,7 +492,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
 
         try {
             $this->expectException(\moodle_exception::class);
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Kontext'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
@@ -514,7 +514,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->grant_webdav_capability($attacker);
 
         $this->expectException(\moodle_exception::class);
-        ortswahl_lib::apply([
+        location_selection::apply([
             'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Kontext'],
             'materialbestand' => ['type' => 'moodle'],
         ]);
@@ -530,7 +530,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
 
         try {
             $this->expectException(\moodle_exception::class);
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => ''],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
@@ -547,7 +547,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         [$user, $fake] = $this->prepare_instance();
 
         try {
-            $result = ortswahl_lib::browse($this->lastinstanceid, '');
+            $result = location_selection::browse($this->lastinstanceid, '');
             $this->assertFalse($result['selectable']);
             $this->assertNotSame('', $result['reason']);
         } finally {
@@ -561,10 +561,10 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Unterricht');
 
         try {
-            $root = ortswahl_lib::browse($this->lastinstanceid, '');
+            $root = location_selection::browse($this->lastinstanceid, '');
             $this->assertFalse($root['iserv']);
 
-            $level = ortswahl_lib::browse($this->lastinstanceid, 'Unterricht');
+            $level = location_selection::browse($this->lastinstanceid, 'Unterricht');
             $this->assertFalse($level['iserv']);
             $this->assertTrue($level['selectable']);
             $this->assertSame('', $level['reason']);
@@ -584,7 +584,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $sink = $this->redirectEvents();
 
         try {
-            $level = ortswahl_lib::browse($this->lastinstanceid, 'Unterricht');
+            $level = location_selection::browse($this->lastinstanceid, 'Unterricht');
             $this->assertFalse($level['iserv']);
         } finally {
             webdav_instance::set_transport(null);
@@ -607,7 +607,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Files/Unterricht');
 
         try {
-            $root = ortswahl_lib::browse($this->lastinstanceid, '');
+            $root = location_selection::browse($this->lastinstanceid, '');
             $this->assertTrue($root['iserv']);
             $this->assertFalse($root['selectable'], 'Die Wurzel bleibt zusaetzlich immer gesperrt.');
             $this->assertSame(
@@ -615,16 +615,16 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 array_map(static fn (array $f): string => $f['name'], $root['folders'])
             );
 
-            $groups = ortswahl_lib::browse($this->lastinstanceid, 'Groups');
+            $groups = location_selection::browse($this->lastinstanceid, 'Groups');
             $this->assertTrue($groups['iserv']);
             $this->assertFalse($groups['selectable'], 'Ausserhalb von Files/ ist bei IServ nichts waehlbar.');
             $this->assertNotSame('', $groups['reason']);
 
-            $files = ortswahl_lib::browse($this->lastinstanceid, 'Files');
+            $files = location_selection::browse($this->lastinstanceid, 'Files');
             $this->assertTrue($files['iserv']);
             $this->assertTrue($files['selectable'], 'Unterhalb von Files/ bleibt bei IServ waehlbar.');
 
-            $nested = ortswahl_lib::browse($this->lastinstanceid, 'Files/Unterricht');
+            $nested = location_selection::browse($this->lastinstanceid, 'Files/Unterricht');
             $this->assertTrue($nested['selectable']);
         } finally {
             webdav_instance::set_transport(null);
@@ -639,7 +639,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake->seed_file('/' . $this->fixturebasispfad . '/Unterricht/a-datei.md', 'Inhalt');
 
         try {
-            $result = ortswahl_lib::browse($this->lastinstanceid, 'Unterricht');
+            $result = location_selection::browse($this->lastinstanceid, 'Unterricht');
             $this->assertSame(2, $result['entrycount']);
             $this->assertSame(['a-datei.md', 'b-ordner'], $result['entrynames']);
         } finally {
@@ -653,7 +653,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Leer');
 
         try {
-            $result = ortswahl_lib::browse($this->lastinstanceid, 'Leer');
+            $result = location_selection::browse($this->lastinstanceid, 'Leer');
             $this->assertSame(0, $result['entrycount']);
             $this->assertSame([], $result['entrynames']);
         } finally {
@@ -668,7 +668,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->grant_webdav_capability($user);
         $this->create_webdav_instance($user, ['webdav_auth' => 'digest']);
 
-        $instances = ortswahl_lib::own_instances();
+        $instances = location_selection::own_instances();
 
         $this->assertCount(1, $instances);
         $this->assertFalse($instances[0]['selectable']);
@@ -682,7 +682,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->grant_webdav_capability($user);
         $this->create_webdav_instance($user);
 
-        $instances = ortswahl_lib::own_instances();
+        $instances = location_selection::own_instances();
 
         $this->assertTrue($instances[0]['selectable']);
         $this->assertSame('', $instances[0]['reason']);
@@ -696,7 +696,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
 
         try {
             $this->expectException(\moodle_exception::class);
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Groups'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
@@ -713,7 +713,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $instanceid = $this->lastinstanceid;
 
         try {
-            $changed = ortswahl_lib::apply([
+            $changed = location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Files/Unterricht'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
@@ -733,7 +733,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
 
         try {
             $this->expectException(\moodle_exception::class);
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Unterricht'],
                 'materialbestand' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Unterricht/Material'],
             ]);
@@ -748,17 +748,17 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
 
-        $this->assertFalse(ortswahl_lib::open_with_access((int) $user->id), 'Ohne Freischaltung kein Fakt.');
+        $this->assertFalse(location_selection::open_with_access((int) $user->id), 'Ohne Freischaltung kein Fakt.');
 
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
-        $this->assertTrue(ortswahl_lib::open_with_access((int) $user->id), 'Freigeschaltet, Ortswahl offen.');
+        $this->assertTrue(location_selection::open_with_access((int) $user->id), 'Freigeschaltet, Ortswahl offen.');
 
         storage_anchor::write_pointer_document([
             'kontextbereich' => 'mein-kontext',
             'materialordner' => 'mein-material',
         ]);
-        $this->assertFalse(ortswahl_lib::open_with_access((int) $user->id), 'Ortswahl nicht mehr offen, sobald ein Pointer existiert.');
+        $this->assertFalse(location_selection::open_with_access((int) $user->id), 'Ortswahl nicht mehr offen, sobald ein Pointer existiert.');
     }
 
     // --- Issue #498: Altbestand (vorheriger Ort) ---
@@ -782,12 +782,12 @@ final class ortswahl_lib_test extends \advanced_testcase {
         ], '# Alt');
 
         try {
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $vorheriger = altbestand::current();
+            $vorheriger = previous_location::current();
             $this->assertSame('moodle', $vorheriger['ort']);
             $this->assertSame('coursepilot', $vorheriger['pfad']);
         } finally {
@@ -803,12 +803,12 @@ final class ortswahl_lib_test extends \advanced_testcase {
         [, $fake] = $this->prepare_instance();
 
         try {
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $this->assertNull(altbestand::current());
+            $this->assertNull(previous_location::current());
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -832,12 +832,12 @@ final class ortswahl_lib_test extends \advanced_testcase {
         ], 'x');
 
         try {
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'moodle'],
                 'materialbestand' => ['type' => 'extern', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
             ]);
 
-            $this->assertNull(altbestand::current());
+            $this->assertNull(previous_location::current());
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -864,19 +864,19 @@ final class ortswahl_lib_test extends \advanced_testcase {
         try {
             // Moodle -> Erst: kein alter Moodle-Ort mit Dateien -> kein Altbestand.
             // "Erst" enthaelt bereits eine Datei -> Uebergabe-Bestaetigung noetig (Issue #518).
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Erst', 'confirmed' => true],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
-            $this->assertNull(altbestand::current());
+            $this->assertNull(previous_location::current());
 
             // Erst -> Zweit: "Erst" enthaelt eine Datei -> wird zum Altbestand.
             // "Zweit" enthaelt ebenfalls bereits eine Datei -> Bestaetigung noetig.
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Zweit', 'confirmed' => true],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
-            $vorheriger = altbestand::current();
+            $vorheriger = previous_location::current();
             $this->assertSame('Erst', $vorheriger['pfad']);
         } finally {
             webdav_instance::set_transport(null);
@@ -901,7 +901,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         webdav_instance::set_transport($fake);
 
         try {
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $oldinstanceid, 'path' => 'Alt'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
@@ -910,12 +910,12 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $newinstanceid = $this->create_webdav_instance($user);
             $fake->seed_folder('/' . $this->fixturebasispfad . '/Neu');
 
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $newinstanceid, 'path' => 'Neu'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $this->assertNull(altbestand::current());
+            $this->assertNull(previous_location::current());
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -947,22 +947,22 @@ final class ortswahl_lib_test extends \advanced_testcase {
 
         try {
             // A (Moodle, mit Datei) -> B (extern, leer): A wird zum Altbestand.
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'B'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
-            $vorheriger = altbestand::current();
+            $vorheriger = previous_location::current();
             $this->assertSame('moodle', $vorheriger['ort']);
             $this->assertSame('coursepilot', $vorheriger['pfad']);
 
             // B (extern, leer) -> A (Moodle): B ist leer, verdraengt den
             // Altbestand trotzdem - sonst zeigte er wieder auf A, den jetzt
             // aktuellen Ort.
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'moodle'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
-            $this->assertNull(altbestand::current());
+            $this->assertNull(previous_location::current());
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -987,12 +987,12 @@ final class ortswahl_lib_test extends \advanced_testcase {
         ], 'x');
 
         try {
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $this->assertNull(altbestand::current());
+            $this->assertNull(previous_location::current());
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -1018,16 +1018,16 @@ final class ortswahl_lib_test extends \advanced_testcase {
         try {
             // "Alt" enthaelt nur eine Nicht-Kontextdatei, keinen Unterordner
             // -> Uebergabe-Bestaetigung noetig (Issue #518); "Neu" ist leer.
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Alt', 'confirmed' => true],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Neu'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $this->assertNull(altbestand::current());
+            $this->assertNull(previous_location::current());
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -1054,12 +1054,12 @@ final class ortswahl_lib_test extends \advanced_testcase {
         ], '# Journal');
 
         try {
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $vorheriger = altbestand::current();
+            $vorheriger = previous_location::current();
             $this->assertSame('moodle', $vorheriger['ort']);
             $this->assertSame('coursepilot', $vorheriger['pfad']);
         } finally {
@@ -1089,16 +1089,16 @@ final class ortswahl_lib_test extends \advanced_testcase {
         try {
             // "Alt" enthaelt nur einen Unterordner -> Uebergabe-Bestaetigung
             // noetig (Issue #518); "Neu" ist leer.
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Alt', 'confirmed' => true],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
-            ortswahl_lib::apply([
+            location_selection::apply([
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Neu'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $vorheriger = altbestand::current();
+            $vorheriger = previous_location::current();
             $this->assertSame('extern', $vorheriger['ort']);
             $this->assertSame('Alt', $vorheriger['pfad']);
         } finally {
