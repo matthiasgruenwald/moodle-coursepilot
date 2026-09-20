@@ -200,4 +200,38 @@ final class skill_corpus_test extends \advanced_testcase {
             'Diese Werkzeuge kommen im Skill-Korpus nicht vor: ' . implode(', ', $missing)
         );
     }
+
+    /**
+     * Dokumentierte Feldnamen muessen im registrierten MCP-Schema stehen.
+     * Die Gegenrichtung fuer Werkzeugnamen prueft der Test direkt darueber.
+     */
+    public function test_documented_contract_fields_match_registered_schemas(): void {
+        $corpus = '';
+        foreach (skill_corpus::list() as $entry) {
+            $corpus .= (string) file_get_contents($entry['path']);
+        }
+
+        $documented = [
+            'coursepilot_describe_module_fields' => ['full'],
+            'coursepilot_update_mc_question' => ['fields_json'],
+            'coursepilot_compare_activity_versions' => ['from_version', 'to_version'],
+            'coursepilot_restore_activity_version' => ['target_version', 'confirmed'],
+            'coursepilot_list_material_files' => ['location'],
+            'coursepilot_preview_material_file' => ['location'],
+            'coursepilot_list_context_files' => ['previous_location'],
+            'coursepilot_read_context_file' => ['previous_location'],
+            'coursepilot_write_context_file' => ['pending_entry', 'create_only'],
+            'coursepilot_append_context_file' => ['pending_entry'],
+            'coursepilot_dismiss_ausstand' => ['identifier'],
+        ];
+
+        foreach ($documented as $tool => $fields) {
+            $this->assertStringContainsString($tool, $corpus);
+            $schema = tool_registry::schemas()[$tool]['properties'];
+            foreach ($fields as $field) {
+                $this->assertMatchesRegularExpression('/`[^`]*\\b' . preg_quote($field, '/') . '\\b/', $corpus);
+                $this->assertArrayHasKey($field, $schema, "{$tool}: {$field} fehlt im Schema.");
+            }
+        }
+    }
 }

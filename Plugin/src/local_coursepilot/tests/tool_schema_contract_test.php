@@ -17,6 +17,9 @@
 namespace local_coursepilot;
 
 use core_external\external_function_parameters;
+use core_external\external_description;
+use core_external\external_multiple_structure;
+use core_external\external_single_structure;
 use core_external\external_value;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -95,5 +98,69 @@ final class tool_schema_contract_test extends \advanced_testcase {
                 "{$name}: MCP-Schema weicht von execute_parameters() ab."
             );
         }
+    }
+
+    /**
+     * Der oeffentliche MCP-Vertrag ist englisch: dieselbe Begriffsmenge gilt
+     * fuer Eingaben und alle verschachtelten Rueckgabefelder.
+     */
+    public function test_every_public_contract_key_is_english(): void {
+        $forbidden = [
+            'aenderungen', 'angelegt', 'angelegte_felder', 'art', 'ausloeser', 'ausstand',
+            'ausstaende', 'bedeutung', 'bedingungen_json', 'bestaetigt', 'dateiname', 'eintraege', 'felder',
+            'felder_json', 'fehlerklasse', 'feldbuendel', 'hinweis', 'hinweise', 'hinweis_luecken',
+            'idnumber_nachgetragen',
+            'kennung', 'kombinationsregeln', 'korpus_stand', 'kursid', 'meldung',
+            'modul', 'nach', 'nach_version', 'nebenwirkungen', 'nur_anlegen',
+            'ort', 'pfad', 'pflicht', 'pseudofelder', 'quelle', 'quelle_callable', 'quellcmid',
+            'referenzierte_teile', 'schreibweg', 'sperrliste', 'umfang',
+            'verstoesse', 'versionen', 'vorgefunden', 'vorgang', 'von', 'von_json', 'von_version', 'vorheriger_ort',
+            'vollstaendig', 'wert_json', 'werte_json', 'wertebereich', 'zeitpunkt', 'zielversion',
+        ];
+
+        foreach (tool_registry::service_functions() as $tool) {
+            $classname = $tool['classname'];
+            $keys = array_merge(
+                array_keys(tool_registry::schemas()[$this->tool_name_for($classname)]['properties']),
+                array_keys(contract_keys::externalize(array_fill_keys(self::structure_keys($classname::execute_returns()), true)))
+            );
+            $this->assertSame(
+                [],
+                array_values(array_intersect($forbidden, $keys)),
+                "{$classname}: German public contract key found."
+            );
+        }
+    }
+
+    /**
+     * @return string[]
+     */
+    private static function structure_keys(external_description $structure): array {
+        if ($structure instanceof external_multiple_structure) {
+            return self::structure_keys($structure->content);
+        }
+        if (!$structure instanceof external_single_structure) {
+            return [];
+        }
+        $keys = [];
+        foreach ($structure->keys as $key => $description) {
+            $keys[] = $key;
+            if ($description instanceof external_single_structure) {
+                $keys = array_merge($keys, self::structure_keys($description));
+            } else if ($description instanceof external_multiple_structure
+                && $description->content instanceof external_single_structure) {
+                $keys = array_merge($keys, self::structure_keys($description->content));
+            }
+        }
+        return $keys;
+    }
+
+    private function tool_name_for(string $classname): string {
+        foreach (tool_registry::service_functions() as $name => $tool) {
+            if ($tool['classname'] === $classname) {
+                return array_search($name, tool_registry::allowed_tools(), true);
+            }
+        }
+        $this->fail("No tool registered for {$classname}.");
     }
 }

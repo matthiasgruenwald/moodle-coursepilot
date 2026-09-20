@@ -174,7 +174,7 @@ als Default befuellen.
 ### Schritt 3: Abschnitt benennen und nur bei Planbezug einen Abschnittseinstieg setzen
 
 ```
-coursepilot_update_section(courseid, sectionnum, felder_json='{"name": ..., "summary": ...}')
+coursepilot_update_section(courseid, sectionnum, fields_json='{"name": ..., "summary": ...}')
 ```
 
 Ein Abschnittseinstieg im `summary` ist kein automatischer Default. Nutze ihn
@@ -184,7 +184,7 @@ Einstieg vorsieht.
 ### Schritt 4: Pro Phase die geplanten Elemente anlegen
 
 Fuer jede Phase der Unterrichtseinheit bzw. des Unterthemas alles ueber
-`coursepilot_create_module(courseid, sectionnum, modname, felder_json)` anlegen:
+`coursepilot_create_module(courseid, sectionnum, modname, fields_json)` anlegen:
 1. `modname="label"` – nur wenn ein sichtbarer Phasen-Trenner geplant ist
 2. Je nach Inhalt: `modname="page"`, `"url"`, `"assign"`, `"resource"`,
    `"folder"`, `"choice"`, `"forum"`

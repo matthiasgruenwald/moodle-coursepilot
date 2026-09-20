@@ -15,11 +15,11 @@ Grundlage: Spec 0016 §7/§8 (`docs/specs/0016-kontextbereich-schreibend.md`).
 
 | Tool | Zweck | Antwort enthält |
 |---|---|---|
-| `coursepilot_list_context_files` | Ordnerinhalt auflisten, optional `vorheriger_ort` (Altbestand) | je Eintrag `contenthash`, `timemodified`, `locked` |
-| `coursepilot_read_context_file` | Datei lesen, optional `vorheriger_ort` (Altbestand) | `content`, `contenthash`, `timemodified` |
-| `coursepilot_write_context_file` | Anlegen/vollständig überschreiben, optional `expected_contenthash`, optional `ausstand` (Kennung), optional `nur_anlegen` (Kopieren aus dem Altbestand) | Meldung "neu angelegt" / "überschrieben"; bei Konflikt Fehler `contextfilechanged`/`contextfilealreadyexists` |
-| `coursepilot_append_context_file` | Anhängen in einem Serveraufruf, kein `expected_contenthash` (kein vorheriges Lesen nötig), optional `ausstand` (Kennung) | Meldung "angehängt" / "neu angelegt", ggf. Rotationshinweis |
-| `coursepilot_dismiss_ausstand` | Einen Eintrag der Ausstandsnotiz ausdrücklich verwerfen (`kennung`) | Bestätigung |
+| `coursepilot_list_context_files` | Ordnerinhalt auflisten, optional `previous_location` (Altbestand) | je Eintrag `contenthash`, `timemodified`, `locked` |
+| `coursepilot_read_context_file` | Datei lesen, optional `previous_location` (Altbestand) | `content`, `contenthash`, `timemodified` |
+| `coursepilot_write_context_file` | Anlegen/vollständig überschreiben, optional `expected_contenthash`, optional `pending_entry` (Kennung), optional `create_only` (Kopieren aus dem Altbestand) | Meldung "neu angelegt" / "überschrieben"; bei Konflikt Fehler `contextfilechanged`/`contextfilealreadyexists` |
+| `coursepilot_append_context_file` | Anhängen in einem Serveraufruf, kein `expected_contenthash` (kein vorheriges Lesen nötig), optional `pending_entry` (Kennung) | Meldung "angehängt" / "neu angelegt", ggf. Rotationshinweis |
+| `coursepilot_dismiss_ausstand` | Einen Eintrag der Ausstandsnotiz ausdrücklich verwerfen (`identifier`) | Bestätigung |
 | `coursepilot_dismiss_altbestand` | Den Altbestand (vorheriger Ort) ausdrücklich beenden, kein Parameter | Bestätigung |
 
 Nur `.md`-Dateien; Pfadsegmente `[A-Za-z0-9_-]`, kein `.`/`..`.
@@ -40,9 +40,9 @@ Ortswahl sperrt ohnehin nichts, Coursepilot arbeitet einfach weiter.
 ohne Zählung den Fakt "Altbestand offen", wenn nach einem Ortswechsel des
 Kontextbereichs am früheren Ort noch Kontextdateien liegen.
 `coursepilot_list_context_files`/`coursepilot_read_context_file` mit
-`vorheriger_ort: true` lesen diesen alten Ort — nur lesend, nie schreibend
+`previous_location: true` lesen diesen alten Ort — nur lesend, nie schreibend
 (**Nur-Lese-Schalter**). Zum Kopieren: gelesenen Inhalt per
-`coursepilot_write_context_file` mit `nur_anlegen: true` an den neuen Ort
+`coursepilot_write_context_file` mit `create_only: true` an den neuen Ort
 schreiben — legt nur an, überschreibt nie. Nach dem Kopieren (oder wenn die
 Lehrkraft auf den Rest verzichtet) `coursepilot_dismiss_altbestand` aufrufen,
 um ihn ausdrücklich zu beenden. Der Altbestand endet nie von selbst durch
@@ -51,7 +51,7 @@ Zeitablauf oder Namensgleichheit.
 **Das Altbestandsangebot:**
 
 - Anzahl der am alten Ort liegenden Dateien nennen (aus
-  `coursepilot_list_context_files` mit `vorheriger_ort: true`), dann **eine**
+  `coursepilot_list_context_files` mit `previous_location: true`), dann **eine**
   Bestätigung für alle einholen — nicht Datei für Datei fragen.
   Uebernommen wird nur nach dieser Bestätigung.
 - Existiert eine Datei am neuen Ort bereits (`contextfilealreadyexists`),
@@ -223,7 +223,7 @@ Antwort nennt Pfad und Vorgang, die Ursache und die Kennung.
   Kontextdatei oder ein anderes Verzeichnis schreiben, auch nicht
   vorübergehend.
 - Sobald die Verbindung wieder steht, denselben Aufruf erneut senden, diesmal
-  mit `ausstand=<Kennung>` — gelingt er, verschwindet der Eintrag im selben
+  mit `pending_entry=<Kennung>` — gelingt er, verschwindet der Eintrag im selben
   Aufruf (**Nachtragen**). Ein Nachtragen überschreibt nie einen inzwischen
   gewachsenen Bestand.
 - `coursepilot_list_skills` meldet zu Sitzungsbeginn offene Einträge im Feld
@@ -296,19 +296,19 @@ Diese Regel ist eine Skill-Regel, kein Serververhalten (Spec 0016 §7: „der
 Server hat kein Session-Konzept"), und gilt daher unverändert für jeden
 Client, der `coursepilot-umsetzen` ausführt — Claude Desktop wie Codex.
 
-## Materialbestand: `ort`, Eintragstyp `kontextbereich` und Sperre (Issue #495)
+## Materialbestand: `location`, Eintragstyp `kontextbereich` und Sperre (Issue #495)
 
 Die lesenden Materialwerkzeuge (`coursepilot_list_material_files`,
 `coursepilot_preview_material_file`, die Quelle von `coursepilot_crop_material_file`,
 Materialpfade bei `coursepilot_create_module`/`coursepilot_update_module_settings`)
-nehmen den Parameter `ort` mit den Werten `bestand` (Standard, der gewachsene
+nehmen den Parameter `location` mit den Werten `bestand` (Standard, der gewachsene
 Materialordner der Lehrkraft — nur gelesen) und `werkbank` (Chat-Anhänge,
 Zuschnitte — hier wird auch geschrieben). Liegt der Materialbestand in
 Moodle, zeigen beide Werte auf denselben Ort; schreibende Materialwerkzeuge
-kennen `ort` nicht, sie zielen immer auf die Werkbank.
+kennen `location` nicht, sie zielen immer auf die Werkbank.
 
 Liegt der Kontextbereich innerhalb des Materialbestands, erscheint sein
-Ordner beim Auflisten (`ort: bestand`) als eigener Eintragstyp
+Ordner beim Auflisten (`location: bestand`) als eigener Eintragstyp
 `kontextbereich`, nicht als `folder` — sichtbar, aber über die Materialwege
 nicht zu betreten. Ein Versuch, einen Pfad darin oder darunter zu lesen oder
 aufzulisten, scheitert mit einer benannten Sperrmeldung

@@ -46,10 +46,10 @@ NIEMALS Formeln als Plain-Text schreiben (z.B. `f = 1/T` oder `U_GPIO`).
 
 **Labels (Phasen-Header):** `name` ist fuer `label` gesperrt – Moodle leitet den in der
 Kursnavigation sichtbaren Namen selbst aus `intro` ab (`get_label_name()`). IMMER den
-Phasennamen als HTML in `intro` schreiben, NIEMALS `name` in `felder_json` mitgeben:
+Phasennamen als HTML in `intro` schreiben, NIEMALS `name` in `fields_json` mitgeben:
 ```
 coursepilot_create_module(courseid, sectionnum, modname="label",
-  felder_json='{"intro": "<h3>Phase 1 – Informieren &amp; Analysieren</h3>"}')
+   fields_json='{"intro": "<h3>Phase 1 – Informieren &amp; Analysieren</h3>"}')
 ```
 
 **Aufgaben, Seiten und Links:** NIEMALS einen "Phase x –" Prefix im `name`-Feld verwenden.

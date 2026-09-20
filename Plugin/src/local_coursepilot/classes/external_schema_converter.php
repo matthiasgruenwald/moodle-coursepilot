@@ -37,7 +37,7 @@ final class external_schema_converter {
     public static function from_parameters(external_function_parameters $parameters): array {
         $schema = self::from_structure($parameters);
         unset($schema['type']);
-        return $schema;
+        return contract_keys::externalize($schema);
     }
 
     /**

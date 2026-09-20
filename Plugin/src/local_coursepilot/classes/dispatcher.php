@@ -294,7 +294,10 @@ final class dispatcher {
             return self::error(404, $id, -32601, 'Unknown tool: ' . $toolname);
         }
 
-        $response = external_api::call_external_function($function, $params['arguments'] ?? []);
+        $response = external_api::call_external_function(
+            $function,
+            contract_keys::internalize($params['arguments'] ?? [])
+        );
         if ($response['error']) {
             $message = self::error_message($response['exception'] ?? null);
             access_log::log_failure($message, $toolname);
@@ -331,7 +334,7 @@ final class dispatcher {
         // der Text-/structuredContent-Kopie entfernt, um ihn nicht doppelt
         // durch den Kontext zu schicken.
         $content = [];
-        $textdata = $data;
+        $textdata = contract_keys::externalize($data);
         $imagebase64 = $data['image_base64'] ?? null;
         $mimetype = $data['mimetype'] ?? null;
         if (is_string($imagebase64) && $imagebase64 !== '' && is_string($mimetype) && $mimetype !== '') {

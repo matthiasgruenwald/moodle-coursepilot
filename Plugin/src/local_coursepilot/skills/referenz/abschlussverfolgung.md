@@ -54,16 +54,16 @@ IMMER in dieser Reihenfolge vorgehen – niemals umgekehrt:
 ```
 // Schritt 1: Aktivitaeten anlegen, cmids merken
 cmid_A = coursepilot_create_module(courseid, sectionnum, modname="assign",
-  felder_json='{"name": "Phase 1 Arbeitsblatt", ...}')    → z.B. 1001
+   fields_json='{"name": "Phase 1 Arbeitsblatt", ...}')    → z.B. 1001
 cmid_B = coursepilot_create_module(courseid, sectionnum, modname="assign",
-  felder_json='{"name": "Phase 2 Aufgabe", ...}')          → z.B. 1002
+   fields_json='{"name": "Phase 2 Aufgabe", ...}')          → z.B. 1002
 cmid_C = coursepilot_create_module(courseid, sectionnum, modname="assign",
-  felder_json='{"name": "Phase 3 Implementierung", ...}')  → z.B. 1003
+   fields_json='{"name": "Phase 3 Implementierung", ...}')  → z.B. 1003
 
 // Schritt 2: Abschluss aktivieren (alle drei)
-coursepilot_set_completion(cmid=1001, felder_json='{"completion": 2, "completionsubmit": 1}')
-coursepilot_set_completion(cmid=1002, felder_json='{"completion": 2, "completionsubmit": 1}')
-coursepilot_set_completion(cmid=1003, felder_json='{"completion": 2, "completionsubmit": 1}')
+coursepilot_set_completion(cmid=1001, fields_json='{"completion": 2, "completionsubmit": 1}')
+coursepilot_set_completion(cmid=1002, fields_json='{"completion": 2, "completionsubmit": 1}')
+coursepilot_set_completion(cmid=1003, fields_json='{"completion": 2, "completionsubmit": 1}')
 
 // Schritt 3: Voraussetzungen setzen (Kette)
 // B erst sichtbar wenn A abgeschlossen
@@ -76,7 +76,7 @@ coursepilot_set_restriction(cmid=1003,
 
 Meldet `coursepilot_set_completion` beim ersten Aufruf ein Datenverlustrisiko
 (vorhandene Abschlussdaten von Lernenden), NICHT einfach erneut ohne Ruecksprache
-mit `bestaetigt: true` wiederholen – siehe `coursepilot_get_skill("mcp-tools")`.
+mit `confirmed: true` wiederholen – siehe `coursepilot_get_skill("mcp-tools")`.
 
 ## Textseiten in die Kette einbeziehen
 
@@ -84,15 +84,15 @@ Wenn auch Textseiten (Informationsblaetter) abgeschlossen sein muessen:
 
 ```
 cmid_info = coursepilot_create_module(courseid, sectionnum, modname="page",
-  felder_json='{"name": "Informationsblatt", ...}')   → z.B. 1000
+   fields_json='{"name": "Informationsblatt", ...}')   → z.B. 1000
 cmid_task = coursepilot_create_module(courseid, sectionnum, modname="assign",
-  felder_json='{"name": "Aufgabe", ...}')              → z.B. 1001
+   fields_json='{"name": "Aufgabe", ...}')              → z.B. 1001
 
 // Informationsblatt: manueller Abschluss
-coursepilot_set_completion(cmid=1000, felder_json='{"completion": 1}')
+coursepilot_set_completion(cmid=1000, fields_json='{"completion": 1}')
 
 // Aufgabe: automatisch bei Einreichung
-coursepilot_set_completion(cmid=1001, felder_json='{"completion": 2, "completionsubmit": 1}')
+coursepilot_set_completion(cmid=1001, fields_json='{"completion": 2, "completionsubmit": 1}')
 
 // Aufgabe erst freischalten wenn Informationsblatt gelesen (manuell abgeschlossen)
 coursepilot_set_restriction(cmid=1001,
