@@ -1165,6 +1165,39 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Ein ungueltiger Pfad bleibt ein Aufruffehler, auch wenn zugleich
+     * Pruefung 8 (IServ) den Ort scheitern liesse (Issue #541 Code-Review-
+     * Befund): der Pfad wird geprueft, bevor der Ort-Ausfall in einen
+     * Ausstand uebersetzt wird - kein Ausstand fuer einen Inhalt, der wegen
+     * seines Namens ohnehin nie hätte geschrieben werden koennen.
+     */
+    public function test_iserv_pruefung_8_does_not_shadow_an_invalid_path(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Groups/Klasse7a', [
+            'server' => $this->fixtureserver,
+            'basispfad' => $this->fixturebasispfad,
+            'konto' => $this->fixturekonto,
+            'iserv' => true,
+        ]);
+        $fake = new fake_webdav_transport();
+        webdav_instance::set_transport($fake);
+
+        try {
+            $this->write('notiz.txt', 'Inhalt');
+            $this->fail('Eine unerlaubte Endung haette abgewiesen werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilenotmarkdown', $e->errorcode);
+        }
+
+        $this->assertSame([], \local_coursepilot\ausstand_notice::list_grouped());
+        $this->assertSame([], $fake->requests());
+    }
+
+    /**
      * Personenbezug-Inhaltspruefung bleibt auch dann in Kraft, wenn Pruefung
      * 8 den Ort unaufloesbar macht (Issue #516 Befund aus dem Standards-/
      * Spec-Review): "ist der Inhalt markiert, obwohl der Schalter aus ist?"

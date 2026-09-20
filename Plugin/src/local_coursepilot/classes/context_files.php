@@ -117,36 +117,6 @@ final class context_files {
     }
 
     /**
-     * Der Client-Pfad zu einem aufgeloesten Verzeichnis - relativ zur
-     * Wurzel, also in derselben Schreibweise, die jedes Werkzeug auch
-     * entgegennimmt. Die Wurzel selbst ist der leere Pfad.
-     *
-     * Wird eine Antwort stattdessen mit dem Wurzelordner darin ausgeliefert
-     * ("coursepilot"), bildet ein Client daraus Unterpfade wie
-     * "coursepilot/fragetypen/match.md" und landet in /coursepilot/coursepilot/...
-     * (#425 F1). Eingabe und Ausgabe muessen dasselbe Koordinatensystem
-     * benutzen.
-     *
-     * @param string $directory Ergebnis von {@see resolve_directory()}
-     * @return string
-     */
-    public static function relative_directory(string $directory): string {
-        return storage_anchor::relative_directory(self::area(), $directory);
-    }
-
-    /**
-     * Der Client-Pfad einer Datei - wie {@see relative_directory()}, nur mit
-     * Dateinamen. Eine Datei an der Wurzel ist schlicht ihr Dateiname.
-     *
-     * @param string $directory Ergebnis von {@see resolve_directory()}
-     * @param string $filename
-     * @return string
-     */
-    public static function relative_file(string $directory, string $filename): string {
-        return storage_anchor::relative_file(self::area(), $directory, $filename);
-    }
-
-    /**
      * Loest einen Client-Dateipfad (Ordner + Dateiname) auf.
      *
      * @param string $path z.B. "vorlagen.md" oder "faecher/mathe/notiz.md".
@@ -172,22 +142,11 @@ final class context_files {
     }
 
     /**
-     * Listet eine Ebene des Kontextbereichs - ortsneutral (Issue #487).
-     *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
-     * @return array<int, array{name: string, type: string, size: int, mimetype: string,
-     *         contenthash: string, timemodified: int}>
-     */
-    public static function list_entries(string $directory): array {
-        return storage_anchor::list_entries($directory);
-    }
-
-    /**
      * Listet eine Ebene des Kontextbereichs zeigerbewusst (Issue #490, Spec
-     * #486 §2/§6) - folgt dem Kontextpointer nach Moodle oder extern. Anders
-     * als {@see list_entries()} nimmt diese Methode den noch unaufgeloesten
-     * Client-Pfad entgegen, weil erst die Pointer-Aufloesung entscheidet, ob
-     * ueberhaupt ein Moodle-Verzeichnis existiert.
+     * #486 §2/§6) - folgt dem Kontextpointer nach Moodle oder extern. Nimmt
+     * den noch unaufgeloesten Client-Pfad entgegen, weil erst die
+     * Pointer-Aufloesung entscheidet, ob ueberhaupt ein Moodle-Verzeichnis
+     * existiert.
      *
      * @param string $path
      * @return array{directory: string, entries: array}
@@ -208,18 +167,6 @@ final class context_files {
      */
     public static function list_entries_previous_location(string $path, pointer_location $location): array {
         return pointer_reader::list_entries(self::area(), $path, $location);
-    }
-
-    /**
-     * Liest den Inhalt einer Kontextdatei - ortsneutral (Issue #487).
-     *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
-     * @param string $filename
-     * @return array{content: string, mimetype: string, size: int, contenthash: string,
-     *         timemodified: int}|null null, wenn die Datei fehlt oder ein Ordner ist.
-     */
-    public static function read_content(string $directory, string $filename): ?array {
-        return storage_anchor::read_content($directory, $filename);
     }
 
     /**
@@ -265,8 +212,10 @@ final class context_files {
      * Legt eine externe Kontextdatei an oder ueberschreibt sie bedingt
      * (Issue #491, Spec #486 §4/§6) - siehe {@see pointer_writer::write()}.
      * Nur fuer einen bereits als *extern* erkannten Pointer-Zustand
-     * ({@see resolve_pointer_location()}).
+     * ({@see resolve_pointer_location()}), der auch als Parameter mitgegeben
+     * wird (Issue #541) - kein zweites Aufloesen des Kontextpointers hier.
      *
+     * @param pointer_location $location Bereits aufgeloester externer Ort.
      * @param string $path
      * @param string $content
      * @param bool $createonly Nur anlegen, nie ueberschreiben (Issue #498,
@@ -280,6 +229,7 @@ final class context_files {
      * @return array{path: string, created: bool, size: int, oldsize: int}
      */
     public static function write_pointer_aware(
+        pointer_location $location,
         string $path,
         string $content,
         bool $createonly = false,
@@ -287,13 +237,16 @@ final class context_files {
         bool $requirecheckvalue = false,
         int $courseid = 0
     ): array {
-        return pointer_writer::write(self::area(), $path, $content, $createonly, $expectedcontenthash, $requirecheckvalue, $courseid);
+        return pointer_writer::write(self::area(), $location, $path, $content, $createonly, $expectedcontenthash, $requirecheckvalue, $courseid);
     }
 
     /**
      * Haengt an eine externe Kontextdatei an (Issue #491, Spec #486 §4/§6) -
-     * siehe {@see pointer_writer::append()}.
+     * siehe {@see pointer_writer::append()}. Der Ort wird wie bei
+     * {@see write_pointer_aware()} bereits aufgeloest entgegengenommen
+     * (Issue #541).
      *
+     * @param pointer_location $location Bereits aufgeloester externer Ort.
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash Pruefwert aus einem frueheren Lesen
@@ -305,37 +258,14 @@ final class context_files {
      * @return array{path: string, created: bool, size: int}
      */
     public static function append_pointer_aware(
+        pointer_location $location,
         string $path,
         string $content,
         string $expectedcontenthash = '',
         bool $requirecheckvalue = false,
         int $courseid = 0
     ): array {
-        return pointer_writer::append(self::area(), $path, $content, $expectedcontenthash, $requirecheckvalue, $courseid);
-    }
-
-    /**
-     * Legt eine Kontextdatei an oder ersetzt ihren Inhalt vollstaendig -
-     * ortsneutral (Issue #487).
-     *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
-     * @param string $filename
-     * @param string $content Vollstaendiger neuer Inhalt.
-     */
-    public static function write(string $directory, string $filename, string $content): void {
-        storage_anchor::write($directory, $filename, $content);
-    }
-
-    /**
-     * Haengt Inhalt an eine Kontextdatei an - ortsneutral (Issue #487).
-     *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
-     * @param string $filename
-     * @param string $content Anzuhaengender Inhalt.
-     * @return int Gesamtgroesse der Datei nach dem Anhaengen, in Byte.
-     */
-    public static function append(string $directory, string $filename, string $content): int {
-        return storage_anchor::append($directory, $filename, $content);
+        return pointer_writer::append(self::area(), $location, $path, $content, $expectedcontenthash, $requirecheckvalue, $courseid);
     }
 
     /**
@@ -379,16 +309,6 @@ final class context_files {
      */
     public static function remaining_quota(): ?int {
         return storage_anchor::remaining_quota();
-    }
-
-    /**
-     * Weist einen Schreibvorgang ab, der die Nutzerquote sprengen wuerde.
-     *
-     * @param int $additionalbytes Zuwachs gegenueber dem bisherigen Stand.
-     * @throws \moodle_exception contextquotaexceeded
-     */
-    public static function require_quota(int $additionalbytes): void {
-        storage_anchor::require_quota(self::area(), $additionalbytes);
     }
 
     /**

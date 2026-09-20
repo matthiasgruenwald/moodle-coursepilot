@@ -204,9 +204,17 @@ final class context_area {
         bool $createonly = false,
         int $courseid = 0
     ): array {
-        $external = self::resolve_write_target($content, $path, $createonly, $courseid);
-        if ($external) {
-            return context_files::write_pointer_aware($path, $content, $createonly, $expectedcontenthash, $ausstand !== '', $courseid);
+        $location = self::resolve_write_target($content, $path, $createonly, $courseid);
+        if ($location !== null) {
+            return context_files::write_pointer_aware(
+                $location,
+                $path,
+                $content,
+                $createonly,
+                $expectedcontenthash,
+                $ausstand !== '',
+                $courseid
+            );
         }
         return self::write_moodle($path, $content, $expectedcontenthash, $ausstand !== '', $createonly, $courseid);
     }
@@ -215,27 +223,42 @@ final class context_area {
      * Loest den Kontextpointer auf (Sonderfall Pruefung 8/IServ eingerechnet)
      * und wendet den Personenbezugs-Gate an - relocated aus
      * {@see \local_coursepilot\external\write_context_file::dispatch()}
-     * (Issue #538). Gibt zurueck, ob der externe Zweig greift.
+     * (Issue #538). Gibt den aufgeloesten externen Ort zurueck, oder `null`
+     * fuer Private Files.
+     *
+     * Uebersetzt einen Ausfall bei Pruefung 8 (IServ) bereits hier, statt ihn
+     * wie vor Issue #541 ein zweites Mal in {@see pointer_writer::write()}
+     * entstehen zu lassen, nur um ihn dort zu uebersetzen - {@see pointer_writer}
+     * loest den Pointer seit Issue #541 nicht mehr selbst auf.
+     *
+     * Validiert dabei zuerst den Pfad ({@see storage_anchor::writable_segments()}),
+     * genau wie vormals {@see pointer_writer::write()} es vor seiner eigenen
+     * (zweiten) Pointer-Aufloesung tat (Code-Review zu Issue #541): ein
+     * ungueltiger Pfad bleibt ein Aufruffehler (`invalidcontextpath`/
+     * `contextfilenotmarkdown`), auch bei Pruefung 8 - kein Ausstand fuer
+     * etwas, das nie hätte geschrieben werden koennen.
      *
      * @param string $content
      * @param string $path
      * @param bool $createonly
      * @param int $courseid
-     * @return bool true, wenn der externe Zweig greift.
+     * @return pointer_location|null Der externe Ort, wenn der externe Zweig
+     *         greift, sonst `null` fuer Private Files.
      */
-    private static function resolve_write_target(string $content, string $path, bool $createonly, int $courseid): bool {
+    private static function resolve_write_target(string $content, string $path, bool $createonly, int $courseid): ?pointer_location {
         try {
             $location = context_files::resolve_pointer_location();
         } catch (\moodle_exception $e) {
             if ($e->errorcode === 'webdaviservfilesonly') {
+                storage_anchor::writable_segments(context_files::area(), $path);
                 self::guard_personal_data_for_write($content, null, $path, $createonly, $courseid);
-                return true;
+                throw pointer_writer::record_location_failure($e, $path, null, pointer_writer::OP_CREATE, $courseid);
             }
             throw $e;
         }
         self::guard_personal_data_for_write($content, $location, $path, $createonly, $courseid);
 
-        return $location !== null && $location->kind === pointer_location::EXTERN;
+        return ($location !== null && $location->kind === pointer_location::EXTERN) ? $location : null;
     }
 
     /**
@@ -501,38 +524,42 @@ final class context_area {
         string $ausstand = '',
         int $courseid = 0
     ): array {
-        if (self::resolve_append_target($path, $content, $courseid)) {
-            return context_files::append_pointer_aware($path, $content, $expectedcontenthash, $ausstand !== '', $courseid);
+        $location = self::resolve_append_target($path, $content, $courseid);
+        if ($location !== null) {
+            return context_files::append_pointer_aware($location, $path, $content, $expectedcontenthash, $ausstand !== '', $courseid);
         }
         return self::append_moodle($path, $content, $courseid);
     }
 
     /**
      * Loest den Kontextpointer auf (Sonderfall Pruefung 8/IServ eingerechnet)
-     * - relocated aus append_context_file::execute() (Issue #538). Gibt
-     * zurueck, ob der externe Zweig greift; wendet dort zugleich das
-     * Personenbezugs-Gate der Zieldatei an.
+     * - relocated aus append_context_file::execute() (Issue #538). Gibt den
+     * aufgeloesten externen Ort zurueck, oder `null` fuer Private Files;
+     * wendet dabei zugleich das Personenbezugs-Gate der Zieldatei an.
+     * Uebersetzt einen Ausfall bei Pruefung 8 (IServ) bereits hier, siehe
+     * {@see resolve_write_target()} (Issue #541).
      *
      * @param string $path
      * @param string $content
      * @param int $courseid
-     * @return bool
+     * @return pointer_location|null
      */
-    private static function resolve_append_target(string $path, string $content, int $courseid): bool {
+    private static function resolve_append_target(string $path, string $content, int $courseid): ?pointer_location {
         try {
             $location = context_files::resolve_pointer_location();
         } catch (\moodle_exception $e) {
             if ($e->errorcode === 'webdaviservfilesonly') {
+                storage_anchor::writable_segments(context_files::area(), $path);
                 self::guard_personal_data_for_append($path, $content, $courseid);
-                return true;
+                throw pointer_writer::record_location_failure($e, $path, null, pointer_writer::OP_APPEND, $courseid);
             }
             throw $e;
         }
         if ($location !== null && $location->kind === pointer_location::EXTERN) {
             self::guard_personal_data_for_append($path, $content, $courseid);
-            return true;
+            return $location;
         }
-        return false;
+        return null;
     }
 
     /**

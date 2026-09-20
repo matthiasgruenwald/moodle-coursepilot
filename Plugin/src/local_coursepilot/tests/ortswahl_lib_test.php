@@ -787,9 +787,9 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertSame('moodle', $document['vorheriger_ort']['ort']);
-            $this->assertSame('coursepilot', $document['vorheriger_ort']['pfad']);
+            $vorheriger = altbestand::current();
+            $this->assertSame('moodle', $vorheriger['ort']);
+            $this->assertSame('coursepilot', $vorheriger['pfad']);
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -808,8 +808,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertArrayNotHasKey('vorheriger_ort', $document);
+            $this->assertNull(altbestand::current());
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -838,8 +837,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'materialbestand' => ['type' => 'extern', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
             ]);
 
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertArrayNotHasKey('vorheriger_ort', $document);
+            $this->assertNull(altbestand::current());
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -870,7 +868,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Erst', 'confirmed' => true],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
-            $this->assertArrayNotHasKey('vorheriger_ort', storage_anchor::read_raw_pointer());
+            $this->assertNull(altbestand::current());
 
             // Erst -> Zweit: "Erst" enthaelt eine Datei -> wird zum Altbestand.
             // "Zweit" enthaelt ebenfalls bereits eine Datei -> Bestaetigung noetig.
@@ -878,8 +876,8 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Zweit', 'confirmed' => true],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertSame('Erst', $document['vorheriger_ort']['pfad']);
+            $vorheriger = altbestand::current();
+            $this->assertSame('Erst', $vorheriger['pfad']);
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -917,8 +915,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertArrayNotHasKey('vorheriger_ort', $document);
+            $this->assertNull(altbestand::current());
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -954,9 +951,9 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'kontextbereich' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'B'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertSame('moodle', $document['vorheriger_ort']['ort']);
-            $this->assertSame('coursepilot', $document['vorheriger_ort']['pfad']);
+            $vorheriger = altbestand::current();
+            $this->assertSame('moodle', $vorheriger['ort']);
+            $this->assertSame('coursepilot', $vorheriger['pfad']);
 
             // B (extern, leer) -> A (Moodle): B ist leer, verdraengt den
             // Altbestand trotzdem - sonst zeigte er wieder auf A, den jetzt
@@ -965,8 +962,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'kontextbereich' => ['type' => 'moodle'],
                 'materialbestand' => ['type' => 'moodle'],
             ]);
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertArrayNotHasKey('vorheriger_ort', $document);
+            $this->assertNull(altbestand::current());
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -996,8 +992,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertArrayNotHasKey('vorheriger_ort', $document);
+            $this->assertNull(altbestand::current());
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -1032,8 +1027,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertArrayNotHasKey('vorheriger_ort', $document);
+            $this->assertNull(altbestand::current());
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -1065,9 +1059,9 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertSame('moodle', $document['vorheriger_ort']['ort']);
-            $this->assertSame('coursepilot', $document['vorheriger_ort']['pfad']);
+            $vorheriger = altbestand::current();
+            $this->assertSame('moodle', $vorheriger['ort']);
+            $this->assertSame('coursepilot', $vorheriger['pfad']);
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -1104,9 +1098,9 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'materialbestand' => ['type' => 'moodle'],
             ]);
 
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertSame('extern', $document['vorheriger_ort']['ort']);
-            $this->assertSame('Alt', $document['vorheriger_ort']['pfad']);
+            $vorheriger = altbestand::current();
+            $this->assertSame('extern', $vorheriger['ort']);
+            $this->assertSame('Alt', $vorheriger['pfad']);
         } finally {
             webdav_instance::set_transport(null);
         }

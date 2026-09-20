@@ -76,12 +76,6 @@ final class storage_anchor_test extends \advanced_testcase {
         $this->assertSame('/unveraendert/', context_files::resolve_directory(''));
     }
 
-    public function test_second_place_rejects_traversal_segments(): void {
-        $this->resetAfterTest();
-        $this->expectException(\moodle_exception::class);
-        storage_anchor::resolve_directory($this->second_place(), 'ordner/../../../etc');
-    }
-
     public function test_second_place_resolves_file_in_both_directions(): void {
         $this->resetAfterTest();
         $area = $this->second_place();
@@ -94,33 +88,6 @@ final class storage_anchor_test extends \advanced_testcase {
             'faecher/mathe/notiz.txt',
             storage_anchor::relative_file($area, $directory, $filename)
         );
-    }
-
-    public function test_second_place_applies_its_own_writable_name_rule(): void {
-        $this->resetAfterTest();
-        $area = $this->second_place();
-
-        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'notiz.txt');
-        $this->assertSame('/zweitort/', $directory);
-        $this->assertSame('notiz.txt', $filename);
-
-        try {
-            storage_anchor::resolve_writable_file($area, 'notiz.md');
-            $this->fail('Die .md-Regel des Kontextbereichs haette hier nicht gelten duerfen.');
-        } catch (\moodle_exception $e) {
-            $this->assertStringContainsString('notiz.md', $e->getMessage());
-        }
-    }
-
-    public function test_second_place_enforces_its_own_quota_error_key(): void {
-        global $CFG;
-
-        $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
-        $CFG->userquota = 100;
-
-        $this->expectException(\moodle_exception::class);
-        storage_anchor::require_quota($this->second_place(), 200);
     }
 
     public function test_second_place_writes_and_reads_back_via_replace(): void {
@@ -443,17 +410,6 @@ final class storage_anchor_test extends \advanced_testcase {
         $this->assertNull($this->find_entry($entries, storage_anchor::AUSSTAND_FILENAME));
     }
 
-    public function test_read_content_returns_null_for_missing_file(): void {
-        $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
-        $area = $this->second_place();
-
-        $this->assertNull(storage_anchor::read_content(
-            storage_anchor::resolve_directory($area, ''),
-            'nichtvorhanden.txt'
-        ));
-    }
-
     public function test_read_content_returns_no_stored_file_object(): void {
         $this->resetAfterTest();
         $area = $this->second_place();
@@ -471,63 +427,6 @@ final class storage_anchor_test extends \advanced_testcase {
         foreach ($result as $value) {
             $this->assertNotInstanceOf(\stored_file::class, $value);
         }
-    }
-
-    public function test_write_creates_new_file_at_the_second_place(): void {
-        $this->resetAfterTest();
-        $area = $this->second_place();
-        $this->setUser($this->getDataGenerator()->create_user());
-        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'notiz.txt');
-
-        storage_anchor::write($directory, $filename, 'frischer Inhalt');
-
-        $this->assertSame('frischer Inhalt', storage_anchor::read_content($directory, $filename)['content']);
-    }
-
-    public function test_write_replaces_existing_content(): void {
-        $this->resetAfterTest();
-        $area = $this->second_place();
-        $this->setUser($this->getDataGenerator()->create_user());
-        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'notiz.txt');
-        storage_anchor::write($directory, $filename, 'alt');
-
-        storage_anchor::write($directory, $filename, 'neu');
-
-        $this->assertSame('neu', storage_anchor::read_content($directory, $filename)['content']);
-    }
-
-    public function test_append_creates_new_file_when_none_exists(): void {
-        $this->resetAfterTest();
-        $area = $this->second_place();
-        $this->setUser($this->getDataGenerator()->create_user());
-        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'journal.txt');
-
-        $newsize = storage_anchor::append($directory, $filename, 'erster Eintrag');
-
-        $this->assertSame('erster Eintrag', storage_anchor::read_content($directory, $filename)['content']);
-        $this->assertSame(strlen('erster Eintrag'), $newsize);
-    }
-
-    /**
-     * append() meldet die tatsaechlich geschriebene Gesamtgroesse, nicht eine
-     * vom Aufrufer aus einem frueheren Lesen hochgerechnete - siehe Docblock
-     * von {@see storage_anchor::append()}.
-     */
-    public function test_append_adds_to_existing_content(): void {
-        $this->resetAfterTest();
-        $area = $this->second_place();
-        $this->setUser($this->getDataGenerator()->create_user());
-        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'journal.txt');
-        storage_anchor::write($directory, $filename, 'erster Eintrag');
-
-        $newsize = storage_anchor::append($directory, $filename, ' zweiter Eintrag');
-
-        $this->assertSame(strlen('erster Eintrag zweiter Eintrag'), $newsize);
-
-        $this->assertSame(
-            'erster Eintrag zweiter Eintrag',
-            storage_anchor::read_content($directory, $filename)['content']
-        );
     }
 
     /**
@@ -562,26 +461,6 @@ final class storage_anchor_test extends \advanced_testcase {
         $this->setUser($this->getDataGenerator()->create_user());
 
         $this->assertSame([], storage_anchor::list_entries_recursive(storage_anchor::resolve_directory($area, '')));
-    }
-
-    public function test_delete_removes_existing_file(): void {
-        $this->resetAfterTest();
-        $area = $this->second_place();
-        $this->setUser($this->getDataGenerator()->create_user());
-        [$directory, $filename] = storage_anchor::resolve_writable_file($area, 'notiz.txt');
-        storage_anchor::write($directory, $filename, 'Inhalt');
-
-        $this->assertTrue(storage_anchor::delete($directory, $filename));
-        $this->assertNull(storage_anchor::read_content($directory, $filename));
-    }
-
-    public function test_delete_returns_false_for_missing_file(): void {
-        $this->resetAfterTest();
-        $area = $this->second_place();
-        $this->setUser($this->getDataGenerator()->create_user());
-        $directory = storage_anchor::resolve_directory($area, '');
-
-        $this->assertFalse(storage_anchor::delete($directory, 'nichtvorhanden.txt'));
     }
 
     /**

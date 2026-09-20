@@ -132,6 +132,10 @@ final class pointer_writer {
      * Moodle-Dateipool, die es extern nicht gibt.
      *
      * @param storage_area $area
+     * @param pointer_location $location Bereits aufgeloester externer Ort
+     *        (Issue #541) - der Aufrufer ({@see context_area}) hat den
+     *        Kontextpointer bereits gelesen und als *extern* erkannt, bevor
+     *        er hierher verzweigt; diese Methode loest ihn nicht erneut auf.
      * @param string $path Client-Pfad, z.B. "plan.md" oder "faecher/mathe/profil.md".
      * @param string $content Vollstaendiger neuer Inhalt.
      * @param bool $createonly Nur anlegen, nie ueberschreiben (Issue #498,
@@ -163,6 +167,7 @@ final class pointer_writer {
      */
     public static function write(
         storage_area $area,
+        pointer_location $location,
         string $path,
         string $content,
         bool $createonly = false,
@@ -173,10 +178,8 @@ final class pointer_writer {
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = self::client_path($folders, $filename);
         $operation = self::OP_CREATE;
-        $location = null;
 
         try {
-            $location = self::resolve_external_location($area);
             $instance = webdav_instance::resolve($location);
             $fileurl = $instance->file_url(storage_anchor::external_relative_path($area, $location, $clientpath));
             $client = $instance->client();
@@ -213,6 +216,8 @@ final class pointer_writer {
      * Anhaengsel angefuegt, das Ganze bedingt zurueckgeschrieben.
      *
      * @param storage_area $area
+     * @param pointer_location $location Bereits aufgeloester externer Ort
+     *        (Issue #541) - siehe {@see write()}.
      * @param string $path
      * @param string $content Anzuhaengender Inhalt.
      * @param string $expectedcontenthash Pruefwert aus einem frueheren Lesen
@@ -234,6 +239,7 @@ final class pointer_writer {
      */
     public static function append(
         storage_area $area,
+        pointer_location $location,
         string $path,
         string $content,
         string $expectedcontenthash = '',
@@ -242,10 +248,8 @@ final class pointer_writer {
     ): array {
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = self::client_path($folders, $filename);
-        $location = null;
 
         try {
-            $location = self::resolve_external_location($area);
             $instance = webdav_instance::resolve($location);
             $fileurl = $instance->file_url(storage_anchor::external_relative_path($area, $location, $clientpath));
             $client = $instance->client();
@@ -266,26 +270,6 @@ final class pointer_writer {
         }
 
         return ['path' => $clientpath, 'created' => false, 'size' => strlen($newcontent)];
-    }
-
-    /**
-     * Der aufgeloeste externe Pointer-Zustand - eine coding_exception, sollte
-     * je ein Aufrufer diese Klasse ohne vorherige Pruefung auf *extern*
-     * erreichen (interner Programmierfehler, nie ein Lehrkraft-sichtbarer Weg:
-     * beide Endpunkte pruefen den Pointer-Zustand selbst, bevor sie hierher
-     * verzweigen).
-     *
-     * @param storage_area $area
-     * @return pointer_location
-     * @throws \moodle_exception pointerunreadable/pointerincomplete/pointerunreachable
-     * @throws \coding_exception der Pointer ist inzwischen nicht mehr extern.
-     */
-    private static function resolve_external_location(storage_area $area): pointer_location {
-        $location = storage_anchor::resolve_pointer_location($area);
-        if ($location === null || $location->kind !== pointer_location::EXTERN) {
-            throw new \coding_exception('pointer_writer erreicht ohne externen Kontextpointer.');
-        }
-        return $location;
     }
 
     /**
@@ -495,6 +479,12 @@ final class pointer_writer {
      * *waehrend* der Pointer-Aufloesung selbst - $location ist dort noch
      * `null`, Host und Instanz-ID kommen dann aus dem $a der Ausnahme.
      *
+     * Oeffentlich (Issue #541): {@see context_area} ruft dies inzwischen auch
+     * direkt fuer `webdaviservfilesonly` auf, sobald die Pointer-Aufloesung
+     * selbst schon scheitert - vorher liess context_area denselben Fehler ein
+     * zweites Mal in {@see write()}/{@see append()} entstehen, nur um ihn dort
+     * zu uebersetzen.
+     *
      * @param \moodle_exception $e
      * @param string $clientpath
      * @param pointer_location|null $location null bei `webdaviservfilesonly`.
@@ -502,7 +492,7 @@ final class pointer_writer {
      * @param int $courseid Siehe {@see write()}.
      * @return \moodle_exception
      */
-    private static function record_location_failure(
+    public static function record_location_failure(
         \moodle_exception $e,
         string $clientpath,
         ?pointer_location $location,

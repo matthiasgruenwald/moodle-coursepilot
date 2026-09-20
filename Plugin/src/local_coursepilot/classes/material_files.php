@@ -291,17 +291,6 @@ final class material_files {
     }
 
     /**
-     * Loescht eine Materialdatei, falls sie existiert - ortsneutral (Issue #488).
-     *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
-     * @param string $filename
-     * @return bool true, wenn eine Datei geloescht wurde; false, wenn keine existierte.
-     */
-    public static function delete(string $directory, string $filename): bool {
-        return storage_anchor::delete($directory, $filename);
-    }
-
-    /**
      * Alle zulaessigen Dateiendungen (Spec 0018 §6), Vereinigung beider
      * Whitelists.
      *
