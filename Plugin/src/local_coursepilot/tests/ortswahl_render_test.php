@@ -78,4 +78,56 @@ final class ortswahl_render_test extends advanced_testcase {
 
         $this->assertStringContainsString('Meine Cloud', $html);
     }
+
+    /**
+     * Issue #563: der Ruecksprung aus dem OAuth-Verbindungsaufbau in die
+     * Ortswahlseite braucht die Anfrageparameter als verstecktes Formularfeld
+     * mit, sonst geht der Rueckweg beim Abschliessen verloren (dieselbe
+     * Sackgasse wie in Issue #558, nur diesmal von der anderen Seite her).
+     */
+    public function test_editor_form_carries_oauth_passthrough_as_hidden_fields(): void {
+        global $PAGE;
+
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $this->create_webdav_instance($user);
+
+        ob_start();
+        local_coursepilot_render_ortswahl_editor($PAGE, $user, [
+            'response_type' => 'code',
+            'client_id' => 'claude-test',
+            'redirect_uri' => 'https://example.test/callback',
+            'code_challenge' => 'abc123',
+            'code_challenge_method' => 'S256',
+            'state' => 'xyz',
+        ]);
+        $html = ob_get_clean();
+
+        $this->assertStringContainsString('name="oauthflow" value="1"', $html);
+        $this->assertStringContainsString('name="client_id" value="claude-test"', $html);
+        $this->assertStringContainsString('name="redirect_uri" value="https://example.test/callback"', $html);
+    }
+
+    /**
+     * Gegenprobe: ausserhalb des OAuth-Verbindungsaufbaus (leeres
+     * Passthrough-Array, der bisherige und weiterhin gueltige eigenstaendige
+     * Aufruf der Ortswahlseite) taucht kein oauthflow-Feld auf.
+     */
+    public function test_editor_form_omits_oauth_fields_outside_oauth_flow(): void {
+        global $PAGE;
+
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $this->create_webdav_instance($user);
+
+        ob_start();
+        local_coursepilot_render_ortswahl_editor($PAGE, $user);
+        $html = ob_get_clean();
+
+        $this->assertStringNotContainsString('oauthflow', $html);
+    }
 }

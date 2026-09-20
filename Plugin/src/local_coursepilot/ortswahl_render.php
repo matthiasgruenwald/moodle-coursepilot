@@ -45,8 +45,12 @@ use local_coursepilot\ortswahl_lib;
  *
  * @param \moodle_page $page
  * @param \stdClass $user
+ * @param array<string, string> $oauthpassthrough Ergebnis von {@see local_coursepilot_read_oauth_passthrough()}['params'],
+ *        leer ausserhalb des OAuth-Verbindungsaufbaus (Issue #563) - reist als
+ *        verstecktes Feld mit, damit das Abschliessen zur Zustimmungsseite
+ *        zurueckfuehrt statt die Wahl kommentarlos zu speichern.
  */
-function local_coursepilot_render_ortswahl_editor(\moodle_page $page, \stdClass $user): void {
+function local_coursepilot_render_ortswahl_editor(\moodle_page $page, \stdClass $user, array $oauthpassthrough = []): void {
     $data = local_coursepilot_ortswahl_editor_data();
     local_coursepilot_render_ortswahl_data_script($data);
 
@@ -54,6 +58,12 @@ function local_coursepilot_render_ortswahl_editor(\moodle_page $page, \stdClass 
     echo html_writer::start_tag('form', ['method' => 'post', 'action' => (new moodle_url('/local/coursepilot/ortswahl.php'))->out(false), 'id' => 'coursepilot-ortswahl-form']);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'finish', 'value' => '1']);
+    if ($oauthpassthrough !== []) {
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'oauthflow', 'value' => '1']);
+        foreach ($oauthpassthrough as $name => $value) {
+            echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $name, 'value' => $value]);
+        }
+    }
 
     local_coursepilot_render_ortswahl_progress_band();
     local_coursepilot_render_ortswahl_tabs($data);

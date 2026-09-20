@@ -35,6 +35,7 @@
 require(__DIR__ . '/../../config.php');
 
 use local_coursepilot\altbestand;
+use local_coursepilot\oauth_lib;
 use local_coursepilot\ortswahl_lib;
 use local_coursepilot\pointer_location;
 use local_coursepilot\webdav\webdav_setup_steps;
@@ -51,30 +52,69 @@ $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('ortswahltitle', 'local_coursepilot'));
 $PAGE->set_heading(get_string('ortswahlheading', 'local_coursepilot'));
 
-$finishresult = local_coursepilot_handle_ortswahl_finish();
+$oauthreturn = local_coursepilot_read_oauth_passthrough();
+$finishresult = local_coursepilot_handle_ortswahl_finish($oauthreturn);
 
 echo $OUTPUT->header();
-local_coursepilot_render_ortswahl_page($finishresult, $USER);
+local_coursepilot_render_ortswahl_page($finishresult, $USER, $oauthreturn);
 echo $OUTPUT->footer();
+
+/**
+ * Liest die OAuth-Anfrageparameter, mit denen die Ortswahlseite von der
+ * Zustimmungsseite aus aufgerufen werden kann (Issue #563, loest die mit
+ * Issue #558 dokumentierte Sackgasse auf: ohne diese Parameter fuehrte ein
+ * Ortswechsel waehrend des Verbindungsaufbaus nicht mehr zurueck). Fehlen
+ * die Parameter oder sind sie ungueltig, verhaelt sich die Seite wie zuvor
+ * (kein Banner, kein Ruecksprung) - eigenstaendiger Aufruf bleibt moeglich.
+ *
+ * @return array{client: \stdClass, params: array<string, string>}|null
+ */
+function local_coursepilot_read_oauth_passthrough(): ?array {
+    if (!optional_param('oauthflow', 0, PARAM_BOOL)) {
+        return null;
+    }
+    $params = [
+        'response_type' => optional_param('response_type', '', PARAM_ALPHA),
+        'client_id' => optional_param('client_id', '', PARAM_RAW_TRIMMED),
+        'redirect_uri' => optional_param('redirect_uri', '', PARAM_URL),
+        'code_challenge' => optional_param('code_challenge', '', PARAM_RAW_TRIMMED),
+        'code_challenge_method' => optional_param('code_challenge_method', '', PARAM_ALPHANUMEXT),
+        'state' => optional_param('state', '', PARAM_RAW_TRIMMED),
+    ];
+    $validation = oauth_lib::validate_authorize_request($params);
+    if (isset($validation['error'])) {
+        return null;
+    }
+    return ['client' => $validation['client'], 'params' => $params];
+}
 
 /**
  * Nimmt eine abgeschickte Ortswahl entgegen (Issue #494, Spec §5) - nur wenn
  * ueberhaupt "finish" mitgeschickt wurde, sonst wird die Seite ohne
  * Formularverarbeitung nur angezeigt.
  *
+ * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn
  * @return array{type: string, text: string}|null
  */
-function local_coursepilot_handle_ortswahl_finish(): ?array {
+function local_coursepilot_handle_ortswahl_finish(?array $oauthreturn): ?array {
     if (!optional_param('finish', 0, PARAM_BOOL)) {
         return null;
     }
     require_sesskey();
     try {
         $changed = ortswahl_lib::apply(local_coursepilot_read_ortswahl_selection());
+        if ($oauthreturn !== null) {
+            // Zurueck zur Zustimmungsseite (Issue #563) statt hier stehen zu
+            // bleiben - egal ob sich etwas geaendert hat, die Lehrkraft war
+            // mitten im Verbindungsaufbau.
+            redirect(new moodle_url('/local/coursepilot/oauth/authorize.php', $oauthreturn['params']));
+        }
         return empty($changed)
             ? ['type' => \core\output\notification::NOTIFY_INFO, 'text' => get_string('ortswahlfinishnochange', 'local_coursepilot')]
             : ['type' => \core\output\notification::NOTIFY_SUCCESS, 'text' => get_string('ortswahlfinishsuccess', 'local_coursepilot', implode(', ', $changed))];
     } catch (moodle_exception $e) {
+        // Bei einem Fehler auf der Ortswahlseite bleiben (auch im OAuth-Fluss)
+        // - ein Ruecksprung wuerde die Fehlermeldung verschlucken.
         return ['type' => \core\output\notification::NOTIFY_ERROR, 'text' => $e->getMessage()];
     }
 }
@@ -108,18 +148,41 @@ function local_coursepilot_read_ortswahl_selection(): array {
  *
  * @param array{type: string, text: string}|null $finishresult Ergebnis von {@see local_coursepilot_handle_ortswahl_finish()}.
  * @param \stdClass $user
+ * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn Ergebnis von {@see local_coursepilot_read_oauth_passthrough()}.
  */
-function local_coursepilot_render_ortswahl_page(?array $finishresult, \stdClass $user): void {
+function local_coursepilot_render_ortswahl_page(?array $finishresult, \stdClass $user, ?array $oauthreturn): void {
     global $OUTPUT;
 
+    local_coursepilot_render_oauth_banner($oauthreturn);
     if ($finishresult !== null) {
         echo $OUTPUT->notification($finishresult['text'], $finishresult['type']);
     }
     echo html_writer::tag('p', get_string('ortswahlintro', 'local_coursepilot'));
     local_coursepilot_render_altbestand_warning();
-    local_coursepilot_render_ortswahl_setup_state($user);
+    local_coursepilot_render_ortswahl_setup_state($user, $oauthreturn);
     local_coursepilot_render_ortswahl_current_locations();
     local_coursepilot_render_ortswahl_history();
+}
+
+/**
+ * Hinweisband und Ruecksprung-Link, wenn die Seite mitten im OAuth-
+ * Verbindungsaufbau aufgerufen wurde (Issue #563).
+ *
+ * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn
+ */
+function local_coursepilot_render_oauth_banner(?array $oauthreturn): void {
+    if ($oauthreturn === null) {
+        return;
+    }
+    global $OUTPUT;
+
+    $clientname = $oauthreturn['client']->clientname ?: $oauthreturn['client']->clientid;
+    echo $OUTPUT->notification(
+        get_string('ortswahloauthflowinfo', 'local_coursepilot', $clientname),
+        \core\output\notification::NOTIFY_INFO
+    );
+    $backurl = new moodle_url('/local/coursepilot/oauth/authorize.php', $oauthreturn['params']);
+    echo html_writer::div(html_writer::link($backurl, get_string('ortswahloauthflowback', 'local_coursepilot')), 'mb-3');
 }
 
 /**
@@ -141,8 +204,9 @@ function local_coursepilot_render_altbestand_warning(): void {
  * passenden Leerzustand oder das Dateifenster.
  *
  * @param \stdClass $user
+ * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn
  */
-function local_coursepilot_render_ortswahl_setup_state(\stdClass $user): void {
+function local_coursepilot_render_ortswahl_setup_state(\stdClass $user, ?array $oauthreturn): void {
     global $PAGE;
 
     $state = ortswahl_lib::setup_state((int) $user->id);
@@ -152,7 +216,7 @@ function local_coursepilot_render_ortswahl_setup_state(\stdClass $user): void {
         local_coursepilot_render_ortswahl_no_instance();
     } else {
         require_once(__DIR__ . '/ortswahl_render.php');
-        local_coursepilot_render_ortswahl_editor($PAGE, $user);
+        local_coursepilot_render_ortswahl_editor($PAGE, $user, $oauthreturn['params'] ?? []);
     }
 }
 

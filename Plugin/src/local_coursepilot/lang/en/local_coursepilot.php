@@ -300,14 +300,18 @@ $string['consenttransfer'] = '<strong>Transfer to the AI provider:</strong> ever
 $string['consentpersonaldataoff'] = 'This Moodle site transfers <strong>no</strong> context files marked as containing personal data (personenbezug: true). Such files are shown to you as locked.';
 $string['consentpersonaldataon'] = 'This Moodle site <strong>also</strong> transfers context files marked as containing personal data (personenbezug: true) — for example class profiles with student names. Your school has explicitly enabled this.';
 $string['consentabbreviate'] = 'What personal information you may put in context files is governed by your school and your jurisdiction\'s data protection rules. Coursepilot does not check this. Use abbreviations instead of names where that suffices for planning.';
-$string['consentrevoke'] = 'You can revoke this connection at any time under Profile → My Coursepilot connections.';
+$string['consentrevoke'] = 'You can revoke this connection at any time from your user menu → Preferences → Coursepilot → My Coursepilot connections.';
 
-// Location choice at connection time (Issue #446, display-only since Issue #494).
+// Location choice at connection time (Issue #446, display-only since Issue #494,
+// linked again since Issue #563 with a round trip back to the connection).
 $string['consentlocationheading'] = 'Where your Coursepilot area lives';
-$string['consentlocationintro'] = 'Coursepilot stores your journals, plans and materials at the locations named below.';
+$string['consentlocationintro'] = 'Your Coursepilot area lives in Moodle by default. You can move it to an external store instead — that is optional and can always be changed again later.';
 $string['consentlocationkontextbereichcurrent'] = 'Journals and plans: {$a}';
 $string['consentlocationmaterialbestandcurrent'] = 'Material files: {$a}';
 $string['consentlocationchangelink'] = 'Change location';
+$string['consentlocationsetuplink'] = 'Set location now';
+$string['ortswahloauthflowinfo'] = 'You are setting up the connection to {$a}. Finishing here returns you to the consent page.';
+$string['ortswahloauthflowback'] = 'Back to the consent page without changing anything';
 
 // External location privacy notice (Issue #500, ADR 0021, Spec #486 §11) -
 // same wording everywhere a teacher sees it before or during an external

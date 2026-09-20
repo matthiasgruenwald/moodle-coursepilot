@@ -128,13 +128,19 @@ echo html_writer::end_tag('ul');
 // Ort gilt und was nicht - dieselbe Formel wie auf "Meine Verbindungen" und
 // bei der Einstellung "personaldatahosts".
 echo html_writer::div(get_string('externallocationprivacyinfo', 'local_coursepilot'), 'small text-muted mb-2');
-// Kein Ortswahl-Link hier (Issue #558): die Ortswahlseite kennt die
-// OAuth-Anfrageparameter (client_id, redirect_uri, code_challenge, state)
-// nicht und fuehrt nach dem Speichern nicht zurueck - ein Klick hier fuehrt
-// in eine Sackgasse, aus der nur ein neuer Verbindungsversuch herausfuehrt.
-// OAuth-Autorisierung ist der erste Schritt; der Ort laesst sich jederzeit
-// danach unter "Meine Coursepilot-Verbindungen" aendern ({@see connections.php}),
-// siehe auch $string['consentrevoke'] oben.
+// Ortswahl-Link mit Ruecksprung (Issue #563, loest die mit #558 dokumentierte
+// Sackgasse auf): die OAuth-Anfrageparameter reisen als Querystring zur
+// Ortswahlseite mit; die Ortswahlseite validiert sie erneut selbst
+// ({@see ortswahl_lib} kennt sie nicht, nur oauth_lib) und fuehrt nach dem
+// Abschliessen genau hierher zurueck, statt zu Claude weiterzuleiten.
+$ortswahlurl = new moodle_url('/local/coursepilot/ortswahl.php', array_merge($params, [
+    'state' => $state,
+    'oauthflow' => 1,
+]));
+echo html_writer::div(
+    html_writer::link($ortswahlurl, get_string('consentlocationsetuplink', 'local_coursepilot'), ['class' => 'btn btn-outline-secondary btn-sm']),
+    'mb-2'
+);
 echo html_writer::empty_tag('br');
 
 $formurl = new moodle_url('/local/coursepilot/oauth/authorize.php');

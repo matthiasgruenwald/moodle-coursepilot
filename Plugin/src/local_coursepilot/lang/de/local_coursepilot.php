@@ -300,14 +300,18 @@ $string['consenttransfer'] = '<strong>Übertragung an den KI-Anbieter:</strong> 
 $string['consentpersonaldataoff'] = 'Diese Moodle-Instanz überträgt <strong>keine</strong> Kontextdateien, die als personenbezogen markiert sind (personenbezug: true). Solche Dateien werden Ihnen als gesperrt angezeigt.';
 $string['consentpersonaldataon'] = 'Diese Moodle-Instanz überträgt <strong>auch</strong> Kontextdateien, die als personenbezogen markiert sind (personenbezug: true) — etwa Lerngruppenprofile mit Schülernamen. Ihre Schule hat das ausdrücklich freigegeben.';
 $string['consentabbreviate'] = 'Welche personenbezogenen Angaben Sie in Kontextdateien ablegen dürfen, richtet sich nach den Vorgaben Ihrer Schule und den Bestimmungen Ihres Landesdatenschutzes. Coursepilot prüft das nicht. Wo es für die Planung ausreicht, verwenden Sie Kürzel statt Namen.';
-$string['consentrevoke'] = 'Sie können diese Verbindung jederzeit unter Profil → Meine Coursepilot-Verbindungen widerrufen.';
+$string['consentrevoke'] = 'Sie können diese Verbindung jederzeit über Ihr Nutzermenü → Einstellungen → Coursepilot → Meine Coursepilot-Verbindungen widerrufen.';
 
-// Ortswahl beim Verbindungsaufbau (Issue #446, seit Issue #494 nur noch Anzeige).
+// Ortswahl beim Verbindungsaufbau (Issue #446, seit Issue #494 nur noch Anzeige,
+// seit Issue #563 wieder mit Link, der auf die Verbindung zurueckfuehrt).
 $string['consentlocationheading'] = 'Wo Ihr Coursepilot-Bereich liegt';
-$string['consentlocationintro'] = 'Coursepilot legt Ihre Journale, Pläne und Materialien an den unten genannten Orten ab.';
+$string['consentlocationintro'] = 'Ihr Coursepilot-Bereich liegt standardmäßig in Moodle. Sie können ihn auch auf einen externen Speicher verlegen — das ist optional und lässt sich jederzeit später wieder ändern.';
 $string['consentlocationkontextbereichcurrent'] = 'Journale und Pläne: {$a}';
 $string['consentlocationmaterialbestandcurrent'] = 'Materialdateien: {$a}';
 $string['consentlocationchangelink'] = 'Ort ändern';
+$string['consentlocationsetuplink'] = 'Ablageort jetzt einstellen';
+$string['ortswahloauthflowinfo'] = 'Sie richten gerade die Verbindung zu {$a} ein. Nach dem Abschließen geht es zurück zur Zustimmungsseite.';
+$string['ortswahloauthflowback'] = 'Zurück zur Zustimmungsseite, ohne etwas zu ändern';
 
 // Datenschutz-Informationstext zum externen Ablageort (Issue #500, ADR 0021,
 // Spec #486 §11) - dieselbe Formel an allen Stellen, die eine Lehrkraft vor
