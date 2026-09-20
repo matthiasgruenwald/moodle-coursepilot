@@ -110,6 +110,7 @@ $string['ortswahltabmaterialbestand'] = 'Materialbestand';
 $string['ortswahlkontexthint'] = 'Empfehlung: ein eigener Ordner nur für Coursepilot — nicht mitten in bereits genutzten Unterlagen.';
 $string['ortswahlkeepmoodle'] = 'In Moodle lassen';
 $string['ortswahlchooseinstance'] = 'Verbindung wählen';
+$string['ortswahlselected'] = 'Ausgewählt';
 $string['ortswahlselectfolder'] = 'Diesen Ordner wählen';
 $string['ortswahlbreadcrumbroot'] = 'Wurzel';
 $string['ortswahlloading'] = 'Wird geladen …';
