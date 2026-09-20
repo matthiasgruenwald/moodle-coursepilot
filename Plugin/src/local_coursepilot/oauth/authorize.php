@@ -34,7 +34,6 @@ require(__DIR__ . '/../../../config.php');
 
 use local_coursepilot\oauth_lib;
 use local_coursepilot\ortswahl_lib;
-use local_coursepilot\webdav\webdav_setup_steps;
 
 require_login(null, false);
 
@@ -129,12 +128,13 @@ echo html_writer::end_tag('ul');
 // Ort gilt und was nicht - dieselbe Formel wie auf "Meine Verbindungen" und
 // bei der Einstellung "personaldatahosts".
 echo html_writer::div(get_string('externallocationprivacyinfo', 'local_coursepilot'), 'small text-muted mb-2');
-echo html_writer::link(
-    new moodle_url(webdav_setup_steps::ORTSWAHL_PAGE),
-    get_string('consentlocationchangelink', 'local_coursepilot'),
-    ['class' => 'btn btn-link p-0']
-);
-echo html_writer::empty_tag('br');
+// Kein Ortswahl-Link hier (Issue #558): die Ortswahlseite kennt die
+// OAuth-Anfrageparameter (client_id, redirect_uri, code_challenge, state)
+// nicht und fuehrt nach dem Speichern nicht zurueck - ein Klick hier fuehrt
+// in eine Sackgasse, aus der nur ein neuer Verbindungsversuch herausfuehrt.
+// OAuth-Autorisierung ist der erste Schritt; der Ort laesst sich jederzeit
+// danach unter "Meine Coursepilot-Verbindungen" aendern ({@see connections.php}),
+// siehe auch $string['consentrevoke'] oben.
 echo html_writer::empty_tag('br');
 
 $formurl = new moodle_url('/local/coursepilot/oauth/authorize.php');
