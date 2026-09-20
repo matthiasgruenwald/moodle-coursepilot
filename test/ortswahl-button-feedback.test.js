@@ -1,16 +1,16 @@
 'use strict';
 
 /**
- * Issue #559: "Ordner anlegen" muss state.lastResult sofort auf ein leeres
- * Ergebnis fuer den neuen Pfad zuruecksetzen, sonst zeigt "Ordner auswaehlen"
- * direkt danach die Uebergabe-Warnung (Issue #497) fuer den *alten*
- * Browse-Stand der Elternebene an, statt den (leeren) neuen Ordner zu sehen.
+ * Issue #562: "In Moodle lassen" gab bisher kein sichtbares Feedback nach
+ * dem Klick - "Verbindung waehlen" bekommt eins ueber das sich oeffnende
+ * Fenster, "In Moodle lassen" veraenderte visuell nichts (die Auswahl
+ * wurde erst am fernen Fortschrittsband sichtbar). Der Knopf selbst muss
+ * jetzt sofort einen "ausgewaehlt"-Zustand zeigen.
  *
- * ortswahl.js ist ein reines Browser-Skript ohne Module-Exports (IIFE gegen
- * document/window/fetch). Es gibt in diesem Plugin keine jsdom-Abhaengigkeit
- * (siehe package.json) - dieser Test baut daher den denkbar kleinsten
- * DOM/fetch-Stub, der nur die Pfade abdeckt, die das Skript tatsaechlich
- * anfasst (kein allgemeines DOM, kein Rendering-Tree).
+ * Gleicher minimaler DOM/fetch-Stub wie
+ * ortswahl-createfolder-lastresult.test.js (kein jsdom im Plugin), hier um
+ * classList/querySelector/remove() erweitert, weil das Feature genau die
+ * anfasst.
  */
 
 const { test } = require('node:test');
@@ -35,6 +35,7 @@ function makeElement(id) {
     title: '',
     _attrs: {},
     _listeners: {},
+    _children: children,
     _removed: false,
     addEventListener: function (type, fn) {
       el._listeners[type] = el._listeners[type] || [];
@@ -51,9 +52,6 @@ function makeElement(id) {
     querySelectorAll: function () {
       return [];
     },
-    // Issue #562: applySelection() markiert jetzt den Ortswahl-Knopf selbst
-    // (classList/Badge) - dieser Stub braucht dafuer nur die eine Abfrage,
-    // die markButtonSelected() tatsaechlich stellt.
     querySelector: function (selector) {
       if (selector === '.coursepilot-ortswahl-selected-badge') {
         return children.filter(function (c) {
@@ -89,10 +87,6 @@ function makeElement(id) {
   return el;
 }
 
-// Baut eine frische DOM/fetch-Umgebung und laedt ortswahl.js darin neu (das
-// Skript ist eine bei jedem require() sofort ausgefuehrte IIFE - eigener
-// Zustand pro Test braucht daher einen frischen vm-Kontext statt
-// require()+Cache-Invalidierung).
 function loadScript(config, fetchResponses) {
   var elements = {};
   ['coursepilot-ortswahl-progress', 'coursepilot-ortswahl-overlaplock', 'coursepilot-ortswahl-finish',
@@ -118,13 +112,22 @@ function loadScript(config, fetchResponses) {
   var pickerButtons = ['kontextbereich', 'materialbestand'].map(function (target) {
     var btn = makeElement('open-picker-' + target);
     btn._attrs['data-target'] = target;
+    btn._attrs['data-action'] = 'open-picker';
     return btn;
   });
   var keepMoodleButtons = ['kontextbereich', 'materialbestand'].map(function (target) {
     var btn = makeElement('keep-moodle-' + target);
     btn._attrs['data-target'] = target;
+    btn._attrs['data-action'] = 'keep-moodle';
     return btn;
   });
+
+  function buttonFor(action, target) {
+    var list = action === 'open-picker' ? pickerButtons : keepMoodleButtons;
+    return list.filter(function (btn) {
+      return btn._attrs['data-target'] === target;
+    })[0] || null;
+  }
 
   var fakeDocument = {
     getElementById: function (id) {
@@ -138,6 +141,13 @@ function loadScript(config, fetchResponses) {
         return keepMoodleButtons;
       }
       return [];
+    },
+    querySelector: function (selector) {
+      var match = selector.match(/\[data-action="([^"]+)"\]\[data-target="([^"]+)"\]/);
+      if (!match) {
+        return null;
+      }
+      return buttonFor(match[1], match[2]);
     },
     createElement: function () {
       return makeElement(null);
@@ -169,7 +179,7 @@ function loadScript(config, fetchResponses) {
   vm.createContext(sandbox);
   vm.runInContext(SCRIPT_SOURCE, sandbox, { filename: SCRIPT_PATH });
 
-  return { elements: elements, pickerButtons: pickerButtons };
+  return { elements: elements, pickerButtons: pickerButtons, keepMoodleButtons: keepMoodleButtons };
 }
 
 function baseConfig() {
@@ -214,40 +224,44 @@ async function flushPromises() {
   });
 }
 
-test('Ordner anlegen setzt state.lastResult sofort auf ein leeres Ergebnis (Kriterium 1)', async function () {
-  var parentBrowseResult = { ok: true, path: '', folders: [{ name: 'material' }], selectable: true, reason: '', entrycount: 1, entrynames: ['material'] };
-  var ctx = loadScript(baseConfig(), [parentBrowseResult]);
+test('"In Moodle lassen" markiert den eigenen Knopf sofort als ausgewaehlt', function () {
+  var ctx = loadScript(baseConfig(), []);
+  var btn = ctx.keepMoodleButtons[0];
 
-  // Fenster fuer "kontextbereich" oeffnen -> browse() der Elternebene laeuft.
-  ctx.pickerButtons[0].dispatch('click');
-  await flushPromises();
+  btn.dispatch('click');
 
-  // Neuen Unterordner anlegen.
-  ctx.elements['coursepilot-ortswahl-newfolder'].value = 'Kontext';
-  ctx.elements['coursepilot-ortswahl-createfolder'].dispatch('click');
-
-  // "Ordner auswaehlen" direkt danach darf KEINE Uebergabe-Warnung anzeigen
-  // (Kriterium 2): das confirm-Modal darf nicht sichtbar geschaltet werden,
-  // und die Auswahl muss sofort (unbestaetigt) uebernommen werden.
-  ctx.elements['coursepilot-ortswahl-confirmfolder'].dispatch('click');
-
-  assert.notStrictEqual(ctx.elements['coursepilot-ortswahl-confirm-modal'].style.display, 'block');
-  assert.strictEqual(ctx.elements['coursepilot-ortswahl-kontextbereich_path'].value, 'Kontext');
-  assert.strictEqual(ctx.elements['coursepilot-ortswahl-kontextbereich_confirmed'].value, '');
+  assert.match(btn.className, /\bactive\b/);
+  var badge = btn.querySelector('.coursepilot-ortswahl-selected-badge');
+  assert.ok(badge, 'Badge muss nach dem Klick vorhanden sein.');
+  assert.strictEqual(badge.textContent, 'Ausgewaehlt');
 });
 
-test('Ordner auswaehlen mit echtem Elternebenen-Inhalt zeigt weiterhin die Uebergabe-Warnung (Regression, Kriterium 3)', async function () {
-  var parentBrowseResult = { ok: true, path: '', folders: [{ name: 'material' }], selectable: true, reason: '', entrycount: 1, entrynames: ['material'] };
-  var ctx = loadScript(baseConfig(), [parentBrowseResult]);
+test('"In Moodle lassen" laesst den Verbindungs-Knopf unmarkiert', function () {
+  var ctx = loadScript(baseConfig(), []);
+  ctx.keepMoodleButtons[0].dispatch('click');
+
+  var pickerBtn = ctx.pickerButtons[0];
+  assert.doesNotMatch(pickerBtn.className, /\bactive\b/);
+  assert.strictEqual(pickerBtn.querySelector('.coursepilot-ortswahl-selected-badge'), null);
+});
+
+test('Ein externer Ordner markiert den Verbindungs-Knopf und entfernt die Markierung von "In Moodle lassen"', async function () {
+  var browseResult = { ok: true, path: '', folders: [], selectable: true, reason: '', entrycount: 0, entrynames: [] };
+  var ctx = loadScript(baseConfig(), [browseResult]);
+
+  // Zuerst "In Moodle lassen" - markiert, dann per externer Ordnerwahl
+  // wieder umentschieden (Kriterium: die Markierung folgt der aktuellen
+  // Auswahl, nicht dem zuletzt geklickten Knopf).
+  ctx.keepMoodleButtons[0].dispatch('click');
 
   ctx.pickerButtons[0].dispatch('click');
   await flushPromises();
-
-  // Kein "Ordner anlegen" - direkt "Ordner auswaehlen" auf der Elternebene
-  // mit echtem, von browse() geliefertem Inhalt.
   ctx.elements['coursepilot-ortswahl-confirmfolder'].dispatch('click');
 
-  assert.strictEqual(ctx.elements['coursepilot-ortswahl-confirm-modal'].style.display, 'block');
-  // Die Auswahl darf noch NICHT uebernommen sein - erst nach Bestaetigung.
-  assert.strictEqual(ctx.elements['coursepilot-ortswahl-kontextbereich_path'].value, '');
+  var keepBtn = ctx.keepMoodleButtons[0];
+  var pickerBtn = ctx.pickerButtons[0];
+  assert.doesNotMatch(keepBtn.className, /\bactive\b/, '"In Moodle lassen" darf nach dem Ortswechsel nicht mehr markiert sein.');
+  assert.strictEqual(keepBtn.querySelector('.coursepilot-ortswahl-selected-badge'), null);
+  assert.match(pickerBtn.className, /\bactive\b/);
+  assert.ok(pickerBtn.querySelector('.coursepilot-ortswahl-selected-badge'));
 });

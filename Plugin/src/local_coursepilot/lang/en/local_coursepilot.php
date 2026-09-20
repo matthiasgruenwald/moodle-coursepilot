@@ -109,6 +109,7 @@ $string['ortswahltabmaterialbestand'] = 'Material stock';
 $string['ortswahlkontexthint'] = 'Recommendation: a dedicated folder just for Coursepilot — not mixed in with documents you already use.';
 $string['ortswahlkeepmoodle'] = 'Leave in Moodle';
 $string['ortswahlchooseinstance'] = 'Choose a connection';
+$string['ortswahlselected'] = 'Selected';
 $string['ortswahlselectfolder'] = 'Choose this folder';
 $string['ortswahlbreadcrumbroot'] = 'Root';
 $string['ortswahlloading'] = 'Loading …';

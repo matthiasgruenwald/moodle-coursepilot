@@ -57,6 +57,47 @@
         materialbestand: initialSelection('materialbestand')
     };
 
+    // Sichtbares Feedback direkt am Knopf (Issue #562): "Verbindung waehlen"
+    // bekommt ueber das sich oeffnende Fenster ein sofortiges Echo, "In
+    // Moodle lassen" bisher keins - der Klick wirkte wie ein nicht
+    // reagierender Knopf, sichtbar wurde die Wahl erst am fernen
+    // Fortschrittsband. Baut aus den beiden Knopf-Listen eine
+    // Ziel->Knopf-Zuordnung; muss vor der Vorbelegung unten stehen, die
+    // ueber applySelection() schon beim Laden einen bereits gewaehlten Ort
+    // anzeigt.
+    function buttonMap(buttons) {
+        var map = {};
+        buttons.forEach(function (btn) {
+            map[btn.getAttribute('data-target')] = btn;
+        });
+        return map;
+    }
+
+    var keepMoodleButtons = buttonMap(document.querySelectorAll('[data-action="keep-moodle"]'));
+    var openPickerButtons = buttonMap(document.querySelectorAll('[data-action="open-picker"]'));
+
+    function markButtonSelected(btn, isSelected) {
+        if (!btn) {
+            return;
+        }
+        btn.classList.toggle('active', isSelected);
+        var badge = btn.querySelector('.coursepilot-ortswahl-selected-badge');
+        if (isSelected && !badge) {
+            badge = document.createElement('span');
+            badge.className = 'coursepilot-ortswahl-selected-badge badge bg-success ms-2';
+            badge.textContent = config.strings.selected;
+            btn.appendChild(badge);
+        } else if (!isSelected && badge) {
+            badge.remove();
+        }
+    }
+
+    function renderButtonSelection(target) {
+        var type = selections[target].type;
+        markButtonSelected(keepMoodleButtons[target], type === 'moodle');
+        markButtonSelected(openPickerButtons[target], type === 'extern');
+    }
+
     // Die versteckten Formularfelder tragen erst nach einer Interaktion
     // einen Wert (applySelection()) - ein bereits gewaehltes Ziel muss aber
     // auch ohne erneute Interaktion mitgeschickt werden, sonst verwirft das
@@ -164,13 +205,13 @@
         el('coursepilot-ortswahl-' + target + '_path').value = selection.path || '';
         el('coursepilot-ortswahl-' + target + '_confirmed').value = selection.confirmed ? '1' : '';
         renderProgress();
+        renderButtonSelection(target);
     }
 
-    // --- "In Moodle lassen" ----------------------------------------------
+    // --- "In Moodle lassen" ------------------------------------------------
 
-    document.querySelectorAll('[data-action="keep-moodle"]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var target = btn.getAttribute('data-target');
+    Object.keys(keepMoodleButtons).forEach(function (target) {
+        keepMoodleButtons[target].addEventListener('click', function () {
             applySelection(target, { type: 'moodle', path: config.targets[target].pfad, display: config.targets[target].display });
         });
     });
@@ -224,9 +265,9 @@
         }
     }
 
-    document.querySelectorAll('[data-action="open-picker"]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            openModal(btn.getAttribute('data-target'));
+    Object.keys(openPickerButtons).forEach(function (target) {
+        openPickerButtons[target].addEventListener('click', function () {
+            openModal(target);
         });
     });
 

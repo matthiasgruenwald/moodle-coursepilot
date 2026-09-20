@@ -106,6 +106,7 @@ function local_coursepilot_ortswahl_editor_strings(): array {
         'kontexthint' => get_string('ortswahlkontexthint', 'local_coursepilot'),
         'keepmoodle' => get_string('ortswahlkeepmoodle', 'local_coursepilot'),
         'chooseinstance' => get_string('ortswahlchooseinstance', 'local_coursepilot'),
+        'selected' => get_string('ortswahlselected', 'local_coursepilot'),
         'selectfolder' => get_string('ortswahlselectfolder', 'local_coursepilot'),
         'breadcrumbroot' => get_string('ortswahlbreadcrumbroot', 'local_coursepilot'),
         'loading' => get_string('ortswahlloading', 'local_coursepilot'),
