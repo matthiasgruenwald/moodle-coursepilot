@@ -896,17 +896,15 @@ final class tool_registry {
     }
 
     /**
-     * MCP-Toolname => inputSchema-Properties, nur wo vorhanden
-     * (dispatcher::TOOL_SCHEMAS).
+     * MCP-Toolname => aus execute_parameters() abgeleitetes inputSchema.
      *
      * @return array<string, array{properties: array, required?: array}>
      */
     public static function schemas(): array {
         $out = [];
         foreach (self::all() as $name => $tool) {
-            if ($tool['schema'] !== null) {
-                $out[$name] = $tool['schema'];
-            }
+            $classname = $tool['classname'];
+            $out[$name] = external_schema_converter::from_parameters($classname::execute_parameters());
         }
         return $out;
     }

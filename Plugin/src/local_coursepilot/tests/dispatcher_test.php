@@ -219,39 +219,27 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
-     * #342: die fuenf neuen Kursstand-Lesewerkzeuge sind gelistet und tragen
-     * ein echtes inputSchema statt eines leeren.
+     * Jede MCP-Schemadeklaration ist die von Moodle validierte
+     * execute_parameters()-Beschreibung, nicht eine gepflegte Stichprobe.
      */
-    public function test_tools_list_includes_the_five_new_read_tools_with_schemas(): void {
+    public function test_tools_list_schemas_match_external_parameters(): void {
         $this->resetAfterTest();
         [, $token] = $this->create_authenticated_user();
 
         $response = dispatcher::handle(['id' => 1, 'method' => 'tools/list'], $token, $this->headers());
         $tools = [];
         foreach ($response['body']['result']['tools'] as $tool) {
-            $tools[$tool['name']] = $tool;
+            $tools[$tool['name']] = $tool['inputSchema'];
         }
 
-        $this->assertArrayHasKey('coursepilot_get_modules', $tools);
-        $this->assertContains('courseid', $tools['coursepilot_get_modules']['inputSchema']['required']);
-
-        $this->assertArrayHasKey('coursepilot_get_sections', $tools);
-        $this->assertContains('courseid', $tools['coursepilot_get_sections']['inputSchema']['required']);
-
-        $this->assertArrayHasKey('coursepilot_get_question_categories', $tools);
-        $this->assertSame(
-            ['courseid', 'questionbankid'],
-            $tools['coursepilot_get_question_categories']['inputSchema']['required']
-        );
-
-        $this->assertArrayHasKey('coursepilot_get_question', $tools);
-        $this->assertContains('categoryid', $tools['coursepilot_get_question']['inputSchema']['required']);
-
-        $this->assertArrayHasKey('coursepilot_plan_quiz_cleanup', $tools);
-        $this->assertSame(
-            ['cmid', 'keep_questionbankentryids'],
-            $tools['coursepilot_plan_quiz_cleanup']['inputSchema']['required']
-        );
+        $functions = tool_registry::service_functions();
+        foreach (tool_registry::allowed_tools() as $name => $function) {
+            $classname = $functions[$function]['classname'];
+            $expected = ['type' => 'object']
+                + external_schema_converter::from_parameters($classname::execute_parameters())
+                + ['additionalProperties' => false];
+            $this->assertEquals($expected, $tools[$name], "{$name}: tools/list-Schema weicht ab.");
+        }
     }
 
     /**
@@ -270,60 +258,6 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertSame('complete', $response['body']['result']['resultType']);
         $this->assertIsInt($response['body']['result']['ttlMs']);
         $this->assertSame('private', $response['body']['result']['cacheScope']);
-    }
-
-    /**
-     * tools/list listet das neue Katalog-Werkzeug mit seinem inputSchema -
-     * "gelistet und aufrufbar dieselbe Menge" (#341).
-     */
-    public function test_tools_list_includes_course_catalog_with_courseid_schema(): void {
-        $this->resetAfterTest();
-        [, $token] = $this->create_authenticated_user();
-
-        $response = dispatcher::handle(['id' => 1, 'method' => 'tools/list'], $token, $this->headers());
-
-        $tools = $response['body']['result']['tools'];
-        $catalogtool = null;
-        foreach ($tools as $tool) {
-            if ($tool['name'] === 'coursepilot_get_course_catalog') {
-                $catalogtool = $tool;
-            }
-        }
-        $this->assertNotNull($catalogtool, 'coursepilot_get_course_catalog fehlt in tools/list.');
-        $this->assertArrayHasKey('courseid', $catalogtool['inputSchema']['properties']);
-        $this->assertContains('courseid', $catalogtool['inputSchema']['required']);
-    }
-
-    /**
-     * Issue #508: jedes Werkzeug, das den Parameter "ort" in seinem
-     * tools/list-Schema zeigt, bezieht Wertebereich und Beschreibung aus
-     * {@see material_files::ort_schema()} - eine Quelle statt je Werkzeug
-     * einer eigenen, auseinanderlaufenden Kopie.
-     */
-    public function test_tools_list_ort_parameter_uses_shared_definition_everywhere(): void {
-        $this->resetAfterTest();
-        [, $token] = $this->create_authenticated_user();
-
-        $response = dispatcher::handle(['id' => 1, 'method' => 'tools/list'], $token, $this->headers());
-        $tools = $response['body']['result']['tools'];
-
-        $toolswithort = [];
-        foreach ($tools as $tool) {
-            $properties = $tool['inputSchema']['properties'];
-            $ort = is_array($properties) ? ($properties['ort'] ?? null) : null;
-            if ($ort !== null) {
-                $toolswithort[$tool['name']] = $ort;
-                $this->assertSame(
-                    material_files::ort_schema(),
-                    $ort,
-                    "Werkzeug {$tool['name']} weicht von material_files::ort_schema() ab."
-                );
-            }
-        }
-
-        // Beleg, dass der Test nicht mangels Treffern grün ist (mind. die drei
-        // lesenden Materialwerkzeuge zeigen "ort" in tools/list).
-        $this->assertGreaterThanOrEqual(3, count($toolswithort));
     }
 
     /**
