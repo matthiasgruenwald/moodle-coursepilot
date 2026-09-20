@@ -18,25 +18,19 @@ function read(filePath) {
 // Seit #378 gibt es eine einzige Werkzeug-Registrierung
 // (classes/tool_registry.php); dispatcher.php, db/services.php und
 // privacy_surface.php leiten ihre Listen daraus ab statt eigene Kopien zu
-// fuehren. Extrahiert den TOOLS-Eintrag eines Werkzeugs (8-Leerzeichen-
-// Einrueckung fuer Schluessel und schliessende Klammer).
+// fuehren. Extrahiert den schlanken TOOLS-Eintrag eines Werkzeugs.
 function extractRegistryEntry(source, toolName) {
-  const re = new RegExp(`'${toolName}'\\s*=>\\s*\\[([\\s\\S]*?)\\n {8}\\],`);
+  const re = new RegExp(`'${toolName}'\\s*=>\\s*\\[([^\\]]*)\\]`);
   const match = source.match(re);
   assert.ok(match, `Registry-Eintrag fuer ${toolName} nicht gefunden`);
   return match[1];
 }
 
-// Extracts the concatenated PHP string literal assigned to a
-// tool_registry TOOLS key, e.g. 'key' => 'a' . 'b' . 'c'.
-function extractToolField(entry, fieldName) {
-  const re = new RegExp(
-    `'${fieldName}'\\s*=>\\s*((?:'(?:[^'\\\\]|\\\\.)*'\\s*(?:\\.\\s*)?)+)`
-  );
-  const match = entry.match(re);
-  assert.ok(match, `Feld ${fieldName} nicht gefunden`);
-  const parts = match[1].match(/'(?:[^'\\]|\\.)*'/g);
-  return parts.map((p) => p.slice(1, -1)).join('');
+function extractLanguageString(source, key) {
+  const re = new RegExp(`\\$string\\['${key}'\\]\\s*=\\s*'((?:[^'\\\\]|\\\\.)*)';`);
+  const match = source.match(re);
+  assert.ok(match, `Sprachstring ${key} nicht gefunden`);
+  return match[1];
 }
 
 test('coursepilot_get_course_catalog is a self-contained port with the same contract fields as the local tool, no cross-plugin dependency', () => {
@@ -90,9 +84,8 @@ test('coursepilot_get_course_catalog is registered as a read-only tool and Moodl
   const registry = read(TOOL_REGISTRY_PATH);
   const entry = extractRegistryEntry(registry, 'coursepilot_get_course_catalog');
 
-  assert.match(entry, /'function'\s*=>\s*'local_coursepilot_get_course_catalog'/);
   assert.match(entry, /'classname'\s*=>\s*'local_coursepilot\\external\\get_course_catalog'/);
-  assert.doesNotMatch(entry, /'write'\s*=>\s*true/);
+  assert.match(entry, /'descriptionkey'\s*=>\s*'tool_get_course_catalog'/);
 
   // privacy_surface und db/services.php muessen tatsaechlich aus der
   // Registry ableiten (#378), nicht eigene Kopien fuehren - sonst kann die
@@ -106,27 +99,24 @@ test('coursepilot_get_course_catalog is registered as a read-only tool and Moodl
 });
 
 test('coursepilot_get_course_catalog tool description documents source, detail levels, masking, and explicit grouping', () => {
-  const registry = read(TOOL_REGISTRY_PATH);
-  const entry = extractRegistryEntry(registry, 'coursepilot_get_course_catalog');
-  const description = extractToolField(entry, 'description');
+  const language = read(path.join(repoRoot, 'Plugin', 'src', 'local_coursepilot', 'lang', 'en', 'local_coursepilot.php'));
+  const description = extractLanguageString(language, 'tool_get_course_catalog');
 
-  assert.match(description, /aus Moodle gelesen/);
+  assert.match(description, /read from Moodle/);
   assert.match(description, /full/);
   assert.match(description, /compact/);
-  assert.match(description, /maskiert/);
-  assert.match(description, /Gruppennamen/);
-  // Echte Umlaute in lehrkraftsichtbaren Texten (#521), nicht ae/oe/ue.
-  assert.match(description, /ausdrücklich/);
+  assert.match(description, /masked/);
+  assert.match(description, /Group names/);
+  assert.match(description, /explicitly/);
 
   const byteLength = Buffer.byteLength(description, 'utf8');
   assert.ok(byteLength < 2048, `Beschreibung ist ${byteLength} Bytes lang, muss unter 2 KB bleiben`);
 });
 
 test('tools() builds a real inputSchema for coursepilot_get_course_catalog instead of an empty one', () => {
-  const registry = read(TOOL_REGISTRY_PATH);
-  const entry = extractRegistryEntry(registry, 'coursepilot_get_course_catalog');
+  const source = read(NATIVE_CATALOG_PATH);
 
-  assert.match(entry, /'schema'\s*=>\s*\[/);
-  assert.match(entry, /'courseid'\s*=>\s*\['type'\s*=>\s*'number'/);
-  assert.match(entry, /'required'\s*=>\s*\['courseid'\]/);
+  assert.match(source, /'courseid'\s*=>\s*new external_value\(PARAM_INT/);
+  assert.match(source, /'sectionnum'\s*=>\s*new external_value\(PARAM_INT/);
+  assert.match(source, /'detail'\s*=>\s*new external_value\(PARAM_ALPHA/);
 });

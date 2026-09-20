@@ -173,7 +173,7 @@ final class dispatcher_test extends \advanced_testcase {
 
     /**
      * #451, Akzeptanzkriterium: die Werkzeugbeschreibung von
-     * coursepilot_list_skills traegt denselben Hinweis wie 'instructions' -
+     * coursepilot_list_skills traegt den englischen Hinweis wie 'instructions' -
      * fuer Clients, die instructions nicht anzeigen.
      */
     public function test_list_skills_tool_description_carries_the_same_hint(): void {
@@ -184,7 +184,7 @@ final class dispatcher_test extends \advanced_testcase {
 
         $tools = array_column($response['body']['result']['tools'], 'description', 'name');
         $this->assertStringContainsString(
-            dispatcher::HANDSHAKE_INSTRUCTIONS,
+            'Before planning or writing, call coursepilot_list_skills first.',
             $tools['coursepilot_list_skills']
         );
     }

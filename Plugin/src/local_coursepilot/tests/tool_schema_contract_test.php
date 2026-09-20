@@ -31,6 +31,37 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(external_schema_converter::class)]
 final class tool_schema_contract_test extends \advanced_testcase {
 
+    public function test_tool_registration_contains_no_literal_descriptions_or_schema(): void {
+        $registry = new \ReflectionClass(tool_registry::class);
+        $tools = $registry->getReflectionConstant('TOOLS')->getValue();
+
+        foreach ($tools as $name => $tool) {
+            $this->assertSame(
+                ['classname', 'descriptionkey'],
+                array_keys($tool),
+                "{$name}: Registrierung darf nur Klasse und Beschreibungsschluessel enthalten."
+            );
+        }
+
+        foreach (tool_registry::descriptions() as $name => $description) {
+            $this->assertNotSame('', $description, "{$name}: fehlende Sprachdatei-Beschreibung.");
+        }
+    }
+
+    public function test_all_public_tool_surfaces_are_derived_from_the_registration(): void {
+        $tools = tool_registry::allowed_tools();
+        $descriptions = tool_registry::descriptions();
+        $functions = tool_registry::service_functions();
+
+        $this->assertSame($tools, privacy_surface::allowed_tools());
+        $this->assertSame(array_values($tools), tool_registry::service_function_names());
+        $this->assertSame(array_values($tools), array_keys($functions));
+
+        foreach ($tools as $name => $function) {
+            $this->assertSame($descriptions[$name], $functions[$function]['description']);
+        }
+    }
+
     public function test_converter_exposes_required_defaults_and_integer_types(): void {
         $parameters = new external_function_parameters([
             'requiredinteger' => new external_value(PARAM_INT, 'Required integer'),
