@@ -460,6 +460,12 @@
         state.path = path;
         renderBreadcrumb();
         renderFolders([]);
+        // Ein gerade angelegter Ordner ist per Definition leer (Spec §5) -
+        // ohne dies bliebe state.lastResult auf dem letzten echten
+        // browse()-Ergebnis der Elternebene stehen und "Ordner auswaehlen"
+        // wuerde faelschlich deren Inhalt fuer die Uebergabe-Warnung
+        // heranziehen (Issue #559).
+        state.lastResult = { path: path, folders: [], selectable: true, reason: '', entrycount: 0, entrynames: [] };
     });
 
     // --- Ordner waehlen, mit Uebergabe-Bestaetigung eines gefuellten Ordners
