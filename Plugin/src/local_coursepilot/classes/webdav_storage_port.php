@@ -100,11 +100,18 @@ final class webdav_storage_port implements storage_port {
         }
 
         $content = $client->get($fileurl);
+        $mimetype = $entry['mimetype'];
+        if ($mimetype === 'document/unknown') {
+            // Ortsneutralitaet (Issue #560): Moodle-Core sniffft bei
+            // unbekannter Endung ebenfalls den Inhalt. Kein zusaetzlicher
+            // GET hier - der Inhalt liegt bereits vor.
+            $mimetype = webdav_client::sniff_mimetype_from_content($content) ?? $mimetype;
+        }
         return [
             'content' => $content,
             'checksum' => pointer_reader::external_checkvalue($entry['etag'] ?? null, $entry['timemodified'] ?? 0),
             'size' => $entry['size'],
-            'mimetype' => $entry['mimetype'],
+            'mimetype' => $mimetype,
             'timemodified' => $entry['timemodified'],
         ];
     }

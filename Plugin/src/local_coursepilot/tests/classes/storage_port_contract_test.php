@@ -197,6 +197,32 @@ abstract class storage_port_contract_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Ortsneutralitaets-Pruefung (Issue #560): derselbe Markdown-Inhalt
+     * liefert beim Lesen ueber jeden Adapter denselben `mimetype`-Wert -
+     * nicht nur den Schluessel (das prueft schon
+     * {@see test_list_reflects_written_files_with_the_same_field_set()}).
+     * `.md` hat keinen Eintrag in Moodles Endungstabelle; ohne Inhalts-
+     * Sniffing waere das Ergebnis vom Ort abhaengig (`text/plain` bei Moodle
+     * Private Files, `document/unknown` bei WebDAV).
+     *
+     * Bewusst nur fuer `read()`, nicht `list()`: Moodle Private Files
+     * sniffft beim Auflisten kostenlos aus dem bereits beim Anlegen
+     * ermittelten `stored_file`-Mimetyp, WebDAV muesste dafuer pro Datei mit
+     * unbekannter Endung extra einen GET machen - das wuerde den
+     * bestehenden Zero-GET-Vertrag des Auflistens verletzen (siehe
+     * Kommentar an {@see \local_coursepilot\webdav\webdav_client::parse_multistatus()}).
+     * `list()` bleibt fuer WebDAV daher bei `document/unknown`.
+     */
+    public function test_mimetype_is_location_independent_for_the_same_content_when_read(): void {
+        $port = $this->port();
+        $area = $this->area();
+
+        $port->write($area, 'notiz.md', "# Titel\n\nText");
+
+        $this->assertSame('text/plain', $port->read($area, 'notiz.md')['mimetype']);
+    }
+
     public function test_delete_removes_an_existing_file(): void {
         $port = $this->port();
         $area = $this->area();

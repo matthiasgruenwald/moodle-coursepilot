@@ -301,7 +301,12 @@ final class webdav_client {
     /**
      * Wertet einen PROPFIND-Multistatus-Rumpf aus (Spec §4): Name
      * (prozentdekodiert), Typ, Groesse, Aenderungszeit und ETag falls
-     * vorhanden. Der MIME-Typ kommt aus der Endung ({@see mimeinfo()}).
+     * vorhanden. Der MIME-Typ kommt rein aus der Endung ({@see mimeinfo()}) -
+     * kein Inhalts-Sniffing hier, das wuerde beim Auflisten fuer jede Datei
+     * mit unbekannter Endung einen zusaetzlichen GET erzwingen und damit den
+     * bestehenden Zero-GET-Vertrag von {@see \local_coursepilot\external\list_context_files_test::test_switch_on_never_fetches_marked_file_content()}
+     * verletzen (Issue #560 - Sniffing sitzt stattdessen in {@see webdav_storage_port::read()},
+     * wo der Inhalt ohnehin geholt wird).
      *
      * @param string $body
      * @param string $requesturl
@@ -356,6 +361,36 @@ final class webdav_client {
             ];
         }
         return $entries;
+    }
+
+    /**
+     * Inhalts-Sniffing fuer einen bereits vorliegenden Dateiinhalt, genau wie
+     * Moodle-Core es fuer lokale Dateien tut ({@see \file_storage::mimetype_from_file()},
+     * `lib/filestorage/file_storage.php`) - nur auf einen String statt einen
+     * Dateipfad angewandt (Issue #560). Kein eigener GET: der Aufrufer muss
+     * den Inhalt ohnehin schon fuer einen anderen Zweck geholt haben (z.B.
+     * {@see webdav_storage_port::read()}), sonst waere Sniffing beim blossen
+     * Auflisten ein zusaetzlicher, teurer und ungewollter Netzwerkkontakt.
+     *
+     * @param string $content Der (Teil-)Inhalt der Datei.
+     * @return string|null Der gesniffte Mimetyp, oder null, wenn nichts
+     *         Brauchbares zu ermitteln war (leerer Inhalt) - der Aufrufer
+     *         bleibt dann bei `document/unknown`.
+     */
+    public static function sniff_mimetype_from_content(string $content): ?string {
+        if ($content === '') {
+            return null;
+        }
+
+        $mimetype = (new \finfo(FILEINFO_MIME_TYPE))->buffer($content);
+        if ($mimetype === false) {
+            return null;
+        }
+        if ($mimetype === 'image/svg') {
+            // Wie file_storage::mimetype_from_file(): https://bugs.php.net/bug.php?id=79045.
+            $mimetype = 'image/svg+xml';
+        }
+        return mimeinfo_from_type('type', $mimetype);
     }
 
     /**

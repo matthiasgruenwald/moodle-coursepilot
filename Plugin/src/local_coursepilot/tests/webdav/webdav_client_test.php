@@ -71,6 +71,48 @@ final class webdav_client_test extends \advanced_testcase {
         $this->assertSame('image/png', $entry['mimetype']);
     }
 
+    /**
+     * PROPFIND bleibt rein endungsbasiert (`.md` also `document/unknown`) -
+     * Sniffing wuerde hier einen zusaetzlichen GET pro Datei mit unbekannter
+     * Endung erzwingen und damit den Zero-GET-Vertrag des Auflistens
+     * verletzen (Issue #560, siehe Kommentar an {@see webdav_client::parse_multistatus()}).
+     * Ortsneutralitaet entsteht stattdessen im Lesepfad, siehe
+     * {@see test_sniff_mimetype_from_content_recognises_markdown_text()}.
+     */
+    public function test_propfind_leaves_unrecognised_extension_as_document_unknown(): void {
+        [$client, $fake] = $this->client(new fake_webdav_transport());
+        $fake->seed_folder('/dav/ordner');
+        $fake->seed_file('/dav/ordner/notiz.md', "# Titel\n\nText");
+
+        $entries = $client->propfind($this->url('/ordner'), 1);
+
+        $this->assertSame('document/unknown', $entries[0]['mimetype']);
+        $gets = array_filter($fake->requests(), static fn (array $r) => $r['method'] === 'GET');
+        $this->assertCount(0, $gets, 'PROPFIND darf fuer die Mimetyp-Ermittlung keinen GET ausloesen.');
+    }
+
+    /**
+     * Reines Inhalts-Sniffing ohne Netzwerk (Issue #560): derselbe Ausweg
+     * wie Moodle-Core ({@see \file_storage::mimetype_from_file()}), nur auf
+     * einen bereits vorliegenden Inhalt statt einen Dateipfad angewandt -
+     * fuer Aufrufer, die den Inhalt schon aus einem anderen Grund geholt
+     * haben (z.B. {@see webdav_storage_port::read()}).
+     */
+    public function test_sniff_mimetype_from_content_recognises_markdown_text(): void {
+        $this->assertSame(
+            'text/plain',
+            webdav_client::sniff_mimetype_from_content("# Titel\n\nText")
+        );
+    }
+
+    /**
+     * Ein leerer Inhalt liefert null, genau wie Moodle-Core bei einer
+     * fehlenden Datei bei `document/unknown` bleibt (kein `finfo_buffer('')`).
+     */
+    public function test_sniff_mimetype_from_content_returns_null_for_empty_content(): void {
+        $this->assertNull(webdav_client::sniff_mimetype_from_content(''));
+    }
+
     public function test_propfind_percent_decodes_names(): void {
         [$client, $fake] = $this->client(new fake_webdav_transport());
         $fake->seed_folder('/dav/ordner');
