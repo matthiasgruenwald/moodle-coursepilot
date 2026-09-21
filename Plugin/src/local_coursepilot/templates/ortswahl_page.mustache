@@ -1,7 +1,57 @@
 {{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
     @template local_coursepilot/ortswahl_page
 
     Vollstaendige Ortswahlseite einschliesslich Leerzustand und Verlauf.
+
+    Context variables required for this template:
+    * oauthreturn - bool - true when the page is rendered after an OAuth flow returned
+    * clientname - string - OAuth client name (only present if oauthreturn)
+    * backurl - string - link back to the course (only present if oauthreturn)
+    * finishresult - bool - true when a submit result should be shown
+    * class - string - Bootstrap alert class for the result (only present if finishresult)
+    * text - string - result message (only present if finishresult)
+    * altbestandopen - bool - whether an unresolved Altbestand notice should show
+    * notenabled - bool - true when required setup steps are still missing
+    * missingstepstext - string - the missing setup steps as plain text (only present if notenabled)
+    * supporturl - string - link to core support docs (only present if notenabled)
+    * noinstance - bool - true when no Nextcloud instance is connected yet
+    * schoolhint - string - optional admin hint for the school instance (only present if noinstance and set)
+    * ready - bool - true when the editor (see local_coursepilot/ortswahl_editor) should render
+    * locations - array - list wrapping the current-location context (see local_coursepilot/current_locations), empty when none set
+    * history - object - {empty: bool, entries: array of {date, target, from, to}}
+
+    Example context (json):
+    {
+        "oauthreturn": false,
+        "finishresult": false,
+        "altbestandopen": false,
+        "notenabled": false,
+        "noinstance": false,
+        "ready": true,
+        "locations": [],
+        "history": {
+            "empty": false,
+            "entries": [
+                {"date": "21.09.2026", "target": "Kontextbereich", "from": "Alter Ordner", "to": "Neuer Ordner"}
+            ]
+        }
+    }
 }}
 {{#oauthreturn}}
 <div class="alert alert-info">{{#str}} ortswahloauthflowinfo, local_coursepilot, {{clientname}} {{/str}}</div>

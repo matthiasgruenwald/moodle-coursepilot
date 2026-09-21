@@ -1,8 +1,49 @@
 {{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
     @template local_coursepilot/ortswahl_editor
 
     Ortswahl und Dateifenster. Dynamische Listen fuellt bis zur AMD-Umstellung
     javascript/ortswahl.js; alle serverseitigen Werte escaped Mustache.
+
+    Context variables required for this template:
+    * editorjson - string - raw JSON state for javascript/ortswahl.js (rendered unescaped via triple braces)
+    * actionurl - string - form action URL
+    * sesskey - string - session key for the form
+    * oauthflow - bool - whether this editor continues an OAuth flow
+    * oauthpassthrough - array - list of {name, value} hidden fields carried through the OAuth round trip
+    * targets - array - list of {name, first, kontextbereich, fields} per pickable target
+      * name - string - target identifier (kontextbereich or materialbestand)
+      * first - bool - whether this is the first tab (active by default)
+      * kontextbereich - bool - true for the Kontextbereich target, false for Materialbestand
+      * fields - array - list of {name, id} hidden inputs filled by javascript/ortswahl.js
+
+    Example context (json):
+    {
+        "editorjson": "{}",
+        "actionurl": "https://example.org/local/coursepilot/ortswahl.php",
+        "sesskey": "abc123",
+        "oauthflow": false,
+        "oauthpassthrough": [],
+        "targets": [
+            {"name": "kontextbereich", "first": true, "kontextbereich": true, "fields": [{"name": "kontextbereich_id", "id": "id_kontextbereich_id"}]},
+            {"name": "materialbestand", "first": false, "kontextbereich": false, "fields": [{"name": "materialbestand_id", "id": "id_materialbestand_id"}]}
+        ]
+    }
 }}
 <div class="coursepilot-ortswahl" id="coursepilot-ortswahl">
     <script type="application/json" id="coursepilot-ortswahl-data">{{{editorjson}}}</script>
