@@ -16,7 +16,6 @@
 
 namespace local_coursepilot\catalog;
 
-use coding_exception;
 use mod_quiz\question\display_options;
 use mod_quiz\quiz_settings as native_quiz_settings;
 use moodle_exception;
@@ -224,9 +223,7 @@ final class quiz_write_bridge {
         }
 
         foreach ($merged as $fieldname => $value) {
-            if (!is_string($fieldname)) {
-                throw new coding_exception('felder_json muss ein JSON-Objekt sein, kein Array.');
-            }
+            field::assert_name($fieldname);
             if (in_array($fieldname, $blocklist, true)) {
                 throw new moodle_exception('blockedfield', 'local_coursepilot', '', ['field' => $fieldname, 'modname' => 'quiz']);
             }

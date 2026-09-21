@@ -16,7 +16,6 @@
 
 namespace local_coursepilot\external;
 
-use coding_exception;
 use completion_info;
 use context_module;
 use core_external\external_api;
@@ -25,6 +24,7 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\pseudofield_carry_forward;
+use local_coursepilot\catalog\field;
 use local_coursepilot\catalog\registry;
 use moodle_exception;
 
@@ -282,14 +282,12 @@ final class set_completion extends external_api {
      *
      * @param array $patch
      * @return void
-     * @throws coding_exception|moodle_exception completionunknownfield|completioninvalidfieldvalue
+     * @throws moodle_exception invalidfieldname|completionunknownfield|completioninvalidfieldvalue
      */
     private static function validate_patch(array $patch, string $modname): void {
         $allowedfields = self::allowed_fields($modname);
         foreach ($patch as $fieldname => $value) {
-            if (!is_string($fieldname)) {
-                throw new coding_exception('felder_json muss ein JSON-Objekt sein, kein Array.');
-            }
+            field::assert_name($fieldname);
             if (!array_key_exists($fieldname, $allowedfields)) {
                 self::assert_not_foreign_module_field($fieldname, $modname);
                 throw new moodle_exception(

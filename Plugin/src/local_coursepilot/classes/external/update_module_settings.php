@@ -16,7 +16,6 @@
 
 namespace local_coursepilot\external;
 
-use coding_exception;
 use context_module;
 use core_external\external_api;
 use core_external\external_function_parameters;
@@ -25,6 +24,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\activity_file_trash;
 use local_coursepilot\catalog\module_catalog;
+use local_coursepilot\catalog\field;
 use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\shared_block;
@@ -647,9 +647,7 @@ class update_module_settings extends external_api {
         array $blocklist,
         array $fieldsbyname
     ): void {
-        if (!is_string($fieldname)) {
-            throw new coding_exception('felder_json muss ein JSON-Objekt sein, kein Array.');
-        }
+        field::assert_name($fieldname);
         if (in_array($fieldname, $blocklist, true)) {
             // Vervollstaendigungsfelder zuerst: sie sind nicht nur
             // gesperrt, sie haben einen Weg (Ticket #461).

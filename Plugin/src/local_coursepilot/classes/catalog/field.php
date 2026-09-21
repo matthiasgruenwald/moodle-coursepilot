@@ -16,6 +16,8 @@
 
 namespace local_coursepilot\catalog;
 
+use moodle_exception;
+
 /**
  * Ein Katalogfeld (Spec 0015 §2.2, Kategorie 1 "Felder" und Kategorie 2
  * "Pseudofelder" - gleiche Form, unterschiedliche Liste).
@@ -35,6 +37,19 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class field {
+
+    /**
+     * Feldangaben aus JSON-Objekten muessen String-Schluessel sein.
+     *
+     * @param mixed $fieldname
+     * @return void
+     * @throws moodle_exception invalidfieldname
+     */
+    public static function assert_name($fieldname): void {
+        if (!is_string($fieldname)) {
+            throw new moodle_exception('invalidfieldname', 'local_coursepilot');
+        }
+    }
 
     /**
      * @param string $name Moodle-Feldname (Formularweg-Vertrag).

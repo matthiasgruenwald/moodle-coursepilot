@@ -451,6 +451,7 @@ $string['unknownskillname'] = 'Unknown skill name "{$a->name}". Valid names: {$a
 // Write core: update_module_settings (#388).
 $string['writevehicleblocked'] = '"{$a->modname}" is not written via update_module_settings, but via {$a->schreibweg}. Nothing was written.';
 $string['invalidpatchjson'] = 'felder_json is not a valid JSON object. Nothing was written.';
+$string['invalidfieldname'] = 'Field names in felder_json must be strings. Nothing was written.';
 $string['invalideditorpseudofield'] = 'Field "{$a->field}" needs the content as text or as an object with "text" - {$a->value} was supplied. Without "text" the content would end up empty, so nothing was written.';
 $string['unknownfield'] = 'Unknown field "{$a->field}" for activity type "{$a->modname}". describe_module_fields(modname: "{$a->modname}", vollstaendig: true) shows the allowed fields. Nothing was written.';
 $string['blockedfield'] = 'Field "{$a->field}" is locked for activity type "{$a->modname}" and cannot be set via patch. describe_module_fields(modname: "{$a->modname}", vollstaendig: true) shows the block list. Nothing was written.';
