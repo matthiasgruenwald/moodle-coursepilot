@@ -427,6 +427,10 @@ final class quiz implements module_catalog {
         return module_state::quiz($instanceid, $cmid, $fullcontent);
     }
 
+    public static function write_options(): array {
+        return ['restores_arrangement' => true];
+    }
+
     public static function common_field_names(): array {
         return [
             'name',

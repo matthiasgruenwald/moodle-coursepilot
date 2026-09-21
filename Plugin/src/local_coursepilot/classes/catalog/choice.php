@@ -236,6 +236,14 @@ final class choice implements module_catalog {
         return module_state::for_modname(self::modname(), $instanceid, $cmid, $fullcontent);
     }
 
+    public static function write_options(): array {
+        return [
+            'scalar_to_repeated' => ['limit' => 'option'],
+            'parallel_array_lengths' => [['reference' => 'option', 'field' => 'limit']],
+            'date_order_rules' => [['reference' => 'timeopen', 'field' => 'timeclose', 'mode' => 'not_before']],
+        ];
+    }
+
     public static function common_field_names(): array {
         return array_map(static fn (field $f): string => $f->name, self::fields());
     }

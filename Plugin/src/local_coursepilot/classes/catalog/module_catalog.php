@@ -69,6 +69,14 @@ interface module_catalog {
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array;
 
     /**
+     * Schreibspezifische Ausnahmen des Modultyps. Die generischen Werkzeuge
+     * interpretieren nur diese Deklaration; sie kennen keine Modultypen.
+     *
+     * @return array<string, mixed>
+     */
+    public static function write_options(): array;
+
+    /**
      * Namen der haeufig gesetzten Felder aus {@see fields()} fuer die Kurzform
      * von describe_module_fields (Spec 0015 §3.1, Ticket #382). Bei wenigen
      * Feldern (label, choice, forum, ...) ist "alle" bereits die Kurzform -

@@ -471,6 +471,27 @@ final class assign implements module_catalog {
         return module_state::for_modname(self::modname(), $instanceid, $cmid, $fullcontent);
     }
 
+    public static function write_options(): array {
+        return [
+            'material_reference_fields' => ['introattachments' => ['component' => 'mod_assign', 'filearea' => 'introattachment']],
+            'intro_image_field' => 'introimages',
+            'admin_default_fields' => [
+                'assignsubmission_file_enabled' => 'assignsubmission_file',
+                'assignsubmission_onlinetext_enabled' => 'assignsubmission_onlinetext',
+                'assignfeedback_comments_enabled' => 'assignfeedback_comments',
+                'assignfeedback_editpdf_enabled' => 'assignfeedback_editpdf',
+                'assignfeedback_file_enabled' => 'assignfeedback_file',
+                'assignfeedback_offline_enabled' => 'assignfeedback_offline',
+            ],
+            'date_order_rules' => [
+                ['reference' => 'allowsubmissionsfromdate', 'field' => 'duedate', 'mode' => 'must_be_after'],
+                ['reference' => 'duedate', 'field' => 'cutoffdate', 'mode' => 'not_before'],
+                ['reference' => 'allowsubmissionsfromdate', 'field' => 'cutoffdate', 'mode' => 'not_before'],
+                ['reference' => 'allowsubmissionsfromdate', 'field' => 'gradingduedate', 'mode' => 'must_be_after'],
+            ],
+        ];
+    }
+
     public static function pseudofields(): array {
         return [
             new field(

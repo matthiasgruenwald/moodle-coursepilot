@@ -62,61 +62,6 @@ defined('MOODLE_INTERNAL') || die();
 class update_module_settings extends external_api {
 
     /**
-     * Modul-lokale Kombinationsregeln, die sich als einfacher
-     * "$field darf/muss nicht vor $reference liegen"-Zeitvergleich pruefen
-     * lassen (Spec 0015 §2.2 Kategorie 4 nennt die Regeln nur als Text fuer
-     * describe_module_fields - Moodles eigene validation() laeuft auf dem
-     * Formularweg nicht mit, also muss dieser Endpunkt sie selbst pruefen).
-     *
-     * ponytail: nur die Regeln der drei Aktivitaetsarten, deren
-     * Kombinationsregeln reine Datumspaar-Vergleiche sind (forum, choice,
-     * assign) - quiz wird ueber schreibweg() ohnehin ausgeschlossen, die
-     * uebrigen Regeln (choice limit[]/option[]-Laenge, quiz
-     * feedbackboundaries[]) sind keine einfachen Paarvergleiche und bleiben
-     * vorerst nur dokumentiert statt erzwungen. Bei Bedarf erweitern, sobald
-     * eine weitere Aktivitaetsart eine pruefbare Regel braucht.
-     *
-     * Die Verstoss-Meldung wird generisch aus reference/field/mode gebaut
-     * (siehe {@see self::rule_violation_message()}) statt als eigener Text
-     * dupliziert zu werden - sonst liefe sie beim naechsten Wortlaut-Update
-     * der Katalogtexte in forum::combination_rules()/assign::combination_rules()
-     * still auseinander.
-     *
-     * @var array<string, array<int, array{reference: string, field: string, mode: string}>>
-     */
-    private const DATE_ORDER_RULES = [
-        'forum' => [
-            ['reference' => 'duedate', 'field' => 'cutoffdate', 'mode' => 'not_before'],
-        ],
-        'choice' => [
-            ['reference' => 'timeopen', 'field' => 'timeclose', 'mode' => 'not_before'],
-        ],
-        'assign' => [
-            ['reference' => 'allowsubmissionsfromdate', 'field' => 'duedate', 'mode' => 'must_be_after'],
-            ['reference' => 'duedate', 'field' => 'cutoffdate', 'mode' => 'not_before'],
-            ['reference' => 'allowsubmissionsfromdate', 'field' => 'cutoffdate', 'mode' => 'not_before'],
-            ['reference' => 'allowsubmissionsfromdate', 'field' => 'gradingduedate', 'mode' => 'must_be_after'],
-        ],
-    ];
-
-    /**
-     * Nebenwirkungen, die abhaengig vom neuen Feldwert ausdruecklich in der
-     * Antwort ausgesprochen werden (Spec 0015 §3.3, Katalogkategorie 5) -
-     * nur beim tatsaechlichen Wechsel auf den Ausloesewert (Moodle wiederholt
-     * die Nebenwirkung nicht, wenn der Wert schon vorher galt, siehe
-     * mod/forum/lib.php: `$oldforum->forcesubscribe <> $forum->forcesubscribe`).
-     *
-     * @var array<string, array<string, array<int|string, string>>>
-     */
-    private const SIDE_EFFECT_TRIGGERS = [
-        'forum' => [
-            'forcesubscribe' => [
-                2 => 'Alle Kursteilnehmenden wurden für dieses Forum abonniert.',
-            ],
-        ],
-    ];
-
-    /**
      * Pseudofelder, deren Patch-Wert kein Skalar ist, sondern eine Liste von
      * Materialordner-Pfaden (Spec 0018 §4.2, Ticket #429) - der Verweisweg,
      * der die Dateisperre aus Spec 0015 §4.3 fuer assign aufhebt. Vor dem
@@ -128,31 +73,6 @@ class update_module_settings extends external_api {
      *
      * @var array<string, array<string, array{component: string, filearea: string}>>
      */
-    private const MATERIAL_REFERENCE_PSEUDOFIELDS = [
-        'assign' => [
-            'introattachments' => ['component' => 'mod_assign', 'filearea' => 'introattachment'],
-        ],
-        // Issue #434: die Hauptdatei einer resource laesst sich nachtraeglich
-        // per Patch ersetzen - dieselbe filearea "content" wie beim Anlegen
-        // ({@see create_module::MATERIAL_REFERENCE_PSEUDOFIELDS}).
-        // resource_set_mainfile() (mod/resource/locallib.php) liest
-        // $data->files direkt - anders als mod_folder (s.u.) funktioniert
-        // das auf dem Patch-Weg.
-        'resource' => [
-            'files' => material_files::CONTENT_FILEAREAS['resource'],
-        ],
-        // "folder" bewusst NICHT hier: folder_update_instance()
-        // (mod/folder/lib.php) liest den Draft-Itemid NICHT aus $data->files,
-        // sondern ueber file_get_submitted_draft_itemid('files') aus
-        // $_REQUEST - eine Moodle-Core-Eigenheit fuer den reinen Formularweg
-        // ohne Webservice-Aufrufer. Ein Patch bliebe deshalb wirkungslos
-        // (kein Fehler, keine Datei). folder_add_instance() (Anlegen,
-        // {@see create_module::MATERIAL_REFERENCE_PSEUDOFIELDS}) liest
-        // $data->files dagegen direkt - "Dateien einem folder hinzufuegen"
-        // laeuft ueber create_module, nicht ueber einen Patch auf eine
-        // bestehende Aktivitaet.
-    ];
-
     /**
      * Oeffentlicher Blick auf {@see self::MATERIAL_REFERENCE_PSEUDOFIELDS} fuer
      * eine Aktivitaetsart - wiederverwendet statt dupliziert von
@@ -165,7 +85,8 @@ class update_module_settings extends external_api {
      * @return array<string, array{component: string, filearea: string}>
      */
     public static function material_reference_specs(string $modname): array {
-        return self::MATERIAL_REFERENCE_PSEUDOFIELDS[$modname] ?? [];
+        $catalogclass = registry::for($modname);
+        return $catalogclass === null ? [] : ($catalogclass::write_options()['material_reference_fields'] ?? []);
     }
 
     /**
@@ -179,10 +100,6 @@ class update_module_settings extends external_api {
      *
      * @var array<string, string>
      */
-    private const INTRO_IMAGE_PSEUDOFIELDS = [
-        'assign' => 'introimages',
-    ];
-
     /**
      * Pseudofelder, die zwar {@see \local_coursepilot\catalog\module_catalog::blocklist()}
      * nicht mehr sperrt (fuer create_module frei, Issue #434), auf DIESEM
@@ -193,10 +110,6 @@ class update_module_settings extends external_api {
      *
      * @var array<string, string[]>
      */
-    private const PATCH_BLOCKED_PSEUDOFIELDS = [
-        'folder' => ['files'],
-    ];
-
     /**
      * @return external_function_parameters
      */
@@ -424,7 +337,8 @@ class update_module_settings extends external_api {
         array &$patch,
         string $ort
     ): void {
-        $specs = self::MATERIAL_REFERENCE_PSEUDOFIELDS[$modname] ?? [];
+        $catalogclass = registry::for($modname);
+        $specs = $catalogclass::write_options()['material_reference_fields'] ?? [];
         $relevant = array_intersect_key($specs, $patch);
         if (!$relevant) {
             return;
@@ -479,7 +393,8 @@ class update_module_settings extends external_api {
         array &$patch,
         string $ort
     ): void {
-        $fieldname = self::INTRO_IMAGE_PSEUDOFIELDS[$modname] ?? null;
+        $catalogclass = registry::for($modname);
+        $fieldname = $catalogclass::write_options()['intro_image_field'] ?? null;
         if ($fieldname === null || !array_key_exists($fieldname, $patch)) {
             return;
         }
@@ -654,7 +569,8 @@ class update_module_settings extends external_api {
             shared_block::assert_not_completion_field($fieldname);
             throw new moodle_exception('blockedfield', 'local_coursepilot', '', ['field' => $fieldname, 'modname' => $modname]);
         }
-        if (in_array($fieldname, self::PATCH_BLOCKED_PSEUDOFIELDS[$modname] ?? [], true)) {
+        $catalogclass = registry::for($modname);
+        if (in_array($fieldname, $catalogclass::write_options()['patch_blocked_fields'] ?? [], true)) {
             throw new moodle_exception('folderfilespatchunsupported', 'local_coursepilot');
         }
         shared_block::assert_not_read_only_vocabulary($fieldname, $modname);
@@ -704,7 +620,8 @@ class update_module_settings extends external_api {
      * @throws moodle_exception combinationruleviolation
      */
     private static function validate_combination_rules(string $modname, array $before, array $patch): void {
-        $rules = self::DATE_ORDER_RULES[$modname] ?? [];
+        $catalogclass = registry::for($modname);
+        $rules = $catalogclass::write_options()['date_order_rules'] ?? [];
         if (!$rules) {
             return;
         }
@@ -767,7 +684,8 @@ class update_module_settings extends external_api {
     private static function diff_and_side_effects(string $modname, array $patch, array $before, array $after): array {
         $changes = [];
         $sideeffects = [];
-        $triggers = self::SIDE_EFFECT_TRIGGERS[$modname] ?? [];
+        $catalogclass = registry::for($modname);
+        $triggers = $catalogclass::write_options()['side_effect_triggers'] ?? [];
 
         foreach (array_keys($patch) as $fieldname) {
             $oldvalue = $before[$fieldname] ?? null;

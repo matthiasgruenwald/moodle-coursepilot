@@ -104,7 +104,8 @@ final class drift_check {
         return array_merge(
             self::column_violations($modname, $catalogclass),
             self::callable_violations($catalogclass),
-            self::constant_violations($catalogclass)
+            self::constant_violations($catalogclass),
+            self::write_option_violations($catalogclass)
         );
     }
 
@@ -224,5 +225,43 @@ final class drift_check {
             }
         }
         return $violations;
+    }
+
+    /**
+     * Jede feldbezogene Schreiboption muss ein Katalogfeld benennen. Damit
+     * faellt auch ein neu gelesener oder geschriebener Feldname auf, der am
+     * Katalog vorbei in einen Werkzeug-Sonderfall geriete.
+     *
+     * @param class-string<module_catalog> $catalogclass
+     * @return string[]
+     */
+    private static function write_option_violations(string $catalogclass): array {
+        $known = array_column(array_merge(
+            shared_block::fields(),
+            $catalogclass::fields(),
+            $catalogclass::pseudofields()
+        ), 'name');
+        $options = $catalogclass::write_options();
+        $referenced = array_merge(
+            array_keys($options['material_reference_fields'] ?? []),
+            array_keys($options['missing_form_values'] ?? []),
+            array_keys($options['admin_default_fields'] ?? []),
+            array_keys($options['scalar_to_repeated'] ?? []),
+            array_values($options['scalar_to_repeated'] ?? []),
+            array_keys($options['editor_content'] ?? []),
+            array_merge(...array_values($options['editor_content'] ?? [[]])),
+            $options['patch_blocked_fields'] ?? [],
+            isset($options['intro_image_field']) ? [$options['intro_image_field']] : []
+        );
+        foreach (array_merge($options['parallel_array_lengths'] ?? [], $options['date_order_rules'] ?? []) as $rule) {
+            $referenced[] = $rule['reference'];
+            $referenced[] = $rule['field'];
+        }
+        $referenced = array_merge($referenced, array_keys($options['side_effect_triggers'] ?? []));
+        $unknown = array_values(array_diff(array_unique($referenced), $known));
+        return array_map(
+            static fn(string $field): string => 'Feld "' . $field . '" wird ausserhalb des Katalogs referenziert.',
+            $unknown
+        );
     }
 }

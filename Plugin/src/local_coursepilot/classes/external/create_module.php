@@ -73,102 +73,6 @@ defined('MOODLE_INTERNAL') || die();
 final class create_module extends external_api {
 
     /**
-     * Pseudofelder, deren Wert beim Anlegen keine Draft-Itemid ist, sondern
-     * eine Liste von Materialordner-Pfaden (Spec 0018 §4.2, Issue #434) -
-     * derselbe Verweisweg wie {@see update_module_settings::MATERIAL_REFERENCE_PSEUDOFIELDS}
-     * fuer den Patch-Weg. Jeder Pfad wird VOR add_moduleinfo() zu einer
-     * Draft-Itemid aufgeloest ({@see \local_coursepilot\material_files::resolve_into_draft()}),
-     * damit eine fehlende/ungueltige Datei scheitert, bevor irgendetwas im
-     * Kurs entsteht - fuer "resource" ist "files" zugleich Pflichtfeld
-     * (Katalog: required=true, default=null), die Aktivitaet entsteht deshalb
-     * nie ohne Hauptdatei.
-     *
-     * Der Modulkontext existiert beim Anlegen noch nicht (er entsteht erst
-     * mit add_moduleinfo()) - als targetcontextid fuer file_prepare_draft_area()
-     * dient deshalb der bereits vorhandene Kurskontext; dort liegen unter
-     * mod_resource/mod_folder + "content" nie vorab Dateien, das bleibt ohne
-     * Wirkung.
-     *
-     * @var array<string, array<string, array{component: string, filearea: string}>>
-     */
-    private const MATERIAL_REFERENCE_PSEUDOFIELDS = [
-        'resource' => [
-            'files' => material_files::CONTENT_FILEAREAS['resource'],
-        ],
-        'folder' => [
-            'files' => material_files::CONTENT_FILEAREAS['folder'],
-        ],
-    ];
-
-    /**
-     * mod_assign fuehrt fuer sechs Abgabe-/Feedback-Plugins keinen festen
-     * Formular-Default (Katalog: default === null, "admin-konfigurierbar") -
-     * der echte Formular-Default kommt erst zur Laufzeit aus
-     * get_config("{$subtype}_{$type}", 'default') (mod/assign/locallib.php:
-     * add_plugin_settings(), Zeile 1716). Ohne diese Aufloesung wuerde jedes
-     * dieser sechs Felder unbelegt bleiben und damit die zugehoerige
-     * Abgabe-/Feedbackart deaktivieren - genau das im Ticket benannte
-     * gefaehrlichste Fehlerbild ("assign ohne die Flags schaltet ALLE
-     * Abgabe-Plugins ab").
-     *
-     * ponytail: nur assign hat dieses Muster (siehe Katalogkommentare "admin-
-     * konfigurierbar" in assign::pseudofields()) - bei einer weiteren
-     * Aktivitaetsart mit demselben Muster hier ergaenzen.
-     *
-     * @var array<string, string> Feldname => Admin-Konfigurationskomponente.
-     */
-    private const ASSIGN_PLUGIN_ENABLE_CONFIG = [
-        'assignsubmission_file_enabled' => 'assignsubmission_file',
-        'assignsubmission_onlinetext_enabled' => 'assignsubmission_onlinetext',
-        'assignfeedback_comments_enabled' => 'assignfeedback_comments',
-        'assignfeedback_editpdf_enabled' => 'assignfeedback_editpdf',
-        'assignfeedback_file_enabled' => 'assignfeedback_file',
-        'assignfeedback_offline_enabled' => 'assignfeedback_offline',
-    ];
-
-    /**
-     * Nebenwirkungen, die abhaengig vom (End-)Feldwert ausdruecklich in der
-     * Antwort ausgesprochen werden (Spec 0015 §3.4, Katalogkategorie 5) - beim
-     * Anlegen gibt es kein "Vorher", jeder Ausloesewert wirkt deshalb immer,
-     * anders als bei {@see update_module_settings::SIDE_EFFECT_TRIGGERS}.
-     *
-     * @var array<string, array<string, array<int|string, string>>>
-     */
-    private const SIDE_EFFECT_TRIGGERS = [
-        'forum' => [
-            'forcesubscribe' => [
-                2 => 'Alle Kursteilnehmenden wurden für dieses Forum abonniert.',
-            ],
-        ],
-    ];
-
-    /**
-     * Datumspaar-Kombinationsregeln, identisch zu
-     * {@see update_module_settings::DATE_ORDER_RULES} (Spec 0015 §3.6 gilt
-     * fuer beide Schreibwege gleichermassen: "verletzte Kombinationsregel -
-     * nichts wird geschrieben"). Beim Anlegen sind Datumsfelder zwar meist
-     * 0 (Katalog-Default), aber genauso ausdruecklich nennbar wie bei einem
-     * Patch - ein widerspruechliches Paar darf deshalb nicht unbemerkt
-     * durchgehen, nur weil es keine "Vorher"-Werte gibt.
-     *
-     * @var array<string, array<int, array{reference: string, field: string, mode: string}>>
-     */
-    private const DATE_ORDER_RULES = [
-        'forum' => [
-            ['reference' => 'duedate', 'field' => 'cutoffdate', 'mode' => 'not_before'],
-        ],
-        'choice' => [
-            ['reference' => 'timeopen', 'field' => 'timeclose', 'mode' => 'not_before'],
-        ],
-        'assign' => [
-            ['reference' => 'allowsubmissionsfromdate', 'field' => 'duedate', 'mode' => 'must_be_after'],
-            ['reference' => 'duedate', 'field' => 'cutoffdate', 'mode' => 'not_before'],
-            ['reference' => 'allowsubmissionsfromdate', 'field' => 'cutoffdate', 'mode' => 'not_before'],
-            ['reference' => 'allowsubmissionsfromdate', 'field' => 'gradingduedate', 'mode' => 'must_be_after'],
-        ],
-    ];
-
-    /**
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -283,24 +187,24 @@ final class create_module extends external_api {
             throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
         }
 
-        self::expand_choice_limit_bundle_shortcut($modname, $merged);
+        self::expand_scalar_to_repeated_fields($catalogclass, $merged);
         // Vor derive_content_from_editor_pseudofield(): die steigt bei einem
         // Nicht-Array still aus, und die Seite entstuende leer (#405).
         pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $merged);
-        self::derive_content_from_editor_pseudofield($modname, $merged);
+        self::derive_content_from_editor_pseudofield($catalogclass, $merged);
 
         self::validate_fields($modname, $catalogclass, $merged);
-        self::validate_choice_option_limit_length($modname, $merged);
-        self::validate_combination_rules($modname, $merged);
+        self::validate_parallel_array_lengths($catalogclass, $modname, $merged);
+        self::validate_combination_rules($catalogclass, $modname, $merged);
         // VOR assert_no_required_field_missing(): eine leere Pfadliste
         // ("files": []) zaehlt als nicht genannt, sonst rutscht sie am
         // Pflichtfeld-Check vorbei und resolve_into_draft() liefert einen
         // gueltigen, aber LEEREN Entwurf - eine resource ohne Hauptdatei
         // waere die Folge (Review-Fund zu Issue #434).
-        self::drop_empty_material_reference_pseudofields($modname, $merged);
+        self::drop_empty_material_reference_pseudofields($catalogclass, $merged);
         self::assert_no_required_field_missing($modname, $catalogclass, $merged);
         self::assert_stealth_allowed($merged);
-        self::resolve_material_reference_pseudofields($modname, $coursecontext, $merged, $params['ort']);
+        self::resolve_material_reference_pseudofields($catalogclass, $coursecontext, $merged, $params['ort']);
 
         return $merged;
     }
@@ -386,8 +290,8 @@ final class create_module extends external_api {
      * @param array $merged Wird in-place bereinigt.
      * @return void
      */
-    private static function drop_empty_material_reference_pseudofields(string $modname, array &$merged): void {
-        foreach (array_keys(self::MATERIAL_REFERENCE_PSEUDOFIELDS[$modname] ?? []) as $fieldname) {
+    private static function drop_empty_material_reference_pseudofields(string $catalogclass, array &$merged): void {
+        foreach (array_keys($catalogclass::write_options()['material_reference_fields'] ?? []) as $fieldname) {
             if (array_key_exists($fieldname, $merged) && $merged[$fieldname] === []) {
                 unset($merged[$fieldname]);
             }
@@ -416,12 +320,12 @@ final class create_module extends external_api {
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
     private static function resolve_material_reference_pseudofields(
-        string $modname,
+        string $catalogclass,
         context_course $coursecontext,
         array &$merged,
         string $ort
     ): void {
-        $specs = self::MATERIAL_REFERENCE_PSEUDOFIELDS[$modname] ?? [];
+        $specs = $catalogclass::write_options()['material_reference_fields'] ?? [];
         $relevant = array_intersect_key($specs, $merged);
         if (!$relevant) {
             return;
@@ -456,17 +360,12 @@ final class create_module extends external_api {
      * @param array $merged Wird in-place ergaenzt.
      * @return void
      */
-    private static function expand_choice_limit_bundle_shortcut(string $modname, array &$merged): void {
-        if ($modname !== 'choice') {
-            return;
+    private static function expand_scalar_to_repeated_fields(string $catalogclass, array &$merged): void {
+        foreach ($catalogclass::write_options()['scalar_to_repeated'] ?? [] as $field => $reference) {
+            if (array_key_exists($field, $merged) && !is_array($merged[$field]) && isset($merged[$reference]) && is_array($merged[$reference])) {
+                $merged[$field] = array_fill(0, count($merged[$reference]), (int) $merged[$field]);
+            }
         }
-        if (!array_key_exists('limit', $merged) || is_array($merged['limit'])) {
-            return;
-        }
-        if (!array_key_exists('option', $merged) || !is_array($merged['option'])) {
-            return;
-        }
-        $merged['limit'] = array_fill(0, count($merged['option']), (int) $merged['limit']);
     }
 
     /**
@@ -489,15 +388,17 @@ final class create_module extends external_api {
      * @param array $merged Wird in-place ergaenzt.
      * @return void
      */
-    private static function derive_content_from_editor_pseudofield(string $modname, array &$merged): void {
-        if ($modname !== 'page' || !isset($merged['page']) || !is_array($merged['page'])) {
-            return;
-        }
-        if (!array_key_exists('content', $merged)) {
-            $merged['content'] = (string) ($merged['page']['text'] ?? '');
-        }
-        if (!array_key_exists('contentformat', $merged)) {
-            $merged['contentformat'] = (int) ($merged['page']['format'] ?? FORMAT_HTML);
+    private static function derive_content_from_editor_pseudofield(string $catalogclass, array &$merged): void {
+        foreach ($catalogclass::write_options()['editor_content'] ?? [] as $editor => $fields) {
+            if (!isset($merged[$editor]) || !is_array($merged[$editor])) {
+                continue;
+            }
+            if (!array_key_exists($fields[0], $merged)) {
+                $merged[$fields[0]] = (string) ($merged[$editor]['text'] ?? '');
+            }
+            if (!array_key_exists($fields[1], $merged)) {
+                $merged[$fields[1]] = (int) ($merged[$editor]['format'] ?? FORMAT_HTML);
+            }
         }
     }
 
@@ -611,29 +512,18 @@ final class create_module extends external_api {
      * @return void
      * @throws moodle_exception combinationruleviolation
      */
-    private static function validate_choice_option_limit_length(string $modname, array $merged): void {
-        if ($modname !== 'choice') {
-            return;
-        }
-        if (!isset($merged['option']) || !is_array($merged['option'])) {
-            return;
-        }
-        if (!isset($merged['limit']) || !is_array($merged['limit'])) {
-            return;
-        }
-        if (count($merged['limit']) === count($merged['option'])) {
-            return;
-        }
-        throw new moodle_exception(
-            'combinationruleviolation',
-            'local_coursepilot',
-            '',
-            [
+    private static function validate_parallel_array_lengths(string $catalogclass, string $modname, array $merged): void {
+        foreach ($catalogclass::write_options()['parallel_array_lengths'] ?? [] as $rule) {
+            if (!isset($merged[$rule['reference']], $merged[$rule['field']])
+                || !is_array($merged[$rule['reference']]) || !is_array($merged[$rule['field']])
+                || count($merged[$rule['reference']]) === count($merged[$rule['field']])) {
+                continue;
+            }
+            throw new moodle_exception('combinationruleviolation', 'local_coursepilot', '', [
                 'modname' => $modname,
-                'message' => '"limit" muss genauso viele Eintraege haben wie "option" ('
-                    . count($merged['option']) . ' Option(en), ' . count($merged['limit']) . ' Begrenzung(en)).',
-            ]
-        );
+                'message' => '"' . $rule['field'] . '" muss genauso viele Eintraege haben wie "' . $rule['reference'] . '".',
+            ]);
+        }
     }
 
     /**
@@ -647,8 +537,8 @@ final class create_module extends external_api {
      * @return void
      * @throws moodle_exception combinationruleviolation
      */
-    private static function validate_combination_rules(string $modname, array $merged): void {
-        $rules = self::DATE_ORDER_RULES[$modname] ?? [];
+    private static function validate_combination_rules(string $catalogclass, string $modname, array $merged): void {
+        $rules = $catalogclass::write_options()['date_order_rules'] ?? [];
         foreach ($rules as $rule) {
             if (!array_key_exists($rule['reference'], $merged) && !array_key_exists($rule['field'], $merged)) {
                 continue;
@@ -756,8 +646,9 @@ final class create_module extends external_api {
                 $moduleinfo->{self::moduleinfo_property($field->name)} = $field->default;
                 continue;
             }
-            if ($modname === 'assign' && isset(self::ASSIGN_PLUGIN_ENABLE_CONFIG[$field->name])) {
-                $configcomponent = self::ASSIGN_PLUGIN_ENABLE_CONFIG[$field->name];
+            $adminfields = $catalogclass::write_options()['admin_default_fields'] ?? [];
+            if (isset($adminfields[$field->name])) {
+                $configcomponent = $adminfields[$field->name];
                 $moduleinfo->{$field->name} = (int) (bool) get_config($configcomponent, 'default');
             }
         }
@@ -767,8 +658,10 @@ final class create_module extends external_api {
         // einen Platzhalter "kein Draftbereich", sonst ein PHP-Warning bei
         // JEDEM Anlegen. Ein leerer Ordner ist gueltig (siehe
         // \local_coursepilot\catalog\folder).
-        if ($modname === 'folder' && !property_exists($moduleinfo, 'files')) {
-            $moduleinfo->files = 0;
+        foreach ($catalogclass::write_options()['missing_form_values'] ?? [] as $field => $value) {
+            if (!property_exists($moduleinfo, $field)) {
+                $moduleinfo->{$field} = $value;
+            }
         }
     }
 
@@ -801,7 +694,7 @@ final class create_module extends external_api {
     private static function report_and_side_effects(string $modname, array $merged, array $after): array {
         $createdfields = [];
         $sideeffects = [];
-        $triggers = self::SIDE_EFFECT_TRIGGERS[$modname] ?? [];
+        $triggers = registry::for($modname)::write_options()['side_effect_triggers'] ?? [];
 
         foreach (array_keys($merged) as $fieldname) {
             $value = $after[$fieldname] ?? null;

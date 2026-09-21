@@ -321,6 +321,13 @@ final class forum implements module_catalog {
         return module_state::for_modname(self::modname(), $instanceid, $cmid, $fullcontent);
     }
 
+    public static function write_options(): array {
+        return [
+            'date_order_rules' => [['reference' => 'duedate', 'field' => 'cutoffdate', 'mode' => 'not_before']],
+            'side_effect_triggers' => ['forcesubscribe' => [2 => 'Alle Kursteilnehmenden wurden für dieses Forum abonniert.']],
+        ];
+    }
+
     public static function common_field_names(): array {
         return array_map(static fn (field $f): string => $f->name, self::fields());
     }

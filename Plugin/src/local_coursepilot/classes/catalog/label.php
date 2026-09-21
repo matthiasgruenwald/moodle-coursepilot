@@ -66,6 +66,10 @@ final class label implements module_catalog {
         return module_state::for_modname(self::modname(), $instanceid, $cmid, $fullcontent);
     }
 
+    public static function write_options(): array {
+        return [];
+    }
+
     public static function common_field_names(): array {
         return array_map(static fn (field $f): string => $f->name, self::fields());
     }

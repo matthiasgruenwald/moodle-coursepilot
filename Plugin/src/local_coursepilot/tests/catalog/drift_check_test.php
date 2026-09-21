@@ -107,6 +107,19 @@ final class drift_check_test extends \advanced_testcase {
     }
 
     /**
+     * Ein Feldzugriff in einer Schreiboption braucht dieselbe Katalogquelle
+     * wie Schreiben und Lesen; ein Sonderfall darf kein eigenes Vokabular
+     * einschmuggeln.
+     */
+    public function test_field_referenced_outside_the_catalog_is_detected(): void {
+        $this->resetAfterTest();
+
+        $violations = drift_check::check_catalog('label', drift_check_test_fake_catalog_with_bad_write_field::class);
+
+        $this->assertStringContainsString('am_katalog_vorbei', implode(' ', $violations));
+    }
+
+    /**
      * Jede Katalogklasse erklaert ihren Geltungsbereich pro Major-Version
      * (Abnahmekriterium #399) - eine positive Ganzzahl.
      */
@@ -130,6 +143,9 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
         ];
     }
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
+        return [];
+    }
+    public static function write_options(): array {
         return [];
     }
     public static function common_field_names(): array {
@@ -186,6 +202,9 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return [];
     }
+    public static function write_options(): array {
+        return [];
+    }
     public static function common_field_names(): array {
         return [];
     }
@@ -218,7 +237,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
 /**
  * Test-Doppelgaenger: referenziert eine nicht existierende Konstante.
  */
-final class drift_check_test_fake_catalog_with_bad_constant implements module_catalog {
+class drift_check_test_fake_catalog_with_bad_constant implements module_catalog {
     public static function modname(): string {
         return 'label';
     }
@@ -229,6 +248,9 @@ final class drift_check_test_fake_catalog_with_bad_constant implements module_ca
         ];
     }
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
+        return [];
+    }
+    public static function write_options(): array {
         return [];
     }
     public static function common_field_names(): array {
@@ -257,5 +279,11 @@ final class drift_check_test_fake_catalog_with_bad_constant implements module_ca
     }
     public static function reviewed_up_to_major(): int {
         return 500;
+    }
+}
+
+final class drift_check_test_fake_catalog_with_bad_write_field extends drift_check_test_fake_catalog_with_bad_constant {
+    public static function write_options(): array {
+        return ['material_reference_fields' => ['am_katalog_vorbei' => []]];
     }
 }

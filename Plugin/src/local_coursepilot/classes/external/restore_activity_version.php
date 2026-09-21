@@ -144,7 +144,8 @@ final class restore_activity_version extends external_api {
         // unabhaengig davon: die Anordnung (Slots/Fragereferenzen/Abschnitte/
         // Feedback) - dafuer braucht es weder den Feldkatalog noch
         // update_module_settings.
-        if ($modname === 'quiz') {
+        $catalogclass = registry::for($modname);
+        if ($catalogclass !== null && ($catalogclass::write_options()['restores_arrangement'] ?? false)) {
             return self::execute_quiz_arrangement_only($cm, $params['zielversion']);
         }
 
