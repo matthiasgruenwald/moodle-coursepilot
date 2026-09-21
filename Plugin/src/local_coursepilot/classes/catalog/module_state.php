@@ -188,4 +188,39 @@ final class module_state {
         }
         return $pairs;
     }
+
+    /**
+     * Liest Pseudofeld-Gruppen zurueck, die in einer eigenen Tabelle statt in
+     * der Instanzzeile leben (Spec 0015 §2.2 Kategorie 2, "repeated group",
+     * Issue #564) - katalogweiter Gegenpart zum Schreibweg in
+     * {@see \local_coursepilot\catalog\pseudofield_carry_forward::carry_forward_choice_options()}.
+     * Deklariert je Aktivitaetsart ueber
+     * {@see \local_coursepilot\catalog\module_catalog::write_options()}
+     * (Schluessel "repeated_group"), damit {@see \local_coursepilot\external\get_module_settings}
+     * keinen modultypspezifischen Sonderfall braucht.
+     *
+     * @param class-string<module_catalog> $catalogclass
+     * @param int $instanceid
+     * @return array<string, mixed> Feldname => Werteliste, leer wenn die Art keine Gruppe deklariert.
+     */
+    public static function read_repeated_groups(string $catalogclass, int $instanceid): array {
+        global $DB;
+
+        $groups = $catalogclass::write_options()['repeated_group'] ?? [];
+        $result = [];
+        foreach ($groups as $spec) {
+            $rows = $DB->get_records(
+                $spec['table'],
+                [$spec['foreignkey'] => $instanceid],
+                $spec['orderby']
+            );
+            foreach ($spec['fields'] as $fieldname => $column) {
+                $result[$fieldname] = array_values(array_map(
+                    static fn (\stdClass $row): mixed => $row->{$column},
+                    $rows
+                ));
+            }
+        }
+        return $result;
+    }
 }

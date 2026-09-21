@@ -241,6 +241,21 @@ final class choice implements module_catalog {
             'scalar_to_repeated' => ['limit' => 'option'],
             'parallel_array_lengths' => [['reference' => 'option', 'field' => 'limit']],
             'date_order_rules' => [['reference' => 'timeopen', 'field' => 'timeclose', 'mode' => 'not_before']],
+            // Rueckweg zu carry_forward_choice_options()
+            // (pseudofield_carry_forward.php): "option"/"limit"/"optionid" leben in
+            // choice_options, nicht in der choice-Instanzzeile - der Lesepfad
+            // (module_state::read_repeated_groups(), aufgerufen aus
+            // get_module_settings) liest dieselbe Tabelle ueber diese Deklaration
+            // zurueck, statt einen "choice"-Sonderfall im Werkzeug zu brauchen
+            // (Issue #564).
+            'repeated_group' => [
+                'option' => [
+                    'table' => 'choice_options',
+                    'foreignkey' => 'choiceid',
+                    'orderby' => 'id',
+                    'fields' => ['option' => 'text', 'limit' => 'maxanswers', 'optionid' => 'id'],
+                ],
+            ],
         ];
     }
 

@@ -258,6 +258,9 @@ final class drift_check {
             $referenced[] = $rule['field'];
         }
         $referenced = array_merge($referenced, array_keys($options['side_effect_triggers'] ?? []));
+        foreach ($options['repeated_group'] ?? [] as $spec) {
+            $referenced = array_merge($referenced, array_keys($spec['fields'] ?? []));
+        }
         $unknown = array_values(array_diff(array_unique($referenced), $known));
         return array_map(
             static fn(string $field): string => 'Feld "' . $field . '" wird ausserhalb des Katalogs referenziert.',

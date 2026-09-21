@@ -241,6 +241,44 @@ final class module_roundtrip_test extends \advanced_testcase {
     }
 
     /**
+     * Issue #564: "option" liegt (anders als "name") nicht in der
+     * choice-Instanzzeile, sondern in choice_options - eine eigene
+     * "repeated group" (Spec 0015 §2.2 Kategorie 2), die der generische
+     * Rundlauf oben (Feld "name") nicht abdeckt. Rundlauf wie bei den
+     * uebrigen acht Modultypen: anlegen, lesen, Option aendern, erneut lesen.
+     */
+    public function test_choice_option_round_trip(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $cmid = $this->create_via_module_tool($course->id, 'choice', [
+            'name' => 'Abstimmung',
+            'intro' => 'Bitte waehlen',
+            'option' => ['Ja', 'Nein'],
+        ])['cmid'];
+
+        $before = $this->read($cmid);
+        $this->assertSame(['Ja', 'Nein'], $before['option'], 'Angelegte Optionen muessen beim Lesen sichtbar sein.');
+        $this->assertCount(2, $before['optionid'], 'Bestehende choice_options-IDs muessen beim Lesen sichtbar sein.');
+
+        // "optionid" muss mitgeschickt werden, sonst legt choice_update_instance()
+        // zusaetzliche Optionen an statt bestehende zu ueberschreiben (siehe
+        // choice::pseudofields(), Feld "optionid") - derselbe Rundlauf, den
+        // mod_choice_mod_form::data_preprocessing() im echten Formularweg vorbereitet.
+        $this->patch('choice', $cmid, [
+            'option' => ['Vielleicht', 'Auf jeden Fall'],
+            'optionid' => $before['optionid'],
+        ]);
+
+        $after = $this->read($cmid);
+        $this->assertSame(
+            ['Vielleicht', 'Auf jeden Fall'],
+            $after['option'],
+            'Geaenderte Optionen muessen beim erneuten Lesen sichtbar sein.'
+        );
+    }
+
+    /**
      * Die Registry ist die vollstaendige Liste - dieser Test scheitert, wenn
      * eine neue Katalogklasse eingetragen wird, ohne hier ein Szenario zu
      * bekommen (haelt Abnahmekriterium 4 "alle neun" dauerhaft wahr).

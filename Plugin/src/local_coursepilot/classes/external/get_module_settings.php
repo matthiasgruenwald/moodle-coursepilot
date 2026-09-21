@@ -23,6 +23,8 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use core_tag_tag;
 use local_coursepilot\availability_privacy;
+use local_coursepilot\catalog\module_state;
+use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\shared_block;
 
 defined('MOODLE_INTERNAL') || die();
@@ -114,6 +116,11 @@ class get_module_settings extends external_api {
 
         if (!empty($CFG->enableavailability)) {
             $data['availabilityconditionsjson'] = availability_privacy::sanitize((string) ($cm->availability ?? ''));
+        }
+
+        $catalogclass = registry::for((string) $cm->modname);
+        if ($catalogclass !== null) {
+            $data = array_merge($data, module_state::read_repeated_groups($catalogclass, (int) $cm->instance));
         }
 
         return [
