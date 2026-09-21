@@ -49,5 +49,15 @@ try {
     echo json_encode(['ok' => true, 'state' => location_selection::page_state((int) $USER->id, $result)]);
 } catch (moodle_exception $e) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'errorkey' => $e->errorcode]);
+    // Issue #565: der Client uebersetzt errorkey erst beim Anzeigen (core/str,
+    // nie als fertiger Satz im Seitenzustand) - braucht dafuer dieselben
+    // Platzhalter, mit denen der Server den String selbst befuellt haette
+    // (nur die benannte Fehlerklasse und der Verweis auf die Ortswahlseite,
+    // siehe pointer_reader::webdav_exception()).
+    echo json_encode([
+        'ok' => false,
+        'errorkey' => $e->errorcode,
+        'errorclass' => $e->a->errorclass ?? '',
+        'page' => $e->a->page ?? '',
+    ]);
 }

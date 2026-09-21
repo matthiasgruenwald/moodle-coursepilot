@@ -145,6 +145,18 @@ $string['webdaviservfilesonly'] = 'On IServ, only locations below "Files/" are r
 $string['webdavexternalerror'] = 'The external storage could not be read ({$a->errorclass}). This is a context gap: the journal, profiles, and plan are not readable right now - please say so explicitly to the teacher once per session and keep working without those files, instead of continuing from memory. Please try again later, or check the location page ({$a->page}).';
 $string['materialexternalerror'] = 'The material collection could not be read ({$a->errorclass}). Please try again later, or check the location page ({$a->page}).';
 $string['ortswahlexternalerror'] = 'The external storage is not responding right now ({$a->errorclass}). Please try again later, or check the connection\'s credentials.';
+// Translated labels for webdav_error::label() (Issue #565) — the constants in
+// webdav_error.php are fixed German internal identifiers for code
+// comparisons, never meant for display; these strings are what actually
+// ends up in {$a->errorclass} above.
+$string['webdaverrorunclear'] = 'unclear/throttled';
+$string['webdaverrornotfound'] = 'not found';
+$string['webdaverrorauthrejected'] = 'authentication rejected';
+$string['webdaverrorunreachable'] = 'unreachable';
+$string['webdaverrorstoragefull'] = 'storage full';
+$string['webdaverrorconflict'] = 'conflict';
+$string['webdaverrorblocked'] = 'blocked';
+$string['webdaverrorredirected'] = 'redirect rejected';
 $string['webdavstep1instruction'] = 'The administration must enable the "WebDAV" repository type under Site administration ▸ Plugins ▸ Repositories.';
 $string['webdavstep2instruction'] = 'The administration must turn on "Allow user instances" for the "WebDAV" repository type.';
 $string['webdavstep3instruction'] = 'The administration must grant the teacher the "repository/webdav:view" capability in their own user context (recommended via a dedicated system role).';

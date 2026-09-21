@@ -313,7 +313,9 @@ final class pointer_reader {
      */
     public static function webdav_exception(webdav_error $e, string $stringkey = 'webdavexternalerror'): \moodle_exception {
         return new \moodle_exception($stringkey, 'local_coursepilot', '', (object) [
-            'errorclass' => $e->errorclass,
+            // Issue #565: uebersetztes Label statt der fest-deutschen
+            // internen Konstante, siehe webdav_error::label().
+            'errorclass' => webdav_error::label($e->errorclass),
             'page' => webdav_setup_steps::ORTSWAHL_PAGE,
         ]);
     }

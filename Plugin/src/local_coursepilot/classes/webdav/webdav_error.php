@@ -67,6 +67,34 @@ final class webdav_error extends \RuntimeException {
     }
 
     /**
+     * Uebersetztes Label fuer eine Fehlerklasse (Issue #565): die Konstanten
+     * oben sind fest-deutsche interne Bezeichner fuer Vergleiche im Code
+     * (`$errorclass === webdav_error::UNCLEAR`), nie fuer die Anzeige
+     * gedacht. Jede Stelle, die eine Fehlerklasse einer Lehrkraft zeigt
+     * (z. B. ueber {$a->errorclass} in ortswahlexternalerror/
+     * webdavexternalerror/materialexternalerror), muss durch dieses Label
+     * gehen statt die Konstante direkt zu interpolieren - sonst bleibt der
+     * Text auf Englisch (oder jeder anderen Sprache) deutsch.
+     *
+     * @param string $errorclass Eine der Konstanten dieser Klasse.
+     * @return string uebersetztes Label, oder die Konstante selbst als
+     *         Rueckfallwert, falls sie keiner bekannten Klasse entspricht.
+     */
+    public static function label(string $errorclass): string {
+        static $map = [
+            self::UNCLEAR => 'webdaverrorunclear',
+            self::NOT_FOUND => 'webdaverrornotfound',
+            self::AUTH_REJECTED => 'webdaverrorauthrejected',
+            self::UNREACHABLE => 'webdaverrorunreachable',
+            self::STORAGE_FULL => 'webdaverrorstoragefull',
+            self::CONFLICT => 'webdaverrorconflict',
+            self::BLOCKED => 'webdaverrorblocked',
+            self::REDIRECTED => 'webdaverrorredirected',
+        ];
+        return isset($map[$errorclass]) ? get_string($map[$errorclass], 'local_coursepilot') : $errorclass;
+    }
+
+    /**
      * Das eine Fehlerbild des WebDAV-Speichers (Issue #506): "nicht
      * gefunden" heisst leer, jeder andere Fehler bleibt ein benannter Fehler.
      * Vorher an vier fast identischen Stellen dupliziert

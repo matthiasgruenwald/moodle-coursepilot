@@ -32,16 +32,64 @@
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-define(['core/templates', 'core/notification'], function(Templates, Notification) {
+define(['core/templates', 'core/notification', 'core/str'], function(Templates, Notification, Str) {
     'use strict';
+
+    /**
+     * Alle Uebersetzungen der Seite, per core/str geladen statt ueber
+     * js_call_amd() eingebettet (Debugging-Warnung "Too much data passed as
+     * arguments"; ueber 1024 Zeichen bei 21 teils langen Textbausteinen). Der
+     * Schluessel ist der Alias, unter dem config.strings die Uebersetzung
+     * traegt; bei den drei "reasonkey"/"errorkey"-Eintraegen (vom Server als
+     * String-Identifier mitgeschickt) ist er identisch mit dem Moodle-
+     * String-Identifier.
+     *
+     * @type {Array<{alias: string, key: string, param: (string|undefined)}>}
+     */
+    var STRING_REQUESTS = [
+        {alias: 'tabkontextbereich', key: 'ortswahltabkontextbereich'},
+        {alias: 'tabmaterialbestand', key: 'ortswahltabmaterialbestand'},
+        {alias: 'selected', key: 'ortswahlselected'},
+        {alias: 'chooseinstance', key: 'ortswahlchooseinstance'},
+        {alias: 'breadcrumbroot', key: 'ortswahlbreadcrumbroot'},
+        {alias: 'loading', key: 'ortswahlloading'},
+        {alias: 'progresschosen', key: 'ortswahlprogresschosen', param: '%s'},
+        {alias: 'progressopen', key: 'ortswahlprogressopen', param: '%s'},
+        {alias: 'selectionincomplete', key: 'ortswahlselectionincomplete'},
+        {alias: 'timeouttitle', key: 'ortswahltimeouttitle'},
+        {alias: 'timeouttext', key: 'ortswahltimeouttext'},
+        {alias: 'ortswahlinstanceauthunsupported', key: 'ortswahlinstanceauthunsupported'},
+        {alias: 'ortswahlrootnotselectable', key: 'ortswahlrootnotselectable'},
+        {alias: 'ortswahliservfilesonly', key: 'ortswahliservfilesonly'},
+        {alias: 'browseerrorheading', key: 'ortswahlbrowseerrorheading'},
+        {alias: 'ortswahlexternalerror', key: 'ortswahlexternalerror'},
+        {alias: 'retry', key: 'ortswahlretry'},
+        {alias: 'checkcredentials', key: 'ortswahlcheckcredentials'},
+        {alias: 'later', key: 'ortswahllater'},
+        {alias: 'confirmcount', key: 'ortswahlconfirmcount', param: '%s'},
+        {alias: 'overlaplocked', key: 'ortswahloverlaplocked'}
+    ];
+
+    /**
+     * @param {Array<string>} translations Resolved in STRING_REQUESTS order.
+     * @return {Object} map of alias/identifier to translated text.
+     */
+    function buildStringsMap(translations) {
+        var map = {};
+        STRING_REQUESTS.forEach(function(request, i) {
+            map[request.alias] = translations[i];
+        });
+        return map;
+    }
 
     /**
      * Wires up one rendering of the Ortswahl editor.
      *
-     * @param {Object} config Page state delivered by local_coursepilot\output\location_selection::editor_data().
+     * @param {Object} config Page state delivered by local_coursepilot\output\location_selection::editor_data(),
+     *   with config.strings already resolved by init().
      * @return {void}
      */
-    function init(config) {
+    function startEditor(config) {
         var root = document.getElementById('coursepilot-ortswahl');
         if (!root) {
             return;
@@ -646,8 +694,21 @@ define(['core/templates', 'core/notification'], function(Templates, Notification
                         // Der Server hat geantwortet, aber mit einem Fehler
                         // (Issue #526) - der benannte Fehler wird erst hier
                         // uebersetzt, nie als Satz im Seitenzustand transportiert.
-                        return showBrowseError(config.strings.browseerrorheading,
-                            (result.errorkey && config.strings[result.errorkey]) || config.strings.timeouttext);
+                        // Issue #565: config.strings deckt nur die vorab ohne
+                        // Platzhalter geladenen Texte ab; ortswahlexternalerror
+                        // braucht {$a->errorclass}/{$a->page} und wird deshalb
+                        // hier live nachgeladen statt aus config.strings gelesen.
+                        if (!result.errorkey) {
+                            return showBrowseError(config.strings.browseerrorheading, config.strings.timeouttext);
+                        }
+                        return Str.get_string(result.errorkey, 'local_coursepilot', {
+                            errorclass: result.errorclass || '',
+                            page: result.page || ''
+                        }).then(function(text) {
+                            return showBrowseError(config.strings.browseerrorheading, text);
+                        }).catch(function() {
+                            return showBrowseError(config.strings.browseerrorheading, config.strings.timeouttext);
+                        });
                     }
                     // Test-Fakes und aeltere Antworten liefern die Ebene direkt;
                     // der Endpunkt liefert sie als Teil des Seitenzustands.
@@ -778,6 +839,26 @@ define(['core/templates', 'core/notification'], function(Templates, Notification
         });
 
         renderProgress();
+    }
+
+    /**
+     * Loads the page's translated strings via core/str (Issue #565: the
+     * previous js_call_amd() payload with all 21 strings embedded exceeded
+     * Moodle's 1024-character debugging threshold), then wires up the
+     * editor.
+     *
+     * @param {Object} config Page state delivered by local_coursepilot\output\location_selection::editor_data().
+     * @return {Promise} resolves once the editor is wired up.
+     */
+    function init(config) {
+        var requests = STRING_REQUESTS.map(function(request) {
+            return {key: request.key, component: 'local_coursepilot', param: request.param};
+        });
+        return Str.get_strings(requests).then(function(translations) {
+            config.strings = buildStringsMap(translations);
+            startEditor(config);
+            return null;
+        }).catch(Notification.exception);
     }
 
     return {init: init};

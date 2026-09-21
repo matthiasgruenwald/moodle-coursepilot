@@ -55,9 +55,12 @@ final class location_selection {
      * @return array<string, mixed>
      */
     public static function amd_configuration(\stdClass $user): array {
+        // Issue #565: page_state() liefert auch den vollen, unbegrenzt
+        // wachsenden Ortsverlauf mit - das AMD-Modul liest daraus nichts
+        // (der Verlauf ist bereits serverseitig in ortswahl_page.mustache
+        // gerendert), darum hier nur die tatsaechlich gebrauchten Instanzen.
         $state = selection::page_state((int) $user->id);
         return [
-            'state' => $state,
             'instances' => $state['instances'],
             'targets' => [
                 'kontextbereich' => selection::current('kontextbereich'),
@@ -69,36 +72,6 @@ final class location_selection {
             ]))->out(false),
             'sesskey' => sesskey(),
             'timeoutms' => selection::BROWSE_TIMEOUT_MS,
-            'strings' => self::editor_strings(),
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function editor_strings(): array {
-        return [
-            'tabkontextbereich' => get_string('ortswahltabkontextbereich', 'local_coursepilot'),
-            'tabmaterialbestand' => get_string('ortswahltabmaterialbestand', 'local_coursepilot'),
-            'selected' => get_string('ortswahlselected', 'local_coursepilot'),
-            'chooseinstance' => get_string('ortswahlchooseinstance', 'local_coursepilot'),
-            'breadcrumbroot' => get_string('ortswahlbreadcrumbroot', 'local_coursepilot'),
-            'loading' => get_string('ortswahlloading', 'local_coursepilot'),
-            'progresschosen' => get_string('ortswahlprogresschosen', 'local_coursepilot', '%s'),
-            'progressopen' => get_string('ortswahlprogressopen', 'local_coursepilot', '%s'),
-            'selectionincomplete' => get_string('ortswahlselectionincomplete', 'local_coursepilot'),
-            'timeouttitle' => get_string('ortswahltimeouttitle', 'local_coursepilot'),
-            'timeouttext' => get_string('ortswahltimeouttext', 'local_coursepilot'),
-            'ortswahlinstanceauthunsupported' => get_string('ortswahlinstanceauthunsupported', 'local_coursepilot'),
-            'ortswahlrootnotselectable' => get_string('ortswahlrootnotselectable', 'local_coursepilot'),
-            'ortswahliservfilesonly' => get_string('ortswahliservfilesonly', 'local_coursepilot'),
-            'browseerrorheading' => get_string('ortswahlbrowseerrorheading', 'local_coursepilot'),
-            'ortswahlexternalerror' => get_string('ortswahlexternalerror', 'local_coursepilot'),
-            'retry' => get_string('ortswahlretry', 'local_coursepilot'),
-            'checkcredentials' => get_string('ortswahlcheckcredentials', 'local_coursepilot'),
-            'later' => get_string('ortswahllater', 'local_coursepilot'),
-            'confirmcount' => get_string('ortswahlconfirmcount', 'local_coursepilot', '%s'),
-            'overlaplocked' => get_string('ortswahloverlaplocked', 'local_coursepilot'),
         ];
     }
 
