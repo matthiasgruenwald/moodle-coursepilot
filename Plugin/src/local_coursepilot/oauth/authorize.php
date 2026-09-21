@@ -65,7 +65,7 @@ if (isset($validation['error'])) {
     // registriertes Umleitungsziel) haben keinen verifizierten redirect_uri,
     // auf den ein Fehler-Redirect sicher waere - Moodle-Fehlerseite statt
     // Redirect (RFC 6749, 4.1.2.1 gilt erst ab verifiziertem Ziel).
-    print_error('authorizeerror', 'local_coursepilot', '', $validation['error_description']);
+    throw new moodle_exception('authorizeerror', 'local_coursepilot', '', $validation['error_description']);
 }
 $client = $validation['client'];
 $clientname = $client->clientname ?: $client->clientid;

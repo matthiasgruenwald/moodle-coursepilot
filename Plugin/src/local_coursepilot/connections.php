@@ -39,6 +39,7 @@ require_login(null, false);
 
 global $USER;
 $context = context_system::instance();
+require_capability('local/coursepilot:useremote', $context);
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/coursepilot/connections.php'));
 $PAGE->set_pagelayout('standard');
