@@ -467,6 +467,10 @@ final class assign implements module_catalog {
         ];
     }
 
+    public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
+        return module_state::for_modname(self::modname(), $instanceid, $cmid, $fullcontent);
+    }
+
     public static function pseudofields(): array {
         return [
             new field(

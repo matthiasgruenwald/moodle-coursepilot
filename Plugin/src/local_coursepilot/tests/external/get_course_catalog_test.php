@@ -17,6 +17,8 @@
 namespace local_coursepilot\external;
 
 use core_external\external_api;
+use local_coursepilot\catalog\module_state;
+use local_coursepilot\catalog\registry;
 
 /**
  * Kurskatalog serverseitig (#341): der Vertrag ist die reine Delegation an
@@ -30,7 +32,68 @@ use core_external\external_api;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(get_course_catalog::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(module_state::class)]
 final class get_course_catalog_test extends \advanced_testcase {
+
+    /**
+     * Alle freigegebenen Modultypen liefern ihren Zustand aus dem Katalog.
+     * Die bisherigen Settings-Schluessel der Sonderleser bleiben dabei Teil
+     * des unveraenderten Katalogvertrags.
+     */
+    public function test_catalog_reads_every_registered_module_type(): void {
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+
+        $instances = [];
+        foreach (registry::known_modnames() as $modname) {
+            $instances[$modname] = $this->getDataGenerator()
+                ->get_plugin_generator('mod_' . $modname)
+                ->create_instance(['course' => $course->id, 'name' => 'Katalog ' . $modname]);
+        }
+
+        $catalog = get_course_catalog::execute($course->id, -1, '', 'full');
+        foreach ($instances as $modname => $instance) {
+            $module = self::find_module($catalog, (int) $instance->cmid);
+            $this->assertNotNull($module, "$modname fehlt im Katalog.");
+            if ($modname !== 'label') {
+                $this->assertSame('Katalog ' . $modname, $module['name']);
+            }
+            $this->assertArrayHasKey('content', $module);
+            $this->assertArrayHasKey('settings', $module);
+            $this->assertArrayHasKey('quizslots', $module);
+        }
+
+        $modules = [];
+        foreach ($catalog['sections'] as $section) {
+            foreach ($section['modules'] as $module) {
+                $modules[$module['modname']] = $module;
+            }
+        }
+        $this->assertSame(['intro'], array_column($modules['page']['settings'], 'name'));
+        $this->assertSame(['externalurl'], array_column($modules['url']['settings'], 'name'));
+        $this->assertSame([
+            'duedate', 'allowsubmissionsfromdate', 'cutoffdate', 'gradingduedate', 'completionsubmit', 'grade',
+            'gradepass', 'submissiondrafts', 'maxattempts', 'attemptreopenmethod', 'requiresubmissionstatement',
+            'teamsubmission', 'requireallteammemberssubmit', 'teamsubmissiongroupingid', 'sendnotifications',
+            'sendlatenotifications', 'sendstudentnotifications', 'blindmarking', 'markingworkflow',
+            'markingallocation', 'gradecat', 'gradingmethod', 'additionalfiles', 'onlinetext_enabled',
+            'onlinetext_wordlimit_enabled', 'onlinetext_wordlimit', 'submission_file_enabled',
+            'submission_file_maxfiles', 'submission_file_maxsizebytes', 'submission_file_filetypes',
+            'feedback_comments_enabled', 'feedback_editpdf_enabled', 'feedback_file_enabled',
+            'feedback_file_maxfiles', 'feedback_file_maxsizebytes', 'feedback_file_filetypes', 'feedback_offline_enabled',
+        ], array_column($modules['assign']['settings'], 'name'));
+        $this->assertSame(
+            ['preferredbehaviour', 'attempts', 'grademethod', 'timelimit', 'grade', 'gradepass', 'grademax'],
+            array_column($modules['quiz']['settings'], 'name')
+        );
+        foreach (['label', 'folder', 'resource', 'choice', 'forum'] as $modname) {
+            $this->assertSame([], $modules[$modname]['settings']);
+        }
+    }
 
     /**
      * Der Katalog liefert Abschnitte, Inhalte, Sichtbarkeit, Abschluss und

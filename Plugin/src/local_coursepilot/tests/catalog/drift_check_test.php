@@ -129,6 +129,9 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
             new field('nichtexistierendespalte', 'PARAM_RAW', 'x', false, null, null, null, 'test'),
         ];
     }
+    public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
+        return [];
+    }
     public static function common_field_names(): array {
         return [];
     }
@@ -180,6 +183,9 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
             ),
         ];
     }
+    public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
+        return [];
+    }
     public static function common_field_names(): array {
         return [];
     }
@@ -221,6 +227,9 @@ final class drift_check_test_fake_catalog_with_bad_constant implements module_ca
             new field('intro', 'PARAM_RAW', 'x', true, null, null, null, 'test'),
             new field('introformat', 'PARAM_INT', 'x', false, 0, null, null, 'test'),
         ];
+    }
+    public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
+        return [];
     }
     public static function common_field_names(): array {
         return [];

@@ -232,6 +232,10 @@ final class choice implements module_catalog {
         ];
     }
 
+    public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
+        return module_state::for_modname(self::modname(), $instanceid, $cmid, $fullcontent);
+    }
+
     public static function common_field_names(): array {
         return array_map(static fn (field $f): string => $f->name, self::fields());
     }

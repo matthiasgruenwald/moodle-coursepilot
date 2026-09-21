@@ -419,6 +419,14 @@ final class quiz implements module_catalog {
         ];
     }
 
+    /**
+     * Quiz bleibt die ADR-0016-Ausnahme: Bewertung und Fragenanordnung liegen
+     * ausserhalb des generischen Formularwegs und werden deshalb hier gelesen.
+     */
+    public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
+        return module_state::quiz($instanceid, $cmid, $fullcontent);
+    }
+
     public static function common_field_names(): array {
         return [
             'name',

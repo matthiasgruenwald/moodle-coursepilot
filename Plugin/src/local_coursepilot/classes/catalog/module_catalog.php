@@ -58,6 +58,17 @@ interface module_catalog {
     public static function fields(): array;
 
     /**
+     * Wirksamer, lehrkraftlesbarer Zustand einer Instanz fuer die
+     * Katalogansicht. Die Form bleibt fuer alle Modultypen gleich.
+     *
+     * @param int $instanceid
+     * @param int $cmid
+     * @param bool $fullcontent
+     * @return array{name: string, content: array, settings: array, quizslots: array}
+     */
+    public static function state(int $instanceid, int $cmid, bool $fullcontent): array;
+
+    /**
      * Namen der haeufig gesetzten Felder aus {@see fields()} fuer die Kurzform
      * von describe_module_fields (Spec 0015 §3.1, Ticket #382). Bei wenigen
      * Feldern (label, choice, forum, ...) ist "alle" bereits die Kurzform -
