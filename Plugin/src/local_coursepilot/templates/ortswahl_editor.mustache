@@ -17,11 +17,12 @@
 {{!
     @template local_coursepilot/ortswahl_editor
 
-    Ortswahl und Dateifenster. Dynamische Listen fuellt bis zur AMD-Umstellung
-    javascript/ortswahl.js; alle serverseitigen Werte escaped Mustache.
+    Ortswahl und Dateifenster. Dynamische Listen fuellt amd/src/ortswahl.js
+    (Issue #551) ueber Mustache-Vorlagen statt aus Zeichenketten; die
+    Konfiguration erreicht das Modul ueber $PAGE->requires->js_call_amd(),
+    nicht ueber eingebettete Daten in diesem Template.
 
     Context variables required for this template:
-    * editorjson - string - raw JSON state for javascript/ortswahl.js (rendered unescaped via triple braces)
     * actionurl - string - form action URL
     * sesskey - string - session key for the form
     * oauthflow - bool - whether this editor continues an OAuth flow
@@ -30,11 +31,10 @@
       * name - string - target identifier (kontextbereich or materialbestand)
       * first - bool - whether this is the first tab (active by default)
       * kontextbereich - bool - true for the Kontextbereich target, false for Materialbestand
-      * fields - array - list of {name, id} hidden inputs filled by javascript/ortswahl.js
+      * fields - array - list of {name, id} hidden inputs filled by amd/src/ortswahl.js
 
     Example context (json):
     {
-        "editorjson": "{}",
         "actionurl": "https://example.org/local/coursepilot/ortswahl.php",
         "sesskey": "abc123",
         "oauthflow": false,
@@ -46,7 +46,6 @@
     }
 }}
 <div class="coursepilot-ortswahl" id="coursepilot-ortswahl">
-    <script type="application/json" id="coursepilot-ortswahl-data">{{{editorjson}}}</script>
     <form method="post" action="{{actionurl}}" id="coursepilot-ortswahl-form">
         <input type="hidden" name="sesskey" value="{{sesskey}}">
         <input type="hidden" name="finish" value="1">

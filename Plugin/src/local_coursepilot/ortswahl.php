@@ -55,14 +55,20 @@ $PAGE->set_heading(get_string('ortswahlheading', 'local_coursepilot'));
 $oauthreturn = local_coursepilot_read_oauth_passthrough();
 $finishresult = local_coursepilot_handle_ortswahl_finish($oauthreturn);
 
+if (location_selection::setup_state((int) $USER->id)['state'] === location_selection::STATE_READY) {
+    // AMD-Modul statt freiem Skript (Issue #551, Spec 0023): die Konfiguration
+    // erreicht das Modul ueber js_call_amd(), nie ueber eingebettete Daten im
+    // Seitenquelltext.
+    $PAGE->requires->js_call_amd('local_coursepilot/ortswahl', 'init', [
+        location_selection_output::amd_configuration($USER),
+    ]);
+}
+
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template(
     'local_coursepilot/ortswahl_page',
     location_selection_output::page_data($USER, $finishresult, $oauthreturn)
 );
-if (location_selection::setup_state((int) $USER->id)['state'] === location_selection::STATE_READY) {
-    $PAGE->requires->js(new moodle_url('/local/coursepilot/javascript/ortswahl.js'));
-}
 echo $OUTPUT->footer();
 
 /**

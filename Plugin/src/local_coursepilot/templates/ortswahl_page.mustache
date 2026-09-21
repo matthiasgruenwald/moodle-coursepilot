@@ -33,6 +33,7 @@
     * noinstance - bool - true when no Nextcloud instance is connected yet
     * schoolhint - string - optional admin hint for the school instance (only present if noinstance and set)
     * ready - bool - true when the editor (see local_coursepilot/ortswahl_editor) should render
+    * editor - object - editor context (see local_coursepilot/ortswahl_editor), only present when ready
     * locations - array - list wrapping the current-location context (see local_coursepilot/current_locations), empty when none set
     * history - object - {empty: bool, entries: array of {date, target, from, to}}
 
@@ -76,7 +77,7 @@
 {{#schoolhint}}<h5>{{#str}} ortswahlschoolhintheading, local_coursepilot {{/str}}</h5><p>{{schoolhint}}</p>{{/schoolhint}}
 {{/noinstance}}
 
-{{#ready}}{{> local_coursepilot/ortswahl_editor}}{{/ready}}
+{{#ready}}{{#editor}}{{> local_coursepilot/ortswahl_editor}}{{/editor}}{{/ready}}
 <h4>{{#str}} ortswahlcurrentheading, local_coursepilot {{/str}}</h4>
 {{#locations}}{{> local_coursepilot/current_locations}}{{/locations}}
 <h4>{{#str}} ortswahlhistoryheading, local_coursepilot {{/str}}</h4>

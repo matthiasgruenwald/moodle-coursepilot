@@ -33,13 +33,30 @@ use local_coursepilot\storage_anchor;
  */
 final class location_selection {
     /**
-     * @param \stdClass $user
      * @param array<string, string> $oauthpassthrough
      * @return array<string, mixed>
      */
-    public static function editor_data(\stdClass $user, array $oauthpassthrough = []): array {
+    public static function editor_data(array $oauthpassthrough = []): array {
+        return [
+            'actionurl' => (new \moodle_url('/local/coursepilot/ortswahl.php'))->out(false),
+            'sesskey' => sesskey(),
+            'oauthflow' => $oauthpassthrough !== [],
+            'oauthpassthrough' => self::oauth_fields($oauthpassthrough),
+            'targets' => self::targets(),
+        ];
+    }
+
+    /**
+     * Configuration for amd/src/ortswahl.js (Issue #551, Spec 0023): reaches
+     * the module via $PAGE->requires->js_call_amd(), not via embedded data in
+     * the page source.
+     *
+     * @param \stdClass $user
+     * @return array<string, mixed>
+     */
+    public static function amd_configuration(\stdClass $user): array {
         $state = selection::page_state((int) $user->id);
-        $configuration = [
+        return [
             'state' => $state,
             'instances' => $state['instances'],
             'targets' => [
@@ -53,15 +70,6 @@ final class location_selection {
             'sesskey' => sesskey(),
             'timeoutms' => selection::BROWSE_TIMEOUT_MS,
             'strings' => self::editor_strings(),
-        ];
-
-        return [
-            'actionurl' => (new \moodle_url('/local/coursepilot/ortswahl.php'))->out(false),
-            'sesskey' => sesskey(),
-            'oauthflow' => $oauthpassthrough !== [],
-            'oauthpassthrough' => self::oauth_fields($oauthpassthrough),
-            'targets' => self::targets(),
-            'editorjson' => json_encode($configuration, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG),
         ];
     }
 
@@ -157,7 +165,7 @@ final class location_selection {
             'missingstepstext' => selection::missing_steps_text((int) $user->id),
             'supporturl' => (new \moodle_url('/admin/settings.php', ['section' => 'supportcontact']))->out(false),
             'schoolhint' => selection::school_hint(),
-            'editor' => self::editor_data($user, $oauthreturn['params'] ?? []),
+            'editor' => self::editor_data($oauthreturn['params'] ?? []),
             'locations' => self::current_locations_data(),
             'history' => self::history_data(),
         ];
