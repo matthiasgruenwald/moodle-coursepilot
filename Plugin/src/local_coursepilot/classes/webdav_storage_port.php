@@ -50,6 +50,35 @@ use local_coursepilot\webdav\webdav_instance;
 final class webdav_storage_port implements storage_port {
 
     /**
+     * Liest eine Ebene fuer die Ortswahl. Das bleibt beim WebDAV-Adapter:
+     * die Seite bewertet nur die zurueckgegebenen Eintraege als Auswahl.
+     *
+     * @param int $instanceid
+     * @param string $path Relativ zur Instanzwurzel.
+     * @return array{entries: array<int, array{name: string, type: string}>, iserv: bool}
+     * @throws webdav_error
+     */
+    public static function browse_location(int $instanceid, string $path): array {
+        $instance = webdav_instance::resolve_owned($instanceid);
+        try {
+            $entries = $instance->client()->propfind($instance->directory_url($path), 1);
+        } catch (webdav_error $e) {
+            $entries = webdav_error::empty_when_missing($e, [], static fn (webdav_error $error): webdav_error => $error);
+        }
+        if ($path === '') {
+            return ['entries' => $entries, 'iserv' => webdav_instance::is_iserv_listing($entries)];
+        }
+        try {
+            $root = $instance->client()->propfind($instance->directory_url(''), 1);
+            $iserv = webdav_instance::is_iserv_listing($root);
+        } catch (webdav_error $e) {
+            access_log::log_failure('WebDAV ' . $e->errorclass . ' bei IServ-Erkennung: ' . $e->getMessage());
+            $iserv = false;
+        }
+        return ['entries' => $entries, 'iserv' => $iserv];
+    }
+
+    /**
      * @var string[] moodle_exception-Fehlerschluessel aus
      *      {@see webdav_instance::resolve_owned()}, die genauso einen
      *      Ausstand anlegen wie ein {@see webdav_error} (Issue #540, ADR

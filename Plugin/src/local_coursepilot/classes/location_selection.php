@@ -89,13 +89,59 @@ final class location_selection {
     }
 
     /**
+     * Der vollstaendige, darstellungsneutrale Zustand der Ortswahl. Texte und
+     * Auszeichnung entstehen erst beim Rendern aus den benannten Schluesseln.
+     *
+     * @param int $userid
+     * @param array|null $browse Ergebnis von {@see browse()}, falls eine Ebene geoeffnet ist.
+     * @return array
+     */
+    public static function page_state(int $userid, ?array $browse = null): array {
+        $setup = self::setup_state($userid);
+        $locations = [];
+        foreach (self::TARGETS as $target) {
+            $current = self::current($target);
+            $locations[$target] = [
+                'state' => $current['chosen'] ? 'selected' : 'not_selected',
+                'kind' => $current['ort'],
+                'path' => $current['pfad'],
+                'allowed' => $current['zugelassen'] ? 'allowed' : 'not_allowed',
+            ] + (isset($current['instanzid']) ? ['instanceid' => $current['instanzid']] : []);
+        }
+        $steps = [];
+        foreach ($setup['steps'] as $key => $step) {
+            $steps[$key] = ['state' => $step['ok'] ? 'complete' : 'missing'];
+        }
+        return [
+            'webdav' => ['state' => $setup['state'], 'steps' => $steps],
+            'locations' => $locations,
+            'instances' => self::own_instances(),
+            'browse' => $browse === null ? ['state' => 'idle'] : ['state' => 'ready'] + $browse,
+            'altbestand' => ['state' => previous_location::open() ? 'open' : 'closed'],
+            'history' => array_map(static function (array $entry): array {
+                if (isset($entry['from'], $entry['to'])) {
+                    return [
+                        'at' => (int) ($entry['datum'] ?? 0),
+                        'target' => (string) ($entry['ziel'] ?? ''),
+                        'from' => $entry['from'],
+                        'to' => $entry['to'],
+                    ];
+                }
+                return ['at' => (int) ($entry['datum'] ?? 0), 'target' => (string) ($entry['ziel'] ?? ''), 'state' => 'legacy'];
+            }, self::history()),
+            'notices' => [],
+            'errors' => [],
+        ];
+    }
+
+    /**
      * Die eigenen WebDAV-Nutzerinstanzen der angemeldeten Person - Wurzeln
      * des Dateifensters (Issue #494). Traegt seit Issue #497 zusaetzlich, ob
      * eine Instanz ueberhaupt waehlbar ist: https+Basic ist Pflicht (Spec
      * §2 Pruefung 5/§3) - eine Instanz ohne das erscheint mit Begruendung,
      * statt einfach zu fehlen.
      *
-     * @return array<int, array{id: int, name: string, selectable: bool, reason: string}>
+     * @return array<int, array{id: int, name: string, selectable: bool, reasonkey: ?string}>
      */
     public static function own_instances(): array {
         global $DB;
@@ -116,7 +162,7 @@ final class location_selection {
                     'id' => (int) $r->id,
                     'name' => (string) $r->name,
                     'selectable' => $selectable,
-                    'reason' => $selectable ? '' : get_string('ortswahlinstanceauthunsupported', 'local_coursepilot'),
+                    'reasonkey' => $selectable ? null : 'ortswahlinstanceauthunsupported',
                 ];
             },
             $records
@@ -166,15 +212,19 @@ final class location_selection {
      * @param int $instanceid
      * @param string $path Relativ zur Instanzwurzel, z.B. "" oder "Unterricht/Kontext".
      * @return array{path: string, folders: array<int, array{name: string}>, iserv: bool,
-     *         selectable: bool, reason: string, entrycount: int, entrynames: string[]}
+     *         selectable: bool, reasonkey: ?string, entrycount: int, entrynames: string[]}
      * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/
      *         webdavauthunsupported/ortswahlexternalerror/invalidcontextpath
      */
     public static function browse(int $instanceid, string $path): array {
         $segments = self::validate_segments($path);
         $relative = implode('/', $segments);
-        $instance = webdav_instance::resolve_owned($instanceid);
-        $raw = self::fetch_raw_entries($instance, $relative);
+        try {
+            $listing = webdav_storage_port::browse_location($instanceid, $relative);
+        } catch (webdav_error $e) {
+            throw pointer_reader::webdav_exception($e, 'ortswahlexternalerror');
+        }
+        $raw = $listing['entries'];
 
         $folders = array_values(array_map(
             static fn (array $entry): array => ['name' => $entry['name']],
@@ -182,7 +232,7 @@ final class location_selection {
         ));
         usort($folders, static fn (array $a, array $b): int => strnatcasecmp($a['name'], $b['name']));
 
-        $iserv = self::iserv_root($segments, $instance, $raw);
+        $iserv = $listing['iserv'];
         [$selectable, $reason] = self::selectability($segments, $iserv);
 
         $names = array_values(array_map(static fn (array $entry): string => $entry['name'], $raw));
@@ -193,14 +243,14 @@ final class location_selection {
             'folders' => $folders,
             'iserv' => $iserv,
             'selectable' => $selectable,
-            'reason' => $reason,
+            'reasonkey' => $reason,
             'entrycount' => count($raw),
             'entrynames' => array_slice($names, 0, self::ENTRY_PREVIEW_COUNT),
         ];
     }
 
     /**
-     * Der eine PROPFIND-Aufruf, den sich {@see browse()} und
+     * Der eine PROPFIND-Aufruf, den sich Altbestand und die
      * {@see old_location_has_entries()} teilen (Issue #517) - ein
      * Netzausfall gilt als leerer Ordner, nicht als Fehler (dieselbe Regel
      * wie zuvor in {@see browse()}).
@@ -258,49 +308,22 @@ final class location_selection {
     }
 
     /**
-     * IServ-Erkennung fuer eine gebrowste Ebene (Issue #497, Spec #486 §5):
-     * an der Wurzel selbst steht die Antwort schon in `$rootlisting`, tiefer
-     * braucht es ein zusaetzliches PROPFIND auf die Wurzel - ein Netzfehler
-     * dabei gilt als "nicht erkannt" (die eigentliche Auflistung ist ja
-     * bereits gegluecht, das Browsen soll daran nicht scheitern).
-     *
-     * @param string[] $segments
-     * @param \local_coursepilot\webdav\resolved_webdav_instance $instance
-     * @param array $rootlisting Nur gueltig, wenn `$segments` leer ist.
-     * @return bool
-     */
-    private static function iserv_root(array $segments, \local_coursepilot\webdav\resolved_webdav_instance $instance, array $rootlisting): bool {
-        if (empty($segments)) {
-            return webdav_instance::is_iserv_listing($rootlisting);
-        }
-        try {
-            return webdav_instance::is_iserv_listing($instance->client()->propfind($instance->directory_url(''), 1));
-        } catch (webdav_error $e) {
-            // Ein Netzfehler hier gilt bewusst als "nein" (die eigentliche
-            // Auflistung ist ja schon gegluecht, das Browsen soll daran nicht
-            // scheitern) - aber nicht mehr kommentarlos: Issue #506 verlangt,
-            // dass jedes bewusste "nein" protokolliert wird.
-            access_log::log_failure('WebDAV ' . $e->errorclass . ' bei IServ-Erkennung: ' . $e->getMessage());
-            return false;
-        }
-    }
-
     /**
      * Waehlbarkeit einer Ebene (Issue #497, Spec #486 §5): weder die Wurzel
      * einer Instanz noch - bei IServ - etwas ausserhalb von `Files/`.
      *
      * @param string[] $segments
      * @param bool $iserv
-     * @return array{0: bool, 1: string} [waehlbar, Begruendung (leer wenn waehlbar)]
+     * @return array{0: bool, 1: string|null} [waehlbar, Begruendungsschluessel]
      */
     private static function selectability(array $segments, bool $iserv): array {
         if (empty($segments)) {
-            return [false, get_string('ortswahlrootnotselectable', 'local_coursepilot')];
+            return [false, 'ortswahlrootnotselectable'];
         }
         if ($iserv && $segments[0] !== webdav_instance::ISERV_FILES_AREA) {
-            return [false, get_string('ortswahliservfilesonly', 'local_coursepilot')];
+            return [false, 'ortswahliservfilesonly'];
         }
-        return [true, ''];
+        return [true, null];
     }
 
     /**
@@ -316,7 +339,7 @@ final class location_selection {
     public static function current(string $target): array {
         $value = self::current_pointer_value($target);
         return $value + [
-            'display' => self::describe_pointer_value($value),
+            'display' => self::describe_location($value),
             'zugelassen' => self::is_allowed($value),
         ];
     }
@@ -405,7 +428,7 @@ final class location_selection {
             return [];
         }
 
-        self::save_pointer_document($wanted, $locationhistory, $previouslocation);
+        storage_anchor::save_location_selection($wanted, $locationhistory, $previouslocation);
         return $changed;
     }
 
@@ -482,8 +505,8 @@ final class location_selection {
             $locationhistory[] = [
                 'datum' => time(),
                 'ziel' => $target,
-                'von' => self::describe_pointer_value($current[$target]),
-                'nach' => self::describe_pointer_value($wanted[$target]),
+                'from' => $current[$target],
+                'to' => $wanted[$target],
             ];
             if ($target === 'kontextbereich') {
                 // Jeder echte Wechsel verdraengt den bisherigen Altbestand -
@@ -499,25 +522,6 @@ final class location_selection {
     }
 
     /**
-     * Schreibt den neuen Kontextpointer - nur erreicht, wenn mindestens ein
-     * Ziel sich wirklich aendert ({@see apply()}).
-     *
-     * @param array<string, array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array}> $wanted
-     * @param array $locationhistory
-     * @param ?array $previouslocation
-     */
-    private static function save_pointer_document(array $wanted, array $locationhistory, ?array $previouslocation): void {
-        $document = [
-            'kontextbereich' => $wanted['kontextbereich'],
-            'materialbestand' => $wanted['materialbestand'],
-            'ortsverlauf' => $locationhistory,
-        ];
-        if ($previouslocation !== null) {
-            $document['vorheriger_ort'] = $previouslocation;
-        }
-        storage_anchor::write_pointer_document($document);
-    }
-
     /**
      * @var string[] Fehlerschluessel, bei denen der alte Ort selbst nicht
      *      mehr gueltig ist (geloeschte/fremde Instanz, entzogene
@@ -766,7 +770,7 @@ final class location_selection {
      * @param array $value
      * @return string
      */
-    private static function describe_pointer_value(array $value): string {
+    public static function describe_location(array $value): string {
         if ($value['ort'] === pointer_location::MOODLE) {
             return get_string('ortswahllocationmoodle', 'local_coursepilot', $value['pfad']);
         }

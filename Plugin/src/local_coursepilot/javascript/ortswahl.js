@@ -284,7 +284,7 @@
             item.textContent = instance.name;
             if (!selectable) {
                 item.disabled = true;
-                item.title = instance.reason || '';
+                item.title = instance.reasonkey ? (config.strings[instance.reasonkey] || '') : '';
                 item.className += ' text-muted';
             }
             item.addEventListener('click', function () {
@@ -353,7 +353,7 @@
                     renderFolders([]);
                     // Im Fenster angelegter Ordner: immer leer und waehlbar,
                     // keine Uebergabe-Rueckfrage noetig (Spec §5).
-                    applyBrowseResult({ path: state.path, folders: [], selectable: true, reason: '', entrycount: 0, entrynames: [] });
+                    applyBrowseResult({ path: state.path, folders: [], selectable: true, reasonkey: null, entrycount: 0, entrynames: [] });
                 } else {
                     browse();
                 }
@@ -426,7 +426,7 @@
         var locked = result.selectable === false;
         var reasonEl = el('coursepilot-ortswahl-modal-reason');
         reasonEl.hidden = !locked;
-        reasonEl.textContent = locked ? (result.reason || '') : '';
+        reasonEl.textContent = locked && result.reasonkey ? (config.strings[result.reasonkey] || '') : '';
         el('coursepilot-ortswahl-confirmfolder').disabled = locked;
         el('coursepilot-ortswahl-createfolder').disabled = locked;
     }
@@ -467,14 +467,17 @@
                 clearTimeout(timer);
                 if (!result.ok) {
                     // Der Server hat geantwortet, aber mit einem Fehler
-                    // (Issue #526) - dessen eigener Text zeigt der Lehrkraft,
-                    // was los ist, statt immer nur die generische
-                    // Zeitueberschreitungs-Meldung.
-                    showBrowseError(config.strings.browseerrorheading, result.error || config.strings.timeouttext);
+                    // (Issue #526) - der benannte Fehler wird erst hier
+                    // uebersetzt, nie als Satz im Seitenzustand transportiert.
+                    showBrowseError(config.strings.browseerrorheading,
+                        (result.errorkey && config.strings[result.errorkey]) || config.strings.timeouttext);
                     return;
                 }
-                renderFolders(result.folders || []);
-                applyBrowseResult(result);
+                // Test-Fakes und aeltere Antworten liefern die Ebene direkt;
+                // der Endpunkt liefert sie als Teil des Seitenzustands.
+                var browseState = result.state ? result.state.browse : result;
+                renderFolders(browseState.folders || []);
+                applyBrowseResult(browseState);
             })
             .catch(function () {
                 clearTimeout(timer);
@@ -506,7 +509,7 @@
         // browse()-Ergebnis der Elternebene stehen und "Ordner auswaehlen"
         // wuerde faelschlich deren Inhalt fuer die Uebergabe-Warnung
         // heranziehen (Issue #559).
-        state.lastResult = { path: path, folders: [], selectable: true, reason: '', entrycount: 0, entrynames: [] };
+        state.lastResult = { path: path, folders: [], selectable: true, reasonkey: null, entrycount: 0, entrynames: [] };
     });
 
     // --- Ordner waehlen, mit Uebergabe-Bestaetigung eines gefuellten Ordners

@@ -304,8 +304,8 @@ function local_coursepilot_render_ortswahl_history(): void {
         $table->data[] = [
             userdate((int) ($entry['datum'] ?? 0)),
             $target,
-            s((string) ($entry['von'] ?? '')),
-            s((string) ($entry['nach'] ?? '')),
+            s(isset($entry['from']) ? location_selection::describe_location($entry['from']) : (string) ($entry['von'] ?? '')),
+            s(isset($entry['to']) ? location_selection::describe_location($entry['to']) : (string) ($entry['nach'] ?? '')),
         ];
     }
     echo html_writer::table($table);

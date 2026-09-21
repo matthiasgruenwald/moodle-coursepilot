@@ -94,6 +94,25 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->assertSame('not_enabled', $state['state']);
     }
 
+    public function test_page_state_uses_named_states_and_keys_instead_of_display_text(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        $state = location_selection::page_state((int) $user->id);
+
+        $this->assertSame(location_selection::STATE_NOT_ENABLED, $state['webdav']['state']);
+        $this->assertSame('not_selected', $state['locations']['kontextbereich']['state']);
+        $this->assertSame('moodle', $state['locations']['kontextbereich']['kind']);
+        $this->assertSame('closed', $state['altbestand']['state']);
+        $this->assertSame([], $state['history']);
+        $this->assertSame('idle', $state['browse']['state']);
+        $this->assertSame([], $state['notices']);
+        $this->assertSame([], $state['errors']);
+        $this->assertArrayNotHasKey('display', $state['locations']['kontextbereich']);
+        $this->assertArrayNotHasKey('instruction', $state['webdav']['steps']['repository_active']);
+    }
+
     public function test_missing_steps_text_names_only_failing_steps(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
@@ -327,7 +346,8 @@ final class ortswahl_lib_test extends \advanced_testcase {
 
     public function test_apply_writes_nothing_when_both_targets_stay_in_moodle(): void {
         $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
 
         $changed = location_selection::apply([
             'kontextbereich' => ['type' => 'moodle'],
@@ -335,7 +355,9 @@ final class ortswahl_lib_test extends \advanced_testcase {
         ]);
 
         $this->assertSame([], $changed);
-        $this->assertNull(storage_anchor::read_raw_pointer());
+        $state = location_selection::page_state((int) $user->id);
+        $this->assertSame('not_selected', $state['locations']['kontextbereich']['state']);
+        $this->assertSame('not_selected', $state['locations']['materialbestand']['state']);
     }
 
     public function test_apply_creates_folder_chain_writes_pointer_and_history_line(): void {
@@ -354,16 +376,14 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $mkcols = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'MKCOL'));
             $this->assertCount(2, $mkcols, 'Ebene fuer Ebene: "Unterricht", dann "Unterricht/Kontext".');
 
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertSame('extern', $document['kontextbereich']['ort']);
-            $this->assertSame($instanceid, $document['kontextbereich']['instanzid']);
-            $this->assertSame('Unterricht/Kontext', $document['kontextbereich']['pfad']);
-            $this->assertSame('moodle', $document['materialbestand']['ort']);
-            $this->assertCount(1, $document['ortsverlauf']);
-            $this->assertSame('kontextbereich', $document['ortsverlauf'][0]['ziel']);
-            $this->assertArrayHasKey('datum', $document['ortsverlauf'][0]);
-            $this->assertArrayHasKey('von', $document['ortsverlauf'][0]);
-            $this->assertArrayHasKey('nach', $document['ortsverlauf'][0]);
+            $state = location_selection::page_state((int) $user->id);
+            $this->assertSame('selected', $state['locations']['kontextbereich']['state']);
+            $this->assertSame('extern', $state['locations']['kontextbereich']['kind']);
+            $this->assertSame($instanceid, $state['locations']['kontextbereich']['instanceid']);
+            $this->assertSame('Unterricht/Kontext', $state['locations']['kontextbereich']['path']);
+            $this->assertSame('moodle', $state['locations']['materialbestand']['kind']);
+            $this->assertCount(1, $state['history']);
+            $this->assertSame('kontextbereich', $state['history'][0]['target']);
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -390,7 +410,8 @@ final class ortswahl_lib_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertSame('ortswahlfolderconfirmrequired', $e->errorcode);
         } finally {
-            $this->assertNull(storage_anchor::read_raw_pointer());
+            $state = location_selection::page_state((int) $user->id);
+            $this->assertSame('not_selected', $state['locations']['kontextbereich']['state']);
             webdav_instance::set_transport(null);
         }
     }
@@ -477,8 +498,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $this->assertSame(['kontextbereich'], location_selection::apply($selection));
             $this->assertSame([], location_selection::apply($selection));
 
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertCount(1, $document['ortsverlauf']);
+            $this->assertCount(1, location_selection::page_state((int) $user->id)['history']);
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -497,7 +517,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'materialbestand' => ['type' => 'moodle'],
             ]);
         } finally {
-            $this->assertNull(storage_anchor::read_raw_pointer());
+            $this->assertSame('not_selected', location_selection::page_state((int) $user->id)['locations']['kontextbereich']['state']);
             webdav_instance::set_transport(null);
         }
     }
@@ -535,7 +555,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'materialbestand' => ['type' => 'moodle'],
             ]);
         } finally {
-            $this->assertNull(storage_anchor::read_raw_pointer());
+            $this->assertSame('not_selected', location_selection::page_state((int) $user->id)['locations']['kontextbereich']['state']);
             webdav_instance::set_transport(null);
         }
     }
@@ -549,7 +569,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         try {
             $result = location_selection::browse($this->lastinstanceid, '');
             $this->assertFalse($result['selectable']);
-            $this->assertNotSame('', $result['reason']);
+            $this->assertSame('ortswahlrootnotselectable', $result['reasonkey']);
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -567,7 +587,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $level = location_selection::browse($this->lastinstanceid, 'Unterricht');
             $this->assertFalse($level['iserv']);
             $this->assertTrue($level['selectable']);
-            $this->assertSame('', $level['reason']);
+            $this->assertNull($level['reasonkey']);
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -618,7 +638,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             $groups = location_selection::browse($this->lastinstanceid, 'Groups');
             $this->assertTrue($groups['iserv']);
             $this->assertFalse($groups['selectable'], 'Ausserhalb von Files/ ist bei IServ nichts waehlbar.');
-            $this->assertNotSame('', $groups['reason']);
+            $this->assertSame('ortswahliservfilesonly', $groups['reasonkey']);
 
             $files = location_selection::browse($this->lastinstanceid, 'Files');
             $this->assertTrue($files['iserv']);
@@ -672,7 +692,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
 
         $this->assertCount(1, $instances);
         $this->assertFalse($instances[0]['selectable']);
-        $this->assertNotSame('', $instances[0]['reason']);
+        $this->assertSame('ortswahlinstanceauthunsupported', $instances[0]['reasonkey']);
     }
 
     public function test_own_instances_marks_valid_instance_as_selectable(): void {
@@ -685,7 +705,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $instances = location_selection::own_instances();
 
         $this->assertTrue($instances[0]['selectable']);
-        $this->assertSame('', $instances[0]['reason']);
+        $this->assertNull($instances[0]['reasonkey']);
     }
 
     public function test_apply_rejects_iserv_path_outside_files(): void {
@@ -701,7 +721,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'materialbestand' => ['type' => 'moodle'],
             ]);
         } finally {
-            $this->assertNull(storage_anchor::read_raw_pointer());
+            $this->assertSame('not_selected', location_selection::page_state((int) $user->id)['locations']['kontextbereich']['state']);
             webdav_instance::set_transport(null);
         }
     }
@@ -719,8 +739,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
             ]);
 
             $this->assertSame(['kontextbereich'], $changed);
-            $document = storage_anchor::read_raw_pointer();
-            $this->assertTrue($document['kontextbereich']['pruefmerkmal']['iserv']);
+            $this->assertSame('selected', location_selection::page_state((int) $user->id)['locations']['kontextbereich']['state']);
         } finally {
             webdav_instance::set_transport(null);
         }
@@ -738,7 +757,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
                 'materialbestand' => ['type' => 'extern', 'instanceid' => $instanceid, 'path' => 'Unterricht/Material'],
             ]);
         } finally {
-            $this->assertNull(storage_anchor::read_raw_pointer());
+            $this->assertSame('not_selected', location_selection::page_state((int) $user->id)['locations']['kontextbereich']['state']);
             webdav_instance::set_transport(null);
         }
     }
@@ -754,11 +773,16 @@ final class ortswahl_lib_test extends \advanced_testcase {
         $this->grant_webdav_capability($user);
         $this->assertTrue(location_selection::open_with_access((int) $user->id), 'Freigeschaltet, Ortswahl offen.');
 
-        storage_anchor::write_pointer_document([
-            'kontextbereich' => 'mein-kontext',
-            'materialordner' => 'mein-material',
-        ]);
-        $this->assertFalse(location_selection::open_with_access((int) $user->id), 'Ortswahl nicht mehr offen, sobald ein Pointer existiert.');
+        [$user, $fake] = $this->prepare_instance();
+        try {
+            location_selection::apply([
+                'kontextbereich' => ['type' => 'extern', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
+                'materialbestand' => ['type' => 'moodle'],
+            ]);
+            $this->assertFalse(location_selection::open_with_access((int) $user->id), 'Ortswahl nicht mehr offen, sobald ein Ort gewaehlt ist.');
+        } finally {
+            webdav_instance::set_transport(null);
+        }
     }
 
     // --- Issue #498: Altbestand (vorheriger Ort) ---

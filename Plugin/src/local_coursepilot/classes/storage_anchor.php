@@ -278,6 +278,27 @@ final class storage_anchor {
     }
 
     /**
+     * Speichert eine in der Ortswahl bestaetigte Auswahl als vollstaendiges
+     * Pointer-Dokument. Die Seitenlogik liefert nur Werte, nie einen
+     * Dateischreibzugriff am Anker vorbei.
+     *
+     * @param array<string, array> $locations
+     * @param array<int, array> $history
+     * @param array|null $previouslocation
+     */
+    public static function save_location_selection(array $locations, array $history, ?array $previouslocation): void {
+        $document = [
+            'kontextbereich' => $locations['kontextbereich'],
+            'materialbestand' => $locations['materialbestand'],
+            'ortsverlauf' => $history,
+        ];
+        if ($previouslocation !== null) {
+            $document['vorheriger_ort'] = $previouslocation;
+        }
+        self::write_pointer_document($document);
+    }
+
+    /**
      * Der feste Anker-Ordner selbst - fuer alles, was direkt darin liegt
      * (Kontextpointer, Ausstandsnotiz), nicht in einem Bereich darunter.
      *

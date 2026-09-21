@@ -36,6 +36,8 @@ require_login(null, false);
 require_sesskey();
 require_capability('local/coursepilot:useremote', context_system::instance());
 
+global $USER;
+
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
@@ -44,8 +46,8 @@ $path = optional_param('path', '', PARAM_RAW_TRIMMED);
 
 try {
     $result = location_selection::browse($instanceid, $path);
-    echo json_encode(['ok' => true] + $result);
+    echo json_encode(['ok' => true, 'state' => location_selection::page_state((int) $USER->id, $result)]);
 } catch (moodle_exception $e) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    echo json_encode(['ok' => false, 'errorkey' => $e->errorcode]);
 }

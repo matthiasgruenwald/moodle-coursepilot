@@ -90,8 +90,14 @@ function local_coursepilot_render_ortswahl_editor(\moodle_page $page, \stdClass 
  *         manageinstancesurl: string, sesskey: string, timeoutms: int, strings: array<string, string>}
  */
 function local_coursepilot_ortswahl_editor_data(): array {
+    global $USER;
+
+    $state = location_selection::page_state((int) $USER->id);
     return [
-        'instances' => location_selection::own_instances(),
+        // Der Zustand bleibt maschinenlesbar; die folgenden UI-Werte sind nur
+        // die vom bestehenden Skript benoetigte Render-Konfiguration.
+        'state' => $state,
+        'instances' => $state['instances'],
         'targets' => [
             'kontextbereich' => location_selection::current('kontextbereich'),
             'materialbestand' => location_selection::current('materialbestand'),
@@ -128,7 +134,11 @@ function local_coursepilot_ortswahl_editor_strings(): array {
         'selectionincomplete' => get_string('ortswahlselectionincomplete', 'local_coursepilot'),
         'timeouttitle' => get_string('ortswahltimeouttitle', 'local_coursepilot'),
         'timeouttext' => get_string('ortswahltimeouttext', 'local_coursepilot'),
+        'ortswahlinstanceauthunsupported' => get_string('ortswahlinstanceauthunsupported', 'local_coursepilot'),
+        'ortswahlrootnotselectable' => get_string('ortswahlrootnotselectable', 'local_coursepilot'),
+        'ortswahliservfilesonly' => get_string('ortswahliservfilesonly', 'local_coursepilot'),
         'browseerrorheading' => get_string('ortswahlbrowseerrorheading', 'local_coursepilot'),
+        'ortswahlexternalerror' => get_string('ortswahlexternalerror', 'local_coursepilot'),
         'retry' => get_string('ortswahlretry', 'local_coursepilot'),
         'checkcredentials' => get_string('ortswahlcheckcredentials', 'local_coursepilot'),
         'later' => get_string('ortswahllater', 'local_coursepilot'),
