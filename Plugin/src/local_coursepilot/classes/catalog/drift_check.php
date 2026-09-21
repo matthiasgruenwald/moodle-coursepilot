@@ -59,7 +59,7 @@ final class drift_check {
     private const REQUIRE_FILES = [
         'page' => ['{libdir}/resourcelib.php'],
         'url' => ['{libdir}/resourcelib.php', '{dirroot}/mod/url/locallib.php'],
-        'folder' => [],
+        'folder' => ['{dirroot}/mod/folder/lib.php'],
         'resource' => ['{libdir}/resourcelib.php'],
         'choice' => [],
         'forum' => ['{dirroot}/mod/forum/lib.php', '{dirroot}/rating/lib.php'],
