@@ -1,0 +1,87 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_coursepilot/surface
+
+    Statusseite (surface.php): Abgleich der registrierten MCP-Oberflaeche mit
+    der Allowlist, sowie Selbstpruefung der Instanz.
+
+    Context variables required for this template:
+    * hasviolations - bool - true when the allowlist check found violations
+    * violations - array - list of {type: string, name: string, detail: string}, present when hasviolations
+    * allowedtools - array - list of {tool: string, function: string}
+    * registered - array - list of {text: string}
+    * forbidden - array - list of {text: string}
+    * requirements - array - list of {text: string}
+    * selfcheckurltext - string - sentence naming the self-check URL (already translated)
+    * selfcheckok - bool - true when the self-check succeeded
+    * selfcheckerror - string - translated error detail (only present when not selfcheckok)
+    * emergencyexithint - string - emergency-exit hint text (only present when not selfcheckok)
+
+    Example context (json):
+    {
+        "hasviolations": false,
+        "allowedtools": [{"tool": "coursepilot_get_sections", "function": "local_coursepilot_get_sections"}],
+        "registered": [{"text": "local_coursepilot_get_sections"}],
+        "forbidden": [{"text": "delete"}],
+        "requirements": [{"text": "AcceptPathInfo On"}],
+        "selfcheckurltext": "Self-check URL: https://example.test/local/coursepilot/mcp.php/discovery",
+        "selfcheckok": true
+    }
+}}
+<p>{{#str}} surfaceintro, local_coursepilot {{/str}}</p>
+
+<h3>{{#str}} surfacestatus, local_coursepilot {{/str}}</h3>
+{{^hasviolations}}<div class="alert alert-success">{{#str}} surfaceok, local_coursepilot {{/str}}</div>{{/hasviolations}}
+{{#hasviolations}}
+<div class="alert alert-danger">{{#str}} surfaceviolations, local_coursepilot {{/str}}</div>
+<table class="generaltable">
+    <thead><tr><th>{{#str}} surfacecoltype, local_coursepilot {{/str}}</th><th>{{#str}} surfacecolname, local_coursepilot {{/str}}</th><th>{{#str}} surfacecoldetail, local_coursepilot {{/str}}</th></tr></thead>
+    <tbody>
+        {{#violations}}
+        <tr><td>{{type}}</td><td>{{name}}</td><td>{{detail}}</td></tr>
+        {{/violations}}
+    </tbody>
+</table>
+{{/hasviolations}}
+
+<h3>{{#str}} surfaceallowed, local_coursepilot {{/str}}</h3>
+<table class="generaltable">
+    <thead><tr><th>{{#str}} surfacecoltool, local_coursepilot {{/str}}</th><th>{{#str}} surfacecolfunction, local_coursepilot {{/str}}</th></tr></thead>
+    <tbody>
+        {{#allowedtools}}
+        <tr><td>{{tool}}</td><td>{{function}}</td></tr>
+        {{/allowedtools}}
+    </tbody>
+</table>
+
+<h3>{{#str}} surfaceregistered, local_coursepilot {{/str}}</h3>
+<ul>{{#registered}}<li>{{text}}</li>{{/registered}}</ul>
+
+<h3>{{#str}} surfaceforbidden, local_coursepilot {{/str}}</h3>
+<ul>{{#forbidden}}<li>{{text}}</li>{{/forbidden}}</ul>
+
+<h3>{{#str}} surfaceinstance, local_coursepilot {{/str}}</h3>
+<p>{{#str}} surfaceinstanceintro, local_coursepilot {{/str}}</p>
+<ul>{{#requirements}}<li>{{text}}</li>{{/requirements}}</ul>
+
+<p>{{selfcheckurltext}}</p>
+{{#selfcheckok}}<div class="alert alert-success">{{#str}} selfcheckok, local_coursepilot {{/str}}</div>{{/selfcheckok}}
+{{^selfcheckok}}
+<div class="alert alert-danger">{{selfcheckerror}}</div>
+<p>{{emergencyexithint}}</p>
+{{/selfcheckok}}

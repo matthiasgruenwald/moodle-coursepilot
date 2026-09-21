@@ -33,6 +33,7 @@
 require(__DIR__ . '/../../config.php');
 
 use local_coursepilot\oauth_lib;
+use local_coursepilot\output\connections_page;
 use local_coursepilot\output\location_selection as location_selection_output;
 use local_coursepilot\webdav\webdav_setup_steps;
 
@@ -58,48 +59,9 @@ if ($revokeid) {
 $tokens = oauth_lib::active_tokens_for_user((int) $USER->id);
 
 echo $OUTPUT->header();
-echo html_writer::tag('p', get_string('myconnectionsintro', 'local_coursepilot'));
-
-// Aktueller Ort je Ziel und ob er zugelassen ist (Issue #500, Spec #486 §11).
-echo $OUTPUT->heading(get_string('ortswahlcurrentheading', 'local_coursepilot'), 4);
-echo $OUTPUT->render_from_template(
-    'local_coursepilot/current_locations',
-    location_selection_output::current_locations_data()
-);
-echo html_writer::div(get_string('externallocationprivacyinfo', 'local_coursepilot'), 'small text-muted mb-2');
-echo html_writer::link(
-    new moodle_url(webdav_setup_steps::ORTSWAHL_PAGE),
-    get_string('consentlocationchangelink', 'local_coursepilot'),
-    ['class' => 'btn btn-link p-0 mb-3']
-);
-echo html_writer::empty_tag('br');
-
-if (!$tokens) {
-    echo $OUTPUT->notification(
-        get_string('connectionnoconnections', 'local_coursepilot'),
-        \core\output\notification::NOTIFY_INFO
-    );
-} else {
-    $table = new html_table();
-    $table->head = [
-        get_string('connectionclient', 'local_coursepilot'),
-        get_string('connectionsince', 'local_coursepilot'),
-        get_string('connectionexpires', 'local_coursepilot'),
-        '',
-    ];
-    foreach ($tokens as $tokenrecord) {
-        $revokeurl = new moodle_url('/local/coursepilot/connections.php', [
-            'revoke' => $tokenrecord->id,
-            'sesskey' => sesskey(),
-        ]);
-        $table->data[] = [
-            s($tokenrecord->clientname ?: $tokenrecord->clientid),
-            userdate($tokenrecord->timecreated),
-            userdate($tokenrecord->expires),
-            html_writer::link($revokeurl, get_string('connectionrevoke', 'local_coursepilot')),
-        ];
-    }
-    echo html_writer::table($table);
-}
-
+echo $OUTPUT->render_from_template('local_coursepilot/connections', connections_page::page_data(
+    $tokens,
+    location_selection_output::current_locations_data(),
+    new moodle_url(webdav_setup_steps::ORTSWAHL_PAGE)
+));
 echo $OUTPUT->footer();

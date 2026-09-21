@@ -33,7 +33,7 @@
 require(__DIR__ . '/../../../config.php');
 
 use local_coursepilot\oauth_lib;
-use local_coursepilot\location_selection;
+use local_coursepilot\output\authorize_page;
 
 require_login(null, false);
 
@@ -93,67 +93,21 @@ if ($action === 'allow') {
     ]));
 }
 
-echo $OUTPUT->header();
-echo $OUTPUT->heading($title);
-
-$allowpersonaldata = (bool) get_config('local_coursepilot', 'allowpersonaldata');
-echo html_writer::div(
-    get_string('consentintro', 'local_coursepilot', $clientname) . '<br><br>'
-    . get_string('consentgranted', 'local_coursepilot') . '<br>'
-    . get_string('consentdenied', 'local_coursepilot') . '<br><br>'
-    . get_string('consenttransfer', 'local_coursepilot') . '<br><br>'
-    . ($allowpersonaldata
-        ? get_string('consentpersonaldataon', 'local_coursepilot')
-        : get_string('consentpersonaldataoff', 'local_coursepilot'))
-    . '<br><br>'
-    . get_string('consentabbreviate', 'local_coursepilot') . '<br><br>'
-    . get_string('consentrevoke', 'local_coursepilot'),
-    'coursepilot-consent'
-);
-
-// Ortswahl (#446, #494): der Dialog zeigt den aufgeloesten Ort nur noch an
-// und verlinkt zur Ortswahlseite - er schreibt selbst keinen Kontextpointer
-// mehr (das war Issue #446, abgeloest durch die eigene Ortswahlseite #494).
-echo $OUTPUT->heading(get_string('consentlocationheading', 'local_coursepilot'), 3);
-echo html_writer::div(get_string('consentlocationintro', 'local_coursepilot'), 'coursepilot-consent-location-intro');
-$kontextbereich = location_selection::current('kontextbereich');
-$materialbestand = location_selection::current('materialbestand');
-echo html_writer::start_tag('ul');
-echo html_writer::tag('li', get_string('consentlocationkontextbereichcurrent', 'local_coursepilot', $kontextbereich['display'])
-    . ' — ' . location_selection::zugelassen_label($kontextbereich));
-echo html_writer::tag('li', get_string('consentlocationmaterialbestandcurrent', 'local_coursepilot', $materialbestand['display'])
-    . ' — ' . location_selection::zugelassen_label($materialbestand));
-echo html_writer::end_tag('ul');
-// Datenschutz-Informationstext (Issue #500, Spec #486 §11): was am externen
-// Ort gilt und was nicht - dieselbe Formel wie auf "Meine Verbindungen" und
-// bei der Einstellung "personaldatahosts".
-echo html_writer::div(get_string('externallocationprivacyinfo', 'local_coursepilot'), 'small text-muted mb-2');
 // Ortswahl-Link mit Ruecksprung (Issue #563, loest die mit #558 dokumentierte
 // Sackgasse auf): die OAuth-Anfrageparameter reisen als Querystring zur
-// Ortswahlseite mit; die Ortswahlseite validiert sie erneut selbst
-// ({@see location_selection} kennt sie nicht, nur oauth_lib) und fuehrt nach dem
-// Abschliessen genau hierher zurueck, statt zu Claude weiterzuleiten.
+// Ortswahlseite mit; die Ortswahlseite validiert sie erneut selbst und
+// fuehrt nach dem Abschliessen genau hierher zurueck, statt zu Claude
+// weiterzuleiten.
 $ortswahlurl = new moodle_url('/local/coursepilot/ortswahl.php', array_merge($params, [
     'state' => $state,
     'oauthflow' => 1,
 ]));
-echo html_writer::div(
-    html_writer::link($ortswahlurl, get_string('consentlocationsetuplink', 'local_coursepilot'), ['class' => 'btn btn-outline-secondary btn-sm']),
-    'mb-2'
-);
-echo html_writer::empty_tag('br');
-
 $formurl = new moodle_url('/local/coursepilot/oauth/authorize.php');
-foreach (['allow' => 'consentconfirm', 'deny' => 'consentdeny'] as $actionvalue => $labelstring) {
-    echo html_writer::start_tag('form', ['method' => 'post', 'action' => $formurl->out(false), 'style' => 'display:inline']);
-    foreach ($params as $name => $value) {
-        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $name, 'value' => $value]);
-    }
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'state', 'value' => $state]);
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => $actionvalue]);
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-    echo html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string($labelstring, 'local_coursepilot')]);
-    echo html_writer::end_tag('form');
-}
 
+echo $OUTPUT->header();
+echo $OUTPUT->heading($title);
+echo $OUTPUT->render_from_template(
+    'local_coursepilot/authorize',
+    authorize_page::page_data($clientname, $params, $state, $formurl, $ortswahlurl)
+);
 echo $OUTPUT->footer();

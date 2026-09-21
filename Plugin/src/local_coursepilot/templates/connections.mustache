@@ -1,0 +1,71 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_coursepilot/connections
+
+    Tokenliste der Lehrkraft auf connections.php ("Meine Verbindungen").
+
+    Context variables required for this template:
+    * currentlocations - object - current-location context (see local_coursepilot/current_locations)
+    * ortswahlurl - string - link to the location-selection page
+    * empty - bool - true when the teacher has no active connections
+    * rows - array - list of {clientname: string, since: string, expires: string, revokeurl: string}, present when not empty
+
+    Example context (json):
+    {
+        "currentlocations": {
+            "kontextbereich": {"label": "Kontextbereich", "allowancelabel": "IGS Musterschule / Klasse 7a"},
+            "materialbestand": {"label": "Materialbestand", "allowancelabel": "IGS Musterschule / Fachbereich Bio"}
+        },
+        "ortswahlurl": "https://example.test/local/coursepilot/ortswahl.php",
+        "empty": false,
+        "rows": [
+            {"clientname": "Claude Desktop", "since": "01.09.2026, 08:00", "expires": "01.10.2026, 08:00", "revokeurl": "https://example.test/local/coursepilot/connections.php?revoke=1&sesskey=abc"}
+        ]
+    }
+}}
+<p>{{#str}} myconnectionsintro, local_coursepilot {{/str}}</p>
+
+<h4>{{#str}} ortswahlcurrentheading, local_coursepilot {{/str}}</h4>
+{{#currentlocations}}{{> local_coursepilot/current_locations}}{{/currentlocations}}
+<div class="small text-muted mb-2">{{#str}} externallocationprivacyinfo, local_coursepilot {{/str}}</div>
+<a href="{{ortswahlurl}}" class="btn btn-link p-0 mb-3">{{#str}} consentlocationchangelink, local_coursepilot {{/str}}</a>
+<br>
+
+{{#empty}}<div class="alert alert-info">{{#str}} connectionnoconnections, local_coursepilot {{/str}}</div>{{/empty}}
+{{^empty}}
+<table class="generaltable">
+    <thead>
+        <tr>
+            <th>{{#str}} connectionclient, local_coursepilot {{/str}}</th>
+            <th>{{#str}} connectionsince, local_coursepilot {{/str}}</th>
+            <th>{{#str}} connectionexpires, local_coursepilot {{/str}}</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#rows}}
+        <tr>
+            <td>{{clientname}}</td>
+            <td>{{since}}</td>
+            <td>{{expires}}</td>
+            <td><a href="{{revokeurl}}">{{#str}} connectionrevoke, local_coursepilot {{/str}}</a></td>
+        </tr>
+        {{/rows}}
+    </tbody>
+</table>
+{{/empty}}

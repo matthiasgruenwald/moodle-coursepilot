@@ -46,7 +46,7 @@
 require(__DIR__ . '/../../config.php');
 
 use local_coursepilot\external\restore_activity_version;
-use local_coursepilot\history\version_history;
+use local_coursepilot\output\history_page;
 
 $cmid = optional_param('cmid', 0, PARAM_INT);
 $courseid = optional_param('id', 0, PARAM_INT);
@@ -147,66 +147,15 @@ if ($cmid && $restoreversion) {
 echo $OUTPUT->header();
 
 if ($cmid) {
-    $data = version_history::list_versions($cmid);
-    $newest = $data['versionen'] ? end($data['versionen'])['version'] : null;
-
-    echo $OUTPUT->heading(format_string($cm->name), 3);
-    echo html_writer::tag('p', get_string('historyintro', 'local_coursepilot'));
-
-    if ($data['modname'] === 'quiz') {
-        echo $OUTPUT->notification(get_string('historyquizhint', 'local_coursepilot'), \core\output\notification::NOTIFY_INFO);
-    }
-
-    $table = new html_table();
-    $table->head = [
-        get_string('historycolversion', 'local_coursepilot'),
-        get_string('historycoluser', 'local_coursepilot'),
-        get_string('historycoltime', 'local_coursepilot'),
-        get_string('historycolchange', 'local_coursepilot'),
-        '',
-    ];
-    foreach ($data['versionen'] as $row) {
-        $action = '';
-        if ($canrestore && $row['version'] !== $newest) {
-            $restoreurl = new moodle_url('/local/coursepilot/history.php', ['cmid' => $cmid, 'restore' => $row['version']]);
-            $action = html_writer::link($restoreurl, get_string('historyrestore', 'local_coursepilot'));
-        }
-        $table->data[] = [
-            $row['version'],
-            s($row['nutzer']),
-            userdate($row['zeitpunkt']),
-            s($row['einzeiler']),
-            $action,
-        ];
-    }
-    echo html_writer::table($table);
-
-    echo html_writer::tag('p', s($data['hinweis_luecken']));
-    echo html_writer::link($listurl, get_string('historybacktolist', 'local_coursepilot'));
+    echo $OUTPUT->render_from_template(
+        'local_coursepilot/history_versions',
+        history_page::versions_data($cmid, $cm->name, $canrestore, $listurl)
+    );
 } else {
-    $activities = version_history::course_activities($course->id);
-    echo $OUTPUT->heading(get_string('historytitle', 'local_coursepilot'), 2);
-    echo html_writer::tag('p', get_string('historyintro', 'local_coursepilot'));
-
-    if (!$activities) {
-        echo $OUTPUT->notification(get_string('historynoactivities', 'local_coursepilot'), \core\output\notification::NOTIFY_INFO);
-    } else {
-        $table = new html_table();
-        $table->head = [
-            get_string('historycolname', 'local_coursepilot'),
-            get_string('historycoltype', 'local_coursepilot'),
-            '',
-        ];
-        foreach ($activities as $activity) {
-            $viewurl = new moodle_url('/local/coursepilot/history.php', ['cmid' => $activity['cmid']]);
-            $table->data[] = [
-                s($activity['name']),
-                s($activity['modname']),
-                html_writer::link($viewurl, get_string('historyview', 'local_coursepilot')),
-            ];
-        }
-        echo html_writer::table($table);
-    }
+    echo $OUTPUT->render_from_template(
+        'local_coursepilot/history_activities',
+        history_page::activities_data($course->id)
+    );
 }
 
 echo $OUTPUT->footer();

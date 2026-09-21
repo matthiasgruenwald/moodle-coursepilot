@@ -33,6 +33,7 @@
 require(__DIR__ . '/../../config.php');
 
 use local_coursepilot\instance_check;
+use local_coursepilot\output\surface_page;
 use local_coursepilot\privacy_surface;
 
 require_login();
@@ -51,70 +52,8 @@ $violations = privacy_surface::check($registered);
 $selfcheck = instance_check::self_check($CFG->wwwroot);
 
 echo $OUTPUT->header();
-echo html_writer::tag('p', get_string('surfaceintro', 'local_coursepilot'));
-
-echo $OUTPUT->heading(get_string('surfacestatus', 'local_coursepilot'), 3);
-if (!$violations) {
-    echo $OUTPUT->notification(get_string('surfaceok', 'local_coursepilot'), \core\output\notification::NOTIFY_SUCCESS);
-} else {
-    echo $OUTPUT->notification(get_string('surfaceviolations', 'local_coursepilot'), \core\output\notification::NOTIFY_ERROR);
-    $rows = [];
-    foreach ($violations as $violation) {
-        $rows[] = new html_table_row([
-            s($violation['type']),
-            s($violation['name']),
-            s($violation['detail']),
-        ]);
-    }
-    $table = new html_table();
-    $table->head = ['Typ', 'Name', 'Detail'];
-    $table->data = $rows;
-    echo html_writer::table($table);
-}
-
-$list = function(array $items): string {
-    return html_writer::alist(array_map('s', $items));
-};
-
-echo $OUTPUT->heading(get_string('surfaceallowed', 'local_coursepilot'), 3);
-$rows = [];
-foreach (privacy_surface::allowed_tools() as $tool => $function) {
-    $rows[] = new html_table_row([s($tool), s($function)]);
-}
-$table = new html_table();
-$table->head = ['MCP-Tool', 'Webservice-Funktion'];
-$table->data = $rows;
-echo html_writer::table($table);
-
-echo $OUTPUT->heading(get_string('surfaceregistered', 'local_coursepilot'), 3);
-echo $list($registered);
-
-echo $OUTPUT->heading(get_string('surfaceforbidden', 'local_coursepilot'), 3);
-echo $list(privacy_surface::FORBIDDEN_TOKENS);
-
-echo $OUTPUT->heading(get_string('surfaceinstance', 'local_coursepilot'), 3);
-echo html_writer::tag('p', get_string('surfaceinstanceintro', 'local_coursepilot'));
-echo $list(array_map(
-    static fn(string $requirement): string => get_string('surfacereq' . $requirement, 'local_coursepilot'),
-    instance_check::REQUIREMENTS
-));
-
-echo html_writer::tag('p', get_string('selfcheckurl', 'local_coursepilot', s($selfcheck['url'])));
-if ($selfcheck['ok']) {
-    echo $OUTPUT->notification(
-        get_string('selfcheckok', 'local_coursepilot'),
-        \core\output\notification::NOTIFY_SUCCESS
-    );
-} else {
-    echo $OUTPUT->notification(
-        get_string($selfcheck['detail'], 'local_coursepilot'),
-        \core\output\notification::NOTIFY_ERROR
-    );
-    echo html_writer::tag('p', get_string(
-        'surfaceinstanceemergencyexit',
-        'local_coursepilot',
-        s(instance_check::EMERGENCY_EXIT_RULE)
-    ));
-}
-
+echo $OUTPUT->render_from_template(
+    'local_coursepilot/surface',
+    surface_page::page_data($violations, $registered, $selfcheck)
+);
 echo $OUTPUT->footer();

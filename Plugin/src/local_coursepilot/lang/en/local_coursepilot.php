@@ -323,6 +323,11 @@ $string['surfaceregistered'] = 'Actually registered web service functions';
 $string['surfacestatus'] = 'Status';
 $string['surfaceok'] = 'The registered surface matches the contract.';
 $string['surfaceviolations'] = 'The registered surface violates the contract:';
+$string['surfacecoltype'] = 'Type';
+$string['surfacecolname'] = 'Name';
+$string['surfacecoldetail'] = 'Detail';
+$string['surfacecoltool'] = 'MCP tool';
+$string['surfacecolfunction'] = 'Web service function';
 
 // surface.php: instance check via self-fetch (#340).
 $string['surfaceinstance'] = 'Instance prerequisites for remote access';

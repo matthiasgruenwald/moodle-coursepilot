@@ -32,8 +32,8 @@
 
 require(__DIR__ . '/../../../config.php');
 
-use local_coursepilot\admin\connection_ablageort;
 use local_coursepilot\oauth_lib;
+use local_coursepilot\output\admin_connections_page;
 
 require_login();
 
@@ -63,50 +63,5 @@ if ($revokeall) {
 $tokens = oauth_lib::active_tokens();
 
 echo $OUTPUT->header();
-echo html_writer::tag('p', get_string('connectionsintro', 'local_coursepilot'));
-
-echo html_writer::start_tag('form', [
-    'method' => 'post',
-    'action' => (new moodle_url('/local/coursepilot/admin/connections.php'))->out(false),
-    'onsubmit' => 'return confirm(' . json_encode(get_string('connectionrevokeallconfirm', 'local_coursepilot')) . ');',
-]);
-echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'revokeall', 'value' => 1]);
-echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-echo html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('connectionrevokeall', 'local_coursepilot')]);
-echo html_writer::end_tag('form');
-
-if (!$tokens) {
-    echo $OUTPUT->notification(
-        get_string('connectionnoconnections', 'local_coursepilot'),
-        \core\output\notification::NOTIFY_INFO
-    );
-} else {
-    $table = new html_table();
-    $table->head = [
-        get_string('connectionperson', 'local_coursepilot'),
-        get_string('connectionclient', 'local_coursepilot'),
-        get_string('connectionsince', 'local_coursepilot'),
-        get_string('connectionexpires', 'local_coursepilot'),
-        get_string('connectionablageort', 'local_coursepilot'),
-        '',
-    ];
-    foreach ($tokens as $tokenrecord) {
-        $revokeurl = new moodle_url('/local/coursepilot/admin/connections.php', [
-            'revoke' => $tokenrecord->id,
-            'sesskey' => sesskey(),
-        ]);
-        $storagelocation = connection_ablageort::describe((int) $tokenrecord->userid);
-        $storagelocationlines = array_merge(array_values($storagelocation['targets']), $storagelocation['markers']);
-        $table->data[] = [
-            s(fullname($tokenrecord) . ' (' . $tokenrecord->email . ')'),
-            s($tokenrecord->clientname ?: $tokenrecord->clientid),
-            userdate($tokenrecord->timecreated),
-            userdate($tokenrecord->expires),
-            html_writer::alist(array_map('s', $storagelocationlines), ['class' => 'unlist m-0']),
-            html_writer::link($revokeurl, get_string('connectionrevoke', 'local_coursepilot')),
-        ];
-    }
-    echo html_writer::table($table);
-}
-
+echo $OUTPUT->render_from_template('local_coursepilot/admin_connections', admin_connections_page::page_data($tokens));
 echo $OUTPUT->footer();
