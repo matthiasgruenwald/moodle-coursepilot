@@ -33,6 +33,7 @@
 require(__DIR__ . '/../../config.php');
 
 use local_coursepilot\oauth_lib;
+use local_coursepilot\output\location_selection as location_selection_output;
 use local_coursepilot\webdav\webdav_setup_steps;
 
 require_login(null, false);
@@ -59,15 +60,12 @@ $tokens = oauth_lib::active_tokens_for_user((int) $USER->id);
 echo $OUTPUT->header();
 echo html_writer::tag('p', get_string('myconnectionsintro', 'local_coursepilot'));
 
-// Aktueller Ort je Ziel und ob er zugelassen ist (Issue #500, Spec #486
-// §11) - dieselbe Formel wie im Zustimmungsdialog und auf der
-// Ortswahlseite, hier auf der Selbstverwaltungsseite der Verbindungen. Das
-// Markup - inklusive Escaping der Anzeigenamen, Issue #511, Sicherheitsbefund
-// HIGH - teilt sich local_coursepilot_current_locations_list_items() mit
-// ortswahl.php.
-require_once(__DIR__ . '/ortswahl_render.php');
+// Aktueller Ort je Ziel und ob er zugelassen ist (Issue #500, Spec #486 §11).
 echo $OUTPUT->heading(get_string('ortswahlcurrentheading', 'local_coursepilot'), 4);
-echo html_writer::tag('ul', local_coursepilot_current_locations_list_items());
+echo $OUTPUT->render_from_template(
+    'local_coursepilot/current_locations',
+    location_selection_output::current_locations_data()
+);
 echo html_writer::div(get_string('externallocationprivacyinfo', 'local_coursepilot'), 'small text-muted mb-2');
 echo html_writer::link(
     new moodle_url(webdav_setup_steps::ORTSWAHL_PAGE),

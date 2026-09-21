@@ -60,7 +60,7 @@ final class location_selection {
 
     /**
      * @var int Zeitgrenze in Millisekunden fuer einen Dateifenster-Abruf
-     *      ({@see \ortswahl_render.php}, `ortswahl.js`) - danach zeigt das
+     *      (die Ortswahlvorlage, `ortswahl.js`) - danach zeigt das
      *      Dateifenster den Zeitueberschreitungs-Hinweis statt endlos zu laden.
      */
     public const BROWSE_TIMEOUT_MS = 8000;

@@ -38,7 +38,7 @@ final class ortswahl_lib_test extends \advanced_testcase {
      * Issue #507 (Spec #486, Review von #486): die Seitenzustaende und die
      * Zeitgrenze des Dateifenster-Abrufs sind benannte Konstanten statt
      * roher Werte - {@see location_selection::setup_state()} und
-     * {@see \ortswahl_render.php} nutzen sie.
+     * die Vorlagen nutzen sie.
      */
     public function test_state_and_timeout_constants_have_the_expected_values(): void {
         $this->assertSame('not_enabled', location_selection::STATE_NOT_ENABLED);

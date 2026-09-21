@@ -1,0 +1,12 @@
+{{!
+    @template local_coursepilot/ortswahl_browser
+
+    Bootstrap-Dateifenster der Ortswahl. Der Inhalt wird clientseitig geladen.
+}}
+<div class="modal" id="coursepilot-ortswahl-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="coursepilot-ortswahl-modal-title"></h5><button type="button" class="btn-close" data-coursepilot-dismiss="modal"></button></div>
+        <div class="modal-body"><div class="row"><div class="col-4" id="coursepilot-ortswahl-instances"></div><div class="col-8"><div class="mb-2 small" id="coursepilot-ortswahl-breadcrumb"></div><div id="coursepilot-ortswahl-folders"></div><div class="input-group mt-2"><input type="text" class="form-control form-control-sm" id="coursepilot-ortswahl-newfolder" placeholder="{{#str}} ortswahlnewfoldername, local_coursepilot {{/str}}"><button type="button" class="btn btn-sm btn-outline-secondary" id="coursepilot-ortswahl-createfolder">{{#str}} ortswahlcreatefolder, local_coursepilot {{/str}}</button></div></div></div></div>
+        <div class="modal-footer flex-column align-items-stretch"><div class="small text-danger mb-2" id="coursepilot-ortswahl-modal-reason" hidden></div><button type="button" class="btn btn-primary align-self-end" id="coursepilot-ortswahl-confirmfolder">{{#str}} ortswahlselectfolder, local_coursepilot {{/str}}</button></div>
+    </div></div>
+</div>

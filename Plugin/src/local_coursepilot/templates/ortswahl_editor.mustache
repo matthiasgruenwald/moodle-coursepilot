@@ -1,0 +1,54 @@
+{{!
+    @template local_coursepilot/ortswahl_editor
+
+    Ortswahl und Dateifenster. Dynamische Listen fuellt bis zur AMD-Umstellung
+    javascript/ortswahl.js; alle serverseitigen Werte escaped Mustache.
+}}
+<div class="coursepilot-ortswahl" id="coursepilot-ortswahl">
+    <script type="application/json" id="coursepilot-ortswahl-data">{{{editorjson}}}</script>
+    <form method="post" action="{{actionurl}}" id="coursepilot-ortswahl-form">
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <input type="hidden" name="finish" value="1">
+        {{#oauthflow}}
+        <input type="hidden" name="oauthflow" value="1">
+        {{/oauthflow}}
+        {{#oauthpassthrough}}
+        <input type="hidden" name="{{name}}" value="{{value}}">
+        {{/oauthpassthrough}}
+
+        <div class="mb-3 d-flex gap-2 flex-wrap" id="coursepilot-ortswahl-progress"></div>
+        <div class="mb-2 small text-danger" id="coursepilot-ortswahl-overlaplock" hidden></div>
+        <ul class="nav nav-tabs" role="tablist">
+            {{#targets}}
+            <li class="nav-item" role="presentation">
+                <a href="#coursepilot-ortswahl-pane-{{name}}" class="nav-link{{#first}} active{{/first}}" data-bs-toggle="tab" data-target="{{name}}" role="tab">
+                    {{#kontextbereich}}{{#str}} ortswahltabkontextbereich, local_coursepilot {{/str}}{{/kontextbereich}}
+                    {{^kontextbereich}}{{#str}} ortswahltabmaterialbestand, local_coursepilot {{/str}}{{/kontextbereich}}
+                </a>
+            </li>
+            {{/targets}}
+        </ul>
+        <div class="tab-content border border-top-0 p-3">
+            {{#targets}}
+            <div class="tab-pane fade{{#first}} show active{{/first}}" id="coursepilot-ortswahl-pane-{{name}}">
+                {{#kontextbereich}}<div class="text-muted small mb-2">{{#str}} ortswahlkontexthint, local_coursepilot {{/str}}</div>{{/kontextbereich}}
+                <button type="button" class="btn btn-outline-secondary me-2" data-action="keep-moodle" data-target="{{name}}">{{#str}} ortswahlkeepmoodle, local_coursepilot {{/str}}</button>
+                <button type="button" class="btn btn-primary" data-action="open-picker" data-target="{{name}}">{{#str}} ortswahlchooseinstance, local_coursepilot {{/str}}</button>
+            </div>
+            {{/targets}}
+        </div>
+        {{#targets}}{{#fields}}
+        <input type="hidden" name="{{name}}" id="{{id}}">
+        {{/fields}}{{/targets}}
+
+        {{> local_coursepilot/ortswahl_browser}}
+        <div class="modal" id="coursepilot-ortswahl-confirm-modal" tabindex="-1">
+            <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">{{#str}} ortswahlconfirmheading, local_coursepilot {{/str}}</h5><button type="button" class="btn-close" data-coursepilot-dismiss="modal"></button></div>
+                <div class="modal-body"><p id="coursepilot-ortswahl-confirm-count"></p><p>{{#str}} ortswahlconfirmtext, local_coursepilot {{/str}}</p></div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-coursepilot-dismiss="modal">{{#str}} ortswahlconfirmcancel, local_coursepilot {{/str}}</button><button type="button" class="btn btn-success" id="coursepilot-ortswahl-confirmfolder-ack">{{#str}} ortswahlconfirmbutton, local_coursepilot {{/str}}</button></div>
+            </div></div>
+        </div>
+        <button type="submit" class="btn btn-success mt-3" id="coursepilot-ortswahl-finish" disabled>{{#str}} ortswahlfinishbutton, local_coursepilot {{/str}}</button>
+    </form>
+</div>

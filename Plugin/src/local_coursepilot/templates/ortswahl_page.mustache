@@ -1,0 +1,36 @@
+{{!
+    @template local_coursepilot/ortswahl_page
+
+    Vollstaendige Ortswahlseite einschliesslich Leerzustand und Verlauf.
+}}
+{{#oauthreturn}}
+<div class="alert alert-info">{{#str}} ortswahloauthflowinfo, local_coursepilot, {{clientname}} {{/str}}</div>
+<div class="mb-3"><a href="{{backurl}}">{{#str}} ortswahloauthflowback, local_coursepilot {{/str}}</a></div>
+{{/oauthreturn}}
+{{#finishresult}}<div class="alert {{class}}">{{text}}</div>{{/finishresult}}
+<p>{{#str}} ortswahlintro, local_coursepilot {{/str}}</p>
+{{#altbestandopen}}<div class="alert alert-warning">{{#str}} ortswahlaltbestandopen, local_coursepilot {{/str}}</div>{{/altbestandopen}}
+
+{{#notenabled}}
+<div class="alert alert-warning">{{#str}} ortswahlnotenabledtext, local_coursepilot {{/str}}</div>
+<h4>{{#str}} ortswahlmissingstepsheading, local_coursepilot {{/str}}</h4>
+<p>{{#str}} ortswahlmissingstepsintro, local_coursepilot {{/str}}</p>
+<textarea class="form-control" rows="4" readonly id="coursepilot-ortswahl-missingsteps">{{missingstepstext}}</textarea>
+<a href="{{supporturl}}" class="btn btn-link px-0 mt-2">{{#str}} ortswahlcoresupportlink, local_coursepilot {{/str}}</a>
+{{/notenabled}}
+
+{{#noinstance}}
+<div class="alert alert-info">{{#str}} ortswahlnoinstanceheading, local_coursepilot {{/str}}</div>
+<p>{{#str}} ortswahlnoinstanceintro, local_coursepilot {{/str}}</p>
+<ol><li>{{#str}} ortswahlnoinstancestep1, local_coursepilot {{/str}}</li><li>{{#str}} ortswahlnoinstancestep2, local_coursepilot {{/str}}</li><li>{{#str}} ortswahlnoinstancestep3, local_coursepilot {{/str}}</li></ol>
+{{#schoolhint}}<h5>{{#str}} ortswahlschoolhintheading, local_coursepilot {{/str}}</h5><p>{{schoolhint}}</p>{{/schoolhint}}
+{{/noinstance}}
+
+{{#ready}}{{> local_coursepilot/ortswahl_editor}}{{/ready}}
+<h4>{{#str}} ortswahlcurrentheading, local_coursepilot {{/str}}</h4>
+{{#locations}}{{> local_coursepilot/current_locations}}{{/locations}}
+<h4>{{#str}} ortswahlhistoryheading, local_coursepilot {{/str}}</h4>
+{{#history.empty}}<p>{{#str}} ortswahlhistoryempty, local_coursepilot {{/str}}</p>{{/history.empty}}
+{{^history.empty}}
+<table class="generaltable"><thead><tr><th>{{#str}} ortswahlhistorydate, local_coursepilot {{/str}}</th><th>{{#str}} ortswahlhistorytarget, local_coursepilot {{/str}}</th><th>{{#str}} ortswahlhistoryfrom, local_coursepilot {{/str}}</th><th>{{#str}} ortswahlhistoryto, local_coursepilot {{/str}}</th></tr></thead><tbody>{{#history.entries}}<tr><td>{{date}}</td><td>{{target}}</td><td>{{from}}</td><td>{{to}}</td></tr>{{/history.entries}}</tbody></table>
+{{/history.empty}}

@@ -34,9 +34,9 @@
 
 require(__DIR__ . '/../../config.php');
 
-use local_coursepilot\previous_location;
 use local_coursepilot\oauth_lib;
 use local_coursepilot\location_selection;
+use local_coursepilot\output\location_selection as location_selection_output;
 use local_coursepilot\pointer_location;
 use local_coursepilot\webdav\webdav_setup_steps;
 
@@ -56,7 +56,13 @@ $oauthreturn = local_coursepilot_read_oauth_passthrough();
 $finishresult = local_coursepilot_handle_ortswahl_finish($oauthreturn);
 
 echo $OUTPUT->header();
-local_coursepilot_render_ortswahl_page($finishresult, $USER, $oauthreturn);
+echo $OUTPUT->render_from_template(
+    'local_coursepilot/ortswahl_page',
+    location_selection_output::page_data($USER, $finishresult, $oauthreturn)
+);
+if (location_selection::setup_state((int) $USER->id)['state'] === location_selection::STATE_READY) {
+    $PAGE->requires->js(new moodle_url('/local/coursepilot/javascript/ortswahl.js'));
+}
 echo $OUTPUT->footer();
 
 /**
@@ -141,172 +147,4 @@ function local_coursepilot_read_ortswahl_selection(): array {
         }
     }
     return $selection;
-}
-
-/**
- * Rendert den gesamten Seiteninhalt zwischen Header und Footer.
- *
- * @param array{type: string, text: string}|null $finishresult Ergebnis von {@see local_coursepilot_handle_ortswahl_finish()}.
- * @param \stdClass $user
- * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn Ergebnis von {@see local_coursepilot_read_oauth_passthrough()}.
- */
-function local_coursepilot_render_ortswahl_page(?array $finishresult, \stdClass $user, ?array $oauthreturn): void {
-    global $OUTPUT;
-
-    local_coursepilot_render_oauth_banner($oauthreturn);
-    if ($finishresult !== null) {
-        echo $OUTPUT->notification($finishresult['text'], $finishresult['type']);
-    }
-    echo html_writer::tag('p', get_string('ortswahlintro', 'local_coursepilot'));
-    local_coursepilot_render_altbestand_warning();
-    local_coursepilot_render_ortswahl_setup_state($user, $oauthreturn);
-    local_coursepilot_render_ortswahl_current_locations();
-    local_coursepilot_render_ortswahl_history();
-}
-
-/**
- * Hinweisband und Ruecksprung-Link, wenn die Seite mitten im OAuth-
- * Verbindungsaufbau aufgerufen wurde (Issue #563).
- *
- * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn
- */
-function local_coursepilot_render_oauth_banner(?array $oauthreturn): void {
-    if ($oauthreturn === null) {
-        return;
-    }
-    global $OUTPUT;
-
-    $clientname = $oauthreturn['client']->clientname ?: $oauthreturn['client']->clientid;
-    echo $OUTPUT->notification(
-        get_string('ortswahloauthflowinfo', 'local_coursepilot', $clientname),
-        \core\output\notification::NOTIFY_INFO
-    );
-    $backurl = new moodle_url('/local/coursepilot/oauth/authorize.php', $oauthreturn['params']);
-    echo html_writer::div(html_writer::link($backurl, get_string('ortswahloauthflowback', 'local_coursepilot')), 'mb-3');
-}
-
-/**
- * Warnt, wenn noch Altbestand offen ist (Issue #498, Spec §486 §5) -
- * angezeigt unabhaengig davon, ob gerade ein neuer Wechsel bevorsteht; ein
- * Abschliessen trotz dieser Warnung verdraengt den offenen Altbestand
- * ({@see \local_coursepilot\location_selection::apply()}), seine Dateien bleiben
- * dabei unberuehrt.
- */
-function local_coursepilot_render_altbestand_warning(): void {
-    global $OUTPUT;
-    if (previous_location::open()) {
-        echo $OUTPUT->notification(get_string('ortswahlaltbestandopen', 'local_coursepilot'), \core\output\notification::NOTIFY_WARNING);
-    }
-}
-
-/**
- * Rendert je Bereitschaftszustand ({@see location_selection::setup_state()}) den
- * passenden Leerzustand oder das Dateifenster.
- *
- * @param \stdClass $user
- * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn
- */
-function local_coursepilot_render_ortswahl_setup_state(\stdClass $user, ?array $oauthreturn): void {
-    global $PAGE;
-
-    $state = location_selection::setup_state((int) $user->id);
-    if ($state['state'] === location_selection::STATE_NOT_ENABLED) {
-        local_coursepilot_render_ortswahl_not_enabled($user);
-    } else if ($state['state'] === location_selection::STATE_NO_INSTANCE) {
-        local_coursepilot_render_ortswahl_no_instance();
-    } else {
-        require_once(__DIR__ . '/ortswahl_render.php');
-        local_coursepilot_render_ortswahl_editor($PAGE, $user, $oauthreturn['params'] ?? []);
-    }
-}
-
-/**
- * Leerzustand "nicht freigeschaltet" (Issue #494): kopierbarer Text an die
- * Administration mit nur den fehlenden Schritten.
- *
- * @param \stdClass $user
- */
-function local_coursepilot_render_ortswahl_not_enabled(\stdClass $user): void {
-    global $OUTPUT;
-
-    echo $OUTPUT->notification(get_string('ortswahlnotenabledtext', 'local_coursepilot'), \core\output\notification::NOTIFY_WARNING);
-    echo $OUTPUT->heading(get_string('ortswahlmissingstepsheading', 'local_coursepilot'), 4);
-    echo html_writer::tag('p', get_string('ortswahlmissingstepsintro', 'local_coursepilot'));
-    echo html_writer::tag('textarea', s(location_selection::missing_steps_text((int) $user->id)), [
-        'class' => 'form-control', 'rows' => 4, 'readonly' => 'readonly', 'id' => 'coursepilot-ortswahl-missingsteps',
-    ]);
-    echo html_writer::link(
-        new moodle_url('/admin/settings.php', ['section' => 'supportcontact']),
-        get_string('ortswahlcoresupportlink', 'local_coursepilot'),
-        ['class' => 'btn btn-link px-0 mt-2']
-    );
-}
-
-/**
- * Leerzustand "keine Instanz" (Issue #494): Schritt-fuer-Schritt-Anleitung
- * plus optionalem Schul-Hinweis.
- */
-function local_coursepilot_render_ortswahl_no_instance(): void {
-    global $OUTPUT;
-
-    echo $OUTPUT->notification(get_string('ortswahlnoinstanceheading', 'local_coursepilot'), \core\output\notification::NOTIFY_INFO);
-    echo html_writer::tag('p', get_string('ortswahlnoinstanceintro', 'local_coursepilot'));
-    echo html_writer::start_tag('ol');
-    echo html_writer::tag('li', get_string('ortswahlnoinstancestep1', 'local_coursepilot'));
-    echo html_writer::tag('li', get_string('ortswahlnoinstancestep2', 'local_coursepilot'));
-    echo html_writer::tag('li', get_string('ortswahlnoinstancestep3', 'local_coursepilot'));
-    echo html_writer::end_tag('ol');
-
-    $hint = location_selection::school_hint();
-    if ($hint !== '') {
-        echo $OUTPUT->heading(get_string('ortswahlschoolhintheading', 'local_coursepilot'), 5);
-        echo html_writer::tag('p', s($hint));
-    }
-}
-
-/**
- * Die aktuellen Orte beider Ziele (Issue #494). Das Markup selbst - inklusive
- * Escaping der Anzeigenamen (Issue #511, Sicherheitsbefund HIGH) - teilt sich
- * {@see local_coursepilot_current_locations_list_items()} mit connections.php.
- */
-function local_coursepilot_render_ortswahl_current_locations(): void {
-    global $OUTPUT;
-
-    require_once(__DIR__ . '/ortswahl_render.php');
-    echo $OUTPUT->heading(get_string('ortswahlcurrentheading', 'local_coursepilot'), 4);
-    echo html_writer::tag('ul', local_coursepilot_current_locations_list_items());
-}
-
-/**
- * Der Ortsverlauf (Issue #494, Grundstruktur).
- */
-function local_coursepilot_render_ortswahl_history(): void {
-    global $OUTPUT;
-
-    echo $OUTPUT->heading(get_string('ortswahlhistoryheading', 'local_coursepilot'), 4);
-    $history = location_selection::history();
-    if (empty($history)) {
-        echo html_writer::tag('p', get_string('ortswahlhistoryempty', 'local_coursepilot'));
-        return;
-    }
-
-    $table = new html_table();
-    $table->head = [
-        get_string('ortswahlhistorydate', 'local_coursepilot'),
-        get_string('ortswahlhistorytarget', 'local_coursepilot'),
-        get_string('ortswahlhistoryfrom', 'local_coursepilot'),
-        get_string('ortswahlhistoryto', 'local_coursepilot'),
-    ];
-    foreach (array_reverse($history) as $entry) {
-        $target = $entry['ziel'] === 'kontextbereich'
-            ? get_string('ortswahltabkontextbereich', 'local_coursepilot')
-            : get_string('ortswahltabmaterialbestand', 'local_coursepilot');
-        $table->data[] = [
-            userdate((int) ($entry['datum'] ?? 0)),
-            $target,
-            s(isset($entry['from']) ? location_selection::describe_location($entry['from']) : (string) ($entry['von'] ?? '')),
-            s(isset($entry['to']) ? location_selection::describe_location($entry['to']) : (string) ($entry['nach'] ?? '')),
-        ];
-    }
-    echo html_writer::table($table);
 }
