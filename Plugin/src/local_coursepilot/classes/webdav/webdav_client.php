@@ -32,8 +32,20 @@ namespace local_coursepilot\webdav;
  */
 final class webdav_client {
 
-    /** @var float Hoechste Wiederholungsdauer bei `unklar/gedrosselt` (Spec §4). */
-    private const RETRY_BUDGET_SECONDS = 5.0;
+    /**
+     * @var float Hoechste Wiederholungsdauer bei `unklar/gedrosselt` (Spec
+     *      §4, Issue #529). Bewusst kurz gehalten: eine Messung gegen eine
+     *      einzelne Nextcloud-Instanz ergab 15-34s Erholungszeit nach einem
+     *      grossen Append (vermutlich Nextclouds eigener Bruteforce-/Rate-
+     *      Schutz, ausgeloest durch fehlendes `trusted_proxies` hinter einem
+     *      Reverse-Proxy, oder knappes `pm.max_children`) - ein Budget, das
+     *      diesen einen gemessenen Wert deckt, deckt keine fremde,
+     *      moeglicherweise schlechter konfigurierte Instanz und blockiert
+     *      dabei jeden Werkzeugaufruf unnoetig lang. Die eigentliche Antwort
+     *      auf eine ueberschrittene Drosselung ist der Ausstand
+     *      ({@see pending_write_translation}), nicht ein laengeres Warten.
+     */
+    private const RETRY_BUDGET_SECONDS = 10.0;
 
     /** @var float Wartezeit zwischen zwei Wiederholungsversuchen. */
     private const RETRY_DELAY_SECONDS = 0.2;

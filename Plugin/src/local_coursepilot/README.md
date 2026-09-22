@@ -50,6 +50,19 @@ changes go back to the community.
 Discovery follows RFC 8414 and RFC 9728. Both work without a web server change, provided
 `slasharguments` is enabled — Moodle's default.
 
+### WebDAV storage behind a reverse proxy
+
+If a teacher's own WebDAV storage (e.g. Nextcloud) runs behind a reverse proxy such as
+Cloudflare, and that proxy is not listed in the storage's `trusted_proxies` setting, the
+storage sees every request as coming from the proxy's single IP address. Its own built-in
+brute-force/rate protection can then throttle a normal, small Coursepilot write for 15–30
+seconds or more (issue #529) — not a Coursepilot bug, but a common misconfiguration on the
+storage side. If teachers report frequent "storage is throttling" pending-write notices,
+check `trusted_proxies` on their storage first. Coursepilot itself deliberately keeps its
+silent-retry budget short (10 s) rather than trying to absorb this: it cannot know the
+quality of a storage it does not control, and a longer budget would block every write call
+for everyone, including teachers whose storage is configured correctly.
+
 ## Status
 
 Alpha. The plugin is in real teaching use by its author; it has not yet been through a

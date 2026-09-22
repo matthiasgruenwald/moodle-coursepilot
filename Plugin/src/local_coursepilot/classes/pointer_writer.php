@@ -114,7 +114,11 @@ final class pointer_writer {
      *      (Issue #492).
      */
     private const REASONS = [
-        webdav_error::UNCLEAR => 'der Speicher antwortet gerade nicht eindeutig (möglicherweise gedrosselt)',
+        // Bewusst nicht alarmierend formuliert (Issue #529): eine Drosselung
+        // durch den eingebauten Bruteforce-/Rate-Schutz einer fremden
+        // Nextcloud-Instanz ist ein erwartbarer, normaler Vorgang, keine
+        // Störung, über die man sich wundern müsste.
+        webdav_error::UNCLEAR => 'der Speicher drosselt gerade kurzfristig (bei manchen Nextcloud-Instanzen normal)',
         webdav_error::NOT_FOUND => 'der Zielordner ist dort nicht erreichbar',
         webdav_error::AUTH_REJECTED => 'die Anmeldung am Speicher wurde abgelehnt',
         webdav_error::UNREACHABLE => 'der Speicher ist gerade nicht erreichbar',

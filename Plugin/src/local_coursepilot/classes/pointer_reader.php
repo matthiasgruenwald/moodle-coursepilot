@@ -307,11 +307,23 @@ final class pointer_reader {
      * {@see \local_coursepilot\material_files} uebergeben hier ihren eigenen
      * Schluessel.
      *
+     * `unklar/gedrosselt` (Issue #529) wechselt am Standardschluessel auf
+     * einen eigenen Text: eine Drosselung ist typischerweise binnen Sekunden
+     * vorbei, deshalb soll die KI dort selbst kurz warten und denselben
+     * Aufruf wiederholen, statt sofort die Lehrkraft zu informieren - anders
+     * als bei den uebrigen Fehlerklassen (Anmeldung abgelehnt, Speicher
+     * voll, ...), die sich nicht von selbst loesen. Nur am Standardschluessel:
+     * ein von Ortswahl/Materialwerkzeugen uebergebener eigener Schluessel
+     * bleibt unveraendert - andere Zielgruppe, andere Textlogik.
+     *
      * @param webdav_error $e
      * @param string $stringkey
      * @return \moodle_exception
      */
     public static function webdav_exception(webdav_error $e, string $stringkey = 'webdavexternalerror'): \moodle_exception {
+        if ($stringkey === 'webdavexternalerror' && $e->errorclass === webdav_error::UNCLEAR) {
+            $stringkey = 'webdavexternalerrorunclear';
+        }
         return new \moodle_exception($stringkey, 'local_coursepilot', '', (object) [
             // Issue #565: uebersetztes Label statt der fest-deutschen
             // internen Konstante, siehe webdav_error::label().
