@@ -105,6 +105,7 @@ final class webdav_storage_port implements storage_port {
         private readonly int $instanceid,
         private readonly string $baserelativepath = '',
         private readonly ?webdav_transport $transport = null,
+        private readonly ?pointer_location $location = null,
     ) {
     }
 
@@ -342,6 +343,9 @@ final class webdav_storage_port implements storage_port {
      *         webdavnotenabled/webdavauthunsupported
      */
     private function resolved_instance(): resolved_webdav_instance {
+        if ($this->location !== null) {
+            return webdav_instance::resolve($this->location);
+        }
         return webdav_instance::resolve_owned($this->instanceid, $this->transport);
     }
 

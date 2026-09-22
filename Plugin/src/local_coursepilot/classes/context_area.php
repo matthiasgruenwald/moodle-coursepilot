@@ -63,7 +63,19 @@ final class context_area {
      *         contenthash: string, timemodified: int}|null
      */
     public static function read(string $path): ?array {
-        return self::normalise_pointer_result(context_files::read_content_pointer_aware($path));
+        try {
+            $file = storage_anchor::port(context_files::area())->read(context_files::area(), $path);
+        } catch (webdav_error $e) {
+            throw pointer_reader::webdav_exception($e);
+        }
+        return $file === null ? null : [
+            'path' => storage_anchor::normalise_client_path(context_files::area(), $path),
+            'content' => $file['content'],
+            'mimetype' => $file['mimetype'],
+            'size' => $file['size'],
+            'contenthash' => $file['checksum'],
+            'timemodified' => $file['timemodified'],
+        ];
     }
 
     /**
@@ -108,9 +120,18 @@ final class context_area {
      * @return array{directory: string, entries: array}
      */
     public static function list(string $path, bool $previouslocation = false): array {
-        $result = $previouslocation
-            ? context_files::list_entries_previous_location($path, previous_location::require_open_location())
-            : context_files::list_entries_pointer_aware($path);
+        if ($previouslocation) {
+            $result = context_files::list_entries_previous_location($path, previous_location::require_open_location());
+        } else {
+            try {
+                $result = [
+                    'directory' => storage_anchor::normalise_client_path(context_files::area(), $path),
+                    'entries' => storage_anchor::port(context_files::area())->list(context_files::area(), $path),
+                ];
+            } catch (webdav_error $e) {
+                throw pointer_reader::webdav_exception($e);
+            }
+        }
 
         return [
             'directory' => $result['directory'],
@@ -137,6 +158,11 @@ final class context_area {
         $etag = $entry['etag'] ?? null;
         $isexternal = array_key_exists('etag', $entry);
         unset($entry['etag']);
+
+        if (array_key_exists('checksum', $entry)) {
+            $entry['contenthash'] = $entry['checksum'];
+            unset($entry['checksum']);
+        }
 
         if ($entry['type'] === 'folder') {
             return $entry + ['locked' => false];
