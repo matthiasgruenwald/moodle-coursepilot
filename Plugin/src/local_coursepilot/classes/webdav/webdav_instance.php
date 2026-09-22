@@ -114,7 +114,7 @@ final class webdav_instance {
      * @return resolved_webdav_instance
      * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/webdavauthunsupported
      */
-    public static function resolve_owned(int $instanceid): resolved_webdav_instance {
+    public static function resolve_owned(int $instanceid, ?webdav_transport $transport = null): resolved_webdav_instance {
         global $DB, $USER;
 
         $record = $DB->get_record_sql(
@@ -147,7 +147,7 @@ final class webdav_instance {
         // ortswahl_browse.php would fail with "Class curl not found".
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
-        $transport = self::$transport ?? new curl_transport(
+        $transport = $transport ?? self::$transport ?? new curl_transport(
             new \curl(),
             (string) ($options['webdav_user'] ?? ''),
             (string) ($options['webdav_password'] ?? '')

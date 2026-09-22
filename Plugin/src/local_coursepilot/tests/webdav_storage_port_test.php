@@ -48,6 +48,9 @@ final class webdav_storage_port_test extends storage_port_contract_test {
     /** @var int|null Instanz der Standard-Testnutzerin, siehe setUp(). */
     private ?int $instanceid = null;
 
+    /** @var fake_webdav_transport Der fuer einen Vertragstest gemeinsam genutzte Transport. */
+    private fake_webdav_transport $transport;
+
     protected function setUp(): void {
         parent::setUp();
 
@@ -59,16 +62,19 @@ final class webdav_storage_port_test extends storage_port_contract_test {
         // Instanzwurzel selbst, die im echten Betrieb schon auf dem Server liegt,
         // im Fake-Speicher aber nur die Wurzel "" vorab existiert.
         $this->instanceid = $this->create_webdav_instance($USER, ['webdav_path' => '']);
-        webdav_instance::set_transport(new fake_webdav_transport());
+        $this->transport = new fake_webdav_transport();
     }
 
     protected function tearDown(): void {
-        webdav_instance::set_transport(null);
         parent::tearDown();
     }
 
     protected function port(): storage_port {
-        return new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test');
+        return new webdav_storage_port(
+            $this->instanceid,
+            'storageport-webdav-contract-test',
+            $this->transport
+        );
     }
 
     protected function area(): storage_area {
@@ -103,10 +109,9 @@ final class webdav_storage_port_test extends storage_port_contract_test {
                 return $this->inner->request($method, $url, $headers, $body);
             }
         };
-        webdav_instance::set_transport($onlyputfails);
-
         try {
-            $this->port()->write($this->area(), 'plan.md', '# Plan');
+            (new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $onlyputfails))
+                ->write($this->area(), 'plan.md', '# Plan');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $this->assertSame('ausstandwritefailed', $e->errorcode);
@@ -139,10 +144,9 @@ final class webdav_storage_port_test extends storage_port_contract_test {
                 return $this->inner->request($method, $url, $headers, $body);
             }
         };
-        webdav_instance::set_transport($onlyputfails);
-
         try {
-            $this->port()->append($this->area(), 'journal.md', 'erste Zeile');
+            (new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $onlyputfails))
+                ->append($this->area(), 'journal.md', 'erste Zeile');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $this->assertSame('ausstandwritefailed', $e->errorcode);

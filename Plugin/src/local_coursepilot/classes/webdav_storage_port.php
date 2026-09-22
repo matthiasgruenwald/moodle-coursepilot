@@ -20,6 +20,7 @@ use local_coursepilot\webdav\resolved_webdav_instance;
 use local_coursepilot\webdav\webdav_client;
 use local_coursepilot\webdav\webdav_error;
 use local_coursepilot\webdav\webdav_instance;
+use local_coursepilot\webdav\webdav_transport;
 
 /**
  * Zweiter Adapter des Ablage-Vertrags (Issue #537, Spec 0021): WebDAV.
@@ -103,6 +104,7 @@ final class webdav_storage_port implements storage_port {
     public function __construct(
         private readonly int $instanceid,
         private readonly string $baserelativepath = '',
+        private readonly ?webdav_transport $transport = null,
     ) {
     }
 
@@ -340,7 +342,7 @@ final class webdav_storage_port implements storage_port {
      *         webdavnotenabled/webdavauthunsupported
      */
     private function resolved_instance(): resolved_webdav_instance {
-        return webdav_instance::resolve_owned($this->instanceid);
+        return webdav_instance::resolve_owned($this->instanceid, $this->transport);
     }
 
     /**
