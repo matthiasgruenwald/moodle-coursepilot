@@ -194,6 +194,19 @@ function loadOrtswahlModule(config, fetchResponses) {
   var fakeNotification = {
     exception: function() {}
   };
+  var fakeStrings = {
+    get_strings: function() {
+      return Promise.resolve([
+        'Kontextbereich', 'Materialbestand', 'Ausgewaehlt', 'Instanz waehlen', 'Wurzel', 'Laedt...',
+        '%s gewaehlt', '%s offen', 'Bitte beide Ziele waehlen', 'Zeitueberschreitung',
+        'Zeitueberschreitung-Text', '', '', '', 'Fehler', '', 'Erneut', 'Zugang pruefen',
+        'Spaeter', '%s Eintraege', 'Ueberlappung'
+      ]);
+    },
+    get_string: function() {
+      return Promise.resolve('Fehler');
+    }
+  };
 
   var moduleExports = null;
   var fakeDefine = function(deps, factory) {
@@ -203,6 +216,9 @@ function loadOrtswahlModule(config, fetchResponses) {
       }
       if (dep === 'core/notification') {
         return fakeNotification;
+      }
+      if (dep === 'core/str') {
+        return fakeStrings;
       }
       throw new Error('ortswahl-amd-test-utils: unstubbed AMD dependency ' + dep);
     });
@@ -222,9 +238,9 @@ function loadOrtswahlModule(config, fetchResponses) {
 
   vm.createContext(sandbox);
   vm.runInContext(SCRIPT_SOURCE, sandbox, {filename: SCRIPT_PATH});
-  moduleExports.init(config);
+  var ready = moduleExports.init(config);
 
-  return {elements: elements, pickerButtons: pickerButtons, keepMoodleButtons: keepMoodleButtons};
+  return {elements: elements, pickerButtons: pickerButtons, keepMoodleButtons: keepMoodleButtons, ready: ready};
 }
 
 /**

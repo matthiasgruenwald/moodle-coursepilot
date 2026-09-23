@@ -16,8 +16,9 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {loadOrtswahlModule, baseConfig, flushPromises} = require('./helpers/ortswahl-amd-test-utils');
 
-test('"In Moodle lassen" markiert den eigenen Knopf sofort als ausgewaehlt', function() {
+test('"In Moodle lassen" markiert den eigenen Knopf sofort als ausgewaehlt', async function() {
   var ctx = loadOrtswahlModule(baseConfig(), []);
+  await ctx.ready;
   var btn = ctx.keepMoodleButtons[0];
 
   btn.dispatch('click');
@@ -28,8 +29,9 @@ test('"In Moodle lassen" markiert den eigenen Knopf sofort als ausgewaehlt', fun
   assert.strictEqual(badge.textContent, 'Ausgewaehlt');
 });
 
-test('"In Moodle lassen" laesst den Verbindungs-Knopf unmarkiert', function() {
+test('"In Moodle lassen" laesst den Verbindungs-Knopf unmarkiert', async function() {
   var ctx = loadOrtswahlModule(baseConfig(), []);
+  await ctx.ready;
   ctx.keepMoodleButtons[0].dispatch('click');
 
   var pickerBtn = ctx.pickerButtons[0];
@@ -40,6 +42,7 @@ test('"In Moodle lassen" laesst den Verbindungs-Knopf unmarkiert', function() {
 test('Ein externer Ordner markiert den Verbindungs-Knopf und entfernt die Markierung von "In Moodle lassen"', async function() {
   var browseResult = {ok: true, path: '', folders: [], selectable: true, reason: '', entrycount: 0, entrynames: []};
   var ctx = loadOrtswahlModule(baseConfig(), [browseResult]);
+  await ctx.ready;
 
   // Zuerst "In Moodle lassen" - markiert, dann per externer Ordnerwahl
   // wieder umentschieden (Kriterium: die Markierung folgt der aktuellen

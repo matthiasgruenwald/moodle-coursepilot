@@ -18,6 +18,7 @@ const {loadOrtswahlModule, baseConfig, flushPromises} = require('./helpers/ortsw
 test('Ordner anlegen setzt state.lastResult sofort auf ein leeres Ergebnis (Kriterium 1)', async function() {
   var parentBrowseResult = {ok: true, path: '', folders: [{name: 'material'}], selectable: true, reason: '', entrycount: 1, entrynames: ['material']};
   var ctx = loadOrtswahlModule(baseConfig(), [parentBrowseResult]);
+  await ctx.ready;
 
   // Fenster fuer "kontextbereich" oeffnen -> browse() der Elternebene laeuft.
   ctx.pickerButtons[0].dispatch('click');
@@ -41,6 +42,7 @@ test('Ordner anlegen setzt state.lastResult sofort auf ein leeres Ergebnis (Krit
 test('Ordner auswaehlen mit echtem Elternebenen-Inhalt zeigt weiterhin die Uebergabe-Warnung (Regression, Kriterium 3)', async function() {
   var parentBrowseResult = {ok: true, path: '', folders: [{name: 'material'}], selectable: true, reason: '', entrycount: 1, entrynames: ['material']};
   var ctx = loadOrtswahlModule(baseConfig(), [parentBrowseResult]);
+  await ctx.ready;
 
   ctx.pickerButtons[0].dispatch('click');
   await flushPromises();
