@@ -204,6 +204,25 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
+     * Parameterlose Werkzeuge muessen properties als JSON-Objekt liefern;
+     * json_encode([]) wuerde Clients ein ungueltiges JSON-Array senden (#566).
+     */
+    public function test_parameterless_tool_properties_are_a_json_object(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $response = dispatcher::handle(['id' => 1, 'method' => 'tools/list'], $token, $this->headers());
+        $tools = array_column($response['body']['result']['tools'], 'inputSchema', 'name');
+
+        $this->assertInstanceOf(\stdClass::class, $tools['coursepilot_list_skills']['properties']);
+        $this->assertStringContainsString(
+            '"properties":{}',
+            json_encode($tools['coursepilot_list_skills']),
+            'coursepilot_list_skills: properties muss als JSON-Objekt serialisieren.'
+        );
+    }
+
+    /**
      * #342, Akzeptanzkriterium: jede Werkzeugbeschreibung bleibt unter 2 KB
      * - generisch ueber alle gelisteten Werkzeuge, nicht nur die neuen fuenf.
      */
@@ -239,6 +258,9 @@ final class dispatcher_test extends \advanced_testcase {
             $expected = ['type' => 'object']
                 + external_schema_converter::from_parameters($classname::execute_parameters())
                 + ['additionalProperties' => false];
+            if ($expected['properties'] === []) {
+                $expected['properties'] = new \stdClass();
+            }
             $this->assertEquals($expected, $tools[$name], "{$name}: tools/list-Schema weicht ab.");
         }
     }

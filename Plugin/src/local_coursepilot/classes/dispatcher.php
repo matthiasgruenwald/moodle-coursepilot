@@ -505,7 +505,7 @@ final class dispatcher {
             $schema = $schemas[$name] ?? null;
             $inputschema = [
                 'type' => 'object',
-                'properties' => $schema ? $schema['properties'] : new \stdClass(),
+                'properties' => $schema && $schema['properties'] ? $schema['properties'] : new \stdClass(),
                 'additionalProperties' => false,
             ];
             if ($schema && !empty($schema['required'])) {
