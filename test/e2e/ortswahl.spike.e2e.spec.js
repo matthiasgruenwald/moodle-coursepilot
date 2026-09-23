@@ -9,6 +9,11 @@ test.skip(!isSpikeProfile || !hasBrowserCredentials || config.courseId !== 6, 'S
 
 let fixture;
 
+async function selectMoodle(page, target) {
+  await page.locator(`a[data-target="${target}"]`).click();
+  await page.locator(`[data-action="keep-moodle"][data-target="${target}"]`).click();
+}
+
 test.beforeAll(async () => {
   fixture = await setupLocationFixture(String(Date.now()));
 });
@@ -22,8 +27,8 @@ test('Ortswahl: Moodle, WebDAV-Browsing, gefuellte Ordneruebergabe und Speichera
   await moodle.login();
   await page.goto(`${config.moodleUrl.replace(/\/+$/, '')}/local/coursepilot/ortswahl.php`, { waitUntil: 'networkidle' });
 
-  await page.locator('[data-action="keep-moodle"][data-target="kontextbereich"]').click();
-  await page.locator('[data-action="keep-moodle"][data-target="materialbestand"]').click();
+  await selectMoodle(page, 'kontextbereich');
+  await selectMoodle(page, 'materialbestand');
   await page.locator('#coursepilot-ortswahl-finish').click();
   await expect(page.locator('.alert-success, .alert-info').first()).toBeVisible();
 
@@ -35,13 +40,14 @@ test('Ortswahl: Moodle, WebDAV-Browsing, gefuellte Ordneruebergabe und Speichera
   await page.locator('#coursepilot-ortswahl-confirmfolder').click();
   await expect(page.locator('#coursepilot-ortswahl-confirm-modal')).toBeVisible();
   await page.locator('#coursepilot-ortswahl-confirmfolder-ack').click();
-  await page.locator('[data-action="keep-moodle"][data-target="materialbestand"]').click();
+  await selectMoodle(page, 'materialbestand');
   await page.locator('#coursepilot-ortswahl-finish').click();
   await expect(page.locator('.alert-success').first()).toBeVisible();
 
+  await page.reload({ waitUntil: 'networkidle' });
   await page.locator('[data-action="open-picker"][data-target="kontextbereich"]').click();
   await page.locator(`[data-instance-id="${fixture.badid}"]`).click();
   const error = page.locator('#coursepilot-ortswahl-folders .alert');
-  await expect(error).toBeVisible();
+  await expect(error).toBeVisible({ timeout: 15_000 });
   await expect(error).toContainText(/external storage|externe Speicher/i);
 });

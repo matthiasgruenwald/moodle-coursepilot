@@ -67,11 +67,10 @@ Ordner.
   stattdessen das, was die Lehrkraft sieht.
 - **Der Test der Darstellungsfunktion entfällt** — das Rendern übernehmen Vorlagen, deren
   Wohlgeformtheit die automatische Prüfung des Marketplace abdeckt.
-- **Keine Browser-Tests.** Vorlagen- und Skriptprüfung laufen über `moodle-plugin-ci`; eine
-  eigene Browserautomation rechtfertigt den Aufwand nicht.
-- **Abnahme in einer echten Sitzung:** Die Ortswahl wird zusätzlich von Hand durchlaufen —
-  Wahl in Moodle, Wahl extern, Blättern, Übergabe eines gefüllten Ordners, Ausfall des
-  Speichers. Das Muster stammt aus der Abnahme der bisherigen Ortswahl-Kette.
+- **Playwright-E2E auf Spike.** Die frühere Entscheidung gegen Browser-Tests ist für #532
+  ausdrücklich überstimmt: Die isolierte Spike-Testinstanz prüft Wahl in Moodle, Wahl extern,
+  WebDAV-Browsing, Übergabe eines gefüllten Ordners und einen benannten Speicherausfall.
+  Vorlagen- und Skriptprüfung laufen zusätzlich über `moodle-plugin-ci`.
 
 ## Out of Scope
 

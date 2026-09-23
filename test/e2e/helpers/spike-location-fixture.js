@@ -43,7 +43,7 @@ $resolved->client()->mkcol_chain($resolved->directory_url(''), [$filled]);
 $resolved->client()->put_new($resolved->file_url($filled . '/vorhanden.md'), 'E2E');
 $typeid = $DB->get_field('repository', 'id', ['type' => 'webdav'], MUST_EXIST);
 $badid = $DB->insert_record('repository_instances', (object) ['name' => 'E2E-Speicherausfall-' . $stamp, 'typeid' => $typeid, 'userid' => 0, 'contextid' => \context_user::instance($user->id)->id, 'timecreated' => time(), 'timemodified' => time(), 'readonly' => 0]);
-foreach (['webdav_type' => '1', 'webdav_server' => '127.0.0.1', 'webdav_port' => '9', 'webdav_path' => '', 'webdav_user' => '', 'webdav_password' => '', 'webdav_auth' => 'basic'] as $name => $value) {
+foreach (['webdav_type' => '1', 'webdav_server' => 'spike.gruenwald.fun', 'webdav_port' => '', 'webdav_path' => 'login/index.php', 'webdav_user' => '', 'webdav_password' => '', 'webdav_auth' => 'basic'] as $name => $value) {
     $DB->insert_record('repository_instance_config', (object) ['instanceid' => $badid, 'name' => $name, 'value' => $value]);
 }
 \local_coursepilot\storage_anchor::write_pointer_document(['kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot'], 'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'], 'ortsverlauf' => []]);
