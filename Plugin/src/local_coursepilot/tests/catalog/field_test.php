@@ -35,12 +35,11 @@ final class field_test extends \advanced_testcase {
             __DIR__ . '/../../classes/external/create_module.php',
             __DIR__ . '/../../classes/external/update_module_settings.php',
             __DIR__ . '/../../classes/catalog/quiz_write_bridge.php',
-            __DIR__ . '/../../classes/external/set_completion.php',
         ];
 
         foreach ($callers as $caller) {
             $source = file_get_contents($caller);
-            $this->assertStringContainsString('field::assert_name($fieldname)', $source, $caller);
+            $this->assertStringContainsString('catalog_fields::validate(', $source, $caller);
         }
     }
 

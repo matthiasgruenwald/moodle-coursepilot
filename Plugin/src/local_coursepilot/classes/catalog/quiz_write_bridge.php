@@ -213,34 +213,7 @@ final class quiz_write_bridge {
      * @throws moodle_exception blockedfield|unknownfield|invalidfieldvalue
      */
     public static function validate_fields(array $merged): void {
-        $blocklist = array_unique(array_merge(shared_block::BLOCKLIST, quiz::blocklist()));
-        // shared_block::pseudofields() (coursepagevisibility/availability_status) bleiben aussen vor -
-        // reine Lese-Vokabel, kein echtes $moduleinfo-Feld (identisch zu update_module_settings::validate_patch()).
-        $settable = array_merge(shared_block::fields(), quiz::fields(), quiz::pseudofields());
-        $byname = [];
-        foreach ($settable as $field) {
-            $byname[$field->name] = $field;
-        }
-
-        foreach ($merged as $fieldname => $value) {
-            field::assert_name($fieldname);
-            if (in_array($fieldname, $blocklist, true)) {
-                throw new moodle_exception('blockedfield', 'local_coursepilot', '', ['field' => $fieldname, 'modname' => 'quiz']);
-            }
-            shared_block::assert_not_read_only_vocabulary($fieldname, 'quiz');
-            if (!array_key_exists($fieldname, $byname)) {
-                throw new moodle_exception('unknownfield', 'local_coursepilot', '', ['field' => $fieldname, 'modname' => 'quiz']);
-            }
-            $field = $byname[$fieldname];
-            if ($field->values !== null && !in_array($value, $field->values, false)) {
-                throw new moodle_exception(
-                    'invalidfieldvalue',
-                    'local_coursepilot',
-                    '',
-                    ['field' => $fieldname, 'modname' => 'quiz', 'value' => json_encode($value)]
-                );
-            }
-        }
+        catalog_fields::validate(quiz::class, $merged);
     }
 
     /**

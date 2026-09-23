@@ -21,11 +21,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
-use core_tag_tag;
-use local_coursepilot\availability_privacy;
 use local_coursepilot\catalog\module_state;
-use local_coursepilot\catalog\registry;
-use local_coursepilot\catalog\shared_block;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -72,8 +68,6 @@ class get_module_settings extends external_api {
      * @return array
      */
     public static function execute(int $cmid): array {
-        global $CFG, $DB;
-
         $params = self::validate_parameters(self::execute_parameters(), ['cmid' => $cmid]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
@@ -81,47 +75,7 @@ class get_module_settings extends external_api {
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
 
-        $cw = $DB->get_record('course_sections', ['id' => $cm->section], 'section', MUST_EXIST);
-        $instance = (array) $DB->get_record($cm->modname, ['id' => $cm->instance], '*', MUST_EXIST);
-
-        $data = array_merge($instance, [
-            'coursemodule' => (int) $cm->id,
-            'section' => (int) $cw->section,
-            'visible' => (int) $cm->visible,
-            'visibleoncoursepage' => (int) $cm->visibleoncoursepage,
-            // "idnumber" (nicht der rohe Formular-Property-Name "cmidnumber",
-            // siehe create_module::moduleinfo_property()) - dasselbe Wort wie
-            // im Feldkatalog (shared_block::fields()) und in
-            // update_module_settings/create_module, damit Lese- und
-            // Schreibwerkzeug dasselbe Vokabular benutzen (Ticket #390,
-            // Abnahmekriterium "Feldnamen identisch mit den Lesetools").
-            'idnumber' => (string) $cm->idnumber,
-            'groupmode' => (int) groups_get_activity_groupmode($cm),
-            'groupingid' => (int) $cm->groupingid,
-            'course' => (int) $cm->course,
-            'module' => (int) $cm->module,
-            'modulename' => (string) $cm->modname,
-            'instance' => (int) $cm->instance,
-            'completion' => (int) $cm->completion,
-            'completionview' => (int) $cm->completionview,
-            'completionexpected' => (int) $cm->completionexpected,
-            'completionusegrade' => $cm->completiongradeitemnumber === null ? 0 : 1,
-            'completionpassgrade' => (int) $cm->completionpassgrade,
-            'completiongradeitemnumber' => $cm->completiongradeitemnumber,
-            'showdescription' => (int) $cm->showdescription,
-            'downloadcontent' => $cm->downloadcontent,
-            'lang' => (string) $cm->lang,
-            'tags' => core_tag_tag::get_item_tags_array('core', 'course_modules', $cm->id),
-        ], shared_block::derive_visibility((int) $cm->visible, (int) $cm->visibleoncoursepage));
-
-        if (!empty($CFG->enableavailability)) {
-            $data['availabilityconditionsjson'] = availability_privacy::sanitize((string) ($cm->availability ?? ''));
-        }
-
-        $catalogclass = registry::for((string) $cm->modname);
-        if ($catalogclass !== null) {
-            $data = array_merge($data, module_state::read_repeated_groups($catalogclass, (int) $cm->instance));
-        }
+        $data = module_state::effective_settings($cm);
 
         return [
             'cmid' => (int) $cm->id,

@@ -125,7 +125,7 @@ final class update_quiz_settings extends external_api {
         }
 
         $quiz = $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST);
-        $before = self::catalog_state($cm, $quiz);
+        $before = quiz::effective_state($cm, $quiz);
 
         $merged = array_merge(self::bundle_fields($params['mode']), $patch);
 
@@ -198,7 +198,7 @@ final class update_quiz_settings extends external_api {
 
         \update_moduleinfo($cm, $moduleinfo, $course);
 
-        $after = self::catalog_state($cm, $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST));
+        $after = quiz::effective_state($cm, $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST));
         [$changes, $sideeffects] = self::diff_and_side_effects($merged, $before, $after, $gradechanged);
 
         return [
@@ -228,32 +228,6 @@ final class update_quiz_settings extends external_api {
             ]);
         }
         return $bundles[$mode];
-    }
-
-    /**
-     * Vollstaendiger Ist-Stand im Katalog-Vokabular (echte Felder plus
-     * Pseudofelder) - Grundlage fuer Kombinationsregeln und den
-     * Vorher-/Nachher-Vergleich.
-     *
-     * @param \stdClass $cm
-     * @param \stdClass $quiz Rohe quiz-Tabellenzeile.
-     * @return array
-     */
-    private static function catalog_state(\stdClass $cm, \stdClass $quiz): array {
-        $feedback = quiz_write_bridge::read_feedback((int) $quiz->id);
-        return array_merge(
-            (array) $quiz,
-            [
-                'quizpassword' => (string) $quiz->password,
-                'visible' => (int) $cm->visible,
-                'visibleoncoursepage' => (int) $cm->visibleoncoursepage,
-                'groupmode' => (int) groups_get_activity_groupmode($cm),
-                'groupingid' => (int) $cm->groupingid,
-                'idnumber' => (string) $cm->idnumber,
-            ],
-            quiz_write_bridge::decompose_review_bitmasks($quiz),
-            $feedback
-        );
     }
 
     /**

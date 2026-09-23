@@ -120,6 +120,17 @@ final class drift_check_test extends \advanced_testcase {
     }
 
     /**
+     * Auch ein Leseweg darf kein eigenes Feldvokabular einfuehren.
+     */
+    public function test_field_read_outside_the_catalog_is_detected(): void {
+        $this->resetAfterTest();
+
+        $violations = drift_check::check_catalog('label', drift_check_test_fake_catalog_with_bad_read_field::class);
+
+        $this->assertStringContainsString('am_katalog_vorbei_gelesen', implode(' ', $violations));
+    }
+
+    /**
      * Jede Katalogklasse erklaert ihren Geltungsbereich pro Major-Version
      * (Abnahmekriterium #399) - eine positive Ganzzahl.
      */
@@ -285,5 +296,11 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
 final class drift_check_test_fake_catalog_with_bad_write_field extends drift_check_test_fake_catalog_with_bad_constant {
     public static function write_options(): array {
         return ['material_reference_fields' => ['am_katalog_vorbei' => []]];
+    }
+}
+
+final class drift_check_test_fake_catalog_with_bad_read_field extends drift_check_test_fake_catalog_with_bad_constant {
+    public static function write_options(): array {
+        return ['read_fields' => ['am_katalog_vorbei_gelesen']];
     }
 }

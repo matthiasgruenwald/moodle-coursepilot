@@ -24,7 +24,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\activity_file_trash;
 use local_coursepilot\catalog\module_catalog;
-use local_coursepilot\catalog\field;
+use local_coursepilot\catalog\catalog_fields;
 use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\shared_block;
@@ -248,7 +248,8 @@ class update_module_settings extends external_api {
         // Extraktions-Schnitt: reiner Performance-/DRY-Fund, keine
         // Verhaltensaenderung).
         $before = self::read_settings($cmid);
-        self::validate_patch($modname, $catalogclass, $before, $patch);
+        catalog_fields::validate($catalogclass, $patch, true);
+        self::validate_patch($modname, $before, $patch);
 
         return [$patch, $before];
     }
@@ -524,69 +525,9 @@ class update_module_settings extends external_api {
      * @return void
      * @throws moodle_exception blockedfield|unknownfield|invalidfieldvalue|combinationruleviolation|stealthnotallowed
      */
-    private static function validate_patch(string $modname, string $catalogclass, array $before, array $patch): void {
-        $blocklist = array_unique(array_merge(shared_block::BLOCKLIST, $catalogclass::blocklist()));
-
-        $settablefields = array_merge(
-            shared_block::fields(),
-            $catalogclass::fields(),
-            $catalogclass::pseudofields()
-        );
-        $fieldsbyname = [];
-        foreach ($settablefields as $settablefield) {
-            $fieldsbyname[$settablefield->name] = $settablefield;
-        }
-
-        foreach ($patch as $fieldname => $value) {
-            self::validate_patch_field($modname, $fieldname, $value, $blocklist, $fieldsbyname);
-        }
-
+    private static function validate_patch(string $modname, array $before, array $patch): void {
         self::validate_combination_rules($modname, $before, $patch);
         self::assert_stealth_allowed($patch);
-    }
-
-    /**
-     * Prueft ein einzelnes Patch-Feld (Issue #523: aus validate_patch()
-     * ausgelagert, um die Funktion unter der 50-Zeilen-Grenze zu halten).
-     *
-     * @param string $modname
-     * @param mixed $fieldname
-     * @param mixed $value
-     * @param string[] $blocklist
-     * @param array $fieldsbyname
-     */
-    private static function validate_patch_field(
-        string $modname,
-        $fieldname,
-        $value,
-        array $blocklist,
-        array $fieldsbyname
-    ): void {
-        field::assert_name($fieldname);
-        if (in_array($fieldname, $blocklist, true)) {
-            // Vervollstaendigungsfelder zuerst: sie sind nicht nur
-            // gesperrt, sie haben einen Weg (Ticket #461).
-            shared_block::assert_not_completion_field($fieldname);
-            throw new moodle_exception('blockedfield', 'local_coursepilot', '', ['field' => $fieldname, 'modname' => $modname]);
-        }
-        $catalogclass = registry::for($modname);
-        if (in_array($fieldname, $catalogclass::write_options()['patch_blocked_fields'] ?? [], true)) {
-            throw new moodle_exception('folderfilespatchunsupported', 'local_coursepilot');
-        }
-        shared_block::assert_not_read_only_vocabulary($fieldname, $modname);
-        if (!array_key_exists($fieldname, $fieldsbyname)) {
-            throw new moodle_exception('unknownfield', 'local_coursepilot', '', ['field' => $fieldname, 'modname' => $modname]);
-        }
-
-        $field = $fieldsbyname[$fieldname];
-        if ($field->values !== null && !in_array($value, $field->values, false)) {
-            throw new moodle_exception(
-                'invalidfieldvalue',
-                'local_coursepilot',
-                '',
-                ['field' => $fieldname, 'modname' => $modname, 'value' => json_encode($value)]
-            );
-        }
     }
 
     /**

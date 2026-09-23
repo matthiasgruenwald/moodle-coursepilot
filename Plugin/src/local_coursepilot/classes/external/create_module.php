@@ -23,7 +23,7 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\module_catalog;
-use local_coursepilot\catalog\field;
+use local_coursepilot\catalog\catalog_fields;
 use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\shared_block;
@@ -193,7 +193,7 @@ final class create_module extends external_api {
         pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $merged);
         self::derive_content_from_editor_pseudofield($catalogclass, $merged);
 
-        self::validate_fields($modname, $catalogclass, $merged);
+        catalog_fields::validate($catalogclass, $merged);
         self::validate_parallel_array_lengths($catalogclass, $modname, $merged);
         self::validate_combination_rules($catalogclass, $modname, $merged);
         // VOR assert_no_required_field_missing(): eine leere Pfadliste
@@ -450,54 +450,6 @@ final class create_module extends external_api {
      * @return void
      * @throws moodle_exception blockedfield|unknownfield|invalidfieldvalue
      */
-    private static function validate_fields(string $modname, string $catalogclass, array $merged): void {
-        $blocklist = array_unique(array_merge(shared_block::BLOCKLIST, $catalogclass::blocklist()));
-
-        $settablefields = array_merge(
-            shared_block::fields(),
-            $catalogclass::fields(),
-            $catalogclass::pseudofields()
-        );
-        $fieldsbyname = [];
-        foreach ($settablefields as $settablefield) {
-            $fieldsbyname[$settablefield->name] = $settablefield;
-        }
-
-        foreach ($merged as $fieldname => $value) {
-            field::assert_name($fieldname);
-            if (in_array($fieldname, $blocklist, true)) {
-                // Vervollstaendigungsfelder zuerst: sie sind nicht nur
-                // gesperrt, sie haben einen Weg (Ticket #461).
-                shared_block::assert_not_completion_field($fieldname);
-                throw new moodle_exception(
-                    'blockedfield',
-                    'local_coursepilot',
-                    '',
-                    ['field' => $fieldname, 'modname' => $modname]
-                );
-            }
-            shared_block::assert_not_read_only_vocabulary($fieldname, $modname);
-            $lookupname = array_key_exists($fieldname, $fieldsbyname) ? $fieldname : self::templated_field_name($fieldname);
-            if (!array_key_exists($lookupname, $fieldsbyname)) {
-                throw new moodle_exception(
-                    'unknownfield',
-                    'local_coursepilot',
-                    '',
-                    ['field' => $fieldname, 'modname' => $modname]
-                );
-            }
-
-            $field = $fieldsbyname[$lookupname];
-            if ($field->values !== null && !in_array($value, $field->values, false)) {
-                throw new moodle_exception(
-                    'invalidfieldvalue',
-                    'local_coursepilot',
-                    '',
-                    ['field' => $fieldname, 'modname' => $modname, 'value' => json_encode($value)]
-                );
-            }
-        }
-    }
 
     /**
      * choice: "limit[]" muss genauso viele Eintraege haben wie "option[]"

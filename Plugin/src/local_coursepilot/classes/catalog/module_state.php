@@ -9,6 +9,7 @@
 namespace local_coursepilot\catalog;
 
 use context_module;
+use local_coursepilot\availability_privacy;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -22,6 +23,51 @@ require_once($CFG->dirroot . '/grade/grading/lib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class module_state {
+
+    /**
+     * Vollstand im Katalogvokabular fuer Read-modify-write. Die externen
+     * Werkzeuge kennen dabei weder Modultabellen noch Pseudofeld-Leser.
+     *
+     * @param \stdClass $cm
+     * @return array
+     */
+    public static function effective_settings(\stdClass $cm): array {
+        global $CFG, $DB;
+
+        $section = $DB->get_record('course_sections', ['id' => $cm->section], 'section', MUST_EXIST);
+        $instance = (array) $DB->get_record($cm->modname, ['id' => $cm->instance], '*', MUST_EXIST);
+        $data = array_merge($instance, [
+            'coursemodule' => (int) $cm->id,
+            'section' => (int) $section->section,
+            'visible' => (int) $cm->visible,
+            'visibleoncoursepage' => (int) $cm->visibleoncoursepage,
+            'idnumber' => (string) $cm->idnumber,
+            'groupmode' => (int) groups_get_activity_groupmode($cm),
+            'groupingid' => (int) $cm->groupingid,
+            'course' => (int) $cm->course,
+            'module' => (int) $cm->module,
+            'modulename' => (string) $cm->modname,
+            'instance' => (int) $cm->instance,
+            'completion' => (int) $cm->completion,
+            'completionview' => (int) $cm->completionview,
+            'completionexpected' => (int) $cm->completionexpected,
+            'completionusegrade' => $cm->completiongradeitemnumber === null ? 0 : 1,
+            'completionpassgrade' => (int) $cm->completionpassgrade,
+            'completiongradeitemnumber' => $cm->completiongradeitemnumber,
+            'showdescription' => (int) $cm->showdescription,
+            'downloadcontent' => $cm->downloadcontent,
+            'lang' => (string) $cm->lang,
+            'tags' => \core_tag_tag::get_item_tags_array('core', 'course_modules', $cm->id),
+        ], shared_block::derive_visibility((int) $cm->visible, (int) $cm->visibleoncoursepage));
+        if (!empty($CFG->enableavailability)) {
+            $data['availabilityconditionsjson'] = availability_privacy::sanitize((string) ($cm->availability ?? ''));
+        }
+        $catalogclass = registry::for((string) $cm->modname);
+        if ($catalogclass !== null) {
+            $data = array_merge($data, self::read_repeated_groups($catalogclass, (int) $cm->instance));
+        }
+        return $data;
+    }
 
     /**
      * @param string $modname

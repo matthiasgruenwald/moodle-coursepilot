@@ -427,6 +427,30 @@ final class quiz implements module_catalog {
         return module_state::quiz($instanceid, $cmid, $fullcontent);
     }
 
+    /**
+     * Vollstand des Tests im Katalogvokabular. Bewertung und Fragenanordnung
+     * bleiben die in ADR 0016 begruendete Quiz-Ausnahme.
+     *
+     * @param \stdClass $cm
+     * @param \stdClass $instance
+     * @return array
+     */
+    public static function effective_state(\stdClass $cm, \stdClass $instance): array {
+        return array_merge(
+            (array) $instance,
+            [
+                'quizpassword' => (string) $instance->password,
+                'visible' => (int) $cm->visible,
+                'visibleoncoursepage' => (int) $cm->visibleoncoursepage,
+                'groupmode' => (int) groups_get_activity_groupmode($cm),
+                'groupingid' => (int) $cm->groupingid,
+                'idnumber' => (string) $cm->idnumber,
+            ],
+            quiz_write_bridge::decompose_review_bitmasks($instance),
+            quiz_write_bridge::read_feedback((int) $instance->id)
+        );
+    }
+
     public static function write_options(): array {
         return ['restores_arrangement' => true];
     }
