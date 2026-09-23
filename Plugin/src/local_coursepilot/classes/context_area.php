@@ -270,7 +270,10 @@ final class context_area {
         // Reuse the preflight read as the write condition. This closes the
         // read-write window without exposing location-specific concurrency.
         $checksum = $expectedcontenthash !== '' ? $expectedcontenthash : ($existing['checksum'] ?? storage_port::MISSING_CHECKSUM);
-        $written = $port->write($area, $path, $content, $checksum);
+        $operation = $existing === null ? pending_write_translation::OP_CREATE : pending_write_translation::OP_OVERWRITE;
+        $written = $location->kind === pointer_location::MOODLE
+            ? self::persist_moodle_write($port, $path, $content, $operation, $courseid, $checksum)
+            : $port->write($area, $path, $content, $checksum);
         return [
             'path' => $written['path'],
             'created' => $written['created'],
@@ -489,10 +492,11 @@ final class context_area {
         string $path,
         string $content,
         string $operation,
-        int $courseid
+        int $courseid,
+        ?string $expectedchecksum = null
     ): array {
         try {
-            return $port->write(context_files::area(), $path, $content);
+            return $port->write(context_files::area(), $path, $content, $expectedchecksum);
         } catch (storage_conflict_exception $e) {
             throw $e;
         } catch (\moodle_exception $e) {
@@ -624,7 +628,9 @@ final class context_area {
         if ($ausstand !== '' && $existing !== null && $expectedcontenthash === '') {
             throw new storage_conflict_exception($path);
         }
-        $written = $port->append($area, $path, $content);
+        $written = $location->kind === pointer_location::MOODLE
+            ? self::persist_moodle_append($port, $path, $content, pending_write_translation::OP_APPEND, $courseid)
+            : $port->append($area, $path, $content);
         return ['path' => $written['path'], 'created' => $written['created'], 'size' => $written['size']];
     }
 
