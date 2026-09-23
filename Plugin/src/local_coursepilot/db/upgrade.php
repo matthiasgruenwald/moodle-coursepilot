@@ -271,5 +271,11 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026091202, 'local', 'coursepilot');
     }
 
+    if ($oldversion < 2026092301) {
+        local_coursepilot_hash_oauth_tokens($dbman);
+
+        upgrade_plugin_savepoint(true, 2026092301, 'local', 'coursepilot');
+    }
+
     return true;
 }

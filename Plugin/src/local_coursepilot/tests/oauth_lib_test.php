@@ -410,6 +410,13 @@ final class oauth_lib_test extends \advanced_testcase {
         $this->assertSame('Bearer', $tokens['token_type']);
         $this->assertSame(oauth_lib::ACCESS_TOKEN_TTL, $tokens['expires_in']);
         $this->assertSame(3600, $tokens['expires_in']);
+
+        global $DB;
+        $stored = $DB->get_record('local_coursepilot_oauth_token', ['clientid' => $fixture['clientid']], '*', MUST_EXIST);
+        $this->assertSame(hash('sha256', $tokens['access_token']), $stored->accesstokenhash);
+        $this->assertSame(hash('sha256', $tokens['refresh_token']), $stored->refreshtokenhash);
+        $this->assertNotSame($tokens['access_token'], $stored->accesstokenhash);
+        $this->assertNotSame($tokens['refresh_token'], $stored->refreshtokenhash);
     }
 
     /**
@@ -642,9 +649,11 @@ final class oauth_lib_test extends \advanced_testcase {
     private function issue_token(int $userid, string $clientid = 'test-client'): \stdClass {
         global $DB;
 
+        $accesstoken = oauth_lib::random_token(32);
+        $refreshtoken = oauth_lib::random_token(32);
         $record = new \stdClass();
-        $record->accesstoken = oauth_lib::random_token(32);
-        $record->refreshtoken = oauth_lib::random_token(32);
+        $record->accesstokenhash = hash('sha256', $accesstoken);
+        $record->refreshtokenhash = hash('sha256', $refreshtoken);
         $record->clientid = $clientid;
         $record->userid = $userid;
         $record->expires = time() + oauth_lib::ACCESS_TOKEN_TTL;
@@ -652,6 +661,8 @@ final class oauth_lib_test extends \advanced_testcase {
         $record->revoked = 0;
         $record->timecreated = time();
         $record->id = $DB->insert_record('local_coursepilot_oauth_token', $record);
+        $record->accesstoken = $accesstoken;
+        $record->refreshtoken = $refreshtoken;
         return $record;
     }
 

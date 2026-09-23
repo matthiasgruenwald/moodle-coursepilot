@@ -39,8 +39,8 @@ final class webdav_capability_check_test extends \advanced_testcase {
         global $DB;
 
         $DB->insert_record('local_coursepilot_oauth_token', (object) [
-            'accesstoken' => oauth_lib::random_token(32),
-            'refreshtoken' => oauth_lib::random_token(32),
+            'accesstokenhash' => hash('sha256', oauth_lib::random_token(32)),
+            'refreshtokenhash' => hash('sha256', oauth_lib::random_token(32)),
             'clientid' => 'test-client',
             'userid' => $userid,
             'expires' => time() + oauth_lib::ACCESS_TOKEN_TTL,

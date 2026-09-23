@@ -332,9 +332,10 @@ final class werkbank_ticket_test extends \advanced_testcase {
     private function issue_connection(int $userid): int {
         global $DB;
 
+        $accesstoken = oauth_lib::random_token(32);
         $record = new \stdClass();
-        $record->accesstoken = oauth_lib::random_token(32);
-        $record->refreshtoken = oauth_lib::random_token(32);
+        $record->accesstokenhash = hash('sha256', $accesstoken);
+        $record->refreshtokenhash = hash('sha256', oauth_lib::random_token(32));
         $record->clientid = 'test-client';
         $record->userid = $userid;
         $record->expires = time() + oauth_lib::ACCESS_TOKEN_TTL;
@@ -343,7 +344,7 @@ final class werkbank_ticket_test extends \advanced_testcase {
         $record->timecreated = time();
         $id = (int) $DB->insert_record('local_coursepilot_oauth_token', $record);
 
-        oauth_lib::authenticate_access_token($record->accesstoken);
+        oauth_lib::authenticate_access_token($accesstoken);
 
         return $id;
     }

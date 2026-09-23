@@ -81,23 +81,83 @@ function local_coursepilot_repair_oauth_schema_drift(database_manager $dbman): v
         $dbman->drop_field($codetable, $challengemethod);
     }
 
-    // refreshtoken: NOT NULL laut install.xml. Eine Zeile ohne Refresh-Token
-    // ist unbrauchbar (die Rotation aus #336 kann sie nicht erneuern) - sie
-    // wird entfernt statt mit einem Platzhalter gefuellt, der als gueltiges
-    // Token aussaehe.
+    // refreshtokenhash: NOT NULL laut install.xml. Eine Zeile ohne
+    // Refresh-Token-Hash ist unbrauchbar (die Rotation aus #336 kann sie
+    // nicht erneuern) - sie wird entfernt statt mit einem Platzhalter
+    // gefuellt, der als gueltiger Hash aussaehe.
     $tokentable = new xmldb_table('local_coursepilot_oauth_token');
-    $refreshtoken = new xmldb_field('refreshtoken', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
-    if ($dbman->field_exists($tokentable, $refreshtoken)) {
-        $DB->delete_records_select('local_coursepilot_oauth_token', 'refreshtoken IS NULL');
+    $refreshtokenhash = new xmldb_field('refreshtokenhash', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
+    if ($dbman->field_exists($tokentable, $refreshtokenhash)) {
+        $DB->delete_records_select('local_coursepilot_oauth_token', 'refreshtokenhash IS NULL');
 
-        $refreshindex = new xmldb_index('refreshtoken', XMLDB_INDEX_UNIQUE, ['refreshtoken']);
+        $refreshindex = new xmldb_index('refreshtokenhash', XMLDB_INDEX_UNIQUE, ['refreshtokenhash']);
         $hadindex = $dbman->index_exists($tokentable, $refreshindex);
         if ($hadindex) {
             $dbman->drop_index($tokentable, $refreshindex);
         }
-        $dbman->change_field_notnull($tokentable, $refreshtoken);
+        $dbman->change_field_notnull($tokentable, $refreshtokenhash);
         if ($hadindex) {
             $dbman->add_index($tokentable, $refreshindex);
         }
     }
+}
+
+/**
+ * Ersetzt Klartext-OAuth-Tokens durch SHA-256-Hashes (#534).
+ *
+ * Die Werte werden erst gehasht, bevor Klartextfelder und ihre Indexe entfernt
+ * werden. Bereits ausgestellte Verbindungen bleiben dadurch bis zu Ablauf,
+ * Rotation oder Widerruf nutzbar; nach erfolgreichem Upgrade bleibt kein
+ * Geheimnis in der Datenbank zurueck.
+ *
+ * @param database_manager $dbman
+ * @return void
+ */
+function local_coursepilot_hash_oauth_tokens(database_manager $dbman): void {
+    global $DB;
+
+    $table = new xmldb_table('local_coursepilot_oauth_token');
+    $access = new xmldb_field('accesstoken', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
+    $refresh = new xmldb_field('refreshtoken', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
+    if (!$dbman->field_exists($table, $access) || !$dbman->field_exists($table, $refresh)) {
+        return;
+    }
+
+    $accesshash = new xmldb_field('accesstokenhash', XMLDB_TYPE_CHAR, '64', null, null, null, null, 'accesstoken');
+    $refreshhash = new xmldb_field('refreshtokenhash', XMLDB_TYPE_CHAR, '64', null, null, null, null, 'accesstokenhash');
+    if (!$dbman->field_exists($table, $accesshash)) {
+        $dbman->add_field($table, $accesshash);
+    }
+    if (!$dbman->field_exists($table, $refreshhash)) {
+        $dbman->add_field($table, $refreshhash);
+    }
+
+    $records = $DB->get_records_sql('SELECT id, accesstoken, refreshtoken FROM {local_coursepilot_oauth_token}');
+    foreach ($records as $record) {
+        $DB->update_record('local_coursepilot_oauth_token', (object) [
+            'id' => $record->id,
+            'accesstokenhash' => hash('sha256', $record->accesstoken),
+            'refreshtokenhash' => hash('sha256', $record->refreshtoken),
+        ]);
+    }
+
+    $accesshash = new xmldb_field('accesstokenhash', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
+    $refreshhash = new xmldb_field('refreshtokenhash', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
+    $dbman->change_field_notnull($table, $accesshash);
+    $dbman->change_field_notnull($table, $refreshhash);
+    $accesshashindex = new xmldb_index('accesstokenhash', XMLDB_INDEX_UNIQUE, ['accesstokenhash']);
+    $refreshhashindex = new xmldb_index('refreshtokenhash', XMLDB_INDEX_UNIQUE, ['refreshtokenhash']);
+    $dbman->add_index($table, $accesshashindex);
+    $dbman->add_index($table, $refreshhashindex);
+
+    $accessindex = new xmldb_index('accesstoken', XMLDB_INDEX_UNIQUE, ['accesstoken']);
+    $refreshindex = new xmldb_index('refreshtoken', XMLDB_INDEX_UNIQUE, ['refreshtoken']);
+    if ($dbman->index_exists($table, $accessindex)) {
+        $dbman->drop_index($table, $accessindex);
+    }
+    if ($dbman->index_exists($table, $refreshindex)) {
+        $dbman->drop_index($table, $refreshindex);
+    }
+    $dbman->drop_field($table, $access);
+    $dbman->drop_field($table, $refresh);
 }

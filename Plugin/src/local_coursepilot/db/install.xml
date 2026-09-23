@@ -40,11 +40,11 @@
         <INDEX NAME="code" UNIQUE="true" FIELDS="code"/>
       </INDEXES>
     </TABLE>
-    <TABLE NAME="local_coursepilot_oauth_token" COMMENT="Access- und Refresh-Token, 1h/30d, Refresh-Rotation (#336).">
+    <TABLE NAME="local_coursepilot_oauth_token" COMMENT="SHA-256-Hashes der Access- und Refresh-Token, 1h/30d, Refresh-Rotation (#336, #534).">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="accesstoken" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="refreshtoken" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="accesstokenhash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="sha256(Access-Token); das Geheimnis selbst wird nie gespeichert."/>
+        <FIELD NAME="refreshtokenhash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="sha256(Refresh-Token); das Geheimnis selbst wird nie gespeichert."/>
         <FIELD NAME="clientid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="expires" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Ablauf des Access-Tokens."/>
@@ -56,8 +56,8 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
       <INDEXES>
-        <INDEX NAME="accesstoken" UNIQUE="true" FIELDS="accesstoken"/>
-        <INDEX NAME="refreshtoken" UNIQUE="true" FIELDS="refreshtoken"/>
+        <INDEX NAME="accesstokenhash" UNIQUE="true" FIELDS="accesstokenhash"/>
+        <INDEX NAME="refreshtokenhash" UNIQUE="true" FIELDS="refreshtokenhash"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_coursepilot_cm_version" COMMENT="Vollstand eines course_modules-Schreibvorgangs (Formularweg, Handaenderung, Massenbearbeitung oder spaeter API), Anker die stabile cmid (#385, Spec 0015 §10).">

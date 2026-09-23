@@ -73,9 +73,11 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     private function issue_token(int $userid, string $clientid = 'test-client'): \stdClass {
         global $DB;
 
+        $accesstoken = oauth_lib::random_token(32);
+        $refreshtoken = oauth_lib::random_token(32);
         $record = new \stdClass();
-        $record->accesstoken = oauth_lib::random_token(32);
-        $record->refreshtoken = oauth_lib::random_token(32);
+        $record->accesstokenhash = hash('sha256', $accesstoken);
+        $record->refreshtokenhash = hash('sha256', $refreshtoken);
         $record->clientid = $clientid;
         $record->userid = $userid;
         $record->expires = time() + oauth_lib::ACCESS_TOKEN_TTL;
@@ -83,6 +85,8 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $record->revoked = 0;
         $record->timecreated = time();
         $record->id = $DB->insert_record('local_coursepilot_oauth_token', $record);
+        $record->accesstoken = $accesstoken;
+        $record->refreshtoken = $refreshtoken;
         return $record;
     }
 

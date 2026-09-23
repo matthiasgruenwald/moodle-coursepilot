@@ -527,7 +527,7 @@ final class oauth_lib {
     public static function rotate_refresh_token(string $refreshtoken, string $clientid): ?array {
         global $DB;
 
-        $record = $DB->get_record(self::TOKEN_TABLE, ['refreshtoken' => $refreshtoken]);
+        $record = $DB->get_record(self::TOKEN_TABLE, ['refreshtokenhash' => self::token_hash($refreshtoken)]);
         if (!$record || (int) $record->revoked === 1 || $record->refreshexpires < time()) {
             return null;
         }
@@ -571,9 +571,11 @@ final class oauth_lib {
         global $DB;
 
         $now = time();
+        $accesstoken = self::random_token(32);
+        $refreshtoken = self::random_token(32);
         $record = new \stdClass();
-        $record->accesstoken = self::random_token(32);
-        $record->refreshtoken = self::random_token(32);
+        $record->accesstokenhash = self::token_hash($accesstoken);
+        $record->refreshtokenhash = self::token_hash($refreshtoken);
         $record->clientid = $clientid;
         $record->userid = $userid;
         $record->expires = $now + self::ACCESS_TOKEN_TTL;
@@ -583,10 +585,10 @@ final class oauth_lib {
         $DB->insert_record(self::TOKEN_TABLE, $record);
 
         return [
-            'access_token' => $record->accesstoken,
+            'access_token' => $accesstoken,
             'token_type' => 'Bearer',
             'expires_in' => self::ACCESS_TOKEN_TTL,
-            'refresh_token' => $record->refreshtoken,
+            'refresh_token' => $refreshtoken,
         ];
     }
 
@@ -667,7 +669,7 @@ final class oauth_lib {
     public static function authenticate_access_token(string $accesstoken): ?int {
         global $DB;
 
-        $record = $DB->get_record(self::TOKEN_TABLE, ['accesstoken' => $accesstoken]);
+        $record = $DB->get_record(self::TOKEN_TABLE, ['accesstokenhash' => self::token_hash($accesstoken)]);
         if (!$record || (int) $record->revoked === 1 || $record->expires < time()) {
             return null;
         }
@@ -846,6 +848,18 @@ final class oauth_lib {
      */
     public static function random_token(int $bytes = 32): string {
         return bin2hex(random_bytes($bytes));
+    }
+
+    /**
+     * Der DB-Lookup verwendet nur den festen SHA-256-Hash des Geheimnisses.
+     * Damit werden Tokens weder persistiert noch als Klartext-Abfragewert
+     * verarbeitet; der Unique-Index bleibt fuer die Authentifizierung nutzbar.
+     *
+     * @param string $token
+     * @return string
+     */
+    private static function token_hash(string $token): string {
+        return hash('sha256', $token);
     }
 
     /**

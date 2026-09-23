@@ -87,7 +87,7 @@ final class upgradelib_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Zeile ohne Refresh-Token laesst sich nicht auf NOT NULL ziehen -
+     * Eine Zeile ohne Refresh-Token-Hash laesst sich nicht auf NOT NULL ziehen -
      * sie wird entfernt statt mit einem Platzhalter gefuellt, der wie ein
      * gueltiges Token aussaehe.
      */
@@ -101,8 +101,8 @@ final class upgradelib_test extends \advanced_testcase {
             $this->introduce_drift($dbman);
 
             $DB->insert_record('local_coursepilot_oauth_token', (object) [
-                'accesstoken' => 'kaputt',
-                'refreshtoken' => null,
+                'accesstokenhash' => hash('sha256', 'kaputt'),
+                'refreshtokenhash' => null,
                 'clientid' => 'client',
                 'userid' => 1,
                 'expires' => time() + 3600,
@@ -114,14 +114,63 @@ final class upgradelib_test extends \advanced_testcase {
             local_coursepilot_repair_oauth_schema_drift($dbman);
         }
 
-        $this->assertSame(0, $DB->count_records('local_coursepilot_oauth_token', ['accesstoken' => 'kaputt']));
+        $this->assertSame(0, $DB->count_records('local_coursepilot_oauth_token', ['accesstokenhash' => hash('sha256', 'kaputt')]));
+        $this->assertSame([], $this->schema_errors());
+    }
+
+    /**
+     * Der Sicherheitsupgrade hasht bestehende Geheimnisse vor dem Entfernen
+     * der Klartextfelder. Damit bleiben Verbindungen samt Refresh-Rotation
+     * nutzbar, obwohl ein Datenbank-Dump danach keine Tokens mehr enthaelt.
+     */
+    public function test_hash_upgrade_preserves_existing_connection_without_retaining_cleartext(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $dbman = $DB->get_manager();
+        $tokentable = new \xmldb_table('local_coursepilot_oauth_token');
+        $accesshashindex = new \xmldb_index('accesstokenhash', XMLDB_INDEX_UNIQUE, ['accesstokenhash']);
+        $refreshhashindex = new \xmldb_index('refreshtokenhash', XMLDB_INDEX_UNIQUE, ['refreshtokenhash']);
+        $accesshash = new \xmldb_field('accesstokenhash');
+        $refreshhash = new \xmldb_field('refreshtokenhash');
+        $dbman->drop_index($tokentable, $accesshashindex);
+        $dbman->drop_index($tokentable, $refreshhashindex);
+        $dbman->drop_field($tokentable, $accesshash);
+        $dbman->drop_field($tokentable, $refreshhash);
+
+        $access = oauth_lib::random_token(32);
+        $refresh = oauth_lib::random_token(32);
+        $accessfield = new \xmldb_field('accesstoken', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null, 'id');
+        $refreshfield = new \xmldb_field('refreshtoken', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null, 'accesstoken');
+        $dbman->add_field($tokentable, $accessfield);
+        $dbman->add_field($tokentable, $refreshfield);
+        $dbman->add_index($tokentable, new \xmldb_index('accesstoken', XMLDB_INDEX_UNIQUE, ['accesstoken']));
+        $dbman->add_index($tokentable, new \xmldb_index('refreshtoken', XMLDB_INDEX_UNIQUE, ['refreshtoken']));
+        $user = $this->getDataGenerator()->create_user();
+        $DB->insert_record('local_coursepilot_oauth_token', (object) [
+            'accesstoken' => $access,
+            'refreshtoken' => $refresh,
+            'clientid' => 'legacy-client',
+            'userid' => $user->id,
+            'expires' => time() + oauth_lib::ACCESS_TOKEN_TTL,
+            'refreshexpires' => time() + oauth_lib::REFRESH_TOKEN_TTL,
+            'revoked' => 0,
+            'timecreated' => time(),
+        ]);
+
+        local_coursepilot_hash_oauth_tokens($dbman);
+
+        $this->assertFalse($dbman->field_exists($tokentable, $accessfield));
+        $this->assertFalse($dbman->field_exists($tokentable, $refreshfield));
+        $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token($access));
+        $this->assertNotNull(oauth_lib::rotate_refresh_token($refresh, 'legacy-client'));
         $this->assertSame([], $this->schema_errors());
     }
 
     /**
      * Stellt genau die Abweichungen her, die auf der Spike-Instanz gemessen
      * wurden: clientid auf 64 verkuerzt, codechallengemethod vorhanden,
-     * refreshtoken nullable.
+     * refreshtokenhash nullable.
      *
      * @param \database_manager $dbman
      * @return void
@@ -157,8 +206,8 @@ final class upgradelib_test extends \advanced_testcase {
         $dbman->add_field($codetable, $challengemethod);
 
         $tokentable = new \xmldb_table('local_coursepilot_oauth_token');
-        $refreshtoken = new \xmldb_field('refreshtoken', XMLDB_TYPE_CHAR, '64', null, null, null, null);
-        $refreshindex = new \xmldb_index('refreshtoken', XMLDB_INDEX_UNIQUE, ['refreshtoken']);
+        $refreshtoken = new \xmldb_field('refreshtokenhash', XMLDB_TYPE_CHAR, '64', null, null, null, null);
+        $refreshindex = new \xmldb_index('refreshtokenhash', XMLDB_INDEX_UNIQUE, ['refreshtokenhash']);
         $dbman->drop_index($tokentable, $refreshindex);
         $dbman->change_field_notnull($tokentable, $refreshtoken);
         $dbman->add_index($tokentable, $refreshindex);

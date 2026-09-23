@@ -70,9 +70,10 @@ final class dispatcher_test extends \advanced_testcase {
     private function issue_access_token(int $userid, int $expiresoffset = 3600, bool $revoked = false): string {
         global $DB;
 
+        $accesstoken = oauth_lib::random_token(32);
         $record = new \stdClass();
-        $record->accesstoken = oauth_lib::random_token(32);
-        $record->refreshtoken = oauth_lib::random_token(32);
+        $record->accesstokenhash = hash('sha256', $accesstoken);
+        $record->refreshtokenhash = hash('sha256', oauth_lib::random_token(32));
         $record->clientid = 'test-client';
         $record->userid = $userid;
         $record->expires = time() + $expiresoffset;
@@ -81,7 +82,7 @@ final class dispatcher_test extends \advanced_testcase {
         $record->timecreated = time();
         $DB->insert_record('local_coursepilot_oauth_token', $record);
 
-        return $record->accesstoken;
+        return $accesstoken;
     }
 
     /**

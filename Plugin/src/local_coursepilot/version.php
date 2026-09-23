@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_coursepilot';
-$plugin->version   = 2026092101;
+$plugin->version   = 2026092301;
 // Moodle 5.0 wird zugesagt. Der Sicherheitssupport fuer 5.0 endet am
 // 05.10.2026; dann wird auf 5.1 als Mindestversion gehoben (ADR 0024).
 $plugin->requires  = 2025041400;

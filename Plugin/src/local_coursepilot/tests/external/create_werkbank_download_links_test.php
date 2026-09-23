@@ -102,8 +102,8 @@ final class create_werkbank_download_links_test extends \advanced_testcase {
         global $DB;
 
         $record = new \stdClass();
-        $record->accesstoken = oauth_lib::random_token(32);
-        $record->refreshtoken = oauth_lib::random_token(32);
+        $record->accesstokenhash = hash('sha256', oauth_lib::random_token(32));
+        $record->refreshtokenhash = hash('sha256', oauth_lib::random_token(32));
         $record->clientid = 'test-client';
         $record->userid = $userid;
         $record->expires = time() + oauth_lib::ACCESS_TOKEN_TTL;
