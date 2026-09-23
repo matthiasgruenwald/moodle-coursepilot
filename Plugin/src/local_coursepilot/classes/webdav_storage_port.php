@@ -37,8 +37,7 @@ use local_coursepilot\webdav\webdav_transport;
  * dieser Adapter fuer jede Operation neu aufruft - Zugangsdaten werden dabei
  * frisch gelesen, nie zwischengespeichert. Die Hostsperre des Kerns
  * ({@see \curl_transport}, im Betrieb hinter {@see webdav_instance}) bleibt
- * unveraendert: dieser Adapter ersetzt nirgends den Transport selbst, nur
- * ueber den bereits bestehenden Testhaken {@see webdav_instance::set_transport()}.
+ * unveraendert. Tests uebergeben ihren Fake-Transport dem Konstruktor.
  *
  * Der Pruefwert dieses Adapters ist ein aus ETag/Aenderungszeit gebildeter
  * Hash ({@see pointer_reader::external_checkvalue()}) - WebDAV kennt keinen
@@ -92,6 +91,7 @@ final class webdav_storage_port implements storage_port {
         'webdavinstanceforeign',
         'webdavnotenabled',
         'webdavauthunsupported',
+        'contextrootmissing',
     ];
 
     /**
@@ -106,6 +106,7 @@ final class webdav_storage_port implements storage_port {
         private readonly string $baserelativepath = '',
         private readonly ?webdav_transport $transport = null,
         private readonly ?pointer_location $location = null,
+        private readonly int $courseid = 0,
     ) {
     }
 
@@ -188,7 +189,6 @@ final class webdav_storage_port implements storage_port {
 
             $existing = $this->current_entry($client, $fileurl);
             $this->require_checksum_match($existing, $expectedchecksum, $clientpath);
-            storage_anchor::require_quota($area, strlen($content) - ($existing['size'] ?? 0));
             if ($existing !== null) {
                 $operation = pending_write_translation::OP_OVERWRITE;
             }
@@ -224,7 +224,6 @@ final class webdav_storage_port implements storage_port {
             $fileurl = $resolved->file_url($this->relative_path($folders, $filename));
 
             $existing = $this->current_entry($client, $fileurl);
-            storage_anchor::require_quota($area, strlen($content));
             $this->ensure_directory($resolved, $folders);
 
             $newcontent = $existing === null ? $content : ($client->get($fileurl) . $content);
@@ -266,7 +265,7 @@ final class webdav_storage_port implements storage_port {
             $operation,
             pointer_writer::reason_for($errorclass),
             pointer_writer::describe_target($this->resolve_host(), $this->instanceid),
-            0
+            $this->courseid
         );
     }
 
@@ -296,7 +295,7 @@ final class webdav_storage_port implements storage_port {
             // anders als bei pointer_writer, der den Host aus dem Pointer-
             // Pruefmerkmal kennt (dieser Adapter kennt keinen Pointer).
             pointer_writer::describe_target('', $this->instanceid),
-            0
+            $this->courseid
         );
     }
 
@@ -344,7 +343,7 @@ final class webdav_storage_port implements storage_port {
      */
     private function resolved_instance(): resolved_webdav_instance {
         if ($this->location !== null) {
-            return webdav_instance::resolve($this->location);
+            return webdav_instance::resolve($this->location, $this->transport);
         }
         return webdav_instance::resolve_owned($this->instanceid, $this->transport);
     }
@@ -406,11 +405,32 @@ final class webdav_storage_port implements storage_port {
      * @throws webdav_error
      */
     private function ensure_directory(resolved_webdav_instance $resolved, array $folders): void {
-        $segments = $this->relative_segments($folders);
+        if ($this->location !== null) {
+            // A pointer names an existing context root. Never recreate it after
+            // it was moved or deleted, otherwise writes would silently fork it.
+            $this->require_pointer_root($resolved);
+        }
+        $segments = $this->location === null ? $this->relative_segments($folders) : $folders;
         if (empty($segments)) {
             return;
         }
-        $resolved->client()->mkcol_chain($resolved->directory_url(''), $segments);
+        $base = $this->location === null ? '' : implode('/', $this->base_segments());
+        $resolved->client()->mkcol_chain($resolved->directory_url($base), $segments);
+    }
+
+    /**
+     * @throws webdav_error
+     * @throws \moodle_exception contextrootmissing
+     */
+    private function require_pointer_root(resolved_webdav_instance $resolved): void {
+        try {
+            $resolved->client()->propfind($resolved->directory_url(implode('/', $this->base_segments())), 0);
+        } catch (webdav_error $e) {
+            if ($e->errorclass !== webdav_error::NOT_FOUND) {
+                throw $e;
+            }
+            throw new \moodle_exception('contextrootmissing', 'local_coursepilot');
+        }
     }
 
     /**
@@ -475,6 +495,12 @@ final class webdav_storage_port implements storage_port {
      */
     private function require_checksum_match(?array $existing, ?string $expectedchecksum, string $clientpath): void {
         if ($expectedchecksum === null) {
+            return;
+        }
+        if ($expectedchecksum === storage_port::MISSING_CHECKSUM) {
+            if ($existing !== null) {
+                throw new storage_conflict_exception($clientpath);
+            }
             return;
         }
         $actual = $existing !== null

@@ -62,35 +62,13 @@ final class webdav_instance {
     private const ISERV_AREAS = [self::ISERV_FILES_AREA, 'Groups', 'Print', 'Temp', 'Windows'];
 
     /**
-     * @var webdav_transport|null Von aussen gesetzter Transport (Issue #535,
-     *      Spec #486 Testing Decisions): ersetzt {@see curl_transport}, z.B.
-     *      durch den In-Memory-Fake im Test. Nur ueber {@see set_transport()}
-     *      setzbar. `null` (Default) baut {@see resolve_owned()} den
-     *      Betriebstransport (Moodles \curl) selbst.
-     */
-    private static ?webdav_transport $transport = null;
-
-    /**
-     * Setzt den Transport von aussen (Issue #535): laesst Aufrufer - im
-     * Betrieb niemand, im Test die WebDAV-Tests - den Betriebstransport
-     * (Moodles \curl) durch einen eigenen ersetzen, ohne dass storage_anchor
-     * oder die Kontextwerkzeuge davon wissen. `null` schaltet zurueck auf den
-     * Betriebstransport.
-     *
-     * @param webdav_transport|null $transport
-     */
-    public static function set_transport(?webdav_transport $transport): void {
-        self::$transport = $transport;
-    }
-
-    /**
      * @param pointer_location $location Muss {@see pointer_location::EXTERN} sein.
      * @return resolved_webdav_instance
      * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/
      *         webdavauthunsupported/webdavfingerprintchanged
      */
-    public static function resolve(pointer_location $location): resolved_webdav_instance {
-        $resolved = self::resolve_owned((int) $location->instanceid);
+    public static function resolve(pointer_location $location, ?webdav_transport $transport = null): resolved_webdav_instance {
+        $resolved = self::resolve_owned((int) $location->instanceid, $transport);
 
         $options = self::fresh_options((int) $location->instanceid);
         if (self::fingerprint($options) !== self::normalised_fingerprint($location->fingerprint ?? [])) {
@@ -147,12 +125,31 @@ final class webdav_instance {
         // ortswahl_browse.php would fail with "Class curl not found".
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
-        $transport = $transport ?? self::$transport ?? new curl_transport(
+        $transport ??= self::transport($options);
+        return new resolved_webdav_instance(self::base_url($options), $transport);
+    }
+
+    /**
+     * Resolves the transport at the composition root. Tests may provide their
+     * fake through Moodle's request-local DI container; production receives
+     * the regular cURL transport.
+     *
+     * @param array<string, string|null> $options
+     */
+    private static function transport(array $options): webdav_transport {
+        try {
+            $transport = \core\di::get(webdav_transport::class);
+            if ($transport instanceof webdav_transport) {
+                return $transport;
+            }
+        } catch (\Throwable $e) {
+            // No binding exists in production.
+        }
+        return new curl_transport(
             new \curl(),
             (string) ($options['webdav_user'] ?? ''),
             (string) ($options['webdav_password'] ?? '')
         );
-        return new resolved_webdav_instance(self::base_url($options), $transport);
     }
 
     /**
@@ -204,8 +201,8 @@ final class webdav_instance {
      * @throws \moodle_exception wie {@see resolve_owned()}.
      * @throws \local_coursepilot\webdav\webdav_error bei einem Netzfehler - vom Aufrufer zu behandeln.
      */
-    public static function detect_iserv_root(int $instanceid): bool {
-        $resolved = self::resolve_owned($instanceid);
+    public static function detect_iserv_root(int $instanceid, ?webdav_transport $transport = null): bool {
+        $resolved = self::resolve_owned($instanceid, $transport);
         return self::is_iserv_listing($resolved->client()->propfind($resolved->directory_url(''), 1));
     }
 

@@ -224,12 +224,12 @@ final class storage_anchor {
      * Der eine Orts-Dispatcher fuer Werkzeugpfade. Der Pointer wird nur hier
      * gelesen; Werkzeuge und Bereichsfassaden sehen ausschliesslich den Port.
      */
-    public static function port(storage_area $area): storage_port {
+    public static function port(storage_area $area, int $courseid = 0): storage_port {
         $location = self::effective_location($area);
         if ($location->kind === pointer_location::MOODLE) {
             return new private_files_storage_port($location);
         }
-        return new webdav_storage_port((int) $location->instanceid, (string) $location->relativepath, null, $location);
+        return new webdav_storage_port((int) $location->instanceid, (string) $location->relativepath, null, $location, $courseid);
     }
 
     /**

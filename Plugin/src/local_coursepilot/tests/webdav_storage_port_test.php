@@ -91,6 +91,10 @@ final class webdav_storage_port_test extends storage_port_contract_test {
         );
     }
 
+    protected function applies_user_quota(): bool {
+        return false;
+    }
+
     /**
      * Ein Ausfall am Speicher (507, Issue #540 ADR 0023 "an beiden Orten")
      * vermerkt einen Ausstand, bevor der Fehler zurueckgeht - nie roh

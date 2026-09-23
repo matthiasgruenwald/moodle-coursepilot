@@ -378,13 +378,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         $fake = new fake_webdav_transport();
         $fake->as_iserv_root('/' . $this->fixturebasispfad);
-        webdav_instance::set_transport($fake);
-
-        try {
-            $this->assertTrue(webdav_instance::detect_iserv_root($instanceid));
-        } finally {
-            webdav_instance::set_transport(null);
-        }
+        $this->assertTrue(webdav_instance::detect_iserv_root($instanceid, $fake));
     }
 
     public function test_detect_iserv_root_is_false_for_a_regular_nextcloud_instance(): void {
@@ -397,12 +391,6 @@ final class webdav_instance_test extends \advanced_testcase {
         $fake = new fake_webdav_transport();
         $fake->seed_folder('/' . $this->fixturebasispfad);
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Unterricht');
-        webdav_instance::set_transport($fake);
-
-        try {
-            $this->assertFalse(webdav_instance::detect_iserv_root($instanceid));
-        } finally {
-            webdav_instance::set_transport(null);
-        }
+        $this->assertFalse(webdav_instance::detect_iserv_root($instanceid, $fake));
     }
 }

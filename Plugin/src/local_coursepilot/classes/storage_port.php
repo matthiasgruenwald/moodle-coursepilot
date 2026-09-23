@@ -41,6 +41,9 @@ namespace local_coursepilot;
  */
 interface storage_port {
 
+    /** Internal condition for a preflight that observed no target file. */
+    public const MISSING_CHECKSUM = "\0coursepilot-missing";
+
     /**
      * Liest den Inhalt einer Datei, oder null, wenn sie fehlt oder ein
      * Ordner ist.

@@ -230,19 +230,53 @@ final class context_area {
         bool $createonly = false,
         int $courseid = 0
     ): array {
-        $location = self::resolve_write_target($content, $path, $createonly, $courseid);
-        if ($location !== null) {
-            return context_files::write_pointer_aware(
-                $location,
-                $path,
-                $content,
-                $createonly,
-                $expectedcontenthash,
-                $ausstand !== '',
-                $courseid
-            );
+        $area = context_files::area();
+        storage_anchor::writable_segments($area, $path);
+        try {
+            $location = storage_anchor::effective_location($area);
+        } catch (\moodle_exception $e) {
+            if ($e->errorcode !== 'webdaviservfilesonly') {
+                throw $e;
+            }
+            if (personal_data::is_marked($content) && !personal_data::allowed()) {
+                throw new \moodle_exception('contextfilelocked', 'local_coursepilot', '', $path);
+            }
+            throw pointer_writer::record_location_failure($e, $path, null, pointer_writer::OP_CREATE, $courseid);
         }
-        return self::write_moodle($path, $content, $expectedcontenthash, $ausstand !== '', $createonly, $courseid);
+        if ($location->kind === pointer_location::MOODLE) {
+            context_files::require_manage_own_files();
+        }
+        $port = storage_anchor::port($area, $courseid);
+        try {
+            $existing = $port->read($area, $path);
+        } catch (webdav_error $e) {
+            throw pointer_writer::record_preread_failure($e, $location, $path, pointer_writer::OP_UNKNOWN, $courseid);
+        } catch (\moodle_exception $e) {
+            throw pointer_writer::record_location_failure($e, $path, $location, pointer_writer::OP_CREATE, $courseid);
+        }
+        if ($existing !== null && $createonly) {
+            throw new \moodle_exception('contextfilealreadyexists', 'local_coursepilot', '', $path);
+        }
+        self::guard_existing_locked($existing, $path);
+        if (personal_data::is_marked($content)) {
+            if (!personal_data::allowed()) {
+                throw new \moodle_exception('contextfilelocked', 'local_coursepilot', '', $path);
+            }
+            personal_data_hosts::require_allowed_location($location, $path);
+        }
+        if ($ausstand !== '' && $existing !== null && $expectedcontenthash === '') {
+            throw new storage_conflict_exception($path);
+        }
+        // Reuse the preflight read as the write condition. This closes the
+        // read-write window without exposing location-specific concurrency.
+        $checksum = $expectedcontenthash !== '' ? $expectedcontenthash : ($existing['checksum'] ?? storage_port::MISSING_CHECKSUM);
+        $written = $port->write($area, $path, $content, $checksum);
+        return [
+            'path' => $written['path'],
+            'created' => $written['created'],
+            'size' => $written['size'],
+            'oldsize' => $existing['size'] ?? 0,
+        ];
     }
 
     /**
@@ -555,11 +589,43 @@ final class context_area {
         string $ausstand = '',
         int $courseid = 0
     ): array {
-        $location = self::resolve_append_target($path, $content, $courseid);
-        if ($location !== null) {
-            return context_files::append_pointer_aware($location, $path, $content, $expectedcontenthash, $ausstand !== '', $courseid);
+        $area = context_files::area();
+        storage_anchor::writable_segments($area, $path);
+        try {
+            $location = storage_anchor::effective_location($area);
+        } catch (\moodle_exception $e) {
+            if ($e->errorcode !== 'webdaviservfilesonly') {
+                throw $e;
+            }
+            throw pointer_writer::record_location_failure($e, $path, null, pointer_writer::OP_APPEND, $courseid);
         }
-        return self::append_moodle($path, $content, $courseid);
+        if ($location->kind === pointer_location::MOODLE) {
+            context_files::require_manage_own_files();
+        }
+        $port = storage_anchor::port($area, $courseid);
+        try {
+            $existing = $port->read($area, $path);
+        } catch (webdav_error $e) {
+            throw pointer_writer::record_preread_failure($e, $location, $path, pointer_writer::OP_APPEND, $courseid);
+        } catch (\moodle_exception $e) {
+            throw pointer_writer::record_location_failure($e, $path, $location, pointer_writer::OP_APPEND, $courseid);
+        }
+        self::guard_existing_locked($existing, $path);
+        $finalcontent = ($existing['content'] ?? '') . $content;
+        if (personal_data::is_marked($finalcontent)) {
+            if (!personal_data::allowed()) {
+                throw new \moodle_exception('contextfilelocked', 'local_coursepilot', '', $path);
+            }
+            personal_data_hosts::require_allowed_location($location, $path);
+        }
+        if ($expectedcontenthash !== '' && ($existing === null || $existing['checksum'] !== $expectedcontenthash)) {
+            throw new storage_conflict_exception($path);
+        }
+        if ($ausstand !== '' && $existing !== null && $expectedcontenthash === '') {
+            throw new storage_conflict_exception($path);
+        }
+        $written = $port->append($area, $path, $content);
+        return ['path' => $written['path'], 'created' => $written['created'], 'size' => $written['size']];
     }
 
     /**

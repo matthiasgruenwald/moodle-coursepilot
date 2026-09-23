@@ -40,7 +40,7 @@ final class append_context_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     protected function tearDown(): void {
-        webdav_instance::set_transport(null);
+        \core\di::reset_container();
         parent::tearDown();
     }
 
@@ -438,7 +438,7 @@ final class append_context_file_test extends \advanced_testcase {
             $this->append('journal.md', "- Stunde 1\n", $gelesen['contenthash']);
             $this->fail('Konflikt haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+            $this->assertSame('storageconflict', $e->errorcode);
         }
 
         $this->assertSame(
@@ -491,13 +491,13 @@ final class append_context_file_test extends \advanced_testcase {
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
         $fake2->seed_file('/Coursepilot/Kontext/journal.md', 'inzwischen gewachsen');
-        webdav_instance::set_transport($fake2);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake2);
 
         try {
             append_context_file::execute('journal.md', 'x', $kennung);
             $this->fail('Nachtragen ohne Pruefwert haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+            $this->assertSame('storageconflict', $e->errorcode);
         }
         $this->assertSame('inzwischen gewachsen', $this->external_content($fake2, '/Coursepilot/Kontext/journal.md'));
     }
@@ -726,7 +726,7 @@ final class append_context_file_test extends \advanced_testcase {
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
-        webdav_instance::set_transport($fake);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
 
         try {
             $this->append('journal.md', 'x');
@@ -759,7 +759,7 @@ final class append_context_file_test extends \advanced_testcase {
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
-        webdav_instance::set_transport($fake);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
 
         try {
             $this->append('notiz.txt', 'x');
@@ -792,7 +792,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
-        webdav_instance::set_transport($fake2);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake2);
 
         $result = append_context_file::execute('journal.md', 'x', $kennung);
         $result = external_api::clean_returnvalue(append_context_file::execute_returns(), $result);

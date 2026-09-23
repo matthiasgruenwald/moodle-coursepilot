@@ -41,7 +41,7 @@ final class write_context_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     protected function tearDown(): void {
-        webdav_instance::set_transport(null);
+        \core\di::reset_container();
         parent::tearDown();
     }
 
@@ -198,7 +198,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->write('plan.md', 'neu', sha1('alt'));
             $this->fail('Konflikt haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('contextfilechanged', $e->errorcode);
+            $this->assertSame('storageconflict', $e->errorcode);
         }
 
         $this->assertSame(
@@ -570,7 +570,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->write('plan.md', '# Neuer Plan', $gelesen['contenthash']);
             $this->fail('Konflikt haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+            $this->assertSame('storageconflict', $e->errorcode);
         }
 
         $this->assertSame('handaenderung', $this->external_content($fake, '/Coursepilot/Kontext/plan.md'));
@@ -616,7 +616,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->write('plan.md', '# Neuer Plan', $gelesen['contenthash']);
             $this->fail('Konflikt haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+            $this->assertSame('storageconflict', $e->errorcode);
         }
     }
 
@@ -643,13 +643,13 @@ final class write_context_file_test extends \advanced_testcase {
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
         $fake2->seed_file('/Coursepilot/Kontext/plan.md', 'inzwischen gewachsen');
-        webdav_instance::set_transport($fake2);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake2);
 
         try {
             write_context_file::execute('plan.md', '# Plan', '', $kennung);
             $this->fail('Nachtragen ohne Pruefwert haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+            $this->assertSame('storageconflict', $e->errorcode);
         }
         $this->assertSame('inzwischen gewachsen', $this->external_content($fake2, '/Coursepilot/Kontext/plan.md'));
     }
@@ -674,7 +674,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
-        webdav_instance::set_transport($fake2);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake2);
 
         $result = write_context_file::execute('plan.md', '# Plan', '', $kennung);
         $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
@@ -753,13 +753,13 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
 
         $decorator = new \local_coursepilot\tests\webdav\stale_read_transport($fake, '/Coursepilot/Kontext/plan.md', $fake);
-        webdav_instance::set_transport($decorator);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $decorator);
 
         try {
             $this->write('plan.md', '# Neuer Plan');
             $this->fail('Konflikt haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+            $this->assertSame('storageconflict', $e->errorcode);
         }
 
         // Weder der alte noch der neu versuchte Inhalt kommt vom
@@ -782,13 +782,13 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_folder('/Coursepilot/Kontext');
 
         $decorator = new \local_coursepilot\tests\webdav\stale_read_transport($fake, '/Coursepilot/Kontext/plan.md', $fake);
-        webdav_instance::set_transport($decorator);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $decorator);
 
         try {
             $this->write('plan.md', '# Neuer Plan');
             $this->fail('Konflikt haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+            $this->assertSame('storageconflict', $e->errorcode);
         }
 
         $this->assertSame('handaenderung', $this->external_content($fake, '/Coursepilot/Kontext/plan.md'));
@@ -929,7 +929,7 @@ final class write_context_file_test extends \advanced_testcase {
                 return $this->inner->request($method, $url, $headers, $body);
             }
         };
-        webdav_instance::set_transport($onlyputfails);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $onlyputfails);
 
         try {
             $this->write('plan.md', '# Neuer Plan');
@@ -1052,7 +1052,7 @@ final class write_context_file_test extends \advanced_testcase {
                 return $this->inner->request($method, $url, $headers, $body);
             }
         };
-        webdav_instance::set_transport($onlyputfails401);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $onlyputfails401);
 
         $message = '';
         try {
@@ -1094,7 +1094,7 @@ final class write_context_file_test extends \advanced_testcase {
                 return $this->inner->request($method, $url, $headers, $body);
             }
         };
-        webdav_instance::set_transport($onlyputfails);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $onlyputfails);
 
         $message = '';
         try {
@@ -1135,7 +1135,7 @@ final class write_context_file_test extends \advanced_testcase {
                 return $this->inner->request($method, $url, $headers, $body);
             }
         };
-        webdav_instance::set_transport($onlyputfails);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $onlyputfails);
 
         $message = '';
         try {
@@ -1172,7 +1172,7 @@ final class write_context_file_test extends \advanced_testcase {
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
-        webdav_instance::set_transport($fake);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
 
         $message = '';
         try {
@@ -1213,7 +1213,7 @@ final class write_context_file_test extends \advanced_testcase {
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
-        webdav_instance::set_transport($fake);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
 
         try {
             $this->write('notiz.txt', 'Inhalt');
@@ -1246,7 +1246,7 @@ final class write_context_file_test extends \advanced_testcase {
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
-        webdav_instance::set_transport($fake);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
 
         try {
             $this->write('lerngruppe.md', $this->marked_content());
@@ -1291,13 +1291,13 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
 
         $decorator = new \local_coursepilot\tests\webdav\stale_read_transport($fake, '/Coursepilot/Kontext/plan.md', $fake);
-        webdav_instance::set_transport($decorator);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $decorator);
 
         try {
             $this->write('plan.md', '# Neuer Plan');
             $this->fail('Konflikt haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('contextfileexternalconflict', $e->errorcode);
+            $this->assertSame('storageconflict', $e->errorcode);
         }
 
         $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
@@ -1341,7 +1341,7 @@ final class write_context_file_test extends \advanced_testcase {
         // Neuer Fake statt des vollen - "der Speicher antwortet wieder".
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
-        webdav_instance::set_transport($fake2);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake2);
 
         $result = write_context_file::execute('plan.md', '# Plan', '', $kennung);
         $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
@@ -1589,7 +1589,7 @@ final class write_context_file_test extends \advanced_testcase {
                 return $this->inner->request($method, $url, $headers, $body);
             }
         };
-        webdav_instance::set_transport($getfails);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $getfails);
 
         $this->expectException(\moodle_exception::class);
         try {
@@ -1636,7 +1636,7 @@ final class write_context_file_test extends \advanced_testcase {
             write_context_file::execute('plan.md', '# Plan', '', 'IRGENDEINEKENNUNG');
             $this->fail('Nachtragen ohne Pruefwert haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('contextfilechanged', $e->errorcode);
+            $this->assertSame('storageconflict', $e->errorcode);
         }
 
         $this->assertSame('inzwischen gewachsen', $this->read_stored($user, '/coursepilot/', 'plan.md'));

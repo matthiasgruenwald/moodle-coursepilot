@@ -175,6 +175,12 @@ final class private_files_storage_port implements storage_port {
         if ($expectedchecksum === null) {
             return;
         }
+        if ($expectedchecksum === storage_port::MISSING_CHECKSUM) {
+            if ($existing !== null) {
+                throw new storage_conflict_exception($clientpath);
+            }
+            return;
+        }
         $currentchecksum = $existing['contenthash'] ?? null;
         if ($currentchecksum !== $expectedchecksum) {
             throw new storage_conflict_exception($clientpath);

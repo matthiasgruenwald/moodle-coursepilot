@@ -209,66 +209,6 @@ final class context_files {
     }
 
     /**
-     * Legt eine externe Kontextdatei an oder ueberschreibt sie bedingt
-     * (Issue #491, Spec #486 §4/§6) - siehe {@see pointer_writer::write()}.
-     * Nur fuer einen bereits als *extern* erkannten Pointer-Zustand
-     * ({@see resolve_pointer_location()}), der auch als Parameter mitgegeben
-     * wird (Issue #541) - kein zweites Aufloesen des Kontextpointers hier.
-     *
-     * @param pointer_location $location Bereits aufgeloester externer Ort.
-     * @param string $path
-     * @param string $content
-     * @param bool $createonly Nur anlegen, nie ueberschreiben (Issue #498,
-     *        Spec #486 §9: Kopieren aus dem Altbestand).
-     * @param string $expectedcontenthash Pruefwert aus einem frueheren Lesen
-     *        (Issue #513) - siehe {@see pointer_writer::write()}.
-     * @param bool $requirecheckvalue Nachtragen (`ausstand=`, Issue #513) -
-     *        siehe {@see pointer_writer::write()}.
-     * @param int $courseid Kurs-ID, nur fuer einen etwaigen Eintrag der
-     *        Ausstandsnotiz (Issue #516) - siehe {@see pointer_writer::write()}.
-     * @return array{path: string, created: bool, size: int, oldsize: int}
-     */
-    public static function write_pointer_aware(
-        pointer_location $location,
-        string $path,
-        string $content,
-        bool $createonly = false,
-        string $expectedcontenthash = '',
-        bool $requirecheckvalue = false,
-        int $courseid = 0
-    ): array {
-        return pointer_writer::write(self::area(), $location, $path, $content, $createonly, $expectedcontenthash, $requirecheckvalue, $courseid);
-    }
-
-    /**
-     * Haengt an eine externe Kontextdatei an (Issue #491, Spec #486 §4/§6) -
-     * siehe {@see pointer_writer::append()}. Der Ort wird wie bei
-     * {@see write_pointer_aware()} bereits aufgeloest entgegengenommen
-     * (Issue #541).
-     *
-     * @param pointer_location $location Bereits aufgeloester externer Ort.
-     * @param string $path
-     * @param string $content
-     * @param string $expectedcontenthash Pruefwert aus einem frueheren Lesen
-     *        (Issue #513) - siehe {@see pointer_writer::append()}.
-     * @param bool $requirecheckvalue Nachtragen (`ausstand=`, Issue #513) -
-     *        siehe {@see pointer_writer::append()}.
-     * @param int $courseid Kurs-ID, nur fuer einen etwaigen Eintrag der
-     *        Ausstandsnotiz (Issue #516) - siehe {@see pointer_writer::append()}.
-     * @return array{path: string, created: bool, size: int}
-     */
-    public static function append_pointer_aware(
-        pointer_location $location,
-        string $path,
-        string $content,
-        string $expectedcontenthash = '',
-        bool $requirecheckvalue = false,
-        int $courseid = 0
-    ): array {
-        return pointer_writer::append(self::area(), $location, $path, $content, $expectedcontenthash, $requirecheckvalue, $courseid);
-    }
-
-    /**
      * Harte Groessengrenze je Schreibvorgang (Spec 0016 §5.2) - gilt fuer das
      * jeweils uebertragene Stueck (voller Inhalt bei write, nur das
      * Anhaengsel bei append), nicht fuer die Zieldatei. Bis Issue #506 in

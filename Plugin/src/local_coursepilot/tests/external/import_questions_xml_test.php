@@ -33,7 +33,7 @@ final class import_questions_xml_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     protected function tearDown(): void {
-        webdav_instance::set_transport(null);
+        \core\di::reset_container();
         parent::tearDown();
     }
 
@@ -605,7 +605,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         $this->write_v2_pointer($teacher, 'materialbestand', $instanceid, 'Material');
 
         $fake = new \local_coursepilot\tests\webdav\fake_webdav_transport();
-        webdav_instance::set_transport($fake);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
         return $fake;
     }
 

@@ -56,6 +56,11 @@ abstract class storage_port_contract_test extends \advanced_testcase {
      */
     abstract protected function area(): storage_area;
 
+    /** WebDAV is outside Moodle's user quota. */
+    protected function applies_user_quota(): bool {
+        return true;
+    }
+
     /**
      * Bringt eine angemeldete Person mit Schreibrecht in Stellung -
      * gemeinsam fuer alle Testmethoden, weil jeder Adapter (auch ein
@@ -143,6 +148,9 @@ abstract class storage_port_contract_test extends \advanced_testcase {
     }
 
     public function test_write_rejects_when_quota_is_exceeded(): void {
+        if (!$this->applies_user_quota()) {
+            $this->markTestSkipped('Dieser Ablageort unterliegt nicht der Moodle-Nutzerquote.');
+        }
         global $CFG;
 
         $area = $this->area();
