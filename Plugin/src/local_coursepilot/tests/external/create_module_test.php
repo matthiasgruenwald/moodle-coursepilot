@@ -408,6 +408,26 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
+     * Der Anlegebericht liest wiederholte Pseudofelder aus choice_options
+     * zurueck statt den nicht existierenden Spaltenwert null zu melden (#564).
+     */
+    public function test_choice_create_report_uses_persisted_options_and_limits(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $result = $this->create($course->id, 0, 'choice', [
+            'name' => 'Abstimmung',
+            'intro' => 'Bitte waehlen',
+            'option' => ['Ja', 'Nein'],
+            'limit' => [2, 3],
+        ]);
+
+        $fields = array_column($result['angelegte_felder'], 'wert_json', 'feld');
+        $this->assertSame('["Ja","Nein"]', $fields['option']);
+        $this->assertSame('["2","3"]', $fields['limit']);
+    }
+
+    /**
      * Eine Begrenzungsliste falscher Laenge scheitert.
      */
     public function test_choice_with_mismatched_limit_length_fails(): void {

@@ -172,6 +172,38 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Wiederholte Pseudofelder stehen in choice_options; der Diff-Bericht muss
+     * deshalb den nach dem nativen Schreibweg gelesenen Wert zeigen (#564).
+     */
+    public function test_choice_option_patch_report_uses_persisted_value(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $created = external_api::clean_returnvalue(
+            create_module::execute_returns(),
+            create_module::execute($course->id, 0, 'choice', json_encode([
+                'name' => 'Abstimmung',
+                'intro' => 'Bitte waehlen',
+                'option' => ['Ja', 'Nein'],
+            ]), \local_coursepilot\material_files::ORT_BESTAND)
+        );
+        $before = $this->read($created['cmid']);
+
+        $result = external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($created['cmid'], json_encode([
+                'option' => ['Vielleicht', 'Auf jeden Fall'],
+                'limit' => [4, 5],
+                'optionid' => $before['optionid'],
+            ]))
+        );
+
+        $changes = array_column($result['aenderungen'], 'auf_json', 'feld');
+        $this->assertSame('["Vielleicht","Auf jeden Fall"]', $changes['option']);
+        $this->assertSame('["4","5"]', $changes['limit']);
+        $this->assertStringNotContainsString('"option" = null', $result['meldung']);
+    }
+
+    /**
      * Auch beim Patchen ist "coursepagevisibility" Lese-Vokabular: die Meldung
      * nennt den Schreibweg statt "Unbekanntes Feld" (#404).
      */

@@ -255,10 +255,12 @@ final class module_roundtrip_test extends \advanced_testcase {
             'name' => 'Abstimmung',
             'intro' => 'Bitte waehlen',
             'option' => ['Ja', 'Nein'],
+            'limit' => [2, 3],
         ])['cmid'];
 
         $before = $this->read($cmid);
         $this->assertSame(['Ja', 'Nein'], $before['option'], 'Angelegte Optionen muessen beim Lesen sichtbar sein.');
+        $this->assertSame([2, 3], array_map('intval', $before['limit']), 'Gesetzte Limits muessen beim Lesen sichtbar sein.');
         $this->assertCount(2, $before['optionid'], 'Bestehende choice_options-IDs muessen beim Lesen sichtbar sein.');
 
         // "optionid" muss mitgeschickt werden, sonst legt choice_update_instance()
@@ -267,6 +269,7 @@ final class module_roundtrip_test extends \advanced_testcase {
         // mod_choice_mod_form::data_preprocessing() im echten Formularweg vorbereitet.
         $this->patch('choice', $cmid, [
             'option' => ['Vielleicht', 'Auf jeden Fall'],
+            'limit' => [4, 5],
             'optionid' => $before['optionid'],
         ]);
 
@@ -276,6 +279,7 @@ final class module_roundtrip_test extends \advanced_testcase {
             $after['option'],
             'Geaenderte Optionen muessen beim erneuten Lesen sichtbar sein.'
         );
+        $this->assertSame([4, 5], array_map('intval', $after['limit']), 'Geaenderte Limits muessen beim erneuten Lesen sichtbar sein.');
     }
 
     /**
