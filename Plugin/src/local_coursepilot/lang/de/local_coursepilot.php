@@ -51,7 +51,7 @@ $string['historybacktolist'] = 'Zurück zur Aktivitätenliste';
 
 // Plugin-Beschreibung auf der Einstellungsseite (Issue #500, Spec #486 §11).
 $string['settingintroheading'] = 'Über Coursepilot';
-$string['settingintroheading_desc'] = 'Coursepilot kann im Auftrag einer Lehrkraft Namen und Bilder aus deren Materialbestand an die KI übertragen. Bei externem Ablageort gilt für Kontextdateien eine Schreibsperre, aber keine Lesesperre — Einzelheiten weiter unten und in der Admin-Anleitung (Issue #481, in Vorbereitung).';
+$string['settingintroheading_desc'] = 'Coursepilot kann im Auftrag einer Lehrkraft Namen und Bilder aus deren Materialbestand an die KI übertragen. Bei externem Ablageort gilt für Kontextdateien eine Schreibsperre, aber keine Lesesperre — Einzelheiten weiter unten und in der Admin-Anleitung (`docs/admin-erstanleitung.md` im Projekt-Repository).';
 
 // Fernzugriffs-Steuerung (#338).
 $string['remoteaccessdisabled'] = 'Der Fernzugriff ist durch die Administration vorübergehend gesperrt.';

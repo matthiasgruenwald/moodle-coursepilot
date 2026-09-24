@@ -31,9 +31,9 @@ if ($hassiteconfig) {
 
     // Plugin-Beschreibung (Issue #500, Spec #486 §11): ein Satz zum externen
     // Ablageort, oben auf der Einstellungsseite, bevor die einzelnen
-    // Einstellungen folgen. Die ausfuehrliche Admin-Erstanleitung ist noch
-    // nicht geschrieben (Issue #481) - deshalb hier nur der eine Satz statt
-    // eines Links auf eine noch nicht existierende Seite.
+    // Einstellungen folgen. Die ausfuehrliche Admin-Erstanleitung liegt unter
+    // docs/admin-erstanleitung.md (Issue #481) - hier bewusst nur der eine
+    // Satz, da diese Seite nicht auf eine Repository-Datei verlinken kann.
     $settings->add(new admin_setting_heading(
         'local_coursepilot/introheading',
         get_string('settingintroheading', 'local_coursepilot'),

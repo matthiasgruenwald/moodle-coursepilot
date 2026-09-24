@@ -102,7 +102,7 @@ $string['historybacktolist'] = 'Back to activity list';
 
 // Plugin description on the settings page (Issue #500, Spec #486 §11).
 $string['settingintroheading'] = 'About Coursepilot';
-$string['settingintroheading_desc'] = 'On a teacher\'s behalf, Coursepilot can send names and images from their material store to the AI. With an external storage location, context files are write-locked but not read-locked — details below and in the admin guide (Issue #481, in preparation).';
+$string['settingintroheading_desc'] = 'On a teacher\'s behalf, Coursepilot can send names and images from their material store to the AI. With an external storage location, context files are write-locked but not read-locked — details below and in the admin guide (`docs/admin-erstanleitung.md` in the project repository).';
 
 // Remote access governance (#338).
 $string['remoteaccessdisabled'] = 'Remote access has been temporarily disabled by the administration.';
