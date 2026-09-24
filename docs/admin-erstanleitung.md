@@ -131,11 +131,35 @@ Administration. Für die Schule sind vier Dinge wichtig:
 Der aktuelle Stand der vier zugehörigen Statusprüfungen steht auf der
 Systemstatus-Seite (Abschnitt 5).
 
+> **⚠️ Achtung — Reverse-Proxy vor dem WebDAV-Speicher (z. B. Cloudflare):**
+> Läuft der WebDAV-Speicher der Lehrkraft (z. B. eine eigene Nextcloud) hinter
+> einem Reverse-Proxy wie Cloudflare, und ist dessen IP-Bereich nicht in der
+> `trusted_proxies`-Einstellung des Speichers eingetragen, sieht der Speicher
+> **jede** Anfrage als von der einen Proxy-IP kommend. Sein eingebauter
+> Bruteforce-/Rate-Schutz drosselt dann diese eine IP — nicht die einzelne
+> Lehrkraft — und blockiert dadurch ganz normale, kleine Coursepilot-Schreib-
+> zugriffe für 15–30 Sekunden oder länger, teils wirkt es, als würde die
+> Verbindung gar nicht ankommen (z. B. beim Speichern auf der Ortswahlseite).
+> Betroffen ist praktisch jede selbstgehostete Nextcloud/WebDAV-Instanz hinter
+> einem Reverse-Proxy, nicht nur bei sehr vielen Nutzenden — schon Coursepilots
+> eigener Anfrage-Burst je Schreibvorgang reicht aus, den Schutz auszulösen.
+> **Das ist kein Coursepilot-Fehler, sondern eine verbreitete
+> Fehlkonfiguration auf Seiten des Speichers** (issue #529). Bei Meldungen wie
+> „die Verbindung hängt"/„kommt nicht an"/„wartende Änderung bleibt stehen"
+> zuerst `trusted_proxies` auf dem WebDAV-Speicher prüfen — nicht am
+> Coursepilot-Plugin suchen. Coursepilot selbst hält sein stilles
+> Wiederholungsbudget bewusst kurz (10 s) statt es an fremde, unbekannte
+> Speicherqualität anzupassen; ein längeres Budget würde jeden Schreibaufruf
+> für alle Lehrkräfte unnötig verzögern, auch bei korrekt konfigurierten
+> Speichern.
+
 ## Weiterführend
 
 - ADR 0011 — Personenbezogene Kontextdaten im Servermodell (`allowpersonaldata`).
 - ADR 0021 — Isolierung und Personenbezug am externen Ablageort (`personaldatahosts`).
 - Spec 0012 — `local_coursepilot`: Moodle-natives MCP-Plugin, Abschnitt 7
   (Instanzvoraussetzungen).
+- Issue #529 — Reverse-Proxy/`trusted_proxies` am externen Ablageort, Messung
+  und Entscheidung zum Wiederholungsbudget.
 - `Plugin/src/local_coursepilot/README.md` — Kurzüberblick, auch für die
   Prüfung vor der Installation gedacht.
