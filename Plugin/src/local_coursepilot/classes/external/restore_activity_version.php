@@ -417,6 +417,7 @@ final class restore_activity_version extends external_api {
                 $patch[$name] = $newvalue;
             }
         }
+
         return $patch;
     }
 

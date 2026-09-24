@@ -102,6 +102,59 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
+     * Der Seiteninhalt liegt im Versionsstand als "content", wird von Moodle
+     * beim Schreiben aber ausschliesslich aus dem Editor-Pseudofeld "page"
+     * gelesen. Eine Rueckkehr darf daher nicht den aktuellen Inhalt weitertragen.
+     */
+    public function test_restore_writes_back_page_content(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance([
+            'course' => $course->id,
+            'content' => '<p>Version eins</p>',
+            'contentformat' => FORMAT_PLAIN,
+        ]);
+        $cmid = $page->cmid;
+
+        update_module_settings::execute($cmid, json_encode([
+            'page' => ['text' => '<p>Version zwei</p>', 'format' => FORMAT_HTML, 'itemid' => 0],
+        ]));
+        $this->assertSame('<p>Version zwei</p>', $this->read($cmid)['content']);
+
+        restore_activity_version::execute($cmid, 1);
+
+        $this->assertSame('<p>Version eins</p>', $this->read($cmid)['content']);
+        $this->assertSame(FORMAT_PLAIN, $this->read($cmid)['contentformat']);
+    }
+
+    /**
+     * Auch der Aktivitaetstext einer Aufgabe wird von Moodle aus dem
+     * activityeditor-Pseudofeld uebernommen.
+     */
+    public function test_restore_writes_back_assign_activity_content(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+            'course' => $course->id,
+        ]);
+        $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
+
+        update_module_settings::execute($cmid, json_encode([
+            'activity' => '<p>Version eins</p>',
+            'activityformat' => FORMAT_PLAIN,
+        ]));
+        $this->assertSame('<p>Version eins</p>', $this->read($cmid)['activity']);
+        $this->assertSame(FORMAT_PLAIN, $this->read($cmid)['activityformat']);
+
+        update_module_settings::execute($cmid, json_encode(['activity' => '<p>Version zwei</p>']));
+        $this->assertSame('<p>Version zwei</p>', $this->read($cmid)['activity']);
+
+        restore_activity_version::execute($cmid, 2);
+
+        $this->assertSame('<p>Version eins</p>', $this->read($cmid)['activity']);
+    }
+
+    /**
      * Abnahmekriterium 2: nach einer Rueckkehr entsteht keine zusaetzliche
      * Aktivitaet im Kurs.
      */

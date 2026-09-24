@@ -473,6 +473,7 @@ final class assign implements module_catalog {
 
     public static function write_options(): array {
         return [
+            'editor_content' => ['activityeditor' => ['activity', 'activityformat']],
             'material_reference_fields' => ['introattachments' => ['component' => 'mod_assign', 'filearea' => 'introattachment']],
             'intro_image_field' => 'introimages',
             'admin_default_fields' => [
@@ -494,6 +495,17 @@ final class assign implements module_catalog {
 
     public static function pseudofields(): array {
         return [
+            new field(
+                'activityeditor',
+                'array{text: string, format: int, itemid: int}',
+                'Editor-Array fuer den zusaetzlichen Aktivitaetstext. Der flache Vertrag nutzt "activity" und '
+                    . '"activityformat"; dieses Feld dient dem nativen Formularweg.',
+                false,
+                null,
+                null,
+                null,
+                'mod/assign/mod_form.php:62-66 (Editor "activityeditor")'
+            ),
             new field(
                 'introimages',
                 'string[] (Materialordner-Pfade, nur Bild-Endungen)',

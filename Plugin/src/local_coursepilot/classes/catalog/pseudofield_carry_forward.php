@@ -16,6 +16,8 @@
 
 namespace local_coursepilot\catalog;
 
+use context_module;
+
 /**
  * Gemeinsame Vorbereitung des $moduleinfo-Feldobjekts fuer JEDEN Aufrufer von
  * update_moduleinfo() ausserhalb des echten Formularwegs (Ticket #388: erst
@@ -39,27 +41,6 @@ namespace local_coursepilot\catalog;
 final class pseudofield_carry_forward {
 
     /**
-     * Editor-Array-Pseudofelder, deren ABWESENHEIT die jeweilige
-     * *_update_instance()-Funktion ungeschuetzt (ohne $mform-Wache) liest und
-     * dabei den echten Inhalt auf null setzt (Spec 0015 §2.2 Kategorie 2,
-     * hier konkret mod/page/lib.php: page_update_instance(): `$data->content
-     * = $data->page['text'];` immer, nicht nur wenn 'page' im Patch steht) -
-     * ohne diesen Formularweg-Ersatz waere JEDER Schreibvorgang auf "page"
-     * destruktiv, auch einer, der "page" gar nicht nennt.
-     *
-     * ponytail: nur "page", die einzige unter den katalogisierten
-     * Aktivitaetsarten mit diesem unbedingten Lesemuster (choice/resource/
-     * folder/forum degradieren beim Fehlen ihrer Pseudofelder nachweislich
-     * ohne Datenverlust, siehe Ticket #388) - bei einer weiteren
-     * Aktivitaetsart mit demselben Muster hier ergaenzen.
-     *
-     * @var array<string, array{pseudofield: string, content: string, format: string}>
-     */
-    private const REQUIRED_EDITOR_PSEUDOFIELDS = [
-        'page' => ['pseudofield' => 'page', 'content' => 'content', 'format' => 'contentformat'],
-    ];
-
-    /**
      * Fuehrt alle sechs Ergaenzungen fuer $modname aus.
      *
      * @param string $modname
@@ -79,7 +60,7 @@ final class pseudofield_carry_forward {
         array $patch
     ): void {
         self::fill_pseudofield_defaults($catalogclass, $moduleinfo, $patch);
-        self::carry_forward_required_editor_pseudofields($modname, $moduleinfo, $before, $patch);
+        self::prepare_editor_content_pseudofields($modname, $catalogclass, $moduleinfo, $before, $cm, $patch);
         self::carry_forward_draft_file_pseudofield($modname, $moduleinfo, $patch);
         self::carry_forward_choice_options($modname, $moduleinfo, $cm, $patch);
         self::carry_forward_assign_plugin_config($modname, $moduleinfo, $cm, $patch);
@@ -103,6 +84,7 @@ final class pseudofield_carry_forward {
      * Meldung, die das Feld nennt - lieber ein klarer Fehler als eine leere
      * Seite.
      *
+     * @param string $modname
      * @param class-string<module_catalog> $catalogclass
      * @param array $patch Wird in-place normalisiert.
      * @return void
@@ -251,8 +233,7 @@ final class pseudofield_carry_forward {
      * "printintro"), "Undefined property"-Warnungen und ein stiller
      * Reset auf null statt auf den dokumentierten Default.
      *
-     * Pseudofelder mit Default null (durchweg die mit required=true, siehe
-     * {@see self::REQUIRED_EDITOR_PSEUDOFIELDS}) bleiben hier aussen vor -
+     * Pseudofelder mit Default null (durchweg die Editor-Arrays) bleiben hier aussen vor -
      * ein Nullwert waere kein sinnvoller Ersatz.
      *
      * @param class-string<module_catalog> $catalogclass
@@ -272,32 +253,55 @@ final class pseudofield_carry_forward {
     }
 
     /**
-     * Siehe {@see self::REQUIRED_EDITOR_PSEUDOFIELDS}: rekonstruiert ein
-     * fehlendes Editor-Pseudofeld aus dem Vorher-Stand, damit ein
-     * Schreibvorgang, der es nicht erwaehnt, den echten Inhalt nicht auf null
-     * zieht.
+     * Rekonstruiert die Editor-Arrays aus dem flachen Katalogvertrag. Moodle
+     * schreibt deren Inhalt aus dem Editor-Array, nicht aus den Instanzspalten.
      *
-     * @param string $modname
+     * @param class-string<module_catalog> $catalogclass
      * @param \stdClass $moduleinfo Wird in-place ergaenzt.
      * @param array $before
      * @param array $patch
      * @return void
      */
-    private static function carry_forward_required_editor_pseudofields(
+    private static function prepare_editor_content_pseudofields(
         string $modname,
+        string $catalogclass,
         \stdClass $moduleinfo,
         array $before,
+        \stdClass $cm,
         array $patch
     ): void {
-        $spec = self::REQUIRED_EDITOR_PSEUDOFIELDS[$modname] ?? null;
-        if ($spec === null || array_key_exists($spec['pseudofield'], $patch)) {
+        global $CFG;
+
+        $editors = $catalogclass::write_options()['editor_content'] ?? [];
+        if (!$editors) {
             return;
         }
-        $moduleinfo->{$spec['pseudofield']} = [
-            'text' => (string) ($before[$spec['content']] ?? ''),
-            'format' => (int) ($before[$spec['format']] ?? FORMAT_HTML),
-            'itemid' => 0,
-        ];
+        require_once($CFG->dirroot . '/mod/' . $modname . '/lib.php');
+        $locallib = $CFG->dirroot . '/mod/' . $modname . '/locallib.php';
+        if (is_file($locallib)) {
+            require_once($locallib);
+        }
+        foreach ($editors as $pseudofield => $columns) {
+            if (array_key_exists($pseudofield, $patch)) {
+                continue;
+            }
+            [$content, $format] = $columns;
+            $draftitemid = file_get_unused_draft_itemid();
+            $text = file_prepare_draft_area(
+                $draftitemid,
+                context_module::instance($cm->id)->id,
+                'mod_' . $modname,
+                $content,
+                0,
+                [],
+                (string) ($patch[$content] ?? $before[$content] ?? '')
+            );
+            $moduleinfo->{$pseudofield} = [
+                'text' => $text,
+                'format' => (int) ($patch[$format] ?? $before[$format] ?? FORMAT_HTML),
+                'itemid' => $draftitemid,
+            ];
+        }
     }
 
     /**
