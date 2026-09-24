@@ -110,13 +110,24 @@ final class access_log {
      *        {@see \local_coursepilot\werkbank_ticket_redemption_failed}).
      *        Null, wenn kein Pfad bekannt ist.
      * @param int|null $userid Siehe {@see log_success()}.
+     * @param string|null $detail Interner Diagnosehinweis, nur bei Stufe
+     *        "Alles" im Ereignis gespeichert.
      * @return void
      */
-    public static function log_failure(string $reason, ?string $toolname = null, ?string $path = null, ?int $userid = null): void {
+    public static function log_failure(
+        string $reason,
+        ?string $toolname = null,
+        ?string $path = null,
+        ?int $userid = null,
+        ?string $detail = null
+    ): void {
         if (self::current_level() < self::LEVEL_ERRORS) {
             return;
         }
         $data = ['other' => ['reason' => $reason, 'toolname' => $toolname, 'path' => $path]];
+        if (self::current_level() >= self::LEVEL_ALL && $detail !== null) {
+            $data['other']['detail'] = $detail;
+        }
         if ($userid !== null) {
             $data['userid'] = $userid;
         }

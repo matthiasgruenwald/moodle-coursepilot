@@ -480,6 +480,25 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
+     * Ein Rueckgabevertragsfehler traegt den einzigen brauchbaren Hinweis in
+     * debuginfo. Er geht als Diagnosehinweis ins Protokoll, nicht an den
+     * MCP-Client (#457).
+     */
+    public function test_diagnostic_detail_keeps_invalid_response_debug_detail(): void {
+        $exception = (object) [
+            'errorcode' => 'invalidresponse',
+            'message' => 'Invalid response value detected.',
+            'debuginfo' => "Invalid response value detected in sections[0].modules[0].settings[2].value.\nError code: invalidresponse",
+        ];
+        $method = new \ReflectionMethod(dispatcher::class, 'diagnostic_detail');
+
+        $this->assertSame(
+            'Invalid response value detected in sections[0].modules[0].settings[2].value.',
+            $method->invoke(null, $exception)
+        );
+    }
+
+    /**
      * Die Regel, nicht der Einzelfall (#466): JEDE Antwort mit einem
      * 'result' traegt in der Revision 2026-07-28 ein 'resultType' - die
      * Revision macht das Feld fuer alle Ergebnisse zur Pflicht, nicht nur

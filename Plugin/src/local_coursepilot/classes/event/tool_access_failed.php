@@ -31,6 +31,8 @@ namespace local_coursepilot\event;
  *      - string|null toolname: Name des betroffenen Werkzeugs, falls bekannt.
  *      - string|null path: Dateipfad, wenn der gescheiterte Zugriff einen
  *        berührt hat und er noch bekannt war (#501), sonst null.
+ *      - string|null detail: Interner Diagnosehinweis, nur bei Protokollstufe
+ *        "Alles" gesetzt (#457).
  * }
  *
  * @package    local_coursepilot

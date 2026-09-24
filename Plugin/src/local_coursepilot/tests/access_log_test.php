@@ -104,6 +104,30 @@ final class access_log_test extends \advanced_testcase {
     }
 
     /**
+     * Interne Feldpfade helfen nur bei der bewusst eingeschalteten Diagnose.
+     * Die normale Fehlerstufe speichert sie nicht, damit sie nicht in jedem
+     * Moodle-Protokollbericht auftauchen (#457).
+     */
+    public function test_failure_detail_is_logged_only_at_level_all(): void {
+        $this->resetAfterTest();
+        $detail = 'Invalid response value in sections[0].modules[0].settings[2].value.';
+
+        set_config('loglevel', access_log::LEVEL_ERRORS, 'local_coursepilot');
+        $errorssink = $this->redirectEvents();
+        access_log::log_failure('Invalid response value detected.', 'coursepilot_get_course_catalog', null, null, $detail);
+        $errorsevent = $errorssink->get_events()[0];
+        $this->assertArrayNotHasKey('detail', $errorsevent->other);
+        $errorssink->close();
+
+        set_config('loglevel', access_log::LEVEL_ALL, 'local_coursepilot');
+        $allsink = $this->redirectEvents();
+        access_log::log_failure('Invalid response value detected.', 'coursepilot_get_course_catalog', null, null, $detail);
+        $allevent = $allsink->get_events()[0];
+        $this->assertSame($detail, $allevent->other['detail']);
+        $allsink->close();
+    }
+
+    /**
      * Stufe "Schreibzugriffe und Fehler" (#388): ein Schreibzugriff erzeugt
      * einen Eintrag, ein Lesezugriff (noch) nicht - erst Stufe 2 (Lesen)
      * schaltet das dazu.

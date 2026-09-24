@@ -300,7 +300,13 @@ final class dispatcher {
         );
         if ($response['error']) {
             $message = self::error_message($response['exception'] ?? null);
-            access_log::log_failure($message, $toolname);
+            access_log::log_failure(
+                $message,
+                $toolname,
+                null,
+                null,
+                self::diagnostic_detail($response['exception'] ?? null)
+            );
             return self::result(200, [], [
                 'jsonrpc' => '2.0',
                 'id' => $id,
@@ -391,6 +397,25 @@ final class dispatcher {
             return $debuginfo;
         }
         return $exception->message ?? 'error';
+    }
+
+    /**
+     * Detail eines Rueckgabevertragsfehlers fuer die Protokollstufe "Alles".
+     *
+     * Die Detailbeschreibung kann interne Feldpfade oder Kursinhalte nennen.
+     * Sie bleibt deshalb aus der MCP-Antwort heraus und geht ausschliesslich
+     * in den bewusst aktivierten Diagnosemodus (#457).
+     *
+     * @param \stdClass|null $exception Die Ausnahmeinfo aus
+     *        external_api::call_external_function() (get_exception_info()).
+     * @return string|null
+     */
+    private static function diagnostic_detail(?\stdClass $exception): ?string {
+        if ($exception === null || ($exception->errorcode ?? '') !== 'invalidresponse') {
+            return null;
+        }
+        $detail = trim(preg_replace('/\n+Error code: \S+\s*$/', '', (string) ($exception->debuginfo ?? '')));
+        return $detail === '' ? null : $detail;
     }
 
     /**
