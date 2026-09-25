@@ -10,6 +10,13 @@ const NATIVE_CATALOG_PATH = path.join(
 const PRIVACY_SURFACE_PATH = path.join(repoRoot, 'Plugin', 'src', 'local_coursepilot', 'classes', 'privacy_surface.php');
 const SERVICES_PATH = path.join(repoRoot, 'Plugin', 'src', 'local_coursepilot', 'db', 'services.php');
 const TOOL_REGISTRY_PATH = path.join(repoRoot, 'Plugin', 'src', 'local_coursepilot', 'classes', 'tool_registry.php');
+// #568 (Review vom 25.09.2026): der Katalogumbau (#533/#556) hat das
+// modultypspezifische Quiz-Lesen (quiz_slots/question_references) aus
+// get_course_catalog.php in den Katalog verlegt - die SQL-Namen leben seither
+// hier, nicht mehr in der aufrufenden External-Klasse.
+const MODULE_STATE_PATH = path.join(
+  repoRoot, 'Plugin', 'src', 'local_coursepilot', 'classes', 'catalog', 'module_state.php'
+);
 
 function read(filePath) {
   return fs.readFileSync(filePath, 'utf8');
@@ -48,8 +55,13 @@ test('coursepilot_get_course_catalog is a self-contained port with the same cont
   assert.match(source, /course_modules/);
   assert.match(source, /completionpassgrade/);
   assert.match(source, /availability/);
-  assert.match(source, /quiz_slots/);
-  assert.match(source, /question_references/);
+
+  // Der Quiz-Detailleser liegt seit der Katalogextraktion (#533/#556) beim
+  // Katalog, nicht mehr hier (Spec 0025 §F, #568-Fund) - dieselbe SQL bleibt
+  // geprueft, nur am tatsaechlichen Ort.
+  const moduleStateSource = read(MODULE_STATE_PATH);
+  assert.match(moduleStateSource, /quiz_slots/);
+  assert.match(moduleStateSource, /question_references/);
 
   // Eigene Capability-Pruefung, konsistent mit db/services.php/privacy_surface.
   assert.match(source, /require_capability\('local\/coursepilot:use', \$context\)/);

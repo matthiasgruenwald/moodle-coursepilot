@@ -31,6 +31,12 @@ defined('MOODLE_INTERNAL') || die();
  * Eintrag verschwindet, neben dem Nachtragen ueber
  * `write_context_file`/`append_context_file` mit `ausstand=<Kennung>`.
  *
+ * Erster vollstaendiger englischer Durchstich der Expand-Migration aus #568
+ * (Spec 0025 §A): Parametername, Rueckgabeschluessel und Beschreibungen sind
+ * hier unmittelbar englisch deklariert - kein Uebersetzungsschritt an der
+ * MCP-Grenze noetig, {@see \local_coursepilot\contract_keys::internalize()}
+ * laesst diesen Aufruf anhand der tatsaechlichen Deklaration unangetastet.
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -42,30 +48,30 @@ class dismiss_ausstand extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'kennung' => new external_value(PARAM_ALPHANUMEXT, 'Kennung des Ausstands, aus coursepilot_list_skills'),
+            'identifier' => new external_value(PARAM_ALPHANUMEXT, 'Identifier of the pending entry, from coursepilot_list_skills'),
         ]);
     }
 
     /**
-     * @param string $kennung
+     * @param string $identifier
      * @return array
      * @throws \moodle_exception ausstandunknown, wenn keine Kennung existiert
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
-    public static function execute(string $kennung): array {
-        $params = self::validate_parameters(self::execute_parameters(), ['kennung' => $kennung]);
+    public static function execute(string $identifier): array {
+        $params = self::validate_parameters(self::execute_parameters(), ['identifier' => $identifier]);
 
         $context = context_files::own_context();
         self::validate_context($context);
         context_files::require_manage_own_files();
 
-        if (!pending_write_notice::dismiss($params['kennung'])) {
-            throw new \moodle_exception('ausstandunknown', 'local_coursepilot', '', $params['kennung']);
+        if (!pending_write_notice::dismiss($params['identifier'])) {
+            throw new \moodle_exception('ausstandunknown', 'local_coursepilot', '', $params['identifier']);
         }
 
         return [
-            'kennung' => $params['kennung'],
-            'message' => get_string('ausstanddismissed', 'local_coursepilot', $params['kennung']),
+            'identifier' => $params['identifier'],
+            'message' => get_string('ausstanddismissed', 'local_coursepilot', $params['identifier']),
         ];
     }
 
@@ -74,7 +80,7 @@ class dismiss_ausstand extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'kennung' => new external_value(PARAM_ALPHANUMEXT, 'Verworfene Kennung'),
+            'identifier' => new external_value(PARAM_ALPHANUMEXT, 'Dismissed identifier'),
             'message' => new external_value(PARAM_RAW, 'Bestaetigung in Lehrkraft-Deutsch'),
         ]);
     }

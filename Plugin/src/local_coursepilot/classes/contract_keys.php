@@ -52,9 +52,41 @@ final class contract_keys {
         return $translated;
     }
 
-    /** @return array<string, mixed> */
-    public static function internalize(array $value): array {
-        return self::translate($value, array_flip(self::INPUT));
+    /**
+     * Der oeffentliche Name eines einzelnen deutschen Feldschluessels - fuer
+     * Stellen, die einen Namen ausserhalb einer Datenstruktur brauchen (#568:
+     * die 'required'-Liste im MCP-Schema ist eine Werteliste, keine
+     * Schluesselmenge, {@see externalize()} uebersetzt deshalb nur ihre
+     * Eintraege nicht automatisch mit). Bereits englische Namen kommen
+     * unveraendert zurueck (kein Eintrag in EXTERNAL), das traegt die
+     * Uebergangsphase aus Spec 0025 §A: eine gemischt deutsch/englisch
+     * deklarierte Werkzeugmenge bleibt hierueber korrekt.
+     */
+    public static function externalize_key(string $key): string {
+        return self::EXTERNAL[$key] ?? $key;
+    }
+
+    /**
+     * @param array<string, mixed> $value
+     * @param string[] $declaredkeys Die tatsaechlich deklarierten Top-Level-
+     *        Parameternamen der aufgerufenen Funktion (#568). Ein
+     *        ankommender Schluessel, der bereits einem davon entspricht, ist
+     *        keine Uebersetzung wert - so bleibt eine bereits englisch
+     *        deklarierte Funktion unangetastet, auch wenn ihr Name zufaellig
+     *        mit einem Uebersetzungsziel einer anderen, noch deutschen
+     *        Funktion uebereinstimmt.
+     * @return array<string, mixed>
+     */
+    public static function internalize(array $value, array $declaredkeys = []): array {
+        $keys = array_flip(self::INPUT);
+        $translated = [];
+        foreach ($value as $key => $item) {
+            if (!in_array($key, $declaredkeys, true) && isset($keys[$key])) {
+                $key = $keys[$key];
+            }
+            $translated[$key] = is_array($item) ? self::translate($item, $keys) : $item;
+        }
+        return $translated;
     }
 
     /** @return array<string, mixed> */

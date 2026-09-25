@@ -294,9 +294,19 @@ final class dispatcher {
             return self::error(404, $id, -32601, 'Unknown tool: ' . $toolname);
         }
 
+        // #568: die Eingabeuebersetzung richtet sich nach der tatsaechlichen
+        // Deklaration der aufgerufenen Funktion, nicht nach einer pauschalen
+        // Uebersetzungstabelle - ein bereits englisch deklariertes Werkzeug
+        // (derzeit coursepilot_dismiss_ausstand) bleibt so unangetastet,
+        // waehrend ein noch deutsch deklariertes Werkzeug weiterhin
+        // uebersetzt wird. Beide Sorten laufen nebeneinander durch denselben
+        // Dispatcher (Spec 0025 §A, Expand-Schritt).
+        $classname = tool_registry::service_functions()[$function]['classname'];
+        $declaredkeys = array_keys($classname::execute_parameters()->keys);
+
         $response = external_api::call_external_function(
             $function,
-            contract_keys::internalize($params['arguments'] ?? [])
+            contract_keys::internalize($params['arguments'] ?? [], $declaredkeys)
         );
         if ($response['error']) {
             $message = self::error_message($response['exception'] ?? null);

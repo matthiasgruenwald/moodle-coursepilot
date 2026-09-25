@@ -80,7 +80,14 @@ final class external_schema_converter {
         foreach ($structure->keys as $name => $description) {
             $schema['properties'][$name] = self::from_description($description);
             if ($description->required === VALUE_REQUIRED) {
-                $required[] = $name;
+                // #568: 'required' ist eine Werteliste, keine Schluesselmenge
+                // - die abschliessende contract_keys::externalize() in
+                // from_parameters() uebersetzt nur Schluessel, nie
+                // Array-Werte. Ohne diese Zeile blieb der Eintrag hier am
+                // deutschen Rohnamen haengen, waehrend 'properties' densel-
+                // ben Namen laengst englisch fuehrte - elf so widerspruech-
+                // liche Pflichtfeldlisten (Review vom 25.09.2026).
+                $required[] = contract_keys::externalize_key($name);
             }
         }
         if ($required) {

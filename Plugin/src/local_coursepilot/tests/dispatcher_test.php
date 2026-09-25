@@ -266,6 +266,64 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
+     * #568, unabhaengiger Vertragstest (Spec 0025 §Testing Decisions,
+     * Abnahmekriterium 23): die Erwartung entsteht hier NICHT ueber
+     * external_schema_converter/contract_keys - ein Fehler im Konverter
+     * (wie die elf widerspruechlichen Pflichtfeldlisten aus dem Review vom
+     * 25.09.2026) darf die eigene Testerwartung nicht miterzeugen. Geprueft
+     * wird die tatsaechlich vom Dispatcher veroeffentlichte Liste gegen rein
+     * strukturelle Invarianten eines geschlossenen JSON-Schemas.
+     */
+    public function test_published_schemas_satisfy_independent_structural_invariants(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $response = dispatcher::handle(['id' => 1, 'method' => 'tools/list'], $token, $this->headers());
+
+        $validtypes = ['string', 'integer', 'number', 'boolean', 'array', 'object'];
+        foreach ($response['body']['result']['tools'] as $tool) {
+            $schema = $tool['inputSchema'];
+            $name = $tool['name'];
+
+            $this->assertSame('object', $schema['type'], "{$name}: inputSchema.type muss 'object' sein.");
+            $this->assertFalse($schema['additionalProperties'], "{$name}: additionalProperties muss false sein.");
+
+            $properties = $schema['properties'] instanceof \stdClass ? [] : $schema['properties'];
+            $required = $schema['required'] ?? [];
+
+            foreach ($required as $requiredname) {
+                // Invariante 1: jedes Pflichtfeld existiert als Eigenschaft -
+                // sonst ist das geschlossene Objekt (additionalProperties:
+                // false) fuer keinen Aufruf mehr erfuellbar.
+                $this->assertArrayHasKey(
+                    $requiredname,
+                    $properties,
+                    "{$name}: Pflichtfeld '{$requiredname}' ist keine deklarierte Eigenschaft."
+                );
+                // Invariante 3: ein Pflichtfeld traegt keinen Default - ein
+                // weggelassener, aber verpflichtender Wert waere sonst
+                // widerspruechlich beschrieben.
+                $this->assertArrayNotHasKey(
+                    'default',
+                    $properties[$requiredname],
+                    "{$name}: Pflichtfeld '{$requiredname}' traegt widerspruechlich einen Default."
+                );
+            }
+
+            foreach ($properties as $propname => $property) {
+                // Invariante 2: der Typ ist einer, den die JSON-Schema-Eingabe-
+                // pruefung tatsaechlich kennt.
+                $this->assertArrayHasKey('type', $property, "{$name}.{$propname}: kein 'type' angegeben.");
+                $this->assertContains(
+                    $property['type'],
+                    $validtypes,
+                    "{$name}.{$propname}: unbekannter Typ '{$property['type']}'."
+                );
+            }
+        }
+    }
+
+    /**
      * resultType ist fuer die Revision 2026-07-28 Pflicht (#337-Nachtrag,
      * Fund aus dem Claude-Code-Livetest: ohne dieses Feld verwirft ein
      * 2026-07-28-Client die tools/list-Antwort als ungueltig).
@@ -309,6 +367,136 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertSame(200, $response['status']);
         $this->assertSame((int) $course->id, $response['body']['result']['structuredContent']['courseid']);
         $this->assertSame('aus Moodle gelesen', $response['body']['result']['structuredContent']['source']);
+    }
+
+    /**
+     * #568, Abnahmekriterium: coursepilot_dismiss_ausstand ist ueber den
+     * oeffentlichen Dispatch-Pfad mit dem englischen Feldnamen `identifier`
+     * aufrufbar - nicht nur per direktem dismiss_ausstand::execute()-Aufruf
+     * (das bereits ausstand_notice_test.php/dismiss_ausstand_test.php
+     * abdecken). Dieses Werkzeug ist bereits vollstaendig englisch
+     * deklariert, braucht also keine Eingabeuebersetzung durch den
+     * Dispatcher (Spec 0025 §A, erster Durchstich der Expand-Migration).
+     */
+    public function test_dismiss_ausstand_is_callable_through_dispatcher_with_identifier(): void {
+        $this->resetAfterTest();
+        [$teacher, $token] = $this->create_authenticated_user();
+        $this->setUser($teacher);
+        $identifier = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
+
+        $response = dispatcher::handle(
+            [
+                'id' => 1,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_dismiss_ausstand',
+                    'arguments' => ['identifier' => $identifier],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+
+        $this->assertSame(200, $response['status']);
+        $this->assertArrayNotHasKey('isError', $response['body']['result']);
+        $this->assertSame($identifier, $response['body']['result']['structuredContent']['identifier']);
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
+     * #568: eine unbekannte Kennung wird ueber denselben Dispatch-Pfad
+     * kontrolliert abgewiesen (Fehlerergebnis, kein stiller Erfolg und kein
+     * HTTP-Fehlerstatus - dieselbe Vertragsform wie jeder andere
+     * fehlgeschlagene Werkzeugaufruf).
+     */
+    public function test_dismiss_ausstand_rejects_unknown_identifier_through_dispatcher(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $response = dispatcher::handle(
+            [
+                'id' => 1,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_dismiss_ausstand',
+                    'arguments' => ['identifier' => 'UNBEKANNT1'],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+
+        $this->assertSame(200, $response['status']);
+        $this->assertTrue($response['body']['result']['isError']);
+    }
+
+    /**
+     * #568: ein fehlendes Pflichtfeld wird ebenso kontrolliert abgewiesen -
+     * das geschlossene Objektschema (additionalProperties: false, required:
+     * ["identifier"]) ist dafuer die erste Verteidigungslinie beim Client,
+     * Moodles eigene Parameterpruefung die zweite auf dem Server.
+     */
+    public function test_dismiss_ausstand_rejects_missing_identifier_through_dispatcher(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $response = dispatcher::handle(
+            [
+                'id' => 1,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_dismiss_ausstand',
+                    'arguments' => [],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+
+        $this->assertSame(200, $response['status']);
+        $this->assertTrue($response['body']['result']['isError']);
+    }
+
+    /**
+     * #568: die Rechtepruefung bleibt auch auf dem englischen Durchstich
+     * wirksam - ohne moodle/user:manageownfiles weist der Dispatcher den
+     * Aufruf ab, genau wie beim direkten execute()-Aufruf
+     * (dismiss_ausstand_test.php::test_rejects_missing_manageownfiles_capability).
+     */
+    public function test_dismiss_ausstand_enforces_manageownfiles_through_dispatcher(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$teacher, $token] = $this->create_authenticated_user();
+        $this->setUser($teacher);
+        $identifier = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
+
+        // CAP_PROHIBIT auf der Basisrolle "user" ueberstimmt jede zusaetzliche
+        // Rolle (hier editingteacher) - derselbe erprobte Griff wie
+        // dismiss_ausstand_test.php::test_rejects_missing_manageownfiles_capability.
+        $roleid = $this->get_role_id('user');
+        assign_capability(
+            'moodle/user:manageownfiles',
+            CAP_PROHIBIT,
+            $roleid,
+            \context_user::instance($teacher->id)->id,
+            true
+        );
+
+        $response = dispatcher::handle(
+            [
+                'id' => 1,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_dismiss_ausstand',
+                    'arguments' => ['identifier' => $identifier],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+
+        $this->assertSame(200, $response['status']);
+        $this->assertTrue($response['body']['result']['isError']);
     }
 
     /**

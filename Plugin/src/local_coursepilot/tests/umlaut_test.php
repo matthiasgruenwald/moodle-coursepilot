@@ -123,7 +123,16 @@ final class local_coursepilot_umlaut_test extends advanced_testcase {
 
     /**
      * Die Plugin-Beschreibung (Einstellungsseite) nennt die richtige
-     * Isolierung - Schreibsperre, keine Lesesperre - und verweist auf #481.
+     * Isolierung - Schreibsperre, keine Lesesperre - und verweist auf die
+     * Admin-Anleitung fuer die Einzelheiten.
+     *
+     * #568 (Review vom 25.09.2026): der Text verwies frueher wortwoertlich
+     * auf "Issue #481" - seit dessen Umsetzung (#481, Admin-Erstanleitung)
+     * steht dort stattdessen der Verweis auf `docs/admin-erstanleitung.md`.
+     * Ein Test, der noch den erledigten Issue-Verweis verlangt, ist rein
+     * implementierungsgebunden an einen ueberholten Textstand - die
+     * fachliche Datenschutzaussage (Schreibsperre, keine Lesesperre) bleibt
+     * unveraendert verhaltensbasiert geprueft.
      */
     public function test_plugin_description_states_write_lock_not_read_lock(): void {
         // Direkt aus der Quelle gelesen statt ueber get_string(): die
@@ -132,7 +141,7 @@ final class local_coursepilot_umlaut_test extends advanced_testcase {
         require(__DIR__ . '/../lang/de/local_coursepilot.php');
         $desc = $string['settingintroheading_desc'];
 
-        $this->assertStringContainsString('Issue #481', $desc);
+        $this->assertStringContainsString('docs/admin-erstanleitung.md', $desc);
         $this->assertStringContainsString('Schreibsperre', $desc);
         $this->assertStringContainsString('keine Lesesperre', $desc);
         $this->assertStringNotContainsString('ohne Lesesperre schreiben', $desc);

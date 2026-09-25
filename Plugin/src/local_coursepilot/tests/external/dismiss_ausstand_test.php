@@ -44,7 +44,7 @@ final class dismiss_ausstand_test extends \advanced_testcase {
         $result = dismiss_ausstand::execute($kennung);
         $result = external_api::clean_returnvalue(dismiss_ausstand::execute_returns(), $result);
 
-        $this->assertSame($kennung, $result['kennung']);
+        $this->assertSame($kennung, $result['identifier']);
         $this->assertSame([], pending_write_notice::list_grouped());
     }
 
