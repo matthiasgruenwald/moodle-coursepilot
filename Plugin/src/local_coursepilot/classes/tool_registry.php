@@ -102,6 +102,27 @@ final class tool_registry {
         return self::is_write_class(self::TOOLS[$toolname]['classname']);
     }
 
+    /**
+     * Die Klasse zu einem Webservice-Funktionsnamen - fuer Aufrufer, die nur
+     * das brauchen (#568: dispatcher.php je Werkzeugaufruf). Anders als
+     * {@see service_functions()} baut das nicht die komplette Tool-Map samt
+     * get_string()-Aufruf je Werkzeug neu auf, nur um einen einzigen
+     * Klassennamen herauszulesen - das waere sonst auf dem heissen Pfad
+     * jedes einzelnen tools/call-Dispatches unnoetige Arbeit.
+     *
+     * @param string $function
+     * @return class-string|null null, wenn kein registriertes Werkzeug diese
+     *         Funktion traegt.
+     */
+    public static function classname_for_function(string $function): ?string {
+        foreach (self::TOOLS as $tool) {
+            if (self::function_name($tool['classname']) === $function) {
+                return $tool['classname'];
+            }
+        }
+        return null;
+    }
+
     /** @return string[] */
     public static function service_function_names(): array {
         return array_values(self::allowed_tools());

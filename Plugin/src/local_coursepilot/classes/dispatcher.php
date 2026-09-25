@@ -301,7 +301,7 @@ final class dispatcher {
         // waehrend ein noch deutsch deklariertes Werkzeug weiterhin
         // uebersetzt wird. Beide Sorten laufen nebeneinander durch denselben
         // Dispatcher (Spec 0025 §A, Expand-Schritt).
-        $classname = tool_registry::service_functions()[$function]['classname'];
+        $classname = tool_registry::classname_for_function($function);
         $declaredkeys = array_keys($classname::execute_parameters()->keys);
 
         $response = external_api::call_external_function(
