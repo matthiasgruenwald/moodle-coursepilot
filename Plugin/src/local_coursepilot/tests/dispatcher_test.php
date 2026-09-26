@@ -480,6 +480,221 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
+     * #570, Abnahmekriterium: die Fragenbank-/Fragen-/Import-/Quiz-Fragen-
+     * Werkzeuge sind ueber den oeffentlichen Dispatch-Pfad mit unmittelbar
+     * englisch deklarierten Feldern aufrufbar - Lesen (coursepilot_get_
+     * question_categories), Aenderung (coursepilot_ensure_question_category,
+     * Rueckgabeschluessel "created"/"message" statt "angelegt"/"meldung")
+     * und eine Import-/Quiz-Zuordnung (coursepilot_import_questions_xml mit
+     * "confirmed" statt "bestaetigt", gefolgt von coursepilot_
+     * add_questions_to_quiz). Das Bestaetigungs-Gate von import_questions_xml
+     * (Verdachtsfall bei einer mitgebrachten idnumber ohne Treffer) und das
+     * Rechte-Gate von add_questions_to_quiz (mod/quiz:manage) bleiben dabei
+     * unveraendert wirksam.
+     */
+    public function test_question_bank_tools_are_callable_through_dispatcher_in_english(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        [$teacher, $token] = $this->create_authenticated_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $quiz = $this->getDataGenerator()->get_plugin_generator('mod_quiz')->create_instance(['course' => $course->id]);
+
+        // Aenderung (idempotentes Anlegen): coursepilot_ensure_question_bank -
+        // Rueckgabeschluessel "created"/"message", nicht "angelegt"/"meldung".
+        $bankresponse = dispatcher::handle(
+            [
+                'id' => 1,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_ensure_question_bank',
+                    'arguments' => ['courseid' => $course->id, 'name' => 'Fragenbank #570'],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $bankresponse['status']);
+        $bank = $bankresponse['body']['result']['structuredContent'];
+        $this->assertTrue($bank['created']);
+        $this->assertArrayHasKey('message', $bank);
+        $this->assertArrayNotHasKey('angelegt', $bank);
+        $this->assertArrayNotHasKey('meldung', $bank);
+
+        // Aenderung: coursepilot_ensure_question_category, dieselbe
+        // Umbenennung wie oben (created/message statt angelegt/meldung).
+        $categoryresponse = dispatcher::handle(
+            [
+                'id' => 2,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_ensure_question_category',
+                    'arguments' => ['name' => 'Kategorie #570', 'parent' => $bank['topcategoryid']],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $categoryresponse['status']);
+        $category = $categoryresponse['body']['result']['structuredContent'];
+        $this->assertTrue($category['created']);
+        $categoryid = (int) $category['id'];
+
+        // Lesen: coursepilot_get_question_categories - englische
+        // Rueckgabeschluessel id/name/parent, wie schon vor #570 deklariert.
+        $listresponse = dispatcher::handle(
+            [
+                'id' => 3,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_get_question_categories',
+                    'arguments' => ['courseid' => $course->id, 'questionbankid' => $bank['questionbankid']],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $listresponse['status']);
+        $categories = $listresponse['body']['result']['structuredContent'];
+        $names = array_column($categories, 'name');
+        $this->assertContains('Kategorie #570', $names);
+
+        // Import-Zuordnung mit Bestaetigungs-Gate: eine mitgebrachte idnumber
+        // ohne Treffer in der Zielkategorie ist ein Verdachtsfall - nichts
+        // wird geschrieben, solange "confirmed" nicht gesetzt ist.
+        $xml = self::multichoice_xml_fixture('Dispatcher-Frage #570', 'Was ist 2+2?', 'kp-570-fremd');
+        $unconfirmedresponse = dispatcher::handle(
+            [
+                'id' => 4,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_import_questions_xml',
+                    'arguments' => ['categoryid' => $categoryid, 'xmlcontent' => $xml],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $unconfirmedresponse['status']);
+        $unconfirmed = $unconfirmedresponse['body']['result']['structuredContent']['questions'][0];
+        $this->assertSame('verdachtsfall', $unconfirmed['status']);
+
+        // "confirmed": true bestaetigt ausdruecklich - jetzt wird geschrieben.
+        $confirmedresponse = dispatcher::handle(
+            [
+                'id' => 5,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_import_questions_xml',
+                    'arguments' => ['categoryid' => $categoryid, 'xmlcontent' => $xml, 'confirmed' => true],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $confirmedresponse['status']);
+        $imported = $confirmedresponse['body']['result']['structuredContent']['questions'][0];
+        $this->assertSame('erstimport', $imported['status']);
+        $this->assertArrayNotHasKey('bestaetigt', $imported);
+
+        // Quiz-Zuordnung: coursepilot_add_questions_to_quiz haengt die
+        // importierte Frage an, Rueckgabeschluessel "message" statt "meldung".
+        $questionid = $this->latest_version_questionid((int) $imported['questionbankentryid']);
+        $quizresponse = dispatcher::handle(
+            [
+                'id' => 6,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_add_questions_to_quiz',
+                    'arguments' => ['cmid' => $quiz->cmid, 'questionids' => [$questionid]],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $quizresponse['status']);
+        $appended = $quizresponse['body']['result']['structuredContent'];
+        $this->assertArrayHasKey('message', $appended);
+        $this->assertArrayNotHasKey('meldung', $appended);
+        $this->assertTrue($appended['appended'][0]['added']);
+
+        // Rechte-Gate bleibt wirksam: ohne mod/quiz:manage scheitert derselbe
+        // Aufruf ueber denselben Dispatch-Pfad kontrolliert.
+        $roleid = $this->get_role_id('editingteacher');
+        assign_capability('mod/quiz:manage', CAP_PROHIBIT, $roleid, \context_module::instance($quiz->cmid)->id, true);
+        $forbiddenresponse = dispatcher::handle(
+            [
+                'id' => 7,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_add_questions_to_quiz',
+                    'arguments' => ['cmid' => $quiz->cmid, 'questionids' => [$questionid]],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $forbiddenresponse['status']);
+        $this->assertTrue($forbiddenresponse['body']['result']['isError']);
+    }
+
+    /**
+     * Baut ein minimales Moodle-XML mit einer einzelnen multichoice-Frage
+     * (#570) - schlanke Kopie von
+     * {@see \local_coursepilot\external\import_questions_xml_test::multichoice_xml()}
+     * fuer den Dispatcher-Rundlauf-Test, ohne Testklassen-Kopplung.
+     *
+     * @param string $name
+     * @param string $questiontext
+     * @param string $idnumber
+     * @return string
+     */
+    private static function multichoice_xml_fixture(string $name, string $questiontext, string $idnumber): string {
+        return <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+  <question type="multichoice">
+    <name><text>{$name}</text></name>
+    <questiontext format="html"><text><![CDATA[{$questiontext}]]></text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <idnumber>{$idnumber}</idnumber>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <correctfeedback format="html"><text></text></correctfeedback>
+    <partiallycorrectfeedback format="html"><text></text></partiallycorrectfeedback>
+    <incorrectfeedback format="html"><text></text></incorrectfeedback>
+    <answer fraction="100" format="html">
+      <text><![CDATA[4]]></text>
+      <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+      <text><![CDATA[5]]></text>
+      <feedback format="html"><text></text></feedback>
+    </answer>
+  </question>
+</quiz>
+XML;
+    }
+
+    /**
+     * @param int $questionbankentryid
+     * @return int questionid der neuesten Version
+     */
+    private function latest_version_questionid(int $questionbankentryid): int {
+        global $DB;
+        $latest = $DB->get_record_sql(
+            'SELECT * FROM {question_versions} WHERE questionbankentryid = ? ORDER BY version DESC',
+            [$questionbankentryid],
+            IGNORE_MULTIPLE
+        );
+        return (int) $latest->questionid;
+    }
+
+    /**
      * #568, Abnahmekriterium: coursepilot_dismiss_ausstand ist ueber den
      * oeffentlichen Dispatch-Pfad mit dem englischen Feldnamen `identifier`
      * aufrufbar - nicht nur per direktem dismiss_ausstand::execute()-Aufruf

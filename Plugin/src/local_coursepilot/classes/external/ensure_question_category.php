@@ -58,8 +58,8 @@ final class ensure_question_category extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'name' => new external_value(PARAM_TEXT, 'Kategoriename, Konvention: "<Abschnittsnummer> <Titel>", z.B. "7.2 Stoffe und ihre Eigenschaften"'),
-            'parent' => new external_value(PARAM_INT, 'ID der Elternkategorie (z.B. topcategoryid aus ensure_question_bank)'),
+            'name' => new external_value(PARAM_TEXT, 'Category name, convention: "<section number> <title>", e.g. "7.2 Stoffe und ihre Eigenschaften"'),
+            'parent' => new external_value(PARAM_INT, 'ID of the parent category (e.g. topcategoryid from ensure_question_bank)'),
         ]);
     }
 
@@ -94,8 +94,8 @@ final class ensure_question_category extends external_api {
                 'name' => $existing->name,
                 'parent' => (int) $existing->parent,
                 'contextid' => (int) $context->id,
-                'angelegt' => false,
-                'meldung' => 'Kategorie "' . $params['name'] . '" existierte bereits, wird wiederverwendet.',
+                'created' => false,
+                'message' => 'Kategorie "' . $params['name'] . '" existierte bereits, wird wiederverwendet.',
             ];
         }
 
@@ -116,8 +116,8 @@ final class ensure_question_category extends external_api {
             'name' => $params['name'],
             'parent' => (int) $parentcategory->id,
             'contextid' => (int) $context->id,
-            'angelegt' => true,
-            'meldung' => 'Kategorie "' . $params['name'] . '" angelegt.',
+            'created' => true,
+            'message' => 'Kategorie "' . $params['name'] . '" angelegt.',
         ];
     }
 
@@ -126,12 +126,12 @@ final class ensure_question_category extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'id' => new external_value(PARAM_INT, 'ID der (angelegten oder wiederverwendeten) Kategorie'),
-            'name' => new external_value(PARAM_TEXT, 'Kategoriename'),
-            'parent' => new external_value(PARAM_INT, 'ID der Elternkategorie'),
-            'contextid' => new external_value(PARAM_INT, 'Kontext-ID der Fragensammlung'),
-            'angelegt' => new external_value(PARAM_BOOL, 'true, wenn neu angelegt; false, wenn eine gleichnamige unter demselben Elternteil wiederverwendet wurde'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Meldung'),
+            'id' => new external_value(PARAM_INT, 'ID of the (created or reused) category'),
+            'name' => new external_value(PARAM_TEXT, 'Category name'),
+            'parent' => new external_value(PARAM_INT, 'ID of the parent category'),
+            'contextid' => new external_value(PARAM_INT, 'Context ID of the question bank'),
+            'created' => new external_value(PARAM_BOOL, 'true if newly created; false if a same-named one under the same parent was reused'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
         ]);
     }
 }

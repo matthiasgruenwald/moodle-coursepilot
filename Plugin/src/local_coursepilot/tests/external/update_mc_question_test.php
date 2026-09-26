@@ -74,7 +74,7 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->assertSame('aktualisiert', $result['status']);
         $this->assertSame($entryid, $result['questionbankentryid'], 'Neue Version DESSELBEN Bank-Eintrags.');
         $this->assertSame(2, $result['version']);
-        $this->assertFalse($result['idnumber_nachgetragen']);
+        $this->assertFalse($result['idnumber_added']);
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
         $this->assertSame($countbefore, $countafter, 'Kein neuer Bank-Eintrag, nur eine neue Version.');
@@ -186,7 +186,7 @@ final class update_mc_question_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
 
         $this->assertSame('aktualisiert', $result['status']);
-        $this->assertTrue($result['idnumber_nachgetragen']);
+        $this->assertTrue($result['idnumber_added']);
         $this->assertSame($target['questionbankentryid'], $result['questionbankentryid'], 'Neue Version, kein neuer Eintrag.');
 
         $newidnumber = $DB->get_field(
@@ -204,7 +204,7 @@ final class update_mc_question_test extends \advanced_testcase {
      * (Spec 0018 §4/§7, Issue #435): questiontext traegt bereits das
      * @@PLUGINFILE@@-Verweis-HTML samt Alt-Text (gleiche Konvention wie
      * update_module_settings::INTRO_IMAGE_PSEUDOFIELDS/#433),
-     * questiontext_bilder nennt den Materialordner-Pfad. Der komplette Weg
+     * questiontext_images nennt den Materialordner-Pfad. Der komplette Weg
      * wird durchlaufen: Materialordner -> Verweisweg -> in der Frage
      * sichtbar (physische Datei in der question/questiontext-Filearea).
      */
@@ -233,7 +233,7 @@ final class update_mc_question_test extends \advanced_testcase {
             json_encode([
                 'questiontext' => '<p>Werte das Diagramm aus:</p>'
                     . '<img src="@@PLUGINFILE@@/diagramm.png" alt="Saeulendiagramm der Messreihe">',
-                'questiontext_bilder' => ['diagramm.png'],
+                'questiontext_images' => ['diagramm.png'],
             ])
         );
         $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
@@ -258,7 +258,7 @@ final class update_mc_question_test extends \advanced_testcase {
 
     /**
      * Dasselbe fuer das Feedback einer einzelnen Antwortoption (Issue #435):
-     * "feedback_bilder" je answers-Eintrag statt eines globalen Feldes, weil
+     * "feedback_images" je answers-Eintrag statt eines globalen Feldes, weil
      * "answers" ohnehin die gesamte Liste patcht (Alles-oder-nichts,
      * bestehende Semantik dieses Endpunkts).
      */
@@ -290,7 +290,7 @@ final class update_mc_question_test extends \advanced_testcase {
                         'fraction' => 1.0,
                         'feedback' => 'Richtig, siehe Karte: '
                             . '<img src="@@PLUGINFILE@@/kartenausschnitt.png" alt="Kartenausschnitt">',
-                        'feedback_bilder' => ['kartenausschnitt.png'],
+                        'feedback_images' => ['kartenausschnitt.png'],
                     ],
                     ['answer' => 'b', 'fraction' => 0.0, 'feedback' => 'Falsch'],
                 ],
@@ -339,7 +339,7 @@ final class update_mc_question_test extends \advanced_testcase {
             $created['questionid'],
             json_encode([
                 'questiontext' => '<img src="@@PLUGINFILE@@/diagramm.png" alt="Diagramm">',
-                'questiontext_bilder' => ['diagramm.png'],
+                'questiontext_images' => ['diagramm.png'],
             ])
         );
         $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
@@ -374,7 +374,7 @@ final class update_mc_question_test extends \advanced_testcase {
                 $created['questionid'],
                 json_encode([
                     'questiontext' => '<img src="@@PLUGINFILE@@/arbeitsblatt.pdf" alt="geht nicht">',
-                    'questiontext_bilder' => ['arbeitsblatt.pdf'],
+                    'questiontext_images' => ['arbeitsblatt.pdf'],
                 ])
             );
             $this->fail('Erwartete moodle_exception blieb aus.');
@@ -414,7 +414,7 @@ final class update_mc_question_test extends \advanced_testcase {
             $created['questionid'],
             json_encode([
                 'questiontext' => '<img src="@@PLUGINFILE@@/gibtsnicht.png" alt="fehlt">',
-                'questiontext_bilder' => ['gibtsnicht.png'],
+                'questiontext_images' => ['gibtsnicht.png'],
             ])
         );
     }
@@ -521,7 +521,7 @@ final class update_mc_question_test extends \advanced_testcase {
             json_encode([
                 'questiontext' => '<p>Werte das Diagramm aus:</p>'
                     . '<img src="@@PLUGINFILE@@/diagramm.png" alt="Saeulendiagramm der Messreihe">',
-                'questiontext_bilder' => ['diagramm.png'],
+                'questiontext_images' => ['diagramm.png'],
             ])
         );
         $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
@@ -560,7 +560,7 @@ final class update_mc_question_test extends \advanced_testcase {
             $created['questionid'],
             json_encode([
                 'questiontext' => '<img src="@@PLUGINFILE@@/werkbank.png" alt="aus der Werkbank">',
-                'questiontext_bilder' => ['werkbank.png'],
+                'questiontext_images' => ['werkbank.png'],
             ]),
             false,
             \local_coursepilot\material_files::ORT_WERKBANK

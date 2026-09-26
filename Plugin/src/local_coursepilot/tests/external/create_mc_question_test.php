@@ -56,8 +56,8 @@ final class create_mc_question_test extends \advanced_testcase {
         $this->assertSame(1, $result['version']);
         $this->assertGreaterThan(0, $result['questionbankentryid']);
         $this->assertGreaterThan(0, $result['questionid']);
-        $this->assertStringContainsString((string) $result['questionbankentryid'], $result['meldung']);
-        $this->assertStringContainsString('1', $result['meldung']);
+        $this->assertStringContainsString((string) $result['questionbankentryid'], $result['message']);
+        $this->assertStringContainsString('1', $result['message']);
 
         global $DB;
         $entry = $DB->get_record('question_bank_entries', ['id' => $result['questionbankentryid']], '*', MUST_EXIST);

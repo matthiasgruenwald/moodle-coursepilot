@@ -42,12 +42,12 @@ final class ensure_question_bank_test extends \advanced_testcase {
         $result = ensure_question_bank::execute($course->id, 'Biologie 9a - Immunsystem');
         $result = external_api::clean_returnvalue(ensure_question_bank::execute_returns(), $result);
 
-        $this->assertTrue($result['angelegt']);
+        $this->assertTrue($result['created']);
         $this->assertGreaterThan(0, $result['questionbankid']);
         $this->assertGreaterThan(0, $result['contextid']);
         $this->assertGreaterThan(0, $result['topcategoryid']);
         $this->assertSame('Biologie 9a - Immunsystem', $result['name']);
-        $this->assertStringContainsString('angelegt', $result['meldung']);
+        $this->assertStringContainsString('angelegt', $result['message']);
     }
 
     /**
@@ -68,11 +68,11 @@ final class ensure_question_bank_test extends \advanced_testcase {
         $second = ensure_question_bank::execute($course->id, 'Biologie 9a - Immunsystem');
         $second = external_api::clean_returnvalue(ensure_question_bank::execute_returns(), $second);
 
-        $this->assertFalse($second['angelegt']);
+        $this->assertFalse($second['created']);
         $this->assertSame($first['questionbankid'], $second['questionbankid']);
         $this->assertSame($first['contextid'], $second['contextid']);
         $this->assertSame($first['topcategoryid'], $second['topcategoryid']);
-        $this->assertStringContainsString('wiederverwendet', $second['meldung']);
+        $this->assertStringContainsString('wiederverwendet', $second['message']);
 
         global $DB;
         $modulename = \core_question\local\bank\question_bank_helper::get_default_question_bank_activity_name();

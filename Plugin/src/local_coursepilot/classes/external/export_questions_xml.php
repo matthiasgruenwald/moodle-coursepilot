@@ -39,14 +39,14 @@ require_once($CFG->dirroot . '/question/format/xml/format.php');
  * in {@see import_questions_xml} ohnehin serverseitig verwendet, hier als
  * eigenstaendiges Werkzeug herausgefuehrt.
  *
- * Standard-Modus (platzhalter=false, Default): die VOLLSTAENDIGE,
+ * Standard-Modus (placeholder=false, Default): die VOLLSTAENDIGE,
  * standardkonforme XML - mit echtem Base64 in den <file>-Bloecken - wird als
  * Datei in den Materialordner geschrieben (Spec 0018 §2); die Antwort nennt
  * nur den Pfad, kein Bildbyte passiert den KI-Kontext. Diese Datei ist in
  * jedes andere Moodle importierbar (Weitergabe) und ueber die Verweistuer von
  * {@see import_questions_xml} wieder einlesbar (Rundlauf).
  *
- * Platzhalter-Modus (platzhalter=true): der urspruengliche Export aus Spec
+ * Platzhalter-Modus (placeholder=true): der urspruengliche Export aus Spec
  * 0017 §4.2 - <file>-Bloecke werden durch einen benannten XML-Kommentar-
  * Platzhalter ersetzt und die XML kommt direkt in der Antwort zurueck. Fuer
  * den Vorlagenzweck (die KI soll die Struktur lernen, nicht 400 KB Bild) ist
@@ -67,23 +67,22 @@ final class export_questions_xml extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'questionids' => new external_multiple_structure(
-                new external_value(PARAM_INT, 'questionid einer beliebigen Version der zu exportierenden Frage'),
-                'Liste von questionids (mindestens eine)'
+                new external_value(PARAM_INT, 'questionid of any version of the question to export'),
+                'List of questionids (at least one)'
             ),
             'targetpath' => new external_value(
                 PARAM_PATH,
-                'Materialordner-Pfad der zu schreibenden XML-Datei, z.B. "export.xml" - Pflicht im Standard-Modus '
-                    . '(platzhalter=false), ignoriert im Platzhalter-Modus.',
+                'Material folder path of the XML file to write, e.g. "export.xml" - required in the standard mode '
+                    . '(placeholder=false), ignored in the placeholder mode.',
                 VALUE_DEFAULT,
                 ''
             ),
-            'platzhalter' => new external_value(
+            'placeholder' => new external_value(
                 PARAM_BOOL,
-                'Schalter (Spec 0018 §7.2), Default false: die vollstaendige, standardkonforme XML mit echtem '
-                    . 'Base64 wird in den Materialordner geschrieben, die Antwort nennt nur den Pfad. true liefert '
-                    . 'stattdessen wie bisher die XML direkt in der Antwort, mit benannten Platzhaltern statt '
-                    . 'eingebetteter Dateien - nur fuer den Vorlagenzweck (Struktur lernen), NICHT zur Weitergabe '
-                    . 'geeignet.',
+                'Switch (Spec 0018 §7.2), default false: the complete, standard-conformant XML with real base64 is '
+                    . 'written to the material folder, the response only names the path. true instead returns the '
+                    . 'XML directly in the response as before, with named placeholders instead of embedded files - '
+                    . 'only for the template purpose (learning the structure), NOT suitable for sharing.',
                 VALUE_DEFAULT,
                 false
             ),
@@ -93,45 +92,45 @@ final class export_questions_xml extends external_api {
     /**
      * @param int[] $questionids
      * @param string $targetpath
-     * @param bool $platzhalter
+     * @param bool $placeholder
      * @return array
      */
-    public static function execute(array $questionids, string $targetpath = '', bool $platzhalter = false): array {
+    public static function execute(array $questionids, string $targetpath = '', bool $placeholder = false): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionids' => $questionids,
             'targetpath' => $targetpath,
-            'platzhalter' => $platzhalter,
+            'placeholder' => $placeholder,
         ]);
         $ids = $params['questionids'];
 
         if (empty($ids)) {
             throw new \invalid_parameter_exception('Es muss mindestens eine questionid angegeben werden.');
         }
-        if (!$params['platzhalter'] && trim($params['targetpath']) === '') {
+        if (!$params['placeholder'] && trim($params['targetpath']) === '') {
             throw new \invalid_parameter_exception(
                 'targetpath ist im Standard-Modus Pflicht (Materialordner-Pfad der zu schreibenden XML-Datei), '
-                    . 'z.B. "export.xml". Fuer den Platzhalter-Modus stattdessen platzhalter=true setzen.'
+                    . 'z.B. "export.xml". Fuer den Platzhalter-Modus stattdessen placeholder=true setzen.'
             );
         }
 
         $parts = [];
         $missing = [];
         foreach ($ids as $questionid) {
-            [$xml, $name, $filenames] = self::export_one((int) $questionid, $params['platzhalter']);
+            [$xml, $name, $filenames] = self::export_one((int) $questionid, $params['placeholder']);
             $parts[] = $xml;
-            if ($params['platzhalter'] && !empty($filenames)) {
+            if ($params['placeholder'] && !empty($filenames)) {
                 $missing[] = ['name' => $name, 'files' => $filenames];
             }
         }
 
         $xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<quiz>\n" . implode("\n", $parts) . "\n</quiz>\n";
 
-        if ($params['platzhalter']) {
+        if ($params['placeholder']) {
             return [
                 'xml' => $xml,
-                'pfad' => '',
-                'anzahl' => count($ids),
-                'meldung' => self::build_message(count($ids), $missing, true),
+                'path' => '',
+                'count' => count($ids),
+                'message' => self::build_message(count($ids), $missing, true),
             ];
         }
 
@@ -146,7 +145,7 @@ final class export_questions_xml extends external_api {
      * @param string $targetpath
      * @param string $xml
      * @param int $count
-     * @return array{xml: string, pfad: string, anzahl: int, meldung: string}
+     * @return array{xml: string, path: string, count: int, message: string}
      */
     private static function write_and_report(string $targetpath, string $xml, int $count): array {
         [$path, $warning] = self::write_material_file($targetpath, $xml);
@@ -157,9 +156,9 @@ final class export_questions_xml extends external_api {
 
         return [
             'xml' => '',
-            'pfad' => $path,
-            'anzahl' => $count,
-            'meldung' => $message,
+            'path' => $path,
+            'count' => $count,
+            'message' => $message,
         ];
     }
 
@@ -171,10 +170,10 @@ final class export_questions_xml extends external_api {
      * fuer eine bereits bestehende Frage statt einer frisch geschriebenen.
      *
      * @param int $questionid
-     * @param bool $platzhalter true: eingebettete Dateien durch Platzhalter ersetzen (Spec 0017 §4.2)
+     * @param bool $placeholder true: eingebettete Dateien durch Platzhalter ersetzen (Spec 0017 §4.2)
      * @return array{0: string, 1: string, 2: string[]} [XML-Fragment, Fragename, entfernte Dateinamen (nur Platzhalter-Modus)]
      */
-    private static function export_one(int $questionid, bool $platzhalter): array {
+    private static function export_one(int $questionid, bool $placeholder): array {
         [$question, $category, $context] = self::resolve_native_question($questionid);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
@@ -183,7 +182,7 @@ final class export_questions_xml extends external_api {
         // Lese-Capability hier - Export ist ein Lesevorgang.
         require_capability('moodle/question:viewall', $context);
 
-        [$xml, $filenames] = self::question_to_xml($question, $category, $context, $platzhalter);
+        [$xml, $filenames] = self::question_to_xml($question, $category, $context, $placeholder);
 
         return [$xml, (string) $question->name, $filenames];
     }
@@ -334,16 +333,16 @@ final class export_questions_xml extends external_api {
      *
      * @param int $count
      * @param array<int, array{name: string, files: string[]}> $missing
-     * @param bool $platzhalter
+     * @param bool $placeholder
      * @return string
      */
-    private static function build_message(int $count, array $missing, bool $platzhalter): string {
+    private static function build_message(int $count, array $missing, bool $placeholder): string {
         $base = $count === 1 ? '1 Frage exportiert.' : $count . ' Fragen exportiert.';
 
-        if ($platzhalter) {
+        if ($placeholder) {
             $base .= ' PLATZHALTER-MODUS: Diese Ausgabe ist unvollstaendig (eingebettete Dateien sind durch '
                 . 'Kommentar-Platzhalter ersetzt) und NICHT zur Weitergabe geeignet - nur fuer den Vorlagenzweck '
-                . '(Struktur einer Frage lernen). Fuer eine vollstaendige, weitergebbare XML platzhalter=false '
+                . '(Struktur einer Frage lernen). Fuer eine vollstaendige, weitergebbare XML placeholder=false '
                 . '(Default) verwenden.';
         }
 
@@ -367,25 +366,24 @@ final class export_questions_xml extends external_api {
         return new external_single_structure([
             'xml' => new external_value(
                 PARAM_RAW,
-                'NUR im Platzhalter-Modus gefuellt: Moodle-XML-Fragenexport (ein <quiz>-Wurzelelement mit einer '
-                    . '<question> je angeforderter Frage), eingebettete Dateien durch benannte Kommentar-Platzhalter '
-                    . 'ersetzt. Im Standard-Modus leer - die vollstaendige XML liegt in "pfad".',
+                'ONLY filled in the placeholder mode: Moodle question XML export (a <quiz> root element with one '
+                    . '<question> per requested question), embedded files replaced by named comment placeholders. '
+                    . 'Empty in the standard mode - the complete XML is in "path".',
                 VALUE_DEFAULT,
                 ''
             ),
-            'pfad' => new external_value(
+            'path' => new external_value(
                 PARAM_TEXT,
-                'NUR im Standard-Modus gefuellt: Materialordner-Pfad der geschriebenen, vollstaendigen XML-Datei '
-                    . '(echtes Base64 in <file>-Bloecken). Im Platzhalter-Modus leer.',
+                'ONLY filled in the standard mode: material folder path of the written, complete XML file (real '
+                    . 'base64 in <file> blocks). Empty in the placeholder mode.',
                 VALUE_DEFAULT,
                 ''
             ),
-            'anzahl' => new external_value(PARAM_INT, 'Anzahl exportierter Fragen'),
-            'meldung' => new external_value(
+            'count' => new external_value(PARAM_INT, 'Number of exported questions'),
+            'message' => new external_value(
                 PARAM_RAW,
-                'Lehrkraft-deutsche Meldung; nennt im Platzhalter-Modus ausdruecklich, dass die Ausgabe '
-                    . 'unvollstaendig und nicht zur Weitergabe geeignet ist, sowie bei fehlenden Dateien welche Frage '
-                    . 'betroffen ist'
+                'Teacher-facing German message; explicitly names in the placeholder mode that the output is '
+                    . 'incomplete and not suitable for sharing, and which question is affected for missing files'
             ),
         ]);
     }

@@ -60,12 +60,12 @@ final class move_question extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'questionid' => new external_value(PARAM_INT, 'questionid einer beliebigen Version der zu verschiebenden Frage'),
-            'targetcategoryid' => new external_value(PARAM_INT, 'ID der Ziel-Fragenbank-Kategorie'),
-            'bestaetigt' => new external_value(
+            'questionid' => new external_value(PARAM_INT, 'questionid of any version of the question to move'),
+            'targetcategoryid' => new external_value(PARAM_INT, 'ID of the target question bank category'),
+            'confirmed' => new external_value(
                 PARAM_BOOL,
-                'true bestaetigt ausdruecklich einen zuvor gemeldeten Verdachtsfall (idnumber-Kollision in der '
-                    . 'Zielkategorie) und fuehrt den Umzug trotzdem aus. Beim ersten Aufruf weglassen oder false.',
+                'true explicitly confirms a previously reported suspect case (idnumber collision in the '
+                    . 'target category) and moves it anyway. Omit or false on the first call.',
                 VALUE_DEFAULT,
                 false
             ),
@@ -75,16 +75,16 @@ final class move_question extends external_api {
     /**
      * @param int $questionid
      * @param int $targetcategoryid
-     * @param bool $bestaetigt
+     * @param bool $confirmed
      * @return array
      */
-    public static function execute(int $questionid, int $targetcategoryid, bool $bestaetigt = false): array {
+    public static function execute(int $questionid, int $targetcategoryid, bool $confirmed = false): array {
         global $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionid' => $questionid,
             'targetcategoryid' => $targetcategoryid,
-            'bestaetigt' => $bestaetigt,
+            'confirmed' => $confirmed,
         ]);
 
         $version = $DB->get_record('question_versions', ['questionid' => $params['questionid']], '*', MUST_EXIST);
@@ -117,7 +117,7 @@ final class move_question extends external_api {
             (int) $entry->id
         );
 
-        if ($collision !== null && !$params['bestaetigt']) {
+        if ($collision !== null && !$params['confirmed']) {
             // Verdachtsfall: nichts wird geschrieben (ADR 0015, Spec 0017 §7.1).
             $latestversion = end($versions);
             $newquestiontext = $latestversion
@@ -129,10 +129,10 @@ final class move_question extends external_api {
                     'status' => 'verdachtsfall',
                     'questionbankentryid' => (int) $entry->id,
                     'versionids' => [],
-                    'idnumber_disambiguiert' => false,
-                    'meldung' => 'Verdachtsfall: In der Zielkategorie gibt es bereits einen Eintrag mit der '
+                    'idnumber_disambiguated' => false,
+                    'message' => 'Verdachtsfall: In der Zielkategorie gibt es bereits einen Eintrag mit der '
                         . 'idnumber "' . $idnumber . '". Nichts wurde verschoben. Zum Verschieben trotz Kollision '
-                        . 'erneut mit bestaetigt=true aufrufen.',
+                        . 'erneut mit confirmed=true aufrufen.',
                 ],
                 question_suspect_gate::response($collision, (int) $targetcategory->id, $newquestiontext)
             );
@@ -166,9 +166,9 @@ final class move_question extends external_api {
         $newidnumber = (string) ($entry->idnumber ?? '');
         $idnumberdisambiguiert = $collision !== null && $newidnumber !== $idnumber;
 
-        $meldung = 'Frage in Zielkategorie verschoben.';
+        $message = 'Frage in Zielkategorie verschoben.';
         if ($idnumberdisambiguiert) {
-            $meldung .= ' Die idnumber "' . $idnumber . '" war in der Zielkategorie bereits vergeben und wurde '
+            $message .= ' Die idnumber "' . $idnumber . '" war in der Zielkategorie bereits vergeben und wurde '
                 . 'auf "' . $newidnumber . '" umbenannt.';
         }
 
@@ -177,8 +177,8 @@ final class move_question extends external_api {
                 'status' => 'verschoben',
                 'questionbankentryid' => (int) $entry->id,
                 'versionids' => array_values(array_map(static fn($item): int => (int) $item->questionid, $versions)),
-                'idnumber_disambiguiert' => $idnumberdisambiguiert,
-                'meldung' => $meldung,
+                'idnumber_disambiguated' => $idnumberdisambiguiert,
+                'message' => $message,
             ],
             question_suspect_gate::empty_result()
         );
@@ -190,17 +190,17 @@ final class move_question extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure(array_merge(
             [
-                'status' => new external_value(PARAM_ALPHA, '"verschoben" oder "verdachtsfall"'),
-                'questionbankentryid' => new external_value(PARAM_INT, 'Unveraenderte Identitaet des question_bank_entries'),
+                'status' => new external_value(PARAM_ALPHA, '"verschoben" (moved) or "verdachtsfall" (suspect case)'),
+                'questionbankentryid' => new external_value(PARAM_INT, 'Unchanged identity of the question_bank_entries row'),
                 'versionids' => new external_multiple_structure(
-                    new external_value(PARAM_INT, 'questionid einer erhaltenen Version'),
-                    'Alle Versionen der Frage in Versionsreihenfolge (leer bei "verdachtsfall")'
+                    new external_value(PARAM_INT, 'questionid of a retained version'),
+                    'All versions of the question in version order (empty for "verdachtsfall")'
                 ),
-                'idnumber_disambiguiert' => new external_value(
+                'idnumber_disambiguated' => new external_value(
                     PARAM_BOOL,
-                    'true, wenn beim bestaetigten Umzug eine idnumber-Kollision durch den Core-Suffix-Mechanismus aufgeloest wurde'
+                    'true if a confirmed move resolved an idnumber collision via the core suffix mechanism'
                 ),
-                'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Meldung'),
+                'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
             ],
             question_suspect_gate::response_fields()
         ));

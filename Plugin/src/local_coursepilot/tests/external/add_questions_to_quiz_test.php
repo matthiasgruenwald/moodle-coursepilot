@@ -101,7 +101,7 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
 
         $this->assertCount(1, $result['slots'], 'Kein zweiter Slot fuer dieselbe Frage.');
         $this->assertFalse($result['appended'][0]['added']);
-        $this->assertStringContainsString('übersprungen', $result['meldung']);
+        $this->assertStringContainsString('übersprungen', $result['message']);
     }
 
     /**

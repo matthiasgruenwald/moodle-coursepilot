@@ -30,7 +30,7 @@ require_once($CFG->libdir . '/questionlib.php');
 
 /**
  * Read-modify-write fuer eine Multiple-Choice-Frage (Spec 0017 §7.1, Ticket
- * #419): "felder_json" ist ein PATCH, kein Vollstand (gleiches Vokabular wie
+ * #419): "fields_json" ist ein PATCH, kein Vollstand (gleiches Vokabular wie
  * {@see update_module_settings}/{@see update_quiz_settings}) - nicht
  * mitgeschickte Felder duerfen NICHT verloren gehen.
  *
@@ -73,7 +73,7 @@ final class update_mc_question extends external_api {
         // "questiontext"-Patch per @@PLUGINFILE@@ referenziert werden - siehe
         // {@see self::embed_material_images()}. Kein moduleinfo-Aequivalent,
         // dieses Feld landet nie auf dem nativen Fragenobjekt.
-        'questiontext_bilder',
+        'questiontext_images',
     ];
 
     /**
@@ -81,46 +81,46 @@ final class update_mc_question extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'questionid' => new external_value(PARAM_INT, 'questionid einer beliebigen Version der zu aendernden Frage'),
-            'felder_json' => new external_value(
+            'questionid' => new external_value(PARAM_INT, 'questionid of any version of the question to change'),
+            'fields_json' => new external_value(
                 PARAM_RAW,
-                'JSON-Objekt Feldname => neuer Wert - nur die zu aendernden Felder (Patch, kein Vollstand). '
-                    . 'Erlaubt: name, questiontext, selectionmode, answers, defaultmark, generalfeedback, '
-                    . 'questiontext_bilder. Nicht genannte Felder bleiben unveraendert. Ein Bild aus dem '
-                    . 'Materialordner wird eingebettet, indem questiontext (bzw. das feedback einer Antwort in '
-                    . 'answers) ein "<img src=\"@@PLUGINFILE@@/<dateiname>\" alt=\"...\">" enthaelt UND der '
-                    . 'Dateiname zusaetzlich in questiontext_bilder (bzw. im answers-Eintrag unter '
-                    . '"feedback_bilder") als Liste von Materialordner-Pfaden genannt wird.'
+                'JSON object field name => new value - only the fields to change (a patch, not a full record). '
+                    . 'Allowed: name, questiontext, selectionmode, answers, defaultmark, generalfeedback, '
+                    . 'questiontext_images. Fields not named stay unchanged. An image from the material folder is '
+                    . 'embedded by having questiontext (or an answer\'s feedback in answers) contain an '
+                    . '"<img src=\"@@PLUGINFILE@@/<filename>\" alt=\"...\">" AND the filename additionally named in '
+                    . 'questiontext_images (or, in the answers entry, under "feedback_images") as a list of '
+                    . 'material folder paths.'
             ),
-            'bestaetigt' => new external_value(
+            'confirmed' => new external_value(
                 PARAM_BOOL,
-                'true bestaetigt ausdruecklich einen zuvor gemeldeten Verdachtsfall des XML-Kerns. Beim ersten '
-                    . 'Aufruf weglassen oder false.',
+                'true explicitly confirms a previously reported suspect case from the XML core. Omit or false on '
+                    . 'the first call.',
                 VALUE_DEFAULT,
                 false
             ),
-            'ort' => material_files::ort_parameter(),
+            'location' => material_files::ort_parameter(),
         ]);
     }
 
     /**
      * @param int $questionid
-     * @param string $felderjson
-     * @param bool $bestaetigt
-     * @param string $ort
+     * @param string $fieldsjson
+     * @param bool $confirmed
+     * @param string $location
      * @return array
      */
     public static function execute(
         int $questionid,
-        string $felderjson,
-        bool $bestaetigt = false,
-        string $ort = material_files::ORT_BESTAND
+        string $fieldsjson,
+        bool $confirmed = false,
+        string $location = material_files::ORT_BESTAND
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionid' => $questionid,
-            'felder_json' => $felderjson,
-            'bestaetigt' => $bestaetigt,
-            'ort' => $ort,
+            'fields_json' => $fieldsjson,
+            'confirmed' => $confirmed,
+            'location' => $location,
         ]);
 
         [$question, $category, $context] = self::resolve_and_authorise($params['questionid']);
@@ -129,7 +129,7 @@ final class update_mc_question extends external_api {
 
         $categoryid = (int) $category->id;
         $entry = get_question_bank_entry((int) $question->id);
-        $write = self::persist_new_version($question, $category, $context, $categoryid, $entry, $params['bestaetigt']);
+        $write = self::persist_new_version($question, $category, $context, $categoryid, $entry, $params['confirmed']);
         $result = $write['result'];
 
         if ($result['status'] === 'verdachtsfall') {
@@ -162,8 +162,8 @@ final class update_mc_question extends external_api {
             'questionbankentryid' => 0,
             'version' => 0,
             'status' => 'verdachtsfall',
-            'idnumber_nachgetragen' => false,
-            'meldung' => $result['meldung'],
+            'idnumber_added' => false,
+            'message' => $result['message'],
             'idnumber' => $result['idnumber'],
             'categoryid' => $result['categoryid'],
             'candidates' => $result['candidates'],
@@ -209,15 +209,15 @@ final class update_mc_question extends external_api {
      * @return array{0: array, 1: ?int, 2: array<int, int>}
      */
     private static function apply_field_patch(\stdClass $question, \context $context, array $params): array {
-        $patch = self::decode_patch($params['felder_json']);
-        // Vor apply_patch() abgezweigt (Issue #435): questiontext_bilder ist
-        // kein Feld des nativen Fragenobjekts, und feedback_bilder je
+        $patch = self::decode_patch($params['fields_json']);
+        // Vor apply_patch() abgezweigt (Issue #435): questiontext_images ist
+        // kein Feld des nativen Fragenobjekts, und feedback_images je
         // Antwort wuerde build_answer_objects() ohnehin verwerfen (dort
         // werden nur answer/fraction/feedback gelesen). Beide Listen werden
         // erst NACH dem Schreiben angewandt (siehe unten), weil sie die
         // question-/answerid der NEUEN Version brauchen - die entsteht erst
         // im import_questions_xml-Aufruf weiter unten.
-        $questiontextimages = is_array($patch['questiontext_bilder'] ?? null) ? $patch['questiontext_bilder'] : [];
+        $questiontextimages = is_array($patch['questiontext_images'] ?? null) ? $patch['questiontext_images'] : [];
         $answerfeedbackimages = self::extract_answer_feedback_images($patch);
         // Alles-oder-nichts (gleiche Regel wie update_module_settings::validate_patch()):
         // Berechtigung, Endungs-Whitelist UND Materialdatei-Existenz werden
@@ -227,7 +227,7 @@ final class update_mc_question extends external_api {
         // materialfilenotfound bereits hier, wenn eine referenzierte Datei
         // fehlt.
         [$questiontextdraftitemid, $answerfeedbackdraftitemids] =
-            self::prepare_image_drafts($context, $questiontextimages, $answerfeedbackimages, $params['ort']);
+            self::prepare_image_drafts($context, $questiontextimages, $answerfeedbackimages, $params['location']);
         self::apply_patch($question, $patch);
 
         return [$patch, $questiontextdraftitemid, $answerfeedbackdraftitemids];
@@ -340,8 +340,8 @@ final class update_mc_question extends external_api {
                 'questionbankentryid' => (int) $result['questionbankentryid'],
                 'version' => (int) $result['version'],
                 'status' => 'aktualisiert',
-                'idnumber_nachgetragen' => $write['backfilled'],
-                'meldung' => $message,
+                'idnumber_added' => $write['backfilled'],
+                'message' => $message,
             ],
             question_suspect_gate::empty_result()
         );
@@ -353,11 +353,11 @@ final class update_mc_question extends external_api {
      * unbekannte Felder brechen den Aufruf ab (Trust-Boundary), statt still
      * ignoriert zu werden.
      *
-     * @param string $felderjson
+     * @param string $fieldsjson
      * @return array<string, mixed>
      */
-    private static function decode_patch(string $felderjson): array {
-        $patch = json_decode($felderjson, true);
+    private static function decode_patch(string $fieldsjson): array {
+        $patch = json_decode($fieldsjson, true);
         if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE || ($patch !== [] && array_is_list($patch))) {
             throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
         }
@@ -365,7 +365,7 @@ final class update_mc_question extends external_api {
         foreach (array_keys($patch) as $fieldname) {
             if (!in_array($fieldname, self::PATCHABLE_FIELDS, true)) {
                 throw new \invalid_parameter_exception(
-                    'Unbekanntes Feld "' . $fieldname . '" in felder_json. Erlaubt: '
+                    'Unbekanntes Feld "' . $fieldname . '" in fields_json. Erlaubt: '
                         . implode(', ', self::PATCHABLE_FIELDS) . '.');
             }
         }
@@ -459,7 +459,7 @@ final class update_mc_question extends external_api {
     }
 
     /**
-     * Liest "feedback_bilder" je Antwortoption aus dem rohen (noch nicht in
+     * Liest "feedback_images" je Antwortoption aus dem rohen (noch nicht in
      * native Objekte gewandelten) "answers"-Patch (Issue #435) - Index im
      * Rueckgabe-Array entspricht der Position in der answers-Liste, die
      * {@see self::build_answer_objects()} in derselben Reihenfolge auf das
@@ -473,11 +473,11 @@ final class update_mc_question extends external_api {
     private static function extract_answer_feedback_images(array $patch): array {
         $result = [];
         foreach (array_values($patch['answers'] ?? []) as $i => $answer) {
-            if (is_array($answer) && !empty($answer['feedback_bilder'])) {
-                if (!is_array($answer['feedback_bilder'])) {
-                    throw new \invalid_parameter_exception('"feedback_bilder" muss eine Liste von Materialordner-Pfaden sein.');
+            if (is_array($answer) && !empty($answer['feedback_images'])) {
+                if (!is_array($answer['feedback_images'])) {
+                    throw new \invalid_parameter_exception('"feedback_images" muss eine Liste von Materialordner-Pfaden sein.');
                 }
-                $result[$i] = $answer['feedback_bilder'];
+                $result[$i] = $answer['feedback_images'];
             }
         }
         return $result;
@@ -500,7 +500,7 @@ final class update_mc_question extends external_api {
      * @param \context $context Kategoriekontext (Ziel der Dateiablage).
      * @param string[] $questiontextimages Materialordner-Pfade fuer questiontext.
      * @param array<int, string[]> $answerfeedbackimages Antwortindex => Materialordner-Pfade.
-     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     * @param string $location {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
      *        Quelle der Pfade (Issue #496).
      * @return array{0: int|null, 1: array<int, int>} [Entwurfs-Itemid fuer questiontext (null ohne Anfrage),
      *         Antwortindex => Entwurfs-Itemid fuer answerfeedback]
@@ -512,7 +512,7 @@ final class update_mc_question extends external_api {
         \context $context,
         array $questiontextimages,
         array $answerfeedbackimages,
-        string $ort
+        string $location
     ): array {
         if (empty($questiontextimages) && empty($answerfeedbackimages)) {
             return [null, []];
@@ -526,12 +526,12 @@ final class update_mc_question extends external_api {
 
         $questiontextdraftitemid = empty($questiontextimages)
             ? null
-            : material_files::resolve_into_draft($context->id, 'question', 'questiontext', 0, $questiontextimages, $ort);
+            : material_files::resolve_into_draft($context->id, 'question', 'questiontext', 0, $questiontextimages, $location);
 
         $answerfeedbackdraftitemids = [];
         foreach ($answerfeedbackimages as $index => $images) {
             $answerfeedbackdraftitemids[$index] =
-                material_files::resolve_into_draft($context->id, 'question', 'answerfeedback', 0, $images, $ort);
+                material_files::resolve_into_draft($context->id, 'question', 'answerfeedback', 0, $images, $location);
         }
 
         return [$questiontextdraftitemid, $answerfeedbackdraftitemids];
@@ -596,7 +596,7 @@ final class update_mc_question extends external_api {
             foreach ($answerfeedbackdraftitemids as $index => $draftitemid) {
                 if (!isset($answers[$index])) {
                     throw new \invalid_parameter_exception(
-                        'feedback_bilder verweist auf Antwortoption ' . $index . ', aber "answers" hat nur '
+                        'feedback_images verweist auf Antwortoption ' . $index . ', aber "answers" hat nur '
                             . count($answers) . ' Eintraege.');
                 }
                 $answer = $answers[$index];
@@ -620,19 +620,19 @@ final class update_mc_question extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure(array_merge(
             [
-                'name' => new external_value(PARAM_TEXT, 'Name der Frage'),
-                'questionid' => new external_value(PARAM_INT, 'ID der neuen question-Zeile (0 bei "verdachtsfall")'),
+                'name' => new external_value(PARAM_TEXT, 'Name of the question'),
+                'questionid' => new external_value(PARAM_INT, 'ID of the new question row (0 for "verdachtsfall")'),
                 'questionbankentryid' => new external_value(
                     PARAM_INT,
-                    'ID des question_bank_entries (Frage-Identitaet, unveraendert; 0 bei "verdachtsfall")'
+                    'ID of the question_bank_entries row (question identity, unchanged; 0 for "verdachtsfall")'
                 ),
-                'version' => new external_value(PARAM_INT, 'Neue Versionsnummer (0 bei "verdachtsfall")'),
-                'status' => new external_value(PARAM_ALPHA, '"aktualisiert" | "verdachtsfall"'),
-                'idnumber_nachgetragen' => new external_value(
+                'version' => new external_value(PARAM_INT, 'New version number (0 for "verdachtsfall")'),
+                'status' => new external_value(PARAM_ALPHA, '"aktualisiert" (updated) | "verdachtsfall" (suspect case)'),
+                'idnumber_added' => new external_value(
                     PARAM_BOOL,
-                    'true, wenn diese Frage zuvor keine idnumber hatte und beim Schreiben genau eine bekam'
+                    'true if this question previously had no idnumber and was assigned exactly one on write'
                 ),
-                'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Meldung mit Bank-Eintrag und Version'),
+                'message' => new external_value(PARAM_RAW, 'Teacher-facing German message with bank entry and version'),
             ],
             question_suspect_gate::response_fields()
         ));

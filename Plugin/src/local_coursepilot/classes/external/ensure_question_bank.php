@@ -53,8 +53,8 @@ final class ensure_question_bank extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'courseid' => new external_value(PARAM_INT, 'Kurs-ID'),
-            'name' => new external_value(PARAM_TEXT, 'Name der Fragensammlung, z.B. "Biologie 9a - Immunsystem"'),
+            'courseid' => new external_value(PARAM_INT, 'Course ID'),
+            'name' => new external_value(PARAM_TEXT, 'Name of the question bank, e.g. "Biologie 9a - Immunsystem"'),
         ]);
     }
 
@@ -107,8 +107,8 @@ final class ensure_question_bank extends external_api {
                 'name' => $params['name'],
                 'contextid' => (int) $bankcontext->id,
                 'topcategoryid' => (int) $topcategory->id,
-                'angelegt' => false,
-                'meldung' => 'Fragensammlung "' . $params['name'] . '" existierte bereits, wird wiederverwendet.',
+                'created' => false,
+                'message' => 'Fragensammlung "' . $params['name'] . '" existierte bereits, wird wiederverwendet.',
             ];
         }
 
@@ -127,8 +127,8 @@ final class ensure_question_bank extends external_api {
             'name' => $params['name'],
             'contextid' => (int) $bankcontext->id,
             'topcategoryid' => (int) $topcategory->id,
-            'angelegt' => true,
-            'meldung' => 'Fragensammlung "' . $params['name'] . '" angelegt.',
+            'created' => true,
+            'message' => 'Fragensammlung "' . $params['name'] . '" angelegt.',
         ];
     }
 
@@ -137,12 +137,12 @@ final class ensure_question_bank extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'questionbankid' => new external_value(PARAM_INT, 'Course module ID der (angelegten oder wiederverwendeten) Fragensammlung'),
-            'name' => new external_value(PARAM_TEXT, 'Name der Fragensammlung'),
-            'contextid' => new external_value(PARAM_INT, 'Kontext-ID der Fragensammlung'),
-            'topcategoryid' => new external_value(PARAM_INT, 'ID der obersten Kategorie der Fragensammlung'),
-            'angelegt' => new external_value(PARAM_BOOL, 'true, wenn neu angelegt; false, wenn eine gleichnamige wiederverwendet wurde'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Meldung'),
+            'questionbankid' => new external_value(PARAM_INT, 'Course module ID of the (created or reused) question bank'),
+            'name' => new external_value(PARAM_TEXT, 'Name of the question bank'),
+            'contextid' => new external_value(PARAM_INT, 'Context ID of the question bank'),
+            'topcategoryid' => new external_value(PARAM_INT, 'ID of the question bank\'s top category'),
+            'created' => new external_value(PARAM_BOOL, 'true if newly created; false if a same-named one was reused'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
         ]);
     }
 }

@@ -52,9 +52,9 @@ final class update_question_category extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'categoryid' => new external_value(PARAM_INT, 'ID der zu aendernden Kategorie'),
-            'name' => new external_value(PARAM_TEXT, 'Neuer Kategoriename (leer = Name behalten)', VALUE_DEFAULT, ''),
-            'parent' => new external_value(PARAM_INT, 'ID der neuen Elternkategorie (0 = Elternteil behalten)', VALUE_DEFAULT, 0),
+            'categoryid' => new external_value(PARAM_INT, 'ID of the category to change'),
+            'name' => new external_value(PARAM_TEXT, 'New category name (empty = keep the current name)', VALUE_DEFAULT, ''),
+            'parent' => new external_value(PARAM_INT, 'ID of the new parent category (0 = keep the current parent)', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -159,7 +159,7 @@ final class update_question_category extends external_api {
 
         $transaction->allow_commit();
 
-        $meldung = self::build_message($renamed, $moved, $targetname);
+        $message = self::build_message($renamed, $moved, $targetname);
 
         return [
             'id' => (int) $category->id,
@@ -168,7 +168,7 @@ final class update_question_category extends external_api {
             'contextid' => (int) $targetcontext->id,
             'moved' => $moved,
             'renamed' => $renamed,
-            'meldung' => $meldung,
+            'message' => $message,
         ];
     }
 
@@ -219,13 +219,13 @@ final class update_question_category extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'id' => new external_value(PARAM_INT, 'ID der geaenderten Kategorie'),
-            'name' => new external_value(PARAM_TEXT, 'Kategoriename nach der Aenderung'),
-            'parent' => new external_value(PARAM_INT, 'ID der Elternkategorie nach der Aenderung'),
-            'contextid' => new external_value(PARAM_INT, 'Kontext-ID der Kategorie nach der Aenderung'),
-            'moved' => new external_value(PARAM_BOOL, 'true, wenn sich Elternkategorie und/oder Kontext geaendert haben'),
-            'renamed' => new external_value(PARAM_BOOL, 'true, wenn sich der Name geaendert hat'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Meldung'),
+            'id' => new external_value(PARAM_INT, 'ID of the changed category'),
+            'name' => new external_value(PARAM_TEXT, 'Category name after the change'),
+            'parent' => new external_value(PARAM_INT, 'ID of the parent category after the change'),
+            'contextid' => new external_value(PARAM_INT, 'Context ID of the category after the change'),
+            'moved' => new external_value(PARAM_BOOL, 'true if the parent category and/or context changed'),
+            'renamed' => new external_value(PARAM_BOOL, 'true if the name changed'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
         ]);
     }
 }

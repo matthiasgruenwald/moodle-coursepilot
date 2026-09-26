@@ -50,9 +50,9 @@ class get_question extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'categoryid' => new external_value(PARAM_INT,  'ID der Fragenbank-Kategorie'),
-            'name'       => new external_value(PARAM_TEXT, 'Name der Frage (alternativ zu questionid)', VALUE_DEFAULT, ''),
-            'questionid' => new external_value(PARAM_INT,  'questionid einer beliebigen Version der Frage (alternativ zu name)', VALUE_DEFAULT, 0),
+            'categoryid' => new external_value(PARAM_INT,  'ID of the question bank category'),
+            'name'       => new external_value(PARAM_TEXT, 'Name of the question (alternative to questionid)', VALUE_DEFAULT, ''),
+            'questionid' => new external_value(PARAM_INT,  'questionid of any version of the question (alternative to name)', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -190,27 +190,27 @@ class get_question extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'questionid'          => new external_value(PARAM_INT,   'ID der latest-version question-Zeile'),
-            'questionbankentryid' => new external_value(PARAM_INT,   'ID des question_bank_entries (Frage-Identitaet)'),
-            'categoryid'          => new external_value(PARAM_INT,   'Aktuelle Fragenbank-Kategorie der Frage'),
-            'version'             => new external_value(PARAM_INT,   'Aktuelle Versionsnummer'),
-            'name'                => new external_value(PARAM_TEXT,  'Name der Frage'),
-            'questiontext'        => new external_value(PARAM_RAW,   'Fragetext (HTML)'),
-            'generalfeedback'     => new external_value(PARAM_RAW,   'Allgemeines Feedback (HTML)'),
-            'qtype'               => new external_value(PARAM_TEXT,  'Fragetyp (i.d.R. multichoice)'),
-            'defaultmark'         => new external_value(PARAM_FLOAT, 'Standard-Punktzahl der Frage'),
+            'questionid'          => new external_value(PARAM_INT,   'ID of the latest-version question row'),
+            'questionbankentryid' => new external_value(PARAM_INT,   'ID of the question_bank_entries row (question identity)'),
+            'categoryid'          => new external_value(PARAM_INT,   'Current question bank category of the question'),
+            'version'             => new external_value(PARAM_INT,   'Current version number'),
+            'name'                => new external_value(PARAM_TEXT,  'Name of the question'),
+            'questiontext'        => new external_value(PARAM_RAW,   'Question text (HTML)'),
+            'generalfeedback'     => new external_value(PARAM_RAW,   'General feedback (HTML)'),
+            'qtype'               => new external_value(PARAM_TEXT,  'Question type (usually multichoice)'),
+            'defaultmark'         => new external_value(PARAM_FLOAT, 'Default mark of the question'),
             'answers'             => new external_multiple_structure(
                 new external_single_structure([
                     'id'       => new external_value(PARAM_INT,   'question_answers.id'),
-                    'answer'   => new external_value(PARAM_RAW,   'Antwort-Text (HTML)'),
-                    'fraction' => new external_value(PARAM_FLOAT, 'Gewicht der Antwort'),
-                    'feedback' => new external_value(PARAM_RAW,   'Antwortspezifisches Feedback (HTML)'),
-                    'correct'  => new external_value(PARAM_BOOL,  'Antwort hat positives Gewicht'),
+                    'answer'   => new external_value(PARAM_RAW,   'Answer text (HTML)'),
+                    'fraction' => new external_value(PARAM_FLOAT, 'Weight of the answer'),
+                    'feedback' => new external_value(PARAM_RAW,   'Answer-specific feedback (HTML)'),
+                    'correct'  => new external_value(PARAM_BOOL,  'Answer has a positive weight'),
                 ]),
-                'Antwort-Optionen in Anlege-Reihenfolge'
+                'Answer options in creation order'
             ),
-            'correctindex'        => new external_value(PARAM_INT,   '0-basierter Index der richtigen Antwort in answers[] (-1 wenn keine erkannt)'),
-            'selectionmode'       => new external_value(PARAM_ALPHA, 'single oder multiple'),
+            'correctindex'        => new external_value(PARAM_INT,   '0-based index of the correct answer in answers[] (-1 if none detected)'),
+            'selectionmode'       => new external_value(PARAM_ALPHA, 'single or multiple'),
         ]);
     }
 }

@@ -158,7 +158,7 @@ final class move_question_test extends \advanced_testcase {
 
         $this->assertSame('verschoben', $result['status']);
         $this->assertCount(1, $result['versionids']);
-        $this->assertTrue($result['idnumber_disambiguiert']);
+        $this->assertTrue($result['idnumber_disambiguated']);
 
         global $DB;
         $version = $DB->get_record('question_versions', ['questionid' => $movingquestion->id], '*', MUST_EXIST);

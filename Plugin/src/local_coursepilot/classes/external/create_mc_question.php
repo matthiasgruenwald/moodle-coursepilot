@@ -54,22 +54,22 @@ final class create_mc_question extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'categoryid' => new external_value(PARAM_INT, 'ID der Ziel-Fragenbank-Kategorie'),
-            'name' => new external_value(PARAM_TEXT, 'Eindeutiger Name der Frage innerhalb der Kategorie'),
-            'questiontext' => new external_value(PARAM_RAW, 'Fragetext (HTML)'),
-            'selectionmode' => new external_value(PARAM_ALPHA, 'single oder multiple', VALUE_DEFAULT, 'single'),
+            'categoryid' => new external_value(PARAM_INT, 'ID of the target question bank category'),
+            'name' => new external_value(PARAM_TEXT, 'Unique name of the question within the category'),
+            'questiontext' => new external_value(PARAM_RAW, 'Question text (HTML)'),
+            'selectionmode' => new external_value(PARAM_ALPHA, 'single or multiple', VALUE_DEFAULT, 'single'),
             'answers' => new external_multiple_structure(new external_single_structure([
-                'answer' => new external_value(PARAM_RAW, 'Antworttext (HTML)'),
-                'fraction' => new external_value(PARAM_FLOAT, 'Gewicht zwischen -1 und 1'),
-                'feedback' => new external_value(PARAM_RAW, 'Antwortspezifisches Feedback (HTML)', VALUE_DEFAULT, ''),
-            ]), 'Antwortoptionen, mindestens 2'),
-            'defaultmark' => new external_value(PARAM_FLOAT, 'Standard-Punktzahl der Frage', VALUE_DEFAULT, 1.0),
-            'generalfeedback' => new external_value(PARAM_RAW, 'Allgemeines Feedback (HTML, optional)', VALUE_DEFAULT, ''),
-            'bestaetigt' => new external_value(
+                'answer' => new external_value(PARAM_RAW, 'Answer text (HTML)'),
+                'fraction' => new external_value(PARAM_FLOAT, 'Weight between -1 and 1'),
+                'feedback' => new external_value(PARAM_RAW, 'Answer-specific feedback (HTML)', VALUE_DEFAULT, ''),
+            ]), 'Answer options, at least 2'),
+            'defaultmark' => new external_value(PARAM_FLOAT, 'Default mark of the question', VALUE_DEFAULT, 1.0),
+            'generalfeedback' => new external_value(PARAM_RAW, 'General feedback (HTML, optional)', VALUE_DEFAULT, ''),
+            'confirmed' => new external_value(
                 PARAM_BOOL,
-                'true bestaetigt ausdruecklich einen zuvor gemeldeten Verdachtsfall (gleichnamiger Eintrag in der '
-                    . 'Zielkategorie) und legt die Frage trotzdem als neuen Eintrag an. Beim ersten Aufruf weglassen '
-                    . 'oder false.',
+                'true explicitly confirms a previously reported suspect case (same-named entry in the '
+                    . 'target category) and creates the question anyway as a new entry. Omit or false on the '
+                    . 'first call.',
                 VALUE_DEFAULT,
                 false
             ),
@@ -84,7 +84,7 @@ final class create_mc_question extends external_api {
      * @param array $answers
      * @param float $defaultmark
      * @param string $generalfeedback
-     * @param bool $bestaetigt
+     * @param bool $confirmed
      * @return array
      */
     public static function execute(
@@ -95,7 +95,7 @@ final class create_mc_question extends external_api {
         array $answers,
         float $defaultmark = 1.0,
         string $generalfeedback = '',
-        bool $bestaetigt = false
+        bool $confirmed = false
     ): array {
         global $DB;
 
@@ -107,7 +107,7 @@ final class create_mc_question extends external_api {
             'answers' => $answers,
             'defaultmark' => $defaultmark,
             'generalfeedback' => $generalfeedback,
-            'bestaetigt' => $bestaetigt,
+            'confirmed' => $confirmed,
         ]);
 
         $category = $DB->get_record('question_categories', ['id' => $params['categoryid']], '*', MUST_EXIST);
@@ -123,7 +123,7 @@ final class create_mc_question extends external_api {
         // zaehlt bereits ein gleichnamiger Eintrag in der Zielkategorie als
         // Verdachtsfall (anders als bei import_questions_xml).
         $candidates = question_suspect_gate::find_name_candidates((int) $params['categoryid'], $params['name']);
-        if (!empty($candidates) && !$params['bestaetigt']) {
+        if (!empty($candidates) && !$params['confirmed']) {
             return array_merge(
                 [
                     'name' => $params['name'],
@@ -131,9 +131,9 @@ final class create_mc_question extends external_api {
                     'questionbankentryid' => 0,
                     'version' => 0,
                     'status' => 'verdachtsfall',
-                    'meldung' => 'Verdachtsfall: In der Zielkategorie gibt es bereits einen Eintrag mit dem Namen "'
+                    'message' => 'Verdachtsfall: In der Zielkategorie gibt es bereits einen Eintrag mit dem Namen "'
                         . $params['name'] . '". Nichts wurde angelegt. Zum Anlegen als neuer Eintrag trotzdem '
-                        . 'erneut mit bestaetigt=true aufrufen.',
+                        . 'erneut mit confirmed=true aufrufen.',
                 ],
                 [
                     'idnumber' => '',
@@ -161,7 +161,7 @@ final class create_mc_question extends external_api {
                 'questionbankentryid' => (int) $question['questionbankentryid'],
                 'version' => (int) $question['version'],
                 'status' => $question['status'],
-                'meldung' => 'MC-Frage "' . $params['name'] . '" angelegt (Bank-Eintrag '
+                'message' => 'MC-Frage "' . $params['name'] . '" angelegt (Bank-Eintrag '
                     . $question['questionbankentryid'] . ', Version ' . $question['version'] . ').',
             ],
             question_suspect_gate::empty_result()
@@ -285,15 +285,15 @@ XML;
     public static function execute_returns(): external_single_structure {
         return new external_single_structure(array_merge(
             [
-                'name' => new external_value(PARAM_TEXT, 'Name der Frage'),
-                'questionid' => new external_value(PARAM_INT, 'ID der neu angelegten question-Zeile (0 bei "verdachtsfall")'),
+                'name' => new external_value(PARAM_TEXT, 'Name of the question'),
+                'questionid' => new external_value(PARAM_INT, 'ID of the newly created question row (0 for "verdachtsfall")'),
                 'questionbankentryid' => new external_value(
                     PARAM_INT,
-                    'ID des question_bank_entries (Frage-Identitaet, 0 bei "verdachtsfall")'
+                    'ID of the question_bank_entries row (question identity, 0 for "verdachtsfall")'
                 ),
-                'version' => new external_value(PARAM_INT, 'Versionsnummer (initial 1, 0 bei "verdachtsfall")'),
-                'status' => new external_value(PARAM_ALPHA, '"erstimport" | "verdachtsfall"'),
-                'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Meldung mit Bank-Eintrag und Version'),
+                'version' => new external_value(PARAM_INT, 'Version number (initially 1, 0 for "verdachtsfall")'),
+                'status' => new external_value(PARAM_ALPHA, '"erstimport" (first import) | "verdachtsfall" (suspect case)'),
+                'message' => new external_value(PARAM_RAW, 'Teacher-facing German message with bank entry and version'),
             ],
             question_suspect_gate::response_fields()
         ));

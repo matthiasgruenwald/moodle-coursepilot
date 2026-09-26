@@ -62,10 +62,10 @@ final class add_questions_to_quiz extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID des Tests'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the quiz'),
             'questionids' => new external_multiple_structure(
-                new external_value(PARAM_INT, 'questionid einer beliebigen Version der anzuhaengenden Frage'),
-                'Fragen in der Reihenfolge, in der sie angehaengt werden sollen, mindestens eine'
+                new external_value(PARAM_INT, 'questionid of any version of the question to append'),
+                'Questions in the order they should be appended, at least one'
             ),
         ]);
     }
@@ -132,7 +132,7 @@ final class add_questions_to_quiz extends external_api {
 
         return [
             'cmid' => (int) $cm->id,
-            'meldung' => self::build_message($appended),
+            'message' => self::build_message($appended),
             'appended' => $appended,
             'slots' => self::slot_state((int) $quiz->id),
         ];
@@ -210,21 +210,21 @@ final class add_questions_to_quiz extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID des Tests'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Meldung: angehaengt vs. uebersprungen'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the quiz'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German message: appended vs. skipped'),
             'appended' => new external_multiple_structure(new external_single_structure([
-                'questionid' => new external_value(PARAM_INT, 'Angefragte questionid'),
-                'questionbankentryid' => new external_value(PARAM_INT, 'Frage-Identitaet (Bank-Eintrag)'),
-                'name' => new external_value(PARAM_TEXT, 'Fragename'),
-                'added' => new external_value(PARAM_BOOL, 'true = neu angehaengt, false = bereits im Quiz, uebersprungen'),
-            ]), 'Ergebnis je angefragter Frage, in der angegebenen Reihenfolge'),
+                'questionid' => new external_value(PARAM_INT, 'Requested questionid'),
+                'questionbankentryid' => new external_value(PARAM_INT, 'Question identity (bank entry)'),
+                'name' => new external_value(PARAM_TEXT, 'Question name'),
+                'added' => new external_value(PARAM_BOOL, 'true = newly appended, false = already in the quiz, skipped'),
+            ]), 'Result per requested question, in the given order'),
             'slots' => new external_multiple_structure(new external_single_structure([
-                'slot' => new external_value(PARAM_INT, 'Slotnummer'),
-                'questionbankentryid' => new external_value(PARAM_INT, 'Frage-Identitaet (Bank-Eintrag)'),
-                'questionid' => new external_value(PARAM_INT, 'ID der aktuellsten Fragen-Version'),
-                'version' => new external_value(PARAM_INT, 'Versionsnummer der aktuellsten Fragen-Version'),
-                'name' => new external_value(PARAM_TEXT, 'Fragename'),
-            ]), 'Slot-Stand des Tests nach dem Anhaengen, aufsteigend nach Slot'),
+                'slot' => new external_value(PARAM_INT, 'Slot number'),
+                'questionbankentryid' => new external_value(PARAM_INT, 'Question identity (bank entry)'),
+                'questionid' => new external_value(PARAM_INT, 'ID of the latest question version'),
+                'version' => new external_value(PARAM_INT, 'Version number of the latest question version'),
+                'name' => new external_value(PARAM_TEXT, 'Question name'),
+            ]), 'Slot state of the quiz after appending, ascending by slot'),
         ]);
     }
 }

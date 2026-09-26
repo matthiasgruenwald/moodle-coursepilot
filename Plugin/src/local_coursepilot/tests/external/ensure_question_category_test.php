@@ -40,11 +40,11 @@ final class ensure_question_category_test extends \advanced_testcase {
         $result = ensure_question_category::execute('7.2 Stoffe und ihre Eigenschaften', $topcategoryid);
         $result = external_api::clean_returnvalue(ensure_question_category::execute_returns(), $result);
 
-        $this->assertTrue($result['angelegt']);
+        $this->assertTrue($result['created']);
         $this->assertGreaterThan(0, $result['id']);
         $this->assertSame($topcategoryid, $result['parent']);
         $this->assertSame('7.2 Stoffe und ihre Eigenschaften', $result['name']);
-        $this->assertStringContainsString('angelegt', $result['meldung']);
+        $this->assertStringContainsString('angelegt', $result['message']);
     }
 
     /**
@@ -62,9 +62,9 @@ final class ensure_question_category_test extends \advanced_testcase {
         $second = ensure_question_category::execute('7.2 Stoffe und ihre Eigenschaften', $topcategoryid);
         $second = external_api::clean_returnvalue(ensure_question_category::execute_returns(), $second);
 
-        $this->assertFalse($second['angelegt']);
+        $this->assertFalse($second['created']);
         $this->assertSame($first['id'], $second['id']);
-        $this->assertStringContainsString('wiederverwendet', $second['meldung']);
+        $this->assertStringContainsString('wiederverwendet', $second['message']);
 
         global $DB;
         $count = $DB->count_records('question_categories', [
@@ -92,7 +92,7 @@ final class ensure_question_category_test extends \advanced_testcase {
         $underother = ensure_question_category::execute('7.2 Stoffe und ihre Eigenschaften', $othersubcategory['id']);
         $underother = external_api::clean_returnvalue(ensure_question_category::execute_returns(), $underother);
 
-        $this->assertTrue($underother['angelegt']);
+        $this->assertTrue($underother['created']);
         $this->assertNotSame($undertop['id'], $underother['id']);
 
         global $DB;

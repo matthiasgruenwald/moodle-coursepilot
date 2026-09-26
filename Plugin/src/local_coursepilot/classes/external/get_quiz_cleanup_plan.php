@@ -52,10 +52,10 @@ class get_quiz_cleanup_plan extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID des Quiz'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the quiz'),
             'keep_questionbankentryids' => new external_multiple_structure(
-                new external_value(PARAM_INT, 'Frage-Identitaet, die in der neuen Quizversion bleibt'),
-                'Question-bank-entry-IDs der neuen Quizversion'
+                new external_value(PARAM_INT, 'Question identity that remains in the new quiz version'),
+                'Question-bank-entry-IDs of the new quiz version'
             ),
         ]);
     }
@@ -126,18 +126,18 @@ class get_quiz_cleanup_plan extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'quizname' => new external_value(PARAM_TEXT, 'Quizname'),
-            'editurl' => new external_value(PARAM_URL, 'Direkter Link zur Quiz-Bearbeitung in Moodle'),
+            'quizname' => new external_value(PARAM_TEXT, 'Quiz name'),
+            'editurl' => new external_value(PARAM_URL, 'Direct link to the quiz edit page in Moodle'),
             'removals' => new external_multiple_structure(new external_single_structure([
-                'slot' => new external_value(PARAM_INT, 'Quiz-Slot, der manuell aus dem Quiz entfernt werden kann'),
-                'questionbankentryid' => new external_value(PARAM_INT, 'Wiederverwendbare Frage-Identitaet'),
-                'questionid' => new external_value(PARAM_INT, 'Aktuelle Fragen-Version'),
-                'version' => new external_value(PARAM_INT, 'Versionsnummer der Frage'),
-                'questionname' => new external_value(PARAM_TEXT, 'Fragename'),
-                'categoryid' => new external_value(PARAM_INT, 'Fragenkategorie-ID'),
-                'categoryname' => new external_value(PARAM_TEXT, 'Fragenkategorie'),
-                'reason' => new external_value(PARAM_TEXT, 'Manuelle, nicht-destruktive Handlungsanweisung'),
-            ]), 'Slots, die Coursepilot nicht löscht'),
+                'slot' => new external_value(PARAM_INT, 'Quiz slot that can be manually removed from the quiz'),
+                'questionbankentryid' => new external_value(PARAM_INT, 'Reusable question identity'),
+                'questionid' => new external_value(PARAM_INT, 'Current question version'),
+                'version' => new external_value(PARAM_INT, 'Version number of the question'),
+                'questionname' => new external_value(PARAM_TEXT, 'Question name'),
+                'categoryid' => new external_value(PARAM_INT, 'Question category ID'),
+                'categoryname' => new external_value(PARAM_TEXT, 'Question category'),
+                'reason' => new external_value(PARAM_TEXT, 'Manual, non-destructive instruction'),
+            ]), 'Slots that Coursepilot does not delete'),
         ]);
     }
 }

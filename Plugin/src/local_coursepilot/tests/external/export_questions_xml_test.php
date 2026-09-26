@@ -55,11 +55,11 @@ final class export_questions_xml_test extends \advanced_testcase {
         $exported = export_questions_xml::execute([(int) $version->questionid], 'export.xml');
         $exported = external_api::clean_returnvalue(export_questions_xml::execute_returns(), $exported);
 
-        $this->assertSame(1, $exported['anzahl']);
+        $this->assertSame(1, $exported['count']);
         $this->assertSame('', $exported['xml'], 'Standard-Modus: kein Bildbyte/XML in der Werkzeugantwort');
-        $this->assertSame('export.xml', $exported['pfad']);
-        $this->assertStringContainsString('Datei: export.xml', $exported['meldung']);
-        $this->assertStringNotContainsString('PLATZHALTER', $exported['meldung']);
+        $this->assertSame('export.xml', $exported['path']);
+        $this->assertStringContainsString('Datei: export.xml', $exported['message']);
+        $this->assertStringNotContainsString('PLATZHALTER', $exported['message']);
 
         $reimported = import_questions_xml::execute($categoryid, '', false, 'export.xml');
         $reimported = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $reimported);
@@ -106,7 +106,7 @@ final class export_questions_xml_test extends \advanced_testcase {
         $exported = external_api::clean_returnvalue(export_questions_xml::execute_returns(), $exported);
 
         $this->assertSame('', $exported['xml'], 'kein Bildbyte in der Werkzeugantwort');
-        $this->assertSame('bild-export.xml', $exported['pfad']);
+        $this->assertSame('bild-export.xml', $exported['path']);
 
         // Die geschriebene Materialdatei traegt echtes Base64, keinen
         // Platzhalter - direkter Beleg der Standardkonformitaet.
@@ -180,14 +180,14 @@ final class export_questions_xml_test extends \advanced_testcase {
         $exported = export_questions_xml::execute([(int) $question->id], '', true);
         $exported = external_api::clean_returnvalue(export_questions_xml::execute_returns(), $exported);
 
-        $this->assertSame('', $exported['pfad'], 'Platzhalter-Modus schreibt keine Materialdatei');
+        $this->assertSame('', $exported['path'], 'Platzhalter-Modus schreibt keine Materialdatei');
         $this->assertStringNotContainsString('<file', $exported['xml'], 'kein <file>-Block, nur der Platzhalter');
         $this->assertStringNotContainsString('fake-bildinhalt', $exported['xml'], 'kein Base64-Dateiinhalt');
         $this->assertStringContainsString('diagramm.png', $exported['xml'], 'Platzhalter nennt den Dateinamen');
-        $this->assertStringContainsString('Frage mit Bild', $exported['meldung']);
-        $this->assertStringContainsString('diagramm.png', $exported['meldung']);
-        $this->assertStringContainsString('PLATZHALTER-MODUS', $exported['meldung']);
-        $this->assertStringContainsString('NICHT zur Weitergabe geeignet', $exported['meldung']);
+        $this->assertStringContainsString('Frage mit Bild', $exported['message']);
+        $this->assertStringContainsString('diagramm.png', $exported['message']);
+        $this->assertStringContainsString('PLATZHALTER-MODUS', $exported['message']);
+        $this->assertStringContainsString('NICHT zur Weitergabe geeignet', $exported['message']);
     }
 
     /**

@@ -75,7 +75,7 @@ bleiben Fragen spaeter nach Unterthema/Abschnitt sortier- und wiederfindbar
 `coursepilot_ensure_question_category` ist idempotent: existiert unter demselben
 `parent` bereits eine Kategorie mit identischem Namen, wird KEINE Dublette
 angelegt - stattdessen liefert das Tool die bestehende `id` mit
-`angelegt=false` zurueck. `parent` ist Pflicht, z.B. die `topcategoryid` aus
+`created=false` zurueck. `parent` ist Pflicht, z.B. die `topcategoryid` aus
 `coursepilot_ensure_question_bank` fuer eine Kategorie direkt unter der
 Fragensammlung.
 

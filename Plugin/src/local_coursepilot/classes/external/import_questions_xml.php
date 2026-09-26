@@ -70,7 +70,7 @@ require_once($CFG->dirroot . '/question/format/xml/format.php');
  * ({@see \local_coursepilot\question_suspect_gate}) wird uebernommen, auch
  * wenn die Kollisionsrichtung hier umgekehrt ist (dort: idnumber bereits
  * vergeben; hier: idnumber ohne Treffer). Nichts wird geschrieben, bis ein
- * erneuter Aufruf mit "bestaetigt": true das bestaetigt. Fehlt die
+ * erneuter Aufruf mit "confirmed": true das bestaetigt. Fehlt die
  * idnumber ganz, ist das ein echter Erstimport - eine neue wird generiert,
  * kein Gate.
  *
@@ -104,61 +104,60 @@ final class import_questions_xml extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'categoryid' => new external_value(PARAM_INT, 'ID der Ziel-Fragenbank-Kategorie'),
+            'categoryid' => new external_value(PARAM_INT, 'ID of the target question bank category'),
             'xmlcontent' => new external_value(
                 PARAM_RAW,
-                'Moodle-XML-Fragenexport als Text (Textuer) - <file>-Bloecke tragen statt echtem Base64 ein '
-                    . 'material="<materialordner-pfad>"-Attribut, der Server loest es serverseitig auf. Genau eins '
-                    . 'von xmlcontent/xmlpath angeben.',
+                'Moodle question XML export as text (text door) - <file> blocks carry a '
+                    . 'material="<material-folder-path>" attribute instead of real base64, the server resolves it '
+                    . 'server-side. Give exactly one of xmlcontent/xmlpath.',
                 VALUE_DEFAULT,
                 ''
             ),
-            'bestaetigt' => new external_value(
+            'confirmed' => new external_value(
                 PARAM_BOOL,
-                'true bestaetigt ausdruecklich einen zuvor gemeldeten Verdachtsfall (mitgebrachte idnumber ohne '
-                    . 'Treffer in der Zielkategorie) und legt die Frage trotzdem als neuen Eintrag an. Beim ersten '
-                    . 'Aufruf weglassen oder false.',
+                'true explicitly confirms a previously reported suspect case (an idnumber that came with no match '
+                    . 'in the target category) and creates the question anyway as a new entry. Omit or false on '
+                    . 'the first call.',
                 VALUE_DEFAULT,
                 false
             ),
             'xmlpath' => new external_value(
                 PARAM_PATH,
-                'Verweis auf eine XML-Datei im Materialordner (Verweistuer, Massenimport eines fremden Exports mit '
-                    . 'echtem Base64 in <file>-Bloecken) - z.B. "export.xml". Genau eins von xmlcontent/xmlpath '
-                    . 'angeben.',
+                'Reference to an XML file in the material folder (reference door, bulk import of a foreign export '
+                    . 'with real base64 in <file> blocks) - e.g. "export.xml". Give exactly one of xmlcontent/xmlpath.',
                 VALUE_DEFAULT,
                 ''
             ),
-            'ort' => material_files::ort_parameter(),
+            'location' => material_files::ort_parameter(),
         ]);
     }
 
     /**
      * @param int $categoryid
      * @param string $xmlcontent
-     * @param bool $bestaetigt
+     * @param bool $confirmed
      * @param string $xmlpath
-     * @param string $ort
+     * @param string $location
      * @return array
      */
     public static function execute(
         int $categoryid,
         string $xmlcontent = '',
-        bool $bestaetigt = false,
+        bool $confirmed = false,
         string $xmlpath = '',
-        string $ort = material_files::ORT_BESTAND
+        string $location = material_files::ORT_BESTAND
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'categoryid' => $categoryid,
             'xmlcontent' => $xmlcontent,
-            'bestaetigt' => $bestaetigt,
+            'confirmed' => $confirmed,
             'xmlpath' => $xmlpath,
-            'ort' => $ort,
+            'location' => $location,
         ]);
 
         [$category, $context, $questions] = self::resolve_and_parse($params);
 
-        return ['questions' => self::import_all($category, $context, $questions, $params['bestaetigt'])];
+        return ['questions' => self::import_all($category, $context, $questions, $params['confirmed'])];
     }
 
     /**
@@ -178,7 +177,7 @@ final class import_questions_xml extends external_api {
         require_capability('local/coursepilot:use', $context);
         require_capability('moodle/question:add', $context);
 
-        $xml = self::resolve_door($params['xmlcontent'], $params['xmlpath'], $params['ort']);
+        $xml = self::resolve_door($params['xmlcontent'], $params['xmlpath'], $params['location']);
 
         // Groessenschranke (Spec 0017 "Bilder und Groessen", Ticket #416) -
         // VOR dem Parsen/Schreiben. Eingebettete Dateien sind seit Spec 0018
@@ -287,12 +286,12 @@ final class import_questions_xml extends external_api {
      *
      * @param string $xmlcontent Textuer-Angabe (leer, wenn nicht genutzt)
      * @param string $xmlpath Verweistuer-Angabe (leer, wenn nicht genutzt)
-     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     * @param string $location {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
      *        Quelle der Materialordner-Pfade in beiden Tueren (Issue #496).
      * @return string
      * @throws \invalid_parameter_exception weder oder beide Angaben gesetzt
      */
-    private static function resolve_door(string $xmlcontent, string $xmlpath, string $ort): string {
+    private static function resolve_door(string $xmlcontent, string $xmlpath, string $location): string {
         $xmlcontent = trim($xmlcontent);
         $xmlpath = trim($xmlpath);
 
@@ -314,12 +313,12 @@ final class import_questions_xml extends external_api {
             // (z.B. ein fremder Moodle-Export) und traegt echtes Base64 in
             // ihren <file>-Bloecken - rein serverseitig gelesen, kein Byte
             // passiert den KI-Kontext.
-            return self::read_material_binary($xmlpath, $ort);
+            return self::read_material_binary($xmlpath, $location);
         }
 
         // Textuer: die KI hat die XML selbst geschrieben. <file>-Bloecke
         // tragen statt echtem Base64 einen Materialordner-Verweis.
-        return self::resolve_material_file_references($xmlcontent, $ort);
+        return self::resolve_material_file_references($xmlcontent, $location);
     }
 
     /**
@@ -329,15 +328,15 @@ final class import_questions_xml extends external_api {
      * <file>-Bloecke ohne dieses Attribut bleiben unangetastet.
      *
      * @param string $xmlcontent
-     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     * @param string $location {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
      *        Quelle der referenzierten Pfade (Issue #496).
      * @return string
      * @throws \moodle_exception materialfilenotfound, wenn ein Verweis ins Leere zeigt
      */
-    private static function resolve_material_file_references(string $xmlcontent, string $ort): string {
+    private static function resolve_material_file_references(string $xmlcontent, string $location): string {
         $resolved = preg_replace_callback(
             '/<file\b([^>]*)>(.*?)<\/file>/s',
-            static function (array $matches) use ($ort): string {
+            static function (array $matches) use ($location): string {
                 $attributes = $matches[1];
                 if (!preg_match('/\bmaterial=(["\'])(.*?)\1/', $attributes, $materialmatch)) {
                     // Kein Materialordner-Verweis - unveraendert lassen
@@ -346,7 +345,7 @@ final class import_questions_xml extends external_api {
                 }
 
                 $materialpath = html_entity_decode($materialmatch[2], ENT_QUOTES | ENT_XML1);
-                $base64 = base64_encode(self::read_material_binary($materialpath, $ort));
+                $base64 = base64_encode(self::read_material_binary($materialpath, $location));
 
                 $cleanattributes = trim(preg_replace(
                     ['/\bmaterial=(["\']).*?\1/', '/\bencoding=(["\']).*?\1/'],
@@ -368,12 +367,12 @@ final class import_questions_xml extends external_api {
      * XML-Datei selbst; Textuer: je referenzierte Einzeldatei).
      *
      * @param string $path Materialordner-Pfad, z.B. "export.xml" oder "diagramme/skizze.png".
-     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} (Issue #496).
+     * @param string $location {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} (Issue #496).
      * @return string
      * @throws \moodle_exception materialfilenotfound / invalidmaterialort / materialpathiskontext
      */
-    private static function read_material_binary(string $path, string $ort = material_files::ORT_BESTAND): string {
-        $stored = material_files::read_content_for_ort($ort, $path);
+    private static function read_material_binary(string $path, string $location = material_files::ORT_BESTAND): string {
+        $stored = material_files::read_content_for_ort($location, $path);
         if ($stored === null) {
             throw new \moodle_exception(
                 'materialfilenotfound',
@@ -493,14 +492,14 @@ final class import_questions_xml extends external_api {
      * @param \stdClass $category
      * @param \context $context
      * @param \stdClass $question
-     * @param bool $bestaetigt
+     * @param bool $confirmed
      * @return array
      */
     private static function import_one(
         \stdClass $category,
         \context $context,
         \stdClass $question,
-        bool $bestaetigt
+        bool $confirmed
     ): array {
         global $DB;
 
@@ -528,7 +527,7 @@ final class import_questions_xml extends external_api {
             return self::result($saved, 'reimport', $name);
         }
 
-        if (!$bestaetigt) {
+        if (!$confirmed) {
             return self::unmatched_idnumber_response($category, $question, $name, $xmlidnumber);
         }
 
@@ -565,9 +564,9 @@ final class import_questions_xml extends external_api {
                 'questionbankentryid' => 0,
                 'version' => 0,
                 'status' => 'verdachtsfall',
-                'meldung' => 'Verdachtsfall: Die mitgebrachte idnumber "' . $xmlidnumber . '" hat keinen '
+                'message' => 'Verdachtsfall: Die mitgebrachte idnumber "' . $xmlidnumber . '" hat keinen '
                     . 'Treffer in der Zielkategorie. Nichts wurde importiert. Zum Anlegen als neuer Eintrag '
-                    . 'trotzdem erneut mit bestaetigt=true aufrufen.',
+                    . 'trotzdem erneut mit confirmed=true aufrufen.',
             ],
             [
                 'idnumber' => $xmlidnumber,
@@ -890,7 +889,7 @@ final class import_questions_xml extends external_api {
                 'questionbankentryid' => (int) $version->questionbankentryid,
                 'version' => (int) $version->version,
                 'status' => $status,
-                'meldung' => $message,
+                'message' => $message,
             ],
             question_suspect_gate::empty_result()
         );
@@ -941,8 +940,8 @@ final class import_questions_xml extends external_api {
                             PARAM_INT,
                             'Neue Versionsnummer (0 bei "verdachtsfall")'
                         ),
-                        'status' => new external_value(PARAM_ALPHA, '"erstimport" | "reimport" | "verdachtsfall"'),
-                        'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Meldung'),
+                        'status' => new external_value(PARAM_ALPHA, '"erstimport" (first import) | "reimport" (new version of the same entry) | "verdachtsfall" (suspect case)'),
+                        'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
                     ],
                     question_suspect_gate::response_fields()
                 )),
