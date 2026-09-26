@@ -482,16 +482,16 @@ $string['completionfieldviasetcompletion'] = 'The completion field "{$a->field}"
 $string['completionfieldnotformodname'] = 'The completion field "{$a->field}" only exists for the activity types {$a->modnames}, not for "{$a->modname}". Nothing was written.';
 $string['completioninvalidfieldvalue'] = 'Invalid value "{$a->value}" for completion field "{$a->field}". Nothing was written.';
 $string['completionnotenabled'] = 'Completion tracking is disabled for this course (or the whole site). Moodle would silently discard these fields either way. Enable completion tracking for the course first. Nothing was written.';
-$string['completiondatalossconfirmationrequired'] = 'This change would delete the existing completion data of {$a->betroffene_lernende} learner(s) for this activity - Moodle wipes and recalculates it as soon as this write unlocks completion. Nothing was written. Call set_completion again with "bestaetigt": true to proceed anyway.';
+$string['completiondatalossconfirmationrequired'] = 'This change would delete the existing completion data of {$a->betroffene_lernende} learner(s) for this activity - Moodle wipes and recalculates it as soon as this write unlocks completion. Nothing was written. Call set_completion again with "confirmed": true to proceed anyway.';
 $string['sectiontargetoutofrange'] = 'Target position "{$a->nach}" is out of the valid range (1 to {$a->max}).';
 
 // Write core: set_restriction (#393).
 $string['restrictionsnotenabled'] = 'Conditional availability is disabled on this Moodle instance (setting "enableavailability"). Moodle would discard restrictions either way. Nothing was written.';
-$string['invalidrestrictionjson'] = 'bedingungen_json is not a valid JSON array of condition objects. Nothing was written.';
-$string['restrictionunknowntype'] = 'Invalid value {$a->value} for "{$a->field}". Allowed: "abschluss", "datum", "gruppe". Nothing was written.';
+$string['invalidrestrictionjson'] = 'conditions_json is not a valid JSON array of condition objects. Nothing was written.';
+$string['restrictionunknowntype'] = 'Invalid value {$a->value} for "{$a->field}". Allowed: "completion", "date", "group". Nothing was written.';
 $string['restrictionactivitynotfound'] = 'Invalid value {$a->value} for "{$a->field}": no activity with this cmid in the same course. Nothing was written.';
-$string['restrictioninvalidstatus'] = 'Invalid value {$a->value} for "{$a->field}". Allowed: abgeschlossen, nicht_abgeschlossen, bestanden, nicht_bestanden. Nothing was written.';
-$string['restrictioninvaliddate'] = 'Invalid date condition ({$a->value}). "richtung" must be "ab" or "bis", "zeitstempel" a Unix timestamp (integer). Nothing was written.';
+$string['restrictioninvalidstatus'] = 'Invalid value {$a->value} for "{$a->field}". Allowed: complete, incomplete, pass, fail. Nothing was written.';
+$string['restrictioninvaliddate'] = 'Invalid date condition ({$a->value}). "direction" must be "from" or "until", "timestamp" a Unix timestamp (integer). Nothing was written.';
 $string['restrictiongroupnotfound'] = 'Invalid value {$a->value} for "{$a->field}": no group with this id in the same course. Nothing was written.';
 
 // Write core: change history surface (#394).

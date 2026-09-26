@@ -77,10 +77,10 @@ final class set_restriction extends external_api {
      * @var array<string, int>
      */
     private const COMPLETION_STATUS = [
-        'abgeschlossen' => 1,
-        'nicht_abgeschlossen' => 0,
-        'bestanden' => 2,
-        'nicht_bestanden' => 3,
+        'complete' => 1,
+        'incomplete' => 0,
+        'pass' => 2,
+        'fail' => 3,
     ];
 
     /**
@@ -92,8 +92,8 @@ final class set_restriction extends external_api {
      * @var array<string, string>
      */
     private const DATE_DIRECTION = [
-        'ab' => '>=',
-        'bis' => '<',
+        'from' => '>=',
+        'until' => '<',
     ];
 
     /**
@@ -101,29 +101,29 @@ final class set_restriction extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID der Aktivitaet'),
-            'bedingungen_json' => new external_value(
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
+            'conditions_json' => new external_value(
                 PARAM_RAW,
-                'JSON-Array von Voraussetzungen (leeres Array entfernt alle Voraussetzungen). Je Eintrag ein Objekt '
-                    . 'mit "typ": "abschluss" (Felder "aktivitaet_cmid", "status": abgeschlossen|nicht_abgeschlossen|'
-                    . 'bestanden|nicht_bestanden), "datum" (Felder "richtung": ab|bis, "zeitstempel": Unix-Zeit) oder '
-                    . '"gruppe" (Feld "gruppen_id", 0 oder weggelassen = beliebige Gruppe). Alle Eintraege muessen '
-                    . 'gleichzeitig erfuellt sein (UND-Verknuepfung).'
+                'JSON array of conditions (empty array removes all conditions). Each entry is an object '
+                    . 'with "type": "completion" (fields "activity_cmid", "status": complete|incomplete|'
+                    . 'pass|fail), "date" (fields "direction": from|until, "timestamp": Unix time) or '
+                    . '"group" (field "group_id", 0 or omitted = any group). All entries must be '
+                    . 'satisfied at the same time (AND).'
             ),
         ]);
     }
 
     /**
      * @param int $cmid
-     * @param string $bedingungenjson
+     * @param string $conditionsjson
      * @return array
      */
-    public static function execute(int $cmid, string $bedingungenjson): array {
+    public static function execute(int $cmid, string $conditionsjson): array {
         global $CFG;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
-            'bedingungen_json' => $bedingungenjson,
+            'conditions_json' => $conditionsjson,
         ]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
@@ -153,17 +153,17 @@ final class set_restriction extends external_api {
             );
         }
 
-        $bedingungen = json_decode($params['bedingungen_json'], true);
-        if (!is_array($bedingungen) || json_last_error() !== JSON_ERROR_NONE || self::is_json_object($bedingungen)) {
+        $conditionsraw = json_decode($params['conditions_json'], true);
+        if (!is_array($conditionsraw) || json_last_error() !== JSON_ERROR_NONE || self::is_json_object($conditionsraw)) {
             throw new moodle_exception('invalidrestrictionjson', 'local_coursepilot');
         }
 
         $conditions = [];
-        foreach ($bedingungen as $bedingung) {
-            if (!is_array($bedingung) || self::is_json_object($bedingung) === false) {
-                throw new coding_exception('bedingungen_json muss ein Array von JSON-Objekten sein.');
+        foreach ($conditionsraw as $condition) {
+            if (!is_array($condition) || self::is_json_object($condition) === false) {
+                throw new coding_exception('conditions_json muss ein Array von JSON-Objekten sein.');
             }
-            $conditions[] = self::build_condition((int) $cm->course, $bedingung);
+            $conditions[] = self::build_condition((int) $cm->course, $condition);
         }
 
         $availabilityjson = self::build_availability_json($conditions);
@@ -184,7 +184,7 @@ final class set_restriction extends external_api {
         return [
             'cmid' => (int) $cmid,
             'modname' => (string) $cm->modname,
-            'meldung' => self::build_message(count($conditions)),
+            'message' => self::build_message(count($conditions)),
         ];
     }
 
@@ -218,7 +218,7 @@ final class set_restriction extends external_api {
 
     /**
      * PHP kennt beim Dekodieren keinen Unterschied zwischen JSON-Array und
-     * JSON-Objekt - beide werden zu assoziativen Arrays. "bedingungen_json"
+     * JSON-Objekt - beide werden zu assoziativen Arrays. "conditions_json"
      * muss aber eine Liste (JSON-Array) sein, kein Objekt.
      *
      * @param array $value
@@ -234,48 +234,48 @@ final class set_restriction extends external_api {
      * offizielle get_json()-Fabrik der drei unterstuetzten Bedingungstypen.
      *
      * @param int $courseid
-     * @param array $bedingung
+     * @param array $condition
      * @return stdClass
      * @throws moodle_exception restrictionunknowntype|restrictionactivitynotfound|restrictioninvalidstatus|
      *         restrictioninvaliddate|restrictiongroupnotfound
      */
-    private static function build_condition(int $courseid, array $bedingung): stdClass {
-        $typ = $bedingung['typ'] ?? null;
-        switch ($typ) {
-            case 'abschluss':
-                return self::build_completion_condition($courseid, $bedingung);
-            case 'datum':
-                return self::build_date_condition($bedingung);
-            case 'gruppe':
-                return self::build_group_condition($courseid, $bedingung);
+    private static function build_condition(int $courseid, array $condition): stdClass {
+        $type = $condition['type'] ?? null;
+        switch ($type) {
+            case 'completion':
+                return self::build_completion_condition($courseid, $condition);
+            case 'date':
+                return self::build_date_condition($condition);
+            case 'group':
+                return self::build_group_condition($courseid, $condition);
             default:
                 throw new moodle_exception(
                     'restrictionunknowntype',
                     'local_coursepilot',
                     '',
-                    ['field' => 'typ', 'value' => json_encode($typ)]
+                    ['field' => 'type', 'value' => json_encode($type)]
                 );
         }
     }
 
     /**
      * @param int $courseid
-     * @param array $bedingung
+     * @param array $condition
      * @return stdClass
      */
-    private static function build_completion_condition(int $courseid, array $bedingung): stdClass {
-        $aktivitaetcmid = self::positive_int($bedingung['aktivitaet_cmid'] ?? null);
-        if ($aktivitaetcmid === null
-                || !get_coursemodule_from_id('', $aktivitaetcmid, $courseid, false, IGNORE_MISSING)) {
+    private static function build_completion_condition(int $courseid, array $condition): stdClass {
+        $activitycmid = self::positive_int($condition['activity_cmid'] ?? null);
+        if ($activitycmid === null
+                || !get_coursemodule_from_id('', $activitycmid, $courseid, false, IGNORE_MISSING)) {
             throw new moodle_exception(
                 'restrictionactivitynotfound',
                 'local_coursepilot',
                 '',
-                ['field' => 'aktivitaet_cmid', 'value' => json_encode($aktivitaetcmid)]
+                ['field' => 'activity_cmid', 'value' => json_encode($activitycmid)]
             );
         }
 
-        $status = $bedingung['status'] ?? null;
+        $status = $condition['status'] ?? null;
         if (!is_string($status) || !array_key_exists($status, self::COMPLETION_STATUS)) {
             throw new moodle_exception(
                 'restrictioninvalidstatus',
@@ -285,57 +285,57 @@ final class set_restriction extends external_api {
             );
         }
 
-        return \availability_completion\condition::get_json($aktivitaetcmid, self::COMPLETION_STATUS[$status]);
+        return \availability_completion\condition::get_json($activitycmid, self::COMPLETION_STATUS[$status]);
     }
 
     /**
-     * @param array $bedingung
+     * @param array $condition
      * @return stdClass
      */
-    private static function build_date_condition(array $bedingung): stdClass {
-        $richtung = $bedingung['richtung'] ?? null;
-        $zeitstempel = $bedingung['zeitstempel'] ?? null;
-        if (!is_string($richtung) || !array_key_exists($richtung, self::DATE_DIRECTION) || !is_int($zeitstempel)) {
+    private static function build_date_condition(array $condition): stdClass {
+        $direction = $condition['direction'] ?? null;
+        $timestamp = $condition['timestamp'] ?? null;
+        if (!is_string($direction) || !array_key_exists($direction, self::DATE_DIRECTION) || !is_int($timestamp)) {
             throw new moodle_exception(
                 'restrictioninvaliddate',
                 'local_coursepilot',
                 '',
-                ['field' => 'richtung/zeitstempel', 'value' => json_encode($bedingung)]
+                ['field' => 'direction/timestamp', 'value' => json_encode($condition)]
             );
         }
 
-        return \availability_date\condition::get_json(self::DATE_DIRECTION[$richtung], $zeitstempel);
+        return \availability_date\condition::get_json(self::DATE_DIRECTION[$direction], $timestamp);
     }
 
     /**
      * @param int $courseid
-     * @param array $bedingung
+     * @param array $condition
      * @return stdClass
      */
-    private static function build_group_condition(int $courseid, array $bedingung): stdClass {
+    private static function build_group_condition(int $courseid, array $condition): stdClass {
         global $DB;
 
-        $rawgruppenid = $bedingung['gruppen_id'] ?? 0;
-        $isanygroup = $rawgruppenid === 0 || $rawgruppenid === null || $rawgruppenid === '0';
-        $gruppenid = $isanygroup ? 0 : self::positive_int($rawgruppenid);
-        if ($gruppenid === null) {
+        $rawgroupid = $condition['group_id'] ?? 0;
+        $isanygroup = $rawgroupid === 0 || $rawgroupid === null || $rawgroupid === '0';
+        $groupid = $isanygroup ? 0 : self::positive_int($rawgroupid);
+        if ($groupid === null) {
             throw new moodle_exception(
                 'restrictiongroupnotfound',
                 'local_coursepilot',
                 '',
-                ['field' => 'gruppen_id', 'value' => json_encode($rawgruppenid)]
+                ['field' => 'group_id', 'value' => json_encode($rawgroupid)]
             );
         }
-        if ($gruppenid > 0 && !$DB->record_exists('groups', ['id' => $gruppenid, 'courseid' => $courseid])) {
+        if ($groupid > 0 && !$DB->record_exists('groups', ['id' => $groupid, 'courseid' => $courseid])) {
             throw new moodle_exception(
                 'restrictiongroupnotfound',
                 'local_coursepilot',
                 '',
-                ['field' => 'gruppen_id', 'value' => json_encode($gruppenid)]
+                ['field' => 'group_id', 'value' => json_encode($groupid)]
             );
         }
 
-        return \availability_group\condition::get_json($gruppenid);
+        return \availability_group\condition::get_json($groupid);
     }
 
     /**
@@ -369,7 +369,7 @@ final class set_restriction extends external_api {
             // Sollte durch die Validierung oben nie erreicht werden - letzte
             // Absicherung, damit niemals eine Struktur geschrieben wird, die
             // availability/classes/info.php spaeter ablehnen wuerde.
-            throw new moodle_exception('invalidrestrictionjson', 'local_coursepilot', '', ['field' => 'bedingungen_json']);
+            throw new moodle_exception('invalidrestrictionjson', 'local_coursepilot', '', ['field' => 'conditions_json']);
         }
 
         return json_encode($structure, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -394,8 +394,8 @@ final class set_restriction extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
-            'modname' => new external_value(PARAM_TEXT, 'Aktivitaetstyp'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Aenderungsmeldung'),
+            'modname' => new external_value(PARAM_TEXT, 'Activity type'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
         ]);
     }
 }

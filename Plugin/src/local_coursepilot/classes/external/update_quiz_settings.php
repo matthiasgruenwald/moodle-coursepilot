@@ -47,7 +47,7 @@ defined('MOODLE_INTERNAL') || die();
  *
  * Die drei Modus-Buendel kommen aus dem Katalog ({@see quiz::bundles()}),
  * nicht aus dieser Werkzeugbeschreibung - ein Buendelwert gilt nur fuer
- * Felder, die "felder_json" nicht bereits selbst nennt (Spec 0015 §2.4).
+ * Felder, die "fields_json" nicht bereits selbst nennt (Spec 0015 §2.4).
  *
  * Die Anordnung (Fragen/Seiten/Abschnitte) ist nicht Teil dieses Endpunkts
  * (Spec 0015 §5, ADR 0016) - sie wird ausschliesslich ueber die 16
@@ -64,24 +64,24 @@ final class update_quiz_settings extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID des Tests'),
-            'felder_json' => new external_value(
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the quiz'),
+            'fields_json' => new external_value(
                 PARAM_RAW,
-                'JSON-Objekt Feldname => neuer Wert - nur die zu aendernden Felder (Patch, kein Vollstand). '
-                    . '"grade"/"sumgrades" hier NICHT moeglich (Sperrliste), siehe Parameter "grade".'
+                'JSON object field name => new value - only the fields to change (patch, not a full state). '
+                    . '"grade"/"sumgrades" are NOT possible here (blocked), see the "grade" parameter.'
             ),
             'mode' => new external_value(
                 PARAM_ALPHANUMEXT,
                 'Modus-Buendel: "mini-check", "lernstandscheck" oder "abschlusstest". Buendelwerte gelten nur '
-                    . 'fuer Felder, die felder_json nicht bereits selbst nennt. Leer = kein Moduswechsel.',
+                    . 'fuer Felder, die fields_json nicht bereits selbst nennt. Leer = kein Moduswechsel.',
                 VALUE_DEFAULT,
                 ''
             ),
             'grade' => new external_value(
                 PARAM_FLOAT,
-                'Neue maximale Bewertung des Tests - laeuft ueber Moodles eigenen Bewertungsweg (skaliert '
-                    . 'bestehende Versuchsnoten und Gesamtfeedback-Grenzen automatisch um), nicht ueber felder_json. '
-                    . '-1 = nicht aendern.',
+                'New maximum grade of the quiz - runs through Moodle\'s own grading path (scales existing '
+                    . 'attempt grades and overall feedback boundaries automatically), not via fields_json. '
+                    . '-1 = do not change.',
                 VALUE_DEFAULT,
                 -1.0
             ),
@@ -90,17 +90,17 @@ final class update_quiz_settings extends external_api {
 
     /**
      * @param int $cmid
-     * @param string $felderjson
+     * @param string $fieldsjson
      * @param string $mode
      * @param float $grade
      * @return array
      */
-    public static function execute(int $cmid, string $felderjson, string $mode = '', float $grade = -1.0): array {
+    public static function execute(int $cmid, string $fieldsjson, string $mode = '', float $grade = -1.0): array {
         global $CFG, $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
-            'felder_json' => $felderjson,
+            'fields_json' => $fieldsjson,
             'mode' => $mode,
             'grade' => $grade,
         ]);
@@ -119,7 +119,7 @@ final class update_quiz_settings extends external_api {
         // fuer das Quiz-Einzelwerkzeug. Lesen bleibt unberuehrt.
         write_gate::assert_writable('quiz');
 
-        $patch = json_decode($params['felder_json'], true);
+        $patch = json_decode($params['fields_json'], true);
         if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
             throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
         }
@@ -203,9 +203,9 @@ final class update_quiz_settings extends external_api {
 
         return [
             'cmid' => (int) $cm->id,
-            'meldung' => self::build_message($changes, $sideeffects),
-            'aenderungen' => $changes,
-            'nebenwirkungen' => $sideeffects,
+            'message' => self::build_message($changes, $sideeffects),
+            'changes' => $changes,
+            'side_effects' => $sideeffects,
         ];
     }
 
@@ -259,18 +259,18 @@ final class update_quiz_settings extends external_api {
             $newvalue = $after[$fieldname] ?? null;
             if ($oldvalue != $newvalue) {
                 $changes[] = [
-                    'feld' => $fieldname,
-                    'von_json' => json_encode($oldvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                    'auf_json' => json_encode($newvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'field' => $fieldname,
+                    'before_json' => json_encode($oldvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'after_json' => json_encode($newvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 ];
             }
         }
 
         if (array_key_exists('feedbacktext', $merged) && $before['feedbacktext'] !== $after['feedbacktext']) {
             $changes[] = [
-                'feld' => 'feedbacktext',
-                'von_json' => json_encode($before['feedbacktext'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                'auf_json' => json_encode($after['feedbacktext'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'field' => 'feedbacktext',
+                'before_json' => json_encode($before['feedbacktext'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'after_json' => json_encode($after['feedbacktext'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ];
         }
 
@@ -299,7 +299,7 @@ final class update_quiz_settings extends external_api {
 
         $parts = [];
         foreach ($changes as $change) {
-            $parts[] = '"' . $change['feld'] . '" von ' . $change['von_json'] . ' auf ' . $change['auf_json'];
+            $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
         }
         $message = 'Geaendert: ' . implode(', ', $parts) . '.';
 
@@ -316,18 +316,18 @@ final class update_quiz_settings extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Aenderungsmeldung'),
-            'aenderungen' => new external_multiple_structure(
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'changes' => new external_multiple_structure(
                 new external_single_structure([
-                    'feld' => new external_value(PARAM_TEXT, 'Feldname'),
-                    'von_json' => new external_value(PARAM_RAW, 'JSON-kodierter Wert vor dem Schreiben'),
-                    'auf_json' => new external_value(PARAM_RAW, 'JSON-kodierter Wert nach dem Schreiben'),
+                    'field' => new external_value(PARAM_TEXT, 'Field name'),
+                    'before_json' => new external_value(PARAM_RAW, 'JSON-encoded value before the write'),
+                    'after_json' => new external_value(PARAM_RAW, 'JSON-encoded value after the write'),
                 ]),
-                'Je tatsaechlich geaendertem Feld ein Eintrag'
+                'One entry per field that actually changed'
             ),
-            'nebenwirkungen' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Nebenwirkungsvermerk in Lehrkraft-Deutsch'),
-                'Ausgeloeste Nebenwirkungen, leer wenn keine ausgeloest wurden'
+            'side_effects' => new external_multiple_structure(
+                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                'Triggered side effects, empty when none were triggered'
             ),
         ]);
     }

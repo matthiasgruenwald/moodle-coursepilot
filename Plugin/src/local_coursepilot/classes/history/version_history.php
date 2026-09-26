@@ -48,7 +48,7 @@ final class version_history {
      * gegenueber dem Vorgaenger (Spec 0015 §10.6, Abnahmekriterium 1+2).
      *
      * @param int $cmid
-     * @return array{cmid: int, modname: string, versionen: array, hinweis_luecken: string}
+     * @return array{cmid: int, modname: string, versions: array, gap_notice: string}
      */
     public static function list_versions(int $cmid): array {
         global $DB;
@@ -66,8 +66,8 @@ final class version_history {
         return [
             'cmid' => $cmid,
             'modname' => (string) $cm->modname,
-            'versionen' => $rows,
-            'hinweis_luecken' => self::GAPS_HINT,
+            'versions' => $rows,
+            'gap_notice' => self::GAPS_HINT,
         ];
     }
 
@@ -89,11 +89,11 @@ final class version_history {
         return [
             'cmid' => $cmid,
             'modname' => (string) $cm->modname,
-            'von' => self::describe_meta($von),
-            'nach' => self::describe_meta($nach),
-            'aenderungen' => self::diff_fields(self::state($von), self::state($nach)),
-            'dateien' => self::diff_files((int) $von->id, (int) $nach->id),
-            'hinweis_luecken' => self::GAPS_HINT,
+            'before' => self::describe_meta($von),
+            'after' => self::describe_meta($nach),
+            'changes' => self::diff_fields(self::state($von), self::state($nach)),
+            'files' => self::diff_files((int) $von->id, (int) $nach->id),
+            'gap_notice' => self::GAPS_HINT,
         ];
     }
 
@@ -224,26 +224,26 @@ final class version_history {
      */
     private static function describe_version(\stdClass $record, ?\stdClass $previous): array {
         $meta = self::describe_meta($record);
-        $meta['einzeiler'] = self::einzeiler($previous, $record, $meta);
+        $meta['summary_line'] = self::summary_line($previous, $record, $meta);
         return $meta;
     }
 
     /**
      * Metadaten eines Standes ohne Einzeiler - Grundlage sowohl fuer
-     * list_versions als auch fuer die von/nach-Bloecke von compare().
+     * list_versions als auch fuer die before/after-Bloecke von compare().
      *
      * @param \stdClass $record
-     * @return array{version: int, quelle: string, vorgefunden: bool, quellcmid: int|null, userid: int, nutzer: string, zeitpunkt: int}
+     * @return array{version: int, source: string, discovered: bool, source_cmid: int|null, userid: int, user: string, timestamp: int}
      */
     private static function describe_meta(\stdClass $record): array {
         return [
             'version' => (int) $record->version,
-            'quelle' => (string) $record->source,
-            'vorgefunden' => $record->source === version_writer::SOURCE_VORGEFUNDEN,
-            'quellcmid' => $record->sourcecmid !== null ? (int) $record->sourcecmid : null,
+            'source' => (string) $record->source,
+            'discovered' => $record->source === version_writer::SOURCE_VORGEFUNDEN,
+            'source_cmid' => $record->sourcecmid !== null ? (int) $record->sourcecmid : null,
             'userid' => (int) $record->userid,
-            'nutzer' => self::fullname((int) $record->userid),
-            'zeitpunkt' => (int) $record->timecreated,
+            'user' => self::fullname((int) $record->userid),
+            'timestamp' => (int) $record->timecreated,
         ];
     }
 
@@ -253,18 +253,18 @@ final class version_history {
      * @param array $meta
      * @return string
      */
-    private static function einzeiler(?\stdClass $previous, \stdClass $record, array $meta): string {
-        $zeitpunkttext = userdate($meta['zeitpunkt']);
+    private static function summary_line(?\stdClass $previous, \stdClass $record, array $meta): string {
+        $zeitpunkttext = userdate($meta['timestamp']);
 
         if ($previous === null) {
-            $label = $meta['vorgefunden']
+            $label = $meta['discovered']
                 ? 'Version %d (vorgefundener Ausgangsstand vor Coursepilot)'
                 : 'Version %d (erster erfasster Stand)';
-            return sprintf($label . ' - %s, %s.', $meta['version'], $meta['nutzer'], $zeitpunkttext);
+            return sprintf($label . ' - %s, %s.', $meta['version'], $meta['user'], $zeitpunkttext);
         }
 
         $summary = self::summarize_change($previous, $record);
-        return sprintf('Version %d - %s, %s: %s.', $meta['version'], $meta['nutzer'], $zeitpunkttext, $summary);
+        return sprintf('Version %d - %s, %s: %s.', $meta['version'], $meta['user'], $zeitpunkttext, $summary);
     }
 
     /**
@@ -286,7 +286,7 @@ final class version_history {
                 : implode(', ', $fields)) . ' geändert';
         }
 
-        $added = count(array_filter($filechanges, static fn(array $c): bool => $c['aenderung'] === 'hinzugefuegt'));
+        $added = count(array_filter($filechanges, static fn(array $c): bool => $c['change_type'] === 'hinzugefuegt'));
         $removed = count($filechanges) - $added;
         if ($added) {
             $parts[] = $added . ' Datei' . ($added === 1 ? '' : 'en') . ' hinzugefügt';
@@ -345,9 +345,9 @@ final class version_history {
         $changes = [];
         foreach (self::changed_fields($before, $after) as $field) {
             $changes[] = [
-                'feld' => $field,
-                'von_json' => json_encode($before[$field] ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                'auf_json' => json_encode($after[$field] ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'field' => $field,
+                'before_json' => json_encode($before[$field] ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'after_json' => json_encode($after[$field] ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ];
         }
         return $changes;
@@ -388,12 +388,12 @@ final class version_history {
         $changes = [];
         foreach ($before as $fileid => $filename) {
             if (!array_key_exists($fileid, $after)) {
-                $changes[] = ['aenderung' => 'entfernt', 'dateiname' => $filename];
+                $changes[] = ['change_type' => 'entfernt', 'filename' => $filename];
             }
         }
         foreach ($after as $fileid => $filename) {
             if (!array_key_exists($fileid, $before)) {
-                $changes[] = ['aenderung' => 'hinzugefuegt', 'dateiname' => $filename];
+                $changes[] = ['change_type' => 'hinzugefuegt', 'filename' => $filename];
             }
         }
         return $changes;

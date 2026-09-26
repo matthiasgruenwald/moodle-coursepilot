@@ -132,8 +132,8 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
         );
 
         $this->assertSame($originalorder, array_column($this->slots((int) $quiz->id), 'id'));
-        $this->assertStringContainsString('Fragenanordnung', $result['meldung']);
-        $this->assertStringContainsString('neuesten Fassung', $result['meldung']);
+        $this->assertStringContainsString('Fragenanordnung', $result['message']);
+        $this->assertStringContainsString('neuesten Fassung', $result['message']);
     }
 
     /**

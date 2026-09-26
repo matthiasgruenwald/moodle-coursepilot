@@ -54,12 +54,12 @@ final class update_section extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'courseid' => new external_value(PARAM_INT, 'Kurs-ID'),
-            'sectionnum' => new external_value(PARAM_INT, 'Abschnittsnummer (0-basiert)'),
-            'felder_json' => new external_value(
+            'courseid' => new external_value(PARAM_INT, 'Course ID'),
+            'sectionnum' => new external_value(PARAM_INT, 'Section number (0-based)'),
+            'fields_json' => new external_value(
                 PARAM_RAW,
-                'JSON-Objekt mit "name" (string), "summary" (string) und/oder "visible" (0|1) - nur die '
-                    . 'genannten Felder aendern sich'
+                'JSON object with "name" (string), "summary" (string) and/or "visible" (0|1) - only the named '
+                    . 'fields change'
             ),
         ]);
     }
@@ -67,16 +67,16 @@ final class update_section extends external_api {
     /**
      * @param int $courseid
      * @param int $sectionnum
-     * @param string $felderjson
+     * @param string $fieldsjson
      * @return array
      */
-    public static function execute(int $courseid, int $sectionnum, string $felderjson): array {
+    public static function execute(int $courseid, int $sectionnum, string $fieldsjson): array {
         global $CFG;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'courseid' => $courseid,
             'sectionnum' => $sectionnum,
-            'felder_json' => $felderjson,
+            'fields_json' => $fieldsjson,
         ]);
 
         $context = context_course::instance($params['courseid']);
@@ -86,7 +86,7 @@ final class update_section extends external_api {
         // course/editsection.php beim Speichern verlangt.
         require_capability('moodle/course:update', $context);
 
-        $patch = json_decode($params['felder_json'], true);
+        $patch = json_decode($params['fields_json'], true);
         if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
             throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
         }
@@ -117,8 +117,8 @@ final class update_section extends external_api {
         return [
             'id' => (int) $after->id,
             'sectionnum' => (int) $params['sectionnum'],
-            'meldung' => self::build_message($changes, $hidesactivities),
-            'aenderungen' => $changes,
+            'message' => self::build_message($changes, $hidesactivities),
+            'changes' => $changes,
         ];
     }
 
@@ -134,7 +134,7 @@ final class update_section extends external_api {
         $fields = [];
         foreach ($patch as $fieldname => $value) {
             if (!is_string($fieldname)) {
-                throw new coding_exception('felder_json muss ein JSON-Objekt sein, kein Array.');
+                throw new coding_exception('fields_json muss ein JSON-Objekt sein, kein Array.');
             }
             if (!in_array($fieldname, self::SETTABLE_FIELDS, true)) {
                 throw new moodle_exception(
@@ -168,9 +168,9 @@ final class update_section extends external_api {
             $newvalue = $fieldname === 'visible' ? (int) $after->visible : (string) ($after->{$fieldname} ?? '');
             if ($oldvalue != $newvalue) {
                 $changes[] = [
-                    'feld' => $fieldname,
-                    'von_json' => json_encode($oldvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                    'auf_json' => json_encode($newvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'field' => $fieldname,
+                    'before_json' => json_encode($oldvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'after_json' => json_encode($newvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 ];
             }
         }
@@ -188,7 +188,7 @@ final class update_section extends external_api {
         } else {
             $parts = [];
             foreach ($changes as $change) {
-                $parts[] = '"' . $change['feld'] . '" von ' . $change['von_json'] . ' auf ' . $change['auf_json'];
+                $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
             }
             $message = 'Geändert: ' . implode(', ', $parts) . '.';
         }
@@ -206,16 +206,16 @@ final class update_section extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'id' => new external_value(PARAM_INT, 'Abschnitts-DB-ID'),
-            'sectionnum' => new external_value(PARAM_INT, 'Abschnittsnummer (0-basiert)'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Aenderungsmeldung'),
-            'aenderungen' => new external_multiple_structure(
+            'id' => new external_value(PARAM_INT, 'Section DB ID'),
+            'sectionnum' => new external_value(PARAM_INT, 'Section number (0-based)'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'changes' => new external_multiple_structure(
                 new external_single_structure([
-                    'feld' => new external_value(PARAM_TEXT, 'Feldname'),
-                    'von_json' => new external_value(PARAM_RAW, 'JSON-kodierter Wert vor dem Schreiben'),
-                    'auf_json' => new external_value(PARAM_RAW, 'JSON-kodierter Wert nach dem Schreiben'),
+                    'field' => new external_value(PARAM_TEXT, 'Field name'),
+                    'before_json' => new external_value(PARAM_RAW, 'JSON-encoded value before the write'),
+                    'after_json' => new external_value(PARAM_RAW, 'JSON-encoded value after the write'),
                 ]),
-                'Je tatsaechlich geaendertem Feld ein Eintrag'
+                'One entry per field that actually changed'
             ),
         ]);
     }

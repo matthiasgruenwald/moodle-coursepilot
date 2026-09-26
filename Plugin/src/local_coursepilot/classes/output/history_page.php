@@ -47,16 +47,16 @@ final class history_page {
         \moodle_url $listurl
     ): array {
         $data = version_history::list_versions($cmid);
-        $newest = $data['versionen'] ? end($data['versionen'])['version'] : null;
+        $newest = $data['versions'] ? end($data['versions'])['version'] : null;
 
         $rows = [];
-        foreach ($data['versionen'] as $row) {
+        foreach ($data['versions'] as $row) {
             $canrestorerow = $canrestore && $row['version'] !== $newest;
             $rows[] = [
                 'version' => $row['version'],
-                'nutzer' => $row['nutzer'],
-                'zeitpunkt' => userdate($row['zeitpunkt']),
-                'einzeiler' => $row['einzeiler'],
+                'nutzer' => $row['user'],
+                'zeitpunkt' => userdate($row['timestamp']),
+                'einzeiler' => $row['summary_line'],
                 'canrestore' => $canrestorerow,
                 'restoreurl' => $canrestorerow
                     ? (new \moodle_url('/local/coursepilot/history.php', [
@@ -71,7 +71,7 @@ final class history_page {
             'activityname' => format_string($activityname),
             'isquiz' => $data['modname'] === 'quiz',
             'rows' => $rows,
-            'hinweisluecken' => $data['hinweis_luecken'],
+            'hinweisluecken' => $data['gap_notice'],
             'listurl' => $listurl->out(false),
         ];
     }

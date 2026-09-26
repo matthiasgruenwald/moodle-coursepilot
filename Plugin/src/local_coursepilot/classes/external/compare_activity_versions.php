@@ -43,23 +43,23 @@ class compare_activity_versions extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID der Aktivitaet'),
-            'von_version' => new external_value(PARAM_INT, 'Erste zu vergleichende Versionsnummer'),
-            'nach_version' => new external_value(PARAM_INT, 'Zweite zu vergleichende Versionsnummer'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
+            'from_version' => new external_value(PARAM_INT, 'First version number to compare'),
+            'to_version' => new external_value(PARAM_INT, 'Second version number to compare'),
         ]);
     }
 
     /**
      * @param int $cmid
-     * @param int $vonversion
-     * @param int $nachversion
+     * @param int $fromversion
+     * @param int $toversion
      * @return array
      */
-    public static function execute(int $cmid, int $vonversion, int $nachversion): array {
+    public static function execute(int $cmid, int $fromversion, int $toversion): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
-            'von_version' => $vonversion,
-            'nach_version' => $nachversion,
+            'from_version' => $fromversion,
+            'to_version' => $toversion,
         ]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
@@ -67,7 +67,7 @@ class compare_activity_versions extends external_api {
         self::validate_context($context);
         require_capability('local/coursepilot:viewhistory', $context);
 
-        return version_history::compare($params['cmid'], $params['von_version'], $params['nach_version']);
+        return version_history::compare($params['cmid'], $params['from_version'], $params['to_version']);
     }
 
     /**
@@ -75,44 +75,44 @@ class compare_activity_versions extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         $standblock = new external_single_structure([
-            'version' => new external_value(PARAM_INT, 'Versionsnummer'),
-            'quelle' => new external_value(PARAM_TEXT, '"moodle", "vorgefunden" oder "geklont"'),
-            'vorgefunden' => new external_value(PARAM_BOOL, 'true, wenn rueckwirkend als Ausgangsstand angelegt'),
-            'quellcmid' => new external_value(
+            'version' => new external_value(PARAM_INT, 'Version number'),
+            'source' => new external_value(PARAM_TEXT, '"moodle", "vorgefunden" or "geklont"'),
+            'discovered' => new external_value(PARAM_BOOL, 'true if retroactively recorded as a starting state'),
+            'source_cmid' => new external_value(
                 PARAM_INT,
-                'Quell-Modul-ID eines Klons - nur bei quelle = "geklont" gesetzt, sonst null',
+                'Source course module ID of a clone - only set when source = "geklont", null otherwise',
                 VALUE_DEFAULT,
                 null,
                 NULL_ALLOWED
             ),
-            'userid' => new external_value(PARAM_INT, 'Nutzer-ID, unter der der Schreibvorgang lief'),
-            'nutzer' => new external_value(PARAM_TEXT, 'Voller Name dieser Nutzerin/dieses Nutzers'),
-            'zeitpunkt' => new external_value(PARAM_INT, 'Unix-Zeitstempel des Schreibvorgangs'),
+            'userid' => new external_value(PARAM_INT, 'User ID that made the write'),
+            'user' => new external_value(PARAM_TEXT, 'Full name of that user'),
+            'timestamp' => new external_value(PARAM_INT, 'Unix timestamp of the write'),
         ]);
 
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
-            'modname' => new external_value(PARAM_TEXT, 'Aktivitaetstyp'),
-            'von' => $standblock,
-            'nach' => $standblock,
-            'aenderungen' => new external_multiple_structure(
+            'modname' => new external_value(PARAM_TEXT, 'Activity type'),
+            'before' => $standblock,
+            'after' => $standblock,
+            'changes' => new external_multiple_structure(
                 new external_single_structure([
-                    'feld' => new external_value(PARAM_TEXT, 'Feldname'),
-                    'von_json' => new external_value(PARAM_RAW, 'JSON-kodierter Wert im Von-Stand'),
-                    'auf_json' => new external_value(PARAM_RAW, 'JSON-kodierter Wert im Nach-Stand'),
+                    'field' => new external_value(PARAM_TEXT, 'Field name'),
+                    'before_json' => new external_value(PARAM_RAW, 'JSON-encoded value in the "before" state'),
+                    'after_json' => new external_value(PARAM_RAW, 'JSON-encoded value in the "after" state'),
                 ]),
-                'Je tatsaechlich unterschiedlichem Feld ein Eintrag'
+                'One entry per field that actually differs'
             ),
-            'dateien' => new external_multiple_structure(
+            'files' => new external_multiple_structure(
                 new external_single_structure([
-                    'aenderung' => new external_value(PARAM_TEXT, '"hinzugefuegt" oder "entfernt"'),
-                    'dateiname' => new external_value(PARAM_TEXT, 'Dateiname'),
+                    'change_type' => new external_value(PARAM_TEXT, '"hinzugefuegt" (added) or "entfernt" (removed)'),
+                    'filename' => new external_value(PARAM_TEXT, 'File name'),
                 ]),
-                'Dateien, die zwischen den beiden Staenden hinzugekommen oder weggefallen sind'
+                'Files that were added or removed between the two states'
             ),
-            'hinweis_luecken' => new external_value(
+            'gap_notice' => new external_value(
                 PARAM_TEXT,
-                'Fester Hinweis auf die strukturellen Luecken des Verlaufs - nicht pro Vergleich berechnet'
+                'Fixed notice about the structural gaps of the history - not computed per comparison'
             ),
         ]);
     }

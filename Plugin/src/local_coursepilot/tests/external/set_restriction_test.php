@@ -68,12 +68,12 @@ final class set_restriction_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(
             set_restriction::execute_returns(),
             set_restriction::execute($ziel->cmid, json_encode([
-                ['typ' => 'abschluss', 'aktivitaet_cmid' => $lerncheck->cmid, 'status' => 'bestanden'],
+                ['type' => 'completion', 'activity_cmid' => $lerncheck->cmid, 'status' => 'pass'],
             ]))
         );
 
         $this->assertSame($ziel->cmid, $result['cmid']);
-        $this->assertStringContainsString('Voraussetzung', $result['meldung']);
+        $this->assertStringContainsString('Voraussetzung', $result['message']);
 
         $availability = json_decode($this->read($ziel->cmid)['availabilityconditionsjson'], true);
         $this->assertSame('&', $availability['op']);
@@ -94,8 +94,8 @@ final class set_restriction_test extends \advanced_testcase {
         $zeitstempel = time() + 3600;
 
         set_restriction::execute($ziel->cmid, json_encode([
-            ['typ' => 'datum', 'richtung' => 'ab', 'zeitstempel' => $zeitstempel],
-            ['typ' => 'gruppe', 'gruppen_id' => $gruppe->id],
+            ['type' => 'date', 'direction' => 'from', 'timestamp' => $zeitstempel],
+            ['type' => 'group', 'group_id' => $gruppe->id],
         ]));
 
         $availability = json_decode($this->read($ziel->cmid)['availabilityconditionsjson'], true);
@@ -118,7 +118,7 @@ final class set_restriction_test extends \advanced_testcase {
         $ziel = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
 
         set_restriction::execute($ziel->cmid, json_encode([
-            ['typ' => 'gruppe', 'gruppen_id' => '0'],
+            ['type' => 'group', 'group_id' => '0'],
         ]));
 
         $availability = json_decode($this->read($ziel->cmid)['availabilityconditionsjson'], true);
@@ -135,7 +135,7 @@ final class set_restriction_test extends \advanced_testcase {
         $lerncheck = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
         $ziel = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
         set_restriction::execute($ziel->cmid, json_encode([
-            ['typ' => 'abschluss', 'aktivitaet_cmid' => $lerncheck->cmid, 'status' => 'abgeschlossen'],
+            ['type' => 'completion', 'activity_cmid' => $lerncheck->cmid, 'status' => 'complete'],
         ]));
         $this->assertNotSame('', $this->read($ziel->cmid)['availabilityconditionsjson']);
 
@@ -144,7 +144,7 @@ final class set_restriction_test extends \advanced_testcase {
             set_restriction::execute($ziel->cmid, json_encode([]))
         );
 
-        $this->assertStringContainsString('entfernt', $result['meldung']);
+        $this->assertStringContainsString('entfernt', $result['message']);
         $this->assertSame('', $this->read($ziel->cmid)['availabilityconditionsjson']);
     }
 
@@ -179,11 +179,11 @@ final class set_restriction_test extends \advanced_testcase {
 
         try {
             set_restriction::execute($page->cmid, json_encode([
-                ['typ' => 'unbekannt'],
+                ['type' => 'unbekannt'],
             ]));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
-            $this->assertStringContainsString('typ', $e->getMessage());
+            $this->assertStringContainsString('type', $e->getMessage());
         }
 
         $raw = $DB->get_field('course_modules', 'availability', ['id' => $page->cmid]);
@@ -204,11 +204,11 @@ final class set_restriction_test extends \advanced_testcase {
 
         try {
             set_restriction::execute($page->cmid, json_encode([
-                ['typ' => 'abschluss', 'aktivitaet_cmid' => 999999, 'status' => 'abgeschlossen'],
+                ['type' => 'completion', 'activity_cmid' => 999999, 'status' => 'complete'],
             ]));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
-            $this->assertStringContainsString('aktivitaet_cmid', $e->getMessage());
+            $this->assertStringContainsString('activity_cmid', $e->getMessage());
         }
         $this->assertSame('', $this->read($page->cmid)['availabilityconditionsjson']);
     }
@@ -227,7 +227,7 @@ final class set_restriction_test extends \advanced_testcase {
         ]);
 
         set_restriction::execute($page->cmid, json_encode([
-            ['typ' => 'gruppe'],
+            ['type' => 'group'],
         ]));
 
         $this->assertSame('Unveraendert', $this->read($page->cmid)['name']);
@@ -272,7 +272,7 @@ final class set_restriction_test extends \advanced_testcase {
         $before = $DB->count_records('local_coursepilot_cm_version', ['cmid' => $page->cmid]);
 
         set_restriction::execute($page->cmid, json_encode([
-            ['typ' => 'gruppe'],
+            ['type' => 'group'],
         ]));
 
         $this->assertGreaterThan($before, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $page->cmid]));
@@ -293,7 +293,7 @@ final class set_restriction_test extends \advanced_testcase {
 
         $this->expectException(\required_capability_exception::class);
         set_restriction::execute($page->cmid, json_encode([
-            ['typ' => 'gruppe'],
+            ['type' => 'group'],
         ]));
     }
 }

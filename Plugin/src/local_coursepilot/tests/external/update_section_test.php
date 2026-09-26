@@ -63,8 +63,8 @@ final class update_section_test extends \advanced_testcase {
             'visible' => 0,
         ]);
 
-        $this->assertCount(3, $result['aenderungen']);
-        $this->assertStringContainsString('Geändert', $result['meldung']);
+        $this->assertCount(3, $result['changes']);
+        $this->assertStringContainsString('Geändert', $result['message']);
 
         $section = get_fast_modinfo($course)->get_section_info(1);
         $this->assertSame('LS 1: Einführung', $section->name);
@@ -83,7 +83,7 @@ final class update_section_test extends \advanced_testcase {
 
         $result = $this->update($course->id, 1, ['visible' => 0]);
 
-        $this->assertStringContainsString('unsichtbar', $result['meldung']);
+        $this->assertStringContainsString('unsichtbar', $result['message']);
 
         $cm = get_fast_modinfo($course)->get_cm($page->cmid);
         $this->assertSame(0, (int) $cm->visible, 'Ein unsichtbarer Abschnitt macht seine Aktivitaeten unsichtbar.');
@@ -95,7 +95,7 @@ final class update_section_test extends \advanced_testcase {
 
         $result = $this->update($course->id, 1, ['name' => 'Nur Name']);
 
-        $this->assertStringNotContainsString('unsichtbar', $result['meldung']);
+        $this->assertStringNotContainsString('unsichtbar', $result['message']);
     }
 
     public function test_unknown_field_throws(): void {

@@ -54,9 +54,9 @@ final class move_section extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'courseid' => new external_value(PARAM_INT, 'Kurs-ID'),
-            'sourcesectionnum' => new external_value(PARAM_INT, 'Aktuelle Abschnittsnummer'),
-            'targetsectionnum' => new external_value(PARAM_INT, 'Gewuenschte Abschnittsnummer nach der Verschiebung'),
+            'courseid' => new external_value(PARAM_INT, 'Course ID'),
+            'sourcesectionnum' => new external_value(PARAM_INT, 'Current section number'),
+            'targetsectionnum' => new external_value(PARAM_INT, 'Desired section number after the move'),
         ]);
     }
 
@@ -111,7 +111,7 @@ final class move_section extends external_api {
             return [
                 'id' => (int) $sections[$von]->id,
                 'sectionnum' => (int) $nach,
-                'meldung' => "Abschnitt \"{$sectionname}\" liegt bereits an Position {$nach}.",
+                'message' => "Abschnitt \"{$sectionname}\" liegt bereits an Position {$nach}.",
             ];
         }
 
@@ -130,7 +130,7 @@ final class move_section extends external_api {
         return [
             'id' => (int) $sections[$von]->id,
             'sectionnum' => (int) $nach,
-            'meldung' => "Abschnitt \"{$sectionname}\" von Position {$von} nach Position {$nach} verschoben.",
+            'message' => "Abschnitt \"{$sectionname}\" von Position {$von} nach Position {$nach} verschoben.",
         ];
     }
 
@@ -139,9 +139,9 @@ final class move_section extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'id' => new external_value(PARAM_INT, 'Abschnitts-DB-ID'),
-            'sectionnum' => new external_value(PARAM_INT, 'Neue Abschnittsnummer nach der Verschiebung'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Aenderungsmeldung'),
+            'id' => new external_value(PARAM_INT, 'Section DB ID'),
+            'sectionnum' => new external_value(PARAM_INT, 'New section number after the move'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
         ]);
     }
 }

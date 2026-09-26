@@ -57,8 +57,8 @@ final class move_module extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID der zu verschiebenden Aktivitaet'),
-            'sectionnum' => new external_value(PARAM_INT, 'Zielabschnittsnummer (0-basiert)'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity to move'),
+            'sectionnum' => new external_value(PARAM_INT, 'Target section number (0-based)'),
             'position' => new external_value(
                 PARAM_INT,
                 'Optionaler 0-basierter Zielindex im Zielabschnitt (vor die dort aktuell stehende Aktivitaet); '
@@ -133,7 +133,7 @@ final class move_module extends external_api {
         return [
             'cmid' => (int) $cm->id,
             'sectionnum' => (int) $params['sectionnum'],
-            'meldung' => "Aktivität \"{$cm->name}\" in Abschnitt \"{$sectionname}\"{$positionmeldung} verschoben.",
+            'message' => "Aktivität \"{$cm->name}\" in Abschnitt \"{$sectionname}\"{$positionmeldung} verschoben.",
         ];
     }
 
@@ -142,9 +142,9 @@ final class move_module extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID der verschobenen Aktivitaet'),
-            'sectionnum' => new external_value(PARAM_INT, 'Zielabschnittsnummer'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Aenderungsmeldung'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the moved activity'),
+            'sectionnum' => new external_value(PARAM_INT, 'Target section number'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
         ]);
     }
 }

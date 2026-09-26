@@ -115,12 +115,12 @@ class update_module_settings extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID der Aktivitaet'),
-            'felder_json' => new external_value(
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
+            'fields_json' => new external_value(
                 PARAM_RAW,
-                'JSON-Objekt Feldname => neuer Wert - nur die zu aendernden Felder (Patch, kein Vollstand)'
+                'JSON object field name => new value - only the fields to change (patch, not a full state)'
             ),
-            'ort' => material_files::ort_parameter(),
+            'location' => material_files::ort_parameter(),
         ]);
     }
 
@@ -156,17 +156,17 @@ class update_module_settings extends external_api {
 
     /**
      * @param int $cmid
-     * @param string $felderjson
-     * @param string $ort
+     * @param string $fieldsjson
+     * @param string $location
      * @return array
      */
-    public static function execute(int $cmid, string $felderjson, string $ort = material_files::ORT_BESTAND): array {
+    public static function execute(int $cmid, string $fieldsjson, string $location = material_files::ORT_BESTAND): array {
         global $CFG;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
-            'felder_json' => $felderjson,
-            'ort' => $ort,
+            'fields_json' => $fieldsjson,
+            'location' => $location,
         ]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
@@ -180,11 +180,11 @@ class update_module_settings extends external_api {
         // Lese-Werkzeug ruft assert_writable() auf).
         write_gate::assert_writable($modname);
 
-        [$patch, $before] = self::decode_and_validate_patch($modname, $catalogclass, $cmid, $params['felder_json']);
+        [$patch, $before] = self::decode_and_validate_patch($modname, $catalogclass, $cmid, $params['fields_json']);
 
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
-        self::apply_patch_to_module($cm, $course, $modname, $catalogclass, $context, $before, $patch, $params['ort']);
+        self::apply_patch_to_module($cm, $course, $modname, $catalogclass, $context, $before, $patch, $params['location']);
 
         $after = self::read_settings($cmid);
         [$changes, $sideeffects] = self::diff_and_side_effects($modname, $patch, $before, $after);
@@ -192,9 +192,9 @@ class update_module_settings extends external_api {
         return [
             'cmid' => (int) $cmid,
             'modname' => $modname,
-            'meldung' => self::build_message($changes, $sideeffects, self::written_pseudofields($catalogclass, $patch)),
-            'aenderungen' => $changes,
-            'nebenwirkungen' => $sideeffects,
+            'message' => self::build_message($changes, $sideeffects, self::written_pseudofields($catalogclass, $patch)),
+            'changes' => $changes,
+            'side_effects' => $sideeffects,
         ];
     }
 
@@ -222,22 +222,22 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Dekodiert felder_json und validiert den Patch (Issue #523: aus
+     * Dekodiert fields_json und validiert den Patch (Issue #523: aus
      * execute() ausgelagert).
      *
      * @param string $modname
      * @param class-string<module_catalog> $catalogclass
      * @param int $cmid
-     * @param string $felderjson
+     * @param string $fieldsjson
      * @return array{0: array, 1: array} [Patch, aktuelle Einstellungen vor dem Patch]
      */
     private static function decode_and_validate_patch(
         string $modname,
         string $catalogclass,
         int $cmid,
-        string $felderjson
+        string $fieldsjson
     ): array {
-        $patch = json_decode($felderjson, true);
+        $patch = json_decode($fieldsjson, true);
         if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
             throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
         }
@@ -633,9 +633,9 @@ class update_module_settings extends external_api {
             $newvalue = $after[$fieldname] ?? null;
             if ($oldvalue != $newvalue) {
                 $changes[] = [
-                    'feld' => $fieldname,
-                    'von_json' => json_encode($oldvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                    'auf_json' => json_encode($newvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'field' => $fieldname,
+                    'before_json' => json_encode($oldvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'after_json' => json_encode($newvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 ];
             }
 
@@ -685,7 +685,7 @@ class update_module_settings extends external_api {
 
         $parts = [];
         foreach ($changes as $change) {
-            $parts[] = '"' . $change['feld'] . '" von ' . $change['von_json'] . ' auf ' . $change['auf_json'];
+            $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
         }
         $message = $parts ? ('Geaendert: ' . implode(', ', $parts) . '.') : '';
 
@@ -713,19 +713,19 @@ class update_module_settings extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
-            'modname' => new external_value(PARAM_TEXT, 'Aktivitaetstyp'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Aenderungsmeldung'),
-            'aenderungen' => new external_multiple_structure(
+            'modname' => new external_value(PARAM_TEXT, 'Activity type'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'changes' => new external_multiple_structure(
                 new external_single_structure([
-                    'feld' => new external_value(PARAM_TEXT, 'Feldname'),
-                    'von_json' => new external_value(PARAM_RAW, 'JSON-kodierter Wert vor dem Schreiben'),
-                    'auf_json' => new external_value(PARAM_RAW, 'JSON-kodierter Wert nach dem Schreiben'),
+                    'field' => new external_value(PARAM_TEXT, 'Field name'),
+                    'before_json' => new external_value(PARAM_RAW, 'JSON-encoded value before the write'),
+                    'after_json' => new external_value(PARAM_RAW, 'JSON-encoded value after the write'),
                 ]),
-                'Je tatsaechlich geaendertem Feld ein Eintrag'
+                'One entry per field that actually changed'
             ),
-            'nebenwirkungen' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Nebenwirkungsvermerk in Lehrkraft-Deutsch'),
-                'Ausgeloeste Nebenwirkungen aus Katalogkategorie 5, leer wenn keine ausgeloest wurden'
+            'side_effects' => new external_multiple_structure(
+                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                'Triggered side effects from catalog category 5, empty when none were triggered'
             ),
         ]);
     }

@@ -40,10 +40,10 @@ defined('MOODLE_INTERNAL') || die();
  * (name, intro, preferredbehaviour, subnet, browsersecurity) muss die
  * Lehrkraft nennen. "grade" ist kein Katalogfeld (Sperrliste) - es kommt aus
  * dem eigenen Parameter "grade" bzw. dem Moodle-Formular-Default
- * (Admin-Einstellung quiz/maximumgrade), niemals aus felder_json.
+ * (Admin-Einstellung quiz/maximumgrade), niemals aus fields_json.
  *
  * Die drei Modus-Buendel kommen aus dem Katalog ({@see quiz::bundles()}) -
- * ein Buendelwert gilt nur fuer Felder, die felder_json nicht bereits selbst
+ * ein Buendelwert gilt nur fuer Felder, die fields_json nicht bereits selbst
  * nennt (Spec 0015 §2.4).
  *
  * @package    local_coursepilot
@@ -57,19 +57,19 @@ final class create_quiz extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'courseid' => new external_value(PARAM_INT, 'Kurs-ID'),
-            'sectionnum' => new external_value(PARAM_INT, 'Abschnittsnummer (0-basiert)'),
-            'felder_json' => new external_value(
+            'courseid' => new external_value(PARAM_INT, 'Course ID'),
+            'sectionnum' => new external_value(PARAM_INT, 'Section number (0-based)'),
+            'fields_json' => new external_value(
                 PARAM_RAW,
-                'JSON-Objekt Feldname => Wert - fehlende Felder kommen aus dem Formular-Default. Pflichtfelder '
-                    . 'ohne Formular-Default muessen genannt werden: "name", "intro", "subnet" (leer = keine '
-                    . 'Einschraenkung), "browsersecurity" ("-" = keine Einschraenkung); "preferredbehaviour" kommt '
-                    . 'sonst aus "mode". "grade"/"sumgrades" hier NICHT moeglich (Sperrliste), siehe Parameter "grade".'
+                'JSON object field name => value - missing fields come from the form default. Required fields '
+                    . 'without a form default must be named: "name", "intro", "subnet" (empty = no restriction), '
+                    . '"browsersecurity" ("-" = no restriction); "preferredbehaviour" otherwise comes from "mode". '
+                    . '"grade"/"sumgrades" are NOT possible here (blocked), see the "grade" parameter.'
             ),
             'mode' => new external_value(
                 PARAM_ALPHANUMEXT,
                 'Modus-Buendel: "mini-check", "lernstandscheck" oder "abschlusstest". Buendelwerte gelten nur '
-                    . 'fuer Felder, die felder_json nicht bereits selbst nennt. Leer = kein Buendel.',
+                    . 'fuer Felder, die fields_json nicht bereits selbst nennt. Leer = kein Buendel.',
                 VALUE_DEFAULT,
                 ''
             ),
@@ -86,18 +86,18 @@ final class create_quiz extends external_api {
     /**
      * @param int $courseid
      * @param int $sectionnum
-     * @param string $felderjson
+     * @param string $fieldsjson
      * @param string $mode
      * @param float $grade
      * @return array
      */
-    public static function execute(int $courseid, int $sectionnum, string $felderjson, string $mode = '', float $grade = -1.0): array {
+    public static function execute(int $courseid, int $sectionnum, string $fieldsjson, string $mode = '', float $grade = -1.0): array {
         global $CFG;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'courseid' => $courseid,
             'sectionnum' => $sectionnum,
-            'felder_json' => $felderjson,
+            'fields_json' => $fieldsjson,
             'mode' => $mode,
             'grade' => $grade,
         ]);
@@ -113,7 +113,7 @@ final class create_quiz extends external_api {
         // fuer das Quiz-Einzelwerkzeug. Lesen bleibt unberuehrt.
         write_gate::assert_writable('quiz');
 
-        $patch = json_decode($params['felder_json'], true);
+        $patch = json_decode($params['fields_json'], true);
         if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
             throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
         }
@@ -153,13 +153,13 @@ final class create_quiz extends external_api {
         $created = \add_moduleinfo($moduleinfo, $course);
 
         $cmid = (int) $created->coursemodule;
-        [$angelegtefelder, $sideeffects] = self::report_and_side_effects($merged, $newgrade);
+        [$createdfields, $sideeffects] = self::report_and_side_effects($merged, $newgrade);
 
         return [
             'cmid' => $cmid,
-            'meldung' => self::build_message($angelegtefelder, $sideeffects),
-            'angelegte_felder' => $angelegtefelder,
-            'nebenwirkungen' => $sideeffects,
+            'message' => self::build_message($createdfields, $sideeffects),
+            'created_fields' => $createdfields,
+            'side_effects' => $sideeffects,
         ];
     }
 
@@ -249,7 +249,7 @@ final class create_quiz extends external_api {
 
     /**
      * Die tatsaechlich vom Patch/Buendel gesetzten Felder mit ihrem Wert,
-     * plus "grade" (immer gesetzt, kommt nie aus felder_json) und
+     * plus "grade" (immer gesetzt, kommt nie aus fields_json) und
      * ausgeloeste Nebenwirkungen - identisches Prinzip wie
      * {@see create_module::report_and_side_effects()}.
      *
@@ -258,31 +258,31 @@ final class create_quiz extends external_api {
      * @return array{0: array, 1: string[]}
      */
     private static function report_and_side_effects(array $merged, float $grade): array {
-        $angelegtefelder = [];
+        $createdfields = [];
         foreach ($merged as $fieldname => $value) {
-            $angelegtefelder[] = ['feld' => $fieldname, 'wert_json' => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+            $createdfields[] = ['field' => $fieldname, 'value_json' => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
         }
-        $angelegtefelder[] = ['feld' => 'grade', 'wert_json' => json_encode($grade, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+        $createdfields[] = ['field' => 'grade', 'value_json' => json_encode($grade, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
 
         $sideeffects = [];
         if ((int) ($merged['timeopen'] ?? 0) > 0 || (int) ($merged['timeclose'] ?? 0) > 0) {
             $sideeffects[] = 'Der Kalendereintrag fuer den Test wurde angelegt.';
         }
 
-        return [$angelegtefelder, $sideeffects];
+        return [$createdfields, $sideeffects];
     }
 
     /**
      * Die Lehrkraft-deutsche Anlegemeldung (Spec 0015 §3.4/§5).
      *
-     * @param array $angelegtefelder
+     * @param array $createdfields
      * @param string[] $sideeffects
      * @return string
      */
-    private static function build_message(array $angelegtefelder, array $sideeffects): string {
+    private static function build_message(array $createdfields, array $sideeffects): string {
         $parts = [];
-        foreach ($angelegtefelder as $feld) {
-            $parts[] = '"' . $feld['feld'] . '" = ' . $feld['wert_json'];
+        foreach ($createdfields as $field) {
+            $parts[] = '"' . $field['field'] . '" = ' . $field['value_json'];
         }
         $message = 'Test angelegt: ' . implode(', ', $parts) . '.';
 
@@ -298,18 +298,18 @@ final class create_quiz extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID des neu angelegten Tests'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Anlegemeldung'),
-            'angelegte_felder' => new external_multiple_structure(
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the newly created quiz'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German creation message'),
+            'created_fields' => new external_multiple_structure(
                 new external_single_structure([
-                    'feld' => new external_value(PARAM_TEXT, 'Feldname'),
-                    'wert_json' => new external_value(PARAM_RAW, 'JSON-kodierter, tatsaechlich persistierter Wert'),
+                    'field' => new external_value(PARAM_TEXT, 'Field name'),
+                    'value_json' => new external_value(PARAM_RAW, 'JSON-encoded, actually persisted value'),
                 ]),
-                'Je vom Patch/Buendel gesetztem Feld ein Eintrag, plus "grade"'
+                'One entry per field set by the patch/bundle, plus "grade"'
             ),
-            'nebenwirkungen' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Nebenwirkungsvermerk in Lehrkraft-Deutsch'),
-                'Ausgeloeste Nebenwirkungen, leer wenn keine ausgeloest wurden'
+            'side_effects' => new external_multiple_structure(
+                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                'Triggered side effects, empty when none were triggered'
             ),
         ]);
     }

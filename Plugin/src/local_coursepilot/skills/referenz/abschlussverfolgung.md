@@ -68,10 +68,10 @@ coursepilot_set_completion(cmid=1003, fields_json='{"completion": 2, "completion
 // Schritt 3: Voraussetzungen setzen (Kette)
 // B erst sichtbar wenn A abgeschlossen
 coursepilot_set_restriction(cmid=1002,
-  bedingungen_json='[{"typ": "abschluss", "aktivitaet_cmid": 1001, "status": "abgeschlossen"}]')
+  conditions_json='[{"type": "completion", "activity_cmid": 1001, "status": "complete"}]')
 // C erst sichtbar wenn B abgeschlossen
 coursepilot_set_restriction(cmid=1003,
-  bedingungen_json='[{"typ": "abschluss", "aktivitaet_cmid": 1002, "status": "abgeschlossen"}]')
+  conditions_json='[{"type": "completion", "activity_cmid": 1002, "status": "complete"}]')
 ```
 
 Meldet `coursepilot_set_completion` beim ersten Aufruf ein Datenverlustrisiko
@@ -96,7 +96,7 @@ coursepilot_set_completion(cmid=1001, fields_json='{"completion": 2, "completion
 
 // Aufgabe erst freischalten wenn Informationsblatt gelesen (manuell abgeschlossen)
 coursepilot_set_restriction(cmid=1001,
-  bedingungen_json='[{"typ": "abschluss", "aktivitaet_cmid": 1000, "status": "abgeschlossen"}]')
+  conditions_json='[{"type": "completion", "activity_cmid": 1000, "status": "complete"}]')
 ```
 
 ## Labels und URLs NICHT in die Kette einbeziehen
@@ -113,7 +113,7 @@ Die Kette bezieht sich nur auf Aufgaben (assign) und ggf. Textseiten (page).
   Freischaltung nicht korrekt
 - NIEMALS eine Aktivitaet als Voraussetzung eintragen die selbst
   keine Abschlussverfolgung hat (completion=0)
-- Bei mehreren Voraussetzungen (mehrere Eintraege in `bedingungen_json`) muessen
-  ALLE genannten `aktivitaet_cmid`-Werte zuvor mit `coursepilot_set_completion`
+- Bei mehreren Voraussetzungen (mehrere Eintraege in `conditions_json`) muessen
+  ALLE genannten `activity_cmid`-Werte zuvor mit `coursepilot_set_completion`
   konfiguriert worden sein
 - `name` ist fuer `label` gesperrt – siehe `coursepilot_get_skill("technische-hinweise")`

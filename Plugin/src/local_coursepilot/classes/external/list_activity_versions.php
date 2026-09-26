@@ -45,7 +45,7 @@ class list_activity_versions extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID der Aktivitaet'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
         ]);
     }
 
@@ -70,39 +70,39 @@ class list_activity_versions extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
-            'modname' => new external_value(PARAM_TEXT, 'Aktivitaetstyp'),
-            'versionen' => new external_multiple_structure(
+            'modname' => new external_value(PARAM_TEXT, 'Activity type'),
+            'versions' => new external_multiple_structure(
                 new external_single_structure([
-                    'version' => new external_value(PARAM_INT, 'Fortlaufende Versionsnummer je cmid, beginnend bei 1'),
-                    'quelle' => new external_value(
+                    'version' => new external_value(PARAM_INT, 'Consecutive version number per cmid, starting at 1'),
+                    'source' => new external_value(
                         PARAM_TEXT,
-                        '"moodle" (normaler Schreibvorgang) oder "vorgefunden" (rueckwirkend angelegter Ausgangsstand vor Coursepilot)'
+                        '"moodle" (normal write) or "vorgefunden" (retroactively recorded starting state before Coursepilot)'
                     ),
-                    'vorgefunden' => new external_value(
+                    'discovered' => new external_value(
                         PARAM_BOOL,
-                        'true, wenn dieser Stand rueckwirkend als Ausgangsstand angelegt wurde (source = "vorgefunden")'
+                        'true if this state was retroactively recorded as a starting state (source = "vorgefunden")'
                     ),
-                    'quellcmid' => new external_value(
+                    'source_cmid' => new external_value(
                         PARAM_INT,
-                        'Quell-Modul-ID eines Klons - nur bei quelle = "geklont" gesetzt, sonst null',
+                        'Source course module ID of a clone - only set when source = "geklont", null otherwise',
                         VALUE_DEFAULT,
                         null,
                         NULL_ALLOWED
                     ),
-                    'userid' => new external_value(PARAM_INT, 'Nutzer-ID, unter der der Schreibvorgang lief'),
-                    'nutzer' => new external_value(PARAM_TEXT, 'Voller Name dieser Nutzerin/dieses Nutzers'),
-                    'zeitpunkt' => new external_value(PARAM_INT, 'Unix-Zeitstempel des Schreibvorgangs'),
-                    'einzeiler' => new external_value(
+                    'userid' => new external_value(PARAM_INT, 'User ID that made the write'),
+                    'user' => new external_value(PARAM_TEXT, 'Full name of that user'),
+                    'timestamp' => new external_value(PARAM_INT, 'Unix timestamp of the write'),
+                    'summary_line' => new external_value(
                         PARAM_TEXT,
-                        'Serverseitig aus den Vollstaenden berechnete Lehrkraft-deutsche Aenderungszeile '
-                            . 'gegenueber dem direkten Vorgaenger (wer, wann, wodurch)'
+                        'Server-computed teacher-facing German change line against the direct predecessor '
+                            . '(who, when, what)'
                     ),
                 ]),
-                'Je Version ein Eintrag, aufsteigend nach Versionsnummer sortiert'
+                'One entry per version, sorted ascending by version number'
             ),
-            'hinweis_luecken' => new external_value(
+            'gap_notice' => new external_value(
                 PARAM_TEXT,
-                'Fester Hinweis auf die strukturellen Luecken des Verlaufs - nicht pro Version berechnet'
+                'Fixed notice about the structural gaps of the history - not computed per version'
             ),
         ]);
     }

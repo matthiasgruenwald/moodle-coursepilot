@@ -58,8 +58,8 @@ final class list_activity_versions_test extends \advanced_testcase {
 
         $this->assertSame((int) $cm->id, $result['cmid']);
         $this->assertSame('page', $result['modname']);
-        $this->assertCount(1, $result['versionen']);
-        $this->assertNotEmpty($result['hinweis_luecken']);
+        $this->assertCount(1, $result['versions']);
+        $this->assertNotEmpty($result['gap_notice']);
     }
 
     /**

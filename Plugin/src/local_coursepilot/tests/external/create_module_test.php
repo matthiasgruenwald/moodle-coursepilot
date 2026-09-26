@@ -128,7 +128,7 @@ final class create_module_test extends \advanced_testcase {
             'intro' => '<p>Einstieg <strong>fett</strong></p>',
         ]);
 
-        $this->assertStringContainsString('<p>Einstieg <strong>fett', $result['meldung']);
+        $this->assertStringContainsString('<p>Einstieg <strong>fett', $result['message']);
     }
 
     /**
@@ -422,7 +422,7 @@ final class create_module_test extends \advanced_testcase {
             'limit' => [2, 3],
         ]);
 
-        $fields = array_column($result['angelegte_felder'], 'wert_json', 'feld');
+        $fields = array_column($result['created_fields'], 'value_json', 'field');
         $this->assertSame('["Ja","Nein"]', $fields['option']);
         $this->assertSame('["2","3"]', $fields['limit']);
     }
@@ -702,10 +702,10 @@ final class create_module_test extends \advanced_testcase {
             'forcesubscribe' => 2,
         ]);
 
-        $this->assertStringContainsString('Ankuendigungen', $result['meldung']);
-        $this->assertNotEmpty($result['nebenwirkungen']);
-        $this->assertStringContainsString('Kursteilnehmenden', $result['nebenwirkungen'][0]);
-        $this->assertStringContainsString('Kursteilnehmenden', $result['meldung']);
+        $this->assertStringContainsString('Ankuendigungen', $result['message']);
+        $this->assertNotEmpty($result['side_effects']);
+        $this->assertStringContainsString('Kursteilnehmenden', $result['side_effects'][0]);
+        $this->assertStringContainsString('Kursteilnehmenden', $result['message']);
     }
 
     /**

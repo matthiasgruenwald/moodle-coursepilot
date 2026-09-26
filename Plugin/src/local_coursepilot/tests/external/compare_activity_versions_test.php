@@ -77,19 +77,19 @@ final class compare_activity_versions_test extends \advanced_testcase {
         $result = compare_activity_versions::execute($cm->id, 1, 2);
         $result = external_api::clean_returnvalue(compare_activity_versions::execute_returns(), $result);
 
-        $this->assertSame(1, $result['von']['version']);
-        $this->assertSame(2, $result['nach']['version']);
+        $this->assertSame(1, $result['before']['version']);
+        $this->assertSame(2, $result['after']['version']);
 
         $namefield = null;
-        foreach ($result['aenderungen'] as $change) {
-            if ($change['feld'] === 'name') {
+        foreach ($result['changes'] as $change) {
+            if ($change['field'] === 'name') {
                 $namefield = $change;
             }
         }
         $this->assertNotNull($namefield);
-        $this->assertSame(json_encode('Erste Fassung'), $namefield['von_json']);
-        $this->assertSame(json_encode('Zweite Fassung'), $namefield['auf_json']);
-        $this->assertNotEmpty($result['hinweis_luecken']);
+        $this->assertSame(json_encode('Erste Fassung'), $namefield['before_json']);
+        $this->assertSame(json_encode('Zweite Fassung'), $namefield['after_json']);
+        $this->assertNotEmpty($result['gap_notice']);
     }
 
     /**

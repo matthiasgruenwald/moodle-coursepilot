@@ -165,7 +165,7 @@ final class set_completion_test extends \advanced_testcase {
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString('1', $e->getMessage());
-            $this->assertStringContainsString('bestaetigt', $e->getMessage());
+            $this->assertStringContainsString('confirmed', $e->getMessage());
         }
 
         // Nichts geschrieben.
@@ -193,8 +193,8 @@ final class set_completion_test extends \advanced_testcase {
         );
 
         $this->assertSame(COMPLETION_TRACKING_AUTOMATIC, $this->read($page->cmid)['completion']);
-        $this->assertNotEmpty($result['aenderungen']);
-        $this->assertStringContainsString('completion', $result['meldung']);
+        $this->assertNotEmpty($result['changes']);
+        $this->assertStringContainsString('completion', $result['message']);
     }
 
     /**
@@ -213,7 +213,7 @@ final class set_completion_test extends \advanced_testcase {
 
         $this->assertSame(COMPLETION_TRACKING_AUTOMATIC, $this->read($page->cmid)['completion']);
         $this->assertSame(1, $this->read($page->cmid)['completionview']);
-        $this->assertNotEmpty($result['aenderungen']);
+        $this->assertNotEmpty($result['changes']);
     }
 
     /**
@@ -238,7 +238,7 @@ final class set_completion_test extends \advanced_testcase {
         );
 
         $this->assertSame($expected, $this->read($page->cmid)['completionexpected']);
-        $this->assertNotEmpty($result['aenderungen']);
+        $this->assertNotEmpty($result['changes']);
 
         // Bestehende Abschlussdaten bleiben unangetastet.
         global $DB;
@@ -292,7 +292,7 @@ final class set_completion_test extends \advanced_testcase {
             set_completion::execute($page->cmid, json_encode(['completion' => COMPLETION_TRACKING_MANUAL]))
         );
 
-        $this->assertEmpty($result['aenderungen']);
+        $this->assertEmpty($result['changes']);
         $this->assertTrue($DB->record_exists('course_modules_completion', ['coursemoduleid' => $page->cmid]));
     }
 
@@ -410,7 +410,7 @@ final class set_completion_test extends \advanced_testcase {
 
         $this->assertEquals(1, $DB->get_field('assign', 'completionsubmit', ['id' => $assign->id]));
         $this->assertSame(COMPLETION_TRACKING_AUTOMATIC, $this->read($cmid)['completion']);
-        $this->assertStringContainsString('completionsubmit', $result['meldung']);
+        $this->assertStringContainsString('completionsubmit', $result['message']);
         // Die Abgabearten bleiben unangetastet (#400).
         $this->assertEquals(0, $DB->get_field('assign', 'nosubmissions', ['id' => $assign->id]));
     }
@@ -505,7 +505,7 @@ final class set_completion_test extends \advanced_testcase {
             set_completion::execute($cmid, json_encode(['completionsubmit' => 0]))
         );
 
-        $this->assertEmpty($result['aenderungen']);
+        $this->assertEmpty($result['changes']);
     }
 
     /**

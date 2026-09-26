@@ -124,7 +124,7 @@ final class clone_activity_test extends \advanced_testcase {
         ]);
 
         set_restriction::execute((int) $dependent->cmid, json_encode([
-            ['typ' => 'abschluss', 'aktivitaet_cmid' => (int) $prerequisite->cmid, 'status' => 'abgeschlossen'],
+            ['type' => 'completion', 'activity_cmid' => (int) $prerequisite->cmid, 'status' => 'complete'],
         ]));
 
         $result = clone_activity::execute((int) $dependent->cmid, 'Klon mit kaputter Voraussetzung', (int) $targetcourse->id);

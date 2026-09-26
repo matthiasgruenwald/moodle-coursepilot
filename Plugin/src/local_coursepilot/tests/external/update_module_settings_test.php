@@ -86,12 +86,12 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['name' => 'Neuer Titel']))
         );
 
-        $this->assertCount(1, $result['aenderungen']);
-        $this->assertSame('name', $result['aenderungen'][0]['feld']);
-        $this->assertSame('"Alter Titel"', $result['aenderungen'][0]['von_json']);
-        $this->assertSame('"Neuer Titel"', $result['aenderungen'][0]['auf_json']);
-        $this->assertStringContainsString('Alter Titel', $result['meldung']);
-        $this->assertStringContainsString('Neuer Titel', $result['meldung']);
+        $this->assertCount(1, $result['changes']);
+        $this->assertSame('name', $result['changes'][0]['field']);
+        $this->assertSame('"Alter Titel"', $result['changes'][0]['before_json']);
+        $this->assertSame('"Neuer Titel"', $result['changes'][0]['after_json']);
+        $this->assertStringContainsString('Alter Titel', $result['message']);
+        $this->assertStringContainsString('Neuer Titel', $result['message']);
 
         $after = $this->read($page->cmid);
         $this->assertSame('Neuer Titel', $after['name']);
@@ -116,7 +116,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['name' => 'Gleicher Titel']))
         );
 
-        $this->assertCount(0, $result['aenderungen']);
+        $this->assertCount(0, $result['changes']);
     }
 
     /**
@@ -136,7 +136,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['name' => 'Gleicher Titel']))
         );
 
-        $this->assertStringContainsString('Keine Aenderung', $result['meldung']);
+        $this->assertStringContainsString('Keine Aenderung', $result['message']);
     }
 
     /**
@@ -161,8 +161,8 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($cmid, json_encode(['assignsubmission_file_enabled' => 1]))
         );
 
-        $this->assertStringNotContainsString('Keine Aenderung', $result['meldung']);
-        $this->assertStringContainsString('assignsubmission_file_enabled', $result['meldung']);
+        $this->assertStringNotContainsString('Keine Aenderung', $result['message']);
+        $this->assertStringContainsString('assignsubmission_file_enabled', $result['message']);
         $this->assertEquals(1, $DB->get_field('assign_plugin_config', 'value', [
             'assignment' => $assign->id,
             'subtype' => 'assignsubmission',
@@ -197,10 +197,10 @@ final class update_module_settings_test extends \advanced_testcase {
             ]))
         );
 
-        $changes = array_column($result['aenderungen'], 'auf_json', 'feld');
+        $changes = array_column($result['changes'], 'after_json', 'field');
         $this->assertSame('["Vielleicht","Auf jeden Fall"]', $changes['option']);
         $this->assertSame('["4","5"]', $changes['limit']);
-        $this->assertStringNotContainsString('"option" = null', $result['meldung']);
+        $this->assertStringNotContainsString('"option" = null', $result['message']);
     }
 
     /**
@@ -334,10 +334,10 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($forum->cmid, json_encode(['forcesubscribe' => 2]))
         );
 
-        $this->assertNotEmpty($result['nebenwirkungen']);
-        $this->assertStringContainsString('Kursteilnehmenden', $result['nebenwirkungen'][0]);
-        $this->assertStringContainsString('abonniert', $result['nebenwirkungen'][0]);
-        $this->assertStringContainsString('Kursteilnehmenden', $result['meldung']);
+        $this->assertNotEmpty($result['side_effects']);
+        $this->assertStringContainsString('Kursteilnehmenden', $result['side_effects'][0]);
+        $this->assertStringContainsString('abonniert', $result['side_effects'][0]);
+        $this->assertStringContainsString('Kursteilnehmenden', $result['message']);
     }
 
     /**
@@ -517,7 +517,7 @@ final class update_module_settings_test extends \advanced_testcase {
             $after = $this->read($instance->cmid);
             $this->assertSame(0, $after['visibleoncoursepage'], "modname={$modname}");
             $this->assertSame('stealth', $after['coursepagevisibility'], "modname={$modname}");
-            $this->assertStringContainsString('visibleoncoursepage', $result['meldung'], "modname={$modname}");
+            $this->assertStringContainsString('visibleoncoursepage', $result['message'], "modname={$modname}");
         }
     }
 
@@ -584,13 +584,13 @@ final class update_module_settings_test extends \advanced_testcase {
 
         // Vorher-/Nachher-Zustand in Lehrkraft-Deutsch (Ticket #390,
         // Abnahmekriterium 8) - nicht nur der Feldname, auch die Werte.
-        $this->assertCount(2, $result['aenderungen']);
-        $bygroupmode = array_values(array_filter($result['aenderungen'], fn($c) => $c['feld'] === 'groupmode'))[0];
-        $this->assertSame('0', $bygroupmode['von_json']);
-        $this->assertSame((string) SEPARATEGROUPS, $bygroupmode['auf_json']);
-        $this->assertStringContainsString('groupmode', $result['meldung']);
-        $this->assertStringContainsString('groupingid', $result['meldung']);
-        $this->assertStringContainsString((string) $grouping->id, $result['meldung']);
+        $this->assertCount(2, $result['changes']);
+        $bygroupmode = array_values(array_filter($result['changes'], fn($c) => $c['field'] === 'groupmode'))[0];
+        $this->assertSame('0', $bygroupmode['before_json']);
+        $this->assertSame((string) SEPARATEGROUPS, $bygroupmode['after_json']);
+        $this->assertStringContainsString('groupmode', $result['message']);
+        $this->assertStringContainsString('groupingid', $result['message']);
+        $this->assertStringContainsString((string) $grouping->id, $result['message']);
     }
 
     /**
@@ -610,11 +610,11 @@ final class update_module_settings_test extends \advanced_testcase {
 
         // Vorher-/Nachher-Zustand in Lehrkraft-Deutsch (Ticket #390,
         // Abnahmekriterium 8).
-        $this->assertCount(1, $result['aenderungen']);
-        $this->assertSame('idnumber', $result['aenderungen'][0]['feld']);
-        $this->assertSame('""', $result['aenderungen'][0]['von_json']);
-        $this->assertSame('"kp-390"', $result['aenderungen'][0]['auf_json']);
-        $this->assertStringContainsString('kp-390', $result['meldung']);
+        $this->assertCount(1, $result['changes']);
+        $this->assertSame('idnumber', $result['changes'][0]['field']);
+        $this->assertSame('""', $result['changes'][0]['before_json']);
+        $this->assertSame('"kp-390"', $result['changes'][0]['after_json']);
+        $this->assertStringContainsString('kp-390', $result['message']);
     }
 
     /**
@@ -703,7 +703,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($cmid, json_encode(['introattachments' => ['arbeitsblatt.pdf']]))
         );
 
-        $this->assertStringContainsString('introattachments', $result['meldung']);
+        $this->assertStringContainsString('introattachments', $result['message']);
         $modulecontext = \context_module::instance($cmid);
         $attached = get_file_storage()->get_file(
             $modulecontext->id,
@@ -740,7 +740,7 @@ final class update_module_settings_test extends \advanced_testcase {
             )
         );
 
-        $this->assertStringContainsString('introattachments', $result['meldung']);
+        $this->assertStringContainsString('introattachments', $result['message']);
         $modulecontext = \context_module::instance($cmid);
         $attached = get_file_storage()->get_file($modulecontext->id, 'mod_assign', 'introattachment', 0, '/', 'werkbankdatei.pdf');
         $this->assertNotFalse($attached);
@@ -795,7 +795,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($cmid, json_encode(['introattachments' => ['arbeitsblatt.pdf']]))
         );
 
-        $this->assertStringContainsString('introattachments', $result['meldung']);
+        $this->assertStringContainsString('introattachments', $result['message']);
         $modulecontext = \context_module::instance($cmid);
         $attached = get_file_storage()->get_file(
             $modulecontext->id,
@@ -998,7 +998,7 @@ final class update_module_settings_test extends \advanced_testcase {
 
         update_module_settings::execute($cmid, json_encode(['introattachments' => ['blatt.pdf']]));
 
-        $latest = max(array_column(\local_coursepilot\history\version_history::list_versions($cmid)['versionen'], 'version'));
+        $latest = max(array_column(\local_coursepilot\history\version_history::list_versions($cmid)['versions'], 'version'));
         $files = \local_coursepilot\history\version_history::files_at($cmid, $latest);
         $introattachment = array_values(array_filter(
             $files,
@@ -1060,7 +1060,7 @@ final class update_module_settings_test extends \advanced_testcase {
             ] + ['introimages' => ['diagramm.png']]))
         );
 
-        $this->assertStringContainsString('intro', $result['meldung']);
+        $this->assertStringContainsString('intro', $result['message']);
         $after = $this->read($cmid);
         // Moodle speichert Intro-Text mit dem @@PLUGINFILE@@-Platzhalter in
         // der Datenbank (lib/filelib.php:1103) - die eigentliche
@@ -1169,9 +1169,9 @@ final class update_module_settings_test extends \advanced_testcase {
             ]))
         );
 
-        $this->assertNotEmpty(array_filter($result['aenderungen'], static fn($c): bool => $c['feld'] === 'intro'));
+        $this->assertNotEmpty(array_filter($result['changes'], static fn($c): bool => $c['field'] === 'intro'));
 
-        $latest = max(array_column(\local_coursepilot\history\version_history::list_versions($cmid)['versionen'], 'version'));
+        $latest = max(array_column(\local_coursepilot\history\version_history::list_versions($cmid)['versions'], 'version'));
         $files = \local_coursepilot\history\version_history::files_at($cmid, $latest);
         $embedded = array_values(array_filter(
             $files,

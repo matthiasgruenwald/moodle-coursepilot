@@ -49,9 +49,9 @@ defined('MOODLE_INTERNAL') || die();
  *
  * Schutzschiene Vervollstaendigung (Spec 0015 §8): die Abschlussfelder
  * laufen ueber genau denselben Zweitakt wie jeder andere set_completion()-
- * Aufruf (Ticket #392) - "bestaetigt" wird unveraendert durchgereicht, statt
+ * Aufruf (Ticket #392) - "confirmed" wird unveraendert durchgereicht, statt
  * an dieser Stelle hart auf true gesetzt zu werden. Wuerde das Schreiben
- * bestehende Abschlussdaten von Lernenden loeschen und ist "bestaetigt"
+ * bestehende Abschlussdaten von Lernenden loeschen und ist "confirmed"
  * nicht gesetzt, schreibt set_completion nichts und meldet die
  * Betroffenenzahl - genau diese Meldung erscheint in der Antwort dieses
  * Endpunkts (statt einer eigenen, schwaecheren Warnung). Ohne
@@ -98,14 +98,13 @@ final class restore_activity_version extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID der Aktivitaet'),
-            'zielversion' => new external_value(PARAM_INT, 'Versionsnummer, auf die zurueckgeschrieben werden soll'),
-            'bestaetigt' => new external_value(
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
+            'target_version' => new external_value(PARAM_INT, 'Version number to write back to'),
+            'confirmed' => new external_value(
                 PARAM_BOOL,
-                'true bestaetigt ausdruecklich das Loeschen bestehender Abschlussdaten der Lernenden, falls das '
-                    . 'Zurueckschreiben der Abschlussfelder das ausloesen wuerde (Zweitakt von set_completion, '
-                    . 'Ticket #392). Ohne Datenverlustrisiko wirkt sich dieser Parameter nicht aus. Beim ersten '
-                    . 'Aufruf weglassen oder false.',
+                'true explicitly confirms deleting existing completion data of learners, if writing back the '
+                    . 'completion fields would trigger that (two-step confirmation of set_completion). Without '
+                    . 'data-loss risk this parameter has no effect. Omit or false on the first call.',
                 VALUE_DEFAULT,
                 false
             ),
@@ -114,15 +113,15 @@ final class restore_activity_version extends external_api {
 
     /**
      * @param int $cmid
-     * @param int $zielversion
-     * @param bool $bestaetigt
+     * @param int $targetversion
+     * @param bool $confirmed
      * @return array
      */
-    public static function execute(int $cmid, int $zielversion, bool $bestaetigt = false): array {
+    public static function execute(int $cmid, int $targetversion, bool $confirmed = false): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
-            'zielversion' => $zielversion,
-            'bestaetigt' => $bestaetigt,
+            'target_version' => $targetversion,
+            'confirmed' => $confirmed,
         ]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
@@ -146,12 +145,12 @@ final class restore_activity_version extends external_api {
         // update_module_settings.
         $catalogclass = registry::for($modname);
         if ($catalogclass !== null && ($catalogclass::write_options()['restores_arrangement'] ?? false)) {
-            return self::execute_quiz_arrangement_only($cm, $params['zielversion']);
+            return self::execute_quiz_arrangement_only($cm, $params['target_version']);
         }
 
         $catalogclass = self::catalog_for($modname);
 
-        $target = version_history::state_at($params['cmid'], $params['zielversion']);
+        $target = version_history::state_at($params['cmid'], $params['target_version']);
         $before = self::read_settings($params['cmid']);
 
         $normalpatch = self::build_normal_patch($catalogclass, $before, $target);
@@ -160,10 +159,10 @@ final class restore_activity_version extends external_api {
         $changes = [];
         if ($normalpatch) {
             $result = update_module_settings::execute($params['cmid'], json_encode($normalpatch, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-            $changes = array_merge($changes, $result['aenderungen']);
+            $changes = array_merge($changes, $result['changes']);
         }
 
-        $restoredfiles = self::restore_files($cm, $context, $params['zielversion']);
+        $restoredfiles = self::restore_files($cm, $context, $params['target_version']);
 
         $completionwarning = null;
         if ($completionpatch) {
@@ -171,9 +170,9 @@ final class restore_activity_version extends external_api {
                 $result = set_completion::execute(
                     $params['cmid'],
                     json_encode($completionpatch, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                    $params['bestaetigt']
+                    $params['confirmed']
                 );
-                $changes = array_merge($changes, $result['aenderungen']);
+                $changes = array_merge($changes, $result['changes']);
             } catch (moodle_exception $e) {
                 // set_completion's eigener Zweitakt greift (Ticket #392): ohne
                 // Bestaetigung UND echtem Datenverlustrisiko schreibt es nichts
@@ -191,8 +190,8 @@ final class restore_activity_version extends external_api {
         return [
             'cmid' => $params['cmid'],
             'modname' => $modname,
-            'meldung' => self::build_message($params['zielversion'], $changes, $completionwarning, null, $restoredfiles),
-            'aenderungen' => $changes,
+            'message' => self::build_message($params['target_version'], $changes, $completionwarning, null, $restoredfiles),
+            'changes' => $changes,
         ];
     }
 
@@ -211,17 +210,17 @@ final class restore_activity_version extends external_api {
      *
      * @param \stdClass $cm
      * @param \context_module $context
-     * @param int $zielversion
+     * @param int $targetversion
      * @return string[] Dateinamen, die tatsaechlich wiederhergestellt wurden.
      */
-    private static function restore_files(\stdClass $cm, context_module $context, int $zielversion): array {
+    private static function restore_files(\stdClass $cm, context_module $context, int $targetversion): array {
         $modname = (string) $cm->modname;
         $specs = update_module_settings::material_reference_specs($modname);
         if (!$specs) {
             return [];
         }
 
-        $targetfiles = version_history::files_at((int) $cm->id, $zielversion);
+        $targetfiles = version_history::files_at((int) $cm->id, $targetversion);
         $fs = get_file_storage();
         $restoredfilenames = [];
 
@@ -289,13 +288,13 @@ final class restore_activity_version extends external_api {
      * Anordnung zurueckschreiben.
      *
      * @param \stdClass $cm
-     * @param int $zielversion
+     * @param int $targetversion
      * @return array
      * @throws moodle_exception arrangementrestoreblocked, wenn der Test bereits Versuche hat und
      *         die Anordnung abweicht; writevehicleblocked, wenn die Anordnung nicht abweicht.
      */
-    private static function execute_quiz_arrangement_only(\stdClass $cm, int $zielversion): array {
-        $arrangementmessage = self::restore_quiz_arrangement($cm, $zielversion);
+    private static function execute_quiz_arrangement_only(\stdClass $cm, int $targetversion): array {
+        $arrangementmessage = self::restore_quiz_arrangement($cm, $targetversion);
         if ($arrangementmessage === null) {
             throw new moodle_exception('writevehicleblocked', 'local_coursepilot', '', [
                 'modname' => 'quiz',
@@ -306,8 +305,8 @@ final class restore_activity_version extends external_api {
         return [
             'cmid' => (int) $cm->id,
             'modname' => 'quiz',
-            'meldung' => self::build_message($zielversion, [], null, $arrangementmessage),
-            'aenderungen' => [],
+            'message' => self::build_message($targetversion, [], null, $arrangementmessage),
+            'changes' => [],
         ];
     }
 
@@ -320,12 +319,12 @@ final class restore_activity_version extends external_api {
      * ({@see version_history} GAPS_HINT).
      *
      * @param \stdClass $cm
-     * @param int $zielversion
+     * @param int $targetversion
      * @return string|null Lehrkraft-deutscher Zusatzsatz fuer die Antwort, oder null ohne Anordnungsaenderung.
      * @throws moodle_exception arrangementrestoreblocked, wenn der Test bereits Versuche hat.
      */
-    private static function restore_quiz_arrangement(\stdClass $cm, int $zielversion): ?string {
-        $target = version_history::arrangement_at((int) $cm->id, $zielversion);
+    private static function restore_quiz_arrangement(\stdClass $cm, int $targetversion): ?string {
+        $target = version_history::arrangement_at((int) $cm->id, $targetversion);
         if ($target === null) {
             return null;
         }
@@ -340,7 +339,7 @@ final class restore_activity_version extends external_api {
         // abgefangene Exception der Core-API.
         arrangement::restore($quizid, $target);
 
-        return 'Die Fragenanordnung wurde ebenfalls auf Version ' . $zielversion . ' zurückgeschrieben. '
+        return 'Die Fragenanordnung wurde ebenfalls auf Version ' . $targetversion . ' zurückgeschrieben. '
             . 'Hinweis: Fragen erscheinen dabei in der jeweils neuesten Fassung, keine Version wird nachträglich gepinnt.';
     }
 
@@ -423,7 +422,7 @@ final class restore_activity_version extends external_api {
 
     /**
      * Die Vervollstaendigungsfelder, die sich zwischen $before und $target
-     * tatsaechlich unterscheiden - unabhaengig von "bestaetigt": ob sie
+     * tatsaechlich unterscheiden - unabhaengig von "confirmed": ob sie
      * tatsaechlich geschrieben werden, entscheidet {@see self::execute()}.
      *
      * @param array $before
@@ -450,7 +449,7 @@ final class restore_activity_version extends external_api {
      * Datenverlust-Warnung (mit Betroffenenzahl) an, statt eine eigene,
      * schwaechere Meldung zu erfinden.
      *
-     * @param int $zielversion
+     * @param int $targetversion
      * @param array $changes
      * @param string|null $completionwarning set_completion's Meldung, wenn dessen
      *        eigener Zweitakt das Schreiben der Abschlussfelder verhindert hat.
@@ -460,25 +459,25 @@ final class restore_activity_version extends external_api {
      * @return string
      */
     private static function build_message(
-        int $zielversion,
+        int $targetversion,
         array $changes,
         ?string $completionwarning,
         ?string $arrangementmessage = null,
         array $restoredfiles = []
     ): string {
         if (!$changes && !$restoredfiles && $arrangementmessage === null) {
-            $base = 'Keine Änderung: die Aktivität entspricht bereits Version ' . $zielversion . '.';
+            $base = 'Keine Änderung: die Aktivität entspricht bereits Version ' . $targetversion . '.';
         } else if (!$changes && !$restoredfiles) {
-            $base = 'Auf Version ' . $zielversion . ' zurückgeschrieben - keine Einstellungsfelder abweichend.';
+            $base = 'Auf Version ' . $targetversion . ' zurückgeschrieben - keine Einstellungsfelder abweichend.';
         } else {
             $parts = [];
             foreach ($changes as $change) {
-                $parts[] = '"' . $change['feld'] . '" von ' . $change['von_json'] . ' auf ' . $change['auf_json'];
+                $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
             }
             $base = $parts
-                ? ('Auf Version ' . $zielversion . ' zurückgeschrieben - der alte Stand wird zur neuen jüngsten '
+                ? ('Auf Version ' . $targetversion . ' zurückgeschrieben - der alte Stand wird zur neuen jüngsten '
                     . 'Version fortgeschrieben: ' . implode(', ', $parts) . '.')
-                : ('Auf Version ' . $zielversion . ' zurückgeschrieben.');
+                : ('Auf Version ' . $targetversion . ' zurückgeschrieben.');
         }
 
         if ($restoredfiles) {
@@ -488,7 +487,7 @@ final class restore_activity_version extends external_api {
 
         if ($completionwarning !== null) {
             $base .= ' Abschlussfelder nicht mitgeschrieben: ' . $completionwarning
-                . ' Erneuter Aufruf von restore_activity_version mit "bestaetigt": true schreibt sie ebenfalls zurück.';
+                . ' Erneuter Aufruf von restore_activity_version mit "confirmed": true schreibt sie ebenfalls zurück.';
         }
 
         if ($arrangementmessage !== null) {
@@ -504,15 +503,15 @@ final class restore_activity_version extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
-            'modname' => new external_value(PARAM_TEXT, 'Aktivitaetstyp'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Aenderungsmeldung'),
-            'aenderungen' => new external_multiple_structure(
+            'modname' => new external_value(PARAM_TEXT, 'Activity type'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'changes' => new external_multiple_structure(
                 new external_single_structure([
-                    'feld' => new external_value(PARAM_TEXT, 'Feldname'),
-                    'von_json' => new external_value(PARAM_RAW, 'JSON-kodierter Wert vor dem Schreiben'),
-                    'auf_json' => new external_value(PARAM_RAW, 'JSON-kodierter Wert nach dem Schreiben'),
+                    'field' => new external_value(PARAM_TEXT, 'Field name'),
+                    'before_json' => new external_value(PARAM_RAW, 'JSON-encoded value before the write'),
+                    'after_json' => new external_value(PARAM_RAW, 'JSON-encoded value after the write'),
                 ]),
-                'Je tatsaechlich geaendertem Feld ein Eintrag'
+                'One entry per field that actually changed'
             ),
         ]);
     }

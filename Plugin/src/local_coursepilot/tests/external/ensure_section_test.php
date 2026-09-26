@@ -62,13 +62,13 @@ final class ensure_section_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
 
         $first = $this->ensure($course->id, 3, 'LS 3');
-        $this->assertTrue($first['angelegt']);
+        $this->assertTrue($first['created']);
         $this->assertSame('LS 3', $first['name']);
 
         $countbefore = count(get_fast_modinfo($course)->get_section_info_all());
 
         $second = $this->ensure($course->id, 3, 'LS 3');
-        $this->assertFalse($second['angelegt']);
+        $this->assertFalse($second['created']);
         $this->assertSame($first['id'], $second['id']);
 
         $countafter = count(get_fast_modinfo($course)->get_section_info_all());
@@ -90,7 +90,7 @@ final class ensure_section_test extends \advanced_testcase {
 
         $result = $this->ensure($course->id, 1, 'Neuer Name');
 
-        $this->assertFalse($result['angelegt']);
+        $this->assertFalse($result['created']);
         $this->assertSame('Neuer Name', $result['name']);
 
         $section = get_fast_modinfo($course)->get_section_info(1);
@@ -107,7 +107,7 @@ final class ensure_section_test extends \advanced_testcase {
 
         $result = $this->ensure($course->id, 1);
 
-        $this->assertFalse($result['angelegt']);
+        $this->assertFalse($result['created']);
         $this->assertSame('Alter Name', $result['name']);
     }
 

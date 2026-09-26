@@ -47,9 +47,9 @@ final class ensure_section extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'courseid' => new external_value(PARAM_INT, 'Kurs-ID'),
-            'sectionnum' => new external_value(PARAM_INT, 'Abschnittsnummer (0-basiert)'),
-            'name' => new external_value(PARAM_TEXT, 'Optionaler Abschnittsname', VALUE_DEFAULT, null, NULL_ALLOWED),
+            'courseid' => new external_value(PARAM_INT, 'Course ID'),
+            'sectionnum' => new external_value(PARAM_INT, 'Section number (0-based)'),
+            'name' => new external_value(PARAM_TEXT, 'Optional section name', VALUE_DEFAULT, null, NULL_ALLOWED),
         ]);
     }
 
@@ -110,8 +110,8 @@ final class ensure_section extends external_api {
             'id' => (int) $sectioninfo->id,
             'sectionnum' => (int) $params['sectionnum'],
             'name' => $finalname,
-            'angelegt' => !$existed,
-            'meldung' => self::build_message($params['sectionnum'], $existed, $namechanged, $oldname, $finalname),
+            'created' => !$existed,
+            'message' => self::build_message($params['sectionnum'], $existed, $namechanged, $oldname, $finalname),
         ];
     }
 
@@ -140,11 +140,11 @@ final class ensure_section extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'id' => new external_value(PARAM_INT, 'Abschnitts-DB-ID'),
-            'sectionnum' => new external_value(PARAM_INT, 'Abschnittsnummer (0-basiert)'),
-            'name' => new external_value(PARAM_TEXT, 'Aktueller Abschnittsname'),
-            'angelegt' => new external_value(PARAM_BOOL, 'true, wenn der Abschnitt neu angelegt wurde'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Meldung'),
+            'id' => new external_value(PARAM_INT, 'Section DB ID'),
+            'sectionnum' => new external_value(PARAM_INT, 'Section number (0-based)'),
+            'name' => new external_value(PARAM_TEXT, 'Current section name'),
+            'created' => new external_value(PARAM_BOOL, 'true if the section was newly created'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
         ]);
     }
 }

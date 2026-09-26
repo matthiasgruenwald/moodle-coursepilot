@@ -27,10 +27,10 @@ use moodle_exception;
  * Moodle eine aufrufbare Quelle hat, steht ihr Name in $sourcecallable -
  * sonst ist $source die literale Datei:Zeile-Angabe (Spec 0015 §2.2).
  *
- * Die PHP-Bezeichner dieser Klasse sind Englisch (CLAUDE.md); die
- * ausgelieferten JSON-Schluessel in {@see to_array()} sind bewusst Deutsch -
- * das ist der eigentliche Lehrkraft-/KI-Vertrag dieses Tickets (#379: "Antwort
- * auf Deutsch statt englischer Feldnamen").
+ * Die PHP-Bezeichner dieser Klasse sind Englisch (CLAUDE.md); seit #569 sind
+ * auch die ausgelieferten JSON-Schluessel in {@see to_array()} unmittelbar
+ * Englisch - der eigentliche Lehrkraft-/KI-Vertrag bleibt die deutsche
+ * Bedeutung ("meaning"), nicht der Schluesselname selbst (#379).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -81,20 +81,20 @@ final class field {
      * genau einen PARAM_*-Typ deklariert - "default" kann hier je nach
      * Katalogfeld int, string, bool oder null sein (#379).
      *
-     * @return array{name: string, typ: string, bedeutung: string, pflicht: bool,
-     *     default_json: string, wertebereich: array{werte_json: string, quelle_callable: ?string, quelle: string}}
+     * @return array{name: string, type: string, meaning: string, required: bool,
+     *     default_json: string, value_range: array{values_json: string, source_callable: ?string, source: string}}
      */
     public function to_array(): array {
         return [
             'name' => $this->name,
-            'typ' => $this->type,
-            'bedeutung' => $this->meaning,
-            'pflicht' => $this->required,
+            'type' => $this->type,
+            'meaning' => $this->meaning,
+            'required' => $this->required,
             'default_json' => json_encode($this->default, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'wertebereich' => [
-                'werte_json' => json_encode($this->values, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                'quelle_callable' => $this->sourcecallable,
-                'quelle' => $this->source,
+            'value_range' => [
+                'values_json' => json_encode($this->values, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'source_callable' => $this->sourcecallable,
+                'source' => $this->source,
             ],
         ];
     }

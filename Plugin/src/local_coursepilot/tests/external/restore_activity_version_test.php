@@ -225,13 +225,13 @@ final class restore_activity_version_test extends \advanced_testcase {
 
         $this->assertSame(COMPLETION_TRACKING_AUTOMATIC, $this->read($cmid)['completion']);
         $this->assertTrue($DB->record_exists('course_modules_completion', ['coursemoduleid' => $cmid]));
-        foreach ($result['aenderungen'] as $change) {
-            $this->assertNotSame('completion', $change['feld']);
+        foreach ($result['changes'] as $change) {
+            $this->assertNotSame('completion', $change['field']);
         }
-        $this->assertStringContainsString('bestaetigt', $result['meldung']);
+        $this->assertStringContainsString('confirmed', $result['message']);
         // Die echte Betroffenenzahl aus set_completion's Zweitakt, nicht nur
         // eine generische Warnung (Testumgebung laeuft in Englisch).
-        $this->assertStringContainsString('1 learner', $result['meldung']);
+        $this->assertStringContainsString('1 learner', $result['message']);
     }
 
     /**
@@ -258,7 +258,7 @@ final class restore_activity_version_test extends \advanced_testcase {
         );
 
         $this->assertSame(COMPLETION_TRACKING_MANUAL, $this->read($cmid)['completion']);
-        $fields = array_column($result['aenderungen'], 'feld');
+        $fields = array_column($result['changes'], 'field');
         $this->assertContains('completion', $fields);
     }
 
@@ -286,7 +286,7 @@ final class restore_activity_version_test extends \advanced_testcase {
         );
 
         $this->assertSame(COMPLETION_TRACKING_MANUAL, $this->read($cmid)['completion']);
-        $fields = array_column($result['aenderungen'], 'feld');
+        $fields = array_column($result['changes'], 'field');
         $this->assertContains('completion', $fields);
     }
 
@@ -309,8 +309,8 @@ final class restore_activity_version_test extends \advanced_testcase {
             restore_activity_version::execute($cmid, 1)
         );
 
-        $this->assertEmpty($result['aenderungen']);
-        $this->assertStringContainsString('Keine Änderung', $result['meldung']);
+        $this->assertEmpty($result['changes']);
+        $this->assertStringContainsString('Keine Änderung', $result['message']);
         $this->assertSame(1, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $cmid]));
     }
 
@@ -412,8 +412,8 @@ final class restore_activity_version_test extends \advanced_testcase {
             restore_activity_version::execute($cmid, 1)
         );
 
-        $this->assertStringContainsString('name', $result['meldung']);
-        $this->assertStringContainsString('Version 1', $result['meldung']);
+        $this->assertStringContainsString('name', $result['message']);
+        $this->assertStringContainsString('Version 1', $result['message']);
     }
 
     /**
@@ -473,8 +473,8 @@ final class restore_activity_version_test extends \advanced_testcase {
         $restored = get_file_storage()->get_file($modulecontext->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf');
         $this->assertNotFalse($restored);
         $this->assertSame('Fassung A', $restored->get_content());
-        $this->assertStringContainsString('blatt.pdf', $result['meldung']);
-        $this->assertStringContainsString('Papierkorb', $result['meldung']);
+        $this->assertStringContainsString('blatt.pdf', $result['message']);
+        $this->assertStringContainsString('Papierkorb', $result['message']);
     }
 
     /**
@@ -510,6 +510,6 @@ final class restore_activity_version_test extends \advanced_testcase {
         );
 
         $this->assertEquals(0, $DB->get_field('assign', 'completionsubmit', ['id' => $assign->id]));
-        $this->assertContains('completionsubmit', array_column($result['aenderungen'], 'feld'));
+        $this->assertContains('completionsubmit', array_column($result['changes'], 'field'));
     }
 }

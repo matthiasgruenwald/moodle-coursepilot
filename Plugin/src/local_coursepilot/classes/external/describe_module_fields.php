@@ -35,9 +35,9 @@ defined('MOODLE_INTERNAL') || die();
  * Deutsch statt englischer Feldnamen ohne Erklaerung.
  *
  * Ohne $modname: welche Aktivitaetsarten Coursepilot ueberhaupt fuehrt (User
- * Story 13). Mit $modname, ohne $vollstaendig: die haeufig gesetzten Felder
+ * Story 13). Mit $modname, ohne $full: die haeufig gesetzten Felder
  * plus Feldbuendel plus Vermerk, dass es mehr gibt (User Story 15). Mit
- * $vollstaendig=true: alle fuenf Kategorien aus Spec 0015 §2.2.
+ * $full=true: alle fuenf Kategorien aus Spec 0015 §2.2.
  *
  * Nicht course-gebunden: der Katalog ist statische Serverkonfiguration, kein
  * Kursinhalt - deshalb keine 'local/coursepilot:use'-Pruefung im Kurskontext
@@ -67,14 +67,14 @@ class describe_module_fields extends external_api {
         return new external_function_parameters([
             'modname' => new external_value(
                 PARAM_ALPHANUMEXT,
-                'Aktivitaetstyp, z.B. label. Leer liefert die Liste der von Coursepilot gefuehrten Arten.',
+                'Activity type, e.g. label. Empty returns the list of activity types Coursepilot knows.',
                 VALUE_DEFAULT,
                 ''
             ),
-            'vollstaendig' => new external_value(
+            'full' => new external_value(
                 PARAM_BOOL,
-                'true fuer alle fuenf Kategorien (Felder, Pseudofelder, Sperrliste, Kombinationsregeln, '
-                    . 'Nebenwirkungen); sonst nur die haeufig gesetzten Felder plus Feldbuendel.',
+                'true for all five categories (fields, pseudo fields, blocked fields, combination rules, '
+                    . 'side effects); otherwise only the commonly set fields plus field bundles.',
                 VALUE_DEFAULT,
                 false
             ),
@@ -83,27 +83,27 @@ class describe_module_fields extends external_api {
 
     /**
      * @param string $modname
-     * @param bool $vollstaendig
+     * @param bool $full
      * @return array
      * @throws moodle_exception unknownmodname, wenn $modname nicht gefuehrt wird.
      */
-    public static function execute(string $modname = '', bool $vollstaendig = false): array {
+    public static function execute(string $modname = '', bool $full = false): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'modname' => $modname,
-            'vollstaendig' => $vollstaendig,
+            'full' => $full,
         ]);
 
         self::validate_context(context_system::instance());
 
-        $aktivitaetsarten = registry::known_modnames();
+        $knownmodnames = registry::known_modnames();
         $modname = trim($params['modname']);
 
         if ($modname === '') {
             return [
-                'aktivitaetsarten' => $aktivitaetsarten,
-                'hinweis' => 'Coursepilot kann die Aktivitaetsarten, die er kennt: '
-                    . implode(', ', $aktivitaetsarten) . '. describe_module_fields(modname) fragt eine davon ab.',
-                'modul' => null,
+                'known_modnames' => $knownmodnames,
+                'notice' => 'Coursepilot kann die Aktivitaetsarten, die er kennt: '
+                    . implode(', ', $knownmodnames) . '. describe_module_fields(modname) fragt eine davon ab.',
+                'module' => null,
             ];
         }
 
@@ -113,13 +113,13 @@ class describe_module_fields extends external_api {
                 'unknownmodname',
                 'local_coursepilot',
                 '',
-                ['modname' => $modname, 'aktivitaetsarten' => implode(', ', $aktivitaetsarten)]
+                ['modname' => $modname, 'aktivitaetsarten' => implode(', ', $knownmodnames)]
             );
         }
 
-        $vollstaendig = (bool) $params['vollstaendig'];
+        $full = (bool) $params['full'];
         $modulefields = $catalogclass::fields();
-        if (!$vollstaendig) {
+        if (!$full) {
             // Ausduennung fuer die Kurzform (Spec 0015 §3.1, Ticket #382): nur Aktivitaetsarten mit sehr
             // vielen Feldern (assign: ~30) grenzen common_field_names() echt ein - bei wenigen Feldern
             // (label, choice, forum, ...) liefert die Methode ohnehin alle Namen (siehe module_catalog).
@@ -129,36 +129,36 @@ class describe_module_fields extends external_api {
                 static fn (field $f): bool => in_array($f->name, $commonnames, true)
             ));
         }
-        $felder = array_merge(shared_block::fields(), $modulefields);
+        $fields = array_merge(shared_block::fields(), $modulefields);
 
-        $modul = [
+        $module = [
             'modname' => $modname,
-            'schreibweg' => $catalogclass::schreibweg() ?? self::VEHICLE_SCHREIBWEG,
-            'felder' => array_map(static fn (field $f): array => $f->to_array(), $felder),
-            'feldbuendel' => self::bundles($catalogclass::bundles()),
-            'pseudofelder' => [],
-            'sperrliste' => [],
-            'kombinationsregeln' => [],
-            'nebenwirkungen' => [],
+            'write_route' => $catalogclass::schreibweg() ?? self::VEHICLE_SCHREIBWEG,
+            'fields' => array_map(static fn (field $f): array => $f->to_array(), $fields),
+            'field_bundles' => self::bundles($catalogclass::bundles()),
+            'pseudo_fields' => [],
+            'blocked_fields' => [],
+            'combination_rules' => [],
+            'side_effects' => [],
         ];
 
-        if ($vollstaendig) {
-            $pseudofelder = array_merge(shared_block::pseudofields(), $catalogclass::pseudofields());
-            $modul['pseudofelder'] = array_map(static fn (field $f): array => $f->to_array(), $pseudofelder);
-            $modul['sperrliste'] = array_values(array_unique(
+        if ($full) {
+            $pseudofields = array_merge(shared_block::pseudofields(), $catalogclass::pseudofields());
+            $module['pseudo_fields'] = array_map(static fn (field $f): array => $f->to_array(), $pseudofields);
+            $module['blocked_fields'] = array_values(array_unique(
                 array_merge(shared_block::BLOCKLIST, $catalogclass::blocklist())
             ));
-            $modul['kombinationsregeln'] = $catalogclass::combination_rules();
-            $modul['nebenwirkungen'] = array_merge(shared_block::side_effects(), $catalogclass::side_effects());
+            $module['combination_rules'] = $catalogclass::combination_rules();
+            $module['side_effects'] = array_merge(shared_block::side_effects(), $catalogclass::side_effects());
         }
 
         return [
-            'aktivitaetsarten' => $aktivitaetsarten,
-            'hinweis' => $vollstaendig
+            'known_modnames' => $knownmodnames,
+            'notice' => $full
                 ? 'Vollstaendige Form: alle fuenf Katalogkategorien.'
                 : 'Kurzform: nur die haeufig gesetzten Felder und Feldbuendel. Pseudofelder, Sperrliste, '
-                    . 'Kombinationsregeln und Nebenwirkungen fehlen - mit vollstaendig:true abrufen.',
-            'modul' => $modul,
+                    . 'Kombinationsregeln und Nebenwirkungen fehlen - mit full:true abrufen.',
+            'module' => $module,
         ];
     }
 
@@ -168,12 +168,12 @@ class describe_module_fields extends external_api {
      * Vorgehen wie get_course_catalog::plugin_config_field()-Zusatzdateien).
      *
      * @param array<string, array<string, mixed>> $bundles
-     * @return array<int, array{name: string, felder_json: string}>
+     * @return array<int, array{name: string, fields_json: string}>
      */
     private static function bundles(array $bundles): array {
         $result = [];
-        foreach ($bundles as $name => $felder) {
-            $result[] = ['name' => $name, 'felder_json' => json_encode($felder, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+        foreach ($bundles as $name => $fields) {
+            $result[] = ['name' => $name, 'fields_json' => json_encode($fields, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
         }
         return $result;
     }
@@ -183,58 +183,58 @@ class describe_module_fields extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         $fieldstructure = new external_single_structure([
-            'name' => new external_value(PARAM_TEXT, 'Moodle-Feldname (Formularweg-Vertrag)'),
-            'typ' => new external_value(PARAM_TEXT, 'PARAM_*-Konstante oder Kurzbeschreibung des Typs'),
-            'bedeutung' => new external_value(PARAM_TEXT, 'Deutsche Bedeutung des Felds'),
-            'pflicht' => new external_value(PARAM_BOOL, 'Pflichtfeld ohne Default?'),
-            'default_json' => new external_value(PARAM_RAW, 'JSON-kodierter Formular-Default, "null" wenn keiner'),
-            'wertebereich' => new external_single_structure([
-                'werte_json' => new external_value(
+            'name' => new external_value(PARAM_TEXT, 'Moodle field name (form-path contract)'),
+            'type' => new external_value(PARAM_TEXT, 'PARAM_* constant or short type description'),
+            'meaning' => new external_value(PARAM_TEXT, 'Teacher-facing German meaning of the field'),
+            'required' => new external_value(PARAM_BOOL, 'Required field without a default?'),
+            'default_json' => new external_value(PARAM_RAW, 'JSON-encoded form default, "null" if none'),
+            'value_range' => new external_single_structure([
+                'values_json' => new external_value(
                     PARAM_RAW,
-                    'JSON-kodierte Liste erlaubter Werte, "null" wenn nur ueber quelle_callable bestimmbar'
+                    'JSON-encoded list of allowed values, "null" if only determinable via source_callable'
                 ),
-                'quelle_callable' => new external_value(
+                'source_callable' => new external_value(
                     PARAM_TEXT,
-                    'Aufrufbare Moodle-Quelle des Wertebereichs, z.B. "format_text_menu()", sonst null'
+                    'Callable Moodle source of the value range, e.g. "format_text_menu()", otherwise null'
                 ),
-                'quelle' => new external_value(PARAM_TEXT, 'Datei:Zeile-Beleg'),
+                'source' => new external_value(PARAM_TEXT, 'File:line reference'),
             ]),
         ]);
 
         return new external_single_structure([
-            'aktivitaetsarten' => new external_multiple_structure(
+            'known_modnames' => new external_multiple_structure(
                 new external_value(PARAM_TEXT, 'Modname'),
-                'Von Coursepilot gefuehrte Aktivitaetsarten'
+                'Activity types Coursepilot knows'
             ),
-            'hinweis' => new external_value(PARAM_TEXT, 'Deutscher Hinweistext'),
-            'modul' => new external_single_structure([
-                'modname' => new external_value(PARAM_TEXT, 'Aktivitaetstyp'),
-                'schreibweg' => new external_value(
+            'notice' => new external_value(PARAM_TEXT, 'Teacher-facing German notice text'),
+            'module' => new external_single_structure([
+                'modname' => new external_value(PARAM_TEXT, 'Activity type'),
+                'write_route' => new external_value(
                     PARAM_TEXT,
-                    'Vehikel-Hinweis oder Name des Einzelwerkzeugs, das stattdessen schreibt'
+                    'Vehicle notice, or the name of the single tool that writes instead'
                 ),
-                'felder' => new external_multiple_structure($fieldstructure, 'Kategorie 1: Felder (inkl. gemeinsamer Block)'),
-                'feldbuendel' => new external_multiple_structure(
+                'fields' => new external_multiple_structure($fieldstructure, 'Category 1: fields (incl. shared block)'),
+                'field_bundles' => new external_multiple_structure(
                     new external_single_structure([
-                        'name' => new external_value(PARAM_TEXT, 'Buendelname'),
-                        'felder_json' => new external_value(PARAM_RAW, 'JSON-kodierte Feld=>Wert-Vorbelegung'),
+                        'name' => new external_value(PARAM_TEXT, 'Bundle name'),
+                        'fields_json' => new external_value(PARAM_RAW, 'JSON-encoded field=>value preset'),
                     ]),
-                    'Feldbuendel (Presets)'
+                    'Field bundles (presets)'
                 ),
-                'pseudofelder' => new external_multiple_structure($fieldstructure, 'Kategorie 2: nur bei vollstaendig:true'),
-                'sperrliste' => new external_multiple_structure(
-                    new external_value(PARAM_TEXT, 'Feldname'),
-                    'Kategorie 3: nur bei vollstaendig:true'
+                'pseudo_fields' => new external_multiple_structure($fieldstructure, 'Category 2: only with full:true'),
+                'blocked_fields' => new external_multiple_structure(
+                    new external_value(PARAM_TEXT, 'Field name'),
+                    'Category 3: only with full:true'
                 ),
-                'kombinationsregeln' => new external_multiple_structure(
+                'combination_rules' => new external_multiple_structure(
                     new external_value(PARAM_TEXT, 'Regel in Lehrkraft-Deutsch'),
-                    'Kategorie 4: nur bei vollstaendig:true'
+                    'Category 4: only with full:true'
                 ),
-                'nebenwirkungen' => new external_multiple_structure(
-                    new external_value(PARAM_TEXT, 'Nebenwirkungsvermerk in Lehrkraft-Deutsch'),
-                    'Kategorie 5: nur bei vollstaendig:true'
+                'side_effects' => new external_multiple_structure(
+                    new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                    'Category 5: only with full:true'
                 ),
-            ], 'Der abgefragte Modulkatalog, null wenn modname leer war', VALUE_DEFAULT, null, NULL_ALLOWED),
+            ], 'The requested module catalog, null when modname was empty', VALUE_DEFAULT, null, NULL_ALLOWED),
         ]);
     }
 }

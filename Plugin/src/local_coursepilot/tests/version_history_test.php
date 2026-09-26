@@ -105,17 +105,17 @@ final class version_history_test extends \advanced_testcase {
         $this->update_page($course, $cm, 'Nach Coursepilot-Einfuehrung');
 
         $result = version_history::list_versions($cm->id);
-        $this->assertCount(2, $result['versionen']);
+        $this->assertCount(2, $result['versions']);
 
-        $v1 = $result['versionen'][0];
+        $v1 = $result['versions'][0];
         $this->assertSame(1, $v1['version']);
-        $this->assertSame('vorgefunden', $v1['quelle']);
-        $this->assertTrue($v1['vorgefunden']);
-        $this->assertStringContainsString('vorgefunden', $v1['einzeiler']);
+        $this->assertSame('vorgefunden', $v1['source']);
+        $this->assertTrue($v1['discovered']);
+        $this->assertStringContainsString('vorgefunden', $v1['summary_line']);
 
-        $v2 = $result['versionen'][1];
+        $v2 = $result['versions'][1];
         $this->assertSame(2, $v2['version']);
-        $this->assertFalse($v2['vorgefunden']);
+        $this->assertFalse($v2['discovered']);
     }
 
     /**
@@ -127,9 +127,9 @@ final class version_history_test extends \advanced_testcase {
         [, $cm] = $this->create_page();
 
         $result = version_history::list_versions($cm->id);
-        $this->assertCount(1, $result['versionen']);
-        $this->assertFalse($result['versionen'][0]['vorgefunden']);
-        $this->assertSame('moodle', $result['versionen'][0]['quelle']);
+        $this->assertCount(1, $result['versions']);
+        $this->assertFalse($result['versions'][0]['discovered']);
+        $this->assertSame('moodle', $result['versions'][0]['source']);
     }
 
     /**
@@ -144,7 +144,7 @@ final class version_history_test extends \advanced_testcase {
         $this->update_page($course, $cm, 'Zweite Fassung');
 
         $result = version_history::list_versions($cm->id);
-        $einzeiler = $result['versionen'][1]['einzeiler'];
+        $einzeiler = $result['versions'][1]['summary_line'];
 
         $this->assertStringContainsString(fullname($teacher), $einzeiler);
         $this->assertStringContainsString('name', $einzeiler);
@@ -159,10 +159,10 @@ final class version_history_test extends \advanced_testcase {
         [, $cm] = $this->create_page();
 
         $result = version_history::list_versions($cm->id);
-        $this->assertStringContainsString('Notenbuch', $result['hinweis_luecken']);
-        $this->assertStringContainsString('Restore', $result['hinweis_luecken']);
-        $this->assertStringContainsString('Quiz', $result['hinweis_luecken']);
-        $this->assertStringContainsString('Datenbankschreibungen', $result['hinweis_luecken']);
+        $this->assertStringContainsString('Notenbuch', $result['gap_notice']);
+        $this->assertStringContainsString('Restore', $result['gap_notice']);
+        $this->assertStringContainsString('Quiz', $result['gap_notice']);
+        $this->assertStringContainsString('Datenbankschreibungen', $result['gap_notice']);
     }
 
     /**
@@ -176,22 +176,22 @@ final class version_history_test extends \advanced_testcase {
         $this->update_page($course, $cm, 'Zweite Fassung');
         $this->update_page($course, $cm, 'Dritte Fassung');
 
-        $this->assertCount(3, version_history::list_versions($cm->id)['versionen']);
+        $this->assertCount(3, version_history::list_versions($cm->id)['versions']);
 
         $result = version_history::compare($cm->id, 1, 3);
-        $this->assertSame(1, $result['von']['version']);
-        $this->assertSame(3, $result['nach']['version']);
+        $this->assertSame(1, $result['before']['version']);
+        $this->assertSame(3, $result['after']['version']);
 
         $namefield = null;
-        foreach ($result['aenderungen'] as $change) {
-            if ($change['feld'] === 'name') {
+        foreach ($result['changes'] as $change) {
+            if ($change['field'] === 'name') {
                 $namefield = $change;
             }
         }
         $this->assertNotNull($namefield, 'Feld "name" muss im Diff auftauchen.');
-        $this->assertSame(json_encode('Erste Fassung'), $namefield['von_json']);
-        $this->assertSame(json_encode('Dritte Fassung'), $namefield['auf_json']);
-        $this->assertStringContainsString('Notenbuch', $result['hinweis_luecken']);
+        $this->assertSame(json_encode('Erste Fassung'), $namefield['before_json']);
+        $this->assertSame(json_encode('Dritte Fassung'), $namefield['after_json']);
+        $this->assertStringContainsString('Notenbuch', $result['gap_notice']);
     }
 
     /**
@@ -262,13 +262,13 @@ final class version_history_test extends \advanced_testcase {
         ]);
 
         $result = version_history::compare($cm->id, 1, 2);
-        $aenderungen = $result['dateien'];
+        $aenderungen = $result['files'];
 
         $this->assertCount(2, $aenderungen);
-        $entfernt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['aenderung'] === 'entfernt'));
-        $hinzugefuegt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['aenderung'] === 'hinzugefuegt'));
-        $this->assertSame('alt.pdf', $entfernt[0]['dateiname']);
-        $this->assertSame('neu.pdf', $hinzugefuegt[0]['dateiname']);
+        $entfernt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['change_type'] === 'entfernt'));
+        $hinzugefuegt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['change_type'] === 'hinzugefuegt'));
+        $this->assertSame('alt.pdf', $entfernt[0]['filename']);
+        $this->assertSame('neu.pdf', $hinzugefuegt[0]['filename']);
     }
 
     /**

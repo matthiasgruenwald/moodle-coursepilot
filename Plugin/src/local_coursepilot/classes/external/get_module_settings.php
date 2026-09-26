@@ -59,7 +59,7 @@ class get_module_settings extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID der Aktivitaet'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
         ]);
     }
 
@@ -90,7 +90,7 @@ class get_module_settings extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
-            'modname' => new external_value(PARAM_TEXT, 'Aktivitaetstyp'),
+            'modname' => new external_value(PARAM_TEXT, 'Activity type'),
             'settings_json' => new external_value(
                 PARAM_RAW,
                 'get_moduleinfo_data()-Feldobjekt als JSON (Ist-Stand, den update_module_settings zurücknimmt), '

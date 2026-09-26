@@ -370,6 +370,116 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
+     * #569, Abnahmekriterium: repraesentativer Dispatcher-Rundlauf fuer die
+     * Kurs-/Aktivitaetswerkzeuge - Lese-, Schreib- und Versionswerkzeug -,
+     * der beweist, dass veroeffentlichte Feldnamen (Eingabe UND Rueckgabe)
+     * unmittelbar englisch ankommen, ohne dass contract_keys::internalize()/
+     * externalize() hier noch etwas zu tun hat (der Vertrag ist bereits
+     * englisch deklariert, siehe update_module_settings::execute_parameters()/
+     * execute_returns()). Moodles eigene Validierung (validate_parameters())
+     * bleibt dabei voll wirksam - der Zweitest unten prueft das ueber ein
+     * unbekanntes Feld.
+     */
+    public function test_course_and_activity_tools_are_callable_through_dispatcher_in_english(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        [$teacher, $token] = $this->create_authenticated_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance([
+            'course' => $course->id,
+            'name' => 'Alte Bezeichnung',
+        ]);
+
+        // Lesewerkzeug: coursepilot_get_modules, Rueckgabe ausschliesslich
+        // englische Schluessel (cmid/sectionnum/modname/name/visible/...).
+        $listresponse = dispatcher::handle(
+            [
+                'id' => 1,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_get_modules',
+                    'arguments' => ['courseid' => $course->id],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $listresponse['status']);
+        $listed = $listresponse['body']['result']['structuredContent'][0];
+        $this->assertSame((int) $page->cmid, $listed['cmid']);
+        $this->assertSame('page', $listed['modname']);
+
+        // Schreibwerkzeug: coursepilot_update_module_settings - der
+        // veroeffentlichte Parametername ist "fields_json", nicht das
+        // deutsche "felder_json" aus der Vor-#569-Fassung.
+        $writeresponse = dispatcher::handle(
+            [
+                'id' => 2,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_update_module_settings',
+                    'arguments' => [
+                        'cmid' => $page->cmid,
+                        'fields_json' => json_encode(['name' => 'Neue Bezeichnung']),
+                    ],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $writeresponse['status']);
+        $this->assertArrayNotHasKey('isError', $writeresponse['body']['result']);
+        $written = $writeresponse['body']['result']['structuredContent'];
+        $this->assertSame((int) $page->cmid, $written['cmid']);
+        $this->assertArrayHasKey('message', $written);
+        $this->assertArrayHasKey('changes', $written);
+        $this->assertSame('name', $written['changes'][0]['field']);
+        $this->assertSame(json_encode('Neue Bezeichnung'), $written['changes'][0]['after_json']);
+
+        // Versionswerkzeug: coursepilot_list_activity_versions - der Patch
+        // oben hat bereits eine zweite Version erzeugt.
+        $versionsresponse = dispatcher::handle(
+            [
+                'id' => 3,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_list_activity_versions',
+                    'arguments' => ['cmid' => $page->cmid],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $versionsresponse['status']);
+        $versioned = $versionsresponse['body']['result']['structuredContent'];
+        $this->assertArrayHasKey('versions', $versioned);
+        $this->assertArrayHasKey('gap_notice', $versioned);
+        $this->assertCount(2, $versioned['versions']);
+        $this->assertArrayHasKey('summary_line', $versioned['versions'][1]);
+
+        // Moodles eigene Validierung bleibt wirksam: ein unbekanntes Feld im
+        // Patch scheitert weiterhin ueber validate_patch()/catalog_fields,
+        // die Uebersetzungsschicht steht dem nicht im Weg.
+        $invalidresponse = dispatcher::handle(
+            [
+                'id' => 4,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_update_module_settings',
+                    'arguments' => [
+                        'cmid' => $page->cmid,
+                        'fields_json' => json_encode(['gibtsnicht' => 'x']),
+                    ],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $invalidresponse['status']);
+        $this->assertTrue($invalidresponse['body']['result']['isError']);
+    }
+
+    /**
      * #568, Abnahmekriterium: coursepilot_dismiss_ausstand ist ueber den
      * oeffentlichen Dispatch-Pfad mit dem englischen Feldnamen `identifier`
      * aufrufbar - nicht nur per direktem dismiss_ausstand::execute()-Aufruf

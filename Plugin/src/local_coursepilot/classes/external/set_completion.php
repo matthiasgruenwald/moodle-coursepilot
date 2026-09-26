@@ -56,9 +56,9 @@ defined('MOODLE_INTERNAL') || die();
  *
  * Benannter Zweitakt (Spec 0015 §8): scheitert die Datenverlust-Pruefung
  * (bereits vorhandene Vervollstaendigungsdaten fuer diese cmid UND eine der
- * vier Sperrfeld-Werte aendert sich tatsaechlich) und ist `bestaetigt` nicht
+ * vier Sperrfeld-Werte aendert sich tatsaechlich) und ist `confirmed` nicht
  * ausdruecklich true, wird NICHTS geschrieben - die Meldung nennt die Anzahl
- * betroffener Lernender. Erst der zweite Aufruf mit `bestaetigt: true` fuehrt
+ * betroffener Lernender. Erst der zweite Aufruf mit `confirmed: true` fuehrt
  * aus. Ohne Datenverlustrisiko (keine vorhandenen Daten, oder nur
  * "completionexpected" geaendert) laeuft der Aufruf ohne Zweitakt durch.
  *
@@ -71,7 +71,7 @@ defined('MOODLE_INTERNAL') || die();
  * mit "Unbekanntes Feld" (s. {@see self::MODULE_SPECIFIC_FIELDS}).
  *
  * "completionunlocked" wird ausschliesslich hier und nur unmittelbar vor dem
- * bestaetigten Schreiben gesetzt - nie automatisch, nie in
+ * bestaetigten (confirmed) Schreiben gesetzt - nie automatisch, nie in
  * update_module_settings/create_module (dort steht es auf der Sperrliste).
  *
  * @package    local_coursepilot
@@ -81,7 +81,7 @@ defined('MOODLE_INTERNAL') || die();
 final class set_completion extends external_api {
 
     /**
-     * Von der Lehrkraft/KI ueber felder_json setzbare Vervollstaendigungsfelder
+     * Von der Lehrkraft/KI ueber fields_json setzbare Vervollstaendigungsfelder
      * mit ihrem erlaubten Wertebereich (null = kein fester Wertebereich, z.B.
      * ein Zeitstempel). "completiongradeitemnumber" ist bewusst nicht dabei
      * (wie "cmidnumber" bei update_module_settings): es wird aus dem
@@ -164,18 +164,19 @@ final class set_completion extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID der Aktivitaet'),
-            'felder_json' => new external_value(
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
+            'fields_json' => new external_value(
                 PARAM_RAW,
-                'JSON-Objekt mit "completion" (0=aus,1=manuell,2=automatisch), "completionview", '
-                    . '"completionusegrade", "completionpassgrade", "completionexpected" und - bei "assign" und '
-                    . '"choice" - "completionsubmit" (1=Abgabe bzw. Abstimmung erforderlich) - nur die zu '
-                    . 'aendernden Felder (Patch)'
+                'JSON object with "completion" (0=off,1=manual,2=automatic), "completionview", '
+                    . '"completionusegrade", "completionpassgrade", "completionexpected" and - for "assign" and '
+                    . '"choice" - "completionsubmit" (1=submission/response required) - only the fields to '
+                    . 'change (patch)'
             ),
-            'bestaetigt' => new external_value(
+            'confirmed' => new external_value(
                 PARAM_BOOL,
-                'true bestaetigt ausdruecklich das Loeschen bestehender Vervollstaendigungsdaten der Lernenden '
-                    . '(zweiter Aufruf des Zweitakts). Beim ersten Aufruf weglassen oder false.',
+                'true explicitly confirms deleting existing completion data of learners, if writing back the '
+                    . 'completion fields would trigger that (two-step confirmation of set_completion). Omit or '
+                    . 'false on the first call.',
                 VALUE_DEFAULT,
                 false
             ),
@@ -184,17 +185,17 @@ final class set_completion extends external_api {
 
     /**
      * @param int $cmid
-     * @param string $felderjson
-     * @param bool $bestaetigt
+     * @param string $fieldsjson
+     * @param bool $confirmed
      * @return array
      */
-    public static function execute(int $cmid, string $felderjson, bool $bestaetigt = false): array {
+    public static function execute(int $cmid, string $fieldsjson, bool $confirmed = false): array {
         global $CFG, $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
-            'felder_json' => $felderjson,
-            'bestaetigt' => $bestaetigt,
+            'fields_json' => $fieldsjson,
+            'confirmed' => $confirmed,
         ]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
@@ -217,7 +218,7 @@ final class set_completion extends external_api {
             );
         }
 
-        $patch = json_decode($params['felder_json'], true);
+        $patch = json_decode($params['fields_json'], true);
         if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
             throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
         }
@@ -240,14 +241,14 @@ final class set_completion extends external_api {
             return [
                 'cmid' => (int) $cmid,
                 'modname' => (string) $cm->modname,
-                'meldung' => 'Keine Aenderung: der Patch stimmte bereits mit dem aktuellen Stand ueberein.',
-                'aenderungen' => [],
+                'message' => 'Keine Aenderung: der Patch stimmte bereits mit dem aktuellen Stand ueberein.',
+                'changes' => [],
             ];
         }
 
         if ($changedlocked) {
             $betroffenelernende = (int) $DB->count_records('course_modules_completion', ['coursemoduleid' => $cmid]);
-            if ($betroffenelernende > 0 && !$params['bestaetigt']) {
+            if ($betroffenelernende > 0 && !$params['confirmed']) {
                 // Erster Takt: melden, nicht ausfuehren (Spec 0015 §8).
                 throw new moodle_exception(
                     'completiondatalossconfirmationrequired',
@@ -271,8 +272,8 @@ final class set_completion extends external_api {
         return [
             'cmid' => (int) $cmid,
             'modname' => (string) $cm->modname,
-            'meldung' => self::build_message($changes),
-            'aenderungen' => $changes,
+            'message' => self::build_message($changes),
+            'changes' => $changes,
         ];
     }
 
@@ -437,9 +438,9 @@ final class set_completion extends external_api {
             $newvalue = $after[$fieldname] ?? null;
             if ($oldvalue != $newvalue) {
                 $changes[] = [
-                    'feld' => $fieldname,
-                    'von_json' => json_encode($oldvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                    'auf_json' => json_encode($newvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'field' => $fieldname,
+                    'before_json' => json_encode($oldvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'after_json' => json_encode($newvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 ];
             }
         }
@@ -456,7 +457,7 @@ final class set_completion extends external_api {
         }
         $parts = [];
         foreach ($changes as $change) {
-            $parts[] = '"' . $change['feld'] . '" von ' . $change['von_json'] . ' auf ' . $change['auf_json'];
+            $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
         }
         return 'Vervollstaendigung geaendert: ' . implode(', ', $parts) . '.';
     }
@@ -467,15 +468,15 @@ final class set_completion extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
-            'modname' => new external_value(PARAM_TEXT, 'Aktivitaetstyp'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Aenderungsmeldung'),
-            'aenderungen' => new external_multiple_structure(
+            'modname' => new external_value(PARAM_TEXT, 'Activity type'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'changes' => new external_multiple_structure(
                 new external_single_structure([
-                    'feld' => new external_value(PARAM_TEXT, 'Feldname'),
-                    'von_json' => new external_value(PARAM_RAW, 'JSON-kodierter Wert vor dem Schreiben'),
-                    'auf_json' => new external_value(PARAM_RAW, 'JSON-kodierter Wert nach dem Schreiben'),
+                    'field' => new external_value(PARAM_TEXT, 'Field name'),
+                    'before_json' => new external_value(PARAM_RAW, 'JSON-encoded value before the write'),
+                    'after_json' => new external_value(PARAM_RAW, 'JSON-encoded value after the write'),
                 ]),
-                'Je tatsaechlich geaendertem Feld ein Eintrag'
+                'One entry per field that actually changed'
             ),
         ]);
     }

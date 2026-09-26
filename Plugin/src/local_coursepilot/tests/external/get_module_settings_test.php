@@ -130,7 +130,7 @@ final class get_module_settings_test extends \advanced_testcase {
             describe_module_fields::execute('page', true)
         );
 
-        $pseudonames = array_column($result['modul']['pseudofelder'], 'name');
+        $pseudonames = array_column($result['module']['pseudo_fields'], 'name');
         $this->assertContains('coursepagevisibility', $pseudonames);
         $this->assertContains('availability_status', $pseudonames);
     }

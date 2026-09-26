@@ -62,8 +62,8 @@ defined('MOODLE_INTERNAL') || die();
  * Feldbuendel (Spec 0015 §2.4) sind bewusst KEIN eigener Endpunkt-Parameter:
  * "Sie überleben als benannte Feldbündel im Katalog, nicht als
  * Endpunkt-Parameter" - describe_module_fields liefert das Buendel, die KI
- * mischt es selbst in felder_json (ein Buendelwert gilt nur fuer Felder, die
- * felder_json nicht schon selbst nennt). Dieser Endpunkt sieht deshalb nur
+ * mischt es selbst in fields_json (ein Buendelwert gilt nur fuer Felder, die
+ * fields_json nicht schon selbst nennt). Dieser Endpunkt sieht deshalb nur
  * das bereits gemischte Ergebnis.
  *
  * @package    local_coursepilot
@@ -77,17 +77,17 @@ final class create_module extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'courseid' => new external_value(PARAM_INT, 'Kurs-ID'),
-            'sectionnum' => new external_value(PARAM_INT, 'Abschnittsnummer (0-basiert)'),
-            'modname' => new external_value(PARAM_PLUGIN, 'Aktivitaetstyp, z.B. page, label, url, choice, forum, assign'),
-            'felder_json' => new external_value(
+            'courseid' => new external_value(PARAM_INT, 'Course ID'),
+            'sectionnum' => new external_value(PARAM_INT, 'Section number (0-based)'),
+            'modname' => new external_value(PARAM_PLUGIN, 'Activity type, e.g. page, label, url, choice, forum, assign'),
+            'fields_json' => new external_value(
                 PARAM_RAW,
-                'JSON-Objekt Feldname => Wert - fehlende Felder werden mit dem Formular-Default aus dem Katalog '
-                    . 'aufgefuellt. Ein Feldbuendel (describe_module_fields) wird VOR dem Aufruf hier hinein '
-                    . 'gemischt (Spec 0015 §2.4: Buendel sind kein Endpunkt-Parameter) - ein Buendelwert gilt nur '
-                    . 'fuer Felder, die dieses Objekt nicht schon selbst nennt.'
+                'JSON object field name => value - missing fields are filled with the catalog form default. '
+                    . 'A field bundle (describe_module_fields) is mixed in here BEFORE the call (Spec 0015 §2.4: '
+                    . 'bundles are not an endpoint parameter) - a bundle value only applies to fields this object '
+                    . 'does not already name itself.'
             ),
-            'ort' => material_files::ort_parameter(),
+            'location' => material_files::ort_parameter(),
         ]);
     }
 
@@ -95,16 +95,16 @@ final class create_module extends external_api {
      * @param int $courseid
      * @param int $sectionnum
      * @param string $modname
-     * @param string $felderjson
-     * @param string $ort
+     * @param string $fieldsjson
+     * @param string $location
      * @return array
      */
     public static function execute(
         int $courseid,
         int $sectionnum,
         string $modname,
-        string $felderjson,
-        string $ort = material_files::ORT_BESTAND
+        string $fieldsjson,
+        string $location = material_files::ORT_BESTAND
     ): array {
         global $CFG;
 
@@ -112,8 +112,8 @@ final class create_module extends external_api {
             'courseid' => $courseid,
             'sectionnum' => $sectionnum,
             'modname' => $modname,
-            'felder_json' => $felderjson,
-            'ort' => $ort,
+            'fields_json' => $fieldsjson,
+            'location' => $location,
         ]);
 
         $coursecontext = self::authorise($params['courseid']);
@@ -137,9 +137,9 @@ final class create_module extends external_api {
         return [
             'cmid' => $cmid,
             'modname' => $modname,
-            'meldung' => self::build_message($modname, $createdfields, $sideeffects),
-            'angelegte_felder' => $createdfields,
-            'nebenwirkungen' => $sideeffects,
+            'message' => self::build_message($modname, $createdfields, $sideeffects),
+            'created_fields' => $createdfields,
+            'side_effects' => $sideeffects,
         ];
     }
 
@@ -182,7 +182,7 @@ final class create_module extends external_api {
         \context_course $coursecontext,
         array $params
     ): array {
-        $merged = json_decode($params['felder_json'], true);
+        $merged = json_decode($params['fields_json'], true);
         if (!is_array($merged) || json_last_error() !== JSON_ERROR_NONE) {
             throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
         }
@@ -204,7 +204,7 @@ final class create_module extends external_api {
         self::drop_empty_material_reference_pseudofields($catalogclass, $merged);
         self::assert_no_required_field_missing($modname, $catalogclass, $merged);
         self::assert_stealth_allowed($merged);
-        self::resolve_material_reference_pseudofields($catalogclass, $coursecontext, $merged, $params['ort']);
+        self::resolve_material_reference_pseudofields($catalogclass, $coursecontext, $merged, $params['location']);
 
         return $merged;
     }
@@ -312,7 +312,7 @@ final class create_module extends external_api {
      *        file_prepare_draft_area() - der Modulkontext existiert beim
      *        Anlegen noch nicht.
      * @param array $merged Wird in-place ersetzt: Pfadliste -> Entwurfs-Itemid.
-     * @param string $ort {@see \local_coursepilot\material_files::ORT_BESTAND}/{@see \local_coursepilot\material_files::ORT_WERKBANK}
+     * @param string $location {@see \local_coursepilot\material_files::ORT_BESTAND}/{@see \local_coursepilot\material_files::ORT_WERKBANK}
      *        - Quelle der Pfade (Issue #496).
      * @return void
      * @throws moodle_exception materialfilenotfound / invalidmaterialpath / invalidmaterialort /
@@ -323,7 +323,7 @@ final class create_module extends external_api {
         string $catalogclass,
         context_course $coursecontext,
         array &$merged,
-        string $ort
+        string $location
     ): void {
         $specs = $catalogclass::write_options()['material_reference_fields'] ?? [];
         $relevant = array_intersect_key($specs, $merged);
@@ -342,7 +342,7 @@ final class create_module extends external_api {
                 $spec['filearea'],
                 0,
                 $merged[$fieldname],
-                $ort
+                $location
             );
         }
     }
@@ -651,8 +651,8 @@ final class create_module extends external_api {
         foreach (array_keys($merged) as $fieldname) {
             $value = $after[$fieldname] ?? null;
             $createdfields[] = [
-                'feld' => $fieldname,
-                'wert_json' => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'field' => $fieldname,
+                'value_json' => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ];
 
             if (isset($triggers[$fieldname][$value])) {
@@ -675,7 +675,7 @@ final class create_module extends external_api {
     private static function build_message(string $modname, array $createdfields, array $sideeffects): string {
         $parts = [];
         foreach ($createdfields as $field) {
-            $parts[] = '"' . $field['feld'] . '" = ' . $field['wert_json'];
+            $parts[] = '"' . $field['field'] . '" = ' . $field['value_json'];
         }
         $message = 'Aktivität "' . $modname . '" angelegt';
         $message .= $parts ? (': ' . implode(', ', $parts) . '.') : '.';
@@ -692,19 +692,19 @@ final class create_module extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID der neu angelegten Aktivitaet'),
-            'modname' => new external_value(PARAM_TEXT, 'Aktivitaetstyp'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Anlegemeldung'),
-            'angelegte_felder' => new external_multiple_structure(
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the newly created activity'),
+            'modname' => new external_value(PARAM_TEXT, 'Activity type'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German creation message'),
+            'created_fields' => new external_multiple_structure(
                 new external_single_structure([
-                    'feld' => new external_value(PARAM_TEXT, 'Feldname'),
-                    'wert_json' => new external_value(PARAM_RAW, 'JSON-kodierter, tatsaechlich persistierter Wert'),
+                    'field' => new external_value(PARAM_TEXT, 'Field name'),
+                    'value_json' => new external_value(PARAM_RAW, 'JSON-encoded, actually persisted value'),
                 ]),
-                'Je vom Patch/Buendel gesetztem Feld ein Eintrag - stille Katalog-Defaults fehlen hier bewusst'
+                'One entry per field set by the patch/bundle - silent catalog defaults are deliberately absent here'
             ),
-            'nebenwirkungen' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Nebenwirkungsvermerk in Lehrkraft-Deutsch'),
-                'Ausgeloeste Nebenwirkungen aus Katalogkategorie 5, leer wenn keine ausgeloest wurden'
+            'side_effects' => new external_multiple_structure(
+                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                'Triggered side effects from catalog category 5, empty when none were triggered'
             ),
         ]);
     }
