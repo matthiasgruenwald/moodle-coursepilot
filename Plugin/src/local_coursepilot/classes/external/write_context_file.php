@@ -37,6 +37,12 @@ defined('MOODLE_INTERNAL') || die();
  * geprueft ist - diese Reihenfolge (Pfad, Endung, Groesse, Personenbezug,
  * Gleichzeitigkeit, Quote) bleibt weiterhin Absicht, liegt aber jetzt dort.
  *
+ * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "pending_entry" statt
+ * "ausstand", "create_only" statt "nur_anlegen" - dasselbe Nachtragsverhalten
+ * (ein erfolgreiches Schreiben mit "pending_entry" verwirft den Eintrag im
+ * selben Aufruf ueber {@see \local_coursepilot\pending_write_notice::dismiss()})
+ * bleibt unveraendert.
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -48,32 +54,32 @@ class write_context_file extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'path' => new external_value(PARAM_PATH, 'Dateipfad relativ zum Kontextbereich, z.B. "plan.md"'),
-            'content' => new external_value(PARAM_RAW, 'Vollstaendiger neuer Dateiinhalt'),
+            'path' => new external_value(PARAM_PATH, 'File path relative to the context area, e.g. "plan.md"'),
+            'content' => new external_value(PARAM_RAW, 'Complete new file content'),
             'expected_contenthash' => new external_value(
                 PARAM_ALPHANUMEXT,
-                'Optional: contenthash aus dem letzten Lesen - passt er nicht, bricht der Vorgang ab',
+                'Optional: contenthash from the last read - if it does not match, the operation aborts',
                 VALUE_DEFAULT,
                 ''
             ),
-            'ausstand' => new external_value(
+            'pending_entry' => new external_value(
                 PARAM_ALPHANUMEXT,
-                'Optional: Kennung eines offenen Ausstands (aus coursepilot_list_skills) - gelingt das Schreiben, '
-                    . 'verschwindet der Eintrag im selben Aufruf',
+                'Optional: identifier of an open pending entry (from coursepilot_list_skills) - if the write '
+                    . 'succeeds, the entry disappears within the same call',
                 VALUE_DEFAULT,
                 ''
             ),
-            'nur_anlegen' => new external_value(
+            'create_only' => new external_value(
                 PARAM_BOOL,
-                'Optional: true legt nur an und ueberschreibt nie - fuer das Kopieren aus dem Altbestand '
-                    . '(vorheriger Ort, aus coursepilot_list_context_files/read_context_file) an den neuen Ort',
+                'Optional: true only creates and never overwrites - for copying from the legacy stock (previous '
+                    . 'location, from coursepilot_list_context_files/read_context_file) to the new location',
                 VALUE_DEFAULT,
                 false
             ),
             'courseid' => new external_value(
                 PARAM_INT,
-                'Optional: Kurs-ID, wenn der Inhalt zu einem bestimmten Kurs gehoert - dient nur einem etwaigen '
-                    . 'Eintrag der Notiz "noch nicht gespeichert", falls der Speicher/die Verbindung/der Ort scheitert',
+                'Optional: course ID, if the content belongs to a specific course - only used for a possible entry '
+                    . 'in the "not yet saved" notice if the storage/connection/location fails',
                 VALUE_DEFAULT,
                 0
             ),
@@ -84,8 +90,8 @@ class write_context_file extends external_api {
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash
-     * @param string $ausstand
-     * @param bool $nuranlegen
+     * @param string $pendingentry
+     * @param bool $createonly
      * @param int $courseid
      * @return array
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
@@ -97,16 +103,16 @@ class write_context_file extends external_api {
         string $path,
         string $content,
         string $expectedcontenthash = '',
-        string $ausstand = '',
-        bool $nuranlegen = false,
+        string $pendingentry = '',
+        bool $createonly = false,
         int $courseid = 0
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'path' => $path,
             'content' => $content,
             'expected_contenthash' => $expectedcontenthash,
-            'ausstand' => $ausstand,
-            'nur_anlegen' => $nuranlegen,
+            'pending_entry' => $pendingentry,
+            'create_only' => $createonly,
             'courseid' => $courseid,
         ]);
 
@@ -119,11 +125,11 @@ class write_context_file extends external_api {
             $params['path'],
             $content,
             $params['expected_contenthash'],
-            $params['ausstand'],
-            $params['nur_anlegen'],
+            $params['pending_entry'],
+            $params['create_only'],
             $params['courseid']
         );
-        pending_write_notice::dismiss($params['ausstand']);
+        pending_write_notice::dismiss($params['pending_entry']);
 
         return self::build_response($result);
     }
@@ -157,10 +163,10 @@ class write_context_file extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'path' => new external_value(PARAM_TEXT, 'Aufgeloester Dateipfad, relativ zum Kontextbereich'),
-            'created' => new external_value(PARAM_BOOL, 'true, wenn die Datei neu angelegt wurde'),
-            'size' => new external_value(PARAM_INT, 'Neue Dateigroesse in Byte'),
-            'message' => new external_value(PARAM_RAW, 'Aenderungsmeldung in Lehrkraft-Deutsch'),
+            'path' => new external_value(PARAM_TEXT, 'Resolved file path, relative to the context area'),
+            'created' => new external_value(PARAM_BOOL, 'true if the file was newly created'),
+            'size' => new external_value(PARAM_INT, 'New file size in bytes'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
         ]);
     }
 }

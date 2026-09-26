@@ -35,9 +35,18 @@ defined('MOODLE_INTERNAL') || die();
  * {@see get_skill}. Nicht kursgebunden: geprüft wird lediglich
  * 'local/coursepilot:use' im Systemkontext, keine Kurs-Zustimmung.
  *
- * Meldet zusaetzlich die offenen Eintraege der Ausstandsnotiz (`ausstaende`,
+ * Meldet zusaetzlich die offenen Eintraege der Ausstandsnotiz (`pending_entries`,
  * Issue #492, ADR 0023 Punkt 4: "Der Server meldet, nicht die KI") -
  * gebuendelt je Zieldatei, aeltester Eintrag zuerst, ohne Netzzugriff.
+ *
+ * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "trigger"/"kind"/
+ * "length" je Skill-Eintrag, "pending_entries" statt "ausstaende" (darin
+ * "path"/"entries"/"identifier"/"timestamp"/"operation"/"error_class"/
+ * "course_id") und "notices" statt "hinweise" - der zugrundeliegende
+ * Skill-Korpus ({@see \local_coursepilot\skill_corpus}) und die
+ * Ausstandsnotiz ({@see \local_coursepilot\pending_write_notice}) bleiben
+ * als interne Speicherformate unveraendert deutsch, die Uebersetzung
+ * geschieht hier an der Werkzeuggrenze.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -62,14 +71,14 @@ final class list_skills extends external_api {
 
         $skills = array_map(static fn (array $entry): array => [
             'name' => $entry['name'],
-            'ausloeser' => $entry['ausloeser'],
-            'art' => $entry['art'],
-            'umfang' => $entry['umfang'],
+            'trigger' => $entry['ausloeser'],
+            'kind' => $entry['art'],
+            'length' => $entry['umfang'],
         ], skill_corpus::list());
 
         global $USER;
-        $ortswahllink = (new \moodle_url(webdav_setup_steps::ORTSWAHL_PAGE))->out(false);
-        $hinweise = [];
+        $locationselectionlink = (new \moodle_url(webdav_setup_steps::ORTSWAHL_PAGE))->out(false);
+        $notices = [];
         try {
             $document = \local_coursepilot\storage_anchor::read_raw_pointer();
             if ($document !== null) {
@@ -86,27 +95,38 @@ final class list_skills extends external_api {
                 // Ortswahl offen und Freischaltung vorhanden (Issue #494
                 // Akzeptanzkriterium) - ohne Netzzugriff, kein Fakt ohne
                 // Freischaltung.
-                $hinweise[] = self::hinweis('listskillsortswahlhint', $ortswahllink);
+                $notices[] = self::notice('listskillsortswahlhint', $locationselectionlink);
             }
             if (\local_coursepilot\previous_location::open()) {
                 // Altbestand offen (Issue #498, Spec #486 §9/§10): ohne
                 // Netzzugriff, ohne Zaehlung - nur der Fakt "es gibt einen
                 // vorherigen Ort".
-                $hinweise[] = self::hinweis('listskillsaltbestandhint', $ortswahllink);
+                $notices[] = self::notice('listskillsaltbestandhint', $locationselectionlink);
             }
         } catch (\moodle_exception $e) {
             // Kaputter Kontextpointer (unlesbar oder unvollstaendig, Issue
             // #519, Spec #486 §10) darf den Handshake nicht scheitern lassen -
             // der Skillkatalog kommt trotzdem, dazu ein benannter Hinweis statt
             // der beiden obigen Fakten, weiterhin ohne Netzzugriff.
-            $hinweise = [self::hinweis('listskillspointerbrokenhint', $ortswahllink)];
+            $notices = [self::notice('listskillspointerbrokenhint', $locationselectionlink)];
         }
 
-        return ['skills' => $skills, 'ausstaende' => pending_write_notice::list_grouped(), 'hinweise' => $hinweise];
+        $pending = array_map(static fn (array $group): array => [
+            'path' => $group['pfad'],
+            'entries' => array_map(static fn (array $entry): array => [
+                'identifier' => $entry['kennung'],
+                'timestamp' => $entry['zeitpunkt'],
+                'operation' => $entry['vorgang'],
+                'error_class' => $entry['fehlerklasse'],
+                'course_id' => $entry['kursid'],
+            ], $group['eintraege']),
+        ], pending_write_notice::list_grouped());
+
+        return ['skills' => $skills, 'pending_entries' => $pending, 'notices' => $notices];
     }
 
     /**
-     * Baut einen Eintrag fuer 'hinweise' (Code-Review Issue #519): Text aus
+     * Baut einen Eintrag fuer 'notices' (Code-Review Issue #519): Text aus
      * dem Sprachpaket, Link stets die Ortswahlseite - gemeinsam fuer alle
      * drei Fakten dieser Methode.
      *
@@ -114,7 +134,7 @@ final class list_skills extends external_api {
      * @param string $link Bereits aufgeloester Link zur Ortswahlseite.
      * @return array{text: string, link: string}
      */
-    private static function hinweis(string $stringkey, string $link): array {
+    private static function notice(string $stringkey, string $link): array {
         return [
             'text' => get_string($stringkey, 'local_coursepilot', webdav_setup_steps::ORTSWAHL_PAGE),
             'link' => $link,
@@ -128,35 +148,38 @@ final class list_skills extends external_api {
         return new external_single_structure([
             'skills' => new external_multiple_structure(
                 new external_single_structure([
-                    'name' => new external_value(PARAM_TEXT, 'Skill-Bezeichner, fuer get_skill(name)'),
-                    'ausloeser' => new external_value(PARAM_TEXT, 'Auslöser/Beschreibung, Deutsch'),
-                    'art' => new external_value(PARAM_TEXT, '"adapter" oder "referenz"'),
-                    'umfang' => new external_value(PARAM_INT, 'Umfang des Inhalts in Zeichen'),
+                    'name' => new external_value(PARAM_TEXT, 'Skill identifier, for get_skill(name)'),
+                    'trigger' => new external_value(PARAM_TEXT, 'Trigger/description, German'),
+                    'kind' => new external_value(PARAM_TEXT, '"adapter" or "referenz" (reference)'),
+                    'length' => new external_value(PARAM_INT, 'Length of the content in characters'),
                 ])
             ),
-            'ausstaende' => new external_multiple_structure(
+            'pending_entries' => new external_multiple_structure(
                 new external_single_structure([
-                    'pfad' => new external_value(PARAM_TEXT, 'Relativer Zieldateipfad im Kontextbereich'),
-                    'eintraege' => new external_multiple_structure(
+                    'path' => new external_value(PARAM_TEXT, 'Relative target file path in the context area'),
+                    'entries' => new external_multiple_structure(
                         new external_single_structure([
-                            'kennung' => new external_value(PARAM_ALPHANUMEXT, 'Kennung, fuer ausstand=<Kennung> oder coursepilot_dismiss_ausstand'),
-                            'zeitpunkt' => new external_value(PARAM_INT, 'Unix-Zeitstempel des gescheiterten Vorgangs'),
-                            'vorgang' => new external_value(PARAM_TEXT, '"anlegen", "überschreiben" oder "anhängen"'),
-                            'fehlerklasse' => new external_value(PARAM_TEXT, 'Benannte Fehlerklasse, nie ein Freitext'),
-                            'kursid' => new external_value(PARAM_INT, 'Kurs-ID, 0 wenn der Aufruf keinem Kurs zugeordnet war'),
+                            'identifier' => new external_value(PARAM_ALPHANUMEXT, 'Identifier, for pending_entry=<identifier> or coursepilot_dismiss_ausstand'),
+                            'timestamp' => new external_value(PARAM_INT, 'Unix timestamp of the failed operation'),
+                            'operation' => new external_value(
+                                PARAM_TEXT,
+                                '"anlegen" (create), "überschreiben" (overwrite) or "anhängen" (append)'
+                            ),
+                            'error_class' => new external_value(PARAM_TEXT, 'Named error class, never free text'),
+                            'course_id' => new external_value(PARAM_INT, 'Course ID, 0 if the call was not tied to a course'),
                         ])
                     ),
                 ]),
-                'Offene Ausstaende, gebuendelt je Zieldatei, die aeltesten zuerst (ADR 0023)',
+                'Open pending entries, bundled per target file, oldest first (ADR 0023)',
                 VALUE_DEFAULT,
                 []
             ),
-            'hinweise' => new external_multiple_structure(
+            'notices' => new external_multiple_structure(
                 new external_single_structure([
-                    'text' => new external_value(PARAM_TEXT, 'Hinweistext, Deutsch'),
-                    'link' => new external_value(PARAM_URL, 'Zielseite des Hinweises'),
+                    'text' => new external_value(PARAM_TEXT, 'Notice text, German'),
+                    'link' => new external_value(PARAM_URL, 'Target page of the notice'),
                 ]),
-                'Ohne Netzzugriff ermittelte Hinweise, z.B. offene Ortswahl bei vorhandener Freischaltung (Issue #494)',
+                'Notices determined without network access, e.g. open location selection with existing enablement (Issue #494)',
                 VALUE_DEFAULT,
                 []
             ),

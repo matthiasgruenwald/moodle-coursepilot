@@ -28,15 +28,15 @@ Nur `.md`-Dateien; Pfadsegmente `[A-Za-z0-9_-]`, kein `.`/`..`.
 
 Solange die Lehrkraft noch keinen Ort gewählt hat und die Schule externe
 Speicher freigeschaltet hat, liefert `coursepilot_list_skills` im Feld
-`hinweise` einen Satz mit Link zur Ortswahlseite. Diesen Satz **genau einmal
+`notices` einen Satz mit Link zur Ortswahlseite. Diesen Satz **genau einmal
 je Sitzung** an die Lehrkraft weitergeben. Antwortet sie mit "später" (oder
 sinngemäß), in derselben Sitzung nicht erneut ansprechen — eine offene
 Ortswahl sperrt ohnehin nichts, Coursepilot arbeitet einfach weiter.
 
 ## Altbestand (vorheriger Ort)
 
-`coursepilot_list_skills` nennt im selben Feld `hinweise` — nach den
-`ausstände` gemeldet, also erst wenn offene Ausstände schon benannt sind —
+`coursepilot_list_skills` nennt im selben Feld `notices` — nach den
+`pending_entries` gemeldet, also erst wenn offene Ausstände schon benannt sind —
 ohne Zählung den Fakt "Altbestand offen", wenn nach einem Ortswechsel des
 Kontextbereichs am früheren Ort noch Kontextdateien liegen.
 `coursepilot_list_context_files`/`coursepilot_read_context_file` mit

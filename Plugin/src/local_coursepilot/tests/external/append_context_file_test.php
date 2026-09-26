@@ -341,11 +341,11 @@ final class append_context_file_test extends \advanced_testcase {
      * Parameter - er wirkt nur extern (Issue #513, Spec #486 §6: "Anhaengen
      * nutzt den Pruefwert ebenso"), weil dort tatsaechlich ein fruehes Lesen
      * vorausgehen kann. Befund aus Issue #513: der urspruengliche Test
-     * (`['path', 'content', 'ausstand']`) galt vor diesem Parameter.
+     * (`['path', 'content', 'pending_entry']`) galt vor diesem Parameter.
      */
     public function test_execute_parameters_expose_expected_contenthash_for_the_external_branch(): void {
         $this->assertSame(
-            ['path', 'content', 'ausstand', 'expected_contenthash', 'courseid'],
+            ['path', 'content', 'pending_entry', 'expected_contenthash', 'courseid'],
             array_keys(append_context_file::execute_parameters()->keys)
         );
     }
@@ -469,7 +469,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Nachtragen mit "ausstand=" ueberschreibt nie ungeprueft (Entscheidung
+     * Nachtragen mit "pending_entry=" ueberschreibt nie ungeprueft (Entscheidung
      * zu Issue #513): Fehlt der Pruefwert, obwohl die Zieldatei bereits
      * existiert, geht das Nachtragen als Konflikt zurueck statt gewachsenen
      * Bestand stillschweigend zu erweitern.
@@ -773,7 +773,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * `ausstand=<Kennung>` hakt den Eintrag beim erfolgreichen Nachtragen
+     * `pending_entry=<Kennung>` hakt den Eintrag beim erfolgreichen Nachtragen
      * per Anhaengen ab (ADR 0023 Punkt 3).
      */
     public function test_ausstand_parameter_dismisses_entry_on_successful_append(): void {

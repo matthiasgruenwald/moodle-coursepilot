@@ -621,7 +621,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Nachtragen mit "ausstand=" ueberschreibt nie ungeprueft (Entscheidung
+     * Nachtragen mit "pending_entry=" ueberschreibt nie ungeprueft (Entscheidung
      * zu Issue #513): Fehlt der Pruefwert, obwohl die Zieldatei bereits
      * existiert, geht das Nachtragen als Konflikt zurueck statt gewachsenen
      * Bestand stillschweigend zu ersetzen.
@@ -1321,7 +1321,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * `ausstand=<Kennung>` an einem erfolgreichen Schreibvorgang hakt den
+     * `pending_entry=<Kennung>` an einem erfolgreichen Schreibvorgang hakt den
      * Eintrag im selben Aufruf ab (ADR 0023 Punkt 3: Nachtragen).
      */
     public function test_ausstand_parameter_dismisses_entry_on_successful_retry(): void {
@@ -1426,12 +1426,12 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertStringContainsString('{$a->reason}', $string['ausstandwritefailed']);
         $this->assertStringContainsString('Noch nicht gespeichert', $string['ausstandwritefailed']);
         $this->assertStringContainsString('Kennung {$a->kennung}', $string['ausstandwritefailed']);
-        $this->assertStringContainsString('ausstand="{$a->kennung}"', $string['ausstandwritefailed']);
+        $this->assertStringContainsString('pending_entry="{$a->kennung}"', $string['ausstandwritefailed']);
         $this->assertStringContainsString('{$a->target}', $string['ausstandwritefailed']);
         $this->assertStringContainsString('voll', $string['ausstandnotewritefailed']);
         $this->assertStringContainsString('Speicherplatz', $string['ausstandnotequotaexceeded']);
 
-        // Teil (4): die Anweisung an die KI nennt ausdruecklich "ausstand="
+        // Teil (4): die Anweisung an die KI nennt ausdruecklich "pending_entry="
         // zum Nachtragen und verbietet einen anderen Ort (Issue #516
         // Akzeptanzkriterium).
         $this->assertStringContainsString('keinesfalls an einem anderen Ort ablegen', $string['ausstandwritefailed']);
@@ -1478,7 +1478,7 @@ final class write_context_file_test extends \advanced_testcase {
      */
     public function test_execute_parameters_expose_no_area_selector(): void {
         $this->assertSame(
-            ['path', 'content', 'expected_contenthash', 'ausstand', 'nur_anlegen', 'courseid'],
+            ['path', 'content', 'expected_contenthash', 'pending_entry', 'create_only', 'courseid'],
             array_keys(write_context_file::execute_parameters()->keys)
         );
     }
@@ -1619,7 +1619,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Nachtragen mit "ausstand=" ueberschreibt auch in Private Files nie
+     * Nachtragen mit "pending_entry=" ueberschreibt auch in Private Files nie
      * ungeprueft (Issue #540, symmetrisch zu
      * {@see test_ausstand_retry_without_checkvalue_is_rejected_when_file_exists()}
      * fuer den externen Ort): Fehlt der Pruefwert, obwohl die Zieldatei

@@ -140,7 +140,7 @@ final class read_context_file_test extends \advanced_testcase {
      */
     public function test_execute_parameters_expose_no_area_selector(): void {
         $definition = read_context_file::execute_parameters()->keys;
-        $this->assertSame(['path', 'vorheriger_ort'], array_keys($definition));
+        $this->assertSame(['path', 'previous_location'], array_keys($definition));
     }
 
     /**

@@ -29,7 +29,8 @@ defined('MOODLE_INTERNAL') || die();
  * Verwirft einen Eintrag der Ausstandsnotiz ausdruecklich (Issue #492, ADR
  * 0023 Punkt 3, Spec #486 §10) - der zweite der beiden Wege, auf denen ein
  * Eintrag verschwindet, neben dem Nachtragen ueber
- * `write_context_file`/`append_context_file` mit `ausstand=<Kennung>`.
+ * `write_context_file`/`append_context_file` mit `pending_entry=<Kennung>`
+ * (#571: Parametername seither englisch deklariert).
  *
  * Erster vollstaendiger englischer Durchstich der Expand-Migration aus #568
  * (Spec 0025 §A): Parametername, Rueckgabeschluessel und Beschreibungen sind

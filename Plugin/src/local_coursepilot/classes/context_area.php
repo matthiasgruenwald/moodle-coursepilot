@@ -385,7 +385,7 @@ final class context_area {
      *
      * Seit Issue #540 (Spec 0021, ADR 0023 "an beiden Orten") symmetrisch zum
      * externen Zweig ({@see pointer_writer::write()}): ein Nachtragen
-     * (`$requirecheckvalue`, `ausstand=`) ueberschreibt eine bereits
+     * (`$requirecheckvalue`, `pending_entry=`) ueberschreibt eine bereits
      * vorhandene Zieldatei nie ungeprueft, und ein echter Ausfall beim
      * Persistieren selbst (nicht: Pfad-/Endungs-/Quotenpruefung, nicht: der
      * hier bereits behandelte Pruefwert-Konflikt) vermerkt einen Ausstand,
@@ -394,7 +394,7 @@ final class context_area {
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash
-     * @param bool $requirecheckvalue Nachtragen (`ausstand=`) - siehe
+     * @param bool $requirecheckvalue Nachtragen (`pending_entry=`) - siehe
      *        {@see pointer_writer::write()}: eine bereits vorhandene
      *        Zieldatei ohne mitgegebenen Pruefwert gilt dann selbst als
      *        Konflikt, statt gewachsenen Bestand ungeprueft zu ersetzen.

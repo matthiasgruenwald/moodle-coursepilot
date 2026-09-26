@@ -194,7 +194,7 @@ $string['contextfilealreadyexists'] = '{$a} existiert am neuen Ort bereits — n
 // Ausstandsnotiz (Issue #492, ADR 0023, Spec #486 §8/§10): kein absoluter
 // Serverpfad, kein Benutzername, kein Passwort, kein HTTP-Code, kein
 // Antwortrumpf (Geheimnis-Test) — der Rohcode geht ins Zugriffsprotokoll.
-$string['ausstandwritefailed'] = '{$a->path} ({$a->operation}): {$a->reason}. Noch nicht gespeichert, vermerkt (Kennung {$a->kennung}). Bitte den Inhalt im Gespräch behalten, ihn keinesfalls an einem anderen Ort ablegen, und denselben Aufruf mit ausstand="{$a->kennung}" wiederholen, sobald die Verbindung wieder steht. Verbindung: {$a->target}.';
+$string['ausstandwritefailed'] = '{$a->path} ({$a->operation}): {$a->reason}. Noch nicht gespeichert, vermerkt (Kennung {$a->kennung}). Bitte den Inhalt im Gespräch behalten, ihn keinesfalls an einem anderen Ort ablegen, und denselben Aufruf mit pending_entry="{$a->kennung}" wiederholen, sobald die Verbindung wieder steht. Verbindung: {$a->target}.';
 $string['ausstandnotewritefailed'] = '{$a->path} ({$a->operation}) nicht geschrieben, und auch der Vermerk „noch nicht gespeichert“ konnte nicht angelegt werden — Ihre Private Files sind voll. Bitte Platz schaffen und erneut versuchen, sonst geht der Inhalt verloren.';
 $string['ausstandnotequotaexceeded'] = 'Der Vermerk „noch nicht gespeichert“ konnte nicht geschrieben werden — der Speicherplatz in Ihren Private Files reicht nicht.';
 $string['ausstandunknown'] = 'Kein offener Eintrag „noch nicht gespeichert“ mit der Kennung {$a}.';

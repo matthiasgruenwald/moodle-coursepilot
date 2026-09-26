@@ -212,7 +212,7 @@ final class list_context_files_test extends \advanced_testcase {
      */
     public function test_execute_parameters_expose_no_area_selector(): void {
         $definition = list_context_files::execute_parameters()->keys;
-        $this->assertSame(['path', 'vorheriger_ort'], array_keys($definition));
+        $this->assertSame(['path', 'previous_location'], array_keys($definition));
     }
 
     /**

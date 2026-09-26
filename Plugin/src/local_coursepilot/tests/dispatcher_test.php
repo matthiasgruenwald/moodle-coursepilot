@@ -695,6 +695,135 @@ XML;
     }
 
     /**
+     * #571, Abnahmekriterium: Skill-Liste/-Abruf, Lesen/Schreiben einer
+     * Kontextdatei sowie Nachtragen und Verwerfen eines Ausstands mit
+     * `identifier` sind ueber den oeffentlichen Dispatch-Pfad mit unmittelbar
+     * englisch deklarierten Feldern aufrufbar (Spec 0025 §A, dritter
+     * Durchstich der Expand-Migration nach #569/#570). Rueckgabeschluessel
+     * "trigger"/"kind"/"length" je Skill, "pending_entries"/"notices" statt
+     * "ausstaende"/"hinweise", "referenced_parts"/"corpus_version" statt
+     * "referenzierte_teile"/"korpus_stand" und der Eingabeparameter
+     * "pending_entry" statt "ausstand" fuer das Nachtragen.
+     */
+    public function test_context_and_skill_tools_are_callable_through_dispatcher_in_english(): void {
+        $this->resetAfterTest();
+        [$teacher, $token] = $this->create_authenticated_user();
+        $this->setUser($teacher);
+
+        // Skill-Liste: Katalog- und Ausstandsfelder englisch benannt.
+        $listskillsresponse = dispatcher::handle(
+            [
+                'id' => 1,
+                'method' => 'tools/call',
+                'params' => ['name' => 'coursepilot_list_skills', 'arguments' => []],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $listskillsresponse['status']);
+        $skills = $listskillsresponse['body']['result']['structuredContent'];
+        $this->assertArrayHasKey('pending_entries', $skills);
+        $this->assertArrayHasKey('notices', $skills);
+        $this->assertArrayNotHasKey('ausstaende', $skills);
+        $this->assertArrayNotHasKey('hinweise', $skills);
+        $firstskill = $skills['skills'][0];
+        $this->assertArrayHasKey('trigger', $firstskill);
+        $this->assertArrayHasKey('kind', $firstskill);
+        $this->assertArrayHasKey('length', $firstskill);
+
+        // Skill-Abruf: Inhaltsfelder englisch benannt.
+        $getskillresponse = dispatcher::handle(
+            [
+                'id' => 2,
+                'method' => 'tools/call',
+                'params' => ['name' => 'coursepilot_get_skill', 'arguments' => ['name' => 'coursepilot']],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $getskillresponse['status']);
+        $skill = $getskillresponse['body']['result']['structuredContent'];
+        $this->assertArrayHasKey('referenced_parts', $skill);
+        $this->assertArrayHasKey('corpus_version', $skill);
+
+        // Schreiben: coursepilot_write_context_file legt eine Kontextdatei an.
+        $writeresponse = dispatcher::handle(
+            [
+                'id' => 3,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_write_context_file',
+                    'arguments' => ['path' => 'plan.md', 'content' => '# Plan #571'],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $writeresponse['status']);
+        $this->assertArrayNotHasKey('isError', $writeresponse['body']['result']);
+        $this->assertTrue($writeresponse['body']['result']['structuredContent']['created']);
+
+        // Lesen: coursepilot_read_context_file liest denselben Inhalt.
+        $readresponse = dispatcher::handle(
+            [
+                'id' => 4,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_read_context_file',
+                    'arguments' => ['path' => 'plan.md'],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $readresponse['status']);
+        $this->assertSame('# Plan #571', $readresponse['body']['result']['structuredContent']['content']);
+
+        // Nachtragen: ein offener Ausstand verschwindet, sobald das erneute
+        // Schreiben mit "pending_entry" gelingt.
+        $pendingidentifier = pending_write_notice::record('journal.md', 'anlegen', 'Speicher voll', 0);
+        $catchupresponse = dispatcher::handle(
+            [
+                'id' => 5,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_write_context_file',
+                    'arguments' => [
+                        'path' => 'journal.md',
+                        'content' => '# Journal #571',
+                        'pending_entry' => $pendingidentifier,
+                    ],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $catchupresponse['status']);
+        $this->assertArrayNotHasKey('isError', $catchupresponse['body']['result']);
+        $this->assertSame([], pending_write_notice::list_grouped());
+
+        // Verwerfen: coursepilot_dismiss_ausstand mit "identifier" beendet
+        // einen zweiten, unabhaengigen Ausstand ausdruecklich.
+        $dismissidentifier = pending_write_notice::record('journal.md', 'anlegen', 'Speicher voll', 0);
+        $dismissresponse = dispatcher::handle(
+            [
+                'id' => 6,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_dismiss_ausstand',
+                    'arguments' => ['identifier' => $dismissidentifier],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $dismissresponse['status']);
+        $this->assertArrayNotHasKey('isError', $dismissresponse['body']['result']);
+        $this->assertSame($dismissidentifier, $dismissresponse['body']['result']['structuredContent']['identifier']);
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
      * #568, Abnahmekriterium: coursepilot_dismiss_ausstand ist ueber den
      * oeffentlichen Dispatch-Pfad mit dem englischen Feldnamen `identifier`
      * aufrufbar - nicht nur per direktem dismiss_ausstand::execute()-Aufruf

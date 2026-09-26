@@ -157,7 +157,7 @@ final class pointer_writer {
      *        passt er nicht zum inzwischen aktuellen Stand, wird ein
      *        `Konflikt` gemeldet, statt die Handaenderung zu ueberschreiben.
      *        Leer heisst: ohne Pruefwert wird wie bisher ueberschrieben.
-     * @param bool $requirecheckvalue Nachtragen (`ausstand=`, Issue #513) -
+     * @param bool $requirecheckvalue Nachtragen (`pending_entry=`, Issue #513) -
      *        eine bereits vorhandene Zieldatei ohne mitgegebenen Pruefwert
      *        gilt dann selbst als `Konflikt`, statt gewachsenen Bestand
      *        ungeprueft zu ersetzen. Wirkungslos, solange die Datei noch
@@ -233,7 +233,7 @@ final class pointer_writer {
      * @param string $expectedcontenthash Pruefwert aus einem frueheren Lesen
      *        (Issue #513) - siehe {@see write()}, hier vor dem Read-modify-
      *        write geprueft statt vor einem einzelnen PUT.
-     * @param bool $requirecheckvalue Nachtragen (`ausstand=`, Issue #513) -
+     * @param bool $requirecheckvalue Nachtragen (`pending_entry=`, Issue #513) -
      *        siehe {@see write()}.
      * @param int $courseid Kurs-ID, nur fuer einen etwaigen Eintrag der
      *        Ausstandsnotiz (Issue #516, Spec #486 §8) - 0, wenn der Aufruf
@@ -528,7 +528,7 @@ final class pointer_writer {
      * Pfad und Vorgang; (2) Ursache in Lehrkraftsprache, mit dem Hinweis
      * "spaeter nachtragen" oder "an Ihrem Speicher ist etwas zu tun" (Issue
      * #516); (3) "noch nicht gespeichert, vermerkt (Kennung ...)"; (4) die
-     * Anweisung an die KI, den Inhalt zu behalten, mit `ausstand=`
+     * Anweisung an die KI, den Inhalt zu behalten, mit `pending_entry=`
      * nachzutragen und keinen anderen Ort zu nehmen; (5) Instanzname und
      * Host. Nie ein absoluter Serverpfad, Benutzername, Passwort, HTTP-Code
      * oder Antwortrumpf (Geheimnis-Test) - der Rohcode ($rawmessage, z.B.

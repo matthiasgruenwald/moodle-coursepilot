@@ -58,7 +58,7 @@ final class pending_write_translation {
      * #492/#516/#540): (1) Pfad und Vorgang; (2) die vom Aufrufer bereits
      * fertige Ursache in Lehrkraftsprache; (3) "noch nicht gespeichert,
      * vermerkt (Kennung ...)"; (4) die Anweisung an die KI, den Inhalt zu
-     * behalten und mit `ausstand=` nachzutragen; (5) das vom Aufrufer bereits
+     * behalten und mit `pending_entry=` nachzutragen; (5) das vom Aufrufer bereits
      * fertige Ziel (Instanzname+Host extern, eine ortsbeschreibende
      * Kurzformel bei Private Files). Nie ein absoluter Serverpfad,
      * Benutzername, Passwort, HTTP-Code oder Antwortrumpf (Geheimnis-Test) -

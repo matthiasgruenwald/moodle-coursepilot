@@ -38,6 +38,11 @@ defined('MOODLE_INTERNAL') || die();
  * Filters: der Name kommt unveraendert bei der Pruefung an, die Ablehnung
  * ist eine Frage der Verzeichnisliste, nicht der Zeichenbereinigung.
  *
+ * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "referenced_parts"
+ * statt "referenzierte_teile", "corpus_version" statt "korpus_stand" - der
+ * zugrundeliegende Skill-Korpus ({@see \local_coursepilot\skill_corpus})
+ * bleibt intern deutsch, die Uebersetzung geschieht hier.
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -49,7 +54,7 @@ final class get_skill extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'name' => new external_value(PARAM_TEXT, 'Skill-Bezeichner aus coursepilot_list_skills, kein Pfad'),
+            'name' => new external_value(PARAM_TEXT, 'Skill identifier from coursepilot_list_skills, not a path'),
         ]);
     }
 
@@ -63,7 +68,12 @@ final class get_skill extends external_api {
         self::validate_context(context_system::instance());
         require_capability('local/coursepilot:use', context_system::instance());
 
-        return skill_corpus::get($params['name']);
+        $entry = skill_corpus::get($params['name']);
+        return [
+            'content' => $entry['content'],
+            'referenced_parts' => $entry['referenzierte_teile'],
+            'corpus_version' => $entry['korpus_stand'],
+        ];
     }
 
     /**
@@ -71,11 +81,11 @@ final class get_skill extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'content' => new external_value(PARAM_RAW, 'Markdown-Inhalt'),
-            'referenzierte_teile' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Name eines im Inhalt referenzierten Korpus-Teils')
+            'content' => new external_value(PARAM_RAW, 'Markdown content'),
+            'referenced_parts' => new external_multiple_structure(
+                new external_value(PARAM_TEXT, 'Name of a corpus part referenced in the content')
             ),
-            'korpus_stand' => new external_value(PARAM_TEXT, 'Plugin-Release und -Version des ausgelieferten Korpus'),
+            'corpus_version' => new external_value(PARAM_TEXT, 'Plugin release and version of the delivered corpus'),
         ]);
     }
 }

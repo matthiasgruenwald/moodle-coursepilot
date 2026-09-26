@@ -36,6 +36,11 @@ defined('MOODLE_INTERNAL') || die();
  * liefert bereits denselben Feldsatz fuer beide Orte - dieses Werkzeug
  * unterscheidet selbst nicht mehr zwischen Moodle und extern.
  *
+ * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "previous_location"
+ * statt "vorheriger_ort" - derselbe Durchstich wie bei den Kurs-/Aktivitaets-
+ * und Fragenbankwerkzeugen aus #569/#570, {@see \local_coursepilot\contract_keys}
+ * uebersetzt diesen Aufruf seitdem nicht mehr.
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -47,11 +52,11 @@ class list_context_files extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'path' => new external_value(PARAM_PATH, 'Relativer Unterordner, leer fuer die Wurzel', VALUE_DEFAULT, ''),
-            'vorheriger_ort' => new external_value(
+            'path' => new external_value(PARAM_PATH, 'Relative subfolder, empty for the root', VALUE_DEFAULT, ''),
+            'previous_location' => new external_value(
                 PARAM_BOOL,
-                'Optional: true listet den vorherigen Ort statt des aktuellen (Nur-Lese-Schalter fuer den '
-                    . 'Altbestand, Issue #498) - wirkt nur, solange ein Altbestand offen ist',
+                'Optional: true lists the previous location instead of the current one (read-only switch for the '
+                    . 'Altbestand/legacy stock, Issue #498) - only takes effect while a legacy stock is open',
                 VALUE_DEFAULT,
                 false
             ),
@@ -63,13 +68,13 @@ class list_context_files extends external_api {
      * @param bool $previouslocation
      * @return array
      * @throws \moodle_exception invalidcontextpath, wenn $path ein "."/".."-
-     *         Segment enthaelt; altbestandclosed, wenn "vorheriger_ort" ohne
+     *         Segment enthaelt; altbestandclosed, wenn "previous_location" ohne
      *         offenen Altbestand gesetzt ist.
      */
     public static function execute(string $path = '', bool $previouslocation = false): array {
         $params = self::validate_parameters(
             self::execute_parameters(),
-            ['path' => $path, 'vorheriger_ort' => $previouslocation]
+            ['path' => $path, 'previous_location' => $previouslocation]
         );
 
         // Kein zusaetzliches 'local/coursepilot:use' o.ae. (anders als
@@ -82,7 +87,7 @@ class list_context_files extends external_api {
         $context = context_files::own_context();
         self::validate_context($context);
 
-        $result = context_area::list($params['path'], $params['vorheriger_ort']);
+        $result = context_area::list($params['path'], $params['previous_location']);
 
         return [
             'path' => $result['directory'],
@@ -97,23 +102,23 @@ class list_context_files extends external_api {
         return new external_single_structure([
             'path' => new external_value(
                 PARAM_TEXT,
-                'Aufgeloester Unterordner, relativ zur Kontextwurzel (leer = Wurzel) - dieselbe Schreibweise, '
-                    . 'die die Werkzeuge entgegennehmen'
+                'Resolved subfolder, relative to the context root (empty = root) - the same notation the tools '
+                    . 'accept'
             ),
             'entries' => new external_multiple_structure(
                 new external_single_structure([
-                    'name' => new external_value(PARAM_TEXT, 'Datei- oder Ordnername'),
-                    'type' => new external_value(PARAM_ALPHA, '"file" oder "folder"'),
-                    'size' => new external_value(PARAM_INT, 'Dateigroesse in Byte, 0 bei Ordnern'),
-                    'mimetype' => new external_value(PARAM_RAW, 'MIME-Typ, leer bei Ordnern'),
+                    'name' => new external_value(PARAM_TEXT, 'File or folder name'),
+                    'type' => new external_value(PARAM_ALPHA, '"file" or "folder"'),
+                    'size' => new external_value(PARAM_INT, 'File size in bytes, 0 for folders'),
+                    'mimetype' => new external_value(PARAM_RAW, 'MIME type, empty for folders'),
                     'locked' => new external_value(
                         PARAM_BOOL,
-                        'Personenbezogen markiert und Schalter aus - Inhalt nicht lesbar, aber sichtbar gelistet'
+                        'Marked as personal data with the switch off - content unreadable, but still listed'
                     ),
                     // Additiv ergaenzt (Spec 0016 Paragraph 2): Grundlage fuer
                     // Gleichzeitigkeitsschutz und Handaenderungs-Erkennung.
-                    'contenthash' => new external_value(PARAM_ALPHANUMEXT, 'Inhaltspruefsumme, leer bei Ordnern'),
-                    'timemodified' => new external_value(PARAM_INT, 'Zeitpunkt der letzten Aenderung, 0 bei Ordnern'),
+                    'contenthash' => new external_value(PARAM_ALPHANUMEXT, 'Content checksum, empty for folders'),
+                    'timemodified' => new external_value(PARAM_INT, 'Time of last change, 0 for folders'),
                 ])
             ),
         ]);

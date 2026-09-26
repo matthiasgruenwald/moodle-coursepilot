@@ -58,8 +58,8 @@ final class list_skills_test extends \advanced_testcase {
 
         foreach ($result['skills'] as $skill) {
             $this->assertArrayNotHasKey('content', $skill);
-            $this->assertContains($skill['art'], ['adapter', 'referenz']);
-            $this->assertGreaterThan(0, $skill['umfang']);
+            $this->assertContains($skill['kind'], ['adapter', 'referenz']);
+            $this->assertGreaterThan(0, $skill['length']);
         }
     }
 
@@ -87,7 +87,7 @@ final class list_skills_test extends \advanced_testcase {
         $result = list_skills::execute();
         $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-        $this->assertSame([], $result['ausstaende']);
+        $this->assertSame([], $result['pending_entries']);
     }
 
     /**
@@ -112,10 +112,10 @@ final class list_skills_test extends \advanced_testcase {
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
             $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
-            $this->assertCount(2, $result['ausstaende']);
-            $this->assertSame('plan.md', $result['ausstaende'][0]['pfad']);
-            $this->assertSame([$aelter, $neuer], array_column($result['ausstaende'][0]['eintraege'], 'kennung'));
-            $this->assertSame('journal.md', $result['ausstaende'][1]['pfad']);
+            $this->assertCount(2, $result['pending_entries']);
+            $this->assertSame('plan.md', $result['pending_entries'][0]['path']);
+            $this->assertSame([$aelter, $neuer], array_column($result['pending_entries'][0]['entries'], 'identifier'));
+            $this->assertSame('journal.md', $result['pending_entries'][1]['path']);
         } finally {
             \core\di::reset_container();
         }
@@ -134,7 +134,7 @@ final class list_skills_test extends \advanced_testcase {
         $result = list_skills::execute();
         $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-        $this->assertSame([], $result['hinweise']);
+        $this->assertSame([], $result['notices']);
     }
 
     /**
@@ -157,8 +157,8 @@ final class list_skills_test extends \advanced_testcase {
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
             $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
-            $this->assertCount(1, $result['hinweise']);
-            $this->assertStringContainsString('/local/coursepilot/ortswahl.php', $result['hinweise'][0]['link']);
+            $this->assertCount(1, $result['notices']);
+            $this->assertStringContainsString('/local/coursepilot/ortswahl.php', $result['notices'][0]['link']);
         } finally {
             \core\di::reset_container();
         }
@@ -183,7 +183,7 @@ final class list_skills_test extends \advanced_testcase {
         $result = list_skills::execute();
         $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-        $this->assertSame([], $result['hinweise']);
+        $this->assertSame([], $result['notices']);
     }
 
     /**
@@ -198,7 +198,7 @@ final class list_skills_test extends \advanced_testcase {
         $result = list_skills::execute();
         $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-        $this->assertSame([], $result['hinweise']);
+        $this->assertSame([], $result['notices']);
     }
 
     /**
@@ -215,14 +215,14 @@ final class list_skills_test extends \advanced_testcase {
         $result = list_skills::execute();
         $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-        $this->assertCount(1, $result['hinweise']);
+        $this->assertCount(1, $result['notices']);
         $this->assertSame(
             get_string(
                 'listskillsaltbestandhint',
                 'local_coursepilot',
                 \local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE
             ),
-            $result['hinweise'][0]['text']
+            $result['notices'][0]['text']
         );
         // Kein Zaehlwert (Issue #498 Akzeptanzkriterium: "ohne Zaehlung") -
         // am deutschen Sprachpaket geprueft, echte Umlaute, keine Ziffern.
@@ -261,16 +261,16 @@ final class list_skills_test extends \advanced_testcase {
 
             $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
             $this->assertNotEmpty($result['skills']);
-            $this->assertCount(1, $result['hinweise']);
+            $this->assertCount(1, $result['notices']);
             $this->assertSame(
                 get_string(
                     'listskillspointerbrokenhint',
                     'local_coursepilot',
                     \local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE
                 ),
-                $result['hinweise'][0]['text']
+                $result['notices'][0]['text']
             );
-            $this->assertStringContainsString('/local/coursepilot/ortswahl.php', $result['hinweise'][0]['link']);
+            $this->assertStringContainsString('/local/coursepilot/ortswahl.php', $result['notices'][0]['link']);
         } finally {
             \core\di::reset_container();
         }
@@ -306,14 +306,14 @@ final class list_skills_test extends \advanced_testcase {
 
             $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
             $this->assertNotEmpty($result['skills']);
-            $this->assertCount(1, $result['hinweise']);
+            $this->assertCount(1, $result['notices']);
             $this->assertSame(
                 get_string(
                     'listskillspointerbrokenhint',
                     'local_coursepilot',
                     \local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE
                 ),
-                $result['hinweise'][0]['text']
+                $result['notices'][0]['text']
             );
         } finally {
             \core\di::reset_container();

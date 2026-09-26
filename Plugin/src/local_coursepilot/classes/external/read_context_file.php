@@ -37,6 +37,9 @@ defined('MOODLE_INTERNAL') || die();
  * liefern den Pruefwert bereits als "contenthash", gleich ob Moodle- oder
  * externer Ort.
  *
+ * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "previous_location"
+ * statt "vorheriger_ort", derselbe Durchstich wie bei {@see list_context_files}.
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -48,11 +51,11 @@ class read_context_file extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'path' => new external_value(PARAM_PATH, 'Dateipfad relativ zum Kontextbereich, z.B. "vorlagen.md"'),
-            'vorheriger_ort' => new external_value(
+            'path' => new external_value(PARAM_PATH, 'File path relative to the context area, e.g. "vorlagen.md"'),
+            'previous_location' => new external_value(
                 PARAM_BOOL,
-                'Optional: true liest vom vorherigen Ort statt vom aktuellen (Nur-Lese-Schalter fuer den '
-                    . 'Altbestand, Issue #498) - wirkt nur, solange ein Altbestand offen ist',
+                'Optional: true reads from the previous location instead of the current one (read-only switch for '
+                    . 'the Altbestand/legacy stock, Issue #498) - only takes effect while a legacy stock is open',
                 VALUE_DEFAULT,
                 false
             ),
@@ -65,13 +68,13 @@ class read_context_file extends external_api {
      * @return array
      * @throws \moodle_exception invalidcontextpath fuer einen leeren Pfad oder
      *         ein "."/".."-Segment; contextfilenotfound, wenn die Datei fehlt;
-     *         altbestandclosed, wenn "vorheriger_ort" ohne offenen Altbestand
+     *         altbestandclosed, wenn "previous_location" ohne offenen Altbestand
      *         gesetzt ist.
      */
     public static function execute(string $path, bool $previouslocation = false): array {
         $params = self::validate_parameters(
             self::execute_parameters(),
-            ['path' => $path, 'vorheriger_ort' => $previouslocation]
+            ['path' => $path, 'previous_location' => $previouslocation]
         );
 
         // Kein zusaetzliches 'local/coursepilot:use' o.ae. (anders als
@@ -84,7 +87,7 @@ class read_context_file extends external_api {
         $context = context_files::own_context();
         self::validate_context($context);
 
-        $file = $params['vorheriger_ort']
+        $file = $params['previous_location']
             ? context_area::read_previous_location($params['path'], previous_location::require_open_location())
             : context_area::read($params['path']);
         if ($file === null) {
@@ -114,15 +117,15 @@ class read_context_file extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'path' => new external_value(PARAM_TEXT, 'Aufgeloester Dateipfad, relativ zum Kontextbereich'),
-            'filename' => new external_value(PARAM_TEXT, 'Dateiname'),
-            'mimetype' => new external_value(PARAM_RAW, 'MIME-Typ'),
-            'size' => new external_value(PARAM_INT, 'Dateigroesse in Byte'),
-            'content' => new external_value(PARAM_RAW, 'Dateiinhalt'),
+            'path' => new external_value(PARAM_TEXT, 'Resolved file path, relative to the context area'),
+            'filename' => new external_value(PARAM_TEXT, 'File name'),
+            'mimetype' => new external_value(PARAM_RAW, 'MIME type'),
+            'size' => new external_value(PARAM_INT, 'File size in bytes'),
+            'content' => new external_value(PARAM_RAW, 'File content'),
             // Additiv ergaenzt (Spec 0016 Paragraph 2): Grundlage fuer
             // Gleichzeitigkeitsschutz und Handaenderungs-Erkennung.
-            'contenthash' => new external_value(PARAM_ALPHANUMEXT, 'Inhaltspruefsumme der Datei'),
-            'timemodified' => new external_value(PARAM_INT, 'Zeitpunkt der letzten Aenderung'),
+            'contenthash' => new external_value(PARAM_ALPHANUMEXT, 'Content checksum of the file'),
+            'timemodified' => new external_value(PARAM_INT, 'Time of last change'),
         ]);
     }
 }

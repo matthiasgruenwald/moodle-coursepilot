@@ -46,8 +46,8 @@ final class get_skill_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(get_skill::execute_returns(), $result);
 
         $this->assertStringContainsString('coursepilot-core', $result['content']);
-        $this->assertContains('coursepilot-core', $result['referenzierte_teile']);
-        $this->assertNotSame('', $result['korpus_stand']);
+        $this->assertContains('coursepilot-core', $result['referenced_parts']);
+        $this->assertNotSame('', $result['corpus_version']);
     }
 
     /**

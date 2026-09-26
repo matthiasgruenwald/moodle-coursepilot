@@ -26,9 +26,9 @@ namespace local_coursepilot;
  * Ein Eintrag je gescheitertem Vorgang, nie den Inhalt: Kennung, Kurs-ID,
  * Zeitpunkt, relativer Pfad, Vorgang (anlegen/ueberschreiben/anhaengen/unbekannt) und
  * Fehlerklasse (Issue #516, Spec #486 §8). Verschwindet nur ausdruecklich - durch Nachtragen
- * ({@see pointer_writer}, ueber `ausstand=<Kennung>`) oder durch
- * ausdrueckliches Verwerfen ({@see \local_coursepilot\external\dismiss_ausstand}) -
- * nie durch Zeitablauf.
+ * ({@see pointer_writer}, ueber `pending_entry=<Kennung>`, #571: seither englisch
+ * deklariert) oder durch ausdrueckliches Verwerfen
+ * ({@see \local_coursepilot\external\dismiss_ausstand}) - nie durch Zeitablauf.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -66,14 +66,15 @@ final class pending_write_notice {
 
     /**
      * Verwirft einen Eintrag - genutzt sowohl beim Nachtragen (erfolgreiches
-     * Schreiben mit `ausstand=<Kennung>`) als auch beim ausdruecklichen
-     * Verwerfen durch die Lehrkraft ({@see \local_coursepilot\external\dismiss_ausstand}):
-     * dieselbe Operation, zwei Anlaesse (ADR 0023 Punkt 3).
+     * Schreiben mit `pending_entry=<Kennung>`, #571: seither englisch
+     * deklariert) als auch beim ausdruecklichen Verwerfen durch die Lehrkraft
+     * ({@see \local_coursepilot\external\dismiss_ausstand}): dieselbe
+     * Operation, zwei Anlaesse (ADR 0023 Punkt 3).
      *
      * Eine leere oder unbekannte Kennung ist ein folgenloser No-Op (Issue
      * #506) - `write_context_file`/`append_context_file` rufen deshalb direkt
-     * durch, ohne den optionalen "ausstand"-Parameter selbst erst auf "" zu
-     * pruefen.
+     * durch, ohne den optionalen "pending_entry"-Parameter selbst erst auf ""
+     * zu pruefen.
      *
      * @param string $identifier
      * @return bool true, wenn ein Eintrag mit dieser Kennung existierte und entfernt wurde.

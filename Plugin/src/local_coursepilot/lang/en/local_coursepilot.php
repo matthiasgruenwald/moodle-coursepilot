@@ -244,7 +244,7 @@ $string['contextfilealreadyexists'] = '{$a} already exists at the new location �
 // Pending-write note "Ausstandsnotiz" (issue #492, ADR 0023, spec #486 §8/§10):
 // never an absolute server path, username, password, HTTP code, or response
 // body (secrecy test) — the raw code goes into the access log instead.
-$string['ausstandwritefailed'] = '{$a->path} ({$a->operation}): {$a->reason}. Not saved yet, noted (Kennung {$a->kennung}). Please keep the content in the conversation, never store it anywhere else, and repeat the same call with ausstand="{$a->kennung}" once the connection is back. Connection: {$a->target}.';
+$string['ausstandwritefailed'] = '{$a->path} ({$a->operation}): {$a->reason}. Not saved yet, noted (Kennung {$a->kennung}). Please keep the content in the conversation, never store it anywhere else, and repeat the same call with pending_entry="{$a->kennung}" once the connection is back. Connection: {$a->target}.';
 $string['ausstandnotewritefailed'] = '{$a->path} ({$a->operation}) was not written, and the pending-write note could not be created either — your private files are full. Please free up space and try again, or the content will be lost.';
 $string['ausstandnotequotaexceeded'] = 'The pending-write note could not be written — there is not enough space left in your private files.';
 $string['ausstandunknown'] = 'No pending entry with Kennung {$a}.';

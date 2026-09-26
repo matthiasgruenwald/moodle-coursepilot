@@ -37,6 +37,9 @@ defined('MOODLE_INTERNAL') || die();
  * Was das *nicht* heisst: Spec 0016 §5.3 verbietet Locks, zwei wirklich
  * gleichzeitige Appends koennen einander daher weiterhin verlieren.
  *
+ * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "pending_entry" statt
+ * "ausstand", derselbe Durchstich wie bei {@see write_context_file}.
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -48,27 +51,27 @@ class append_context_file extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'path' => new external_value(PARAM_PATH, 'Dateipfad relativ zum Kontextbereich, z.B. "journal.md"'),
-            'content' => new external_value(PARAM_RAW, 'Anzuhaengender Inhalt'),
-            'ausstand' => new external_value(
+            'path' => new external_value(PARAM_PATH, 'File path relative to the context area, e.g. "journal.md"'),
+            'content' => new external_value(PARAM_RAW, 'Content to append'),
+            'pending_entry' => new external_value(
                 PARAM_ALPHANUMEXT,
-                'Optional: Kennung eines offenen Ausstands (aus coursepilot_list_skills) - gelingt das Schreiben, '
-                    . 'verschwindet der Eintrag im selben Aufruf',
+                'Optional: identifier of an open pending entry (from coursepilot_list_skills) - if the write '
+                    . 'succeeds, the entry disappears within the same call',
                 VALUE_DEFAULT,
                 ''
             ),
             'expected_contenthash' => new external_value(
                 PARAM_ALPHANUMEXT,
-                'Optional, wirkt nur am externen Ort: contenthash der Zieldatei aus dem letzten Lesen - passt er '
-                    . 'nicht, bricht der Vorgang ab. Ohne ETag (IServ) beruht der Vergleich auf der Aenderungszeit '
-                    . '(Sekundenaufloesung).',
+                'Optional, only effective at the external location: contenthash of the target file from the last '
+                    . 'read - if it does not match, the operation aborts. Without an ETag (IServ) the comparison '
+                    . 'relies on the modification time (second resolution).',
                 VALUE_DEFAULT,
                 ''
             ),
             'courseid' => new external_value(
                 PARAM_INT,
-                'Optional: Kurs-ID, wenn der Inhalt zu einem bestimmten Kurs gehoert - dient nur einem etwaigen '
-                    . 'Eintrag der Notiz "noch nicht gespeichert", falls der Speicher/die Verbindung/der Ort scheitert',
+                'Optional: course ID, if the content belongs to a specific course - only used for a possible entry '
+                    . 'in the "not yet saved" notice if the storage/connection/location fails',
                 VALUE_DEFAULT,
                 0
             ),
@@ -78,7 +81,7 @@ class append_context_file extends external_api {
     /**
      * @param string $path
      * @param string $content
-     * @param string $ausstand
+     * @param string $pendingentry
      * @param string $expectedcontenthash
      * @param int $courseid
      * @return array
@@ -90,14 +93,14 @@ class append_context_file extends external_api {
     public static function execute(
         string $path,
         string $content,
-        string $ausstand = '',
+        string $pendingentry = '',
         string $expectedcontenthash = '',
         int $courseid = 0
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'path' => $path,
             'content' => $content,
-            'ausstand' => $ausstand,
+            'pending_entry' => $pendingentry,
             'expected_contenthash' => $expectedcontenthash,
             'courseid' => $courseid,
         ]);
@@ -111,10 +114,10 @@ class append_context_file extends external_api {
             $params['path'],
             $content,
             $params['expected_contenthash'],
-            $params['ausstand'],
+            $params['pending_entry'],
             $params['courseid']
         );
-        pending_write_notice::dismiss($params['ausstand']);
+        pending_write_notice::dismiss($params['pending_entry']);
 
         return self::build_response($result);
     }
@@ -151,10 +154,10 @@ class append_context_file extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'path' => new external_value(PARAM_TEXT, 'Aufgeloester Dateipfad, relativ zum Kontextbereich'),
-            'created' => new external_value(PARAM_BOOL, 'true, wenn die Datei neu angelegt wurde'),
-            'size' => new external_value(PARAM_INT, 'Gesamtgroesse der Datei nach dem Anhaengen, in Byte'),
-            'message' => new external_value(PARAM_RAW, 'Aenderungsmeldung in Lehrkraft-Deutsch'),
+            'path' => new external_value(PARAM_TEXT, 'Resolved file path, relative to the context area'),
+            'created' => new external_value(PARAM_BOOL, 'true if the file was newly created'),
+            'size' => new external_value(PARAM_INT, 'Total file size after appending, in bytes'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
         ]);
     }
 }
