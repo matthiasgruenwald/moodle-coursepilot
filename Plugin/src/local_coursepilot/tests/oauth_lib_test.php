@@ -439,6 +439,82 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
+     * Ein abgelaufener Code scheitert, unabhaengig von used - und bleibt
+     * dabei unangetastet (kein Claim auf eine Zeile, die ohnehin nicht mehr
+     * gueltig ist).
+     */
+    public function test_exchange_code_rejects_expired_code(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $fixture = $this->registered_client_with_pkce();
+        $this->setUser($this->getDataGenerator()->create_user());
+        global $USER;
+        $code = oauth_lib::issue_code($fixture['clientid'], (int) $USER->id, $fixture['redirecturi'], $fixture['challenge']);
+        $DB->set_field('local_coursepilot_oauth_code', 'expires', time() - 1, ['code' => $code]);
+
+        $result = oauth_lib::exchange_code($code, $fixture['clientid'], $fixture['redirecturi'], $fixture['verifier']);
+
+        $this->assertNull($result);
+        $this->assertSame(0, (int) $DB->get_field('local_coursepilot_oauth_code', 'used', ['code' => $code]));
+    }
+
+    /**
+     * Beweist die eigentliche Race-Condition-Sicherheit mit echter
+     * Ueberlappung ueber zwei GETRENNTE Datenbankverbindungen (#574,
+     * Abnahmekriterium 1) - nicht nur zwei Aufrufe im selben Prozess
+     * nacheinander. Moodle-Kernmuster fuer eine zweite, unabhaengige
+     * Verbindung zur selben Test-DB: {@see \moodle_database::get_driver_instance()}
+     * + connect(), siehe z. B. lib/dml/tests/dml_test.php in Moodle-Core.
+     *
+     * Beide Verbindungen lesen den unveraenderten Datensatz (used=0), BEVOR
+     * auch nur eine von beiden schreibt - der eigentliche Ueberlappungsfall.
+     * Danach fuehrt jede Verbindung ueber sich selbst genau die
+     * CAS-Anweisung aus, die auch {@see oauth_lib::claim_row()} intern
+     * verwendet. Der bisherige Stand (getrenntes Lesen des used-Flags,
+     * danach ein unbedingtes update_record()) haette hier fuer BEIDE
+     * Verbindungen zum Erfolg gefuehrt - die WHERE-Bedingung `used = 0` der
+     * neuen CAS-Anweisung sorgt dafuer, dass die Datenbank selbst die
+     * zweite, zeitgleiche Anweisung ins Leere laufen laesst.
+     */
+    public function test_exchange_code_at_most_one_of_two_separate_connections_wins_the_claim(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $fixture = $this->registered_client_with_pkce();
+        $this->setUser($this->getDataGenerator()->create_user());
+        global $USER;
+        $code = oauth_lib::issue_code($fixture['clientid'], (int) $USER->id, $fixture['redirecturi'], $fixture['challenge']);
+
+        $cfg = $DB->export_dbconfig();
+        $db2 = \moodle_database::get_driver_instance($cfg->dbtype, $cfg->dblibrary);
+        $db2->connect($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname, $cfg->prefix, (array) ($cfg->dboptions ?? []));
+
+        try {
+            // Beide Verbindungen sehen denselben, noch unbeanspruchten Stand.
+            $this->assertSame(0, (int) $DB->get_field('local_coursepilot_oauth_code', 'used', ['code' => $code]));
+            $this->assertSame(0, (int) $db2->get_field('local_coursepilot_oauth_code', 'used', ['code' => $code]));
+
+            $claima = hash('sha256', $code . '|a');
+            $claimb = hash('sha256', $code . '|b');
+            $DB->execute(
+                'UPDATE {local_coursepilot_oauth_code} SET code = :claim, used = 1 WHERE code = :code AND used = 0',
+                ['claim' => $claima, 'code' => $code]
+            );
+            $db2->execute(
+                'UPDATE {local_coursepilot_oauth_code} SET code = :claim, used = 1 WHERE code = :code AND used = 0',
+                ['claim' => $claimb, 'code' => $code]
+            );
+
+            $wona = $DB->record_exists('local_coursepilot_oauth_code', ['code' => $claima]);
+            $wonb = $DB->record_exists('local_coursepilot_oauth_code', ['code' => $claimb]);
+            $this->assertNotEquals($wona, $wonb, 'Genau eine der beiden ueberlappenden Verbindungen darf den Anspruch gewinnen.');
+        } finally {
+            $db2->dispose();
+        }
+    }
+
+    /**
      * Ein falscher PKCE-Code-Verifier scheitert - der Code ist damit noch
      * nicht verbraucht.
      */
@@ -494,6 +570,127 @@ final class oauth_lib_test extends \advanced_testcase {
         // Das alte Refresh-Token ist tot.
         $reuse = oauth_lib::rotate_refresh_token($original['refresh_token'], $fixture['clientid']);
         $this->assertNull($reuse);
+    }
+
+    /**
+     * Ein abgelaufenes Refresh-Token scheitert, unabhaengig von revoked - und
+     * bleibt dabei unangetastet.
+     */
+    public function test_rotate_refresh_token_rejects_expired_token(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $fixture = $this->registered_client_with_pkce();
+        global $USER;
+        $this->setUser($this->getDataGenerator()->create_user());
+        $code = oauth_lib::issue_code($fixture['clientid'], (int) $USER->id, $fixture['redirecturi'], $fixture['challenge']);
+        $original = oauth_lib::exchange_code($code, $fixture['clientid'], $fixture['redirecturi'], $fixture['verifier']);
+        $hash = hash('sha256', $original['refresh_token']);
+        $DB->set_field('local_coursepilot_oauth_token', 'refreshexpires', time() - 1, ['refreshtokenhash' => $hash]);
+
+        $result = oauth_lib::rotate_refresh_token($original['refresh_token'], $fixture['clientid']);
+
+        $this->assertNull($result);
+        $this->assertSame(0, (int) $DB->get_field('local_coursepilot_oauth_token', 'revoked', ['refreshtokenhash' => $hash]));
+    }
+
+    /**
+     * Beweist die Race-Condition-Sicherheit der Refresh-Rotation mit echter
+     * Ueberlappung ueber zwei getrennte Datenbankverbindungen (#574,
+     * Abnahmekriterium 1, gleiches Vorbild wie
+     * {@see test_exchange_code_at_most_one_of_two_separate_connections_wins_the_claim()}).
+     * Beide Verbindungen lesen denselben, noch nicht widerrufenen Datensatz,
+     * bevor eine von beiden schreibt; danach fuehrt jede ueber sich selbst
+     * genau die CAS-Anweisung aus, die auch {@see oauth_lib::claim_row()}
+     * intern verwendet.
+     */
+    public function test_rotate_refresh_token_at_most_one_of_two_separate_connections_wins_the_claim(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $fixture = $this->registered_client_with_pkce();
+        global $USER;
+        $this->setUser($this->getDataGenerator()->create_user());
+        $code = oauth_lib::issue_code($fixture['clientid'], (int) $USER->id, $fixture['redirecturi'], $fixture['challenge']);
+        $original = oauth_lib::exchange_code($code, $fixture['clientid'], $fixture['redirecturi'], $fixture['verifier']);
+        $hash = hash('sha256', $original['refresh_token']);
+
+        $cfg = $DB->export_dbconfig();
+        $db2 = \moodle_database::get_driver_instance($cfg->dbtype, $cfg->dblibrary);
+        $db2->connect($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname, $cfg->prefix, (array) ($cfg->dboptions ?? []));
+
+        try {
+            $this->assertSame(0, (int) $DB->get_field('local_coursepilot_oauth_token', 'revoked', ['refreshtokenhash' => $hash]));
+            $this->assertSame(0, (int) $db2->get_field('local_coursepilot_oauth_token', 'revoked', ['refreshtokenhash' => $hash]));
+
+            $claima = hash('sha256', $hash . '|a');
+            $claimb = hash('sha256', $hash . '|b');
+            $DB->execute(
+                'UPDATE {local_coursepilot_oauth_token} SET refreshtokenhash = :claim, revoked = 1 '
+                    . 'WHERE refreshtokenhash = :hash AND revoked = 0',
+                ['claim' => $claima, 'hash' => $hash]
+            );
+            $db2->execute(
+                'UPDATE {local_coursepilot_oauth_token} SET refreshtokenhash = :claim, revoked = 1 '
+                    . 'WHERE refreshtokenhash = :hash AND revoked = 0',
+                ['claim' => $claimb, 'hash' => $hash]
+            );
+
+            $wona = $DB->record_exists('local_coursepilot_oauth_token', ['refreshtokenhash' => $claima]);
+            $wonb = $DB->record_exists('local_coursepilot_oauth_token', ['refreshtokenhash' => $claimb]);
+            $this->assertNotEquals($wona, $wonb, 'Genau eine der beiden ueberlappenden Verbindungen darf den Anspruch gewinnen.');
+        } finally {
+            $db2->dispose();
+        }
+    }
+
+    /**
+     * Anspruch und Tokenausstellung bilden eine Datenbankgrenze (#574,
+     * Abnahmekriterium 3): ein provozierter Ausstellungsfehler macht den
+     * Anspruch per Rollback rueckgaengig, statt den Code dauerhaft zu
+     * verbrennen, ohne je ein Tokenpaar geliefert zu haben. Provoziert wird
+     * der Fehler ueber eine temporaere NOT-NULL-Spalte ohne Default auf der
+     * Token-Tabelle - issue_token_pair()s insert_record() setzt sie nicht,
+     * die Datenbank lehnt den Insert deshalb zuverlaessig ab. Die Spalte wird
+     * im finally-Block wieder entfernt, unabhaengig vom Testausgang.
+     */
+    public function test_exchange_code_rolls_back_the_claim_when_token_issuance_fails(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $fixture = $this->registered_client_with_pkce();
+        global $USER;
+        $this->setUser($this->getDataGenerator()->create_user());
+        $code = oauth_lib::issue_code($fixture['clientid'], (int) $USER->id, $fixture['redirecturi'], $fixture['challenge']);
+
+        $dbman = $DB->get_manager();
+        $table = new \xmldb_table('local_coursepilot_oauth_token');
+        $field = new \xmldb_field('forcedfailure574', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null, 'id');
+        $dbman->add_field($table, $field);
+
+        try {
+            $threw = false;
+            try {
+                oauth_lib::exchange_code($code, $fixture['clientid'], $fixture['redirecturi'], $fixture['verifier']);
+            } catch (\dml_exception $e) {
+                $threw = true;
+            }
+
+            $this->assertTrue($threw, 'issue_token_pair() haette an der fehlenden Pflichtspalte scheitern muessen.');
+            $stored = $DB->get_record('local_coursepilot_oauth_code', ['code' => $code]);
+            $this->assertNotFalse($stored, 'Das Rollback haette den urspruenglichen Code wiederherstellen muessen.');
+            $this->assertSame(0, (int) $stored->used, 'Ein zurueckgerollter Anspruch darf den Code nicht als verbraucht zeigen.');
+            $this->assertSame(0, $DB->count_records('local_coursepilot_oauth_token'), 'Kein halb ausgestelltes Tokenpaar darf uebrig bleiben.');
+
+            // Der Code ist nach dem Rollback ganz normal erneut einloesbar,
+            // sobald die provozierte Stoerung wieder behoben ist (naechster
+            // Schritt: Spalte entfernen, siehe finally).
+        } finally {
+            $dbman->drop_field($table, $field);
+        }
+
+        $tokens = oauth_lib::exchange_code($code, $fixture['clientid'], $fixture['redirecturi'], $fixture['verifier']);
+        $this->assertNotNull($tokens, 'Nach Behebung der Stoerung muss der zurueckgerollte Code wieder einloesbar sein.');
     }
 
     /**

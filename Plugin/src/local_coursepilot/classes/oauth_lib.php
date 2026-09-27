@@ -505,12 +505,24 @@ final class oauth_lib {
             return null;
         }
 
-        // Ein Code ist genau einmal einloesbar (#336) - sofort markieren,
-        // bevor das Token-Paar ausgestellt wird.
-        $record->used = 1;
-        $DB->update_record(self::CODE_TABLE, $record);
+        // Anspruch (claim_row()) und Tokenausstellung als eine Datenbank-
+        // grenze (#574): schlaegt die Ausstellung fehl, macht das Rollback
+        // den Anspruch rueckgaengig statt den Code dauerhaft zu verbrennen.
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            if (!self::claim_row(self::CODE_TABLE, 'code', 'used', $record->code)) {
+                // Rivalisierender Anspruch war schneller - fuer den Aufrufer
+                // ununterscheidbar von invalid_grant.
+                $transaction->allow_commit();
+                return null;
+            }
+            $tokens = self::issue_token_pair($clientid, (int) $record->userid);
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
+        $transaction->allow_commit();
 
-        return self::issue_token_pair($clientid, (int) $record->userid);
+        return $tokens;
     }
 
     /**
@@ -535,13 +547,60 @@ final class oauth_lib {
             return null;
         }
 
-        // Rotation: das eingeloeste Refresh-Token stirbt sofort, unabhaengig
-        // vom neuen Paar - eine zweite Einloesung desselben Tokens (z. B.
-        // durch einen kompromittierten Client) schlaegt danach fehl.
-        $record->revoked = 1;
-        $DB->update_record(self::TOKEN_TABLE, $record);
+        // Gleiches Muster wie exchange_code(): Anspruch + Ausstellung als
+        // eine Datenbankgrenze (#574). `accesstokenhash` bleibt beim Claim
+        // unberuehrt, ist aber ueber dieselbe Zeile mitwiderrufen (`revoked`
+        // gilt fuer das ganze Paar, wie schon vor #574).
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            if (!self::claim_row(self::TOKEN_TABLE, 'refreshtokenhash', 'revoked', $record->refreshtokenhash)) {
+                $transaction->allow_commit();
+                return null;
+            }
+            $tokens = self::issue_token_pair($clientid, (int) $record->userid);
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
+        $transaction->allow_commit();
 
-        return self::issue_token_pair($clientid, (int) $record->userid);
+        return $tokens;
+    }
+
+    /**
+     * Beansprucht eine Zeile atomar per Compare-and-Swap (#574), gemeinsamer
+     * Kern fuer den Autorisierungscode- und den Refresh-Token-Anspruch -
+     * gleiches Muster wie {@see werkbank_ticket::claim()} (#512), hier fuer
+     * zwei Tabellen verallgemeinert statt zweimal dupliziert. Eine einzige
+     * UPDATE-Anweisung setzt sowohl $column (eindeutig indiziert) auf einen
+     * frischen, nur diesem Aufruf bekannten Zufallswert als auch $flagcolumn
+     * auf 1, mit dem alten Wert und $flagcolumn = 0 in der WHERE-Klausel. Die
+     * Datenbank sperrt die Zeile fuer die Dauer dieser einen Anweisung; ein
+     * zeitgleicher zweiter Anspruch mit derselben WHERE-Bedingung trifft
+     * danach keine Zeile mehr. Der Read-back unter dem eigenen Zufallswert
+     * zeigt, ob dieser Aufruf gewonnen hat - ohne eine von Moodles
+     * DB-Abstraktion nicht angebotene Rueckgabe der Anzahl betroffener
+     * Zeilen zu brauchen. $column/$flagcolumn stammen ausschliesslich aus
+     * den beiden Aufrufstellen (feste Zeichenketten, nie Nutzereingabe) -
+     * Interpolation in die SQL ist damit unbedenklich. Rueckgabe bewusst
+     * bool statt der beanspruchten Zeile (anders als werkbank_ticket::claim()):
+     * die Aufrufer lesen unveraenderliche Felder (userid, clientid) bereits
+     * aus dem vor dem Anspruch gelesenen Datensatz.
+     *
+     * @param string $table
+     * @param string $column Eindeutig indizierte Spalte, die den CAS-Anspruch traegt.
+     * @param string $flagcolumn Zusaetzliches Verbrauchs-Flag (0/1), das mitgesetzt wird.
+     * @param string $value Aktueller Wert von $column.
+     * @return bool true, wenn dieser Aufruf die Zeile tatsaechlich beansprucht hat.
+     */
+    private static function claim_row(string $table, string $column, string $flagcolumn, string $value): bool {
+        global $DB;
+
+        $claim = hash('sha256', $value . '|' . self::random_token(16));
+        $DB->execute(
+            "UPDATE {{$table}} SET {$column} = :claim, {$flagcolumn} = 1 WHERE {$column} = :value AND {$flagcolumn} = 0",
+            ['claim' => $claim, 'value' => $value]
+        );
+        return $DB->record_exists($table, [$column => $claim]);
     }
 
     /**
