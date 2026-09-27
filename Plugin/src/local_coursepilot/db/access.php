@@ -36,6 +36,16 @@ $capabilities = [
     ],
     // Fernzugriff ueber den MCP-Endpunkt - systemweit abschaltbar, ohne
     // einzelne Kurse anzufassen (#296, Punkt 1).
+    //
+    // Die Archetyp-Vorbelegung fuer editingteacher/teacher bleibt aus
+    // Rueckwaertskompatibilitaet mit bereits bestehenden Installationen
+    // stehen, die eine systemweite editingteacher-Zuweisung als Freischaltung
+    // nutzen (siehe docs/admin-erstanleitung.md, "teacher_edit"). Der ab #575
+    // dokumentierte und empfohlene Einrichtungsweg fuer neue Freischaltungen
+    // ist eine dedizierte Rolle nur mit dieser einen Faehigkeit - siehe
+    // tests/remote_role_test.php::test_useremote_capability_default_archetypes_stay_documented_as_legacy,
+    // die diese Vorbelegung bewusst festschreibt, damit eine kuenftige
+    // Aenderung hier nicht unbemerkt durchrutscht.
     'local/coursepilot:useremote' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_SYSTEM,

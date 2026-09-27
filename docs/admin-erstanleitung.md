@@ -18,10 +18,8 @@ ersetzt sie für die Administration.
    (`db/services.php`) und Capabilities (`db/access.php`).
 3. Web Services und das REST-Protokoll aktivieren (Website-Administration ›
    Plugins › Web Services), falls noch nicht geschehen.
-4. Nichts weiter an Rollen einstellen: `local/coursepilot:use`,
-   `local/coursepilot:useremote`, `local/coursepilot:viewhistory` und
-   `local/coursepilot:restoreversion` sind für die Archetypen `teacher` und
-   `editingteacher` bereits per Auslieferung erlaubt.
+4. Für den Fernzugriff eine dedizierte, systemweit zuweisbare Rolle anlegen
+   (siehe Abschnitt 2, „Fernzugriffsrecht für Lehrkräfte").
 
 Nach jeder späteren Aktualisierung des Plugins erneut `upgrade.php` ausführen —
 Pflicht, sobald sich `db/access.php` oder `db/services.php` geändert haben, sonst
@@ -29,6 +27,53 @@ schlagen Kursnavigation und MCP-Werkzeugaufrufe mit HTTP 500 fehl (fehlende
 Capability).
 
 ## 2. Einstellungen (Website-Administration › Plugins › lokale Plugins › Coursepilot)
+
+### Fernzugriffsrecht für Lehrkräfte
+
+`local/coursepilot:useremote` wird beim Verbinden eines KI-Chats im
+**Systemkontext** geprüft. Eine Einschreibung als `teacher` oder
+`editingteacher` in einem Kurs vergibt dieses Recht dort nicht. Die bisherige
+Konfiguration von `teacher_edit` nutzt eine systemweite `editingteacher`-Rolle;
+das vergibt allerdings auch weitere systemweite Lehrkraftrechte und ist **kein**
+geeigneter allgemeiner Einrichtungsweg. Eine Moodle-Kohorte verleiht von sich
+aus keine Capability im Systemkontext.
+
+Der empfohlene Weg (Issue #575, löst die in Spec 0025 § C und
+[Issue #579](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/579)
+offen gelassene Frage nach der schulweiten Freigabe): eine eigene, schmale
+Rolle anlegen, die **nur** den Fernzugriff trägt — keine Kursbearbeitungsrechte,
+kein Archetyp.
+
+1. Website-Administration › Nutzer/innen › Rechte › Rollen definieren › Neue
+   Rolle anlegen.
+2. „Diese Rolle basiert auf: Keine Rolle verwenden" wählen (kein Archetyp —
+   sonst erbt die Rolle ungewollt weitere Rechte).
+3. Kontexttypen, in denen diese Rolle zuweisbar ist: nur **System** ankreuzen.
+4. Bei der Fähigkeit `local/coursepilot:useremote` „Erlauben" setzen, sonst
+   nichts ändern.
+5. Rolle speichern (Kurzname z. B. `coursepilotremote`, Anzeigename z. B.
+   „Coursepilot Fernzugriff").
+6. Die neue Rolle je Lehrkraft unter Website-Administration › Nutzer/innen ›
+   Rechte › Systemrollen zuweisen zuteilen (oder entziehen).
+
+Ehrlich gesagt: `db/access.php` erlaubt `local/coursepilot:useremote` weiterhin
+auch als Archetyp-Vorbelegung für `editingteacher`/`teacher` — wer diese
+Rollen systemweit zuweist (wie die bisherige `teacher_edit`-Praxis), bekommt
+den Fernzugriff also nach wie vor automatisch mit. Diese Vorbelegung bleibt
+für bereits bestehende Installationen stehen, ist aber **kein empfohlener
+Weg für neue Freischaltungen** — dafür immer die dedizierte Rolle oben
+verwenden. `tests/remote_role_test.php` schreibt diesen Altbestand bewusst
+als Test fest, damit eine künftige Verengung dieser Vorbelegung nicht
+unbemerkt passiert.
+
+Damit bleibt die Kursrolle der Lehrkraft (z. B. `editingteacher` nur im
+eigenen Kurs) unangetastet, und niemand bekommt über den Fernzugriffs-Umweg
+Bearbeitungsrechte an fremden Kursen. Für Werkzeugaufrufe in einem Kurs
+bleiben separat die Kursrolle und `local/coursepilot:use` (sowie die
+jeweils nötigen Moodle-Kursrechte) nötig — Fernzugriffsrecht und
+Kursberechtigung werden unabhängig voneinander entzogen. Die Einstellung
+`remoteaccessenabled` unten ist nur eine instanzweite Notbremse und ersetzt
+keine Freigabe pro Person.
 
 | Einstellung | Standard | Bedeutung |
 |---|---|---|
