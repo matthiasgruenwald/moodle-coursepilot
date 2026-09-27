@@ -56,24 +56,24 @@ final class get_version_info_test extends \advanced_testcase {
     }
 
     /**
-     * "datum" fuellt das Feld "zuletzt verifiziert am" der Fragetyp-Ablage -
+     * "date" fuellt das Feld "zuletzt verifiziert am" der Fragetyp-Ablage -
      * Serverdatum als YYYY-MM-DD, kein Zeitstempel zum Nachformatieren.
      */
-    public function test_datum_is_iso_date(): void {
+    public function test_date_is_iso_date(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
         $result = get_version_info::execute();
         $result = external_api::clean_returnvalue(get_version_info::execute_returns(), $result);
 
-        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $result['datum']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $result['date']);
     }
 
     /**
      * Die Meldung ist die Lehrkraft-lesbare Fassung derselben Angaben - sie
      * muss die Versionen im Klartext enthalten, sonst waere sie wertlos.
      */
-    public function test_meldung_names_both_versions(): void {
+    public function test_message_names_both_versions(): void {
         global $CFG;
 
         $this->resetAfterTest();
@@ -82,7 +82,7 @@ final class get_version_info_test extends \advanced_testcase {
         $result = get_version_info::execute();
         $result = external_api::clean_returnvalue(get_version_info::execute_returns(), $result);
 
-        $this->assertStringContainsString($CFG->release, $result['meldung']);
-        $this->assertStringContainsString((string) $result['plugin_version'], $result['meldung']);
+        $this->assertStringContainsString($CFG->release, $result['message']);
+        $this->assertStringContainsString((string) $result['plugin_version'], $result['message']);
     }
 }

@@ -294,20 +294,11 @@ final class dispatcher {
             return self::error(404, $id, -32601, 'Unknown tool: ' . $toolname);
         }
 
-        // #568: die Eingabeuebersetzung richtet sich nach der tatsaechlichen
-        // Deklaration der aufgerufenen Funktion, nicht nach einer pauschalen
-        // Uebersetzungstabelle - ein bereits englisch deklariertes Werkzeug
-        // (derzeit coursepilot_dismiss_ausstand) bleibt so unangetastet,
-        // waehrend ein noch deutsch deklariertes Werkzeug weiterhin
-        // uebersetzt wird. Beide Sorten laufen nebeneinander durch denselben
-        // Dispatcher (Spec 0025 §A, Expand-Schritt).
-        $classname = tool_registry::classname_for_function($function);
-        $declaredkeys = array_keys($classname::execute_parameters()->keys);
-
-        $response = external_api::call_external_function(
-            $function,
-            contract_keys::internalize($params['arguments'] ?? [], $declaredkeys)
-        );
+        // #573 (Spec 0025 §A, Contract-Schritt): jedes registrierte Werkzeug
+        // ist unmittelbar englisch deklariert, die frueher hier noetige
+        // Eingabeuebersetzung aus #568 entfaellt ersatzlos - Moodles eigene
+        // Parameterdeklaration ist der einzige Vertrag.
+        $response = external_api::call_external_function($function, $params['arguments'] ?? []);
         if ($response['error']) {
             $message = self::error_message($response['exception'] ?? null);
             access_log::log_failure(
@@ -350,7 +341,7 @@ final class dispatcher {
         // der Text-/structuredContent-Kopie entfernt, um ihn nicht doppelt
         // durch den Kontext zu schicken.
         $content = [];
-        $textdata = contract_keys::externalize($data);
+        $textdata = $data;
         $imagebase64 = $data['image_base64'] ?? null;
         $mimetype = $data['mimetype'] ?? null;
         if (is_string($imagebase64) && $imagebase64 !== '' && is_string($mimetype) && $mimetype !== '') {

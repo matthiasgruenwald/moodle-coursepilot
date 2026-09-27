@@ -118,7 +118,7 @@ if ($cmid && $restoreversion) {
     require_sesskey();
     try {
         $result = restore_activity_version::execute($cmid, $restoreversion, (bool) $bestaetigt);
-        redirect($viewurl, $result['meldung'], null, \core\output\notification::NOTIFY_SUCCESS);
+        redirect($viewurl, $result['message'], null, \core\output\notification::NOTIFY_SUCCESS);
     } catch (moodle_exception $e) {
         if ($e->errorcode !== 'completiondatalossconfirmationrequired' || $bestaetigt) {
             throw $e;

@@ -38,8 +38,8 @@ defined('MOODLE_INTERNAL') || die();
  *
  * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "previous_location"
  * statt "vorheriger_ort" - derselbe Durchstich wie bei den Kurs-/Aktivitaets-
- * und Fragenbankwerkzeugen aus #569/#570, {@see \local_coursepilot\contract_keys}
- * uebersetzt diesen Aufruf seitdem nicht mehr.
+ * und Fragenbankwerkzeugen aus #569/#570. Seit #573 gibt es an der MCP-Grenze
+ * ueberhaupt keinen Uebersetzungsschritt mehr.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

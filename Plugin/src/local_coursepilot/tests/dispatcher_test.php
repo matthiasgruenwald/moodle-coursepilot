@@ -268,9 +268,9 @@ final class dispatcher_test extends \advanced_testcase {
     /**
      * #568, unabhaengiger Vertragstest (Spec 0025 §Testing Decisions,
      * Abnahmekriterium 23): die Erwartung entsteht hier NICHT ueber
-     * external_schema_converter/contract_keys - ein Fehler im Konverter
-     * (wie die elf widerspruechlichen Pflichtfeldlisten aus dem Review vom
-     * 25.09.2026) darf die eigene Testerwartung nicht miterzeugen. Geprueft
+     * external_schema_converter - ein Fehler im Konverter (wie die elf
+     * widerspruechlichen Pflichtfeldlisten aus dem Review vom 25.09.2026)
+     * darf die eigene Testerwartung nicht miterzeugen. Geprueft
      * wird die tatsaechlich vom Dispatcher veroeffentlichte Liste gegen rein
      * strukturelle Invarianten eines geschlossenen JSON-Schemas.
      */
@@ -371,14 +371,16 @@ final class dispatcher_test extends \advanced_testcase {
 
     /**
      * #569, Abnahmekriterium: repraesentativer Dispatcher-Rundlauf fuer die
-     * Kurs-/Aktivitaetswerkzeuge - Lese-, Schreib- und Versionswerkzeug -,
-     * der beweist, dass veroeffentlichte Feldnamen (Eingabe UND Rueckgabe)
-     * unmittelbar englisch ankommen, ohne dass contract_keys::internalize()/
-     * externalize() hier noch etwas zu tun hat (der Vertrag ist bereits
-     * englisch deklariert, siehe update_module_settings::execute_parameters()/
-     * execute_returns()). Moodles eigene Validierung (validate_parameters())
-     * bleibt dabei voll wirksam - der Zweitest unten prueft das ueber ein
-     * unbekanntes Feld.
+     * Kurs-/Aktivitaetswerkzeuge - Lese-, Schreib-, Versions- UND
+     * Wiederherstellungswerkzeug -, der beweist, dass veroeffentlichte
+     * Feldnamen (Eingabe UND Rueckgabe) unmittelbar englisch ankommen (der
+     * Vertrag ist bereits englisch deklariert, siehe update_module_settings::
+     * execute_parameters()/execute_returns()) - seit #573 gibt es an dieser
+     * Grenze ohnehin keine Uebersetzung mehr. Moodles eigene Validierung
+     * (validate_parameters()) bleibt dabei voll wirksam - der Zweitest unten
+     * prueft das ueber ein unbekanntes Feld. #573: der Rundlauf ueber
+     * coursepilot_restore_activity_version schliesst genau die Luecke, die
+     * den history.php-Fund (message/meldung) unentdeckt liess.
      */
     public function test_course_and_activity_tools_are_callable_through_dispatcher_in_english(): void {
         $this->resetAfterTest();
@@ -457,12 +459,36 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertCount(2, $versioned['versions']);
         $this->assertArrayHasKey('summary_line', $versioned['versions'][1]);
 
+        // Verlaufswerkzeug: coursepilot_restore_activity_version - der
+        // Rueckgabeschluessel ist "message", nicht das deutsche "meldung",
+        // das history.php bis zu diesem Fund noch gelesen hat (#573: die
+        // Seite ruft restore_activity_version::execute() direkt auf, am
+        // Dispatcher vorbei, und war seit #572 kaputt). Restauriert auf
+        // Version 1, die erste der beiden oben erzeugten Versionen.
+        $restoreresponse = dispatcher::handle(
+            [
+                'id' => 4,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_restore_activity_version',
+                    'arguments' => ['cmid' => $page->cmid, 'target_version' => 1],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $restoreresponse['status']);
+        $this->assertArrayNotHasKey('isError', $restoreresponse['body']['result']);
+        $restored = $restoreresponse['body']['result']['structuredContent'];
+        $this->assertArrayHasKey('message', $restored);
+        $this->assertArrayNotHasKey('meldung', $restored);
+
         // Moodles eigene Validierung bleibt wirksam: ein unbekanntes Feld im
         // Patch scheitert weiterhin ueber validate_patch()/catalog_fields,
         // die Uebersetzungsschicht steht dem nicht im Weg.
         $invalidresponse = dispatcher::handle(
             [
-                'id' => 4,
+                'id' => 5,
                 'method' => 'tools/call',
                 'params' => [
                     'name' => 'coursepilot_update_module_settings',

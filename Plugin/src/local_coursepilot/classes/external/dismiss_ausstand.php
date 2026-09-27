@@ -32,11 +32,10 @@ defined('MOODLE_INTERNAL') || die();
  * `write_context_file`/`append_context_file` mit `pending_entry=<Kennung>`
  * (#571: Parametername seither englisch deklariert).
  *
- * Erster vollstaendiger englischer Durchstich der Expand-Migration aus #568
+ * Erster vollstaendiger englischer Durchstich der Migration aus #568
  * (Spec 0025 §A): Parametername, Rueckgabeschluessel und Beschreibungen sind
- * hier unmittelbar englisch deklariert - kein Uebersetzungsschritt an der
- * MCP-Grenze noetig, {@see \local_coursepilot\contract_keys::internalize()}
- * laesst diesen Aufruf anhand der tatsaechlichen Deklaration unangetastet.
+ * hier unmittelbar englisch deklariert - seit #573 der einzige Weg an der
+ * MCP-Grenze, ein Uebersetzungsschritt existiert dort nicht mehr.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

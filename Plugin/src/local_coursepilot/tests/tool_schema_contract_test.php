@@ -103,11 +103,22 @@ final class tool_schema_contract_test extends \advanced_testcase {
     /**
      * Der oeffentliche MCP-Vertrag ist englisch: dieselbe Begriffsmenge gilt
      * fuer Eingaben und alle verschachtelten Rueckgabefelder.
+     *
+     * #573: seit dem Entfernen der Uebersetzungsschicht (contract_keys) gibt
+     * es keinen produktiven Konverter mehr, der hier mitlaufen koennte - die
+     * Rohschluessel aus execute_returns() SIND bereits der oeffentliche
+     * Vertrag. Vorher lief die erwartete Menge irrtuemlich durch genau die
+     * Uebersetzung, die sie eigentlich pruefen sollte (contract_keys::
+     * externalize() haette einen deutschen Rohschluessel wie "meldung" schon
+     * vor der Pruefung in "message" verwandelt) - dieser Test haette eine
+     * unmigrierte Stelle wie get_version_info::execute_returns() ("datum",
+     * unuebersetzt weil nicht in der EXTERNAL-Map) also gar nicht sicher
+     * gefunden.
      */
     public function test_every_public_contract_key_is_english(): void {
         $forbidden = [
             'aenderungen', 'angelegt', 'angelegte_felder', 'art', 'ausloeser', 'ausstand',
-            'ausstaende', 'bedeutung', 'bedingungen_json', 'bestaetigt', 'dateiname', 'eintraege', 'felder',
+            'ausstaende', 'bedeutung', 'bedingungen_json', 'bestaetigt', 'dateiname', 'datum', 'eintraege', 'felder',
             'felder_json', 'fehlerklasse', 'feldbuendel', 'hinweis', 'hinweise', 'hinweis_luecken',
             'idnumber_nachgetragen',
             'kennung', 'kombinationsregeln', 'korpus_stand', 'kursid', 'meldung',
@@ -122,7 +133,7 @@ final class tool_schema_contract_test extends \advanced_testcase {
             $classname = $tool['classname'];
             $keys = array_merge(
                 array_keys(tool_registry::schemas()[$this->tool_name_for($classname)]['properties']),
-                array_keys(contract_keys::externalize(array_fill_keys(self::structure_keys($classname::execute_returns()), true)))
+                self::structure_keys($classname::execute_returns())
             );
             $this->assertSame(
                 [],

@@ -37,6 +37,11 @@ defined('MOODLE_INTERNAL') || die();
  * Moodle-Fusszeile und sind an keinen Kurs gebunden. Der Fernzugriff selbst
  * ist bereits durch 'local/coursepilot:useremote' im Dispatcher geprueft.
  *
+ * #573: die Rueckgabeschluessel "date"/"message" waren bis hierher als
+ * "datum"/"meldung" deklariert - eine von #569-#572 uebersehene Luecke, die
+ * beim Entfernen der Uebersetzungsschicht aufgefallen ist. Jetzt unmittelbar
+ * englisch wie jedes andere Werkzeug.
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -83,8 +88,8 @@ final class get_version_info extends external_api {
             'plugin_version' => $pluginversion,
             'plugin_release' => $pluginrelease,
             'plugin_version_db' => $installed === false ? 0 : (int) $installed,
-            'datum' => date('Y-m-d'),
-            'meldung' => $meldung,
+            'date' => date('Y-m-d'),
+            'message' => $meldung,
         ];
     }
 
@@ -102,8 +107,8 @@ final class get_version_info extends external_api {
                 PARAM_INT,
                 'In der Datenbank eingetragene Plugin-Version; weicht sie ab, fehlt ein upgrade.php-Lauf'
             ),
-            'datum' => new external_value(PARAM_TEXT, 'Serverdatum YYYY-MM-DD - fuellt "zuletzt verifiziert am"'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Zusammenfassung derselben Angaben'),
+            'date' => new external_value(PARAM_TEXT, 'Server date YYYY-MM-DD - fills "last verified on"'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German summary of the same version data'),
         ]);
     }
 }
