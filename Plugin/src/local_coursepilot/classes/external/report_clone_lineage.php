@@ -53,6 +53,11 @@ defined('MOODLE_INTERNAL') || die();
  * Gate aus. Fuenf konstant leere Felder in jeder Antwort sind keine
  * Einheitlichkeit, sondern Rauschen (#424 Nachlauf 4).
  *
+ * Unmittelbar englisch deklariert (#572, Spec 0025 §A): "message" statt
+ * "meldung", "source_course_id" statt "quellkurs_id" - die Statuswerte
+ * "eigene_kopie"/"geteilte_referenz" bleiben Domainvokabular (glossiert in
+ * execute_returns()), wie bereits bei list_skills' "kind"-Feld (#571).
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -104,14 +109,14 @@ final class report_clone_lineage extends external_api {
                 'name' => (string) $row->questionname,
                 'idnumber' => (string) ($row->entryidnumber ?? ''),
                 'status' => $owncopy ? 'eigene_kopie' : 'geteilte_referenz',
-                'quellkurs_id' => $owncopy ? 0 : $entrycourseid,
+                'source_course_id' => $owncopy ? 0 : $entrycourseid,
             ];
         }
 
         return [
             'cmid' => $cm->id,
             'questions' => $questions,
-            'meldung' => self::build_message($questions),
+            'message' => self::build_message($questions),
         ];
     }
 
@@ -210,10 +215,16 @@ final class report_clone_lineage extends external_api {
                 'questionid' => new external_value(PARAM_INT, 'ID der aktuellsten Fragen-Version'),
                 'name' => new external_value(PARAM_TEXT, 'Fragename'),
                 'idnumber' => new external_value(PARAM_TEXT, 'idnumber des Bank-Eintrags, leer wenn keine vergeben'),
-                'status' => new external_value(PARAM_ALPHANUMEXT, '"eigene_kopie" oder "geteilte_referenz"'),
-                'quellkurs_id' => new external_value(PARAM_INT, 'Kurs-ID, auf den die Referenz noch zeigt (0 bei "eigene_kopie")'),
+                'status' => new external_value(
+                    PARAM_ALPHANUMEXT,
+                    '"eigene_kopie" (own copy) or "geteilte_referenz" (shared reference)'
+                ),
+                'source_course_id' => new external_value(
+                    PARAM_INT,
+                    'Course ID the reference still points to (0 when status = "eigene_kopie")'
+                ),
             ]), 'Ergebnis je Slot des Tests, in Slot-Reihenfolge'),
-            'meldung' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Zusammenfassung: eigene Kopien vs. geteilte Referenzen'),
+            'message' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Zusammenfassung: eigene Kopien vs. geteilte Referenzen'),
         ]);
     }
 }

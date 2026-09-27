@@ -63,6 +63,8 @@ require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
  * (#421). Das macht den Endstand unabhaengig davon, wie viele
  * Zwischenereignisse Moodle intern beim Duplizieren/Restore feuert.
  *
+ * Unmittelbar englisch deklariert (#572, Spec 0025 §A): "message" statt "meldung".
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -134,7 +136,7 @@ final class clone_activity extends external_api {
         // die Bereinigung selbst ist ungefaehrlich, auch unconditional
         // aufgerufen (sie entfernt ausschliesslich cm=0-Bedingungen, die es
         // beim Intra-Kurs-Klon nie gibt), aber nur dort noetig.
-        $entferntemeldung = $crosscourse ? self::cleanup_dangling_availability($newcmid, $cm) : null;
+        $removedmessage = $crosscourse ? self::cleanup_dangling_availability($newcmid, $cm) : null;
 
         rebuild_course_cache($newtargetcourseid, true);
 
@@ -147,7 +149,7 @@ final class clone_activity extends external_api {
         return [
             'cmid' => $newcmid,
             'courseid' => $newtargetcourseid,
-            'meldung' => self::build_message($title, $crosscourse, $entferntemeldung),
+            'message' => self::build_message($title, $crosscourse, $removedmessage),
         ];
     }
 
@@ -428,15 +430,15 @@ final class clone_activity extends external_api {
     /**
      * @param string $title
      * @param bool $crosscourse
-     * @param string|null $entferntemeldung
+     * @param string|null $removedmessage
      * @return string
      */
-    private static function build_message(string $title, bool $crosscourse, ?string $entferntemeldung): string {
+    private static function build_message(string $title, bool $crosscourse, ?string $removedmessage): string {
         $basis = $crosscourse
             ? "Aktivität als \"{$title}\" in den Zielkurs geklont."
             : "Aktivität als \"{$title}\" im selben Kurs geklont.";
 
-        return $entferntemeldung !== null ? $basis . ' ' . $entferntemeldung : $basis;
+        return $removedmessage !== null ? $basis . ' ' . $removedmessage : $basis;
     }
 
     /**
@@ -446,7 +448,7 @@ final class clone_activity extends external_api {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID der neuen (geklonten) Aktivitaet'),
             'courseid' => new external_value(PARAM_INT, 'Kurs, in dem der Klon liegt'),
-            'meldung' => new external_value(
+            'message' => new external_value(
                 PARAM_RAW,
                 'Lehrkraft-deutsche Meldung; nennt entfernte kaputte Voraussetzungen im Klartext, falls vorhanden'
             ),

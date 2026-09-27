@@ -130,8 +130,8 @@ final class clone_activity_test extends \advanced_testcase {
         $result = clone_activity::execute((int) $dependent->cmid, 'Klon mit kaputter Voraussetzung', (int) $targetcourse->id);
         $result = external_api::clean_returnvalue(clone_activity::execute_returns(), $result);
 
-        $this->assertStringContainsString('entfernt', $result['meldung']);
-        $this->assertStringContainsString('Voraussetzung-Ziel', $result['meldung']);
+        $this->assertStringContainsString('entfernt', $result['message']);
+        $this->assertStringContainsString('Voraussetzung-Ziel', $result['message']);
 
         $newcm = $DB->get_record('course_modules', ['id' => $result['cmid']], '*', MUST_EXIST);
         $this->assertTrue($newcm->availability === null || $newcm->availability === '');

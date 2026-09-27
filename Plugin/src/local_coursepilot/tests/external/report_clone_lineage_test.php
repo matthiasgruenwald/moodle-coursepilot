@@ -100,13 +100,13 @@ final class report_clone_lineage_test extends \advanced_testcase {
         }
 
         $this->assertSame('eigene_kopie', $bystatus['Eigene Kopie']['status']);
-        $this->assertSame(0, $bystatus['Eigene Kopie']['quellkurs_id']);
+        $this->assertSame(0, $bystatus['Eigene Kopie']['source_course_id']);
 
         $this->assertSame('geteilte_referenz', $bystatus['Geteilte Referenz']['status']);
-        $this->assertSame((int) $foreigncourse->id, $bystatus['Geteilte Referenz']['quellkurs_id']);
+        $this->assertSame((int) $foreigncourse->id, $bystatus['Geteilte Referenz']['source_course_id']);
 
-        $this->assertStringContainsString('eigene Kopie angelegt', $result['meldung']);
-        $this->assertStringContainsString('geteilte Referenz', $result['meldung']);
+        $this->assertStringContainsString('eigene Kopie angelegt', $result['message']);
+        $this->assertStringContainsString('geteilte Referenz', $result['message']);
     }
 
     /**
@@ -124,7 +124,7 @@ final class report_clone_lineage_test extends \advanced_testcase {
         $result = report_clone_lineage::execute((int) $quiz->cmid);
         $result = external_api::clean_returnvalue(report_clone_lineage::execute_returns(), $result);
 
-        $this->assertSame(['cmid', 'questions', 'meldung'], array_keys($result));
+        $this->assertSame(['cmid', 'questions', 'message'], array_keys($result));
         foreach (array_keys(\local_coursepilot\question_suspect_gate::empty_result()) as $field) {
             $this->assertArrayNotHasKey($field, $result);
         }
@@ -168,7 +168,7 @@ final class report_clone_lineage_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(report_clone_lineage::execute_returns(), $result);
 
         $this->assertSame([], $result['questions']);
-        $this->assertStringContainsString('keine Fragen', $result['meldung']);
+        $this->assertStringContainsString('keine Fragen', $result['message']);
     }
 
     /**

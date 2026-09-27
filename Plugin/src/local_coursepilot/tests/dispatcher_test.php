@@ -1088,6 +1088,166 @@ XML;
     }
 
     /**
+     * #572, Abnahmekriterium: die Material-/Werkbank-Werkzeuge sind ueber den
+     * oeffentlichen Dispatch-Pfad mit unmittelbar englisch deklarierten
+     * Feldern aufrufbar - Lesen (coursepilot_list_material_files, Parameter
+     * "location" statt "ort"), ein Schreibpfad (coursepilot_upload_material_file)
+     * und der reine Werkbank-Lesepfad (coursepilot_create_werkbank_download_links,
+     * ebenfalls hinter moodle/user:manageownfiles) mit korrekten Rueckgabe-
+     * schluesseln.
+     */
+    public function test_material_and_werkbank_tools_are_callable_through_dispatcher_in_english(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        // Schreibwerkzeug: coursepilot_upload_material_file - bereits vor
+        // #572 englisch deklariert, hier als der geforderte reale
+        // Schreibpfad der Gruppe.
+        $uploadresponse = dispatcher::handle(
+            [
+                'id' => 1,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_upload_material_file',
+                    'arguments' => ['path' => 'blatt.pdf', 'content_base64' => base64_encode('Inhalt')],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $uploadresponse['status']);
+        $this->assertArrayNotHasKey('isError', $uploadresponse['body']['result']);
+        $uploaded = $uploadresponse['body']['result']['structuredContent'];
+        $this->assertTrue($uploaded['created']);
+        $this->assertArrayHasKey('message', $uploaded);
+
+        // Lesewerkzeug: coursepilot_list_material_files - der veroeffentlichte
+        // Parametername ist "location", nicht das deutsche "ort" aus der
+        // Vor-#572-Fassung; werkbank und bestand zeigen ohne Kontextpointer
+        // auf denselben Ort (Issue #495).
+        $listresponse = dispatcher::handle(
+            [
+                'id' => 2,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_list_material_files',
+                    'arguments' => ['location' => 'werkbank'],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $listresponse['status']);
+        $listed = $listresponse['body']['result']['structuredContent'];
+        $this->assertSame(['blatt.pdf'], array_column($listed['entries'], 'name'));
+
+        // Werkbank-Lesepfad: coursepilot_create_werkbank_download_links -
+        // rein lesend (Issue #501), aber hinter derselben
+        // moodle/user:manageownfiles-Pruefung wie der Schreibweg oben.
+        $linksresponse = dispatcher::handle(
+            [
+                'id' => 3,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_create_werkbank_download_links',
+                    'arguments' => ['paths' => ['blatt.pdf']],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $linksresponse['status']);
+        $links = $linksresponse['body']['result']['structuredContent']['links'];
+        $this->assertSame('blatt.pdf', $links[0]['path']);
+        $this->assertArrayHasKey('sha1', $links[0]);
+        $this->assertArrayHasKey('url', $links[0]);
+
+        // Ohne moodle/user:manageownfiles ist sowohl der Schreib- als auch
+        // der Werkbank-Lesepfad gesperrt - die Materialgrenze bleibt
+        // Rechte-gesteuert, nicht nur eine Frage der Uebersetzung. CAP_PROHIBIT
+        // auf der Basisrolle "user" ueberstimmt jede zusaetzliche Rolle (hier
+        // editingteacher) - derselbe erprobte Griff wie
+        // test_dismiss_ausstand_enforces_manageownfiles_through_dispatcher.
+        [$restricteduser, $restrictedtoken] = $this->create_authenticated_user();
+        $roleid = $this->get_role_id('user');
+        assign_capability(
+            'moodle/user:manageownfiles',
+            CAP_PROHIBIT,
+            $roleid,
+            \context_user::instance($restricteduser->id)->id,
+            true
+        );
+
+        $deniedresponse = dispatcher::handle(
+            [
+                'id' => 4,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_create_werkbank_download_links',
+                    'arguments' => ['paths' => ['blatt.pdf']],
+                ],
+            ],
+            $restrictedtoken,
+            $this->headers()
+        );
+        $this->assertSame(200, $deniedresponse['status']);
+        $this->assertTrue($deniedresponse['body']['result']['isError']);
+    }
+
+    /**
+     * #572, Abnahmekriterium: das Klon- und das Abstammungswerkzeug sind
+     * ueber den oeffentlichen Dispatch-Pfad mit unmittelbar englisch
+     * deklarierten Feldern aufrufbar - coursepilot_clone_activity liefert
+     * "message" statt "meldung", coursepilot_report_clone_lineage liefert
+     * "source_course_id" statt "quellkurs_id" und ebenfalls "message".
+     */
+    public function test_clone_and_lineage_tools_are_callable_through_dispatcher_in_english(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        [$teacher, $token] = $this->create_authenticated_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
+
+        $cloneresponse = dispatcher::handle(
+            [
+                'id' => 1,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_clone_activity',
+                    'arguments' => ['cmid' => $page->cmid, 'title' => 'Klon'],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $cloneresponse['status']);
+        $this->assertArrayNotHasKey('isError', $cloneresponse['body']['result']);
+        $cloned = $cloneresponse['body']['result']['structuredContent'];
+        $this->assertArrayHasKey('message', $cloned);
+        $this->assertSame((int) $course->id, $cloned['courseid']);
+
+        $quiz = $this->getDataGenerator()->get_plugin_generator('mod_quiz')->create_instance(['course' => $course->id]);
+        $lineageresponse = dispatcher::handle(
+            [
+                'id' => 2,
+                'method' => 'tools/call',
+                'params' => [
+                    'name' => 'coursepilot_report_clone_lineage',
+                    'arguments' => ['cmid' => $quiz->cmid],
+                ],
+            ],
+            $token,
+            $this->headers()
+        );
+        $this->assertSame(200, $lineageresponse['status']);
+        $lineage = $lineageresponse['body']['result']['structuredContent'];
+        $this->assertSame([], $lineage['questions']);
+        $this->assertArrayHasKey('message', $lineage);
+        $this->assertArrayNotHasKey('meldung', $lineage);
+    }
+
+    /**
      * Der Fehlertext eines Werkzeugs erreicht den Aufrufer im Klartext.
      *
      * invalid_parameter_exception traegt die eigentliche Meldung in

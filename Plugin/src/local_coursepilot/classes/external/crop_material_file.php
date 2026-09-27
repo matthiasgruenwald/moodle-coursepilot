@@ -41,6 +41,10 @@ defined('MOODLE_INTERNAL') || die();
  * ein serialisiertes Objekt statt eines rohen Strings, siehe unserialize_object()
  * in moodlelib.php.
  *
+ * Unmittelbar englisch deklariert (#572, Spec 0025 §A): "location" statt
+ * "ort" - {@see \local_coursepilot\material_files::ort_parameter()} bleibt
+ * intern deutsch benannt, der Parametername an dieser Grenze ist englisch.
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -67,13 +71,13 @@ class crop_material_file extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
-            'ort' => material_files::ort_parameter(),
+            'location' => material_files::ort_parameter(),
         ]);
     }
 
     /**
      * @param string $sourcepath
-     * @param string $ort
+     * @param string $location
      * @param string $targetpath
      * @param float $x0
      * @param float $y0
@@ -95,11 +99,11 @@ class crop_material_file extends external_api {
         float $x1,
         float $y1,
         string $expectedcontenthash = '',
-        string $ort = material_files::ORT_BESTAND
+        string $location = material_files::ORT_BESTAND
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'sourcepath' => $sourcepath,
-            'ort' => $ort,
+            'location' => $location,
             'targetpath' => $targetpath,
             'x0' => $x0,
             'y0' => $y0,
@@ -140,7 +144,7 @@ class crop_material_file extends external_api {
      *         [Quelldatei-Inhalt, aufgeloester Quellpfad]
      */
     private static function resolve_source(array $params): array {
-        $sourcestored = material_area::read_for_ort($params['ort'], $params['sourcepath']);
+        $sourcestored = material_area::read_for_ort($params['location'], $params['sourcepath']);
         if ($sourcestored === null) {
             throw new \moodle_exception(
                 'materialfilenotfound',
@@ -316,7 +320,7 @@ class crop_material_file extends external_api {
             // reinen Pfads (Issue #495): der Materialbestand traegt keinen
             // contenthash, dieser Fingerabdruck ist deshalb das einzige, was
             // die KI ueber "was genau wurde zugeschnitten" mitnehmen kann.
-            'source' => self::describe_source($params['ort'], $sourcerelative, $sourcestored),
+            'source' => self::describe_source($params['location'], $sourcerelative, $sourcestored),
             'created' => $existing === null,
             'width' => $width,
             'height' => $height,
@@ -333,8 +337,8 @@ class crop_material_file extends external_api {
             'path' => new external_value(PARAM_TEXT, 'Aufgeloester Zielpfad des Ausschnitts, relativ zum Materialordner'),
             'source' => new external_value(
                 PARAM_TEXT,
-                'Ort und Pruefmerkmal der Quelldatei: "<ort>:<pfad> (<Groesse> Byte, geändert <Zeitpunkt>)" - '
-                    . 'der Materialbestand traegt keinen contenthash, dieses Pruefmerkmal ersetzt ihn hier'
+                'Location and fingerprint of the source file: "<location>:<path> (<size> byte, changed <timestamp>)" - '
+                    . 'the material store carries no contenthash, this fingerprint replaces it here'
             ),
             'created' => new external_value(PARAM_BOOL, 'true, wenn der Ausschnitt neu angelegt wurde'),
             'width' => new external_value(PARAM_INT, 'Breite des Ausschnitts in Pixeln, aus dem Original berechnet'),
@@ -350,15 +354,15 @@ class crop_material_file extends external_api {
      * contenthash zum Vergleichen (Spec #486 §7: "contenthash bleibt leer"),
      * dieser Fingerabdruck ist der Ersatz.
      *
-     * @param string $ort
+     * @param string $location
      * @param string $path
      * @param array{size: int, timemodified: int} $stored
      * @return string
      */
-    private static function describe_source(string $ort, string $path, array $stored): string {
+    private static function describe_source(string $location, string $path, array $stored): string {
         return sprintf(
             '%s:%s (%d Byte, geändert %s)',
-            $ort,
+            $location,
             $path,
             $stored['size'],
             gmdate('Y-m-d\TH:i:s\Z', $stored['timemodified'])
