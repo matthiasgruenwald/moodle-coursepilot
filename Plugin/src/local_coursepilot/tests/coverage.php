@@ -40,25 +40,28 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$config = new phpunit_coverage_info();
+return new class extends phpunit_coverage_info {
+    /** @var array Verzeichnisse des nativen Produktionscodes. */
+    protected $includelistfolders = [
+        'admin',
+        'classes',
+        'db',
+        'lang',
+        'oauth',
+        'werkbank',
+    ];
 
-$config->includes = [
-    'admin',
-    'classes',
-    'db',
-    'lang',
-    'oauth',
-    'werkbank',
-    'connections.php',
-    'history.php',
-    'lib.php',
-    'mcp.php',
-    'oauth.php',
-    'ortswahl.php',
-    'ortswahl_browse.php',
-    'settings.php',
-    'surface.php',
-    'version.php',
-];
-
-return $config;
+    /** @var array Einzeldateien im Plugin-Wurzelverzeichnis. */
+    protected $includelistfiles = [
+        'connections.php',
+        'history.php',
+        'lib.php',
+        'mcp.php',
+        'oauth.php',
+        'ortswahl.php',
+        'ortswahl_browse.php',
+        'settings.php',
+        'surface.php',
+        'version.php',
+    ];
+};
