@@ -188,7 +188,7 @@ final class dispatcher {
             return self::error(403, $id, -32002, get_string('capabilitymissing', 'local_coursepilot', 'local/coursepilot:useremote'));
         }
 
-        $serverinfo = ['name' => 'local_coursepilot', 'version' => '0.1.0'];
+        $serverinfo = ['name' => 'local_coursepilot', 'version' => self::plugin_release()];
 
         switch ($rpcmethod) {
             // Legacy-Aera: Handshake.
@@ -515,6 +515,18 @@ final class dispatcher {
         $USER->ignoresesskey = true;
         external_api::set_context_restriction(\context_system::instance());
         return true;
+    }
+
+    /**
+     * $plugin->release aus derselben kanonischen Quelle wie
+     * get_version_info::execute() (#577, plugin_meta::current()). Der
+     * MCP-Handshake und die Versionsauskunft dürfen keine zweite,
+     * unabhängig gepflegte Versionszahl melden.
+     *
+     * @return string
+     */
+    private static function plugin_release(): string {
+        return (string) plugin_meta::current()->release;
     }
 
     /**

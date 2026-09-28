@@ -41,6 +41,11 @@ changes go back to the community.
 
 ## Installation
 
+0. **Upgrading from Coursepilot 1.x (the local Node/stdio line)?** Uninstall the previous
+   `local_coursepilot` component first (Site administration → Plugins → Manage plugins),
+   then install this ZIP as a fresh plugin. There is no data, settings or webservice-token
+   migration between the two lines — they share a component name but not a schema. See
+   `docs/adr/0024-englische-basis-und-komponente-coursepilot.md` for the reasoning.
 1. Install the plugin into `local/coursepilot` and run the upgrade.
 2. Enable web services and the REST protocol.
 3. Give teachers the `local/coursepilot:use` capability.
@@ -49,6 +54,22 @@ changes go back to the community.
 
 Discovery follows RFC 8414 and RFC 9728. Both work without a web server change, provided
 `slasharguments` is enabled — Moodle's default.
+
+## Supported versions
+
+Tested combination: **Moodle 5.0.8, PHP 8.4, MariaDB** (native PHPUnit suite). `version.php`
+requires Moodle 5.0 or later as a floor; that requirement is raised to 5.1 only once 5.1
+itself has been exercised the same way — a metadata edit alone is not a compatibility test.
+No other PHP or database combination has been verified.
+
+## Language
+
+Moodle-facing strings ship in English only (`lang/en/`); this is the base language, and
+translations (including German) are expected to follow through
+[AMOS](https://lang.moodle.org/) after release rather than being bundled in the package. The
+teacher-facing skill corpus (`skills/`) is German prose, not a Moodle string, and is not
+covered by AMOS — it stays German for now (see
+`docs/adr/0024-englische-basis-und-komponente-coursepilot.md`).
 
 ### WebDAV storage behind a reverse proxy
 

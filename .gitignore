@@ -37,6 +37,11 @@ temp/
 # raus - der eigentliche Mirror ist ein separates, schreibgeschuetztes Repository.
 /dist/mirror/
 
+# Generiertes Release-Artefakt der nativen Server-MCP-Linie (npm run
+# build:native-release, Issue #577): ZIP und Quellstand aus
+# Plugin/src/local_coursepilot. Baubar, gehoert nicht ins Repo.
+/dist/native-release/
+
 # Node/editor/runtime artifacts
 node_modules/
 npm-debug.log*

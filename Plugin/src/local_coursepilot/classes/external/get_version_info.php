@@ -20,6 +20,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_coursepilot\plugin_meta;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -66,9 +67,9 @@ final class get_version_info extends external_api {
         // $plugin->version/->release kommen aus version.php der laufenden
         // Dateien, nicht aus config_plugins: bei einem Deploy ohne
         // upgrade.php-Lauf laufen beide auseinander, und genau dieser Fall
-        // ist der, den ein Support-Blick sehen muss.
-        $plugin = new \stdClass();
-        require($CFG->dirroot . '/local/coursepilot/version.php');
+        // ist der, den ein Support-Blick sehen muss. Dieselbe kanonische
+        // Quelle wie dispatcher::plugin_release() (#577).
+        $plugin = plugin_meta::current();
         $installed = get_config('local_coursepilot', 'version');
 
         $pluginversion = (int) $plugin->version;
@@ -102,7 +103,7 @@ final class get_version_info extends external_api {
             'moodle_version' => new external_value(PARAM_TEXT, 'Moodle-Versionsstempel, z.B. "2025041400.05"'),
             'moodle_branch' => new external_value(PARAM_TEXT, 'Moodle-Zweig, z.B. "500"'),
             'plugin_version' => new external_value(PARAM_INT, '$plugin->version aus version.php der laufenden Dateien'),
-            'plugin_release' => new external_value(PARAM_TEXT, '$plugin->release, z.B. "0.1.0"'),
+            'plugin_release' => new external_value(PARAM_TEXT, '$plugin->release, z.B. "2.0.0-alpha"'),
             'plugin_version_db' => new external_value(
                 PARAM_INT,
                 'In der Datenbank eingetragene Plugin-Version; weicht sie ab, fehlt ein upgrade.php-Lauf'

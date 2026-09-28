@@ -127,6 +127,14 @@ final class dispatcher_test extends \advanced_testcase {
 
         $this->assertSame(200, $response['status']);
         $this->assertSame('local_coursepilot', $response['body']['result']['serverInfo']['name']);
+
+        // #577: die Handshake-Version stammt aus derselben kanonischen Quelle
+        // wie version.php - kein fest eingebauter Prototypwert mehr.
+        global $CFG;
+        $plugin = new \stdClass();
+        require($CFG->dirroot . '/local/coursepilot/version.php');
+        $this->assertSame($plugin->release, $response['body']['result']['serverInfo']['version']);
+        $this->assertNotSame('0.1.0', $response['body']['result']['serverInfo']['version']);
     }
 
     /**

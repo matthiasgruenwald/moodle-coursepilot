@@ -39,8 +39,11 @@ Moodle 5.0+                               |
 
 ### Server-Weg einrichten
 
-1. Plugin aus `Plugin/src/local_coursepilot/` nach `local/coursepilot` installieren
-   und das Moodle-Upgrade ausführen.
+1. Release-Kandidat bauen (`npm run build:native-release`, Issue #577) oder das Verzeichnis
+   `Plugin/src/local_coursepilot/` direkt nach `local/coursepilot` kopieren, dann das
+   Moodle-Upgrade ausführen. War auf dieser Instanz zuvor der Altweg (`local_coursepilot`
+   1.x) installiert: zuerst deinstallieren, keine Datenübernahme — siehe
+   `Plugin/src/local_coursepilot/README.md`, Abschnitt Installation.
 2. Webservices und das REST-Protokoll aktivieren.
 3. Lehrkräften die Capability `local/coursepilot:use` geben.
 4. Im KI-Client einen Connector auf `https://<moodle>/local/coursepilot/mcp.php`
