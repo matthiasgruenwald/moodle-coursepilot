@@ -9,6 +9,7 @@
   },
   "scripts": {
     "test": "node --require ./test/helpers/no-browser.js --test 'test/**/*.test.js'",
+    "test:ci": "node scripts/ci/run-js-tests.js",
     "test:e2e": "playwright test",
     "build:plugin": "node scripts/build-plugin.js",
     "build:mirror": "node scripts/build-mirror-export.js",

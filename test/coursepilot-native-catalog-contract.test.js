@@ -10,12 +10,14 @@ const NATIVE_CATALOG_PATH = path.join(
 const PRIVACY_SURFACE_PATH = path.join(repoRoot, 'Plugin', 'src', 'local_coursepilot', 'classes', 'privacy_surface.php');
 const SERVICES_PATH = path.join(repoRoot, 'Plugin', 'src', 'local_coursepilot', 'db', 'services.php');
 const TOOL_REGISTRY_PATH = path.join(repoRoot, 'Plugin', 'src', 'local_coursepilot', 'classes', 'tool_registry.php');
-// #568 (Review vom 25.09.2026): der Katalogumbau (#533/#556) hat das
+// #268 (Review vom 25.09.2026): der Katalogumbau (#533/#556) hat das
 // modultypspezifische Quiz-Lesen (quiz_slots/question_references) aus
-// get_course_catalog.php in den Katalog verlegt - die SQL-Namen leben seither
-// hier, nicht mehr in der aufrufenden External-Klasse.
-const MODULE_STATE_PATH = path.join(
-  repoRoot, 'Plugin', 'src', 'local_coursepilot', 'classes', 'catalog', 'module_state.php'
+// get_course_catalog.php in die Quiz-Katalogklasse verlegt - die SQL-Namen
+// leben seither dort, nicht in der gemeinsamen module_state.php (die nur
+// modultypunabhaengige Normalisierung enthaelt) und auch nicht mehr in der
+// aufrufenden External-Klasse.
+const QUIZ_CATALOG_PATH = path.join(
+  repoRoot, 'Plugin', 'src', 'local_coursepilot', 'classes', 'catalog', 'quiz.php'
 );
 
 function read(filePath) {
@@ -56,12 +58,12 @@ test('coursepilot_get_course_catalog is a self-contained port with the same cont
   assert.match(source, /completionpassgrade/);
   assert.match(source, /availability/);
 
-  // Der Quiz-Detailleser liegt seit der Katalogextraktion (#533/#556) beim
-  // Katalog, nicht mehr hier (Spec 0025 §F, #568-Fund) - dieselbe SQL bleibt
-  // geprueft, nur am tatsaechlichen Ort.
-  const moduleStateSource = read(MODULE_STATE_PATH);
-  assert.match(moduleStateSource, /quiz_slots/);
-  assert.match(moduleStateSource, /question_references/);
+  // Der Quiz-Detailleser liegt seit der Katalogextraktion (#533/#556) bei der
+  // Quiz-Katalogklasse, nicht mehr hier (Spec 0025 §F, #268-Fund) - dieselbe
+  // SQL bleibt geprueft, nur am tatsaechlichen Ort.
+  const quizCatalogSource = read(QUIZ_CATALOG_PATH);
+  assert.match(quizCatalogSource, /quiz_slots/);
+  assert.match(quizCatalogSource, /question_references/);
 
   // Eigene Capability-Pruefung, konsistent mit db/services.php/privacy_surface.
   assert.match(source, /require_capability\('local\/coursepilot:use', \$context\)/);
