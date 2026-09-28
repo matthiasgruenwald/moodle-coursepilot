@@ -29,12 +29,14 @@ const DEFAULT_THRESHOLD = 80;
  * @returns {{statements: number, coveredstatements: number} | null}
  */
 function extractProjectMetrics(xml) {
-  // Clover legt genau ein <project>-Element an; dessen direktes <metrics>-Kind
-  // traegt die Gesamtzahlen. Bewusst kein XML-Parser als Abhaengigkeit
-  // (CLAUDE.md: keine npm-Laufzeit-Dependencies) - das Format ist stabil und
-  // ein einzelnes Regex-Match auf das erste <metrics ...>-Tag genuegt, weil
-  // Clover es als erstes Kind von <project> vor allen <file>-Metriken schreibt.
-  const match = xml.match(/<metrics\s+[^>]*\bstatements="(\d+)"[^>]*\bcoveredstatements="(\d+)"[^>]*\/>/);
+  // Clover legt genau ein <project>-Element an; dessen Summen-<metrics> ist
+  // das LETZTE Kind, hinter allen <file>-/<package>-Metriken (phpunit-Clover,
+  // CI-Lauf 36475282645). Deshalb das <metrics>-Tag direkt vor </project>,
+  // nicht das erste im Dokument. Bewusst kein XML-Parser als Abhaengigkeit
+  // (CLAUDE.md: keine npm-Laufzeit-Dependencies).
+  const project = xml.match(/<metrics\s+([^>]*)\/>\s*<\/project>/);
+  const attrs = project ? project[1] : '';
+  const match = attrs.match(/\bstatements="(\d+)"[\s\S]*\bcoveredstatements="(\d+)"/);
   if (!match) {
     return null;
   }

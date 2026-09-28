@@ -18,6 +18,10 @@
 // installierten Plugins).
 
 define('CLI_SCRIPT', true);
+// Wie mcp.php: ohne WS_SERVER lehnt external_api::call_external_function()
+// im Cookie-losen CLI-Kontext jeden loginpflichtigen Aufruf ab
+// ('servicerequireslogin') - der echte MCP-Endpunkt laeuft genau so.
+define('WS_SERVER', true);
 require(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->libdir . '/accesslib.php');

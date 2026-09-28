@@ -12,11 +12,11 @@ function cloverWith(statements, covered) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <coverage generated="1">
   <project timestamp="1">
-    <metrics files="1" loc="10" ncloc="10" classes="1" methods="1" coveredmethods="1"
-      statements="${statements}" coveredstatements="${covered}" elements="${statements}" coveredelements="${covered}"/>
     <file name="x.php">
       <metrics statements="${statements}" coveredstatements="${covered}"/>
     </file>
+    <metrics files="1" loc="10" ncloc="10" classes="1" methods="1" coveredmethods="1"
+      statements="${statements}" coveredstatements="${covered}" elements="${statements}" coveredelements="${covered}"/>
   </project>
 </coverage>`;
 }
@@ -77,4 +77,26 @@ test('gate case: zero-statement denominator is red, not a vacuous pass', () => {
 test('gate case: no path argument is red', () => {
   const result = checkCoverage(undefined, 80);
   assert.equal(result.ok, false);
+});
+
+// Echte phpunit-Clover-Struktur (CI-Lauf 36475282645): Datei- und
+// Paketmetriken zuerst, die Projektsumme als letztes Kind von <project>.
+test('gate case: project totals are read from the end of <project>, not the first file', () => {
+  const file = writeTmp(`<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1">
+  <project timestamp="1" name="Clover Coverage">
+    <file name="lang.php">
+      <metrics loc="68" ncloc="39" classes="0" methods="0" coveredmethods="0" conditionals="0" coveredconditionals="0" statements="23" coveredstatements="0" elements="23" coveredelements="0"/>
+    </file>
+    <package name="local_coursepilot">
+      <file name="x.php">
+        <metrics loc="10" ncloc="10" classes="1" methods="1" coveredmethods="1" conditionals="0" coveredconditionals="0" statements="77" coveredstatements="77" elements="78" coveredelements="78"/>
+      </file>
+    </package>
+    <metrics files="2" loc="78" ncloc="49" classes="1" methods="1" coveredmethods="1" conditionals="0" coveredconditionals="0" statements="100" coveredstatements="77" elements="101" coveredelements="77"/>
+  </project>
+</coverage>`);
+  const result = checkCoverage(file, 80);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /77\/100/);
 });
