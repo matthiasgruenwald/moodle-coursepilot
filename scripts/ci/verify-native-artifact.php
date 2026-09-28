@@ -66,6 +66,12 @@ $user = $DB->get_record('user', ['username' => 'coursepilot_artifact_check']);
 if (!$user) {
     $randompassword = 'ArtifactCheck#' . bin2hex(random_bytes(16));
     $user = create_user_record('coursepilot_artifact_check', $randompassword, 'manual');
+    // Ohne Vor-/Nachname und E-Mail lehnt require_login() den Aufruf mit
+    // "User not fully set-up" ab - ein echtes Lehrkraftkonto hat sie.
+    $user->firstname = 'Artifact';
+    $user->lastname = 'Check';
+    $user->email = 'coursepilot_artifact_check@example.com';
+    $DB->update_record('user', $user);
 }
 $systemcontext = \context_system::instance();
 $roleid = create_role('Coursepilot Artifact Check', 'coursepilot_artifact_check', 'Nur fuer den CI-Artefakt-Check');
