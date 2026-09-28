@@ -63,7 +63,15 @@ final class label implements module_catalog {
     }
 
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
-        return module_state::for_modname(self::modname(), $instanceid, $cmid, $fullcontent);
+        global $DB;
+
+        $details = module_state::empty($fullcontent);
+        $label = $DB->get_record('label', ['id' => $instanceid], 'name, intro', IGNORE_MISSING);
+        if ($label) {
+            $details['name'] = (string) $label->name;
+            $details['content'] = module_state::content_field((string) $label->intro, $fullcontent);
+        }
+        return $details;
     }
 
     public static function write_options(): array {

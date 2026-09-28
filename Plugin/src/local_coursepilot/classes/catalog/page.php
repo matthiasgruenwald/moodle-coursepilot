@@ -121,7 +121,16 @@ final class page implements module_catalog {
     }
 
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
-        return module_state::for_modname(self::modname(), $instanceid, $cmid, $fullcontent);
+        global $DB;
+
+        $details = module_state::empty($fullcontent);
+        $page = $DB->get_record('page', ['id' => $instanceid], 'name, intro, content', IGNORE_MISSING);
+        if ($page) {
+            $details['name'] = (string) $page->name;
+            $details['content'] = module_state::content_field((string) $page->content, $fullcontent);
+            $details['settings'] = module_state::settings(['intro' => module_state::preview((string) $page->intro, $fullcontent)]);
+        }
+        return $details;
     }
 
     public static function write_options(): array {

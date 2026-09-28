@@ -16,6 +16,12 @@
 
 namespace local_coursepilot\catalog;
 
+use context_module;
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/grade/grading/lib.php');
+
 /**
  * Feldkatalog fuer mod_assign (Spec 0015 §2.2/§4.1, Ticket #382). Der
  * Stresstest der Zweistufigkeit: ~35 Instanzspalten, 13 Plugin-Pseudofelder,
@@ -468,7 +474,67 @@ final class assign implements module_catalog {
     }
 
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
-        return module_state::for_modname(self::modname(), $instanceid, $cmid, $fullcontent);
+        global $DB;
+
+        $details = module_state::empty($fullcontent);
+        $assign = $DB->get_record('assign', ['id' => $instanceid], 'id, name, intro, allowsubmissionsfromdate, duedate, cutoffdate, gradingduedate, completionsubmit, grade, submissiondrafts, requiresubmissionstatement, maxattempts, attemptreopenmethod, teamsubmission, requireallteammemberssubmit, teamsubmissiongroupingid, sendnotifications, sendlatenotifications, sendstudentnotifications, blindmarking, markingworkflow, markingallocation', IGNORE_MISSING);
+        if (!$assign) {
+            return $details;
+        }
+
+        $gradingmethod = \get_grading_manager(context_module::instance($cmid), 'mod_assign', 'submissions')->get_active_method();
+        $gradeitem = $DB->get_record('grade_items', ['itemtype' => 'mod', 'itemmodule' => 'assign', 'iteminstance' => $assign->id], 'gradepass, categoryid', IGNORE_MISSING);
+        $details['name'] = (string) $assign->name;
+        $details['content'] = module_state::content_field((string) $assign->intro, $fullcontent);
+        $pluginsettings = [];
+        foreach ($DB->get_records('assign_plugin_config', ['assignment' => $assign->id]) as $config) {
+            $pluginsettings[self::plugin_config_field($config)] = (string) $config->value;
+        }
+        $files = [];
+        foreach (get_file_storage()->get_area_files(context_module::instance($cmid)->id, 'mod_assign', 'introattachment', 0, 'filepath, filename', false) as $file) {
+            $files[] = ['filename' => $file->get_filename(), 'filepath' => $file->get_filepath(), 'filesize' => $file->get_filesize(), 'mimetype' => $file->get_mimetype()];
+        }
+        $details['settings'] = module_state::settings(array_merge([
+            'duedate' => (string) ((int) $assign->duedate), 'allowsubmissionsfromdate' => (string) ((int) $assign->allowsubmissionsfromdate),
+            'cutoffdate' => (string) ((int) $assign->cutoffdate), 'gradingduedate' => (string) ((int) $assign->gradingduedate),
+            'completionsubmit' => (string) ((int) $assign->completionsubmit), 'grade' => (string) ((int) $assign->grade),
+            'gradepass' => (string) ((float) ($gradeitem->gradepass ?? 0)), 'submissiondrafts' => (string) ((int) $assign->submissiondrafts),
+            'maxattempts' => (string) ((int) $assign->maxattempts), 'attemptreopenmethod' => (string) $assign->attemptreopenmethod,
+            'requiresubmissionstatement' => (string) ((int) $assign->requiresubmissionstatement), 'teamsubmission' => (string) ((int) $assign->teamsubmission),
+            'requireallteammemberssubmit' => (string) ((int) $assign->requireallteammemberssubmit), 'teamsubmissiongroupingid' => (string) ((int) $assign->teamsubmissiongroupingid),
+            'sendnotifications' => (string) ((int) $assign->sendnotifications), 'sendlatenotifications' => (string) ((int) $assign->sendlatenotifications),
+            'sendstudentnotifications' => (string) ((int) $assign->sendstudentnotifications), 'blindmarking' => (string) ((int) $assign->blindmarking),
+            'markingworkflow' => (string) ((int) $assign->markingworkflow), 'markingallocation' => (string) ((int) $assign->markingallocation),
+            'gradecat' => (string) ((int) ($gradeitem->categoryid ?? 0)), 'gradingmethod' => (string) ($gradingmethod ?: 'none'), 'additionalfiles' => json_encode($files),
+        ], [
+            'onlinetext_enabled' => $pluginsettings['assignsubmission_onlinetext_enabled'] ?? '0', 'onlinetext_wordlimit_enabled' => $pluginsettings['assignsubmission_onlinetext_wordlimit_enabled'] ?? '0',
+            'onlinetext_wordlimit' => $pluginsettings['assignsubmission_onlinetext_wordlimit'] ?? '0', 'submission_file_enabled' => $pluginsettings['assignsubmission_file_enabled'] ?? '0',
+            'submission_file_maxfiles' => $pluginsettings['assignsubmission_file_maxfiles'] ?? '0', 'submission_file_maxsizebytes' => $pluginsettings['assignsubmission_file_maxsizebytes'] ?? '0',
+            'submission_file_filetypes' => $pluginsettings['assignsubmission_file_filetypes'] ?? '', 'feedback_comments_enabled' => $pluginsettings['assignfeedback_comments_enabled'] ?? '0',
+            'feedback_editpdf_enabled' => $pluginsettings['assignfeedback_editpdf_enabled'] ?? '0', 'feedback_file_enabled' => $pluginsettings['assignfeedback_file_enabled'] ?? '0',
+            'feedback_file_maxfiles' => $pluginsettings['assignfeedback_file_maxfiles'] ?? '0', 'feedback_file_maxsizebytes' => $pluginsettings['assignfeedback_file_maxsizebytes'] ?? '0',
+            'feedback_file_filetypes' => $pluginsettings['assignfeedback_file_filetypes'] ?? '', 'feedback_offline_enabled' => $pluginsettings['assignfeedback_offline_enabled'] ?? '0',
+        ]));
+        return $details;
+    }
+
+    /**
+     * Übersetzt eine Zeile aus assign_plugin_config auf den Formularfeldnamen
+     * des Katalogs - vier Ausnahmen tragen im Formular einen anderen Namen als
+     * "{subtype}_{plugin}_{name}" (mod/assign/locallib.php: save_settings()
+     * der jeweiligen Pluginklasse).
+     *
+     * @param \stdClass $config
+     * @return string
+     */
+    private static function plugin_config_field(\stdClass $config): string {
+        $field = $config->subtype . '_' . $config->plugin . '_' . $config->name;
+        return [
+            'assignsubmission_onlinetext_wordlimitenabled' => 'assignsubmission_onlinetext_wordlimit_enabled',
+            'assignsubmission_file_maxfilesubmissions' => 'assignsubmission_file_maxfiles',
+            'assignsubmission_file_maxsubmissionsizebytes' => 'assignsubmission_file_maxsizebytes',
+            'assignsubmission_file_filetypeslist' => 'assignsubmission_file_filetypes',
+        ][$field] ?? $field;
     }
 
     public static function write_options(): array {

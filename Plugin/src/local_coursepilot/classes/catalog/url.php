@@ -110,7 +110,16 @@ final class url implements module_catalog {
     }
 
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
-        return module_state::for_modname(self::modname(), $instanceid, $cmid, $fullcontent);
+        global $DB;
+
+        $details = module_state::empty($fullcontent);
+        $url = $DB->get_record('url', ['id' => $instanceid], 'name, intro, externalurl', IGNORE_MISSING);
+        if ($url) {
+            $details['name'] = (string) $url->name;
+            $details['content'] = module_state::content_field((string) $url->intro, $fullcontent);
+            $details['settings'] = module_state::settings(['externalurl' => (string) $url->externalurl]);
+        }
+        return $details;
     }
 
     public static function write_options(): array {

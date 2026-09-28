@@ -121,7 +121,7 @@ final class folder implements module_catalog {
     }
 
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
-        return module_state::for_modname(self::modname(), $instanceid, $cmid, $fullcontent);
+        return module_state::unknown(self::modname(), $instanceid, $fullcontent);
     }
 
     public static function write_options(): array {
