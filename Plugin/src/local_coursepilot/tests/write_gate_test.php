@@ -32,14 +32,18 @@ final class write_gate_test extends \advanced_testcase {
 
     /**
      * Auf der aktuellen Testinstanz ist jede katalogisierte Aktivitätsart
-     * gruen und "geprueft" (reviewed_up_to_major() deckt die laufende
-     * Moodle-Hauptversion ab).
+     * gruen: "geprueft", solange reviewed_up_to_major() die laufende
+     * Moodle-Hauptversion abdeckt, sonst "automatisch_geprueft" (z. B. im
+     * CI-Leg MOODLE_501_STABLE bei manuellem Review bis 5.0).
      */
-    public function test_all_catalogs_are_geprueft_on_the_current_instance(): void {
+    public function test_all_catalogs_are_green_on_the_current_instance(): void {
+        global $CFG;
         $this->resetAfterTest();
 
         foreach (write_gate::all_statuses() as $status) {
-            $this->assertSame('geprueft', $status['zustand'], $status['modname'] . ': ' . implode(' ', $status['verstoesse']));
+            $catalogclass = \local_coursepilot\catalog\registry::for($status['modname']);
+            $expected = (int) $CFG->branch > $catalogclass::reviewed_up_to_major() ? 'automatisch_geprueft' : 'geprueft';
+            $this->assertSame($expected, $status['zustand'], $status['modname'] . ': ' . implode(' ', $status['verstoesse']));
             $this->assertSame([], $status['verstoesse']);
         }
     }

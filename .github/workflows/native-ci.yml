@@ -103,7 +103,10 @@ jobs:
           php-version: ${{ env.PHP_VERSION }}
           extensions: pgsql, mysqli, gd, zip, soap, intl, exif, mbstring, xml
           coverage: ${{ matrix.measures-coverage && 'pcov' || 'none' }}
-          ini-values: max_input_vars=5000
+          # Uploadgrenzen wie auf realen Kurspilot-Servern (Spike: 200M/206M);
+          # import_questions_xml_test setzt voraus, dass die Servergrenze
+          # ueber der Fachgrenze MAX_XML_BYTES liegt (PHP-Default 2M nicht).
+          ini-values: max_input_vars=5000, upload_max_filesize=200M, post_max_size=206M
           tools: composer:v2
 
       - name: moodle-plugin-ci installieren
@@ -229,6 +232,13 @@ jobs:
 
       - name: PHP-Syntaxpruefung des installierten Artefakts
         run: moodle-plugin-ci phplint
+
+      - name: Moodle-Site installieren (moodle-plugin-ci richtet nur die PHPUnit-Datenbank ein)
+        # Zufaelliges Admin-Passwort je Lauf, nirgends ausgegeben.
+        run: |
+          php moodle/admin/cli/install_database.php --agree-license \
+            --adminpass="CI#$(openssl rand -hex 16)" --adminemail=admin@example.com \
+            --fullname="Coursepilot CI" --shortname="CI"
 
       - name: Registrierung, Discovery und autorisierten Werkzeugaufruf pruefen
         # moodle-plugin-ci klont Moodle standardmaessig nach ./moodle
