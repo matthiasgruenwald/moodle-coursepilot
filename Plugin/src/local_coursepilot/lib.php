@@ -76,7 +76,7 @@ function local_coursepilot_myprofile_navigation(
  * Konfiguration sucht (`/user/preferences.php`), fehlte jeder Eintrag.
  *
  * Nur in der eigenen Ansicht und nur mit dem Recht, das auch die
- * Ortswahlseite selbst verlangt (`local/coursepilot:useremote`) - Moodle ruft
+ * Ortswahlseite selbst verlangt (Fernzugriffsfreigabe, #579) - Moodle ruft
  * diesen Callback auch beim Betrachten fremder Einstellungsseiten
  * (Administration) auf, $user/$usercontext beziehen sich dann auf die
  * betrachtete, nicht die angemeldete Person.
@@ -100,7 +100,7 @@ function local_coursepilot_extend_navigation_user_settings(
     if ((int) $user->id !== (int) $USER->id) {
         return;
     }
-    if (!has_capability('local/coursepilot:useremote', \context_system::instance())) {
+    if (!\local_coursepilot\remote_access::is_granted()) {
         return;
     }
 

@@ -16,17 +16,15 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class connections_page_test extends \advanced_testcase {
-    public function test_rejects_a_user_without_remote_access_capability(): void {
+    public function test_rejects_a_user_without_remote_access_grant(): void {
         $source = (string) file_get_contents(__DIR__ . '/../connections.php');
-        $this->assertStringContainsString(
-            "require_capability('local/coursepilot:useremote', \$context);",
-            $source
-        );
+        $this->assertStringContainsString('\\local_coursepilot\\remote_access::require_granted();', $source);
 
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $this->expectException(\required_capability_exception::class);
-        require_capability('local/coursepilot:useremote', \context_system::instance());
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage('REMOTE_ACCESS_NOT_GRANTED');
+        remote_access::require_granted();
     }
 }

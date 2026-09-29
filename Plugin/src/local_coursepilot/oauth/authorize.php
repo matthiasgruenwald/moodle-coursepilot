@@ -38,7 +38,7 @@ use local_coursepilot\output\authorize_page;
 require_login(null, false);
 
 $context = context_system::instance();
-require_capability('local/coursepilot:useremote', $context);
+\local_coursepilot\remote_access::require_granted();
 
 $PAGE->set_url('/local/coursepilot/oauth/authorize.php');
 $PAGE->set_context($context);

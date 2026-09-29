@@ -104,13 +104,18 @@ final class local_coursepilot_lib_test extends advanced_testcase {
     /**
      * local_coursepilot_extend_navigation_user_settings() (Issue #524, Spec
      * #486 §5, Befund #12 aus der Live-Abnahme #505): auf der eigenen
-     * Einstellungsseite erscheint mit dem Coursepilot-Recht ein eigener
-     * Coursepilot-Block mit Links zur Ortswahl und zu den Verbindungen.
+     * Einstellungsseite erscheint mit Fernzugriffsfreigabe (hier ueber eine
+     * gewaehlte Kohorte, #579) ein eigener Coursepilot-Block mit Links zur
+     * Ortswahl und zu den Verbindungen.
      */
     public function test_settings_navigation_adds_coursepilot_block_for_own_page(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/cohort/lib.php');
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $cohort = $this->getDataGenerator()->create_cohort(['contextid' => \context_system::instance()->id]);
+        cohort_add_member($cohort->id, $user->id);
+        set_config('remoteaccesscohorts', (string) $cohort->id, 'local_coursepilot');
         $this->setUser($user);
         $course = $this->getDataGenerator()->create_course();
 

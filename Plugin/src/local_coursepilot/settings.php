@@ -50,6 +50,11 @@ if ($hassiteconfig) {
         1
     ));
 
+    // Fernzugriffsfreigabe ueber Kohorten (#579, ADR 0026): frei waehlbare,
+    // bestehende Systemkohorten; Standard leer. Kategorie-Kohorten sind nicht
+    // waehlbar, weil Kategorie-Manager sie selbst pflegen.
+    $settings->add(new \local_coursepilot\admin\remoteaccesscohorts_setting());
+
     // Protokollstufe (#339): steuert, wie viel ueber die Moodle-Ereignis-API
     // in den nativen Protokollberichten landet. Voreinstellung
     // "Lesezugriffe und Fehler" - siehe local_coursepilot\access_log.

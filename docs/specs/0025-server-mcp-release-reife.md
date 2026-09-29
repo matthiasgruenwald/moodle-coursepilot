@@ -88,8 +88,8 @@ Modulkatalog, und die Driftprüfung erfasst die tatsächlich verwendete Leseproj
 ### C. Ersteinrichtung und Rechte
 
 - Systemweiter Fernzugriff und kursbezogene Werkzeugberechtigungen bleiben getrennte Grenzen.
-- Die Administration richtet die systemweite Freigabe über eine dedizierte, eng berechtigte Rolle ein. Eine globale Zuweisung der Rolle `editingteacher` ist kein Einrichtungsweg.
-- Die Anleitung erklärt ausdrücklich, dass ein Archetyp-Default keine systemweite Rollenzuweisung einer Kurslehrkraft ersetzt.
+- Die Administration erteilt die **Fernzugriffsfreigabe** über frei gewählte, bestehende Systemkohorten oder über `local/coursepilot:useremote` in einer ohnehin systemweit vergebenen Rolle (ADR 0026, #579). Coursepilot legt weder Kohorte noch Rolle an; eine globale Zuweisung der Rolle `editingteacher` ist kein Einrichtungsweg, die Archetyp-Vorbelegung entfällt.
+- Die Anleitung erklärt beide Wege und dass Moodles „Rechte prüfen“ die Kohortenfreigabe nicht anzeigt.
 - Eine frisch eingeschriebene Kurslehrkraft wird ohne systemweite Lehrkraftrolle geprüft: vor Fernzugriffsfreischaltung abgewiesen, danach verbindungsfähig, weiterhin nur innerhalb ihrer Kursrechte handlungsfähig.
 
 ### D. Release-Artefakt und Übergang

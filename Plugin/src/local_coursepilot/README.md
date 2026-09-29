@@ -48,11 +48,13 @@ changes go back to the community.
    `docs/adr/0024-englische-basis-und-komponente-coursepilot.md` for the reasoning.
 1. Install the plugin into `local/coursepilot` and run the upgrade.
 2. Enable web services and the REST protocol.
-3. Give teachers the `local/coursepilot:use` capability in their courses, and the
-   `local/coursepilot:useremote` capability in the **system** context. A course enrolment
-   does not grant the latter; use a dedicated system role that carries only
-   `local/coursepilot:useremote` (no archetype, no course editing rights) rather than a
-   site-wide teacher role.
+3. Give teachers the `local/coursepilot:use` capability in their courses, and grant them
+   remote access: select one or more existing **system cohorts** under the plugin setting
+   *Remote access cohorts*, or allow `local/coursepilot:useremote` in a role you already
+   assign system-wide. A course enrolment grants neither; the capability has no archetype
+   default, so a site-wide teacher role does not grant remote access by accident. Remote
+   access never adds course rights and is checked on every call, so removal takes effect
+   for existing connections too.
 4. The teacher connects their MCP client to `https://<your-site>/local/coursepilot/mcp.php`
    and authorises it once.
 

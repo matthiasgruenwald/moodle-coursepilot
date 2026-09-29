@@ -106,6 +106,11 @@ $string['settingintroheading_desc'] = 'On a teacher\'s behalf, Coursepilot can s
 
 // Remote access governance (#338).
 $string['remoteaccessdisabled'] = 'Remote access has been temporarily disabled by the administration.';
+$string['remoteaccessnotgranted'] = 'REMOTE_ACCESS_NOT_GRANTED: you are neither a member of a remote access cohort nor granted local/coursepilot:useremote through a system role. Ask your Moodle administration to grant remote access.';
+$string['settingremoteaccesscohorts'] = 'Remote access cohorts';
+$string['settingremoteaccesscohorts_desc'] = 'Members of the selected system cohorts may connect an AI chat to Coursepilot. Alternatively, allow local/coursepilot:useremote in a role you already assign system-wide. Neither grants any course rights. Moodle\'s capability overview does not show cohort-based access.';
+$string['settingremoteaccesscohorts_members'] = '{$a->name}: {$a->members} member(s)';
+$string['settingremoteaccesscohorts_missing'] = 'Selected cohort {$a} no longer exists and is ignored.';
 $string['settingremoteaccessenabled'] = 'Allow remote access';
 $string['settingremoteaccessenabled_desc'] = 'Kill switch: immediately blocks any further access through the MCP endpoint. Already-issued access tokens remain valid — for a security incident, also use the bulk revoke on the connections overview. The normal Moodle login is not affected by this setting.';
 // Event logging (#339).

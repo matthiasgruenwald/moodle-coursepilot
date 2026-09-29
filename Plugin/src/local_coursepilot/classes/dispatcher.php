@@ -180,12 +180,14 @@ final class dispatcher {
             ]);
         }
 
-        // Fernzugriffs-Notbremse (#296, #337): getrennt von local/coursepilot:use,
-        // damit ein Admin den Fernzugriff systemweit sperren kann, ohne
-        // einzelne Kurse anzufassen. Anders als der vage Auth-Fehler oben ist
-        // dieser Fehler konkret - ein gueltiges Token allein reicht nicht.
-        if (!has_capability('local/coursepilot:useremote', \context_system::instance())) {
-            return self::error(403, $id, -32002, get_string('capabilitymissing', 'local_coursepilot', 'local/coursepilot:useremote'));
+        // Fernzugriffsfreigabe (#296, #337, #579): getrennt von
+        // local/coursepilot:use, damit ein Admin den Fernzugriff pro Person
+        // entziehen kann, ohne einzelne Kurse anzufassen. Pro Aufruf geprueft,
+        // daher wirkt ein Entzug auch auf bestehende Verbindungen. Anders als
+        // der vage Auth-Fehler oben ist dieser Fehler konkret und nennt beide
+        // Freigabewege (Kohorte oder Capability).
+        if (!remote_access::is_granted()) {
+            return self::error(403, $id, -32002, get_string('remoteaccessnotgranted', 'local_coursepilot'));
         }
 
         $serverinfo = ['name' => 'local_coursepilot', 'version' => self::plugin_release()];

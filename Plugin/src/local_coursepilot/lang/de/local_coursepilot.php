@@ -55,6 +55,11 @@ $string['settingintroheading_desc'] = 'Coursepilot kann im Auftrag einer Lehrkra
 
 // Fernzugriffs-Steuerung (#338).
 $string['remoteaccessdisabled'] = 'Der Fernzugriff ist durch die Administration vorübergehend gesperrt.';
+$string['remoteaccessnotgranted'] = 'REMOTE_ACCESS_NOT_GRANTED: Sie sind weder Mitglied einer Fernzugriffs-Kohorte (cohort) noch haben Sie local/coursepilot:useremote über eine Systemrolle. Bitten Sie Ihre Moodle-Administration um die Fernzugriffsfreigabe.';
+$string['settingremoteaccesscohorts'] = 'Fernzugriffs-Kohorten';
+$string['settingremoteaccesscohorts_desc'] = 'Mitglieder der gewählten Systemkohorten dürfen einen KI-Chat mit Coursepilot verbinden. Alternativ local/coursepilot:useremote in einer Rolle erlauben, die Sie ohnehin systemweit vergeben. Beides gibt keine Kursrechte. Moodles „Rechte prüfen“ zeigt die Freigabe über Kohorten nicht an.';
+$string['settingremoteaccesscohorts_members'] = '{$a->name}: {$a->members} Mitglied(er)';
+$string['settingremoteaccesscohorts_missing'] = 'Die gewählte Kohorte {$a} existiert nicht mehr und wird ignoriert.';
 $string['settingremoteaccessenabled'] = 'Fernzugriff erlauben';
 $string['settingremoteaccessenabled_desc'] = 'Notbremse: sperrt sofort jeden weiteren Zugriff über den MCP-Endpunkt. Bereits ausgestellte Zugriffstoken bleiben dabei gültig — für den Sicherheitsvorfall zusätzlich den Sammelwiderruf auf der Verbindungsübersicht nutzen. Der normale Moodle-Login ist von dieser Einstellung nicht betroffen.';
 // Protokollierung (#339).

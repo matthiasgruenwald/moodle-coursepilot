@@ -18,8 +18,8 @@ ersetzt sie für die Administration.
    (`db/services.php`) und Capabilities (`db/access.php`).
 3. Web Services und das REST-Protokoll aktivieren (Website-Administration ›
    Plugins › Web Services), falls noch nicht geschehen.
-4. Für den Fernzugriff eine dedizierte, systemweit zuweisbare Rolle anlegen
-   (siehe Abschnitt 2, „Fernzugriffsrecht für Lehrkräfte").
+4. Die Fernzugriffsfreigabe für die Lehrkräfte einrichten (siehe Abschnitt 2,
+   „Fernzugriffsfreigabe für Lehrkräfte").
 
 Nach jeder späteren Aktualisierung des Plugins erneut `upgrade.php` ausführen —
 Pflicht, sobald sich `db/access.php` oder `db/services.php` geändert haben, sonst
@@ -28,55 +28,45 @@ Capability).
 
 ## 2. Einstellungen (Website-Administration › Plugins › lokale Plugins › Coursepilot)
 
-### Fernzugriffsrecht für Lehrkräfte
+### Fernzugriffsfreigabe für Lehrkräfte
 
-`local/coursepilot:useremote` wird beim Verbinden eines KI-Chats im
-**Systemkontext** geprüft. Eine Einschreibung als `teacher` oder
-`editingteacher` in einem Kurs vergibt dieses Recht dort nicht. Die bisherige
-Konfiguration von `teacher_edit` nutzt eine systemweite `editingteacher`-Rolle;
-das vergibt allerdings auch weitere systemweite Lehrkraftrechte und ist **kein**
-geeigneter allgemeiner Einrichtungsweg. Eine Moodle-Kohorte verleiht von sich
-aus keine Capability im Systemkontext.
+Eine Lehrkraft darf einen KI-Chat erst verbinden, wenn die Administration ihr den
+Fernzugriff freigegeben hat. Eine Einschreibung als `teacher` oder
+`editingteacher` in einem Kurs reicht dafür nicht. Es gibt zwei Wege, beide ohne
+eigene Coursepilot-Rolle (ADR 0026, Issue #579):
 
-Der empfohlene Weg (Issue #575, löst die in Spec 0025 § C und
-[Issue #579](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/579)
-offen gelassene Frage nach der schulweiten Freigabe): eine eigene, schmale
-Rolle anlegen, die **nur** den Fernzugriff trägt — keine Kursbearbeitungsrechte,
-kein Archetyp.
+1. **Kohorte (empfohlen):** Unter Website-Administration › Plugins › lokale
+   Plugins › Coursepilot bei **Fernzugriffs-Kohorten** eine oder mehrere
+   bestehende **Systemkohorten** auswählen (z. B. die Kohorte, in der die Schule
+   ihre Lehrkräfte ohnehin pflegt). Coursepilot legt keine Kohorte an; der
+   Standard ist leer. Kohorten einer Kurskategorie sind nicht wählbar, weil
+   Kategorie-Manager sie selbst pflegen. Unter dem Feld steht je gewählter
+   Kohorte die Mitgliederzahl; eine inzwischen gelöschte Kohorte wird dort
+   markiert und ignoriert.
+2. **Vorhandene Systemrolle:** In einer Rolle, die die Schule systemweit schon
+   vergibt, die Fähigkeit `local/coursepilot:useremote` auf „Erlauben" setzen.
 
-1. Website-Administration › Nutzer/innen › Rechte › Rollen definieren › Neue
-   Rolle anlegen.
-2. „Diese Rolle basiert auf: Keine Rolle verwenden" wählen (kein Archetyp —
-   sonst erbt die Rolle ungewollt weitere Rechte).
-3. Kontexttypen, in denen diese Rolle zuweisbar ist: nur **System** ankreuzen.
-4. Bei der Fähigkeit `local/coursepilot:useremote` „Erlauben" setzen, sonst
-   nichts ändern.
-5. Rolle speichern (Kurzname z. B. `coursepilotremote`, Anzeigename z. B.
-   „Coursepilot Fernzugriff").
-6. Die neue Rolle je Lehrkraft unter Website-Administration › Nutzer/innen ›
-   Rechte › Systemrollen zuweisen zuteilen (oder entziehen).
+Coursepilot prüft die Freigabe bei **jedem** Aufruf. Wer aus der Kohorte entfernt
+wird oder die Rolle verliert, wird beim nächsten Aufruf abgewiesen, auch über eine
+schon bestehende Verbindung. Kommt die Person zurück, funktioniert ihre Verbindung
+wieder, ohne dass sie sich neu anmelden muss.
 
-Ehrlich gesagt: `db/access.php` erlaubt `local/coursepilot:useremote` weiterhin
-auch als Archetyp-Vorbelegung für `editingteacher`/`teacher` — wer diese
-Rollen systemweit zuweist (wie die bisherige `teacher_edit`-Praxis), bekommt
-den Fernzugriff also nach wie vor automatisch mit. Diese Vorbelegung bleibt
-für bereits bestehende Installationen stehen, ist aber **kein empfohlener
-Weg für neue Freischaltungen** — dafür immer die dedizierte Rolle oben
-verwenden. `tests/remote_role_test.php` schreibt diesen Altbestand bewusst
-als Test fest, damit eine künftige Verengung dieser Vorbelegung nicht
-unbemerkt passiert.
+Die Fähigkeit `local/coursepilot:useremote` hat **keine** Archetyp-Vorbelegung
+mehr: Eine systemweit zugewiesene `editingteacher`-Rolle bringt den Fernzugriff
+nicht nebenbei mit und ist kein Einrichtungsweg. Hinweis: Moodles „Rechte prüfen"
+zeigt nur den Rollenweg; ob jemand über eine Kohorte freigegeben ist, sieht man
+an der Kohortenmitgliedschaft.
 
-Damit bleibt die Kursrolle der Lehrkraft (z. B. `editingteacher` nur im
-eigenen Kurs) unangetastet, und niemand bekommt über den Fernzugriffs-Umweg
-Bearbeitungsrechte an fremden Kursen. Für Werkzeugaufrufe in einem Kurs
-bleiben separat die Kursrolle und `local/coursepilot:use` (sowie die
-jeweils nötigen Moodle-Kursrechte) nötig — Fernzugriffsrecht und
-Kursberechtigung werden unabhängig voneinander entzogen. Die Einstellung
-`remoteaccessenabled` unten ist nur eine instanzweite Notbremse und ersetzt
-keine Freigabe pro Person.
+Die Freigabe gibt keine Kursrechte. Für Werkzeugaufrufe in einem Kurs bleiben
+separat die Kursrolle und `local/coursepilot:use` (sowie die jeweils nötigen
+Moodle-Kursrechte) nötig; niemand bekommt über den Fernzugriff Bearbeitungsrechte
+an fremden Kursen. Fernzugriffsfreigabe und Kursberechtigung werden unabhängig
+voneinander entzogen. Die Einstellung `remoteaccessenabled` unten ist nur die
+instanzweite Notbremse und ersetzt keine Freigabe pro Person.
 
 | Einstellung | Standard | Bedeutung |
 |---|---|---|
+| `remoteaccesscohorts` | leer | Systemkohorten, deren Mitglieder den Fernzugriff nutzen dürfen (siehe oben). |
 | `remoteaccessenabled` | an | Notbremse: sperrt jeden weiteren MCP-Zugriff sofort. Bereits ausgestellte Zugriffstoken bleiben gültig — bei einem Sicherheitsvorfall zusätzlich den Sammelwiderruf auf der Verbindungsübersicht (Abschnitt 4) nutzen. Der normale Moodle-Login ist davon nicht betroffen. |
 | `loglevel` | Lesezugriffe und Fehler | Steuert, was über die Moodle-Ereignis-API protokolliert wird und in den üblichen Protokollberichten erscheint. |
 | `contextroot` | `coursepilot` | Wurzelordner des Kontextbereichs. Rein organisatorisch, keine Sicherheitsgrenze — die Isolation kommt aus `component`/`filearea`/`itemid`/`contextid`. Wirkt nur auf neu angelegte Dateien und nur für Lehrkräfte ohne eigenen Kontext-Pointer (externer Ablageort, siehe Abschnitt 6). |

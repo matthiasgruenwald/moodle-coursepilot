@@ -32,10 +32,11 @@ final class dispatcher_test extends \advanced_testcase {
 
     /**
      * Legt einen Nutzer mit gueltigem OAuth-Access-Token an (#337) - ersetzt
-     * die fruehere Webservice-Token-Kruecke. Bekommt standardmaessig
-     * local/coursepilot:useremote (Archetyp-Default fuer editingteacher, siehe
-     * db/access.php), damit bestehende Tests ohne Aenderung weiterlaufen;
-     * $withremote = false simuliert den entzogenen Fernzugriff.
+     * die fruehere Webservice-Token-Kruecke. Die systemweite
+     * editingteacher-Rolle bekommt standardmaessig ausdruecklich
+     * local/coursepilot:useremote (seit #579 ohne Archetyp-Vorbelegung, der
+     * Rollenweg der Fernzugriffsfreigabe); $withremote = false simuliert den
+     * entzogenen Fernzugriff.
      *
      * @param bool $withremote
      * @return array{0: \stdClass, 1: string} Nutzer und Access-Token.
@@ -43,16 +44,13 @@ final class dispatcher_test extends \advanced_testcase {
     private function create_authenticated_user(bool $withremote = true): array {
         $user = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
-        if (!$withremote) {
-            $roleid = $this->get_role_id('editingteacher');
-            assign_capability(
-                'local/coursepilot:useremote',
-                CAP_PROHIBIT,
-                $roleid,
-                \context_system::instance()->id,
-                true
-            );
-        }
+        assign_capability(
+            'local/coursepilot:useremote',
+            $withremote ? CAP_ALLOW : CAP_PROHIBIT,
+            $this->get_role_id('editingteacher'),
+            \context_system::instance()->id,
+            true
+        );
         $token = $this->issue_access_token($user->id);
         return [$user, $token];
     }

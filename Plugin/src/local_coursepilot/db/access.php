@@ -34,25 +34,16 @@ $capabilities = [
             'teacher' => CAP_ALLOW,
         ],
     ],
-    // Fernzugriff ueber den MCP-Endpunkt - systemweit abschaltbar, ohne
-    // einzelne Kurse anzufassen (#296, Punkt 1).
-    //
-    // Die Archetyp-Vorbelegung fuer editingteacher/teacher bleibt aus
-    // Rueckwaertskompatibilitaet mit bereits bestehenden Installationen
-    // stehen, die eine systemweite editingteacher-Zuweisung als Freischaltung
-    // nutzen (siehe docs/admin-erstanleitung.md, "teacher_edit"). Der ab #575
-    // dokumentierte und empfohlene Einrichtungsweg fuer neue Freischaltungen
-    // ist eine dedizierte Rolle nur mit dieser einen Faehigkeit - siehe
-    // tests/remote_role_test.php::test_useremote_capability_default_archetypes_stay_documented_as_legacy,
-    // die diese Vorbelegung bewusst festschreibt, damit eine kuenftige
-    // Aenderung hier nicht unbemerkt durchrutscht.
+    // Fernzugriff ueber den MCP-Endpunkt (#296, #579): einer von zwei Wegen
+    // der Fernzugriffsfreigabe, neben den gewaehlten Systemkohorten (siehe
+    // local_coursepilot\remote_access, ADR 0026). Bewusst ohne
+    // Archetyp-Vorbelegung - eine systemweit zugewiesene Lehrkraftrolle soll
+    // den Fernzugriff nicht nebenbei mitbringen; die Schule erlaubt ihn
+    // ausdruecklich in einer vorhandenen Systemrolle oder waehlt eine Kohorte.
     'local/coursepilot:useremote' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => [
-            'editingteacher' => CAP_ALLOW,
-            'teacher' => CAP_ALLOW,
-        ],
+        'archetypes' => [],
     ],
     // Einsicht in den Aenderungsverlauf einer Aktivitaet (#394, Spec 0015
     // §10.6) - eigene Faehigkeit statt local/coursepilot:use, weil Spec 0015
