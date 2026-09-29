@@ -30,6 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(webdav_client::class)]
+#[CoversClass(\local_coursepilot\webdav\webdav_error::class)]
 final class webdav_client_test extends \advanced_testcase {
 
     /**

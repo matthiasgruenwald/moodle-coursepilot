@@ -32,6 +32,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(external_schema_converter::class)]
+#[CoversClass(\local_coursepilot\tool_registry::class)]
 final class tool_schema_contract_test extends \advanced_testcase {
 
     public function test_tool_registration_contains_no_literal_descriptions_or_schema(): void {

@@ -37,6 +37,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(write_context_file::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\pointer_writer::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_area::class)]
 final class write_context_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 

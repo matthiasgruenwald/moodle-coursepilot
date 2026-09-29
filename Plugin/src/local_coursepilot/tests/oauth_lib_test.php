@@ -28,6 +28,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(oauth_lib::class)]
+#[CoversClass(\local_coursepilot\storage_anchor::class)]
 final class oauth_lib_test extends \advanced_testcase {
 
     private const WWWROOT = 'https://coursepilot.example';

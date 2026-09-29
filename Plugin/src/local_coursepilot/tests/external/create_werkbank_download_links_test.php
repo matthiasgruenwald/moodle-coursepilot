@@ -31,6 +31,7 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(create_werkbank_download_links::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\oauth_lib::class)]
 final class create_werkbank_download_links_test extends \advanced_testcase {
 
     public function setUp(): void {

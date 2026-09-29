@@ -30,6 +30,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(drift_check::class)]
+#[CoversClass(\local_coursepilot\catalog\field::class)]
 final class drift_check_test extends \advanced_testcase {
 
     /**

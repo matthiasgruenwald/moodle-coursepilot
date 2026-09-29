@@ -30,6 +30,7 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(delete_material_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_files::class)]
 final class delete_material_files_test extends \advanced_testcase {
 
     public function test_deletes_exactly_named_files(): void {

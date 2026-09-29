@@ -28,6 +28,7 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(werkbank_ticket::class)]
+#[CoversClass(\local_coursepilot\oauth_lib::class)]
 final class werkbank_ticket_test extends \advanced_testcase {
 
     public function setUp(): void {

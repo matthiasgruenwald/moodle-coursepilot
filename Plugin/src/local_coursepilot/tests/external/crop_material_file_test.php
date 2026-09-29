@@ -35,6 +35,7 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(crop_material_file::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_files::class)]
 final class crop_material_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 

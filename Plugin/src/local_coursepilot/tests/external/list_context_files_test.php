@@ -34,6 +34,8 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(list_context_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_files::class)]
 final class list_context_files_test extends \advanced_testcase {
     use webdav_instance_fixture;
 

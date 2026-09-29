@@ -29,6 +29,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(context_pointer::class)]
+#[CoversClass(\local_coursepilot\pointer_location::class)]
 final class context_pointer_test extends \advanced_testcase {
 
     public function test_legacy_pointer_resolves_both_fields_as_moodle(): void {

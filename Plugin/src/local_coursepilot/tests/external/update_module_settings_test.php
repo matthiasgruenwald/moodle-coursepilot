@@ -30,6 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(update_module_settings::class)]
+#[CoversClass(\local_coursepilot\activity_file_trash::class)]
 final class update_module_settings_test extends \advanced_testcase {
     use webdav_instance_fixture;
 

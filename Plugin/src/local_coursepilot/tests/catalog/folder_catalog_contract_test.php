@@ -27,6 +27,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(folder::class)]
+#[CoversClass(\local_coursepilot\catalog\shared_block::class)]
 final class folder_catalog_contract_test extends \advanced_testcase {
 
     /**

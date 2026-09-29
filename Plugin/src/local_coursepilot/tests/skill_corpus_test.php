@@ -29,6 +29,7 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(skill_corpus::class)]
+#[CoversClass(\local_coursepilot\tool_registry::class)]
 final class skill_corpus_test extends \advanced_testcase {
 
     /**

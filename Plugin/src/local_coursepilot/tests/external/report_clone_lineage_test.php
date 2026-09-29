@@ -44,6 +44,7 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(report_clone_lineage::class)]
+#[CoversClass(\local_coursepilot\question_suspect_gate::class)]
 final class report_clone_lineage_test extends \advanced_testcase {
 
     /**
