@@ -92,7 +92,7 @@ sichtbarem Grund in der Ausgabe:
 - 4 Bildzuschnitt-Tests (`lib/image-crop.js`, Altstand): ImageMagick bzw.
   macOS-`sips` fehlt auf dem Runner.
 
-
+Keine dieser Ausnahmen betrifft natives Verhalten unter
 `Plugin/src/local_coursepilot`; keine native Testdatei wird abgeschaltet.
 Die laufende Spike- oder Produktivinstanz wird durch diese CI nicht
 automatisch verändert.
@@ -134,6 +134,14 @@ Der Review nannte zwei konkrete veraltete Testerwartungen:
    `test/coursepilot-native-catalog-contract.test.js`: die SQL liegt seit der
    Katalogextraktion (#533/#556) in `classes/catalog/quiz.php`, nicht in
    `classes/catalog/module_state.php` (dorthin verwies der Test noch).
+
+Außerdem meldete die Suite eine Notice: `oauth_lib::active_tokens()` las nur
+Vor- und Nachname, `fullname()` in der Verbindungsübersicht löste deshalb
+Moodles `debugging()` zu fehlenden Namensfeldern aus. Behoben in #578; der
+Test baut seine Zeilen jetzt über `active_tokens()` und verlangt, dass kein
+`debugging()` fällt. Übrig bleibt ein beabsichtigter Skip
+(`webdav_storage_port_test::test_write_rejects_when_quota_is_exceeded`: WebDAV
+unterliegt nicht der Moodle-Nutzerquote).
 
 ## Frühere Bugfix-Voraussetzungen #239/#243/#244
 

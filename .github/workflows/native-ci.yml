@@ -215,6 +215,11 @@ jobs:
       - name: Release-ZIP bauen (#577)
         run: npm run build:native-release
 
+      - name: ZIP-Pruefsumme protokollieren (Abnahmenachweis #578)
+        # upload-artifact verpackt das ZIP erneut - nur diese Zeile nennt die
+        # Pruefsumme des Plugin-ZIPs selbst.
+        run: sha256sum dist/native-release/local_coursepilot-*.zip
+
       - name: ZIP entpacken - dasselbe Artefakt, das eine Administration installieren wuerde
         run: |
           mkdir -p artifact-plugin

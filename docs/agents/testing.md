@@ -44,10 +44,10 @@ set -a; source /opt/kurspilot-spike/docker/kurspilot-spike.env; set +a
   vendor/bin/phpunit --testsuite local_coursepilot_testsuite
 ```
 
-**Nur Moodle 5.0** wird zugesagt (`$plugin->requires = 2025041400`); die
-Spike-Instanz läuft auf 5.0.8. Kein Coverage-Gate — das zieht
-[#268](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/268)
-nach.
+Zugesagt sind Moodle 5.0 und 5.1 mit PHP 8.4 und MariaDB 11
+(`$plugin->requires = 2025041400`); die Spike-Instanz läuft auf 5.0.8. Die
+verbindliche Prüfung einschließlich 80%-Line-Coverage-Gate läuft in CI, siehe
+[`docs/ci-native-server-mcp.md`](../ci-native-server-mcp.md) (#268).
 
 #### Der volle Lauf braucht einen abgekoppelten Prozess
 

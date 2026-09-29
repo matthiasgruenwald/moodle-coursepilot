@@ -39,7 +39,7 @@ final class admin_connections_page_test extends \advanced_testcase {
     public function test_row_includes_person_and_ablageort_lines(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user(['firstname' => 'Ada', 'lastname' => 'Lovelace']);
-        $this->issue_token((int) $user->id);
+        $tokenid = $this->issue_token((int) $user->id);
 
         // Echte Zeilen aus oauth_lib::active_tokens() statt eines
         // handgebauten Objekts - nur so faellt auf, wenn die Abfrage
@@ -51,7 +51,7 @@ final class admin_connections_page_test extends \advanced_testcase {
         $row = $data['rows'][0];
         $this->assertStringContainsString(fullname($user), $row['person']);
         $this->assertStringContainsString($user->email, $row['person']);
-        $this->assertStringContainsString('revoke=', $row['revokeurl']);
+        $this->assertStringContainsString('revoke=' . $tokenid, $row['revokeurl']);
         $this->assertNotEmpty($row['ablageortlines']);
     }
 
@@ -59,9 +59,9 @@ final class admin_connections_page_test extends \advanced_testcase {
      * Stellt ueber den regulaeren OAuth-Weg ein aktives Token fuer $userid aus.
      *
      * @param int $userid
-     * @return void
+     * @return int Die ID der Tokenzeile.
      */
-    private function issue_token(int $userid): void {
+    private function issue_token(int $userid): int {
         $registration = oauth_lib::handle_registration('POST', [
             'client_name' => 'Claude Desktop',
             'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
@@ -71,6 +71,7 @@ final class admin_connections_page_test extends \advanced_testcase {
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
         $code = oauth_lib::issue_code($clientid, $userid, 'https://claude.ai/api/mcp/auth_callback', $challenge);
         $this->assertNotNull(oauth_lib::exchange_code($code, $clientid, 'https://claude.ai/api/mcp/auth_callback', $verifier));
+        return (int) array_key_first(oauth_lib::active_tokens_for_user($userid));
     }
 
     public function test_revokeall_onsubmit_embeds_confirm_text_as_json(): void {
