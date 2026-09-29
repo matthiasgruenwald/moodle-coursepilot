@@ -55,15 +55,14 @@ stillschweigende Erweiterung dieser Matrix.
   Schwelle, exakt 80 %, über der Schwelle, fehlender/leerer/ungültiger
   Bericht, ungültiger Nenner).
 
-### Bekannter Befund: Schwelle mit der vorhandenen Suite noch nicht nachgewiesen
+### Gemessener Stand
 
-Der Review vom 25.09.2026 (Commit `06ded34`) hat die Coverage **nicht
-gemessen**. Diese CI erhebt sie jetzt erstmals automatisiert, aber der
-tatsächliche Prozentsatz ist in dieser Umgebung nicht ausführbar ermittelbar
-(kein PHP/PHPUnit im Entwicklungscontainer, siehe unten). Sollte der erste
-reale CI-Lauf unter 80 % liegen, ist das **kein CI-Defekt** — die Schwelle
-bleibt bei 80 % bestehen, siehe Issue #268 ("nicht selbst Tests weglassen
-oder Schwelle senken, um grün zu erzwingen").
+Erster grüner Gesamtlauf: Commit `9a92ef3`, Run
+[36530129453](https://github.com/matthiasgruenwald/moodle-coursepilot/actions/runs/36530129453)
+— **80,03 %** Line Coverage (10.364 von 12.950 Zeilen). Die Schwelle ist damit
+knapp erreicht; jede neue ungetestete Produktionszeile kann sie wieder
+unterschreiten. Sie bleibt trotzdem bei 80 % (Issue #268: nicht Tests
+weglassen oder Schwelle senken, um grün zu erzwingen).
 
 ## Legacy- und Plattformtestumfang (Node-Suite)
 
@@ -83,7 +82,17 @@ jede einzeln begründet im Dateikopf des Skripts:
   liest — auf einem Linux-Runner strukturell nicht simulierbar. Testet
   zudem `lib/` (lokaler stdio-Altstand).
 
-Keine dieser Ausnahmen betrifft natives Verhalten unter
+Zusätzlich überspringen sich im Pflichtlauf 43 Einzeltests selbst, jeweils mit
+sichtbarem Grund in der Ausgabe:
+
+- 39 Integrationstests unter `test/integration/` gegen eine Testmoodle-Instanz
+  über den REST-Weg des lokalen stdio-Altstands — ohne Zugangsdaten im
+  Schlüsselbund, `MOODLE_TEST_COURSEID` bzw. Zusatztokens
+  (`MOODLE_TEST_TOKEN_*`) laufen sie nicht.
+- 4 Bildzuschnitt-Tests (`lib/image-crop.js`, Altstand): ImageMagick bzw.
+  macOS-`sips` fehlt auf dem Runner.
+
+
 `Plugin/src/local_coursepilot`; keine native Testdatei wird abgeschaltet.
 Die laufende Spike- oder Produktivinstanz wird durch diese CI nicht
 automatisch verändert.
@@ -103,6 +112,12 @@ vom `phpunit`-Job getrennten** frischen Moodle-Instanz und prüft über
    die Capability `local/coursepilot:useremote` besitzt (keine Admin-Rechte) —
    prüft die tatsächliche Capability-Kette, nicht nur „geht mit Admin-Rechten
    alles".
+4. Denselben Aufruf als MCP-Anfrage (#578): Token über den echten
+   OAuth-Weg (DCR, PKCE, Code-Einlösung), dann `server/discover`,
+   `tools/list` und `tools/call` über `dispatcher::handle()` — die Seam, an
+   die `mcp.php` den HTTP-Rumpf übergibt. Ohne Token 401. Handshake,
+   Werkzeugantwort und installierte Version müssen `version.php` des ZIPs
+   entsprechen.
 
 ## Bekannte native Baseline-Fehler (Stand Review 25.09.2026, Commit `06ded34`)
 
@@ -137,23 +152,11 @@ Falls nicht automatisiert eingerichtet: Repository-Einstellungen → Branches �
 Branch protection rule für `main` → „Require status checks to pass before
 merging" → `Gate (required)` auswählen.
 
-## Nicht in dieser Sandbox ausführbar
+## Nachweis
 
-Diese YAML- und PHP-Dateien wurden hier nicht gegen einen echten
-GitHub-Actions-Runner oder echtes PHPUnit ausgeführt (kein PHP im
-Entwicklungscontainer). Geprüft wurde stattdessen:
-
-- `actionlint` (v1.7.12) gegen `.github/workflows/native-ci.yml` — keine
-  Befunde.
-- Der zugrunde liegende `moodlehq/moodle-plugin-ci`-Quellcode (Kommandos
-  `install`, `phpunit`, Optionen `--coverage-clover`/`--coverage-pcov`) wurde
-  gegen die tatsächliche Implementierung auf GitHub geprüft, nicht nur gegen
-  Dokumentation.
-- `node --check` gegen alle neuen `.js`-Dateien; die Coverage-Gate-Logik
-  selbst läuft unter `test/ci-check-coverage.test.js` (8 Fälle, grün).
-- `node scripts/ci/run-js-tests.js` lokal grün (1076 Tests, 0 Fehler, 43
-  dokumentiert übersprungen).
-
-Der erste reale Lauf auf GitHub Actions ist damit der erste tatsächliche
-Nachweis, dass PHPUnit-Installation, Coverage-Erhebung und
-Artefakt-Installation wie vorgesehen funktionieren.
+Der Workflow ist seit Run
+[36530129453](https://github.com/matthiasgruenwald/moodle-coursepilot/actions/runs/36530129453)
+auf echten GitHub-Actions-Runnern grün; PHPUnit-Installation,
+Coverage-Erhebung und Artefakt-Installation sind damit real nachgewiesen.
+Die Vor-Merge-Abnahme mit Commit, ZIP-Prüfsumme und allen Kennzahlen steht in
+[`docs/release/2.0.0-alpha-vor-merge-abnahme.md`](release/2.0.0-alpha-vor-merge-abnahme.md).

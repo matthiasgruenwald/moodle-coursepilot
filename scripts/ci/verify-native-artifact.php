@@ -12,6 +12,9 @@
 //   3. Autorisierter Aufruf: ein Nutzer mit lokal/coursepilot:useremote
 //      kann coursepilot_get_version_info (schreibfrei, ohne Kurskontext)
 //      wirklich ausfuehren und bekommt eine gueltige Antwort.
+//   4. MCP-Aufruf: mit einem ueber OAuth (DCR, PKCE, Code-Einloesung)
+//      ausgestellten Token server/discover, tools/list und tools/call ueber
+//      den Dispatcher; ohne Token 401; Versionen stimmen mit version.php.
 //
 // Aufruf: php admin/cli/verify-native-artifact.php (aus dem Moodle-Root,
 // diese Datei wird vom Workflow dorthin kopiert - kein Bestandteil des
@@ -97,4 +100,65 @@ if (!isset($result['data']) || !is_array($result['data']) || empty($result['data
 }
 
 fwrite(STDOUT, "OK: {$functionname} registriert, discoverbar und autorisiert aufrufbar.\n");
+
+// 4. Derselbe Aufruf als MCP-Anfrage (#578): OAuth-Token ueber den echten
+// Autorisierungsweg (DCR, Code mit PKCE, Einloesung), dann Discovery und
+// Werkzeugaufruf ueber dispatcher::handle() - dieselbe Seam, an die mcp.php
+// den HTTP-Rumpf uebergibt. Nur der HTTP-Transport selbst entfaellt.
+$client = \local_coursepilot\oauth_lib::register_client([
+    'redirect_uris' => ['http://127.0.0.1/callback'],
+    'client_name' => 'Coursepilot Artifact Check',
+]);
+if (empty($client['client_id'])) {
+    verify_native_artifact_fail('OAuth-Client-Registrierung fehlgeschlagen: ' . json_encode($client));
+}
+$verifier = bin2hex(random_bytes(32));
+$challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
+$code = \local_coursepilot\oauth_lib::issue_code($client['client_id'], (int) $user->id, 'http://127.0.0.1/callback', $challenge);
+$tokens = \local_coursepilot\oauth_lib::exchange_code($code, $client['client_id'], 'http://127.0.0.1/callback', $verifier);
+if (empty($tokens['access_token'])) {
+    verify_native_artifact_fail('OAuth-Code-Einloesung lieferte kein Access-Token.');
+}
+
+$headers = ['origin' => null, 'pathinfo' => '', 'method' => 'POST'];
+$mcp = static function(string $method, array $params, ?string $token) use ($headers): array {
+    $request = ['jsonrpc' => '2.0', 'id' => 1, 'method' => $method, 'params' => $params];
+    return \local_coursepilot\dispatcher::handle($request, $token, $headers);
+};
+
+$unauthorized = $mcp('tools/list', [], null);
+if ($unauthorized['status'] !== 401) {
+    verify_native_artifact_fail("MCP ohne Token lieferte HTTP {$unauthorized['status']} statt 401.");
+}
+
+$discover = $mcp('server/discover', [], $tokens['access_token']);
+$serverinfo = $discover['body']['result']['serverInfo'] ?? null;
+if ($discover['status'] !== 200 || ($serverinfo['name'] ?? null) !== $component) {
+    verify_native_artifact_fail('MCP server/discover fehlgeschlagen: ' . json_encode($discover['body']));
+}
+
+$list = $mcp('tools/list', [], $tokens['access_token']);
+$toolnames = array_column($list['body']['result']['tools'] ?? [], 'name');
+if ($list['status'] !== 200 || !in_array('coursepilot_get_version_info', $toolnames, true)) {
+    verify_native_artifact_fail('MCP tools/list enthaelt coursepilot_get_version_info nicht.');
+}
+
+$call = $mcp('tools/call', ['name' => 'coursepilot_get_version_info', 'arguments' => []], $tokens['access_token']);
+$info = $call['body']['result']['structuredContent'] ?? null;
+if ($call['status'] !== 200 || !empty($call['body']['result']['isError']) || !is_array($info)) {
+    verify_native_artifact_fail('MCP tools/call fehlgeschlagen: ' . json_encode($call['body']));
+}
+// Versionskonsistenz: Handshake, Werkzeugantwort und installierte Version
+// nennen denselben Stand wie version.php des installierten ZIPs.
+$plugin = new stdClass();
+require($CFG->dirroot . '/local/coursepilot/version.php');
+if ($serverinfo['version'] !== $plugin->release || $info['plugin_release'] !== $plugin->release
+        || (int) $info['plugin_version'] !== (int) $plugin->version
+        || (int) $info['plugin_version_db'] !== (int) $plugin->version) {
+    verify_native_artifact_fail('Versionsangaben widersprechen version.php: ' . json_encode([$serverinfo, $info]));
+}
+
+fwrite(STDOUT, "OK: MCP ueber OAuth - server/discover, tools/list ("
+    . count($toolnames) . " Werkzeuge), tools/call coursepilot_get_version_info -> "
+    . "{$info['plugin_release']} ({$info['plugin_version']}), Moodle {$info['moodle_release']}.\n");
 exit(0);
