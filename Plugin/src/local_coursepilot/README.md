@@ -48,7 +48,11 @@ changes go back to the community.
    `docs/adr/0024-englische-basis-und-komponente-coursepilot.md` for the reasoning.
 1. Install the plugin into `local/coursepilot` and run the upgrade.
 2. Enable web services and the REST protocol.
-3. Give teachers the `local/coursepilot:use` capability.
+3. Give teachers the `local/coursepilot:use` capability in their courses, and the
+   `local/coursepilot:useremote` capability in the **system** context. A course enrolment
+   does not grant the latter; use a dedicated system role that carries only
+   `local/coursepilot:useremote` (no archetype, no course editing rights) rather than a
+   site-wide teacher role.
 4. The teacher connects their MCP client to `https://<your-site>/local/coursepilot/mcp.php`
    and authorises it once.
 
@@ -57,10 +61,10 @@ Discovery follows RFC 8414 and RFC 9728. Both work without a web server change, 
 
 ## Supported versions
 
-Tested combination: **Moodle 5.0.8, PHP 8.4, MariaDB** (native PHPUnit suite). `version.php`
-requires Moodle 5.0 or later as a floor; that requirement is raised to 5.1 only once 5.1
-itself has been exercised the same way — a metadata edit alone is not a compatibility test.
-No other PHP or database combination has been verified.
+Tested combinations (full native PHPUnit suite in CI): **Moodle 5.0 and Moodle 5.1**
+(`MOODLE_500_STABLE`, `MOODLE_501_STABLE`), each with **PHP 8.4 and MariaDB 11**.
+`version.php` requires Moodle 5.0 or later as a floor. No other Moodle, PHP or database
+combination (for example PostgreSQL) has been verified.
 
 ## Language
 
