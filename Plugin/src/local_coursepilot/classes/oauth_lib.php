@@ -871,9 +871,13 @@ final class oauth_lib {
     public static function active_tokens(): array {
         global $DB;
 
+        // Alle Namensfelder, die fullname() erwartet - sonst meldet Moodle
+        // fehlende Felder per debugging() (#578).
+        $namefields = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
+
         return $DB->get_records_sql(
             'SELECT t.id, t.clientid, t.userid, t.timecreated, t.expires, c.clientname,
-                    u.firstname, u.lastname, u.email
+                    ' . $namefields . ', u.email
                FROM {' . self::TOKEN_TABLE . '} t
           LEFT JOIN {' . self::CLIENT_TABLE . '} c ON c.clientid = t.clientid
           LEFT JOIN {user} u ON u.id = t.userid

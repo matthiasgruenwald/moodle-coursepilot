@@ -16,6 +16,7 @@
 
 namespace local_coursepilot\output;
 
+use local_coursepilot\oauth_lib;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -37,27 +38,39 @@ final class admin_connections_page_test extends \advanced_testcase {
 
     public function test_row_includes_person_and_ablageort_lines(): void {
         $this->resetAfterTest();
-        $user = $this->getDataGenerator()->create_user();
+        $user = $this->getDataGenerator()->create_user(['firstname' => 'Ada', 'lastname' => 'Lovelace']);
+        $this->issue_token((int) $user->id);
 
-        $token = (object) [
-            'id' => 7,
-            'userid' => $user->id,
-            'clientid' => 'client-abc',
-            'clientname' => 'Claude Desktop',
-            'timecreated' => time(),
-            'expires' => time() + 3600,
-            'firstname' => $user->firstname,
-            'lastname' => $user->lastname,
-            'email' => $user->email,
-        ];
+        // Echte Zeilen aus oauth_lib::active_tokens() statt eines
+        // handgebauten Objekts - nur so faellt auf, wenn die Abfrage
+        // Namensfelder fehlen, die fullname() braucht (Notice aus #578).
+        $data = admin_connections_page::page_data(oauth_lib::active_tokens());
 
-        $data = admin_connections_page::page_data([$token]);
-
+        $this->assertDebuggingNotCalled();
         $this->assertFalse($data['empty']);
         $row = $data['rows'][0];
+        $this->assertStringContainsString(fullname($user), $row['person']);
         $this->assertStringContainsString($user->email, $row['person']);
-        $this->assertStringContainsString('revoke=7', $row['revokeurl']);
+        $this->assertStringContainsString('revoke=', $row['revokeurl']);
         $this->assertNotEmpty($row['ablageortlines']);
+    }
+
+    /**
+     * Stellt ueber den regulaeren OAuth-Weg ein aktives Token fuer $userid aus.
+     *
+     * @param int $userid
+     * @return void
+     */
+    private function issue_token(int $userid): void {
+        $registration = oauth_lib::handle_registration('POST', [
+            'client_name' => 'Claude Desktop',
+            'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
+        ]);
+        $clientid = $registration['body']['client_id'];
+        $verifier = bin2hex(random_bytes(32));
+        $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
+        $code = oauth_lib::issue_code($clientid, $userid, 'https://claude.ai/api/mcp/auth_callback', $challenge);
+        $this->assertNotNull(oauth_lib::exchange_code($code, $clientid, 'https://claude.ai/api/mcp/auth_callback', $verifier));
     }
 
     public function test_revokeall_onsubmit_embeds_confirm_text_as_json(): void {
