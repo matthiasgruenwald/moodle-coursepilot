@@ -534,4 +534,43 @@ final class set_completion_test extends \advanced_testcase {
             }
         }
     }
+
+    /**
+     * Riegel (#583): Abschluss ueber die Note einer lehrerbewerteten Aufgabe
+     * wartet auf die Lehrkraft - ohne Bestaetigung abgelehnt.
+     */
+    public function test_completion_by_teacher_grade_needs_confirmation(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $aufgabe = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $patch = json_encode(['completion' => COMPLETION_TRACKING_AUTOMATIC, 'completionusegrade' => 1]);
+
+        try {
+            set_completion::execute($aufgabe->cmid, $patch);
+            $this->fail('Abschluss ueber Lehrkraftnote haette bestaetigt werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
+            $this->assertStringContainsString('completionusegrade', $e->getMessage());
+        }
+        $this->assertSame(0, (int) $this->read($aufgabe->cmid)['completionusegrade']);
+
+        set_completion::execute($aufgabe->cmid, $patch, false, ['completionusegrade']);
+        $this->assertSame(1, (int) $this->read($aufgabe->cmid)['completionusegrade']);
+    }
+
+    /**
+     * Ein automatisch bewerteter Test braucht dafuer keine Bestaetigung.
+     */
+    public function test_completion_by_quiz_grade_needs_no_confirmation(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $test = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        set_completion::execute($test->cmid, json_encode([
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionusegrade' => 1,
+        ]));
+
+        $this->assertSame(1, (int) $this->read($test->cmid)['completionusegrade']);
+    }
 }

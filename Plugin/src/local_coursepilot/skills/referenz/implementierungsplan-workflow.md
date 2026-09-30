@@ -142,26 +142,21 @@ Fragenreferenzen oder Fragedaten aendern.
   Lernende ueberarbeiten ihre Abgabe selbst, bis sie bewertet ist oder der
   Abgabeschluss erreicht ist. Sind mehrere Versuche geplant
   (`maxattempts` != 1), gilt `attemptreopenmethod=untilpass` oder `automatic`.
-- **Riegel-Pruefung** fuer jede Einstellung, die vom Moodle-Standard abweicht:
-  Braucht eine Lernende oder ein Lernender danach eine Handlung der Lehrkraft,
-  um weiterzuarbeiten oder nachzubessern? Nein -> Einstellung frei planbar.
-  Ja -> die Einstellung ist ein **Riegel**. Ein Riegel kommt nur in den Plan,
-  wenn die Lehrkraft ihn im Auftrag oder Kontext ausdruecklich nennt, und
-  erscheint dann als Planabweichung mit Begruendung. Bekannte Riegel:
-  - Aufgabe: `submissiondrafts=1` (Abgabe gesperrt, bis die Lehrkraft auf
-    Entwurf zuruecksetzt oder einen Versuch oeffnet),
-    `attemptreopenmethod=manual`, `cutoffdate`, `timelimit`,
-    `requireallteammemberssubmit=1`, `preventsubmissionnotingroup=1`,
-    `markingworkflow=1` (Bewertung erst nach Freigabe sichtbar),
-    `blindmarking=1`.
-  - Test: `attempts` > 0, `navmethod=sequential`, `timeclose`, `timelimit`,
-    `quizpassword`, `subnet`, `browsersecurity`.
-  - Abstimmung: `allowupdate=0`, `timeclose`.
-  - Forum: `cutoffdate`, `lockdiscussionafter`, `blockafter`.
-  - Kette: eine Voraussetzung oder ein Abschluss, der an der Bewertung einer
-    Aufgabe haengt (Bewertungsbedingung auf eine Aufgabe,
-    `completionusegrade`/`completionpassgrade` bei Aufgaben). Bewertungen
-    von Tests entstehen automatisch und sind kein Riegel.
+- **Riegel** sind Einstellungen, nach denen eine lernende Person eine
+  Handlung der Lehrkraft braucht, um weiterzuarbeiten oder nachzubessern.
+  Welche Felder Riegel sind, steht im Feldkatalog
+  (`coursepilot_describe_module_fields`, Angabe `learner_lock` je Feld);
+  bestehende Riegel meldet `coursepilot_get_module_settings`. Ein Riegel
+  kommt nur in den Plan, wenn die Lehrkraft ihn im Auftrag oder Kontext
+  ausdrücklich nennt (ein ausdrücklich gewählter Modus wie
+  `abschlusstest` nennt seine Riegel mit), und erscheint dann als
+  Planabweichung mit Begründung.
+- **Riegel-Ablehnung beim Schreiben:** Lehnt ein Schreibwerkzeug den Aufruf
+  wegen eines Riegels ab (`learnerlocksunconfirmed`), ist nichts
+  geschrieben. Hat die Lehrkraft genau diesen Riegel ausdrücklich genannt,
+  den Aufruf mit `confirm_learner_locks` und den gemeldeten Kennungen
+  wiederholen. Sonst das Feld weglassen oder den offenen Wert setzen (die
+  Meldung nennt den Grund) und neu aufrufen.
 
 ### Planabweichungen
 

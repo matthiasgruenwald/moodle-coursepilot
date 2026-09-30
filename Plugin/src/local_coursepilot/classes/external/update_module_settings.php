@@ -25,6 +25,7 @@ use core_external\external_value;
 use local_coursepilot\activity_file_trash;
 use local_coursepilot\catalog\module_catalog;
 use local_coursepilot\catalog\catalog_fields;
+use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\shared_block;
@@ -121,6 +122,7 @@ class update_module_settings extends external_api {
                 'JSON object field name => new value - only the fields to change (patch, not a full state)'
             ),
             'location' => material_files::ort_parameter(),
+            learner_locks::PARAMETER => learner_locks::confirm_parameter(),
         ]);
     }
 
@@ -158,15 +160,22 @@ class update_module_settings extends external_api {
      * @param int $cmid
      * @param string $fieldsjson
      * @param string $location
+     * @param string[] $confirmlearnerlocks
      * @return array
      */
-    public static function execute(int $cmid, string $fieldsjson, string $location = material_files::ORT_BESTAND): array {
+    public static function execute(
+        int $cmid,
+        string $fieldsjson,
+        string $location = material_files::ORT_BESTAND,
+        array $confirmlearnerlocks = []
+    ): array {
         global $CFG;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
             'fields_json' => $fieldsjson,
             'location' => $location,
+            learner_locks::PARAMETER => $confirmlearnerlocks,
         ]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
@@ -181,6 +190,13 @@ class update_module_settings extends external_api {
         write_gate::assert_writable($modname);
 
         [$patch, $before] = self::decode_and_validate_patch($modname, $catalogclass, $cmid, $params['fields_json']);
+        // Riegel (#583): ein Patch, der einen bestehenden Riegel nur
+        // wiederholt, braucht keine erneute Bestaetigung.
+        learner_locks::assert_confirmed(
+            $modname,
+            learner_locks::find_changed($catalogclass, $patch, $before),
+            $params[learner_locks::PARAMETER]
+        );
 
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');

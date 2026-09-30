@@ -23,6 +23,7 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\field;
+use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\shared_block;
 use moodle_exception;
@@ -131,10 +132,13 @@ class describe_module_fields extends external_api {
         }
         $fields = array_merge(shared_block::fields(), $modulefields);
 
+        $withlock = static fn (field $f): array => $f->to_array()
+            + ['learner_lock' => learner_locks::condition_json($catalogclass, $f->name)];
         $module = [
             'modname' => $modname,
             'write_route' => $catalogclass::schreibweg() ?? self::VEHICLE_SCHREIBWEG,
-            'fields' => array_map(static fn (field $f): array => $f->to_array(), $fields),
+            'grade_origin' => $catalogclass::grade_origin(),
+            'fields' => array_map($withlock, $fields),
             'field_bundles' => self::bundles($catalogclass::bundles()),
             'pseudo_fields' => [],
             'blocked_fields' => [],
@@ -144,7 +148,7 @@ class describe_module_fields extends external_api {
 
         if ($full) {
             $pseudofields = array_merge(shared_block::pseudofields(), $catalogclass::pseudofields());
-            $module['pseudo_fields'] = array_map(static fn (field $f): array => $f->to_array(), $pseudofields);
+            $module['pseudo_fields'] = array_map($withlock, $pseudofields);
             $module['blocked_fields'] = array_values(array_unique(
                 array_merge(shared_block::BLOCKLIST, $catalogclass::blocklist())
             ));
@@ -199,6 +203,12 @@ class describe_module_fields extends external_api {
                 ),
                 'source' => new external_value(PARAM_TEXT, 'File:line reference'),
             ]),
+            'learner_lock' => new external_value(
+                PARAM_RAW,
+                'JSON-encoded learner lock condition {op, value, reason}: when the written value meets it, learners '
+                    . 'need an action by the teacher to continue or resubmit, and write tools reject the call unless '
+                    . 'confirm_learner_locks names the field. "null" if the field cannot be a lock.'
+            ),
         ]);
 
         return new external_single_structure([
@@ -212,6 +222,11 @@ class describe_module_fields extends external_api {
                 'write_route' => new external_value(
                     PARAM_TEXT,
                     'Vehicle notice, or the name of the single tool that writes instead'
+                ),
+                'grade_origin' => new external_value(
+                    PARAM_ALPHA,
+                    'Who produces the grade: "teacher", "automatic" or "none". A quiz containing a manually graded '
+                        . 'question counts as "teacher" in the write tools.'
                 ),
                 'fields' => new external_multiple_structure($fieldstructure, 'Category 1: fields (incl. shared block)'),
                 'field_bundles' => new external_multiple_structure(

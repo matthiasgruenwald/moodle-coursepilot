@@ -36,6 +36,9 @@ verwechselt wird.
 - **Abschlusstest (`abschlusstest`):** Abschlusstest mit Verbesserungsmöglichkeit,
   keine Klassenarbeit. Zwei Versuche mit Wartezeit und Mittelwertbildung halten
   den Fokus auf Abschluss und Verbesserung statt auf einmalige Bewertung.
+  Die Versuchsbegrenzung ist ein Riegel: hat die Lehrkraft den Abschlusstest
+  ausdrücklich gewählt, `create_quiz`/`update_quiz_settings` mit
+  `confirm_learner_locks: ["attempts"]` aufrufen.
 
 Aus Kompatibilitätsgründen nimmt das Plugin die alten Werte `intensiv`,
 `lerncheck` und `bewertung` noch an und mappt sie intern auf `mini-check`,

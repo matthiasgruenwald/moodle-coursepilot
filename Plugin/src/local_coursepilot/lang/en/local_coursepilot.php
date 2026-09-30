@@ -488,6 +488,7 @@ $string['completionfieldnotformodname'] = 'The completion field "{$a->field}" on
 $string['completioninvalidfieldvalue'] = 'Invalid value "{$a->value}" for completion field "{$a->field}". Nothing was written.';
 $string['completionnotenabled'] = 'Completion tracking is disabled for this course (or the whole site). Moodle would silently discard these fields either way. Enable completion tracking for the course first. Nothing was written.';
 $string['completiondatalossconfirmationrequired'] = 'This change would delete the existing completion data of {$a->betroffene_lernende} learner(s) for this activity - Moodle wipes and recalculates it as soon as this write unlocks completion. Nothing was written. Call set_completion again with "confirmed": true to proceed anyway.';
+$string['learnerlocksunconfirmed'] = 'This call would set learner lock(s) for activity type "{$a->modname}" - settings after which a learner needs an action by the teacher to continue or resubmit: {$a->locks} Nothing was written. Leave the field out or choose an open value unless the teacher explicitly asked for this lock; only then repeat the call with "{$a->parameter}": {$a->ids}.';
 $string['sectiontargetoutofrange'] = 'Target position "{$a->nach}" is out of the valid range (1 to {$a->max}).';
 
 // Write core: set_restriction (#393).

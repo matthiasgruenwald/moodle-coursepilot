@@ -130,6 +130,30 @@ interface module_catalog {
     public static function bundles(): array;
 
     /**
+     * Riegel (Issue #583): Feld => strukturierte Bedingung, unter der das Feld
+     * eine lernende Person auf eine Handlung der Lehrkraft warten laesst
+     * (weiterarbeiten oder nachbessern). Bedingung:
+     * `['op' => 'equals'|'not_equals'|'greater'|'nonzero', 'value' => ..., 'reason' => '...']`
+     * ("value" entfaellt bei "nonzero", "reason" ist ein englischer Satz fuer
+     * die Werkzeugmeldung). Pflicht: auch eine leere Liste ist eine
+     * ausdrueckliche Antwort. Ausgewertet von {@see learner_locks}.
+     *
+     * @return array<string, array{op: string, value?: mixed, reason: string}>
+     */
+    public static function learner_locks(): array;
+
+    /**
+     * Herkunft der Note (Issue #583): {@see learner_locks::GRADE_TEACHER},
+     * {@see learner_locks::GRADE_AUTOMATIC} oder {@see learner_locks::GRADE_NONE}.
+     * Mit $instanceid darf eine Katalogklasse die Aussage fuer eine konkrete
+     * Instanz schaerfen (quiz: manuell zu bewertende Frage -> teacher).
+     *
+     * @param int $instanceid 0 = Aussage fuer die Aktivitaetsart.
+     * @return string
+     */
+    public static function grade_origin(int $instanceid = 0): string;
+
+    /**
      * Schreibweg: null, wenn ueber das Vehikel (update_moduleinfo()) - sonst
      * der Name des Einzelwerkzeugs, das stattdessen schreibt (Spec 0015
      * §3.1, z.B. "update_quiz_settings").

@@ -354,6 +354,22 @@ final class choice implements module_catalog {
         return [];
     }
 
+    public static function learner_locks(): array {
+        // allowupdate: der Formular-Default 0 ist selbst ein Riegel. Er zaehlt
+        // beim Anlegen mit (#583) - wer offen anlegen will, nennt
+        // "allowupdate": 1 (so auch das Buendel "zuteilung").
+        return [
+            'allowupdate' => ['op' => 'equals', 'value' => 0,
+                'reason' => 'Learners cannot change their answer; a correction needs the teacher to delete the response.'],
+            'timeclose' => ['op' => 'nonzero',
+                'reason' => 'After the close date learners can no longer answer unless the teacher moves the date.'],
+        ];
+    }
+
+    public static function grade_origin(int $instanceid = 0): string {
+        return learner_locks::GRADE_NONE;
+    }
+
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

@@ -19,9 +19,12 @@ namespace local_coursepilot\external;
 use context_module;
 use core_external\external_api;
 use core_external\external_function_parameters;
+use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\module_state;
+use local_coursepilot\catalog\registry;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -76,11 +79,13 @@ class get_module_settings extends external_api {
         require_capability('local/coursepilot:use', $context);
 
         $data = module_state::effective_settings($cm);
+        $catalogclass = registry::for((string) $cm->modname);
 
         return [
             'cmid' => (int) $cm->id,
             'modname' => (string) $cm->modname,
             'settings_json' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'learner_locks' => $catalogclass === null ? [] : learner_locks::existing($catalogclass, $data),
         ];
     }
 
@@ -96,6 +101,14 @@ class get_module_settings extends external_api {
                 'get_moduleinfo_data()-Feldobjekt als JSON (Ist-Stand, den update_module_settings zurücknimmt), '
                     . 'ergaenzt um coursepagevisibility/availability_status (dasselbe Vokabular wie get_course_catalog '
                     . 'und get_modules); profile-Bedingungen in availabilityconditionsjson sind maskiert (ADR 0011)'
+            ),
+            'learner_locks' => new external_multiple_structure(
+                new external_single_structure([
+                    'field' => new external_value(PARAM_TEXT, 'Field name in the catalog vocabulary'),
+                    'value_json' => new external_value(PARAM_RAW, 'JSON-encoded current value'),
+                    'reason' => new external_value(PARAM_TEXT, 'Why this value makes learners wait for the teacher'),
+                ]),
+                'Existing learner locks of this activity (describe_module_fields: learner_lock), empty when none'
             ),
         ]);
     }

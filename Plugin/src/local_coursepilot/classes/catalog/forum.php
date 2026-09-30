@@ -387,6 +387,21 @@ final class forum implements module_catalog {
         return ['FORUM_INITIALSUBSCRIBE'];
     }
 
+    public static function learner_locks(): array {
+        return [
+            'cutoffdate' => ['op' => 'nonzero',
+                'reason' => 'After the cut-off date learners can no longer post unless the teacher moves the date.'],
+            'lockdiscussionafter' => ['op' => 'nonzero',
+                'reason' => 'Inactive discussions get locked; only the teacher can unlock them.'],
+            'blockafter' => ['op' => 'nonzero',
+                'reason' => 'Learners are blocked from posting once they reach the post threshold in the period.'],
+        ];
+    }
+
+    public static function grade_origin(int $instanceid = 0): string {
+        return learner_locks::GRADE_TEACHER;
+    }
+
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

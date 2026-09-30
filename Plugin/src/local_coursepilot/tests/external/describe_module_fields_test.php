@@ -241,6 +241,29 @@ final class describe_module_fields_test extends \advanced_testcase {
     }
 
     /**
+     * Riegel aus dem Katalog (#583): jedes Feld traegt seine Riegel-Bedingung
+     * als JSON, "null" bei Feldern, die kein Riegel sein koennen. Dazu die
+     * Herkunft der Note.
+     */
+    public function test_fields_carry_their_learner_lock_condition(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $result = external_api::clean_returnvalue(
+            describe_module_fields::execute_returns(),
+            describe_module_fields::execute('assign', true)
+        );
+        $locks = array_column($result['module']['fields'], 'learner_lock', 'name');
+
+        $lock = json_decode($locks['attemptreopenmethod'], true);
+        $this->assertSame('equals', $lock['op']);
+        $this->assertSame('manual', $lock['value']);
+        $this->assertNotSame('', $lock['reason']);
+        $this->assertSame('null', $locks['name']);
+        $this->assertSame('teacher', $result['module']['grade_origin']);
+    }
+
+    /**
      * Unbekannte Aktivitätsart scheitert mit einer Meldung, die die
      * geführten Arten nennt.
      */

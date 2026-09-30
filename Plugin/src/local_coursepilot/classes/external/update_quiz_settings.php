@@ -23,6 +23,7 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\pseudofield_carry_forward;
+use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\quiz;
 use local_coursepilot\catalog\quiz_write_bridge;
 use local_coursepilot\write_gate;
@@ -85,6 +86,7 @@ final class update_quiz_settings extends external_api {
                 VALUE_DEFAULT,
                 -1.0
             ),
+            learner_locks::PARAMETER => learner_locks::confirm_parameter(),
         ]);
     }
 
@@ -93,9 +95,16 @@ final class update_quiz_settings extends external_api {
      * @param string $fieldsjson
      * @param string $mode
      * @param float $grade
+     * @param string[] $confirmlearnerlocks
      * @return array
      */
-    public static function execute(int $cmid, string $fieldsjson, string $mode = '', float $grade = -1.0): array {
+    public static function execute(
+        int $cmid,
+        string $fieldsjson,
+        string $mode = '',
+        float $grade = -1.0,
+        array $confirmlearnerlocks = []
+    ): array {
         global $CFG, $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [
@@ -103,6 +112,7 @@ final class update_quiz_settings extends external_api {
             'fields_json' => $fieldsjson,
             'mode' => $mode,
             'grade' => $grade,
+            learner_locks::PARAMETER => $confirmlearnerlocks,
         ]);
 
         $cm = get_coursemodule_from_id('quiz', $params['cmid'], 0, false, MUST_EXIST);
@@ -133,6 +143,13 @@ final class update_quiz_settings extends external_api {
         $newgrade = $params['grade'] >= 0 ? $params['grade'] : (float) $quiz->grade;
         quiz_write_bridge::validate_combination_rules(array_merge($before, $merged), $merged, $newgrade);
         quiz_write_bridge::assert_stealth_allowed($merged);
+        // Riegel (#583): Buendelwerte zaehlen mit, ein nur wiederholter
+        // bestehender Riegel braucht keine erneute Bestaetigung.
+        learner_locks::assert_confirmed(
+            'quiz',
+            learner_locks::find_changed(quiz::class, $merged, $before),
+            $params[learner_locks::PARAMETER]
+        );
 
         // Eine Grade-Aenderung laeuft ZUERST (Moodles eigener Grade-Calculator,
         // siehe quiz_write_bridge-Klassendoku): er skaliert bestehende

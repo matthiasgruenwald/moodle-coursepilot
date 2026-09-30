@@ -296,4 +296,52 @@ final class set_restriction_test extends \advanced_testcase {
             ['type' => 'group'],
         ]));
     }
+
+    /**
+     * Riegel (#583): eine Bewertungsbedingung auf eine lehrerbewertete Aufgabe
+     * laesst Lernende auf die Lehrkraft warten - ohne Bestaetigung abgelehnt,
+     * nichts geschrieben; mit Bestaetigung gesetzt.
+     */
+    public function test_grade_condition_on_teacher_graded_assign_needs_confirmation(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $aufgabe = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $ziel = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $conditions = json_encode([['type' => 'completion', 'activity_cmid' => (int) $aufgabe->cmid, 'status' => 'pass']]);
+
+        try {
+            set_restriction::execute($ziel->cmid, $conditions);
+            $this->fail('Bewertungsbedingung auf eine Aufgabe haette bestaetigt werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
+            $this->assertStringContainsString('teacher_grade:' . $aufgabe->cmid, $e->getMessage());
+        }
+        $this->assertSame('', (string) ($this->read($ziel->cmid)['availabilityconditionsjson'] ?? ''));
+
+        set_restriction::execute($ziel->cmid, $conditions, ['teacher_grade:' . $aufgabe->cmid]);
+        $this->assertStringContainsString('"completion"', $this->read($ziel->cmid)['availabilityconditionsjson']);
+
+        // Unveraendert bestehende Bedingung plus neue Datumsbedingung: keine erneute Bestaetigung.
+        set_restriction::execute($ziel->cmid, json_encode([
+            ['type' => 'completion', 'activity_cmid' => (int) $aufgabe->cmid, 'status' => 'pass'],
+            ['type' => 'date', 'direction' => 'from', 'timestamp' => 1767225600],
+        ]));
+        $this->assertStringContainsString('"date"', $this->read($ziel->cmid)['availabilityconditionsjson']);
+    }
+
+    /**
+     * Ein Test bewertet sich selbst - keine Bestaetigung noetig.
+     */
+    public function test_grade_condition_on_automatic_quiz_needs_no_confirmation(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $test = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+        $ziel = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+
+        set_restriction::execute($ziel->cmid, json_encode([
+            ['type' => 'completion', 'activity_cmid' => (int) $test->cmid, 'status' => 'pass'],
+        ]));
+
+        $this->assertStringContainsString('"completion"', $this->read($ziel->cmid)['availabilityconditionsjson']);
+    }
 }

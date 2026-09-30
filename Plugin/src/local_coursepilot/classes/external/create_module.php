@@ -24,6 +24,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\module_catalog;
 use local_coursepilot\catalog\catalog_fields;
+use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\shared_block;
@@ -88,6 +89,7 @@ final class create_module extends external_api {
                     . 'does not already name itself.'
             ),
             'location' => material_files::ort_parameter(),
+            learner_locks::PARAMETER => learner_locks::confirm_parameter(),
         ]);
     }
 
@@ -97,6 +99,7 @@ final class create_module extends external_api {
      * @param string $modname
      * @param string $fieldsjson
      * @param string $location
+     * @param string[] $confirmlearnerlocks
      * @return array
      */
     public static function execute(
@@ -104,7 +107,8 @@ final class create_module extends external_api {
         int $sectionnum,
         string $modname,
         string $fieldsjson,
-        string $location = material_files::ORT_BESTAND
+        string $location = material_files::ORT_BESTAND,
+        array $confirmlearnerlocks = []
     ): array {
         global $CFG;
 
@@ -114,6 +118,7 @@ final class create_module extends external_api {
             'modname' => $modname,
             'fields_json' => $fieldsjson,
             'location' => $location,
+            learner_locks::PARAMETER => $confirmlearnerlocks,
         ]);
 
         $coursecontext = self::authorise($params['courseid']);
@@ -204,6 +209,13 @@ final class create_module extends external_api {
         self::drop_empty_material_reference_pseudofields($catalogclass, $merged);
         self::assert_no_required_field_missing($modname, $catalogclass, $merged);
         self::assert_stealth_allowed($merged);
+        // Riegel (#583): die effektiv geschriebenen Werte zaehlen, also auch
+        // die aufgefuellten Formular-Defaults - vor jeder Dateiablage.
+        learner_locks::assert_confirmed(
+            $modname,
+            learner_locks::find($catalogclass, $merged, self::form_defaults($catalogclass)),
+            $params[learner_locks::PARAMETER]
+        );
         self::resolve_material_reference_pseudofields($catalogclass, $coursecontext, $merged, $params['location']);
 
         return $merged;
@@ -574,6 +586,23 @@ final class create_module extends external_api {
             return;
         }
         throw new moodle_exception('stealthnotallowed', 'local_coursepilot');
+    }
+
+    /**
+     * Katalogisierte Formular-Defaults als Feldname => Wert - dieselben Werte,
+     * die {@see self::fill_form_defaults()} fuer nicht genannte Felder setzt.
+     *
+     * @param class-string<module_catalog> $catalogclass
+     * @return array<string, mixed>
+     */
+    private static function form_defaults(string $catalogclass): array {
+        $defaults = [];
+        foreach (array_merge(shared_block::fields(), $catalogclass::fields(), $catalogclass::pseudofields()) as $field) {
+            if ($field->default !== null) {
+                $defaults[$field->name] = $field->default;
+            }
+        }
+        return $defaults;
     }
 
     /**

@@ -72,12 +72,20 @@ final class create_quiz_test extends \advanced_testcase {
      * @param array $felder
      * @param string $mode
      * @param float $grade
+     * @param string[] $confirmlearnerlocks Bewusst gesetzte Riegel (#583).
      * @return array
      */
-    private function create(int $courseid, int $sectionnum, array $felder, string $mode = '', float $grade = -1.0): array {
+    private function create(
+        int $courseid,
+        int $sectionnum,
+        array $felder,
+        string $mode = '',
+        float $grade = -1.0,
+        array $confirmlearnerlocks = []
+    ): array {
         return external_api::clean_returnvalue(
             create_quiz::execute_returns(),
-            create_quiz::execute($courseid, $sectionnum, json_encode($felder), $mode, $grade)
+            create_quiz::execute($courseid, $sectionnum, json_encode($felder), $mode, $grade, $confirmlearnerlocks)
         );
     }
 
@@ -106,7 +114,7 @@ final class create_quiz_test extends \advanced_testcase {
         ];
 
         foreach ($expectations as $mode => $expected) {
-            $result = $this->create($course->id, 0, $this->minimal_fields(), $mode);
+            $result = $this->create($course->id, 0, $this->minimal_fields(), $mode, -1.0, ['attempts']);
             $quiz = $this->raw_quiz($result['cmid']);
             foreach ($expected as $field => $value) {
                 $this->assertEquals($value, $quiz->{$field}, "mode={$mode} field={$field}");
@@ -126,7 +134,7 @@ final class create_quiz_test extends \advanced_testcase {
         $felder = $this->minimal_fields();
         $felder['attempts'] = 7; // mini-check-Buendel setzt sonst 0.
 
-        $result = $this->create($course->id, 0, $felder, 'mini-check');
+        $result = $this->create($course->id, 0, $felder, 'mini-check', -1.0, ['attempts']);
         $quiz = $this->raw_quiz($result['cmid']);
         $this->assertEquals(7, $quiz->attempts);
     }
@@ -305,5 +313,29 @@ final class create_quiz_test extends \advanced_testcase {
             // gegen das Sprachpaket geprueft.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
         }
+    }
+
+    /**
+     * Riegel (#583): der Modus "abschlusstest" begrenzt die Versuche - die
+     * Lehrkraft waehlt ihn ausdruecklich, der Aufruf bestaetigt "attempts".
+     */
+    public function test_final_test_mode_needs_attempt_confirmation(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $felder = json_encode(['name' => 'Test', 'intro' => 'x', 'subnet' => '', 'browsersecurity' => '-']);
+
+        try {
+            create_quiz::execute($course->id, 0, $felder, 'abschlusstest');
+            $this->fail('Versuchsbegrenzung haette bestaetigt werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
+            $this->assertStringContainsString('attempts', $e->getMessage());
+        }
+
+        $result = create_quiz::execute($course->id, 0, $felder, 'abschlusstest', -1.0, ['attempts']);
+        $this->assertGreaterThan(0, $result['cmid']);
     }
 }

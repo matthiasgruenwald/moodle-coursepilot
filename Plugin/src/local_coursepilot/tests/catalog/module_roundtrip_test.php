@@ -177,6 +177,7 @@ final class module_roundtrip_test extends \advanced_testcase {
                     'name' => 'Abstimmung',
                     'intro' => 'Bitte waehlen',
                     'option' => ['Ja', 'Nein'],
+                    'allowupdate' => 1,
                 ])['cmid'],
                 'field' => 'name',
                 'value' => 'Neue Abstimmung',
@@ -255,6 +256,7 @@ final class module_roundtrip_test extends \advanced_testcase {
             'name' => 'Abstimmung',
             'intro' => 'Bitte waehlen',
             'option' => ['Ja', 'Nein'],
+            'allowupdate' => 1,
             'limit' => [2, 3],
         ])['cmid'];
 

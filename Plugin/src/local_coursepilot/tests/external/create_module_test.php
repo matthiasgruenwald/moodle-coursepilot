@@ -74,6 +74,7 @@ final class create_module_test extends \advanced_testcase {
      * @param array $felder
      * @param string $ort {@see \local_coursepilot\material_files::ORT_BESTAND}/{@see \local_coursepilot\material_files::ORT_WERKBANK}
      *        (Issue #496).
+     * @param string[] $confirmlearnerlocks Bewusst gesetzte Riegel (#583).
      * @return array
      */
     private function create(
@@ -81,11 +82,12 @@ final class create_module_test extends \advanced_testcase {
         int $sectionnum,
         string $modname,
         array $felder,
-        string $ort = \local_coursepilot\material_files::ORT_BESTAND
+        string $ort = \local_coursepilot\material_files::ORT_BESTAND,
+        array $confirmlearnerlocks = []
     ): array {
         return external_api::clean_returnvalue(
             create_module::execute_returns(),
-            create_module::execute($courseid, $sectionnum, $modname, json_encode($felder), $ort)
+            create_module::execute($courseid, $sectionnum, $modname, json_encode($felder), $ort, $confirmlearnerlocks)
         );
     }
 
@@ -401,6 +403,7 @@ final class create_module_test extends \advanced_testcase {
             'name' => 'Geraete-Zuteilung',
             'intro' => 'Bitte waehlen',
             'option' => $options,
+            'allowupdate' => 1,
         ]);
 
         $cm = get_coursemodule_from_id('choice', $result['cmid'], 0, false, MUST_EXIST);
@@ -420,6 +423,7 @@ final class create_module_test extends \advanced_testcase {
             'intro' => 'Bitte waehlen',
             'option' => ['Ja', 'Nein'],
             'limit' => [2, 3],
+            'allowupdate' => 1,
         ]);
 
         $fields = array_column($result['created_fields'], 'value_json', 'field');
@@ -488,7 +492,7 @@ final class create_module_test extends \advanced_testcase {
             'intro' => 'Bitte waehlen',
             'option' => ['Tablet 1', 'Tablet 2'],
             'allowupdate' => 0,
-        ]));
+        ]), \local_coursepilot\material_files::ORT_BESTAND, ['allowupdate']);
 
         $after = $this->read($result['cmid']);
         $this->assertEquals(0, $after['allowupdate']);
@@ -678,6 +682,7 @@ final class create_module_test extends \advanced_testcase {
             'name' => 'Abstimmung',
             'intro' => 'Bitte waehlen',
             'option' => ['Ja', 'Nein'],
+            'allowupdate' => 1,
         ]);
         $this->assertGreaterThan(0, $choice['cmid']);
 
@@ -829,5 +834,55 @@ final class create_module_test extends \advanced_testcase {
         // "folder" bleibt anlegbar - nur "page" ist gesperrt.
         $this->create($course->id, 0, 'folder', ['name' => 'x']);
         $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Riegel (#583, Abnahme): attemptreopenmethod=manual ohne Bestaetigung
+     * abgelehnt, nichts angelegt; mit Bestaetigung angelegt.
+     */
+    public function test_assign_manual_reopen_needs_confirmation(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $felder = ['name' => 'Aufgabe', 'intro' => 'x', 'attemptreopenmethod' => 'manual'];
+
+        try {
+            $this->create($course->id, 0, 'assign', $felder);
+            $this->fail('attemptreopenmethod=manual haette bestaetigt werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
+            $this->assertStringContainsString('attemptreopenmethod', $e->getMessage());
+            $this->assertStringContainsString('confirm_learner_locks', $e->getMessage());
+        }
+        $this->assertSame(0, $DB->count_records('assign', ['course' => $course->id]));
+
+        $result = external_api::clean_returnvalue(
+            create_module::execute_returns(),
+            create_module::execute($course->id, 0, 'assign', json_encode($felder),
+                \local_coursepilot\material_files::ORT_BESTAND, ['attemptreopenmethod'])
+        );
+        $this->assertSame('manual', $this->read($result['cmid'])['attemptreopenmethod']);
+    }
+
+    /**
+     * Ein aufgefuellter Formular-Default, der selbst ein Riegel ist, zaehlt
+     * mit (#583): choice.allowupdate steht per Default auf 0.
+     */
+    public function test_choice_default_lock_counts_unless_named_open(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $felder = ['name' => 'Wahl', 'intro' => 'x', 'option' => ['A', 'B']];
+
+        try {
+            $this->create($course->id, 0, 'choice', $felder);
+            $this->fail('Default-Riegel allowupdate=0 haette gemeldet werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
+            $this->assertStringContainsString('form default', $e->getMessage());
+        }
+
+        $result = $this->create($course->id, 0, 'choice', $felder + ['allowupdate' => 1]);
+        $this->assertSame(1, (int) $this->read($result['cmid'])['allowupdate']);
     }
 }

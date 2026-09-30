@@ -31,9 +31,15 @@ einen Schreib- oder Lesezugriff zustaendig ist.
 | `coursepilot_update_quiz_settings` | Bestehendes Quiz nachträglich auf eine Coursepilot-Settings-Kombination umstellen |
 | `coursepilot_list_courses` | Kurse lesen, in denen die angemeldete Lehrkraft Coursepilot nutzen darf – Einstieg, wenn keine Kurs-ID bekannt ist |
 | `coursepilot_ensure_section` | Abschnitt anlegen, falls die `sectionnum` noch nicht existiert (idempotent; bestehender Abschnitt: nur Namensabgleich) |
-| `coursepilot_get_module_settings` | Vollstaendigen Ist-Stand einer Aktivität lesen (`cmid`) – vor jedem Patch, statt eine bestehende Einstellung anzunehmen |
-| `coursepilot_describe_module_fields` | Feldkatalog einer Aktivitätsart lesen (`modname`, optional `full`) – welche Felder es gibt, was sie bedeuten, was gesperrt ist |
+| `coursepilot_get_module_settings` | Vollstaendigen Ist-Stand einer Aktivität lesen (`cmid`) – vor jedem Patch, statt eine bestehende Einstellung anzunehmen; meldet bestehende Riegel (`learner_locks`) |
+| `coursepilot_describe_module_fields` | Feldkatalog einer Aktivitätsart lesen (`modname`, optional `full`) – welche Felder es gibt, was sie bedeuten, was gesperrt ist, welche Werte ein Riegel sind (`learner_lock`) |
 | `coursepilot_clone_activity` | Aktivität duplizieren (`cmid`, `title`, optional `targetcourseid`) – im selben Kurs oder in einen anderen |
+
+Die Schreibwerkzeuge für Einstellungen (`create_module`,
+`update_module_settings`, `set_completion`, `set_restriction`, `create_quiz`,
+`update_quiz_settings`) lehnen einen Aufruf mit Riegel ab, solange
+`confirm_learner_locks` ihn nicht nennt. Wann bestätigt wird, regelt
+`coursepilot_get_skill("implementierungsplan-workflow")`, Planungsgrundsätze.
 
 ## Fragen und Tests
 

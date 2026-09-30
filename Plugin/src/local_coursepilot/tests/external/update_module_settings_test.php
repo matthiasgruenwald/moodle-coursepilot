@@ -185,6 +185,7 @@ final class update_module_settings_test extends \advanced_testcase {
                 'name' => 'Abstimmung',
                 'intro' => 'Bitte waehlen',
                 'option' => ['Ja', 'Nein'],
+                'allowupdate' => 1,
             ]), \local_coursepilot\material_files::ORT_BESTAND)
         );
         $before = $this->read($created['cmid']);
@@ -1316,5 +1317,34 @@ final class update_module_settings_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertSame('folderfilespatchunsupported', $e->errorcode);
         }
+    }
+
+    /**
+     * Riegel (#583, Abnahme): attemptreopenmethod=manual per Patch ohne
+     * Bestaetigung abgelehnt, mit Bestaetigung geschrieben; ein
+     * unveraendert wiederholter Riegel braucht keine neue Bestaetigung.
+     */
+    public function test_assign_manual_reopen_patch_needs_confirmation_once(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $assign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $patch = json_encode(['attemptreopenmethod' => 'manual']);
+
+        try {
+            update_module_settings::execute($assign->cmid, $patch);
+            $this->fail('attemptreopenmethod=manual haette bestaetigt werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
+        }
+
+        update_module_settings::execute($assign->cmid, $patch, \local_coursepilot\material_files::ORT_BESTAND,
+            ['attemptreopenmethod']);
+        $settings = json_decode(get_module_settings::execute($assign->cmid)['settings_json'], true);
+        $this->assertSame('manual', $settings['attemptreopenmethod']);
+
+        update_module_settings::execute($assign->cmid, json_encode(['attemptreopenmethod' => 'manual', 'name' => 'Neu']));
     }
 }

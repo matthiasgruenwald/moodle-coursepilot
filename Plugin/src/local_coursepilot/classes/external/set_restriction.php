@@ -23,6 +23,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\registry;
 use moodle_exception;
@@ -110,20 +111,23 @@ final class set_restriction extends external_api {
                     . '"group" (field "group_id", 0 or omitted = any group). All entries must be '
                     . 'satisfied at the same time (AND).'
             ),
+            learner_locks::PARAMETER => learner_locks::confirm_parameter(),
         ]);
     }
 
     /**
      * @param int $cmid
      * @param string $conditionsjson
+     * @param string[] $confirmlearnerlocks
      * @return array
      */
-    public static function execute(int $cmid, string $conditionsjson): array {
+    public static function execute(int $cmid, string $conditionsjson, array $confirmlearnerlocks = []): array {
         global $CFG;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
             'conditions_json' => $conditionsjson,
+            learner_locks::PARAMETER => $confirmlearnerlocks,
         ]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
@@ -167,6 +171,11 @@ final class set_restriction extends external_api {
         }
 
         $availabilityjson = self::build_availability_json($conditions);
+        learner_locks::assert_confirmed(
+            $modname,
+            self::teacher_grade_locks($conditions, (string) ($cm->availability ?? '')),
+            $params[learner_locks::PARAMETER]
+        );
 
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
@@ -336,6 +345,60 @@ final class set_restriction extends external_api {
         }
 
         return \availability_group\condition::get_json($groupid);
+    }
+
+    /**
+     * Riegel (#583): eine Abschlussbedingung auf eine Aktivitaet, deren Note
+     * von der Lehrkraft kommt, laesst Lernende warten - sobald die Bedingung
+     * an der Note haengt ("pass"/"fail") oder der Abschluss der Aktivitaet
+     * selbst ueber die Note laeuft. Eine schon bestehende, unveraenderte
+     * Bedingung braucht keine erneute Bestaetigung.
+     *
+     * @param stdClass[] $conditions Native Bedingungen aus {@see self::build_condition()}.
+     * @param string $currentavailability Bisheriges Verfuegbarkeits-JSON der Aktivitaet.
+     * @return array<int, array{id: string, detail: string}>
+     */
+    private static function teacher_grade_locks(array $conditions, string $currentavailability): array {
+        $existing = self::completion_pairs(json_decode($currentavailability, true) ?: []);
+        $gradedstatus = [self::COMPLETION_STATUS['pass'], self::COMPLETION_STATUS['fail']];
+        $locks = [];
+        foreach ($conditions as $condition) {
+            if ($condition->type !== 'completion' || in_array($condition->cm . ':' . $condition->e, $existing, true)) {
+                continue;
+            }
+            $target = get_coursemodule_from_id('', $condition->cm, 0, false, MUST_EXIST);
+            $catalogclass = registry::for((string) $target->modname);
+            if ($catalogclass === null || $catalogclass::grade_origin((int) $target->instance) !== learner_locks::GRADE_TEACHER) {
+                continue;
+            }
+            $bygrade = $target->completiongradeitemnumber !== null || !empty($target->completionpassgrade);
+            if (!in_array($condition->e, $gradedstatus, true) && !$bygrade) {
+                continue;
+            }
+            $locks[] = [
+                'id' => 'teacher_grade:' . $condition->cm,
+                'detail' => '"teacher_grade:' . $condition->cm . '": the condition on ' . $target->modname
+                    . ' (cmid ' . $condition->cm . ') is only met once the teacher has graded the learner.',
+            ];
+        }
+        return $locks;
+    }
+
+    /**
+     * Alle Abschlussbedingungen eines Verfuegbarkeitsbaums als "cm:e".
+     *
+     * @param array $tree
+     * @return string[]
+     */
+    private static function completion_pairs(array $tree): array {
+        $pairs = [];
+        if (($tree['type'] ?? null) === 'completion' && isset($tree['cm'], $tree['e'])) {
+            $pairs[] = (int) $tree['cm'] . ':' . (int) $tree['e'];
+        }
+        foreach ($tree['c'] ?? [] as $child) {
+            $pairs = array_merge($pairs, is_array($child) ? self::completion_pairs($child) : []);
+        }
+        return $pairs;
     }
 
     /**

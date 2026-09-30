@@ -233,6 +233,14 @@ final class page implements module_catalog {
         return ['RESOURCELIB_DISPLAY_POPUP'];
     }
 
+    public static function learner_locks(): array {
+        return [];
+    }
+
+    public static function grade_origin(int $instanceid = 0): string {
+        return learner_locks::GRADE_NONE;
+    }
+
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

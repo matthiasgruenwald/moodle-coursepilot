@@ -25,6 +25,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\field;
+use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\registry;
 use moodle_exception;
 
@@ -180,6 +181,7 @@ final class set_completion extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            learner_locks::PARAMETER => learner_locks::confirm_parameter(),
         ]);
     }
 
@@ -187,15 +189,22 @@ final class set_completion extends external_api {
      * @param int $cmid
      * @param string $fieldsjson
      * @param bool $confirmed
+     * @param string[] $confirmlearnerlocks
      * @return array
      */
-    public static function execute(int $cmid, string $fieldsjson, bool $confirmed = false): array {
+    public static function execute(
+        int $cmid,
+        string $fieldsjson,
+        bool $confirmed = false,
+        array $confirmlearnerlocks = []
+    ): array {
         global $CFG, $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
             'fields_json' => $fieldsjson,
             'confirmed' => $confirmed,
+            learner_locks::PARAMETER => $confirmlearnerlocks,
         ]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
@@ -246,6 +255,12 @@ final class set_completion extends external_api {
             ];
         }
 
+        learner_locks::assert_confirmed(
+            $modname,
+            self::teacher_grade_locks($catalogclass, (int) $cm->instance, $patch, $changedlocked),
+            $params[learner_locks::PARAMETER]
+        );
+
         if ($changedlocked) {
             $betroffenelernende = (int) $DB->count_records('course_modules_completion', ['coursemoduleid' => $cmid]);
             if ($betroffenelernende > 0 && !$params['confirmed']) {
@@ -275,6 +290,32 @@ final class set_completion extends external_api {
             'message' => self::build_message($changes),
             'changes' => $changes,
         ];
+    }
+
+    /**
+     * Riegel (#583): ein Abschluss ueber die Note wartet auf die Lehrkraft,
+     * wenn die Note von ihr kommt ({@see learner_locks::GRADE_TEACHER}). Nur
+     * tatsaechlich eingeschaltete Felder zaehlen - ein bestehender Wert
+     * braucht keine erneute Bestaetigung.
+     *
+     * @param class-string<\local_coursepilot\catalog\module_catalog> $catalogclass
+     * @param int $instanceid
+     * @param array $patch
+     * @param string[] $changedlocked
+     * @return array<int, array{id: string, detail: string}>
+     */
+    private static function teacher_grade_locks(string $catalogclass, int $instanceid, array $patch, array $changedlocked): array {
+        $fields = array_filter(
+            ['completionusegrade', 'completionpassgrade'],
+            static fn(string $field): bool => in_array($field, $changedlocked, true) && (int) $patch[$field] === 1
+        );
+        if (!$fields || $catalogclass::grade_origin($instanceid) !== learner_locks::GRADE_TEACHER) {
+            return [];
+        }
+        return array_map(static fn(string $field): array => [
+            'id' => $field,
+            'detail' => '"' . $field . '" = 1: the activity only counts as complete once the teacher has graded it.',
+        ], array_values($fields));
     }
 
     /**

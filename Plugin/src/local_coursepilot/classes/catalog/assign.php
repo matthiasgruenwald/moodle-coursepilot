@@ -823,7 +823,7 @@ final class assign implements module_catalog {
             ],
             'übung' => [
                 'grade' => 0,
-                'submissiondrafts' => 1,
+                'submissiondrafts' => 0,
                 'requiresubmissionstatement' => 0,
                 'sendnotifications' => 0,
                 'maxattempts' => -1, // ASSIGN_UNLIMITED_ATTEMPTS.
@@ -881,6 +881,34 @@ final class assign implements module_catalog {
             'ASSIGN_EVENT_TYPE_CLOSE',
             'ASSIGN_EVENT_TYPE_EXTENSION',
         ];
+    }
+
+    public static function learner_locks(): array {
+        // Ausgangsbestand aus #582, geprueft gegen Moodle 5.0.8
+        // (mod/assign/locallib.php: submissions_open(), is_blind_marking(),
+        // get_marking_workflow_states_for_current_user()).
+        return [
+            'submissiondrafts' => ['op' => 'equals', 'value' => 1,
+                'reason' => 'Learners must press "Submit"; the submission is then locked until the teacher reverts it to draft.'],
+            'attemptreopenmethod' => ['op' => 'equals', 'value' => 'manual',
+                'reason' => 'A new attempt only opens when the teacher reopens it by hand.'],
+            'cutoffdate' => ['op' => 'nonzero',
+                'reason' => 'After the cut-off date no submission is possible unless the teacher grants an extension.'],
+            'timelimit' => ['op' => 'nonzero',
+                'reason' => 'When the time limit runs out the learner cannot continue unless the teacher grants an extension.'],
+            'requireallteammemberssubmit' => ['op' => 'equals', 'value' => 1,
+                'reason' => 'A group submission only counts once every member has submitted; one missing member blocks the group.'],
+            'preventsubmissionnotingroup' => ['op' => 'equals', 'value' => 1,
+                'reason' => 'Learners outside a group cannot submit until the teacher adds them to one.'],
+            'markingworkflow' => ['op' => 'equals', 'value' => 1,
+                'reason' => 'Grades and feedback stay hidden from learners until the teacher releases them.'],
+            'blindmarking' => ['op' => 'equals', 'value' => 1,
+                'reason' => 'Grades and feedback stay hidden from learners until the teacher reveals identities.'],
+        ];
+    }
+
+    public static function grade_origin(int $instanceid = 0): string {
+        return learner_locks::GRADE_TEACHER;
     }
 
     public static function reviewed_up_to_major(): int {

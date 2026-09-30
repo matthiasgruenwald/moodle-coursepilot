@@ -487,7 +487,12 @@ final class quiz implements module_catalog {
     }
 
     public static function write_options(): array {
-        return ['restores_arrangement' => true];
+        return [
+            'restores_arrangement' => true,
+            // Riegel-Auswertung auf dem Ist-Stand (#583): das Formularfeld
+            // "quizpassword" liegt in der Spalte "password".
+            'settings_aliases' => ['quizpassword' => 'password'],
+        ];
     }
 
     public static function common_field_names(): array {
@@ -690,6 +695,44 @@ final class quiz implements module_catalog {
 
     public static function checked_constants(): array {
         return [];
+    }
+
+    public static function learner_locks(): array {
+        return [
+            'attempts' => ['op' => 'greater', 'value' => 0,
+                'reason' => 'Once all attempts are used up, another try needs a user override by the teacher.'],
+            'navmethod' => ['op' => 'equals', 'value' => 'sequential',
+                'reason' => 'Learners cannot return to earlier questions to correct them.'],
+            'timeclose' => ['op' => 'nonzero',
+                'reason' => 'After the close date no attempt is possible unless the teacher grants an override.'],
+            'timelimit' => ['op' => 'nonzero',
+                'reason' => 'When the time runs out the attempt is submitted; another try needs a free attempt or an override.'],
+            'quizpassword' => ['op' => 'not_equals', 'value' => '',
+                'reason' => 'Learners need the password from the teacher to start an attempt.'],
+            'subnet' => ['op' => 'not_equals', 'value' => '',
+                'reason' => 'Attempts only work from the listed network; anywhere else the teacher has to step in.'],
+            'browsersecurity' => ['op' => 'not_equals', 'value' => '-',
+                'reason' => 'Attempts need a special browser setup the teacher has to provide.'],
+        ];
+    }
+
+    /**
+     * Automatisch bewertet - ausser eine Instanz enthaelt eine manuell zu
+     * bewertende Frage (z.B. Freitext): dann entsteht die Note erst durch
+     * die Lehrkraft (#583).
+     */
+    public static function grade_origin(int $instanceid = 0): string {
+        global $CFG;
+
+        if ($instanceid > 0) {
+            require_once($CFG->dirroot . '/question/engine/bank.php');
+            foreach (self::quiz_slots($instanceid) as $slot) {
+                if ($slot['qtype'] !== '' && \question_bank::get_qtype($slot['qtype'], false)->is_manual_graded()) {
+                    return learner_locks::GRADE_TEACHER;
+                }
+            }
+        }
+        return learner_locks::GRADE_AUTOMATIC;
     }
 
     public static function reviewed_up_to_major(): int {

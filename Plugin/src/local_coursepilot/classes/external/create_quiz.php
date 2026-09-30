@@ -22,6 +22,7 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\quiz;
 use local_coursepilot\catalog\quiz_write_bridge;
 use local_coursepilot\catalog\shared_block;
@@ -80,6 +81,7 @@ final class create_quiz extends external_api {
                 VALUE_DEFAULT,
                 -1.0
             ),
+            learner_locks::PARAMETER => learner_locks::confirm_parameter(),
         ]);
     }
 
@@ -89,9 +91,17 @@ final class create_quiz extends external_api {
      * @param string $fieldsjson
      * @param string $mode
      * @param float $grade
+     * @param string[] $confirmlearnerlocks
      * @return array
      */
-    public static function execute(int $courseid, int $sectionnum, string $fieldsjson, string $mode = '', float $grade = -1.0): array {
+    public static function execute(
+        int $courseid,
+        int $sectionnum,
+        string $fieldsjson,
+        string $mode = '',
+        float $grade = -1.0,
+        array $confirmlearnerlocks = []
+    ): array {
         global $CFG;
 
         $params = self::validate_parameters(self::execute_parameters(), [
@@ -100,6 +110,7 @@ final class create_quiz extends external_api {
             'fields_json' => $fieldsjson,
             'mode' => $mode,
             'grade' => $grade,
+            learner_locks::PARAMETER => $confirmlearnerlocks,
         ]);
 
         $coursecontext = context_course::instance($params['courseid']);
@@ -126,6 +137,12 @@ final class create_quiz extends external_api {
         quiz_write_bridge::validate_combination_rules($effective, $merged, $newgrade);
         self::assert_no_required_field_missing($merged);
         quiz_write_bridge::assert_stealth_allowed($merged);
+        // Riegel (#583): Buendel und Formular-Defaults zaehlen mit.
+        learner_locks::assert_confirmed(
+            'quiz',
+            learner_locks::find(quiz::class, $merged, self::catalog_defaults()),
+            $params[learner_locks::PARAMETER]
+        );
 
         $course = get_course($params['courseid']);
         require_once($CFG->dirroot . '/course/modlib.php');

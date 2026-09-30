@@ -252,7 +252,9 @@ final class drift_check {
             array_merge(...array_values($options['editor_content'] ?? [[]])),
             $options['read_fields'] ?? [],
             $options['patch_blocked_fields'] ?? [],
-            isset($options['intro_image_field']) ? [$options['intro_image_field']] : []
+            isset($options['intro_image_field']) ? [$options['intro_image_field']] : [],
+            array_keys($options['settings_aliases'] ?? []),
+            array_keys($catalogclass::learner_locks())
         );
         foreach (array_merge($options['parallel_array_lengths'] ?? [], $options['date_order_rules'] ?? []) as $rule) {
             $referenced[] = $rule['reference'];

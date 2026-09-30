@@ -184,6 +184,12 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     public static function checked_constants(): array {
         return [];
     }
+    public static function learner_locks(): array {
+        return [];
+    }
+    public static function grade_origin(int $instanceid = 0): string {
+        return learner_locks::GRADE_NONE;
+    }
     public static function reviewed_up_to_major(): int {
         return 500;
     }
@@ -241,6 +247,12 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     public static function checked_constants(): array {
         return [];
     }
+    public static function learner_locks(): array {
+        return [];
+    }
+    public static function grade_origin(int $instanceid = 0): string {
+        return learner_locks::GRADE_NONE;
+    }
     public static function reviewed_up_to_major(): int {
         return 500;
     }
@@ -288,6 +300,12 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     }
     public static function checked_constants(): array {
         return ['NICHT_EXISTIERENDE_KONSTANTE_XYZ'];
+    }
+    public static function learner_locks(): array {
+        return [];
+    }
+    public static function grade_origin(int $instanceid = 0): string {
+        return learner_locks::GRADE_NONE;
     }
     public static function reviewed_up_to_major(): int {
         return 500;

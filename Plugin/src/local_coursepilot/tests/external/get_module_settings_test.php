@@ -264,4 +264,46 @@ final class get_module_settings_test extends \advanced_testcase {
         }
         return null;
     }
+
+    /**
+     * Bestehende Riegel (#583) stehen neben dem Ist-Stand - ein Kurs laesst
+     * sich pruefen, ohne in die Datenbank zu schauen.
+     */
+    public function test_reports_existing_learner_locks(): void {
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+
+        $assign = $this->getDataGenerator()->create_module('assign', [
+            'course' => $course->id,
+            'attemptreopenmethod' => 'manual',
+            'submissiondrafts' => 0,
+        ]);
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'quizpassword' => 'geheim']);
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+
+        $assignresult = external_api::clean_returnvalue(
+            get_module_settings::execute_returns(),
+            get_module_settings::execute($assign->cmid)
+        );
+        $quizresult = external_api::clean_returnvalue(
+            get_module_settings::execute_returns(),
+            get_module_settings::execute($quiz->cmid)
+        );
+        $pageresult = external_api::clean_returnvalue(
+            get_module_settings::execute_returns(),
+            get_module_settings::execute($page->cmid)
+        );
+
+        $assignlocks = array_column($assignresult['learner_locks'], null, 'field');
+        $this->assertArrayHasKey('attemptreopenmethod', $assignlocks);
+        $this->assertArrayNotHasKey('submissiondrafts', $assignlocks);
+        $this->assertSame('"manual"', $assignlocks['attemptreopenmethod']['value_json']);
+        $this->assertNotSame('', $assignlocks['attemptreopenmethod']['reason']);
+        $this->assertContains('quizpassword', array_column($quizresult['learner_locks'], 'field'));
+        $this->assertSame([], $pageresult['learner_locks']);
+    }
 }

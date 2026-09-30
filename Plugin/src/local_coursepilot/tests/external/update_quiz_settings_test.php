@@ -45,12 +45,19 @@ final class update_quiz_settings_test extends \advanced_testcase {
      * @param array $felder
      * @param string $mode
      * @param float $grade
+     * @param string[] $confirmlearnerlocks Bewusst gesetzte Riegel (#583).
      * @return array
      */
-    private function patch(int $cmid, array $felder, string $mode = '', float $grade = -1.0): array {
+    private function patch(
+        int $cmid,
+        array $felder,
+        string $mode = '',
+        float $grade = -1.0,
+        array $confirmlearnerlocks = []
+    ): array {
         return external_api::clean_returnvalue(
             update_quiz_settings::execute_returns(),
-            update_quiz_settings::execute($cmid, json_encode($felder), $mode, $grade)
+            update_quiz_settings::execute($cmid, json_encode($felder), $mode, $grade, $confirmlearnerlocks)
         );
     }
 
@@ -100,7 +107,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
         $quiz = $this->getDataGenerator()->get_plugin_generator('mod_quiz')->create_instance(['course' => $course->id]);
 
-        $this->patch($quiz->cmid, ['attempts' => 9], 'mini-check');
+        $this->patch($quiz->cmid, ['attempts' => 9], 'mini-check', -1.0, ['attempts']);
 
         $raw = $this->raw_quiz($quiz->cmid);
         $this->assertEquals(9, $raw->attempts);
@@ -328,5 +335,29 @@ final class update_quiz_settings_test extends \advanced_testcase {
             // gegen das Sprachpaket geprueft.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
         }
+    }
+
+    /**
+     * Riegel (#583): Versuchsbegrenzung per Quiz-Patch nur mit Bestaetigung.
+     */
+    public function test_attempt_limit_needs_confirmation(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        try {
+            update_quiz_settings::execute($quiz->cmid, json_encode(['attempts' => 1]));
+            $this->fail('attempts=1 haette bestaetigt werden muessen.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
+        }
+
+        update_quiz_settings::execute($quiz->cmid, json_encode(['attempts' => 1]), '', -1.0, ['attempts']);
+        $this->assertSame(1, (int) $DB->get_field('quiz', 'attempts', ['id' => $quiz->id]));
     }
 }
