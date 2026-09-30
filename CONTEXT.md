@@ -626,6 +626,10 @@ _Avoid_: externe Herkunft verschweigen, Fragegueltigkeit von veraenderlichen Fre
 Ein knapper Quellenhinweis auf ein Schulbuch oder Lehrwerk, zum Beispiel mit Lehrwerkskuerzel und Seitenangabe.
 _Avoid_: Schulbuchmaterial ohne Herkunft, fuer Schueler nicht wiederfindbare Seitenangabe
 
+**Quellenkopf**:
+Ein **Quellenhinweis**, meist ein **Lehrwerkverweis**, der als Kopfzeile fest in eine **Fachabbildung** eingebrannt ist, damit die Herkunft beim Kopieren oder Weitergeben des Bildes erhalten bleibt. Er ergaenzt den Quellenhinweis im Moodle-Material, ersetzt ihn aber nicht. Stammt eine Fachabbildung aus einem Lehrwerk, bekommt sie standardmaessig einen Quellenkopf; die Lehrkraft kann ihn abwaehlen ([#584](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/584)).
+_Avoid_: Herkunft nur im HTML neben dem Bild, Quellenkopf nachtraeglich per Hand in ein Bildprogramm
+
 **Bereitgestelltes Lehrkraftmaterial**:
 Material, das die Lehrkraft MoodleMcp fuer die Unterrichtsplanung zur Verfuegung stellt, zum Beispiel Dateien, Screenshots, Arbeitsblaetter oder Schulbuchauszuege.
 _Avoid_: MoodleMcp beschafft Schulbuchinhalte selbst, Material ohne Herkunft oder Lehrkraftfreigabe uebernehmen
@@ -984,8 +988,10 @@ _Avoid_: Lückenlosigkeit des Verlaufs behaupten, Lücke verschweigen, Verlauf a
 - In Moodle wird bei OCR-Material primaer der bearbeitete Text genutzt, nicht zusaetzlich das Originalbild als Standardinhalt
 - Eine **Fachabbildung** wird in Moodle eingebettet, wenn Lernende sie fuer die Aufgabe brauchen
 - Bei Quellen-Screenshots wird eine **Fachabbildung** als **Gezielter Bildausschnitt** uebernommen, nicht als ganze Seite
+- Eine **Fachabbildung** kann aus mehreren **Gezielten Bildausschnitten** zusammengesetzt sein, untereinander oder nebeneinander; sie bleibt eine Fachabbildung mit einem **Alt-Text**, und jeder Ausschnitt kann seinen eigenen **Quellenkopf** tragen
 - Text aus dem Umfeld einer Abbildung wird per **OCR-Extraktion** als Text behandelt und nicht doppelt als Bild angezeigt
 - Jede **Fachabbildung** braucht einen **Alt-Text**
+- Eine **Fachabbildung** aus einem Lehrwerk traegt standardmaessig einen **Quellenkopf** mit ihrem **Lehrwerkverweis**
 - **KI-Qualitaetsroutinen** wie Alt-Texte, klare Beschriftungen und hilfreiche Alternativhinweise sollen in Moodle-Umsetzungen standardmaessig mitgedacht werden
 - Eine **Urheberrechtswarnung** gehoert in die spaetere README oder Fortbildungsdokumentation, besonders fuer Weitergabe ausserhalb des eigenen Unterrichtskontexts
 - Feedback soll nicht auf externe Inhalte verweisen, die vorher nicht im Moodle-Kurs eingefuehrt wurden
