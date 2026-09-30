@@ -398,7 +398,19 @@ final class forum implements module_catalog {
         ];
     }
 
+    /**
+     * Die Lehrkraft bewertet - ausser eine Instanz hat weder Beitrags- noch
+     * Gesamtbewertung.
+     */
     public static function grade_origin(int $instanceid = 0): string {
+        global $DB;
+
+        if ($instanceid > 0) {
+            $forum = $DB->get_record('forum', ['id' => $instanceid], 'assessed, grade_forum', MUST_EXIST);
+            if ((int) $forum->assessed === 0 && (int) $forum->grade_forum === 0) {
+                return learner_locks::GRADE_NONE;
+            }
+        }
         return learner_locks::GRADE_TEACHER;
     }
 

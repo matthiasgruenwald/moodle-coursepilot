@@ -173,7 +173,7 @@ final class set_restriction extends external_api {
         $availabilityjson = self::build_availability_json($conditions);
         learner_locks::assert_confirmed(
             $modname,
-            self::teacher_grade_locks($conditions, (string) ($cm->availability ?? '')),
+            self::grade_condition_locks($conditions, (string) ($cm->availability ?? '')),
             $params[learner_locks::PARAMETER]
         );
 
@@ -358,7 +358,7 @@ final class set_restriction extends external_api {
      * @param string $currentavailability Bisheriges Verfuegbarkeits-JSON der Aktivitaet.
      * @return array<int, array{id: string, detail: string}>
      */
-    private static function teacher_grade_locks(array $conditions, string $currentavailability): array {
+    private static function grade_condition_locks(array $conditions, string $currentavailability): array {
         $existing = self::completion_pairs(json_decode($currentavailability, true) ?: []);
         $gradedstatus = [self::COMPLETION_STATUS['pass'], self::COMPLETION_STATUS['fail']];
         $locks = [];

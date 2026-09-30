@@ -213,7 +213,7 @@ final class create_module extends external_api {
         // die aufgefuellten Formular-Defaults - vor jeder Dateiablage.
         learner_locks::assert_confirmed(
             $modname,
-            learner_locks::find($catalogclass, $merged, self::form_defaults($catalogclass)),
+            learner_locks::find($catalogclass, $merged, self::form_defaults($catalogclass, $merged)),
             $params[learner_locks::PARAMETER]
         );
         self::resolve_material_reference_pseudofields($catalogclass, $coursecontext, $merged, $params['location']);
@@ -589,17 +589,27 @@ final class create_module extends external_api {
     }
 
     /**
-     * Katalogisierte Formular-Defaults als Feldname => Wert - dieselben Werte,
-     * die {@see self::fill_form_defaults()} fuer nicht genannte Felder setzt.
+     * Die Werte, mit denen {@see self::fill_form_defaults()} jedes nicht
+     * genannte Feld auffuellt: katalogisierter FORMULAR-Default (nicht der
+     * DB-Default, siehe Klassendoku), fuer mod_assign zusaetzlich die
+     * admin-konfigurierten Abgabe-/Feedback-Enable-Felder. Auch die
+     * Riegel-Pruefung (#583) liest hier, was effektiv geschrieben wird.
      *
      * @param class-string<module_catalog> $catalogclass
+     * @param array $merged
      * @return array<string, mixed>
      */
-    private static function form_defaults(string $catalogclass): array {
+    private static function form_defaults(string $catalogclass, array $merged): array {
         $defaults = [];
+        $adminfields = $catalogclass::write_options()['admin_default_fields'] ?? [];
         foreach (array_merge(shared_block::fields(), $catalogclass::fields(), $catalogclass::pseudofields()) as $field) {
+            if (array_key_exists($field->name, $merged)) {
+                continue;
+            }
             if ($field->default !== null) {
                 $defaults[$field->name] = $field->default;
+            } else if (isset($adminfields[$field->name])) {
+                $defaults[$field->name] = (int) (bool) get_config($adminfields[$field->name], 'default');
             }
         }
         return $defaults;
@@ -618,20 +628,8 @@ final class create_module extends external_api {
      * @return void
      */
     private static function fill_form_defaults(string $modname, string $catalogclass, \stdClass $moduleinfo, array $merged): void {
-        $allfields = array_merge(shared_block::fields(), $catalogclass::fields(), $catalogclass::pseudofields());
-        foreach ($allfields as $field) {
-            if (array_key_exists($field->name, $merged)) {
-                continue;
-            }
-            if ($field->default !== null) {
-                $moduleinfo->{self::moduleinfo_property($field->name)} = $field->default;
-                continue;
-            }
-            $adminfields = $catalogclass::write_options()['admin_default_fields'] ?? [];
-            if (isset($adminfields[$field->name])) {
-                $configcomponent = $adminfields[$field->name];
-                $moduleinfo->{$field->name} = (int) (bool) get_config($configcomponent, 'default');
-            }
+        foreach (self::form_defaults($catalogclass, $merged) as $fieldname => $value) {
+            $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
         }
         // mod_folder liest "files" (Draft-Itemid) ungeschuetzt, ohne isset()-
         // Wache (mod/folder/lib.php: folder_add_instance()) - das Feld ist

@@ -62,7 +62,7 @@ final class learner_locks_test extends \advanced_testcase {
                 if ($condition['op'] !== 'nonzero') {
                     $this->assertArrayHasKey('value', $condition, $where . ': Vergleichswert fehlt.');
                 }
-                if (($condition['op'] === 'equals') && $field->values !== null) {
+                if (in_array($condition['op'], ['equals', 'not_equals'], true) && $field->values !== null) {
                     $this->assertContains($condition['value'], $field->values, $where . ': Wert ausserhalb des Wertebereichs.');
                 }
             }

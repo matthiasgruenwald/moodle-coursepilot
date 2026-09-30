@@ -344,4 +344,20 @@ final class set_restriction_test extends \advanced_testcase {
 
         $this->assertStringContainsString('"completion"', $this->read($ziel->cmid)['availabilityconditionsjson']);
     }
+
+    /**
+     * Eine Aufgabe ohne Bewertung (grade = 0) wartet auf keine Lehrkraftnote.
+     */
+    public function test_condition_on_ungraded_assign_needs_no_confirmation(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $aufgabe = $this->getDataGenerator()->create_module('assign', ['course' => $course->id, 'grade' => 0]);
+        $ziel = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+
+        set_restriction::execute($ziel->cmid, json_encode([
+            ['type' => 'completion', 'activity_cmid' => (int) $aufgabe->cmid, 'status' => 'pass'],
+        ]));
+
+        $this->assertStringContainsString('"completion"', $this->read($ziel->cmid)['availabilityconditionsjson']);
+    }
 }

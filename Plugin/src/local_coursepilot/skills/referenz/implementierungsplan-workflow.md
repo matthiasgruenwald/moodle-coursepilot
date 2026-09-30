@@ -148,9 +148,9 @@ Fragenreferenzen oder Fragedaten aendern.
   (`coursepilot_describe_module_fields`, Angabe `learner_lock` je Feld);
   bestehende Riegel meldet `coursepilot_get_module_settings`. Ein Riegel
   kommt nur in den Plan, wenn die Lehrkraft ihn im Auftrag oder Kontext
-  ausdrücklich nennt (ein ausdrücklich gewählter Modus wie
-  `abschlusstest` nennt seine Riegel mit), und erscheint dann als
-  Planabweichung mit Begründung.
+  ausdrücklich nennt, und erscheint dann als Planabweichung mit Begründung.
+  Ein Feldbündel oder Modus bringt seinen Riegel nicht mit: den Riegel im
+  Bündel durch den offenen Wert ersetzen, außer die Lehrkraft nennt ihn.
 - **Riegel-Ablehnung beim Schreiben:** Lehnt ein Schreibwerkzeug den Aufruf
   wegen eines Riegels ab (`learnerlocksunconfirmed`), ist nichts
   geschrieben. Hat die Lehrkraft genau diesen Riegel ausdrücklich genannt,

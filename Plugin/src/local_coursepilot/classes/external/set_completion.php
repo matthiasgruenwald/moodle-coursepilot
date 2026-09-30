@@ -257,7 +257,7 @@ final class set_completion extends external_api {
 
         learner_locks::assert_confirmed(
             $modname,
-            self::teacher_grade_locks($catalogclass, (int) $cm->instance, $patch, $changedlocked),
+            self::grade_completion_locks($catalogclass, (int) $cm->instance, $before, $patch, $changedlocked),
             $params[learner_locks::PARAMETER]
         );
 
@@ -293,21 +293,35 @@ final class set_completion extends external_api {
     }
 
     /**
-     * Riegel (#583): ein Abschluss ueber die Note wartet auf die Lehrkraft,
-     * wenn die Note von ihr kommt ({@see learner_locks::GRADE_TEACHER}). Nur
-     * tatsaechlich eingeschaltete Felder zaehlen - ein bestehender Wert
-     * braucht keine erneute Bestaetigung.
+     * Riegel (#583): ein automatischer Abschluss ueber die Note wartet auf
+     * die Lehrkraft, wenn die Note von ihr kommt
+     * ({@see learner_locks::GRADE_TEACHER}). Zaehlt, sobald der Aufruf das
+     * Notenfeld oder den automatischen Abschluss selbst erst einschaltet -
+     * ein unveraendert bestehender Zustand braucht keine erneute Bestaetigung.
      *
      * @param class-string<\local_coursepilot\catalog\module_catalog> $catalogclass
      * @param int $instanceid
+     * @param array $before
      * @param array $patch
      * @param string[] $changedlocked
      * @return array<int, array{id: string, detail: string}>
      */
-    private static function teacher_grade_locks(string $catalogclass, int $instanceid, array $patch, array $changedlocked): array {
+    private static function grade_completion_locks(
+        string $catalogclass,
+        int $instanceid,
+        array $before,
+        array $patch,
+        array $changedlocked
+    ): array {
+        $final = static fn(string $field): int => (int) ($patch[$field] ?? $before[$field] ?? 0);
+        if ($final('completion') !== COMPLETION_TRACKING_AUTOMATIC) {
+            return [];
+        }
+        $completionchanged = in_array('completion', $changedlocked, true);
         $fields = array_filter(
             ['completionusegrade', 'completionpassgrade'],
-            static fn(string $field): bool => in_array($field, $changedlocked, true) && (int) $patch[$field] === 1
+            static fn(string $field): bool => $final($field) === 1
+                && ($completionchanged || in_array($field, $changedlocked, true))
         );
         if (!$fields || $catalogclass::grade_origin($instanceid) !== learner_locks::GRADE_TEACHER) {
             return [];

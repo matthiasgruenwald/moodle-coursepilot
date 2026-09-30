@@ -907,7 +907,16 @@ final class assign implements module_catalog {
         ];
     }
 
+    /**
+     * Die Lehrkraft bewertet - ausser eine Instanz hat keine Bewertung
+     * (grade = 0, z.B. Buendel "übung").
+     */
     public static function grade_origin(int $instanceid = 0): string {
+        global $DB;
+
+        if ($instanceid > 0 && (int) $DB->get_field('assign', 'grade', ['id' => $instanceid]) === 0) {
+            return learner_locks::GRADE_NONE;
+        }
         return learner_locks::GRADE_TEACHER;
     }
 
