@@ -36,10 +36,10 @@ verwechselt wird.
 - **Abschlusstest (`abschlusstest`):** Abschlusstest mit Verbesserungsmöglichkeit,
   keine Klassenarbeit. Zwei Versuche mit Wartezeit und Mittelwertbildung halten
   den Fokus auf Abschluss und Verbesserung statt auf einmalige Bewertung.
-  Die Versuchsbegrenzung ist ein Riegel: `create_quiz`/`update_quiz_settings`
-  lehnen den Modus ab, bis `confirm_learner_locks: ["attempts"]` ihn
-  bestätigt. Bestätigen, wenn die Lehrkraft begrenzte Versuche ausdrücklich
-  will; sonst `"attempts": 0` in `fields_json` nennen.
+  Die Versuchsbegrenzung ist ein Riegel, den die Wahl des Modus bereits
+  bestätigt. Im Plan der Lehrkraft die Einstellungen des Abschlusstests
+  nennen (zwei Versuche, Wartezeit, Mittelwert); eine Extra-Rückfrage zu den
+  Versuchen entfällt.
 
 Aus Kompatibilitätsgründen nimmt das Plugin die alten Werte `intensiv`,
 `lerncheck` und `bewertung` noch an und mappt sie intern auf `mini-check`,

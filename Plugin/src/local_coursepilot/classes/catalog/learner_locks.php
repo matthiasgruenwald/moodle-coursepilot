@@ -204,6 +204,22 @@ final class learner_locks {
     }
 
     /**
+     * Ein ausdruecklich gewaehlter Modus (Werkzeugparameter "mode", z.B.
+     * quiz "abschlusstest") bestaetigt die Riegel, die er selbst mitbringt -
+     * die Wahl des Modus ist die Entscheidung der Lehrkraft fuer seine
+     * Einstellungen. Ein Wert, den der Aufruf selbst ueberschreibt, bleibt
+     * bestaetigungspflichtig.
+     *
+     * @param string[] $confirmed Ausdruecklich bestaetigte Riegel.
+     * @param array $bundle Feldwerte des gewaehlten Modus.
+     * @param array $named Vom Aufruf selbst genannte Felder.
+     * @return string[]
+     */
+    public static function confirmed_with_mode(array $confirmed, array $bundle, array $named): array {
+        return array_values(array_unique(array_merge($confirmed, array_keys(array_diff_key($bundle, $named)))));
+    }
+
+    /**
      * Lehnt ab, solange ein gefundener Riegel nicht bestaetigt ist. Die
      * Meldung nennt jeden offenen Riegel mit Grund, damit der Agent ohne
      * weiteres Nachschlagen entscheiden kann. Nichts wird geschrieben.

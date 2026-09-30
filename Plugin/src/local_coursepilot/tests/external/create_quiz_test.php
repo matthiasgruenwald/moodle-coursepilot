@@ -114,7 +114,7 @@ final class create_quiz_test extends \advanced_testcase {
         ];
 
         foreach ($expectations as $mode => $expected) {
-            $result = $this->create($course->id, 0, $this->minimal_fields(), $mode, -1.0, ['attempts']);
+            $result = $this->create($course->id, 0, $this->minimal_fields(), $mode);
             $quiz = $this->raw_quiz($result['cmid']);
             foreach ($expected as $field => $value) {
                 $this->assertEquals($value, $quiz->{$field}, "mode={$mode} field={$field}");
@@ -316,26 +316,23 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Riegel (#583): der Modus "abschlusstest" begrenzt die Versuche - die
-     * Lehrkraft waehlt ihn ausdruecklich, der Aufruf bestaetigt "attempts".
+     * Riegel (#583): der Modus "abschlusstest" bringt zwei Versuche mit - die
+     * Moduswahl bestaetigt diesen Riegel selbst. Ein ohne Modus gesetztes
+     * Versuchslimit bleibt bestaetigungspflichtig.
      */
-    public function test_final_test_mode_needs_attempt_confirmation(): void {
+    public function test_chosen_mode_confirms_its_own_locks(): void {
         $this->resetAfterTest();
-        $course = $this->getDataGenerator()->create_course();
-        $teacher = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
-        $this->setUser($teacher);
-        $felder = json_encode(['name' => 'Test', 'intro' => 'x', 'subnet' => '', 'browsersecurity' => '-']);
+        [$course] = $this->course_with_editing_teacher();
+
+        $result = $this->create($course->id, 0, $this->minimal_fields(), 'abschlusstest');
+        $this->assertEquals(2, $this->raw_quiz($result['cmid'])->attempts);
 
         try {
-            create_quiz::execute($course->id, 0, $felder, 'abschlusstest');
-            $this->fail('Versuchsbegrenzung haette bestaetigt werden muessen.');
+            $this->create($course->id, 0, $this->minimal_fields_without_mode() + ['attempts' => 2]);
+            $this->fail('Versuchslimit ohne Modus haette bestaetigt werden muessen.');
         } catch (\moodle_exception $e) {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
             $this->assertStringContainsString('attempts', $e->getMessage());
         }
-
-        $result = create_quiz::execute($course->id, 0, $felder, 'abschlusstest', -1.0, ['attempts']);
-        $this->assertGreaterThan(0, $result['cmid']);
     }
 }

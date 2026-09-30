@@ -28,6 +28,15 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(learner_locks::class)]
+#[CoversClass(assign::class)]
+#[CoversClass(quiz::class)]
+#[CoversClass(choice::class)]
+#[CoversClass(forum::class)]
+#[CoversClass(label::class)]
+#[CoversClass(page::class)]
+#[CoversClass(url::class)]
+#[CoversClass(folder::class)]
+#[CoversClass(resource::class)]
 final class learner_locks_test extends \advanced_testcase {
 
     /**
@@ -155,8 +164,9 @@ final class learner_locks_test extends \advanced_testcase {
 
     /**
      * Feldbuendel sind Voreinstellungen fuer den Normalfall - sie setzen
-     * keinen Riegel. Ausnahme: der Quiz-Modus "abschlusstest", den die
-     * Lehrkraft ausdruecklich waehlt (begrenzte Versuche sind sein Zweck).
+     * keinen Riegel. Ausnahme: der Quiz-Modus "abschlusstest" (begrenzte
+     * Versuche sind sein Zweck); seine Wahl bestaetigt den Riegel selbst
+     * ({@see learner_locks::confirmed_with_mode()}).
      */
     public function test_bundles_set_no_lock_except_the_final_test_mode(): void {
         foreach (registry::known_modnames() as $modname) {
@@ -182,5 +192,52 @@ final class learner_locks_test extends \advanced_testcase {
         }
 
         learner_locks::assert_confirmed('assign', $found, ['cutoffdate', 'attemptreopenmethod']);
+    }
+
+    public function test_chosen_mode_confirms_only_the_locks_it_brings(): void {
+        $bundle = quiz::bundles()['abschlusstest'];
+
+        $this->assertContains('attempts', learner_locks::confirmed_with_mode([], $bundle, []));
+        $this->assertNotContains('attempts', learner_locks::confirmed_with_mode([], $bundle, ['attempts' => 5]));
+        $this->assertContains('timeclose', learner_locks::confirmed_with_mode(['timeclose'], $bundle, []));
+    }
+
+    public function test_matches_rejects_an_unknown_operator(): void {
+        $this->assertFalse(learner_locks::matches(['op' => 'contains', 'value' => 1], 1));
+    }
+
+    public function test_existing_reads_settings_and_catalog_aliases(): void {
+        $locks = learner_locks::existing(quiz::class, ['password' => 'geheim', 'attempts' => 0, 'navmethod' => 'free']);
+
+        $this->assertSame(['quizpassword'], array_column($locks, 'field'));
+        $this->assertSame('"geheim"', $locks[0]['value_json']);
+        $this->assertNotSame('', $locks[0]['reason']);
+    }
+
+    public function test_condition_json_is_null_for_fields_that_cannot_lock(): void {
+        $this->assertSame('null', learner_locks::condition_json(assign::class, 'name'));
+        $this->assertSame('manual', json_decode(learner_locks::condition_json(assign::class, 'attemptreopenmethod'))->value);
+    }
+
+    public function test_confirm_parameter_defaults_to_an_empty_list(): void {
+        $parameter = learner_locks::confirm_parameter();
+
+        $this->assertInstanceOf(\core_external\external_multiple_structure::class, $parameter);
+        $this->assertSame(VALUE_DEFAULT, $parameter->required);
+        $this->assertSame([], $parameter->default);
+    }
+
+    public function test_graded_instances_refine_the_activity_type_origin(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $gradedassign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id, 'grade' => 100]);
+        $ungradedassign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id, 'grade' => 0]);
+        $ratedforum = $this->getDataGenerator()->create_module('forum', ['course' => $course->id, 'assessed' => 1, 'scale' => 10]);
+        $plainforum = $this->getDataGenerator()->create_module('forum', ['course' => $course->id]);
+
+        $this->assertSame(learner_locks::GRADE_TEACHER, assign::grade_origin((int) $gradedassign->id));
+        $this->assertSame(learner_locks::GRADE_NONE, assign::grade_origin((int) $ungradedassign->id));
+        $this->assertSame(learner_locks::GRADE_TEACHER, forum::grade_origin((int) $ratedforum->id));
+        $this->assertSame(learner_locks::GRADE_NONE, forum::grade_origin((int) $plainforum->id));
     }
 }

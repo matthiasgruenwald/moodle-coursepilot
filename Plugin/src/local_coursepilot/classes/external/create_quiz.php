@@ -129,7 +129,8 @@ final class create_quiz extends external_api {
             throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
         }
 
-        $merged = array_merge(self::bundle_fields($params['mode']), $patch);
+        $bundle = self::bundle_fields($params['mode']);
+        $merged = array_merge($bundle, $patch);
 
         quiz_write_bridge::validate_fields($merged);
         $newgrade = $params['grade'] >= 0 ? $params['grade'] : quiz_write_bridge::default_grade();
@@ -137,11 +138,12 @@ final class create_quiz extends external_api {
         quiz_write_bridge::validate_combination_rules($effective, $merged, $newgrade);
         self::assert_no_required_field_missing($merged);
         quiz_write_bridge::assert_stealth_allowed($merged);
-        // Riegel (#583): Buendel und Formular-Defaults zaehlen mit.
+        // Riegel (#583): Formular-Defaults zaehlen mit; die Riegel des
+        // gewaehlten Modus bestaetigt die Moduswahl selbst.
         learner_locks::assert_confirmed(
             'quiz',
             learner_locks::find(quiz::class, $merged, self::catalog_defaults()),
-            $params[learner_locks::PARAMETER]
+            learner_locks::confirmed_with_mode($params[learner_locks::PARAMETER], $bundle, $patch)
         );
 
         $course = get_course($params['courseid']);

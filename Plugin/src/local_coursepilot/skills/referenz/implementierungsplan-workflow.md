@@ -149,8 +149,9 @@ Fragenreferenzen oder Fragedaten aendern.
   bestehende Riegel meldet `coursepilot_get_module_settings`. Ein Riegel
   kommt nur in den Plan, wenn die Lehrkraft ihn im Auftrag oder Kontext
   ausdrücklich nennt, und erscheint dann als Planabweichung mit Begründung.
-  Ein Feldbündel oder Modus bringt seinen Riegel nicht mit: den Riegel im
-  Bündel durch den offenen Wert ersetzen, außer die Lehrkraft nennt ihn.
+  Wählt die Lehrkraft einen Modus (z.B. Quiz `abschlusstest`), gelten seine
+  Einstellungen samt Riegel als gewählt: im Plan die Einstellungen des Modus
+  nennen, das Werkzeug bestätigt sie über den Modus selbst.
 - **Riegel-Ablehnung beim Schreiben:** Lehnt ein Schreibwerkzeug den Aufruf
   wegen eines Riegels ab (`learnerlocksunconfirmed`), ist nichts
   geschrieben. Hat die Lehrkraft genau diesen Riegel ausdrücklich genannt,

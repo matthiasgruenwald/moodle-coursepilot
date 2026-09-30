@@ -360,4 +360,24 @@ final class update_quiz_settings_test extends \advanced_testcase {
         update_quiz_settings::execute($quiz->cmid, json_encode(['attempts' => 1]), '', -1.0, ['attempts']);
         $this->assertSame(1, (int) $DB->get_field('quiz', 'attempts', ['id' => $quiz->id]));
     }
+
+    /**
+     * Riegel (#583): der Wechsel in den Modus "abschlusstest" bestaetigt
+     * dessen Versuchslimit selbst.
+     */
+    public function test_switching_to_final_test_mode_needs_no_extra_confirmation(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        $this->patch($quiz->cmid, [], 'abschlusstest');
+
+        $this->assertSame(2, (int) $DB->get_field('quiz', 'attempts', ['id' => $quiz->id]));
+    }
+
 }
