@@ -140,9 +140,7 @@ Fragenreferenzen oder Fragedaten aendern.
   ausdruecklich geplant und begruendet ist.
 - **Offene Abgabe als Standard** -> Aufgaben bekommen `submissiondrafts=0`:
   Lernende ueberarbeiten ihre Abgabe selbst, bis sie bewertet ist oder der
-  Abgabeschluss erreicht ist. Das Feldbuendel `standard` bringt
-  `submissiondrafts=1` mit; beim Anlegen mit diesem Buendel deshalb
-  `submissiondrafts=0` ausdruecklich mitgeben. Sind mehrere Versuche geplant
+  Abgabeschluss erreicht ist. Sind mehrere Versuche geplant
   (`maxattempts` != 1), gilt `attemptreopenmethod=untilpass` oder `automatic`.
 - **Riegel-Pruefung** fuer jede Einstellung, die vom Moodle-Standard abweicht:
   Braucht eine Lernende oder ein Lernender danach eine Handlung der Lehrkraft,

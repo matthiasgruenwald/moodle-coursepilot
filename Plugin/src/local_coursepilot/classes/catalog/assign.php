@@ -811,7 +811,7 @@ final class assign implements module_catalog {
     public static function bundles(): array {
         return [
             'standard' => [
-                'submissiondrafts' => 1,
+                'submissiondrafts' => 0,
                 'requiresubmissionstatement' => 0,
                 'teamsubmission' => 0,
                 'blindmarking' => 0,
