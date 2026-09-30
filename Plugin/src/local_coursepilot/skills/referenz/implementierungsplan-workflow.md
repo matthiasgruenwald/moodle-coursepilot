@@ -138,6 +138,32 @@ Fragenreferenzen oder Fragedaten aendern.
   die Textseite explizit als Pflichtlektuere geplant ist.
 - **Freigabe-Voraussetzung (Restriction)** wird nur gesetzt, wenn sie im Plan
   ausdruecklich geplant und begruendet ist.
+- **Offene Abgabe als Standard** -> Aufgaben bekommen `submissiondrafts=0`:
+  Lernende ueberarbeiten ihre Abgabe selbst, bis sie bewertet ist oder der
+  Abgabeschluss erreicht ist. Das Feldbuendel `standard` bringt
+  `submissiondrafts=1` mit; beim Anlegen mit diesem Buendel deshalb
+  `submissiondrafts=0` ausdruecklich mitgeben. Sind mehrere Versuche geplant
+  (`maxattempts` != 1), gilt `attemptreopenmethod=untilpass` oder `automatic`.
+- **Riegel-Pruefung** fuer jede Einstellung, die vom Moodle-Standard abweicht:
+  Braucht eine Lernende oder ein Lernender danach eine Handlung der Lehrkraft,
+  um weiterzuarbeiten oder nachzubessern? Nein -> Einstellung frei planbar.
+  Ja -> die Einstellung ist ein **Riegel**. Ein Riegel kommt nur in den Plan,
+  wenn die Lehrkraft ihn im Auftrag oder Kontext ausdruecklich nennt, und
+  erscheint dann als Planabweichung mit Begruendung. Bekannte Riegel:
+  - Aufgabe: `submissiondrafts=1` (Abgabe gesperrt, bis die Lehrkraft auf
+    Entwurf zuruecksetzt oder einen Versuch oeffnet),
+    `attemptreopenmethod=manual`, `cutoffdate`, `timelimit`,
+    `requireallteammemberssubmit=1`, `preventsubmissionnotingroup=1`,
+    `markingworkflow=1` (Bewertung erst nach Freigabe sichtbar),
+    `blindmarking=1`.
+  - Test: `attempts` > 0, `navmethod=sequential`, `timeclose`, `timelimit`,
+    `quizpassword`, `subnet`, `browsersecurity`.
+  - Abstimmung: `allowupdate=0`, `timeclose`.
+  - Forum: `cutoffdate`, `lockdiscussionafter`, `blockafter`.
+  - Kette: eine Voraussetzung oder ein Abschluss, der an der Bewertung einer
+    Aufgabe haengt (Bewertungsbedingung auf eine Aufgabe,
+    `completionusegrade`/`completionpassgrade` bei Aufgaben). Bewertungen
+    von Tests entstehen automatisch und sind kein Riegel.
 
 ### Planabweichungen
 
