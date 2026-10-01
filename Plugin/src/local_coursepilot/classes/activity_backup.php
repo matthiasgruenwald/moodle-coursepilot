@@ -103,17 +103,18 @@ final class activity_backup {
      * @param int|null $sectionnum target section for an activity XML (required there);
      *        a real backup keeps the section it was taken from
      * @param string $source activity XML (starts with "<") or backup id from {@see self::backup()}
+     * @param bool $hidden restore an activity XML hidden (a backup keeps its own visibility)
      * @return int new cmid
      * @throws invalid_parameter_exception source is XML but not an activity XML
      * @throws moodle_exception activityrestorefailed
      */
-    public static function restore(int $courseid, ?int $sectionnum, string $source): int {
+    public static function restore(int $courseid, ?int $sectionnum, string $source, bool $hidden = false): int {
         global $DB;
         $isxml = str_starts_with(ltrim($source), '<');
         $backupid = $source;
         if ($isxml) {
             $modname = self::modname_of($source);
-            $backupid = self::scaffold($source, $modname, $sectionnum ?? 1);
+            $backupid = self::scaffold($source, $modname, $sectionnum ?? 1, $hidden);
         }
         $before = $DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$courseid]);
         try {
@@ -153,8 +154,9 @@ final class activity_backup {
      *
      * @return string backup id
      */
-    private static function scaffold(string $activityxml, string $modname, int $sectionnum): string {
+    private static function scaffold(string $activityxml, string $modname, int $sectionnum, bool $hidden): string {
         global $CFG;
+        $visible = $hidden ? 0 : 1;
         $backupid = 'cp' . random_string(30);
         $base = self::backup_path($backupid);
         $cmid = self::SYNTH_CMID;
@@ -178,8 +180,9 @@ final class activity_backup {
             "$dir/competencies.xml" => '<course_module_competencies><competencies></competencies></course_module_competencies>',
             "$dir/module.xml" => "<module id=\"$cmid\" version=\"$modversion\"><modulename>$modname</modulename>"
                 . "<sectionid>1</sectionid><sectionnumber>$sectionnum</sectionnumber><idnumber>\$@NULL@\$</idnumber>"
-                . "<added>$now</added><score>0</score><indent>0</indent><visible>1</visible>"
-                . '<visibleoncoursepage>1</visibleoncoursepage><visibleold>1</visibleold><groupmode>0</groupmode>'
+                . "<added>$now</added><score>0</score><indent>0</indent><visible>$visible</visible>"
+                . "<visibleoncoursepage>1</visibleoncoursepage><visibleold>$visible</visibleold>"
+                . '<groupmode>0</groupmode>'
                 . '<groupingid>0</groupingid><completion>0</completion><completiongradeitemnumber>$@NULL@$</completiongradeitemnumber>'
                 . '<completionpassgrade>0</completionpassgrade><completionview>0</completionview><completionexpected>0</completionexpected>'
                 . '<availability>$@NULL@$</availability><showdescription>0</showdescription><downloadcontent>1</downloadcontent>'

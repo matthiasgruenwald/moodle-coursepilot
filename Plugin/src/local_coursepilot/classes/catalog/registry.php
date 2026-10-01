@@ -112,4 +112,21 @@ final class registry {
         }
         return $catalog;
     }
+
+    /**
+     * Gate for the XML paths: only developed kinds pass.
+     *
+     * @param string $modname
+     * @param string $cataloguedkey language key for a catalogued kind (local_coursepilot, takes $a->modname)
+     * @throws \moodle_exception $cataloguedkey, or the exclusion reason of the kind
+     */
+    public static function require_developed(string $modname, string $cataloguedkey): void {
+        $kind = self::kind($modname);
+        if ($kind->kind === activity_kind::CATALOGUED) {
+            throw new \moodle_exception($cataloguedkey, 'local_coursepilot', '', ['modname' => $modname]);
+        }
+        if ($kind->kind === activity_kind::EXCLUDED) {
+            throw new \moodle_exception($kind->reasonkey, 'local_coursepilot');
+        }
+    }
 }

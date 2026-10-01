@@ -85,6 +85,7 @@ $string['tool_report_loose_material_files'] = 'Reports material files not used b
 $string['tool_delete_material_files'] = 'Deletes exactly the specified files from the calling teacher\'s material folder.';
 $string['tool_clone_activity'] = 'Clones an activity within a course or across courses.';
 $string['tool_export_activity_backup'] = 'Returns the activity XML (backup file <module>.xml, without user data) of an existing activity - a template for how that activity type is built.';
+$string['tool_create_activity_from_xml'] = 'Creates an activity of a developed (not catalogued) type from an activity XML (build it from coursepilot_export_default_activity). The activity is created hidden, exported and compared with the input; on deviation it is removed again in the same call and nothing remains. Otherwise it becomes visible unless hidden is set. Creating only, never editing. Returns the cmid and the fields Moodle filled in by itself.';
 $string['tool_export_default_activity'] = 'Returns the activity XML of a developed (not catalogued) activity type with Moodle default values - a template for creating it from XML. The activity is created temporarily and removed again; nothing remains in the course.';
 $string['tool_report_clone_lineage'] = 'Reports whether quiz questions are copied or still shared with their source course.';
 $string['tool_list_skills'] = 'Lists the Coursepilot skill corpus shipped with the plugin. Before planning or writing, call coursepilot_list_skills first.';
@@ -541,6 +542,9 @@ $string['roundtripmismatch'] = 'Round-trip check failed after writing: field "{$
 
 // Spec 0017: clone_activity (#421).
 $string['clonenobackupsupport'] = 'Activity type "{$a->modname}" does not support activity backup (no FEATURE_BACKUP_MOODLE2), so it cannot be cloned or exported.';
+$string['createfromxmlcatalogued'] = 'Activity type "{$a->modname}" is catalogued: create it with coursepilot_create_module (see coursepilot_describe_module_fields), not from XML.';
+$string['xmlroundtripmismatch'] = 'The activity XML did not survive creation: "{$a->path}" expected "{$a->expected}", Moodle stored "{$a->actual}" ({$a->count} deviation(s)). The activity was removed again, nothing is left in the course.';
+$string['createfromxmlpresets'] = 'Moodle filled in fields that were not in your XML: {$a}.';
 $string['activityrestorefailed'] = 'Restoring the activity failed - Moodle did not report a new activity after the restore. Nothing usable was left behind.';
 $string['activitybackupfailed'] = 'Exporting the activity failed - the backup did not contain an activity XML.';
 

@@ -58,6 +58,7 @@ final class tool_registry {
         'coursepilot_report_loose_material_files' => ['classname' => 'local_coursepilot\external\report_loose_material_files', 'descriptionkey' => 'tool_report_loose_material_files'],
         'coursepilot_delete_material_files' => ['classname' => 'local_coursepilot\external\delete_material_files', 'descriptionkey' => 'tool_delete_material_files'],
         'coursepilot_clone_activity' => ['classname' => 'local_coursepilot\external\clone_activity', 'descriptionkey' => 'tool_clone_activity'],
+        'coursepilot_create_activity_from_xml' => ['classname' => 'local_coursepilot\external\create_activity_from_xml', 'descriptionkey' => 'tool_create_activity_from_xml'],
         'coursepilot_export_activity_backup' => ['classname' => 'local_coursepilot\external\export_activity_backup', 'descriptionkey' => 'tool_export_activity_backup'],
         'coursepilot_export_default_activity' => ['classname' => 'local_coursepilot\external\export_default_activity', 'descriptionkey' => 'tool_export_default_activity'],
         'coursepilot_report_clone_lineage' => ['classname' => 'local_coursepilot\external\report_clone_lineage', 'descriptionkey' => 'tool_report_clone_lineage'],

@@ -24,7 +24,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\activity_backup;
 use local_coursepilot\course_module_placement;
-use local_coursepilot\catalog\activity_kind;
 use local_coursepilot\catalog\registry;
 use moodle_exception;
 
@@ -71,7 +70,7 @@ final class export_default_activity extends external_api {
         require_capability('local/coursepilot:use', $context);
         require_capability('moodle/course:manageactivities', $context);
         require_capability('moodle/backup:backupactivity', $context);
-        self::require_developed($modname);
+        registry::require_developed($modname, 'defaultactivitycatalogued');
         require_capability("mod/$modname:addinstance", $context);
 
         require_once($CFG->dirroot . '/course/modlib.php');
@@ -105,20 +104,6 @@ final class export_default_activity extends external_api {
             course_module_placement::discard_failed((int) $cmid);
         }
         rebuild_course_cache($course->id, true);
-    }
-
-    /**
-     * @param string $modname
-     * @throws moodle_exception defaultactivitycatalogued, or the exclusion reason of the kind
-     */
-    private static function require_developed(string $modname): void {
-        $kind = registry::kind($modname);
-        if ($kind->kind === activity_kind::CATALOGUED) {
-            throw new moodle_exception('defaultactivitycatalogued', 'local_coursepilot', '', ['modname' => $modname]);
-        }
-        if ($kind->kind === activity_kind::EXCLUDED) {
-            throw new moodle_exception($kind->reasonkey, 'local_coursepilot');
-        }
     }
 
     /**
