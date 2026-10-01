@@ -54,7 +54,7 @@ den Plan bestaetigt, statt nur im Chat.
 Vollstaendig definiert in `CONTEXT.md` (Glossareintraege "Skill-Korpus" und
 "Lerndatei", Spec 0020 §6): Dieser Kern und die Referenzteile sind die
 Grundlage, die fuer jede Lehrkraft gleich gilt. Was eine Lehrkraft in ihrer
-Lerndatei festgehalten hat (`fragetypen/<typ>.md`, `vorlagen.md`) ist spaeter
+Lerndatei festgehalten hat (`fragetypen/<typ>.md`, `aktivitaetsarten/<art>.md`, `vorlagen.md`) ist spaeter
 und spezifischer. Reihenfolge: erst der Korpus als Grundlage lesen, dann die
 Lerndatei als Ueberschreibung. Widerspricht eine Lerndatei-Angabe einer
 Korpus-Regel, gilt im Konflikt die Lerndatei.
@@ -81,6 +81,7 @@ seinen Modus situationsbezogen relevant sind. Uebersicht (Name fuer
 | Kontext klaeren, Onboarding-Gespraech fuehren oder eine Klon-Quelle ohne genannte `cmid` nachschlagen | `kontext-onboarding` |
 | Implementierungsplan aufbauen, zeigen oder vor Moodle-Schreibzugriff freigeben | `implementierungsplan-workflow` |
 | Quiz anlegen/aktualisieren, Fragenbank-Kategorien benennen/bereinigen oder ein unbekannter Fragetyp | `quiz-und-fragenbank`, bei neuem Fragetyp zusaetzlich `fragetypen` |
+| Aktivität einer Art ohne Feldkatalog anlegen (z. B. Buch, Checkliste, Glossar) oder eine solche ablösen | `aktivitaetsarten` |
 | Textseite, Phasen-Header oder Aufgabenbeschreibung mit HTML gestalten | `html-vorlagen` |
 | Eingabefelder, Checkboxen, Placeholder oder Tabellen in einer Aufgabe einbauen | `interaktive-elemente` |
 | Zeichenaufgabe (Skizze, Schaltplan, Diagramm) einbauen | `zeichen-canvas` |

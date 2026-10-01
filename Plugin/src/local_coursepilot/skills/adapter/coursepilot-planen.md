@@ -12,7 +12,8 @@ zusätzlich: beim Aufbau oder der Vorschau des Implementierungsplans
 `coursepilot_get_skill("implementierungsplan-workflow")`, beim Planen eines
 Quiz oder einer Fragensammlung `coursepilot_get_skill("quiz-und-fragenbank")`,
 geht es dabei um einen unbekannten Fragetyp zusätzlich
-`coursepilot_get_skill("fragetypen")`, beim Dokumentieren einer
+`coursepilot_get_skill("fragetypen")`, bei einer Aktivität ohne Feldkatalog (Buch,
+Checkliste, Glossar) `coursepilot_get_skill("aktivitaetsarten")`, beim Dokumentieren einer
 Planungsentscheidung `coursepilot_get_skill("journal")`, bei einer gerade nicht
 ausführbaren Bestandsänderung `coursepilot_get_skill("merkzettel")`.
 

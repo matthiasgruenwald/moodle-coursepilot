@@ -26,6 +26,11 @@ Beim Anlegen oder Aendern einer Frage, deren Fragetyp Coursepilot nicht kennt,
 gilt `coursepilot_get_skill("fragetypen")` (Fragetyp-Ablage, Lernschleife,
 Widerspruchspruefung).
 
+Soll eine Aktivität einer Art ohne Feldkatalog (z. B. Buch, Checkliste,
+Glossar) angelegt oder abgelöst werden, gilt
+`coursepilot_get_skill("aktivitaetsarten")` (Aktivitätsart-Ablage,
+Lernschleife, Ablösen).
+
 Am Ende eines abgeschlossenen Aufbaus gilt die Aufraeumfrage aus
 `coursepilot_get_skill("kontextbereich")` (Abschnitt "Aufraeumfrage nach
 Aufbau").

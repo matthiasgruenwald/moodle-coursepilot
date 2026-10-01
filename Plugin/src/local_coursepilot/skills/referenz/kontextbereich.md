@@ -89,6 +89,7 @@ An der Wurzel liegen:
 | `index.md` | globale Uebersicht über die Vorhaben (Spec 0010) |
 | `vorlagen.md` | gemerkte Aktivitätsvorlagen (Spec 0013/0012 §5) |
 | `fragetypen/` | ein `<fragetyp>.md` je erschlossenem Fragetyp (`coursepilot_get_skill("fragetypen")`) |
+| `aktivitaetsarten/` | ein `<modname>.md` je erschlossener Aktivitätsart (`coursepilot_get_skill("aktivitaetsarten")`) |
 | `<schuljahr>/<klasse-oder-lerngruppe>/<fach>/<vorhaben>/` | die eigentliche Arbeitsablage: Profile, `plan.md`, `status.md`, Journal, Material |
 
 Neue Ablageorte kommen an die Wurzel oder in einen Vorhabenordner — kein
@@ -153,7 +154,7 @@ Archiv, neu `journal-2026-07.md`). Stimmt die Lehrkraft zu:
 
 ## Lerndatei: ersetzen statt anhängen (Spec 0020 §7)
 
-Eine Lerndatei (`fragetypen/<typ>.md` — feste Gliederung, Schreibregel siehe
+Eine Lerndatei (`fragetypen/<typ>.md`, `aktivitaetsarten/<modname>.md` — feste Gliederung, Schreibregel siehe
 `coursepilot_get_skill("fragetypen")` — sowie `vorlagen.md`) darf sonst zu
 Schicht auf Schicht wachsen: Anhängen fühlt sich sicher an, Löschen
 riskant, und der Kontext wird mit jeder Sitzung teurer und widersprüchlicher.
