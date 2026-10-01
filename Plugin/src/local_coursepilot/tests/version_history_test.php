@@ -17,6 +17,8 @@
 namespace local_coursepilot;
 
 use local_coursepilot\history\version_history;
+use local_coursepilot\history\version_source;
+use local_coursepilot\history\version_writer;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -317,5 +319,54 @@ final class version_history_test extends \advanced_testcase {
         rebuild_course_cache($course->id, true);
 
         $this->assertSame([], version_history::course_activities($course->id));
+    }
+
+    /**
+     * #596: Vermerk-Stand an der alten cmid - Quelle "superseded", Bezug = neue
+     * cmid ueber sourcecmid (keine Schemaaenderung), Einzeiler nennt den Bezug.
+     */
+    public function test_superseded_marker_references_new_cmid(): void {
+        $this->resetAfterTest();
+        [$course, $cm, $teacher] = $this->create_page();
+        $new = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $this->setUser($teacher);
+
+        version_writer::capture_superseded((int) $cm->id, (int) $new->cmid, (int) $teacher->id);
+
+        $rows = version_history::list_versions($cm->id)['versions'];
+        $marker = end($rows);
+        $this->assertSame('superseded', $marker['source']);
+        $this->assertSame((int) $new->cmid, $marker['source_cmid']);
+        $this->assertFalse($marker['discovered']);
+        $this->assertStringContainsString('abgelöst durch Aktivität ' . $new->cmid, $marker['summary_line']);
+    }
+
+    /**
+     * #596: Quelle "from_xml" als Begriff - Schluessel und Beschriftung.
+     */
+    public function test_from_xml_source_is_described(): void {
+        $this->resetAfterTest();
+        [, $cm, $teacher] = $this->create_page();
+        $this->setUser($teacher);
+
+        version_writer::capture((int) $cm->id, (int) $teacher->id, version_writer::SOURCE_FROM_XML);
+
+        $rows = version_history::list_versions($cm->id)['versions'];
+        $this->assertSame('from_xml', end($rows)['source']);
+        $this->assertSame('aus Aktivitäts-XML angelegt', (new version_source('from_xml'))->label());
+        $this->assertSame('Klon der Aktivität 7', (new version_source('geklont', 7))->label());
+        $this->assertSame('unbekannt', (new version_source('unbekannt'))->label());
+    }
+
+    /**
+     * #596: der Hinweis nennt die Luecke bei erschlossenen Arten ehrlich.
+     */
+    public function test_gap_notice_names_instance_row_only_for_catalogued_kinds(): void {
+        $this->resetAfterTest();
+        [, $cm] = $this->create_page();
+
+        $notice = version_history::list_versions($cm->id)['gap_notice'];
+        $this->assertStringContainsString('erschlossenen Aktivitätsarten', $notice);
+        $this->assertStringContainsString('nur die Instanzzeile', $notice);
     }
 }

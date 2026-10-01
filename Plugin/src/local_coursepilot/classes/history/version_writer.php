@@ -41,13 +41,32 @@ defined('MOODLE_INTERNAL') || die();
 final class version_writer {
 
     /** @var string Ursprung, solange nur der native Moodle-Schreibweg beobachtet wird. */
-    public const SOURCE_MOODLE = 'moodle';
+    public const SOURCE_MOODLE = version_source::MOODLE;
 
     /** @var string Ursprung des rueckwirkend angelegten Vorher-Standes (#386, Spec 0015 §10.3). */
-    public const SOURCE_VORGEFUNDEN = 'vorgefunden';
+    public const SOURCE_VORGEFUNDEN = version_source::DISCOVERED;
 
     /** @var string Ursprung eines Klons (#421, Spec 0017 §7.5) - immer Version 1, nie ueber capture_on_update(). */
-    public const SOURCE_GEKLONT = 'geklont';
+    public const SOURCE_GEKLONT = version_source::CLONED;
+
+    /** @var string Ursprung einer Aktivitaet aus Aktivitaets-XML (ADR 0028, #596). */
+    public const SOURCE_FROM_XML = version_source::FROM_XML;
+
+    /** @var string Vermerk-Stand an der alten cmid nach dem Abloesen; sourcecmid = neue cmid (#596). */
+    public const SOURCE_SUPERSEDED = version_source::SUPERSEDED;
+
+    /**
+     * Vermerk-Stand an der alten cmid: "abgeloest durch $newcmid" (#596, Spec 0026).
+     * Bezug laeuft ueber das vorhandene Feld sourcecmid, keine Schemaaenderung.
+     *
+     * @param int $oldcmid
+     * @param int $newcmid
+     * @param int $userid
+     * @return int id der neuen Version
+     */
+    public static function capture_superseded(int $oldcmid, int $newcmid, int $userid): int {
+        return self::capture($oldcmid, $userid, self::SOURCE_SUPERSEDED, $newcmid);
+    }
 
     /**
      * Schnappt den Ist-Stand bei einer Aenderung (course_module_updated). Fehlt
@@ -97,7 +116,7 @@ final class version_writer {
      * @param int $cmid
      * @param int $userid Nutzer/in, unter der der Schreibvorgang lief (Event-userid).
      * @param string $source
-     * @param int|null $sourcecmid Quell-Modul-ID eines Klons (#421) - nur bei source=SOURCE_GEKLONT gesetzt, sonst null.
+     * @param int|null $sourcecmid Bezugs-cmid, siehe {@see version_source}: Klon-Quelle (geklont) bzw. neue cmid (superseded), sonst null.
      * @return int id der neu angelegten Version
      */
     public static function capture(

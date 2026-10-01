@@ -41,7 +41,9 @@ final class version_history {
         . 'Notenbuch, eine Wiederherstellung eines ganzen Kurses aus dem Papierkorb (Restore) und direkte '
         . 'Datenbankschreibungen werden nicht erfasst. Ersetzte Aktivitätsdateien in freigeschalteten Feldern '
         . '(z. B. Anhänge) sind davon ausgenommen und werden bei einer Rückkehr zu einem alten Stand '
-        . 'mitgeholt. Die Lücke ist erkennbar, aber nicht schließbar.';
+        . 'mitgeholt. Bei erschlossenen Aktivitätsarten (z. B. Buch, Glossar, Lektion) erfasst der Verlauf '
+        . 'nur die Instanzzeile, nicht die Kindtabellen (Kapitel, Einträge, Seiten, Punkte). '
+        . 'Die Lücke ist erkennbar, aber nicht schließbar.';
 
     /**
      * Alle Versionen einer Aktivitaet, aufsteigend, mit je einem Einzeiler
@@ -236,11 +238,12 @@ final class version_history {
      * @return array{version: int, source: string, discovered: bool, source_cmid: int|null, userid: int, user: string, timestamp: int}
      */
     private static function describe_meta(\stdClass $record): array {
+        $source = version_source::from_record($record);
         return [
             'version' => (int) $record->version,
-            'source' => (string) $record->source,
-            'discovered' => $record->source === version_writer::SOURCE_VORGEFUNDEN,
-            'source_cmid' => $record->sourcecmid !== null ? (int) $record->sourcecmid : null,
+            'source' => $source->key,
+            'discovered' => $source->is_discovered(),
+            'source_cmid' => $source->refcmid,
             'userid' => (int) $record->userid,
             'user' => self::fullname((int) $record->userid),
             'timestamp' => (int) $record->timecreated,
@@ -256,11 +259,9 @@ final class version_history {
     private static function summary_line(?\stdClass $previous, \stdClass $record, array $meta): string {
         $zeitpunkttext = userdate($meta['timestamp']);
 
-        if ($previous === null) {
-            $label = $meta['discovered']
-                ? 'Version %d (vorgefundener Ausgangsstand vor Coursepilot)'
-                : 'Version %d (erster erfasster Stand)';
-            return sprintf($label . ' - %s, %s.', $meta['version'], $meta['user'], $zeitpunkttext);
+        $source = version_source::from_record($record);
+        if ($previous === null || $source->is_marker()) {
+            return sprintf('Version %d (%s) - %s, %s.', $meta['version'], $source->label(), $meta['user'], $zeitpunkttext);
         }
 
         $summary = self::summarize_change($previous, $record);
