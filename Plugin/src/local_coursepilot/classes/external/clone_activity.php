@@ -279,7 +279,7 @@ final class clone_activity extends external_api {
                 continue;
             }
 
-            if (is_array($child) && ($child['type'] ?? null) === 'completion' && (int) ($child['cm'] ?? -1) === 0) {
+            if (is_array($child) && \local_coursepilot\cm_references::is_dangling_completion($child)) {
                 $removed[] = self::describe_removed_condition($sourcechild);
                 continue;
             }

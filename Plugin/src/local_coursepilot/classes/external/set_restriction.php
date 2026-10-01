@@ -351,7 +351,7 @@ final class set_restriction extends external_api {
      * @return array<int, array{id: string, detail: string}>
      */
     private static function grade_condition_locks(array $conditions, string $currentavailability): array {
-        $existing = self::completion_pairs(json_decode($currentavailability, true) ?: []);
+        $existing = \local_coursepilot\cm_references::completion_pairs(json_decode($currentavailability, true) ?: []);
         $gradedstatus = [self::COMPLETION_STATUS['pass'], self::COMPLETION_STATUS['fail']];
         $locks = [];
         foreach ($conditions as $condition) {
@@ -374,23 +374,6 @@ final class set_restriction extends external_api {
             ];
         }
         return $locks;
-    }
-
-    /**
-     * Alle Abschlussbedingungen eines Verfuegbarkeitsbaums als "cm:e".
-     *
-     * @param array $tree
-     * @return string[]
-     */
-    private static function completion_pairs(array $tree): array {
-        $pairs = [];
-        if (($tree['type'] ?? null) === 'completion' && isset($tree['cm'], $tree['e'])) {
-            $pairs[] = (int) $tree['cm'] . ':' . (int) $tree['e'];
-        }
-        foreach ($tree['c'] ?? [] as $child) {
-            $pairs = array_merge($pairs, is_array($child) ? self::completion_pairs($child) : []);
-        }
-        return $pairs;
     }
 
     /**
