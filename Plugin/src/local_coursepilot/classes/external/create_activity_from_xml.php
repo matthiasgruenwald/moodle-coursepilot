@@ -47,6 +47,8 @@ final class create_activity_from_xml extends external_api {
             'section' => new external_value(PARAM_INT, 'Section number (0 = general section)'),
             'activity_xml' => new external_value(PARAM_RAW, 'Activity XML (<module>.xml of a backup), e.g. from coursepilot_export_default_activity'),
             'hidden' => new external_value(PARAM_BOOL, 'Leave the activity hidden after the check', VALUE_DEFAULT, false),
+            'dry_run' => new external_value(PARAM_BOOL, 'Only with replaces_cmid: write nothing, return the references to the old activity (plan preview)', VALUE_DEFAULT, false),
+            'replaces_cmid' => new external_value(PARAM_INT, 'Supersede this activity (same type, same course): the new one is placed directly behind it, the old one is only hidden. 0 = create only', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -56,15 +58,27 @@ final class create_activity_from_xml extends external_api {
      * @param int $section
      * @param string $activityxml
      * @param bool $hidden
+     * @param int $replacescmid
+     * @param bool $dryrun
      * @return array
      */
-    public static function execute(int $courseid, string $modname, int $section, string $activityxml, bool $hidden = false): array {
+    public static function execute(
+        int $courseid,
+        string $modname,
+        int $section,
+        string $activityxml,
+        bool $hidden = false,
+        int $replacescmid = 0,
+        bool $dryrun = false
+    ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'courseid' => $courseid,
             'modname' => $modname,
             'section' => $section,
             'activity_xml' => $activityxml,
             'hidden' => $hidden,
+            'replaces_cmid' => $replacescmid,
+            'dry_run' => $dryrun,
         ]);
         if ($params['section'] < 0) {
             throw new \invalid_parameter_exception('section must not be negative.');
@@ -77,19 +91,48 @@ final class create_activity_from_xml extends external_api {
         require_capability('moodle/restore:restoreactivity', $context);
         require_capability('mod/' . $params['modname'] . ':addinstance', $context);
 
+        if ($params['replaces_cmid']) {
+            $oldcontext = \context_module::instance($params['replaces_cmid']);
+            require_capability('moodle/course:manageactivities', $oldcontext);
+            require_capability('moodle/course:activityvisibility', $oldcontext);
+        }
+        if ($params['dry_run']) {
+            if (!$params['replaces_cmid']) {
+                throw new \invalid_parameter_exception('dry_run needs replaces_cmid.');
+            }
+            $references = xml_activity_creator::preview_supersede(
+                $params['courseid'], $params['modname'], $params['activity_xml'], $params['replaces_cmid']);
+            return self::shape(['cmid' => 0, 'presets' => [], 'references' => $references]);
+        }
         $result = xml_activity_creator::create(
             $params['courseid'],
             $params['modname'],
             $params['section'],
             $params['activity_xml'],
-            $params['hidden']
+            $params['hidden'],
+            $params['replaces_cmid'] ?: null
         );
+        return self::shape($result);
+    }
+
+    /**
+     * @param array{cmid: int, presets: string[], references: array} $result
+     * @return array
+     */
+    private static function shape(array $result): array {
+        $messages = [];
+        if ($result['presets']) {
+            $messages[] = get_string('createfromxmlpresets', 'local_coursepilot', implode(', ', $result['presets']));
+        }
+        if ($result['references']) {
+            $places = implode(', ', array_map(static fn($r) => $r['kind'] . ' (' . $r['location'] . ')', $result['references']));
+            $messages[] = get_string('createfromxmlreferences', 'local_coursepilot', $places);
+        }
         return [
             'cmid' => $result['cmid'],
             'presets' => $result['presets'],
-            'message' => $result['presets']
-                ? get_string('createfromxmlpresets', 'local_coursepilot', implode(', ', $result['presets']))
-                : '',
+            'references' => $result['references'],
+            'message' => implode(' ', $messages),
         ];
     }
 
@@ -98,12 +141,20 @@ final class create_activity_from_xml extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID of the new activity'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the new activity (0 for a dry run)'),
             'presets' => new external_multiple_structure(
                 new external_value(PARAM_RAW, 'Path of a field Moodle filled in that was not in the XML'),
                 'Moodle presets'
             ),
-            'message' => new external_value(PARAM_RAW, 'Hint about Moodle presets, empty if there are none'),
+            'references' => new external_multiple_structure(
+                new external_single_structure([
+                    'kind' => new external_value(PARAM_ALPHANUMEXT, 'activity_availability, section_availability or course_completion'),
+                    'location_id' => new external_value(PARAM_INT, 'cmid, section id or course id of the referencing place'),
+                    'location' => new external_value(PARAM_TEXT, 'Readable place'),
+                ]),
+                'Places that still point at the superseded activity (only with replaces_cmid); not resolved'
+            ),
+            'message' => new external_value(PARAM_RAW, 'Hints about Moodle presets and unresolved references, empty if there are none'),
         ]);
     }
 }

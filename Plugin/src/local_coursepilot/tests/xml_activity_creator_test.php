@@ -110,4 +110,84 @@ final class xml_activity_creator_test extends \advanced_testcase {
             }
         }
     }
+
+    /** Old book in section 2 between two page neighbours; returns [course, xml, old cmid, neighbour cmid]. */
+    private function setup_old(): array {
+        [$course, $xml] = $this->setup_course();
+        $old = xml_activity_creator::create($course->id, 'book', 2, $xml)['cmid'];
+        $next = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'section' => 2])->cmid;
+        return [$course, $xml, $old, $next];
+    }
+
+    public function test_supersede_places_after_old_and_hides_it_untouched(): void {
+        global $DB;
+        [$course, $xml, $old, $next] = $this->setup_old();
+        $result = xml_activity_creator::create($course->id, 'book', 1, $xml, false, $old);
+
+        $modinfo = get_fast_modinfo($course->id);
+        $this->assertSame([$old, $result['cmid'], $next], array_map('intval', $modinfo->sections[2]));
+        $this->assertTrue((bool) $modinfo->get_cm($result['cmid'])->visible);
+        $this->assertFalse((bool) $modinfo->get_cm($old)->visible);
+        $this->assertSame('Created', $modinfo->get_cm($old)->name);
+        $this->assertTrue($DB->record_exists('course_modules', ['id' => $old]));
+    }
+
+    public function test_supersede_records_marker_state_on_old_cmid(): void {
+        global $DB;
+        [$course, $xml, $old] = $this->setup_old();
+        $result = xml_activity_creator::create($course->id, 'book', 2, $xml, false, $old);
+
+        $marker = $DB->get_records('local_coursepilot_cm_version', ['cmid' => $old], 'version DESC', '*', 0, 1);
+        $marker = reset($marker);
+        $this->assertSame('superseded', $marker->source);
+        $this->assertEquals($result['cmid'], $marker->sourcecmid);
+        $this->assertCount(1, $DB->get_records('local_coursepilot_cm_version', ['cmid' => $result['cmid']]));
+    }
+
+    public function test_supersede_reports_references_to_old_without_resolving_them(): void {
+        global $DB;
+        [$course, $xml, $old, $next] = $this->setup_old();
+        $availability = json_encode(['op' => '&', 'c' => [['type' => 'completion', 'cm' => $old, 'e' => 1]], 'showc' => [true]]);
+        $DB->set_field('course_modules', 'availability', $availability, ['id' => $next]);
+        rebuild_course_cache($course->id, true);
+
+        $result = xml_activity_creator::create($course->id, 'book', 2, $xml, false, $old);
+
+        $this->assertSame([[
+            'kind' => cm_references::KIND_ACTIVITY_AVAILABILITY,
+            'location_id' => $next,
+            'location' => 'cmid ' . $next,
+        ]], $result['references']);
+        $this->assertSame($availability, $DB->get_field('course_modules', 'availability', ['id' => $next]));
+    }
+
+    public function test_supersede_rejects_foreign_course_or_other_type_and_writes_nothing(): void {
+        [$course, $xml, $old] = $this->setup_old();
+        $other = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id])->cmid;
+        $foreign = $this->getDataGenerator()->create_module('book', ['course' => $other->id])->cmid;
+        $before = $this->footprint($course->id);
+        foreach ([$page, $foreign, 999999] as $bad) {
+            try {
+                xml_activity_creator::create($course->id, 'book', 1, $xml, false, $bad);
+                $this->fail('invalid replaces_cmid must be rejected');
+            } catch (\moodle_exception $e) {
+                $this->assertSame($before, $this->footprint($course->id));
+            }
+        }
+    }
+
+    public function test_supersede_failure_leaves_old_untouched(): void {
+        [$course, $xml, $old] = $this->setup_old();
+        $before = $this->footprint($course->id);
+        $broken = str_replace('</book>', '<bogusfield>x</bogusfield></book>', $xml);
+        try {
+            xml_activity_creator::create($course->id, 'book', 2, $broken, false, $old);
+            $this->fail('deviation must be reported');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('xmlroundtripmismatch', $e->errorcode);
+        }
+        $this->assertTrue((bool) get_fast_modinfo($course->id)->get_cm($old)->visible);
+        $this->assertSame($before, $this->footprint($course->id));
+    }
 }

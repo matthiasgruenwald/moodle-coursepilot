@@ -32,6 +32,12 @@ defined('MOODLE_INTERNAL') || die();
  * only THEN capture the history (earlier it would create a version 2 through
  * course_module_updated). Creating only, never editing.
  *
+ * Superseding (#591, ADR 0028): with $replacescmid the new activity is placed directly
+ * behind the old one, the old one is only hidden (name untouched, nothing deleted) and
+ * gets a marker state "superseded by new cmid". References to the old cmid are reported,
+ * never resolved. The marker is no restore risk: only developed kinds are superseded
+ * (same modname as the old cm), and those have no restore path (catalog_for requires a catalog).
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -53,14 +59,29 @@ final class xml_activity_creator {
      * @param int $sectionnum target section number
      * @param string $activityxml activity XML (`<mod>.xml`)
      * @param bool $hidden leave the activity hidden after the check
-     * @return array{cmid: int, presets: string[]}
+     * @param int|null $replacescmid supersede this activity of the same type in the same course;
+     *        $sectionnum is then ignored (the new one lands behind the old one)
+     * @return array{cmid: int, presets: string[], references: array}
+     * references: {@see cm_references::references_to()} of the old cmid, empty without $replacescmid
      * @throws moodle_exception kind gate, xmlroundtripmismatch
-     * @throws invalid_parameter_exception invalid XML or modname mismatch
+     * @throws invalid_parameter_exception invalid XML, modname mismatch or unusable $replacescmid
      */
-    public static function create(int $courseid, string $modname, int $sectionnum, string $activityxml, bool $hidden = false): array {
+    public static function create(
+        int $courseid,
+        string $modname,
+        int $sectionnum,
+        string $activityxml,
+        bool $hidden = false,
+        ?int $replacescmid = null
+    ): array {
         global $USER;
         registry::require_developed($modname, 'createfromxmlcatalogued');
         self::assert_valid($activityxml, $modname);
+        if ($replacescmid !== null) {
+            self::assert_replaceable($replacescmid, $courseid, $modname);
+        }
+        $references = $replacescmid === null ? [] : cm_references::references_to($replacescmid);
+        $oldvisible = $replacescmid === null || (bool) get_fast_modinfo($courseid)->get_cm($replacescmid)->visible;
 
         $cmid = activity_backup::restore($courseid, $sectionnum, $activityxml, true);
         try {
@@ -80,8 +101,14 @@ final class xml_activity_creator {
             if (!$hidden) {
                 course_module_placement::set_visible($cmid, true);
             }
+            if ($replacescmid !== null) {
+                self::supersede($cmid, $replacescmid, (int) $USER->id);
+            }
         } catch (\Throwable $e) {
             try {
+                if ($replacescmid !== null) {
+                    course_module_placement::set_visible($replacescmid, $oldvisible);
+                }
                 course_module_placement::discard_failed($cmid);
             } catch (\Throwable $cleanup) {
                 debugging('create_activity_from_xml cleanup failed: ' . $cleanup->getMessage(), DEBUG_DEVELOPER);
@@ -91,7 +118,42 @@ final class xml_activity_creator {
         // Last: drop what the observers wrote on the way, keep exactly one state.
         retention::purge_cm($cmid);
         version_writer::capture($cmid, (int) $USER->id, version_writer::SOURCE_FROM_XML);
-        return ['cmid' => $cmid, 'presets' => $result['presets']];
+        return ['cmid' => $cmid, 'presets' => $result['presets'], 'references' => $references];
+    }
+
+    /**
+     * Dry run of superseding: the same checks as create(), writes nothing, names what still
+     * points at the old activity (Spec 0026 module 6, plan preview).
+     *
+     * @return array<int, array{kind: string, location_id: int, location: string}> {@see cm_references::references_to()}
+     * @throws moodle_exception kind gate
+     * @throws invalid_parameter_exception invalid XML or unusable $replacescmid
+     */
+    public static function preview_supersede(int $courseid, string $modname, string $activityxml, int $replacescmid): array {
+        registry::require_developed($modname, 'createfromxmlcatalogued');
+        self::assert_valid($activityxml, $modname);
+        self::assert_replaceable($replacescmid, $courseid, $modname);
+        return cm_references::references_to($replacescmid);
+    }
+
+    /**
+     * Places the new activity behind the old one, hides the old one, notes the marker state.
+     * Inside create()'s try block: a failure here discards the new activity.
+     */
+    private static function supersede(int $newcmid, int $oldcmid, int $userid): void {
+        course_module_placement::place_after($newcmid, $oldcmid);
+        course_module_placement::set_visible($oldcmid, false);
+        version_writer::capture_superseded($oldcmid, $newcmid, $userid);
+    }
+
+    /**
+     * @throws invalid_parameter_exception no activity of this type in this course
+     */
+    private static function assert_replaceable(int $cmid, int $courseid, string $modname): void {
+        $cm = get_coursemodule_from_id($modname, $cmid, $courseid);
+        if (!$cm || $cm->deletioninprogress) {
+            throw new invalid_parameter_exception("replaces_cmid $cmid is not an activity of type \"$modname\" in this course.");
+        }
     }
 
     /**

@@ -50,6 +50,53 @@ final class create_activity_from_xml_test extends \advanced_testcase {
         $this->assertStringContainsString('numbering', $result['message']);
     }
 
+    public function test_replaces_cmid_supersedes_and_lists_references(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $xml = export_default_activity::execute($course->id, 'book')['xml'];
+        $old = create_activity_from_xml::execute($course->id, 'book', 1, $xml)['cmid'];
+        $other = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $DB->set_field('course_modules', 'availability',
+            json_encode(['op' => '&', 'c' => [['type' => 'completion', 'cm' => $old, 'e' => 1]], 'showc' => [true]]),
+            ['id' => $other->cmid]);
+
+        $result = create_activity_from_xml::execute($course->id, 'book', 1, $xml, false, $old);
+        $result = external_api::clean_returnvalue(create_activity_from_xml::execute_returns(), $result);
+
+        $this->assertFalse((bool) get_fast_modinfo($course->id)->get_cm($old)->visible);
+        $this->assertSame($other->cmid, (int) $result['references'][0]['location_id']);
+        $this->assertStringContainsString('activity_availability', $result['message']);
+    }
+
+    public function test_dry_run_returns_references_and_writes_nothing(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $xml = export_default_activity::execute($course->id, 'book')['xml'];
+        $old = create_activity_from_xml::execute($course->id, 'book', 1, $xml)['cmid'];
+        $other = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $DB->set_field('course_modules', 'availability',
+            json_encode(['op' => '&', 'c' => [['type' => 'completion', 'cm' => $old, 'e' => 1]], 'showc' => [true]]),
+            ['id' => $other->cmid]);
+        $cms = $DB->count_records('course_modules');
+        $versions = $DB->count_records('local_coursepilot_cm_version');
+
+        $result = create_activity_from_xml::execute($course->id, 'book', 1, $xml, false, $old, true);
+
+        $this->assertSame(0, $result['cmid']);
+        $this->assertSame($other->cmid, (int) $result['references'][0]['location_id']);
+        $this->assertSame($cms, $DB->count_records('course_modules'));
+        $this->assertSame($versions, $DB->count_records('local_coursepilot_cm_version'));
+        $this->assertTrue((bool) get_fast_modinfo($course->id)->get_cm($old)->visible);
+    }
+
     public function test_requires_restore_capability(): void {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
