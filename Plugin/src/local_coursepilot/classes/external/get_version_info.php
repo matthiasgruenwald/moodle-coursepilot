@@ -103,7 +103,7 @@ final class get_version_info extends external_api {
             'moodle_version' => new external_value(PARAM_TEXT, 'Moodle-Versionsstempel, z.B. "2025041400.05"'),
             'moodle_branch' => new external_value(PARAM_TEXT, 'Moodle-Zweig, z.B. "500"'),
             'plugin_version' => new external_value(PARAM_INT, '$plugin->version aus version.php der laufenden Dateien'),
-            'plugin_release' => new external_value(PARAM_TEXT, '$plugin->release, z.B. "2.0.0-alpha"'),
+            'plugin_release' => new external_value(PARAM_TEXT, '$plugin->release, z.B. "2.0.0-beta"'),
             'plugin_version_db' => new external_value(
                 PARAM_INT,
                 'In der Datenbank eingetragene Plugin-Version; weicht sie ab, fehlt ein upgrade.php-Lauf'

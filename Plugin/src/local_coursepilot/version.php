@@ -25,11 +25,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_coursepilot';
-$plugin->version   = 2026100101;
-// Moodle 5.0 wird zugesagt. Der Sicherheitssupport fuer 5.0 endet am
-// 05.10.2026; dann wird auf 5.1 als Mindestversion gehoben (ADR 0024).
+$plugin->version   = 2026100102;
+// 2.0.x sagt Moodle 5.0 zu (geprueft). Ab 2.1 gilt Moodle 5.1 als
+// Mindestversion (ADR 0027).
 $plugin->requires  = 2025041400;
-// Alpha bis der eigene Produktivbetrieb etwas anderes zeigt. Die Linie setzt
-// Coursepilot 1.x fort: der Neubau ist Version 2, keine zweite Produktlinie.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '2.0.0-alpha';
+// Beta nach dem Praxistest (ADR 0027). Die Linie setzt Coursepilot 1.x fort:
+// der Neubau ist Version 2, keine zweite Produktlinie.
+$plugin->maturity  = MATURITY_BETA;
+$plugin->release   = '2.0.0-beta';

@@ -6,7 +6,7 @@ lokalen Coursepilot-MCP. Entwicklungs- und Issue-Repository ist
 (primäres Repository); der Plugin-Quellbaum wird separat als Mirror für das Moodle Plugin
 Directory veröffentlicht.
 
-## Coursepilot 2.0 (Server-MCP, Release-Kandidat) – Artefakt, Version, Übergang
+## Coursepilot 2.0.0-beta (Server-MCP) – Artefakt, Version, Übergang
 
 Betrifft die native Linie unter `Plugin/src/local_coursepilot/` (Issue #577, Spec 0025
 Abschnitt D). Die Angaben im vorherigen Abschnitt „Coursepilot 1.0" gelten unverändert für
@@ -51,10 +51,10 @@ angefasst – der Schnitt bleibt eine bewusste, separate Entscheidung.
 
 ### Unterstützte Kombination
 
-Nachgewiesen ist ausschließlich **Moodle 5.0.8, PHP 8.4, MariaDB** (nativer PHPUnit-Lauf).
-`version.php` verlangt Moodle 5.0 oder neuer als Untergrenze; eine Anhebung auf 5.1 erfolgt
-erst, nachdem 5.1 selbst so geprüft wurde – eine reine Metadatenänderung ist keine
-Kompatibilitätsabnahme.
+Nachgewiesen sind **Moodle 5.0 und 5.1, PHP 8.4, MariaDB** (nativer PHPUnit-Lauf in der CI).
+2.0.x verlangt Moodle 5.0 oder neuer. Ab Coursepilot 2.1 ist **Moodle 5.1** die
+Mindestversion (ADR 0027). Neuere Moodle-Versionen gelten erst als unterstützt, wenn CI und
+Testinstanz sie nachweisen – eine reine Metadatenänderung ist keine Kompatibilitätsabnahme.
 
 ## Coursepilot 1.0 – Produktname, Neuinstallation, Sprachen und Datenschutz
 
