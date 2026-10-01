@@ -59,6 +59,7 @@ final class tool_registry {
         'coursepilot_delete_material_files' => ['classname' => 'local_coursepilot\external\delete_material_files', 'descriptionkey' => 'tool_delete_material_files'],
         'coursepilot_clone_activity' => ['classname' => 'local_coursepilot\external\clone_activity', 'descriptionkey' => 'tool_clone_activity'],
         'coursepilot_export_activity_backup' => ['classname' => 'local_coursepilot\external\export_activity_backup', 'descriptionkey' => 'tool_export_activity_backup'],
+        'coursepilot_export_default_activity' => ['classname' => 'local_coursepilot\external\export_default_activity', 'descriptionkey' => 'tool_export_default_activity'],
         'coursepilot_report_clone_lineage' => ['classname' => 'local_coursepilot\external\report_clone_lineage', 'descriptionkey' => 'tool_report_clone_lineage'],
         'coursepilot_list_skills' => ['classname' => 'local_coursepilot\external\list_skills', 'descriptionkey' => 'tool_list_skills'],
         'coursepilot_get_skill' => ['classname' => 'local_coursepilot\external\get_skill', 'descriptionkey' => 'tool_get_skill'],
@@ -119,6 +120,7 @@ final class tool_registry {
         if (in_array($classname, [
             'local_coursepilot\\external\\create_werkbank_download_links',
             'local_coursepilot\\external\\export_activity_backup',
+            'local_coursepilot\\external\\export_default_activity',
         ], true)) {
             return false;
         }

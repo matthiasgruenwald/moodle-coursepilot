@@ -85,6 +85,7 @@ $string['tool_report_loose_material_files'] = 'Reports material files not used b
 $string['tool_delete_material_files'] = 'Deletes exactly the specified files from the calling teacher\'s material folder.';
 $string['tool_clone_activity'] = 'Clones an activity within a course or across courses.';
 $string['tool_export_activity_backup'] = 'Returns the activity XML (backup file <module>.xml, without user data) of an existing activity - a template for how that activity type is built.';
+$string['tool_export_default_activity'] = 'Returns the activity XML of a developed (not catalogued) activity type with Moodle default values - a template for creating it from XML. The activity is created temporarily and removed again; nothing remains in the course.';
 $string['tool_report_clone_lineage'] = 'Reports whether quiz questions are copied or still shared with their source course.';
 $string['tool_list_skills'] = 'Lists the Coursepilot skill corpus shipped with the plugin. Before planning or writing, call coursepilot_list_skills first.';
 $string['tool_get_skill'] = 'Delivers one Coursepilot skill corpus entry by name.';
@@ -462,6 +463,7 @@ $string['privacy:metadata:webdav_external_storage:content'] = 'The file content,
 $string['kindexcludedfiles'] = 'This activity type keeps files in its content, which cannot be created from XML.';
 $string['kindexcludednobackup'] = 'This activity type does not support Moodle backup, so it cannot be created from XML.';
 $string['kindexcludedquestions'] = 'This activity type contains questions and cannot be created from XML.';
+$string['defaultactivitycatalogued'] = 'Activity type "{$a->modname}" is catalogued: create it with coursepilot_create_module (see coursepilot_describe_module_fields), not from XML.';
 $string['unknownmodname'] = 'Unknown activity type "{$a->modname}". Coursepilot catalogs: {$a->aktivitaetsarten}.';
 
 // Skill corpus: coursepilot_list_skills/coursepilot_get_skill (Spec 0020 §4, #450).
