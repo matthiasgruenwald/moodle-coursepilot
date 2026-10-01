@@ -101,6 +101,6 @@ final class version_source {
      * @return string teacher-facing label
      */
     public function label(): string {
-        return sprintf(self::LABELS[$this->key] ?? $this->key, (string) $this->refcmid);
+        return str_replace('%s', (string) ($this->refcmid ?? '?'), self::LABELS[$this->key] ?? $this->key);
     }
 }

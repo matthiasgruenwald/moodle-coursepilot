@@ -361,7 +361,7 @@ final class version_history_test extends \advanced_testcase {
     /**
      * #596: der Hinweis nennt die Luecke bei erschlossenen Arten ehrlich.
      */
-    public function test_gap_notice_names_instance_row_only_for_catalogued_kinds(): void {
+    public function test_gap_notice_names_instance_row_only_gap_for_catalogued_kinds(): void {
         $this->resetAfterTest();
         [, $cm] = $this->create_page();
 

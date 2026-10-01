@@ -104,10 +104,10 @@ Bau-Reihenfolge.
    aktiv, legt sein Hook trotzdem einen Eintrag an, und das Modul entfernt ihn gleich wieder.
    Die Verbotsliste (`no_deprecated_move_functions_test`) bleibt unberührt, weil
    `delete_module` dort nicht steht.
-5. **Verlaufsquelle**. Die Quellen (`moodle`, `vorgefunden`, `geklont`, neu `aus_xml`,
-   `abgelöst`) werden ein Begriff mit Schlüssel, Bezugs-cmid und Beschriftung. Bisher kennen
+5. **Verlaufsquelle**. Die Quellen (`moodle`, `vorgefunden`, `geklont`, neu `aus_xml` (Code: `from_xml`),
+   `abgelöst` (Code: `superseded`)) werden ein Begriff mit Schlüssel, Bezugs-cmid und Beschriftung. Bisher kennen
    `version_writer`, `describe_meta` und `summary_line` jede Quelle einzeln.
-   - Ablösen schreibt an die alte cmid einen Vermerk-Stand: Quelle `abgelöst`, Bezug = neue
+   - Ablösen schreibt an die alte cmid einen Vermerk-Stand: Quelle `abgelöst` (Code: `superseded`), Bezug = neue
      cmid, über das vorhandene Feld `sourcecmid`. Das braucht keine Schemaänderung. Ist die
      Umdeutung „Herkunft → Bezug“ nicht tragfähig, kommt ein eigenes Feld mit
      `upgrade.php`-Schritt.
