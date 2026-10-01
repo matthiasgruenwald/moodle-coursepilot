@@ -24,44 +24,144 @@ Anlegen aus XML, Aktivitäts-XML, Ablösen.
 
 ## Implementation Decisions
 
-- **Drei Werkzeuge** (englisch, ADR 0024):
-  - `export_activity_backup(cmid)` — liefert die Aktivitäts-XML einer bestehenden
-    Aktivität. Dient dem Bestand („wie ist das gebaut?“) und der Round-Trip-Prüfung.
-  - `export_default_activity(courseid, modname)` — legt in einer Transaktion eine Aktivität
-    mit Moodle-Standardwerten an (Formular-Vorbelegung → `add_moduleinfo`), exportiert sie
-    und rollt zurück. Es bleibt nichts im Kurs. Ersetzt in der Lernschleife den Schritt
-    „Lehrkraft legt selbst an und exportiert“.
-  - `create_activity_from_xml(courseid, modname, section, activity_xml, hidden?)` — legt an.
-    Optional `replaces_cmid` fürs Ablösen (siehe unten).
-- **Zulässige Arten:** jede installierte Art ohne Feldkatalog. Abgelehnt mit Klartext:
-  katalogisierte Arten (Verweis auf `create_module`), lesson, quiz, Arten mit Dateien im
-  Inhalt. Keine Positivliste.
-- **Ablauf beim Anlegen:** XML parsen (vorher, Restore ist nicht atomar) → Gerüst bauen →
-  Restore versteckt → exportieren → Eingabe ⊆ Ausgabe prüfen (ignoriert: ids, `time*`,
-  contextid, Datei-Verweise) → bei Abweichung im selben Aufruf löschen und die Abweichung
-  melden → sonst sichtbar schalten, außer `hidden` → ersten Stand im Änderungsverlauf
-  schreiben (wie `clone_activity`, Quelle „aus XML angelegt“).
-- **Antwort:** cmid, Abweichungen bzw. Moodle-Vorbelegungen als Hinweis (Felder, die Moodle
-  ergänzt hat, ohne dass sie in der Eingabe standen).
-- **Ablösen** (`replaces_cmid`): neue Aktivität direkt hinter der alten, alte nur verstecken
-  (Titel bleibt), Verlauf der alten cmid „abgelöst durch cmid X“. Die Planvorschau nennt
-  Verweise auf die alte cmid (Voraussetzungen, Textlinks soweit lesbar); aufgelöst werden
-  sie nicht.
-- **Nutzerdaten-Inhalte** gehen nicht mit. Ein Glossar wird leer angelegt; das steht als
-  Stolperstein in der Ablage.
-- **Rechte:** Restore- bzw. Backup-Capabilities im Kurs, praktisch `editingteacher`.
-  Je Werkzeug eine Deklaration (Spec 0022), danach `upgrade.php`.
+### Werkzeuge (englisch, ADR 0024)
+
+- `export_activity_backup(cmid)` liefert die Aktivitäts-XML einer bestehenden Aktivität.
+  Es dient dem Bestand („wie ist das gebaut?“). Es ist ein **lesendes** Werkzeug, deshalb
+  braucht `tool_registry::is_write_class` eine Ausnahme: Das Präfix `export_` gilt heute
+  pauschal als schreibend.
+- `export_default_activity(courseid, modname)` legt in einer Transaktion eine Aktivität mit
+  Moodle-Standardwerten an (Formular-Vorbelegung → `add_moduleinfo`), exportiert sie und
+  rollt zurück. Im Kurs bleibt nichts. Das ersetzt in der Lernschleife den Schritt
+  „Lehrkraft legt selbst an und exportiert“.
+- `create_activity_from_xml(courseid, modname, section, activity_xml, hidden?, replaces_cmid?)`
+  legt an. Mit `replaces_cmid` wird die Aktivität abgelöst.
+
+Alle drei Werkzeuge sind dünne Adapter: Sie prüfen Parameter und Rechte, rufen ein Modul
+auf und formen die Antwort. Die Logik liegt in den folgenden Modulen, in dieser
+Bau-Reihenfolge.
+
+### Modulschnitt
+
+1. **Aktivitäts-Backup** (`activity_backup`). Das Modul hat zwei Operationen:
+   - `export(cm)` liefert die Aktivitäts-XML (`<mod>.xml`, ohne Nutzerdaten).
+   - `restore(course, section, quelle)` gibt die neue cmid zurück. Die Quelle ist entweder
+     ein echtes Backup (für das Klonen) oder eine Aktivitäts-XML. Aus der baut das Modul
+     intern das Gerüst (16 Dateien); die Version kommt aus `$CFG`/`backup::VERSION`, nicht
+     hart wie im Prototyp.
+
+   Das Modul räumt selbst auf: das Tempdir und eine halbe Anlage, wenn der Restore
+   scheitert (Restore ist nicht atomar). `clone_activity` zieht sofort auf dieses Modul um
+   (bisher privat inline), und seine bestehenden Tests sichern den Schnitt ab.
+2. **Art-Tor** in der Katalog-Registry. `registry::kind(modname)` antwortet mit genau einer
+   von drei Arten:
+   - *katalogisiert* (mit Katalog),
+   - *erschlossen*,
+   - *ausgeschlossen* (mit Grund als Sprachschlüssel).
+
+   Ausgeschlossen sind lesson, quiz, Arten mit Dateien im Inhalt und Arten ohne
+   `FEATURE_BACKUP_MOODLE2`. Keine Positivliste. Die fünf verstreuten
+   `unknownmodname`-Prüfungen (`create_module`, `set_completion`,
+   `restore_activity_version`, `update_module_settings`, `set_restriction`) werden zu einem
+   Aufruf `registry::require_catalogued()`. Die neuen Werkzeuge lehnen katalogisierte Arten
+   ab und verweisen auf `create_module`.
+3. **Anlegen aus XML** (`xml_activity_creator`). Es trägt den ganzen Ablauf mit seinen
+   Reihenfolge-Regeln, Ablösen eingeschlossen:
+   1. Art-Tor.
+   2. XML parsen; ungültige XML schreibt nichts.
+   3. Restore über das Aktivitäts-Backup, intern versteckt.
+   4. Exportieren und Round-Trip-Vergleich.
+   5. Bei Abweichung: im selben Aufruf entfernen (Kursmodul-Platzierung) und die Abweichung
+      melden.
+   6. Sonst: platzieren, sichtbar schalten (außer `hidden`), **danach** den ersten Stand im
+      Verlauf erfassen. Würde vor dem Sichtbarschalten erfasst, entstünde über
+      `course_module_updated` eine Version 2.
+
+   Der **Round-Trip-Vergleich** ist eine reine Funktion: Eingabe-XML und Ausgabe-XML hinein,
+   Abweichungen und Moodle-Vorbelegungen heraus. Er prüft Eingabe ⊆ Ausgabe und ignoriert
+   ids, `time*`, contextid und Datei-Verweise. Er ist als internes Seam ohne Moodle testbar.
+   Der Fragen-Vergleich (`import_questions_xml::find_mismatch`) ist feldspezifisch und wird
+   nicht wiederverwendet. Die Fehlermeldung bekommt einen eigenen Sprachschlüssel, denn
+   `roundtripmismatch` sagt „zurückgerollt“.
+
+   Für #593 bleibt Platz: Ein späterer Nachtrag von Nutzerdaten-Inhalten käme nach dem
+   bestandenen Round-Trip und vor dem Sichtbarschalten. Heute wird dafür kein Seam gebaut,
+   denn es gäbe nur einen Adapter (glossary).
+4. **Kursmodul-Platzierung**. Drei Operationen über die erlaubten Moodle-Wege:
+   - `place_after(cm, after_cm)` über `stateactions::cm_move`; Ziel ist der Nachfolger von
+     `after_cm`, sonst das Abschnittsende.
+   - `set_visible(cm, bool)` über `cmactions::set_visibility`.
+   - `discard_failed(cm)`.
+
+   `move_module` und `clone_activity` ziehen mit um. `discard_failed` ist das einzige
+   Löschen im Plugin, und es gilt nur für cmids, die im selben Aufruf entstanden und nie
+   sichtbar waren. Es löscht **sofort und ohne Papierkorb**: Eine Fehlanlage funktioniert
+   nicht und muss in Moodle nicht aufbewahrt werden; nachvollziehbar bleibt sie im
+   Chatverlauf der Lehrkraft. Technisch heißt das: synchron über
+   `course_get_format()->delete_module($cm, false)`, nicht asynchron. Ist der Papierkorb
+   aktiv, legt sein Hook trotzdem einen Eintrag an, und das Modul entfernt ihn gleich wieder.
+   Die Verbotsliste (`no_deprecated_move_functions_test`) bleibt unberührt, weil
+   `delete_module` dort nicht steht.
+5. **Verlaufsquelle**. Die Quellen (`moodle`, `vorgefunden`, `geklont`, neu `aus_xml`,
+   `abgelöst`) werden ein Begriff mit Schlüssel, Bezugs-cmid und Beschriftung. Bisher kennen
+   `version_writer`, `describe_meta` und `summary_line` jede Quelle einzeln.
+   - Ablösen schreibt an die alte cmid einen Vermerk-Stand: Quelle `abgelöst`, Bezug = neue
+     cmid, über das vorhandene Feld `sourcecmid`. Das braucht keine Schemaänderung. Ist die
+     Umdeutung „Herkunft → Bezug“ nicht tragfähig, kommt ein eigenes Feld mit
+     `upgrade.php`-Schritt.
+   - `version_history::GAPS_HINT` nennt die Lücke ehrlich: Bei erschlossenen Arten erfasst
+     der Verlauf nur die Instanzzeile, nicht die Kindtabellen (Kapitel, Einträge, Punkte).
+6. **Verweis-Finder** (`cm_references`). `references_to(cmid)` liefert die Verweise auf eine
+   cmid mit Art und Ort:
+   - Voraussetzungen an Aktivitäten und Abschnitten (availability),
+   - Kursabschluss-Kriterien.
+
+   Die beiden bestehenden Baumläufe (`set_restriction::completion_pairs`,
+   `clone_activity::strip_dangling_completion`) werden seine internen Teile. Die Planvorschau
+   beim Ablösen nennt die Verweise, aufgelöst werden sie nicht. Das spätere „Ersetzen“ nutzt
+   dasselbe Modul.
+
+### Übriges
+
+- **Ablösen** (`replaces_cmid`): Die neue Aktivität kommt direkt hinter die alte; die alte
+  wird nur versteckt (Titel bleibt).
+- **Antwort** von `create_activity_from_xml`: cmid, dazu Moodle-Vorbelegungen als Hinweis,
+  also Felder, die Moodle ergänzt hat, ohne dass sie in der Eingabe standen.
+- **Nutzerdaten-Inhalte** gehen nicht mit, weil `MODE_IMPORT` `users=0` erzwingt. Ein
+  Glossar wird leer angelegt; das steht als Stolperstein in der Ablage.
+- **Rechte:** Restore- bzw. Backup-Capabilities im Kurs, praktisch `editingteacher`. Je
+  Werkzeug eine Deklaration (Spec 0022) plus Erwähnung in `skills/referenz/mcp-tools.md`
+  (Korpus-Test), danach `version.php` anheben und `upgrade.php` ausführen.
 - **Skill:** `Plugin/src/local_coursepilot/skills/referenz/aktivitaetsarten.md` nach dem
-  Vorbild `referenz/fragetypen.md`:
-  Ablage-Gliederung, Lernschleife (Ablage lesen → Bestand oder `export_default_activity` →
-  bauen → Round-Trip → höchstens dreimal korrigieren), Schreibangebot fürs Gelernte. Zur
-  Lehrkraft heißt der Vorgang nur „anlegen“; erschlossene Arten heißen nie „unterstützt“.
+  Vorbild `referenz/fragetypen.md`. Inhalt:
+  - die Gliederung der Ablage,
+  - die Lernschleife: Ablage lesen → Bestand oder `export_default_activity` → bauen →
+    Round-Trip → höchstens dreimal korrigieren,
+  - das Schreibangebot fürs Gelernte.
+
+  Zur Lehrkraft heißt der Vorgang nur „anlegen“. Erschlossene Arten heißen nie
+  „unterstützt“.
 
 ## Testing Decisions
 
-- **PHPUnit im Spike-Container** je Werkzeug: Anlegen mit gültiger XML, Fehlanlage wird
-  gelöscht und gemeldet, katalogisierte Art abgelehnt, `hidden` wirkt, Verlauf hat genau
-  einen Stand, `export_default_activity` hinterlässt nichts.
+- **Jedes Modul wird über sein Interface getestet** (PHPUnit im Spike-Container):
+  - Aktivitäts-Backup: Export und Restore aus beiden Quellen; eine halbe Anlage wird
+    entfernt. Die bestehenden `clone_activity`-Tests laufen unverändert grün.
+  - Art-Tor: alle drei Arten samt Ausschlussgründen. Die fünf Altwerkzeuge verhalten sich
+    unverändert.
+  - Round-Trip-Vergleich: reine Fälle ohne Datenbank (Teilmenge, ignorierte Felder,
+    Vorbelegung, Abweichung).
+  - Anlegen aus XML:
+    - Erfolg sichtbar oder mit `hidden`.
+    - Eine Fehlanlage ist danach weder im Kurs noch im Papierkorb, auch bei aktivem
+      Papierkorb.
+    - Der Verlauf hat genau einen Stand.
+    - Beim Ablösen: Position, die alte Aktivität ist versteckt, der Vermerk-Stand ist da.
+  - Kursmodul-Platzierung: `place_after` am Abschnittsende und in der Mitte. Die
+    `move_module`-Tests bleiben grün.
+  - Verweis-Finder: availability an Aktivität und Abschnitt, Kursabschluss.
+- **`export_default_activity` hinterlässt nichts:** keine cm, kein Verlauf, kein
+  Papierkorb-Eintrag.
 - **Abnahme an book, checklist, glossary** auf der Spike-Instanz, jeweils mit verifiziertem
   Minimal-Beispiel in der Ablage.
 
@@ -69,5 +169,6 @@ Anlegen aus XML, Aktivitäts-XML, Ablösen.
 
 - Bearbeiten über XML (ADR 0016, 0028).
 - „Ersetzen“ (Überschreiben mit Sicherung und Verweisauflösung).
-- Nutzerdaten-Inhalte, etwa Glossar-Einträge — eigenes Ticket.
+- Nutzerdaten-Inhalte, etwa Glossar-Einträge — eigenes Ticket (#593), kein Seam auf Vorrat.
+- Textlinks (`view.php?id=`) im Verweis-Finder — erst bei Bedarf.
 - Arten mit Dateien im Inhalt sowie lesson und quiz.
