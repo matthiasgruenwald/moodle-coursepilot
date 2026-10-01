@@ -269,15 +269,7 @@ final class create_module extends external_api {
      * @throws moodle_exception unknownmodname|writevehicleblocked
      */
     private static function catalog_for(string $modname): string {
-        $catalogclass = registry::for($modname);
-        if ($catalogclass === null) {
-            throw new moodle_exception(
-                'unknownmodname',
-                'local_coursepilot',
-                '',
-                ['modname' => $modname, 'aktivitaetsarten' => implode(', ', registry::known_modnames())]
-            );
-        }
+        $catalogclass = registry::require_catalogued($modname);
         $schreibweg = $catalogclass::schreibweg();
         if ($schreibweg !== null) {
             throw new moodle_exception(

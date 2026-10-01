@@ -217,15 +217,7 @@ final class set_completion extends external_api {
         require_capability('moodle/course:manageactivities', $context);
 
         $modname = (string) $cm->modname;
-        $catalogclass = registry::for($modname);
-        if ($catalogclass === null) {
-            throw new moodle_exception(
-                'unknownmodname',
-                'local_coursepilot',
-                '',
-                ['modname' => $modname, 'aktivitaetsarten' => implode(', ', registry::known_modnames())]
-            );
-        }
+        $catalogclass = registry::require_catalogued($modname);
 
         $patch = json_decode($params['fields_json'], true);
         if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {

@@ -62,4 +62,54 @@ final class registry {
     public static function for(string $modname): ?string {
         return self::CATALOGS[$modname] ?? null;
     }
+
+    /** Arten mit Fragen (Spec 0026): nie ueber Aktivitaets-XML. */
+    private const EXCLUDED_QUESTIONS = ['lesson', 'quiz'];
+
+    /** Arten mit Dateien im Inhalt (Spec 0026): Restore aus XML traegt keine Dateien. */
+    private const EXCLUDED_FILES = ['scorm', 'imscp', 'h5pactivity'];
+
+    /**
+     * Art-Tor (ADR 0028): genau eine von drei Arten.
+     *
+     * Katalogisiert gewinnt vor Ausschluss (quiz hat einen Katalog).
+     * Keine Positivliste: alles Uebrige ist erschlossen.
+     *
+     * @param string $modname
+     * @return activity_kind
+     */
+    public static function kind(string $modname): activity_kind {
+        $catalog = self::for($modname);
+        if ($catalog !== null) {
+            return new activity_kind(activity_kind::CATALOGUED, $catalog);
+        }
+        if (in_array($modname, self::EXCLUDED_QUESTIONS, true)) {
+            return new activity_kind(activity_kind::EXCLUDED, null, 'kindexcludedquestions');
+        }
+        if (in_array($modname, self::EXCLUDED_FILES, true)) {
+            return new activity_kind(activity_kind::EXCLUDED, null, 'kindexcludedfiles');
+        }
+        if (!plugin_supports('mod', $modname, FEATURE_BACKUP_MOODLE2, false)) {
+            return new activity_kind(activity_kind::EXCLUDED, null, 'kindexcludednobackup');
+        }
+        return new activity_kind(activity_kind::DEVELOPED);
+    }
+
+    /**
+     * @param string $modname
+     * @return class-string<module_catalog> Die Katalogklasse.
+     * @throws \moodle_exception unknownmodname, wenn die Art nicht katalogisiert ist.
+     */
+    public static function require_catalogued(string $modname): string {
+        $catalog = self::for($modname);
+        if ($catalog === null) {
+            throw new \moodle_exception(
+                'unknownmodname',
+                'local_coursepilot',
+                '',
+                ['modname' => $modname, 'aktivitaetsarten' => implode(', ', self::known_modnames())]
+            );
+        }
+        return $catalog;
+    }
 }

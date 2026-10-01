@@ -147,15 +147,7 @@ final class set_restriction extends external_api {
         }
 
         $modname = (string) $cm->modname;
-        $catalogclass = registry::for($modname);
-        if ($catalogclass === null) {
-            throw new moodle_exception(
-                'unknownmodname',
-                'local_coursepilot',
-                '',
-                ['modname' => $modname, 'aktivitaetsarten' => implode(', ', registry::known_modnames())]
-            );
-        }
+        $catalogclass = registry::require_catalogued($modname);
 
         $conditionsraw = json_decode($params['conditions_json'], true);
         if (!is_array($conditionsraw) || json_last_error() !== JSON_ERROR_NONE || self::is_json_object($conditionsraw)) {
