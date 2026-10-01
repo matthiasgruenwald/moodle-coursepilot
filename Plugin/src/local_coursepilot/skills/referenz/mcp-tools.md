@@ -62,7 +62,7 @@ Die Schreibwerkzeuge für Einstellungen (`create_module`,
 | `coursepilot_compare_activity_versions` | Zwei frei gewaehlte Staende vergleichen (`cmid`, `from_version`, `to_version`) – Feld- und Dateiunterschiede |
 | `coursepilot_restore_activity_version` | Einen frueheren Stand als neue juengste Version fortschreiben (`cmid`, `target_version`) – kein Rueckspulen, cmid bleibt stabil. Wuerden dabei Abschlussdaten von Lernenden geloescht, meldet der erste Aufruf das; erst ein zweiter mit `confirmed: true` schreibt die Abschlussfelder mit |
 
-## Materialordner
+## Materialbestand und Werkbank
 
 Der eigene Materialordner der Lehrkraft – Bilder und Dokumente, die in
 Aktivitaeten eingebettet werden. Alle Pfade sind relativ zur Wurzel des
@@ -81,12 +81,45 @@ zum Eintragstyp `kontextbereich` und zur Sperre am Kontextbereich stehen in
 | `coursepilot_upload_material_file` | Datei anlegen oder ersetzen (`path`, `content_base64`) – immer auf der Werkbank, kein `location` |
 | `coursepilot_preview_material_file` | Verkleinerte Vorschau eines Bildes ansehen (`path`, optional `location`) – damit ein Ausschnitt oder ein Alt-Text nicht geraten wird |
 | `coursepilot_crop_material_file` | Bild auf einen Ausschnitt zuschneiden (`sourcepath`, `targetpath`, `x0`/`y0`/`x1`/`y1` relativ 0–1 auf die Vorschau) – Ziel immer Werkbank |
+| `coursepilot_compose_material_file` | Geordnete `parts` mit optionalem Ausschnitt und Quellenkopf als eine PNG zusammensetzen (`arrangement`: `vertical` oder `horizontal`, `targetpath`) – Ziel immer Werkbank, Originalauflösung, fester Hausstil |
 | `coursepilot_report_loose_material_files` | Dateien melden, die in keiner Aktivität verwendet werden – liest nur, nur Werkbank |
 | `coursepilot_delete_material_files` | Genau die genannten Pfade löschen (`paths`) – nur nach ausdrücklicher Bestätigung der Lehrkraft, nur Werkbank |
 | `coursepilot_create_werkbank_download_links` | Je Werkbankdatei einen 15 Minuten gültigen Einmal-Downloadlink ausstellen (`paths`) – für einen Client mit Shell (curl), ohne OAuth-Bearer-Header; liefert URL, Name, Größe, SHA-1, keine fertige Abrufzeile |
 
 Aktivitätstyp-Auswahl (welcher `modname` für welche Situation) steht in
 `coursepilot_get_skill("implementierungsplan-workflow")`.
+
+### Quellenkopf und Zusammensetzen
+
+`coursepilot_compose_material_file` nimmt je Teil `sourcepath`, eigenes
+`location` (`bestand` als Standard oder `werkbank`, gemischt erlaubt), optional
+`crop` mit `x0`/`y0`/`x1`/`y1` relativ 0–1 wie beim Gezielten Bildausschnitt,
+`source_header_text` und `expected_contenthash`. Der Prüfwert ist hier der
+SHA-1 der **jeweiligen Quelle**; beim Zuschnitt-Werkzeug schützt er dagegen
+das Ziel. Bei externem Bestand ohne bekannten SHA-1 den optionalen Wert
+weglassen. Fehlender Ausschnitt bedeutet das ganze Original; fehlender oder
+leerer Kopftext bedeutet keinen Kopfstreifen. Zielpfade werden wie beim
+Zuschnitt aufgelöst und müssen `.png` enden; vorhandene Ziele werden ersetzt.
+
+Ein Teil mit Kopf und Ausschnitt braucht keine Zwischendatei:
+
+```json
+{
+  "parts": [{
+    "sourcepath": "ml-s36.png",
+    "location": "bestand",
+    "crop": {"x0": 0.1, "y0": 0.2, "x1": 0.9, "y1": 0.5},
+    "source_header_text": "ML S. 36"
+  }],
+  "arrangement": "vertical",
+  "targetpath": "ml-s36-aufgabe-kopf.png"
+}
+```
+
+Die Rückgabe nennt `path`, `width`, `height`, `size`, `contenthash`, `created`,
+`message` und geordnete `sources` (Ort, aufgelöster Pfad, Größe, Änderungszeit),
+keine Bildbytes. Quellenkopf-Standard, Kürzelklärung, Planfreigabe und Alt-Text
+stehen in `coursepilot_get_skill("grafiken")`.
 
 ## Kontextbereich
 

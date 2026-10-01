@@ -300,12 +300,14 @@ Client, der `coursepilot-umsetzen` ausführt — Claude Desktop wie Codex.
 
 Die lesenden Materialwerkzeuge (`coursepilot_list_material_files`,
 `coursepilot_preview_material_file`, die Quelle von `coursepilot_crop_material_file`,
+je Teil die Quelle von `coursepilot_compose_material_file`,
 Materialpfade bei `coursepilot_create_module`/`coursepilot_update_module_settings`)
 nehmen den Parameter `location` mit den Werten `bestand` (Standard, der gewachsene
 Materialordner der Lehrkraft — nur gelesen) und `werkbank` (Chat-Anhänge,
 Zuschnitte — hier wird auch geschrieben). Liegt der Materialbestand in
-Moodle, zeigen beide Werte auf denselben Ort; schreibende Materialwerkzeuge
-kennen `location` nicht, sie zielen immer auf die Werkbank.
+Moodle, zeigen beide Werte auf denselben Ort. Schreibziele liegen immer auf
+der Werkbank; `location` wählt ausschließlich die Quelle, beim Zusammensetzen
+für jeden Teil einzeln.
 
 Liegt der Kontextbereich innerhalb des Materialbestands, erscheint sein
 Ordner beim Auflisten (`location: bestand`) als eigener Eintragstyp

@@ -20,3 +20,7 @@ ausführbaren Bestandsänderung `coursepilot_get_skill("merkzettel")`.
 geschrieben (`coursepilot_write_context_file`), nie still.
 
 Halte die Ein-Plan-Regel und die Planstrenge aus dem Kern ein.
+
+Bei Fachabbildungen aus Lehrwerken oder dem Materialbestand sowie gemeinsam
+zu betrachtenden Ausschnitten schon vor der Planvorschau
+`coursepilot_get_skill("grafiken")` lesen (Quellenkopf und Zusammensetzen).

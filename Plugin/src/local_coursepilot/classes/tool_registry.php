@@ -54,6 +54,7 @@ final class tool_registry {
         'coursepilot_upload_material_file' => ['classname' => 'local_coursepilot\external\upload_material_file', 'descriptionkey' => 'tool_upload_material_file'],
         'coursepilot_preview_material_file' => ['classname' => 'local_coursepilot\external\preview_material_file', 'descriptionkey' => 'tool_preview_material_file'],
         'coursepilot_crop_material_file' => ['classname' => 'local_coursepilot\external\crop_material_file', 'descriptionkey' => 'tool_crop_material_file'],
+        'coursepilot_compose_material_file' => ['classname' => 'local_coursepilot\external\compose_material_file', 'descriptionkey' => 'tool_compose_material_file'],
         'coursepilot_report_loose_material_files' => ['classname' => 'local_coursepilot\external\report_loose_material_files', 'descriptionkey' => 'tool_report_loose_material_files'],
         'coursepilot_delete_material_files' => ['classname' => 'local_coursepilot\external\delete_material_files', 'descriptionkey' => 'tool_delete_material_files'],
         'coursepilot_clone_activity' => ['classname' => 'local_coursepilot\external\clone_activity', 'descriptionkey' => 'tool_clone_activity'],
@@ -116,6 +117,6 @@ final class tool_registry {
         if ($classname === 'local_coursepilot\\external\\create_werkbank_download_links') {
             return false;
         }
-        return preg_match('/\\\\(?:restore|update|create|set|ensure|move|import|export|add|write|append|upload|crop|delete|clone|dismiss)_/', $classname) === 1;
+        return preg_match('/\\\\(?:restore|update|create|set|ensure|move|import|export|add|write|append|upload|crop|compose|delete|clone|dismiss)_/', $classname) === 1;
     }
 }

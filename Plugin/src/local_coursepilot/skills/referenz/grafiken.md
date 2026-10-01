@@ -1,16 +1,50 @@
 ---
 name: grafiken
-description: Lies diese Datei, wenn eine Grafik (Schaltplan, Diagramm, Foto, Screenshot) in eine Textseite oder Aufgabe eingebettet werden soll.
+description: Lies diese Datei beim Planen oder Umsetzen einer Fachabbildung aus Lehrwerk oder Materialbestand, beim Zusammensetzen von Ausschnitten oder beim Einbetten einer Grafik.
 ---
 
 # Referenz: Grafiken in Textseiten und Aufgaben
 
-Lies diese Datei, wenn eine Grafik (Schaltplan, Diagramm, Foto, Screenshot) in
-eine Textseite oder Aufgabe eingebettet werden soll. Fuer die Pflichtpruefung
+Lies diese Datei beim Planen oder Umsetzen einer Fachabbildung aus Lehrwerk
+oder Materialbestand, beim Zusammensetzen von Ausschnitten oder beim Einbetten
+einer Grafik. Fuer die Pflichtpruefung
 vor dem Absenden einer SVG-Grafik siehe `coursepilot_get_skill("svg-qualitaetssicherung")`.
 
-Wenn eine Grafik das Verstaendnis foerdert, IMMER direkt als SVG oder base64 einbetten.
-NIEMALS externe Bild-URLs verwenden (koennen wegfallen, brauchen Internetzugang).
+Bestehende Fachabbildungen serverseitig über Materialpfade einbetten; selbst
+erzeugte Grafiken als SVG oder base64. Externe Bild-URLs vermeiden.
+
+## Fachabbildung aus Lehrwerk oder Materialbestand
+
+- Eine Fachabbildung aus einem Lehrwerk bekommt standardmäßig einen Quellenkopf
+  mit ihrem Lehrwerkverweis (z. B. `ML S. 36`). Die Lehrkraft kann den Quellenkopf
+  abwählen. Er ergänzt den Quellenhinweis im Moodle-Text.
+- Kürzel aus Dateiname oder Kontext eindeutig ableitbar: übernehmen. Sonst
+  einmal nach dem Kürzel fragen und die Antwort im passenden Fach- oder
+  Lerngruppenkontext im Kontextbereich merken, unter der Kontextfreigabe bzw.
+  mit dem Schreibangebot aus `coursepilot_get_skill("kontextbereich")`.
+  Seitenzahl aus Vorschau oder Dateiname übernehmen; bei unklarer Seite
+  gezielt klären, statt eine Seitenzahl zu erfinden.
+- Der Kopftext steht im Plan zusammen mit Quelle, Gezieltem Bildausschnitt,
+  Zielpfad und Alt-Text. Er wird mit der normalen Planfreigabe freigegeben;
+  keine Extra-Rückfrage zum Kopftext vor der Umsetzung.
+- Zusammensetzen anbieten, wenn Ausschnitte gemeinsam betrachtet werden sollen
+  (Aufgabe + Abbildung, Vergleich). Reihenfolge und Anordnung im Plan nennen.
+  Eine zusammengesetzte Fachabbildung bekommt einen Alt-Text für das Ganze.
+  Stammen alle Teile von derselben Seite, genügt ein Kopf am ersten Teil.
+- Nach Planfreigabe `coursepilot_compose_material_file` nutzen: ein Teil mit
+  optionalem Ausschnitt und Kopf ist ein Aufruf ohne Zwischendateien. Mehrere
+  Teile können aus Materialbestand und Werkbank gemischt kommen. Bildbytes
+  bleiben auf dem Server; nur Pfade, relative Koordinaten und Kopftexte gehen
+  an das Werkzeug. Zum fachlichen Bestimmen eines Ausschnitts bei Bedarf die
+  Vorschau nutzen, nicht die Originaldatei durch den KI-Kontext transportieren.
+- Hausstil ist fest: weißer Kopfstreifen über jedem beschrifteten Teil, Text
+  blau, fett und links; weißer Hintergrund, fester Abstand zwischen Teilen.
+  Kein Skalieren. Ergebnis ist eine PNG auf der Werkbank, nicht bereits eine
+  Kurseinbettung.
+- Beim geplanten Einbetten über `coursepilot_create_module` oder
+  `coursepilot_update_module_settings` den Ergebnis-Pfad mit `location: werkbank`
+  und dem einen Alt-Text verwenden. Originale aus dem Materialbestand bleiben
+  unverändert. Parameter und Beispiel stehen in `coursepilot_get_skill("mcp-tools")`.
 
 ## Wann eine Grafik sinnvoll ist
 
