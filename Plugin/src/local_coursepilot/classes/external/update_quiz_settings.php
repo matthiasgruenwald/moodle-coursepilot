@@ -68,8 +68,7 @@ final class update_quiz_settings extends external_api {
             'cmid' => new external_value(PARAM_INT, 'Course module ID of the quiz'),
             'fields_json' => new external_value(
                 PARAM_RAW,
-                'JSON object field name => new value - only the fields to change (patch, not a full state). '
-                    . '"grade"/"sumgrades" are NOT possible here (blocked), see the "grade" parameter.'
+                get_string('quizpatchfields', 'local_coursepilot')
             ),
             'mode' => new external_value(
                 PARAM_ALPHANUMEXT,
@@ -171,6 +170,11 @@ final class update_quiz_settings extends external_api {
         // gemeinsamen Block (visible, groupmode, cmidnumber, ...) - dieselbe
         // Grundlage wie beim generischen Patch (update_module_settings).
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
+        // The form state rounds gradepass to display decimals. Preserve the
+        // persisted points exactly unless the patch explicitly replaces them.
+        if ($before['gradepass'] !== null) {
+            $moduleinfo->gradepass = $before['gradepass'];
+        }
 
         $feedbacktextpatch = $merged['feedbacktext'] ?? null;
         $feedbackboundariespatch = $merged['feedbackboundaries'] ?? [];

@@ -469,6 +469,11 @@ $string['stealthnotallowed'] = 'Stealth ("visibleoncoursepage" = 0) is disabled 
 
 // Write core: create_quiz/update_quiz_settings (#398).
 $string['unknownmode'] = 'Unknown mode "{$a->mode}". Allowed: {$a->modi}. Nothing was written.';
+$string['invalidquizgradepass'] = 'Invalid gradepass: supply a finite JSON number in quiz grade points, NOT percent, from 0 to {$a->maximum} inclusive. 0 disables the passing threshold. Nothing was written.';
+$string['quizgradepassmeaning'] = 'Passing grade in quiz grade points, NOT percent: a finite JSON number from 0 to the maximum grade (inclusive); 0 disables the passing threshold. For 80%, read the current grade with get_module_settings and supply 0.8 * grade (10 -> 8, 25 -> 20). If the grade parameter changes the maximum in the same call, use that new maximum.';
+$string['quizgradepassrule'] = '"gradepass" must be a finite JSON number from 0 to the effective maximum grade inclusive, in grade points, not percent. Coursepilot enforces this range for every question behaviour. 0 disables the passing threshold; a simultaneous grade change supplies the new maximum.';
+$string['quizpatchfields'] = 'JSON object field name => new value - only the fields to change (patch, not a full state). "grade"/"sumgrades" are NOT possible here (blocked), see the "grade" parameter. "gradepass" is a finite JSON number in grade points, NOT percent, from 0 to the maximum grade inclusive (0 disables the threshold). Read grade with get_module_settings: 80% of grade 10 is {"gradepass":8}, of grade 25 is {"gradepass":20}. When grade changes in this call, gradepass refers to the new maximum.';
+$string['modulesettingsdescription'] = 'Current activity settings as JSON, including coursepagevisibility/availability_status; profile conditions in availabilityconditionsjson are masked (ADR 0011). For quizzes, gradepass and grademax are persisted gradebook values in grade points, not percent; null means the primary grade item is missing.';
 
 // Write core: create_module (#389).
 $string['requiredfieldwithoutdefault'] = 'These required fields for activity type "{$a->modname}" have no form default and must be supplied: {$a->field}. Nothing was created.';

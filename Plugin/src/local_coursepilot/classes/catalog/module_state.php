@@ -63,6 +63,9 @@ final class module_state {
         if ($catalogclass !== null) {
             $data = array_merge($data, self::read_repeated_groups($catalogclass, (int) $cm->instance));
         }
+        if ($cm->modname === 'quiz') {
+            $data = array_merge($data, quiz::grade_settings((int) $cm->instance));
+        }
         return $data;
     }
 

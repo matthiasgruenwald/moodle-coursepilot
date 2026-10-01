@@ -12,17 +12,34 @@ bereinigt werden.
 ## Quiz-Modi (`coursepilot_create_quiz`, `coursepilot_update_quiz_settings`)
 
 Quizze werden über den Parameter `mode` in einer von drei dokumentierten
-Settings-Kombinationen angelegt oder nachträglich aktualisiert. Default ist
-`lernstandscheck`. `gradepass` und `timelimit` können explizit gesetzt werden
-und überschreiben dann den Modus-Default (Layered Defaults). Den Wert `test`
+Settings-Kombinationen angelegt oder nachträglich aktualisiert. Bei der Planung
+gilt `lernstandscheck` als Standard und wird beim Anlegen explizit als `mode`
+übergeben; beim Patch bleibt `mode` leer, wenn nur einzelne
+Einstellungen geändert werden sollen. `timelimit` kann explizit gesetzt werden
+und überschreibt dann den Modus-Default (Layered Defaults). Die geplante
+Bestehensgrenze wird explizit gesetzt (siehe unten). Den Wert `test`
 nicht als Modusnamen verwenden, weil er mit der Moodle-Testaktivität
 verwechselt wird.
 
-| Modus | Frageverhalten | Versuche | Bewertungsmethode | Layout | Wartezeit | Review-Sichtbarkeit | gradepass |
+| Modus | Frageverhalten | Versuche | Bewertungsmethode | Layout | Wartezeit | Review-Sichtbarkeit | geplante Bestehensgrenze (explizit) |
 |---|---|---|---|---|---|---|---|
 | `mini-check` | `immediatefeedback` (direkte Auswertung ohne Selbsteinschätzung) | unbegrenzt (0) | beste Bewertung (`QUIZ_GRADEHIGHEST`) | eine Frage pro Seite, freie Navigation | keine | richtige Antwort nicht anzeigen, Gesamtfeedback sichtbar | 80 % |
 | `lernstandscheck` (Default) | `deferredcbm` (spätere Auswertung mit Selbsteinschätzung) | unbegrenzt (0) | beste Bewertung (`QUIZ_GRADEHIGHEST`) | alle Fragen auf einer Seite, freie Navigation | mindestens 5 Minuten | richtige Antwort nicht anzeigen, Gesamtfeedback für Lernplanung sichtbar | 80 % |
 | `abschlusstest` | `deferredfeedback` (spätere Auswertung ohne Selbsteinschätzung) | maximal 2 | Mittelwert (`QUIZ_GRADEAVERAGE`) | alle Fragen auf einer Seite, freie Navigation | mindestens 15 Minuten | richtige Antwort nicht anzeigen, Gesamtfeedback sichtbar | 80 % |
+
+### Bestehensgrenze eines bestehenden Tests
+
+1. `coursepilot_get_module_settings(cmid)` lesen: `grade` ist die maximale
+   Testnote, `gradepass` die gespeicherte Bestehensgrenze im Gradebook.
+2. Prozentvorgabe in **Notenpunkte** umrechnen: 80 % von `grade: 10` ergibt
+   `8`, von `grade: 25` ergibt `20`.
+3. `coursepilot_update_quiz_settings(cmid, fields_json: '{"gradepass":8}')`
+   aufrufen; `mode` weglassen. Fragen, Anordnung und andere Einstellungen bleiben
+   erhalten. `gradepass` ist eine JSON-Zahl zwischen `0` und `grade`
+   einschließlich; `0` deaktiviert die Grenze. Prozenttexte und Zahlenstrings
+   sind ungültig. Bei gleichzeitiger Änderung von `grade` gilt die neue Maximalnote.
+4. Erneut `coursepilot_get_module_settings(cmid)` lesen und `gradepass`
+   abgleichen; der Quiz-Katalog zeigt denselben gespeicherten Punktewert.
 
 ### Schueler-Erfahrung und Monitoring-Tradeoffs
 

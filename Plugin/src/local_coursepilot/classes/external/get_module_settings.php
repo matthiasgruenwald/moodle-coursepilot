@@ -48,8 +48,8 @@ defined('MOODLE_INTERNAL') || die();
  * den Bewertungsdialog, und die outcome_<id>/gradepass-/gradecat-Feldnamen aus
  * den Grade-Items der Instanz (course/modlib.php:848-886) sind kein
  * DB-Ist-Stand der Aktivitaet selbst, sondern vom Gradebook abgeleitet. Falls
- * ein spaeterer Rundtrip sie braucht: hier ergaenzen, analog zum Vorbild in
- * get_moduleinfo_data() (course/modlib.php:823-886).
+ * ein Rundtrip sie braucht: gezielt ergaenzen. Fuer Quiz liest module_state
+ * gradepass/grademax aus dem primaeren Grade-Item (#580), ohne Formatierung.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -98,9 +98,7 @@ class get_module_settings extends external_api {
             'modname' => new external_value(PARAM_TEXT, 'Activity type'),
             'settings_json' => new external_value(
                 PARAM_RAW,
-                'get_moduleinfo_data()-Feldobjekt als JSON (Ist-Stand, den update_module_settings zurücknimmt), '
-                    . 'ergaenzt um coursepagevisibility/availability_status (dasselbe Vokabular wie get_course_catalog '
-                    . 'und get_modules); profile-Bedingungen in availabilityconditionsjson sind maskiert (ADR 0011)'
+                get_string('modulesettingsdescription', 'local_coursepilot')
             ),
             'learner_locks' => new external_multiple_structure(
                 new external_single_structure([

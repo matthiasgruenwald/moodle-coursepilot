@@ -250,6 +250,15 @@ final class quiz_write_bridge {
      * @throws moodle_exception combinationruleviolation
      */
     public static function validate_combination_rules(array $effective, array $patch, float $grade): void {
+        // The form validation is not run by update_moduleinfo. Validate before
+        // any grade change or activity patch, and never coerce strings/bools to points.
+        if (array_key_exists('gradepass', $patch)) {
+            $passing = $patch['gradepass'];
+            if ((!is_int($passing) && !is_float($passing)) || !is_finite((float) $passing)
+                    || $passing < 0 || $passing > $grade) {
+                throw new moodle_exception('invalidquizgradepass', 'local_coursepilot', '', ['maximum' => $grade]);
+            }
+        }
         $timeopen = (int) ($effective['timeopen'] ?? 0);
         $timeclose = (int) ($effective['timeclose'] ?? 0);
         if ($timeopen > 0 && $timeclose > 0 && $timeclose < $timeopen) {

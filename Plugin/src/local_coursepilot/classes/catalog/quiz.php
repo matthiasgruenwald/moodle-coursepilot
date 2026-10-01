@@ -431,14 +431,14 @@ final class quiz implements module_catalog {
         if (!$quiz) {
             return $details;
         }
-        $gradeitem = $DB->get_record('grade_items', ['itemmodule' => 'quiz', 'iteminstance' => $quiz->id], 'gradepass, grademax', IGNORE_MISSING);
+        $gradesettings = self::grade_settings((int) $quiz->id);
         $details['name'] = (string) $quiz->name;
         $details['content'] = module_state::content_field((string) $quiz->intro, $fullcontent);
         $details['settings'] = module_state::settings([
             'preferredbehaviour' => (string) $quiz->preferredbehaviour, 'attempts' => (string) ((int) $quiz->attempts),
             'grademethod' => (string) ((int) $quiz->grademethod), 'timelimit' => (string) ((int) $quiz->timelimit),
-            'grade' => (string) ((float) $quiz->grade), 'gradepass' => $gradeitem ? (string) ((float) $gradeitem->gradepass) : '',
-            'grademax' => $gradeitem ? (string) ((float) $gradeitem->grademax) : '',
+            'grade' => (string) ((float) $quiz->grade), 'gradepass' => (string) $gradesettings['gradepass'],
+            'grademax' => (string) $gradesettings['grademax'],
         ]);
         $details['quizslots'] = self::quiz_slots((int) $quiz->id);
         return $details;
@@ -473,6 +473,7 @@ final class quiz implements module_catalog {
     public static function effective_state(\stdClass $cm, \stdClass $instance): array {
         return array_merge(
             (array) $instance,
+            self::grade_settings((int) $instance->id),
             [
                 'quizpassword' => (string) $instance->password,
                 'visible' => (int) $cm->visible,
@@ -484,6 +485,23 @@ final class quiz implements module_catalog {
             quiz_write_bridge::decompose_review_bitmasks($instance),
             quiz_write_bridge::read_feedback((int) $instance->id)
         );
+    }
+
+    /**
+     * Read the primary quiz grade item without display rounding or locale formatting.
+     *
+     * @param int $quizid
+     * @return array{gradepass: ?float, grademax: ?float}
+     */
+    public static function grade_settings(int $quizid): array {
+        global $DB;
+        $item = $DB->get_record('grade_items', [
+            'itemtype' => 'mod', 'itemmodule' => 'quiz', 'iteminstance' => $quizid, 'itemnumber' => 0,
+        ], 'gradepass, grademax');
+        return [
+            'gradepass' => $item ? (float) $item->gradepass : null,
+            'grademax' => $item ? (float) $item->grademax : null,
+        ];
     }
 
     public static function write_options(): array {
@@ -512,6 +530,16 @@ final class quiz implements module_catalog {
 
     public static function pseudofields(): array {
         $fields = [
+            new field(
+                'gradepass',
+                'PARAM_FLOAT',
+                get_string('quizgradepassmeaning', 'local_coursepilot'),
+                false,
+                0,
+                null,
+                null,
+                'course/modlib.php: edit_module_post_actions() (grade_items.gradepass, itemnumber 0)'
+            ),
             new field(
                 'quizpassword',
                 'PARAM_TEXT',
@@ -598,8 +626,7 @@ final class quiz implements module_catalog {
                 . '"graceperiodmin"), wenn "overduehandling"="graceperiod" (validation()).',
             '"feedbackboundaries[]" muss absteigend sortiert sein und jeder Wert zwischen 0 und "grade" '
                 . 'liegen; die Anzahl muss genau eine weniger sein als "feedbacktext[]" (validation()).',
-            '"preferredbehaviour"="deferredcbm" oder "immediatecbm" (Certainty-Based Marking) unterdrückt die '
-                . 'sonstige Warnung, wenn die Bestehensgrenze über der maximalen Note liegt (validation()).',
+            get_string('quizgradepassrule', 'local_coursepilot'),
         ];
     }
 
