@@ -21,6 +21,7 @@ use local_coursepilot\catalog\choice;
 use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use local_coursepilot\webdav\webdav_instance;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Der zweite Schreibvorgang (Spec 0015 §3.4, Ticket #389).
@@ -149,6 +150,10 @@ final class create_module_test extends \advanced_testcase {
 
         $after = $this->read($result['cmid']);
         $this->assertEquals(0, $after['nosubmissions'], 'nosubmissions muss 0 sein - mindestens eine Abgabeart aktiv.');
+        $this->assertSame('Beschreibung', $after['intro']);
+        $this->assertSame([], get_file_storage()->get_area_files(
+            \context_module::instance($result['cmid'])->id, 'mod_assign', 'intro', 0, 'filename', false));
+        $this->assertNotContains('introimages', array_column($result['created_fields'], 'field'));
     }
 
     /**
@@ -195,6 +200,110 @@ final class create_module_test extends \advanced_testcase {
             $filerecord['filename']
         );
         \local_coursepilot\material_files::replace($existing ?: null, $filerecord, $content);
+    }
+
+    public function test_assign_create_persists_intro_image_from_werkbank(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $this->create_material_file('diagramm.png', 'Bildinhalt 581');
+
+        $result = $this->create($course->id, 0, 'assign', [
+            'name' => 'Bildaufgabe',
+            'intro' => '<img src="@@PLUGINFILE@@/diagramm.png" alt="Diagramm">',
+            'introimages' => ['diagramm.png'],
+        ], \local_coursepilot\material_files::ORT_WERKBANK);
+
+        $context = \context_module::instance($result['cmid']);
+        $file = get_file_storage()->get_file($context->id, 'mod_assign', 'intro', 0, '/', 'diagramm.png');
+        $this->assertNotFalse($file);
+        $this->assertSame('Bildinhalt 581', $file->get_content());
+        $this->assertSame(sha1('Bildinhalt 581'), $file->get_contenthash());
+        $this->assertStringContainsString('@@PLUGINFILE@@/diagramm.png', $this->read($result['cmid'])['intro']);
+        $rendered = file_rewrite_pluginfile_urls($this->read($result['cmid'])['intro'], 'pluginfile.php',
+            $context->id, 'mod_assign', 'intro', 0);
+        $this->assertStringContainsString('/pluginfile.php/' . $context->id . '/mod_assign/intro/0/diagramm.png', $rendered);
+        $this->assertStringNotContainsString('draftfile.php', $rendered);
+        $fields = array_column($result['created_fields'], 'value_json', 'field');
+        $this->assertSame('["diagramm.png"]', $fields['introimages']);
+        $this->assertSame([], report_loose_material_files::execute()['files']);
+    }
+
+    public function test_assign_create_persists_intro_image_from_bestand(): void {
+        $this->resetAfterTest();
+        [$course, $teacher] = $this->course_with_editing_teacher();
+        $fake = $this->set_up_external_material_for($teacher);
+        $fake->seed_file('/Coursepilot/Material/bilder/diagramm.png', 'Bestandsbild 581');
+
+        $result = $this->create($course->id, 0, 'assign', [
+            'name' => 'Bildaufgabe aus dem Bestand',
+            'intro' => '<img src="@@PLUGINFILE@@/diagramm.png" alt="Diagramm">',
+            'introformat' => FORMAT_HTML,
+            'introimages' => ['bilder/diagramm.png'],
+        ]);
+
+        $context = \context_module::instance($result['cmid']);
+        $file = get_file_storage()->get_file($context->id, 'mod_assign', 'intro', 0, '/', 'diagramm.png');
+        $this->assertNotFalse($file);
+        $this->assertSame('Bestandsbild 581', $file->get_content());
+        $this->assertSame(sha1('Bestandsbild 581'), $file->get_contenthash());
+        $after = $this->read($result['cmid']);
+        $this->assertStringContainsString('@@PLUGINFILE@@/diagramm.png', $after['intro']);
+        $this->assertEquals(FORMAT_HTML, $after['introformat']);
+        $fields = array_column($result['created_fields'], 'value_json', 'field');
+        $this->assertSame('["diagramm.png"]', $fields['introimages']);
+    }
+
+    public static function invalid_intro_images(): array {
+        return [
+            'missing file' => [['missing.png'], 'materialfilenotfound'],
+            'disallowed extension' => [['worksheet.pdf'], 'materialfiledisallowedtype'],
+            'scalar' => ['diagramm.png', 'invalidmaterialreferencelist'],
+            'null' => [null, 'invalidmaterialreferencelist'],
+            'object instead of list' => [['image' => 'diagramm.png'], 'invalidmaterialreferencelist'],
+            'non-string entry' => [[['path' => 'diagramm.png']], 'materialfiledisallowedtype'],
+            'path traversal' => [['../diagramm.png'], 'invalidmaterialpath'],
+        ];
+    }
+
+    #[DataProvider('invalid_intro_images')]
+    public function test_assign_create_rejects_invalid_intro_images_without_activity($paths, string $errorcode): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $this->create_material_file('worksheet.pdf', 'PDF content');
+
+        try {
+            $this->create($course->id, 0, 'assign', [
+                'name' => 'Invalid image',
+                'intro' => '<img src="@@PLUGINFILE@@/missing.png" alt="Missing">',
+                'introimages' => $paths,
+            ], \local_coursepilot\material_files::ORT_WERKBANK);
+            $this->fail('Expected rejection before activity creation.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame($errorcode, $e->errorcode);
+        }
+        $this->assertSame(0, $DB->count_records('assign', ['course' => $course->id]));
+        $this->assertSame(0, $DB->count_records('course_modules', ['course' => $course->id]));
+    }
+
+    public function test_assign_create_checks_manageownfiles_before_image_type(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course, $teacher] = $this->course_with_editing_teacher();
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid,
+            \context_user::instance($teacher->id)->id, true);
+
+        try {
+            $this->create($course->id, 0, 'assign', [
+                'name' => 'No file permission', 'intro' => 'Description', 'introimages' => ['worksheet.pdf'],
+            ], \local_coursepilot\material_files::ORT_WERKBANK);
+            $this->fail('Expected capability rejection before the image whitelist.');
+        } catch (\required_capability_exception $e) {
+            $this->assertSame(get_capability_string('moodle/user:manageownfiles'), $e->a);
+        }
+        $this->assertSame(0, $DB->count_records('assign', ['course' => $course->id]));
+        $this->assertSame(0, $DB->count_records('course_modules', ['course' => $course->id]));
     }
 
     /**

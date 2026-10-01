@@ -131,10 +131,12 @@ final class create_module extends external_api {
         write_gate::assert_writable($modname);
 
         $merged = self::prepare_merged_fields($modname, $catalogclass, $coursecontext, $params);
+        $modulefields = $merged;
+        self::resolve_intro_image_pseudofield($modname, $catalogclass, $coursecontext, $modulefields, $params['location']);
 
         $course = get_course($params['courseid']);
         require_once($CFG->dirroot . '/course/modlib.php');
-        $cmid = self::create_activity($course, $modname, $catalogclass, $params['sectionnum'], $merged);
+        $cmid = self::create_activity($course, $modname, $catalogclass, $params['sectionnum'], $modulefields);
 
         $after = self::read_settings($cmid);
         [$createdfields, $sideeffects] = self::report_and_side_effects($modname, $merged, $after);
@@ -357,6 +359,51 @@ final class create_module extends external_api {
                 $location
             );
         }
+    }
+
+    /**
+     * Resolves catalog intro images before creation. The course context is
+     * only used to prepare the draft; add_moduleinfo() saves it to the new
+     * module context. Keep the original fields separately for the report.
+     *
+     * @param string $modname
+     * @param class-string<module_catalog> $catalogclass
+     * @param context_course $coursecontext
+     * @param array $fields Replaces the image pseudofield with introeditor.
+     * @param string $location
+     */
+    private static function resolve_intro_image_pseudofield(
+        string $modname,
+        string $catalogclass,
+        context_course $coursecontext,
+        array &$fields,
+        string $location
+    ): void {
+        $fieldname = $catalogclass::write_options()['intro_image_field'] ?? null;
+        if ($fieldname === null || !array_key_exists($fieldname, $fields)) {
+            return;
+        }
+        $paths = $fields[$fieldname];
+        if (!is_array($paths) || !array_is_list($paths)) {
+            throw new moodle_exception('invalidmaterialreferencelist', 'local_coursepilot', '', $fieldname);
+        }
+        material_files::require_manage_own_files();
+        foreach ($paths as $path) {
+            if (!is_string($path) || !material_files::is_allowed_embed_image_extension($path)) {
+                throw new moodle_exception('materialfiledisallowedtype', 'local_coursepilot', '', (object) [
+                    'filename' => is_string($path) ? $path : '',
+                    'allowed' => implode(', ', material_files::allowed_embed_image_extensions()),
+                ]);
+            }
+        }
+        $draftitemid = material_files::resolve_into_draft(
+            $coursecontext->id, 'mod_' . $modname, 'intro', 0, $paths, $location);
+        $fields['introeditor'] = [
+            'text' => $fields['intro'] ?? '',
+            'format' => $fields['introformat'] ?? FORMAT_HTML,
+            'itemid' => $draftitemid,
+        ];
+        unset($fields[$fieldname]);
     }
 
     /**
@@ -654,7 +701,15 @@ final class create_module extends external_api {
      */
     private static function read_settings(int $cmid): array {
         $result = get_module_settings::execute($cmid);
-        return json_decode($result['settings_json'], true);
+        $settings = json_decode($result['settings_json'], true);
+        $fieldname = registry::for($result['modname'])::write_options()['intro_image_field'] ?? null;
+        if ($fieldname !== null) {
+            $files = get_file_storage()->get_area_files(
+                \context_module::instance($cmid)->id, 'mod_' . $result['modname'], 'intro', 0, 'filename', false);
+            $settings[$fieldname] = array_values(array_map(
+                static fn(\stored_file $file): string => $file->get_filename(), $files));
+        }
+        return $settings;
     }
 
     /**
