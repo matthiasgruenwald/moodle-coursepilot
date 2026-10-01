@@ -18,6 +18,7 @@ namespace local_coursepilot\external;
 
 use context_course;
 use core_external\external_api;
+use local_coursepilot\course_module_placement;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
@@ -120,10 +121,8 @@ final class move_module extends external_api {
             $targetcmid = $targetcmids[$position];
         }
 
+        course_module_placement::move_to((int) $cm->id, (int) $targetsection->id, $targetcmid);
         $format = course_get_format($course);
-        $updates = $format->get_stateupdates_instance();
-        $actions = $format->get_stateactions_instance();
-        $actions->cm_move($updates, $course, [$cm->id], $targetsection->id, $targetcmid);
 
         $sectionname = $format->get_section_name($targetsection);
         $positionmeldung = $targetcmid !== null

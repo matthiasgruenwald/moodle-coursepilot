@@ -23,6 +23,7 @@ use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\activity_backup;
+use local_coursepilot\course_module_placement;
 use local_coursepilot\catalog\activity_kind;
 use local_coursepilot\catalog\registry;
 use moodle_exception;
@@ -75,9 +76,6 @@ final class export_default_activity extends external_api {
 
         require_once($CFG->dirroot . '/course/modlib.php');
         $course = get_course($params['courseid']);
-        $binmark = $DB->get_manager()->table_exists('tool_recyclebin_course')
-            ? (int) $DB->get_field_sql('SELECT MAX(id) FROM {tool_recyclebin_course} WHERE courseid = ?', [$course->id])
-            : null;
         $before = $DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$course->id]);
         try {
             $xml = activity_backup::export(self::create_default($course, $modname));
@@ -85,7 +83,7 @@ final class export_default_activity extends external_api {
             // Also covers a create that fails after the cm row exists.
             $created = array_diff($DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$course->id]), $before);
             try {
-                self::remove($course, $created, $binmark);
+                self::remove($course, $created);
             } catch (\Throwable $cleanup) {
                 debugging('export_default_activity cleanup failed: ' . $cleanup->getMessage(), DEBUG_DEVELOPER);
             }
@@ -95,32 +93,16 @@ final class export_default_activity extends external_api {
     }
 
     /**
-     * Removes the throwaway activity and every trace of the removal: the history cascades
-     * with the delete event; recycle bin items created since $binmark are deleted.
+     * Discards the throwaway activity: the history cascades with the delete event, the
+     * recycle bin stays untouched (see {@see course_module_placement::discard_failed()}).
      * No transaction: the backup runs DDL, which commits implicitly on MySQL/MariaDB.
      *
      * @param \stdClass $course
      * @param int[] $cmids course modules created by the run
-     * @param int|null $binmark highest recycle bin item id of the course before the run, null without recycle bin
      */
-    private static function remove(\stdClass $course, array $cmids, ?int $binmark): void {
-        global $DB;
+    private static function remove(\stdClass $course, array $cmids): void {
         foreach ($cmids as $cmid) {
-            $cm = $DB->get_record('course_modules', ['id' => $cmid]);
-            if ($cm && (int) $cm->instance === 0) {
-                // Half-created row: the regular delete cannot handle it.
-                delete_mod_from_section($cm->id, $cm->section);
-                $DB->delete_records('course_modules', ['id' => $cm->id]);
-            } else if ($cm) {
-                rebuild_course_cache($course->id, true);
-                course_get_format($course)->delete_module(get_fast_modinfo($course)->get_cm((int) $cmid), false);
-            }
-        }
-        if ($binmark !== null) {
-            $bin = new \tool_recyclebin\course_bin($course->id);
-            foreach ($DB->get_records_select('tool_recyclebin_course', 'courseid = ? AND id > ?', [$course->id, $binmark]) as $item) {
-                $bin->delete_item($item);
-            }
+            course_module_placement::discard_failed((int) $cmid);
         }
         rebuild_course_cache($course->id, true);
     }

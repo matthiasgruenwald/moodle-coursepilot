@@ -23,6 +23,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use invalid_parameter_exception;
 use local_coursepilot\activity_backup;
+use local_coursepilot\course_module_placement;
 use local_coursepilot\history\retention;
 use local_coursepilot\history\version_writer;
 use moodle_exception;
@@ -132,7 +133,7 @@ final class clone_activity extends external_api {
         $newcmid = activity_backup::restore($newtargetcourseid, null, activity_backup::backup($cm));
 
         set_coursemodule_name($newcmid, $title);
-        set_coursemodule_visible($newcmid, $visible ? 1 : 0);
+        course_module_placement::set_visible($newcmid, $visible);
 
         // Kaputte Voraussetzungen (#332) entstehen nur kursuebergreifend -
         // die Bereinigung selbst ist ungefaehrlich, auch unconditional

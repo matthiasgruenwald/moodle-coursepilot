@@ -261,9 +261,8 @@ final class activity_backup {
     }
 
     /**
-     * Deletes every course module that appeared in the course since $before.
-     * A failed restore can leave a cm row with instance=0; the regular delete cannot
-     * handle that, so that case is removed by hand.
+     * Discards every course module that appeared in the course since $before
+     * (a failed restore can leave half-made rows, see {@see course_module_placement::discard_failed()}).
      *
      * @param int[] $before cmids present before the restore
      */
@@ -271,13 +270,7 @@ final class activity_backup {
         global $DB;
         $new = array_diff($DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$courseid]), $before);
         foreach ($new as $cmid) {
-            $cm = $DB->get_record('course_modules', ['id' => $cmid]);
-            if ($cm && (int) $cm->instance === 0) {
-                delete_mod_from_section($cm->id, $cm->section);
-                $DB->delete_records('course_modules', ['id' => $cm->id]);
-            } else if ($cm) {
-                course_get_format($courseid)->delete_module(get_fast_modinfo($courseid)->get_cm((int) $cmid), false);
-            }
+            course_module_placement::discard_failed((int) $cmid);
         }
         rebuild_course_cache($courseid, true);
     }
