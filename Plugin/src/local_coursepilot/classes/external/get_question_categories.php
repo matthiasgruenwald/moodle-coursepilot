@@ -16,19 +16,16 @@
 
 namespace local_coursepilot\external;
 
-use context_course;
-use context_module;
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
-use core_question\local\bank\question_bank_helper;
+use local_coursepilot\question_bank_context;
 
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/questionlib.php');
-require_once($CFG->dirroot . '/question/classes/local/bank/question_bank_helper.php');
 
 /**
  * Fragenbank-Kategorien einer benannten Fragensammlung (#342): fuer
@@ -69,32 +66,7 @@ class get_question_categories extends external_api {
             'questionbankid' => $questionbankid,
         ]);
 
-        $context = context_course::instance($params['courseid']);
-        self::validate_context($context);
-        require_capability('local/coursepilot:use', $context);
-
-        $course = $DB->get_record('course', ['id' => $params['courseid']], '*', MUST_EXIST);
-        $modulename = question_bank_helper::get_default_question_bank_activity_name();
-        $sql = "SELECT cm.id
-                  FROM {course_modules} cm
-                  JOIN {modules} m ON m.id = cm.module
-                  JOIN {{$modulename}} qb ON qb.id = cm.instance
-                 WHERE cm.id = :questionbankid
-                   AND cm.course = :courseid
-                   AND m.name = :modulename";
-        $bankrecord = $DB->get_record_sql($sql, [
-            'questionbankid' => $params['questionbankid'],
-            'courseid'       => $course->id,
-            'modulename'     => $modulename,
-        ]);
-
-        if (!$bankrecord) {
-            throw new \invalid_parameter_exception('Selected question bank was not found in this course.');
-        }
-
-        $qbankcontext = context_module::instance((int) $bankrecord->id);
-        self::validate_context($qbankcontext);
-        require_capability('local/coursepilot:use', $qbankcontext);
+        [, $qbankcontext] = question_bank_context::resolve($params['courseid'], $params['questionbankid']);
 
         // Stellt sicher, dass die top-Kategorie existiert (legt sie ggf. an).
         question_get_top_category($qbankcontext->id, true);

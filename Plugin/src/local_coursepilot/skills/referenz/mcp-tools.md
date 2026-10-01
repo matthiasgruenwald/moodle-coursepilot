@@ -26,6 +26,7 @@ einen Schreib- oder Lesezugriff zustaendig ist.
 | `coursepilot_ensure_question_category` | Fragenbank-Kategorie je Unterthema/Inhaltsabschnitt in ausgewählter Fragensammlung finden oder anlegen (idempotent) |
 | `coursepilot_update_question_category` | Fragenbank-Kategorie nicht-destruktiv umbenennen und/oder in die richtige Fragensammlung/Zielkategorie verschieben |
 | `coursepilot_get_question_categories` | Vorhandene Fragenbank-Kategorien einer ausgewählten Fragensammlung lesen |
+| `coursepilot_plan_question_category_cleanup` | Leere, blattlose Kategorien einer Fragensammlung zur manuellen Prüfung auflisten (`courseid`, `questionbankid` als CMID) – rein lesend; liefert Bankname, Kategorie-ID/Name/Eltern-ID, Moodle-Link und Handlungsanweisung; Kategorien mit Fragen oder Unterkategorien und die oberste Kategorie bleiben ausgenommen |
 | `coursepilot_move_question` | Frage mit allen Versionen nicht-destruktiv in eine Zielkategorie verschieben |
 | `coursepilot_create_quiz` | Quiz (mod_quiz) anlegen – Modus wählt komplette Settings-Kombination (siehe `coursepilot_get_skill("quiz-und-fragenbank")`) |
 | `coursepilot_update_quiz_settings` | Bestehendes Quiz nachträglich auf eine Coursepilot-Settings-Kombination umstellen |
