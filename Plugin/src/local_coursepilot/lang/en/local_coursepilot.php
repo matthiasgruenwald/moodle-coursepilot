@@ -84,6 +84,7 @@ $string['materialcompositionwritten'] = 'Saved composed PNG {$a->path} ({$a->wid
 $string['tool_report_loose_material_files'] = 'Reports material files not used by an activity in the calling teacher\'s courses.';
 $string['tool_delete_material_files'] = 'Deletes exactly the specified files from the calling teacher\'s material folder.';
 $string['tool_clone_activity'] = 'Clones an activity within a course or across courses.';
+$string['tool_export_activity_backup'] = 'Returns the activity XML (backup file <module>.xml, without user data) of an existing activity - a template for how that activity type is built.';
 $string['tool_report_clone_lineage'] = 'Reports whether quiz questions are copied or still shared with their source course.';
 $string['tool_list_skills'] = 'Lists the Coursepilot skill corpus shipped with the plugin. Before planning or writing, call coursepilot_list_skills first.';
 $string['tool_get_skill'] = 'Delivers one Coursepilot skill corpus entry by name.';
@@ -537,8 +538,9 @@ $string['driftstatusbrauchtarbeit'] = 'Needs work: the field catalog no longer m
 $string['roundtripmismatch'] = 'Round-trip check failed after writing: field "{$a->field}" differs from the imported XML{$a->detail}. Nothing was imported, the write was rolled back.';
 
 // Spec 0017: clone_activity (#421).
-$string['clonenobackupsupport'] = 'Activity type "{$a->modname}" does not support activity export (no FEATURE_BACKUP_MOODLE2) and cannot be cloned.';
-$string['clonefailed'] = 'Cloning the activity failed - Moodle did not report the new activity after the backup/restore. Nothing usable was left behind.';
+$string['clonenobackupsupport'] = 'Activity type "{$a->modname}" does not support activity backup (no FEATURE_BACKUP_MOODLE2), so it cannot be cloned or exported.';
+$string['activityrestorefailed'] = 'Restoring the activity failed - Moodle did not report a new activity after the restore. Nothing usable was left behind.';
+$string['activitybackupfailed'] = 'Exporting the activity failed - the backup did not contain an activity XML.';
 
 // Administration: WebDAV status checks, Ablageort column, settings block (#499, Spec #486 §12).
 $string['webdavcheckactionlink'] = 'Open now';

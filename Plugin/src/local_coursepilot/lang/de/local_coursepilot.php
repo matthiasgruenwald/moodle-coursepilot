@@ -458,7 +458,6 @@ $string['driftstatusbrauchtarbeit'] = 'Braucht Arbeit: der Feldkatalog weicht vo
 
 // Spec 0017: clone_activity (#421).
 $string['clonenobackupsupport'] = 'Aktivitätsart "{$a->modname}" unterstützt keinen Aktivitäts-Export (kein FEATURE_BACKUP_MOODLE2) und kann deshalb nicht geklont werden.';
-$string['clonefailed'] = 'Das Klonen der Aktivität ist fehlgeschlagen - Moodle hat nach Backup/Restore keine neue Aktivität gemeldet. Es bleibt nichts Nutzbares zurück.';
 
 // Administration: WebDAV-Statusprüfungen, Spalte Ablageort, Einstellungsblock (#499, Spec #486 §12).
 $string['webdavcheckactionlink'] = 'Jetzt öffnen';

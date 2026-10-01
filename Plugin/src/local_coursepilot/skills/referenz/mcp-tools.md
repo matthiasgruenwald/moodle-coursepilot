@@ -52,6 +52,7 @@ Die Schreibwerkzeuge für Einstellungen (`create_module`,
 | `coursepilot_import_questions_xml` | Fragen aus Moodle-XML in eine Kategorie einspielen (`categoryid`) – Weg für Fragetypen jenseits MC |
 | `coursepilot_export_questions_xml` | Bestehende Fragen als Moodle-XML ausgeben (`questionids`) – Vorlage für einen Import |
 | `coursepilot_plan_quiz_cleanup` | Manuellen Bereinigungsplan für ueberzaehlige Quiz-Slots erstellen (`cmid`, `keep_questionbankentryids`) – löscht nichts, nennt Links |
+| `coursepilot_export_activity_backup` | Aktivitäts-XML (Backup-Datei `<modul>.xml`, ohne Nutzerdaten) einer bestehenden Aktivität ausgeben (`cmid`) – lesend, zeigt, wie die Aktivitätsart gebaut ist |
 | `coursepilot_report_clone_lineage` | Je Frage eines geklonten Tests melden, ob eigene Kopie oder geteilte Referenz auf den Quellkurs (`cmid`) – rein lesend |
 
 ## Versionsverlauf einer Aktivität

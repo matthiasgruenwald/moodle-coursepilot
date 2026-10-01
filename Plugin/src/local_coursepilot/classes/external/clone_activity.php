@@ -17,12 +17,12 @@
 namespace local_coursepilot\external;
 
 use context_course;
-use context_module;
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
 use invalid_parameter_exception;
+use local_coursepilot\activity_backup;
 use local_coursepilot\history\retention;
 use local_coursepilot\history\version_writer;
 use moodle_exception;
@@ -31,8 +31,6 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot . '/course/lib.php');
-require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
-require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
 
 /**
  * Klonen (Spec 0017 §7.5, Ticket #421): ein Endpunkt fuer beide Moodle-Wege.
@@ -47,6 +45,8 @@ require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
  * geerbte/zufaellige Sichtbarkeit). Vorbild fuer den Backup/Restore-Teil: lokal
  * local_coursepilot\external\clone_activity_to_course (kursuebergreifender Pfad
  * des alten Plugins).
+ *
+ * Backup und Restore liegen im Modul {@see activity_backup} (Spec 0026, #588).
  *
  * Kaputte Voraussetzungen (#332): Moodle kann cmid-Verweise in
  * Abschlussbedingungen beim kursuebergreifenden Klonen nicht uebersetzen
@@ -127,7 +127,9 @@ final class clone_activity extends external_api {
 
         self::authorize($cm, $sourcecourseid, $newtargetcourseid, $crosscourse);
 
-        $newcmid = self::clone_via_backup_restore($cm, $newtargetcourseid, (int) $USER->id);
+        // Einzelaktivitaets-Backup (MODE_IMPORT) und Restore (TARGET_CURRENT_ADDING) im
+        // Modul activity_backup, fuer BEIDE Pfade (siehe Klassenkommentar).
+        $newcmid = activity_backup::restore($newtargetcourseid, null, activity_backup::backup($cm));
 
         set_coursemodule_name($newcmid, $title);
         set_coursemodule_visible($newcmid, $visible ? 1 : 0);
@@ -161,7 +163,7 @@ final class clone_activity extends external_api {
      * gleich bleibt.
      *
      * Der FEATURE_BACKUP_MOODLE2-Check gilt fuer BEIDE Pfade, nicht nur
-     * kursuebergreifend: {@see self::clone_via_backup_restore()} nutzt
+     * kursuebergreifend: {@see activity_backup} nutzt
      * Einzelaktivitaets-Backup/Restore fuer Intra-Kurs genauso wie fuer
      * kursuebergreifend (siehe Klassenkommentar) - ohne diesen Check wuerde
      * ein nicht backup-faehiger Aktivitaetstyp im Intra-Kurs-Fall mit einer
@@ -194,94 +196,6 @@ final class clone_activity extends external_api {
         if (!plugin_supports('mod', $cm->modname, FEATURE_BACKUP_MOODLE2)) {
             throw new moodle_exception('clonenobackupsupport', 'local_coursepilot', '', ['modname' => $cm->modname]);
         }
-    }
-
-    /**
-     * Einzelaktivitaets-Backup (MODE_IMPORT), sofort in den Zielkurs
-     * importiert (TARGET_CURRENT_ADDING) - fuer BEIDE Pfade (Intra-Kurs und
-     * kursuebergreifend), siehe Klassenkommentar zur Begruendung gegen
-     * duplicate_module(). Die neue cmid wird wie bei duplicate_module()
-     * selbst ueber den alten Modulkontext des restore_activity_task ermittelt
-     * (Vorbild: local_coursepilot\external\clone_activity_to_course).
-     *
-     * @param \stdClass $cm
-     * @param int $targetcourseid
-     * @param int $userid
-     * @return int neue cmid
-     * @throws moodle_exception clonefailed
-     */
-    private static function clone_via_backup_restore(\stdClass $cm, int $targetcourseid, int $userid): int {
-        global $CFG;
-
-        $cmcontext = context_module::instance($cm->id);
-
-        $bc = new \backup_controller(
-            \backup::TYPE_1ACTIVITY,
-            $cm->id,
-            \backup::FORMAT_MOODLE,
-            \backup::INTERACTIVE_NO,
-            \backup::MODE_IMPORT,
-            $userid
-        );
-        $backupid = $bc->get_backupid();
-        $backupbasepath = $bc->get_plan()->get_basepath();
-        $bc->execute_plan();
-        $bc->destroy();
-
-        try {
-            $newcmid = self::run_restore($backupid, $targetcourseid, $userid, (int) $cmcontext->id);
-        } finally {
-            if (empty($CFG->keeptempdirectoriesonbackup)) {
-                fulldelete($backupbasepath);
-            }
-        }
-
-        return $newcmid;
-    }
-
-    /**
-     * @param string $backupid
-     * @param int $targetcourseid
-     * @param int $userid
-     * @param int $oldcmcontextid
-     * @return int
-     * @throws moodle_exception clonefailed
-     */
-    private static function run_restore(string $backupid, int $targetcourseid, int $userid, int $oldcmcontextid): int {
-        $rc = new \restore_controller(
-            $backupid,
-            $targetcourseid,
-            \backup::INTERACTIVE_NO,
-            \backup::MODE_IMPORT,
-            $userid,
-            \backup::TARGET_CURRENT_ADDING
-        );
-
-        if (!$rc->execute_precheck()) {
-            $precheckresults = $rc->get_precheck_results();
-            $rc->destroy();
-            if (is_array($precheckresults) && !empty($precheckresults['errors'])) {
-                throw new moodle_exception('backupprecheckerrors', 'backup', '', $precheckresults);
-            }
-            throw new moodle_exception('clonefailed', 'local_coursepilot');
-        }
-
-        $rc->execute_plan();
-
-        $newcmid = null;
-        foreach ($rc->get_plan()->get_tasks() as $task) {
-            if (is_subclass_of($task, 'restore_activity_task') && $task->get_old_contextid() == $oldcmcontextid) {
-                $newcmid = $task->get_moduleid();
-                break;
-            }
-        }
-        $rc->destroy();
-
-        if (!$newcmid) {
-            throw new moodle_exception('clonefailed', 'local_coursepilot');
-        }
-
-        return (int) $newcmid;
     }
 
     /**

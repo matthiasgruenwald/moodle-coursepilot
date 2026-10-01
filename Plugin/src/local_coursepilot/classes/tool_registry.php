@@ -58,6 +58,7 @@ final class tool_registry {
         'coursepilot_report_loose_material_files' => ['classname' => 'local_coursepilot\external\report_loose_material_files', 'descriptionkey' => 'tool_report_loose_material_files'],
         'coursepilot_delete_material_files' => ['classname' => 'local_coursepilot\external\delete_material_files', 'descriptionkey' => 'tool_delete_material_files'],
         'coursepilot_clone_activity' => ['classname' => 'local_coursepilot\external\clone_activity', 'descriptionkey' => 'tool_clone_activity'],
+        'coursepilot_export_activity_backup' => ['classname' => 'local_coursepilot\external\export_activity_backup', 'descriptionkey' => 'tool_export_activity_backup'],
         'coursepilot_report_clone_lineage' => ['classname' => 'local_coursepilot\external\report_clone_lineage', 'descriptionkey' => 'tool_report_clone_lineage'],
         'coursepilot_list_skills' => ['classname' => 'local_coursepilot\external\list_skills', 'descriptionkey' => 'tool_list_skills'],
         'coursepilot_get_skill' => ['classname' => 'local_coursepilot\external\get_skill', 'descriptionkey' => 'tool_get_skill'],
@@ -114,7 +115,11 @@ final class tool_registry {
     }
 
     private static function is_write_class(string $classname): bool {
-        if ($classname === 'local_coursepilot\\external\\create_werkbank_download_links') {
+        // Read-only despite the "export_" prefix: hands out XML, writes nothing.
+        if (in_array($classname, [
+            'local_coursepilot\\external\\create_werkbank_download_links',
+            'local_coursepilot\\external\\export_activity_backup',
+        ], true)) {
             return false;
         }
         return preg_match('/\\\\(?:restore|update|create|set|ensure|move|import|export|add|write|append|upload|crop|compose|delete|clone|dismiss)_/', $classname) === 1;
