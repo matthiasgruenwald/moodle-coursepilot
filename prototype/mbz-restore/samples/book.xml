@@ -1,0 +1,18 @@
+<activity id="1" moduleid="900001" modulename="book" contextid="1">
+  <book id="1">
+    <name>KI-Buch: Die Zelle</name>
+    <intro>&lt;p&gt;Ein Buch, das die KI gebaut hat.&lt;/p&gt;</intro>
+    <introformat>1</introformat>
+    <numbering>1</numbering>
+    <navstyle>1</navstyle>
+    <customtitles>0</customtitles>
+    <timecreated>0</timecreated>
+    <timemodified>0</timemodified>
+    <chapters>
+      <chapter id="1"><pagenum>1</pagenum><subchapter>0</subchapter><title>Zellkern</title><content>&lt;p&gt;Der Zellkern enthält die DNA.&lt;/p&gt;</content><contentformat>1</contentformat><hidden>0</hidden><timemcreated>0</timemcreated><timemodified>0</timemodified><importsrc></importsrc></chapter>
+      <chapter id="2"><pagenum>2</pagenum><subchapter>1</subchapter><title>Kernhülle</title><content>&lt;p&gt;Doppelmembran mit Poren.&lt;/p&gt;</content><contentformat>1</contentformat><hidden>0</hidden><timemcreated>0</timemcreated><timemodified>0</timemodified><importsrc></importsrc></chapter>
+      <chapter id="3"><pagenum>3</pagenum><subchapter>0</subchapter><title>Mitochondrien</title><content>&lt;p&gt;Kraftwerke der Zelle.&lt;/p&gt;</content><contentformat>1</contentformat><hidden>0</hidden><timemcreated>0</timemcreated><timemodified>0</timemodified><importsrc></importsrc></chapter>
+    </chapters>
+    <chaptertags></chaptertags>
+  </book>
+</activity>
