@@ -70,12 +70,12 @@ final class cm_references {
             }
         }
 
-        $criteria = $DB->record_exists('course_completion_criteria', [
+        $hascriterion = $DB->record_exists('course_completion_criteria', [
             'course' => $cm->course,
             'criteriatype' => COMPLETION_CRITERIA_TYPE_ACTIVITY,
             'moduleinstance' => $cmid,
         ]);
-        if ($criteria) {
+        if ($hascriterion) {
             $found[] = [
                 'kind' => self::KIND_COURSE_COMPLETION,
                 'location_id' => (int) $cm->course,
@@ -93,7 +93,7 @@ final class cm_references {
      * @param array $tree Decoded availability JSON.
      * @return array[] Condition nodes with type "completion".
      */
-    public static function completion_conditions(array $tree): array {
+    private static function completion_conditions(array $tree): array {
         $nodes = [];
         if (($tree['type'] ?? null) === 'completion') {
             $nodes[] = $tree;

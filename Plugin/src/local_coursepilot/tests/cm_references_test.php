@@ -67,7 +67,7 @@ final class cm_references_test extends \advanced_testcase {
     public function test_condition_on_another_cm_is_not_a_reference(): void {
         global $DB;
         [, $target, $other] = $this->setup_course();
-        $DB->set_field('course_modules', 'availability', $this->tree($other + 1000), ['id' => $other]);
+        $DB->set_field('course_modules', 'availability', $this->tree($other + 1000) /* no such cm */, ['id' => $other]);
         $this->assertSame([], cm_references::references_to($target));
     }
 
