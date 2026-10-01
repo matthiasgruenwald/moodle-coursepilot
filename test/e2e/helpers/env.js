@@ -3,7 +3,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const ENV_PATH = path.resolve(__dirname, '..', '..', '..', '.env.e2e');
+const ROOT = path.resolve(__dirname, '..', '..', '..');
+const profile = process.env.KURSPILOT_E2E_PROFILE || '';
+const ENV_PATH = path.join(ROOT, profile === 'spike' ? '.env.e2e.spike' : '.env.e2e');
 
 function loadEnvFile() {
   if (!fs.existsSync(ENV_PATH)) return {};
@@ -22,14 +24,16 @@ function loadEnvFile() {
 const env = loadEnvFile();
 
 const config = {
-  moodleUrl: env.MOODLE_URL || process.env.MOODLE_URL || '',
-  moodleToken: env.MOODLE_TOKEN || process.env.MOODLE_TOKEN || '',
-  courseId: Number(env.MOODLE_TEST_COURSEID || process.env.MOODLE_TEST_COURSEID || 0),
-  username: env.MOODLE_USERNAME || process.env.MOODLE_USERNAME || '',
-  password: env.MOODLE_PASSWORD || process.env.MOODLE_PASSWORD || '',
+  moodleUrl: process.env.MOODLE_URL || env.MOODLE_URL || '',
+  moodleToken: process.env.MOODLE_TOKEN || env.MOODLE_TOKEN || '',
+  courseId: Number(process.env.MOODLE_TEST_COURSEID || env.MOODLE_TEST_COURSEID || 0),
+  username: process.env.MOODLE_USERNAME || env.MOODLE_USERNAME || '',
+  password: process.env.MOODLE_PASSWORD || env.MOODLE_PASSWORD || '',
 };
 
 const isConfigured = Boolean(config.moodleUrl && config.moodleToken && config.courseId);
 const hasBrowserCredentials = Boolean(config.username && config.password);
 
-module.exports = { config, isConfigured, hasBrowserCredentials };
+const isSpikeProfile = profile === 'spike';
+
+module.exports = { config, isConfigured, hasBrowserCredentials, isSpikeProfile, loadEnvFile };

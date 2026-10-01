@@ -340,7 +340,9 @@ test('Kurspilot package docs keep Allgemeines fachlich and out of process storag
   assert.match(readme, /Allgemeines/i);
   assert.match(readme, /normaler fachlicher/i);
   assert.match(readme, /Kursabschnitt/i);
-  assert.match(readme, /Prozessdaten[\s\S]*Kurspilot-Arbeitsbereich/i);
+  // README traegt den neuen Produktnamen (ADR 0024); skills/kurspilot-core.md
+  // gehoert zum lokalen Altweg und behaelt den alten.
+  assert.match(readme, /Prozessdaten[\s\S]*Coursepilot-Arbeitsbereich/i);
   assert.doesNotMatch(readme, /local-context\//);
 
   assert.match(workflow, /Abschnitt 0/i);
@@ -377,7 +379,7 @@ test('Kurspilot package docs define KURSPILOT.md as Wegweiser to Startkontext on
 test('README documents fresh-session setup for both skill providers and MCP prerequisites', () => {
   const readme = read('README.md');
 
-  assert.match(readme, /Fuer Lehrkraefte ist \*\*Kurspilot\*\* der sichtbare Name der Skill-Familie/);
+  assert.match(readme, /Fuer Lehrkraefte ist \*\*Coursepilot\*\* der sichtbare Name der Skill-Familie/);
   assert.match(readme, /`kurspilot`:/);
   assert.match(readme, /`kurspilot-einrichten`:/);
   assert.match(readme, /`kurspilot-planen`:/);

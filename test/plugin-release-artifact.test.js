@@ -32,7 +32,7 @@ const { execFileSync } = require('node:child_process');
 const REPO_ROOT = path.join(__dirname, '..');
 const BUILD_PLUGIN_SCRIPT = path.join(REPO_ROOT, 'scripts', 'build-plugin.js');
 const BUILD_MIRROR_SCRIPT = path.join(REPO_ROOT, 'scripts', 'build-mirror-export.js');
-const PLUGIN_SRC = path.join(REPO_ROOT, 'Plugin', 'src', 'local_coursepilot');
+const PLUGIN_SRC = path.join(REPO_ROOT, 'legacy', 'local_coursepilot');
 
 const PRIMARY_LICENSE = path.join(REPO_ROOT, 'LICENSE');
 const PRIMARY_NOTICE = path.join(REPO_ROOT, 'NOTICE');

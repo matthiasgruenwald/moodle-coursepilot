@@ -6,6 +6,56 @@ lokalen Coursepilot-MCP. Entwicklungs- und Issue-Repository ist
 (primäres Repository); der Plugin-Quellbaum wird separat als Mirror für das Moodle Plugin
 Directory veröffentlicht.
 
+## Coursepilot 2.0.0-beta (Server-MCP) – Artefakt, Version, Übergang
+
+Betrifft die native Linie unter `Plugin/src/local_coursepilot/` (Issue #577, Spec 0025
+Abschnitt D). Die Angaben im vorherigen Abschnitt „Coursepilot 1.0" gelten unverändert für
+den eingefrorenen Altstand (`legacy/local_coursepilot/`) und dessen `moodle-mcp.js`-Weg.
+
+### Release-Artefakt aus der nativen Linie
+
+`npm run build:native-release` baut aus `Plugin/src/local_coursepilot/` sowohl den
+installierbaren `local_coursepilot-<release>.zip` als auch den ungezippten Quellstand
+(`dist/native-release/local_coursepilot/`) – identischer Inhalt, ZIP und Quellstand können
+also nicht auseinanderlaufen. Der Altstand bleibt davon unberührt und weiterhin über
+`npm run build:plugin`/`npm run release:plugin` separat baubar.
+
+### Eine kanonische Version, kein Prototypwert
+
+`Plugin/src/local_coursepilot/version.php` (`$plugin->release`) ist die alleinige Quelle für
+die Plugin-Version. Der MCP-Handshake (`initialize`/`server/discover`, `serverInfo.version`)
+und das Werkzeug `coursepilot_get_version_info` lesen dieselbe Datei zur Laufzeit; der
+frühere feste Platzhalter `0.1.0` wird nicht mehr gemeldet (#577).
+
+### Lizenz und Herkunft
+
+`Plugin/src/local_coursepilot/LICENSE` ist **AGPL-3.0-or-later** (ADR 0025) – anders als beim
+Altstand, der weiterhin unter GPL-3.0-or-later steht. Der Release-Kandidat enthält eine
+`NOTICE`-Datei mit dem Herkunftshinweis auf den Upstream-Fork `jtuttas/MoodleMcp` (MIT).
+
+### Sprachen: nur Englisch im Paket, AMOS für Übersetzungen
+
+Das Release-Paket der nativen Linie enthält ausschließlich `lang/en/`; `lang/de/` aus dem
+Entwicklungsbaum wird beim Bau ausgeschlossen. Übersetzungen laufen künftig über AMOS. Der
+deutsche Skill-Korpus (`skills/`) ist keine Moodle-Sprachdatei, bleibt AMOS-unabhängig und
+vorerst deutsche Prosa (ADR 0024).
+
+### Übergang von Coursepilot 1.x
+
+Beide Linien tragen dieselbe Moodle-Komponente `local_coursepilot`, können aber nicht
+gemeinsam auf einer Instanz laufen. Der Wechsel ist eine Deinstallation vor der
+Installation: das laufende Altplugin zuerst deinstallieren, dann die native 2.0-ZIP
+installieren. Es gibt **keine** Daten-, Einstellungs- oder Token-Migration zwischen den
+Linien. Die produktiv genutzte Altinstanz wird von diesem Übergang nicht automatisch
+angefasst – der Schnitt bleibt eine bewusste, separate Entscheidung.
+
+### Unterstützte Kombination
+
+Nachgewiesen sind **Moodle 5.0 und 5.1, PHP 8.4, MariaDB** (nativer PHPUnit-Lauf in der CI).
+2.0.x verlangt Moodle 5.0 oder neuer. Ab Coursepilot 2.1 ist **Moodle 5.1** die
+Mindestversion (ADR 0027). Neuere Moodle-Versionen gelten erst als unterstützt, wenn CI und
+Testinstanz sie nachweisen – eine reine Metadatenänderung ist keine Kompatibilitätsabnahme.
+
 ## Coursepilot 1.0 – Produktname, Neuinstallation, Sprachen und Datenschutz
 
 ### Einheitlicher Produktname

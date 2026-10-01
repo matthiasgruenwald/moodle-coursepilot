@@ -89,7 +89,7 @@ async function fetchCatalogQuiz(cmid) {
 
 test('mini-check default is immediatefeedback and allows a preferredbehaviour override', () => {
   const source = require('node:fs').readFileSync(
-    require('node:path').join(__dirname, '..', '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'external', 'create_quiz.php'),
+    require('node:path').join(__dirname, '..', '..', 'legacy', 'local_coursepilot', 'classes', 'external', 'create_quiz.php'),
     'utf8'
   );
 

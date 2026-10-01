@@ -1,0 +1,56 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_coursepilot/history_activities
+
+    Aktivitaetenliste eines Kurses auf history.php (?id=).
+
+    Context variables required for this template:
+    * empty - bool - true when the course has no activity with a recorded history
+    * rows - array - list of {name: string, modname: string, viewurl: string}, present when not empty
+
+    Example context (json):
+    {
+        "empty": false,
+        "rows": [
+            {"name": "Erste Fassung", "modname": "page", "viewurl": "https://example.test/local/coursepilot/history.php?cmid=5"}
+        ]
+    }
+}}
+<h2>{{#str}} historytitle, local_coursepilot {{/str}}</h2>
+<p>{{#str}} historyintro, local_coursepilot {{/str}}</p>
+{{#empty}}<div class="alert alert-info">{{#str}} historynoactivities, local_coursepilot {{/str}}</div>{{/empty}}
+{{^empty}}
+<table class="generaltable">
+    <thead>
+        <tr>
+            <th>{{#str}} historycolname, local_coursepilot {{/str}}</th>
+            <th>{{#str}} historycoltype, local_coursepilot {{/str}}</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#rows}}
+        <tr>
+            <td>{{name}}</td>
+            <td>{{modname}}</td>
+            <td><a href="{{viewurl}}">{{#str}} historyview, local_coursepilot {{/str}}</a></td>
+        </tr>
+        {{/rows}}
+    </tbody>
+</table>
+{{/empty}}

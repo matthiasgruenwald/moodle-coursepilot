@@ -9,8 +9,8 @@ const { CORE_TOOLS } = require('../lib/core-tools');
 const { ALLOWED_WEBSERVICE_FUNCTIONS } = require('../lib/data-protection-allowlist');
 
 const ROOT = path.join(__dirname, '..');
-const SERVICES_PATH = path.join(ROOT, 'Plugin', 'src', 'local_coursepilot', 'db', 'services.php');
-const CATALOG_PATH = path.join(ROOT, 'Plugin', 'src', 'local_coursepilot', 'classes', 'external', 'get_course_catalog.php');
+const SERVICES_PATH = path.join(ROOT, 'legacy', 'local_coursepilot', 'db', 'services.php');
+const CATALOG_PATH = path.join(ROOT, 'legacy', 'local_coursepilot', 'classes', 'external', 'get_course_catalog.php');
 
 function tool(name) {
   const match = CORE_TOOLS.find(candidate => candidate.name === name);

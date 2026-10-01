@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
 
-PLUGIN_DIR="$(cd "$(dirname "$0")/.." && pwd)/Plugin/src/local_coursepilot"
+# Altplugin (Coursepilot 1.x, eingefroren): Quelle liegt seit der Umbenennung
+# unter legacy/. Versorgt die produktive 5.0-Instanz, bis der Schnitt faellt.
+PLUGIN_DIR="$(cd "$(dirname "$0")/.." && pwd)/legacy/local_coursepilot"
 
 rsync -av --delete \
   -e "ssh -i ~/.ssh/id_moodle_deploy" \

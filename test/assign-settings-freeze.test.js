@@ -11,7 +11,7 @@ test('frozen assignment settings reject a real change but accept a no-op', () =>
   const moodleRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'coursepilot-grading-'));
   fs.mkdirSync(path.join(moodleRoot, 'grade', 'grading'), { recursive: true });
   fs.writeFileSync(path.join(moodleRoot, 'grade', 'grading', 'lib.php'), '<?php class grading_manager {}');
-  const source = path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'assign_settings.php');
+  const source = path.join(__dirname, '..', 'legacy', 'local_coursepilot', 'classes', 'assign_settings.php');
   const script = `
     class invalid_parameter_exception extends Exception {}
     define('MOODLE_INTERNAL', true);

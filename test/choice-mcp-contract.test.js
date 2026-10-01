@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { CHOICE_TOOLS } = require('../lib/choice-tools');
 
-const PLUGIN_ROOT = path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot');
+const PLUGIN_ROOT = path.join(__dirname, '..', 'legacy', 'local_coursepilot');
 const UPDATE_CHOICE_PATH = path.join(PLUGIN_ROOT, 'classes', 'external', 'update_choice.php');
 
 // #325: timeopen/timeclose fehlten in update_choice, nach dem Klonen einer

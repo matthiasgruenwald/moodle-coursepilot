@@ -6,14 +6,13 @@ const path = require('node:path');
 const repoRoot = path.join(__dirname, '..');
 const EXTERNAL_PATH = path.join(
   repoRoot,
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'classes',
   'external',
   'get_course_catalog.php'
 );
-const SERVICES_PATH = path.join(repoRoot, 'Plugin', 'src', 'local_coursepilot', 'db', 'services.php');
+const SERVICES_PATH = path.join(repoRoot, 'legacy', 'local_coursepilot', 'db', 'services.php');
 // Issue #89: moodle_get_course_catalog ist ein Core-Tool; die Tool-Definition
 // liegt in lib/core-tools.js, geteilt von moodle-mcp.js und
 // moodle-mcp-core.js (ADR 0007).
@@ -21,8 +20,7 @@ const MCP_PATH = path.join(repoRoot, 'lib', 'core-tools.js');
 const CORE_PATH = path.join(repoRoot, 'skills', 'kurspilot-core.md');
 const GET_QUESTION_PATH = path.join(
   repoRoot,
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'classes',
   'external',

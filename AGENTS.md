@@ -1,6 +1,6 @@
-# Kurspilot
+# Coursepilot
 
-Kurspilot ist ein Node.js-MCP-Server mit Moodle-Plugin, der Codex/Claude per stdio mit der Moodle-REST-API verbindet.
+Coursepilot ist ein Node.js-MCP-Server mit Moodle-Plugin, der Codex/Claude per stdio mit der Moodle-REST-API verbindet.
 
 ## Immer relevant
 

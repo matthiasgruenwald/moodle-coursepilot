@@ -7,8 +7,8 @@ const path = require('node:path');
 const { QUESTION_BANK_TOOLS, QUESTION_BANK_READ_ONLY_TOOL_NAMES } = require('../lib/question-bank-tools');
 
 const root = path.join(__dirname, '..');
-const external = path.join(root, 'Plugin', 'src', 'local_coursepilot', 'classes', 'external', 'get_question_category_cleanup_plan.php');
-const services = path.join(root, 'Plugin', 'src', 'local_coursepilot', 'db', 'services.php');
+const external = path.join(root, 'legacy', 'local_coursepilot', 'classes', 'external', 'get_question_category_cleanup_plan.php');
+const services = path.join(root, 'legacy', 'local_coursepilot', 'db', 'services.php');
 
 test('question category cleanup plan is read-only and identifies every empty leaf category for manual removal', async () => {
   const tool = QUESTION_BANK_TOOLS.find(({ name }) => name === 'moodle_plan_question_category_cleanup');

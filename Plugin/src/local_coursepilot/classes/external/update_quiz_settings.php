@@ -1,141 +1,357 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Coursepilot is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Coursepilot is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
 
+use context_module;
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_multiple_structure;
+use core_external\external_single_structure;
+use core_external\external_value;
+use local_coursepilot\catalog\pseudofield_carry_forward;
+use local_coursepilot\catalog\learner_locks;
+use local_coursepilot\catalog\quiz;
+use local_coursepilot\catalog\quiz_write_bridge;
+use local_coursepilot\write_gate;
+use moodle_exception;
+
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir . '/externallib.php');
-require_once($CFG->dirroot . '/course/lib.php');
-require_once($CFG->dirroot . '/mod/quiz/lib.php');
-require_once(__DIR__ . '/create_quiz.php');
-
-use context_module;
-use external_api;
-use external_function_parameters;
-use external_single_structure;
-use external_value;
-use local_coursepilot\quiz_settings;
-
 /**
- * Patcht Settings eines bestehenden mod_quiz-Aktivitaet (#322, KP-009/KP-012).
+ * Der Quiz-Patch (Spec 0015 §5, Ticket #398): quiz ist eine begruendete
+ * Ausnahme vom generischen Vehikel {@see update_module_settings} - der
+ * Katalog (#383) fuehrt quiz trotzdem, mit `schreibweg(): 'update_quiz_settings'`.
  *
- * Duenner Wrapper um quiz_settings::snapshot()/patch()/persist()/result()
- * (Snapshot+Patch-Modul, analog assign_settings). mode wird nur angewendet,
- * wenn explizit uebergeben ('' = kein Moduswechsel, kein automatischer
- * Sentinel-Default mehr); alle anderen Felder folgen dem gleichen
- * Sentinel-Prinzip wie create_quiz (Layered Defaults).
+ * Read-modify-write wie beim generischen Patch (Spec 0015 §3.3): der
+ * Formularweg (update_moduleinfo()) traegt fuer die meisten Felder, "grade"
+ * laeuft stattdessen ueber {@see quiz_write_bridge::apply_grade_change()}
+ * (Moodles eigener Grade-Calculator statt einer direkten DB-Schreibung,
+ * ADR 0016). Ohne "feedbacktext" im Patch loescht Moodle das Gesamtfeedback
+ * still (quiz_after_add_or_update() loescht immer zuerst) - dieser Endpunkt
+ * liest den Ist-Stand und schreibt ihn deshalb unveraendert mit zurueck,
+ * genauso fuer die 32 Review-Checkboxen und das Passwort (siehe
+ * {@see quiz_write_bridge}-Klassendoku).
+ *
+ * Die drei Modus-Buendel kommen aus dem Katalog ({@see quiz::bundles()}),
+ * nicht aus dieser Werkzeugbeschreibung - ein Buendelwert gilt nur fuer
+ * Felder, die "fields_json" nicht bereits selbst nennt (Spec 0015 §2.4).
+ *
+ * Die Anordnung (Fragen/Seiten/Abschnitte) ist nicht Teil dieses Endpunkts
+ * (Spec 0015 §5, ADR 0016) - sie wird ausschliesslich ueber die 16
+ * mod_quiz-Struktur-Ereignisse versioniert (#396).
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-class update_quiz_settings extends external_api {
+final class update_quiz_settings extends external_api {
 
+    /**
+     * @return external_function_parameters
+     */
     public static function execute_parameters(): external_function_parameters {
-        return new external_function_parameters(array_merge([
-            'cmid'      => new external_value(PARAM_INT, 'Course module ID of the quiz'),
-            'name'      => new external_value(PARAM_TEXT, 'Neuer Quiz-Titel. Leer = nicht ändern.', VALUE_DEFAULT, ''),
-            'intro'     => new external_value(PARAM_RAW, 'Neue Beschreibung/Anleitung des Quiz (HTML). Leer = nicht ändern.', VALUE_DEFAULT, ''),
-            'visible'   => new external_value(PARAM_INT, '1 = sichtbar, 0 = versteckt, -1 = nicht ändern', VALUE_DEFAULT, -1),
-            'mode'      => new external_value(PARAM_ALPHANUMEXT, "Quizmodus: 'mini-check', 'lernstandscheck' oder 'abschlusstest'. Deprecated aliases: 'intensiv', 'lerncheck', 'bewertung'. Leer = kein Moduswechsel (reines Patch der explizit gesetzten Felder).", VALUE_DEFAULT, ''),
-            'gradepass' => new external_value(PARAM_FLOAT, 'Bestehensgrenze in Prozent (0-100). -1 = nicht ändern.', VALUE_DEFAULT, -1),
-            'timelimit' => new external_value(PARAM_INT, 'Zeitlimit in Sekunden (0 = unbegrenzt). -1 = nicht ändern.', VALUE_DEFAULT, -1),
-            'timeopen'  => new external_value(PARAM_INT, 'Öffnungszeitpunkt als Unix-Timestamp (0 = kein Limit). -1 = nicht ändern.', VALUE_DEFAULT, -1),
-            'timeclose' => new external_value(PARAM_INT, 'Schließzeitpunkt als Unix-Timestamp (0 = kein Limit). -1 = nicht ändern.', VALUE_DEFAULT, -1),
-        ], create_quiz::overridable_field_params()));
+        return new external_function_parameters([
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the quiz'),
+            'fields_json' => new external_value(
+                PARAM_RAW,
+                get_string('quizpatchfields', 'local_coursepilot')
+            ),
+            'mode' => new external_value(
+                PARAM_ALPHANUMEXT,
+                'Modus-Buendel: "mini-check", "lernstandscheck" oder "abschlusstest". Buendelwerte gelten nur '
+                    . 'fuer Felder, die fields_json nicht bereits selbst nennt. Leer = kein Moduswechsel.',
+                VALUE_DEFAULT,
+                ''
+            ),
+            'grade' => new external_value(
+                PARAM_FLOAT,
+                'New maximum grade of the quiz - runs through Moodle\'s own grading path (scales existing '
+                    . 'attempt grades and overall feedback boundaries automatically), not via fields_json. '
+                    . '-1 = do not change.',
+                VALUE_DEFAULT,
+                -1.0
+            ),
+            learner_locks::PARAMETER => learner_locks::confirm_parameter(),
+        ]);
     }
 
+    /**
+     * @param int $cmid
+     * @param string $fieldsjson
+     * @param string $mode
+     * @param float $grade
+     * @param string[] $confirmlearnerlocks
+     * @return array
+     */
     public static function execute(
         int $cmid,
-        string $name = '',
-        string $intro = '',
-        int $visible = -1,
+        string $fieldsjson,
         string $mode = '',
-        float $gradepass = -1,
-        int $timelimit = -1,
-        int $timeopen = -1,
-        int $timeclose = -1,
-        string $preferredbehaviour = '',
-        string $navmethod = '',
-        int    $questionsperpage = -1,
-        int    $attempts = -1,
-        int    $attemptonlast = -1,
-        int    $grademethod = -1,
-        int    $delay1 = -1,
-        int    $delay2 = -1,
-        int    $shuffleanswers = -1,
-        int    $decimalpoints = -1,
-        int    $completion = -1,
-        int    $completionusegrade = -1,
-        int    $completionpassgrade = -1,
-        int    $reviewattempt = -1,
-        int    $reviewcorrectness = -1,
-        int    $reviewmaxmarks = -1,
-        int    $reviewmarks = -1,
-        int    $reviewspecificfeedback = -1,
-        int    $reviewgeneralfeedback = -1,
-        int    $reviewrightanswer = -1,
-        int    $reviewoverallfeedback = -1,
-        string $overallfeedbacktextpass = '',
-        string $overallfeedbacktextfail = ''
+        float $grade = -1.0,
+        array $confirmlearnerlocks = []
     ): array {
+        global $CFG, $DB;
+
         $params = self::validate_parameters(self::execute_parameters(), [
-            'cmid'      => $cmid,
-            'name'      => $name,
-            'intro'     => $intro,
-            'visible'   => $visible,
-            'mode'      => $mode,
-            'gradepass' => $gradepass,
-            'timelimit' => $timelimit,
-            'timeopen'  => $timeopen,
-            'timeclose' => $timeclose,
-            'preferredbehaviour' => $preferredbehaviour,
-            'navmethod' => $navmethod,
-            'questionsperpage' => $questionsperpage,
-            'attempts' => $attempts,
-            'attemptonlast' => $attemptonlast,
-            'grademethod' => $grademethod,
-            'delay1' => $delay1,
-            'delay2' => $delay2,
-            'shuffleanswers' => $shuffleanswers,
-            'decimalpoints' => $decimalpoints,
-            'completion' => $completion,
-            'completionusegrade' => $completionusegrade,
-            'completionpassgrade' => $completionpassgrade,
-            'reviewattempt' => $reviewattempt,
-            'reviewcorrectness' => $reviewcorrectness,
-            'reviewmaxmarks' => $reviewmaxmarks,
-            'reviewmarks' => $reviewmarks,
-            'reviewspecificfeedback' => $reviewspecificfeedback,
-            'reviewgeneralfeedback' => $reviewgeneralfeedback,
-            'reviewrightanswer' => $reviewrightanswer,
-            'reviewoverallfeedback' => $reviewoverallfeedback,
-            'overallfeedbacktextpass' => $overallfeedbacktextpass,
-            'overallfeedbacktextfail' => $overallfeedbacktextfail,
+            'cmid' => $cmid,
+            'fields_json' => $fieldsjson,
+            'mode' => $mode,
+            'grade' => $grade,
+            learner_locks::PARAMETER => $confirmlearnerlocks,
         ]);
 
         $cm = get_coursemodule_from_id('quiz', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
+        // Native Berechtigungspruefung vorgezogen, wie
+        // {@see update_module_settings::execute()} - get_moduleinfo_data()
+        // prueft dieselbe Capability spaeter ohnehin erneut.
         require_capability('moodle/course:manageactivities', $context);
 
-        $snapshot = quiz_settings::snapshot($cm);
-        $patched = quiz_settings::patch($snapshot, $params);
-        quiz_settings::persist($cm, $patched);
-        rebuild_course_cache($cm->course, true);
+        // Billigteil der Selbstfreigabe (Spec 0015 §11, ADR 0017, Ticket #399):
+        // dasselbe Regime wie fuer das generische Vehikel gilt unveraendert
+        // fuer das Quiz-Einzelwerkzeug. Lesen bleibt unberuehrt.
+        write_gate::assert_writable('quiz');
 
-        return array_merge([
-            'cmid'           => (int) $cm->id,
-            'mode'           => $patched['mode'],
-            'deprecatedmode' => $patched['deprecatedmode'],
-            'message'        => 'Quiz settings successfully updated.' . ($patched['mode'] !== '' ? ' (mode=' . $patched['mode'] . ')' : ''),
-        ], quiz_settings::result($cm));
+        $patch = json_decode($params['fields_json'], true);
+        if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
+            throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
+        }
+
+        $quiz = $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST);
+        $before = quiz::effective_state($cm, $quiz);
+
+        $bundle = self::bundle_fields($params['mode']);
+        $merged = array_merge($bundle, $patch);
+
+        quiz_write_bridge::validate_fields($merged);
+        $newgrade = $params['grade'] >= 0 ? $params['grade'] : (float) $quiz->grade;
+        quiz_write_bridge::validate_combination_rules(array_merge($before, $merged), $merged, $newgrade);
+        quiz_write_bridge::assert_stealth_allowed($merged);
+        // Riegel (#583): ein nur wiederholter bestehender Riegel braucht
+        // keine erneute Bestaetigung; die Riegel des gewaehlten Modus
+        // bestaetigt die Moduswahl selbst.
+        learner_locks::assert_confirmed(
+            'quiz',
+            learner_locks::find_changed(quiz::class, $merged, $before),
+            learner_locks::confirmed_with_mode($params[learner_locks::PARAMETER], $bundle, $patch)
+        );
+
+        // Eine Grade-Aenderung laeuft ZUERST (Moodles eigener Grade-Calculator,
+        // siehe quiz_write_bridge-Klassendoku): er skaliert bestehende
+        // Gesamtfeedback-Grenzen anteilig auf die neue Bewertung um. Erst
+        // DANACH liest get_moduleinfo_data() den (jetzt aktuellen) Ist-Stand -
+        // sonst wuerden explizit im selben Aufruf mitgegebene, bereits gegen
+        // die neue Bewertung gueltige "feedbackboundaries" durch die
+        // anschliessende Skalierung ein zweites Mal verzerrt.
+        $gradechanged = $params['grade'] >= 0 && abs($params['grade'] - (float) $quiz->grade) > 0.00001;
+        if ($gradechanged) {
+            quiz_write_bridge::apply_grade_change((int) $quiz->id, $params['grade']);
+        }
+
+        $course = get_course((int) $cm->course);
+        require_once($CFG->dirroot . '/course/modlib.php');
+        // get_moduleinfo_data() liefert die rohe quiz-Zeile plus den
+        // gemeinsamen Block (visible, groupmode, cmidnumber, ...) - dieselbe
+        // Grundlage wie beim generischen Patch (update_module_settings).
+        [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
+        // The form state rounds gradepass to display decimals. Preserve the
+        // persisted points exactly unless the patch explicitly replaces them.
+        if ($before['gradepass'] !== null) {
+            $moduleinfo->gradepass = $before['gradepass'];
+        }
+
+        $feedbacktextpatch = $merged['feedbacktext'] ?? null;
+        $feedbackboundariespatch = $merged['feedbackboundaries'] ?? [];
+        $fieldstowrite = $merged;
+        unset($fieldstowrite['feedbacktext'], $fieldstowrite['feedbackboundaries']);
+
+        foreach ($fieldstowrite as $fieldname => $value) {
+            $moduleinfo->{quiz_write_bridge::moduleinfo_property($fieldname)} = $value;
+        }
+
+        // Ein reiner ->intro-Patch wuerde sonst stillschweigend verpuffen
+        // (Abnahmekriterium 2: Beschreibung aendern) - siehe
+        // pseudofield_carry_forward::sync_intro_editor_from_patch().
+        pseudofield_carry_forward::sync_intro_editor_from_patch($moduleinfo, $fieldstowrite);
+
+        // Carry-forward der 32 Review-Checkboxen (quiz_process_options()
+        // berechnet die acht Bitmasken IMMER aus diesen 32 Feldern neu, siehe
+        // quiz_write_bridge-Klassendoku).
+        foreach (quiz_write_bridge::decompose_review_bitmasks($quiz) as $name => $value) {
+            if (!array_key_exists($name, $merged)) {
+                $moduleinfo->{$name} = $value;
+            }
+        }
+
+        // Passwort-Carry-forward (Formularname "quizpassword", siehe Katalog-Klassendoku).
+        if (!array_key_exists('quizpassword', $merged)) {
+            $moduleinfo->quizpassword = (string) $quiz->password;
+        }
+
+        // Gesamtfeedback-Carry-forward (Klassendoku quiz_write_bridge).
+        if ($feedbacktextpatch !== null) {
+            quiz_write_bridge::apply_feedback_pseudofields($moduleinfo, $feedbacktextpatch, $feedbackboundariespatch);
+        } else {
+            $current = quiz_write_bridge::read_feedback((int) $quiz->id);
+            if ($current['feedbacktext']) {
+                quiz_write_bridge::apply_feedback_pseudofields($moduleinfo, $current['feedbacktext'], $current['feedbackboundaries']);
+            }
+        }
+
+        // #400: get_moduleinfo_data() liefert "gradepass" im Anzeigeformat
+        // ("0,00"); ungeprueft zurueckgeschrieben endet der Aufruf im
+        // DB-Schreibfehler, nachdem die Aenderung schon persistiert ist.
+        pseudofield_carry_forward::unformat_localised_gradepass($moduleinfo);
+
+        \update_moduleinfo($cm, $moduleinfo, $course);
+
+        $after = quiz::effective_state($cm, $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST));
+        [$changes, $sideeffects] = self::diff_and_side_effects($merged, $before, $after, $gradechanged);
+
+        return [
+            'cmid' => (int) $cm->id,
+            'message' => self::build_message($changes, $sideeffects),
+            'changes' => $changes,
+            'side_effects' => $sideeffects,
+        ];
     }
 
+    /**
+     * Modus-Buendel aus dem Katalog, oder leer ohne Moduswechsel.
+     *
+     * @param string $mode
+     * @return array<string, mixed>
+     * @throws moodle_exception unknownmode
+     */
+    private static function bundle_fields(string $mode): array {
+        if ($mode === '') {
+            return [];
+        }
+        $bundles = quiz::bundles();
+        if (!array_key_exists($mode, $bundles)) {
+            throw new moodle_exception('unknownmode', 'local_coursepilot', '', [
+                'mode' => $mode,
+                'modi' => implode(', ', array_keys($bundles)),
+            ]);
+        }
+        return $bundles[$mode];
+    }
+
+    /**
+     * Vorher-/Nachher-Diff je tatsaechlich geaendertem Feld (echter Vergleich,
+     * nicht der Patch selbst - identisches Prinzip wie
+     * {@see update_module_settings::diff_and_side_effects()}), plus
+     * Nebenwirkungsvermerke fuer Kalendereintraege bei timeopen/timeclose
+     * (Katalog-Klassendoku quiz::side_effects()) und fuer eine Grade-Aenderung.
+     *
+     * @param array $merged
+     * @param array $before
+     * @param array $after
+     * @param bool $gradechanged
+     * @return array{0: array, 1: string[]}
+     */
+    private static function diff_and_side_effects(array $merged, array $before, array $after, bool $gradechanged): array {
+        $changes = [];
+        $sideeffects = [];
+        $fieldnames = array_keys($merged);
+        if ($gradechanged) {
+            $fieldnames[] = 'grade';
+        }
+
+        foreach (array_unique($fieldnames) as $fieldname) {
+            if (in_array($fieldname, ['feedbacktext', 'feedbackboundaries'], true)) {
+                continue;
+            }
+            $oldvalue = $before[$fieldname] ?? null;
+            $newvalue = $after[$fieldname] ?? null;
+            if ($oldvalue != $newvalue) {
+                $changes[] = [
+                    'field' => $fieldname,
+                    'before_json' => json_encode($oldvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'after_json' => json_encode($newvalue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ];
+            }
+        }
+
+        if (array_key_exists('feedbacktext', $merged) && $before['feedbacktext'] !== $after['feedbacktext']) {
+            $changes[] = [
+                'field' => 'feedbacktext',
+                'before_json' => json_encode($before['feedbacktext'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'after_json' => json_encode($after['feedbacktext'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ];
+        }
+
+        if ((array_key_exists('timeopen', $merged) && (int) $after['timeopen'] > 0)
+                || (array_key_exists('timeclose', $merged) && (int) $after['timeclose'] > 0)) {
+            $sideeffects[] = 'Der Kalendereintrag fuer den Test wurde aktualisiert.';
+        }
+        if ($gradechanged) {
+            $sideeffects[] = 'Bestehende Versuchsnoten und Gesamtfeedback-Grenzen wurden anteilig auf die neue Bewertung umgerechnet.';
+        }
+
+        return [$changes, $sideeffects];
+    }
+
+    /**
+     * Die Lehrkraft-deutsche Aenderungsmeldung (Spec 0015 §3.3/§5).
+     *
+     * @param array $changes
+     * @param string[] $sideeffects
+     * @return string
+     */
+    private static function build_message(array $changes, array $sideeffects): string {
+        if (!$changes) {
+            return 'Keine Aenderung: der Patch stimmte bereits mit dem aktuellen Stand ueberein.';
+        }
+
+        $parts = [];
+        foreach ($changes as $change) {
+            $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
+        }
+        $message = 'Geaendert: ' . implode(', ', $parts) . '.';
+
+        if ($sideeffects) {
+            $message .= ' ' . implode(' ', $sideeffects);
+        }
+
+        return $message;
+    }
+
+    /**
+     * @return external_single_structure
+     */
     public static function execute_returns(): external_single_structure {
-        return new external_single_structure(array_merge([
-            'cmid'           => new external_value(PARAM_INT, 'Course module ID of the updated quiz'),
-            'mode'           => new external_value(PARAM_TEXT, 'Tatsächlich angewendeter Modus (leer, wenn kein Moduswechsel erfolgte)'),
-            'deprecatedmode' => new external_value(PARAM_BOOL, 'True when a deprecated alias was accepted and mapped'),
-            'message'        => new external_value(PARAM_TEXT, 'Success message'),
-        ], create_quiz::saved_settings_return_structure()));
+        return new external_single_structure([
+            'cmid' => new external_value(PARAM_INT, 'Course module ID'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'changes' => new external_multiple_structure(
+                new external_single_structure([
+                    'field' => new external_value(PARAM_TEXT, 'Field name'),
+                    'before_json' => new external_value(PARAM_RAW, 'JSON-encoded value before the write'),
+                    'after_json' => new external_value(PARAM_RAW, 'JSON-encoded value after the write'),
+                ]),
+                'One entry per field that actually changed'
+            ),
+            'side_effects' => new external_multiple_structure(
+                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                'Triggered side effects, empty when none were triggered'
+            ),
+        ]);
     }
 }

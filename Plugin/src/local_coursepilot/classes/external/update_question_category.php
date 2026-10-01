@@ -1,94 +1,108 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Coursepilot is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Coursepilot is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
 
+use context;
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_single_structure;
+use core_external\external_value;
+
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
-require_once($CFG->dirroot . '/question/classes/local/bank/question_bank_helper.php');
-
-use context_course;
-use context_module;
-use core_question\local\bank\question_bank_helper;
-use local_coursepilot\question_category_defaults;
-use external_api;
-use external_function_parameters;
-use external_single_structure;
-use external_value;
 
 /**
- * Renames and/or moves a question category subtree into a selected
- * named question bank context without deleting questions or categories.
+ * Umbenennen und/oder Verschieben einer Fragenbank-Kategorie (Spec 0017 §1,
+ * Ticket #413) - bewusst auf echte Aenderungen verengt: Anlegen-oder-Finden
+ * ist {@see ensure_question_category}, dieser Endpunkt legt nie an.
+ *
+ * Kontextauflösung wie ensure_question_category direkt ueber die
+ * (Ziel-)Kategorie, kein courseid/questionbankid-Parameter noetig - anders
+ * als das aeltere lokale Pendant
+ * local_coursepilot\external\update_question_category, dessen Muster als
+ * Vorbild fuer Zyklus-/Top-Kategorie-/Namenskollisionsschutz diente.
+ *
+ * Fragen und ihre Versionen werden nie angefasst - nur die
+ * question_categories-Zeile(n) selbst (Name, Parent, ggf. contextid des
+ * gesamten Unterbaums bei Umzug in eine andere Fragensammlung).
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-class update_question_category extends external_api {
+final class update_question_category extends external_api {
 
+    /**
+     * @return external_function_parameters
+     */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'courseid'       => new external_value(PARAM_INT, 'Course ID of the target course'),
-            'categoryid'     => new external_value(PARAM_INT, 'Question category ID to rename and/or move'),
-            'questionbankid' => new external_value(PARAM_INT, 'Course module ID of the target named question bank'),
-            'name'           => new external_value(PARAM_TEXT, 'New category name (empty string keeps the current name)', VALUE_DEFAULT, ''),
-            'parent'         => new external_value(PARAM_INT, 'Target parent category ID (0 = top category of the selected question bank)', VALUE_DEFAULT, 0),
+            'categoryid' => new external_value(PARAM_INT, 'ID of the category to change'),
+            'name' => new external_value(PARAM_TEXT, 'New category name (empty = keep the current name)', VALUE_DEFAULT, ''),
+            'parent' => new external_value(PARAM_INT, 'ID of the new parent category (0 = keep the current parent)', VALUE_DEFAULT, 0),
         ]);
     }
 
-    public static function execute(
-        int $courseid,
-        int $categoryid,
-        int $questionbankid,
-        string $name = '',
-        int $parent = 0
-    ): array {
+    /**
+     * @param int $categoryid
+     * @param string $name
+     * @param int $parent
+     * @return array
+     */
+    public static function execute(int $categoryid, string $name = '', int $parent = 0): array {
         global $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [
-            'courseid'       => $courseid,
-            'categoryid'     => $categoryid,
-            'questionbankid' => $questionbankid,
-            'name'           => $name,
-            'parent'         => $parent,
+            'categoryid' => $categoryid,
+            'name' => $name,
+            'parent' => $parent,
         ]);
 
-        $coursecontext = context_course::instance($params['courseid']);
-        self::validate_context($coursecontext);
-        require_capability('local/coursepilot:use', $coursecontext);
-        $course = $DB->get_record('course', ['id' => $params['courseid']], '*', MUST_EXIST);
-
         $category = $DB->get_record('question_categories', ['id' => $params['categoryid']], '*', MUST_EXIST);
-        $sourcecontext = \context::instance_by_id((int) $category->contextid, MUST_EXIST);
+        $sourcecontext = context::instance_by_id((int) $category->contextid, MUST_EXIST);
         self::validate_context($sourcecontext);
         require_capability('local/coursepilot:use', $sourcecontext);
         require_capability('moodle/question:managecategory', $sourcecontext);
 
-        $targetcontext = self::resolve_question_bank_context((int) $course->id, $params['questionbankid']);
-        self::validate_context($targetcontext);
-        require_capability('local/coursepilot:use', $targetcontext);
-        require_capability('moodle/question:managecategory', $targetcontext);
-
         $sourcetopcategory = question_get_top_category($sourcecontext->id, true);
         if ((int) $category->id === (int) $sourcetopcategory->id) {
-            throw new \invalid_parameter_exception('The top category cannot be renamed or moved.');
+            throw new \invalid_parameter_exception('Die oberste Kategorie einer Fragensammlung kann nicht umbenannt oder verschoben werden.');
         }
 
-        $targettopcategory = question_get_top_category($targetcontext->id, true);
-        $targetparentid = $params['parent'] > 0 ? $params['parent'] : (int) $targettopcategory->id;
-
+        $targetparentid = $params['parent'] > 0 ? $params['parent'] : (int) $category->parent;
         if ($targetparentid === (int) $category->id) {
-            throw new \invalid_parameter_exception('A question category cannot be its own parent.');
+            throw new \invalid_parameter_exception('Eine Kategorie kann nicht ihre eigene Elternkategorie sein.');
         }
 
-        if ($params['parent'] > 0) {
-            $targetparent = $DB->get_record('question_categories', ['id' => $targetparentid], '*', MUST_EXIST);
-            if ((int) $targetparent->contextid !== (int) $targetcontext->id) {
-                throw new \invalid_parameter_exception('Target parent category was not found in the selected question bank.');
-            }
+        $targetparent = $params['parent'] > 0
+            ? $DB->get_record('question_categories', ['id' => $targetparentid], '*', MUST_EXIST)
+            : $DB->get_record('question_categories', ['id' => $category->parent], '*', MUST_EXIST);
+        $targetcontext = context::instance_by_id((int) $targetparent->contextid, MUST_EXIST);
+
+        if ((int) $targetcontext->id !== (int) $sourcecontext->id) {
+            self::validate_context($targetcontext);
+            require_capability('local/coursepilot:use', $targetcontext);
+            require_capability('moodle/question:managecategory', $targetcontext);
         }
 
         $subtreeids = self::collect_subtree_ids((int) $category->id);
         if (in_array($targetparentid, $subtreeids, true)) {
-            throw new \invalid_parameter_exception('A question category cannot be moved into one of its own child categories.');
+            throw new \invalid_parameter_exception('Eine Kategorie kann nicht in eine ihrer eigenen Unterkategorien verschoben werden.');
         }
 
         $targetname = trim($params['name']) !== '' ? $params['name'] : $category->name;
@@ -100,7 +114,7 @@ class update_question_category extends external_api {
         ]);
         if ($conflict && (int) $conflict->id !== (int) $category->id) {
             throw new \invalid_parameter_exception(
-                'A question category with this name already exists under the selected target parent.'
+                'Unter der Zielkategorie gibt es bereits eine Kategorie mit diesem Namen.'
             );
         }
 
@@ -110,25 +124,42 @@ class update_question_category extends external_api {
 
         $transaction = $DB->start_delegated_transaction();
 
-        if ((int) $category->contextid !== (int) $targetcontext->id) {
-            foreach ($subtreeids as $subtreeid) {
-                $record = new \stdClass();
-                $record->id = $subtreeid;
-                $record->contextid = $targetcontext->id;
-                $DB->update_record('question_categories', $record);
-            }
-        }
-
         $update = new \stdClass();
         $update->id = (int) $category->id;
         $update->name = $targetname;
         $update->parent = $targetparentid;
-        if ($moved) {
-            $update->sortorder = self::next_sortorder();
+
+        if ($moved && (int) $category->contextid !== (int) $targetcontext->id) {
+            // Ein Kontextwechsel ist mehr als die contextid-Spalte: an den
+            // Fragen haengen Dateien (Fragebilder liegen im Kontext der
+            // Fragensammlung), Schlagwoerter und Slot-Referenzen aus Tests.
+            // question_move_category_to_context() zieht all das nach und
+            // schreibt die contextid des Unterbaums um - eine eigene
+            // Schleife ueber die Kategoriezeilen laesst die Bilder im alten
+            // Kontext zurueck, sichtbar erst, wenn jemand die Frage
+            // aufschlaegt.
+            question_move_category_to_context(
+                (int) $category->id,
+                (int) $category->contextid,
+                (int) $targetcontext->id
+            );
+            // Die Kernfunktion setzt die contextid nur fuer die
+            // Unterkategorien, nicht fuer die uebergebene Kategorie selbst -
+            // und deren Slot-Referenzen fasst sie ebenfalls nicht an.
+            move_question_set_references(
+                (int) $category->id,
+                (int) $category->id,
+                (int) $category->contextid,
+                (int) $targetcontext->id
+            );
+            $update->contextid = (int) $targetcontext->id;
         }
+
         $DB->update_record('question_categories', $update);
 
         $transaction->allow_commit();
+
+        $message = self::build_message($renamed, $moved, $targetname);
 
         return [
             'id' => (int) $category->id,
@@ -137,35 +168,33 @@ class update_question_category extends external_api {
             'contextid' => (int) $targetcontext->id,
             'moved' => $moved,
             'renamed' => $renamed,
-            'updatedcategories' => count($subtreeids),
-            'message' => 'Question category "' . $targetname . '" successfully updated.',
+            'message' => $message,
         ];
     }
 
-    private static function resolve_question_bank_context(int $courseid, int $questionbankid): context_module {
-        global $DB;
-
-        $modulename = question_bank_helper::get_default_question_bank_activity_name();
-        $sql = "SELECT cm.id
-                  FROM {course_modules} cm
-                  JOIN {modules} m ON m.id = cm.module
-                  JOIN {{$modulename}} qb ON qb.id = cm.instance
-                 WHERE cm.id = :questionbankid
-                   AND cm.course = :courseid
-                   AND m.name = :modulename";
-        $bankrecord = $DB->get_record_sql($sql, [
-            'questionbankid' => $questionbankid,
-            'courseid' => $courseid,
-            'modulename' => $modulename,
-        ]);
-
-        if (!$bankrecord) {
-            throw new \invalid_parameter_exception('Selected question bank was not found in this course.');
+    /**
+     * @param bool $renamed
+     * @param bool $moved
+     * @param string $name
+     * @return string
+     */
+    private static function build_message(bool $renamed, bool $moved, string $name): string {
+        if ($renamed && $moved) {
+            return 'Kategorie in "' . $name . '" umbenannt und verschoben.';
         }
-
-        return context_module::instance((int) $bankrecord->id);
+        if ($renamed) {
+            return 'Kategorie in "' . $name . '" umbenannt.';
+        }
+        if ($moved) {
+            return 'Kategorie "' . $name . '" verschoben.';
+        }
+        return 'Keine Änderung: Name und Elternkategorie sind unverändert.';
     }
 
+    /**
+     * @param int $categoryid
+     * @return int[]
+     */
     private static function collect_subtree_ids(int $categoryid): array {
         global $DB;
 
@@ -185,20 +214,18 @@ class update_question_category extends external_api {
         return $ids;
     }
 
-    private static function next_sortorder(): int {
-        return question_category_defaults::SORTORDER;
-    }
-
+    /**
+     * @return external_single_structure
+     */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'id' => new external_value(PARAM_INT, 'Updated category ID'),
-            'name' => new external_value(PARAM_TEXT, 'Current category name after update'),
-            'parent' => new external_value(PARAM_INT, 'Current parent category ID after update'),
-            'contextid' => new external_value(PARAM_INT, 'Context ID of the selected target question bank'),
-            'moved' => new external_value(PARAM_BOOL, 'true if the category parent and/or context changed'),
-            'renamed' => new external_value(PARAM_BOOL, 'true if the category name changed'),
-            'updatedcategories' => new external_value(PARAM_INT, 'Number of affected categories including moved child categories'),
-            'message' => new external_value(PARAM_TEXT, 'Status message'),
+            'id' => new external_value(PARAM_INT, 'ID of the changed category'),
+            'name' => new external_value(PARAM_TEXT, 'Category name after the change'),
+            'parent' => new external_value(PARAM_INT, 'ID of the parent category after the change'),
+            'contextid' => new external_value(PARAM_INT, 'Context ID of the category after the change'),
+            'moved' => new external_value(PARAM_BOOL, 'true if the parent category and/or context changed'),
+            'renamed' => new external_value(PARAM_BOOL, 'true if the name changed'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
         ]);
     }
 }

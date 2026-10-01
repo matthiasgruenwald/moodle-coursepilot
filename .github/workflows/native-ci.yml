@@ -1,0 +1,281 @@
+# Native Server-MCP CI (Issue #268, Spec 0025 / Release-Reife #567).
+#
+# Prueft ausschliesslich den nativen Server-MCP (Plugin/src/local_coursepilot)
+# reproduzierbar auf frischen GitHub-Actions-Runnern - kein Zugriff auf die
+# Spike- oder Produktivinstanz, keine persoenlichen Verbindungen, kein
+# Praxiskurs (User Story 2/14). Der eingefrorene Altstand (legacy/) wird
+# weder gebaut noch getestet noch veraendert.
+#
+# Vier Pflichtjobs plus ein stabiler Gesamtcheck ("Gate (required)"), der als
+# einziger Merge-Check dient - Matrixleg-Namen duerfen sich aendern, ohne die
+# Branch-Protection-Regel neu einrichten zu muessen (User Story 13):
+#
+#   phpunit   - volle native PHPUnit-Suite (inkl. Vertragstests aus #567) je
+#               unterstuetzter Moodle-Version; ein benannter Leg
+#               (MOODLE_500_STABLE) erhebt zusaetzlich die 80%-Line-Coverage
+#               ueber den gesamten nativen PHP-Produktionscode
+#               (tests/coverage.php), inklusive nie ausgefuehrter Zeilen.
+#   js-native - natives JS/AMD: Syntaxpruefung des AMD-Quellmoduls plus die
+#               Node-Suite ohne die dokumentiert plattform-/altstandgebundenen
+#               Faelle (scripts/ci/run-js-tests.js).
+#   artifact  - baut das installierbare Release-ZIP (#577) und installiert es
+#               auf einer eigenen, vom phpunit-Job getrennten frischen
+#               Moodle-Instanz; prueft Registrierung, Discovery und einen
+#               autorisierten MCP-Werkzeugaufruf (scripts/ci/verify-native-artifact.php).
+#   gate      - aggregiert die drei obigen Jobs. Laeuft mit if:always() und
+#               wertet needs.*.result explizit aus, damit ein uebersprungener
+#               oder fehlgeschlagener Pflichtjob nie zu einem gruenen
+#               Gesamtcheck fuehrt (Testing Decisions #268).
+#
+# Bewusst KEIN paths-Filter: Aenderungen an Test-, Build- und
+# Workflow-Konfiguration selbst loesen den Pflichtlauf aus, kein
+# unbeabsichtigtes Ausblenden ueber Pfadmuster.
+#
+# Supportmatrix (dokumentiert, siehe auch docs/ci-native-server-mcp.md):
+#   Moodle 5.0 (MOODLE_500_STABLE) - Pflicht, bestehender Nachweis.
+#   Moodle 5.1 (MOODLE_501_STABLE) - Pflicht vor der in ADR 0024 vorgesehenen
+#     Mindestversionsanhebung. Keine Zusage fuer neuere Moodle-Versionen.
+#   PHP 8.4, MariaDB.
+
+name: Native Server-MCP CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request: {}
+  workflow_dispatch: {}
+
+# Nur der neueste Lauf je Ref zaehlt - keine veralteten, parallel laufenden
+# Ergebnisse fuer denselben Branch/PR.
+concurrency:
+  group: native-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phpunit:
+    name: PHPUnit (${{ matrix.moodle-branch }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - moodle-branch: MOODLE_500_STABLE
+            measures-coverage: true
+          - moodle-branch: MOODLE_501_STABLE
+            measures-coverage: false
+    env:
+      PHP_VERSION: '8.4'
+      DB: mariadb
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+          MYSQL_CHARACTER_SET_SERVER: utf8mb4
+          MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Native Plugin-Quelle und Coverage-Gate-Skript auschecken
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+          sparse-checkout: |
+            Plugin/src/local_coursepilot
+            scripts/ci
+
+      - name: Node einrichten (fuer das Coverage-Gate-Skript)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: PHP einrichten (Coverage-Treiber nur auf dem messenden Leg)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pgsql, mysqli, gd, zip, soap, intl, exif, mbstring, xml
+          coverage: ${{ matrix.measures-coverage && 'pcov' || 'none' }}
+          # Uploadgrenzen wie auf realen Kurspilot-Servern (Spike: 200M/206M);
+          # import_questions_xml_test setzt voraus, dass die Servergrenze
+          # ueber der Fachgrenze MAX_XML_BYTES liegt (PHP-Default 2M nicht).
+          ini-values: max_input_vars=5000, upload_max_filesize=200M, post_max_size=206M
+          tools: composer:v2
+
+      - name: moodle-plugin-ci installieren
+        run: |
+          composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
+          echo "$(cd ci/bin; pwd)" >> "$GITHUB_PATH"
+          echo "$(cd ci/vendor/bin; pwd)" >> "$GITHUB_PATH"
+          sudo locale-gen en_AU.UTF-8
+
+      - name: Native Plugin unter dem erwarteten Namen bereitstellen
+        run: |
+          mkdir -p ci-plugin
+          cp -R plugin/Plugin/src/local_coursepilot ci-plugin/local_coursepilot
+
+      - name: Moodle + Testdatenbank + Testdateibereich einrichten (frisch, kein Spike-Zugriff)
+        env:
+          MOODLE_BRANCH: ${{ matrix.moodle-branch }}
+        run: moodle-plugin-ci install --plugin ci-plugin/local_coursepilot --db-host=127.0.0.1
+
+      - name: PHP-Syntaxpruefung (guenstiges Sicherheitsnetz vor dem vollen Testlauf)
+        run: moodle-plugin-ci phplint
+
+      - name: Volle native PHPUnit-Suite (inkl. Vertragstests aus #567), Coverage nur auf dem messenden Leg
+        run: |
+          if [ "${{ matrix.measures-coverage }}" = "true" ]; then
+            moodle-plugin-ci phpunit --coverage-clover
+          else
+            moodle-plugin-ci phpunit
+          fi
+
+      - name: 80%-Coverage-Gate (nur messender Leg)
+        if: matrix.measures-coverage
+        # moodle-plugin-ci schreibt --coverage-clover als coverage.xml in das
+        # Arbeitsverzeichnis, aus dem `moodle-plugin-ci` selbst aufgerufen
+        # wurde (getcwd() im CI-Tool-Prozess) - hier $GITHUB_WORKSPACE, da
+        # kein Schritt zuvor das Verzeichnis wechselt.
+        run: node plugin/scripts/ci/check-coverage.js "${{ github.workspace }}/coverage.xml" --threshold=80
+
+      - name: Test- und Coverage-Berichte hochladen (auch bei Fehlschlag)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpunit-${{ matrix.moodle-branch }}-${{ github.sha }}
+          path: |
+            ${{ github.workspace }}/coverage.xml
+          if-no-files-found: warn
+          retention-days: 30
+
+  js-native:
+    name: Native JS/AMD
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: AMD-Quellmodul syntaktisch pruefen
+        run: node --check Plugin/src/local_coursepilot/amd/src/ortswahl.js
+
+      - name: Native JS-Suite (dokumentierter Ausschluss plattform-/altstandgebundener Faelle)
+        run: node scripts/ci/run-js-tests.js
+
+  artifact:
+    name: Release-Artefakt (frische Installation)
+    runs-on: ubuntu-22.04
+    env:
+      PHP_VERSION: '8.4'
+      DB: mariadb
+      MOODLE_BRANCH: MOODLE_500_STABLE
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+          MYSQL_CHARACTER_SET_SERVER: utf8mb4
+          MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: PHP einrichten
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pgsql, mysqli, gd, zip, soap, intl, exif, mbstring, xml
+          coverage: none
+          ini-values: max_input_vars=5000
+          tools: composer:v2
+
+      - name: Release-ZIP bauen (#577)
+        run: npm run build:native-release
+
+      - name: ZIP-Pruefsumme protokollieren (Abnahmenachweis #578)
+        # upload-artifact verpackt das ZIP erneut - nur diese Zeile nennt die
+        # Pruefsumme des Plugin-ZIPs selbst.
+        run: sha256sum dist/native-release/local_coursepilot-*.zip
+
+      - name: ZIP entpacken - dasselbe Artefakt, das eine Administration installieren wuerde
+        run: |
+          mkdir -p artifact-plugin
+          unzip -q dist/native-release/local_coursepilot-*.zip -d artifact-plugin
+
+      - name: moodle-plugin-ci installieren
+        run: |
+          composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
+          echo "$(cd ci/bin; pwd)" >> "$GITHUB_PATH"
+          echo "$(cd ci/vendor/bin; pwd)" >> "$GITHUB_PATH"
+          sudo locale-gen en_AU.UTF-8
+
+      - name: Frische Moodle-Instanz mit dem entpackten ZIP installieren (getrennt vom phpunit-Job)
+        run: moodle-plugin-ci install --plugin artifact-plugin/local_coursepilot --db-host=127.0.0.1
+
+      - name: PHP-Syntaxpruefung des installierten Artefakts
+        run: moodle-plugin-ci phplint
+
+      - name: Moodle-Site installieren (moodle-plugin-ci richtet nur die PHPUnit-Datenbank ein)
+        # Zufaelliges Admin-Passwort je Lauf, nirgends ausgegeben.
+        run: |
+          php moodle/admin/cli/install_database.php --agree-license \
+            --adminpass="CI#$(openssl rand -hex 16)" --adminemail=admin@example.com \
+            --fullname="Coursepilot CI" --shortname="CI"
+
+      - name: Registrierung, Discovery und autorisierten Werkzeugaufruf pruefen
+        # moodle-plugin-ci klont Moodle standardmaessig nach ./moodle
+        # (relativ zum Aufrufverzeichnis, hier $GITHUB_WORKSPACE).
+        run: |
+          cp scripts/ci/verify-native-artifact.php moodle/admin/cli/verify-native-artifact.php
+          php moodle/admin/cli/verify-native-artifact.php
+
+      - name: Artefakt hochladen (auch bei Fehlschlag)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-release-zip-${{ github.sha }}
+          path: dist/native-release/local_coursepilot-*.zip
+          if-no-files-found: warn
+          retention-days: 30
+
+  gate:
+    name: Gate (required)
+    if: always()
+    needs: [phpunit, js-native, artifact]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Alle Pflichtjobs erfolgreich?
+        run: |
+          echo "phpunit:   ${{ needs.phpunit.result }}"
+          echo "js-native: ${{ needs.js-native.result }}"
+          echo "artifact:  ${{ needs.artifact.result }}"
+          if [ "${{ needs.phpunit.result }}" != "success" ] || \
+             [ "${{ needs.js-native.result }}" != "success" ] || \
+             [ "${{ needs.artifact.result }}" != "success" ]; then
+            echo "::error::Mindestens ein Pflichtjob ist nicht erfolgreich (uebersprungen zaehlt als nicht erfolgreich)."
+            exit 1
+          fi
+          echo "Alle Pflichtjobs erfolgreich."

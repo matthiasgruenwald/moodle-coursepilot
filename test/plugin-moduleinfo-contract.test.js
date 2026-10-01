@@ -6,8 +6,7 @@ const path = require('node:path');
 const CREATE_ASSIGN_PATH = path.join(
   __dirname,
   '..',
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'classes',
   'external',
@@ -16,8 +15,7 @@ const CREATE_ASSIGN_PATH = path.join(
 const ASSIGN_SETTINGS_PATH = path.join(
   __dirname,
   '..',
-  'Plugin',
-  'src',
+  'legacy',
   'local_coursepilot',
   'classes',
   'assign_settings.php'

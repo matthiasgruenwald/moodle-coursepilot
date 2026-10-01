@@ -6,6 +6,7 @@
 .env.*
 !.env.example
 !.env.plugin-deploy.example
+!.env.e2e.spike.example
 moodle-config.json
 moodle.config.json
 config.local.json
@@ -35,6 +36,11 @@ temp/
 # ausschliesslich das GPL-Plugin. Entsteht lokal und bleibt aus dem Primaer-Repo
 # raus - der eigentliche Mirror ist ein separates, schreibgeschuetztes Repository.
 /dist/mirror/
+
+# Generiertes Release-Artefakt der nativen Server-MCP-Linie (npm run
+# build:native-release, Issue #577): ZIP und Quellstand aus
+# Plugin/src/local_coursepilot. Baubar, gehoert nicht ins Repo.
+/dist/native-release/
 
 # Node/editor/runtime artifacts
 node_modules/
@@ -75,3 +81,6 @@ Thumbs.db
 /.opencode/skills/design/
 /.opencode/skills/slides/
 /.opencode/skills/ui-styling/
+
+# Belege und Token eines Abnahmelaufs (scripts/spike-abnahme-426.sh)
+.abnahme-426/

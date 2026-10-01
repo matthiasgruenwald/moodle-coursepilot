@@ -1,0 +1,49 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_coursepilot/ortswahl_browse_error
+
+    Fehlerbox beim Blaettern im Dateifenster der Ortswahl (Issue #526, #551):
+    Zeitueberschreitung oder ein vom Server beantworteter Fehler, mit den drei
+    Ausweg-Aktionen (erneut versuchen, Zugang pruefen, spaeter). Gefuellt vom
+    AMD-Modul amd/src/ortswahl.js statt per createElement-Handarbeit.
+
+    Context variables required for this template:
+    * title - string - error heading
+    * text - string - error detail text
+    * retrylabel - string - label of the retry button
+    * checkcredentialsurl - string - link to the connection management page
+    * checkcredentialslabel - string - label of the check-credentials link
+    * laterlabel - string - label of the "later" button
+
+    Example context (json):
+    {
+        "title": "Zeitueberschreitung",
+        "text": "Der Speicher hat nicht rechtzeitig geantwortet.",
+        "retrylabel": "Erneut versuchen",
+        "checkcredentialsurl": "https://example.org/repository/manage_instances.php",
+        "checkcredentialslabel": "Zugang pruefen",
+        "laterlabel": "Spaeter"
+    }
+}}
+<div class="alert alert-warning">
+    <strong>{{title}}</strong>
+    <p class="mb-2">{{text}}</p>
+    <button type="button" class="btn btn-sm btn-primary me-2" data-action="retry">{{retrylabel}}</button>
+    <a class="btn btn-sm btn-outline-secondary me-2" href="{{checkcredentialsurl}}" target="_blank" rel="noopener">{{checkcredentialslabel}}</a>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="later">{{laterlabel}}</button>
+</div>

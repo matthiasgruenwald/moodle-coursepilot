@@ -16,12 +16,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const EXTERNAL_DIR = path.join(
-  __dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'external'
+  __dirname, '..', 'legacy', 'local_coursepilot', 'classes', 'external'
 );
 const UPLOAD_PATH = path.join(EXTERNAL_DIR, 'upload_question_image.php');
 const GET_QUESTION_PATH = path.join(EXTERNAL_DIR, 'get_question.php');
 const VERSION_HELPER_PATH = path.join(
-  __dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'mc_question_version.php'
+  __dirname, '..', 'legacy', 'local_coursepilot', 'classes', 'mc_question_version.php'
 );
 
 test('upload_question_image.php validiert area, answerid-Pflicht und MIME/Groesse ueber fileupload_helper', () => {
@@ -65,7 +65,7 @@ test('upload_question_image.php validiert area, answerid-Pflicht und MIME/Groess
 
 test('db/services.php registriert local_coursepilot_upload_question_image im Coursepilot-Dienst', () => {
   const servicesPath = path.join(
-    __dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'db', 'services.php'
+    __dirname, '..', 'legacy', 'local_coursepilot', 'db', 'services.php'
   );
   const source = fs.readFileSync(servicesPath, 'utf8');
 

@@ -1,130 +1,150 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Coursepilot is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Coursepilot is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
 
+use context_course;
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_single_structure;
+use core_external\external_value;
+use moodle_exception;
+
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir . '/externallib.php');
-require_once($CFG->dirroot . '/course/lib.php');
-
-use context_course;
-use external_api;
-use external_function_parameters;
-use external_single_structure;
-use external_value;
-use invalid_parameter_exception;
-
 /**
- * Moves an existing course module to another position without changing content.
+ * Schreibkern 13 (Spec 0015 Phase 3, Ticket #391): verschiebt eine Aktivitaet
+ * in einen (anderen) Abschnitt, optional an eine bestimmte Position darin.
+ *
+ * Ticket #391 nennt cmactions::move_before()/move_end_section() als
+ * Zielapi der 5.2-Nachfolge (MDL-86854). Auf dieser Instanz (echte
+ * Moodle-5.0.8-Quelle, /opt/moodle/course/format/classes/local/cmactions.php)
+ * fuehrt cmactions bisher nur rename()/set_visibility() - kein move. Der
+ * tatsaechlich existierende, NICHT-deprecated Kommando-Bus fuer diese Aktion
+ * ist {@see \core_courseformat\stateactions::cm_move()} - dieselbe Methode,
+ * die core_courseformat\external\update_course ("core_courseformat_update_course",
+ * von der JS-Kursbearbeitung genutzt) fuer die Aktion "cm_move" aufruft.
+ * cm_move() prueft 'moodle/course:manageactivities' bereits selbst. Kein
+ * direkter Aufruf von moveto_module() - das bleibt Moodles eigene interne
+ * Implementierung hinter dieser Abstraktion.
+ *
+ * "position" bildet cmactions::move_before() nach: der Index (0-basiert) der
+ * Aktivitaet im Zielabschnitt, VOR die verschoben wird. Ohne Angabe, mit
+ * negativem Index oder mit Index >= Anzahl vorhandener Aktivitaeten entspricht
+ * das move_end_section() - ans Ende des Zielabschnitts.
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-class move_module extends external_api {
+final class move_module extends external_api {
 
+    /**
+     * @return external_function_parameters
+     */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'courseid' => new external_value(PARAM_INT, 'Course ID'),
-            'cmid' => new external_value(PARAM_INT, 'Course module ID to move'),
-            'beforecmid' => new external_value(PARAM_INT, 'Move directly before this course module ID; 0 = unused', VALUE_DEFAULT, 0),
-            'aftercmid' => new external_value(PARAM_INT, 'Move directly after this course module ID; 0 = unused', VALUE_DEFAULT, 0),
-            'targetsectionnum' => new external_value(PARAM_INT, 'Target section number for moving to section end; -1 = infer from before/after', VALUE_DEFAULT, -1),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity to move'),
+            'sectionnum' => new external_value(PARAM_INT, 'Target section number (0-based)'),
+            'position' => new external_value(
+                PARAM_INT,
+                'Optionaler 0-basierter Zielindex im Zielabschnitt (vor die dort aktuell stehende Aktivitaet); '
+                    . 'ohne Angabe ans Ende des Zielabschnitts',
+                VALUE_DEFAULT,
+                null,
+                NULL_ALLOWED
+            ),
         ]);
     }
 
-    public static function execute(
-        int $courseid,
-        int $cmid,
-        int $beforecmid = 0,
-        int $aftercmid = 0,
-        int $targetsectionnum = -1
-    ): array {
-        global $DB;
-
+    /**
+     * @param int $cmid
+     * @param int $sectionnum
+     * @param int|null $position
+     * @return array
+     * @throws moodle_exception sectionnotfound
+     */
+    public static function execute(int $cmid, int $sectionnum, ?int $position = null): array {
         $params = self::validate_parameters(self::execute_parameters(), [
-            'courseid' => $courseid,
             'cmid' => $cmid,
-            'beforecmid' => $beforecmid,
-            'aftercmid' => $aftercmid,
-            'targetsectionnum' => $targetsectionnum,
+            'sectionnum' => $sectionnum,
+            'position' => $position,
         ]);
 
-        if ($params['beforecmid'] > 0 && $params['aftercmid'] > 0) {
-            throw new invalid_parameter_exception('Nur beforecmid oder aftercmid setzen, nicht beide.');
-        }
-        if ($params['beforecmid'] === $params['cmid'] || $params['aftercmid'] === $params['cmid']) {
-            throw new invalid_parameter_exception('Eine Aktivitaet kann nicht relativ zu sich selbst verschoben werden.');
-        }
-        if ($params['beforecmid'] <= 0 && $params['aftercmid'] <= 0 && $params['targetsectionnum'] < 0) {
-            throw new invalid_parameter_exception('beforecmid, aftercmid oder targetsectionnum ist erforderlich.');
-        }
-
-        $context = context_course::instance($params['courseid']);
+        $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
+        $context = context_course::instance($cm->course);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
+        // Native Berechtigungspruefung: stateactions::cm_move() prueft
+        // 'moodle/course:manageactivities' ohnehin selbst erneut - der
+        // Aufruf hier ist billig und stellt sicher, dass eine fehlende
+        // Berechtigung nicht hinter einer Positionsvalidierung versteckt
+        // bleibt.
         require_capability('moodle/course:manageactivities', $context);
 
-        $cm = get_coursemodule_from_id(null, $params['cmid'], $params['courseid'], false, MUST_EXIST);
-        $targetsection = null;
-        $beforemod = null;
+        $course = get_course($cm->course);
+        $modinfo = get_fast_modinfo($course);
+        $sections = $modinfo->get_section_info_all();
+        // Eigene Coursepilot-Fehlermeldung statt get_section_info(...,
+        // MUST_EXIST) - dieselbe Fehlerstrategie (deutsche, mit
+        // describe-naheliegender Meldung) wie update_section/move_section
+        // fuer denselben Fall "Zielabschnitt existiert nicht".
+        if (!array_key_exists($params['sectionnum'], $sections)) {
+            throw new moodle_exception('sectionnotfound', 'local_coursepilot', '', ['sectionnum' => $params['sectionnum']]);
+        }
+        $targetsection = $sections[$params['sectionnum']];
 
-        if ($params['beforecmid'] > 0) {
-            $beforemod = get_coursemodule_from_id(null, $params['beforecmid'], $params['courseid'], false, MUST_EXIST);
-            $targetsection = $DB->get_record('course_sections', ['id' => $beforemod->section], '*', MUST_EXIST);
-        } else if ($params['aftercmid'] > 0) {
-            $aftermod = get_coursemodule_from_id(null, $params['aftercmid'], $params['courseid'], false, MUST_EXIST);
-            $targetsection = $DB->get_record('course_sections', ['id' => $aftermod->section], '*', MUST_EXIST);
-            $beforemod = self::module_after($targetsection, $params['aftercmid'], $params['cmid']);
-        } else {
-            $targetsection = $DB->get_record('course_sections', [
-                'course' => $params['courseid'],
-                'section' => $params['targetsectionnum'],
-            ], '*', MUST_EXIST);
+        $targetcmids = $modinfo->sections[$params['sectionnum']] ?? [];
+        // Die eigene cmid darf im Zielabschnitt (Verschiebung innerhalb
+        // desselben Abschnitts) nicht als "vor sich selbst"-Ziel gezaehlt
+        // werden, sonst wird eine Positionsangabe hinter der eigenen
+        // aktuellen Stelle um eins verschoben.
+        $targetcmids = array_values(array_filter($targetcmids, static fn (int $id): bool => $id !== $cm->id));
+
+        $position = $params['position'];
+        $targetcmid = null;
+        if ($position !== null && $position >= 0 && $position < count($targetcmids)) {
+            $targetcmid = $targetcmids[$position];
         }
 
-        if ($params['targetsectionnum'] >= 0 && (int) $targetsection->section !== $params['targetsectionnum']) {
-            throw new invalid_parameter_exception('targetsectionnum passt nicht zur beforecmid/aftercmid-Zielaktivitaet.');
-        }
+        $format = course_get_format($course);
+        $updates = $format->get_stateupdates_instance();
+        $actions = $format->get_stateactions_instance();
+        $actions->cm_move($updates, $course, [$cm->id], $targetsection->id, $targetcmid);
 
-        moveto_module($cm, $targetsection, $beforemod);
-        rebuild_course_cache($params['courseid'], true);
+        $sectionname = $format->get_section_name($targetsection);
+        $positionmeldung = $targetcmid !== null
+            ? " an Position {$position}"
+            : '';
 
         return [
-            'cmid' => (int) $params['cmid'],
-            'sectionnum' => (int) $targetsection->section,
-            'beforecmid' => (int) ($beforemod ? $beforemod->id : 0),
-            'aftercmid' => (int) $params['aftercmid'],
-            'moved' => 1,
-            'message' => 'Module moved successfully.',
+            'cmid' => (int) $cm->id,
+            'sectionnum' => (int) $params['sectionnum'],
+            'message' => "Aktivität \"{$cm->name}\" in Abschnitt \"{$sectionname}\"{$positionmeldung} verschoben.",
         ];
     }
 
-    private static function module_after(\stdClass $section, int $aftercmid, int $movingcmid): ?\stdClass {
-        global $DB;
-
-        $sequence = array_values(array_filter(array_map('intval', explode(',', (string) $section->sequence))));
-        $sequence = array_values(array_filter($sequence, function($id) use ($movingcmid) {
-            return $id !== $movingcmid;
-        }));
-        $afterindex = array_search($aftercmid, $sequence, true);
-        if ($afterindex === false) {
-            throw new invalid_parameter_exception('aftercmid liegt nicht im Zielabschnitt.');
-        }
-
-        $nextid = $sequence[$afterindex + 1] ?? 0;
-        if ($nextid <= 0) {
-            return null;
-        }
-
-        return get_coursemodule_from_id(null, $nextid, (int) $section->course, false, MUST_EXIST);
-    }
-
+    /**
+     * @return external_single_structure
+     */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'cmid' => new external_value(PARAM_INT, 'Moved course module ID'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the moved activity'),
             'sectionnum' => new external_value(PARAM_INT, 'Target section number'),
-            'beforecmid' => new external_value(PARAM_INT, 'Course module ID now after the moved module, or 0'),
-            'aftercmid' => new external_value(PARAM_INT, 'Requested after course module ID, or 0'),
-            'moved' => new external_value(PARAM_INT, '1 if the module move was requested'),
-            'message' => new external_value(PARAM_TEXT, 'Success message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
         ]);
     }
 }

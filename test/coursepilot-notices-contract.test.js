@@ -33,7 +33,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const REPO_ROOT = path.join(__dirname, '..');
-const PLUGIN_ROOT = path.join(REPO_ROOT, 'Plugin', 'src', 'local_coursepilot');
+const PLUGIN_ROOT = path.join(REPO_ROOT, 'legacy', 'local_coursepilot');
 const LANG_EN_PATH = path.join(PLUGIN_ROOT, 'lang', 'en', 'local_coursepilot.php');
 const LANG_DE_PATH = path.join(PLUGIN_ROOT, 'lang', 'de', 'local_coursepilot.php');
 const README_PATH = path.join(REPO_ROOT, 'README.md');

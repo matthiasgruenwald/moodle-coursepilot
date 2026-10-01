@@ -1,46 +1,81 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Coursepilot is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Coursepilot is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
 
+use context_course;
+use context_module;
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_single_structure;
+use core_external\external_value;
+use core_question\local\bank\question_bank_helper;
+
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->dirroot . '/question/classes/local/bank/question_bank_helper.php');
 
-use context_course;
-use context_module;
-use core_question\local\bank\question_bank_helper;
-use external_api;
-use external_function_parameters;
-use external_single_structure;
-use external_value;
-
 /**
- * Creates or reuses a named standard question bank activity in a course.
+ * Idempotentes Anlegen einer benannten Fragenbank-Aktivitaet (Spec 0017 §1,
+ * Ticket #412): legt eine Fragenbank mit dem genannten Namen an, oder
+ * verwendet eine gleichnamige bestehende wieder - ein zweiter Lauf mit
+ * demselben Namen erzeugt keine zweite Bank.
+ *
+ * Eigenstaendige Portierung von
+ * local_coursepilot\external\ensure_question_bank - local_coursepilot hat laut
+ * Spec 0012 keine Laufzeitabhaengigkeit auf das andere Plugin (siehe
+ * get_question_categories.php aus #342, derselbe Fund). Anders als das
+ * lokale Vorbild: Lehrkraft-deutsche Meldung statt Englisch (CLAUDE.md), und
+ * nur die native Moodle-Berechtigungspruefung - keine Zusatz-Capability.
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-class ensure_question_bank extends external_api {
+final class ensure_question_bank extends external_api {
 
+    /**
+     * @return external_function_parameters
+     */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'courseid' => new external_value(PARAM_INT, 'Course ID'),
-            'name'     => new external_value(PARAM_TEXT, 'Teacher-readable question bank name, e.g. "Biologie 9a - Immunsystem"'),
+            'name' => new external_value(PARAM_TEXT, 'Name of the question bank, e.g. "Biologie 9a - Immunsystem"'),
         ]);
     }
 
+    /**
+     * @param int $courseid
+     * @param string $name
+     * @return array
+     */
     public static function execute(int $courseid, string $name): array {
         global $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'courseid' => $courseid,
-            'name'     => $name,
+            'name' => $name,
         ]);
 
         $course = $DB->get_record('course', ['id' => $params['courseid']], '*', MUST_EXIST);
         $coursecontext = context_course::instance($course->id);
         self::validate_context($coursecontext);
         require_capability('local/coursepilot:use', $coursecontext);
+        // Native Berechtigungspruefung: eine Fragenbank ist eine Aktivitaet.
         require_capability('moodle/course:manageactivities', $coursecontext);
 
         $modulename = question_bank_helper::get_default_question_bank_activity_name();
@@ -55,11 +90,11 @@ class ensure_question_bank extends external_api {
               ORDER BY cm.id ASC";
 
         $existing = $DB->get_record_sql($sql, [
-            'courseid'   => $course->id,
+            'courseid' => $course->id,
             'modulename' => $modulename,
-            'type'       => question_bank_helper::TYPE_STANDARD,
-            'name'       => $params['name'],
-        ]);
+            'type' => question_bank_helper::TYPE_STANDARD,
+            'name' => $params['name'],
+        ], IGNORE_MULTIPLE);
 
         if ($existing) {
             $bankcontext = context_module::instance((int) $existing->id);
@@ -69,11 +104,11 @@ class ensure_question_bank extends external_api {
 
             return [
                 'questionbankid' => (int) $existing->id,
-                'name'           => $params['name'],
-                'contextid'      => (int) $bankcontext->id,
-                'topcategoryid'  => (int) $topcategory->id,
-                'created'        => false,
-                'message'        => 'Question bank "' . $params['name'] . '" already exists.',
+                'name' => $params['name'],
+                'contextid' => (int) $bankcontext->id,
+                'topcategoryid' => (int) $topcategory->id,
+                'created' => false,
+                'message' => 'Fragensammlung "' . $params['name'] . '" existierte bereits, wird wiederverwendet.',
             ];
         }
 
@@ -89,22 +124,25 @@ class ensure_question_bank extends external_api {
 
         return [
             'questionbankid' => (int) $bankcm->id,
-            'name'           => $params['name'],
-            'contextid'      => (int) $bankcontext->id,
-            'topcategoryid'  => (int) $topcategory->id,
-            'created'        => true,
-            'message'        => 'Question bank "' . $params['name'] . '" successfully created.',
+            'name' => $params['name'],
+            'contextid' => (int) $bankcontext->id,
+            'topcategoryid' => (int) $topcategory->id,
+            'created' => true,
+            'message' => 'Fragensammlung "' . $params['name'] . '" angelegt.',
         ];
     }
 
+    /**
+     * @return external_single_structure
+     */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'questionbankid' => new external_value(PARAM_INT, 'Course module ID of the selected question bank'),
-            'name'           => new external_value(PARAM_TEXT, 'Question bank name'),
-            'contextid'      => new external_value(PARAM_INT, 'Context ID of the selected question bank'),
-            'topcategoryid'  => new external_value(PARAM_INT, 'Top category ID of the selected question bank'),
-            'created'        => new external_value(PARAM_BOOL, 'true if a new question bank was created, false if an existing one was reused'),
-            'message'        => new external_value(PARAM_TEXT, 'Status message'),
+            'questionbankid' => new external_value(PARAM_INT, 'Course module ID of the (created or reused) question bank'),
+            'name' => new external_value(PARAM_TEXT, 'Name of the question bank'),
+            'contextid' => new external_value(PARAM_INT, 'Context ID of the question bank'),
+            'topcategoryid' => new external_value(PARAM_INT, 'ID of the question bank\'s top category'),
+            'created' => new external_value(PARAM_BOOL, 'true if newly created; false if a same-named one was reused'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
         ]);
     }
 }

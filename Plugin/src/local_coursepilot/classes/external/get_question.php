@@ -1,39 +1,67 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Coursepilot is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Coursepilot is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
 
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_multiple_structure;
+use core_external\external_single_structure;
+use core_external\external_value;
+
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
-require_once($CFG->libdir . '/filelib.php');
-
-use external_api;
-use external_function_parameters;
-use external_value;
-use external_single_structure;
-use external_multiple_structure;
 
 /**
- * Liefert die latest version einer Frage in einer Kategorie, eindeutig
- * identifiziert per Name ODER per questionid (ID einer beliebigen Version
- * derselben Frage).
+ * Einzelne Frage in ihrer aktuellen Fassung (#342): liefert die latest
+ * version einer Frage in einer Kategorie, eindeutig identifiziert per Name
+ * ODER per questionid (ID einer beliebigen Version derselben Frage) - vor
+ * einer Bearbeitung ueber den lokalen Weg genutzt, um die aktuelle
+ * questionid zu kennen.
  *
- * Liefert auch die Antwort-Optionen und kennzeichnet die richtige Antwort,
- * damit Aufrufer (z.B. der MCP-Server) vor einem Edit sehen, mit welcher
- * Frage gearbeitet wird.
+ * Eigenstaendige Portierung von local_coursepilot\external\get_question -
+ * local_coursepilot hat laut Spec 0012 keine Laufzeitabhaengigkeit auf das
+ * andere Plugin (siehe get_course_catalog.php aus #341, derselbe Fund).
+ * Vertrag (Feldnamen, Antwort-Optionen inkl. richtiger Antwort) bleibt
+ * identisch zum lokalen Werkzeug.
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class get_question extends external_api {
 
+    /**
+     * @return external_function_parameters
+     */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'categoryid' => new external_value(PARAM_INT,  'ID der Fragenbank-Kategorie'),
-            'name'       => new external_value(PARAM_TEXT, 'Name der Frage (alternativ zu questionid)', VALUE_DEFAULT, ''),
-            'questionid' => new external_value(PARAM_INT,  'questionid einer beliebigen Version der Frage (alternativ zu name)', VALUE_DEFAULT, 0),
+            'categoryid' => new external_value(PARAM_INT,  'ID of the question bank category'),
+            'name'       => new external_value(PARAM_TEXT, 'Name of the question (alternative to questionid)', VALUE_DEFAULT, ''),
+            'questionid' => new external_value(PARAM_INT,  'questionid of any version of the question (alternative to name)', VALUE_DEFAULT, 0),
         ]);
     }
 
+    /**
+     * @param int $categoryid
+     * @param string $name
+     * @param int $questionid
+     * @return array
+     */
     public static function execute(int $categoryid, string $name = '', int $questionid = 0): array {
         global $DB;
 
@@ -57,7 +85,6 @@ class get_question extends external_api {
         // viewmine/viewall. viewall passt zur Lese-Capability hier.
         require_capability('moodle/question:viewall', $context);
 
-        // questionbankentryid bestimmen.
         $entryid = $params['questionid'] > 0
             ? self::entry_id_from_questionid((int) $params['questionid'])
             : self::entry_id_from_name((int) $params['categoryid'], (string) $params['name']);
@@ -67,7 +94,6 @@ class get_question extends external_api {
                 null, 'Keine Frage gefunden fuer die uebergebenen Kriterien.');
         }
 
-        // Latest Version dieser Entry laden.
         $latest = $DB->get_record_sql(
             'SELECT * FROM {question_versions}
               WHERE questionbankentryid = ?
@@ -83,7 +109,6 @@ class get_question extends external_api {
         $question = $DB->get_record('question',
             ['id' => $latest->questionid], '*', MUST_EXIST);
 
-        // Antworten laden (in der Reihenfolge ihrer IDs = Anlege-Reihenfolge).
         $answers = $DB->get_records('question_answers',
             ['question' => $question->id], 'id ASC');
 
@@ -105,66 +130,28 @@ class get_question extends external_api {
         }
         $multichoice = $DB->get_record('qtype_multichoice_options', ['questionid' => $question->id]);
         $selectionmode = $multichoice && empty($multichoice->single) ? 'multiple' : 'single';
-        // 'none' ist der von mc_question_version.php fest gesetzte Wert (Issue #324).
-        // Fallback nur fuer den (regulaer nicht erwarteten) Fall, dass zu einer
-        // multichoice-Frage kein qtype_multichoice_options-Datensatz existiert.
-        $answernumbering = $multichoice ? (string) $multichoice->answernumbering : 'none';
-
-        $bankentry = $DB->get_record('question_bank_entries', ['id' => $entryid], '*', MUST_EXIST);
-
-        $fs = get_file_storage();
-        $files = array_merge(
-            self::collect_files($fs, $context->id, 'questiontext', $question->id),
-            self::collect_files($fs, $context->id, 'generalfeedback', $question->id)
-        );
-        foreach ($answerlist as $a) {
-            $files = array_merge(
-                $files,
-                self::collect_files($fs, $context->id, 'answer', $a['id']),
-                self::collect_files($fs, $context->id, 'answerfeedback', $a['id'])
-            );
-        }
 
         return [
             'questionid'          => (int) $question->id,
             'questionbankentryid' => (int) $entryid,
-            'categoryid'          => (int) $bankentry->questioncategoryid,
+            'categoryid'          => (int) $DB->get_field('question_bank_entries', 'questioncategoryid', ['id' => $entryid], MUST_EXIST),
             'version'             => (int) $latest->version,
             'name'                => (string) $question->name,
             'questiontext'        => (string) $question->questiontext,
             'generalfeedback'     => (string) $question->generalfeedback,
             'qtype'               => (string) $question->qtype,
             'defaultmark'         => (float)  $question->defaultmark,
-            'idnumber'            => (string) ($bankentry->idnumber ?? ''),
             'answers'             => $answerlist,
             'correctindex'        => $correctindex,
             'selectionmode'       => $selectionmode,
-            'answernumbering'     => $answernumbering,
-            'files'               => $files,
         ];
     }
 
     /**
-     * Liest die Dateien eines Bereichs (component 'question') und liefert
-     * sie als strukturierte Metadaten (kein pluginfile.php-URL-Aufbau hier,
-     * Issue #326, KP-006 Read-back).
-     */
-    private static function collect_files(\file_storage $fs, int $contextid, string $filearea, int $itemid): array {
-        $result = [];
-        foreach ($fs->get_area_files($contextid, 'question', $filearea, $itemid, 'filepath, filename', false) as $file) {
-            $result[] = [
-                'filearea' => $filearea,
-                'itemid'   => $itemid,
-                'filename' => $file->get_filename(),
-                'filesize' => (int) $file->get_filesize(),
-                'mimetype' => (string) $file->get_mimetype(),
-            ];
-        }
-        return $result;
-    }
-
-    /**
      * Entry-ID ueber eine bekannte questionid (irgendeine Version) ermitteln.
+     *
+     * @param int $questionid
+     * @return int
      */
     private static function entry_id_from_questionid(int $questionid): int {
         global $DB;
@@ -174,12 +161,15 @@ class get_question extends external_api {
 
     /**
      * Entry-ID ueber Kategorie + Frage-Name ermitteln (eindeutig anhand der
-     * latest version, da der Name historisch in question.name liegt).
-     * Bei mehreren Treffern wird der mit der hoechsten Version genommen.
+     * latest version, da der Name historisch in question.name liegt). Bei
+     * mehreren Treffern wird der mit der hoechsten Version genommen.
+     *
+     * @param int $categoryid
+     * @param string $name
+     * @return int
      */
     private static function entry_id_from_name(int $categoryid, string $name): int {
         global $DB;
-        // Join: Entry in Kategorie -> latest version -> question mit gesuchtem Namen.
         $sql = 'SELECT qbe.id AS entryid, qv.version AS version
                   FROM {question_bank_entries} qbe
                   JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
@@ -191,46 +181,36 @@ class get_question extends external_api {
         if (!$rows) {
             return 0;
         }
-        // Erste Entry mit Match nehmen.
         $first = reset($rows);
         return (int) $first->entryid;
     }
 
+    /**
+     * @return external_single_structure
+     */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'questionid'          => new external_value(PARAM_INT,   'ID der latest-version question-Zeile'),
-            'questionbankentryid' => new external_value(PARAM_INT,   'ID des question_bank_entries (Frage-Identitaet)'),
-            'categoryid'          => new external_value(PARAM_INT,   'Aktuelle Fragenbank-Kategorie der Frage'),
-            'version'             => new external_value(PARAM_INT,   'Aktuelle Versionsnummer'),
-            'name'                => new external_value(PARAM_TEXT,  'Name der Frage'),
-            'questiontext'        => new external_value(PARAM_RAW,   'Fragetext (HTML)'),
-            'generalfeedback'     => new external_value(PARAM_RAW,   'Allgemeines Feedback (HTML)'),
-            'qtype'               => new external_value(PARAM_TEXT,  'Fragetyp (i.d.R. multichoice)'),
-            'defaultmark'         => new external_value(PARAM_FLOAT, 'Standard-Punktzahl der Frage'),
-            'idnumber'            => new external_value(PARAM_TEXT,  'idnumber des question_bank_entries (leer, falls keine vergeben)'),
+            'questionid'          => new external_value(PARAM_INT,   'ID of the latest-version question row'),
+            'questionbankentryid' => new external_value(PARAM_INT,   'ID of the question_bank_entries row (question identity)'),
+            'categoryid'          => new external_value(PARAM_INT,   'Current question bank category of the question'),
+            'version'             => new external_value(PARAM_INT,   'Current version number'),
+            'name'                => new external_value(PARAM_TEXT,  'Name of the question'),
+            'questiontext'        => new external_value(PARAM_RAW,   'Question text (HTML)'),
+            'generalfeedback'     => new external_value(PARAM_RAW,   'General feedback (HTML)'),
+            'qtype'               => new external_value(PARAM_TEXT,  'Question type (usually multichoice)'),
+            'defaultmark'         => new external_value(PARAM_FLOAT, 'Default mark of the question'),
             'answers'             => new external_multiple_structure(
                 new external_single_structure([
                     'id'       => new external_value(PARAM_INT,   'question_answers.id'),
-                    'answer'   => new external_value(PARAM_RAW,   'Antwort-Text (HTML)'),
-                    'fraction' => new external_value(PARAM_FLOAT, 'Gewicht der Antwort'),
-                    'feedback' => new external_value(PARAM_RAW,   'Antwortspezifisches Feedback (HTML)'),
-                    'correct'  => new external_value(PARAM_BOOL,  'Antwort hat positives Gewicht'),
+                    'answer'   => new external_value(PARAM_RAW,   'Answer text (HTML)'),
+                    'fraction' => new external_value(PARAM_FLOAT, 'Weight of the answer'),
+                    'feedback' => new external_value(PARAM_RAW,   'Answer-specific feedback (HTML)'),
+                    'correct'  => new external_value(PARAM_BOOL,  'Answer has a positive weight'),
                 ]),
-                'Antwort-Optionen in Anlege-Reihenfolge'
+                'Answer options in creation order'
             ),
-            'correctindex'        => new external_value(PARAM_INT,   '0-basierter Index der richtigen Antwort in answers[] (-1 wenn keine erkannt)'),
-            'selectionmode'       => new external_value(PARAM_ALPHA, 'single oder multiple'),
-            'answernumbering'     => new external_value(PARAM_ALPHANUM, 'Nummerierungsstil der Antworten (Kurspilot setzt stets none, KP-007; "123" bei Altfragen vor #324 moeglich)'),
-            'files'               => new external_multiple_structure(
-                new external_single_structure([
-                    'filearea' => new external_value(PARAM_ALPHA, 'Dateibereich (questiontext, generalfeedback, answer, answerfeedback)'),
-                    'itemid'   => new external_value(PARAM_INT,   'questionid (Fragenebene) oder answerid (Antwortebene), je nach Dateibereich'),
-                    'filename' => new external_value(PARAM_FILE,  'Dateiname'),
-                    'filesize' => new external_value(PARAM_INT,   'Dateigroesse in Byte'),
-                    'mimetype' => new external_value(PARAM_RAW,   'MIME-Type'),
-                ]),
-                'Angehaengte Dateien je Bereich (questiontext, generalfeedback, answer, answerfeedback); keine pluginfile.php-URLs'
-            ),
+            'correctindex'        => new external_value(PARAM_INT,   '0-based index of the correct answer in answers[] (-1 if none detected)'),
+            'selectionmode'       => new external_value(PARAM_ALPHA, 'single or multiple'),
         ]);
     }
 }
