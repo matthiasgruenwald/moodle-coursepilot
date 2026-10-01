@@ -1471,3 +1471,28 @@ _Avoid_: je Weg eine eigene Gate-Form, stille idnumber-Umbenennung durch Moodle 
 **Abstammungs-Meldung**:
 Die Auskunft nach einem Klon, welche Fragen des Duplikats eigene Kopien geworden sind und welche weiter auf das Original zeigen. Sie meldet nur; die Anbindung an eine Fragenidentität geschieht erst beim ersten echten Schreibzugriff auf die einzelne Frage.
 _Avoid_: beim Klonen Fragen im Bestand umschreiben, ganze Fragensammlungen ungefragt inventarisieren, Kopie und geteilte Referenz gleich benennen
+
+**Katalogisierte Aktivitätsart**:
+Eine Aktivitätsart mit geprüftem Feldkatalog. Coursepilot sagt zu, dass sie funktioniert (Produktzusage). Sie wird nie über den XML-Weg angelegt.
+_Avoid_: katalogisierte Art per Aktivitäts-XML anlegen, „Coursepilot kann alle Aktivitätsarten"
+
+**Erschlossene Aktivitätsart**:
+Eine installierte Aktivitätsart ohne Feldkatalog, die sich Coursepilot über die Aktivitätsart-Ablage selbst erschließt. Das Wissen gehört der Lehrkraft, es gibt keine Zusage — nur die Round-Trip-Prüfung beim Anlegen.
+_Avoid_: erschlossene Art als „unterstützt" bezeichnen, Ablage-Wissen ins Plugin übernehmen ohne Feldkatalog
+
+**Aktivitätsart-Ablage**:
+Zweite Form der Lerndatei, analog zur Fragetyp-Ablage: eine Kontextdatei je erschlossener Aktivitätsart (`aktivitaetsarten/<modname>.md`) mit Minimal-Beispiel (wortgleich, verifiziert), Pflichtstruktur, Stolpersteinen und Moodle-Versionsstand. Sie hält nur Wissen fest und ist keine klonbare Quelle — keine Vorlage im Sinn von Aktivitaetsvorlage oder Vorlagen-Datei.
+_Avoid_: „Aktivitätstyp-Ablage" (Ticket-Sprache), Ablage mit Aktivitaetsvorlage oder Vorlagen-Datei verwechseln, Ablage ohne Versionsstand führen
+
+**Anlegen aus XML**:
+Der Vorgang, eine erschlossene Aktivitätsart über eine **Aktivitäts-XML** neu im Kurs anzulegen. (ADR 0028) Zur Lehrkraft heißt er nur „anlegen". Er ist reines Anlegen, nie Bearbeiten (ADR 0016 verwarf nur den Bearbeitungsweg). Nach dem Anlegen exportiert Coursepilot die Aktivität und prüft: Eingabe ⊆ Ausgabe (ignoriert: ids, `time*`, contextid, Datei-Verweise); Moodle-Vorbelegungen gehen als Hinweis zurück. Weicht etwas ab, ist es eine Fehlanlage und wird gelöscht — nur wenn sie im selben Aufruf entstand und nie sichtbar war. Deshalb legt das Plugin intern versteckt an und schaltet erst nach bestandener Prüfung sichtbar — außer die Lehrkraft will die Aktivität ausdrücklich versteckt. Das Verbot „kein Löschen" schützt nur den Bestand der Lehrkraft.
+_Avoid_: „Wiederherstellen"/„Restore" als Begriff, Bestand der Lehrkraft löschen, Fehlanlage stehen lassen, Byte-Gleichheit erwarten
+
+**Aktivitäts-XML**:
+Die Datei `<mod>.xml` aus einem Moodle-Backup, die die KI baut; das Gerüst drumherum (16 Dateien) erzeugt das Plugin. Nutzerdaten-Inhalte (z. B. Glossar-Einträge) gehen nicht mit — ein Glossar wird leer angelegt, das steht als Stolperstein in der Aktivitätsart-Ablage.
+Eine Muster-XML mit Moodle-Standardwerten liefert `export_default_activity`; die dafür angelegte Aktivität wird zurückgerollt und ist keine Vorlage.
+_Avoid_: ganzes Backup von der KI bauen lassen, Nutzerdaten über die XML einschleusen, Muster-XML „Vorlage“ nennen
+
+**Ablösen**:
+Eine Aktivität mit Nutzerdaten ändern, indem eine neue Aktivität direkt hinter der alten angelegt und die alte nur versteckt wird (Titel bleibt). Der Änderungsverlauf der alten Kursmodul-ID vermerkt „abgelöst durch cmid X"; die Planvorschau nennt Verweise auf die alte cmid. „Ersetzen" (Überschreiben mit Sicherung) ist für später reserviert.
+_Avoid_: alte Aktivität löschen, „Ersetzen" für Ablösen sagen, Verweise auf die alte cmid stillschweigend lassen

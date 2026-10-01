@@ -1,5 +1,7 @@
 # Modul-Formularweg statt direkter DB-Schreibung
 
+> Ergänzt durch ADR 0028: Backup-XML ist als Anlegeweg für erschlossene Aktivitätsarten zugelassen. Als Bearbeitungsweg bleibt es verworfen.
+
 `local_coursepilot` schreibt Aktivitäten heute auf zwei Wegen: neun `create_*`-Werkzeuge über `add_moduleinfo()`, zwölf `update_*`-Werkzeuge und Sonderfälle wie `quiz_settings.php` direkt in die Instanztabelle. Beim Neubau des Schreibpfads in `local_kurspilot` (Spec 0015) entscheiden wir: **alles, was eine Modulinstanz berührt, läuft über `add_moduleinfo()`/`update_moduleinfo()` (`course/modlib.php`). Die direkte DB-Schreibung wird nicht portiert.** Ausgenommen bleibt nur, wofür Moodle kein Formularfeld hat: Positionen (`move_section_to()`, `moveto_module()`) und die Quiz-Anordnung (Kern-Struktur-API).
 
 ## Considered Options
