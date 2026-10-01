@@ -18,6 +18,7 @@ namespace local_coursepilot\external;
 
 use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Quiz als Einzelwerkzeug, Patch (Spec 0015 §5, Ticket #398).
@@ -69,6 +70,161 @@ final class update_quiz_settings_test extends \advanced_testcase {
         global $DB;
         $cm = get_coursemodule_from_id('quiz', $cmid, 0, false, MUST_EXIST);
         return $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST);
+    }
+
+    /** An 80% requirement is supplied as points, never as a percentage. */
+    #[DataProvider('passing_grades')]
+    public function test_gradepass_is_persisted_in_quiz_grade_points(float $maximum, float $passing): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'grade' => $maximum]);
+
+        $result = $this->patch($quiz->cmid, ['gradepass' => $passing]);
+
+        $item = $DB->get_record('grade_items', [
+            'itemtype' => 'mod', 'itemmodule' => 'quiz', 'iteminstance' => $quiz->id, 'itemnumber' => 0,
+        ], '*', MUST_EXIST);
+        $this->assertEqualsWithDelta($passing, (float) $item->gradepass, 0.00001);
+        $this->assertEqualsWithDelta($maximum, (float) $item->grademax, 0.00001);
+        $changes = array_column($result['changes'], null, 'field');
+        $this->assertEquals($passing, json_decode($changes['gradepass']['after_json']));
+    }
+
+    public static function passing_grades(): array {
+        return [
+            'ten points' => [10.0, 8.0], 'twenty-five points' => [25.0, 20.0],
+            'fractional maximum' => [12.5, 10.0], 'inclusive maximum' => [10.0, 10.0],
+        ];
+    }
+
+    /** Read tools and the published field catalog agree on points and persisted values. */
+    public function test_gradepass_readback_and_contract_are_consistent(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'grade' => 10]);
+        $this->patch($quiz->cmid, ['gradepass' => 8.125]);
+
+        $read = external_api::clean_returnvalue(get_module_settings::execute_returns(), get_module_settings::execute($quiz->cmid));
+        $settings = json_decode($read['settings_json'], true);
+        $this->assertSame(8.125, $settings['gradepass']);
+        $this->assertEquals(10, $settings['grademax']);
+        $catalog = external_api::clean_returnvalue(
+            get_course_catalog::execute_returns(), get_course_catalog::execute($course->id, -1, 'quiz', 'full')
+        );
+        foreach ($catalog['sections'] as $section) {
+            foreach ($section['modules'] as $module) {
+                if ($module['cmid'] === (int) $quiz->cmid) {
+                    $values = array_column($module['settings'], 'value', 'name');
+                    $this->assertSame('8.125', $values['gradepass']);
+                    $this->assertSame('10', $values['grademax']);
+                }
+            }
+        }
+        $fields = describe_module_fields::execute('quiz', true)['module'];
+        $passing = array_column($fields['pseudo_fields'], null, 'name')['gradepass'];
+        $this->assertSame('PARAM_FLOAT', $passing['type']);
+        $this->assertStringContainsString('NOT percent', $passing['meaning']);
+        $this->assertStringContainsString('0 to the maximum', $passing['meaning']);
+    }
+
+    /** Changing the threshold preserves questions, pages, sections, feedback and settings. */
+    public function test_gradepass_preserves_existing_quiz_content_and_settings(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', [
+            'course' => $course->id, 'grade' => 10, 'password' => 'unchanged', 'timelimit' => 123,
+        ]);
+        $qbank = $this->getDataGenerator()->create_module('qbank', ['course' => $course->id]);
+        $questions = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $questions->create_question_category(['contextid' => \context_module::instance($qbank->cmid)->id]);
+        foreach ([1, 2] as $page) {
+            $question = $questions->create_question('truefalse', null, ['category' => $category->id]);
+            quiz_add_quiz_question($question->id, $quiz, $page);
+        }
+        $this->patch($quiz->cmid, ['feedbacktext' => ['Pass', 'Retry'], 'feedbackboundaries' => [8]]);
+        $before = json_decode(get_module_settings::execute($quiz->cmid)['settings_json'], true);
+        $slots = $DB->get_records('quiz_slots', ['quizid' => $quiz->id], 'slot');
+        $sections = $DB->get_records('quiz_sections', ['quizid' => $quiz->id], 'firstslot');
+        $references = $DB->get_records('question_references', ['component' => 'mod_quiz'], 'id');
+        $feedback = \local_coursepilot\catalog\quiz_write_bridge::read_feedback($quiz->id);
+
+        foreach ([8, 7.5] as $passing) {
+            $this->patch($quiz->cmid, ['gradepass' => $passing]);
+            $after = json_decode(get_module_settings::execute($quiz->cmid)['settings_json'], true);
+            unset($before['timemodified'], $before['gradepass'], $after['timemodified'], $after['gradepass']);
+            $this->assertSame($before, $after);
+            $this->assertEquals($slots, $DB->get_records('quiz_slots', ['quizid' => $quiz->id], 'slot'));
+            $this->assertEquals($sections, $DB->get_records('quiz_sections', ['quizid' => $quiz->id], 'firstslot'));
+            $this->assertEquals($references, $DB->get_records('question_references', ['component' => 'mod_quiz'], 'id'));
+            $this->assertSame($feedback, \local_coursepilot\catalog\quiz_write_bridge::read_feedback($quiz->id));
+        }
+    }
+
+    /** Invalid thresholds reject the entire call before even changing the maximum grade. */
+    #[DataProvider('invalid_passing_grades')]
+    public function test_invalid_gradepass_rejects_the_entire_patch(mixed $passing): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'grade' => 10]);
+        $before = get_module_settings::execute($quiz->cmid)['settings_json'];
+        $versions = $DB->count_records('local_coursepilot_cm_version', ['cmid' => $quiz->cmid]);
+
+        try {
+            $this->patch($quiz->cmid, ['name' => 'Must not persist', 'gradepass' => $passing], '', 5.0);
+            $this->fail('Invalid gradepass must reject the whole patch.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidquizgradepass', $e->errorcode);
+            $this->assertStringContainsString('grade points', $e->getMessage());
+            $this->assertStringContainsString('0 to 5', $e->getMessage());
+        }
+        $this->assertSame($before, get_module_settings::execute($quiz->cmid)['settings_json']);
+        $this->assertSame($versions, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $quiz->cmid]));
+    }
+
+    public static function invalid_passing_grades(): array {
+        return [
+            'negative' => [-0.01], 'above new maximum' => [8], 'percent mistaken for points' => [80],
+            'percent text' => ['80%'], 'numeric string' => ['4.5'], 'locale string' => ['4,5'],
+            'empty string' => [''], 'null' => [null], 'boolean' => [true], 'array' => [[4]],
+            'object' => [(object) ['value' => 4]], 'non-finite text' => ['INF'],
+        ];
+    }
+
+    /** JSON can decode an overflowing numeric literal to infinity. */
+    public function test_nonfinite_numeric_gradepass_is_rejected_before_writing(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'grade' => 10]);
+        $before = get_module_settings::execute($quiz->cmid)['settings_json'];
+        try {
+            update_quiz_settings::execute($quiz->cmid, '{"name":"Must not persist","gradepass":1e309}', '', 5.0);
+            $this->fail('Infinity must be rejected.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidquizgradepass', $e->errorcode);
+        }
+        $this->assertSame($before, get_module_settings::execute($quiz->cmid)['settings_json']);
+    }
+
+    /** New maximum, decimal points and disabling the threshold survive the Moodle lifecycle. */
+    public function test_gradepass_uses_new_maximum_and_can_be_disabled(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'grade' => 10]);
+        force_current_language('de');
+        $this->patch($quiz->cmid, ['gradepass' => 20], '', 25.0);
+        $settings = json_decode(get_module_settings::execute($quiz->cmid)['settings_json'], true);
+        $this->assertSame(20, $settings['gradepass']);
+        $this->assertSame(25, $settings['grademax']);
+        $this->patch($quiz->cmid, ['gradepass' => 19.125]);
+        $this->patch($quiz->cmid, ['intro' => 'Unrelated patch']);
+        $settings = json_decode(get_module_settings::execute($quiz->cmid)['settings_json'], true);
+        $this->assertSame(19.125, $settings['gradepass']);
+        $this->patch($quiz->cmid, ['gradepass' => 0]);
+        $settings = json_decode(get_module_settings::execute($quiz->cmid)['settings_json'], true);
+        $this->assertSame(0, $settings['gradepass']);
     }
 
     /**

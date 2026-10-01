@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<libraries>
+    <library>
+        <location>fonts</location>
+        <name>GNU FreeFont (FreeSans Bold)</name>
+        <version>20211204+svn4273</version>
+        <license>GPL-3.0-or-later with Special Font Exception</license>
+        <licenseversion>3</licenseversion>
+        <repository>https://savannah.gnu.org/projects/freefont/</repository>
+    </library>
+</libraries>

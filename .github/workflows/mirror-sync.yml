@@ -19,11 +19,10 @@
 
 name: Mirror-Sync (local_coursepilot)
 
+# Automatischer Push abgeschaltet (ADR 0027): der Mirror baut noch den
+# Altstand. Er wird erst mit der Marketplace-Einreichung (#192) auf die
+# native Linie umgestellt und bis dahin nur manuell ausgeloest.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'legacy/local_coursepilot/**'
   workflow_dispatch:
 
 # Serialisieren: keine parallelen Mirror-Pushes (Race-Schutz).

@@ -44,7 +44,7 @@ permissions:
 
 on:
   push:
-    branches: [main, moodle-native-mcp]
+    branches: [main, dev]
   pull_request: {}
   workflow_dispatch: {}
 

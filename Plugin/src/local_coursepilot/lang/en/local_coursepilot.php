@@ -59,6 +59,8 @@ $string['tool_update_mc_question'] = 'Updates a multiple-choice question.';
 $string['tool_import_questions_xml'] = 'Imports questions from Moodle XML.';
 $string['tool_export_questions_xml'] = 'Exports questions as a complete Moodle XML file.';
 $string['tool_get_question_categories'] = 'Lists the question categories of a named question bank.';
+$string['tool_plan_question_category_cleanup'] = 'Builds a non-destructive cleanup plan for empty leaf categories in a named question bank.';
+$string['questioncategorycleanupreason'] = 'Empty leaf category with no questions or subcategories. Coursepilot does not delete it; review it manually and, if appropriate, delete it in Moodle using the link.';
 $string['tool_get_question'] = 'Reads the latest version of a single question.';
 $string['tool_plan_quiz_cleanup'] = 'Builds a non-destructive cleanup plan for obsolete quiz slots.';
 $string['tool_add_questions_to_quiz'] = 'Appends questions to a quiz in the requested order.';
@@ -72,6 +74,13 @@ $string['tool_list_material_files'] = 'Lists the calling teacher\'s Coursepilot 
 $string['tool_upload_material_file'] = 'Creates or fully overwrites one file in the calling teacher\'s Coursepilot material folder.';
 $string['tool_preview_material_file'] = 'Returns a preview of an image in the calling teacher\'s Coursepilot material folder.';
 $string['tool_crop_material_file'] = 'Crops an image in the calling teacher\'s Coursepilot material folder.';
+$string['tool_compose_material_file'] = 'Composes ordered full-resolution raster parts with optional crops and source headers into one workbench PNG. Fixed white background, blue bold left-aligned headers and spacing; image bytes remain server-side.';
+$string['materialcompositionemptyparts'] = 'Provide at least one source part.';
+$string['materialcompositioninvalidarrangement'] = 'Arrangement must be vertical or horizontal.';
+$string['materialcompositionoutputunsupported'] = 'Target extension "{$a}" cannot hold a composition result — only PNG is supported.';
+$string['invalidmaterialort'] = 'Unknown location "{$a}" — valid values are "bestand" and "werkbank".';
+$string['materialcompositionfontmissing'] = 'Image composition requires GD with FreeType and the bundled FreeSans Bold font.';
+$string['materialcompositionwritten'] = 'Saved composed PNG {$a->path} ({$a->width} × {$a->height} pixels) on the workbench.';
 $string['tool_report_loose_material_files'] = 'Reports material files not used by an activity in the calling teacher\'s courses.';
 $string['tool_delete_material_files'] = 'Deletes exactly the specified files from the calling teacher\'s material folder.';
 $string['tool_clone_activity'] = 'Clones an activity within a course or across courses.';
@@ -469,6 +478,11 @@ $string['stealthnotallowed'] = 'Stealth ("visibleoncoursepage" = 0) is disabled 
 
 // Write core: create_quiz/update_quiz_settings (#398).
 $string['unknownmode'] = 'Unknown mode "{$a->mode}". Allowed: {$a->modi}. Nothing was written.';
+$string['invalidquizgradepass'] = 'Invalid gradepass: supply a finite JSON number in quiz grade points, NOT percent, from 0 to {$a->maximum} inclusive. 0 disables the passing threshold. Nothing was written.';
+$string['quizgradepassmeaning'] = 'Passing grade in quiz grade points, NOT percent: a finite JSON number from 0 to the maximum grade (inclusive); 0 disables the passing threshold. For 80%, read the current grade with get_module_settings and supply 0.8 * grade (10 -> 8, 25 -> 20). If the grade parameter changes the maximum in the same call, use that new maximum.';
+$string['quizgradepassrule'] = '"gradepass" must be a finite JSON number from 0 to the effective maximum grade inclusive, in grade points, not percent. Coursepilot enforces this range for every question behaviour. 0 disables the passing threshold; a simultaneous grade change supplies the new maximum.';
+$string['quizpatchfields'] = 'JSON object field name => new value - only the fields to change (patch, not a full state). "grade"/"sumgrades" are NOT possible here (blocked), see the "grade" parameter. "gradepass" is a finite JSON number in grade points, NOT percent, from 0 to the maximum grade inclusive (0 disables the threshold). Read grade with get_module_settings: 80% of grade 10 is {"gradepass":8}, of grade 25 is {"gradepass":20}. When grade changes in this call, gradepass refers to the new maximum.';
+$string['modulesettingsdescription'] = 'Current activity settings as JSON, including coursepagevisibility/availability_status; profile conditions in availabilityconditionsjson are masked (ADR 0011). For quizzes, gradepass and grademax are persisted gradebook values in grade points, not percent; null means the primary grade item is missing.';
 
 // Write core: create_module (#389).
 $string['requiredfieldwithoutdefault'] = 'These required fields for activity type "{$a->modname}" have no form default and must be supplied: {$a->field}. Nothing was created.';

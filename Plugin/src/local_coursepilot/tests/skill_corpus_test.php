@@ -219,6 +219,7 @@ final class skill_corpus_test extends \advanced_testcase {
             'coursepilot_restore_activity_version' => ['target_version', 'confirmed'],
             'coursepilot_list_material_files' => ['location'],
             'coursepilot_preview_material_file' => ['location'],
+            'coursepilot_compose_material_file' => ['parts', 'arrangement', 'targetpath'],
             'coursepilot_list_context_files' => ['previous_location'],
             'coursepilot_read_context_file' => ['previous_location'],
             'coursepilot_write_context_file' => ['pending_entry', 'create_only'],
@@ -234,5 +235,27 @@ final class skill_corpus_test extends \advanced_testcase {
                 $this->assertArrayHasKey($field, $schema, "{$tool}: {$field} fehlt im Schema.");
             }
         }
+    }
+    public function test_graphics_reference_exposes_source_header_and_composition_rules(): void {
+        $content = preg_replace('/\s+/u', ' ', skill_corpus::get('grafiken')['content']);
+        foreach ([
+            'standardmäßig einen Quellenkopf mit ihrem Lehrwerkverweis',
+            'Lehrkraft kann den Quellenkopf abwählen',
+            'Dateiname oder Kontext eindeutig',
+            'einmal nach dem Kürzel fragen',
+            'Fach- oder Lerngruppenkontext im Kontextbereich',
+            'Seitenzahl aus Vorschau oder Dateiname',
+            'Kopftext steht im Plan',
+            'normalen Planfreigabe',
+            'keine Extra-Rückfrage',
+            'Zusammensetzen anbieten',
+            'einen Alt-Text',
+            'derselben Seite',
+            'Kopf am ersten Teil',
+        ] as $rule) {
+            $this->assertStringContainsString($rule, $content);
+        }
+        $this->assertStringContainsString('coursepilot_compose_material_file', $content);
+        $this->assertStringContainsString('coursepilot_get_skill("grafiken")', skill_corpus::get('coursepilot-planen')['content']);
     }
 }

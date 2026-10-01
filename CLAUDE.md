@@ -57,6 +57,8 @@ Der Server-MCP liegt unter `Plugin/src/local_coursepilot/` und wird per rsync de
 
 ## Git/gh-Workflow
 
+Branches (ADR 0027): `main` = veröffentlichter Stand, nur Hotfixes (mit Tag, danach nach `dev` mergen). `dev` = Entwicklung für 2.1+, getestet gegen Spike (Moodle 5.1). Feature-, Forschungs- und Prototyp-Zweige zweigen von `dev` ab.
+
 Volle Autonomie: `git add/commit/push`, `gh pr/issue` etc. ohne Rückfrage ausführen, wenn im Rahmen der Aufgabe sinnvoll. Force-Push, History-Rewrite, Branch-Löschung weiterhin nur nach Rückfrage (siehe globale Sicherheitsregeln).
 
 ---
