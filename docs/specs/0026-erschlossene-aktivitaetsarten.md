@@ -30,9 +30,11 @@ Anlegen aus XML, Aktivitäts-XML, Ablösen.
   Es dient dem Bestand („wie ist das gebaut?“). Es ist ein **lesendes** Werkzeug, deshalb
   braucht `tool_registry::is_write_class` eine Ausnahme: Das Präfix `export_` gilt heute
   pauschal als schreibend.
-- `export_default_activity(courseid, modname)` legt in einer Transaktion eine Aktivität mit
+- `export_default_activity(courseid, modname)` legt eine Aktivität mit
   Moodle-Standardwerten an (Formular-Vorbelegung → `add_moduleinfo`), exportiert sie und
-  rollt zurück. Im Kurs bleibt nichts. Das ersetzt in der Lernschleife den Schritt
+  räumt sie wieder auf (Aktivität löschen, Papierkorb-Einträge entfernen, Verlauf fällt mit
+  der Lösch-Kaskade). Eine Transaktion trägt nicht: Das Backup führt DDL aus, das auf MariaDB
+  implizit committet (#589, am Test belegt). Im Kurs bleibt nichts außer den Moodle-Logeinträgen. Das ersetzt in der Lernschleife den Schritt
   „Lehrkraft legt selbst an und exportiert“.
 - `create_activity_from_xml(courseid, modname, section, activity_xml, hidden?, replaces_cmid?)`
   legt an. Mit `replaces_cmid` wird die Aktivität abgelöst.

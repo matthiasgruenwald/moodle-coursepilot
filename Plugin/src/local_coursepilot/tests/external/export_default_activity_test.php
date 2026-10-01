@@ -66,7 +66,7 @@ final class export_default_activity_test extends \advanced_testcase {
         $this->assertSame('book', $result['modname']);
         $this->assertStringContainsString('<book id=', $result['xml']);
         $this->assertSame($before, $this->footprint($course->id));
-        $this->assertSame(0, get_fast_modinfo($course->id)->get_instances_of('book') ? 1 : 0);
+        $this->assertEmpty(get_fast_modinfo($course->id)->get_instances_of('book'));
     }
 
     public function test_works_for_glossary(): void {

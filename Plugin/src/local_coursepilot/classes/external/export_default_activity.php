@@ -71,18 +71,24 @@ final class export_default_activity extends external_api {
         require_capability('moodle/course:manageactivities', $context);
         require_capability('moodle/backup:backupactivity', $context);
         self::require_developed($modname);
+        require_capability("mod/$modname:addinstance", $context);
 
         require_once($CFG->dirroot . '/course/modlib.php');
         $course = get_course($params['courseid']);
         $binmark = $DB->get_manager()->table_exists('tool_recyclebin_course')
             ? (int) $DB->get_field_sql('SELECT MAX(id) FROM {tool_recyclebin_course} WHERE courseid = ?', [$course->id])
             : null;
-        $cm = null;
+        $before = $DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$course->id]);
         try {
-            $cm = self::create_default($course, $modname);
-            $xml = activity_backup::export($cm);
+            $xml = activity_backup::export(self::create_default($course, $modname));
         } finally {
-            self::remove($course, $cm, $binmark);
+            // Also covers a create that fails after the cm row exists.
+            $created = array_diff($DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$course->id]), $before);
+            try {
+                self::remove($course, $created, $binmark);
+            } catch (\Throwable $cleanup) {
+                debugging('export_default_activity cleanup failed: ' . $cleanup->getMessage(), DEBUG_DEVELOPER);
+            }
         }
 
         return ['courseid' => (int) $course->id, 'modname' => $modname, 'xml' => $xml];
@@ -94,13 +100,21 @@ final class export_default_activity extends external_api {
      * No transaction: the backup runs DDL, which commits implicitly on MySQL/MariaDB.
      *
      * @param \stdClass $course
-     * @param \stdClass|null $cm
+     * @param int[] $cmids course modules created by the run
      * @param int|null $binmark highest recycle bin item id of the course before the run, null without recycle bin
      */
-    private static function remove(\stdClass $course, ?\stdClass $cm, ?int $binmark): void {
+    private static function remove(\stdClass $course, array $cmids, ?int $binmark): void {
         global $DB;
-        if ($cm !== null) {
-            course_get_format($course)->delete_module(get_fast_modinfo($course)->get_cm((int) $cm->id), false);
+        foreach ($cmids as $cmid) {
+            $cm = $DB->get_record('course_modules', ['id' => $cmid]);
+            if ($cm && (int) $cm->instance === 0) {
+                // Half-created row: the regular delete cannot handle it.
+                delete_mod_from_section($cm->id, $cm->section);
+                $DB->delete_records('course_modules', ['id' => $cm->id]);
+            } else if ($cm) {
+                rebuild_course_cache($course->id, true);
+                course_get_format($course)->delete_module(get_fast_modinfo($course)->get_cm((int) $cmid), false);
+            }
         }
         if ($binmark !== null) {
             $bin = new \tool_recyclebin\course_bin($course->id);
