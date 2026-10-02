@@ -109,19 +109,14 @@ final class activity_backup {
      * @throws moodle_exception activityrestorefailed
      */
     public static function restore(int $courseid, ?int $sectionnum, string $source, bool $hidden = false): int {
-        global $DB;
         $isxml = str_starts_with(ltrim($source), '<');
         $backupid = $source;
         if ($isxml) {
             $modname = self::modname_of($source);
             $backupid = self::scaffold($source, $modname, $sectionnum ?? 1, $hidden);
         }
-        $before = $DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$courseid]);
         try {
             return self::run_restore($backupid, $courseid);
-        } catch (\Throwable $e) {
-            self::remove_new_modules($courseid, $before);
-            throw $e;
         } finally {
             self::discard_tempdir($backupid);
         }
@@ -257,24 +252,30 @@ final class activity_backup {
                     return (int) $task->get_moduleid();
                 }
             }
+            throw new moodle_exception('activityrestorefailed', 'local_coursepilot');
+        } catch (\Throwable $failure) {
+            // Read identities before destroy(): Moodle tasks retain even instance=0 cmids.
+            $owned = [];
+            foreach ($rc->get_plan()->get_tasks() as $task) {
+                if ($task instanceof \restore_activity_task && $task->get_moduleid()) {
+                    $owned[(int) $task->get_moduleid()] = (int) $task->get_activityid();
+                }
+            }
+            if (!$owned) {
+                throw new moodle_exception('activitycleanupincomplete', 'local_coursepilot', '', null,
+                    'Restore reported no owned activity identity; no automatic deletion was attempted.');
+            }
+            try {
+                foreach ($owned as $cmid => $instanceid) {
+                    course_module_placement::discard_failed($cmid, $instanceid ?: null);
+                }
+            } catch (\Throwable $cleanup) {
+                throw new moodle_exception('activitycleanupincomplete', 'local_coursepilot', '', null,
+                    $cleanup->getMessage());
+            }
+            throw $failure;
         } finally {
             $rc->destroy();
         }
-        throw new moodle_exception('activityrestorefailed', 'local_coursepilot');
-    }
-
-    /**
-     * Discards every course module that appeared in the course since $before
-     * (a failed restore can leave half-made rows, see {@see course_module_placement::discard_failed()}).
-     *
-     * @param int[] $before cmids present before the restore
-     */
-    private static function remove_new_modules(int $courseid, array $before): void {
-        global $DB;
-        $new = array_diff($DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$courseid]), $before);
-        foreach ($new as $cmid) {
-            course_module_placement::discard_failed((int) $cmid);
-        }
-        rebuild_course_cache($courseid, true);
     }
 }

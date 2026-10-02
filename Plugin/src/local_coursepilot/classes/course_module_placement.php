@@ -80,47 +80,52 @@ final class course_module_placement {
     /**
      * The only delete in the plugin. Only for cmids that arose in the same call and were
      * never shown to the teacher (not necessarily visible = 0): deletes at once, without
-     * recycle bin. An active bin hook still files an item; it is removed again here.
+     * recycle bin.
      *
-     * Caller duty: this method does not check that itself (a visibility guard would break the
-     * clone restore, which keeps the source's visibility). Callers pass only cmids they created
-     * in the same call: activity_backup::remove_new_modules(), export_default_activity::remove(),
-     * xml_activity_creator::create(). The first two take the cmids that appeared in the course
-     * since the call began (a concurrent add in the same course would count too).
-     * {@see \local_coursepilot\discard_failed_callers_test} checks each caller; add a new one there.
+     * Caller duty: pass only an identity returned by this call's native creation or restore
+     * task, never a course-wide difference. Visibility alone does not establish ownership.
+     * Recyclebin is disabled only in this PHP process during deletion; concurrent native
+     * requests keep their own settings and bin entries. No bin matching/deletion is needed.
      *
+     * $instanceid is accepted only from the same restore task as $cmid. It completes
+     * the native cm link when a restore failed between instance creation and linking.
      * A half-made row (instance = 0) is removed by hand, the regular delete cannot take it.
      * An unknown cmid is a no-op (idempotent).
      */
-    public static function discard_failed(int $cmid): void {
-        global $DB;
+    public static function discard_failed(int $cmid, ?int $instanceid = null): void {
+        global $DB, $CFG;
         $cm = $DB->get_record('course_modules', ['id' => $cmid]);
         if (!$cm) {
             return;
         }
+        // The task records its native instance before Moodle links it to the cm row.
+        if ((int) $cm->instance === 0 && $instanceid) {
+            $DB->set_field('course_modules', 'instance', $instanceid, ['id' => $cmid]);
+            $cm->instance = $instanceid;
+        }
         if ((int) $cm->instance === 0) {
+            $context = \context_module::instance($cmid, IGNORE_MISSING);
+            if ($context) {
+                $context->delete();
+            }
             delete_mod_from_section($cm->id, $cm->section);
             $DB->delete_records('course_modules', ['id' => $cm->id]);
             rebuild_course_cache($cm->course, true);
             return;
         }
-        $hasbin = $DB->get_manager()->table_exists('tool_recyclebin_course');
-        $binmark = $hasbin
-            ? (int) $DB->get_field_sql('SELECT MAX(id) FROM {tool_recyclebin_course} WHERE courseid = ?', [$cm->course])
-            : 0;
         rebuild_course_cache($cm->course, true);
         $info = get_fast_modinfo($cm->course)->get_cm($cmid);
-        $name = $info->name;
-        course_get_format($cm->course)->delete_module($info, false);
-        if ($hasbin) {
-            $bin = new \tool_recyclebin\course_bin($cm->course);
-            // Only the item of this very cm: other deletions in the course stay untouched.
-            $select = 'courseid = ? AND id > ? AND module = ? AND name = ?';
-            $mine = [$cm->course, $binmark, $cm->module, $name];
-            foreach ($DB->get_records_select('tool_recyclebin_course', $select, $mine) as $item) {
-                $bin->delete_item($item);
+        $forced = $CFG->forced_plugin_settings['tool_recyclebin'] ?? null;
+        $CFG->forced_plugin_settings['tool_recyclebin']['coursebinenable'] = 0;
+        try {
+            course_get_format($cm->course)->delete_module($info, false);
+        } finally {
+            if ($forced === null) {
+                unset($CFG->forced_plugin_settings['tool_recyclebin']);
+            } else {
+                $CFG->forced_plugin_settings['tool_recyclebin'] = $forced;
             }
+            rebuild_course_cache($cm->course, true);
         }
-        rebuild_course_cache($cm->course, true);
     }
 }

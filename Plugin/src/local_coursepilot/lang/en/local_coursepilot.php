@@ -598,3 +598,5 @@ $string['storagelocationmarkerdefect'] = 'broken pointer ({$a})';
 
 $string['settingwebdavheading'] = 'External storage location (WebDAV)';
 $string['settingwebdavheading_desc'] = 'What the school should know about the external storage location: names and images from the material store can go to the AI. A WebDAV user instance stores the password in plain text — an app password instead of the actual account password is recommended. Core gap: the repository provider for data access/deletion searches by "userid", but user instances carry "userid = 0" and are therefore not found. External context files have a write lock but no read lock. The current state of the four related status checks is on the <a href="{$a}">system status</a> page.';
+
+$string['activitycleanupincomplete'] = 'Activity cleanup is incomplete. Unproven ownership prevents automatic deletion; inspect the failed creation in Moodle.';
