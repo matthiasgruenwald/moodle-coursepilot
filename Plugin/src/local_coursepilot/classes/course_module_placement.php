@@ -79,8 +79,16 @@ final class course_module_placement {
 
     /**
      * The only delete in the plugin. Only for cmids that arose in the same call and were
-     * never visible to the teacher (the caller guarantees that): deletes at once, without
+     * never shown to the teacher (not necessarily visible = 0): deletes at once, without
      * recycle bin. An active bin hook still files an item; it is removed again here.
+     *
+     * Caller duty: this method does not check that itself (a visibility guard would break the
+     * clone restore, which keeps the source's visibility). Callers pass only cmids they created
+     * in the same call: activity_backup::remove_new_modules(), export_default_activity::remove(),
+     * xml_activity_creator::create(). The first two take the cmids that appeared in the course
+     * since the call began (a concurrent add in the same course would count too).
+     * {@see \local_coursepilot\discard_failed_callers_test} checks each caller; add a new one there.
+     *
      * A half-made row (instance = 0) is removed by hand, the regular delete cannot take it.
      * An unknown cmid is a no-op (idempotent).
      */
