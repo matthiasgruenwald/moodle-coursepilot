@@ -76,17 +76,17 @@ class list_activity_versions extends external_api {
                     'version' => new external_value(PARAM_INT, 'Consecutive version number per cmid, starting at 1'),
                     'source' => new external_value(
                         PARAM_TEXT,
-                        '"moodle" (normal write), "vorgefunden" (retroactively recorded starting state before Coursepilot), '
-                            . '"geklont" (clone), "from_xml" (created from activity XML) or "superseded" '
+                        '"moodle" (normal write), "discovered" (retroactively recorded starting state before Coursepilot), '
+                            . '"cloned" (clone), "from_xml" (created from activity XML) or "superseded" '
                             . '(marker on the old activity after replacement)'
                     ),
                     'discovered' => new external_value(
                         PARAM_BOOL,
-                        'true if this state was retroactively recorded as a starting state (source = "vorgefunden")'
+                        'true if this state was retroactively recorded as a starting state (source = "discovered")'
                     ),
                     'source_cmid' => new external_value(
                         PARAM_INT,
-                        'Reference course module ID: clone origin (source = "geklont") or replacing activity '
+                        'Reference course module ID: clone origin (source = "cloned") or replacing activity '
                             . '(source = "superseded"), null otherwise',
                         VALUE_DEFAULT,
                         null,

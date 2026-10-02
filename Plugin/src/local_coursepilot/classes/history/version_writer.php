@@ -44,10 +44,10 @@ final class version_writer {
     public const SOURCE_MOODLE = version_source::MOODLE;
 
     /** @var string Ursprung des rueckwirkend angelegten Vorher-Standes (#386, Spec 0015 §10.3). */
-    public const SOURCE_VORGEFUNDEN = version_source::DISCOVERED;
+    public const SOURCE_DISCOVERED = version_source::DISCOVERED;
 
     /** @var string Ursprung eines Klons (#421, Spec 0017 §7.5) - immer Version 1, nie ueber capture_on_update(). */
-    public const SOURCE_GEKLONT = version_source::CLONED;
+    public const SOURCE_CLONED = version_source::CLONED;
 
     /** @var string Ursprung einer Aktivitaet aus Aktivitaets-XML (ADR 0028, #596). */
     public const SOURCE_FROM_XML = version_source::FROM_XML;
@@ -101,7 +101,7 @@ final class version_writer {
         $transaction = $DB->start_delegated_transaction();
 
         if (!$DB->record_exists('local_coursepilot_cm_version', ['cmid' => $cmid])) {
-            self::capture($cmid, $userid, self::SOURCE_VORGEFUNDEN);
+            self::capture($cmid, $userid, self::SOURCE_DISCOVERED);
         }
         $versionid = self::capture($cmid, $userid, $source);
 

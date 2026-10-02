@@ -48,6 +48,11 @@ $string['historyrestoreconfirm'] = 'Diese Aktivität wirklich auf Version {$a} z
 $string['historydatalossconfirm'] = '{$a} Wirklich fortsetzen und dabei bestehende Abschlussdaten löschen?';
 $string['historyquizhint'] = 'Hinweis: Fragen erscheinen bei Tests in der jeweils neuesten Fassung, keine Version wird nachträglich gepinnt.';
 $string['historybacktolist'] = 'Zurück zur Aktivitätenliste';
+$string['historysourcemoodle'] = 'erster erfasster Stand';
+$string['historysourcediscovered'] = 'vorgefundener Ausgangsstand vor Coursepilot';
+$string['historysourcecloned'] = 'Klon der Aktivität {$a}';
+$string['historysourcefromxml'] = 'aus Aktivitäts-XML angelegt';
+$string['historysourcesuperseded'] = 'abgelöst durch Aktivität {$a}';
 
 // Plugin-Beschreibung auf der Einstellungsseite (Issue #500, Spec #486 §11).
 $string['settingintroheading'] = 'Über Coursepilot';

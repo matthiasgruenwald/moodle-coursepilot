@@ -193,7 +193,7 @@ final class clone_activity_test extends \advanced_testcase {
         $versions = array_values($DB->get_records('local_coursepilot_cm_version', ['cmid' => $result['cmid']]));
         $this->assertCount(1, $versions);
         $this->assertSame(1, (int) $versions[0]->version);
-        $this->assertSame(version_writer::SOURCE_GEKLONT, $versions[0]->source);
+        $this->assertSame(version_writer::SOURCE_CLONED, $versions[0]->source);
         $this->assertSame((int) $page->cmid, (int) $versions[0]->sourcecmid);
     }
 }

@@ -99,7 +99,7 @@ final class version_history_test extends \advanced_testcase {
      * Abnahmekriterium: Version 1 ist als vorgefunden erkennbar, sowohl im
      * "quelle"-Feld als auch im Einzeiler.
      */
-    public function test_legacy_version_one_is_marked_as_vorgefunden(): void {
+    public function test_legacy_version_one_is_marked_as_discovered(): void {
         $this->resetAfterTest();
         [$course, $cm] = $this->create_page();
         $this->simulate_legacy_activity($cm->id);
@@ -111,9 +111,9 @@ final class version_history_test extends \advanced_testcase {
 
         $v1 = $result['versions'][0];
         $this->assertSame(1, $v1['version']);
-        $this->assertSame('vorgefunden', $v1['source']);
+        $this->assertSame('discovered', $v1['source']);
         $this->assertTrue($v1['discovered']);
-        $this->assertStringContainsString('vorgefunden', $v1['summary_line']);
+        $this->assertStringContainsString('starting state found before Coursepilot', $v1['summary_line']);
 
         $v2 = $result['versions'][1];
         $this->assertSame(2, $v2['version']);
@@ -124,7 +124,7 @@ final class version_history_test extends \advanced_testcase {
      * Eine Aktivitaet, die erst nach Coursepilot angelegt wurde, hat eine
      * "moodle"-Version 1 - keine falsch positive Vorgefunden-Markierung.
      */
-    public function test_freshly_created_activity_version_one_is_not_vorgefunden(): void {
+    public function test_freshly_created_activity_version_one_is_not_discovered(): void {
         $this->resetAfterTest();
         [, $cm] = $this->create_page();
 
@@ -338,7 +338,7 @@ final class version_history_test extends \advanced_testcase {
         $this->assertSame('superseded', $marker['source']);
         $this->assertSame((int) $new->cmid, $marker['source_cmid']);
         $this->assertFalse($marker['discovered']);
-        $this->assertStringContainsString('abgelöst durch Aktivität ' . $new->cmid, $marker['summary_line']);
+        $this->assertStringContainsString('superseded by activity ' . $new->cmid, $marker['summary_line']);
     }
 
     /**
@@ -353,9 +353,9 @@ final class version_history_test extends \advanced_testcase {
 
         $rows = version_history::list_versions($cm->id)['versions'];
         $this->assertSame('from_xml', end($rows)['source']);
-        $this->assertSame('aus Aktivitäts-XML angelegt', (new version_source('from_xml'))->label());
-        $this->assertSame('Klon der Aktivität 7', (new version_source('geklont', 7))->label());
-        $this->assertSame('unbekannt', (new version_source('unbekannt'))->label());
+        $this->assertSame('created from activity XML', (new version_source('from_xml'))->label());
+        $this->assertSame('clone of activity 7', (new version_source('cloned', 7))->label());
+        $this->assertSame('unknown_source', (new version_source('unknown_source'))->label());
     }
 
     /**

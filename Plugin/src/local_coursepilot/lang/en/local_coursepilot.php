@@ -111,6 +111,11 @@ $string['historyrestoreconfirm'] = 'Really restore this activity to version {$a}
 $string['historydatalossconfirm'] = '{$a} Really continue and delete existing completion data?';
 $string['historyquizhint'] = 'Note: on quizzes, questions always show in their latest version, no version is pinned retroactively.';
 $string['historybacktolist'] = 'Back to activity list';
+$string['historysourcemoodle'] = 'first recorded state';
+$string['historysourcediscovered'] = 'starting state found before Coursepilot';
+$string['historysourcecloned'] = 'clone of activity {$a}';
+$string['historysourcefromxml'] = 'created from activity XML';
+$string['historysourcesuperseded'] = 'superseded by activity {$a}';
 
 // Plugin description on the settings page (Issue #500, Spec #486 §11).
 $string['settingintroheading'] = 'About Coursepilot';

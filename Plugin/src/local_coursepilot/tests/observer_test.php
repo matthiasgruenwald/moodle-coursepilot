@@ -343,7 +343,7 @@ final class observer_test extends \advanced_testcase {
      * Verlaufs entsteht, bekommt Version 1 direkt beim Anlegen - als
      * regulaeren Stand, nicht als "vorgefunden".
      */
-    public function test_new_activity_gets_version_one_on_create_not_vorgefunden(): void {
+    public function test_new_activity_gets_version_one_on_create_not_discovered(): void {
         global $DB;
 
         $this->resetAfterTest();
@@ -381,7 +381,7 @@ final class observer_test extends \advanced_testcase {
      * an - Version 1 als vorgefunden gekennzeichnet, Version 2 mit dem neuen
      * Stand.
      */
-    public function test_first_update_on_activity_without_history_backfills_vorgefunden_version(): void {
+    public function test_first_update_on_activity_without_history_backfills_discovered_version(): void {
         global $DB;
 
         $this->resetAfterTest();
@@ -397,7 +397,7 @@ final class observer_test extends \advanced_testcase {
         $this->assertCount(2, $versions, 'Das erste Ereignis ohne Vorgeschichte muss zwei Versionen anlegen.');
 
         $this->assertSame(1, (int) $versions[0]->version);
-        $this->assertSame(version_writer::SOURCE_VORGEFUNDEN, $versions[0]->source);
+        $this->assertSame(version_writer::SOURCE_DISCOVERED, $versions[0]->source);
         $this->assertSame((int) $teacher->id, (int) $versions[0]->userid);
 
         $this->assertSame(2, (int) $versions[1]->version);
@@ -429,7 +429,7 @@ final class observer_test extends \advanced_testcase {
         $versions = array_values($DB->get_records('local_coursepilot_cm_version', ['cmid' => $cm->id], 'version ASC'));
         $this->assertCount(3, $versions);
         $this->assertSame([1, 2, 3], array_map(fn ($v) => (int) $v->version, $versions));
-        $this->assertSame(version_writer::SOURCE_VORGEFUNDEN, $versions[0]->source);
+        $this->assertSame(version_writer::SOURCE_DISCOVERED, $versions[0]->source);
         $this->assertSame(version_writer::SOURCE_MOODLE, $versions[1]->source);
         $this->assertSame(version_writer::SOURCE_MOODLE, $versions[2]->source);
         $this->assertSame('Zweite beobachtete Aenderung', json_decode($versions[2]->moduleinfo_json, true)['name']);

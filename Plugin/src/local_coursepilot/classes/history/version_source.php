@@ -37,10 +37,10 @@ final class version_source {
     public const MOODLE = 'moodle';
 
     /** @var string Retroactively recorded starting state (#386). */
-    public const DISCOVERED = 'vorgefunden';
+    public const DISCOVERED = 'discovered';
 
     /** @var string Clone, always version 1 (#421); reference = origin cmid. */
-    public const CLONED = 'geklont';
+    public const CLONED = 'cloned';
 
     /** @var string Created from an activity XML (ADR 0028). */
     public const FROM_XML = 'from_xml';
@@ -49,17 +49,18 @@ final class version_source {
     public const SUPERSEDED = 'superseded';
 
     /**
-     * Label for the summary line, "%s" is replaced by the reference cmid.
-     * Unknown keys (future API clients) get no entry and fall back to the key.
+     * Language string per source for the summary line, "{$a}" is the
+     * reference cmid. Unknown keys (future API clients) get no entry and
+     * fall back to the key.
      *
      * @var array<string, string>
      */
     private const LABELS = [
-        self::MOODLE => 'erster erfasster Stand',
-        self::DISCOVERED => 'vorgefundener Ausgangsstand vor Coursepilot',
-        self::CLONED => 'Klon der Aktivität %s',
-        self::FROM_XML => 'aus Aktivitäts-XML angelegt',
-        self::SUPERSEDED => 'abgelöst durch Aktivität %s',
+        self::MOODLE => 'historysourcemoodle',
+        self::DISCOVERED => 'historysourcediscovered',
+        self::CLONED => 'historysourcecloned',
+        self::FROM_XML => 'historysourcefromxml',
+        self::SUPERSEDED => 'historysourcesuperseded',
     ];
 
     /** @var string[] Sources whose summary line is the label even when a predecessor exists. */
@@ -101,6 +102,9 @@ final class version_source {
      * @return string teacher-facing label
      */
     public function label(): string {
-        return str_replace('%s', (string) ($this->refcmid ?? '?'), self::LABELS[$this->key] ?? $this->key);
+        if (!isset(self::LABELS[$this->key])) {
+            return $this->key;
+        }
+        return get_string(self::LABELS[$this->key], 'local_coursepilot', (string) ($this->refcmid ?? '?'));
     }
 }

@@ -277,5 +277,12 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026092301, 'local', 'coursepilot');
     }
 
+    if ($oldversion < 2026100200) {
+        // #602 (ADR 0024): Quellschluessel des Verlaufs englisch.
+        local_coursepilot_migrate_history_sources();
+
+        upgrade_plugin_savepoint(true, 2026100200, 'local', 'coursepilot');
+    }
+
     return true;
 }

@@ -66,8 +66,8 @@
         <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Kurs zum Zeitpunkt des Schreibvorgangs - noetig fuer die Kurs-Kaskade (#387): course_modules ist beim course_deleted-Event bereits geloescht."/>
         <FIELD NAME="version" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Fortlaufend je cmid, beginnend bei 1."/>
-        <FIELD NAME="source" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="moodle" SEQUENCE="false" COMMENT="Ursprung des Schreibvorgangs: moodle (nativer Schreibweg), vorgefunden (rueckwirkend beim ersten beobachteten Ereignis angelegter Vorher-Stand, #386) oder geklont (clone_activity, #421); spaetere API-Clients tragen einen eigenen Wert."/>
-        <FIELD NAME="sourcecmid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Quell-Modul-ID eines Klons (#421) - nur bei source=geklont gesetzt, sonst NULL."/>
+        <FIELD NAME="source" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="moodle" SEQUENCE="false" COMMENT="Ursprung des Schreibvorgangs: moodle (nativer Schreibweg), discovered (rueckwirkend beim ersten beobachteten Ereignis angelegter Vorher-Stand, #386) oder cloned (clone_activity, #421); spaetere API-Clients tragen einen eigenen Wert."/>
+        <FIELD NAME="sourcecmid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Quell-Modul-ID eines Klons (#421) - nur bei source=cloned gesetzt, sonst NULL."/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="moduleinfo_json" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="get_moduleinfo_data()-Feldobjekt (Instanz-Record, Tags, availability, gradepass/gradecat/Outcomes)."/>
         <FIELD NAME="coursemodule_json" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Vollstaendige course_modules-Zeile zum Zeitpunkt des Schreibvorgangs."/>

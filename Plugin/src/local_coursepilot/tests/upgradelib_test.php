@@ -168,6 +168,27 @@ final class upgradelib_test extends \advanced_testcase {
     }
 
     /**
+     * #602: deutsche Verlaufsquellen werden englisch, andere bleiben.
+     */
+    public function test_history_sources_are_migrated_to_english(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        foreach (['vorgefunden', 'geklont', 'moodle'] as $index => $source) {
+            $DB->insert_record('local_coursepilot_cm_version', (object) [
+                'cmid' => 100 + $index, 'courseid' => 1, 'version' => 1, 'source' => $source, 'userid' => 2,
+                'moduleinfo_json' => '{}', 'coursemodule_json' => '{}', 'timecreated' => time(),
+            ]);
+        }
+
+        local_coursepilot_migrate_history_sources();
+        local_coursepilot_migrate_history_sources();
+
+        $sources = $DB->get_fieldset_sql('SELECT source FROM {local_coursepilot_cm_version} ORDER BY cmid');
+        $this->assertSame(['discovered', 'cloned', 'moodle'], $sources);
+    }
+
+    /**
      * Stellt genau die Abweichungen her, die auf der Spike-Instanz gemessen
      * wurden: clientid auf 64 verkuerzt, codechallengemethod vorhanden,
      * refreshtokenhash nullable.

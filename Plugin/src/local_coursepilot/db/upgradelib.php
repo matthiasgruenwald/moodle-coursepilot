@@ -161,3 +161,18 @@ function local_coursepilot_hash_oauth_tokens(database_manager $dbman): void {
     $dbman->drop_field($table, $access);
     $dbman->drop_field($table, $refresh);
 }
+
+/**
+ * Schreibt die deutschen Quellschluessel des Aenderungsverlaufs auf die
+ * englischen um (#602, ADR 0024): "vorgefunden" -> "discovered",
+ * "geklont" -> "cloned". Idempotent.
+ *
+ * @return void
+ */
+function local_coursepilot_migrate_history_sources(): void {
+    global $DB;
+
+    foreach (['vorgefunden' => 'discovered', 'geklont' => 'cloned'] as $old => $new) {
+        $DB->set_field('local_coursepilot_cm_version', 'source', $new, ['source' => $old]);
+    }
+}

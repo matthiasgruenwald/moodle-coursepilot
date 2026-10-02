@@ -76,11 +76,11 @@ class compare_activity_versions extends external_api {
     public static function execute_returns(): external_single_structure {
         $standblock = new external_single_structure([
             'version' => new external_value(PARAM_INT, 'Version number'),
-            'source' => new external_value(PARAM_TEXT, '"moodle", "vorgefunden", "geklont", "from_xml" or "superseded"'),
+            'source' => new external_value(PARAM_TEXT, '"moodle", "discovered", "cloned", "from_xml" or "superseded"'),
             'discovered' => new external_value(PARAM_BOOL, 'true if retroactively recorded as a starting state'),
             'source_cmid' => new external_value(
                 PARAM_INT,
-                'Reference course module ID: clone origin (source = "geklont") or replacing activity '
+                'Reference course module ID: clone origin (source = "cloned") or replacing activity '
                     . '(source = "superseded"), null otherwise',
                 VALUE_DEFAULT,
                 null,

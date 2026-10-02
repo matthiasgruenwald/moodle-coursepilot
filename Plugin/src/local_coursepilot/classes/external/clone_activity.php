@@ -147,7 +147,7 @@ final class clone_activity extends external_api {
         // Klonens bereits mitgeschrieben hat, und ersetzt es durch genau
         // einen Stand mit korrekter Herkunft (#421) - siehe Klassenkommentar.
         retention::purge_cm($newcmid);
-        version_writer::capture($newcmid, (int) $USER->id, version_writer::SOURCE_GEKLONT, (int) $cm->id);
+        version_writer::capture($newcmid, (int) $USER->id, version_writer::SOURCE_CLONED, (int) $cm->id);
 
         return [
             'cmid' => $newcmid,
