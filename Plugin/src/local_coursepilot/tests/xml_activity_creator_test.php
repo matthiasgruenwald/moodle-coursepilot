@@ -190,4 +190,46 @@ final class xml_activity_creator_test extends \advanced_testcase {
         $this->assertTrue((bool) get_fast_modinfo($course->id)->get_cm($old)->visible);
         $this->assertSame($before, $this->footprint($course->id));
     }
+
+    public function test_supersede_of_superseded_names_successor_and_still_runs(): void {
+        [$course, $xml, $a] = $this->setup_old();
+        $b = xml_activity_creator::create($course->id, 'book', 2, $xml, false, $a)['cmid'];
+        $c = xml_activity_creator::create($course->id, 'book', 2, $xml, false, $b)['cmid'];
+
+        $preview = xml_activity_creator::preview_supersede($course->id, 'book', $xml, $a);
+        $result = xml_activity_creator::create($course->id, 'book', 2, $xml, false, $a);
+
+        // The newest of the chain, not just the direct successor.
+        $this->assertSame($c, $preview['successor_cmid']);
+        $this->assertSame($c, $result['successor_cmid']);
+        $this->assertTrue((bool) get_fast_modinfo($course->id)->get_cm($result['cmid'])->visible);
+    }
+
+    public function test_chain_counts_hidden_predecessors(): void {
+        [$course, $xml, $a] = $this->setup_old();
+        $this->assertSame(1, xml_activity_creator::preview_supersede($course->id, 'book', $xml, $a)['hidden_predecessors']);
+        $b = xml_activity_creator::create($course->id, 'book', 2, $xml, false, $a);
+        $this->assertSame(1, $b['hidden_predecessors']);
+        $this->assertSame(0, $b['successor_cmid']);
+        $c = xml_activity_creator::create($course->id, 'book', 2, $xml, false, $b['cmid']);
+        $this->assertSame(2, $c['hidden_predecessors']);
+        $this->assertSame(3, xml_activity_creator::preview_supersede($course->id, 'book', $xml, $c['cmid'])['hidden_predecessors']);
+    }
+
+    public function test_retry_after_failed_supersede_needs_no_special_case(): void {
+        [$course, $xml, $old] = $this->setup_old();
+        $broken = str_replace('</book>', '<bogusfield>x</bogusfield></book>', $xml);
+        try {
+            xml_activity_creator::create($course->id, 'book', 2, $broken, false, $old);
+            $this->fail('deviation must be reported');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('xmlroundtripmismatch', $e->errorcode);
+        }
+
+        $result = xml_activity_creator::create($course->id, 'book', 2, $xml, false, $old);
+
+        $this->assertSame(0, $result['successor_cmid']);
+        $this->assertSame(1, $result['hidden_predecessors']);
+        $this->assertFalse((bool) get_fast_modinfo($course->id)->get_cm($old)->visible);
+    }
 }

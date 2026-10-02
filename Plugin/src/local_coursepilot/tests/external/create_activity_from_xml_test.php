@@ -97,6 +97,25 @@ final class create_activity_from_xml_test extends \advanced_testcase {
         $this->assertTrue((bool) get_fast_modinfo($course->id)->get_cm($old)->visible);
     }
 
+    public function test_dry_run_on_superseded_names_successor_and_chain_count(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $xml = export_default_activity::execute($course->id, 'book')['xml'];
+        $a = create_activity_from_xml::execute($course->id, 'book', 1, $xml)['cmid'];
+        $b = create_activity_from_xml::execute($course->id, 'book', 1, $xml, false, $a)['cmid'];
+
+        $result = create_activity_from_xml::execute($course->id, 'book', 1, $xml, false, $a, true);
+        $result = external_api::clean_returnvalue(create_activity_from_xml::execute_returns(), $result);
+
+        $this->assertSame($b, $result['successor_cmid']);
+        $this->assertSame(1, $result['hidden_predecessors']);
+        $this->assertStringContainsString("cmid $b", $result['message']);
+        $this->assertStringContainsString('1 hidden', $result['message']);
+    }
+
     public function test_requires_restore_capability(): void {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();

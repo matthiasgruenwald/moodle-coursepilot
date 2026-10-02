@@ -35,7 +35,9 @@ defined('MOODLE_INTERNAL') || die();
  * Superseding (#591, ADR 0028): with $replacescmid the new activity is placed directly
  * behind the old one, the old one is only hidden (name untouched, nothing deleted) and
  * gets a marker state "superseded by new cmid". References to the old cmid are reported,
- * never resolved. The marker is no restore risk: only developed kinds are superseded
+ * never resolved. Repeated superseding forms a chain A -> B -> C (#600): the result names the
+ * newest successor of an already superseded $replacescmid and the number of hidden
+ * predecessors, both as hints, nothing is blocked. The marker is no restore risk: only developed kinds are superseded
  * (same modname as the old cm), and those have no restore path (catalog_for requires a catalog).
  *
  * @package    local_coursepilot
@@ -61,8 +63,9 @@ final class xml_activity_creator {
      * @param bool $hidden leave the activity hidden after the check
      * @param int|null $replacescmid supersede this activity of the same type in the same course;
      *        $sectionnum is then ignored (the new one lands behind the old one)
-     * @return array{cmid: int, presets: string[], references: array}
-     * references: {@see cm_references::references_to()} of the old cmid, empty without $replacescmid
+     * @return array{cmid: int, presets: string[], references: array, successor_cmid: int, hidden_predecessors: int}
+     * references: {@see cm_references::references_to()} of the old cmid, empty without $replacescmid;
+     * successor_cmid/hidden_predecessors: {@see self::chain()}, 0 without $replacescmid
      * @throws moodle_exception kind gate, xmlroundtripmismatch
      * @throws invalid_parameter_exception invalid XML, modname mismatch or unusable $replacescmid
      */
@@ -81,6 +84,9 @@ final class xml_activity_creator {
             self::assert_replaceable($replacescmid, $courseid, $modname);
         }
         $references = $replacescmid === null ? [] : cm_references::references_to($replacescmid);
+        $chain = $replacescmid === null
+            ? ['successor_cmid' => 0, 'hidden_predecessors' => 0]
+            : self::chain($courseid, $replacescmid);
         $oldvisible = $replacescmid === null || (bool) get_fast_modinfo($courseid)->get_cm($replacescmid)->visible;
 
         $cmid = activity_backup::restore($courseid, $sectionnum, $activityxml, true);
@@ -118,14 +124,15 @@ final class xml_activity_creator {
         // Last: drop what the observers wrote on the way, keep exactly one state.
         retention::purge_cm($cmid);
         version_writer::capture($cmid, (int) $USER->id, version_writer::SOURCE_FROM_XML);
-        return ['cmid' => $cmid, 'presets' => $result['presets'], 'references' => $references];
+        return ['cmid' => $cmid, 'presets' => $result['presets'], 'references' => $references] + $chain;
     }
 
     /**
      * Dry run of superseding: the same checks as create(), writes nothing, names what still
      * points at the old activity (Spec 0026 module 6, plan preview).
      *
-     * @return array<int, array{kind: string, location_id: int, location: string}> {@see cm_references::references_to()}
+     * @return array{references: array, successor_cmid: int, hidden_predecessors: int}
+     * references: {@see cm_references::references_to()}; the rest: {@see self::chain()}
      * @throws moodle_exception kind gate
      * @throws invalid_parameter_exception invalid XML or unusable $replacescmid
      */
@@ -133,7 +140,50 @@ final class xml_activity_creator {
         registry::require_developed($modname, 'createfromxmlcatalogued');
         self::assert_valid($activityxml, $modname);
         self::assert_replaceable($replacescmid, $courseid, $modname);
-        return cm_references::references_to($replacescmid);
+        return ['references' => cm_references::references_to($replacescmid)] + self::chain($courseid, $replacescmid);
+    }
+
+    /**
+     * Chain hints for superseding $oldcmid (#600), read from the superseded marker states.
+     * successor_cmid: newest existing successor if $oldcmid is already superseded, else 0.
+     * hidden_predecessors: hidden activities behind the new one once $oldcmid is hidden,
+     * i.e. $oldcmid itself plus its hidden predecessors.
+     * ponytail: links live in the marker states, which expire with the history retention and
+     * vanish with a deleted middle version (purge_cm); such a gap ends the walk, so the hints
+     * are a lower bound then. A persistent chain field (upgrade.php) if that ever matters.
+     *
+     * @return array{successor_cmid: int, hidden_predecessors: int}
+     */
+    private static function chain(int $courseid, int $oldcmid): array {
+        global $DB;
+        $cms = get_fast_modinfo($courseid)->cms;
+        $markers = $DB->get_records('local_coursepilot_cm_version',
+            ['courseid' => $courseid, 'source' => version_writer::SOURCE_SUPERSEDED], 'id ASC', 'id, cmid, sourcecmid');
+        $next = [];
+        $previous = [];
+        foreach ($markers as $m) {
+            if (isset($cms[$m->cmid], $cms[$m->sourcecmid])) {
+                $next[(int) $m->cmid] = (int) $m->sourcecmid; // Ascending id: the latest marker wins.
+                $previous[(int) $m->sourcecmid] = (int) $m->cmid;
+            }
+        }
+        $successors = self::walk($next, $oldcmid);
+        $hiddenpredecessors = array_filter(self::walk($previous, $oldcmid), static fn($cmid) => !$cms[$cmid]->visible);
+        return ['successor_cmid' => end($successors) ?: 0, 'hidden_predecessors' => 1 + count($hiddenpredecessors)];
+    }
+
+    /**
+     * Follows $links from $start, cycle-safe.
+     *
+     * @param array<int, int> $links cmid => linked cmid
+     * @return int[] the linked cmids in walking order, $start excluded
+     */
+    private static function walk(array $links, int $start): array {
+        $path = [$start => $start];
+        for ($cmid = $start; isset($links[$cmid]) && !isset($path[$links[$cmid]]); $cmid = $links[$cmid]) {
+            $path[$links[$cmid]] = $links[$cmid];
+        }
+        return array_values(array_slice($path, 1, null, true));
     }
 
     /**

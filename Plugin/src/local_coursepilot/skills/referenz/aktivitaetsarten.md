@@ -146,14 +146,28 @@ Soll eine bestehende Aktivität einer erschlossenen Art „geändert“ werden:
 1. Frage die Lehrkraft, ob die neue Fassung die alte **ablösen** soll (die
    alte bleibt versteckt erhalten, mit allen Daten der Lernenden).
 2. Rufe `coursepilot_create_activity_from_xml` mit `replaces_cmid` und
-   `dry_run: true` auf. Es schreibt nichts und liefert nur `references`:
-   Stellen, die auf die alte Aktivität zeigen (Voraussetzungen,
-   Kursabschluss-Kriterien).
+   `dry_run: true` auf. Es schreibt nichts und liefert nur Hinweise:
+   `references` (Stellen, die auf die alte Aktivität zeigen: Voraussetzungen,
+   Kursabschluss-Kriterien), `successor_cmid` und `hidden_predecessors`.
 3. Nenne der Lehrkraft diese Verweise. Coursepilot löst sie nicht auf; sie
    werden von Hand auf die neue Aktivität umgestellt.
-4. Nach Freigabe: derselbe Aufruf ohne `dry_run`. Die neue Aktivität steht
+4. **Ist die Vorlage schon abgelöst?** Ist `successor_cmid` ungleich 0
+   (**Ja/Nein**)? **Nein:** weiter mit 5. **Ja:** Nenne die Nachfolgerin
+   (`cmid`) und frage die Lehrkraft: Soll stattdessen sie abgelöst werden
+   (**Ja/Nein**)? **Ja:** zurück zu 2 mit `replaces_cmid` = Nachfolgerin.
+   **Nein:** weiter mit 5 an der ursprünglichen Vorlage; der Aufruf wird
+   nicht blockiert.
+5. Nenne die Zahl `hidden_predecessors`: so viele versteckte ältere Fassungen
+   liegen nach dem Ablösen in der Kette (A → B → C, sichtbar nur die
+   neueste). Gib den Aufräum-Hinweis weiter: Nicht mehr gebrauchte
+   Altfassungen kann die Lehrkraft in Moodle löschen. Keine Schwelle, immer
+   die tatsächliche Zahl.
+6. Nach Freigabe: derselbe Aufruf ohne `dry_run`. Die neue Aktivität steht
    direkt hinter der alten, die alte ist nur versteckt (Titel bleibt, nichts
-   gelöscht). `section` entfällt dabei; Art und Kurs müssen gleich sein.
+   gelöscht). `section` entfällt dabei; Art und Kurs müssen gleich sein. Die
+   Antwort trägt dieselben Hinweise; gib sie wie in 3–5 weiter.
+7. Schlägt die Anlage fehl, bleibt nichts zurück; ein neuer Versuch mit
+   derselben `replaces_cmid` braucht keine Sonderbehandlung.
 
 ## Nutzerdaten-Inhalte
 

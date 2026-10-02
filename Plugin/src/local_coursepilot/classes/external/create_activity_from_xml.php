@@ -100,9 +100,9 @@ final class create_activity_from_xml extends external_api {
             if (!$params['replaces_cmid']) {
                 throw new \invalid_parameter_exception('dry_run needs replaces_cmid.');
             }
-            $references = xml_activity_creator::preview_supersede(
+            $preview = xml_activity_creator::preview_supersede(
                 $params['courseid'], $params['modname'], $params['activity_xml'], $params['replaces_cmid']);
-            return self::shape(['cmid' => 0, 'presets' => [], 'references' => $references]);
+            return self::shape(['cmid' => 0, 'presets' => []] + $preview);
         }
         $result = xml_activity_creator::create(
             $params['courseid'],
@@ -116,7 +116,7 @@ final class create_activity_from_xml extends external_api {
     }
 
     /**
-     * @param array{cmid: int, presets: string[], references: array} $result
+     * @param array{cmid: int, presets: string[], references: array, successor_cmid: int, hidden_predecessors: int} $result
      * @return array
      */
     private static function shape(array $result): array {
@@ -128,10 +128,18 @@ final class create_activity_from_xml extends external_api {
             $places = implode(', ', array_map(static fn($r) => $r['kind'] . ' (' . $r['location'] . ')', $result['references']));
             $messages[] = get_string('createfromxmlreferences', 'local_coursepilot', $places);
         }
+        if ($result['successor_cmid']) {
+            $messages[] = get_string('createfromxmlsuccessor', 'local_coursepilot', $result['successor_cmid']);
+        }
+        if ($result['hidden_predecessors']) {
+            $messages[] = get_string('createfromxmlhiddenpredecessors', 'local_coursepilot', $result['hidden_predecessors']);
+        }
         return [
             'cmid' => $result['cmid'],
             'presets' => $result['presets'],
             'references' => $result['references'],
+            'successor_cmid' => $result['successor_cmid'],
+            'hidden_predecessors' => $result['hidden_predecessors'],
             'message' => implode(' ', $messages),
         ];
     }
@@ -154,7 +162,14 @@ final class create_activity_from_xml extends external_api {
                 ]),
                 'Places that still point at the superseded activity (only with replaces_cmid); not resolved'
             ),
-            'message' => new external_value(PARAM_RAW, 'Hints about Moodle presets and unresolved references, empty if there are none'),
+            'successor_cmid' => new external_value(PARAM_INT,
+                'Newest activity that already supersedes replaces_cmid (ask the teacher whether to supersede that one instead), '
+                . '0 if none'),
+            'hidden_predecessors' => new external_value(PARAM_INT,
+                'Hidden earlier versions in the chain behind the new activity: replaces_cmid (hidden by superseding) '
+                . 'plus its hidden predecessors; 0 without replaces_cmid'),
+            'message' => new external_value(PARAM_RAW,
+                'Hints about Moodle presets, unresolved references and the superseding chain, empty if there are none'),
         ]);
     }
 }
