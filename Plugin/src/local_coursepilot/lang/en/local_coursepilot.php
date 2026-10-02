@@ -465,7 +465,7 @@ $string['kindexcludedfiles'] = 'This activity type needs files in its content. C
 $string['kindexcludednobackup'] = 'This activity type does not support Moodle backup, so it cannot be created from XML.';
 $string['kindexcludedquestions'] = 'This activity type contains questions and cannot be created from XML.';
 $string['defaultactivitycatalogued'] = 'Activity type "{$a->modname}" is catalogued: create it with coursepilot_create_module (see coursepilot_describe_module_fields), not from XML.';
-$string['unknownmodname'] = 'Unknown activity type "{$a->modname}". Coursepilot catalogs: {$a->aktivitaetsarten}.';
+$string['unknownmodname'] = 'Unknown activity type "{$a->modname}". Coursepilot catalogs: {$a->modnames}.';
 
 // Skill corpus: coursepilot_list_skills/coursepilot_get_skill (Spec 0020 §4, #450).
 $string['unknownskillname'] = 'Unknown skill name "{$a->name}". Valid names: {$a->namen}.';

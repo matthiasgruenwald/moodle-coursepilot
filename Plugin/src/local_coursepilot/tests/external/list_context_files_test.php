@@ -122,15 +122,15 @@ final class list_context_files_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
 
-        $this->create_context_file($user, '/coursepilot/fragetypen/', 'match.md', '# match');
+        $this->create_context_file($user, '/coursepilot/question-types/', 'match.md', '# match');
 
         $root = list_context_files::execute();
         $root = external_api::clean_returnvalue(list_context_files::execute_returns(), $root);
         $this->assertSame('', $root['path']);
 
-        $sub = list_context_files::execute('fragetypen');
+        $sub = list_context_files::execute('question-types');
         $sub = external_api::clean_returnvalue(list_context_files::execute_returns(), $sub);
-        $this->assertSame('fragetypen', $sub['path']);
+        $this->assertSame('question-types', $sub['path']);
     }
 
     /**

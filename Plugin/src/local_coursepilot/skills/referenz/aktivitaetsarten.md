@@ -45,11 +45,15 @@ der Lehrkraft, fester Pfad **relativ zur Kontextwurzel** (siehe „Ablageordnung
 in `coursepilot_get_skill("kontextbereich")`):
 
 ```
-aktivitaetsarten/<modname>.md
+activity-types/<modname>.md
 ```
 
 `<modname>` ist der Moodle-Kurzname der Art (`book`, `checklist`, `glossary`).
 Eine Datei je Art; die Ablage hält Wissen fest und ist keine Klonvorlage.
+
+Erfahrungswerte aus echten Importen (Tar-Aufbau, Vorschaubilder, Checklisten-Verweise)
+stehen in `coursepilot_get_skill("activity-backup-experience")`. Sie sind Hinweise,
+keine geprüften Regeln: Was du davon bestätigst, gehört in die Ablage der Art.
 
 ### Verbindliche Gliederung
 
@@ -90,7 +94,7 @@ wird angesagt, je Versuch wird berichtet, was fehlschlug und was korrigiert
 wurde. Die Stufen mit **Ja/Nein** stehen fest, bevor der nächste Schritt
 beginnt.
 
-1. **Ablage lesen.** Gibt es `aktivitaetsarten/<modname>.md`
+1. **Ablage lesen.** Gibt es `activity-types/<modname>.md`
    (`coursepilot_read_context_file`, mit Handänderungs-Prüfung)?
    **Ja:** weiter mit 2. **Nein:** weiter mit 3.
 2. **Kopf abgleichen.** Stimmen Moodle-Release und Plugin-Version im Kopf mit
@@ -161,4 +165,4 @@ Round-Trip nicht; die Anlage wird dann wie in Schritt 5 entfernt.
 die Aktivitäts-XML nicht mit; eine XML mit `<entry>` besteht den Round-Trip
 nicht. Lege das Glossar ohne Einträge an und sage der Lehrkraft vorher, dass
 sie die Einträge in Moodle selbst anlegt. Gehört in die Ablage
-`aktivitaetsarten/glossary.md`.
+`activity-types/glossary.md`.

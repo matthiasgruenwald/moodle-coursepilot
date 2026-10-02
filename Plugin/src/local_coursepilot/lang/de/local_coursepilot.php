@@ -394,7 +394,7 @@ $string['privacy:metadata:webdav_external_storage:path'] = 'Der Datei- und Ordne
 $string['privacy:metadata:webdav_external_storage:content'] = 'Der Dateiinhalt, einschließlich markierter personenbezogener Angaben wie Namen aus Lerngruppenprofilen.';
 
 // Feldkatalog (#379).
-$string['unknownmodname'] = 'Unbekannte Aktivitätsart "{$a->modname}". Coursepilot führt: {$a->aktivitaetsarten}.';
+$string['unknownmodname'] = 'Unbekannte Aktivitätsart "{$a->modname}". Coursepilot führt: {$a->modnames}.';
 
 // Skill-Korpus: coursepilot_list_skills/coursepilot_get_skill (Spec 0020 §4, #450).
 $string['unknownskillname'] = 'Unbekannter Skill-Name "{$a->name}". Gültige Namen: {$a->namen}.';

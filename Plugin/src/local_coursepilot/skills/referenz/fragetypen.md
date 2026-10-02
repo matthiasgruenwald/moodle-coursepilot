@@ -25,7 +25,7 @@ ein Kontext-Werkzeug bekommt (siehe "Ablageordnung" in
 `coursepilot_get_skill("kontextbereich")`):
 
 ```
-fragetypen/<fragetyp>.md
+question-types/<fragetyp>.md
 ```
 
 Kein Wurzelordner davor: die Wurzel setzt das Plugin selbst.
@@ -89,7 +89,7 @@ Registry, keine Garantie.
 
 Ablauf, wenn Coursepilot einen Fragetyp bauen soll, den es nicht kennt:
 
-1. **Ablage lesen und Kopf abgleichen.** Gibt es `fragetypen/<typ>.md`
+1. **Ablage lesen und Kopf abgleichen.** Gibt es `question-types/<typ>.md`
    (`coursepilot_read_context_file`, mit Handaenderungs-Pruefung), wird der
    Kopf **vor** dem Bauen mit `coursepilot_get_version_info` abgeglichen
    (Versionsabweichung, siehe Widerspruchspruefung unten). Erst danach wird

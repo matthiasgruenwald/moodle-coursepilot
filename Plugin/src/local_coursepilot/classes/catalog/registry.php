@@ -110,7 +110,7 @@ final class registry {
                 'unknownmodname',
                 'local_coursepilot',
                 '',
-                ['modname' => $modname, 'aktivitaetsarten' => implode(', ', self::known_modnames())]
+                ['modname' => $modname, 'modnames' => implode(', ', self::known_modnames())]
             );
         }
         return $catalog;

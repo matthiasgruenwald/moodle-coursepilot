@@ -114,7 +114,7 @@ class describe_module_fields extends external_api {
                 'unknownmodname',
                 'local_coursepilot',
                 '',
-                ['modname' => $modname, 'aktivitaetsarten' => implode(', ', $knownmodnames)]
+                ['modname' => $modname, 'modnames' => implode(', ', $knownmodnames)]
             );
         }
 
