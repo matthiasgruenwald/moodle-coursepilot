@@ -210,8 +210,14 @@ final class upgradelib_test extends \advanced_testcase {
                 'fehlerklasse' => 'Speicher voll', 'kursid' => 4],
         ]));
 
+        $broken = $this->getDataGenerator()->create_user();
+        $brokencontext = \context_user::instance($broken->id);
+        $fs->create_file_from_string(['contextid' => $brokencontext->id] + $record + ['filename' => '.coursepilot-ort.json'], '{kaputt');
+
         local_coursepilot_migrate_anchor_files();
         local_coursepilot_migrate_anchor_files();
+
+        $this->assertTrue($fs->file_exists($brokencontext->id, 'user', 'private', 0, '/coursepilot/', '.coursepilot-ort.json'));
 
         $this->assertFalse($fs->file_exists($context->id, 'user', 'private', 0, '/coursepilot/', '.coursepilot-ort.json'));
         $this->assertFalse($fs->file_exists($context->id, 'user', 'private', 0, '/coursepilot/', '.coursepilot-ausstand.json'));

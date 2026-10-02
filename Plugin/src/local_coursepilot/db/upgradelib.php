@@ -203,8 +203,11 @@ function local_coursepilot_migrate_anchor_files(): void {
         foreach ($records as $record) {
             $old = $fs->get_file_instance($record);
             $decoded = json_decode($old->get_content(), true);
-            if (!$fs->file_exists($record->contextid, 'user', 'private', 0, $record->filepath, $newname)
-                    && is_array($decoded) && !array_is_list($decoded)) {
+            if (!is_array($decoded) || array_is_list($decoded)) {
+                // Unlesbar: liegen lassen statt die Ortswahl still zu verlieren.
+                continue;
+            }
+            if (!$fs->file_exists($record->contextid, 'user', 'private', 0, $record->filepath, $newname)) {
                 $translated = $oldname === '.coursepilot-ort.json'
                     ? \local_coursepilot\context_pointer::normalise($decoded)
                     : local_coursepilot_translate_pending_entries($decoded);

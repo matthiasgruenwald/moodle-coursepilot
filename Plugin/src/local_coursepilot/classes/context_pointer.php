@@ -22,21 +22,20 @@ namespace local_coursepilot;
  * beide Fassungen:
  *
  * - **Erste Fassung** (Issue #445): zwei flache Pfade unter den Schluesseln
- *   "context_area"/"materialordner". Gilt vollstaendig als *in Moodle* an
- *   diesen Pfaden - kein Upgrade-Schritt schreibt sie um (Spec §2).
- * - **Zweite Fassung** (Issue #490): je Ziel ein Objekt mit `ort` =
- *   "moodle" (Feld `pfad`) oder "external" (Felder `instanzid`, `pfad`,
- *   `pruefmerkmal`). Der Materialbestand traegt intern denselben Feldnamen
- *   wie sein Ziel - "material_store" loest den frueheren Begriff
- *   "materialordner" ab (Spec §2), auch wenn {@see \local_coursepilot\material_files}
- *   ihren Pointer-Schluessel (aus historischen Gruenden "materialordner")
- *   unveraendert weiterreicht: die Zuordnung passiert hier in
- *   {@see TARGET_FIELD}.
+ *   "kontextbereich"/"materialordner". Gilt vollstaendig als *in Moodle* an
+ *   diesen Pfaden (Spec §2).
+ * - **Zweite Fassung** (Issue #490): je Ziel ein Objekt mit `location` =
+ *   "moodle" (Feld `path`) oder "external" (Felder `instanceid`, `path`,
+ *   `fingerprint`). Die Ziele heissen "context_area" und "material_store",
+ *   zugleich die Pointer-Schluessel der Bereiche ({@see TARGETS}).
+ *
+ * Seit #602 (ADR 0024) sind Schluessel und Werte englisch; aeltere Pointer mit
+ * deutschen Schluesseln uebersetzt {@see normalise()} beim Lesen.
  *
  * "Ortsverlauf" (Spec §2) wird von dieser Klasse weiterhin nicht gedeutet -
  * die Ortswahlseite ({@see \local_coursepilot\location_selection}) haengt Zeilen an
  * und liest sie roh zurueck, keine Aufloesung noetig. "Vorheriger Ort" (Feld
- * `vorheriger_ort`, Issue #498, Spec #486 §9) wird dagegen hier gedeutet -
+ * `previous_location`, Issue #498, Spec #486 §9) wird dagegen hier gedeutet -
  * {@see resolve_previous()} - denn der Altbestand-Nur-Lese-Zweig
  * ({@see \local_coursepilot\previous_location}) braucht dieselbe Struktur- und
  * IServ-Pruefung wie die beiden regulaeren Ziele.
@@ -144,7 +143,7 @@ final class context_pointer {
 
     /**
      * @param array $decoded
-     * @return array{kontextbereich: pointer_location, materialbestand: pointer_location}
+     * @return array{context_area: pointer_location, material_store: pointer_location}
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
     private static function resolve_pair_legacy(array $decoded): array {
@@ -161,7 +160,7 @@ final class context_pointer {
 
     /**
      * @param array $decoded
-     * @return array{kontextbereich: pointer_location, materialbestand: pointer_location}
+     * @return array{context_area: pointer_location, material_store: pointer_location}
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
     private static function resolve_pair_v2(array $decoded): array {

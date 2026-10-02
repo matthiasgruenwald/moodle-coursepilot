@@ -281,8 +281,8 @@ final class storage_anchor {
      * ausschliesslich die kleine Pointer-Datei selbst, per {@see replace()}
      * mit der ueblichen Zwischendatei-Choreografie.
      *
-     * @param array $document Vollstaendiges Pointer-Dokument (kontextbereich,
-     *        materialbestand, ortsverlauf).
+     * @param array $document Vollstaendiges Pointer-Dokument (context_area,
+     *        material_store, location_history).
      */
     public static function write_pointer_document(array $document): void {
         $content = json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
