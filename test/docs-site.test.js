@@ -74,13 +74,18 @@ test('reports a page that exists in only one language', () => {
   assert.deepEqual(findMissingCounterparts(root), [path.join('en', 'teachers.html')]);
 });
 
-test('developer page lists exactly the registered tools and their count', () => {
-  const registry = fs.readFileSync(
-    path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'tool_registry.php'), 'utf8');
-  const registered = [...registry.matchAll(/'(coursepilot_\w+)' => \['classname'/g)].map((m) => m[1]).sort();
-  const page = fs.readFileSync(path.join(SITE_ROOT, 'de', 'developers.html'), 'utf8');
-  const table = page.match(/<table class="tools">[\s\S]*?<\/table>/)[0];
-  const listed = [...table.matchAll(/<code>(coursepilot_\w+)<\/code>/g)].map((m) => m[1]).sort();
-  assert.deepEqual(listed, registered);
-  assert.match(page, new RegExp(`Werkzeuge nach Gruppen \\(${registered.length}\\)`));
-});
+const TOOL_HEADINGS = { de: 'Werkzeuge nach Gruppen', en: 'Tools by group' };
+
+for (const [lang, heading] of Object.entries(TOOL_HEADINGS)) {
+  test(`${lang} developer page lists exactly the registered tools and their count`, () => {
+    const registry = fs.readFileSync(
+      path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'tool_registry.php'), 'utf8');
+    const registered = [...registry.matchAll(/'(coursepilot_\w+)' => \['classname'/g)].map((m) => m[1]).sort();
+    const page = fs.readFileSync(path.join(SITE_ROOT, lang, 'developers.html'), 'utf8');
+    const table = page.match(/<table class="tools">[\s\S]*?<\/table>/);
+    assert.ok(table, `${lang}/developers.html has no tools table`);
+    const listed = [...table[0].matchAll(/<code>(coursepilot_\w+)<\/code>/g)].map((m) => m[1]).sort();
+    assert.deepEqual(listed, registered);
+    assert.match(page, new RegExp(`${heading} \\(${registered.length}\\)`));
+  });
+}

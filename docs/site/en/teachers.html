@@ -22,10 +22,284 @@
   </header>
   <main>
     <h1>Teacher guide</h1>
-    <h2>Try a starter prompt</h2>
-    <p>Copy this sentence into your AI client:</p>
+    <p class="lead">Coursepilot connects your AI client to your Moodle courses. The AI reads the course as it stands, proposes a plan, and only builds sections, pages, assignments and quizzes once you explicitly agree in the chat. This guide walks you through the setup and your first steps.</p>
+
+    <nav class="toc" aria-label="On this page">
+      <a href="#vorher">Before you start</a>
+      <a href="#claude">Claude</a>
+      <a href="#chatgpt">ChatGPT</a>
+      <a href="#codex">Codex</a>
+      <a href="#andere">Other clients</a>
+      <a href="#webdav">Your own storage</a>
+      <a href="#erste-schritte">First steps</a>
+      <a href="#einstiegsprompts">Starter prompts</a>
+      <a href="#werkzeugluecken">Tool gaps</a>
+      <a href="#rueckgaengig">Undoing changes</a>
+      <a href="#datenschutz">What the AI sees</a>
+      <a href="#mail">Email to colleagues</a>
+    </nav>
+
+    <h2 id="vorher">Before you start</h2>
+    <ul>
+      <li><strong>Access:</strong> Your Moodle admins need to have granted you remote access, usually through a cohort. Without it, the connection fails. Being a teacher in the course isn't enough.</li>
+      <li><strong>Address:</strong> Your connection address is always <code>https://&lt;moodle-address&gt;/local/coursepilot/mcp.php</code>, e.g. <code>https://moodle.my-school.org/local/coursepilot/mcp.php</code>.</li>
+      <li><strong>AI client:</strong> Claude is the most reliable option. ChatGPT works too, but OpenAI may change write access for custom connectors depending on plan and interface. Codex is a separate program and is covered on its own below.</li>
+      <li><strong>Sign in once:</strong> The first time you connect, the Moodle page "Connect Coursepilot" opens. Sign in there with your Moodle account and choose <em>Allow connection</em>. You never have to type in an access key.</li>
+    </ul>
+    <figure class="screenshot">
+      <img src="../assets/img/moodle-verbinden-en.png" alt="Moodle page &quot;Connect Coursepilot with Claude&quot; with the buttons &quot;Allow connection&quot; and &quot;Deny&quot;" loading="lazy">
+      <figcaption>Moodle page "Connect Coursepilot": shows what is shared (courses, activities, your own context files) and what isn't (submissions, grades, participants).</figcaption>
+    </figure>
+
+    <h2 id="claude">Set up the connector in Claude</h2>
+    <p>Applies to claude.ai in the browser and the Claude desktop app. Custom connectors are available on all plans; the free plan allows just one. The red frames in the pictures mark where you click. The screenshots show the German interface.</p>
+    <ol class="steps">
+      <li>Click your name in the bottom left and choose <em>Settings</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/claude-1.png" class="narrow" alt="Claude account menu with the Settings entry highlighted (German UI)" loading="lazy">
+          <figcaption>Claude: account menu in the bottom left, "Settings" (German UI).</figcaption>
+        </figure>
+      </li>
+      <li>Choose <em>Connectors</em> on the left, then <em>Add</em> › <em>Add custom connector</em> in the top right.
+        <figure class="screenshot">
+          <img src="../assets/img/claude-2.png" alt="Claude settings, Connectors section, Add menu with Add custom connector (German UI)" loading="lazy">
+          <figcaption>Claude: Connectors › Add › Add custom connector (German UI).</figcaption>
+        </figure>
+      </li>
+      <li>Enter <code>Coursepilot</code> as the name and your connection address, then <em>Continue</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/claude-3.png" class="narrow" alt="Add custom connector dialog with the name Coursepilot and the connection address (German UI)" loading="lazy">
+          <figcaption>Claude: enter name and connection address, "Continue" (German UI).</figcaption>
+        </figure>
+      </li>
+      <li>Claude detects the sign-in method by itself: signing in now and registering the OAuth client automatically are already selected. Click <em>Add</em>. The Moodle page "Connect Coursepilot" opens: sign in and choose <em>Allow connection</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/claude-4.png" class="narrow" alt="Second step of the dialog with authentication set to sign in now, OAuth client set to register automatically, and the Add button (German UI)" loading="lazy">
+          <figcaption>Claude: leave sign-in and OAuth client as detected, "Add" (German UI).</figcaption>
+        </figure>
+      </li>
+      <li>In the chat, check in the tools menu that Coursepilot is switched on.</li>
+    </ol>
+    <p><strong>Team or Enterprise account:</strong> There, your organization's admins add the connector once. After that, you connect yourself under <em>Settings › Connectors</em>.</p>
+    <p><strong>Claude Code</strong> (terminal): <code>claude mcp add --transport http coursepilot https://&lt;moodle-address&gt;/local/coursepilot/mcp.php</code>, then run <code>/mcp</code> in Claude Code and sign in.</p>
+
+    <h2 id="chatgpt">Set up the connector in ChatGPT</h2>
+    <p>Custom connectors in ChatGPT run through <strong>developer mode</strong>, only in the web interface (chatgpt.com) and on the Plus, Pro, Business, Enterprise and Edu plans. The menu item is a few clicks deep.</p>
+    <p class="note warning">Whether ChatGPT lets Coursepilot <strong>write</strong> or only read is up to OpenAI, depends on plan and interface, and has changed before. If reading works for you but creating things in the course doesn't, that's why. Claude is the more reliable option then.</p>
+    <ol class="steps">
+      <li>In ChatGPT, open <em>Settings › Security and login</em> and switch on <em>Developer mode</em>. In Business, Enterprise and Edu accounts, the workspace admins have to allow this first.</li>
+      <li>Under <em>Plugins</em> (<em>Apps</em> in some interfaces), add a custom connector with the plus icon.</li>
+      <li>Enter <code>Coursepilot</code> as the name, your connection address, and <em>OAuth</em> for authentication.</li>
+      <li>The Moodle page "Connect Coursepilot" opens: sign in and choose <em>Allow connection</em>.</li>
+      <li>In the chat, choose <em>Developer mode</em> from the plus menu and add Coursepilot.</li>
+    </ol>
+    <p>For write actions, ChatGPT asks you every time by default and shows you what will be sent. Your approval lasts at most for the current conversation.</p>
+    <figure class="screenshot">
+      <div class="placeholder">Screenshot to follow</div>
+      <figcaption>ChatGPT: switch on developer mode under "Security and login".</figcaption>
+    </figure>
+    <figure class="screenshot">
+      <div class="placeholder">Screenshot to follow</div>
+      <figcaption>ChatGPT: add a custom connector with connection address and OAuth.</figcaption>
+    </figure>
+
+    <h2 id="codex">Add Coursepilot to Codex</h2>
+    <p>Codex is included in all ChatGPT plans. The easiest way is the ChatGPT desktop app in Codex mode; the command line and the editor extension share the same configuration (<code>~/.codex/config.toml</code>). The screenshots show the German interface.</p>
+    <ol class="steps">
+      <li>Switch from <em>ChatGPT</em> to <em>Codex</em> in the top left and open <em>Plugins</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/codex-1.png" class="narrow" alt="ChatGPT desktop app with Codex selected and the Plugins entry (German UI)" loading="lazy">
+          <figcaption>Codex: choose "Codex" in the top left, then "Plugins" (German UI).</figcaption>
+        </figure>
+      </li>
+      <li>Choose <em>Add</em> › <em>Create custom MCP server</em> in the top right.
+        <figure class="screenshot">
+          <img src="../assets/img/codex-2.png" alt="Plugins page with the Add menu and the entry Create custom MCP server (German UI)" loading="lazy">
+          <figcaption>Codex: Add › Create custom MCP server (German UI).</figcaption>
+        </figure>
+      </li>
+      <li>Enter <code>coursepilot</code> as the name, choose <em>Server URL</em> under <em>Connection</em> and enter your connection address. Leave <em>Authentication</em> on <em>OAuth</em>. Tick the box confirming that you understand and want to continue, then click <em>Create as plugin</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/codex-3.png" class="narrow" alt="Create custom MCP server form with name, server URL, OAuth, checkbox and the Create as plugin button (German UI)" loading="lazy">
+          <figcaption>Codex: name, server URL, checkbox, "Create as plugin" (German UI).</figcaption>
+        </figure>
+      </li>
+      <li>In the "Connect coursepilot" window, click <em>Continue to coursepilot</em>. The Moodle page "Connect Coursepilot" opens: sign in and choose <em>Allow connection</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/codex-4.png" class="narrow" alt="Connect coursepilot window with the Continue to coursepilot button (German UI)" loading="lazy">
+          <figcaption>Codex: "Continue to coursepilot", then allow in Moodle (German UI).</figcaption>
+        </figure>
+      </li>
+    </ol>
+    <p><strong>Command line</strong> instead of the app:</p>
+    <div class="prompt"><pre><code>codex mcp add coursepilot --url https://&lt;moodle-address&gt;/local/coursepilot/mcp.php
+codex mcp login coursepilot</code></pre></div>
+    <p>The second command opens your browser with the Moodle page "Connect Coursepilot".</p>
+
+    <h2 id="andere">Other MCP clients</h2>
+    <p>Any client that supports remote MCP servers with sign-in works the same way:</p>
+    <ul>
+      <li>Transport: <em>Streamable HTTP</em> (not SSE, not local/stdio)</li>
+      <li>Address: <code>https://&lt;moodle-address&gt;/local/coursepilot/mcp.php</code></li>
+      <li>Authentication: <em>OAuth</em>. The client registers itself; you don't need a client ID or secret.</li>
+      <li>Choose <em>Allow connection</em> once on the Moodle page.</li>
+    </ul>
+
+    <h3>Managing connections</h3>
+    <p>All your connections are listed in Moodle under <em>User menu › Preferences › Coursepilot › My Coursepilot connections</em>, and you can revoke each one there. A connection stays signed in for up to 30 days without use.</p>
+    <figure class="screenshot">
+      <img src="../assets/img/moodle-verbindungen-en.png" alt="Moodle page &quot;My Coursepilot connections&quot; with one connection and the &quot;Revoke&quot; link" loading="lazy">
+      <figcaption>Moodle: "My Coursepilot connections" with the Revoke button.</figcaption>
+    </figure>
+
+    <h2 id="webdav">Connect your own storage (IServ, Nextcloud)</h2>
+    <p>By default, Coursepilot keeps plans, profiles and notes in Moodle under <em>Private files</em> (folder <code>coursepilot</code>). That's enough to get started. If you'd rather keep the files in your school storage, connect it as a WebDAV connection. Requirement: your Moodle admins have enabled WebDAV connections for teachers. If they haven't, the location page shows you a ready-made text you can send to them.</p>
+
+    <h3>IServ step by step</h3>
+    <p>IServ is a school server platform common in Germany. Other WebDAV storage works the same way with its own server address.</p>
+    <ol class="steps">
+      <li>In Moodle, open any place where you can upload a file (e.g. <em>Private files</em>). In the file picker, choose <em>WebDAV</em> on the left, then <em>Manage</em>.</li>
+      <li>Create a new connection and fill it in like this:
+        <table>
+          <tbody>
+            <tr><td>Name</td><td>e.g. <code>IServ</code></td></tr>
+            <tr><td>WebDAV type</td><td>HTTPS</td></tr>
+            <tr><td>WebDAV server</td><td><code>webdav.&lt;iserv-address&gt;</code>, e.g. <code>webdav.igs-roderbruch.org</code> (without <code>https://</code>)</td></tr>
+            <tr><td>WebDAV path</td><td><code>/</code></td></tr>
+            <tr><td>Authentication</td><td>Basic</td></tr>
+            <tr><td>WebDAV server port</td><td>leave empty (443 applies with HTTPS)</td></tr>
+            <tr><td>WebDAV server user and password</td><td>your IServ credentials</td></tr>
+          </tbody>
+        </table>
+      </li>
+      <li>Save. The file picker now shows the IServ areas (<code>Files</code>, <code>Groups</code> …).</li>
+      <li>Open <em>User menu › Preferences › Coursepilot › Coursepilot: locations for context area and material collection</em>.</li>
+      <li>For <em>Context area</em>, choose the IServ connection and create or pick a folder below <code>Files</code>, e.g. <code>Files/Coursepilot</code>. Other IServ areas can't be selected.</li>
+      <li>For <em>Material stock</em>, pick a folder the same way (not the same one as for the context area) or <em>Leave in Moodle</em>. Then <em>Finish setup</em>.</li>
+    </ol>
+    <figure class="screenshot">
+      <img src="../assets/img/moodle-webdav-formular-en.png" alt="Moodle form for a WebDAV connection, filled in with HTTPS, server webdav.igs-roderbruch.org, path / and basic authentication" loading="lazy">
+      <figcaption>Moodle: adding a WebDAV connection to IServ, example IGS Roderbruch. You still enter your password at the bottom.</figcaption>
+    </figure>
+    <figure class="screenshot">
+      <img src="../assets/img/moodle-ortswahl-en.png" alt="Coursepilot location page with the tabs Context area and Material stock and the &quot;Finish setup&quot; button" loading="lazy">
+      <figcaption>Moodle: location page, the context area lives on IServ under <code>Files/Coursepilot</code>.</figcaption>
+    </figure>
+    <p class="note">Moodle stores the password of a WebDAV connection in plain text. If your storage offers app passwords, use one instead of your account password.</p>
+
+    <h3>Nextcloud: the differences</h3>
+    <ul>
+      <li><strong>WebDAV server:</strong> your Nextcloud's address without <code>https://</code>, e.g. <code>cloud.my-school.org</code>.</li>
+      <li><strong>WebDAV path:</strong> <code>/remote.php/dav/files/&lt;nextcloud-username&gt;/</code></li>
+      <li><strong>Password:</strong> an app password from your Nextcloud (<em>Personal settings › Security › Create new app password</em>).</li>
+      <li>You can pick any folder, but not the root itself. Best use a folder just for Coursepilot.</li>
+      <li>If Coursepilot often reports that the storage is throttling, whoever runs your Nextcloud should check its <code>trusted_proxies</code> setting (see the <a href="admins.html#webdav">admin page</a>).</li>
+    </ul>
+    <p>If the storage can't be reached for a while, Coursepilot doesn't quietly put anything somewhere else. It only remembers <em>that</em> something is pending, and the AI writes it once the storage responds again.</p>
+
+    <h2 id="erste-schritte">First steps</h2>
+
+    <h3>How a conversation goes</h3>
+    <ol>
+      <li><strong>Plan:</strong> The AI reads the course as it stands (read-only) and proposes a plan, first as a summary, in full wording if you ask.</li>
+      <li><strong>Approve:</strong> Only once you explicitly agree in the chat does it write to the course. The German skill corpus uses the phrase <span lang="de">„ja, so umsetzen“</span> ("yes, go ahead") as its example; a clear English approval like "Yes, go ahead" works just as well. This is a way of working the AI sticks to, not a technical lock in Moodle. Your safety net is the <a href="#rueckgaengig">change history</a>.</li>
+      <li><strong>Carry out:</strong> Before writing, the AI checks the plan against the course once more. If something no longer fits, it stops and asks you.</li>
+    </ol>
+    <p>Coursepilot keeps the plan, progress and decisions in the <strong>context area</strong> (the Moodle folder <em>Private files › coursepilot</em> or your own storage), so a later conversation can pick up where you left off. The files are plain text files: you can read, change, delete and share them.</p>
+
+    <h3>Set up your course context</h3>
+    <p>A short profile of your class and your subject helps the AI hit the right level and style. Setting it up is optional and only starts if you want it to. All it needs is the school year, the class or group and, if you like, the subject.</p>
+    <div class="prompt"><pre><code>Set up the context for my class 7a in science.</code></pre></div>
+    <p>The AI asks for anything missing, shows you the profile before saving and only creates it once you confirm. Student names don't belong in regular profiles. Whether and how they may appear in marked files is up to your school; by default, Coursepilot doesn't pass such files to the AI.</p>
+
+    <h3>Save design templates</h3>
+    <p>You can have Coursepilot remember activities that worked well as templates, e.g. an assignment with proven submission settings. Coursepilot notes them in the file <code>vorlagen.md</code> in your context area and later copies them into another section or course when you ask. You can also add to the file by hand.</p>
+    <div class="prompt"><pre><code>Remember the assignment "Hand in your presentation" from my course Bio 7a as a template for all presentation submissions.</code></pre></div>
+
+    <h2 id="einstiegsprompts">Starter prompts</h2>
+    <p>Copy a sentence, replace the parts in square brackets and paste it into the chat. The AI leads the way from there; follow-up questions are normal.</p>
+    <p class="note">For now, Coursepilot's built-in instructions for the AI are German (<a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues/604">#604</a>). The English prompts below work, but the AI may answer in German. Just ask it to reply in English.</p>
+
+    <h3>Continue working</h3>
     <div class="prompt"><pre><code>Let's continue with biology.</code></pre></div>
-    <p class="placeholder">Content follows.</p>
+    <p>Looks for open plans for the subject and asks if more than one fits.</p>
+
+    <h3>Plan a section</h3>
+    <div class="prompt"><pre><code>Plan the section "[topic]" in my course [course name]: [number] lessons, an info page, an assignment with a submission, and a short mini check at the end.</code></pre></div>
+    <p>Then review it with "Show me the full text of the info page." and approve with "Yes, go ahead."</p>
+
+    <h3>Create a quiz and questions</h3>
+    <div class="prompt"><pre><code>In my course [course name], add a mini check with five multiple-choice questions on [topic] to the section "[section]". Show me the questions before you create them.</code></pre></div>
+
+    <h3>Add material</h3>
+    <div class="prompt"><pre><code>My worksheet is attached. Add it as a file to the section "[section]" in my course [course name] and write a short task instruction to go with it.</code></pre></div>
+    <p>Attach the file to your message first. Coursepilot then puts it on a workbench in Moodle and adds it to the course from there.</p>
+
+    <h3>Crop an image</h3>
+    <div class="prompt"><pre><code>Crop the figure [short description] from [file name] and put it on the page "[page name]" in my course [course name].</code></pre></div>
+    <p>The AI shows you a preview of the crop before adding it. Cropping works with photos and scans, not with SVG graphics.</p>
+
+    <h3>Clone an activity</h3>
+    <div class="prompt"><pre><code>Copy the assignment "[name]" from my course [source course] to the course [target course], section "[section]".</code></pre></div>
+    <p>Settings and content come along; submissions and other student data don't. The AI tells you about any completion conditions that were carried over.</p>
+
+    <h3>Restore a version</h3>
+    <div class="prompt"><pre><code>Show me the versions of the page "[name]" in my course [course name] and bring back the version from [date].</code></pre></div>
+
+    <h3>Other activity types</h3>
+    <div class="prompt"><pre><code>In my course [course name], add a glossary "Key terms [topic]" to the section "[section]".</code></pre></div>
+    <p>Besides text and media area, page, URL, folder, file, choice, forum, assignment and quiz, Coursepilot can <strong>create</strong> other installed types such as book, glossary or checklist, but can't change them afterwards. If such an activity needs to change, Coursepilot adds a new version right after it and hides the old one.</p>
+
+    <h2 id="werkzeugluecken">When something doesn't work: tool gaps</h2>
+    <p>Not every setting and not every activity or question type can be set through Coursepilot, e.g. lessons, SCORM packages, H5P activities or special settings of some submission types. In that case, the AI says so openly and describes the steps to do it by hand in Moodle: where to click and what to enter. After that, the conversation carries on as usual; the AI reads the new state too.</p>
+    <p>Question types other than multiple choice (e.g. cloze, matching, STACK) are created through Moodle's XML import. If you like, Coursepilot notes what worked in a notes file in your context area, so it goes faster next time.</p>
+    <div class="prompt"><pre><code>I'd like [setting or activity]. If Coursepilot can't do it itself, walk me through it in Moodle step by step.</code></pre></div>
+
+    <h2 id="rueckgaengig">Undoing changes</h2>
+    <p>Coursepilot keeps a <strong>change history</strong> for every activity, including changes made by hand in the Moodle form. There are two ways to bring an earlier version back:</p>
+    <ul>
+      <li><strong>In the chat:</strong> with the starter prompt <a href="#einstiegsprompts">"Restore a version"</a>.</li>
+      <li><strong>In Moodle, without a chat:</strong> In the course, open <em>Coursepilot: change history</em>, choose the activity and version, then <em>Restore</em>.</li>
+    </ul>
+    <p>Restoring saves the old state as the new latest version; the activity stays the same and links to it keep working. The history isn't complete: quiz questions beyond their order, grades and restored course backups aren't in it; for book, glossary and similar types only the basic settings are, not chapters or entries. Entries are deleted after one year unless your school has set something else.</p>
+    <figure class="screenshot">
+      <img src="../assets/img/moodle-aenderungsverlauf-en.png" alt="Change history of an assignment with two versions and the &quot;Restore&quot; link" loading="lazy">
+      <figcaption>Moodle: "Coursepilot: change history" with the versions of an activity and the "Restore" button. Some change summaries are still German (<a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues/649">#649</a>).</figcaption>
+    </figure>
+
+    <h2 id="datenschutz">What the AI sees and what it doesn't</h2>
+    <table>
+      <thead><tr><th>The AI sees</th><th>The AI doesn't see</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Courses you teach; sections, activities and their content (page text, assignment instructions, questions); your Coursepilot files in the context area; material you give it.</td>
+          <td>Submissions, forum posts, quiz attempts, grades, participant lists. There's no tool for them; an automated test makes sure of that. Files marked as containing personal data, unless your school allows it.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Coursepilot itself sends nothing to an AI provider. But whatever the AI reads through Coursepilot goes to the provider of your AI client (e.g. Anthropic or OpenAI) and is processed there. That's why student names don't belong in plans or material unless your school explicitly allows it. The AI always works with your own Moodle permissions.</p>
+
+    <h2 id="mail">Email template for colleagues</h2>
+    <p>Copy and adapt (Moodle address, name):</p>
+    <div class="prompt"><pre><code>Subject: Build Moodle courses with AI support – try Coursepilot
+
+Hi everyone,
+
+Our school now has Coursepilot. It lets you connect an AI chat (e.g. Claude or ChatGPT) to your Moodle courses. The AI reads the course as it stands, proposes a plan and only creates sections, pages, assignments and quizzes once you explicitly approve. You can undo every change in Moodle.
+
+The AI doesn't see submissions, grades or participant lists. Coursepilot is still in beta.
+
+Getting started:
+1. Drop me a quick note and your access in Moodle will be switched on.
+2. Follow the guide: https://matthiasgruenwald.github.io/moodle-coursepilot/en/teachers.html
+3. Connection address: https://[moodle-address]/local/coursepilot/mcp.php
+
+To begin, a sentence like "Plan the section '[topic]' in my course [course name]" is all you need.
+
+Just get in touch if you have questions.
+
+Best wishes
+[Name]</code></pre></div>
   </main>
   <footer class="site-footer">
     <p>Coursepilot · Beta (2.0.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Source on GitHub</a> · AGPL-3.0-or-later</p>
