@@ -1,0 +1,225 @@
+/* Coursepilot documentation site - one stylesheet, light/dark via prefers-color-scheme. */
+
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --text: #1d2125;
+  --muted: #5b6168;
+  --border: #dcdfe3;
+  --accent: #0f6cbf;
+  --accent-text: #ffffff;
+  --code-bg: #eef1f4;
+  --radius: 8px;
+  --max: 52rem;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15181b;
+    --surface: #1e2226;
+    --text: #e6e8ea;
+    --muted: #a3a9b0;
+    --border: #353b41;
+    --accent: #6cb4ff;
+    --accent-text: #0b1520;
+    --code-bg: #262b31;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 1rem/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overflow-wrap: break-word;
+}
+
+a {
+  color: var(--accent);
+}
+
+img,
+iframe {
+  max-width: 100%;
+}
+
+.site-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.site-header .inner,
+main,
+.site-footer {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.site-header .inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.brand {
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  flex: 1;
+}
+
+.site-nav a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.site-nav a[aria-current="page"] {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+.lang-switch {
+  font-size: 0.9rem;
+}
+
+@media (max-width: 40rem) {
+  .site-nav {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .lang-switch {
+    margin-left: auto;
+  }
+}
+
+main {
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+}
+
+h1 {
+  font-size: 1.9rem;
+  line-height: 1.25;
+  margin: 0 0 1rem;
+}
+
+h2 {
+  font-size: 1.35rem;
+  margin: 2.25rem 0 0.75rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+code,
+pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+
+code {
+  background: var(--code-bg);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+}
+
+pre {
+  background: var(--code-bg);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+.placeholder {
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+/* Einstiegsprompt with copy button */
+.prompt {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 1rem 0;
+}
+
+.prompt pre {
+  margin: 0;
+  background: none;
+  white-space: pre-wrap;
+  padding-right: 6.5rem;
+}
+
+.copy-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  background: var(--accent);
+  color: var(--accent-text);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.copy-button:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.diagram-link {
+  display: inline-block;
+  margin: 0.5rem 0;
+}
+
+.site-footer {
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding-bottom: 2rem;
+}

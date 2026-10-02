@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coursepilot</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script>
+    // Remembered choice first, then the browser language; German is the default.
+    (function () {
+      var lang = null;
+      try {
+        lang = localStorage.getItem('coursepilot-docs-lang');
+      } catch (e) {
+        // Storage blocked: fall through to the browser language.
+      }
+      if (lang !== 'de' && lang !== 'en') {
+        lang = /^de\b/i.test(navigator.language || '') ? 'de' : 'en';
+      }
+      location.replace(lang + '/index.html');
+    })();
+  </script>
+</head>
+<body>
+  <main>
+    <h1>Coursepilot</h1>
+    <p><a href="de/index.html" hreflang="de">Deutsch</a> · <a href="en/index.html" hreflang="en" lang="en">English</a></p>
+  </main>
+</body>
+</html>
