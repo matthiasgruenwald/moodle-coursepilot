@@ -1,0 +1,670 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Coursepilot Server-MCP Architecture",
+    "output": "docs/site/assets/diagrams/coursepilot-architecture.html",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/matthiasgruenwald/moodle-coursepilot.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "d3a570cb41fe2a719203d2f445094ba5dba21297"
+    }
+  },
+  "components": [
+    {
+      "id": "client",
+      "type": "external",
+      "label": "AI client",
+      "sublabel": "Claude, ChatGPT, Codex",
+      "pos": [
+        30,
+        262
+      ],
+      "size": [
+        150,
+        76
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/dispatcher.php",
+          "line": 44,
+          "end_line": 47,
+          "label": "protocol revisions"
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/dispatcher.php",
+          "line": 62,
+          "end_line": 62,
+          "label": "allowed origins"
+        }
+      ]
+    },
+    {
+      "id": "oauthep",
+      "type": "security",
+      "label": "OAuth endpoints",
+      "sublabel": "discovery, register, authorize, token",
+      "pos": [
+        290,
+        80
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/oauth.php",
+          "line": 44,
+          "end_line": 44
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/oauth/authorize.php",
+          "line": 62,
+          "end_line": 95
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/oauth/token.php",
+          "line": 52,
+          "end_line": 52
+        }
+      ]
+    },
+    {
+      "id": "oauthlib",
+      "type": "security",
+      "label": "oauth_lib",
+      "sublabel": "DCR + CIMD, PKCE, token pairs",
+      "pos": [
+        570,
+        80
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/oauth_lib.php",
+          "line": 124,
+          "end_line": 137,
+          "label": "discovery"
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/oauth_lib.php",
+          "line": 139,
+          "end_line": 176,
+          "label": "registration"
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/oauth_lib.php",
+          "line": 728,
+          "end_line": 746,
+          "label": "bearer check"
+        }
+      ]
+    },
+    {
+      "id": "mcp",
+      "type": "frontend",
+      "label": "mcp.php",
+      "sublabel": "stateless POST-only shell",
+      "pos": [
+        300,
+        262
+      ],
+      "size": [
+        170,
+        76
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/mcp.php",
+          "line": 37,
+          "end_line": 45
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/mcp.php",
+          "line": 71,
+          "end_line": 82
+        }
+      ]
+    },
+    {
+      "id": "dispatcher",
+      "type": "backend",
+      "label": "dispatcher",
+      "sublabel": "origin, auth gate, protocol switch",
+      "pos": [
+        570,
+        262
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/dispatcher.php",
+          "line": 83,
+          "end_line": 129,
+          "label": "origin + CORS"
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/dispatcher.php",
+          "line": 176,
+          "end_line": 191,
+          "label": "auth + grant gate"
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/dispatcher.php",
+          "line": 195,
+          "end_line": 251,
+          "label": "JSON-RPC switch"
+        }
+      ]
+    },
+    {
+      "id": "remote",
+      "type": "security",
+      "label": "remote_access",
+      "sublabel": "cohort or capability, per call",
+      "pos": [
+        880,
+        80
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/remote_access.php",
+          "line": 39,
+          "end_line": 66
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/dispatcher.php",
+          "line": 189,
+          "end_line": 191
+        }
+      ]
+    },
+    {
+      "id": "surface",
+      "type": "security",
+      "label": "Tool declarations",
+      "sublabel": "tool_registry + privacy allowlist",
+      "pos": [
+        920,
+        262
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/tool_registry.php",
+          "line": 15,
+          "end_line": 90,
+          "label": "TOOLS + schemas"
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/privacy_surface.php",
+          "line": 56,
+          "end_line": 83,
+          "label": "allowlist"
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/db/services.php",
+          "line": 32,
+          "end_line": 36
+        }
+      ]
+    },
+    {
+      "id": "ext",
+      "type": "backend",
+      "label": "External functions",
+      "sublabel": "classes/external/*",
+      "tag": "54 tools",
+      "pos": [
+        300,
+        450
+      ],
+      "size": [
+        1046,
+        70
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/dispatcher.php",
+          "line": 292,
+          "end_line": 300,
+          "label": "call_external_function"
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/external/create_module.php",
+          "line": 246,
+          "end_line": 257
+        }
+      ]
+    },
+    {
+      "id": "skills",
+      "type": "backend",
+      "label": "Skill corpus",
+      "sublabel": "list_skills, get_skill",
+      "pos": [
+        300,
+        610
+      ],
+      "size": [
+        190,
+        68
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/skill_corpus.php",
+          "line": 55,
+          "end_line": 101
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/external/get_skill.php",
+          "line": 71,
+          "end_line": 71
+        }
+      ]
+    },
+    {
+      "id": "catalog",
+      "type": "backend",
+      "label": "Module catalog",
+      "sublabel": "field catalog + write_gate",
+      "pos": [
+        514,
+        610
+      ],
+      "size": [
+        190,
+        68
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/catalog/registry.php",
+          "line": 35,
+          "end_line": 51
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/write_gate.php",
+          "line": 75,
+          "end_line": 102
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/external/create_module.php",
+          "line": 131,
+          "end_line": 131
+        }
+      ]
+    },
+    {
+      "id": "xml",
+      "type": "backend",
+      "label": "Activity XML creator",
+      "sublabel": "create, round trip, discard",
+      "pos": [
+        728,
+        610
+      ],
+      "size": [
+        190,
+        68
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+          "line": 72,
+          "end_line": 128
+        }
+      ]
+    },
+    {
+      "id": "history",
+      "type": "database",
+      "label": "Change history",
+      "sublabel": "version_writer, restore",
+      "pos": [
+        942,
+        610
+      ],
+      "size": [
+        190,
+        68
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/history/version_writer.php",
+          "line": 122,
+          "end_line": 138
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/observer.php",
+          "line": 44,
+          "end_line": 53
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/external/restore_activity_version.php",
+          "line": 120,
+          "end_line": 120
+        }
+      ]
+    },
+    {
+      "id": "anchor",
+      "type": "backend",
+      "label": "Storage anchor",
+      "sublabel": "context + material areas",
+      "pos": [
+        1156,
+        610
+      ],
+      "size": [
+        190,
+        68
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/storage_anchor.php",
+          "line": 227,
+          "end_line": 233
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/storage_port.php",
+          "line": 57,
+          "end_line": 118
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/context_area.php",
+          "line": 249,
+          "end_line": 249
+        }
+      ]
+    },
+    {
+      "id": "course",
+      "type": "cloud",
+      "label": "Moodle course",
+      "sublabel": "course modules",
+      "pos": [
+        611,
+        790
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/external/create_module.php",
+          "line": 257,
+          "end_line": 257
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/external/update_module_settings.php",
+          "line": 156,
+          "end_line": 156
+        }
+      ]
+    },
+    {
+      "id": "private",
+      "type": "database",
+      "label": "Private files",
+      "sublabel": "user/private storage port",
+      "pos": [
+        1166,
+        790
+      ],
+      "size": [
+        170,
+        68
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/private_files_storage_port.php",
+          "line": 40,
+          "end_line": 40
+        }
+      ]
+    },
+    {
+      "id": "webdav",
+      "type": "database",
+      "label": "Teacher WebDAV",
+      "sublabel": "IServ, Nextcloud",
+      "pos": [
+        1420,
+        790
+      ],
+      "size": [
+        170,
+        68
+      ],
+      "sources": [
+        {
+          "path": "Plugin/src/local_coursepilot/classes/webdav_storage_port.php",
+          "line": 50,
+          "end_line": 50
+        },
+        {
+          "path": "Plugin/src/local_coursepilot/classes/webdav/curl_transport.php",
+          "line": 51,
+          "end_line": 51
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Moodle site · local_coursepilot",
+      "wraps": [
+        "oauthep",
+        "oauthlib",
+        "mcp",
+        "dispatcher",
+        "remote",
+        "surface",
+        "ext",
+        "skills",
+        "catalog",
+        "xml",
+        "history",
+        "anchor",
+        "course",
+        "private"
+      ],
+      "pad": 30
+    }
+  ],
+  "connections": [
+    {
+      "id": "rpc",
+      "from": "client",
+      "to": "mcp",
+      "label": "HTTPS + Bearer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "oauthflow",
+      "from": "client",
+      "to": "oauthep",
+      "label": "OAuth 2.1",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "delegate",
+      "from": "oauthep",
+      "to": "oauthlib",
+      "variant": "security"
+    },
+    {
+      "id": "handle",
+      "from": "mcp",
+      "to": "dispatcher",
+      "label": "handle()",
+      "variant": "emphasis"
+    },
+    {
+      "id": "verify",
+      "from": "dispatcher",
+      "to": "oauthlib",
+      "label": "verify token",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "grant",
+      "from": "dispatcher",
+      "to": "remote",
+      "label": "grant check",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "calls",
+      "from": "dispatcher",
+      "to": "surface",
+      "label": "tools/list, tools/call",
+      "variant": "emphasis"
+    },
+    {
+      "id": "invoke",
+      "from": "surface",
+      "to": "ext",
+      "label": "external_api",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e-skills",
+      "from": "ext",
+      "to": "skills",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e-catalog",
+      "from": "ext",
+      "to": "catalog",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e-xml",
+      "from": "ext",
+      "to": "xml",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e-history",
+      "from": "ext",
+      "to": "history",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e-anchor",
+      "from": "ext",
+      "to": "anchor",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "formpath",
+      "from": "catalog",
+      "to": "course",
+      "label": "form path",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "roundtrip",
+      "from": "xml",
+      "to": "course",
+      "label": "round trip",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "events",
+      "from": "course",
+      "to": "history",
+      "label": "module events",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "bottom"
+    },
+    {
+      "id": "p-private",
+      "from": "anchor",
+      "to": "private",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "p-webdav",
+      "from": "anchor",
+      "to": "webdav",
+      "label": "own curl client",
+      "fromSide": "right",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "One declaration per tool",
+      "items": [
+        "tool_registry::TOOLS drives the MCP input schema (from execute_parameters()), the web service in db/services.php and the privacy allowlist.",
+        "tools/list and tools/call use the same set."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Access and privacy",
+      "items": [
+        "OAuth 2.1 with discovery (RFC 8414/9728), dynamic registration (RFC 7591) and CIMD; PKCE; no manual tokens.",
+        "Remote access is checked on every call (system cohort or capability).",
+        "Allowlist without learner data, enforced by a contract test."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Writing safely",
+      "items": [
+        "Catalogued types write only through add_moduleinfo()/update_moduleinfo(); drift locks just the affected type.",
+        "Other installed types are created from activity XML, verified by round trip, discarded on mismatch.",
+        "Every module change is captured; restore creates a new version."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Context stays with the teacher",
+      "items": [
+        "One storage anchor, two adapters: Moodle private files or the teacher's own WebDAV.",
+        "No fallback store: a failed write leaves a pending note without content."
+      ]
+    }
+  ]
+}
