@@ -30,9 +30,8 @@ defined('MOODLE_INTERNAL') || die();
  * ergaenzt um die dort bewusst ausgeklammerten gradepass/gradecat/Outcome-Felder,
  * die Spec 0015 §10.4 fuer den Verlauf ausdruecklich verlangt.
  *
- * Intro-Dateien laufen nicht ueber introeditor/Draftbereich, sondern wie alle
- * anderen Dateien des Modulkontexts durch {@see self::capture_files()} -
- * Metadaten only, dedupliziert in local_coursepilot_cm_file.
+ * Intro and allowed material files are captured without introeditor/draft side effects.
+ * Only their metadata is deduplicated in local_coursepilot_cm_file.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -285,15 +284,8 @@ final class version_writer {
     }
 
     /**
-     * Datei-Zeilen des Modulkontexts, nur Metadaten. Rueckschreibbar (gap=0)
-     * sind Intro-Dateien UND Dateien in einem der
-     * {@see \local_coursepilot\external\update_module_settings::material_reference_specs()}-
-     * Dateibereiche (component/filearea) - fuer letztere existiert seit
-     * Issue #432 ein echter Wiederherstellungsweg ueber den Papierkorb
-     * ({@see \local_coursepilot\activity_file_trash}, Spec 0018 §9.1). Alles
-     * andere bleibt eine ausgewiesene Luecke (gap=1) - Dateiinhalte
-     * ausserhalb dieser beiden Faelle sind nicht rueckschreibbar (Spec 0015
-     * §10.4).
+     * Capture metadata only for positively allowed teaching-design file areas.
+     * Submission and unknown areas never enter history, including gap rows.
      *
      * @param int $versionid
      * @param int $contextid
@@ -303,37 +295,19 @@ final class version_writer {
     private static function capture_files(int $versionid, int $contextid, string $modname): void {
         global $DB;
 
-        $introcomponent = 'mod_' . $modname;
-        $restorablespecs = \local_coursepilot\external\update_module_settings::material_reference_specs($modname);
         $files = $DB->get_records_select('files', 'contextid = ? AND filename <> ?', [$contextid, '.']);
 
         foreach ($files as $file) {
+            if (!file_policy::allows($modname, $file->component, $file->filearea)) {
+                continue;
+            }
             $fileid = self::dedup_file($file);
-            $gap = self::file_is_restorable($file, $introcomponent, $restorablespecs) ? 0 : 1;
             $DB->insert_record('local_coursepilot_cm_version_file', (object) [
                 'versionid' => $versionid,
                 'fileid' => $fileid,
-                'gap' => $gap,
+                'gap' => 0,
             ], false);
         }
-    }
-
-    /**
-     * @param \stdClass $file
-     * @param string $introcomponent
-     * @param array<string, array{component: string, filearea: string}> $restorablespecs
-     * @return bool
-     */
-    private static function file_is_restorable(\stdClass $file, string $introcomponent, array $restorablespecs): bool {
-        if ($file->component === $introcomponent && $file->filearea === 'intro') {
-            return true;
-        }
-        foreach ($restorablespecs as $spec) {
-            if ($file->component === $spec['component'] && $file->filearea === $spec['filearea']) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

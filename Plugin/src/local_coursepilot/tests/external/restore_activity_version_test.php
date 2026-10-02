@@ -455,6 +455,11 @@ final class restore_activity_version_test extends \advanced_testcase {
         $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance(['course' => $course->id]);
         $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
         $modulecontext = \context_module::instance($cmid);
+        set_config('allowpersonaldata', 1, 'local_coursepilot');
+        get_file_storage()->create_file_from_string([
+            'contextid' => $modulecontext->id, 'component' => 'mod_assign', 'filearea' => 'intro',
+            'itemid' => 0, 'filepath' => '/', 'filename' => 'design.png',
+        ], 'Intro design');
 
         $this->create_material_file('blatt.pdf', 'Fassung A');
         update_module_settings::execute($cmid, json_encode(['introattachments' => ['blatt.pdf']])); // Version 2
@@ -473,6 +478,14 @@ final class restore_activity_version_test extends \advanced_testcase {
         $restored = get_file_storage()->get_file($modulecontext->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf');
         $this->assertNotFalse($restored);
         $this->assertSame('Fassung A', $restored->get_content());
+        $intro = get_file_storage()->get_file($modulecontext->id, 'mod_assign', 'intro', 0, '/', 'design.png');
+        $this->assertNotFalse($intro);
+        $this->assertSame('Intro design', $intro->get_content());
+        $versions = \local_coursepilot\history\version_history::list_versions($cmid)['versions'];
+        $this->assertSame([1, 2, 3, 4], array_column($versions, 'version'));
+        $files = \local_coursepilot\history\version_history::files_at($cmid, 4);
+        $this->assertContains('design.png', array_column($files, 'filename'));
+        $this->assertContains('blatt.pdf', array_column($files, 'filename'));
         $this->assertStringContainsString('blatt.pdf', $result['message']);
         $this->assertStringContainsString('Papierkorb', $result['message']);
     }

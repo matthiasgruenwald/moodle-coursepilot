@@ -93,7 +93,7 @@ final class version_history {
             'modname' => (string) $cm->modname,
             'before' => self::describe_meta($fromstate),
             'after' => self::describe_meta($tostate),
-            'changes' => self::diff_fields(self::state($fromstate), self::state($tostate)),
+            'changes' => self::diff_fields(self::public_state($fromstate), self::public_state($tostate)),
             'files' => self::diff_files((int) $fromstate->id, (int) $tostate->id),
             'gap_notice' => self::GAPS_HINT,
         ];
@@ -129,16 +129,23 @@ final class version_history {
      * @throws \moodle_exception versionnotfound
      */
     public static function files_at(int $cmid, int $version): array {
-        global $DB;
-
         $record = self::load_version($cmid, $version);
-        return array_values($DB->get_records_sql(
-            'SELECT vf.id, f.component, f.filearea, f.filename, f.contenthash, vf.gap
+        $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);
+        return self::allowed_files((int) $record->id, (string) $cm->modname);
+    }
+
+    /** Read old rows through the same allowlist used by capture. */
+    private static function allowed_files(int $versionid, string $modname): array {
+        global $DB;
+        $files = $DB->get_records_sql(
+            'SELECT vf.id, vf.fileid, f.component, f.filearea, f.filename, f.contenthash, vf.gap
                FROM {local_coursepilot_cm_version_file} vf
                JOIN {local_coursepilot_cm_file} f ON f.id = vf.fileid
               WHERE vf.versionid = ?',
-            [$record->id]
-        ));
+            [$versionid]
+        );
+        return array_values(array_filter($files, static fn(\stdClass $file): bool =>
+            file_policy::allows($modname, $file->component, $file->filearea)));
     }
 
     /**
@@ -277,7 +284,7 @@ final class version_history {
      * @return string
      */
     private static function summarize_change(\stdClass $before, \stdClass $after): string {
-        $fields = self::changed_fields(self::state($before), self::state($after));
+        $fields = self::changed_fields(self::public_state($before), self::public_state($after));
         $filechanges = self::diff_files((int) $before->id, (int) $after->id);
 
         $parts = [];
@@ -311,6 +318,17 @@ final class version_history {
         $coursemodule = json_decode($record->coursemodule_json, true) ?: [];
         $moduleinfo = json_decode($record->moduleinfo_json, true) ?: [];
         return array_merge($coursemodule, $moduleinfo);
+    }
+
+    /** Safe comparison projection; raw state_at remains exclusively for native restoration. */
+    private static function public_state(\stdClass $record): array {
+        $state = self::state($record);
+        foreach (['availability', 'availabilityconditionsjson'] as $field) {
+            if (array_key_exists($field, $state)) {
+                $state[$field] = \local_coursepilot\availability_privacy::sanitize((string) ($state[$field] ?? ''));
+            }
+        }
+        return $state;
     }
 
     /**
@@ -363,13 +381,13 @@ final class version_history {
     private static function file_map(int $versionid): array {
         global $DB;
 
-        return $DB->get_records_sql_menu(
-            'SELECT vf.fileid, f.filename
-               FROM {local_coursepilot_cm_version_file} vf
-               JOIN {local_coursepilot_cm_file} f ON f.id = vf.fileid
-              WHERE vf.versionid = ?',
-            [$versionid]
-        );
+        $cmid = $DB->get_field('local_coursepilot_cm_version', 'cmid', ['id' => $versionid], MUST_EXIST);
+        $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);
+        $map = [];
+        foreach (self::allowed_files($versionid, (string) $cm->modname) as $file) {
+            $map[$file->fileid] = $file->filename;
+        }
+        return $map;
     }
 
     /**

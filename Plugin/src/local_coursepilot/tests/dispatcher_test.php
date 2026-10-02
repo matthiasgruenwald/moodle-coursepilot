@@ -28,6 +28,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(dispatcher::class)]
+#[CoversClass(\local_coursepilot\history\file_policy::class)]
 final class dispatcher_test extends \advanced_testcase {
 
     /**
@@ -97,6 +98,74 @@ final class dispatcher_test extends \advanced_testcase {
      */
     private function headers(array $overrides = []): array {
         return array_merge(['origin' => null, 'pathinfo' => '', 'method' => 'POST'], $overrides);
+    }
+
+    /** History never exposes submission metadata or profile values, including legacy rows. */
+    public function test_history_comparison_protects_current_and_legacy_data(): void {
+        global $DB, $CFG;
+        $this->resetAfterTest();
+        $CFG->enableavailability = true;
+        set_config('allowpersonaldata', 1, 'local_coursepilot');
+        [$teacher, $token] = $this->create_authenticated_user();
+        $course = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $assign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $cmid = (int) $assign->cmid;
+        $context = \context_module::instance($cmid);
+        foreach ([['assignsubmission_file', 'submission_files', 'student-secret.pdf'],
+                ['mod_assign', 'unknown', 'unknown-secret.pdf'],
+                ['mod_assign', 'intro', 'design.png']] as [$component, $area, $name]) {
+            get_file_storage()->create_file_from_string([
+                'contextid' => $context->id, 'component' => $component, 'filearea' => $area,
+                'itemid' => 0, 'filepath' => '/', 'filename' => $name,
+            ], 'synthetic bytes');
+        }
+        $availability = json_encode(['op' => '&', 'c' => [
+            ['op' => '|', 'c' => [['type' => 'profile', 'sf' => 'email', 'op' => 'isequalto',
+                'v' => 'private-profile@example.invalid']]],
+        ]]);
+        $DB->set_field('course_modules', 'availability', $availability, ['id' => $cmid]);
+        \local_coursepilot\history\version_writer::capture($cmid, (int) $teacher->id);
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['filename' => 'student-secret.pdf']));
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['filename' => 'unknown-secret.pdf']));
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_file', ['filename' => 'design.png']));
+
+        // Simulate historical metadata from before the positive allowlist, even with gap=0.
+        $versionid = $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $cmid, 'version' => 2]);
+        foreach ([['assignsubmission_file', 'submission_files', 'legacy-student.pdf'],
+                ['mod_assign', 'unknown', 'legacy-unknown.pdf']] as [$component, $area, $name]) {
+            $fileid = $DB->insert_record('local_coursepilot_cm_file', (object) [
+                'component' => $component, 'filearea' => $area, 'filename' => $name,
+                'pathnamehash' => sha1($name), 'contenthash' => sha1('synthetic'),
+                'itemid' => 0, 'filepath' => '/', 'filesize' => 9, 'mimetype' => 'application/pdf',
+                'timemodified' => time(),
+            ]);
+            $DB->insert_record('local_coursepilot_cm_version_file', (object) [
+                'versionid' => $versionid, 'fileid' => $fileid, 'gap' => 0,
+            ]);
+        }
+        foreach (['coursepilot_compare_activity_versions' => ['cmid' => $cmid, 'from_version' => 1, 'to_version' => 2],
+                'coursepilot_list_activity_versions' => ['cmid' => $cmid]] as $name => $arguments) {
+            $response = dispatcher::handle(['id' => 1, 'method' => 'tools/call',
+                'params' => ['name' => $name, 'arguments' => $arguments]], $token, $this->headers());
+            $this->assertSame(200, $response['status']);
+            $this->assertFalse($response['body']['result']['isError'] ?? false, json_encode($response));
+            $encoded = json_encode($response);
+            foreach (['student-secret.pdf', 'unknown-secret.pdf', 'legacy-student.pdf', 'legacy-unknown.pdf',
+                    'private-profile@example.invalid'] as $secret) {
+                $this->assertStringNotContainsString($secret, $encoded);
+            }
+            if ($name === 'coursepilot_compare_activity_versions') {
+                $this->assertStringContainsString('design.png', $encoded);
+                $this->assertStringContainsString('***', $encoded);
+            }
+        }
+        $files = \local_coursepilot\history\version_history::files_at($cmid, 2);
+        $this->assertSame(['design.png'], array_column($files, 'filename'));
+        // Native restore retains the raw conditions; the AI projection must not mutate them.
+        $state = \local_coursepilot\history\version_history::state_at($cmid, 2);
+        $this->assertSame($availability, $state['availabilityconditionsjson']);
     }
 
     /**
