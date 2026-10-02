@@ -22,21 +22,37 @@
   </header>
   <main>
     <h1>Coursepilot</h1>
-    <p>Coursepilot ist ein Moodle-Plugin, mit dem Lehrkräfte ihre bestehenden Moodle-Kurse zusammen mit einem KI-Client planen und befüllen.</p>
+    <p class="lead">Coursepilot ist ein Moodle-Plugin, mit dem Lehrkräfte ihre bestehenden Moodle-Kurse im Gespräch mit einem KI-Client planen, befüllen und überarbeiten. Das Plugin ist selbst der Anschlusspunkt für die KI: Die Lehrkraft verbindet ihren KI-Client (Claude, ChatGPT, Codex oder einen anderen MCP-fähigen Client) mit ihrem Moodle-Konto und installiert dafür nichts auf dem eigenen Rechner.</p>
 
     <h2>Für wen ist was?</h2>
     <table>
-      <thead><tr><th>Zielgruppe</th><th>Seite</th></tr></thead>
+      <thead><tr><th>Zielgruppe</th><th>Seite</th><th>Inhalt</th></tr></thead>
       <tbody>
-        <tr><td>Lehrkräfte</td><td><a href="teachers.html">Lehrkraft-Anleitung</a></td></tr>
-        <tr><td>Admins</td><td><a href="admins.html">Installation und Betrieb</a></td></tr>
-        <tr><td>Entwickler</td><td><a href="developers.html">Architektur und Mitarbeit</a></td></tr>
+        <tr><td>Lehrkräfte</td><td><a href="teachers.html">Lehrkraft-Anleitung</a></td><td>Connector einrichten, WebDAV anlegen, erste Schritte, Einstiegsprompts zum Kopieren</td></tr>
+        <tr><td>Admins</td><td><a href="admins.html">Installation und Betrieb</a></td><td>Voraussetzungen, Installation, Fernzugriff, OAuth, Datenschutz</td></tr>
+        <tr><td>Entwickler</td><td><a href="developers.html">Architektur und Mitarbeit</a></td><td>Architektur, Werkzeugvertrag, Entscheidungen (ADRs), Tests, bekannte Grenzen</td></tr>
+        <tr><td>Alle</td><td><a href="#so-arbeitet-coursepilot">So arbeitet Coursepilot</a></td><td>Das Prinzip in einem Diagramm, Reifegrad, Rückmeldung</td></tr>
       </tbody>
     </table>
 
-    <h2>So arbeitet Coursepilot</h2>
-    <p><a class="diagram-link" href="../assets/diagrams/coursepilot-aus-nutzersicht.html">Diagramm: Coursepilot aus Nutzersicht</a></p>
-    <p class="placeholder">Inhalt folgt.</p>
+    <h2>Was Coursepilot besonders macht</h2>
+    <ol class="features">
+      <li><strong>Das Plugin ist der KI-Anschluss.</strong> Coursepilot stellt seine Werkzeuge direkt aus Moodle unter <code>/local/coursepilot/mcp.php</code> bereit. Die Lehrkraft verbindet ihren KI-Client einmal und bestätigt die Verbindung auf einer Moodle-Seite; kein Programm auf dem Laptop, kein Zugangsschlüssel zum Abtippen.</li>
+      <li><strong>Lernendendaten bleiben außen vor, technisch erzwungen.</strong> Die Werkzeuge lesen keine Abgaben, Forenbeiträge, Testversuche, Bewertungen oder Teilnehmerlisten. Das ist eine feste Positivliste, die ein automatischer Test bei jeder Änderung gegen die tatsächlich angebotenen Werkzeuge prüft. Das Plugin ruft selbst keinen KI-Anbieter auf.</li>
+      <li><strong>Jede Änderung hat einen Rückweg.</strong> Coursepilot speichert zu jeder Aktivität einen Änderungsverlauf, auch für Änderungen von Hand im Moodle-Formular. Ein früherer Stand lässt sich im Chat oder direkt in Moodle wiederherstellen, ohne dass ein Gespräch laufen muss.</li>
+      <li><strong>Auch Aktivitätsarten ohne eigene Unterstützung.</strong> Neben den neun fest beschriebenen Arten (z.&nbsp;B. Textseite, Aufgabe, Test) kann Coursepilot weitere installierte Arten wie Buch, Glossar oder Checkliste neu anlegen. Jede solche Anlage wird sofort geprüft und bei Abweichung wieder entfernt.</li>
+      <li><strong>Der Kontext gehört der Lehrkraft.</strong> Planungen, Profile und gelernte Vorlieben liegen als Dateien in „Meine Dateien“ in Moodle oder im eigenen WebDAV-Speicher (z.&nbsp;B. IServ oder Nextcloud). Fällt der Speicher aus, legt Coursepilot nichts heimlich woanders ab.</li>
+    </ol>
+
+    <h2 id="so-arbeitet-coursepilot">So arbeitet Coursepilot</h2>
+    <p>Die Lehrkraft schreibt im KI-Client, was sie vorhat. Die KI holt sich über Coursepilot den Kursstand und die Arbeitsdateien der Lehrkraft, schlägt einen Plan vor und schreibt erst nach ausdrücklicher Freigabe im Chat in den Kurs. Coursepilot sitzt dabei in Moodle und arbeitet nur mit den Rechten, die die Lehrkraft dort ohnehin hat.</p>
+    <p><a class="diagram-link" href="../assets/diagrams/coursepilot-aus-nutzersicht.html">Diagramm öffnen: Coursepilot aus Nutzersicht</a> (interaktiv, öffnet in einer eigenen Ansicht)</p>
+
+    <h2>Reifegrad</h2>
+    <p>Coursepilot ist eine <strong>Beta</strong> (Version <code>2.0.0-beta</code>) für Moodle 5.0 und neuer. Der Autor setzt es im eigenen Unterricht ein; an einer weiteren Schule ist es noch nicht im Produktivbetrieb erprobt. In Randfällen gibt es kleinere Werkzeuglücken. Was noch fehlt, steht offen auf der <a href="developers.html#bekannte-grenzen">Entwickler-Seite</a>.</p>
+
+    <h2>Rückmeldung</h2>
+    <p>Fehler, Fragen und Wünsche bitte als <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues">Issue auf GitHub</a> melden.</p>
   </main>
   <footer class="site-footer">
     <p>Coursepilot · Beta (2.0.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Quellcode auf GitHub</a> · AGPL-3.0-or-later</p>

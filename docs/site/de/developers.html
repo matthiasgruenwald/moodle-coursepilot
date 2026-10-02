@@ -22,8 +22,140 @@
   </header>
   <main>
     <h1>Architektur und Mitarbeit</h1>
-    <p><a class="diagram-link" href="../assets/diagrams/coursepilot-architecture.html">Architekturdiagramm (englisch)</a></p>
-    <p class="placeholder">Inhalt folgt.</p>
+    <p class="lead">Für Entwickler:innen ähnlicher Moodle-KI-Werkzeuge und alle, die beitragen wollen. Quelle des Server-MCP: <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/tree/main/Plugin/src/local_coursepilot"><code>Plugin/src/local_coursepilot/</code></a>.</p>
+
+    <nav class="toc" aria-label="Auf dieser Seite">
+      <a href="#prinzip">Prinzip</a>
+      <a href="#werkzeugvertrag">Werkzeugvertrag</a>
+      <a href="#werkzeuge">Werkzeuge</a>
+      <a href="#adr">Entscheidungen</a>
+      <a href="#tests">Tests und CI</a>
+      <a href="#branches">Branches</a>
+      <a href="#beitragen">Beitragen</a>
+      <a href="#bekannte-grenzen">Bekannte Grenzen</a>
+    </nav>
+
+    <h2 id="prinzip">Prinzip: Das Plugin ist der MCP-Endpunkt</h2>
+    <p>Coursepilot ist ein lokales Moodle-Plugin, das selbst als MCP-Server arbeitet. Der KI-Client spricht Streamable HTTP mit <code>/local/coursepilot/mcp.php</code>; auf dem Rechner der Lehrkraft läuft nichts.</p>
+    <p><a class="diagram-link" href="../assets/diagrams/coursepilot-architecture.html">Architektur-Diagramm öffnen</a> (interaktiv, englisch beschriftet)</p>
+    <pre><code>KI-Client --HTTPS + OAuth--&gt; mcp.php (dünne Schale)
+  -&gt; dispatcher::handle()   Auth-Gate, Protokoll, Datenschutzvertrag
+  -&gt; Moodle-externe Funktionen (classes/external/*)
+  -&gt; Fassaden: context_area, material_area, version_writer, catalog/*
+  -&gt; storage_port (Private Files | WebDAV)</code></pre>
+    <ul>
+      <li><strong>Seam-Muster:</strong> <code>mcp.php</code> macht nur Ein- und Ausgabe. Entscheidungen fallen in <code>dispatcher</code>, <code>oauth_lib</code> und <code>instance_check</code> als reine Funktionen (Werte rein, Werte raus), testbar ohne Webserver.</li>
+      <li><strong>Protokoll:</strong> zustandslos, nur POST, JSON. Bedient werden die MCP-Revisionen 2025-06-18 (Handshake <code>initialize</code>, z.&nbsp;B. Codex) und 2026-07-28 (<code>server/discover</code>, z.&nbsp;B. claude.ai).</li>
+      <li><strong>Anmeldung:</strong> OAuth 2.1 mit PKCE, Discovery (RFC 8414/9728), Dynamic Client Registration (RFC 7591) und CIMD. Kein Token von Hand.</li>
+      <li><strong>Schreiben:</strong> nur über Moodles Formularweg (<code>add_moduleinfo()</code>/<code>update_moduleinfo()</code>) mit geprüftem Feldkatalog je Aktivitätsart (ADR 0016/0017).</li>
+      <li><strong>Änderungsverlauf:</strong> Vollstand je Schreibvorgang in einer Schattentabelle, auch für Handänderungen; Wiederherstellen schreibt eine neue Version (ADR 0018).</li>
+      <li><strong>Ablage:</strong> ein Anker, ein Modul, zwei Adapter: Private Files oder WebDAV der Lehrkraft. Fällt der Speicher aus, gibt es keinen Rückfallspeicher, nur eine Ausstandsnotiz ohne Inhalt (ADR 0019–0023).</li>
+      <li><strong>Skill-Korpus:</strong> Die Arbeitsweise der KI (planen, freigeben, umsetzen) wird mit dem Plugin ausgeliefert und über <code>coursepilot_list_skills</code>/<code>coursepilot_get_skill</code> geholt, nicht installiert (ADR 0020).</li>
+    </ul>
+    <p>Abgrenzung: Der frühere lokale Weg (Node-Server auf dem Laptop, <code>legacy/</code>, Coursepilot 1.x) ist eingefroren und wird auf <code>dev</code> entfernt; hier nicht beschrieben.</p>
+
+    <h2 id="werkzeugvertrag">Werkzeugvertrag</h2>
+    <ul>
+      <li><strong>Eine Deklaration je Werkzeug:</strong> <code>tool_registry::TOOLS</code> treibt Webservice-Registrierung (<code>db/services.php</code>), MCP-Schema (abgeleitet aus <code>execute_parameters()</code>) und Datenschutz-Positivliste. Keine zweite Schema-Deklaration.</li>
+      <li><strong>Englische Basis:</strong> Werkzeugnamen, Parameter, Rückgabeschlüssel und Beschreibungen sind englisch; Moodle-Strings liegen nur in <code>lang/en/</code> (ADR 0024).</li>
+      <li><strong>Schreibend oder lesend</strong> ergibt sich aus dem Namensmuster. Mutierende Werkzeuge nutzen das Muster eines Bestätigungsparameters (<code>confirmed</code>).</li>
+      <li><strong>Vertragstests:</strong> <code>tool_schema_contract_test.php</code> und <code>privacy_surface_test.php</code> prüfen die real registrierte Oberfläche.</li>
+    </ul>
+
+    <h2 id="werkzeuge">Werkzeuge nach Gruppen (54)</h2>
+    <table class="tools">
+      <thead><tr><th>Gruppe</th><th>Werkzeuge</th></tr></thead>
+      <tbody>
+        <tr><td>Orientierung (7)</td><td><code>coursepilot_list_courses</code> <code>coursepilot_get_course_catalog</code> <code>coursepilot_get_modules</code> <code>coursepilot_get_module_settings</code> <code>coursepilot_get_sections</code> <code>coursepilot_describe_module_fields</code> <code>coursepilot_get_version_info</code> </td></tr>
+        <tr><td>Abschnitte (3)</td><td><code>coursepilot_ensure_section</code> <code>coursepilot_update_section</code> <code>coursepilot_move_section</code> </td></tr>
+        <tr><td>Aktivitäten (8)</td><td><code>coursepilot_create_module</code> <code>coursepilot_update_module_settings</code> <code>coursepilot_move_module</code> <code>coursepilot_create_quiz</code> <code>coursepilot_update_quiz_settings</code> <code>coursepilot_set_completion</code> <code>coursepilot_set_restriction</code> <code>coursepilot_clone_activity</code> </td></tr>
+        <tr><td>Versionen (3)</td><td><code>coursepilot_list_activity_versions</code> <code>coursepilot_compare_activity_versions</code> <code>coursepilot_restore_activity_version</code> </td></tr>
+        <tr><td>Test und Fragenbank (13)</td><td><code>coursepilot_ensure_question_bank</code> <code>coursepilot_ensure_question_category</code> <code>coursepilot_update_question_category</code> <code>coursepilot_get_question_categories</code> <code>coursepilot_plan_question_category_cleanup</code> <code>coursepilot_get_question</code> <code>coursepilot_move_question</code> <code>coursepilot_create_mc_question</code> <code>coursepilot_update_mc_question</code> <code>coursepilot_import_questions_xml</code> <code>coursepilot_export_questions_xml</code> <code>coursepilot_add_questions_to_quiz</code> <code>coursepilot_plan_quiz_cleanup</code> </td></tr>
+        <tr><td>Klon-Nachweis (1)</td><td><code>coursepilot_report_clone_lineage</code> </td></tr>
+        <tr><td>Kontextbereich (6)</td><td><code>coursepilot_list_context_files</code> <code>coursepilot_read_context_file</code> <code>coursepilot_write_context_file</code> <code>coursepilot_append_context_file</code> <code>coursepilot_dismiss_pending_entry</code> <code>coursepilot_dismiss_previous_location</code> </td></tr>
+        <tr><td>Material (8)</td><td><code>coursepilot_list_material_files</code> <code>coursepilot_upload_material_file</code> <code>coursepilot_preview_material_file</code> <code>coursepilot_crop_material_file</code> <code>coursepilot_compose_material_file</code> <code>coursepilot_report_loose_material_files</code> <code>coursepilot_delete_material_files</code> <code>coursepilot_create_workbench_download_links</code> </td></tr>
+        <tr><td>Erschlossene Arten (3)</td><td><code>coursepilot_create_activity_from_xml</code> <code>coursepilot_export_activity_backup</code> <code>coursepilot_export_default_activity</code> </td></tr>
+        <tr><td>Skills (2)</td><td><code>coursepilot_list_skills</code> <code>coursepilot_get_skill</code> </td></tr>
+      </tbody>
+    </table>
+    <p>Beschreibungen: <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/Plugin/src/local_coursepilot/lang/en/local_coursepilot.php"><code>lang/en/local_coursepilot.php</code></a>. Die Liste wird gegen <code>tool_registry.php</code> geprüft (<code>test/docs-site.test.js</code>).</p>
+
+    <h3>Aktivitätsarten</h3>
+    <ul>
+      <li><strong>Katalogisiert</strong> (Feldkatalog, anlegen und bearbeiten): Textfeld, Textseite, Link, Verzeichnis, Datei, Abstimmung, Forum, Aufgabe, Test.</li>
+      <li><strong>Erschlossen</strong> (ADR 0028): jede weitere installierte Art, nur anlegen. Das Aktivitäts-XML wird aus einem exportierten Standardstand abgeleitet, versteckt angelegt, wieder exportiert und verglichen; bei Abweichung im selben Aufruf gelöscht. Ändern heißt Ablösen: neue Aktivität hinter die alte, alte versteckt.</li>
+      <li><strong>Nicht über XML:</strong> Arten mit Fragen (Lektion; Test läuft über den Katalog) und vorläufig Arten mit Dateien im Inhalt (SCORM, IMS-Paket, H5P, Lightbox-Galerie).</li>
+    </ul>
+
+    <h2 id="adr">Entscheidungen (ADR-Landkarte)</h2>
+    <p>ADR 0002–0010 betreffen überwiegend den eingefrorenen Altweg. Die Nummern 0012–0014 gibt es nicht; 0020 ist doppelt vergeben.</p>
+    <table>
+      <thead><tr><th>ADR</th><th>Entscheidung</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0001-use-native-moodle-question-versioning.md">0001</a></td><td>Fragen werden als neue native Moodle-Version derselben Frage geändert, nie ersetzt oder dupliziert.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0002-use-an-igs-fork-as-training-version.md">0002</a></td><td>Entwicklung als schulspezifischer Fork von MoodleMcp.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0003-allow-local-student-names-in-teacher-context.md">0003</a></td><td>Kontextdateien der Lehrkraft dürfen echte Schülernamen enthalten (fortgeschrieben durch 0011).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0004-ocr-via-agent-vision.md">0004</a></td><td>Texterkennung über die Bildverarbeitung des KI-Agenten statt einer OCR-Bibliothek, mit Kontrollschritt.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0005-imagemagick-fuer-bildausschnitt.md">0005</a></td><td>ImageMagick für Bildausschnitte im lokalen Altweg (im Server-MCP durch GD ersetzt).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0006-node-helper-fuer-moodle-token-speicher.md">0006</a></td><td>Node-Helfer als Token-Speicher (Altweg).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0007-aktivitaets-mcp-aufteilung.md">0007</a></td><td>Aufteilung in Core-MCP und Aktivitäts-MCPs mit expliziten Formularfeldern (Altweg).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0008-curl-bootstrap-vertrieb.md">0008</a></td><td>Verteilung per curl/PowerShell-Bootstrap statt kompiliertem Installer (Altweg).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0009-opencode-als-bereitgehaltener-client.md">0009</a></td><td>opencode als bereitgehaltener Client (Altweg).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0010-sicherheits-haertung-lieferkette-setup.md">0010</a></td><td>Lieferkettenhärtung des Setups: Tag-Pin, SHA256, CSRF-Schutz (Altweg).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0011-personenbezogene-kontextdaten-im-servermodell.md">0011</a></td><td>Personenbezogene Kontextdaten im Servermodell: Schule verantwortlich, Schalter standardmäßig aus.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0015-fragen-identitaet-abstammung-und-stand.md">0015</a></td><td>Fragenidentität: Abstammung über die idnumber, Stand über den Fragenbank-Eintrag.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0016-modul-formularweg-statt-direkter-db-schreibung.md">0016</a></td><td>Aktivitäten nur über Moodles Formularweg (add/update_moduleinfo), keine direkte DB-Schreibung.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0017-katalogpflege-selbstfreigabe-in-zwei-stufen.md">0017</a></td><td>Katalogpflege in zwei Stufen: Drift sperrt nur die betroffene Aktivitätsart, Lesen läuft weiter.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0018-aenderungsverlauf-im-notenbuch-muster.md">0018</a></td><td>Änderungsverlauf als Vollstand-Schattentabelle nach Notenbuch-Muster; Rückkehr ist eine neue Version.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0019-kontextbereich-in-private-files.md">0019</a></td><td>Kontextbereich in Moodles Private Files statt eigener Dateiablage.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0020-gemeinsamer-ablageort-anker.md">0020</a></td><td>Ein gemeinsamer Ablageort-Anker statt zweier paralleler Klassen.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0020-skills-ueber-werkzeuge-statt-installation.md">0020</a></td><td>Skill-Korpus über Werkzeuge ausliefern statt lokal installieren.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0021-isolierung-und-personenbezug-am-externen-ablageort.md">0021</a></td><td>Isolierung über Instanzeigentum; Personenbezug am externen Ort als Schreibsperre.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0022-eigener-webdav-client-auf-moodle-curl.md">0022</a></td><td>Eigener schlanker WebDAV-Client auf Moodles curl statt webdav_client.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0023-ausfall-ohne-rueckfall-ausstandsnotiz-am-anker.md">0023</a></td><td>Ausfall ohne Rückfall: Ausstandsnotiz am Anker, die KI trägt nach.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0024-englische-basis-und-komponente-coursepilot.md">0024</a></td><td>Englische Basis, Name Coursepilot, Komponente local_coursepilot; Skill-Korpus vorerst deutsch.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0025-agpl-fuer-das-gesamte-projekt.md">0025</a></td><td>AGPL-3.0-or-later für das ganze Projekt einschließlich Plugin.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0026-fernzugriffsfreigabe-ueber-kohorte-statt-eigener-rolle.md">0026</a></td><td>Fernzugriff über gewählte Systemkohorten statt einer eigenen Rolle.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0027-versionslinien-branches-und-moodle-mindestversion.md">0027</a></td><td>Versionslinien 2.0.x/2.1+, Branches main/dev, Moodle-Mindestversion, Beta.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0028-aktivitaets-xml-als-anlegeweg.md">0028</a></td><td>Aktivitäts-XML als Anlegeweg (nie Bearbeitungsweg) für erschlossene Aktivitätsarten.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="tests">Tests und CI</h2>
+    <ul>
+      <li><strong>PHPUnit:</strong> volle native Suite in <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/.github/workflows/native-ci.yml"><code>native-ci.yml</code></a>, Matrix Moodle 5.0 und 5.1 mit PHP 8.4 und MariaDB, dazu ein Job, der das Release-Artefakt frisch installiert und einen autorisierten Werkzeugaufruf ausführt.</li>
+      <li><strong>Coverage-Gate:</strong> 80&nbsp;% Zeilenabdeckung (PCOV, Moodle-5.0-Lauf), Quellumfang in <code>tests/coverage.php</code>.</li>
+      <li><strong>Merge-Bedingung:</strong> nur der Sammelcheck <code>Gate (required)</code>; ein übersprungener Pflichtjob zählt als Fehlschlag.</li>
+      <li><strong>Node-Suite:</strong> <code>npm run test:ci</code> für Hilfsskripte und diese Dokumentationsseite (Links, Bildpfade, Sprachgegenstücke).</li>
+    </ul>
+
+    <h2 id="branches">Branch-Modell (ADR 0027)</h2>
+    <table>
+      <thead><tr><th>Branch</th><th>Linie</th><th>Moodle</th><th>Inhalt</th></tr></thead>
+      <tbody>
+        <tr><td><code>main</code></td><td>2.0.x</td><td>ab 5.0 (geprüft 5.0, 5.1)</td><td>veröffentlichter Stand, nur Hotfixes mit Tag, danach nach <code>dev</code> gemergt</td></tr>
+        <tr><td><code>dev</code></td><td>2.1+</td><td>ab 5.1</td><td>neue Funktionen, entwickelt und geprüft gegen eine Testinstanz mit Moodle 5.1</td></tr>
+      </tbody>
+    </table>
+    <p>Feature-, Forschungs- und Prototypzweige zweigen von <code>dev</code> ab und werden nach dem Zurückführen gelöscht.</p>
+
+    <h2 id="beitragen">Beitragen</h2>
+    <ul>
+      <li>Fehler und Vorschläge als <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues">GitHub-Issue</a>; Pull Requests gegen <code>dev</code>.</li>
+      <li>Code-Sprache englisch (Bezeichner, Werkzeugvertrag, <code>lang/en/</code>). Begriffe im Glossar <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/CONTEXT.md"><code>CONTEXT.md</code></a>, Entscheidungen in <code>docs/adr/</code>, Spezifikationen in <code>docs/specs/</code>.</li>
+      <li>Lizenz: AGPL-3.0-or-later, auch für das Plugin (ADR 0025). Beiträge stehen unter derselben Lizenz.</li>
+    </ul>
+
+    <h2 id="bekannte-grenzen">Bekannte Grenzen</h2>
+    <ul>
+      <li><strong>Beta:</strong> <code>2.0.0-beta</code>, im Unterricht des Autors erprobt, noch nicht an einer weiteren Schule im Produktivbetrieb. In Randfällen gibt es kleinere Werkzeuglücken.</li>
+      <li><strong>Keine Ratenbegrenzung</strong> am MCP-Endpunkt. Schutz kommt bisher aus OAuth, Fernzugriffsfreigabe je Person und Notbremse.</li>
+      <li><strong>Moodle Plugins Directory:</strong> Die Einreichung ist offen (<a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues/192">#192</a>); bis dahin liegt die deutsche Übersetzung im Plugin statt in AMOS.</li>
+      <li><strong>Änderungsverlauf nicht lückenlos:</strong> Testinhalte jenseits der Fragenanordnung, Notenbuch, zurückgespielte Sicherungen und direkte DB-Eingriffe fehlen; bei erschlossenen Arten nur die Instanzzeile, nicht die Kindtabellen (Kapitel, Einträge). Ersetzte Aktivitätsdateien kommen bei einer Rückkehr mit.</li>
+      <li><strong>Erschlossene Aktivitätsarten</strong> werden nur angelegt oder abgelöst, nie bearbeitet; Arten mit Dateien im Inhalt fehlen noch.</li>
+      <li><strong>Geprüfte Umgebung</strong> nur PHP 8.4 mit MariaDB; PostgreSQL ungeprüft.</li>
+      <li><strong>Skill-Korpus</strong> vorerst deutsch.</li>
+    </ul>
   </main>
   <footer class="site-footer">
     <p>Coursepilot · Beta (2.0.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Quellcode auf GitHub</a> · AGPL-3.0-or-later</p>

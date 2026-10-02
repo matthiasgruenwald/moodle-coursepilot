@@ -22,10 +22,249 @@
   </header>
   <main>
     <h1>Lehrkraft-Anleitung</h1>
-    <h2>Einstiegsprompt ausprobieren</h2>
-    <p>Diesen Satz in den KI-Client kopieren:</p>
+    <p class="lead">Coursepilot verbindet einen KI-Client mit den eigenen Moodle-Kursen. Die KI liest den Kursstand, schlägt einen Plan vor und baut Abschnitte, Seiten, Aufgaben und Tests erst nach ausdrücklicher Freigabe im Chat. Diese Anleitung führt durch die Einrichtung und die ersten Schritte.</p>
+
+    <nav class="toc" aria-label="Auf dieser Seite">
+      <a href="#vorher">Vorher klären</a>
+      <a href="#claude">Claude</a>
+      <a href="#chatgpt">ChatGPT</a>
+      <a href="#codex">Codex</a>
+      <a href="#andere">Andere Clients</a>
+      <a href="#webdav">Eigener Speicher</a>
+      <a href="#erste-schritte">Erste Schritte</a>
+      <a href="#einstiegsprompts">Einstiegsprompts</a>
+      <a href="#werkzeugluecken">Werkzeuglücken</a>
+      <a href="#rueckgaengig">Rückgängig machen</a>
+      <a href="#datenschutz">Was die KI sieht</a>
+      <a href="#mail">Mail an Kolleg:innen</a>
+    </nav>
+
+    <h2 id="vorher">Vorher klären</h2>
+    <ul>
+      <li><strong>Freigabe:</strong> Die Moodle-Administration muss den Fernzugriff freigegeben haben, meist über eine Kohorte. Ohne Freigabe scheitert die Verbindung. Eine Lehrkraft-Rolle im Kurs reicht dafür nicht.</li>
+      <li><strong>Adresse:</strong> Die Anschlussadresse lautet immer <code>https://&lt;moodle-adresse&gt;/local/coursepilot/mcp.php</code>, also z.&nbsp;B. <code>https://moodle.meine-schule.de/local/coursepilot/mcp.php</code>.</li>
+      <li><strong>KI-Client:</strong> Claude ist der verlässlichste Weg. ChatGPT funktioniert ebenfalls; dort kann OpenAI die Schreibrechte für eigene Connectoren je nach Tarif und Oberfläche ändern. Codex ist ein eigenes Programm und unten getrennt beschrieben.</li>
+      <li><strong>Einmal anmelden:</strong> Bei der ersten Verbindung öffnet sich eine Moodle-Seite „Coursepilot verbinden“. Dort mit dem Moodle-Konto anmelden und <em>Verbindung erlauben</em> wählen. Ein Zugangsschlüssel muss nie abgetippt werden.</li>
+    </ul>
+    <figure class="screenshot">
+      <div class="placeholder">Screenshot folgt</div>
+      <figcaption>Moodle-Seite „Coursepilot verbinden“: Sie zeigt, was freigegeben wird (Kurse, Aktivitäten, eigene Kontextdateien) und was nicht (Abgaben, Bewertungen, Teilnehmende).</figcaption>
+    </figure>
+
+    <h2 id="claude">Connector in Claude einrichten</h2>
+    <p>Gilt für claude.ai im Browser und die Claude-Desktop-App. Eigene Connectoren gibt es in allen Tarifen; im kostenlosen Tarif ist nur einer möglich.</p>
+    <ol class="steps">
+      <li>In Claude <em>Customize › Connectors</em> öffnen.</li>
+      <li><em>+ Add</em> › <em>Add custom connector</em> wählen.</li>
+      <li>Name <code>Coursepilot</code> und die Anschlussadresse eintragen, speichern.</li>
+      <li><em>Connect</em> wählen. Es öffnet sich die Moodle-Seite „Coursepilot verbinden“: anmelden und <em>Verbindung erlauben</em>.</li>
+      <li>Im Chat über das Werkzeug-Menü prüfen, dass Coursepilot eingeschaltet ist.</li>
+    </ol>
+    <figure class="screenshot">
+      <div class="placeholder">Screenshot folgt</div>
+      <figcaption>Claude: Dialog „Add custom connector“ mit Name und Anschlussadresse.</figcaption>
+    </figure>
+    <figure class="screenshot">
+      <div class="placeholder">Screenshot folgt</div>
+      <figcaption>Claude: Coursepilot im Werkzeug-Menü des Chats eingeschaltet.</figcaption>
+    </figure>
+    <p><strong>Team- oder Enterprise-Konto:</strong> Dort legt die Organisations-Verwaltung den Connector einmal an (<em>Organization settings › Connectors</em>). Danach verbindet sich jede Person einzeln unter <em>Customize › Connectors</em>.</p>
+    <p><strong>Claude Code</strong> (Terminal): <code>claude mcp add --transport http coursepilot https://&lt;moodle-adresse&gt;/local/coursepilot/mcp.php</code>, danach in Claude Code <code>/mcp</code> aufrufen und anmelden.</p>
+
+    <h2 id="chatgpt">Connector in ChatGPT einrichten</h2>
+    <p>Eigene Connectoren laufen in ChatGPT über den <strong>Entwicklermodus</strong>, nur in der Weboberfläche (chatgpt.com) und in den Tarifen Plus, Pro, Business, Enterprise und Edu. Der Menüpunkt liegt einige Klicks tief.</p>
+    <p class="note warning">Ob ChatGPT Coursepilot auch <strong>schreiben</strong> lässt oder nur lesen, legt OpenAI je nach Tarif und Oberfläche fest und hat es schon geändert. Klappt das Lesen, aber nicht das Anlegen im Kurs, liegt es daran. Claude ist dann der verlässlichere Weg.</p>
+    <ol class="steps">
+      <li>In ChatGPT <em>Einstellungen › Security and login</em> öffnen und <em>Developer mode</em> einschalten. In Business-, Enterprise- und Edu-Konten muss die Workspace-Verwaltung das vorher erlauben.</li>
+      <li>Unter <em>Plugins</em> (in manchen Oberflächen <em>Apps</em>) über das Plus-Symbol einen eigenen Connector anlegen.</li>
+      <li>Name <code>Coursepilot</code>, die Anschlussadresse und als Anmeldung <em>OAuth</em> eintragen.</li>
+      <li>Die Moodle-Seite „Coursepilot verbinden“ öffnet sich: anmelden und <em>Verbindung erlauben</em>.</li>
+      <li>Im Chat über das Plus-Menü <em>Developer mode</em> wählen und Coursepilot zuschalten.</li>
+    </ol>
+    <p>Bei schreibenden Aktionen fragt ChatGPT standardmäßig jedes Mal nach und zeigt, was gesendet wird. Die Zustimmung gilt höchstens für das laufende Gespräch.</p>
+    <figure class="screenshot">
+      <div class="placeholder">Screenshot folgt</div>
+      <figcaption>ChatGPT: Entwicklermodus unter „Security and login“ einschalten.</figcaption>
+    </figure>
+    <figure class="screenshot">
+      <div class="placeholder">Screenshot folgt</div>
+      <figcaption>ChatGPT: eigenen Connector mit Anschlussadresse und OAuth anlegen.</figcaption>
+    </figure>
+
+    <h2 id="codex">Coursepilot in Codex einbinden</h2>
+    <p>Codex (Kommandozeile, Editor-Erweiterung, ChatGPT-Desktop-App) ist in allen ChatGPT-Tarifen enthalten und teilt seine Einstellungen über die Datei <code>~/.codex/config.toml</code>.</p>
+    <p><strong>Kommandozeile:</strong></p>
+    <div class="prompt"><pre><code>codex mcp add coursepilot --url https://&lt;moodle-adresse&gt;/local/coursepilot/mcp.php
+codex mcp login coursepilot</code></pre></div>
+    <p>Der zweite Befehl öffnet den Browser mit der Moodle-Seite „Coursepilot verbinden“: anmelden und <em>Verbindung erlauben</em>.</p>
+    <p><strong>Editor-Erweiterung:</strong> <em>Settings › MCP servers › Add server</em>, Typ <em>Streamable HTTP</em>, Anschlussadresse eintragen, danach anmelden.</p>
+    <figure class="screenshot">
+      <div class="placeholder">Screenshot folgt</div>
+      <figcaption>Codex: Coursepilot als MCP-Server eingetragen und angemeldet.</figcaption>
+    </figure>
+
+    <h2 id="andere">Andere MCP-Clients</h2>
+    <p>Jeder Client, der entfernte MCP-Server mit Anmeldung unterstützt, funktioniert nach demselben Muster:</p>
+    <ul>
+      <li>Transport: <em>Streamable HTTP</em> (nicht SSE, nicht lokal/stdio)</li>
+      <li>Adresse: <code>https://&lt;moodle-adresse&gt;/local/coursepilot/mcp.php</code></li>
+      <li>Anmeldung: <em>OAuth</em>. Der Client registriert sich selbst; Client-ID oder Geheimnis müssen nicht eingetragen werden.</li>
+      <li>Einmal auf der Moodle-Seite <em>Verbindung erlauben</em>.</li>
+    </ul>
+
+    <h3>Verbindungen verwalten</h3>
+    <p>Alle eigenen Verbindungen stehen in Moodle unter <em>Nutzermenü › Einstellungen › Coursepilot › Meine Coursepilot-Verbindungen</em> und lassen sich dort einzeln widerrufen. Eine Verbindung bleibt bis zu 30 Tage ohne Nutzung angemeldet.</p>
+    <figure class="screenshot">
+      <div class="placeholder">Screenshot folgt</div>
+      <figcaption>Moodle: „Meine Coursepilot-Verbindungen“ mit Widerrufen-Knopf.</figcaption>
+    </figure>
+
+    <h2 id="webdav">Eigenen Speicher anbinden (IServ, Nextcloud)</h2>
+    <p>Coursepilot legt Pläne, Profile und Notizen standardmäßig in Moodle unter <em>Meine Dateien</em> ab (Ordner <code>coursepilot</code>). Das reicht für den Anfang. Wer die Dateien lieber im Schulspeicher hat, bindet ihn als WebDAV-Verbindung an. Voraussetzung: Die Moodle-Administration hat WebDAV-Verbindungen für Lehrkräfte freigeschaltet. Fehlt das, zeigt die Ortswahlseite einen fertigen Text für die Administration.</p>
+
+    <h3>IServ Schritt für Schritt</h3>
+    <ol class="steps">
+      <li>In Moodle eine Stelle öffnen, an der man eine Datei hochladen kann (z.&nbsp;B. <em>Meine Dateien</em>). Im Dateiauswahl-Fenster links <em>WebDAV</em> wählen, dann <em>Repository konfigurieren</em>.</li>
+      <li>Eine neue Verbindung anlegen und so ausfüllen:
+        <table>
+          <tbody>
+            <tr><td>Name</td><td>z.&nbsp;B. <code>IServ</code></td></tr>
+            <tr><td>WebDAV-Typ</td><td>HTTPS</td></tr>
+            <tr><td>WebDAV Server</td><td><code>webdav.&lt;iserv-adresse&gt;</code>, z.&nbsp;B. <code>webdav.meine-schule.de</code> (ohne <code>https://</code>)</td></tr>
+            <tr><td>WebDAV-Pfad</td><td><code>/</code></td></tr>
+            <tr><td>Authentifizierung</td><td>Basic</td></tr>
+            <tr><td>WebDAV Server-Port</td><td>leer lassen (bei HTTPS gilt 443)</td></tr>
+            <tr><td>WebDAV Server-Nutzer und -Kennwort</td><td>die IServ-Zugangsdaten</td></tr>
+          </tbody>
+        </table>
+      </li>
+      <li>Speichern. Im Dateiauswahl-Fenster erscheinen jetzt die IServ-Bereiche (<code>Files</code>, <code>Groups</code> …).</li>
+      <li><em>Nutzermenü › Einstellungen › Coursepilot › Coursepilot: Ablageorte für Kontextbereich und Materialbestand</em> öffnen.</li>
+      <li>Für <em>Kontextbereich</em> die IServ-Verbindung wählen und einen Ordner unterhalb von <code>Files</code> anlegen oder wählen, z.&nbsp;B. <code>Files/Coursepilot</code>. Andere IServ-Bereiche sind nicht wählbar.</li>
+      <li>Für <em>Materialbestand</em> ebenso einen Ordner wählen (nicht denselben wie für den Kontextbereich) oder <em>In Moodle lassen</em>. Dann <em>Einrichten abschließen</em>.</li>
+    </ol>
+    <figure class="screenshot">
+      <div class="placeholder">Screenshot folgt</div>
+      <figcaption>Moodle: WebDAV-Verbindung zu IServ im Dateiauswahl-Fenster anlegen.</figcaption>
+    </figure>
+    <figure class="screenshot">
+      <div class="placeholder">Screenshot folgt</div>
+      <figcaption>Moodle: Ortswahlseite mit gewähltem Ordner unter <code>Files</code>.</figcaption>
+    </figure>
+    <p class="note">Moodle speichert das Kennwort einer WebDAV-Verbindung im Klartext. Wo der Speicher ein eigenes App-Passwort anbietet, dieses statt des Kontopassworts verwenden.</p>
+
+    <h3>Nextcloud: die Abweichungen</h3>
+    <ul>
+      <li><strong>WebDAV Server:</strong> die Adresse der Nextcloud ohne <code>https://</code>, z.&nbsp;B. <code>cloud.meine-schule.de</code>.</li>
+      <li><strong>WebDAV-Pfad:</strong> <code>/remote.php/dav/files/&lt;nextcloud-benutzername&gt;/</code></li>
+      <li><strong>Kennwort:</strong> ein App-Passwort aus der Nextcloud (<em>Persönliche Einstellungen › Sicherheit › Neues App-Passwort erstellen</em>).</li>
+      <li>Ordner frei wählbar; die Wurzel selbst ist nicht wählbar. Empfohlen ist ein eigener Ordner nur für Coursepilot.</li>
+      <li>Meldet Coursepilot häufig „Speicher drosselt“, sollte die Betreuung der Nextcloud deren Einstellung <code>trusted_proxies</code> prüfen (siehe <a href="admins.html#webdav">Admin-Seite</a>).</li>
+    </ul>
+    <p>Ist der Speicher einmal nicht erreichbar, legt Coursepilot nichts heimlich woanders ab. Es merkt sich nur, <em>dass</em> etwas aussteht, und die KI schreibt es nach, sobald der Speicher wieder antwortet.</p>
+
+    <h2 id="erste-schritte">Erste Schritte</h2>
+
+    <h3>So läuft ein Gespräch</h3>
+    <ol>
+      <li><strong>Planen:</strong> Die KI liest den Kursstand (nur lesend) und schlägt einen Plan vor, zuerst als Zusammenfassung, auf Wunsch im vollen Wortlaut.</li>
+      <li><strong>Freigeben:</strong> Erst nach einer ausdrücklichen Freigabe im Chat, z.&nbsp;B. „ja, so umsetzen“, schreibt sie in den Kurs. Das ist eine Arbeitsweise, die die KI einhält, keine technische Sperre in Moodle. Das Sicherheitsnetz ist der <a href="#rueckgaengig">Änderungsverlauf</a>.</li>
+      <li><strong>Umsetzen:</strong> Vor dem Schreiben gleicht die KI den Plan noch einmal mit dem Kurs ab. Passt etwas nicht mehr, hält sie an und fragt.</li>
+    </ol>
+    <p>Plan, Stand und Entscheidungen hält Coursepilot im <strong>Kontextbereich</strong> fest (Moodle-Ordner <em>Meine Dateien › coursepilot</em> oder der eigene Speicher). So kann ein späteres Gespräch dort weitermachen. Die Dateien sind normale Textdateien: lesbar, änderbar, löschbar, weitergebbar.</p>
+
+    <h3>Kurskontext einrichten</h3>
+    <p>Ein kurzes Profil der Lerngruppe und des Fachs hilft der KI, Niveau und Stil zu treffen. Das Einrichten ist freiwillig und wird nur auf Wunsch gestartet. Nötig sind Schuljahr, Klasse oder Lerngruppe und, falls gewünscht, das Fach.</p>
+    <div class="prompt"><pre><code>Richte den Kontext für meine 7a in Naturwissenschaften ein.</code></pre></div>
+    <p>Die KI fragt die fehlenden Angaben ab, zeigt das Profil vor dem Speichern und legt es erst nach Bestätigung an. Namen von Schüler:innen gehören nicht in normale Profile. Ob und wie sie in markierten Dateien stehen dürfen, regelt die Schule; standardmäßig gibt Coursepilot solche Dateien nicht an die KI.</p>
+
+    <h3>Gestaltungsvorlagen merken</h3>
+    <p>Gelungene Aktivitäten lassen sich als Vorlage merken, z.&nbsp;B. eine Aufgabe mit bewährten Abgabe-Einstellungen. Coursepilot notiert sie in der Datei <code>vorlagen.md</code> im Kontextbereich und kopiert sie später auf Zuruf in einen anderen Abschnitt oder Kurs. Die Datei kann auch von Hand ergänzt werden.</p>
+    <div class="prompt"><pre><code>Merk dir die Aufgabe „Präsentation abgeben“ aus meinem Kurs Bio 7a als Vorlage für alle Präsentationsabgaben.</code></pre></div>
+
+    <h2 id="einstiegsprompts">Einstiegsprompts</h2>
+    <p>Einen Satz kopieren, Angaben in eckigen Klammern ersetzen, in den Chat einfügen. Den weiteren Weg führt die KI; Rückfragen sind normal.</p>
+
+    <h3>Weiterarbeiten</h3>
     <div class="prompt"><pre><code>Mach mit Bio weiter.</code></pre></div>
-    <p class="placeholder">Inhalt folgt.</p>
+    <p>Sucht offene Planungen zum Fach und fragt nach, falls mehrere passen.</p>
+
+    <h3>Abschnitt planen</h3>
+    <div class="prompt"><pre><code>Plane den Abschnitt „[Thema]“ in meinem Kurs [Kursname]: [Anzahl] Stunden, eine Infoseite, eine Aufgabe mit Abgabe und am Ende ein kurzer Mini-Check.</code></pre></div>
+    <p>Danach: „Zeig mir den ganzen Text der Infoseite.“ zum Prüfen und „ja, so umsetzen“ zum Freigeben.</p>
+
+    <h3>Test und Fragen anlegen</h3>
+    <div class="prompt"><pre><code>Lege in meinem Kurs [Kursname] im Abschnitt „[Abschnitt]“ einen Mini-Check mit fünf Multiple-Choice-Fragen zu [Thema] an. Zeig mir die Fragen, bevor du sie anlegst.</code></pre></div>
+
+    <h3>Material einbinden</h3>
+    <div class="prompt"><pre><code>Im Anhang ist mein Arbeitsblatt. Binde es in meinem Kurs [Kursname] im Abschnitt „[Abschnitt]“ als Datei ein und schreib eine kurze Arbeitsanweisung dazu.</code></pre></div>
+    <p>Die Datei vorher an die Nachricht anhängen. Coursepilot legt sie zuerst auf eine Werkbank in Moodle und baut sie von dort ein.</p>
+
+    <h3>Bild zuschneiden</h3>
+    <div class="prompt"><pre><code>Schneide aus [Dateiname] die Abbildung [kurze Beschreibung] aus und setze sie auf die Textseite „[Seitenname]“ in meinem Kurs [Kursname].</code></pre></div>
+    <p>Die KI zeigt eine Vorschau des Ausschnitts, bevor sie ihn einbaut. Zuschneiden geht mit Fotos und Scans, nicht mit SVG-Grafiken.</p>
+
+    <h3>Aktivität klonen</h3>
+    <div class="prompt"><pre><code>Kopiere die Aufgabe „[Name]“ aus meinem Kurs [Quellkurs] in den Kurs [Zielkurs], Abschnitt „[Abschnitt]“.</code></pre></div>
+    <p>Einstellungen und Inhalte gehen mit, Abgaben und andere Daten der Lernenden nicht. Übernommene Abschlussbedingungen meldet die KI.</p>
+
+    <h3>Version wiederherstellen</h3>
+    <div class="prompt"><pre><code>Zeig mir die Versionen der Textseite „[Name]“ in meinem Kurs [Kursname] und hol den Stand von [Datum] zurück.</code></pre></div>
+
+    <h3>Weitere Aktivitätsarten</h3>
+    <div class="prompt"><pre><code>Lege in meinem Kurs [Kursname] im Abschnitt „[Abschnitt]“ ein Glossar „Fachbegriffe [Thema]“ an.</code></pre></div>
+    <p>Neben Textfeld, Textseite, Link, Verzeichnis, Datei, Abstimmung, Forum, Aufgabe und Test kann Coursepilot weitere installierte Arten wie Buch, Glossar oder Checkliste <strong>neu anlegen</strong>, aber nicht nachträglich ändern. Soll so eine Aktivität anders werden, legt Coursepilot eine neue Fassung dahinter an und versteckt die alte.</p>
+
+    <h2 id="werkzeugluecken">Wenn etwas nicht geht: Werkzeuglücken</h2>
+    <p>Nicht jede Einstellung und nicht jede Aktivitäts- oder Frageart lässt sich über Coursepilot setzen, z.&nbsp;B. Lektionen, SCORM-Pakete, H5P-Aktivitäten oder Sonder-Einstellungen mancher Abgabetypen. Dann sagt die KI das offen und beschreibt die Schritte, um es von Hand in Moodle zu erledigen: wo man klickt und was man einträgt. Danach kann das Gespräch normal weitergehen; die KI liest den neuen Stand mit.</p>
+    <p>Fragen anderer Typen als Multiple Choice (z.&nbsp;B. Lückentext, Zuordnung, STACK) legt Coursepilot über Moodles XML-Import an. Was sich dabei bewährt hat, notiert es auf Wunsch in einer Lerndatei im Kontextbereich, damit es beim nächsten Mal schneller geht.</p>
+    <div class="prompt"><pre><code>Ich möchte [Einstellung oder Aktivität]. Wenn Coursepilot das nicht selbst kann, führe mich Schritt für Schritt durch Moodle.</code></pre></div>
+
+    <h2 id="rueckgaengig">Rückgängig machen</h2>
+    <p>Coursepilot speichert zu jeder Aktivität einen <strong>Änderungsverlauf</strong>, auch für Änderungen von Hand im Moodle-Formular. Zurückholen geht auf zwei Wegen:</p>
+    <ul>
+      <li><strong>Im Chat:</strong> mit dem Einstiegsprompt <a href="#einstiegsprompts">„Version wiederherstellen“</a>.</li>
+      <li><strong>In Moodle, ohne Chat:</strong> im Kurs <em>Coursepilot: Änderungsverlauf</em> öffnen, Aktivität und Version wählen, <em>Zurückschreiben</em>.</li>
+    </ul>
+    <p>Zurückschreiben legt den alten Stand als neue jüngste Version an; die Aktivität bleibt dieselbe, Links darauf funktionieren weiter. Der Verlauf ist nicht lückenlos: Testfragen über die Reihenfolge hinaus, Bewertungen und zurückgespielte Kurssicherungen stehen nicht darin; bei Buch, Glossar und ähnlichen Arten nur die Grundeinstellungen, nicht Kapitel oder Einträge. Einträge werden nach einem Jahr gelöscht, sofern die Schule nichts anderes eingestellt hat.</p>
+    <figure class="screenshot">
+      <div class="placeholder">Screenshot folgt</div>
+      <figcaption>Moodle: „Coursepilot: Änderungsverlauf“ mit Versionen einer Aktivität und dem Knopf „Zurückschreiben“.</figcaption>
+    </figure>
+
+    <h2 id="datenschutz">Was die KI sieht und was nicht</h2>
+    <table>
+      <thead><tr><th>Sieht die KI</th><th>Sieht die KI nicht</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Kurse, in denen man selbst Lehrkraft ist; Abschnitte, Aktivitäten und deren Inhalte (Seitentexte, Aufgabenstellungen, Fragen); die eigenen Coursepilot-Dateien im Kontextbereich; Material, das man ihr gibt.</td>
+          <td>Abgaben, Forenbeiträge, Testversuche, Bewertungen, Teilnehmerlisten. Dafür gibt es kein Werkzeug; ein automatischer Test stellt das sicher. Dateien, die als personenbezogen markiert sind, solange die Schule das nicht freigibt.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Coursepilot selbst schickt nichts an einen KI-Anbieter. Was die KI über Coursepilot liest, geht aber an den Anbieter des KI-Clients (z.&nbsp;B. Anthropic oder OpenAI) und wird dort verarbeitet. Deshalb gehören keine Namen von Schüler:innen in Pläne oder Material, außer die Schule erlaubt es ausdrücklich. Gearbeitet wird immer mit den eigenen Moodle-Rechten.</p>
+
+    <h2 id="mail">Mail-Vorlage für Kolleg:innen</h2>
+    <p>Zum Kopieren und Anpassen (Anrede, Moodle-Adresse, Ansprechperson):</p>
+    <div class="prompt"><pre><code>Betreff: Moodle-Kurse mit KI-Unterstützung bauen – Coursepilot ausprobieren
+
+Liebe Kolleginnen und Kollegen,
+
+an unserer Schule steht seit Kurzem Coursepilot zur Verfügung. Damit lässt sich ein KI-Chat (z. B. Claude oder ChatGPT) mit den eigenen Moodle-Kursen verbinden. Die KI liest den Kursstand, schlägt einen Plan vor und legt Abschnitte, Seiten, Aufgaben und Tests erst nach ausdrücklicher Freigabe an. Jede Änderung lässt sich in Moodle zurückholen.
+
+Die KI sieht keine Abgaben, Bewertungen oder Teilnehmerlisten. Coursepilot ist noch in der Beta-Phase.
+
+So geht es los:
+1. Kurz bei mir melden, dann wird der Zugang in Moodle freigeschaltet.
+2. Der Anleitung folgen: https://matthiasgruenwald.github.io/moodle-coursepilot/de/teachers.html
+3. Anschlussadresse: https://[moodle-adresse]/local/coursepilot/mcp.php
+
+Für den Anfang reicht ein Satz wie „Plane den Abschnitt ‚[Thema]‘ in meinem Kurs [Kursname]“.
+
+Bei Fragen gern melden.
+
+Viele Grüße
+[Name]</code></pre></div>
   </main>
   <footer class="site-footer">
     <p>Coursepilot · Beta (2.0.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Quellcode auf GitHub</a> · AGPL-3.0-or-later</p>
