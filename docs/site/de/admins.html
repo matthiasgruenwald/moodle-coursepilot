@@ -22,7 +22,7 @@
   </header>
   <main>
     <h1>Installation und Betrieb</h1>
-    <p class="lead">Für Moodle-Administrationen, die Coursepilot (<code>local_coursepilot</code>) auf einer Instanz einrichten und betreiben. Die Lehrkräfte verbinden ihren KI-Client danach selbst; siehe <a href="teachers.html">Lehrkraft-Anleitung</a>.</p>
+    <p class="lead">Für dich, wenn du Coursepilot (<code>local_coursepilot</code>) auf einer Moodle-Instanz einrichtest und betreibst. Die Lehrkräfte verbinden ihren KI-Client danach selbst; siehe <a href="teachers.html">Lehrkraft-Anleitung</a>.</p>
 
     <nav class="toc" aria-label="Auf dieser Seite">
       <a href="#voraussetzungen">Voraussetzungen</a>
@@ -56,14 +56,14 @@
 
     <h2 id="installation">Installation</h2>
     <ol class="steps">
-      <li><strong>Umstieg von Coursepilot 1.x</strong> (lokaler Node-Weg)? Die alte Komponente <code>local_coursepilot</code> zuerst deinstallieren (Website-Administration › Plugins › Plugins verwalten). Es gibt keine Übernahme von Daten, Einstellungen oder Tokens zwischen den Linien.</li>
-      <li>Plugin-ZIP nach <code>local/coursepilot</code> entpacken oder über „Plugin installieren“ hochladen.</li>
-      <li><code>admin/cli/upgrade.php</code> ausführen oder die Aktualisierung in der Weboberfläche bestätigen. Das registriert die Webservice-Funktionen (Dienst „Coursepilot“) und die Fähigkeiten.</li>
-      <li>Web Services und das REST-Protokoll aktivieren (Website-Administration › Plugins › Web Services), falls noch nicht geschehen.</li>
-      <li>Den Fernzugriff für die Lehrkräfte freigeben (nächster Abschnitt).</li>
-      <li>Die <a href="#instanzpruefung">Instanzprüfung</a> aufrufen und kontrollieren, dass alle drei Voraussetzungen erfüllt sind.</li>
+      <li><strong>Umstieg von Coursepilot 1.x</strong> (lokaler Node-Weg)? Deinstallier zuerst die alte Komponente <code>local_coursepilot</code> (Website-Administration › Plugins › Plugins verwalten). Es gibt keine Übernahme von Daten, Einstellungen oder Tokens zwischen den Linien.</li>
+      <li>Entpack das Plugin-ZIP nach <code>local/coursepilot</code> oder lad es über „Plugin installieren“ hoch.</li>
+      <li>Führ <code>admin/cli/upgrade.php</code> aus oder bestätige die Aktualisierung in der Weboberfläche. Das registriert die Webservice-Funktionen (Dienst „Coursepilot“) und die Fähigkeiten.</li>
+      <li>Aktivier Web Services und das REST-Protokoll (Website-Administration › Plugins › Web Services), falls noch nicht geschehen.</li>
+      <li>Gib den Lehrkräften den Fernzugriff frei (nächster Abschnitt).</li>
+      <li>Ruf die <a href="#instanzpruefung">Instanzprüfung</a> auf und kontrollier, dass alle drei Voraussetzungen erfüllt sind.</li>
     </ol>
-    <p class="note"><strong>Nach jedem Update:</strong> erneut <code>upgrade.php</code> ausführen. Haben sich Fähigkeiten oder Webservice-Funktionen geändert, schlagen Kursnavigation und Werkzeugaufrufe sonst mit HTTP 500 fehl.</p>
+    <p class="note"><strong>Nach jedem Update:</strong> Führ erneut <code>upgrade.php</code> aus. Haben sich Fähigkeiten oder Webservice-Funktionen geändert, schlagen Kursnavigation und Werkzeugaufrufe sonst mit HTTP 500 fehl.</p>
 
     <h3>Fähigkeiten</h3>
     <table>
@@ -77,10 +77,10 @@
     </table>
 
     <h2 id="fernzugriff">Fernzugriff freigeben</h2>
-    <p>Eine Lehrkraft kann ihren KI-Client erst verbinden, wenn die Administration ihr den Fernzugriff freigegeben hat. Eine Einschreibung als Lehrkraft im Kurs reicht nicht. Coursepilot legt dafür weder Kohorte noch Rolle an. Zwei Wege:</p>
+    <p>Eine Lehrkraft kann ihren KI-Client erst verbinden, wenn du ihr den Fernzugriff freigegeben hast. Eine Einschreibung als Lehrkraft im Kurs reicht nicht. Coursepilot legt dafür weder Kohorte noch Rolle an. Zwei Wege:</p>
     <ol>
-      <li><strong>Kohorte (empfohlen):</strong> in den Plugin-Einstellungen bei <em>Fernzugriffs-Kohorten</em> eine oder mehrere bestehende <strong>Systemkohorten</strong> wählen, z.&nbsp;B. die Kohorte, in der die Schule ihre Lehrkräfte ohnehin pflegt. Kohorten einer Kurskategorie sind nicht wählbar.</li>
-      <li><strong>Vorhandene Systemrolle:</strong> in einer systemweit vergebenen Rolle <code>local/coursepilot:useremote</code> erlauben. Die Fähigkeit hat keine Vorbelegung; eine systemweite Lehrkraft-Rolle bringt den Fernzugriff also nicht nebenbei mit.</li>
+      <li><strong>Kohorte (empfohlen):</strong> Wähl in den Plugin-Einstellungen bei <em>Fernzugriffs-Kohorten</em> eine oder mehrere bestehende <strong>Systemkohorten</strong>, z.&nbsp;B. die Kohorte, in der die Schule ihre Lehrkräfte ohnehin pflegt. Kohorten einer Kurskategorie sind nicht wählbar.</li>
+      <li><strong>Vorhandene Systemrolle:</strong> Erlaube <code>local/coursepilot:useremote</code> in einer systemweit vergebenen Rolle. Die Fähigkeit hat keine Vorbelegung; eine systemweite Lehrkraft-Rolle bringt den Fernzugriff also nicht nebenbei mit.</li>
     </ol>
     <p>Die Freigabe wird bei <strong>jedem</strong> Aufruf geprüft. Wer aus der Kohorte entfernt wird oder die Rolle verliert, wird beim nächsten Aufruf abgewiesen, auch über eine bestehende Verbindung. Der Fernzugriff gibt keine Kursrechte: Niemand bekommt darüber Zugriff auf fremde Kurse. „Rechte prüfen“ in Moodle zeigt nur den Rollenweg, nicht die Kohortenmitgliedschaft.</p>
 
@@ -117,27 +117,27 @@
     <ul>
       <li><strong>Öffentliches HTTPS</strong></li>
       <li><strong>Egress:</strong> ausgehende Verbindungen sind möglich, die Antwort kommt zurück.</li>
-      <li><strong>PATH_INFO:</strong> Der Pfadanhang der Discovery-Adresse kommt beim Skript an. Typischer Stolperstein: Ein Reverse-Proxy oder vorgelagerter Dienst kappt ihn. Abhilfe: <code>AcceptPathInfo On</code> (Apache) explizit setzen.</li>
+      <li><strong>PATH_INFO:</strong> Der Pfadanhang der Discovery-Adresse kommt beim Skript an. Typischer Stolperstein: Ein Reverse-Proxy oder vorgelagerter Dienst kappt ihn. Abhilfe: Setz <code>AcceptPathInfo On</code> (Apache) explizit.</li>
     </ul>
-    <p>Kann sich ein Client nicht verbinden, obwohl das Plugin installiert ist, zuerst diese Seite prüfen.</p>
+    <p>Kann sich ein Client nicht verbinden, obwohl das Plugin installiert ist, prüf zuerst diese Seite.</p>
 
     <h2 id="notfall">Notbremse und Sammelwiderruf</h2>
     <ul>
       <li><strong>Notbremse:</strong> <em>Fernzugriff erlauben</em> ausschalten sperrt sofort jeden weiteren Zugriff über den MCP-Endpunkt. Bereits ausgestellte Zugriffstoken bleiben dabei gültig; der normale Moodle-Login ist nicht betroffen.</li>
       <li><strong>Widerruf:</strong> Die Seite <em>Coursepilot-Verbindungen</em> (<code>/local/coursepilot/admin/connections.php</code>, nur mit <code>moodle/site:config</code>) zeigt alle aktiven Verbindungen der Instanz. Einzelwiderruf je Verbindung oder <em>Alle Verbindungen widerrufen</em>: Danach muss jede Verbindung neu hergestellt werden.</li>
-      <li><strong>Bei einem Sicherheitsvorfall</strong> beides nutzen: Notbremse für neue Zugriffe, Sammelwiderruf für bestehende Token.</li>
+      <li><strong>Bei einem Sicherheitsvorfall</strong> nutzt du beides: Notbremse für neue Zugriffe, Sammelwiderruf für bestehende Token.</li>
     </ul>
 
     <h2 id="webdav">WebDAV für Lehrkräfte</h2>
-    <p>Lehrkräfte können Kontextbereich und Material statt in Moodle im eigenen WebDAV-Speicher führen (z.&nbsp;B. IServ, Nextcloud). Sie richten das selbst auf ihrer Ortswahlseite ein. Die Administration schaltet dafür einmal frei:</p>
+    <p>Lehrkräfte können Kontextbereich und Material statt in Moodle im eigenen WebDAV-Speicher führen (z.&nbsp;B. IServ, Nextcloud). Sie richten das selbst auf ihrer Ortswahlseite ein. Du schaltest dafür einmal frei:</p>
     <ol>
-      <li>Repository-Typ <strong>WebDAV</strong> aktivieren (Website-Administration › Plugins › Repositories).</li>
-      <li>Beim Typ WebDAV <strong>„Nutzerinstanzen erlauben“</strong> einschalten.</li>
-      <li>Den Lehrkräften das Recht <code>repository/webdav:view</code> im eigenen Nutzerkontext geben, empfohlen über eine eigene Systemrolle.</li>
+      <li>Aktivier den Repository-Typ <strong>WebDAV</strong> (Website-Administration › Plugins › Repositories).</li>
+      <li>Schalte beim Typ WebDAV <strong>„Nutzerinstanzen erlauben“</strong> ein.</li>
+      <li>Gib den Lehrkräften das Recht <code>repository/webdav:view</code> im eigenen Nutzerkontext, am besten über eine eigene Systemrolle.</li>
     </ol>
     <p>Coursepilot prüft diese drei Punkte bei jedem Zugriff und zeigt sie als Moodle-Statusprüfungen an.</p>
     <div class="note warning">
-      <p><strong>Reverse-Proxy vor dem WebDAV-Speicher (<code>trusted_proxies</code>):</strong> Läuft der Speicher einer Lehrkraft (z.&nbsp;B. eine eigene Nextcloud) hinter einem Reverse-Proxy wie Cloudflare und ist dessen IP-Bereich nicht in <code>trusted_proxies</code> des Speichers eingetragen, sieht der Speicher alle Anfragen von einer einzigen IP. Sein Schutz gegen Anmeldeversuche drosselt dann normale Schreibzugriffe für 15–30 Sekunden oder länger. Das betrifft den Speicher, nicht Moodle oder Coursepilot. Bei Meldungen wie „Verbindung hängt“ oder „wartende Änderung bleibt stehen“ zuerst dort <code>trusted_proxies</code> prüfen. Coursepilot wiederholt still nur 10 Sekunden lang, damit nicht jeder Schreibaufruf für alle verzögert wird.</p>
+      <p><strong>Reverse-Proxy vor dem WebDAV-Speicher (<code>trusted_proxies</code>):</strong> Läuft der Speicher einer Lehrkraft (z.&nbsp;B. eine eigene Nextcloud) hinter einem Reverse-Proxy wie Cloudflare und ist dessen IP-Bereich nicht in <code>trusted_proxies</code> des Speichers eingetragen, sieht der Speicher alle Anfragen von einer einzigen IP. Sein Schutz gegen Anmeldeversuche drosselt dann normale Schreibzugriffe für 15–30 Sekunden oder länger. Das betrifft den Speicher, nicht Moodle oder Coursepilot. Bei Meldungen wie „Verbindung hängt“ oder „wartende Änderung bleibt stehen“ prüf zuerst dort <code>trusted_proxies</code>. Coursepilot wiederholt still nur 10 Sekunden lang, damit nicht jeder Schreibaufruf für alle verzögert wird.</p>
     </div>
 
     <h2 id="datenschutz">Datenschutz</h2>
@@ -147,7 +147,7 @@
       <li><strong>Verantwortlich ist die Schule.</strong> <em>Personenbezogene Kontextdaten übertragen</em> ist standardmäßig aus. Der Schalter wirkt auf die Markierung <code>personenbezug: true</code> im Kopf einer Kontextdatei, nicht auf Inhalte: Er filtert keine Namen aus unmarkierten Dateien.</li>
       <li><strong>Externer Speicher:</strong> Lehrkräfte sind gegeneinander abgegrenzt, weil die WebDAV-Instanz der Person gehören muss, die den Zugriff auslöst. <code>personaldatahosts</code> ist eine Schreibsperre, keine Lesesperre.</li>
       <li><strong>Moodle-Datenschutz-API:</strong> Coursepilot meldet seine eigenen Daten (OAuth-Verbindungen, Download-Tickets, Verweise auf frühere Ablageorte) für Auskunft und Löschung. Dateien in „Meine Dateien“ behandelt Moodle selbst.</li>
-      <li><strong>Bekannte Moodle-Lücke:</strong> WebDAV-Nutzerinstanzen tragen <code>userid = 0</code> und werden bei einer Auskunft oder Löschung nach DSGVO nicht gefunden. Sie speichern das Passwort im Klartext; Lehrkräften deshalb ein App-Passwort empfehlen.</li>
+      <li><strong>Bekannte Moodle-Lücke:</strong> WebDAV-Nutzerinstanzen tragen <code>userid = 0</code> und werden bei einer Auskunft oder Löschung nach DSGVO nicht gefunden. Sie speichern das Passwort im Klartext; empfiehl den Lehrkräften deshalb ein App-Passwort.</li>
     </ul>
 
     <h2>Statusprüfungen</h2>
