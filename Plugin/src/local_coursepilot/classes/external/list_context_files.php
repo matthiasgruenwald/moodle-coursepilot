@@ -68,7 +68,7 @@ class list_context_files extends external_api {
      * @param bool $previouslocation
      * @return array
      * @throws \moodle_exception invalidcontextpath, wenn $path ein "."/".."-
-     *         Segment enthaelt; altbestandclosed, wenn "previous_location" ohne
+     *         Segment enthaelt; previouslocationclosed, wenn "previous_location" ohne
      *         offenen Altbestand gesetzt ist.
      */
     public static function execute(string $path = '', bool $previouslocation = false): array {

@@ -28,7 +28,7 @@ use local_coursepilot\webdav\webdav_setup_steps;
  * Ebene anlegen, dann - nur bei echter Aenderung - den Kontextpointer
  * schreiben und je geaendertem Ziel eine Zeile in den Ortsverlauf anhaengen).
  *
- * Duenne Schale obenauf (#334-Muster): `ortswahl.php` und `ortswahl_browse.php`
+ * Duenne Schale obenauf (#334-Muster): `location_selection.php` und `location_selection_browse.php`
  * tun nur noch Ein-/Ausgabe, die gesamte Logik lebt hier, testbar mit dem
  * WebDAV-Transport-Fake ({@see \local_coursepilot\tests\webdav\fake_webdav_transport}) -
  * nie ueber die Seite selbst (Issue #494 Akzeptanzkriterium).
@@ -44,7 +44,7 @@ use local_coursepilot\webdav\webdav_setup_steps;
 final class location_selection {
 
     /** @var string[] Die beiden Ziele, wie sie im Kontextpointer-Dokument heissen (Spec §2). */
-    public const TARGETS = ['kontextbereich', 'materialbestand'];
+    public const TARGETS = context_pointer::TARGETS;
 
     /** @var int Wie viele Eintragsnamen die Uebergabe-Bestaetigung (Issue #497) hoechstens zeigt. */
     private const ENTRY_PREVIEW_COUNT = 5;
@@ -60,7 +60,7 @@ final class location_selection {
 
     /**
      * @var int Zeitgrenze in Millisekunden fuer einen Dateifenster-Abruf
-     *      (die Ortswahlvorlage, `ortswahl.js`) - danach zeigt das
+     *      (die Ortswahlvorlage, `location_selection.js`) - danach zeigt das
      *      Dateifenster den Zeitueberschreitungs-Hinweis statt endlos zu laden.
      */
     public const BROWSE_TIMEOUT_MS = 8000;
@@ -103,10 +103,10 @@ final class location_selection {
             $current = self::current($target);
             $locations[$target] = [
                 'state' => $current['chosen'] ? 'selected' : 'not_selected',
-                'kind' => $current['ort'],
-                'path' => $current['pfad'],
-                'allowed' => $current['zugelassen'] ? 'allowed' : 'not_allowed',
-            ] + (isset($current['instanzid']) ? ['instanceid' => $current['instanzid']] : []);
+                'kind' => $current['location'],
+                'path' => $current['path'],
+                'allowed' => $current['allowed'] ? 'allowed' : 'not_allowed',
+            ] + (isset($current['instanceid']) ? ['instanceid' => $current['instanceid']] : []);
         }
         $steps = [];
         foreach ($setup['steps'] as $key => $step) {
@@ -117,17 +117,17 @@ final class location_selection {
             'locations' => $locations,
             'instances' => self::own_instances(),
             'browse' => $browse === null ? ['state' => 'idle'] : ['state' => 'ready'] + $browse,
-            'altbestand' => ['state' => previous_location::open() ? 'open' : 'closed'],
+            'previous_location' => ['state' => previous_location::open() ? 'open' : 'closed'],
             'history' => array_map(static function (array $entry): array {
                 if (isset($entry['from'], $entry['to'])) {
                     return [
-                        'at' => (int) ($entry['datum'] ?? 0),
-                        'target' => (string) ($entry['ziel'] ?? ''),
+                        'at' => (int) ($entry['date'] ?? 0),
+                        'target' => (string) ($entry['target'] ?? ''),
                         'from' => $entry['from'],
                         'to' => $entry['to'],
                     ];
                 }
-                return ['at' => (int) ($entry['datum'] ?? 0), 'target' => (string) ($entry['ziel'] ?? ''), 'state' => 'legacy'];
+                return ['at' => (int) ($entry['date'] ?? 0), 'target' => (string) ($entry['target'] ?? ''), 'state' => 'legacy'];
             }, self::history()),
             'notices' => [],
             'errors' => [],
@@ -162,7 +162,7 @@ final class location_selection {
                     'id' => (int) $r->id,
                     'name' => (string) $r->name,
                     'selectable' => $selectable,
-                    'reasonkey' => $selectable ? null : 'ortswahlinstanceauthunsupported',
+                    'reasonkey' => $selectable ? null : 'locationselectioninstanceauthunsupported',
                 ];
             },
             $records
@@ -214,7 +214,7 @@ final class location_selection {
      * @return array{path: string, folders: array<int, array{name: string}>, iserv: bool,
      *         selectable: bool, reasonkey: ?string, entrycount: int, entrynames: string[]}
      * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/
-     *         webdavauthunsupported/ortswahlexternalerror/invalidcontextpath
+     *         webdavauthunsupported/locationselectionexternalerror/invalidcontextpath
      */
     public static function browse(int $instanceid, string $path): array {
         $segments = self::validate_segments($path);
@@ -222,7 +222,7 @@ final class location_selection {
         try {
             $listing = webdav_storage_port::browse_location($instanceid, $relative);
         } catch (webdav_error $e) {
-            throw pointer_reader::webdav_exception($e, 'ortswahlexternalerror');
+            throw pointer_reader::webdav_exception($e, 'locationselectionexternalerror');
         }
         $raw = $listing['entries'];
 
@@ -269,7 +269,7 @@ final class location_selection {
             return webdav_error::empty_when_missing(
                 $e,
                 [],
-                static fn (webdav_error $e): \moodle_exception => pointer_reader::webdav_exception($e, 'ortswahlexternalerror')
+                static fn (webdav_error $e): \moodle_exception => pointer_reader::webdav_exception($e, 'locationselectionexternalerror')
             );
         }
     }
@@ -288,7 +288,7 @@ final class location_selection {
      * hoch gewaehlter Ordner darf den Ortswechsel nicht 30s blockieren - ein
      * Unterordner wird genannt, nicht durchsucht. Die Namen bleiben
      * aussagekraeftig genug, {@see webdav_setup_steps} liefert dafuer den
-     * Hinweis `listskillsaltbestandhint`, die KI listet den vorherigen Ort
+     * Hinweis `listskillspreviouslocationhint`, die KI listet den vorherigen Ort
      * bei Bedarf selbst per `coursepilot_list_context_files` auf.
      *
      * @param array<int, array{name: string, type: string}> $entries
@@ -318,10 +318,10 @@ final class location_selection {
      */
     private static function selectability(array $segments, bool $iserv): array {
         if (empty($segments)) {
-            return [false, 'ortswahlrootnotselectable'];
+            return [false, 'locationselectionrootnotselectable'];
         }
         if ($iserv && $segments[0] !== webdav_instance::ISERV_FILES_AREA) {
-            return [false, 'ortswahliservfilesonly'];
+            return [false, 'locationselectioniservfilesonly'];
         }
         return [true, null];
     }
@@ -332,7 +332,7 @@ final class location_selection {
      * dem Pointer"). Kein Pointer bzw. ein *in Moodle*-Ziel ohne
      * Aenderungswunsch heisst schlicht: die konfigurierte Standardwurzel.
      *
-     * @param string $target "kontextbereich" oder "materialbestand".
+     * @param string $target "context_area" oder "material_store".
      * @return array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array,
      *         chosen: bool, display: string, zugelassen: bool}
      */
@@ -340,7 +340,7 @@ final class location_selection {
         $value = self::current_pointer_value($target);
         return $value + [
             'display' => self::describe_location($value),
-            'zugelassen' => self::is_allowed($value),
+            'allowed' => self::is_allowed($value),
         ];
     }
 
@@ -356,10 +356,10 @@ final class location_selection {
      * @return bool
      */
     private static function is_allowed(array $value): bool {
-        if ($value['ort'] !== pointer_location::EXTERN) {
+        if ($value['location'] !== pointer_location::EXTERNAL) {
             return true;
         }
-        return personal_data_hosts::allowed((string) ($value['pruefmerkmal']['server'] ?? ''));
+        return personal_data_hosts::allowed((string) ($value['fingerprint']['server'] ?? ''));
     }
 
     /**
@@ -370,8 +370,8 @@ final class location_selection {
      * @param array{zugelassen: bool} $value Ergebnis von {@see current()}.
      * @return string
      */
-    public static function zugelassen_label(array $value): string {
-        return get_string($value['zugelassen'] ? 'ortswahlzugelassenja' : 'ortswahlzugelassennein', 'local_coursepilot');
+    public static function allowed_label(array $value): string {
+        return get_string($value['allowed'] ? 'locationselectionallowedyes' : 'locationselectionallowedno', 'local_coursepilot');
     }
 
     /**
@@ -383,7 +383,7 @@ final class location_selection {
      */
     public static function history(): array {
         $document = storage_anchor::read_raw_pointer();
-        $entries = $document['ortsverlauf'] ?? [];
+        $entries = $document['location_history'] ?? [];
         return is_array($entries) ? $entries : [];
     }
 
@@ -398,8 +398,8 @@ final class location_selection {
      *
      * @param array<string, array{type: string, instanceid?: int, path?: string, confirmed?: bool}> $selection
      *        Je Ziel entweder ['type' => 'moodle'] oder
-     *        ['type' => 'extern', 'instanceid' => int, 'path' => string, 'confirmed' => bool].
-     *        `confirmed` gilt nur fuer "kontextbereich" (Issue #518, Spec §5):
+     *        ['type' => 'external', 'instanceid' => int, 'path' => string, 'confirmed' => bool].
+     *        `confirmed` gilt nur fuer "context_area" (Issue #518, Spec §5):
      *        die ausdrueckliche Uebergabe eines gefuellten Ordners.
      * @return string[] Die tatsaechlich geaenderten Ziele.
      * @throws \moodle_exception bei ungueltiger Auswahl oder einem Ausfall beim Ordner-Anlegen.
@@ -412,7 +412,7 @@ final class location_selection {
         // Schreibzugriff geprueft, nicht erst bei der naechsten Auflosung -
         // sonst liesse sich eine ungueltige Kombination erst gar nicht
         // abschliessen, ohne dass die Seite das sofort sagt.
-        self::assert_no_overlap($wanted['kontextbereich'], $wanted['materialbestand']);
+        self::assert_no_overlap($wanted['context_area'], $wanted['material_store']);
 
         // Uebergabe-Bestaetigung eines gefuellten Kontextbereich-Ordners
         // (Issue #518, Spec §5): serverseitig geprueft, nicht nur im
@@ -422,7 +422,7 @@ final class location_selection {
 
         self::create_new_external_folders($wanted, $current);
 
-        ['changed' => $changed, 'ortsverlauf' => $locationhistory, 'vorherigerort' => $previouslocation]
+        ['changed' => $changed, 'location_history' => $locationhistory, 'previouslocation' => $previouslocation]
             = self::record_changes($wanted, $current);
         if (empty($changed)) {
             return [];
@@ -472,8 +472,8 @@ final class location_selection {
      */
     private static function create_new_external_folders(array $wanted, array $current): void {
         foreach (self::TARGETS as $target) {
-            if ($wanted[$target]['ort'] === pointer_location::EXTERN && !self::same_place($current[$target], $wanted[$target])) {
-                self::ensure_directory((int) $wanted[$target]['instanzid'], (string) $wanted[$target]['pfad']);
+            if ($wanted[$target]['location'] === pointer_location::EXTERNAL && !self::same_place($current[$target], $wanted[$target])) {
+                self::ensure_directory((int) $wanted[$target]['instanceid'], (string) $wanted[$target]['path']);
             }
         }
     }
@@ -503,12 +503,12 @@ final class location_selection {
             }
             $changed[] = $target;
             $locationhistory[] = [
-                'datum' => time(),
-                'ziel' => $target,
+                'date' => time(),
+                'target' => $target,
                 'from' => $current[$target],
                 'to' => $wanted[$target],
             ];
-            if ($target === 'kontextbereich') {
+            if ($target === 'context_area') {
                 // Jeder echte Wechsel verdraengt den bisherigen Altbestand -
                 // auch wenn der verlassene Ort selbst leer war (Issue #517,
                 // Spec §9: "Wer erneut wechselt, verdraengt ihn"). Ohne dieses
@@ -518,7 +518,7 @@ final class location_selection {
                 $previouslocation = self::old_location_has_entries($current[$target]) ? $current[$target] : null;
             }
         }
-        return ['changed' => $changed, 'ortsverlauf' => $locationhistory, 'vorherigerort' => $previouslocation];
+        return ['changed' => $changed, 'location_history' => $locationhistory, 'previouslocation' => $previouslocation];
     }
 
     /**
@@ -529,7 +529,7 @@ final class location_selection {
      *      Liste wie {@see \local_coursepilot\pointer_writer::LOCATION_FAILURE_CODES}.
      *      Gilt dann als "kein nachweisbarer Altbestand" statt den Abschluss
      *      daran scheitern zu lassen. Ein echter Verbindungsausfall
-     *      ("ortswahlexternalerror") ist dagegen kein Sonderfall des alten
+     *      ("locationselectionexternalerror") ist dagegen kein Sonderfall des alten
      *      Ortes, sondern ein Ausfall wie jeder andere im Ablauf - er laeuft
      *      ungefangen durch und scheitert den gesamten Abschluss, statt
      *      stillschweigend einen Altbestand zu verlieren (Spec §5: "Scheitert
@@ -550,17 +550,17 @@ final class location_selection {
      *
      * @param array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array} $old
      * @return bool
-     * @throws \moodle_exception ortswahlexternalerror bei einem echten Ausfall
+     * @throws \moodle_exception locationselectionexternalerror bei einem echten Ausfall
      *         (nicht bei einem nicht mehr gueltigen alten Ort).
      */
     private static function old_location_has_entries(array $old): bool {
-        if ($old['ort'] === pointer_location::MOODLE) {
-            $directory = '/' . trim((string) $old['pfad'], '/') . '/';
+        if ($old['location'] === pointer_location::MOODLE) {
+            $directory = '/' . trim((string) $old['path'], '/') . '/';
             return self::has_context_file(storage_anchor::list_entries($directory));
         }
         try {
-            $instance = webdav_instance::resolve_owned((int) $old['instanzid']);
-            $relative = implode('/', self::validate_segments((string) $old['pfad']));
+            $instance = webdav_instance::resolve_owned((int) $old['instanceid']);
+            $relative = implode('/', self::validate_segments((string) $old['path']));
             return self::has_context_file(self::fetch_raw_entries($instance, $relative));
         } catch (\moodle_exception $e) {
             if (in_array($e->errorcode, self::OLD_LOCATION_INVALID_CODES, true)) {
@@ -587,7 +587,7 @@ final class location_selection {
      * @return storage_area
      */
     private static function area(string $target): storage_area {
-        return $target === 'materialbestand' ? material_files::area() : context_files::area();
+        return $target === 'material_store' ? material_files::area() : context_files::area();
     }
 
     /**
@@ -604,16 +604,16 @@ final class location_selection {
         // Ziel als erledigt vorzubelegen, ohne die erste Einrichtung zu
         // uebergehen.
         if ($location === null) {
-            return ['ort' => pointer_location::MOODLE, 'pfad' => storage_anchor::default_root($area), 'chosen' => false];
+            return ['location' => pointer_location::MOODLE, 'path' => storage_anchor::default_root($area), 'chosen' => false];
         }
         if ($location->kind === pointer_location::MOODLE) {
-            return ['ort' => pointer_location::MOODLE, 'pfad' => trim((string) $location->path, '/'), 'chosen' => true];
+            return ['location' => pointer_location::MOODLE, 'path' => trim((string) $location->path, '/'), 'chosen' => true];
         }
         return [
-            'ort' => pointer_location::EXTERN,
-            'instanzid' => (int) $location->instanceid,
-            'pfad' => (string) $location->relativepath,
-            'pruefmerkmal' => $location->fingerprint,
+            'location' => pointer_location::EXTERNAL,
+            'instanceid' => (int) $location->instanceid,
+            'path' => (string) $location->relativepath,
+            'fingerprint' => $location->fingerprint,
             'chosen' => true,
         ];
     }
@@ -622,18 +622,18 @@ final class location_selection {
      * @param string $target
      * @param array{type?: string, instanceid?: int, path?: string} $selection
      * @return array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array}
-     * @throws \moodle_exception ortswahlselectioninvalid, oder wie {@see webdav_instance::resolve_owned()}.
+     * @throws \moodle_exception locationselectionselectioninvalid, oder wie {@see webdav_instance::resolve_owned()}.
      */
     private static function build_target(string $target, array $selection): array {
         $type = $selection['type'] ?? pointer_location::MOODLE;
-        if ($type !== pointer_location::EXTERN) {
+        if ($type !== pointer_location::EXTERNAL) {
             $area = self::area($target);
-            return ['ort' => pointer_location::MOODLE, 'pfad' => storage_anchor::default_root($area)];
+            return ['location' => pointer_location::MOODLE, 'path' => storage_anchor::default_root($area)];
         }
 
         $instanceid = (int) ($selection['instanceid'] ?? 0);
         if ($instanceid <= 0) {
-            throw new \moodle_exception('ortswahlselectioninvalid', 'local_coursepilot');
+            throw new \moodle_exception('locationselectionselectioninvalid', 'local_coursepilot');
         }
         // Wirft bei fremder/fehlender/nicht freigeschalteter Instanz - die
         // Instanz-ID kommt aus einer Formulareingabe, nie ungeprueft nutzen.
@@ -642,7 +642,7 @@ final class location_selection {
 
         // Wurzel nie waehlbar (Issue #497, Spec §5).
         if (empty($segments)) {
-            throw new \moodle_exception('ortswahlrootnotselectable', 'local_coursepilot');
+            throw new \moodle_exception('locationselectionrootnotselectable', 'local_coursepilot');
         }
 
         // IServ-Erkennung als Ja/Nein-Pruefung, frisch bei jeder Wahl (Issue
@@ -651,17 +651,17 @@ final class location_selection {
         try {
             $iserv = webdav_instance::detect_iserv_root($instanceid);
         } catch (webdav_error $e) {
-            throw pointer_reader::webdav_exception($e, 'ortswahlexternalerror');
+            throw pointer_reader::webdav_exception($e, 'locationselectionexternalerror');
         }
         if ($iserv && $segments[0] !== webdav_instance::ISERV_FILES_AREA) {
-            throw new \moodle_exception('ortswahliservfilesonly', 'local_coursepilot');
+            throw new \moodle_exception('locationselectioniservfilesonly', 'local_coursepilot');
         }
 
         return [
-            'ort' => pointer_location::EXTERN,
-            'instanzid' => $instanceid,
-            'pfad' => implode('/', $segments),
-            'pruefmerkmal' => webdav_instance::fingerprint_of($instanceid) + ['iserv' => $iserv],
+            'location' => pointer_location::EXTERNAL,
+            'instanceid' => $instanceid,
+            'path' => implode('/', $segments),
+            'fingerprint' => webdav_instance::fingerprint_of($instanceid) + ['iserv' => $iserv],
         ];
     }
 
@@ -671,15 +671,15 @@ final class location_selection {
      * Kontextbereich oder im selben Ordner liegen - gilt fuer die neu
      * gewaehlten Ziele, bevor irgendetwas angelegt oder gespeichert wird.
      *
-     * @param array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array} $kontextbereich
-     * @param array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array} $materialbestand
-     * @throws \moodle_exception materialbestandimkontext
+     * @param array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array} $contextarea
+     * @param array{ort: string, pfad: string, instanzid?: int, pruefmerkmal?: array} $materialstore
+     * @throws \moodle_exception materialstoreincontext
      */
-    private static function assert_no_overlap(array $kontextbereich, array $materialbestand): void {
-        $kontextkey = self::to_pointer_location($kontextbereich)->comparison_key();
-        $materialkey = self::to_pointer_location($materialbestand)->comparison_key();
-        if (str_starts_with($materialkey, $kontextkey)) {
-            throw new \moodle_exception('materialbestandimkontext', 'local_coursepilot');
+    private static function assert_no_overlap(array $contextarea, array $materialstore): void {
+        $contextkey = self::to_pointer_location($contextarea)->comparison_key();
+        $materialkey = self::to_pointer_location($materialstore)->comparison_key();
+        if (str_starts_with($materialkey, $contextkey)) {
+            throw new \moodle_exception('materialstoreincontext', 'local_coursepilot');
         }
     }
 
@@ -691,26 +691,26 @@ final class location_selection {
      * keine Bestaetigung, nur ein wirklicher Wechsel auf einen gefuellten
      * externen Ordner.
      *
-     * Gilt nur fuer "kontextbereich" - Spec §5 fragt ausdruecklich nur dort
+     * Gilt nur fuer "context_area" - Spec §5 fragt ausdruecklich nur dort
      * nach, ein Wechsel des Materialbestands braucht keine Bestaetigung.
      *
      * @param array<string, array{ort: string, pfad: string, instanzid?: int}> $wanted
      * @param array<string, array{ort: string, pfad: string, instanzid?: int}> $current
      * @param array<string, array{confirmed?: bool}> $selection Roh, wie an {@see apply()} uebergeben.
-     * @throws \moodle_exception ortswahlfolderconfirmrequired
+     * @throws \moodle_exception locationselectionfolderconfirmrequired
      */
     private static function assert_folder_handover_confirmed(array $wanted, array $current, array $selection): void {
-        $target = 'kontextbereich';
-        if ($wanted[$target]['ort'] !== pointer_location::EXTERN || self::same_place($current[$target], $wanted[$target])) {
+        $target = 'context_area';
+        if ($wanted[$target]['location'] !== pointer_location::EXTERNAL || self::same_place($current[$target], $wanted[$target])) {
             return;
         }
         if (!empty($selection[$target]['confirmed'] ?? false)) {
             return;
         }
-        $instance = webdav_instance::resolve_owned((int) $wanted[$target]['instanzid']);
-        $relative = (string) $wanted[$target]['pfad'];
+        $instance = webdav_instance::resolve_owned((int) $wanted[$target]['instanceid']);
+        $relative = (string) $wanted[$target]['path'];
         if (count(self::fetch_raw_entries($instance, $relative)) > 0) {
-            throw new \moodle_exception('ortswahlfolderconfirmrequired', 'local_coursepilot');
+            throw new \moodle_exception('locationselectionfolderconfirmrequired', 'local_coursepilot');
         }
     }
 
@@ -719,10 +719,10 @@ final class location_selection {
      * @return pointer_location
      */
     private static function to_pointer_location(array $value): pointer_location {
-        if ($value['ort'] === pointer_location::MOODLE) {
-            return pointer_location::moodle('/' . trim((string) $value['pfad'], '/') . '/');
+        if ($value['location'] === pointer_location::MOODLE) {
+            return pointer_location::moodle('/' . trim((string) $value['path'], '/') . '/');
         }
-        return pointer_location::extern((int) $value['instanzid'], (string) $value['pfad'], (array) ($value['pruefmerkmal'] ?? []));
+        return pointer_location::external((int) $value['instanceid'], (string) $value['path'], (array) ($value['fingerprint'] ?? []));
     }
 
     /**
@@ -732,7 +732,7 @@ final class location_selection {
      *
      * @param int $instanceid
      * @param string $path
-     * @throws \moodle_exception ortswahlexternalerror, oder wie {@see webdav_instance::resolve_owned()}.
+     * @throws \moodle_exception locationselectionexternalerror, oder wie {@see webdav_instance::resolve_owned()}.
      */
     private static function ensure_directory(int $instanceid, string $path): void {
         $segments = self::validate_segments($path);
@@ -743,7 +743,7 @@ final class location_selection {
         try {
             $instance->client()->mkcol_chain($instance->directory_url(''), $segments);
         } catch (webdav_error $e) {
-            throw pointer_reader::webdav_exception($e, 'ortswahlexternalerror');
+            throw pointer_reader::webdav_exception($e, 'locationselectionexternalerror');
         }
     }
 
@@ -757,13 +757,13 @@ final class location_selection {
      * @return bool
      */
     private static function same_place(array $a, array $b): bool {
-        if ($a['ort'] !== $b['ort']) {
+        if ($a['location'] !== $b['location']) {
             return false;
         }
-        if ($a['ort'] === pointer_location::MOODLE) {
-            return $a['pfad'] === $b['pfad'];
+        if ($a['location'] === pointer_location::MOODLE) {
+            return $a['path'] === $b['path'];
         }
-        return (int) $a['instanzid'] === (int) $b['instanzid'] && $a['pfad'] === $b['pfad'];
+        return (int) $a['instanceid'] === (int) $b['instanceid'] && $a['path'] === $b['path'];
     }
 
     /**
@@ -771,10 +771,10 @@ final class location_selection {
      * @return string
      */
     public static function describe_location(array $value): string {
-        if ($value['ort'] === pointer_location::MOODLE) {
-            return get_string('ortswahllocationmoodle', 'local_coursepilot', $value['pfad']);
+        if ($value['location'] === pointer_location::MOODLE) {
+            return get_string('locationselectionlocationmoodle', 'local_coursepilot', $value['path']);
         }
-        return self::describe_extern((int) $value['instanzid'], (string) $value['pfad']);
+        return self::describe_external((int) $value['instanceid'], (string) $value['path']);
     }
 
     /**
@@ -782,15 +782,15 @@ final class location_selection {
      * @param string $path
      * @return string
      */
-    private static function describe_extern(int $instanceid, string $path): string {
+    private static function describe_external(int $instanceid, string $path): string {
         global $DB;
 
         $name = $DB->get_field('repository_instances', 'name', ['id' => $instanceid]);
-        $label = ($name !== false && $name !== '') ? $name : get_string('ortswahlinstanceunknown', 'local_coursepilot');
+        $label = ($name !== false && $name !== '') ? $name : get_string('locationselectioninstanceunknown', 'local_coursepilot');
         if ($path === '') {
-            return get_string('ortswahllocationexternroot', 'local_coursepilot', $label);
+            return get_string('locationselectionlocationexternalalroot', 'local_coursepilot', $label);
         }
-        return get_string('ortswahllocationextern', 'local_coursepilot', (object) ['instance' => $label, 'path' => $path]);
+        return get_string('locationselectionlocationexternal', 'local_coursepilot', (object) ['instance' => $label, 'path' => $path]);
     }
 
     /**

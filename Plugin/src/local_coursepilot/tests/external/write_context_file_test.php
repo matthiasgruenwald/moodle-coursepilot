@@ -138,7 +138,7 @@ final class write_context_file_test extends \advanced_testcase {
         // pruefung liegt im private_files_storage_port-Adapter, tief innerhalb
         // der seit #540 neu umschliessenden Ausfallbehandlung - ohne die
         // Ausnahme in context_area::is_moodle_call_error() wuerde sie
-        // faelschlich als "ausstandwritefailed" statt als
+        // faelschlich als "pendingwritefailed" statt als
         // "contextfilenotmarkdown" zurueckkommen und dabei sogar einen
         // Ausstand anlegen.
         try {
@@ -485,7 +485,7 @@ final class write_context_file_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString('MB', $e->getMessage());
             $this->assertStringContainsString(
-                \local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE,
+                \local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE,
                 $e->getMessage()
             );
         }
@@ -639,9 +639,9 @@ final class write_context_file_test extends \advanced_testcase {
             $this->write('plan.md', '# Plan');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
-        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['entries'][0]['identifier'];
 
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
@@ -671,9 +671,9 @@ final class write_context_file_test extends \advanced_testcase {
             $this->write('plan.md', '# Plan');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
-        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['entries'][0]['identifier'];
 
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
@@ -728,14 +728,14 @@ final class write_context_file_test extends \advanced_testcase {
             $this->fail('Fehlende Kontextbereich-Wurzel haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $this->assertStringContainsString('Ortswahlseite', $message);
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('contextrootmissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame('contextrootmissing', $ausstaende[0]['entries'][0]['error_class']);
 
         $this->assertSame([], array_values(array_filter(
             $fake->requests(),
@@ -817,25 +817,25 @@ final class write_context_file_test extends \advanced_testcase {
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('plan.md', $ausstaende[0]['pfad']);
-        $this->assertCount(1, $ausstaende[0]['eintraege']);
-        $this->assertSame('anlegen', $ausstaende[0]['eintraege'][0]['vorgang']);
+        $this->assertSame('plan.md', $ausstaende[0]['path']);
+        $this->assertCount(1, $ausstaende[0]['entries']);
+        $this->assertSame('create', $ausstaende[0]['entries'][0]['operation']);
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::STORAGE_FULL,
-            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+            $ausstaende[0]['entries'][0]['error_class']
         );
 
         // Sprachneutral: die variablen Teile muessen auftauchen, unabhaengig
         // davon, welches Sprachpaket die PHPUnit-Instanz aufloest (Englisch,
         // siehe test_german_messages_carry_the_required_wording()).
-        $kennung = $ausstaende[0]['eintraege'][0]['kennung'];
+        $kennung = $ausstaende[0]['entries'][0]['identifier'];
         $this->assertStringContainsString('plan.md', $message);
-        $this->assertStringContainsString('anlegen', $message);
+        $this->assertStringContainsString('create', $message);
         $this->assertStringContainsString($kennung, $message);
         $this->assertStringContainsString('Meine Cloud', $message);
         $this->assertStringContainsString($this->fixtureserver, $message);
@@ -863,15 +863,15 @@ final class write_context_file_test extends \advanced_testcase {
             $this->write('plan.md', '# Neu');
             $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('plan.md', $ausstaende[0]['pfad']);
+        $this->assertSame('plan.md', $ausstaende[0]['path']);
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::AUTH_REJECTED,
-            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+            $ausstaende[0]['entries'][0]['error_class']
         );
     }
 
@@ -894,13 +894,13 @@ final class write_context_file_test extends \advanced_testcase {
             $this->write('plan.md', '# Neu');
             $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame(
             \local_coursepilot\pending_write_translation::OP_UNKNOWN,
-            $ausstaende[0]['eintraege'][0]['vorgang']
+            $ausstaende[0]['entries'][0]['operation']
         );
     }
 
@@ -938,11 +938,11 @@ final class write_context_file_test extends \advanced_testcase {
             $this->write('plan.md', '# Neuer Plan');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame('überschreiben', $ausstaende[0]['eintraege'][0]['vorgang']);
+        $this->assertSame('overwrite', $ausstaende[0]['entries'][0]['operation']);
     }
 
     /**
@@ -963,12 +963,12 @@ final class write_context_file_test extends \advanced_testcase {
             $this->fail('Geloeschte Instanz haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('webdavinstancemissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame('webdavinstancemissing', $ausstaende[0]['entries'][0]['error_class']);
         // Issue #516 Akzeptanzkriterium: "Instanz gelöscht" fuehrt zu "an
         // Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
         $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
@@ -992,11 +992,11 @@ final class write_context_file_test extends \advanced_testcase {
             $this->fail('Entzogene Freischaltung haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame('webdavnotenabled', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame('webdavnotenabled', $ausstaende[0]['entries'][0]['error_class']);
         // Issue #516 Akzeptanzkriterium: "Freischaltung entzogen" fuehrt zu
         // "an Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
         $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
@@ -1024,11 +1024,11 @@ final class write_context_file_test extends \advanced_testcase {
             $this->fail('Geaendertes Pruefmerkmal haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame('webdavfingerprintchanged', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame('webdavfingerprintchanged', $ausstaende[0]['entries'][0]['error_class']);
         // Issue #516 Akzeptanzkriterium: "Prüfmerkmal geändert" fuehrt zu
         // "an Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
         $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
@@ -1063,13 +1063,13 @@ final class write_context_file_test extends \advanced_testcase {
             $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::AUTH_REJECTED,
-            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+            $ausstaende[0]['entries'][0]['error_class']
         );
         $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
     }
@@ -1105,13 +1105,13 @@ final class write_context_file_test extends \advanced_testcase {
             $this->fail('Nicht erreichbarer Speicher haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::UNREACHABLE,
-            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+            $ausstaende[0]['entries'][0]['error_class']
         );
         $this->assertStringContainsString('später nachtragen', $message);
     }
@@ -1146,13 +1146,13 @@ final class write_context_file_test extends \advanced_testcase {
             $this->fail('Unklarer Speicherzustand haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::UNCLEAR,
-            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+            $ausstaende[0]['entries'][0]['error_class']
         );
         $this->assertStringContainsString('später nachtragen', $message);
     }
@@ -1168,10 +1168,10 @@ final class write_context_file_test extends \advanced_testcase {
         $this->setUser($user);
         $this->grant_webdav_capability($user);
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Groups/Klasse7a', [
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Groups/Klasse7a', [
             'server' => $this->fixtureserver,
-            'basispfad' => $this->fixturebasispfad,
-            'konto' => $this->fixturekonto,
+            'basepath' => $this->fixturebasispfad,
+            'account' => $this->fixturekonto,
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
@@ -1183,13 +1183,13 @@ final class write_context_file_test extends \advanced_testcase {
             $this->fail('Pfad ausserhalb von "Files/" haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('webdaviservfilesonly', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
-        $this->assertSame('anlegen', $ausstaende[0]['eintraege'][0]['vorgang']);
+        $this->assertSame('webdaviservfilesonly', $ausstaende[0]['entries'][0]['error_class']);
+        $this->assertSame('create', $ausstaende[0]['entries'][0]['operation']);
         $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
         // Kein Netzzugriff: Pruefung 8 scheitert schon bei der reinen
         // Pointer-Aufloesung, bevor ueberhaupt eine WebDAV-Anfrage entsteht.
@@ -1209,10 +1209,10 @@ final class write_context_file_test extends \advanced_testcase {
         $this->setUser($user);
         $this->grant_webdav_capability($user);
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Groups/Klasse7a', [
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Groups/Klasse7a', [
             'server' => $this->fixtureserver,
-            'basispfad' => $this->fixturebasispfad,
-            'konto' => $this->fixturekonto,
+            'basepath' => $this->fixturebasispfad,
+            'account' => $this->fixturekonto,
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
@@ -1242,10 +1242,10 @@ final class write_context_file_test extends \advanced_testcase {
         $this->setUser($user);
         $this->grant_webdav_capability($user);
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Groups/Klasse7a', [
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Groups/Klasse7a', [
             'server' => $this->fixtureserver,
-            'basispfad' => $this->fixturebasispfad,
-            'konto' => $this->fixturekonto,
+            'basepath' => $this->fixturebasispfad,
+            'account' => $this->fixturekonto,
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
@@ -1276,11 +1276,11 @@ final class write_context_file_test extends \advanced_testcase {
             write_context_file::execute('plan.md', '# Plan', '', '', false, 42);
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame(42, $ausstaende[0]['eintraege'][0]['kursid']);
+        $this->assertSame(42, $ausstaende[0]['entries'][0]['course_id']);
     }
 
     /**
@@ -1337,9 +1337,9 @@ final class write_context_file_test extends \advanced_testcase {
             $this->write('plan.md', '# Plan');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
-        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['entries'][0]['identifier'];
 
         // Neuer Fake statt des vollen - "der Speicher antwortet wieder".
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
@@ -1424,30 +1424,30 @@ final class write_context_file_test extends \advanced_testcase {
         // Fuenfteilige Ausfallantwort (Issue #492, ADR 0023): Pfad+Vorgang,
         // Ursache, "noch nicht gespeichert" mit Kennung, Anweisung an die
         // KI, Instanzname+Host - echte Umlaute, kein ae/oe/ue-Ersatz.
-        $this->assertStringContainsString('{$a->path}', $string['ausstandwritefailed']);
-        $this->assertStringContainsString('{$a->operation}', $string['ausstandwritefailed']);
-        $this->assertStringContainsString('{$a->reason}', $string['ausstandwritefailed']);
-        $this->assertStringContainsString('Noch nicht gespeichert', $string['ausstandwritefailed']);
-        $this->assertStringContainsString('Kennung {$a->kennung}', $string['ausstandwritefailed']);
-        $this->assertStringContainsString('pending_entry="{$a->kennung}"', $string['ausstandwritefailed']);
-        $this->assertStringContainsString('{$a->target}', $string['ausstandwritefailed']);
-        $this->assertStringContainsString('voll', $string['ausstandnotewritefailed']);
-        $this->assertStringContainsString('Speicherplatz', $string['ausstandnotequotaexceeded']);
+        $this->assertStringContainsString('{$a->path}', $string['pendingwritefailed']);
+        $this->assertStringContainsString('{$a->operation}', $string['pendingwritefailed']);
+        $this->assertStringContainsString('{$a->reason}', $string['pendingwritefailed']);
+        $this->assertStringContainsString('Noch nicht gespeichert', $string['pendingwritefailed']);
+        $this->assertStringContainsString('Kennung {$a->identifier}', $string['pendingwritefailed']);
+        $this->assertStringContainsString('pending_entry="{$a->identifier}"', $string['pendingwritefailed']);
+        $this->assertStringContainsString('{$a->target}', $string['pendingwritefailed']);
+        $this->assertStringContainsString('voll', $string['pendingnotewritefailed']);
+        $this->assertStringContainsString('Speicherplatz', $string['pendingnotequotaexceeded']);
 
         // Teil (4): die Anweisung an die KI nennt ausdruecklich "pending_entry="
         // zum Nachtragen und verbietet einen anderen Ort (Issue #516
         // Akzeptanzkriterium).
-        $this->assertStringContainsString('keinesfalls an einem anderen Ort ablegen', $string['ausstandwritefailed']);
+        $this->assertStringContainsString('keinesfalls an einem anderen Ort ablegen', $string['pendingwritefailed']);
 
         // Kein Text an die Lehrkraft nennt das Wort "Ausstand" (Issue #516
         // Akzeptanzkriterium, CONTEXT.md).
         foreach ([
-            'ausstandwritefailed',
-            'ausstandnotewritefailed',
-            'ausstandnotequotaexceeded',
-            'ausstandunknown',
-            'ausstanddismissed',
-            'ablageortmarkerausstand',
+            'pendingwritefailed',
+            'pendingnotewritefailed',
+            'pendingnotequotaexceeded',
+            'pendingunknown',
+            'pendingdismissed',
+            'storagelocationmarkerpending',
         ] as $key) {
             $this->assertStringNotContainsString('Ausstand', $string[$key], "\"$key\" darf nicht \"Ausstand\" enthalten.");
         }
@@ -1669,7 +1669,7 @@ final class write_context_file_test extends \advanced_testcase {
     public function test_moodle_successful_write_dismisses_the_ausstand_entry(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
-        $kennung = \local_coursepilot\pending_write_notice::record('plan.md', 'anlegen', 'irgendeinefehlerklasse', 0);
+        $kennung = \local_coursepilot\pending_write_notice::record('plan.md', 'create', 'irgendeinefehlerklasse', 0);
 
         $result = write_context_file::execute('plan.md', '# Plan', '', $kennung);
         $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);

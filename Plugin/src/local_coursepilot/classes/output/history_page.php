@@ -54,9 +54,9 @@ final class history_page {
             $canrestorerow = $canrestore && $row['version'] !== $newest;
             $rows[] = [
                 'version' => $row['version'],
-                'nutzer' => $row['user'],
-                'zeitpunkt' => userdate($row['timestamp']),
-                'einzeiler' => $row['summary_line'],
+                'user' => $row['user'],
+                'time' => userdate($row['timestamp']),
+                'summary_line' => $row['summary_line'],
                 'canrestore' => $canrestorerow,
                 'restoreurl' => $canrestorerow
                     ? (new \moodle_url('/local/coursepilot/history.php', [
@@ -71,7 +71,7 @@ final class history_page {
             'activityname' => format_string($activityname),
             'isquiz' => $data['modname'] === 'quiz',
             'rows' => $rows,
-            'hinweisluecken' => $data['gap_notice'],
+            'gap_notice' => $data['gap_notice'],
             'listurl' => $listurl->out(false),
         ];
     }

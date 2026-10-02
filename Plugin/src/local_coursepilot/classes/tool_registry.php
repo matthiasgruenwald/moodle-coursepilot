@@ -64,9 +64,9 @@ final class tool_registry {
         'coursepilot_report_clone_lineage' => ['classname' => 'local_coursepilot\external\report_clone_lineage', 'descriptionkey' => 'tool_report_clone_lineage'],
         'coursepilot_list_skills' => ['classname' => 'local_coursepilot\external\list_skills', 'descriptionkey' => 'tool_list_skills'],
         'coursepilot_get_skill' => ['classname' => 'local_coursepilot\external\get_skill', 'descriptionkey' => 'tool_get_skill'],
-        'coursepilot_dismiss_ausstand' => ['classname' => 'local_coursepilot\external\dismiss_ausstand', 'descriptionkey' => 'tool_dismiss_ausstand'],
-        'coursepilot_create_werkbank_download_links' => ['classname' => 'local_coursepilot\external\create_werkbank_download_links', 'descriptionkey' => 'tool_create_werkbank_download_links'],
-        'coursepilot_dismiss_altbestand' => ['classname' => 'local_coursepilot\external\dismiss_altbestand', 'descriptionkey' => 'tool_dismiss_altbestand'],
+        'coursepilot_dismiss_pending_entry' => ['classname' => 'local_coursepilot\external\dismiss_pending_entry', 'descriptionkey' => 'tool_dismiss_pending_entry'],
+        'coursepilot_create_workbench_download_links' => ['classname' => 'local_coursepilot\external\create_workbench_download_links', 'descriptionkey' => 'tool_create_workbench_download_links'],
+        'coursepilot_dismiss_previous_location' => ['classname' => 'local_coursepilot\external\dismiss_previous_location', 'descriptionkey' => 'tool_dismiss_previous_location'],
     ];
 
     /** @return array<string, string> */
@@ -119,7 +119,7 @@ final class tool_registry {
     private static function is_write_class(string $classname): bool {
         // Read-only despite the "export_" prefix: hands out XML, writes nothing.
         if (in_array($classname, [
-            'local_coursepilot\\external\\create_werkbank_download_links',
+            'local_coursepilot\\external\\create_workbench_download_links',
             'local_coursepilot\\external\\export_activity_backup',
             'local_coursepilot\\external\\export_default_activity',
         ], true)) {

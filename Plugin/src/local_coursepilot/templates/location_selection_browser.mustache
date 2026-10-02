@@ -1,0 +1,32 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_coursepilot/location_selection_browser
+
+    Bootstrap-Dateifenster der Ortswahl. Der Inhalt wird clientseitig geladen,
+    das Template liefert nur das leere Modal-Geruest (keine Context-Variablen).
+
+    Example context (json):
+    {}
+}}
+<div class="modal" id="coursepilot-location-selection-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="coursepilot-location-selection-modal-title"></h5><button type="button" class="btn-close" data-coursepilot-dismiss="modal"></button></div>
+        <div class="modal-body"><div class="row"><div class="col-4" id="coursepilot-location-selection-instances"></div><div class="col-8"><div class="mb-2 small" id="coursepilot-location-selection-breadcrumb"></div><div id="coursepilot-location-selection-folders"></div><div class="input-group mt-2"><input type="text" class="form-control form-control-sm" id="coursepilot-location-selection-newfolder" placeholder="{{#str}} locationselectionnewfoldername, local_coursepilot {{/str}}"><button type="button" class="btn btn-sm btn-outline-secondary" id="coursepilot-location-selection-createfolder">{{#str}} locationselectioncreatefolder, local_coursepilot {{/str}}</button></div></div></div></div>
+        <div class="modal-footer flex-column align-items-stretch"><div class="small text-danger mb-2" id="coursepilot-location-selection-modal-reason" hidden></div><button type="button" class="btn btn-primary align-self-end" id="coursepilot-location-selection-confirmfolder">{{#str}} locationselectionselectfolder, local_coursepilot {{/str}}</button></div>
+    </div></div>
+</div>

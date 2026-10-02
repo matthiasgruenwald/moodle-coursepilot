@@ -36,7 +36,7 @@ final class admin_connections_page_test extends \advanced_testcase {
         $this->assertSame([], $data['rows']);
     }
 
-    public function test_row_includes_person_and_ablageort_lines(): void {
+    public function test_row_includes_person_and_storagelocation_lines(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user(['firstname' => 'Ada', 'lastname' => 'Lovelace']);
         $tokenid = $this->issue_token((int) $user->id);
@@ -52,7 +52,7 @@ final class admin_connections_page_test extends \advanced_testcase {
         $this->assertStringContainsString(fullname($user), $row['person']);
         $this->assertStringContainsString($user->email, $row['person']);
         $this->assertStringContainsString('revoke=' . $tokenid, $row['revokeurl']);
-        $this->assertNotEmpty($row['ablageortlines']);
+        $this->assertNotEmpty($row['storagelocationlines']);
     }
 
     /**

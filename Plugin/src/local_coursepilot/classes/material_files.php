@@ -49,10 +49,10 @@ use core_external\external_value;
 final class material_files {
 
     /** @var string Ort-Parameterwert "Materialbestand" (Issue #495, Default) - pointerbewusst, nur lesend. */
-    public const ORT_BESTAND = 'bestand';
+    public const LOCATION_STORE = 'store';
 
     /** @var string Ort-Parameterwert "Werkbank" - fest am Anker, ignoriert den Pointer, einziges Schreibziel. */
-    public const ORT_WERKBANK = 'werkbank';
+    public const LOCATION_WORKBENCH = 'workbench';
 
     /**
      * Gemeinsame KI-Beschreibung des Parameters "ort" (Issue #508, Spec 0486 §7)
@@ -61,8 +61,8 @@ final class material_files {
      *
      * @var string
      */
-    public const ORT_DESCRIPTION = '"bestand" (Standard, der gewachsene Materialbestand der Lehrkraft, nur lesend) '
-        . 'oder "werkbank" (Coursepilots eigene Zwischenstation)';
+    public const LOCATION_DESCRIPTION = '"store" (default, the teacher\'s grown material store, read-only) '
+        . 'or "workbench" (Coursepilot\'s own staging area)';
 
     /** @var string Moodle-Dateikomponente - Moodles Private Files (Spec 0018 §2.1). */
     public const COMPONENT = storage_anchor::COMPONENT;
@@ -122,8 +122,8 @@ final class material_files {
      *
      * @return external_value
      */
-    public static function ort_parameter(): external_value {
-        return new external_value(PARAM_ALPHA, self::ORT_DESCRIPTION, VALUE_DEFAULT, self::ORT_BESTAND);
+    public static function location_parameter(): external_value {
+        return new external_value(PARAM_ALPHA, self::LOCATION_DESCRIPTION, VALUE_DEFAULT, self::LOCATION_STORE);
     }
 
     /**
@@ -132,11 +132,11 @@ final class material_files {
      *
      * @return array{type: string, enum: string[], description: string}
      */
-    public static function ort_schema(): array {
+    public static function location_schema(): array {
         return [
             'type' => 'string',
-            'enum' => [self::ORT_BESTAND, self::ORT_WERKBANK],
-            'description' => self::ORT_DESCRIPTION,
+            'enum' => [self::LOCATION_STORE, self::LOCATION_WORKBENCH],
+            'description' => self::LOCATION_DESCRIPTION,
         ];
     }
 
@@ -162,7 +162,7 @@ final class material_files {
                     ]);
                 }
             },
-            pointerkey: 'materialordner',
+            pointerkey: 'material_store',
         );
     }
 
@@ -180,12 +180,12 @@ final class material_files {
      * {@see resolve_file()}/{@see resolve_writable_file()} und ihre
      * relative_*()-Gegenstuecke) - der Materialbestand ({@see area()}) ist nur
      * ueber die eigenen pointerbewussten Lesemethoden erreichbar
-     * ({@see list_entries_for_ort()}/{@see read_content_for_ort()}), nie als
+     * ({@see list_entries_for_location()}/{@see read_content_for_location()}), nie als
      * Schreibziel.
      *
      * @return storage_area
      */
-    public static function werkbank_area(): storage_area {
+    public static function workbench_area(): storage_area {
         $area = self::area();
         return new storage_area(
             rootsetting: $area->rootsetting,
@@ -212,13 +212,13 @@ final class material_files {
      * Loest einen optionalen Client-Unterordner zu einem vollstaendigen
      * Moodle-Dateipfad innerhalb der Werkbank auf (Issue #520: die Werkbank
      * folgt dem Materialbestand-Pointer, solange dieser in Moodle liegt,
-     * siehe {@see werkbank_area()}).
+     * siehe {@see workbench_area()}).
      *
      * @param string $path Relativer Unterordner, z.B. "" oder "faecher/mathe".
      * @return string Immer mit fuehrendem und abschliessendem "/".
      */
     public static function resolve_directory(string $path): string {
-        return storage_anchor::resolve_directory(self::werkbank_area(), $path);
+        return storage_anchor::resolve_directory(self::workbench_area(), $path);
     }
 
     /**
@@ -229,7 +229,7 @@ final class material_files {
      * @return string
      */
     public static function relative_directory(string $directory): string {
-        return storage_anchor::relative_directory(self::werkbank_area(), $directory);
+        return storage_anchor::relative_directory(self::workbench_area(), $directory);
     }
 
     /**
@@ -241,7 +241,7 @@ final class material_files {
      * @return string
      */
     public static function relative_file(string $directory, string $filename): string {
-        return storage_anchor::relative_file(self::werkbank_area(), $directory, $filename);
+        return storage_anchor::relative_file(self::workbench_area(), $directory, $filename);
     }
 
     /**
@@ -252,7 +252,7 @@ final class material_files {
      * @return array{0: string, 1: string} [Ordnerpfad, Dateiname]
      */
     public static function resolve_file(string $path): array {
-        return storage_anchor::resolve_file(self::werkbank_area(), $path);
+        return storage_anchor::resolve_file(self::workbench_area(), $path);
     }
 
     /**
@@ -346,7 +346,7 @@ final class material_files {
      * @throws \moodle_exception invalidmaterialpath / materialfiledisallowedtype
      */
     public static function resolve_writable_file(string $path): array {
-        return storage_anchor::resolve_writable_file(self::werkbank_area(), $path);
+        return storage_anchor::resolve_writable_file(self::workbench_area(), $path);
     }
 
     /**
@@ -356,21 +356,21 @@ final class material_files {
      * {@see pointer_reader::list_entries()}). Beide Zweige weisen einen Pfad
      * am oder unter dem Kontextbereich ab (ortsunabhaengig) und markieren
      * einen unmittelbaren Kindordner, der selbst der Kontextbereich ist, als
-     * Eintragstyp "kontextbereich" statt "folder".
+     * Eintragstyp "context_area" statt "folder".
      *
-     * @param string $ort {@see ORT_BESTAND}/{@see ORT_WERKBANK}.
+     * @param string $locationkey {@see LOCATION_STORE}/{@see LOCATION_WORKBENCH}.
      * @param string $path
      * @return array{directory: string, entries: array}
-     * @throws \moodle_exception invalidmaterialort, materialpathiskontext, sowie
+     * @throws \moodle_exception invalidmateriallocation, materialpathiscontext, sowie
      *         wie {@see pointer_reader::list_entries()}.
      */
-    public static function list_entries_for_ort(string $ort, string $path): array {
-        $location = self::location_for_ort($ort);
-        $kontext = storage_anchor::effective_location(context_files::area());
+    public static function list_entries_for_location(string $locationkey, string $path): array {
+        $location = self::location_for_value($locationkey);
+        $contextlocation = storage_anchor::effective_location(context_files::area());
         $normalisedpath = self::normalise_path($path);
-        self::guard_not_kontextbereich($location, $kontext, $normalisedpath);
+        self::guard_not_context_area($location, $contextlocation, $normalisedpath);
 
-        if ($ort === self::ORT_WERKBANK) {
+        if ($locationkey === self::LOCATION_WORKBENCH) {
             $directory = self::resolve_directory($path);
             $result = ['directory' => self::relative_directory($directory), 'entries' => self::list_entries($directory)];
         } else {
@@ -381,7 +381,7 @@ final class material_files {
         }
 
         $result['entries'] = array_map(
-            static fn (array $entry): array => self::mark_kontextbereich_entry($entry, $location, $kontext, $normalisedpath),
+            static fn (array $entry): array => self::mark_context_area_entry($entry, $location, $contextlocation, $normalisedpath),
             $result['entries']
         );
         return $result;
@@ -389,27 +389,27 @@ final class material_files {
 
     /**
      * Liest eine Datei des angefragten Orts (Issue #495) - siehe
-     * {@see list_entries_for_ort()} fuer die Ort-/Kontextbereich-Logik.
+     * {@see list_entries_for_location()} fuer die Ort-/Kontextbereich-Logik.
      *
-     * @param string $ort {@see ORT_BESTAND}/{@see ORT_WERKBANK}.
+     * @param string $locationkey {@see LOCATION_STORE}/{@see LOCATION_WORKBENCH}.
      * @param string $path
      * @return array{path: string, content: string, mimetype: string, size: int,
      *         contenthash: string, timemodified: int}|null
-     * @throws \moodle_exception invalidmaterialort, materialpathiskontext, sowie
+     * @throws \moodle_exception invalidmateriallocation, materialpathiscontext, sowie
      *         wie {@see pointer_reader::read_content()}.
      */
-    public static function read_content_for_ort(string $ort, string $path): ?array {
-        $location = self::location_for_ort($ort);
-        $kontext = storage_anchor::effective_location(context_files::area());
+    public static function read_content_for_location(string $locationkey, string $path): ?array {
+        $location = self::location_for_value($locationkey);
+        $contextlocation = storage_anchor::effective_location(context_files::area());
         $normalisedpath = self::normalise_path($path);
-        self::guard_not_kontextbereich($location, $kontext, $normalisedpath);
+        self::guard_not_context_area($location, $contextlocation, $normalisedpath);
 
-        if ($ort === self::ORT_WERKBANK) {
+        if ($locationkey === self::LOCATION_WORKBENCH) {
             [$directory, $filename] = self::resolve_file($path);
             $content = self::read_content($directory, $filename);
             return $content === null ? null : ($content + ['path' => self::relative_file($directory, $filename)]);
         }
-        // Siehe list_entries_for_ort(): eigener Fehlertext, keine Kontext-Lücke.
+        // Siehe list_entries_for_location(): eigener Fehlertext, keine Kontext-Lücke.
         return pointer_reader::read_content(self::area(), $path, null, 'materialexternalerror');
     }
 
@@ -427,16 +427,16 @@ final class material_files {
     }
 
     /**
-     * @param string $ort
+     * @param string $locationkey
      * @return pointer_location
-     * @throws \moodle_exception invalidmaterialort
+     * @throws \moodle_exception invalidmateriallocation
      */
-    private static function location_for_ort(string $ort): pointer_location {
-        if (!in_array($ort, [self::ORT_BESTAND, self::ORT_WERKBANK], true)) {
-            throw new \moodle_exception('invalidmaterialort', 'local_coursepilot', '', $ort);
+    private static function location_for_value(string $locationkey): pointer_location {
+        if (!in_array($locationkey, [self::LOCATION_STORE, self::LOCATION_WORKBENCH], true)) {
+            throw new \moodle_exception('invalidmateriallocation', 'local_coursepilot', '', $locationkey);
         }
-        return $ort === self::ORT_WERKBANK
-            ? storage_anchor::effective_location(self::werkbank_area())
+        return $locationkey === self::LOCATION_WORKBENCH
+            ? storage_anchor::effective_location(self::workbench_area())
             : storage_anchor::effective_location(self::area());
     }
 
@@ -446,41 +446,41 @@ final class material_files {
      * Vergleichsschluessel aus {@see pointer_location::comparison_key()}.
      *
      * @param pointer_location $location Ort, an dem $subpath aufgeloest wird.
-     * @param pointer_location $kontext Aufgeloester Kontextbereich.
+     * @param pointer_location $contextlocation Aufgeloester Kontextbereich.
      * @param string $subpath Bereits segmentgeprueft, siehe {@see normalise_path()}.
-     * @throws \moodle_exception materialpathiskontext
+     * @throws \moodle_exception materialpathiscontext
      */
-    private static function guard_not_kontextbereich(pointer_location $location, pointer_location $kontext, string $subpath): void {
-        if (str_starts_with($location->comparison_key($subpath), $kontext->comparison_key())) {
-            throw new \moodle_exception('materialpathiskontext', 'local_coursepilot');
+    private static function guard_not_context_area(pointer_location $location, pointer_location $contextlocation, string $subpath): void {
+        if (str_starts_with($location->comparison_key($subpath), $contextlocation->comparison_key())) {
+            throw new \moodle_exception('materialpathiscontext', 'local_coursepilot');
         }
     }
 
     /**
      * Markiert einen unmittelbaren Kindordner, der selbst der Kontextbereich
-     * ist, als eigenen Eintragstyp "kontextbereich" statt "folder" (Issue
+     * ist, als eigenen Eintragstyp "context_area" statt "folder" (Issue
      * #495, Spec #486 §2/§7) - sichtbar gelistet, aber ueber die Materialwege
-     * nicht zu betreten (das erzwingt {@see guard_not_kontextbereich()} beim
+     * nicht zu betreten (das erzwingt {@see guard_not_context_area()} beim
      * naechsten Zugriff).
      *
      * @param array $entry
      * @param pointer_location $location Ort, an dem $parentpath liegt.
-     * @param pointer_location $kontext Aufgeloester Kontextbereich.
+     * @param pointer_location $contextlocation Aufgeloester Kontextbereich.
      * @param string $parentpath Aufgeloester Elternpfad, segmentgeprueft.
      * @return array
      */
-    private static function mark_kontextbereich_entry(
+    private static function mark_context_area_entry(
         array $entry,
         pointer_location $location,
-        pointer_location $kontext,
+        pointer_location $contextlocation,
         string $parentpath
     ): array {
         if ($entry['type'] !== 'folder') {
             return $entry;
         }
         $childpath = $parentpath === '' ? $entry['name'] : $parentpath . '/' . $entry['name'];
-        if ($location->comparison_key($childpath) === $kontext->comparison_key()) {
-            $entry['type'] = 'kontextbereich';
+        if ($location->comparison_key($childpath) === $contextlocation->comparison_key()) {
+            $entry['type'] = 'context_area';
         }
         return $entry;
     }
@@ -594,15 +594,15 @@ final class material_files {
      *
      * Jeder Listeneintrag ist entweder ein reiner Materialordner-Pfad
      * (String, landet im Draft-Wurzelverzeichnis "/") oder ein Objekt
-     * `['pfad' => <materialordner-pfad>, 'zielordner' => <unterordner>]`
+     * `['path' => <materialordner-pfad>, 'target_folder' => <unterordner>]`
      * (Issue #434, "Zielverzeichnis innerhalb des Ordners wählbar" -
      * mod_folder fuehrt echte Unterordner, mod_assign/mod_resource-Fileareas
-     * sind flach und nutzen deshalb nur den String-Fall). "zielordner"
+     * sind flach und nutzen deshalb nur den String-Fall). "target_folder"
      * durchlaeuft dieselbe Segmentpruefung wie ein Materialordner-Pfad
      * (kein separates Regelwerk fuer den Draft-Zielpfad).
      *
      * Seit Issue #496 (Spec #486 §7) liest die Quelle ueber
-     * {@see read_content_for_ort()} statt fest ueber die Werkbank - "bestand"
+     * {@see read_content_for_location()} statt fest ueber die Werkbank - "bestand"
      * (Default) kopiert also direkt aus dem gewachsenen Materialbestand der
      * Lehrkraft, ohne Umweg ueber die Werkbank. Fuer diesen Zweig zaehlt der
      * Entwurf nicht gegen die Nutzerquote (Spec #486 §7: "Der Entwurf
@@ -616,10 +616,10 @@ final class material_files {
      * @param string $filearea z.B. "introattachment".
      * @param int $itemid
      * @param array $paths Materialordner-Pfade, z.B. ["arbeitsblatt.pdf"], oder
-     *        `['pfad' => ..., 'zielordner' => ...]`-Objekte.
-     * @param string $ort {@see ORT_BESTAND}/{@see ORT_WERKBANK} - Quelle der Pfade (Issue #496).
+     *        `['path' => ..., 'target_folder' => ...]`-Objekte.
+     * @param string $locationkey {@see LOCATION_STORE}/{@see LOCATION_WORKBENCH} - Quelle der Pfade (Issue #496).
      * @return int Entwurfs-Itemid, direkt als *_update_instance()-Feldwert nutzbar.
-     * @throws \moodle_exception invalidmaterialpath / invalidmaterialort / materialpathiskontext /
+     * @throws \moodle_exception invalidmaterialpath / invalidmateriallocation / materialpathiscontext /
      *         materialfilenotfound / materialembedtoolarge
      */
     public static function resolve_into_draft(
@@ -628,7 +628,7 @@ final class material_files {
         string $filearea,
         int $itemid,
         array $paths,
-        string $ort = self::ORT_BESTAND
+        string $locationkey = self::LOCATION_STORE
     ): int {
         $fs = get_file_storage();
         $draftitemid = 0;
@@ -636,7 +636,7 @@ final class material_files {
 
         $usercontext = self::own_context();
         foreach ($paths as $entry) {
-            self::embed_draft_entry($fs, $usercontext->id, $draftitemid, $entry, $ort);
+            self::embed_draft_entry($fs, $usercontext->id, $draftitemid, $entry, $locationkey);
         }
 
         return $draftitemid;
@@ -651,21 +651,21 @@ final class material_files {
      * @param int $usercontextid
      * @param int $draftitemid
      * @param string|array $entry
-     * @param string $ort
+     * @param string $locationkey
      */
     private static function embed_draft_entry(
         \file_storage $fs,
         int $usercontextid,
         int $draftitemid,
         $entry,
-        string $ort
+        string $locationkey
     ): void {
         [$path, $targetdirectory] = self::split_draft_entry($entry);
-        $source = self::read_content_for_ort($ort, $path);
+        $source = self::read_content_for_location($locationkey, $path);
         if ($source === null) {
             throw new \moodle_exception('materialfilenotfound', 'local_coursepilot', '', self::normalise_path($path));
         }
-        if ($ort === self::ORT_BESTAND) {
+        if ($locationkey === self::LOCATION_STORE) {
             // Nur der Bestand-Zweig braucht diese Grenze (Spec #486 §7):
             // eine Werkbank-Datei durchlief bereits die Servergrenze von
             // upload_material_file (get_max_upload_file_size()) beim
@@ -706,7 +706,7 @@ final class material_files {
      * Zerlegt einen {@see self::resolve_into_draft()}-Listeneintrag in
      * Materialordner-Pfad und Draft-Zielordner (Issue #434).
      *
-     * @param mixed $entry String oder `['pfad' => ..., 'zielordner' => ...]`.
+     * @param mixed $entry String oder `['path' => ..., 'target_folder' => ...]`.
      * @return array{0: string, 1: string} [Materialordner-Pfad, Draft-Zielordner mit "/"-Rahmen].
      * @throws \moodle_exception invalidmaterialpath
      */
@@ -715,15 +715,15 @@ final class material_files {
         if (is_string($entry)) {
             return [$path, '/'];
         }
-        $zielordner = $entry['zielordner'] ?? '';
-        if (!is_string($zielordner)) {
+        $targetfolder = $entry['target_folder'] ?? '';
+        if (!is_string($targetfolder)) {
             throw new \moodle_exception('invalidmaterialpath', 'local_coursepilot');
         }
         // Dieselbe Segmentpruefung wie ein gewoehnlicher Materialordner-Pfad
         // (kein separates Regelwerk fuer den Draft-Zielpfad): resolve_directory()
         // wirft bei "."/".."-Segmenten; relative_directory() zieht die
         // Materialwurzel wieder ab, uebrig bleiben die geprueften Segmente.
-        $relative = self::relative_directory(self::resolve_directory($zielordner));
+        $relative = self::relative_directory(self::resolve_directory($targetfolder));
         $targetdirectory = $relative === '' ? '/' : '/' . $relative . '/';
         return [$path, $targetdirectory];
     }
@@ -735,7 +735,7 @@ final class material_files {
      * denselben String/Objekt-Fall nicht ein zweites Mal von Hand
      * unterscheiden muessen (Issue #434).
      *
-     * @param mixed $entry String oder `['pfad' => ..., 'zielordner' => ...]`.
+     * @param mixed $entry String oder `['path' => ..., 'target_folder' => ...]`.
      * @return string
      * @throws \moodle_exception invalidmaterialpath
      */
@@ -743,10 +743,10 @@ final class material_files {
         if (is_string($entry)) {
             return $entry;
         }
-        if (!is_array($entry) || !isset($entry['pfad']) || !is_string($entry['pfad'])) {
+        if (!is_array($entry) || !isset($entry['path']) || !is_string($entry['path'])) {
             throw new \moodle_exception('invalidmaterialpath', 'local_coursepilot');
         }
-        return $entry['pfad'];
+        return $entry['path'];
     }
 
     /**

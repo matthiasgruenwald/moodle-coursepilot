@@ -31,7 +31,7 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Der Katalog des Skill-Korpus (Spec 0020 §4, Issue #450): Name, Auslöser,
- * Art (adapter/referenz) und Umfang je Eintrag - kein Inhalt, das liefert
+ * Art (adapter/reference) und Umfang je Eintrag - kein Inhalt, das liefert
  * {@see get_skill}. Nicht kursgebunden: geprüft wird lediglich
  * 'local/coursepilot:use' im Systemkontext, keine Kurs-Zustimmung.
  *
@@ -71,13 +71,13 @@ final class list_skills extends external_api {
 
         $skills = array_map(static fn (array $entry): array => [
             'name' => $entry['name'],
-            'trigger' => $entry['ausloeser'],
-            'kind' => $entry['art'],
-            'length' => $entry['umfang'],
+            'trigger' => $entry['trigger'],
+            'kind' => $entry['kind'],
+            'length' => $entry['length'],
         ], skill_corpus::list());
 
         global $USER;
-        $locationselectionlink = (new \moodle_url(webdav_setup_steps::ORTSWAHL_PAGE))->out(false);
+        $locationselectionlink = (new \moodle_url(webdav_setup_steps::LOCATION_SELECTION_PAGE))->out(false);
         $notices = [];
         try {
             $document = \local_coursepilot\storage_anchor::read_raw_pointer();
@@ -85,23 +85,23 @@ final class list_skills extends external_api {
                 // Vollstaendigkeitspruefung ueber die bestehende Aufloesung
                 // (Issue #519, Spec #486 §10: "unlesbar oder unvollstaendig") -
                 // wirft pointerincomplete/pointerunreachable/
-                // materialbestandimkontext bei einem unvollstaendigen Pointer,
+                // materialstoreincontext bei einem unvollstaendigen Pointer,
                 // denselben Fall wie "unlesbar", ohne die Pruefung hier zu
                 // duplizieren. Das aufgeloeste Ziel selbst wird nicht
                 // gebraucht.
-                \local_coursepilot\context_pointer::resolve_target($document, 'kontextbereich');
+                \local_coursepilot\context_pointer::resolve_target($document, 'context_area');
             }
             if (location_selection::open_with_access((int) $USER->id)) {
                 // Ortswahl offen und Freischaltung vorhanden (Issue #494
                 // Akzeptanzkriterium) - ohne Netzzugriff, kein Fakt ohne
                 // Freischaltung.
-                $notices[] = self::notice('listskillsortswahlhint', $locationselectionlink);
+                $notices[] = self::notice('listskillslocationselectionhint', $locationselectionlink);
             }
             if (\local_coursepilot\previous_location::open()) {
                 // Altbestand offen (Issue #498, Spec #486 §9/§10): ohne
                 // Netzzugriff, ohne Zaehlung - nur der Fakt "es gibt einen
                 // vorherigen Ort".
-                $notices[] = self::notice('listskillsaltbestandhint', $locationselectionlink);
+                $notices[] = self::notice('listskillspreviouslocationhint', $locationselectionlink);
             }
         } catch (\moodle_exception $e) {
             // Kaputter Kontextpointer (unlesbar oder unvollstaendig, Issue
@@ -111,18 +111,7 @@ final class list_skills extends external_api {
             $notices = [self::notice('listskillspointerbrokenhint', $locationselectionlink)];
         }
 
-        $pending = array_map(static fn (array $group): array => [
-            'path' => $group['pfad'],
-            'entries' => array_map(static fn (array $entry): array => [
-                'identifier' => $entry['kennung'],
-                'timestamp' => $entry['zeitpunkt'],
-                'operation' => $entry['vorgang'],
-                'error_class' => $entry['fehlerklasse'],
-                'course_id' => $entry['kursid'],
-            ], $group['eintraege']),
-        ], pending_write_notice::list_grouped());
-
-        return ['skills' => $skills, 'pending_entries' => $pending, 'notices' => $notices];
+        return ['skills' => $skills, 'pending_entries' => pending_write_notice::list_grouped(), 'notices' => $notices];
     }
 
     /**
@@ -136,7 +125,7 @@ final class list_skills extends external_api {
      */
     private static function notice(string $stringkey, string $link): array {
         return [
-            'text' => get_string($stringkey, 'local_coursepilot', webdav_setup_steps::ORTSWAHL_PAGE),
+            'text' => get_string($stringkey, 'local_coursepilot', webdav_setup_steps::LOCATION_SELECTION_PAGE),
             'link' => $link,
         ];
     }
@@ -150,7 +139,7 @@ final class list_skills extends external_api {
                 new external_single_structure([
                     'name' => new external_value(PARAM_TEXT, 'Skill identifier, for get_skill(name)'),
                     'trigger' => new external_value(PARAM_TEXT, 'Trigger/description, German'),
-                    'kind' => new external_value(PARAM_TEXT, '"adapter" or "referenz" (reference)'),
+                    'kind' => new external_value(PARAM_TEXT, '"adapter" or "reference"'),
                     'length' => new external_value(PARAM_INT, 'Length of the content in characters'),
                 ])
             ),
@@ -159,11 +148,11 @@ final class list_skills extends external_api {
                     'path' => new external_value(PARAM_TEXT, 'Relative target file path in the context area'),
                     'entries' => new external_multiple_structure(
                         new external_single_structure([
-                            'identifier' => new external_value(PARAM_ALPHANUMEXT, 'Identifier, for pending_entry=<identifier> or coursepilot_dismiss_ausstand'),
+                            'identifier' => new external_value(PARAM_ALPHANUMEXT, 'Identifier, for pending_entry=<identifier> or coursepilot_dismiss_pending_entry'),
                             'timestamp' => new external_value(PARAM_INT, 'Unix timestamp of the failed operation'),
                             'operation' => new external_value(
                                 PARAM_TEXT,
-                                '"anlegen" (create), "überschreiben" (overwrite) or "anhängen" (append)'
+                                '"create", "overwrite", "append" or "unknown" (pre-read failed)'
                             ),
                             'error_class' => new external_value(PARAM_TEXT, 'Named error class, never free text'),
                             'course_id' => new external_value(PARAM_INT, 'Course ID, 0 if the call was not tied to a course'),

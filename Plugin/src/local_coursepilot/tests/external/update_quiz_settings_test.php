@@ -518,7 +518,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Riegel (#583): der Wechsel in den Modus "abschlusstest" bestaetigt
+     * Riegel (#583): der Wechsel in den Modus "final-test" bestaetigt
      * dessen Versuchslimit selbst.
      */
     public function test_switching_to_final_test_mode_needs_no_extra_confirmation(): void {
@@ -531,7 +531,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
         $this->setUser($teacher);
         $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
 
-        $this->patch($quiz->cmid, [], 'abschlusstest');
+        $this->patch($quiz->cmid, [], 'final-test');
 
         $this->assertSame(2, (int) $DB->get_field('quiz', 'attempts', ['id' => $quiz->id]));
     }

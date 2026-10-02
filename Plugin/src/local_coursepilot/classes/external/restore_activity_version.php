@@ -298,7 +298,7 @@ final class restore_activity_version extends external_api {
         if ($arrangementmessage === null) {
             throw new moodle_exception('writevehicleblocked', 'local_coursepilot', '', [
                 'modname' => 'quiz',
-                'schreibweg' => 'update_quiz_settings',
+                'write_route' => 'update_quiz_settings',
             ]);
         }
 
@@ -354,13 +354,13 @@ final class restore_activity_version extends external_api {
      */
     private static function catalog_for(string $modname): string {
         $catalogclass = registry::require_catalogued($modname);
-        $schreibweg = $catalogclass::schreibweg();
-        if ($schreibweg !== null) {
+        $writeroute = $catalogclass::write_route();
+        if ($writeroute !== null) {
             throw new moodle_exception(
                 'writevehicleblocked',
                 'local_coursepilot',
                 '',
-                ['modname' => $modname, 'schreibweg' => $schreibweg]
+                ['modname' => $modname, 'write_route' => $writeroute]
             );
         }
         return $catalogclass;

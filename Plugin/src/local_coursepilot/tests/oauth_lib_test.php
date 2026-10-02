@@ -1021,7 +1021,7 @@ final class oauth_lib_test extends \advanced_testcase {
         global $USER;
 
         storage_anchor::write_pointer_document([
-            'kontextbereich' => 'mein-ort',
+            'context_area' => 'mein-ort',
             'materialordner' => 'mein-material',
         ]);
         $assertlocationunchanged = function (): void {

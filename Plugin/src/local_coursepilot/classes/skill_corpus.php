@@ -22,7 +22,7 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Der Skill-Korpus (Spec 0020 §3.1, Issue #450): Markdown-Dateien im Plugin,
- * zwei Unterordner (`skills/adapter`, `skills/referenz`), das Verzeichnis
+ * zwei Unterordner (`skills/adapter`, `skills/reference`), das Verzeichnis
  * selbst ist die Quelle - kein zweiter Index, keine Registrierungsliste je
  * Datei. Eine neue Referenzdatei ist damit eine Datei, kein Code-Aenderungs-
  * vorgang.
@@ -44,7 +44,7 @@ defined('MOODLE_INTERNAL') || die();
 final class skill_corpus {
 
     /** @var string[] Die beiden Korpus-Unterordner = die beiden Arten. */
-    private const KINDS = ['adapter', 'referenz'];
+    private const KINDS = ['adapter', 'reference'];
 
     /**
      * Der Katalog: je Korpus-Datei Name, Art, Auslöser und Umfang - kein
@@ -61,9 +61,9 @@ final class skill_corpus {
                 $content = (string) file_get_contents($path);
                 $entries[] = [
                     'name' => basename($path, '.md'),
-                    'art' => $kind,
-                    'ausloeser' => self::ausloeser($content),
-                    'umfang' => mb_strlen($content),
+                    'kind' => $kind,
+                    'trigger' => self::trigger_of($content),
+                    'length' => mb_strlen($content),
                     'path' => $path,
                 ];
             }
@@ -75,7 +75,7 @@ final class skill_corpus {
      * Inhalt, referenzierte Teile und Korpus-Stand eines einzelnen Eintrags.
      *
      * @param string $name Bezeichner aus {@see list()}, kein Pfad.
-     * @return array{content: string, referenzierte_teile: string[], korpus_stand: string}
+     * @return array{content: string, referenced_parts: string[], corpus_version: string}
      * @throws moodle_exception unknownskillname, nennt die gueltigen Namen.
      */
     public static function get(string $name): array {
@@ -84,14 +84,14 @@ final class skill_corpus {
                 $content = (string) file_get_contents($entry['path']);
                 return [
                     'content' => $content,
-                    'referenzierte_teile' => self::referenced_names($content),
-                    'korpus_stand' => self::korpus_stand(),
+                    'referenced_parts' => self::referenced_names($content),
+                    'corpus_version' => self::corpus_version(),
                 ];
             }
         }
         throw new moodle_exception('unknownskillname', 'local_coursepilot', '', [
             'name' => $name,
-            'namen' => implode(', ', array_column(self::list(), 'name')),
+            'names' => implode(', ', array_column(self::list(), 'name')),
         ]);
     }
 
@@ -113,7 +113,7 @@ final class skill_corpus {
      * @param string $content
      * @return string
      */
-    private static function ausloeser(string $content): string {
+    private static function trigger_of(string $content): string {
         $description = self::frontmatter_description($content);
         if ($description !== null) {
             return $description;
@@ -170,7 +170,7 @@ final class skill_corpus {
      *
      * @return string
      */
-    private static function korpus_stand(): string {
+    private static function corpus_version(): string {
         global $CFG;
 
         $plugin = new \stdClass();

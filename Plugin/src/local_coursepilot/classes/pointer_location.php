@@ -35,7 +35,7 @@ final class pointer_location {
     public const MOODLE = 'moodle';
 
     /** @var string Ziel liegt in einer WebDAV-Nutzerinstanz. */
-    public const EXTERN = 'extern';
+    public const EXTERNAL = 'external';
 
     private function __construct(
         public readonly string $kind,
@@ -61,8 +61,8 @@ final class pointer_location {
      *        Stand von Server/Basispfad/Konto zum Zeitpunkt der Wahl (Spec §2).
      * @return self
      */
-    public static function extern(int $instanceid, string $relativepath, array $fingerprint): self {
-        return new self(self::EXTERN, instanceid: $instanceid, relativepath: $relativepath, fingerprint: $fingerprint);
+    public static function external(int $instanceid, string $relativepath, array $fingerprint): self {
+        return new self(self::EXTERNAL, instanceid: $instanceid, relativepath: $relativepath, fingerprint: $fingerprint);
     }
 
     /**
@@ -90,10 +90,10 @@ final class pointer_location {
             return 'moodle|' . self::normalised_path((string) $this->path, $subpath);
         }
         $server = strtolower((string) ($this->fingerprint['server'] ?? ''));
-        $account = (string) ($this->fingerprint['konto'] ?? '');
-        $basepath = (string) ($this->fingerprint['basispfad'] ?? '');
+        $account = (string) ($this->fingerprint['account'] ?? '');
+        $basepath = (string) ($this->fingerprint['basepath'] ?? '');
         $effectivepath = trim($basepath, '/') . '/' . trim((string) $this->relativepath, '/');
-        return 'extern|' . $server . '|' . $account . '|' . self::normalised_path($effectivepath, $subpath);
+        return 'external|' . $server . '|' . $account . '|' . self::normalised_path($effectivepath, $subpath);
     }
 
     /**

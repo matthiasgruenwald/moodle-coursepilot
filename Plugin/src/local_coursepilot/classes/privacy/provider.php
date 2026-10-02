@@ -92,7 +92,7 @@ final class provider implements
      */
     public static function get_metadata(collection $collection): collection {
         $collection = self::describe_oauth_and_version_tables($collection);
-        $collection = self::describe_context_and_werkbank_tables($collection);
+        $collection = self::describe_context_and_workbench_tables($collection);
 
         $collection->add_external_location_link('webdav_external_storage', [
             'path' => 'privacy:metadata:webdav_external_storage:path',
@@ -165,7 +165,7 @@ final class provider implements
      * @param collection $collection
      * @return collection
      */
-    private static function describe_context_and_werkbank_tables(collection $collection): collection {
+    private static function describe_context_and_workbench_tables(collection $collection): collection {
         // Markierungsgedaechtnis (#493, Spec #486 §6): traegt userid und den
         // Client-Pfad einer Kontextdatei, siehe local_coursepilot\mark_memory.
         $collection->add_database_table('local_coursepilot_context_mark', [
@@ -185,15 +185,15 @@ final class provider implements
         // wuerde.
         // Werkbank-Downloadticket (#501, Spec #486 §13): system-kontextgebunden
         // wie die OAuth-Tabellen (kein Kurs-/Modulbezug), nur der Hash des
-        // Ticketgeheimnisses wird gefuehrt, siehe local_coursepilot\werkbank_ticket.
-        $collection->add_database_table('local_coursepilot_werkbank_ticket', [
-            'userid' => 'privacy:metadata:werkbank_ticket:userid',
-            'path' => 'privacy:metadata:werkbank_ticket:path',
-            'contenthash' => 'privacy:metadata:werkbank_ticket:contenthash',
-            'oauthtokenid' => 'privacy:metadata:werkbank_ticket:oauthtokenid',
-            'expires' => 'privacy:metadata:werkbank_ticket:expires',
-            'timecreated' => 'privacy:metadata:werkbank_ticket:timecreated',
-        ], 'privacy:metadata:werkbank_ticket');
+        // Ticketgeheimnisses wird gefuehrt, siehe local_coursepilot\workbench_ticket.
+        $collection->add_database_table('local_coursepilot_workbench_ticket', [
+            'userid' => 'privacy:metadata:workbench_ticket:userid',
+            'path' => 'privacy:metadata:workbench_ticket:path',
+            'contenthash' => 'privacy:metadata:workbench_ticket:contenthash',
+            'oauthtokenid' => 'privacy:metadata:workbench_ticket:oauthtokenid',
+            'expires' => 'privacy:metadata:workbench_ticket:expires',
+            'timecreated' => 'privacy:metadata:workbench_ticket:timecreated',
+        ], 'privacy:metadata:workbench_ticket');
 
         return $collection;
     }
@@ -208,7 +208,7 @@ final class provider implements
         $contextlist = new contextlist();
         $hasoauthdata = $DB->record_exists('local_coursepilot_oauth_code', ['userid' => $userid])
             || $DB->record_exists('local_coursepilot_oauth_token', ['userid' => $userid])
-            || $DB->record_exists('local_coursepilot_werkbank_ticket', ['userid' => $userid]);
+            || $DB->record_exists('local_coursepilot_workbench_ticket', ['userid' => $userid]);
         if ($hasoauthdata) {
             $contextlist->add_system_context();
         }
@@ -230,7 +230,7 @@ final class provider implements
         if ($context instanceof \context_system) {
             $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_oauth_code}', []);
             $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_oauth_token}', []);
-            $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_werkbank_ticket}', []);
+            $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_workbench_ticket}', []);
             return;
         }
 
@@ -346,7 +346,7 @@ final class provider implements
             'timecreated' => transform::datetime($record->timecreated),
         ], array_values($tokens));
 
-        $tickets = $DB->get_records('local_coursepilot_werkbank_ticket', ['userid' => $userid]);
+        $tickets = $DB->get_records('local_coursepilot_workbench_ticket', ['userid' => $userid]);
         $exportedtickets = array_map(static fn($record): \stdClass => (object) [
             'path' => $record->path,
             'expires' => transform::datetime($record->expires),
@@ -358,7 +358,7 @@ final class provider implements
             (object) [
                 'oauth_codes' => $exportedcodes,
                 'oauth_tokens' => $exportedtokens,
-                'werkbank_tickets' => $exportedtickets,
+                'workbench_tickets' => $exportedtickets,
             ]
         );
     }
@@ -379,7 +379,7 @@ final class provider implements
         }
         $DB->delete_records('local_coursepilot_oauth_code');
         $DB->delete_records('local_coursepilot_oauth_token');
-        $DB->delete_records('local_coursepilot_werkbank_ticket');
+        $DB->delete_records('local_coursepilot_workbench_ticket');
     }
 
     /**
@@ -428,7 +428,7 @@ final class provider implements
         }
         $DB->delete_records('local_coursepilot_oauth_code', ['userid' => $userid]);
         $DB->delete_records('local_coursepilot_oauth_token', ['userid' => $userid]);
-        $DB->delete_records('local_coursepilot_werkbank_ticket', ['userid' => $userid]);
+        $DB->delete_records('local_coursepilot_workbench_ticket', ['userid' => $userid]);
     }
 
     /**
@@ -450,6 +450,6 @@ final class provider implements
         [$insql, $inparams] = $DB->get_in_or_equal($userlist->get_userids(), SQL_PARAMS_NAMED);
         $DB->delete_records_select('local_coursepilot_oauth_code', "userid $insql", $inparams);
         $DB->delete_records_select('local_coursepilot_oauth_token', "userid $insql", $inparams);
-        $DB->delete_records_select('local_coursepilot_werkbank_ticket', "userid $insql", $inparams);
+        $DB->delete_records_select('local_coursepilot_workbench_ticket', "userid $insql", $inparams);
     }
 }

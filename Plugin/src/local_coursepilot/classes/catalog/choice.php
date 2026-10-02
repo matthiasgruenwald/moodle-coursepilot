@@ -36,7 +36,7 @@ namespace local_coursepilot\catalog;
  *   gehoert, bevor sie per $DB->update_record() ueberschrieben wird - eine
  *   ID aus einer fremden choice-Instanz wuerde deren Option kaputt
  *   ueberschreiben. Dokumentiert im Feld selbst, siehe pseudofields().
- * - Feldbuendel "zuteilung" (Spec 0015 §2.4, neu): Geraete-/Partnerzuteilung
+ * - Feldbuendel "allocation" (Spec 0015 §2.4, neu): Geraete-/Partnerzuteilung
  *   braucht sechs Felder, die einzeln zu setzen niemand im Kopf hat -
  *   limitanswers=1, limit[] je Option (1 fuer Geraete, 2 fuer Partnerarbeit -
  *   das Buendel setzt den haeufigeren Fall 1 vor, die KI ueberschreibt ihn
@@ -335,7 +335,7 @@ final class choice implements module_catalog {
 
     public static function bundles(): array {
         return [
-            'zuteilung' => [
+            'allocation' => [
                 'limitanswers' => 1,
                 'limit' => 1,
                 'publish' => 1, // CHOICE_PUBLISH_NAMES.
@@ -346,7 +346,7 @@ final class choice implements module_catalog {
         ];
     }
 
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
 
@@ -357,7 +357,7 @@ final class choice implements module_catalog {
     public static function learner_locks(): array {
         // allowupdate: der Formular-Default 0 ist selbst ein Riegel. Er zaehlt
         // beim Anlegen mit (#583) - wer offen anlegen will, nennt
-        // "allowupdate": 1 (so auch das Buendel "zuteilung").
+        // "allowupdate": 1 (so auch das Buendel "allocation").
         return [
             'allowupdate' => ['op' => 'equals', 'value' => 0,
                 'reason' => 'Learners cannot change their answer; a correction needs the teacher to delete the response.'],

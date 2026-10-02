@@ -100,10 +100,10 @@ final class report_clone_lineage_test extends \advanced_testcase {
             $bystatus[$entry['name']] = $entry;
         }
 
-        $this->assertSame('eigene_kopie', $bystatus['Eigene Kopie']['status']);
+        $this->assertSame('own_copy', $bystatus['Eigene Kopie']['status']);
         $this->assertSame(0, $bystatus['Eigene Kopie']['source_course_id']);
 
-        $this->assertSame('geteilte_referenz', $bystatus['Geteilte Referenz']['status']);
+        $this->assertSame('shared_reference', $bystatus['Geteilte Referenz']['status']);
         $this->assertSame((int) $foreigncourse->id, $bystatus['Geteilte Referenz']['source_course_id']);
 
         $this->assertStringContainsString('eigene Kopie angelegt', $result['message']);

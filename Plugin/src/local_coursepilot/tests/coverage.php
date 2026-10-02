@@ -26,7 +26,7 @@
  * Bewusst NICHT gelistet, mit fachlicher Begruendung statt "niedrige
  * Abdeckung":
  * - tests/    - die Testsuite selbst, kein Produktionscode.
- * - amd/      - reines JavaScript (amd/src/ortswahl.js, amd/build/*.js),
+ * - amd/      - reines JavaScript (amd/src/location_selection.js, amd/build/*.js),
  *               enthaelt keine PHP-Zeilen, die ein PHP-Coverage-Treiber
  *               ueberhaupt erfassen koennte.
  * - templates/ - Mustache-Vorlagen, keine PHP-Zeilen.
@@ -48,7 +48,7 @@ return new class extends phpunit_coverage_info {
         'db',
         'lang',
         'oauth',
-        'werkbank',
+        'workbench',
     ];
 
     /** @var array Einzeldateien im Plugin-Wurzelverzeichnis. */
@@ -58,8 +58,8 @@ return new class extends phpunit_coverage_info {
         'lib.php',
         'mcp.php',
         'oauth.php',
-        'ortswahl.php',
-        'ortswahl_browse.php',
+        'location_selection.php',
+        'location_selection_browse.php',
         'settings.php',
         'surface.php',
         'version.php',

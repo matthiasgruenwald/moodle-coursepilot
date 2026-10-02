@@ -130,7 +130,7 @@ trait webdav_instance_fixture {
      * @return array{server: string, basispfad: string, konto: string}
      */
     protected function fixture_fingerprint(): array {
-        return ['server' => $this->fixtureserver, 'basispfad' => $this->fixturebasispfad, 'konto' => $this->fixturekonto];
+        return ['server' => $this->fixtureserver, 'basepath' => $this->fixturebasispfad, 'account' => $this->fixturekonto];
     }
 
     /**
@@ -139,7 +139,7 @@ trait webdav_instance_fixture {
      * Moodle*.
      *
      * @param \stdClass $user
-     * @param string $externtarget "kontextbereich" oder "materialbestand".
+     * @param string $externtarget "context_area" oder "material_store".
      * @param int $instanceid
      * @param string $relativepath
      * @param array|null $fingerprint Default: {@see fixture_fingerprint()}.
@@ -152,16 +152,16 @@ trait webdav_instance_fixture {
         ?array $fingerprint = null
     ): void {
         $external = [
-            'ort' => 'extern',
-            'instanzid' => $instanceid,
-            'pfad' => $relativepath,
-            'pruefmerkmal' => $fingerprint ?? $this->fixture_fingerprint(),
+            'location' => 'external',
+            'instanceid' => $instanceid,
+            'path' => $relativepath,
+            'fingerprint' => $fingerprint ?? $this->fixture_fingerprint(),
         ];
-        $inmoodle = ['ort' => 'moodle', 'pfad' => 'coursepilot'];
+        $inmoodle = ['location' => 'moodle', 'path' => 'coursepilot'];
 
         $pointer = [
-            'kontextbereich' => $externtarget === 'kontextbereich' ? $external : $inmoodle,
-            'materialbestand' => $externtarget === 'materialbestand' ? $external : ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => $externtarget === 'context_area' ? $external : $inmoodle,
+            'material_store' => $externtarget === 'material_store' ? $external : ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ];
 
         get_file_storage()->create_file_from_string([
@@ -170,7 +170,7 @@ trait webdav_instance_fixture {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/coursepilot/',
-            'filename' => '.coursepilot-ort.json',
+            'filename' => '.coursepilot-location.json',
         ], json_encode($pointer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
@@ -190,7 +190,7 @@ trait webdav_instance_fixture {
         $this->setUser($user);
         $this->grant_webdav_capability($user);
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Kontext');
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Kontext');
 
         $fake = new fake_webdav_transport();
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
@@ -211,7 +211,7 @@ trait webdav_instance_fixture {
         $this->setUser($user);
         $this->grant_webdav_capability($user);
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'materialbestand', $instanceid, 'Material');
+        $this->write_v2_pointer($user, 'material_store', $instanceid, 'Material');
 
         $fake = new fake_webdav_transport();
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
@@ -227,14 +227,14 @@ trait webdav_instance_fixture {
      * Altbestand voraussetzen, statt vier fast identischer Kopien.
      *
      * @param \stdClass $user
-     * @param string $pfad Wurzel des vorherigen Ortes, relativ zu den Private Files.
+     * @param string $path Wurzel des vorherigen Ortes, relativ zu den Private Files.
      */
-    protected function write_pointer_with_vorheriger_ort(\stdClass $user, string $pfad = 'alter-kontext'): void {
+    protected function write_pointer_with_previous_location(\stdClass $user, string $path = 'alter-kontext'): void {
         $document = [
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
-            'ortsverlauf' => [],
-            'vorheriger_ort' => ['ort' => 'moodle', 'pfad' => $pfad],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
+            'location_history' => [],
+            'previous_location' => ['location' => 'moodle', 'path' => $path],
         ];
         get_file_storage()->create_file_from_string([
             'contextid' => \context_user::instance($user->id)->id,
@@ -242,12 +242,12 @@ trait webdav_instance_fixture {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/coursepilot/',
-            'filename' => '.coursepilot-ort.json',
+            'filename' => '.coursepilot-location.json',
         ], json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
     /**
-     * Gegenstueck zu {@see write_pointer_with_vorheriger_ort()} mit einem
+     * Gegenstueck zu {@see write_pointer_with_previous_location()} mit einem
      * *externen* vorherigen Ort (Issue #517, Spec §6: `moodle/user:manageownfiles`
      * wirkt extern nicht) - beide regulaeren Ziele bleiben *in Moodle*, nur
      * der Altbestand selbst liegt in der WebDAV-Nutzerinstanz.
@@ -257,21 +257,21 @@ trait webdav_instance_fixture {
      * @param string $relativepath Wurzel des vorherigen Ortes in der Instanz.
      * @param array|null $fingerprint Default: {@see fixture_fingerprint()}.
      */
-    protected function write_pointer_with_external_vorheriger_ort(
+    protected function write_pointer_with_external_previous_location(
         \stdClass $user,
         int $instanceid,
         string $relativepath = 'Alt',
         ?array $fingerprint = null
     ): void {
         $document = [
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
-            'ortsverlauf' => [],
-            'vorheriger_ort' => [
-                'ort' => 'extern',
-                'instanzid' => $instanceid,
-                'pfad' => $relativepath,
-                'pruefmerkmal' => $fingerprint ?? $this->fixture_fingerprint(),
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
+            'location_history' => [],
+            'previous_location' => [
+                'location' => 'external',
+                'instanceid' => $instanceid,
+                'path' => $relativepath,
+                'fingerprint' => $fingerprint ?? $this->fixture_fingerprint(),
             ],
         ];
         get_file_storage()->create_file_from_string([
@@ -280,7 +280,7 @@ trait webdav_instance_fixture {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/coursepilot/',
-            'filename' => '.coursepilot-ort.json',
+            'filename' => '.coursepilot-location.json',
         ], json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 }

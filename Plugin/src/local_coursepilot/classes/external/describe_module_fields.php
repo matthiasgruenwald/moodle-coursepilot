@@ -58,7 +58,7 @@ class describe_module_fields extends external_api {
      * dieses Ticket (#379) liefert nur den Lesekatalog, der Schreibkern selbst
      * kommt erst in Phase 3.
      */
-    private const VEHICLE_SCHREIBWEG = 'Formularweg (update_moduleinfo() bzw. add_moduleinfo()); eigener '
+    private const VEHICLE_WRITE_ROUTE = 'Formularweg (update_moduleinfo() bzw. add_moduleinfo()); eigener '
         . 'Schreib-Endpunkt folgt in einer spaeteren Ausbaustufe.';
 
     /**
@@ -136,7 +136,7 @@ class describe_module_fields extends external_api {
             + ['learner_lock' => learner_locks::condition_json($catalogclass, $f->name)];
         $module = [
             'modname' => $modname,
-            'write_route' => $catalogclass::schreibweg() ?? self::VEHICLE_SCHREIBWEG,
+            'write_route' => $catalogclass::write_route() ?? self::VEHICLE_WRITE_ROUTE,
             'grade_origin' => $catalogclass::grade_origin(),
             'fields' => array_map($withlock, $fields),
             'field_bundles' => self::bundles($catalogclass::bundles()),

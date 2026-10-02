@@ -67,16 +67,16 @@ final class activity_drift extends check {
     public function get_result(): result {
         $status = write_gate::status_for($this->modname);
 
-        return match ($status['zustand']) {
-            'geprueft' => new result(result::OK, get_string('driftstatusgeprueft', 'local_coursepilot')),
-            'automatisch_geprueft' => new result(
+        return match ($status['state']) {
+            'checked' => new result(result::OK, get_string('driftstatuschecked', 'local_coursepilot')),
+            'auto_checked' => new result(
                 result::OK,
-                get_string('driftstatusautomatischgeprueft', 'local_coursepilot')
+                get_string('driftstatusautochecked', 'local_coursepilot')
             ),
             default => new result(
                 result::ERROR,
                 get_string('driftstatusbrauchtarbeit', 'local_coursepilot'),
-                implode("\n", $status['verstoesse'])
+                implode("\n", $status['violations'])
             ),
         };
     }

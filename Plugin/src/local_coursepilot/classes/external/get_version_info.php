@@ -75,10 +75,10 @@ final class get_version_info extends external_api {
         $pluginversion = (int) $plugin->version;
         $pluginrelease = (string) $plugin->release;
 
-        $meldung = 'Moodle ' . $CFG->release . ' (Branch ' . $CFG->branch . '), Coursepilot-Plugin '
+        $message = 'Moodle ' . $CFG->release . ' (Branch ' . $CFG->branch . '), Coursepilot-Plugin '
             . $pluginrelease . ' (Version ' . $pluginversion . ').';
         if ($installed !== false && (int) $installed !== $pluginversion) {
-            $meldung .= ' Achtung: In der Datenbank steht Version ' . (int) $installed
+            $message .= ' Achtung: In der Datenbank steht Version ' . (int) $installed
                 . ' - upgrade.php wurde nach dem letzten Deploy nicht ausgefuehrt.';
         }
 
@@ -90,7 +90,7 @@ final class get_version_info extends external_api {
             'plugin_release' => $pluginrelease,
             'plugin_version_db' => $installed === false ? 0 : (int) $installed,
             'date' => date('Y-m-d'),
-            'message' => $meldung,
+            'message' => $message,
         ];
     }
 

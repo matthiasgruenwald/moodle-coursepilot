@@ -78,23 +78,23 @@ final class version_history {
      * (Spec 0015 §10.6, Abnahmekriterium 3).
      *
      * @param int $cmid
-     * @param int $vonversion
-     * @param int $nachversion
+     * @param int $fromversion
+     * @param int $toversion
      * @return array
      * @throws \moodle_exception versionnotfound
      */
-    public static function compare(int $cmid, int $vonversion, int $nachversion): array {
+    public static function compare(int $cmid, int $fromversion, int $toversion): array {
         $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);
-        $von = self::load_version($cmid, $vonversion);
-        $nach = self::load_version($cmid, $nachversion);
+        $fromstate = self::load_version($cmid, $fromversion);
+        $tostate = self::load_version($cmid, $toversion);
 
         return [
             'cmid' => $cmid,
             'modname' => (string) $cm->modname,
-            'before' => self::describe_meta($von),
-            'after' => self::describe_meta($nach),
-            'changes' => self::diff_fields(self::state($von), self::state($nach)),
-            'files' => self::diff_files((int) $von->id, (int) $nach->id),
+            'before' => self::describe_meta($fromstate),
+            'after' => self::describe_meta($tostate),
+            'changes' => self::diff_fields(self::state($fromstate), self::state($tostate)),
+            'files' => self::diff_files((int) $fromstate->id, (int) $tostate->id),
             'gap_notice' => self::GAPS_HINT,
         ];
     }
@@ -257,15 +257,15 @@ final class version_history {
      * @return string
      */
     private static function summary_line(?\stdClass $previous, \stdClass $record, array $meta): string {
-        $zeitpunkttext = userdate($meta['timestamp']);
+        $timetext = userdate($meta['timestamp']);
 
         $source = version_source::from_record($record);
         if ($previous === null || $source->is_marker()) {
-            return sprintf('Version %d (%s) - %s, %s.', $meta['version'], $source->label(), $meta['user'], $zeitpunkttext);
+            return sprintf('Version %d (%s) - %s, %s.', $meta['version'], $source->label(), $meta['user'], $timetext);
         }
 
         $summary = self::summarize_change($previous, $record);
-        return sprintf('Version %d - %s, %s: %s.', $meta['version'], $meta['user'], $zeitpunkttext, $summary);
+        return sprintf('Version %d - %s, %s: %s.', $meta['version'], $meta['user'], $timetext, $summary);
     }
 
     /**
@@ -287,7 +287,7 @@ final class version_history {
                 : implode(', ', $fields)) . ' geändert';
         }
 
-        $added = count(array_filter($filechanges, static fn(array $c): bool => $c['change_type'] === 'hinzugefuegt'));
+        $added = count(array_filter($filechanges, static fn(array $c): bool => $c['change_type'] === 'added'));
         $removed = count($filechanges) - $added;
         if ($added) {
             $parts[] = $added . ' Datei' . ($added === 1 ? '' : 'en') . ' hinzugefügt';
@@ -389,12 +389,12 @@ final class version_history {
         $changes = [];
         foreach ($before as $fileid => $filename) {
             if (!array_key_exists($fileid, $after)) {
-                $changes[] = ['change_type' => 'entfernt', 'filename' => $filename];
+                $changes[] = ['change_type' => 'removed', 'filename' => $filename];
             }
         }
         foreach ($after as $fileid => $filename) {
             if (!array_key_exists($fileid, $before)) {
-                $changes[] = ['change_type' => 'hinzugefuegt', 'filename' => $filename];
+                $changes[] = ['change_type' => 'added', 'filename' => $filename];
             }
         }
         return $changes;

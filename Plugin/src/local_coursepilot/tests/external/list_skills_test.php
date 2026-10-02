@@ -58,7 +58,7 @@ final class list_skills_test extends \advanced_testcase {
 
         foreach ($result['skills'] as $skill) {
             $this->assertArrayNotHasKey('content', $skill);
-            $this->assertContains($skill['kind'], ['adapter', 'referenz']);
+            $this->assertContains($skill['kind'], ['adapter', 'reference']);
             $this->assertGreaterThan(0, $skill['length']);
         }
     }
@@ -104,9 +104,9 @@ final class list_skills_test extends \advanced_testcase {
         $fake = new fake_webdav_transport();
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
         try {
-            $aelter = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
-            $neuer = pending_write_notice::record('plan.md', 'überschreiben', 'nicht erreichbar', 0);
-            pending_write_notice::record('journal.md', 'anhängen', 'Anmeldung abgelehnt', 0);
+            $aelter = pending_write_notice::record('plan.md', 'create', 'storage_full', 0);
+            $neuer = pending_write_notice::record('plan.md', 'overwrite', 'unreachable', 0);
+            pending_write_notice::record('journal.md', 'append', 'auth_rejected', 0);
 
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
@@ -142,7 +142,7 @@ final class list_skills_test extends \advanced_testcase {
      * nennt 'hinweise' den Fakt samt Link zur Ortswahlseite - ohne
      * Netzzugriff (Issue #494 Akzeptanzkriterium).
      */
-    public function test_hinweise_field_names_open_ortswahl_when_enabled_and_no_pointer(): void {
+    public function test_hinweise_field_names_open_location_selection_when_enabled_and_no_pointer(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
@@ -158,7 +158,7 @@ final class list_skills_test extends \advanced_testcase {
 
             $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
             $this->assertCount(1, $result['notices']);
-            $this->assertStringContainsString('/local/coursepilot/ortswahl.php', $result['notices'][0]['link']);
+            $this->assertStringContainsString('/local/coursepilot/location_selection.php', $result['notices'][0]['link']);
         } finally {
             \core\di::reset_container();
         }
@@ -176,7 +176,7 @@ final class list_skills_test extends \advanced_testcase {
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
         storage_anchor::write_pointer_document([
-            'kontextbereich' => 'mein-kontext',
+            'context_area' => 'mein-kontext',
             'materialordner' => 'mein-material',
         ]);
 
@@ -189,7 +189,7 @@ final class list_skills_test extends \advanced_testcase {
     /**
      * Ohne offenen Altbestand fehlt der Hinweisfakt.
      */
-    public function test_hinweise_field_has_no_altbestand_hint_by_default(): void {
+    public function test_hinweise_field_has_no_previouslocation_hint_by_default(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
@@ -205,12 +205,12 @@ final class list_skills_test extends \advanced_testcase {
      * Ein offener Altbestand (Issue #498, Spec #486 §9/§10) erscheint als
      * Fakt in 'hinweise', ohne Zaehlung - der Hinweistext nennt keine Anzahl.
      */
-    public function test_hinweise_field_names_open_altbestand_without_counting(): void {
+    public function test_hinweise_field_names_open_previouslocation_without_counting(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
         $this->setUser($user);
-        $this->write_pointer_with_vorheriger_ort($user);
+        $this->write_pointer_with_previous_location($user);
 
         $result = list_skills::execute();
         $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
@@ -218,9 +218,9 @@ final class list_skills_test extends \advanced_testcase {
         $this->assertCount(1, $result['notices']);
         $this->assertSame(
             get_string(
-                'listskillsaltbestandhint',
+                'listskillspreviouslocationhint',
                 'local_coursepilot',
-                \local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE
+                \local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE
             ),
             $result['notices'][0]['text']
         );
@@ -228,7 +228,7 @@ final class list_skills_test extends \advanced_testcase {
         // am deutschen Sprachpaket geprueft, echte Umlaute, keine Ziffern.
         $string = [];
         require(__DIR__ . '/../../lang/de/local_coursepilot.php');
-        $this->assertDoesNotMatchRegularExpression('/\d/', $string['listskillsaltbestandhint']);
+        $this->assertDoesNotMatchRegularExpression('/\d/', $string['listskillspreviouslocationhint']);
     }
 
     /**
@@ -250,7 +250,7 @@ final class list_skills_test extends \advanced_testcase {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/coursepilot/',
-            'filename' => '.coursepilot-ort.json',
+            'filename' => '.coursepilot-location.json',
         ], 'kein json');
 
         $fake = new fake_webdav_transport();
@@ -266,11 +266,11 @@ final class list_skills_test extends \advanced_testcase {
                 get_string(
                     'listskillspointerbrokenhint',
                     'local_coursepilot',
-                    \local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE
+                    \local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE
                 ),
                 $result['notices'][0]['text']
             );
-            $this->assertStringContainsString('/local/coursepilot/ortswahl.php', $result['notices'][0]['link']);
+            $this->assertStringContainsString('/local/coursepilot/location_selection.php', $result['notices'][0]['link']);
         } finally {
             \core\di::reset_container();
         }
@@ -295,7 +295,7 @@ final class list_skills_test extends \advanced_testcase {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/coursepilot/',
-            'filename' => '.coursepilot-ort.json',
+            'filename' => '.coursepilot-location.json',
         ], json_encode(['irgendwas' => 'ohne die Pflichtfelder']));
 
         $fake = new fake_webdav_transport();
@@ -311,7 +311,7 @@ final class list_skills_test extends \advanced_testcase {
                 get_string(
                     'listskillspointerbrokenhint',
                     'local_coursepilot',
-                    \local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE
+                    \local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE
                 ),
                 $result['notices'][0]['text']
             );

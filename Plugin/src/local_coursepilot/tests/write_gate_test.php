@@ -42,9 +42,9 @@ final class write_gate_test extends \advanced_testcase {
 
         foreach (write_gate::all_statuses() as $status) {
             $catalogclass = \local_coursepilot\catalog\registry::for($status['modname']);
-            $expected = (int) $CFG->branch > $catalogclass::reviewed_up_to_major() ? 'automatisch_geprueft' : 'geprueft';
-            $this->assertSame($expected, $status['zustand'], $status['modname'] . ': ' . implode(' ', $status['verstoesse']));
-            $this->assertSame([], $status['verstoesse']);
+            $expected = (int) $CFG->branch > $catalogclass::reviewed_up_to_major() ? 'auto_checked' : 'checked';
+            $this->assertSame($expected, $status['state'], $status['modname'] . ': ' . implode(' ', $status['violations']));
+            $this->assertSame([], $status['violations']);
         }
     }
 
@@ -75,15 +75,15 @@ final class write_gate_test extends \advanced_testcase {
         set_config('driftviolations_label', json_encode(['Spalte "intro" fehlt.']), 'local_coursepilot');
 
         $labelstatus = write_gate::status_for('label');
-        $this->assertSame('braucht_arbeit', $labelstatus['zustand']);
-        $this->assertNotEmpty($labelstatus['verstoesse']);
+        $this->assertSame('needs_work', $labelstatus['state']);
+        $this->assertNotEmpty($labelstatus['violations']);
 
         foreach (\local_coursepilot\catalog\registry::known_modnames() as $modname) {
             if ($modname === 'label') {
                 continue;
             }
             $status = write_gate::status_for($modname);
-            $this->assertNotSame('braucht_arbeit', $status['zustand'], "$modname sollte durch den Drift von label nicht gesperrt sein.");
+            $this->assertNotSame('needs_work', $status['state'], "$modname sollte durch den Drift von label nicht gesperrt sein.");
         }
 
         $this->expectException(\moodle_exception::class);

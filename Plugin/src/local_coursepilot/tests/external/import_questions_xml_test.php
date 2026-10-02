@@ -52,7 +52,7 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         $this->assertCount(1, $result['questions']);
         $question = $result['questions'][0];
-        $this->assertSame('erstimport', $question['status']);
+        $this->assertSame('first_import', $question['status']);
         $this->assertSame('Erstimport-Frage', $question['name']);
         $this->assertSame(1, $question['version']);
         $this->assertGreaterThan(0, $question['questionbankentryid']);
@@ -76,7 +76,7 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         $first = import_questions_xml::execute($categoryid, $xml1);
         $first = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $first);
-        $this->assertSame('erstimport', $first['questions'][0]['status']);
+        $this->assertSame('first_import', $first['questions'][0]['status']);
         $entryid = $first['questions'][0]['questionbankentryid'];
 
         global $DB;
@@ -135,7 +135,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
 
         $question = $result['questions'][0];
-        $this->assertSame('verdachtsfall', $question['status']);
+        $this->assertSame('suspect', $question['status']);
         $this->assertSame(0, $question['questionbankentryid']);
         $this->assertSame('q-415-unbekannt', $question['idnumber']);
         $this->assertSame($categoryid, $question['categoryid']);
@@ -155,12 +155,12 @@ final class import_questions_xml_test extends \advanced_testcase {
         $xml = self::multichoice_xml('Bestaetigte Frage', 'Fragetext', 'Feedback', 'q-415-bestaetigt');
         $unconfirmed = import_questions_xml::execute($categoryid, $xml);
         $unconfirmed = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $unconfirmed);
-        $this->assertSame('verdachtsfall', $unconfirmed['questions'][0]['status']);
+        $this->assertSame('suspect', $unconfirmed['questions'][0]['status']);
 
         $confirmed = import_questions_xml::execute($categoryid, $xml, true);
         $confirmed = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $confirmed);
 
-        $this->assertSame('erstimport', $confirmed['questions'][0]['status']);
+        $this->assertSame('first_import', $confirmed['questions'][0]['status']);
         $this->assertGreaterThan(0, $confirmed['questions'][0]['questionbankentryid']);
 
         global $DB;
@@ -215,7 +215,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         $result = import_questions_xml::execute($categoryid, $xml);
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
 
-        $this->assertSame('erstimport', $result['questions'][0]['status']);
+        $this->assertSame('first_import', $result['questions'][0]['status']);
         // Die Antwort enthaelt kein Bildbyte - das aufgeloeste Base64 bleibt
         // serverseitig, unabhaengig davon, wie viele Bilder das XML traegt.
         $this->assertStringNotContainsString(base64_encode(self::PNG_BYTES), json_encode($result));
@@ -238,7 +238,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         $result = import_questions_xml::execute($categoryid, $xml);
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
 
-        $this->assertSame('erstimport', $result['questions'][0]['status']);
+        $this->assertSame('first_import', $result['questions'][0]['status']);
     }
 
     /**
@@ -282,7 +282,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         $result = import_questions_xml::execute($categoryid, '', false, 'export.xml');
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
 
-        $this->assertSame('erstimport', $result['questions'][0]['status']);
+        $this->assertSame('first_import', $result['questions'][0]['status']);
         $this->assertSame('Frage aus Verweistuer', $result['questions'][0]['name']);
     }
 
@@ -304,7 +304,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         $result = import_questions_xml::execute($categoryid, $xml);
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
 
-        $this->assertSame('erstimport', $result['questions'][0]['status']);
+        $this->assertSame('first_import', $result['questions'][0]['status']);
     }
 
     /**
@@ -323,7 +323,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         $result = import_questions_xml::execute($categoryid, '', false, 'export.xml');
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
 
-        $this->assertSame('erstimport', $result['questions'][0]['status']);
+        $this->assertSame('first_import', $result['questions'][0]['status']);
         $this->assertSame('Frage aus Verweistuer (Bestand)', $result['questions'][0]['name']);
     }
 
@@ -342,15 +342,15 @@ final class import_questions_xml_test extends \advanced_testcase {
         ));
 
         $result = import_questions_xml::execute(
-            $categoryid, '', false, 'export.xml', material_files::ORT_WERKBANK);
+            $categoryid, '', false, 'export.xml', material_files::LOCATION_WORKBENCH);
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
 
-        $this->assertSame('erstimport', $result['questions'][0]['status']);
+        $this->assertSame('first_import', $result['questions'][0]['status']);
         $this->assertSame('Frage aus der Werkbank', $result['questions'][0]['name']);
     }
 
     /**
-     * Die Sperre unterhalb eines Eintrags vom Typ "kontextbereich" (Issue
+     * Die Sperre unterhalb eines Eintrags vom Typ "context_area" (Issue
      * #495, Spec #486 §2/§7) greift auch an der Verweistuer der Einbettung
      * (Issue #496) - kein zweiter Zugang zu Kontextdateien.
      */
@@ -359,8 +359,8 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         [, $categoryid] = $this->setup_course_and_category();
         \local_coursepilot\storage_anchor::write_pointer_document([
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material/kontext'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot-material/kontext'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ]);
         get_file_storage()->create_file_from_string([
             'contextid' => material_files::own_context()->id,
@@ -375,7 +375,7 @@ final class import_questions_xml_test extends \advanced_testcase {
             import_questions_xml::execute($categoryid, '', false, 'kontext/export.xml');
             $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('materialpathiskontext', $e->errorcode);
+            $this->assertSame('materialpathiscontext', $e->errorcode);
         }
     }
 
@@ -602,7 +602,7 @@ final class import_questions_xml_test extends \advanced_testcase {
     private function set_up_external_material_for(\stdClass $teacher): \local_coursepilot\tests\webdav\fake_webdav_transport {
         $this->grant_webdav_capability($teacher);
         $instanceid = $this->create_webdav_instance($teacher);
-        $this->write_v2_pointer($teacher, 'materialbestand', $instanceid, 'Material');
+        $this->write_v2_pointer($teacher, 'material_store', $instanceid, 'Material');
 
         $fake = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);

@@ -128,7 +128,7 @@ final class import_questions_xml extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
-            'location' => material_files::ort_parameter(),
+            'location' => material_files::location_parameter(),
         ]);
     }
 
@@ -145,7 +145,7 @@ final class import_questions_xml extends external_api {
         string $xmlcontent = '',
         bool $confirmed = false,
         string $xmlpath = '',
-        string $location = material_files::ORT_BESTAND
+        string $location = material_files::LOCATION_STORE
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'categoryid' => $categoryid,
@@ -286,7 +286,7 @@ final class import_questions_xml extends external_api {
      *
      * @param string $xmlcontent Textuer-Angabe (leer, wenn nicht genutzt)
      * @param string $xmlpath Verweistuer-Angabe (leer, wenn nicht genutzt)
-     * @param string $location {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
      *        Quelle der Materialordner-Pfade in beiden Tueren (Issue #496).
      * @return string
      * @throws \invalid_parameter_exception weder oder beide Angaben gesetzt
@@ -328,7 +328,7 @@ final class import_questions_xml extends external_api {
      * <file>-Bloecke ohne dieses Attribut bleiben unangetastet.
      *
      * @param string $xmlcontent
-     * @param string $location {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
      *        Quelle der referenzierten Pfade (Issue #496).
      * @return string
      * @throws \moodle_exception materialfilenotfound, wenn ein Verweis ins Leere zeigt
@@ -367,12 +367,12 @@ final class import_questions_xml extends external_api {
      * XML-Datei selbst; Textuer: je referenzierte Einzeldatei).
      *
      * @param string $path Materialordner-Pfad, z.B. "export.xml" oder "diagramme/skizze.png".
-     * @param string $location {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} (Issue #496).
+     * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} (Issue #496).
      * @return string
-     * @throws \moodle_exception materialfilenotfound / invalidmaterialort / materialpathiskontext
+     * @throws \moodle_exception materialfilenotfound / invalidmateriallocation / materialpathiscontext
      */
-    private static function read_material_binary(string $path, string $location = material_files::ORT_BESTAND): string {
-        $stored = material_files::read_content_for_ort($location, $path);
+    private static function read_material_binary(string $path, string $location = material_files::LOCATION_STORE): string {
+        $stored = material_files::read_content_for_location($location, $path);
         if ($stored === null) {
             throw new \moodle_exception(
                 'materialfilenotfound',
@@ -511,7 +511,7 @@ final class import_questions_xml extends external_api {
             $idnumber = self::generate_idnumber();
             $saved = self::save($category, $context, $question, null, $idnumber);
             self::verify_roundtrip($category, $context, $question, $saved, $idnumber);
-            return self::result($saved, 'erstimport', $name);
+            return self::result($saved, 'first_import', $name);
         }
 
         $entry = $DB->get_record('question_bank_entries', [
@@ -534,7 +534,7 @@ final class import_questions_xml extends external_api {
         // Bestaetigter Verdachtsfall: neuer Eintrag mit der mitgebrachten idnumber.
         $saved = self::save($category, $context, $question, null, $xmlidnumber);
         self::verify_roundtrip($category, $context, $question, $saved, $xmlidnumber);
-        return self::result($saved, 'erstimport', $name);
+        return self::result($saved, 'first_import', $name);
     }
 
     /**
@@ -563,7 +563,7 @@ final class import_questions_xml extends external_api {
                 'name' => $name,
                 'questionbankentryid' => 0,
                 'version' => 0,
-                'status' => 'verdachtsfall',
+                'status' => 'suspect',
                 'message' => 'Verdachtsfall: Die mitgebrachte idnumber "' . $xmlidnumber . '" hat keinen '
                     . 'Treffer in der Zielkategorie. Nichts wurde importiert. Zum Anlegen als neuer Eintrag '
                     . 'trotzdem erneut mit confirmed=true aufrufen.',
@@ -879,7 +879,7 @@ final class import_questions_xml extends external_api {
         global $DB;
 
         $version = $DB->get_record('question_versions', ['questionid' => $saved->id], '*', MUST_EXIST);
-        $message = $status === 'erstimport'
+        $message = $status === 'first_import'
             ? 'Frage "' . $name . '" neu angelegt (Version ' . $version->version . ').'
             : 'Frage "' . $name . '" als neue Version (Version ' . $version->version . ') desselben Bank-Eintrags importiert.';
 
@@ -934,13 +934,13 @@ final class import_questions_xml extends external_api {
                         'name' => new external_value(PARAM_TEXT, 'Name der importierten Frage'),
                         'questionbankentryid' => new external_value(
                             PARAM_INT,
-                            'ID des question_bank_entries (0 bei "verdachtsfall")'
+                            'ID des question_bank_entries (0 bei "suspect")'
                         ),
                         'version' => new external_value(
                             PARAM_INT,
-                            'Neue Versionsnummer (0 bei "verdachtsfall")'
+                            'Neue Versionsnummer (0 bei "suspect")'
                         ),
-                        'status' => new external_value(PARAM_ALPHA, '"erstimport" (first import) | "reimport" (new version of the same entry) | "verdachtsfall" (suspect case)'),
+                        'status' => new external_value(PARAM_ALPHAEXT, '"first_import" (first import) | "reimport" (new version of the same entry) | "suspect" (suspect case)'),
                         'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
                     ],
                     question_suspect_gate::response_fields()

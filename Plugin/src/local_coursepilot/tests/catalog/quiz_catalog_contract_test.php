@@ -81,7 +81,7 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
      * quiz bleibt laut ADR 0016 Einzelwerkzeug statt Formularweg.
      */
     public function test_schreibweg_is_update_quiz_settings(): void {
-        $this->assertSame('update_quiz_settings', quiz::schreibweg());
+        $this->assertSame('update_quiz_settings', quiz::write_route());
     }
 
     /**
@@ -193,9 +193,9 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
 
         // "Ein Vokabular, zwei Schreibwege" (#383): dasselbe Feld "timelimit", aber assign schreibt
         // ueber das Vehikel (schreibweg() === null) und quiz ueber ein Einzelwerkzeug.
-        $this->assertNull(assign::schreibweg());
-        $this->assertNotNull(quiz::schreibweg());
-        $this->assertNotSame(assign::schreibweg(), quiz::schreibweg());
+        $this->assertNull(assign::write_route());
+        $this->assertNotNull(quiz::write_route());
+        $this->assertNotSame(assign::write_route(), quiz::write_route());
     }
 
     /**
@@ -205,10 +205,10 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
         $bundles = quiz::bundles();
 
         $this->assertArrayHasKey('mini-check', $bundles);
-        $this->assertArrayHasKey('lernstandscheck', $bundles);
-        $this->assertArrayHasKey('abschlusstest', $bundles);
+        $this->assertArrayHasKey('progress-check', $bundles);
+        $this->assertArrayHasKey('final-test', $bundles);
 
-        foreach (['mini-check', 'lernstandscheck', 'abschlusstest'] as $mode) {
+        foreach (['mini-check', 'progress-check', 'final-test'] as $mode) {
             $this->assertNotEmpty($bundles[$mode], "Buendel $mode ist leer.");
 
             // Kein Buendel darf gesperrte Felder setzen - sonst wuerde ein Schreibvorgang, der das

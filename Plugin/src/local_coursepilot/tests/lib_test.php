@@ -130,7 +130,7 @@ final class local_coursepilot_lib_test extends advanced_testcase {
 
         $block = $navigation->get('local_coursepilot_settings');
         $this->assertNotFalse($block);
-        $this->assertNotFalse($block->get('local_coursepilot_settings_ortswahl'));
+        $this->assertNotFalse($block->get('local_coursepilot_settings_location_selection'));
         $this->assertNotFalse($block->get('local_coursepilot_settings_connections'));
     }
 

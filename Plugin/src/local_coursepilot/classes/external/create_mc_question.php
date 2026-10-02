@@ -130,7 +130,7 @@ final class create_mc_question extends external_api {
                     'questionid' => 0,
                     'questionbankentryid' => 0,
                     'version' => 0,
-                    'status' => 'verdachtsfall',
+                    'status' => 'suspect',
                     'message' => 'Verdachtsfall: In der Zielkategorie gibt es bereits einen Eintrag mit dem Namen "'
                         . $params['name'] . '". Nichts wurde angelegt. Zum Anlegen als neuer Eintrag trotzdem '
                         . 'erneut mit confirmed=true aufrufen.',
@@ -286,13 +286,13 @@ XML;
         return new external_single_structure(array_merge(
             [
                 'name' => new external_value(PARAM_TEXT, 'Name of the question'),
-                'questionid' => new external_value(PARAM_INT, 'ID of the newly created question row (0 for "verdachtsfall")'),
+                'questionid' => new external_value(PARAM_INT, 'ID of the newly created question row (0 for "suspect")'),
                 'questionbankentryid' => new external_value(
                     PARAM_INT,
-                    'ID of the question_bank_entries row (question identity, 0 for "verdachtsfall")'
+                    'ID of the question_bank_entries row (question identity, 0 for "suspect")'
                 ),
-                'version' => new external_value(PARAM_INT, 'Version number (initially 1, 0 for "verdachtsfall")'),
-                'status' => new external_value(PARAM_ALPHA, '"erstimport" (first import) | "verdachtsfall" (suspect case)'),
+                'version' => new external_value(PARAM_INT, 'Version number (initially 1, 0 for "suspect")'),
+                'status' => new external_value(PARAM_ALPHAEXT, '"first_import" (first import) | "suspect" (suspect case)'),
                 'message' => new external_value(PARAM_RAW, 'Teacher-facing German message with bank entry and version'),
             ],
             question_suspect_gate::response_fields()

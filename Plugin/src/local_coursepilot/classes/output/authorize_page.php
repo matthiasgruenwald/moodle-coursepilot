@@ -36,7 +36,7 @@ final class authorize_page {
      * @param array<string, string> $params response_type/client_id/redirect_uri/code_challenge/code_challenge_method
      * @param string $state
      * @param \moodle_url $formurl
-     * @param \moodle_url $ortswahlurl
+     * @param \moodle_url $locationselectionurl
      * @return array<string, mixed>
      */
     public static function page_data(
@@ -44,15 +44,15 @@ final class authorize_page {
         array $params,
         string $state,
         \moodle_url $formurl,
-        \moodle_url $ortswahlurl
+        \moodle_url $locationselectionurl
     ): array {
         $allowpersonaldata = (bool) get_config('local_coursepilot', 'allowpersonaldata');
 
         return [
             'consenttext' => self::consent_text($clientname, $allowpersonaldata),
-            'kontextbereich' => self::location_data('kontextbereich'),
-            'materialbestand' => self::location_data('materialbestand'),
-            'ortswahlurl' => $ortswahlurl->out(false),
+            'context_area' => self::location_data('context_area'),
+            'material_store' => self::location_data('material_store'),
+            'locationselectionurl' => $locationselectionurl->out(false),
             'formurl' => $formurl->out(false),
             'hiddenfields' => self::hidden_fields($params, $state),
             'sesskey' => sesskey(),
@@ -87,11 +87,11 @@ final class authorize_page {
      */
     private static function location_data(string $target): array {
         $location = location_selection::current($target);
-        $currentkey = $target === 'kontextbereich'
-            ? 'consentlocationkontextbereichcurrent'
-            : 'consentlocationmaterialbestandcurrent';
+        $currentkey = $target === 'context_area'
+            ? 'consentlocationcontextareacurrent'
+            : 'consentlocationmaterialstorecurrent';
         $text = get_string($currentkey, 'local_coursepilot', $location['display'])
-            . ' — ' . location_selection::zugelassen_label($location);
+            . ' — ' . location_selection::allowed_label($location);
         return ['text' => $text];
     }
 

@@ -235,7 +235,7 @@ final class describe_module_fields_test extends \advanced_testcase {
         $this->assertNotEmpty($short['module']['field_bundles']);
         $bundlenames = array_column($short['module']['field_bundles'], 'name');
         $this->assertContains('standard', $bundlenames);
-        $this->assertContains('übung', $bundlenames);
+        $this->assertContains('exercise', $bundlenames);
 
         $this->assertContains('markinganonymous', $fullnames, 'Vollstaendige Form muss alle Felder enthalten.');
     }

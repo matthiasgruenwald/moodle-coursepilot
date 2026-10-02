@@ -33,7 +33,7 @@ defined('MOODLE_INTERNAL') || die();
  * einen anderen Bereich oder eine andere Person.
  *
  * Unmittelbar englisch deklariert (#572, Spec 0025 §A): "location" statt
- * "ort" - {@see \local_coursepilot\material_files::ort_parameter()} bleibt
+ * "ort" - {@see \local_coursepilot\material_files::location_parameter()} bleibt
  * intern deutsch benannt, der Parametername an dieser Grenze ist englisch.
  *
  * @package    local_coursepilot
@@ -48,7 +48,7 @@ class list_material_files extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'path' => new external_value(PARAM_PATH, 'Relativer Unterordner, leer fuer die Wurzel', VALUE_DEFAULT, ''),
-            'location' => material_files::ort_parameter(),
+            'location' => material_files::location_parameter(),
         ]);
     }
 
@@ -57,18 +57,18 @@ class list_material_files extends external_api {
      * @param string $location
      * @return array
      * @throws \moodle_exception invalidmaterialpath, wenn $path ein "."/".."-
-     *         Segment enthaelt, invalidmaterialort bei einem unbekannten
-     *         "location"-Wert, materialpathiskontext, wenn der Kontextbereich im
+     *         Segment enthaelt, invalidmateriallocation bei einem unbekannten
+     *         "location"-Wert, materialpathiscontext, wenn der Kontextbereich im
      *         Bestand liegt und $path darunter fuehrt.
      */
-    public static function execute(string $path = '', string $location = material_files::ORT_BESTAND): array {
+    public static function execute(string $path = '', string $location = material_files::LOCATION_STORE): array {
         $params = self::validate_parameters(self::execute_parameters(), ['path' => $path, 'location' => $location]);
 
         $context = material_files::own_context();
         self::validate_context($context);
 
         // Der Kontextpointer (Issue #445) liegt physisch im
-        // Kontextbereich-Anker, nicht hier - list_entries_for_ort() schliesst
+        // Kontextbereich-Anker, nicht hier - list_entries_for_location() schliesst
         // ihn aus Konsistenzgruenden trotzdem aus, falls Anker und
         // Materialordner je zusammenfallen. material_area::list() entfernt
         // das nur intern gebrauchte "etag"-Feld bereits ortsneutral (Issue #539).
@@ -98,7 +98,7 @@ class list_material_files extends external_api {
                     'name' => new external_value(PARAM_TEXT, 'Datei- oder Ordnername'),
                     'type' => new external_value(
                         PARAM_ALPHA,
-                        '"file", "folder" or "kontextbereich" (context area - it physically lives here inside the '
+                        '"file", "folder" or "context_area" (context area - it physically lives here inside the '
                             . 'material store, but is not enterable via the material paths, see list_context_files)'
                     ),
                     'size' => new external_value(PARAM_INT, 'Dateigroesse in Byte, 0 bei Ordnern'),

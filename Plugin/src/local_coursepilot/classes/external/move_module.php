@@ -125,14 +125,14 @@ final class move_module extends external_api {
         $format = course_get_format($course);
 
         $sectionname = $format->get_section_name($targetsection);
-        $positionmeldung = $targetcmid !== null
+        $positionmessage = $targetcmid !== null
             ? " an Position {$position}"
             : '';
 
         return [
             'cmid' => (int) $cm->id,
             'sectionnum' => (int) $params['sectionnum'],
-            'message' => "Aktivität \"{$cm->name}\" in Abschnitt \"{$sectionname}\"{$positionmeldung} verschoben.",
+            'message' => "Aktivität \"{$cm->name}\" in Abschnitt \"{$sectionname}\"{$positionmessage} verschoben.",
         ];
     }
 

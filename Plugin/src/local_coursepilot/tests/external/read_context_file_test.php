@@ -148,7 +148,7 @@ final class read_context_file_test extends \advanced_testcase {
      * "vorheriger_ort" ohne offenen Altbestand ist ein benannter Fehler
      * (Issue #498, Spec #486 §6).
      */
-    public function test_vorheriger_ort_switch_without_open_altbestand_is_rejected(): void {
+    public function test_vorheriger_ort_switch_without_open_previouslocation_is_rejected(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
@@ -156,7 +156,7 @@ final class read_context_file_test extends \advanced_testcase {
             read_context_file::execute('plan.md', true);
             $this->fail('Ohne offenen Altbestand haette der Schalter abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('altbestandclosed', $e->errorcode);
+            $this->assertSame('previouslocationclosed', $e->errorcode);
         }
     }
 
@@ -170,8 +170,8 @@ final class read_context_file_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
         $this->create_context_file($user, '/coursepilot/', 'plan.md', '# Aktuell');
-        $this->create_context_file($user, '/altbestand/', 'plan.md', '# Alt');
-        $this->write_pointer_with_vorheriger_ort($user, 'altbestand');
+        $this->create_context_file($user, '/previouslocation/', 'plan.md', '# Alt');
+        $this->write_pointer_with_previous_location($user, 'previouslocation');
 
         $current = read_context_file::execute('plan.md');
         $current = external_api::clean_returnvalue(read_context_file::execute_returns(), $current);
@@ -190,8 +190,8 @@ final class read_context_file_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
-        $this->create_context_file($user, '/altbestand/', 'lerngruppe.md', $this->marked_content());
-        $this->write_pointer_with_vorheriger_ort($user, 'altbestand');
+        $this->create_context_file($user, '/previouslocation/', 'lerngruppe.md', $this->marked_content());
+        $this->write_pointer_with_previous_location($user, 'previouslocation');
 
         $this->expectException(\moodle_exception::class);
         read_context_file::execute('lerngruppe.md', true);

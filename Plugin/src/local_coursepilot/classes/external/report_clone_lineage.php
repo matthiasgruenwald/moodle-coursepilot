@@ -55,7 +55,7 @@ defined('MOODLE_INTERNAL') || die();
  *
  * Unmittelbar englisch deklariert (#572, Spec 0025 §A): "message" statt
  * "meldung", "source_course_id" statt "quellkurs_id" - die Statuswerte
- * "eigene_kopie"/"geteilte_referenz" bleiben Domainvokabular (glossiert in
+ * "own_copy"/"shared_reference" bleiben Domainvokabular (glossiert in
  * execute_returns()), wie bereits bei list_skills' "kind"-Feld (#571).
  *
  * @package    local_coursepilot
@@ -108,7 +108,7 @@ final class report_clone_lineage extends external_api {
                 'questionid' => (int) $row->questionid,
                 'name' => (string) $row->questionname,
                 'idnumber' => (string) ($row->entryidnumber ?? ''),
-                'status' => $owncopy ? 'eigene_kopie' : 'geteilte_referenz',
+                'status' => $owncopy ? 'own_copy' : 'shared_reference',
                 'source_course_id' => $owncopy ? 0 : $entrycourseid,
             ];
         }
@@ -184,7 +184,7 @@ final class report_clone_lineage extends external_api {
         $owncopies = 0;
         $shared = 0;
         foreach ($questions as $question) {
-            if ($question['status'] === 'eigene_kopie') {
+            if ($question['status'] === 'own_copy') {
                 $owncopies++;
             } else {
                 $shared++;
@@ -217,11 +217,11 @@ final class report_clone_lineage extends external_api {
                 'idnumber' => new external_value(PARAM_TEXT, 'idnumber des Bank-Eintrags, leer wenn keine vergeben'),
                 'status' => new external_value(
                     PARAM_ALPHANUMEXT,
-                    '"eigene_kopie" (own copy) or "geteilte_referenz" (shared reference)'
+                    '"own_copy" (own copy) or "shared_reference" (shared reference)'
                 ),
                 'source_course_id' => new external_value(
                     PARAM_INT,
-                    'Course ID the reference still points to (0 when status = "eigene_kopie")'
+                    'Course ID the reference still points to (0 when status = "own_copy")'
                 ),
             ]), 'Ergebnis je Slot des Tests, in Slot-Reihenfolge'),
             'message' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Zusammenfassung: eigene Kopien vs. geteilte Referenzen'),

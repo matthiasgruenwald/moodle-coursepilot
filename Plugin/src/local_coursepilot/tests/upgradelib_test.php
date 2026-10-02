@@ -189,6 +189,47 @@ final class upgradelib_test extends \advanced_testcase {
     }
 
     /**
+     * #602: Kontextpointer und Ausstandsnotiz alter Fassung werden englisch
+     * benannt und uebersetzt; die alten Dateien verschwinden.
+     */
+    public function test_anchor_files_are_renamed_and_translated(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $context = \context_user::instance($user->id);
+        $fs = get_file_storage();
+        $record = ['contextid' => $context->id, 'component' => 'user', 'filearea' => 'private', 'itemid' => 0,
+            'filepath' => '/coursepilot/'];
+        $fs->create_file_from_string($record + ['filename' => '.coursepilot-ort.json'], json_encode([
+            'kontextbereich' => ['ort' => 'extern', 'instanzid' => 3, 'pfad' => 'Kontext',
+                'pruefmerkmal' => ['server' => 'cloud.example', 'basispfad' => 'dav', 'konto' => 'lea']],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'ortsverlauf' => [['datum' => 5, 'ziel' => 'kontextbereich', 'von' => 'a', 'nach' => 'b']],
+        ]));
+        $fs->create_file_from_string($record + ['filename' => '.coursepilot-ausstand.json'], json_encode([
+            'ABC' => ['zeitpunkt' => 7, 'pfad' => 'plan.md', 'vorgang' => 'überschreiben',
+                'fehlerklasse' => 'Speicher voll', 'kursid' => 4],
+        ]));
+
+        local_coursepilot_migrate_anchor_files();
+        local_coursepilot_migrate_anchor_files();
+
+        $this->assertFalse($fs->file_exists($context->id, 'user', 'private', 0, '/coursepilot/', '.coursepilot-ort.json'));
+        $this->assertFalse($fs->file_exists($context->id, 'user', 'private', 0, '/coursepilot/', '.coursepilot-ausstand.json'));
+        $pointer = json_decode($fs->get_file($context->id, 'user', 'private', 0, '/coursepilot/', '.coursepilot-location.json')
+            ->get_content(), true);
+        $this->assertSame([
+            'context_area' => ['location' => 'external', 'instanceid' => 3, 'path' => 'Kontext',
+                'fingerprint' => ['server' => 'cloud.example', 'basepath' => 'dav', 'account' => 'lea']],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
+            'location_history' => [['date' => 5, 'target' => 'context_area', 'from_text' => 'a', 'to_text' => 'b']],
+        ], $pointer);
+        $pending = json_decode($fs->get_file($context->id, 'user', 'private', 0, '/coursepilot/', '.coursepilot-pending.json')
+            ->get_content(), true);
+        $this->assertSame(['ABC' => ['timestamp' => 7, 'path' => 'plan.md', 'operation' => 'overwrite',
+            'error_class' => 'storage_full', 'course_id' => 4]], $pending);
+    }
+
+    /**
      * Stellt genau die Abweichungen her, die auf der Spike-Instanz gemessen
      * wurden: clientid auf 64 verkuerzt, codechallengemethod vorhanden,
      * refreshtokenhash nullable.

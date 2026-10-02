@@ -71,7 +71,7 @@ final class update_mc_question_test extends \advanced_testcase {
         );
         $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
 
-        $this->assertSame('aktualisiert', $result['status']);
+        $this->assertSame('updated', $result['status']);
         $this->assertSame($entryid, $result['questionbankentryid'], 'Neue Version DESSELBEN Bank-Eintrags.');
         $this->assertSame(2, $result['version']);
         $this->assertFalse($result['idnumber_added']);
@@ -139,7 +139,7 @@ final class update_mc_question_test extends \advanced_testcase {
             json_encode(['defaultmark' => 3.0])
         );
         $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
-        $this->assertSame('aktualisiert', $result['status']);
+        $this->assertSame('updated', $result['status']);
 
         $newpenalty = $DB->get_field('question', 'penalty', ['id' => $result['questionid']], MUST_EXIST);
         $newoptions = $DB->get_record(
@@ -185,7 +185,7 @@ final class update_mc_question_test extends \advanced_testcase {
         );
         $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
 
-        $this->assertSame('aktualisiert', $result['status']);
+        $this->assertSame('updated', $result['status']);
         $this->assertTrue($result['idnumber_added']);
         $this->assertSame($target['questionbankentryid'], $result['questionbankentryid'], 'Neue Version, kein neuer Eintrag.');
 
@@ -238,7 +238,7 @@ final class update_mc_question_test extends \advanced_testcase {
         );
         $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
 
-        $this->assertSame('aktualisiert', $result['status']);
+        $this->assertSame('updated', $result['status']);
         $this->assertSame($entryid, $result['questionbankentryid'], 'Neue Version DESSELBEN Bank-Eintrags.');
         $this->assertSame(2, $result['version']);
 
@@ -297,7 +297,7 @@ final class update_mc_question_test extends \advanced_testcase {
             ])
         );
         $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
-        $this->assertSame('aktualisiert', $result['status']);
+        $this->assertSame('updated', $result['status']);
 
         $answers = array_values($DB->get_records('question_answers', ['question' => $result['questionid']], 'id ASC'));
         $this->assertCount(2, $answers);
@@ -485,7 +485,7 @@ final class update_mc_question_test extends \advanced_testcase {
     private function set_up_external_material_for(\stdClass $teacher): \local_coursepilot\tests\webdav\fake_webdav_transport {
         $this->grant_webdav_capability($teacher);
         $instanceid = $this->create_webdav_instance($teacher);
-        $this->write_v2_pointer($teacher, 'materialbestand', $instanceid, 'Material');
+        $this->write_v2_pointer($teacher, 'material_store', $instanceid, 'Material');
 
         $fake = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
@@ -526,7 +526,7 @@ final class update_mc_question_test extends \advanced_testcase {
         );
         $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
 
-        $this->assertSame('aktualisiert', $result['status']);
+        $this->assertSame('updated', $result['status']);
         $stored = $this->stored_question_file('question', 'questiontext', $result['questionid'], 'diagramm.png');
         $this->assertNotFalse($stored, 'Datei liegt physisch in der question/questiontext-Filearea.');
         $this->assertSame('Bildinhalt-1', $stored->get_content());
@@ -541,7 +541,7 @@ final class update_mc_question_test extends \advanced_testcase {
 
         [, $categoryid, $teacher] = $this->setup_course_and_category();
         $fake = $this->set_up_external_material_for($teacher);
-        $fake->seed_file('/Coursepilot/Material/nur-extern.png', 'extern');
+        $fake->seed_file('/Coursepilot/Material/nur-extern.png', 'external');
         $this->upload_material('werkbank.png', 'aus der Werkbank');
 
         $created = create_mc_question::execute(
@@ -563,11 +563,11 @@ final class update_mc_question_test extends \advanced_testcase {
                 'questiontext_images' => ['werkbank.png'],
             ]),
             false,
-            \local_coursepilot\material_files::ORT_WERKBANK
+            \local_coursepilot\material_files::LOCATION_WORKBENCH
         );
         $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
 
-        $this->assertSame('aktualisiert', $result['status']);
+        $this->assertSame('updated', $result['status']);
         $stored = $this->stored_question_file('question', 'questiontext', $result['questionid'], 'werkbank.png');
         $this->assertNotFalse($stored);
         $this->assertSame('aus der Werkbank', $stored->get_content());

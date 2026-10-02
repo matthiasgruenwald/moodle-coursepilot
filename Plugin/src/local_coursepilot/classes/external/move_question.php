@@ -126,7 +126,7 @@ final class move_question extends external_api {
 
             return array_merge(
                 [
-                    'status' => 'verdachtsfall',
+                    'status' => 'suspect',
                     'questionbankentryid' => (int) $entry->id,
                     'versionids' => [],
                     'idnumber_disambiguated' => false,
@@ -164,20 +164,20 @@ final class move_question extends external_api {
         $entry = $DB->get_record('question_bank_entries', ['id' => $entry->id], '*', MUST_EXIST);
         $versions = $DB->get_records('question_versions', ['questionbankentryid' => $entry->id], 'version ASC');
         $newidnumber = (string) ($entry->idnumber ?? '');
-        $idnumberdisambiguiert = $collision !== null && $newidnumber !== $idnumber;
+        $idnumberdisambiguated = $collision !== null && $newidnumber !== $idnumber;
 
         $message = 'Frage in Zielkategorie verschoben.';
-        if ($idnumberdisambiguiert) {
+        if ($idnumberdisambiguated) {
             $message .= ' Die idnumber "' . $idnumber . '" war in der Zielkategorie bereits vergeben und wurde '
                 . 'auf "' . $newidnumber . '" umbenannt.';
         }
 
         return array_merge(
             [
-                'status' => 'verschoben',
+                'status' => 'moved',
                 'questionbankentryid' => (int) $entry->id,
                 'versionids' => array_values(array_map(static fn($item): int => (int) $item->questionid, $versions)),
-                'idnumber_disambiguated' => $idnumberdisambiguiert,
+                'idnumber_disambiguated' => $idnumberdisambiguated,
                 'message' => $message,
             ],
             question_suspect_gate::empty_result()
@@ -190,11 +190,11 @@ final class move_question extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure(array_merge(
             [
-                'status' => new external_value(PARAM_ALPHA, '"verschoben" (moved) or "verdachtsfall" (suspect case)'),
+                'status' => new external_value(PARAM_ALPHA, '"moved" (moved) or "suspect" (suspect case)'),
                 'questionbankentryid' => new external_value(PARAM_INT, 'Unchanged identity of the question_bank_entries row'),
                 'versionids' => new external_multiple_structure(
                     new external_value(PARAM_INT, 'questionid of a retained version'),
-                    'All versions of the question in version order (empty for "verdachtsfall")'
+                    'All versions of the question in version order (empty for "suspect")'
                 ),
                 'idnumber_disambiguated' => new external_value(
                     PARAM_BOOL,

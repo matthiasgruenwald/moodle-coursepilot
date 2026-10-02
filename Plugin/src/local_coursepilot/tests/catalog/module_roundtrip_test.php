@@ -73,7 +73,7 @@ final class module_roundtrip_test extends \advanced_testcase {
     private function create_via_module_tool(int $courseid, string $modname, array $felder): array {
         return external_api::clean_returnvalue(
             create_module::execute_returns(),
-            create_module::execute($courseid, 0, $modname, json_encode($felder), \local_coursepilot\material_files::ORT_BESTAND)
+            create_module::execute($courseid, 0, $modname, json_encode($felder), \local_coursepilot\material_files::LOCATION_STORE)
         );
     }
 

@@ -88,7 +88,7 @@ final class create_module extends external_api {
                     . 'bundles are not an endpoint parameter) - a bundle value only applies to fields this object '
                     . 'does not already name itself.'
             ),
-            'location' => material_files::ort_parameter(),
+            'location' => material_files::location_parameter(),
             learner_locks::PARAMETER => learner_locks::confirm_parameter(),
         ]);
     }
@@ -107,7 +107,7 @@ final class create_module extends external_api {
         int $sectionnum,
         string $modname,
         string $fieldsjson,
-        string $location = material_files::ORT_BESTAND,
+        string $location = material_files::LOCATION_STORE,
         array $confirmlearnerlocks = []
     ): array {
         global $CFG;
@@ -270,13 +270,13 @@ final class create_module extends external_api {
      */
     private static function catalog_for(string $modname): string {
         $catalogclass = registry::require_catalogued($modname);
-        $schreibweg = $catalogclass::schreibweg();
-        if ($schreibweg !== null) {
+        $writeroute = $catalogclass::write_route();
+        if ($writeroute !== null) {
             throw new moodle_exception(
                 'writevehicleblocked',
                 'local_coursepilot',
                 '',
-                ['modname' => $modname, 'schreibweg' => $schreibweg]
+                ['modname' => $modname, 'write_route' => $writeroute]
             );
         }
         return $catalogclass;
@@ -318,11 +318,11 @@ final class create_module extends external_api {
      *        file_prepare_draft_area() - der Modulkontext existiert beim
      *        Anlegen noch nicht.
      * @param array $merged Wird in-place ersetzt: Pfadliste -> Entwurfs-Itemid.
-     * @param string $location {@see \local_coursepilot\material_files::ORT_BESTAND}/{@see \local_coursepilot\material_files::ORT_WERKBANK}
+     * @param string $location {@see \local_coursepilot\material_files::LOCATION_STORE}/{@see \local_coursepilot\material_files::LOCATION_WORKBENCH}
      *        - Quelle der Pfade (Issue #496).
      * @return void
-     * @throws moodle_exception materialfilenotfound / invalidmaterialpath / invalidmaterialort /
-     *         materialpathiskontext / invalidmaterialreferencelist / materialembedtoolarge
+     * @throws moodle_exception materialfilenotfound / invalidmaterialpath / invalidmateriallocation /
+     *         materialpathiscontext / invalidmaterialreferencelist / materialembedtoolarge
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
     private static function resolve_material_reference_pseudofields(
@@ -399,7 +399,7 @@ final class create_module extends external_api {
     }
 
     /**
-     * Das Buendel "zuteilung" (choice) fuehrt "limit" als EINEN Wert
+     * Das Buendel "allocation" (choice) fuehrt "limit" als EINEN Wert
      * (dieselbe Begrenzung fuer jede Option, siehe
      * {@see \local_coursepilot\catalog\choice::bundles()}), waehrend das echte
      * Formularfeld ein Array je Option ist. Ohne diese Aufloesung wuerde

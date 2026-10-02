@@ -328,7 +328,7 @@ final class pointer_reader {
             // Issue #565: uebersetztes Label statt der fest-deutschen
             // internen Konstante, siehe webdav_error::label().
             'errorclass' => webdav_error::label($e->errorclass),
-            'page' => webdav_setup_steps::ORTSWAHL_PAGE,
+            'page' => webdav_setup_steps::LOCATION_SELECTION_PAGE,
         ]);
     }
 
@@ -367,7 +367,7 @@ final class pointer_reader {
      *
      * @param storage_area $area
      * @param string $path Client-Pfad, bereits als extern erkannt.
-     * @param pointer_location $location Muss bereits als EXTERN erkannt sein.
+     * @param pointer_location $location Muss bereits als EXTERNAL erkannt sein.
      * @return string|null null, wenn die Datei fehlt oder der Ort gerade nicht aufloesbar ist.
      * @throws webdav_error bei einem echten Lesefehler (nicht: fehlende Datei) - roh, unuebersetzt.
      */

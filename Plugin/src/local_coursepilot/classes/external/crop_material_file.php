@@ -42,7 +42,7 @@ defined('MOODLE_INTERNAL') || die();
  * in moodlelib.php.
  *
  * Unmittelbar englisch deklariert (#572, Spec 0025 §A): "location" statt
- * "ort" - {@see \local_coursepilot\material_files::ort_parameter()} bleibt
+ * "ort" - {@see \local_coursepilot\material_files::location_parameter()} bleibt
  * intern deutsch benannt, der Parametername an dieser Grenze ist englisch.
  *
  * @package    local_coursepilot
@@ -71,7 +71,7 @@ class crop_material_file extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
-            'location' => material_files::ort_parameter(),
+            'location' => material_files::location_parameter(),
         ]);
     }
 
@@ -85,8 +85,8 @@ class crop_material_file extends external_api {
      * @param float $y1
      * @param string $expectedcontenthash
      * @return array
-     * @throws \moodle_exception invalidmaterialpath, invalidmaterialort,
-     *         materialpathiskontext, materialfilenotfound,
+     * @throws \moodle_exception invalidmaterialpath, invalidmateriallocation,
+     *         materialpathiscontext, materialfilenotfound,
      *         materialgdmissing, materialcropsourceunsupported,
      *         materialcropoutputunsupported, materialcropinvalidcoordinates,
      *         materialfiledisallowedtype, materialfilechanged, materialquotaexceeded
@@ -99,7 +99,7 @@ class crop_material_file extends external_api {
         float $x1,
         float $y1,
         string $expectedcontenthash = '',
-        string $location = material_files::ORT_BESTAND
+        string $location = material_files::LOCATION_STORE
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'sourcepath' => $sourcepath,
@@ -144,7 +144,7 @@ class crop_material_file extends external_api {
      *         [Quelldatei-Inhalt, aufgeloester Quellpfad]
      */
     private static function resolve_source(array $params): array {
-        $sourcestored = material_area::read_for_ort($params['location'], $params['sourcepath']);
+        $sourcestored = material_area::read_for_location($params['location'], $params['sourcepath']);
         if ($sourcestored === null) {
             throw new \moodle_exception(
                 'materialfilenotfound',

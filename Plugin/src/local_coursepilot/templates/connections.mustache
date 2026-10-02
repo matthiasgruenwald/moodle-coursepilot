@@ -21,17 +21,17 @@
 
     Context variables required for this template:
     * currentlocations - object - current-location context (see local_coursepilot/current_locations)
-    * ortswahlurl - string - link to the location-selection page
+    * locationselectionurl - string - link to the location-selection page
     * empty - bool - true when the teacher has no active connections
     * rows - array - list of {clientname: string, since: string, expires: string, revokeurl: string}, present when not empty
 
     Example context (json):
     {
         "currentlocations": {
-            "kontextbereich": {"label": "Kontextbereich", "allowancelabel": "IGS Musterschule / Klasse 7a"},
-            "materialbestand": {"label": "Materialbestand", "allowancelabel": "IGS Musterschule / Fachbereich Bio"}
+            "context_area": {"label": "Kontextbereich", "allowancelabel": "IGS Musterschule / Klasse 7a"},
+            "material_store": {"label": "Materialbestand", "allowancelabel": "IGS Musterschule / Fachbereich Bio"}
         },
-        "ortswahlurl": "https://example.test/local/coursepilot/ortswahl.php",
+        "locationselectionurl": "https://example.test/local/coursepilot/location_selection.php",
         "empty": false,
         "rows": [
             {"clientname": "Claude Desktop", "since": "01.09.2026, 08:00", "expires": "01.10.2026, 08:00", "revokeurl": "https://example.test/local/coursepilot/connections.php?revoke=1&sesskey=abc"}
@@ -40,10 +40,10 @@
 }}
 <p>{{#str}} myconnectionsintro, local_coursepilot {{/str}}</p>
 
-<h4>{{#str}} ortswahlcurrentheading, local_coursepilot {{/str}}</h4>
+<h4>{{#str}} locationselectioncurrentheading, local_coursepilot {{/str}}</h4>
 {{#currentlocations}}{{> local_coursepilot/current_locations}}{{/currentlocations}}
 <div class="small text-muted mb-2">{{#str}} externallocationprivacyinfo, local_coursepilot {{/str}}</div>
-<a href="{{ortswahlurl}}" class="btn btn-link p-0 mb-3">{{#str}} consentlocationchangelink, local_coursepilot {{/str}}</a>
+<a href="{{locationselectionurl}}" class="btn btn-link p-0 mb-3">{{#str}} consentlocationchangelink, local_coursepilot {{/str}}</a>
 <br>
 
 {{#empty}}<div class="alert alert-info">{{#str}} connectionnoconnections, local_coursepilot {{/str}}</div>{{/empty}}

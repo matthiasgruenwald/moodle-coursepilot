@@ -6,10 +6,10 @@ description: Coursepilot-Einstieg. Nutze diesen Skill bei der Formulierung "Mach
 # coursepilot
 
 Lies zuerst `coursepilot_get_skill("coursepilot-core")`. Bei Mehrdeutigkeit über
-Klasse, Fach oder Thema zusätzlich `coursepilot_get_skill("kontext-onboarding")`.
+Klasse, Fach oder Thema zusätzlich `coursepilot_get_skill("context-onboarding")`.
 
-Benenne transparent den passenden Modus (`coursepilot-planen` oder
-`coursepilot-umsetzen`) und den Grund für den Wechsel. Halte die Planstrenge
+Benenne transparent den passenden Modus (`coursepilot-plan` oder
+`coursepilot-implement`) und den Grund für den Wechsel. Halte die Planstrenge
 aus dem Kern ein.
 
 ## Servermodus
@@ -20,8 +20,8 @@ gegenueber der Lehrkraft und arbeitet mit den Server-Skills weiter, statt sie
 zu mischen.
 
 Nicht leere Felder `ausstände`/`hinweise` aus derselben Antwort zu
-Sitzungsbeginn melden (siehe `coursepilot_get_skill("kontextbereich")`).
+Sitzungsbeginn melden (siehe `coursepilot_get_skill("context-area")`).
 
 Bei einer Bestandsänderung, die gerade nicht ausführbar ist, oder bei
 einem Client mit lokalen Dateiwerkzeugen zu Sitzungsbeginn:
-`coursepilot_get_skill("merkzettel")`.
+`coursepilot_get_skill("notepad")`.

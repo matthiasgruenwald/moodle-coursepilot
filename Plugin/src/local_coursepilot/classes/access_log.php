@@ -107,7 +107,7 @@ final class access_log {
      *        berührt hat und er noch bekannt war (#501: ein Werkbank-
      *        Downloadticket kann den Pfad schon verloren haben, wenn erst
      *        eine spätere Prüfung scheitert - siehe
-     *        {@see \local_coursepilot\werkbank_ticket_redemption_failed}).
+     *        {@see \local_coursepilot\workbench_ticket_redemption_failed}).
      *        Null, wenn kein Pfad bekannt ist.
      * @param int|null $userid Siehe {@see log_success()}.
      * @param string|null $detail Interner Diagnosehinweis, nur bei Stufe

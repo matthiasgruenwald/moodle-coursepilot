@@ -49,7 +49,7 @@ final class storage_anchor {
     public const ITEMID = 0;
 
     /** @var string Namensvorsatz der Zwischendatei in {@see replace()}. */
-    public const TEMP_PREFIX = '.coursepilot-neu-';
+    public const TEMP_PREFIX = '.coursepilot-new-';
 
     /**
      * @var string Einstellungsname des Ankers (Issue #445): der einzige, nicht
@@ -71,7 +71,7 @@ final class storage_anchor {
      *      keine der beiden Schreibendpunkte kann ihn ueberschreiben, er wird
      *      ausschliesslich von Hand ueber "Meine Dateien" angelegt.
      */
-    public const POINTER_FILENAME = '.coursepilot-ort.json';
+    public const POINTER_FILENAME = '.coursepilot-location.json';
 
     /**
      * @var string Dateiname der Ausstandsnotiz im Anker-Ordner (Issue #492,
@@ -80,7 +80,7 @@ final class storage_anchor {
      *      halten sie ausserhalb der `.md`-Regel des Kontextbereichs und der
      *      Auflistung ({@see list_entries()}).
      */
-    public const AUSSTAND_FILENAME = '.coursepilot-ausstand.json';
+    public const PENDING_FILENAME = '.coursepilot-pending.json';
 
     /**
      * Der eigene Nutzerkontext der angemeldeten Person - niemals aus
@@ -114,7 +114,7 @@ final class storage_anchor {
         if ($location === null) {
             return $configured;
         }
-        if ($location->kind === pointer_location::EXTERN) {
+        if ($location->kind === pointer_location::EXTERNAL) {
             if ($area->externalfallback) {
                 // Werkbank (Issue #520, Spec #486 §1): bleibt bei einem
                 // externen Materialbestand an der Standardwurzel im Anker -
@@ -126,7 +126,7 @@ final class storage_anchor {
             // Orte (Issue #490 baut nur den Lesepfad) - ein stiller
             // Rueckfall auf die Standardwurzel legte einen zweiten, halben
             // Bereich an, deshalb ein benannter Fehler statt dessen.
-            throw new \moodle_exception('pointerexternalnotsupported', 'local_coursepilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
+            throw new \moodle_exception('pointerexternalnotsupported', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
         }
         return $location->path;
     }
@@ -188,7 +188,7 @@ final class storage_anchor {
         if (!is_array($decoded) || json_last_error() !== JSON_ERROR_NONE || array_is_list($decoded)) {
             throw new \moodle_exception('pointerunreadable', 'local_coursepilot', '', self::POINTER_FILENAME);
         }
-        return $decoded;
+        return context_pointer::normalise($decoded);
     }
 
     /**
@@ -203,14 +203,14 @@ final class storage_anchor {
      * @param storage_area $area
      * @return pointer_location
      * @throws \moodle_exception pointerunreadable/pointerincomplete/pointerunreachable/
-     *         materialbestandimkontext
+     *         materialstoreincontext
      */
     public static function effective_location(storage_area $area): pointer_location {
         $location = self::resolve_pointer_location($area);
         if ($location === null) {
             return pointer_location::moodle(self::configured_root($area->rootsetting, $area->defaultroot));
         }
-        if ($location->kind === pointer_location::EXTERN && $area->externalfallback) {
+        if ($location->kind === pointer_location::EXTERNAL && $area->externalfallback) {
             // Werkbank (Issue #520): bleibt bei einem externen Materialbestand
             // an der Standardwurzel im Anker, deckungsgleich mit {@see root()} -
             // sonst wiche der hier gemeldete Ort vom tatsaechlich
@@ -300,12 +300,12 @@ final class storage_anchor {
      */
     public static function save_location_selection(array $locations, array $history, ?array $previouslocation): void {
         $document = [
-            'kontextbereich' => $locations['kontextbereich'],
-            'materialbestand' => $locations['materialbestand'],
-            'ortsverlauf' => $history,
+            'context_area' => $locations['context_area'],
+            'material_store' => $locations['material_store'],
+            'location_history' => $history,
         ];
         if ($previouslocation !== null) {
-            $document['vorheriger_ort'] = $previouslocation;
+            $document['previous_location'] = $previouslocation;
         }
         self::write_pointer_document($document);
     }
@@ -537,7 +537,7 @@ final class storage_anchor {
         throw new \moodle_exception($area->quotaerrorkey, 'local_coursepilot', '', (object) [
             'remaining' => format_float($remaining / 1048576, 1),
             'needed' => format_float($additionalbytes / 1048576, 1),
-            'page' => webdav_setup_steps::ORTSWAHL_PAGE,
+            'page' => webdav_setup_steps::LOCATION_SELECTION_PAGE,
         ]);
     }
 
@@ -656,7 +656,7 @@ final class storage_anchor {
         $entries = [];
         foreach (self::directory_files($directory, false, true) as $file) {
             if (!$file->is_directory()
-                    && ($file->get_filename() === self::POINTER_FILENAME || $file->get_filename() === self::AUSSTAND_FILENAME)) {
+                    && ($file->get_filename() === self::POINTER_FILENAME || $file->get_filename() === self::PENDING_FILENAME)) {
                 continue;
             }
             if ($file->is_directory()) {

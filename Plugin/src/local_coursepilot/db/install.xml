@@ -136,7 +136,7 @@
         <INDEX NAME="userid_pathhash" UNIQUE="true" FIELDS="userid, pathhash"/>
       </INDEXES>
     </TABLE>
-    <TABLE NAME="local_coursepilot_werkbank_ticket" COMMENT="Einmal-Downloadticket fuer eine Werkbankdatei (#501, Spec #486 Paragraph 13): gebunden an Person, Pfad und contenthash, 15 Minuten gueltig, gespeichert wird nur der Hash des Tickets selbst.">
+    <TABLE NAME="local_coursepilot_workbench_ticket" COMMENT="Einmal-Downloadticket fuer eine Werkbankdatei (#501, Spec #486 Paragraph 13): gebunden an Person, Pfad und contenthash, 15 Minuten gueltig, gespeichert wird nur der Hash des Tickets selbst.">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>

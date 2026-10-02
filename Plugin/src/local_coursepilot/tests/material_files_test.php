@@ -463,7 +463,7 @@ final class material_files_test extends \advanced_testcase {
             'mod_folder',
             'content',
             0,
-            [['pfad' => 'blatt.pdf', 'zielordner' => 'unterordner']]
+            [['path' => 'blatt.pdf', 'target_folder' => 'unterordner']]
         );
 
         $draftfile = get_file_storage()->get_file(
@@ -530,7 +530,7 @@ final class material_files_test extends \advanced_testcase {
             'mod_folder',
             'content',
             0,
-            [['pfad' => 'blatt.pdf', 'zielordner' => '../ausserhalb']]
+            [['path' => 'blatt.pdf', 'target_folder' => '../ausserhalb']]
         );
     }
 
@@ -548,7 +548,7 @@ final class material_files_test extends \advanced_testcase {
             'mod_folder',
             'content',
             0,
-            [['zielordner' => 'unterordner']]
+            [['target_folder' => 'unterordner']]
         );
     }
 
@@ -611,7 +611,7 @@ final class material_files_test extends \advanced_testcase {
             'introattachment',
             0,
             ['gross.pdf'],
-            material_files::ORT_WERKBANK
+            material_files::LOCATION_WORKBENCH
         );
 
         $this->assertNotFalse(get_file_storage()->get_file(
@@ -650,12 +650,12 @@ final class material_files_test extends \advanced_testcase {
      * Default und Beschreibung kommen aus derselben Konstante wie das
      * tools/list-Schema.
      */
-    public function test_ort_parameter_uses_shared_default_and_description(): void {
-        $param = material_files::ort_parameter();
+    public function test_location_parameter_uses_shared_default_and_description(): void {
+        $param = material_files::location_parameter();
 
         $this->assertSame(PARAM_ALPHA, $param->type);
-        $this->assertSame(material_files::ORT_BESTAND, $param->default);
-        $this->assertSame(material_files::ORT_DESCRIPTION, $param->desc);
+        $this->assertSame(material_files::LOCATION_STORE, $param->default);
+        $this->assertSame(material_files::LOCATION_DESCRIPTION, $param->desc);
         $this->assertSame(VALUE_DEFAULT, $param->required);
     }
 
@@ -663,11 +663,11 @@ final class material_files_test extends \advanced_testcase {
      * Issue #508: dieselbe Beschreibung, derselbe Wertebereich - fuer die
      * KI-Werkzeugliste (tool_registry-Schemas) wie fuer den Webservice.
      */
-    public function test_ort_schema_matches_shared_description_and_values(): void {
-        $schema = material_files::ort_schema();
+    public function test_location_schema_matches_shared_description_and_values(): void {
+        $schema = material_files::location_schema();
 
         $this->assertSame('string', $schema['type']);
-        $this->assertSame([material_files::ORT_BESTAND, material_files::ORT_WERKBANK], $schema['enum']);
-        $this->assertSame(material_files::ORT_DESCRIPTION, $schema['description']);
+        $this->assertSame([material_files::LOCATION_STORE, material_files::LOCATION_WORKBENCH], $schema['enum']);
+        $this->assertSame(material_files::LOCATION_DESCRIPTION, $schema['description']);
     }
 }

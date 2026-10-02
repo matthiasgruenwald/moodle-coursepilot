@@ -109,8 +109,8 @@ final class create_quiz_test extends \advanced_testcase {
 
         $expectations = [
             'mini-check' => ['preferredbehaviour' => 'immediatefeedback', 'grademethod' => 1, 'attempts' => 0],
-            'lernstandscheck' => ['preferredbehaviour' => 'deferredcbm', 'grademethod' => 1, 'delay1' => 300],
-            'abschlusstest' => ['preferredbehaviour' => 'deferredfeedback', 'grademethod' => 2, 'attempts' => 2],
+            'progress-check' => ['preferredbehaviour' => 'deferredcbm', 'grademethod' => 1, 'delay1' => 300],
+            'final-test' => ['preferredbehaviour' => 'deferredfeedback', 'grademethod' => 2, 'attempts' => 2],
         ];
 
         foreach ($expectations as $mode => $expected) {
@@ -316,7 +316,7 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Riegel (#583): der Modus "abschlusstest" bringt zwei Versuche mit - die
+     * Riegel (#583): der Modus "final-test" bringt zwei Versuche mit - die
      * Moduswahl bestaetigt diesen Riegel selbst. Ein ohne Modus gesetztes
      * Versuchslimit bleibt bestaetigungspflichtig.
      */
@@ -324,7 +324,7 @@ final class create_quiz_test extends \advanced_testcase {
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
 
-        $result = $this->create($course->id, 0, $this->minimal_fields(), 'abschlusstest');
+        $result = $this->create($course->id, 0, $this->minimal_fields(), 'final-test');
         $this->assertEquals(2, $this->raw_quiz($result['cmid'])->attempts);
 
         try {

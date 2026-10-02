@@ -41,7 +41,7 @@ defined('MOODLE_INTERNAL') || die();
  * Hochladen/Einbetten bleiben unberuehrt.
  *
  * Unmittelbar englisch deklariert (#572, Spec 0025 §A): "location" statt
- * "ort" - {@see \local_coursepilot\material_files::ort_parameter()} bleibt
+ * "ort" - {@see \local_coursepilot\material_files::location_parameter()} bleibt
  * intern deutsch benannt, der Parametername an dieser Grenze ist englisch.
  *
  * @package    local_coursepilot
@@ -56,7 +56,7 @@ class preview_material_file extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'path' => new external_value(PARAM_PATH, 'Dateipfad relativ zum Materialordner, z.B. "screenshot.png"'),
-            'location' => material_files::ort_parameter(),
+            'location' => material_files::location_parameter(),
         ]);
     }
 
@@ -64,17 +64,17 @@ class preview_material_file extends external_api {
      * @param string $path
      * @param string $location
      * @return array
-     * @throws \moodle_exception invalidmaterialpath, invalidmaterialort,
-     *         materialpathiskontext, materialfilenotfound, materialgdmissing,
+     * @throws \moodle_exception invalidmaterialpath, invalidmateriallocation,
+     *         materialpathiscontext, materialfilenotfound, materialgdmissing,
      *         materialpreviewunsupported
      */
-    public static function execute(string $path, string $location = material_files::ORT_BESTAND): array {
+    public static function execute(string $path, string $location = material_files::LOCATION_STORE): array {
         $params = self::validate_parameters(self::execute_parameters(), ['path' => $path, 'location' => $location]);
 
         $context = material_files::own_context();
         self::validate_context($context);
 
-        $stored = material_area::read_for_ort($params['location'], $params['path']);
+        $stored = material_area::read_for_location($params['location'], $params['path']);
         if ($stored === null) {
             throw new \moodle_exception('materialfilenotfound', 'local_coursepilot', '', material_files::normalise_path($params['path']));
         }

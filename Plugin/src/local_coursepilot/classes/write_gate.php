@@ -74,7 +74,7 @@ final class write_gate {
      */
     public static function assert_writable(string $modname): void {
         $status = self::status_for($modname);
-        if ($status['zustand'] !== 'braucht_arbeit') {
+        if ($status['state'] !== 'needs_work') {
             return;
         }
 
@@ -88,7 +88,7 @@ final class write_gate {
             'local_coursepilot',
             '',
             ['modname' => $modname],
-            implode(' ', $status['verstoesse'])
+            implode(' ', $status['violations'])
         );
     }
 
@@ -107,22 +107,22 @@ final class write_gate {
 
         $catalogclass = registry::for($modname);
         if ($catalogclass === null) {
-            return ['modname' => $modname, 'zustand' => 'braucht_arbeit', 'verstoesse' => ['Unbekannte Aktivitätsart.']];
+            return ['modname' => $modname, 'state' => 'needs_work', 'violations' => ['Unbekannte Aktivitätsart.']];
         }
 
         $violations = self::cached_violations($modname);
         if ($violations) {
-            $zustand = 'braucht_arbeit';
+            $state = 'needs_work';
         } elseif ((int) $CFG->branch > $catalogclass::reviewed_up_to_major()) {
             // Neuere Hauptversion als das letzte manuelle Review - maschinell
             // gruen, aber das nicht pruefbare Restrisiko (Wertelisten,
             // Kombinationsregeln, Nebenwirkungen) ist noch nicht durchgesehen.
-            $zustand = 'automatisch_geprueft';
+            $state = 'auto_checked';
         } else {
-            $zustand = 'geprueft';
+            $state = 'checked';
         }
 
-        return ['modname' => $modname, 'zustand' => $zustand, 'verstoesse' => $violations];
+        return ['modname' => $modname, 'state' => $state, 'violations' => $violations];
     }
 
     /**

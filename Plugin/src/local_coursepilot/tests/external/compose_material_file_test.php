@@ -51,7 +51,7 @@ final class compose_material_file_test extends \advanced_testcase {
     }
 
     private function result_image(string $path): \GdImage {
-        $stored = material_area::read_for_ort('werkbank', $path);
+        $stored = material_area::read_for_location('workbench', $path);
         $this->assertNotNull($stored);
         $this->assertSame('image/png', $stored['mimetype']);
         return imagecreatefromstring($stored['content']);
@@ -72,7 +72,7 @@ final class compose_material_file_test extends \advanced_testcase {
         crop_material_file::execute('page.png', 'crop.png', 0.5, 0.5, 0.75, 0.75);
 
         $result = compose_material_file::execute([[
-            'sourcepath' => 'page.png', 'location' => 'werkbank',
+            'sourcepath' => 'page.png', 'location' => 'workbench',
             'crop' => ['x0' => 0.5, 'y0' => 0.5, 'x1' => 0.75, 'y1' => 0.75],
             'source_header_text' => 'ML S. 36',
         ]], 'vertical', 'composed.png');
@@ -81,9 +81,9 @@ final class compose_material_file_test extends \advanced_testcase {
         $this->assertTrue($result['created']);
         $this->assertSame(250, $result['width']);
         $this->assertSame(298, $result['height']);
-        $stored = material_area::read_for_ort('werkbank', $result['path']);
+        $stored = material_area::read_for_location('workbench', $result['path']);
         $this->assertSame($stored['contenthash'], $result['contenthash']);
-        $this->assertStringStartsWith('werkbank:page.png', $result['sources'][0]);
+        $this->assertStringStartsWith('workbench:page.png', $result['sources'][0]);
         $image = $this->result_image('composed.png');
         $blue = 0;
         for ($y = 0; $y < 48; $y++) {
@@ -108,16 +108,16 @@ final class compose_material_file_test extends \advanced_testcase {
         $fake->seed_file('/Coursepilot/Material/page.png', $first);
         $this->store('detail.png', $second);
         $parts = [
-            ['sourcepath' => 'page.png', 'location' => 'bestand', 'source_header_text' => 'ML S. 36',
+            ['sourcepath' => 'page.png', 'location' => 'store', 'source_header_text' => 'ML S. 36',
                 'expected_contenthash' => sha1($first)],
-            ['sourcepath' => 'detail.png', 'location' => 'werkbank', 'expected_contenthash' => sha1($second)],
+            ['sourcepath' => 'detail.png', 'location' => 'workbench', 'expected_contenthash' => sha1($second)],
         ];
         foreach (['vertical' => [200, 252, 0, 152], 'horizontal' => [344, 128, 224, 0]] as $layout => $expected) {
             $result = compose_material_file::execute($parts, $layout, $layout . '.png');
             $this->assertSame($expected[0], $result['width']);
             $this->assertSame($expected[1], $result['height']);
-            $this->assertStringStartsWith('bestand:page.png', $result['sources'][0]);
-            $this->assertStringStartsWith('werkbank:detail.png', $result['sources'][1]);
+            $this->assertStringStartsWith('store:page.png', $result['sources'][0]);
+            $this->assertStringStartsWith('workbench:detail.png', $result['sources'][1]);
             $image = $this->result_image($result['path']);
             $original = imagecreatefromstring($first);
             $this->assert_pixels($original, $image, 0, 48);
@@ -129,7 +129,7 @@ final class compose_material_file_test extends \advanced_testcase {
             imagedestroy($original);
             imagedestroy($image);
         }
-        $this->assertSame($first, material_area::read_for_ort('bestand', 'page.png')['content']);
+        $this->assertSame($first, material_area::read_for_location('store', 'page.png')['content']);
     }
 
     public function test_without_header_or_crop_preserves_original_including_alpha(): void {
@@ -169,7 +169,7 @@ final class compose_material_file_test extends \advanced_testcase {
                 'vertical', 'result.png', 'materialcropinvalidcoordinates'],
             'empty list' => [[], 'vertical', 'result.png', 'materialcompositionemptyparts'],
             'hash mismatch' => [[$valid + ['expected_contenthash' => 'wrong']], 'vertical', 'result.png', 'materialfilechanged'],
-            'invalid location' => [[$valid + ['location' => 'elsewhere']], 'vertical', 'result.png', 'invalidmaterialort'],
+            'invalid location' => [[$valid + ['location' => 'elsewhere']], 'vertical', 'result.png', 'invalidmateriallocation'],
             'invalid arrangement' => [[$valid], 'grid', 'result.png', 'materialcompositioninvalidarrangement'],
             'not PNG' => [[$valid], 'vertical', 'result.svg', 'materialcompositionoutputunsupported'],
         ];
@@ -197,12 +197,12 @@ final class compose_material_file_test extends \advanced_testcase {
                     $this->assertStringContainsString('PNG', $e->getMessage());
                     $this->assertStringNotContainsString('jpeg', $e->getMessage());
                 }
-                if ($errorcode === 'invalidmaterialort') {
-                    $this->assertStringContainsString('bestand', $e->getMessage());
-                    $this->assertStringContainsString('werkbank', $e->getMessage());
+                if ($errorcode === 'invalidmateriallocation') {
+                    $this->assertStringContainsString('store', $e->getMessage());
+                    $this->assertStringContainsString('workbench', $e->getMessage());
                 }
             }
-            $stored = material_area::read_for_ort('werkbank', $target);
+            $stored = material_area::read_for_location('workbench', $target);
             if ($existing) {
                 $this->assertSame('existing target', $stored['content']);
             } else {
@@ -234,8 +234,8 @@ final class compose_material_file_test extends \advanced_testcase {
             $dotrows += (int) ($runs === 2);
         }
         $this->assertGreaterThanOrEqual(2, $dotrows);
-        $this->assertNotSame(material_area::read_for_ort('werkbank', 'plain.png')['contenthash'],
-            material_area::read_for_ort('werkbank', 'umlaut.png')['contenthash']);
+        $this->assertNotSame(material_area::read_for_location('workbench', 'plain.png')['contenthash'],
+            material_area::read_for_location('workbench', 'umlaut.png')['contenthash']);
         foreach ($images as $image) {
             imagedestroy($image);
         }

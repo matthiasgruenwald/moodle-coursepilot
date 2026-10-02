@@ -145,6 +145,19 @@ final class tool_schema_contract_test extends \advanced_testcase {
     }
 
     /**
+     * #602: auch die Werkzeugnamen selbst sind englisch.
+     */
+    public function test_every_tool_name_is_english(): void {
+        $tools = tool_registry::allowed_tools();
+        foreach ($tools as $mcpname => $functionname) {
+            $this->assertDoesNotMatchRegularExpression('/altbestand|ausstand|werkbank|ortswahl/', $mcpname . ' ' . $functionname);
+        }
+        $this->assertArrayHasKey('coursepilot_dismiss_previous_location', $tools);
+        $this->assertArrayHasKey('coursepilot_dismiss_pending_entry', $tools);
+        $this->assertArrayHasKey('coursepilot_create_workbench_download_links', $tools);
+    }
+
+    /**
      * @return string[]
      */
     private static function structure_keys(external_description $structure): array {

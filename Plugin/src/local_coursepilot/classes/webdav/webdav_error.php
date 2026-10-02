@@ -31,28 +31,28 @@ namespace local_coursepilot\webdav;
 final class webdav_error extends \RuntimeException {
 
     /** @var string Kein DAV-XML-Rumpf zu 404, oder ein anderer unklarer Status - stumm wiederholt. */
-    public const UNCLEAR = 'unklar/gedrosselt';
+    public const UNCLEAR = 'unclear';
 
     /** @var string 404 mit DAV-XML-Rumpf. */
-    public const NOT_FOUND = 'nicht gefunden';
+    public const NOT_FOUND = 'not_found';
 
     /** @var string 401/403. */
-    public const AUTH_REJECTED = 'Anmeldung abgelehnt';
+    public const AUTH_REJECTED = 'auth_rejected';
 
     /** @var string Zeitueberschreitung, DNS-Fehler. */
-    public const UNREACHABLE = 'nicht erreichbar';
+    public const UNREACHABLE = 'unreachable';
 
     /** @var string 507. */
-    public const STORAGE_FULL = 'Speicher voll';
+    public const STORAGE_FULL = 'storage_full';
 
     /** @var string 409/412. */
-    public const CONFLICT = 'Konflikt';
+    public const CONFLICT = 'conflict';
 
     /** @var string Moodles Hostsperre. */
-    public const BLOCKED = 'gesperrt';
+    public const BLOCKED = 'blocked';
 
     /** @var string 3xx-Antwort - der Client folgt keiner Weiterleitung (Issue #510). */
-    public const REDIRECTED = 'Weiterleitung abgelehnt';
+    public const REDIRECTED = 'redirected';
 
     /**
      * @param string $errorclass Eine der Konstanten dieser Klasse.
@@ -71,7 +71,7 @@ final class webdav_error extends \RuntimeException {
      * oben sind fest-deutsche interne Bezeichner fuer Vergleiche im Code
      * (`$errorclass === webdav_error::UNCLEAR`), nie fuer die Anzeige
      * gedacht. Jede Stelle, die eine Fehlerklasse einer Lehrkraft zeigt
-     * (z. B. ueber {$a->errorclass} in ortswahlexternalerror/
+     * (z. B. ueber {$a->errorclass} in locationselectionexternalerror/
      * webdavexternalerror/materialexternalerror), muss durch dieses Label
      * gehen statt die Konstante direkt zu interpolieren - sonst bleibt der
      * Text auf Englisch (oder jeder anderen Sprache) deutsch.

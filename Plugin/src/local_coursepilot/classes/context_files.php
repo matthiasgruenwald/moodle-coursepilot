@@ -91,7 +91,7 @@ final class context_files {
                     throw new \moodle_exception('contextfilenotmarkdown', 'local_coursepilot', '', $filename);
                 }
             },
-            pointerkey: 'kontextbereich',
+            pointerkey: 'context_area',
         );
     }
 

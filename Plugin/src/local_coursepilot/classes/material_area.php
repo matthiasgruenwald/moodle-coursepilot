@@ -27,7 +27,7 @@ namespace local_coursepilot;
  *
  * Anders als beim Kontextbereich kennt kein schreibendes Materialwerkzeug
  * einen externen Ort: jedes zielt ausschliesslich auf die Werkbank
- * ({@see material_files::werkbank_area()}), die immer in Moodles Private
+ * ({@see material_files::workbench_area()}), die immer in Moodles Private
  * Files liegt (siehe dortige Dokumentation). Schreiben/Loeschen laufen
  * deshalb unbedingt ueber den Ablage-Vertrag {@see storage_port}, adaptiert
  * durch {@see private_files_storage_port} - denselben Adapter, den auch
@@ -43,11 +43,11 @@ namespace local_coursepilot;
  * eigene Ortsverzweigung: die Werkbank ist ohnehin immer Moodle).
  *
  * Auflisten/Lesen des Materialbestands ("bestand") folgen weiterhin dem
- * Kontextpointer ueber {@see material_files::list_entries_for_ort()}/
- * {@see material_files::read_content_for_ort()} - dort liegt die
+ * Kontextpointer ueber {@see material_files::list_entries_for_location()}/
+ * {@see material_files::read_content_for_location()} - dort liegt die
  * Ort-Entscheidung (Bestand/Werkbank, Moodle/extern) bereits ortsneutral,
  * dieselbe pointer_reader-Maschinerie, die auch der Kontextbereich extern
- * nutzt. {@see list()}/{@see read_for_ort()} sind duenne Fassaden darueber,
+ * nutzt. {@see list()}/{@see read_for_location()} sind duenne Fassaden darueber,
  * die nur noch die interne Nachbearbeitung ("etag" entfernen) hier statt im
  * Werkzeug erledigen.
  *
@@ -63,13 +63,13 @@ final class material_area {
      * {@see pointer_reader} fuer den externen Bestand durchreicht (Issue
      * #539, relocated aus {@see \local_coursepilot\external\list_material_files::execute()}).
      *
-     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK}.
+     * @param string $locationkey {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH}.
      * @param string $path
      * @return array{directory: string, entries: array}
-     * @throws \moodle_exception wie {@see material_files::list_entries_for_ort()}.
+     * @throws \moodle_exception wie {@see material_files::list_entries_for_location()}.
      */
-    public static function list(string $ort, string $path): array {
-        $result = material_files::list_entries_for_ort($ort, $path);
+    public static function list(string $locationkey, string $path): array {
+        $result = material_files::list_entries_for_location($locationkey, $path);
         $result['entries'] = array_map(
             static function (array $entry): array {
                 unset($entry['etag']);
@@ -84,18 +84,18 @@ final class material_area {
      * Liest eine Datei des angefragten Materialorts - ortsneutral, fuer
      * {@see \local_coursepilot\external\preview_material_file} und den
      * Quell-Lesepfad von {@see \local_coursepilot\external\crop_material_file}
-     * (Issue #539). Duenne Fassade ueber {@see material_files::read_content_for_ort()}:
+     * (Issue #539). Duenne Fassade ueber {@see material_files::read_content_for_location()}:
      * die Ort-Entscheidung (Bestand/Werkbank, Moodle/extern) bleibt dort,
      * ortsneutral ueber {@see pointer_reader}.
      *
-     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK}.
+     * @param string $locationkey {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH}.
      * @param string $path
      * @return array{path: string, content: string, mimetype: string, size: int,
      *         contenthash: string, timemodified: int}|null
-     * @throws \moodle_exception wie {@see material_files::read_content_for_ort()}.
+     * @throws \moodle_exception wie {@see material_files::read_content_for_location()}.
      */
-    public static function read_for_ort(string $ort, string $path): ?array {
-        return material_files::read_content_for_ort($ort, $path);
+    public static function read_for_location(string $locationkey, string $path): ?array {
+        return material_files::read_content_for_location($locationkey, $path);
     }
 
     /**
@@ -110,7 +110,7 @@ final class material_area {
      * @throws \moodle_exception invalidmaterialpath
      */
     public static function read(string $path): ?array {
-        return self::port()->read(material_files::werkbank_area(), $path);
+        return self::port()->read(material_files::workbench_area(), $path);
     }
 
     /**
@@ -131,7 +131,7 @@ final class material_area {
      *         materialfiledisallowedtype, invalidmaterialpath, materialquotaexceeded
      */
     public static function write(string $path, string $content, string $expectedcontenthash = ''): array {
-        $area = material_files::werkbank_area();
+        $area = material_files::workbench_area();
         $port = self::port();
 
         $existing = $port->read($area, $path);
@@ -161,7 +161,7 @@ final class material_area {
      * @throws \moodle_exception invalidmaterialpath
      */
     public static function delete(string $path): bool {
-        return self::port()->delete(material_files::werkbank_area(), $path);
+        return self::port()->delete(material_files::workbench_area(), $path);
     }
 
     /**

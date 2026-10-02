@@ -22,12 +22,12 @@ namespace local_coursepilot;
  * beide Fassungen:
  *
  * - **Erste Fassung** (Issue #445): zwei flache Pfade unter den Schluesseln
- *   "kontextbereich"/"materialordner". Gilt vollstaendig als *in Moodle* an
+ *   "context_area"/"materialordner". Gilt vollstaendig als *in Moodle* an
  *   diesen Pfaden - kein Upgrade-Schritt schreibt sie um (Spec §2).
  * - **Zweite Fassung** (Issue #490): je Ziel ein Objekt mit `ort` =
- *   "moodle" (Feld `pfad`) oder "extern" (Felder `instanzid`, `pfad`,
+ *   "moodle" (Feld `pfad`) oder "external" (Felder `instanzid`, `pfad`,
  *   `pruefmerkmal`). Der Materialbestand traegt intern denselben Feldnamen
- *   wie sein Ziel - "materialbestand" loest den frueheren Begriff
+ *   wie sein Ziel - "material_store" loest den frueheren Begriff
  *   "materialordner" ab (Spec §2), auch wenn {@see \local_coursepilot\material_files}
  *   ihren Pointer-Schluessel (aus historischen Gruenden "materialordner")
  *   unveraendert weiterreicht: die Zuordnung passiert hier in
@@ -47,17 +47,61 @@ namespace local_coursepilot;
  */
 final class context_pointer {
 
-    /** @var string[] Pflichtfelder der ersten Fassung. */
-    private const LEGACY_KEYS = ['kontextbereich', 'materialordner'];
+    /** @var string[] Die beiden Ziele, zugleich Pflichtfelder beider Fassungen. */
+    public const TARGETS = ['context_area', 'material_store'];
 
     /**
-     * @var array<string, string> Bereichs-Pointerschluessel => Feldname im
-     *      Pointer der zweiten Fassung.
+     * @var array<string, string> Deutsche Schluessel aelterer Pointer (#602,
+     *      ADR 0024) => englischer Schluessel. "materialordner" ist der
+     *      Materialschluessel der ersten Fassung (Issue #445).
      */
-    private const TARGET_FIELD = [
-        'kontextbereich' => 'kontextbereich',
-        'materialordner' => 'materialbestand',
+    private const LEGACY_KEY_MAP = [
+        'kontextbereich' => 'context_area',
+        'materialbestand' => 'material_store',
+        'materialordner' => 'material_store',
+        'ort' => 'location',
+        'pfad' => 'path',
+        'instanzid' => 'instanceid',
+        'pruefmerkmal' => 'fingerprint',
+        'basispfad' => 'basepath',
+        'konto' => 'account',
+        'ortsverlauf' => 'location_history',
+        'vorheriger_ort' => 'previous_location',
+        'datum' => 'date',
+        'ziel' => 'target',
+        'von' => 'from_text',
+        'nach' => 'to_text',
     ];
+
+    /** @var array<string, string> Deutsche Werte aelterer Pointer (#602) => englischer Wert. */
+    private const LEGACY_VALUE_MAP = [
+        'extern' => pointer_location::EXTERNAL,
+        'kontextbereich' => 'context_area',
+        'materialbestand' => 'material_store',
+    ];
+
+    /**
+     * Uebersetzt einen Pointer mit deutschen Schluesseln und Werten (Fassung
+     * vor #602) in die englische Form - rekursiv, idempotent, ohne
+     * Pruefung. Werte werden nur unter "location" und "target" uebersetzt;
+     * Pfade bleiben unangetastet.
+     *
+     * @param array $decoded
+     * @return array
+     */
+    public static function normalise(array $decoded): array {
+        $result = [];
+        foreach ($decoded as $key => $value) {
+            $key = is_string($key) ? (self::LEGACY_KEY_MAP[$key] ?? $key) : $key;
+            if (is_array($value)) {
+                $value = self::normalise($value);
+            } else if (is_string($value) && in_array($key, ['location', 'target'], true)) {
+                $value = self::LEGACY_VALUE_MAP[$value] ?? $value;
+            }
+            $result[$key] = $value;
+        }
+        return $result;
+    }
 
     /**
      * @param array $decoded Bereits als JSON-Objekt dekodierter Pointerinhalt.
@@ -66,6 +110,7 @@ final class context_pointer {
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
     public static function resolve_target(array $decoded, string $pointerkey): pointer_location {
+        $decoded = self::normalise($decoded);
         $pair = self::is_legacy($decoded) ? self::resolve_pair_legacy($decoded) : self::resolve_pair_v2($decoded);
 
         // Aufloesungspruefung 7 (Issue #495, Spec #486 §2): der Materialbestand
@@ -77,8 +122,8 @@ final class context_pointer {
         // Materialbestand-Schluessel unter (oder gleich) dem Kontextbereich-
         // Schluessel, ist der Bestand nicht erreichbar, ohne versehentlich in
         // den Kontextbereich hineinzulesen.
-        if (str_starts_with($pair['materialbestand']->comparison_key(), $pair['kontextbereich']->comparison_key())) {
-            throw new \moodle_exception('materialbestandimkontext', 'local_coursepilot');
+        if (str_starts_with($pair['material_store']->comparison_key(), $pair['context_area']->comparison_key())) {
+            throw new \moodle_exception('materialstoreincontext', 'local_coursepilot');
         }
 
         // Aufloesungspruefung 8 (Issue #497, Spec #486 §2/§5): bei einer als
@@ -86,7 +131,7 @@ final class context_pointer {
         // von "Files/" erreichbar - fuer beide Ziele, unabhaengig davon,
         // welches hier gerade angefragt wird (derselbe Grund wie bei Pruefung 7).
         foreach ($pair as $location) {
-            if ($location->kind === pointer_location::EXTERN && ($location->fingerprint['iserv'] ?? false) === true) {
+            if ($location->kind === pointer_location::EXTERNAL && ($location->fingerprint['iserv'] ?? false) === true) {
                 $first = strtok((string) $location->relativepath, '/');
                 if ($first !== \local_coursepilot\webdav\webdav_instance::ISERV_FILES_AREA) {
                     throw self::iserv_files_only_exception($location);
@@ -94,8 +139,7 @@ final class context_pointer {
             }
         }
 
-        $field = self::TARGET_FIELD[$pointerkey] ?? $pointerkey;
-        return $pair[$field];
+        return $pair[$pointerkey];
     }
 
     /**
@@ -104,14 +148,14 @@ final class context_pointer {
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
     private static function resolve_pair_legacy(array $decoded): array {
-        foreach (self::LEGACY_KEYS as $key) {
+        foreach (self::TARGETS as $key) {
             if (!is_string($decoded[$key] ?? null)) {
                 self::incomplete();
             }
         }
         return [
-            'kontextbereich' => pointer_location::moodle('/' . self::validate_path($decoded['kontextbereich']) . '/'),
-            'materialbestand' => pointer_location::moodle('/' . self::validate_path($decoded['materialordner']) . '/'),
+            'context_area' => pointer_location::moodle('/' . self::validate_path($decoded['context_area']) . '/'),
+            'material_store' => pointer_location::moodle('/' . self::validate_path($decoded['material_store']) . '/'),
         ];
     }
 
@@ -124,14 +168,14 @@ final class context_pointer {
         // Vollstaendigkeit (Pruefung 1, Spec §2): beide Ziele muessen als
         // gueltige Struktur vorliegen, unabhaengig davon, welches gerade
         // aufgeloest wird - dieselbe Regel wie bei der ersten Fassung.
-        foreach (self::TARGET_FIELD as $targetfield) {
+        foreach (self::TARGETS as $targetfield) {
             if (!is_array($decoded[$targetfield] ?? null)) {
                 self::incomplete();
             }
         }
 
         $pair = [];
-        foreach (self::TARGET_FIELD as $targetfield) {
+        foreach (self::TARGETS as $targetfield) {
             $pair[$targetfield] = self::resolve_single_v2($decoded[$targetfield]);
         }
         return $pair;
@@ -143,17 +187,17 @@ final class context_pointer {
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
     private static function resolve_single_v2(array $target): pointer_location {
-        $location = $target['ort'] ?? null;
+        $location = $target['location'] ?? null;
 
         if ($location === pointer_location::MOODLE) {
-            if (!is_string($target['pfad'] ?? null)) {
+            if (!is_string($target['path'] ?? null)) {
                 self::incomplete();
             }
-            return pointer_location::moodle('/' . self::validate_path($target['pfad']) . '/');
+            return pointer_location::moodle('/' . self::validate_path($target['path']) . '/');
         }
 
-        if ($location === pointer_location::EXTERN) {
-            return self::resolve_extern($target);
+        if ($location === pointer_location::EXTERNAL) {
+            return self::resolve_external($target);
         }
 
         self::incomplete();
@@ -173,8 +217,8 @@ final class context_pointer {
      * @throws \moodle_exception pointerincomplete/pointerunreachable/webdaviservfilesonly
      */
     public static function resolve_previous(array $value): pointer_location {
-        $location = self::resolve_single_v2($value);
-        if ($location->kind === pointer_location::EXTERN && ($location->fingerprint['iserv'] ?? false) === true) {
+        $location = self::resolve_single_v2(self::normalise($value));
+        if ($location->kind === pointer_location::EXTERNAL && ($location->fingerprint['iserv'] ?? false) === true) {
             $first = strtok((string) $location->relativepath, '/');
             if ($first !== \local_coursepilot\webdav\webdav_instance::ISERV_FILES_AREA) {
                 throw self::iserv_files_only_exception($location);
@@ -191,19 +235,19 @@ final class context_pointer {
      * bis zu einem fertigen {@see pointer_location} kam (Pruefung 8 scheitert
      * *waehrend* der Aufloesung).
      *
-     * @param pointer_location $location Bereits als EXTERN/iserv erkannt.
+     * @param pointer_location $location Bereits als EXTERNAL/iserv erkannt.
      * @return \moodle_exception
      */
     private static function iserv_files_only_exception(pointer_location $location): \moodle_exception {
         return new \moodle_exception('webdaviservfilesonly', 'local_coursepilot', '', (object) [
-            'page' => \local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE,
+            'page' => \local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE,
             'server' => $location->fingerprint['server'] ?? '',
             'instanceid' => $location->instanceid,
         ]);
     }
 
     /**
-     * Erste Fassung erkennen: "kontextbereich" ist ein flacher String, keine
+     * Erste Fassung erkennen: "context_area" ist ein flacher String, keine
      * Struktur (Spec §2: "Ein Pointer der ersten Fassung mit zwei Pfaden
      * gilt als in Moodle an diesen Pfaden").
      *
@@ -211,7 +255,7 @@ final class context_pointer {
      * @return bool
      */
     private static function is_legacy(array $decoded): bool {
-        return is_string($decoded['kontextbereich'] ?? null);
+        return is_string($decoded['context_area'] ?? null);
     }
 
     /**
@@ -219,25 +263,25 @@ final class context_pointer {
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
-    private static function resolve_extern(array $target): pointer_location {
-        $instanceid = $target['instanzid'] ?? null;
-        $relativepath = $target['pfad'] ?? null;
-        $fingerprint = $target['pruefmerkmal'] ?? null;
+    private static function resolve_external(array $target): pointer_location {
+        $instanceid = $target['instanceid'] ?? null;
+        $relativepath = $target['path'] ?? null;
+        $fingerprint = $target['fingerprint'] ?? null;
 
         if (!is_numeric($instanceid) || (int) $instanceid <= 0
             || !is_string($relativepath)
             || !is_array($fingerprint)
             || !is_string($fingerprint['server'] ?? null)
-            || !is_string($fingerprint['basispfad'] ?? null)
-            || !is_string($fingerprint['konto'] ?? null)
+            || !is_string($fingerprint['basepath'] ?? null)
+            || !is_string($fingerprint['account'] ?? null)
         ) {
             self::incomplete();
         }
 
-        return pointer_location::extern((int) $instanceid, self::validate_path($relativepath), [
+        return pointer_location::external((int) $instanceid, self::validate_path($relativepath), [
             'server' => $fingerprint['server'],
-            'basispfad' => $fingerprint['basispfad'],
-            'konto' => $fingerprint['konto'],
+            'basepath' => $fingerprint['basepath'],
+            'account' => $fingerprint['account'],
             // IServ-Erkennung (Issue #497, Spec #486 §2 Pruefung 8) - optional,
             // ein Pointer vor #497 kennt das Feld noch nicht und gilt dann als "nein".
             'iserv' => (bool) ($fingerprint['iserv'] ?? false),

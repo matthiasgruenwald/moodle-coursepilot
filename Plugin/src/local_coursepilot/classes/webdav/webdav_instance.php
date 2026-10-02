@@ -62,7 +62,7 @@ final class webdav_instance {
     private const ISERV_AREAS = [self::ISERV_FILES_AREA, 'Groups', 'Print', 'Temp', 'Windows'];
 
     /**
-     * @param pointer_location $location Muss {@see pointer_location::EXTERN} sein.
+     * @param pointer_location $location Muss {@see pointer_location::EXTERNAL} sein.
      * @return resolved_webdav_instance
      * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/
      *         webdavauthunsupported/webdavfingerprintchanged
@@ -72,7 +72,7 @@ final class webdav_instance {
 
         $options = self::fresh_options((int) $location->instanceid);
         if (self::fingerprint($options) !== self::normalised_fingerprint($location->fingerprint ?? [])) {
-            throw new \moodle_exception('webdavfingerprintchanged', 'local_coursepilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
+            throw new \moodle_exception('webdavfingerprintchanged', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
         }
 
         return $resolved;
@@ -103,26 +103,26 @@ final class webdav_instance {
             ['id' => $instanceid, 'type' => self::REPOSITORY_TYPE]
         );
         if (!$record) {
-            throw new \moodle_exception('webdavinstancemissing', 'local_coursepilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
+            throw new \moodle_exception('webdavinstancemissing', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
         }
 
         $owncontextid = storage_anchor::own_context()->id;
         if ((int) $record->contextid !== (int) $owncontextid || \core\session\manager::is_loggedinas()) {
-            throw new \moodle_exception('webdavinstanceforeign', 'local_coursepilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
+            throw new \moodle_exception('webdavinstanceforeign', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
         }
 
         if (!webdav_setup_steps::enabled_for_user((int) $USER->id)) {
-            throw new \moodle_exception('webdavnotenabled', 'local_coursepilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
+            throw new \moodle_exception('webdavnotenabled', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
         }
 
         $options = self::fresh_options($instanceid);
 
         if (!self::auth_supported($options)) {
-            throw new \moodle_exception('webdavauthunsupported', 'local_coursepilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
+            throw new \moodle_exception('webdavauthunsupported', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
         }
 
         // \curl (lib/filelib.php) is not autoloaded - plain pages like
-        // ortswahl_browse.php would fail with "Class curl not found".
+        // location_selection_browse.php would fail with "Class curl not found".
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
         $transport ??= self::transport($options);
@@ -246,8 +246,8 @@ final class webdav_instance {
     private static function fingerprint(array $options): array {
         return [
             'server' => (string) ($options['webdav_server'] ?? ''),
-            'basispfad' => trim((string) ($options['webdav_path'] ?? ''), '/'),
-            'konto' => (string) ($options['webdav_user'] ?? ''),
+            'basepath' => trim((string) ($options['webdav_path'] ?? ''), '/'),
+            'account' => (string) ($options['webdav_user'] ?? ''),
         ];
     }
 
@@ -258,8 +258,8 @@ final class webdav_instance {
     private static function normalised_fingerprint(array $fingerprint): array {
         return [
             'server' => (string) ($fingerprint['server'] ?? ''),
-            'basispfad' => trim((string) ($fingerprint['basispfad'] ?? ''), '/'),
-            'konto' => (string) ($fingerprint['konto'] ?? ''),
+            'basepath' => trim((string) ($fingerprint['basepath'] ?? ''), '/'),
+            'account' => (string) ($fingerprint['account'] ?? ''),
         ];
     }
 

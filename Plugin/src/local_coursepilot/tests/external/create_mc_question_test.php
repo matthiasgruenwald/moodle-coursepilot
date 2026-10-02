@@ -51,7 +51,7 @@ final class create_mc_question_test extends \advanced_testcase {
         );
         $result = external_api::clean_returnvalue(create_mc_question::execute_returns(), $result);
 
-        $this->assertSame('erstimport', $result['status']);
+        $this->assertSame('first_import', $result['status']);
         $this->assertSame('Additionsfrage', $result['name']);
         $this->assertSame(1, $result['version']);
         $this->assertGreaterThan(0, $result['questionbankentryid']);
@@ -93,7 +93,7 @@ final class create_mc_question_test extends \advanced_testcase {
 
         $first = create_mc_question::execute($categoryid, 'Dopplung', 'Erste Fassung', 'single', $answers);
         $first = external_api::clean_returnvalue(create_mc_question::execute_returns(), $first);
-        $this->assertSame('erstimport', $first['status']);
+        $this->assertSame('first_import', $first['status']);
 
         global $DB;
         $countbefore = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
@@ -101,7 +101,7 @@ final class create_mc_question_test extends \advanced_testcase {
         $second = create_mc_question::execute($categoryid, 'Dopplung', 'Zweite Fassung', 'single', $answers);
         $second = external_api::clean_returnvalue(create_mc_question::execute_returns(), $second);
 
-        $this->assertSame('verdachtsfall', $second['status']);
+        $this->assertSame('suspect', $second['status']);
         $this->assertSame(0, $second['questionbankentryid']);
         $this->assertSame(0, $second['questionid']);
         $this->assertSame($categoryid, $second['categoryid']);
@@ -117,7 +117,7 @@ final class create_mc_question_test extends \advanced_testcase {
             $categoryid, 'Dopplung', 'Zweite Fassung', 'single', $answers, 1.0, '', true);
         $confirmed = external_api::clean_returnvalue(create_mc_question::execute_returns(), $confirmed);
 
-        $this->assertSame('erstimport', $confirmed['status']);
+        $this->assertSame('first_import', $confirmed['status']);
         $this->assertGreaterThan(0, $confirmed['questionbankentryid']);
         $this->assertNotSame($first['questionbankentryid'], $confirmed['questionbankentryid']);
 
@@ -154,7 +154,7 @@ final class create_mc_question_test extends \advanced_testcase {
         );
         $result = external_api::clean_returnvalue(create_mc_question::execute_returns(), $result);
 
-        $this->assertSame('erstimport', $result['status']);
+        $this->assertSame('first_import', $result['status']);
 
         $readback = get_question::execute($categoryid, 'CDATA-Frage');
         $readback = external_api::clean_returnvalue(get_question::execute_returns(), $readback);

@@ -22,7 +22,7 @@
  * (Schreibsperre, keine Lesesperre - Spec #486 §12) und verweist auf #481.
  *
  * Issue #522 (weitere Review-Nacharbeit zu #486): die Referenzteile
- * `kontextbereich` und `merkzettel` bleiben ortsneutral - echte Umlaute,
+ * `context-area` und `notepad` bleiben ortsneutral - echte Umlaute,
  * kein Verbindungsaufbau-Satz fuer die Ortswahl, keine Festlegung auf
  * "Meine Dateien", Altbestand (nur Kontextbereich) und Wechsel des
  * Materialbestands getrennt beschrieben, "keinen anderen Ort nehmen" beim
@@ -46,17 +46,17 @@ final class local_coursepilot_umlaut_test extends advanced_testcase {
         $root = __DIR__ . '/../';
         return [
             $root . 'classes/tool_registry.php' => ['Aktivitaet', 'Aktivitaetstyp', 'Eintraege', 'Feldbuendel', 'Geprueft', 'Haengt', 'Loeschen', 'Verhaltensaenderung', 'Werkzeugeintraege', 'auffaellt', 'ausdruecklich', 'dafuer', 'fuegt', 'fuehrt', 'fuer', 'haengt', 'hoechstens', 'laeuft', 'loeschen', 'loescht', 'tatsaechlich', 'ueber', 'ueberschreibt', 'unveraendert', 'vollstaendig', 'vollstaendige', 'zurueck', 'zusaetzlich', 'zusammengefuegt'],
-            $root . 'classes/tool_registry_context_tools.php' => ['Aktivitaet', 'Aktivitaets', 'Aktivitaetsart', 'Aktivitaetsarten', 'Aktivitaetstyp', 'Anhaengen', 'Anhaengversuch', 'Anzuhaengender', 'Aufloesung', 'Bestaetigung', 'Erklaerung', 'Feldbuendel', 'Fragenidentitaet', 'Geprueft', 'Gespraech', 'Groesse', 'Haelfte', 'Haengt', 'Handaenderung', 'Loeschen', 'Loescht', 'Loeschweg', 'Pruefwert', 'Ruehrt', 'Sekundenaufloesung', 'Vollstaendiger', 'aenderung', 'angehaengt', 'anzuhaengen', 'auffaellt', 'ausdruecklich', 'ausdrueckliche', 'ausstaende', 'benoetigten', 'dafuer', 'erklaerender', 'fuegt', 'fuenf', 'fuer', 'gefuehrten', 'gehoert', 'geprueft', 'groesser', 'gueltigen', 'gueltiger', 'haeufig', 'hoechstens', 'kursuebergreifend', 'kursuebergreifenden', 'laengste', 'loeschende', 'loescht', 'moeglich', 'moeglicherweise', 'noetig', 'tatsaechlich', 'traegt', 'ueber', 'uebergebene', 'ueberschreibt', 'ueberschrieben', 'ueberschriebene', 'uebersetzen', 'veraendert', 'vollstaendig', 'waehlen', 'waehlt', 'waere', 'zusaetzlich', 'zusammenfuehren'],
+            $root . 'classes/tool_registry_context_tools.php' => ['Aktivitaet', 'Aktivitaets', 'Aktivitaetsart', 'Aktivitaetsarten', 'Aktivitaetstyp', 'Anhaengen', 'Anhaengversuch', 'Anzuhaengender', 'Aufloesung', 'Bestaetigung', 'Erklaerung', 'Feldbuendel', 'Fragenidentitaet', 'Geprueft', 'Gespraech', 'Groesse', 'Haelfte', 'Haengt', 'Handaenderung', 'Loeschen', 'Loescht', 'Loeschweg', 'Pruefwert', 'Ruehrt', 'Sekundenaufloesung', 'Vollstaendiger', 'aenderung', 'angehaengt', 'anzuhaengen', 'auffaellt', 'ausdruecklich', 'ausdrueckliche', 'ausstaende', 'benoetigten', 'dafuer', 'erklaerender', 'fuegt', 'fuenf', 'fuer', 'gefuehrten', 'gehoert', 'checked', 'groesser', 'gueltigen', 'gueltiger', 'haeufig', 'hoechstens', 'kursuebergreifend', 'kursuebergreifenden', 'laengste', 'loeschende', 'loescht', 'moeglich', 'moeglicherweise', 'noetig', 'tatsaechlich', 'traegt', 'ueber', 'uebergebene', 'ueberschreibt', 'ueberschrieben', 'ueberschriebene', 'uebersetzen', 'veraendert', 'vollstaendig', 'waehlen', 'waehlt', 'waere', 'zusaetzlich', 'zusammenfuehren'],
             $root . 'lang/de/local_coursepilot.php' => ['Aktivitaet', 'Dateigroesse', 'Groesse', 'Inhaltspruefsumme', 'Loeschen', 'Markierungsgedaechtnis', 'Schluessel', 'fuer', 'gehoert', 'laeuft', 'noetig', 'rueckschreibbar', 'vollstaendig'],
-            $root . 'skills/adapter/coursepilot-planen.md' => ['Bestandsaenderung', 'ausfuehrbaren', 'fuer', 'geprueft', 'zusaetzlich'],
-            $root . 'skills/adapter/coursepilot-umsetzen.md' => ['Aktivitaet', 'Anhaengen', 'Einzelbestaetigung', 'fuer', 'zusaetzlich'],
+            $root . 'skills/adapter/coursepilot-plan.md' => ['Bestandsaenderung', 'ausfuehrbaren', 'fuer', 'checked', 'zusaetzlich'],
+            $root . 'skills/adapter/coursepilot-implement.md' => ['Aktivitaet', 'Anhaengen', 'Einzelbestaetigung', 'fuer', 'zusaetzlich'],
             $root . 'skills/adapter/coursepilot.md' => ['Bestandsaenderung', 'ausfuehrbar', 'ausstaende', 'fuer', 'ueber', 'zusaetzlich'],
-            $root . 'skills/referenz/journal.md' => ['Aktivitaetstyp', 'Bestaetigung', 'Eintraege', 'Eintraegen', 'angehaengt', 'ausstaende', 'fuer', 'haelt', 'laeuft', 'spaeter', 'ueber', 'ueberschrieben', 'zusaetzlich'],
-            $root . 'skills/referenz/kontextbereich.md' => ['Aktivitaet', 'Anhaenge', 'Anhaengen', 'Ausstaende', 'Bestaetigung', 'Dateigroesse', 'Eintraege', 'Einzelbestaetigung', 'Gespraech', 'Groesse', 'Kuerzel', 'Kuerzeln', 'Loeschen', 'Luecke', 'Rueckfall', 'Zaehlung', 'angehaengt', 'ausdruecklich', 'ausdrueckliche', 'ausdrueckliches', 'ausstaende', 'bestaetigten', 'fuehrt', 'fuer', 'gebuendelt', 'gewaehlt', 'gewoehnliche', 'gueltiger', 'haengt', 'laeuft', 'loeschen', 'loescht', 'moeglich', 'noetig', 'prueft', 'schlaegt', 'schwaecher', 'sinngemaess', 'spaeter', 'traegt', 'ueber', 'ueberschreiben', 'ueberschreibt', 'ueberschrieben', 'uebersprungenen', 'unveraendert', 'vollstaendig', 'vollstaendige', 'zurueck', 'zusaetzlich', 'zusammenfuehren',
+            $root . 'skills/reference/journal.md' => ['Aktivitaetstyp', 'Bestaetigung', 'Eintraege', 'Eintraegen', 'angehaengt', 'ausstaende', 'fuer', 'haelt', 'laeuft', 'spaeter', 'ueber', 'ueberschrieben', 'zusaetzlich'],
+            $root . 'skills/reference/context-area.md' => ['Aktivitaet', 'Anhaenge', 'Anhaengen', 'Ausstaende', 'Bestaetigung', 'Dateigroesse', 'Eintraege', 'Einzelbestaetigung', 'Gespraech', 'Groesse', 'Kuerzel', 'Kuerzeln', 'Loeschen', 'Luecke', 'Rueckfall', 'Zaehlung', 'angehaengt', 'ausdruecklich', 'ausdrueckliche', 'ausdrueckliches', 'ausstaende', 'bestaetigten', 'fuehrt', 'fuer', 'gebuendelt', 'gewaehlt', 'gewoehnliche', 'gueltiger', 'haengt', 'laeuft', 'loeschen', 'loescht', 'moeglich', 'noetig', 'prueft', 'schlaegt', 'schwaecher', 'sinngemaess', 'spaeter', 'traegt', 'ueber', 'ueberschreiben', 'ueberschreibt', 'ueberschrieben', 'uebersprungenen', 'unveraendert', 'vollstaendig', 'vollstaendige', 'zurueck', 'zusaetzlich', 'zusammenfuehren',
                 // Issue #522: weitere Ersatzschreibweisen, von #521 nicht erfasst.
                 'enthaelt', 'Aktivitaetsvorlagen', 'Aufraeumfrage', 'Ergaenzung', 'Geloescht', 'Gesamtgroesse', 'Handaenderungs', 'Kuenftige', 'Loeschgrund', 'Pruefung', 'Rueckgaben', 'Schueler', 'Schuelernamen', 'Statuspruefung', 'Waechst', 'Zusammenfuehren', 'anhaengen', 'aufloesen', 'ausfuehrt', 'auszufuehrenden', 'auszufuehrender', 'ergaenzen', 'fuehlt', 'geaendert', 'gefuehrt', 'gehoeren', 'koennte', 'koennten', 'loest', 'muesste', 'naechsten', 'natuerlichen', 'pruefen', 'regulaer', 'schwaechere', 'spuerbar', 'ueberholte', 'ueberschreitet', 'widerspruechlicher', 'ausschliesslich', 'heisst', 'gleichermassen', 'fruheren'],
-            $root . 'skills/referenz/mcp-tools.md' => ['Aktivitaet', 'Aktivitaetsart', 'Aktivitaetstyp', 'Anhaenge', 'Anhaengen', 'Bestaetigung', 'Groesse', 'ausdruecklich', 'ausdruecklicher', 'fuer', 'gueltigen', 'loeschen', 'loescht', 'traegt', 'ueberschreiben', 'vollstaendig', 'waehlt', 'zusaetzlich'],
-            $root . 'skills/referenz/merkzettel.md' => ['Anhaenge', 'Ausfuehrung', 'Bestaetigung', 'Bestandsaenderung', 'Faellen', 'Fuer', 'Gespraech', 'Loesung', 'Originalqualitaet', 'Pruefsumme', 'Rueckfrage', 'ankuendigen', 'ausdruecklich', 'ausfuehrbar', 'ausfuehren', 'bestaetigten', 'entfaellt', 'fuer', 'gewoehnliche', 'haelt', 'laedt', 'laengst', 'laeuft', 'loeschen', 'mituebertragen', 'moeglich', 'prueft', 'schlaegt', 'schreibgeschuetzt', 'traegt', 'ueber', 'ueberein', 'unveraendert'],
+            $root . 'skills/reference/mcp-tools.md' => ['Aktivitaet', 'Aktivitaetsart', 'Aktivitaetstyp', 'Anhaenge', 'Anhaengen', 'Bestaetigung', 'Groesse', 'ausdruecklich', 'ausdruecklicher', 'fuer', 'gueltigen', 'loeschen', 'loescht', 'traegt', 'ueberschreiben', 'vollstaendig', 'waehlt', 'zusaetzlich'],
+            $root . 'skills/reference/notepad.md' => ['Anhaenge', 'Ausfuehrung', 'Bestaetigung', 'Bestandsaenderung', 'Faellen', 'Fuer', 'Gespraech', 'Loesung', 'Originalqualitaet', 'Pruefsumme', 'Rueckfrage', 'ankuendigen', 'ausdruecklich', 'ausfuehrbar', 'ausfuehren', 'bestaetigten', 'entfaellt', 'fuer', 'gewoehnliche', 'haelt', 'laedt', 'laengst', 'laeuft', 'loeschen', 'mituebertragen', 'moeglich', 'prueft', 'schlaegt', 'schreibgeschuetzt', 'traegt', 'ueber', 'ueberein', 'unveraendert'],
         ];
     }
 
@@ -66,7 +66,7 @@ final class local_coursepilot_umlaut_test extends advanced_testcase {
      * unabhaengig davon, wie die KI-Anbindung eingerichtet ist.
      */
     public function test_kontextbereich_replaces_verbindungsaufbau_sentence(): void {
-        $content = file_get_contents(__DIR__ . '/../skills/referenz/kontextbereich.md');
+        $content = file_get_contents(__DIR__ . '/../skills/reference/context-area.md');
         $this->assertStringNotContainsString('beim Verbindungsaufbau gewählt', $content);
         $this->assertStringContainsString('Ortswahlseite', $content);
     }
@@ -77,7 +77,7 @@ final class local_coursepilot_umlaut_test extends advanced_testcase {
      * (Spec #486 §14).
      */
     public function test_kontextbereich_does_not_fix_handaenderung_to_meine_dateien(): void {
-        $content = file_get_contents(__DIR__ . '/../skills/referenz/kontextbereich.md');
+        $content = file_get_contents(__DIR__ . '/../skills/reference/context-area.md');
         $this->assertStringNotContainsString(
             'kann jede Datei jederzeit in "Meine Dateien" selbst bearbeiten',
             $content
@@ -89,7 +89,7 @@ final class local_coursepilot_umlaut_test extends advanced_testcase {
      * Ort fuer den nicht gespeicherten Inhalt zu nehmen (Spec #486 §14/§8).
      */
     public function test_kontextbereich_ausstand_forbids_taking_another_location(): void {
-        $content = file_get_contents(__DIR__ . '/../skills/referenz/kontextbereich.md');
+        $content = file_get_contents(__DIR__ . '/../skills/reference/context-area.md');
         $this->assertStringContainsString('keinen anderen Ort', $content);
     }
 
@@ -98,8 +98,8 @@ final class local_coursepilot_umlaut_test extends advanced_testcase {
      * `\local_coursepilot\previous_location`) - der Merkzettel-Text darf den Wechsel
      * des Materialbestands nicht als Altbestand-Vorgang beschreiben.
      */
-    public function test_merkzettel_separates_altbestand_from_materialbestand_wechsel(): void {
-        $content = file_get_contents(__DIR__ . '/../skills/referenz/merkzettel.md');
+    public function test_merkzettel_separates_previouslocation_from_materialbestand_wechsel(): void {
+        $content = file_get_contents(__DIR__ . '/../skills/reference/notepad.md');
         $this->assertStringNotContainsString('Wechsel des Bestands (Altbestand', $content);
         $this->assertStringContainsString('kein Altbestand', $content);
     }

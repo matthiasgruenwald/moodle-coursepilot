@@ -56,14 +56,14 @@ function local_coursepilot_myprofile_navigation(
 
     // Ortswahlseite (#494), neben "Meine Verbindungen" - nur in der eigenen
     // Profilansicht, aus demselben Grund wie oben.
-    $ortswahlnode = new \core_user\output\myprofile\node(
+    $locationselectionnode = new \core_user\output\myprofile\node(
         'miscellaneous',
-        'local_coursepilot_ortswahl',
-        get_string('ortswahl', 'local_coursepilot'),
+        'local_coursepilot_location_selection',
+        get_string('locationselection', 'local_coursepilot'),
         null,
-        new moodle_url(\local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE)
+        new moodle_url(\local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE)
     );
-    $tree->add_node($ortswahlnode);
+    $tree->add_node($locationselectionnode);
 
     return true;
 }
@@ -112,11 +112,11 @@ function local_coursepilot_extend_navigation_user_settings(
         'local_coursepilot_settings'
     );
     $coursepilot->add(
-        get_string('ortswahl', 'local_coursepilot'),
-        new moodle_url(\local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE),
+        get_string('locationselection', 'local_coursepilot'),
+        new moodle_url(\local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE),
         \navigation_node::TYPE_SETTING,
         null,
-        'local_coursepilot_settings_ortswahl'
+        'local_coursepilot_settings_location_selection'
     );
     $coursepilot->add(
         get_string('myconnections', 'local_coursepilot'),

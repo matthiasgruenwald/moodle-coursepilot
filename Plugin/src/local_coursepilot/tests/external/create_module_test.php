@@ -61,7 +61,7 @@ final class create_module_test extends \advanced_testcase {
     private function set_up_external_material_for(\stdClass $teacher): \local_coursepilot\tests\webdav\fake_webdav_transport {
         $this->grant_webdav_capability($teacher);
         $instanceid = $this->create_webdav_instance($teacher);
-        $this->write_v2_pointer($teacher, 'materialbestand', $instanceid, 'Material');
+        $this->write_v2_pointer($teacher, 'material_store', $instanceid, 'Material');
 
         $fake = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
@@ -73,7 +73,7 @@ final class create_module_test extends \advanced_testcase {
      * @param int $sectionnum
      * @param string $modname
      * @param array $felder
-     * @param string $ort {@see \local_coursepilot\material_files::ORT_BESTAND}/{@see \local_coursepilot\material_files::ORT_WERKBANK}
+     * @param string $ort {@see \local_coursepilot\material_files::LOCATION_STORE}/{@see \local_coursepilot\material_files::LOCATION_WORKBENCH}
      *        (Issue #496).
      * @param string[] $confirmlearnerlocks Bewusst gesetzte Riegel (#583).
      * @return array
@@ -83,7 +83,7 @@ final class create_module_test extends \advanced_testcase {
         int $sectionnum,
         string $modname,
         array $felder,
-        string $ort = \local_coursepilot\material_files::ORT_BESTAND,
+        string $ort = \local_coursepilot\material_files::LOCATION_STORE,
         array $confirmlearnerlocks = []
     ): array {
         return external_api::clean_returnvalue(
@@ -211,7 +211,7 @@ final class create_module_test extends \advanced_testcase {
             'name' => 'Bildaufgabe',
             'intro' => '<img src="@@PLUGINFILE@@/diagramm.png" alt="Diagramm">',
             'introimages' => ['diagramm.png'],
-        ], \local_coursepilot\material_files::ORT_WERKBANK);
+        ], \local_coursepilot\material_files::LOCATION_WORKBENCH);
 
         $context = \context_module::instance($result['cmid']);
         $file = get_file_storage()->get_file($context->id, 'mod_assign', 'intro', 0, '/', 'diagramm.png');
@@ -277,7 +277,7 @@ final class create_module_test extends \advanced_testcase {
                 'name' => 'Invalid image',
                 'intro' => '<img src="@@PLUGINFILE@@/missing.png" alt="Missing">',
                 'introimages' => $paths,
-            ], \local_coursepilot\material_files::ORT_WERKBANK);
+            ], \local_coursepilot\material_files::LOCATION_WORKBENCH);
             $this->fail('Expected rejection before activity creation.');
         } catch (\moodle_exception $e) {
             $this->assertSame($errorcode, $e->errorcode);
@@ -297,7 +297,7 @@ final class create_module_test extends \advanced_testcase {
         try {
             $this->create($course->id, 0, 'assign', [
                 'name' => 'No file permission', 'intro' => 'Description', 'introimages' => ['worksheet.pdf'],
-            ], \local_coursepilot\material_files::ORT_WERKBANK);
+            ], \local_coursepilot\material_files::LOCATION_WORKBENCH);
             $this->fail('Expected capability rejection before the image whitelist.');
         } catch (\required_capability_exception $e) {
             $this->assertSame(get_capability_string('moodle/user:manageownfiles'), $e->a);
@@ -360,7 +360,7 @@ final class create_module_test extends \advanced_testcase {
         $this->resetAfterTest();
         [$course, $teacher] = $this->course_with_editing_teacher();
         $fake = $this->set_up_external_material_for($teacher);
-        $fake->seed_file('/Coursepilot/Material/nur-extern.pdf', 'extern');
+        $fake->seed_file('/Coursepilot/Material/nur-extern.pdf', 'external');
         $this->create_material_file('werkbankdatei.pdf', 'aus der Werkbank');
 
         $result = $this->create(
@@ -368,7 +368,7 @@ final class create_module_test extends \advanced_testcase {
             0,
             'resource',
             ['name' => 'Datei', 'files' => ['werkbankdatei.pdf']],
-            \local_coursepilot\material_files::ORT_WERKBANK
+            \local_coursepilot\material_files::LOCATION_WORKBENCH
         );
 
         $modulecontext = \context_module::instance($result['cmid']);
@@ -484,7 +484,7 @@ final class create_module_test extends \advanced_testcase {
             'name' => 'Materialordner',
             'files' => [
                 'wurzel.pdf',
-                ['pfad' => 'blatt.pdf', 'zielordner' => 'unterordner'],
+                ['path' => 'blatt.pdf', 'target_folder' => 'unterordner'],
             ],
         ]);
 
@@ -562,7 +562,7 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Das Feldbuendel "zuteilung" erzeugt die sechs dokumentierten
+     * Das Feldbuendel "allocation" erzeugt die sechs dokumentierten
      * Einstellungen.
      */
     public function test_choice_zuteilung_bundle_sets_documented_fields(): void {
@@ -570,7 +570,7 @@ final class create_module_test extends \advanced_testcase {
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
 
-        $result = $this->create($course->id, 0, 'choice', $this->merge_bundle(choice::bundles()['zuteilung'], [
+        $result = $this->create($course->id, 0, 'choice', $this->merge_bundle(choice::bundles()['allocation'], [
             'name' => 'Geraete-Zuteilung',
             'intro' => 'Bitte waehlen',
             'option' => ['Tablet 1', 'Tablet 2'],
@@ -596,12 +596,12 @@ final class create_module_test extends \advanced_testcase {
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
 
-        $result = $this->create($course->id, 0, 'choice', $this->merge_bundle(choice::bundles()['zuteilung'], [
+        $result = $this->create($course->id, 0, 'choice', $this->merge_bundle(choice::bundles()['allocation'], [
             'name' => 'Geraete-Zuteilung',
             'intro' => 'Bitte waehlen',
             'option' => ['Tablet 1', 'Tablet 2'],
             'allowupdate' => 0,
-        ]), \local_coursepilot\material_files::ORT_BESTAND, ['allowupdate']);
+        ]), \local_coursepilot\material_files::LOCATION_STORE, ['allowupdate']);
 
         $after = $this->read($result['cmid']);
         $this->assertEquals(0, $after['allowupdate']);
@@ -969,7 +969,7 @@ final class create_module_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(
             create_module::execute_returns(),
             create_module::execute($course->id, 0, 'assign', json_encode($felder),
-                \local_coursepilot\material_files::ORT_BESTAND, ['attemptreopenmethod'])
+                \local_coursepilot\material_files::LOCATION_STORE, ['attemptreopenmethod'])
         );
         $this->assertSame('manual', $this->read($result['cmid'])['attemptreopenmethod']);
     }

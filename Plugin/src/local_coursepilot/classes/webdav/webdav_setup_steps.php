@@ -41,7 +41,7 @@ final class webdav_setup_steps {
      *      die Seite selbst folgt in einem spaeteren Issue (#494). Jede
      *      Fehlermeldung der Pointer-Aufloesung verweist hierher.
      */
-    public const ORTSWAHL_PAGE = '/local/coursepilot/ortswahl.php';
+    public const LOCATION_SELECTION_PAGE = '/local/coursepilot/location_selection.php';
 
     public const STEP_REPOSITORY_ACTIVE = 'repository_active';
     public const STEP_USER_INSTANCES = 'user_instances';

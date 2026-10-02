@@ -69,7 +69,7 @@ final class create_quiz extends external_api {
             ),
             'mode' => new external_value(
                 PARAM_ALPHANUMEXT,
-                'Modus-Buendel: "mini-check", "lernstandscheck" oder "abschlusstest". Buendelwerte gelten nur '
+                'Modus-Buendel: "mini-check", "progress-check" oder "final-test". Buendelwerte gelten nur '
                     . 'fuer Felder, die fields_json nicht bereits selbst nennt. Leer = kein Buendel.',
                 VALUE_DEFAULT,
                 ''
@@ -197,7 +197,7 @@ final class create_quiz extends external_api {
         if (!array_key_exists($mode, $bundles)) {
             throw new moodle_exception('unknownmode', 'local_coursepilot', '', [
                 'mode' => $mode,
-                'modi' => implode(', ', array_keys($bundles)),
+                'modes' => implode(', ', array_keys($bundles)),
             ]);
         }
         return $bundles[$mode];

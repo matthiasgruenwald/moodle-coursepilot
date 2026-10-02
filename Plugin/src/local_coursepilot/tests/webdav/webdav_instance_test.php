@@ -36,7 +36,7 @@ final class webdav_instance_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     private function location(int $instanceid, ?array $fingerprint = null): pointer_location {
-        return pointer_location::extern($instanceid, 'Coursepilot-Kontext', $fingerprint ?? $this->fixture_fingerprint());
+        return pointer_location::external($instanceid, 'Coursepilot-Kontext', $fingerprint ?? $this->fixture_fingerprint());
     }
 
     public function test_resolves_valid_instance_to_credentials_and_base_url(): void {
@@ -281,7 +281,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         $attempts = [
             fn () => webdav_instance::resolve($this->location(999999)),
-            fn () => webdav_instance::resolve($this->location($instanceid, ['server' => 'x', 'basispfad' => 'y', 'konto' => 'z'])),
+            fn () => webdav_instance::resolve($this->location($instanceid, ['server' => 'x', 'basepath' => 'y', 'account' => 'z'])),
         ];
         foreach ($attempts as $attempt) {
             try {

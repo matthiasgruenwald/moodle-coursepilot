@@ -170,9 +170,9 @@ final class pointer_writer {
      *         contextfileexternalconflict bei 412 sowie bei einem nicht mehr
      *         passenden oder (beim Nachtragen) fehlenden Pruefwert,
      *         contextfilealreadyexists bei $createonly und vorhandener Datei,
-     *         sonst ausstandwritefailed (Issue #492, Ausfall an Speicher/
+     *         sonst pendingwritefailed (Issue #492, Ausfall an Speicher/
      *         Verbindung/Ort - legt einen Eintrag in der Ausstandsnotiz an)
-     *         bzw. ausstandnotewritefailed, wenn selbst die Notiz nicht mehr
+     *         bzw. pendingnotewritefailed, wenn selbst die Notiz nicht mehr
      *         geschrieben werden kann.
      */
     public static function write(
@@ -242,9 +242,9 @@ final class pointer_writer {
      * @throws \moodle_exception invalidpathkey/contextfilenotmarkdown des Bereichs,
      *         contextfileexternalconflict bei 412 sowie bei einem nicht mehr
      *         passenden oder (beim Nachtragen) fehlenden Pruefwert, sonst
-     *         ausstandwritefailed (Issue #492, Ausfall an Speicher/
+     *         pendingwritefailed (Issue #492, Ausfall an Speicher/
      *         Verbindung/Ort - legt einen Eintrag in der Ausstandsnotiz an)
-     *         bzw. ausstandnotewritefailed, wenn selbst die Notiz nicht mehr
+     *         bzw. pendingnotewritefailed, wenn selbst die Notiz nicht mehr
      *         geschrieben werden kann.
      */
     public static function append(
@@ -341,7 +341,7 @@ final class pointer_writer {
             if ($e->errorclass !== webdav_error::NOT_FOUND) {
                 throw $e;
             }
-            throw new \moodle_exception('contextrootmissing', 'local_coursepilot', '', webdav_setup_steps::ORTSWAHL_PAGE);
+            throw new \moodle_exception('contextrootmissing', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
         }
     }
 

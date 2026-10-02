@@ -86,9 +86,9 @@ $string['contextfilelocked'] = 'Datei gesperrt: {$a} — personenbezogen markier
 
 // Kontextpointer (Issue #445, Spec: Ablageort als eine Sache #442 §2).
 $string['pointerunreadable'] = 'Kontextpointer nicht lesbar: {$a} enthält kein gültiges JSON-Objekt.';
-$string['pointerincomplete'] = 'Kontextpointer unvollständig: {$a} muss die Felder "kontextbereich" und "materialordner" enthalten.';
+$string['pointerincomplete'] = 'Kontextpointer unvollständig: {$a} muss die Felder "context_area" und "material_store" enthalten.';
 $string['pointerunreachable'] = 'Kontextpointer verweist auf einen nicht erreichbaren Ort: {$a} enthält einen ungültigen Pfad.';
-$string['materialbestandimkontext'] = 'Der Materialbestand liegt im Kontextbereich oder im selben Ordner — das ist nicht zulässig. Bitte auf der Ortswahlseite einen anderen Ordner für den Materialbestand oder den Kontextbereich wählen.';
+$string['materialstoreincontext'] = 'Der Materialbestand liegt im Kontextbereich oder im selben Ordner — das ist nicht zulässig. Bitte auf der Ortswahlseite einen anderen Ordner für den Materialbestand oder den Kontextbereich wählen.';
 
 // Kontextpointer, zweite Fassung: externe Orte (Issue #490, Spec: Kontextbereich
 // und Materialbestand im WebDAV-Speicher der Lehrkraft #486 §2/§3/§12). Keine
@@ -105,7 +105,7 @@ $string['webdaviservfilesonly'] = 'Bei IServ ist nur unterhalb von „Files/“ 
 $string['webdavexternalerror'] = 'Der externe Speicher konnte nicht gelesen werden ({$a->errorclass}). Das ist eine Kontext-Lücke: Journal, Profile und Plan sind gerade nicht lesbar - bitte das der Lehrkraft einmal je Sitzung ausdrücklich ansagen und ohne diese Dateien weiterarbeiten, statt aus der Erinnerung fortzuschreiben. Bitte später erneut versuchen oder auf der Ortswahlseite ({$a->page}) nachsehen.';
 $string['webdavexternalerrorunclear'] = 'Der externe Speicher drosselt gerade kurzfristig ({$a->errorclass}) - bei manchen Nextcloud-Instanzen normal, meist binnen Sekunden vorbei. Bitte kurz warten und denselben Aufruf selbstständig einmal wiederholen, bevor die Lehrkraft davon erfährt. Hält es an, gilt dieselbe Ansage wie sonst: ohne diese Dateien weiterarbeiten, statt aus der Erinnerung fortzuschreiben, und auf der Ortswahlseite ({$a->page}) nachsehen.';
 $string['materialexternalerror'] = 'Der Materialbestand konnte nicht gelesen werden ({$a->errorclass}). Bitte später erneut versuchen oder auf der Ortswahlseite ({$a->page}) nachsehen.';
-$string['ortswahlexternalerror'] = 'Der externe Speicher antwortet gerade nicht ({$a->errorclass}). Bitte später erneut versuchen oder die Zugangsdaten der Verbindung prüfen.';
+$string['locationselectionexternalerror'] = 'Der externe Speicher antwortet gerade nicht ({$a->errorclass}). Bitte später erneut versuchen oder die Zugangsdaten der Verbindung prüfen.';
 // Übersetzte Labels für webdav_error::label() (Issue #565) — die Konstanten in
 // webdav_error.php sind fest-deutsche interne Bezeichner für Codevergleiche,
 // nie für die Anzeige gedacht; diese Strings sind das, was in {$a->errorclass}
@@ -123,92 +123,96 @@ $string['webdavstep2instruction'] = 'Die Administration muss beim Repository-Typ
 $string['webdavstep3instruction'] = 'Die Administration muss der Lehrkraft das Recht "repository/webdav:view" im eigenen Nutzerkontext zuweisen (empfohlen über eine eigene Systemrolle).';
 
 // Ortswahlseite (Issue #494, Spec #486 §5/§10).
-$string['ortswahl'] = 'Coursepilot: Ablageorte für Kontextbereich und Materialbestand';
+$string['locationselection'] = 'Coursepilot: Ablageorte für Kontextbereich und Materialbestand';
 $string['coursepilotsettingsheading'] = 'Coursepilot';
-$string['ortswahltitle'] = 'Wo Kontextbereich und Materialbestand liegen';
-$string['ortswahlheading'] = 'Wo Kontextbereich und Materialbestand liegen';
-$string['ortswahlintro'] = 'Wählen Sie je Ziel einen Ordner in einer Ihrer WebDAV-Verbindungen, oder lassen Sie es in Moodle.';
-$string['ortswahltabkontextbereich'] = 'Kontextbereich';
-$string['ortswahltabmaterialbestand'] = 'Materialbestand';
-$string['ortswahlkontexthint'] = 'Empfehlung: ein eigener Ordner nur für Coursepilot — nicht mitten in bereits genutzten Unterlagen.';
-$string['ortswahlkeepmoodle'] = 'In Moodle lassen';
-$string['ortswahlchooseinstance'] = 'Verbindung wählen';
-$string['ortswahlselected'] = 'Ausgewählt';
-$string['ortswahlselectfolder'] = 'Diesen Ordner wählen';
-$string['ortswahlbreadcrumbroot'] = 'Wurzel';
-$string['ortswahlloading'] = 'Wird geladen …';
-$string['ortswahlcreatefolder'] = 'Ordner anlegen';
-$string['ortswahlnewfoldername'] = 'Name des neuen Ordners';
-$string['ortswahlprogresschosen'] = '{$a}';
-$string['ortswahlprogressopen'] = 'noch offen: {$a}';
-$string['ortswahlfinishbutton'] = 'Einrichten abschließen';
-$string['ortswahlfinishsuccess'] = 'Gespeichert. Geänderte Ziele: {$a}.';
-$string['ortswahlfinishnochange'] = 'Keine Änderung — der bisherige Ort bleibt bestehen.';
-$string['ortswahlselectionincomplete'] = 'Bitte für jedes Ziel eine Antwort wählen, bevor Sie abschließen.';
-$string['ortswahlselectioninvalid'] = 'Ungültige Auswahl — bitte den Ordner im Dateifenster erneut wählen.';
-$string['ortswahltimeouttitle'] = 'Keine Antwort';
-$string['ortswahltimeouttext'] = 'Der Speicher antwortet nicht innerhalb von 8 Sekunden. Nichts wurde gespeichert.';
-$string['ortswahlbrowseerrorheading'] = 'Fehler beim Laden';
-$string['ortswahlretry'] = 'Erneut versuchen';
-$string['ortswahlcheckcredentials'] = 'Zugangsdaten prüfen';
-$string['ortswahllater'] = 'Später';
-$string['ortswahlcurrentheading'] = 'Aktueller Ort';
-$string['ortswahlcurrentkontextbereich'] = 'Kontextbereich: {$a}';
-$string['ortswahlcurrentmaterialbestand'] = 'Materialbestand: {$a}';
-$string['ortswahlhistoryheading'] = 'Bisherige Orte';
-$string['ortswahlhistoryempty'] = 'Noch keine Änderungen.';
-$string['ortswahlhistorydate'] = 'Datum';
-$string['ortswahlhistorytarget'] = 'Ziel';
-$string['ortswahlhistoryfrom'] = 'Von';
-$string['ortswahlhistoryto'] = 'Nach';
-$string['ortswahllocationmoodle'] = 'in Moodle ({$a})';
-$string['ortswahllocationextern'] = '{$a->instance} / {$a->path}';
-$string['ortswahllocationexternroot'] = '{$a} (Wurzel)';
-$string['ortswahlinstanceunknown'] = 'unbekannte Verbindung';
-$string['ortswahlnoinstanceheading'] = 'Noch keine eigene WebDAV-Verbindung';
-$string['ortswahlnoinstanceintro'] = 'Ihre Schule hat externe Speicher freigeschaltet, Sie haben aber noch keine eigene Verbindung eingerichtet:';
-$string['ortswahlnoinstancestep1'] = '1. Öffnen Sie den Dateipicker (z. B. beim Hochladen einer Datei), wählen Sie "WebDAV" und dann "Repository konfigurieren".';
-$string['ortswahlnoinstancestep2'] = '2. Tragen Sie Server, Pfad und Ihre Zugangsdaten ein und speichern Sie.';
-$string['ortswahlnoinstancestep3'] = '3. Kehren Sie auf diese Seite zurück — die neue Verbindung erscheint hier automatisch.';
-$string['ortswahlschoolhintheading'] = 'Hinweis Ihrer Schule';
-$string['ortswahlnotenabledheading'] = 'Externe Speicher noch nicht freigegeben';
-$string['ortswahlnotenabledtext'] = 'Ihre Schule hat externe Speicher noch nicht freigegeben. Bis dahin liegt alles in Moodle.';
-$string['ortswahlmissingstepsheading'] = 'Text für die Administration';
-$string['ortswahlmissingstepsintro'] = 'Kopieren Sie den Text und schicken Sie ihn an Ihre Moodle-Administration:';
-$string['ortswahlcoresupportlink'] = 'Support-Kontakt Ihrer Moodle-Instanz';
+$string['locationselectiontitle'] = 'Wo Kontextbereich und Materialbestand liegen';
+$string['locationselectionheading'] = 'Wo Kontextbereich und Materialbestand liegen';
+$string['locationselectionintro'] = 'Wählen Sie je Ziel einen Ordner in einer Ihrer WebDAV-Verbindungen, oder lassen Sie es in Moodle.';
+$string['locationselectiontabcontextarea'] = 'Kontextbereich';
+$string['locationselectiontabmaterialstore'] = 'Materialbestand';
+$string['locationselectioncontexthint'] = 'Empfehlung: ein eigener Ordner nur für Coursepilot — nicht mitten in bereits genutzten Unterlagen.';
+$string['locationselectionkeepmoodle'] = 'In Moodle lassen';
+$string['locationselectionchooseinstance'] = 'Verbindung wählen';
+$string['locationselectionselected'] = 'Ausgewählt';
+$string['locationselectionselectfolder'] = 'Diesen Ordner wählen';
+$string['locationselectionbreadcrumbroot'] = 'Wurzel';
+$string['locationselectionloading'] = 'Wird geladen …';
+$string['locationselectioncreatefolder'] = 'Ordner anlegen';
+$string['locationselectionnewfoldername'] = 'Name des neuen Ordners';
+$string['locationselectionprogresschosen'] = '{$a}';
+$string['locationselectionprogressopen'] = 'noch offen: {$a}';
+$string['locationselectionfinishbutton'] = 'Einrichten abschließen';
+$string['locationselectionfinishsuccess'] = 'Gespeichert. Geänderte Ziele: {$a}.';
+$string['locationselectionfinishnochange'] = 'Keine Änderung — der bisherige Ort bleibt bestehen.';
+$string['locationselectionselectionincomplete'] = 'Bitte für jedes Ziel eine Antwort wählen, bevor Sie abschließen.';
+$string['locationselectionselectioninvalid'] = 'Ungültige Auswahl — bitte den Ordner im Dateifenster erneut wählen.';
+$string['locationselectiontimeouttitle'] = 'Keine Antwort';
+$string['locationselectiontimeouttext'] = 'Der Speicher antwortet nicht innerhalb von 8 Sekunden. Nichts wurde gespeichert.';
+$string['locationselectionbrowseerrorheading'] = 'Fehler beim Laden';
+$string['locationselectionretry'] = 'Erneut versuchen';
+$string['locationselectioncheckcredentials'] = 'Zugangsdaten prüfen';
+$string['locationselectionlater'] = 'Später';
+$string['locationselectioncurrentheading'] = 'Aktueller Ort';
+$string['locationselectioncurrentcontextarea'] = 'Kontextbereich: {$a}';
+$string['locationselectioncurrentmaterialstore'] = 'Materialbestand: {$a}';
+$string['locationselectionhistoryheading'] = 'Bisherige Orte';
+$string['locationselectionhistoryempty'] = 'Noch keine Änderungen.';
+$string['locationselectionhistorydate'] = 'Datum';
+$string['locationselectionhistorytarget'] = 'Ziel';
+$string['locationselectionhistoryfrom'] = 'Von';
+$string['locationselectionhistoryto'] = 'Nach';
+$string['locationselectionlocationmoodle'] = 'in Moodle ({$a})';
+$string['locationselectionlocationexternal'] = '{$a->instance} / {$a->path}';
+$string['locationselectionlocationexternalalroot'] = '{$a} (Wurzel)';
+$string['locationselectioninstanceunknown'] = 'unbekannte Verbindung';
+$string['locationselectionnoinstanceheading'] = 'Noch keine eigene WebDAV-Verbindung';
+$string['locationselectionnoinstanceintro'] = 'Ihre Schule hat externe Speicher freigeschaltet, Sie haben aber noch keine eigene Verbindung eingerichtet:';
+$string['locationselectionnoinstancestep1'] = '1. Öffnen Sie den Dateipicker (z. B. beim Hochladen einer Datei), wählen Sie "WebDAV" und dann "Repository konfigurieren".';
+$string['locationselectionnoinstancestep2'] = '2. Tragen Sie Server, Pfad und Ihre Zugangsdaten ein und speichern Sie.';
+$string['locationselectionnoinstancestep3'] = '3. Kehren Sie auf diese Seite zurück — die neue Verbindung erscheint hier automatisch.';
+$string['locationselectionschoolhintheading'] = 'Hinweis Ihrer Schule';
+$string['locationselectionnotenabledheading'] = 'Externe Speicher noch nicht freigegeben';
+$string['locationselectionnotenabledtext'] = 'Ihre Schule hat externe Speicher noch nicht freigegeben. Bis dahin liegt alles in Moodle.';
+$string['locationselectionmissingstepsheading'] = 'Text für die Administration';
+$string['locationselectionmissingstepsintro'] = 'Kopieren Sie den Text und schicken Sie ihn an Ihre Moodle-Administration:';
+$string['locationselectioncoresupportlink'] = 'Support-Kontakt Ihrer Moodle-Instanz';
 
 // Sperren und Uebergabe (Issue #497, Spec #486 §5).
-$string['ortswahlrootnotselectable'] = 'Die Wurzel dieser Verbindung ist nicht wählbar — bitte einen Ordner darunter wählen.';
-$string['ortswahliservfilesonly'] = 'Bei IServ ist nur unterhalb von „Files/“ wählbar.';
-$string['ortswahlinstanceauthunsupported'] = 'Diese Verbindung nutzt kein https mit Basic-Anmeldung und ist deshalb nicht wählbar.';
-$string['ortswahloverlaplocked'] = 'Der Materialbestand liegt im Kontextbereich oder im selben Ordner — bitte einen anderen Ordner wählen.';
-$string['ortswahlfolderconfirmrequired'] = 'Der gewählte Ordner für den Kontextbereich ist nicht leer — bitte die Übergabe im Dateifenster ausdrücklich bestätigen.';
-$string['ortswahlconfirmheading'] = 'Ordner ist nicht leer';
-$string['ortswahlconfirmcount'] = '{$a} Einträge liegen hier bereits, unter anderem:';
-$string['ortswahlconfirmtext'] = 'Coursepilot legt hier Markdown-Dateien an und kann gleichnamige Markdown-Dateien überschreiben. Löschen oder verschieben kann es nichts.';
-$string['ortswahlconfirmbutton'] = 'Das ist mein Coursepilot-Ordner';
-$string['ortswahlconfirmcancel'] = 'Abbrechen';
+$string['locationselectionrootnotselectable'] = 'Die Wurzel dieser Verbindung ist nicht wählbar — bitte einen Ordner darunter wählen.';
+$string['locationselectioniservfilesonly'] = 'Bei IServ ist nur unterhalb von „Files/“ wählbar.';
+$string['locationselectioninstanceauthunsupported'] = 'Diese Verbindung nutzt kein https mit Basic-Anmeldung und ist deshalb nicht wählbar.';
+$string['locationselectionoverlaplocked'] = 'Der Materialbestand liegt im Kontextbereich oder im selben Ordner — bitte einen anderen Ordner wählen.';
+$string['locationselectionfolderconfirmrequired'] = 'Der gewählte Ordner für den Kontextbereich ist nicht leer — bitte die Übergabe im Dateifenster ausdrücklich bestätigen.';
+$string['locationselectionconfirmheading'] = 'Ordner ist nicht leer';
+$string['locationselectionconfirmcount'] = '{$a} Einträge liegen hier bereits, unter anderem:';
+$string['locationselectionconfirmtext'] = 'Coursepilot legt hier Markdown-Dateien an und kann gleichnamige Markdown-Dateien überschreiben. Löschen oder verschieben kann es nichts.';
+$string['locationselectionconfirmbutton'] = 'Das ist mein Coursepilot-Ordner';
+$string['locationselectionconfirmcancel'] = 'Abbrechen';
 $string['settingwebdavhint'] = 'Hinweis der Schule (Ortswahl)';
 $string['settingwebdavhint_desc'] = 'Optionaler Freitext, der Lehrkräften ohne eigene WebDAV-Verbindung auf der Ortswahlseite zusätzlich zu den drei Einrichtungsschritten angezeigt wird — z. B. eine Empfehlung, welchen Cloud-Dienst die Schule stellt.';
-$string['listskillsortswahlhint'] = 'Die Lehrkraft kann Kontextbereich und Materialbestand statt in Moodle in einem eigenen WebDAV-Speicher ablegen — Ortswahl unter {$a}.';
+$string['listskillslocationselectionhint'] = 'Die Lehrkraft kann Kontextbereich und Materialbestand statt in Moodle in einem eigenen WebDAV-Speicher ablegen — Ortswahl unter {$a}.';
 $string['listskillspointerbrokenhint'] = 'Der Kontextpointer ist unlesbar oder unvollständig. Die Lehrkraft muss die Ortswahl erneut abschließen — Ortswahl unter {$a}.';
 
 // Altbestand (Issue #498, Spec #486 §9/§10): der vorherige Ort nach einem
 // Ortswechsel des Kontextbereichs — nur lesbar, endet ausdrücklich.
-$string['ortswahlaltbestandopen'] = 'Vom früheren Ort ist noch nicht alles übernommen.';
-$string['listskillsaltbestandhint'] = 'Am vorherigen Ort des Kontextbereichs liegen noch Kontextdateien (Altbestand). Anbieten, sie zu kopieren — Ortswahl unter {$a}.';
-$string['altbestandclosed'] = 'Es liegt kein offener Altbestand vor.';
-$string['altbestanddismissed'] = 'Altbestand abgeschlossen — der vorherige Ort wird nicht mehr erwähnt.';
+$string['locationselectionpreviouslocationopen'] = 'Vom früheren Ort ist noch nicht alles übernommen.';
+$string['listskillspreviouslocationhint'] = 'Am vorherigen Ort des Kontextbereichs liegen noch Kontextdateien (Altbestand). Anbieten, sie zu kopieren — Ortswahl unter {$a}.';
+$string['previouslocationclosed'] = 'Es liegt kein offener Altbestand vor.';
+$string['previouslocationdismissed'] = 'Altbestand abgeschlossen — der vorherige Ort wird nicht mehr erwähnt.';
 $string['contextfilealreadyexists'] = '{$a} existiert am neuen Ort bereits — nicht überschrieben (Kopieren legt nur an, nie überschreibend).';
 
 // Ausstandsnotiz (Issue #492, ADR 0023, Spec #486 §8/§10): kein absoluter
 // Serverpfad, kein Benutzername, kein Passwort, kein HTTP-Code, kein
 // Antwortrumpf (Geheimnis-Test) — der Rohcode geht ins Zugriffsprotokoll.
-$string['ausstandwritefailed'] = '{$a->path} ({$a->operation}): {$a->reason}. Noch nicht gespeichert, vermerkt (Kennung {$a->kennung}). Bitte den Inhalt im Gespräch behalten, ihn keinesfalls an einem anderen Ort ablegen, und denselben Aufruf mit pending_entry="{$a->kennung}" wiederholen, sobald die Verbindung wieder steht. Verbindung: {$a->target}.';
-$string['ausstandnotewritefailed'] = '{$a->path} ({$a->operation}) nicht geschrieben, und auch der Vermerk „noch nicht gespeichert“ konnte nicht angelegt werden — Ihre Private Files sind voll. Bitte Platz schaffen und erneut versuchen, sonst geht der Inhalt verloren.';
-$string['ausstandnotequotaexceeded'] = 'Der Vermerk „noch nicht gespeichert“ konnte nicht geschrieben werden — der Speicherplatz in Ihren Private Files reicht nicht.';
-$string['ausstandunknown'] = 'Kein offener Eintrag „noch nicht gespeichert“ mit der Kennung {$a}.';
-$string['ausstanddismissed'] = 'Eintrag {$a} verworfen.';
+$string['pendingwritefailed'] = '{$a->path} ({$a->operation}): {$a->reason}. Noch nicht gespeichert, vermerkt (Kennung {$a->identifier}). Bitte den Inhalt im Gespräch behalten, ihn keinesfalls an einem anderen Ort ablegen, und denselben Aufruf mit pending_entry="{$a->identifier}" wiederholen, sobald die Verbindung wieder steht. Verbindung: {$a->target}.';
+$string['pendingnotewritefailed'] = '{$a->path} ({$a->operation}) nicht geschrieben, und auch der Vermerk „noch nicht gespeichert“ konnte nicht angelegt werden — Ihre Private Files sind voll. Bitte Platz schaffen und erneut versuchen, sonst geht der Inhalt verloren.';
+$string['pendingoperationcreate'] = 'anlegen';
+$string['pendingoperationoverwrite'] = 'überschreiben';
+$string['pendingoperationappend'] = 'anhängen';
+$string['pendingoperationunknown'] = 'unbekannt';
+$string['pendingnotequotaexceeded'] = 'Der Vermerk „noch nicht gespeichert“ konnte nicht geschrieben werden — der Speicherplatz in Ihren Private Files reicht nicht.';
+$string['pendingunknown'] = 'Kein offener Eintrag „noch nicht gespeichert“ mit der Kennung {$a}.';
+$string['pendingdismissed'] = 'Eintrag {$a} verworfen.';
 
 // Schreiben in den Kontextbereich (#408, Spec 0016 §4.1).
 $string['contextfilenotmarkdown'] = 'In den Kontextbereich lassen sich nur .md-Dateien schreiben: {$a}';
@@ -234,8 +238,8 @@ $string['materialquotawarning'] = 'Hinweis: nur noch {$a} MB Speicherplatz frei.
 $string['materialfilecreated'] = '{$a} neu angelegt.';
 $string['materialfileoverwritten'] = '{$a->path} überschrieben (vorher: {$a->before} Byte, jetzt: {$a->after} Byte).';
 $string['materialfilenotfound'] = 'Keine Materialdatei unter "{$a}" gefunden — erwarteter Pfad im Materialordner. Erst mit upload_material_file ablegen, dann verweisen.';
-$string['invalidmaterialort'] = 'Unbekannter Ort "{$a}" — gültig sind "bestand" und "werkbank".';
-$string['materialpathiskontext'] = 'Dieser Pfad gehört zum Kontextbereich, nicht zum Materialbestand — über die Materialwerkzeuge nicht erreichbar. Bitte stattdessen list_context_files/read_context_file nutzen.';
+$string['invalidmateriallocation'] = 'Unbekannter Ort "{$a}" — gültig sind "store" (Materialbestand) und "workbench" (Werkbank).';
+$string['materialpathiscontext'] = 'Dieser Pfad gehört zum Kontextbereich, nicht zum Materialbestand — über die Materialwerkzeuge nicht erreichbar. Bitte stattdessen list_context_files/read_context_file nutzen.';
 $string['materialgdmissing'] = 'Bildvorschau und Bildzuschnitt sind auf diesem Server gesperrt — die PHP-Erweiterung GD fehlt. Hochladen und Einbetten funktionieren weiterhin.';
 $string['materialpreviewnotanimage'] = '"{$a}" ist keine Bilddatei — dafür gibt es keine Vorschau.';
 $string['materialpreviewunsupported'] = 'Diese Datei lässt sich nicht als Bild lesen (z. B. SVG oder beschädigte Bilddaten) — dafür gibt es keine Vorschau.';
@@ -254,11 +258,11 @@ $string['materialfilesdeleted'] = '{$a->count} Datei(en) gelöscht, {$a->freed} 
 $string['materialdeletefilenotfound'] = 'Nicht gelöscht: keine Materialdatei unter "{$a}" gefunden — bitte die Pfadliste prüfen (Tippfehler?).';
 
 // Einmal-Downloadlink für Werkbankdateien (Issue #501, Spec #486 §13).
-$string['werkbankticketinvalid'] = 'Dieser Downloadlink ist ungültig oder bereits verbraucht — jeder Link gilt nur für einen Abruf.';
-$string['werkbankticketexpired'] = 'Dieser Downloadlink ist abgelaufen — Links gelten 15 Minuten.';
-$string['werkbankticketconnectionrevoked'] = 'Die Verbindung, die diesen Downloadlink ausgestellt hat, besteht nicht mehr.';
-$string['werkbankticketaccountinactive'] = 'Das zugehörige Moodle-Konto ist nicht mehr aktiv.';
-$string['werkbankticketcontentchanged'] = 'Die Datei wurde seit dem Ausstellen des Downloadlinks geändert — bitte einen neuen Link anfordern.';
+$string['workbenchticketinvalid'] = 'Dieser Downloadlink ist ungültig oder bereits verbraucht — jeder Link gilt nur für einen Abruf.';
+$string['workbenchticketexpired'] = 'Dieser Downloadlink ist abgelaufen — Links gelten 15 Minuten.';
+$string['workbenchticketconnectionrevoked'] = 'Die Verbindung, die diesen Downloadlink ausgestellt hat, besteht nicht mehr.';
+$string['workbenchticketaccountinactive'] = 'Das zugehörige Moodle-Konto ist nicht mehr aktiv.';
+$string['workbenchticketcontentchanged'] = 'Die Datei wurde seit dem Ausstellen des Downloadlinks geändert — bitte einen neuen Link anfordern.';
 
 // Schalter für personenbezogene Kontextdaten (#344, ADR 0011).
 $string['settingallowpersonaldata'] = 'Personenbezogene Kontextdaten übertragen';
@@ -330,20 +334,20 @@ $string['consentrevoke'] = 'Sie können diese Verbindung jederzeit über Ihr Nut
 // seit Issue #563 wieder mit Link, der auf die Verbindung zurueckfuehrt).
 $string['consentlocationheading'] = 'Wo Ihr Coursepilot-Bereich liegt';
 $string['consentlocationintro'] = 'Ihr Coursepilot-Bereich liegt standardmäßig in Moodle. Sie können ihn auch auf einen externen Speicher verlegen — das ist optional und lässt sich jederzeit später wieder ändern.';
-$string['consentlocationkontextbereichcurrent'] = 'Journale und Pläne: {$a}';
-$string['consentlocationmaterialbestandcurrent'] = 'Materialdateien: {$a}';
+$string['consentlocationcontextareacurrent'] = 'Journale und Pläne: {$a}';
+$string['consentlocationmaterialstorecurrent'] = 'Materialdateien: {$a}';
 $string['consentlocationchangelink'] = 'Ort ändern';
 $string['consentlocationsetuplink'] = 'Ablageort jetzt einstellen';
-$string['ortswahloauthflowinfo'] = 'Sie richten gerade die Verbindung zu {$a} ein. Nach dem Abschließen geht es zurück zur Zustimmungsseite.';
-$string['ortswahloauthflowback'] = 'Zurück zur Zustimmungsseite, ohne etwas zu ändern';
+$string['locationselectionoauthflowinfo'] = 'Sie richten gerade die Verbindung zu {$a} ein. Nach dem Abschließen geht es zurück zur Zustimmungsseite.';
+$string['locationselectionoauthflowback'] = 'Zurück zur Zustimmungsseite, ohne etwas zu ändern';
 
 // Datenschutz-Informationstext zum externen Ablageort (Issue #500, ADR 0021,
 // Spec #486 §11) - dieselbe Formel an allen Stellen, die eine Lehrkraft vor
 // oder bei einer externen Ortswahl sieht: Zustimmungsdialog, "Meine
 // Verbindungen", Beschreibung der Einstellung "personaldatahosts".
 $string['externallocationprivacyinfo'] = 'Liegt Kontextbereich oder Materialbestand extern: Namen und Bilder aus dem Bestand können bei einer Anfrage an die KI übertragen werden. Für externe Kontextdateien gilt eine Schreibsperre, aber keine Lesesperre. Eingehängte Freigaben (etwa IServ-Gruppen, Nextcloud-Freigaben) sind von außen nicht als solche erkennbar. Verwenden Sie für die Verbindung ein App-Passwort statt Ihres Hauptpassworts.';
-$string['ortswahlzugelassenja'] = 'zugelassener Speicher für personenbezogene Daten';
-$string['ortswahlzugelassennein'] = 'kein zugelassener Speicher für personenbezogene Daten';
+$string['locationselectionallowedyes'] = 'zugelassener Speicher für personenbezogene Daten';
+$string['locationselectionallowedno'] = 'kein zugelassener Speicher für personenbezogene Daten';
 
 // classes/privacy/provider.php (#336).
 $string['privacy:metadata:oauth_code'] = 'Kurzlebige, PKCE-gebundene Autorisierungscodes für den OAuth-Zustimmungsdialog.';
@@ -385,13 +389,13 @@ $string['privacy:metadata:context_mark'] = 'Markierungsgedächtnis (#493): je Ko
 $string['privacy:metadata:context_mark:userid'] = 'Die Nutzer-ID der Lehrkraft, zu der dieser Eintrag gehört.';
 $string['privacy:metadata:context_mark:path'] = 'Client-Pfad der Kontextdatei, auf die sich dieser Eintrag bezieht.';
 $string['privacy:metadata:context_mark:ismarked'] = 'Ob die Datei zuletzt als personenbezogen markiert erkannt wurde.';
-$string['privacy:metadata:werkbank_ticket'] = 'Einmal-Downloadticket für eine Werkbankdatei (#501): gespeichert wird nur der Hash des Ticketgeheimnisses, nie das Geheimnis selbst.';
-$string['privacy:metadata:werkbank_ticket:userid'] = 'Die Nutzer-ID der Lehrkraft, für die das Ticket ausgestellt wurde.';
-$string['privacy:metadata:werkbank_ticket:path'] = 'Pfad der Werkbankdatei, relativ zur Werkbankwurzel.';
-$string['privacy:metadata:werkbank_ticket:contenthash'] = 'Inhaltsprüfsumme der Datei zum Ausstellungszeitpunkt.';
-$string['privacy:metadata:werkbank_ticket:oauthtokenid'] = 'Verweis auf die ausstellende Verbindung (local_coursepilot_oauth_token).';
-$string['privacy:metadata:werkbank_ticket:expires'] = 'Ablaufzeitpunkt des Tickets.';
-$string['privacy:metadata:werkbank_ticket:timecreated'] = 'Ausstellungszeitpunkt.';
+$string['privacy:metadata:workbench_ticket'] = 'Einmal-Downloadticket für eine Werkbankdatei (#501): gespeichert wird nur der Hash des Ticketgeheimnisses, nie das Geheimnis selbst.';
+$string['privacy:metadata:workbench_ticket:userid'] = 'Die Nutzer-ID der Lehrkraft, für die das Ticket ausgestellt wurde.';
+$string['privacy:metadata:workbench_ticket:path'] = 'Pfad der Werkbankdatei, relativ zur Werkbankwurzel.';
+$string['privacy:metadata:workbench_ticket:contenthash'] = 'Inhaltsprüfsumme der Datei zum Ausstellungszeitpunkt.';
+$string['privacy:metadata:workbench_ticket:oauthtokenid'] = 'Verweis auf die ausstellende Verbindung (local_coursepilot_oauth_token).';
+$string['privacy:metadata:workbench_ticket:expires'] = 'Ablaufzeitpunkt des Tickets.';
+$string['privacy:metadata:workbench_ticket:timecreated'] = 'Ausstellungszeitpunkt.';
 
 // classes/privacy/provider.php: externer Ablageort (#500, ADR 0021).
 $string['privacy:metadata:webdav_external_storage'] = 'Kontextbereich und Materialbestand können am externen WebDAV-Speicher liegen, den die Lehrkraft über die Ortswahl gewählt hat - außerhalb von Moodle und außerhalb dieses Plugins. Coursepilot schreibt und liest dort direkt, ohne eigene Kopie in Moodle.';
@@ -402,10 +406,10 @@ $string['privacy:metadata:webdav_external_storage:content'] = 'Der Dateiinhalt, 
 $string['unknownmodname'] = 'Unbekannte Aktivitätsart "{$a->modname}". Coursepilot führt: {$a->modnames}.';
 
 // Skill-Korpus: coursepilot_list_skills/coursepilot_get_skill (Spec 0020 §4, #450).
-$string['unknownskillname'] = 'Unbekannter Skill-Name "{$a->name}". Gültige Namen: {$a->namen}.';
+$string['unknownskillname'] = 'Unbekannter Skill-Name "{$a->name}". Gültige Namen: {$a->names}.';
 
 // Schreibkern: update_module_settings (#388).
-$string['writevehicleblocked'] = '"{$a->modname}" wird nicht über update_module_settings geschrieben, sondern über {$a->schreibweg}. Nichts wurde geschrieben.';
+$string['writevehicleblocked'] = '"{$a->modname}" wird nicht über update_module_settings geschrieben, sondern über {$a->write_route}. Nichts wurde geschrieben.';
 $string['invalidpatchjson'] = 'felder_json ist kein gültiges JSON-Objekt. Nichts wurde geschrieben.';
 $string['invalideditorpseudofield'] = 'Das Feld "{$a->field}" braucht den Inhalt als Text oder als Objekt mit "text" - angegeben war {$a->value}. Ohne "text" bliebe der Inhalt leer, deshalb wurde nichts geschrieben.';
 $string['unknownfield'] = 'Unbekanntes Feld "{$a->field}" für Aktivitätsart "{$a->modname}". describe_module_fields(modname: "{$a->modname}", vollständig: true) zeigt die erlaubten Felder. Nichts wurde geschrieben.';
@@ -423,18 +427,18 @@ $string['readonlyvocabularyfield'] = 'Das Feld "{$a->field}" ist Lese-Vokabular 
 // Schreibkern: Struktur und Positionen (#391).
 $string['invalidsectionnum'] = 'Ungültige Abschnittsnummer "{$a->sectionnum}". Nichts wurde geschrieben.';
 $string['sectionnotfound'] = 'Abschnitt "{$a->sectionnum}" existiert nicht.';
-$string['sectionunknownfield'] = 'Unbekanntes Feld "{$a->field}" für Abschnitte. Erlaubt: {$a->felder}. Nichts wurde geschrieben.';
+$string['sectionunknownfield'] = 'Unbekanntes Feld "{$a->field}" für Abschnitte. Erlaubt: {$a->fields}. Nichts wurde geschrieben.';
 $string['sectioninvalidvisible'] = 'Ungültiger Wert "{$a->value}" für "visible" - erlaubt sind 0 oder 1. Nichts wurde geschrieben.';
 $string['sectionnotmovable'] = 'Abschnitt "{$a->sectionnum}" existiert nicht oder ist der allgemeine Abschnitt (0) - dieser kann nicht verschoben werden.';
 
 // Schreibkern: set_completion (#392).
-$string['completionunknownfield'] = 'Unbekanntes Vervollständigungsfeld "{$a->field}". Erlaubt für diese Aktivitätsart: {$a->erlaubt}. Nichts wurde geschrieben.';
+$string['completionunknownfield'] = 'Unbekanntes Vervollständigungsfeld "{$a->field}". Erlaubt für diese Aktivitätsart: {$a->allowed_fields}. Nichts wurde geschrieben.';
 $string['completionfieldviasetcompletion'] = 'Das Vervollständigungsfeld "{$a->field}" wird nicht per Feld-Patch gesetzt, sondern ausschließlich über set_completion (cmid, felder_json) - Moodle verwirft es sonst still oder löscht die Abschlussdaten der Lernenden. Nichts wurde geschrieben.';
 $string['completionfieldnotformodname'] = 'Das Vervollständigungsfeld "{$a->field}" gibt es nur bei den Aktivitätsarten {$a->modnames}, nicht bei "{$a->modname}". Nichts wurde geschrieben.';
 $string['completioninvalidfieldvalue'] = 'Ungültiger Wert "{$a->value}" für Vervollständigungsfeld "{$a->field}". Nichts wurde geschrieben.';
 $string['completionnotenabled'] = 'Die Abschlussverfolgung ist für diesen Kurs (oder die gesamte Moodle-Instanz) deaktiviert. Moodle würde diese Felder ohnehin still verwerfen. Aktivieren Sie zuerst die Abschlussverfolgung im Kurs. Nichts wurde geschrieben.';
-$string['completiondatalossconfirmationrequired'] = 'Diese Änderung würde die vorhandenen Abschlussdaten von {$a->betroffene_lernende} Lernenden für diese Aktivität löschen - Moodle löscht und berechnet sie neu, sobald dieser Schreibvorgang die Vervollständigung entsperrt. Nichts wurde geschrieben. Rufen Sie set_completion erneut mit "confirmed": true auf, um trotzdem fortzufahren.';
-$string['sectiontargetoutofrange'] = 'Zielposition "{$a->nach}" liegt außerhalb des gültigen Bereichs (1 bis {$a->max}).';
+$string['completiondatalossconfirmationrequired'] = 'Diese Änderung würde die vorhandenen Abschlussdaten von {$a->affected_learners} Lernenden für diese Aktivität löschen - Moodle löscht und berechnet sie neu, sobald dieser Schreibvorgang die Vervollständigung entsperrt. Nichts wurde geschrieben. Rufen Sie set_completion erneut mit "confirmed": true auf, um trotzdem fortzufahren.';
+$string['sectiontargetoutofrange'] = 'Zielposition "{$a->target}" liegt außerhalb des gültigen Bereichs (1 bis {$a->max}).';
 
 // Schreibkern: set_restriction (#393).
 $string['restrictionsnotenabled'] = 'Bedingte Verfügbarkeit ist auf dieser Moodle-Instanz deaktiviert (Einstellung "enableavailability"). Moodle würde Voraussetzungen ohnehin verwerfen. Nichts wurde geschrieben.';
@@ -457,8 +461,8 @@ $string['addquestionstoquizblocked'] = 'Diesem Test (quizid {$a->quizid}) könne
 // Schreibkern: Drift-Check und Admin-Statusprüfung (#399, ADR 0017).
 $string['modnamedriftlocked'] = 'Aktivitätsart "{$a->modname}" kann ich gerade nicht ändern - bitte der Administration melden. Andere Aktivitätsarten bleiben schreibbar, Lesen und Nachschlagen sind ebenfalls weiterhin möglich.';
 $string['driftcheckname'] = 'Coursepilot-Feldkatalog: {$a}';
-$string['driftstatusgeprueft'] = 'Geprüft: Feldkatalog manuell für diese Moodle-Hauptversion durchgesehen, keine Abweichung.';
-$string['driftstatusautomatischgeprueft'] = 'Automatisch geprüft: Spalten, aufrufbare Quellen und Konstanten stimmen, aber diese Moodle-Hauptversion wurde noch nicht manuell durchgesehen (Wertelisten, Kombinationsregeln, Nebenwirkungen).';
+$string['driftstatuschecked'] = 'Geprüft: Feldkatalog manuell für diese Moodle-Hauptversion durchgesehen, keine Abweichung.';
+$string['driftstatusautochecked'] = 'Automatisch geprüft: Spalten, aufrufbare Quellen und Konstanten stimmen, aber diese Moodle-Hauptversion wurde noch nicht manuell durchgesehen (Wertelisten, Kombinationsregeln, Nebenwirkungen).';
 $string['driftstatusbrauchtarbeit'] = 'Braucht Arbeit: der Feldkatalog weicht von dieser Moodle-Instanz ab, die Aktivitätsart ist schreibgesperrt.';
 
 // Spec 0017: clone_activity (#421).
@@ -482,20 +486,20 @@ $string['webdavcheck4name'] = 'Coursepilot: Zugelassene Speicher für personenbe
 $string['webdavcheck4info'] = 'Keine externen Speicher zugelassen — als personenbezogen markierte Dateien bleiben in Moodle.';
 $string['webdavcheck4ok'] = 'Zugelassene externe Speicher sind konfiguriert.';
 
-$string['connectionablageort'] = 'Ablageort';
-$string['ablageorttargetkontextbereich'] = 'Kontextbereich';
-$string['ablageorttargetmaterialbestand'] = 'Materialbestand';
-$string['ablageortoffen'] = 'offen';
-$string['ablageortmoodle'] = 'in Moodle';
-$string['ablageortextern'] = 'extern: {$a}';
-$string['ablageortdefektungueltig'] = 'Pointer ungültig';
-$string['ablageortdefektinstanzfehlt'] = 'Instanz fehlt';
-$string['ablageortdefektfremdeinstanz'] = 'gehört jemand anderem';
-$string['ablageortdefekthttp'] = 'http';
-$string['ablageortmarkernichtzugelassen'] = 'nicht zugelassener Speicher';
-$string['ablageortmarkerausstand'] = 'noch nicht gespeichert';
-$string['ablageortmarkeraltbestand'] = 'offener Altbestand';
-$string['ablageortmarkerdefekt'] = 'defekter Pointer ({$a})';
+$string['connectionstoragelocation'] = 'Ablageort';
+$string['storagelocationtargetcontextarea'] = 'Kontextbereich';
+$string['storagelocationtargetmaterialstore'] = 'Materialbestand';
+$string['storagelocationopen'] = 'offen';
+$string['storagelocationmoodle'] = 'in Moodle';
+$string['storagelocationexternal'] = 'extern: {$a}';
+$string['storagelocationdefectinvalid'] = 'Pointer ungültig';
+$string['storagelocationdefectinstancemissing'] = 'Instanz fehlt';
+$string['storagelocationdefectforeigninstance'] = 'gehört jemand anderem';
+$string['storagelocationdefecthttp'] = 'http';
+$string['storagelocationmarkernotallowed'] = 'nicht zugelassener Speicher';
+$string['storagelocationmarkerpending'] = 'noch nicht gespeichert';
+$string['storagelocationmarkerpreviouslocation'] = 'offener Altbestand';
+$string['storagelocationmarkerdefect'] = 'defekter Pointer ({$a})';
 
 $string['settingwebdavheading'] = 'Externer Ablageort (WebDAV)';
 $string['settingwebdavheading_desc'] = 'Was die Schule über den externen Ablageort wissen sollte: Namen und Bilder aus dem Materialbestand können an die KI gehen. Eine WebDAV-Nutzerinstanz speichert das Passwort im Klartext — ein separates App-Passwort statt des eigentlichen Kontopassworts wird empfohlen. Core-Lücke: der Repository-Provider für Auskunft/Löschung sucht über „userid", Nutzerinstanzen tragen aber „userid = 0" und werden dadurch nicht gefunden. Für externe Kontextdateien gilt eine Schreibsperre, aber keine Lesesperre. Der aktuelle Stand der vier zugehörigen Statusprüfungen steht im <a href="{$a}">Systemstatus</a>.';

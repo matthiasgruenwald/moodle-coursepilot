@@ -43,17 +43,17 @@ final class skill_corpus_test extends \advanced_testcase {
         foreach ($entries as $entry) {
             $byname[$entry['name']] = $entry;
             $this->assertArrayNotHasKey('content', $entry);
-            $this->assertContains($entry['art'], ['adapter', 'referenz']);
-            $this->assertGreaterThan(0, $entry['umfang']);
+            $this->assertContains($entry['kind'], ['adapter', 'reference']);
+            $this->assertGreaterThan(0, $entry['length']);
         }
 
         $this->assertArrayHasKey('coursepilot', $byname);
-        $this->assertSame('adapter', $byname['coursepilot']['art']);
-        $this->assertStringContainsString('Coursepilot-Einstieg', $byname['coursepilot']['ausloeser']);
+        $this->assertSame('adapter', $byname['coursepilot']['kind']);
+        $this->assertStringContainsString('Coursepilot-Einstieg', $byname['coursepilot']['trigger']);
 
         $this->assertArrayHasKey('coursepilot-core', $byname);
-        $this->assertSame('referenz', $byname['coursepilot-core']['art']);
-        $this->assertNotSame('', $byname['coursepilot-core']['ausloeser']);
+        $this->assertSame('reference', $byname['coursepilot-core']['kind']);
+        $this->assertNotSame('', $byname['coursepilot-core']['trigger']);
     }
 
     /**
@@ -64,11 +64,11 @@ final class skill_corpus_test extends \advanced_testcase {
      */
     public function test_lists_the_three_v1_adapters_and_not_einrichten(): void {
         $adapters = array_column(
-            array_filter(skill_corpus::list(), static fn (array $entry): bool => $entry['art'] === 'adapter'),
+            array_filter(skill_corpus::list(), static fn (array $entry): bool => $entry['kind'] === 'adapter'),
             'name'
         );
 
-        foreach (['coursepilot', 'coursepilot-planen', 'coursepilot-umsetzen'] as $expected) {
+        foreach (['coursepilot', 'coursepilot-plan', 'coursepilot-implement'] as $expected) {
             $this->assertContains($expected, $adapters);
         }
         $this->assertNotContains('coursepilot-einrichten', $adapters);
@@ -81,7 +81,7 @@ final class skill_corpus_test extends \advanced_testcase {
     public function test_new_file_on_disk_appears_without_code_change(): void {
         global $CFG;
 
-        $path = $CFG->dirroot . '/local/coursepilot/skills/referenz/zzz-testneuling.md';
+        $path = $CFG->dirroot . '/local/coursepilot/skills/reference/zzz-testneuling.md';
         file_put_contents($path, "# Testneuling\n\nNur fuer diesen Test.\n");
 
         try {
@@ -102,13 +102,13 @@ final class skill_corpus_test extends \advanced_testcase {
         $result = skill_corpus::get('coursepilot');
 
         $this->assertStringContainsString('coursepilot-core', $result['content']);
-        $this->assertContains('coursepilot-core', $result['referenzierte_teile']);
-        $this->assertContains('kontext-onboarding', $result['referenzierte_teile']);
+        $this->assertContains('coursepilot-core', $result['referenced_parts']);
+        $this->assertContains('context-onboarding', $result['referenced_parts']);
 
         $plugin = new \stdClass();
         require($CFG->dirroot . '/local/coursepilot/version.php');
-        $this->assertStringContainsString($plugin->release, $result['korpus_stand']);
-        $this->assertStringContainsString((string) $plugin->version, $result['korpus_stand']);
+        $this->assertStringContainsString($plugin->release, $result['corpus_version']);
+        $this->assertStringContainsString((string) $plugin->version, $result['corpus_version']);
     }
 
     /**
@@ -224,7 +224,7 @@ final class skill_corpus_test extends \advanced_testcase {
             'coursepilot_read_context_file' => ['previous_location'],
             'coursepilot_write_context_file' => ['pending_entry', 'create_only'],
             'coursepilot_append_context_file' => ['pending_entry'],
-            'coursepilot_dismiss_ausstand' => ['identifier'],
+            'coursepilot_dismiss_pending_entry' => ['identifier'],
         ];
 
         foreach ($documented as $tool => $fields) {
@@ -237,7 +237,7 @@ final class skill_corpus_test extends \advanced_testcase {
         }
     }
     public function test_graphics_reference_exposes_source_header_and_composition_rules(): void {
-        $content = preg_replace('/\s+/u', ' ', skill_corpus::get('grafiken')['content']);
+        $content = preg_replace('/\s+/u', ' ', skill_corpus::get('graphics')['content']);
         foreach ([
             'standardmäßig einen Quellenkopf mit ihrem Lehrwerkverweis',
             'Lehrkraft kann den Quellenkopf abwählen',
@@ -256,6 +256,6 @@ final class skill_corpus_test extends \advanced_testcase {
             $this->assertStringContainsString($rule, $content);
         }
         $this->assertStringContainsString('coursepilot_compose_material_file', $content);
-        $this->assertStringContainsString('coursepilot_get_skill("grafiken")', skill_corpus::get('coursepilot-planen')['content']);
+        $this->assertStringContainsString('coursepilot_get_skill("graphics")', skill_corpus::get('coursepilot-plan')['content']);
     }
 }

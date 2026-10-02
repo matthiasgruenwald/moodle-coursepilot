@@ -176,3 +176,77 @@ function local_coursepilot_migrate_history_sources(): void {
         $DB->set_field('local_coursepilot_cm_version', 'source', $new, ['source' => $old]);
     }
 }
+
+/**
+ * Benennt die Ablagedateien am Anker englisch um und uebersetzt ihren Inhalt
+ * (#602, ADR 0024): Kontextpointer ".coursepilot-ort.json" ->
+ * ".coursepilot-location.json" (Schluessel ueber
+ * {@see \local_coursepilot\context_pointer::normalise()}), Ausstandsnotiz
+ * ".coursepilot-ausstand.json" -> ".coursepilot-pending.json" (Schluessel,
+ * Vorgaenge und WebDAV-Fehlerklassen englisch). Liegt die neue Datei schon
+ * vor, gewinnt sie und die alte entfaellt. Idempotent.
+ *
+ * @return void
+ */
+function local_coursepilot_migrate_anchor_files(): void {
+    global $DB;
+
+    $renames = [
+        '.coursepilot-ort.json' => '.coursepilot-location.json',
+        '.coursepilot-ausstand.json' => '.coursepilot-pending.json',
+    ];
+    $fs = get_file_storage();
+    foreach ($renames as $oldname => $newname) {
+        $records = $DB->get_records('files', [
+            'component' => 'user', 'filearea' => 'private', 'itemid' => 0, 'filename' => $oldname,
+        ]);
+        foreach ($records as $record) {
+            $old = $fs->get_file_instance($record);
+            $decoded = json_decode($old->get_content(), true);
+            if (!$fs->file_exists($record->contextid, 'user', 'private', 0, $record->filepath, $newname)
+                    && is_array($decoded) && !array_is_list($decoded)) {
+                $translated = $oldname === '.coursepilot-ort.json'
+                    ? \local_coursepilot\context_pointer::normalise($decoded)
+                    : local_coursepilot_translate_pending_entries($decoded);
+                $fs->create_file_from_string([
+                    'contextid' => $record->contextid, 'component' => 'user', 'filearea' => 'private',
+                    'itemid' => 0, 'filepath' => $record->filepath, 'filename' => $newname,
+                    'userid' => $record->userid,
+                ], json_encode($translated, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            }
+            $old->delete();
+        }
+    }
+}
+
+/**
+ * Uebersetzt Eintraege einer Ausstandsnotiz vor #602 (deutsche Schluessel,
+ * Vorgaenge und WebDAV-Fehlerklassen) in die englische Form.
+ *
+ * @param array $entries Kennung => Eintrag.
+ * @return array
+ */
+function local_coursepilot_translate_pending_entries(array $entries): array {
+    $keys = ['zeitpunkt' => 'timestamp', 'pfad' => 'path', 'vorgang' => 'operation',
+        'fehlerklasse' => 'error_class', 'kursid' => 'course_id'];
+    $values = [
+        'anlegen' => 'create', 'überschreiben' => 'overwrite', 'ueberschreiben' => 'overwrite',
+        'anhängen' => 'append', 'anhaengen' => 'append', 'unbekannt' => 'unknown',
+        'unklar/gedrosselt' => 'unclear', 'nicht gefunden' => 'not_found', 'Anmeldung abgelehnt' => 'auth_rejected',
+        'nicht erreichbar' => 'unreachable', 'Speicher voll' => 'storage_full', 'Konflikt' => 'conflict',
+        'gesperrt' => 'blocked', 'Weiterleitung abgelehnt' => 'redirected',
+    ];
+    $result = [];
+    foreach ($entries as $identifier => $entry) {
+        $translated = [];
+        foreach ((array) $entry as $key => $value) {
+            $key = $keys[$key] ?? $key;
+            if (in_array($key, ['operation', 'error_class'], true) && is_string($value)) {
+                $value = $values[$value] ?? $value;
+            }
+            $translated[$key] = $value;
+        }
+        $result[$identifier] = $translated;
+    }
+    return $result;
+}

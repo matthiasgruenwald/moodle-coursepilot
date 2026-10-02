@@ -19,7 +19,7 @@ namespace local_coursepilot;
 /**
  * Die Ausstandsnotiz (Issue #492, ADR 0023, Spec #486 §8/§10): die
  * Aufzeichnung gescheiterter Schreibvorgaenge am festen Anker, neben dem
- * Kontextpointer ({@see storage_anchor::AUSSTAND_FILENAME}) - dort, wo
+ * Kontextpointer ({@see storage_anchor::PENDING_FILENAME}) - dort, wo
  * Coursepilot auch dann schreiben kann, wenn der externe Speicher schweigt
  * (CONTEXT.md "Ausstandsnotiz").
  *
@@ -28,7 +28,7 @@ namespace local_coursepilot;
  * Fehlerklasse (Issue #516, Spec #486 §8). Verschwindet nur ausdruecklich - durch Nachtragen
  * ({@see pointer_writer}, ueber `pending_entry=<Kennung>`, #571: seither englisch
  * deklariert) oder durch ausdrueckliches Verwerfen
- * ({@see \local_coursepilot\external\dismiss_ausstand}) - nie durch Zeitablauf.
+ * ({@see \local_coursepilot\external\dismiss_pending_entry}) - nie durch Zeitablauf.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -41,24 +41,24 @@ final class pending_write_notice {
      * vergebene Kennung.
      *
      * @param string $path Relativer Client-Pfad der Zieldatei, nie der Inhalt.
-     * @param string $operation "anlegen", "ueberschreiben", "anhaengen" oder "unbekannt".
+     * @param string $operation Eine der {@see pending_write_translation}::OP_*-Konstanten.
      * @param string $errorclass Fehlerklasse (z.B. {@see \local_coursepilot\webdav\webdav_error}-Konstante
      *        oder ein webdavinstance*-Fehlerschluessel), nie ein Freitext.
      * @param int $courseid Kurs-ID (Issue #516, Spec #486 §8) - 0, wenn der
      *        gescheiterte Aufruf keinem Kurs zugeordnet war.
      * @return string Neu vergebene Kennung.
-     * @throws \moodle_exception ausstandnotequotaexceeded, wenn die Notiz selbst
+     * @throws \moodle_exception pendingnotequotaexceeded, wenn die Notiz selbst
      *         nicht mehr geschrieben werden kann (Private-Files-Quote voll).
      */
     public static function record(string $path, string $operation, string $errorclass, int $courseid): string {
         $entries = self::all();
         $identifier = self::generate_identifier($entries);
         $entries[$identifier] = [
-            'zeitpunkt' => time(),
-            'pfad' => $path,
-            'vorgang' => $operation,
-            'fehlerklasse' => $errorclass,
-            'kursid' => $courseid,
+            'timestamp' => time(),
+            'path' => $path,
+            'operation' => $operation,
+            'error_class' => $errorclass,
+            'course_id' => $courseid,
         ];
         self::save($entries);
         return $identifier;
@@ -68,7 +68,7 @@ final class pending_write_notice {
      * Verwirft einen Eintrag - genutzt sowohl beim Nachtragen (erfolgreiches
      * Schreiben mit `pending_entry=<Kennung>`, #571: seither englisch
      * deklariert) als auch beim ausdruecklichen Verwerfen durch die Lehrkraft
-     * ({@see \local_coursepilot\external\dismiss_ausstand}): dieselbe
+     * ({@see \local_coursepilot\external\dismiss_pending_entry}): dieselbe
      * Operation, zwei Anlaesse (ADR 0023 Punkt 3).
      *
      * Eine leere oder unbekannte Kennung ist ein folgenloser No-Op (Issue
@@ -94,41 +94,41 @@ final class pending_write_notice {
      * fuer den Handshake ({@see \local_coursepilot\external\list_skills}). Rein
      * lokal, ohne Netzzugriff: liest ausschliesslich die Notizdatei selbst.
      *
-     * @return array<int, array{pfad: string, eintraege: array<int, array{
-     *         kennung: string, zeitpunkt: int, vorgang: string, fehlerklasse: string, kursid: int}>}>
+     * @return array<int, array{path: string, entries: array<int, array{
+     *         identifier: string, timestamp: int, operation: string, error_class: string, course_id: int}>}>
      */
     public static function list_grouped(): array {
         $bypath = [];
         foreach (self::all() as $identifier => $entry) {
-            $bypath[$entry['pfad']][] = [
-                'kennung' => $identifier,
-                'zeitpunkt' => $entry['zeitpunkt'],
-                'vorgang' => $entry['vorgang'],
-                'fehlerklasse' => $entry['fehlerklasse'],
+            $bypath[$entry['path']][] = [
+                'identifier' => $identifier,
+                'timestamp' => $entry['timestamp'],
+                'operation' => $entry['operation'],
+                'error_class' => $entry['error_class'],
                 // Rueckwaertskompatibel (Issue #516): ein vor diesem Issue
                 // geschriebener Eintrag kennt das Feld noch nicht.
-                'kursid' => $entry['kursid'] ?? 0,
+                'course_id' => $entry['course_id'] ?? 0,
             ];
         }
 
         $groups = [];
         foreach ($bypath as $path => $entriesforpath) {
-            usort($entriesforpath, static fn (array $a, array $b): int => $a['zeitpunkt'] <=> $b['zeitpunkt']);
-            $groups[] = ['pfad' => $path, 'eintraege' => $entriesforpath];
+            usort($entriesforpath, static fn (array $a, array $b): int => $a['timestamp'] <=> $b['timestamp']);
+            $groups[] = ['path' => $path, 'entries' => $entriesforpath];
         }
-        usort($groups, static fn (array $a, array $b): int => $a['eintraege'][0]['zeitpunkt'] <=> $b['eintraege'][0]['zeitpunkt']);
+        usort($groups, static fn (array $a, array $b): int => $a['entries'][0]['timestamp'] <=> $b['entries'][0]['timestamp']);
         return $groups;
     }
 
     /**
-     * Rohe Eintraege, Kennung => {zeitpunkt, pfad, vorgang, fehlerklasse}.
+     * Rohe Eintraege, Kennung => {timestamp, path, operation, error_class, course_id}.
      * Leer, wenn keine Notizdatei existiert, keine Person angemeldet ist,
      * oder die Datei kein gueltiges JSON-Objekt enthaelt (ponytail: kein
      * eigener Reparaturpfad fuer eine von Hand kaputtgemachte Notizdatei -
      * sie wird plugin-intern geschrieben, ein defekter Bestand ist der
      * seltene Rand-fall, nicht der Normalfall).
      *
-     * @return array<string, array{zeitpunkt: int, pfad: string, vorgang: string, fehlerklasse: string}>
+     * @return array<string, array{timestamp: int, path: string, operation: string, error_class: string, course_id: int}>
      */
     private static function all(): array {
         global $USER;
@@ -143,7 +143,7 @@ final class pending_write_notice {
             storage_anchor::FILEAREA,
             storage_anchor::ITEMID,
             storage_anchor::anchor_root(),
-            storage_anchor::AUSSTAND_FILENAME
+            storage_anchor::PENDING_FILENAME
         );
         if (!$file) {
             return [];
@@ -154,8 +154,8 @@ final class pending_write_notice {
     }
 
     /**
-     * @param array<string, array{zeitpunkt: int, pfad: string, vorgang: string, fehlerklasse: string}> $entries
-     * @throws \moodle_exception ausstandnotequotaexceeded
+     * @param array<string, array{timestamp: int, path: string, operation: string, error_class: string, course_id: int}> $entries
+     * @throws \moodle_exception pendingnotequotaexceeded
      */
     private static function save(array $entries): void {
         $content = json_encode($entries, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -168,18 +168,18 @@ final class pending_write_notice {
             storage_anchor::FILEAREA,
             storage_anchor::ITEMID,
             $directory,
-            storage_anchor::AUSSTAND_FILENAME
+            storage_anchor::PENDING_FILENAME
         );
 
         $oldsize = $existing ? $existing->get_filesize() : 0;
         $remaining = storage_anchor::remaining_quota();
         if ($remaining !== null && (strlen($content) - $oldsize) > $remaining) {
-            throw new \moodle_exception('ausstandnotequotaexceeded', 'local_coursepilot');
+            throw new \moodle_exception('pendingnotequotaexceeded', 'local_coursepilot');
         }
 
         storage_anchor::replace(
             $existing ?: null,
-            storage_anchor::filerecord($contextid, $directory, storage_anchor::AUSSTAND_FILENAME),
+            storage_anchor::filerecord($contextid, $directory, storage_anchor::PENDING_FILENAME),
             $content
         );
     }

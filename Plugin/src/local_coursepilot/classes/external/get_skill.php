@@ -68,12 +68,7 @@ final class get_skill extends external_api {
         self::validate_context(context_system::instance());
         require_capability('local/coursepilot:use', context_system::instance());
 
-        $entry = skill_corpus::get($params['name']);
-        return [
-            'content' => $entry['content'],
-            'referenced_parts' => $entry['referenzierte_teile'],
-            'corpus_version' => $entry['korpus_stand'],
-        ];
+        return skill_corpus::get($params['name']);
     }
 
     /**

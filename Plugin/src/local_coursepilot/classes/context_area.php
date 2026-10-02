@@ -217,7 +217,7 @@ final class context_area {
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash Siehe {@see context_files::write_pointer_aware()}.
-     * @param string $ausstand Siehe {@see context_files::write_pointer_aware()}.
+     * @param string $pendingentry Siehe {@see context_files::write_pointer_aware()}.
      * @param bool $createonly Siehe {@see context_files::write_pointer_aware()}.
      * @param int $courseid Siehe {@see context_files::write_pointer_aware()}.
      * @return array{path: string, created: bool, size: int, oldsize: int}
@@ -226,7 +226,7 @@ final class context_area {
         string $path,
         string $content,
         string $expectedcontenthash = '',
-        string $ausstand = '',
+        string $pendingentry = '',
         bool $createonly = false,
         int $courseid = 0
     ): array {
@@ -264,7 +264,7 @@ final class context_area {
             }
             personal_data_hosts::require_allowed_location($location, $path);
         }
-        if ($ausstand !== '' && $existing !== null && $expectedcontenthash === '') {
+        if ($pendingentry !== '' && $existing !== null && $expectedcontenthash === '') {
             throw new storage_conflict_exception($path);
         }
         // Reuse the preflight read as the write condition. This closes the
@@ -321,7 +321,7 @@ final class context_area {
         }
         self::guard_personal_data_for_write($content, $location, $path, $createonly, $courseid);
 
-        return ($location !== null && $location->kind === pointer_location::EXTERN) ? $location : null;
+        return ($location !== null && $location->kind === pointer_location::EXTERNAL) ? $location : null;
     }
 
     /**
@@ -334,7 +334,7 @@ final class context_area {
      * @param string $path
      * @param bool $createonly
      * @param int $courseid
-     * @throws \moodle_exception contextfilelocked, contextfilealreadyexists, ausstandwritefailed
+     * @throws \moodle_exception contextfilelocked, contextfilealreadyexists, pendingwritefailed
      */
     private static function guard_personal_data_for_write(
         string $content,
@@ -343,7 +343,7 @@ final class context_area {
         bool $createonly,
         int $courseid = 0
     ): void {
-        if ($location !== null && $location->kind === pointer_location::EXTERN && !personal_data::allowed()) {
+        if ($location !== null && $location->kind === pointer_location::EXTERNAL && !personal_data::allowed()) {
             try {
                 $existing = pointer_reader::peek_external_content(context_files::area(), $path, $location);
             } catch (webdav_error $e) {
@@ -403,8 +403,8 @@ final class context_area {
      *        Ausstandsnotiz - 0, wenn der Aufruf keinem Kurs zugeordnet ist.
      * @return array{path: string, created: bool, size: int, oldsize: int}
      * @throws \moodle_exception contextfilealreadyexists, contextfilelocked,
-     *         contextfilechanged, contextquotaexceeded, ausstandwritefailed,
-     *         ausstandnotewritefailed
+     *         contextfilechanged, contextquotaexceeded, pendingwritefailed,
+     *         pendingnotewritefailed
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
     private static function write_moodle(
@@ -485,7 +485,7 @@ final class context_area {
      * @param string $operation Eine der {@see pending_write_translation}-OP_*-Konstanten.
      * @param int $courseid
      * @return array{path: string, created: bool, size: int, checksum: string}
-     * @throws \moodle_exception contextquotaexceeded, ausstandwritefailed, ausstandnotewritefailed
+     * @throws \moodle_exception contextquotaexceeded, pendingwritefailed, pendingnotewritefailed
      */
     private static function persist_moodle_write(
         storage_port $port,
@@ -582,7 +582,7 @@ final class context_area {
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash Siehe {@see context_files::append_pointer_aware()}.
-     * @param string $ausstand Siehe {@see context_files::append_pointer_aware()}.
+     * @param string $pendingentry Siehe {@see context_files::append_pointer_aware()}.
      * @param int $courseid Siehe {@see context_files::append_pointer_aware()}.
      * @return array{path: string, created: bool, size: int}
      */
@@ -590,7 +590,7 @@ final class context_area {
         string $path,
         string $content,
         string $expectedcontenthash = '',
-        string $ausstand = '',
+        string $pendingentry = '',
         int $courseid = 0
     ): array {
         $area = context_files::area();
@@ -625,7 +625,7 @@ final class context_area {
         if ($expectedcontenthash !== '' && ($existing === null || $existing['checksum'] !== $expectedcontenthash)) {
             throw new storage_conflict_exception($path);
         }
-        if ($ausstand !== '' && $existing !== null && $expectedcontenthash === '') {
+        if ($pendingentry !== '' && $existing !== null && $expectedcontenthash === '') {
             throw new storage_conflict_exception($path);
         }
         $written = $location->kind === pointer_location::MOODLE
@@ -658,7 +658,7 @@ final class context_area {
             }
             throw $e;
         }
-        if ($location !== null && $location->kind === pointer_location::EXTERN) {
+        if ($location !== null && $location->kind === pointer_location::EXTERNAL) {
             self::guard_personal_data_for_append($path, $content, $courseid);
             return $location;
         }
@@ -712,7 +712,7 @@ final class context_area {
             }
             return null;
         }
-        if ($location === null || $location->kind !== pointer_location::EXTERN) {
+        if ($location === null || $location->kind !== pointer_location::EXTERNAL) {
             return null;
         }
         try {
@@ -739,7 +739,7 @@ final class context_area {
      *        Ausstandsnotiz - 0, wenn der Aufruf keinem Kurs zugeordnet ist.
      * @return array{path: string, created: bool, size: int}
      * @throws \moodle_exception contextfilelocked, contextquotaexceeded,
-     *         ausstandwritefailed, ausstandnotewritefailed
+     *         pendingwritefailed, pendingnotewritefailed
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
     private static function append_moodle(string $path, string $content, int $courseid = 0): array {
@@ -764,7 +764,7 @@ final class context_area {
      * @param string $operation
      * @param int $courseid
      * @return array{path: string, created: bool, size: int, checksum: string}
-     * @throws \moodle_exception contextquotaexceeded, ausstandwritefailed, ausstandnotewritefailed
+     * @throws \moodle_exception contextquotaexceeded, pendingwritefailed, pendingnotewritefailed
      */
     private static function persist_moodle_append(
         storage_port $port,

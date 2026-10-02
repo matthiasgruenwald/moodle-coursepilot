@@ -178,7 +178,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     public static function bundles(): array {
         return [];
     }
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
     public static function checked_constants(): array {
@@ -241,7 +241,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     public static function bundles(): array {
         return [];
     }
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
     public static function checked_constants(): array {
@@ -295,7 +295,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     public static function bundles(): array {
         return [];
     }
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
     public static function checked_constants(): array {

@@ -254,14 +254,14 @@ final class set_completion extends external_api {
         );
 
         if ($changedlocked) {
-            $betroffenelernende = (int) $DB->count_records('course_modules_completion', ['coursemoduleid' => $cmid]);
-            if ($betroffenelernende > 0 && !$params['confirmed']) {
+            $affectedlearners = (int) $DB->count_records('course_modules_completion', ['coursemoduleid' => $cmid]);
+            if ($affectedlearners > 0 && !$params['confirmed']) {
                 // Erster Takt: melden, nicht ausfuehren (Spec 0015 §8).
                 throw new moodle_exception(
                     'completiondatalossconfirmationrequired',
                     'local_coursepilot',
                     '',
-                    ['betroffene_lernende' => $betroffenelernende]
+                    ['affected_learners' => $affectedlearners]
                 );
             }
         }
@@ -342,7 +342,7 @@ final class set_completion extends external_api {
                     'completionunknownfield',
                     'local_coursepilot',
                     '',
-                    ['field' => $fieldname, 'erlaubt' => implode(', ', array_keys($allowedfields))]
+                    ['field' => $fieldname, 'allowed_fields' => implode(', ', array_keys($allowedfields))]
                 );
             }
             if (!is_int($value)) {

@@ -99,7 +99,7 @@ final class update_mc_question extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
-            'location' => material_files::ort_parameter(),
+            'location' => material_files::location_parameter(),
         ]);
     }
 
@@ -114,7 +114,7 @@ final class update_mc_question extends external_api {
         int $questionid,
         string $fieldsjson,
         bool $confirmed = false,
-        string $location = material_files::ORT_BESTAND
+        string $location = material_files::LOCATION_STORE
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionid' => $questionid,
@@ -132,7 +132,7 @@ final class update_mc_question extends external_api {
         $write = self::persist_new_version($question, $category, $context, $categoryid, $entry, $params['confirmed']);
         $result = $write['result'];
 
-        if ($result['status'] === 'verdachtsfall') {
+        if ($result['status'] === 'suspect') {
             return self::build_suspect_response($result);
         }
 
@@ -161,7 +161,7 @@ final class update_mc_question extends external_api {
             'questionid' => 0,
             'questionbankentryid' => 0,
             'version' => 0,
-            'status' => 'verdachtsfall',
+            'status' => 'suspect',
             'idnumber_added' => false,
             'message' => $result['message'],
             'idnumber' => $result['idnumber'],
@@ -339,7 +339,7 @@ final class update_mc_question extends external_api {
                 'questionid' => (int) $latest->id,
                 'questionbankentryid' => (int) $result['questionbankentryid'],
                 'version' => (int) $result['version'],
-                'status' => 'aktualisiert',
+                'status' => 'updated',
                 'idnumber_added' => $write['backfilled'],
                 'message' => $message,
             ],
@@ -500,12 +500,12 @@ final class update_mc_question extends external_api {
      * @param \context $context Kategoriekontext (Ziel der Dateiablage).
      * @param string[] $questiontextimages Materialordner-Pfade fuer questiontext.
      * @param array<int, string[]> $answerfeedbackimages Antwortindex => Materialordner-Pfade.
-     * @param string $location {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
      *        Quelle der Pfade (Issue #496).
      * @return array{0: int|null, 1: array<int, int>} [Entwurfs-Itemid fuer questiontext (null ohne Anfrage),
      *         Antwortindex => Entwurfs-Itemid fuer answerfeedback]
      * @throws moodle_exception materialfiledisallowedtype / materialfilenotfound / invalidmaterialpath /
-     *         invalidmaterialort / materialpathiskontext / materialembedtoolarge
+     *         invalidmateriallocation / materialpathiscontext / materialembedtoolarge
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
     private static function prepare_image_drafts(
@@ -621,13 +621,13 @@ final class update_mc_question extends external_api {
         return new external_single_structure(array_merge(
             [
                 'name' => new external_value(PARAM_TEXT, 'Name of the question'),
-                'questionid' => new external_value(PARAM_INT, 'ID of the new question row (0 for "verdachtsfall")'),
+                'questionid' => new external_value(PARAM_INT, 'ID of the new question row (0 for "suspect")'),
                 'questionbankentryid' => new external_value(
                     PARAM_INT,
-                    'ID of the question_bank_entries row (question identity, unchanged; 0 for "verdachtsfall")'
+                    'ID of the question_bank_entries row (question identity, unchanged; 0 for "suspect")'
                 ),
-                'version' => new external_value(PARAM_INT, 'New version number (0 for "verdachtsfall")'),
-                'status' => new external_value(PARAM_ALPHA, '"aktualisiert" (updated) | "verdachtsfall" (suspect case)'),
+                'version' => new external_value(PARAM_INT, 'New version number (0 for "suspect")'),
+                'status' => new external_value(PARAM_ALPHA, '"updated" (updated) | "suspect" (suspect case)'),
                 'idnumber_added' => new external_value(
                     PARAM_BOOL,
                     'true if this question previously had no idnumber and was assigned exactly one on write'

@@ -121,7 +121,7 @@ class update_module_settings extends external_api {
                 PARAM_RAW,
                 'JSON object field name => new value - only the fields to change (patch, not a full state)'
             ),
-            'location' => material_files::ort_parameter(),
+            'location' => material_files::location_parameter(),
             learner_locks::PARAMETER => learner_locks::confirm_parameter(),
         ]);
     }
@@ -166,7 +166,7 @@ class update_module_settings extends external_api {
     public static function execute(
         int $cmid,
         string $fieldsjson,
-        string $location = material_files::ORT_BESTAND,
+        string $location = material_files::LOCATION_STORE,
         array $confirmlearnerlocks = []
     ): array {
         global $CFG;
@@ -281,7 +281,7 @@ class update_module_settings extends external_api {
      * @param \context_module $context
      * @param array $before
      * @param array $patch
-     * @param string $ort
+     * @param string $locationkey
      */
     private static function apply_patch_to_module(
         \stdClass $cm,
@@ -291,15 +291,15 @@ class update_module_settings extends external_api {
         \context_module $context,
         array $before,
         array $patch,
-        string $ort
+        string $locationkey
     ): void {
         // get_moduleinfo_data() gibt das Tupel [cm, context, module, data, cw]
         // zurueck (course/modlib.php) - "data" (Positon 3) ist das
         // Formularweg-Feldobjekt, das ueberlagert und zurueckgeschrieben wird.
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
         pseudofield_carry_forward::apply($modname, $catalogclass, $moduleinfo, $before, $cm, $patch);
-        self::resolve_material_reference_pseudofields($modname, $context, $patch, $ort);
-        self::resolve_intro_image_pseudofield($modname, $context, $moduleinfo, $patch, $ort);
+        self::resolve_material_reference_pseudofields($modname, $context, $patch, $locationkey);
+        self::resolve_intro_image_pseudofield($modname, $context, $moduleinfo, $patch, $locationkey);
         foreach ($patch as $fieldname => $value) {
             $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
         }
@@ -341,18 +341,18 @@ class update_module_settings extends external_api {
      * @param string $modname
      * @param \context_module $context Modulkontext - Ziel der Dateiablage.
      * @param array $patch Wird in-place ersetzt: Pfadliste -> Entwurfs-Itemid.
-     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     * @param string $locationkey {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
      *        Quelle der Pfade (Issue #496).
      * @return void
-     * @throws moodle_exception materialfilenotfound / invalidmaterialpath / invalidmaterialort /
-     *         materialpathiskontext / materialembedtoolarge
+     * @throws moodle_exception materialfilenotfound / invalidmaterialpath / invalidmateriallocation /
+     *         materialpathiscontext / materialembedtoolarge
      * @throws \required_capability_exception ohne moodle/user:manageownfiles
      */
     private static function resolve_material_reference_pseudofields(
         string $modname,
         \context_module $context,
         array &$patch,
-        string $ort
+        string $locationkey
     ): void {
         $catalogclass = registry::for($modname);
         $specs = $catalogclass::write_options()['material_reference_fields'] ?? [];
@@ -373,7 +373,7 @@ class update_module_settings extends external_api {
                 $spec['filearea'],
                 0,
                 $patch[$fieldname],
-                $ort
+                $locationkey
             );
         }
     }
@@ -396,11 +396,11 @@ class update_module_settings extends external_api {
      * @param \context_module $context
      * @param \stdClass $moduleinfo Wird in-place ergaenzt (introeditor-Itemid).
      * @param array $patch Wird in-place bereinigt: introimages entfernt.
-     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
+     * @param string $locationkey {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
      *        Quelle der Pfade (Issue #496).
      * @return void
      * @throws moodle_exception invalidmaterialreferencelist / materialfiledisallowedtype /
-     *         materialfilenotfound / invalidmaterialpath / invalidmaterialort / materialpathiskontext /
+     *         materialfilenotfound / invalidmaterialpath / invalidmateriallocation / materialpathiscontext /
      *         materialembedtoolarge
      */
     private static function resolve_intro_image_pseudofield(
@@ -408,7 +408,7 @@ class update_module_settings extends external_api {
         \context_module $context,
         \stdClass $moduleinfo,
         array &$patch,
-        string $ort
+        string $locationkey
     ): void {
         $catalogclass = registry::for($modname);
         $fieldname = $catalogclass::write_options()['intro_image_field'] ?? null;
@@ -441,7 +441,7 @@ class update_module_settings extends external_api {
         $introspec = ['component' => 'mod_' . $modname, 'filearea' => 'intro'];
         self::trash_files_about_to_be_replaced($context, $introspec, $paths);
         $draftitemid = material_files::resolve_into_draft(
-            $context->id, $introspec['component'], $introspec['filearea'], 0, $paths, $ort);
+            $context->id, $introspec['component'], $introspec['filearea'], 0, $paths, $locationkey);
         if (!isset($moduleinfo->introeditor) || !is_array($moduleinfo->introeditor)) {
             $moduleinfo->introeditor = ['text' => $moduleinfo->intro ?? '', 'format' => $moduleinfo->introformat ?? FORMAT_HTML];
         }
@@ -462,7 +462,7 @@ class update_module_settings extends external_api {
      * @param \context_module $context
      * @param array{component: string, filearea: string} $spec
      * @param array $paths Materialordner-Pfade aus dem Patch - Strings oder
-     *        `['pfad' => ..., 'zielordner' => ...]`-Objekte (Issue #434).
+     *        `['path' => ..., 'target_folder' => ...]`-Objekte (Issue #434).
      * @return void
      */
     private static function trash_files_about_to_be_replaced(\context_module $context, array $spec, array $paths): void {
@@ -496,13 +496,13 @@ class update_module_settings extends external_api {
      */
     private static function catalog_for(string $modname): string {
         $catalogclass = registry::require_catalogued($modname);
-        $schreibweg = $catalogclass::schreibweg();
-        if ($schreibweg !== null) {
+        $writeroute = $catalogclass::write_route();
+        if ($writeroute !== null) {
             throw new moodle_exception(
                 'writevehicleblocked',
                 'local_coursepilot',
                 '',
-                ['modname' => $modname, 'schreibweg' => $schreibweg]
+                ['modname' => $modname, 'write_route' => $writeroute]
             );
         }
         return $catalogclass;

@@ -66,7 +66,7 @@ final class pointer_reader_test extends \advanced_testcase {
 
         $this->assertSame('webdavexternalerror', $exception->errorcode);
         $this->assertStringContainsString(webdav_error::label(webdav_error::AUTH_REJECTED), $exception->getMessage());
-        $this->assertStringContainsString(webdav_setup_steps::ORTSWAHL_PAGE, $exception->getMessage());
+        $this->assertStringContainsString(webdav_setup_steps::LOCATION_SELECTION_PAGE, $exception->getMessage());
         $this->assertStringNotContainsString('hunter2', $exception->getMessage());
         $this->assertStringNotContainsString('secret-host', $exception->getMessage());
     }

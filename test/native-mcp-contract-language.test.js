@@ -14,7 +14,7 @@ const EXTERNAL_SOURCE = fs.readdirSync(EXTERNAL_DIR)
   .filter((name) => name.endsWith('.php'))
   .map((name) => fs.readFileSync(path.join(EXTERNAL_DIR, name), 'utf8'))
   .join('\n');
-const CORPUS = fs.readFileSync(path.join(ROOT, 'skills', 'referenz', 'mcp-tools.md'), 'utf8');
+const CORPUS = fs.readFileSync(path.join(ROOT, 'skills', 'reference', 'mcp-tools.md'), 'utf8');
 
 // #573 (Contract-Schritt): die Uebersetzungsschicht aus #568 ist entfernt,
 // nicht nur deaktiviert - kein Aufrufer darf sie noch voraussetzen.

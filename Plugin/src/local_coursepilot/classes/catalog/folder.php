@@ -26,7 +26,7 @@ namespace local_coursepilot\catalog;
  *   katalogisiert: der Wert ist eine Liste von Materialordner-Pfaden (Spec
  *   0018 §4.2), je Eintrag entweder ein reiner Pfad-String (landet im
  *   Wurzelverzeichnis des Ordners) oder ein Objekt
- *   `{"pfad": "...", "zielordner": "..."}` fuer einen Zielunterordner
+ *   `{"path": "...", "target_folder": "..."}` fuer einen Zielunterordner
  *   ({@see \local_coursepilot\material_files::resolve_into_draft()}).
  * - Anders als bei resource ist ein LEERER Ordner gueltig
  *   (mod/folder/lib.php: `$draftitemid = $data->files;` wird nur bei
@@ -142,7 +142,7 @@ final class folder implements module_catalog {
                 'files',
                 'Liste von Materialordner-Pfaden (JSON-Array)',
                 'Die im Ordner abzulegenden Dateien - je Eintrag ein Pfad in den Materialordner (Spec 0018 §4.2, '
-                    . 'z.B. ["arbeitsblatt.pdf"]) oder ein Objekt {"pfad": "...", "zielordner": "unterordner"} fuer '
+                    . 'z.B. ["arbeitsblatt.pdf"]) oder ein Objekt {"path": "...", "target_folder": "unterordner"} fuer '
                     . 'ein Zielverzeichnis innerhalb des Ordners. Mehrere Eintraege in einem Aufruf moeglich. Ein '
                     . 'LEERER Ordner ist gueltig - anders als bei resource blockiert das Fehlen einer Datei das '
                     . 'Anlegen nicht. NUR beim Anlegen (create_module) nutzbar - ein spaeterer Patch ueber '
@@ -184,7 +184,7 @@ final class folder implements module_catalog {
         return [];
     }
 
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
 

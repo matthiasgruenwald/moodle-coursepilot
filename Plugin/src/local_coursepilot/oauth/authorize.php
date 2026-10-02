@@ -98,7 +98,7 @@ if ($action === 'allow') {
 // Ortswahlseite mit; die Ortswahlseite validiert sie erneut selbst und
 // fuehrt nach dem Abschliessen genau hierher zurueck, statt zu Claude
 // weiterzuleiten.
-$ortswahlurl = new moodle_url('/local/coursepilot/ortswahl.php', array_merge($params, [
+$locationselectionurl = new moodle_url('/local/coursepilot/location_selection.php', array_merge($params, [
     'state' => $state,
     'oauthflow' => 1,
 ]));
@@ -108,6 +108,6 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading($title);
 echo $OUTPUT->render_from_template(
     'local_coursepilot/authorize',
-    authorize_page::page_data($clientname, $params, $state, $formurl, $ortswahlurl)
+    authorize_page::page_data($clientname, $params, $state, $formurl, $locationselectionurl)
 );
 echo $OUTPUT->footer();

@@ -37,13 +37,13 @@ namespace local_coursepilot;
 final class pending_write_translation {
 
     /** @var string Vorgang "anlegen". */
-    public const OP_CREATE = 'anlegen';
+    public const OP_CREATE = 'create';
 
     /** @var string Vorgang "ueberschreiben". */
-    public const OP_OVERWRITE = 'überschreiben';
+    public const OP_OVERWRITE = 'overwrite';
 
     /** @var string Vorgang "anhaengen". */
-    public const OP_APPEND = 'anhängen';
+    public const OP_APPEND = 'append';
 
     /**
      * @var string Vorgang "unbekannt" (Issue #561): der Vorab-Lese-Check vor
@@ -51,7 +51,7 @@ final class pending_write_translation {
      *      ob am Ort schon etwas lag, ist damit unbekannt, nicht binaer
      *      "anlegen" oder "ueberschreiben".
      */
-    public const OP_UNKNOWN = 'unbekannt';
+    public const OP_UNKNOWN = 'unknown';
 
     /**
      * Vermerkt einen Ausstand und baut die fuenfteilige Ausfallantwort (Issue
@@ -91,21 +91,32 @@ final class pending_write_translation {
         try {
             $identifier = pending_write_notice::record($clientpath, $operation, $errorclass, $courseid);
         } catch (\moodle_exception $quotaerror) {
-            if ($quotaerror->errorcode !== 'ausstandnotequotaexceeded') {
+            if ($quotaerror->errorcode !== 'pendingnotequotaexceeded') {
                 throw $quotaerror;
             }
-            return new \moodle_exception('ausstandnotewritefailed', 'local_coursepilot', '', (object) [
+            return new \moodle_exception('pendingnotewritefailed', 'local_coursepilot', '', (object) [
                 'path' => $clientpath,
-                'operation' => $operation,
+                'operation' => self::operation_label($operation),
             ]);
         }
 
-        return new \moodle_exception('ausstandwritefailed', 'local_coursepilot', '', (object) [
+        return new \moodle_exception('pendingwritefailed', 'local_coursepilot', '', (object) [
             'path' => $clientpath,
-            'operation' => $operation,
+            'operation' => self::operation_label($operation),
             'reason' => $reason,
-            'kennung' => $identifier,
+            'identifier' => $identifier,
             'target' => $target,
         ]);
+    }
+
+    /**
+     * Anzeigetext eines Vorgangs (#602): der gespeicherte Wert ist ein
+     * englischer Schluessel, die Lehrkraft liest ihn in ihrer Sprache.
+     *
+     * @param string $operation Eine der OP_*-Konstanten.
+     * @return string
+     */
+    public static function operation_label(string $operation): string {
+        return get_string('pendingoperation' . $operation, 'local_coursepilot');
     }
 }

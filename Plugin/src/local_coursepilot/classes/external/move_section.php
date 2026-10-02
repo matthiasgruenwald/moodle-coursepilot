@@ -89,29 +89,29 @@ final class move_section extends external_api {
         $sections = $modinfo->get_section_info_all();
         $maxsectionnum = max(array_keys($sections));
 
-        $von = $params['sourcesectionnum'];
-        $nach = $params['targetsectionnum'];
+        $from = $params['sourcesectionnum'];
+        $to = $params['targetsectionnum'];
 
-        if ($von <= 0 || !array_key_exists($von, $sections)) {
-            throw new moodle_exception('sectionnotmovable', 'local_coursepilot', '', ['sectionnum' => $von]);
+        if ($from <= 0 || !array_key_exists($from, $sections)) {
+            throw new moodle_exception('sectionnotmovable', 'local_coursepilot', '', ['sectionnum' => $from]);
         }
-        if ($nach < 1 || $nach > $maxsectionnum) {
+        if ($to < 1 || $to > $maxsectionnum) {
             throw new moodle_exception(
                 'sectiontargetoutofrange',
                 'local_coursepilot',
                 '',
-                ['nach' => $nach, 'max' => $maxsectionnum]
+                ['target' => $to, 'max' => $maxsectionnum]
             );
         }
 
         $format = course_get_format($course);
-        $sectionname = $format->get_section_name($sections[$von]);
+        $sectionname = $format->get_section_name($sections[$from]);
 
-        if ($von === $nach) {
+        if ($from === $to) {
             return [
-                'id' => (int) $sections[$von]->id,
-                'sectionnum' => (int) $nach,
-                'message' => "Abschnitt \"{$sectionname}\" liegt bereits an Position {$nach}.",
+                'id' => (int) $sections[$from]->id,
+                'sectionnum' => (int) $to,
+                'message' => "Abschnitt \"{$sectionname}\" liegt bereits an Position {$to}.",
             ];
         }
 
@@ -120,17 +120,17 @@ final class move_section extends external_api {
         // Kommando-Bus (section_move_after) verlangt stattdessen "nach
         // welchem Abschnitt einfuegen" - die Umrechnung ist reine
         // Indexarithmetik (siehe Klassendoku).
-        $destinationnum = $nach > $von ? $nach : $nach - 1;
+        $destinationnum = $to > $from ? $to : $to - 1;
         $destination = $sections[$destinationnum];
 
         $updates = $format->get_stateupdates_instance();
         $actions = $format->get_stateactions_instance();
-        $actions->section_move_after($updates, $course, [$sections[$von]->id], $destination->id);
+        $actions->section_move_after($updates, $course, [$sections[$from]->id], $destination->id);
 
         return [
-            'id' => (int) $sections[$von]->id,
-            'sectionnum' => (int) $nach,
-            'message' => "Abschnitt \"{$sectionname}\" von Position {$von} nach Position {$nach} verschoben.",
+            'id' => (int) $sections[$from]->id,
+            'sectionnum' => (int) $to,
+            'message' => "Abschnitt \"{$sectionname}\" von Position {$from} nach Position {$to} verschoben.",
         ];
     }
 

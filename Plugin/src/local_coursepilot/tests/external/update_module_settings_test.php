@@ -186,7 +186,7 @@ final class update_module_settings_test extends \advanced_testcase {
                 'intro' => 'Bitte waehlen',
                 'option' => ['Ja', 'Nein'],
                 'allowupdate' => 1,
-            ]), \local_coursepilot\material_files::ORT_BESTAND)
+            ]), \local_coursepilot\material_files::LOCATION_STORE)
         );
         $before = $this->read($created['cmid']);
 
@@ -679,7 +679,7 @@ final class update_module_settings_test extends \advanced_testcase {
     private function set_up_external_material_for(\stdClass $teacher): \local_coursepilot\tests\webdav\fake_webdav_transport {
         $this->grant_webdav_capability($teacher);
         $instanceid = $this->create_webdav_instance($teacher);
-        $this->write_v2_pointer($teacher, 'materialbestand', $instanceid, 'Material');
+        $this->write_v2_pointer($teacher, 'material_store', $instanceid, 'Material');
 
         $fake = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
@@ -730,7 +730,7 @@ final class update_module_settings_test extends \advanced_testcase {
         $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance(['course' => $course->id]);
         $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
         $fake = $this->set_up_external_material_for($teacher);
-        $fake->seed_file('/Coursepilot/Material/nur-extern.pdf', 'extern');
+        $fake->seed_file('/Coursepilot/Material/nur-extern.pdf', 'external');
         $this->create_material_file('werkbankdatei.pdf', 'aus der Werkbank');
 
         $result = external_api::clean_returnvalue(
@@ -738,7 +738,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute(
                 $cmid,
                 json_encode(['introattachments' => ['werkbankdatei.pdf']]),
-                \local_coursepilot\material_files::ORT_WERKBANK
+                \local_coursepilot\material_files::LOCATION_WORKBENCH
             )
         );
 
@@ -750,7 +750,7 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Die Sperre unterhalb eines Eintrags vom Typ "kontextbereich" (Issue
+     * Die Sperre unterhalb eines Eintrags vom Typ "context_area" (Issue
      * #495, Spec #486 §2/§7) greift auch an der Einbettung (Issue #496) -
      * kein zweiter Zugang zu Kontextdateien am Personenbezug-Schalter vorbei.
      */
@@ -760,8 +760,8 @@ final class update_module_settings_test extends \advanced_testcase {
         $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance(['course' => $course->id]);
         $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
         \local_coursepilot\storage_anchor::write_pointer_document([
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material/kontext'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot-material/kontext'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ]);
         get_file_storage()->create_file_from_string([
             'contextid' => \local_coursepilot\material_files::own_context()->id,
@@ -776,7 +776,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($cmid, json_encode(['introattachments' => ['kontext/plan.md']]));
             $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('materialpathiskontext', $e->errorcode);
+            $this->assertSame('materialpathiscontext', $e->errorcode);
         }
     }
 
@@ -1340,7 +1340,7 @@ final class update_module_settings_test extends \advanced_testcase {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
         }
 
-        update_module_settings::execute($assign->cmid, $patch, \local_coursepilot\material_files::ORT_BESTAND,
+        update_module_settings::execute($assign->cmid, $patch, \local_coursepilot\material_files::LOCATION_STORE,
             ['attemptreopenmethod']);
         $settings = json_decode(get_module_settings::execute($assign->cmid)['settings_json'], true);
         $this->assertSame('manual', $settings['attemptreopenmethod']);

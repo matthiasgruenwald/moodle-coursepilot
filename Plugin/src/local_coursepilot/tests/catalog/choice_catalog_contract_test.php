@@ -133,14 +133,14 @@ final class choice_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #381: das Feldbuendel "zuteilung" wird ausgeliefert
+     * Abnahmekriterium #381: das Feldbuendel "allocation" wird ausgeliefert
      * und enthaelt genau die sechs genannten Felder.
      */
     public function test_zuteilung_bundle_has_the_six_named_fields(): void {
         $bundles = choice::bundles();
-        $this->assertArrayHasKey('zuteilung', $bundles);
+        $this->assertArrayHasKey('allocation', $bundles);
 
-        $zuteilung = $bundles['zuteilung'];
+        $zuteilung = $bundles['allocation'];
         $this->assertEqualsCanonicalizing(
             ['limitanswers', 'limit', 'publish', 'showresults', 'display', 'allowupdate'],
             array_keys($zuteilung)
@@ -168,7 +168,7 @@ final class choice_catalog_contract_test extends \advanced_testcase {
      * dem Schreibkern selbst.
      */
     public function test_explicit_field_overrides_the_bundle(): void {
-        $bundle = choice::bundles()['zuteilung'];
+        $bundle = choice::bundles()['allocation'];
 
         // Partnerarbeit statt Geraetezuteilung: die Lehrkraft nennt "limit"
         // und "publish" ausdruecklich, das Buendel darf sie nicht zuruecksetzen.

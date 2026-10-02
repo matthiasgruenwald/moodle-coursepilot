@@ -315,7 +315,7 @@ final class crop_material_file_test extends \advanced_testcase {
         $result = crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
 
         $this->assertSame(500, $result['width']);
-        $this->assertStringStartsWith('bestand:buchseite.png', $result['source']);
+        $this->assertStringStartsWith('store:buchseite.png', $result['source']);
 
         $stored = get_file_storage()->get_file(
             material_files::own_context()->id,
@@ -340,7 +340,7 @@ final class crop_material_file_test extends \advanced_testcase {
         $result = crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
 
         $this->assertMatchesRegularExpression(
-            '/^bestand:buchseite\.png \(\d+ Byte, geändert \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\)$/u',
+            '/^store:buchseite\.png \(\d+ Byte, geändert \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\)$/u',
             $result['source']
         );
     }
@@ -354,7 +354,7 @@ final class crop_material_file_test extends \advanced_testcase {
             crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5, '', 'woanders');
             $this->fail('Ein unbekannter Ort-Wert haette werfen muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('invalidmaterialort', $e->errorcode);
+            $this->assertSame('invalidmateriallocation', $e->errorcode);
         }
     }
 
@@ -366,15 +366,15 @@ final class crop_material_file_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
         storage_anchor::write_pointer_document([
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material/kontext'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot-material/kontext'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ]);
 
         try {
             crop_material_file::execute('kontext/buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
             $this->fail('Eine Quelle unter dem Kontextbereich haette werfen muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('materialpathiskontext', $e->errorcode);
+            $this->assertSame('materialpathiscontext', $e->errorcode);
         }
     }
 }

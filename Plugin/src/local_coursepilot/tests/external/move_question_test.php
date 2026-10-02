@@ -63,7 +63,7 @@ final class move_question_test extends \advanced_testcase {
         $result = move_question::execute($question->id, $targetcategory['id']);
         $result = external_api::clean_returnvalue(move_question::execute_returns(), $result);
 
-        $this->assertSame('verschoben', $result['status']);
+        $this->assertSame('moved', $result['status']);
         $this->assertSame((int) $entrybefore->questionbankentryid, $result['questionbankentryid']);
         $this->assertCount(2, $result['versionids']);
 
@@ -110,7 +110,7 @@ final class move_question_test extends \advanced_testcase {
         $result = move_question::execute($movingquestion->id, $targetcategory['id']);
         $result = external_api::clean_returnvalue(move_question::execute_returns(), $result);
 
-        $this->assertSame('verdachtsfall', $result['status']);
+        $this->assertSame('suspect', $result['status']);
         $this->assertSame([], $result['versionids']);
         $this->assertSame('q-414-collision', $result['idnumber']);
         $this->assertSame($targetcategory['id'], $result['categoryid']);
@@ -156,7 +156,7 @@ final class move_question_test extends \advanced_testcase {
         $result = move_question::execute($movingquestion->id, $targetcategory['id'], true);
         $result = external_api::clean_returnvalue(move_question::execute_returns(), $result);
 
-        $this->assertSame('verschoben', $result['status']);
+        $this->assertSame('moved', $result['status']);
         $this->assertCount(1, $result['versionids']);
         $this->assertTrue($result['idnumber_disambiguated']);
 

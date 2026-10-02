@@ -62,6 +62,6 @@ echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('local_coursepilot/connections', connections_page::page_data(
     $tokens,
     location_selection_output::current_locations_data(),
-    new moodle_url(webdav_setup_steps::ORTSWAHL_PAGE)
+    new moodle_url(webdav_setup_steps::LOCATION_SELECTION_PAGE)
 ));
 echo $OUTPUT->footer();

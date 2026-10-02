@@ -22,8 +22,8 @@
     Context variables required for this template:
     * activityname - string - name of the activity (already format_string()'d)
     * isquiz - bool - true when a quiz-specific hint should show
-    * rows - array - list of {version: int, nutzer: string, zeitpunkt: string, einzeiler: string, canrestore: bool, restoreurl: string|null}
-    * hinweisluecken - string - fixed note about gaps in the history
+    * rows - array - list of {version: int, user: string, time: string, summary_line: string, canrestore: bool, restoreurl: string|null}
+    * gap_notice - string - fixed note about gaps in the history
     * listurl - string - link back to the activity list
 
     Example context (json):
@@ -31,9 +31,9 @@
         "activityname": "Erste Fassung",
         "isquiz": false,
         "rows": [
-            {"version": 1, "nutzer": "Lea Lehrer", "zeitpunkt": "21.09.2026, 10:00", "einzeiler": "Version 1 (erster erfasster Stand)", "canrestore": false, "restoreurl": null}
+            {"version": 1, "user": "Lea Lehrer", "time": "21.09.2026, 10:00", "summary_line": "Version 1 (erster erfasster Stand)", "canrestore": false, "restoreurl": null}
         ],
-        "hinweisluecken": "Der Verlauf ist nicht lückenlos.",
+        "gap_notice": "Der Verlauf ist nicht lückenlos.",
         "listurl": "https://example.test/local/coursepilot/history.php?id=2"
     }
 }}
@@ -54,13 +54,13 @@
         {{#rows}}
         <tr>
             <td>{{version}}</td>
-            <td>{{nutzer}}</td>
-            <td>{{zeitpunkt}}</td>
-            <td>{{einzeiler}}</td>
+            <td>{{user}}</td>
+            <td>{{time}}</td>
+            <td>{{summary_line}}</td>
             <td>{{#canrestore}}<a href="{{restoreurl}}">{{#str}} historyrestore, local_coursepilot {{/str}}</a>{{/canrestore}}</td>
         </tr>
         {{/rows}}
     </tbody>
 </table>
-<p>{{hinweisluecken}}</p>
+<p>{{gap_notice}}</p>
 <a href="{{listurl}}">{{#str}} historybacktolist, local_coursepilot {{/str}}</a>

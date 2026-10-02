@@ -160,7 +160,7 @@ interface module_catalog {
      *
      * @return string|null
      */
-    public static function schreibweg(): ?string;
+    public static function write_route(): ?string;
 
     /**
      * Konstanten ohne aufrufbare Wertemenge, die dieser Katalog voraussetzt

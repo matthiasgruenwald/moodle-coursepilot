@@ -821,7 +821,7 @@ final class assign implements module_catalog {
                 'assignsubmission_onlinetext_enabled' => 0,
                 'assignfeedback_comments_enabled' => 1,
             ],
-            'übung' => [
+            'exercise' => [
                 'grade' => 0,
                 'submissiondrafts' => 0,
                 'requiresubmissionstatement' => 0,
@@ -835,7 +835,7 @@ final class assign implements module_catalog {
         ];
     }
 
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
 
@@ -909,7 +909,7 @@ final class assign implements module_catalog {
 
     /**
      * Die Lehrkraft bewertet - ausser eine Instanz hat keine Bewertung
-     * (grade = 0, z.B. Buendel "übung").
+     * (grade = 0, z.B. Buendel "exercise").
      */
     public static function grade_origin(int $instanceid = 0): string {
         global $DB;

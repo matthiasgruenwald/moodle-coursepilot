@@ -20,16 +20,16 @@
     Aktuelle Orte fuer Kontextbereich und Materialbestand.
 
     Context variables required for this template:
-    * kontextbereich - object - {label: string, allowancelabel: string}
-    * materialbestand - object - {label: string, allowancelabel: string}
+    * context_area - object - {label: string, allowancelabel: string}
+    * material_store - object - {label: string, allowancelabel: string}
 
     Example context (json):
     {
-        "kontextbereich": {"label": "Kontextbereich", "allowancelabel": "IGS Musterschule / Klasse 7a"},
-        "materialbestand": {"label": "Materialbestand", "allowancelabel": "IGS Musterschule / Fachbereich Bio"}
+        "context_area": {"label": "Kontextbereich", "allowancelabel": "IGS Musterschule / Klasse 7a"},
+        "material_store": {"label": "Materialbestand", "allowancelabel": "IGS Musterschule / Fachbereich Bio"}
     }
 }}
 <ul>
-    <li>{{kontextbereich.label}} - {{kontextbereich.allowancelabel}}</li>
-    <li>{{materialbestand.label}} - {{materialbestand.allowancelabel}}</li>
+    <li>{{context_area.label}} - {{context_area.allowancelabel}}</li>
+    <li>{{material_store.label}} - {{material_store.allowancelabel}}</li>
 </ul>

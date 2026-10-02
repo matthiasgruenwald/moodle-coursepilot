@@ -102,7 +102,7 @@ final class label implements module_catalog {
         return [];
     }
 
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
 

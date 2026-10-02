@@ -252,7 +252,7 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
         // Einmal-Downloadticket fuer Werkbankdateien (#501, Spec #486 §13):
         // gebunden an Person, Pfad und contenthash, 15 Minuten gueltig,
         // gespeichert wird nur der Hash des Tickets - siehe
-        // local_coursepilot\werkbank_ticket.
+        // local_coursepilot\workbench_ticket (bis #602 werkbank_ticket).
         $tickettable = new xmldb_table('local_coursepilot_werkbank_ticket');
         $tickettable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
         $tickettable->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
@@ -282,6 +282,19 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
         local_coursepilot_migrate_history_sources();
 
         upgrade_plugin_savepoint(true, 2026100200, 'local', 'coursepilot');
+    }
+
+    if ($oldversion < 2026100201) {
+        // #602 (ADR 0024): Werkbank-Tickettabelle englisch, Ablagedateien am
+        // Anker englisch benannt und mit englischen Schluesseln.
+        $oldtable = new xmldb_table('local_coursepilot_werkbank_ticket');
+        if ($dbman->table_exists($oldtable)
+                && !$dbman->table_exists(new xmldb_table('local_coursepilot_workbench_ticket'))) {
+            $dbman->rename_table($oldtable, 'local_coursepilot_workbench_ticket');
+        }
+        local_coursepilot_migrate_anchor_files();
+
+        upgrade_plugin_savepoint(true, 2026100201, 'local', 'coursepilot');
     }
 
     return true;

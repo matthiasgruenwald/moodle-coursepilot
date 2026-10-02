@@ -222,7 +222,7 @@ final class list_context_files_test extends \advanced_testcase {
      * kein stilles leeres Ergebnis (Issue #498, Spec #486 §6: "wirkt nur,
      * solange Altbestand offen ist").
      */
-    public function test_vorheriger_ort_switch_without_open_altbestand_is_rejected(): void {
+    public function test_vorheriger_ort_switch_without_open_previouslocation_is_rejected(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
@@ -230,7 +230,7 @@ final class list_context_files_test extends \advanced_testcase {
             list_context_files::execute('', true);
             $this->fail('Ohne offenen Altbestand haette der Schalter abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('altbestandclosed', $e->errorcode);
+            $this->assertSame('previouslocationclosed', $e->errorcode);
         }
     }
 
@@ -243,8 +243,8 @@ final class list_context_files_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
         $this->create_context_file($user, '/coursepilot/', 'aktuell.md', '# Aktuell');
-        $this->create_context_file($user, '/altbestand/', 'alt.md', '# Alt');
-        $this->write_pointer_with_vorheriger_ort($user, 'altbestand');
+        $this->create_context_file($user, '/previouslocation/', 'alt.md', '# Alt');
+        $this->write_pointer_with_previous_location($user, 'previouslocation');
 
         $current = list_context_files::execute();
         $current = external_api::clean_returnvalue(list_context_files::execute_returns(), $current);
@@ -327,7 +327,7 @@ final class list_context_files_test extends \advanced_testcase {
             $user,
             '/coursepilot/',
             \local_coursepilot\storage_anchor::POINTER_FILENAME,
-            '{"kontextbereich":"coursepilot","materialordner":"coursepilot-material"}'
+            '{"context_area":"coursepilot","materialordner":"coursepilot-material"}'
         );
 
         $result = list_context_files::execute();

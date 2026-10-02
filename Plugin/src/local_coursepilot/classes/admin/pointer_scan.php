@@ -34,31 +34,31 @@ use local_coursepilot\storage_anchor;
 final class pointer_scan {
 
     /** @var string[] Die beiden Pointer-Ziele, wie {@see \local_coursepilot\location_selection::TARGETS}. */
-    public const TARGETS = ['kontextbereich', 'materialbestand'];
+    public const TARGETS = context_pointer::TARGETS;
 
     /** @var string Zustand: kein Kontextpointer vorhanden. */
-    public const STATE_OPEN = 'offen';
+    public const STATE_OPEN = 'open';
 
     /** @var string Zustand: Ziel liegt in Moodles Private Files. */
     public const STATE_MOODLE = pointer_location::MOODLE;
 
     /** @var string Zustand: Ziel liegt in einer WebDAV-Nutzerinstanz. */
-    public const STATE_EXTERN = pointer_location::EXTERN;
+    public const STATE_EXTERNAL = pointer_location::EXTERNAL;
 
     /** @var string Zustand: Pointer strukturell defekt (nicht aufloesbar). */
-    public const STATE_BROKEN = 'kaputt';
+    public const STATE_BROKEN = 'broken';
 
     /** @var string Defekt: die referenzierte Instanz existiert nicht mehr. */
-    public const DEFECT_INSTANCE_MISSING = 'instanzfehlt';
+    public const DEFECT_INSTANCE_MISSING = 'instance_missing';
 
     /** @var string Defekt: die Instanz gehoert einer anderen Person. */
-    public const DEFECT_FOREIGN_INSTANCE = 'fremdeinstanz';
+    public const DEFECT_FOREIGN_INSTANCE = 'foreign_instance';
 
     /** @var string Defekt: die Instanz nutzt HTTP statt HTTPS+Basic. */
     public const DEFECT_HTTP = 'http';
 
     /** @var string Defekt: die Pointer-Struktur selbst ist ungueltig. */
-    public const DEFECT_INVALID = 'ungueltig';
+    public const DEFECT_INVALID = 'invalid';
 
     /**
      * Alle Personen mit einer nicht-leeren Kontextpointer-Datei - eine reine
@@ -107,7 +107,7 @@ final class pointer_scan {
             return null;
         }
         $decoded = json_decode($file->get_content(), true);
-        return (is_array($decoded) && !array_is_list($decoded)) ? $decoded : null;
+        return (is_array($decoded) && !array_is_list($decoded)) ? context_pointer::normalise($decoded) : null;
     }
 
     /**
@@ -117,14 +117,14 @@ final class pointer_scan {
      * @param int $userid
      * @return bool
      */
-    public static function has_open_ausstand(int $userid): bool {
+    public static function has_open_pending(int $userid): bool {
         $file = get_file_storage()->get_file(
             \context_user::instance($userid)->id,
             storage_anchor::COMPONENT,
             storage_anchor::FILEAREA,
             storage_anchor::ITEMID,
             storage_anchor::anchor_root(),
-            storage_anchor::AUSSTAND_FILENAME
+            storage_anchor::PENDING_FILENAME
         );
         if (!$file) {
             return false;
@@ -140,8 +140,8 @@ final class pointer_scan {
      * @param array|null $decoded
      * @return bool
      */
-    public static function has_open_altbestand(?array $decoded): bool {
-        return is_array($decoded) && is_array($decoded['vorheriger_ort'] ?? null);
+    public static function has_open_previous_location(?array $decoded): bool {
+        return is_array($decoded) && is_array($decoded['previous_location'] ?? null);
     }
 
     /**
@@ -161,7 +161,7 @@ final class pointer_scan {
         }
         foreach (self::TARGETS as $target) {
             $value = $decoded[$target] ?? null;
-            if (is_array($value) && ($value['ort'] ?? null) === pointer_location::EXTERN) {
+            if (is_array($value) && ($value['location'] ?? null) === pointer_location::EXTERNAL) {
                 return true;
             }
         }
@@ -193,18 +193,17 @@ final class pointer_scan {
      *
      * @param int $userid
      * @param array|null $decoded Ergebnis von {@see raw_pointer_for()}.
-     * @param string $target "kontextbereich" oder "materialbestand".
+     * @param string $target "context_area" oder "material_store".
      * @return array{state: string, host: ?string, defect: ?string}
-     *         state: "offen"|"moodle"|"extern"|"kaputt".
+     *         state: "open"|"moodle"|"external"|"broken".
      */
     public static function target_state(int $userid, ?array $decoded, string $target): array {
         if ($decoded === null) {
             return ['state' => self::STATE_OPEN, 'host' => null, 'defect' => null];
         }
 
-        $pointerkey = $target === 'materialbestand' ? 'materialordner' : $target;
         try {
-            $location = context_pointer::resolve_target($decoded, $pointerkey);
+            $location = context_pointer::resolve_target($decoded, $target);
         } catch (\moodle_exception $e) {
             return ['state' => self::STATE_BROKEN, 'host' => null, 'defect' => self::DEFECT_INVALID];
         }
@@ -214,7 +213,7 @@ final class pointer_scan {
         }
 
         $host = (string) ($location->fingerprint['server'] ?? '');
-        return ['state' => self::STATE_EXTERN, 'host' => $host, 'defect' => self::extern_defect($userid, $location)];
+        return ['state' => self::STATE_EXTERNAL, 'host' => $host, 'defect' => self::external_defect($userid, $location)];
     }
 
     /**
@@ -230,7 +229,7 @@ final class pointer_scan {
      * @param pointer_location $location
      * @return string|null "instanzfehlt"|"fremdeinstanz"|"http"|null (kein Defekt).
      */
-    private static function extern_defect(int $userid, pointer_location $location): ?string {
+    private static function external_defect(int $userid, pointer_location $location): ?string {
         global $DB;
 
         $record = $DB->get_record_sql(

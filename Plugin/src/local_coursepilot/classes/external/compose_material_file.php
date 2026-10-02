@@ -27,7 +27,7 @@ class compose_material_file extends external_api {
         return new external_function_parameters([
             'parts' => new external_multiple_structure(new external_single_structure([
                 'sourcepath' => new external_value(PARAM_PATH, 'Source file path relative to its location root'),
-                'location' => material_files::ort_parameter(),
+                'location' => material_files::location_parameter(),
                 'crop' => new external_single_structure([
                     'x0' => new external_value(PARAM_FLOAT, 'Left edge, relative 0-1'),
                     'y0' => new external_value(PARAM_FLOAT, 'Top edge, relative 0-1'),
@@ -86,7 +86,7 @@ class compose_material_file extends external_api {
         $inputs = [];
         $sources = [];
         foreach ($parts as $part) {
-            $stored = material_area::read_for_ort($part['location'], $part['sourcepath']);
+            $stored = material_area::read_for_location($part['location'], $part['sourcepath']);
             if ($stored === null) {
                 throw new \moodle_exception('materialfilenotfound', 'local_coursepilot', '',
                     material_files::normalise_path($part['sourcepath']));

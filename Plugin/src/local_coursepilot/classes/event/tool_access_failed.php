@@ -46,8 +46,8 @@ class tool_access_failed extends \core\event\base {
      */
     public function get_description() {
         $tool = $this->other['toolname'] ?? null;
-        $suffix = $tool !== null ? " (Werkzeug: {$tool})" : '';
-        return "Ein Coursepilot-Zugriff ist fehlgeschlagen: {$this->other['reason']}{$suffix}.";
+        $suffix = $tool !== null ? " (tool: {$tool})" : '';
+        return "A Coursepilot access failed: {$this->other['reason']}{$suffix}.";
     }
 
     /**

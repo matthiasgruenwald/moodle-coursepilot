@@ -118,17 +118,17 @@ final class webdav_storage_port_test extends storage_port_contract_test {
                 ->write($this->area(), 'plan.md', '# Plan');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
             $this->assertStringContainsString('plan.md', $e->getMessage());
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('plan.md', $ausstaende[0]['pfad']);
-        $this->assertSame('anlegen', $ausstaende[0]['eintraege'][0]['vorgang']);
+        $this->assertSame('plan.md', $ausstaende[0]['path']);
+        $this->assertSame('create', $ausstaende[0]['entries'][0]['operation']);
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::STORAGE_FULL,
-            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+            $ausstaende[0]['entries'][0]['error_class']
         );
     }
 
@@ -153,11 +153,11 @@ final class webdav_storage_port_test extends storage_port_contract_test {
                 ->append($this->area(), 'journal.md', 'erste Zeile');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame('anhängen', $ausstaende[0]['eintraege'][0]['vorgang']);
+        $this->assertSame('append', $ausstaende[0]['entries'][0]['operation']);
     }
 
     /**
@@ -195,10 +195,10 @@ final class webdav_storage_port_test extends storage_port_contract_test {
             $this->port()->write($this->area(), 'plan.md', '# Plan');
             $this->fail('Geloeschte Instanz haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame('webdavinstancemissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame('webdavinstancemissing', $ausstaende[0]['entries'][0]['error_class']);
     }
 }

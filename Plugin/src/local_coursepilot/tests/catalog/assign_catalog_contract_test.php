@@ -205,15 +205,15 @@ final class assign_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #382: Feldbündel "standard" und "übung" werden
+     * Abnahmekriterium #382: Feldbündel "standard" und "exercise" werden
      * mitgeliefert.
      */
     public function test_standard_and_uebung_bundles_are_shipped(): void {
         $bundles = assign::bundles();
         $this->assertArrayHasKey('standard', $bundles);
-        $this->assertArrayHasKey('übung', $bundles);
+        $this->assertArrayHasKey('exercise', $bundles);
         $this->assertNotEmpty($bundles['standard']);
-        $this->assertNotEmpty($bundles['übung']);
+        $this->assertNotEmpty($bundles['exercise']);
     }
 
     /**

@@ -205,7 +205,7 @@ final class learner_locks {
 
     /**
      * Ein ausdruecklich gewaehlter Modus (Werkzeugparameter "mode", z.B.
-     * quiz "abschlusstest") bestaetigt die Riegel, die er selbst mitbringt -
+     * quiz "final-test") bestaetigt die Riegel, die er selbst mitbringt -
      * die Wahl des Modus ist die Entscheidung der Lehrkraft fuer seine
      * Einstellungen. Ein Wert, den der Aufruf selbst ueberschreibt, bleibt
      * bestaetigungspflichtig.

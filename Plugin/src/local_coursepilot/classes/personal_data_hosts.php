@@ -56,7 +56,7 @@ final class personal_data_hosts {
     /**
      * Wirft den Aufruffehler "Speicher nicht zugelassen" (Issue #493, ADR
      * 0021 §3), wenn ein Ziel extern und sein Server nicht zugelassen ist -
-     * Private Files (jede Position ausser EXTERN) sind immer zugelassen.
+     * Private Files (jede Position ausser EXTERNAL) sind immer zugelassen.
      * Geteilt von {@see \local_coursepilot\external\write_context_file} und
      * {@see \local_coursepilot\external\append_context_file}, die beide
      * "die ganze entstehende Datei" pruefen muessen (Spec #486 §6:
@@ -67,7 +67,7 @@ final class personal_data_hosts {
      * @throws \moodle_exception contextfilehostnotallowed
      */
     public static function require_allowed_location(?pointer_location $location, string $path): void {
-        if ($location !== null && $location->kind === pointer_location::EXTERN
+        if ($location !== null && $location->kind === pointer_location::EXTERNAL
                 && !self::allowed((string) ($location->fingerprint['server'] ?? ''))) {
             throw new \moodle_exception('contextfilehostnotallowed', 'local_coursepilot', '', $path);
         }

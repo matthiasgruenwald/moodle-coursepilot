@@ -141,7 +141,7 @@ final class update_section extends external_api {
                     'sectionunknownfield',
                     'local_coursepilot',
                     '',
-                    ['field' => $fieldname, 'felder' => implode(', ', self::SETTABLE_FIELDS)]
+                    ['field' => $fieldname, 'fields' => implode(', ', self::SETTABLE_FIELDS)]
                 );
             }
             if ($fieldname === 'visible' && !in_array($value, [0, 1], true)) {

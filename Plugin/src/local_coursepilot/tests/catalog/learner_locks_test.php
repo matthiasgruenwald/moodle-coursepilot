@@ -164,7 +164,7 @@ final class learner_locks_test extends \advanced_testcase {
 
     /**
      * Feldbuendel sind Voreinstellungen fuer den Normalfall - sie setzen
-     * keinen Riegel. Ausnahme: der Quiz-Modus "abschlusstest" (begrenzte
+     * keinen Riegel. Ausnahme: der Quiz-Modus "final-test" (begrenzte
      * Versuche sind sein Zweck); seine Wahl bestaetigt den Riegel selbst
      * ({@see learner_locks::confirmed_with_mode()}).
      */
@@ -173,7 +173,7 @@ final class learner_locks_test extends \advanced_testcase {
             $catalogclass = registry::for($modname);
             foreach ($catalogclass::bundles() as $name => $values) {
                 $ids = array_column(learner_locks::find($catalogclass, $values), 'id');
-                $expected = ($modname === 'quiz' && $name === 'abschlusstest') ? ['attempts'] : [];
+                $expected = ($modname === 'quiz' && $name === 'final-test') ? ['attempts'] : [];
                 $this->assertSame($expected, $ids, $modname . '/' . $name);
             }
         }
@@ -195,7 +195,7 @@ final class learner_locks_test extends \advanced_testcase {
     }
 
     public function test_chosen_mode_confirms_only_the_locks_it_brings(): void {
-        $bundle = quiz::bundles()['abschlusstest'];
+        $bundle = quiz::bundles()['final-test'];
 
         $this->assertContains('attempts', learner_locks::confirmed_with_mode([], $bundle, []));
         $this->assertNotContains('attempts', learner_locks::confirmed_with_mode([], $bundle, ['attempts' => 5]));

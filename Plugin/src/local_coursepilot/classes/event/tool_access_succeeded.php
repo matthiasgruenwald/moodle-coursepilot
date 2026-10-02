@@ -42,7 +42,7 @@ class tool_access_succeeded extends \core\event\base {
      * @return string
      */
     public function get_description() {
-        return "Das Coursepilot-Werkzeug '{$this->other['toolname']}' wurde von Nutzer/in mit ID {$this->userid} erfolgreich aufgerufen.";
+        return "The user with id '{$this->userid}' successfully called the Coursepilot tool '{$this->other['toolname']}'.";
     }
 
     /**

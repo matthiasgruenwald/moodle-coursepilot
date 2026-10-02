@@ -45,7 +45,7 @@ final class webdav_repository_check_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Kontext');
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Kontext');
         // create_webdav_instance() aktiviert den Repository-Typ als
         // Nebenwirkung (enable_webdav_repository_type()) - hier wieder
         // ausgeschaltet, um den Fall "aus, aber Pointer zeigt extern" zu bauen.

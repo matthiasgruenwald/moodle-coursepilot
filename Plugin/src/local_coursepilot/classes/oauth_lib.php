@@ -57,7 +57,7 @@ final class oauth_lib {
      * @var int|null Datensatz-ID des zuletzt per {@see authenticate_access_token()}
      *      erfolgreich aufgeloesten Access-Tokens (#501) - die "ausstellende
      *      Verbindung" eines waehrend dieser Anfrage ausgestellten
-     *      Werkbank-Downloadtickets ({@see \local_coursepilot\werkbank_ticket::issue()}).
+     *      Werkbank-Downloadtickets ({@see \local_coursepilot\workbench_ticket::issue()}).
      *      Prozessweites Request-Gedaechtnis wie $USER, kein DB-Zustand -
      *      ponytail: keine Dependency-Injection-Kette durch dispatcher ->
      *      external_api::call_external_function() -> Werkzeug, nur damit ein
@@ -569,7 +569,7 @@ final class oauth_lib {
     /**
      * Beansprucht eine Zeile atomar per Compare-and-Swap (#574), gemeinsamer
      * Kern fuer den Autorisierungscode- und den Refresh-Token-Anspruch -
-     * gleiches Muster wie {@see werkbank_ticket::claim()} (#512), hier fuer
+     * gleiches Muster wie {@see workbench_ticket::claim()} (#512), hier fuer
      * zwei Tabellen verallgemeinert statt zweimal dupliziert. Eine einzige
      * UPDATE-Anweisung setzt sowohl $column (eindeutig indiziert) auf einen
      * frischen, nur diesem Aufruf bekannten Zufallswert als auch $flagcolumn
@@ -582,7 +582,7 @@ final class oauth_lib {
      * Zeilen zu brauchen. $column/$flagcolumn stammen ausschliesslich aus
      * den beiden Aufrufstellen (feste Zeichenketten, nie Nutzereingabe) -
      * Interpolation in die SQL ist damit unbedenklich. Rueckgabe bewusst
-     * bool statt der beanspruchten Zeile (anders als werkbank_ticket::claim()):
+     * bool statt der beanspruchten Zeile (anders als workbench_ticket::claim()):
      * die Aufrufer lesen unveraenderliche Felder (userid, clientid) bereits
      * aus dem vor dem Anspruch gelesenen Datensatz.
      *

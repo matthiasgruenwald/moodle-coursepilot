@@ -200,7 +200,7 @@ final class preview_material_file_test extends \advanced_testcase {
             preview_material_file::execute('bild.png', 'woanders');
             $this->fail('Ein unbekannter Ort-Wert haette werfen muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('invalidmaterialort', $e->errorcode);
+            $this->assertSame('invalidmateriallocation', $e->errorcode);
         }
     }
 
@@ -212,15 +212,15 @@ final class preview_material_file_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
         storage_anchor::write_pointer_document([
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material/kontext'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot-material/kontext'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ]);
 
         try {
             preview_material_file::execute('kontext/plan.png');
             $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('materialpathiskontext', $e->errorcode);
+            $this->assertSame('materialpathiscontext', $e->errorcode);
         }
     }
 }

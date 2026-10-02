@@ -36,7 +36,7 @@ final class authorize_page_test extends \advanced_testcase {
             ['client_id' => 'abc', 'redirect_uri' => 'https://example.test/cb'],
             'thestate',
             new \moodle_url('/local/coursepilot/oauth/authorize.php'),
-            new \moodle_url('/local/coursepilot/ortswahl.php')
+            new \moodle_url('/local/coursepilot/location_selection.php')
         );
 
         $this->assertStringContainsString('Claude Desktop', $data['consenttext']);
@@ -51,7 +51,7 @@ final class authorize_page_test extends \advanced_testcase {
             ['client_id' => 'abc', 'redirect_uri' => 'https://example.test/cb'],
             'thestate',
             new \moodle_url('/local/coursepilot/oauth/authorize.php'),
-            new \moodle_url('/local/coursepilot/ortswahl.php')
+            new \moodle_url('/local/coursepilot/location_selection.php')
         );
 
         $names = array_column($data['hiddenfields'], 'name');
@@ -71,7 +71,7 @@ final class authorize_page_test extends \advanced_testcase {
             [],
             '',
             new \moodle_url('/local/coursepilot/oauth/authorize.php'),
-            new \moodle_url('/local/coursepilot/ortswahl.php')
+            new \moodle_url('/local/coursepilot/location_selection.php')
         );
 
         $actionvalues = array_column($data['actions'], 'actionvalue');

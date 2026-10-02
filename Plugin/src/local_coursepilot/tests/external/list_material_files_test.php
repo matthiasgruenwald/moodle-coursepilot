@@ -151,7 +151,7 @@ final class list_material_files_test extends \advanced_testcase {
             'itemid' => material_files::ITEMID,
             'filepath' => '/coursepilot-material/',
             'filename' => \local_coursepilot\storage_anchor::POINTER_FILENAME,
-        ], '{"kontextbereich":"coursepilot","materialordner":"coursepilot-material"}');
+        ], '{"context_area":"coursepilot","materialordner":"coursepilot-material"}');
 
         $result = list_material_files::execute();
 
@@ -174,8 +174,8 @@ final class list_material_files_test extends \advanced_testcase {
             'filename' => 'blatt.pdf',
         ], 'Inhalt');
 
-        $bestand = list_material_files::execute('', material_files::ORT_BESTAND);
-        $werkbank = list_material_files::execute('', material_files::ORT_WERKBANK);
+        $bestand = list_material_files::execute('', material_files::LOCATION_STORE);
+        $werkbank = list_material_files::execute('', material_files::LOCATION_WORKBENCH);
 
         $this->assertSame(['blatt.pdf'], array_column($bestand['entries'], 'name'));
         $this->assertSame(array_column($bestand['entries'], 'name'), array_column($werkbank['entries'], 'name'));
@@ -197,7 +197,7 @@ final class list_material_files_test extends \advanced_testcase {
             'itemid' => storage_anchor::ITEMID,
             'filepath' => '/' . storage_anchor::ANCHOR_DEFAULT_ROOT . '/',
             'filename' => storage_anchor::POINTER_FILENAME,
-        ], json_encode(['kontextbereich' => 'coursepilot', 'materialordner' => 'eigener-materialpfad']));
+        ], json_encode(['context_area' => 'coursepilot', 'materialordner' => 'eigener-materialpfad']));
         get_file_storage()->create_file_from_string([
             'contextid' => material_files::own_context()->id,
             'component' => material_files::COMPONENT,
@@ -207,8 +207,8 @@ final class list_material_files_test extends \advanced_testcase {
             'filename' => 'blatt.pdf',
         ], 'Inhalt');
 
-        $bestand = list_material_files::execute('', material_files::ORT_BESTAND);
-        $werkbank = list_material_files::execute('', material_files::ORT_WERKBANK);
+        $bestand = list_material_files::execute('', material_files::LOCATION_STORE);
+        $werkbank = list_material_files::execute('', material_files::LOCATION_WORKBENCH);
 
         $this->assertSame(['blatt.pdf'], array_column($bestand['entries'], 'name'));
         $this->assertSame(array_column($bestand['entries'], 'name'), array_column($werkbank['entries'], 'name'));
@@ -222,7 +222,7 @@ final class list_material_files_test extends \advanced_testcase {
             list_material_files::execute('', 'woanders');
             $this->fail('Ein unbekannter Ort-Wert haette werfen muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('invalidmaterialort', $e->errorcode);
+            $this->assertSame('invalidmateriallocation', $e->errorcode);
         }
     }
 
@@ -275,14 +275,14 @@ final class list_material_files_test extends \advanced_testcase {
             'filename' => 'werkbankdatei.pdf',
         ], 'Inhalt');
 
-        $result = list_material_files::execute('', material_files::ORT_WERKBANK);
+        $result = list_material_files::execute('', material_files::LOCATION_WORKBENCH);
 
         $this->assertSame(['werkbankdatei.pdf'], array_column($result['entries'], 'name'));
     }
 
     /**
      * Liegt der Kontextbereich im Bestand, erscheint er als eigener
-     * Eintragstyp "kontextbereich" (Issue #495, Abnahmekriterium 4) - nicht
+     * Eintragstyp "context_area" (Issue #495, Abnahmekriterium 4) - nicht
      * als gewoehnlicher Ordner.
      */
     public function test_kontextbereich_inside_bestand_appears_as_own_entry_type(): void {
@@ -291,8 +291,8 @@ final class list_material_files_test extends \advanced_testcase {
         // Kontextbereich liegt bewusst als Unterordner des Materialbestands -
         // erlaubte Richtung (CONTEXT.md "Materialbestand").
         storage_anchor::write_pointer_document([
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material/kontext'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot-material/kontext'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ]);
         get_file_storage()->create_file_from_string([
             'contextid' => material_files::own_context()->id,
@@ -315,7 +315,7 @@ final class list_material_files_test extends \advanced_testcase {
 
         $kontexteintrag = $this->find_entry($result['entries'], 'kontext');
         $this->assertNotNull($kontexteintrag);
-        $this->assertSame('kontextbereich', $kontexteintrag['type']);
+        $this->assertSame('context_area', $kontexteintrag['type']);
         $materialeintrag = $this->find_entry($result['entries'], 'blatt.pdf');
         $this->assertSame('file', $materialeintrag['type']);
     }
@@ -329,15 +329,15 @@ final class list_material_files_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
         storage_anchor::write_pointer_document([
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material/kontext'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot-material/kontext'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ]);
 
         try {
             list_material_files::execute('kontext');
             $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('materialpathiskontext', $e->errorcode);
+            $this->assertSame('materialpathiscontext', $e->errorcode);
         }
     }
 

@@ -267,8 +267,8 @@ final class version_history_test extends \advanced_testcase {
         $aenderungen = $result['files'];
 
         $this->assertCount(2, $aenderungen);
-        $entfernt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['change_type'] === 'entfernt'));
-        $hinzugefuegt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['change_type'] === 'hinzugefuegt'));
+        $entfernt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['change_type'] === 'removed'));
+        $hinzugefuegt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['change_type'] === 'added'));
         $this->assertSame('alt.pdf', $entfernt[0]['filename']);
         $this->assertSame('neu.pdf', $hinzugefuegt[0]['filename']);
     }

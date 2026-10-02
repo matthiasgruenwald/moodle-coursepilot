@@ -46,7 +46,7 @@ final class previous_location {
      */
     public static function current(): ?array {
         $document = storage_anchor::read_raw_pointer();
-        $value = $document['vorheriger_ort'] ?? null;
+        $value = $document['previous_location'] ?? null;
         return is_array($value) ? $value : null;
     }
 
@@ -67,12 +67,12 @@ final class previous_location {
      * Fehler statt eines stillen leeren Ergebnisses.
      *
      * @return pointer_location
-     * @throws \moodle_exception altbestandclosed, oder wie {@see context_pointer::resolve_previous()}.
+     * @throws \moodle_exception previouslocationclosed, oder wie {@see context_pointer::resolve_previous()}.
      */
     public static function require_open_location(): pointer_location {
         $value = self::current();
         if ($value === null) {
-            throw new \moodle_exception('altbestandclosed', 'local_coursepilot');
+            throw new \moodle_exception('previouslocationclosed', 'local_coursepilot');
         }
         return context_pointer::resolve_previous($value);
     }
@@ -89,10 +89,10 @@ final class previous_location {
      */
     public static function dismiss(): bool {
         $document = storage_anchor::read_raw_pointer();
-        if ($document === null || ($document['vorheriger_ort'] ?? null) === null) {
+        if ($document === null || ($document['previous_location'] ?? null) === null) {
             return false;
         }
-        unset($document['vorheriger_ort']);
+        unset($document['previous_location']);
         storage_anchor::write_pointer_document($document);
         return true;
     }

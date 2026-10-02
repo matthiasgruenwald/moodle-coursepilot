@@ -609,7 +609,7 @@ final class dispatcher_test extends \advanced_testcase {
         );
         $this->assertSame(200, $unconfirmedresponse['status']);
         $unconfirmed = $unconfirmedresponse['body']['result']['structuredContent']['questions'][0];
-        $this->assertSame('verdachtsfall', $unconfirmed['status']);
+        $this->assertSame('suspect', $unconfirmed['status']);
 
         // "confirmed": true bestaetigt ausdruecklich - jetzt wird geschrieben.
         $confirmedresponse = dispatcher::handle(
@@ -626,7 +626,7 @@ final class dispatcher_test extends \advanced_testcase {
         );
         $this->assertSame(200, $confirmedresponse['status']);
         $imported = $confirmedresponse['body']['result']['structuredContent']['questions'][0];
-        $this->assertSame('erstimport', $imported['status']);
+        $this->assertSame('first_import', $imported['status']);
         $this->assertArrayNotHasKey('bestaetigt', $imported);
 
         // Quiz-Zuordnung: coursepilot_add_questions_to_quiz haengt die
@@ -813,7 +813,7 @@ XML;
 
         // Nachtragen: ein offener Ausstand verschwindet, sobald das erneute
         // Schreiben mit "pending_entry" gelingt.
-        $pendingidentifier = pending_write_notice::record('journal.md', 'anlegen', 'Speicher voll', 0);
+        $pendingidentifier = pending_write_notice::record('journal.md', 'create', 'storage_full', 0);
         $catchupresponse = dispatcher::handle(
             [
                 'id' => 5,
@@ -834,15 +834,15 @@ XML;
         $this->assertArrayNotHasKey('isError', $catchupresponse['body']['result']);
         $this->assertSame([], pending_write_notice::list_grouped());
 
-        // Verwerfen: coursepilot_dismiss_ausstand mit "identifier" beendet
+        // Verwerfen: coursepilot_dismiss_pending_entry mit "identifier" beendet
         // einen zweiten, unabhaengigen Ausstand ausdruecklich.
-        $dismissidentifier = pending_write_notice::record('journal.md', 'anlegen', 'Speicher voll', 0);
+        $dismissidentifier = pending_write_notice::record('journal.md', 'create', 'storage_full', 0);
         $dismissresponse = dispatcher::handle(
             [
                 'id' => 6,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_dismiss_ausstand',
+                    'name' => 'coursepilot_dismiss_pending_entry',
                     'arguments' => ['identifier' => $dismissidentifier],
                 ],
             ],
@@ -856,26 +856,26 @@ XML;
     }
 
     /**
-     * #568, Abnahmekriterium: coursepilot_dismiss_ausstand ist ueber den
+     * #568, Abnahmekriterium: coursepilot_dismiss_pending_entry ist ueber den
      * oeffentlichen Dispatch-Pfad mit dem englischen Feldnamen `identifier`
-     * aufrufbar - nicht nur per direktem dismiss_ausstand::execute()-Aufruf
-     * (das bereits ausstand_notice_test.php/dismiss_ausstand_test.php
+     * aufrufbar - nicht nur per direktem dismiss_pending_entry::execute()-Aufruf
+     * (das bereits pending_write_notice_test.php/dismiss_pending_entry_test.php
      * abdecken). Dieses Werkzeug ist bereits vollstaendig englisch
      * deklariert, braucht also keine Eingabeuebersetzung durch den
      * Dispatcher (Spec 0025 §A, erster Durchstich der Expand-Migration).
      */
-    public function test_dismiss_ausstand_is_callable_through_dispatcher_with_identifier(): void {
+    public function test_dismiss_pending_entry_is_callable_through_dispatcher_with_identifier(): void {
         $this->resetAfterTest();
         [$teacher, $token] = $this->create_authenticated_user();
         $this->setUser($teacher);
-        $identifier = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
+        $identifier = pending_write_notice::record('plan.md', 'create', 'storage_full', 0);
 
         $response = dispatcher::handle(
             [
                 'id' => 1,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_dismiss_ausstand',
+                    'name' => 'coursepilot_dismiss_pending_entry',
                     'arguments' => ['identifier' => $identifier],
                 ],
             ],
@@ -895,7 +895,7 @@ XML;
      * HTTP-Fehlerstatus - dieselbe Vertragsform wie jeder andere
      * fehlgeschlagene Werkzeugaufruf).
      */
-    public function test_dismiss_ausstand_rejects_unknown_identifier_through_dispatcher(): void {
+    public function test_dismiss_pending_entry_rejects_unknown_identifier_through_dispatcher(): void {
         $this->resetAfterTest();
         [, $token] = $this->create_authenticated_user();
 
@@ -904,7 +904,7 @@ XML;
                 'id' => 1,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_dismiss_ausstand',
+                    'name' => 'coursepilot_dismiss_pending_entry',
                     'arguments' => ['identifier' => 'UNBEKANNT1'],
                 ],
             ],
@@ -922,7 +922,7 @@ XML;
      * ["identifier"]) ist dafuer die erste Verteidigungslinie beim Client,
      * Moodles eigene Parameterpruefung die zweite auf dem Server.
      */
-    public function test_dismiss_ausstand_rejects_missing_identifier_through_dispatcher(): void {
+    public function test_dismiss_pending_entry_rejects_missing_identifier_through_dispatcher(): void {
         $this->resetAfterTest();
         [, $token] = $this->create_authenticated_user();
 
@@ -931,7 +931,7 @@ XML;
                 'id' => 1,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_dismiss_ausstand',
+                    'name' => 'coursepilot_dismiss_pending_entry',
                     'arguments' => [],
                 ],
             ],
@@ -947,18 +947,18 @@ XML;
      * #568: die Rechtepruefung bleibt auch auf dem englischen Durchstich
      * wirksam - ohne moodle/user:manageownfiles weist der Dispatcher den
      * Aufruf ab, genau wie beim direkten execute()-Aufruf
-     * (dismiss_ausstand_test.php::test_rejects_missing_manageownfiles_capability).
+     * (dismiss_pending_entry_test.php::test_rejects_missing_manageownfiles_capability).
      */
-    public function test_dismiss_ausstand_enforces_manageownfiles_through_dispatcher(): void {
+    public function test_dismiss_pending_entry_enforces_manageownfiles_through_dispatcher(): void {
         global $DB;
         $this->resetAfterTest();
         [$teacher, $token] = $this->create_authenticated_user();
         $this->setUser($teacher);
-        $identifier = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
+        $identifier = pending_write_notice::record('plan.md', 'create', 'storage_full', 0);
 
         // CAP_PROHIBIT auf der Basisrolle "user" ueberstimmt jede zusaetzliche
         // Rolle (hier editingteacher) - derselbe erprobte Griff wie
-        // dismiss_ausstand_test.php::test_rejects_missing_manageownfiles_capability.
+        // dismiss_pending_entry_test.php::test_rejects_missing_manageownfiles_capability.
         $roleid = $this->get_role_id('user');
         assign_capability(
             'moodle/user:manageownfiles',
@@ -973,7 +973,7 @@ XML;
                 'id' => 1,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_dismiss_ausstand',
+                    'name' => 'coursepilot_dismiss_pending_entry',
                     'arguments' => ['identifier' => $identifier],
                 ],
             ],
@@ -1124,7 +1124,7 @@ XML;
      * oeffentlichen Dispatch-Pfad mit unmittelbar englisch deklarierten
      * Feldern aufrufbar - Lesen (coursepilot_list_material_files, Parameter
      * "location" statt "ort"), ein Schreibpfad (coursepilot_upload_material_file)
-     * und der reine Werkbank-Lesepfad (coursepilot_create_werkbank_download_links,
+     * und der reine Werkbank-Lesepfad (coursepilot_create_workbench_download_links,
      * ebenfalls hinter moodle/user:manageownfiles) mit korrekten Rueckgabe-
      * schluesseln.
      */
@@ -1163,7 +1163,7 @@ XML;
                 'method' => 'tools/call',
                 'params' => [
                     'name' => 'coursepilot_list_material_files',
-                    'arguments' => ['location' => 'werkbank'],
+                    'arguments' => ['location' => 'workbench'],
                 ],
             ],
             $token,
@@ -1173,7 +1173,7 @@ XML;
         $listed = $listresponse['body']['result']['structuredContent'];
         $this->assertSame(['blatt.pdf'], array_column($listed['entries'], 'name'));
 
-        // Werkbank-Lesepfad: coursepilot_create_werkbank_download_links -
+        // Werkbank-Lesepfad: coursepilot_create_workbench_download_links -
         // rein lesend (Issue #501), aber hinter derselben
         // moodle/user:manageownfiles-Pruefung wie der Schreibweg oben.
         $linksresponse = dispatcher::handle(
@@ -1181,7 +1181,7 @@ XML;
                 'id' => 3,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_create_werkbank_download_links',
+                    'name' => 'coursepilot_create_workbench_download_links',
                     'arguments' => ['paths' => ['blatt.pdf']],
                 ],
             ],
@@ -1199,7 +1199,7 @@ XML;
         // Rechte-gesteuert, nicht nur eine Frage der Uebersetzung. CAP_PROHIBIT
         // auf der Basisrolle "user" ueberstimmt jede zusaetzliche Rolle (hier
         // editingteacher) - derselbe erprobte Griff wie
-        // test_dismiss_ausstand_enforces_manageownfiles_through_dispatcher.
+        // test_dismiss_pending_entry_enforces_manageownfiles_through_dispatcher.
         [$restricteduser, $restrictedtoken] = $this->create_authenticated_user();
         $roleid = $this->get_role_id('user');
         assign_capability(
@@ -1215,7 +1215,7 @@ XML;
                 'id' => 4,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_create_werkbank_download_links',
+                    'name' => 'coursepilot_create_workbench_download_links',
                     'arguments' => ['paths' => ['blatt.pdf']],
                 ],
             ],

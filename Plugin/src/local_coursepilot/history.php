@@ -52,7 +52,7 @@ $cmid = optional_param('cmid', 0, PARAM_INT);
 $courseid = optional_param('id', 0, PARAM_INT);
 $restoreversion = optional_param('restore', 0, PARAM_INT);
 $confirmed = optional_param('confirmed', 0, PARAM_BOOL);
-$bestaetigt = optional_param('bestaetigt', 0, PARAM_BOOL);
+$confirmed = optional_param('confirmed', 0, PARAM_BOOL);
 
 if ($cmid) {
     $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);
@@ -117,10 +117,10 @@ if ($cmid && $restoreversion) {
 
     require_sesskey();
     try {
-        $result = restore_activity_version::execute($cmid, $restoreversion, (bool) $bestaetigt);
+        $result = restore_activity_version::execute($cmid, $restoreversion, (bool) $confirmed);
         redirect($viewurl, $result['message'], null, \core\output\notification::NOTIFY_SUCCESS);
     } catch (moodle_exception $e) {
-        if ($e->errorcode !== 'completiondatalossconfirmationrequired' || $bestaetigt) {
+        if ($e->errorcode !== 'completiondatalossconfirmationrequired' || $confirmed) {
             throw $e;
         }
         // set_completion's Zweitakt (Ticket #392) greift ueber
@@ -134,7 +134,7 @@ if ($cmid && $restoreversion) {
                 'cmid' => $cmid,
                 'restore' => $restoreversion,
                 'confirmed' => 1,
-                'bestaetigt' => 1,
+                'confirmed' => 1,
                 'sesskey' => sesskey(),
             ]),
             $viewurl

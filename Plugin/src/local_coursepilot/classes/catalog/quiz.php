@@ -657,7 +657,7 @@ final class quiz implements module_catalog {
                 // overallfeedback: nach dem Versuch, nicht während. rightanswer bleibt in allen drei Modi 0.
                 ['overallfeedback']
             )),
-            'lernstandscheck' => array_merge([
+            'progress-check' => array_merge([
                 'preferredbehaviour' => 'deferredcbm',
                 'attempts' => 0,
                 'grademethod' => 1, // QUIZ_GRADEHIGHEST.
@@ -673,7 +673,7 @@ final class quiz implements module_catalog {
                 ['maxmarks', 'marks'],
                 ['attempt', 'correctness', 'maxmarks', 'marks', 'specificfeedback', 'generalfeedback', 'overallfeedback']
             )),
-            'abschlusstest' => array_merge([
+            'final-test' => array_merge([
                 'preferredbehaviour' => 'deferredfeedback',
                 'attempts' => 2,
                 'grademethod' => 2, // QUIZ_GRADEAVERAGE.
@@ -716,7 +716,7 @@ final class quiz implements module_catalog {
         return $result;
     }
 
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return 'update_quiz_settings';
     }
 

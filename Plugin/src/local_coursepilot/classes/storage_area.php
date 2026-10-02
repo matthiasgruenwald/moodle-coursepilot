@@ -44,7 +44,7 @@ final class storage_area {
      * @param \Closure(string): void $checkwritablename Wirft bei einem nicht zulaessigen
      *        Dateinamen eine eigene moodle_exception; gibt sonst einfach zurueck.
      * @param string|null $pointerkey Feldname dieses Bereichs im Kontextpointer
-     *        (Issue #445), z.B. "kontextbereich"/"materialordner". `null`, wenn
+     *        (Issue #445), z.B. "context_area"/"materialordner". `null`, wenn
      *        der Bereich den Pointer nicht kennt (z.B. ein reiner Testbereich) -
      *        dann gilt immer die per Einstellung konfigurierte Standardwurzel.
      * @param bool $externalfallback Bei einem Pointer-Ziel *extern* auf die

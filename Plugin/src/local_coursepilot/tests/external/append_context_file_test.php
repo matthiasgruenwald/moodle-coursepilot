@@ -486,9 +486,9 @@ final class append_context_file_test extends \advanced_testcase {
             $this->append('journal.md', 'x');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
-        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['entries'][0]['identifier'];
 
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
@@ -533,11 +533,11 @@ final class append_context_file_test extends \advanced_testcase {
             $this->append('journal.md', '# Journal');
             $this->fail('Fehlende Kontextbereich-Wurzel haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame('contextrootmissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame('contextrootmissing', $ausstaende[0]['entries'][0]['error_class']);
         $this->assertSame([], array_values(array_filter(
             $fake->requests(),
             static fn (array $r): bool => in_array($r['method'], ['PUT', 'MKCOL'], true)
@@ -619,18 +619,18 @@ final class append_context_file_test extends \advanced_testcase {
             $this->append('journal.md', 'x');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
             $this->assertStringContainsString('journal.md', $e->getMessage());
-            $this->assertStringContainsString('Kennung', $e->getMessage());
+            $this->assertStringContainsString('identifier', $e->getMessage());
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('journal.md', $ausstaende[0]['pfad']);
-        $this->assertSame('anhängen', $ausstaende[0]['eintraege'][0]['vorgang']);
+        $this->assertSame('journal.md', $ausstaende[0]['path']);
+        $this->assertSame('append', $ausstaende[0]['entries'][0]['operation']);
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::STORAGE_FULL,
-            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+            $ausstaende[0]['entries'][0]['error_class']
         );
     }
 
@@ -651,15 +651,15 @@ final class append_context_file_test extends \advanced_testcase {
             $this->append('journal.md', 'x');
             $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('journal.md', $ausstaende[0]['pfad']);
+        $this->assertSame('journal.md', $ausstaende[0]['path']);
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::AUTH_REJECTED,
-            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+            $ausstaende[0]['entries'][0]['error_class']
         );
     }
 
@@ -682,12 +682,12 @@ final class append_context_file_test extends \advanced_testcase {
             $this->append('journal.md', 'x');
             $this->fail('Geloeschte Instanz haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('webdavinstancemissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame('webdavinstancemissing', $ausstaende[0]['entries'][0]['error_class']);
     }
 
     /**
@@ -704,11 +704,11 @@ final class append_context_file_test extends \advanced_testcase {
             append_context_file::execute('journal.md', 'x', '', '', 42);
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame(42, $ausstaende[0]['eintraege'][0]['kursid']);
+        $this->assertSame(42, $ausstaende[0]['entries'][0]['course_id']);
     }
 
     /**
@@ -721,10 +721,10 @@ final class append_context_file_test extends \advanced_testcase {
         $this->setUser($user);
         $this->grant_webdav_capability($user);
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Groups/Klasse7a', [
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Groups/Klasse7a', [
             'server' => $this->fixtureserver,
-            'basispfad' => $this->fixturebasispfad,
-            'konto' => $this->fixturekonto,
+            'basepath' => $this->fixturebasispfad,
+            'account' => $this->fixturekonto,
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
@@ -734,12 +734,12 @@ final class append_context_file_test extends \advanced_testcase {
             $this->append('journal.md', 'x');
             $this->fail('Pfad ausserhalb von "Files/" haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('webdaviservfilesonly', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame('webdaviservfilesonly', $ausstaende[0]['entries'][0]['error_class']);
         $this->assertSame([], $fake->requests());
     }
 
@@ -754,10 +754,10 @@ final class append_context_file_test extends \advanced_testcase {
         $this->setUser($user);
         $this->grant_webdav_capability($user);
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Groups/Klasse7a', [
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Groups/Klasse7a', [
             'server' => $this->fixtureserver,
-            'basispfad' => $this->fixturebasispfad,
-            'konto' => $this->fixturekonto,
+            'basepath' => $this->fixturebasispfad,
+            'account' => $this->fixturekonto,
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
@@ -788,9 +788,9 @@ final class append_context_file_test extends \advanced_testcase {
             $this->append('journal.md', 'x');
             $this->fail('Speicher voll haette abgewiesen werden muessen.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
-        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['entries'][0]['identifier'];
 
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');

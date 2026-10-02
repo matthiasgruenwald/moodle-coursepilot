@@ -46,7 +46,7 @@ final class export_questions_xml_test extends \advanced_testcase {
         $xml = self::multichoice_xml('Rundlauf-Frage', 'Was ist 2+2?', 'Allgemeines Feedback');
         $imported = import_questions_xml::execute($categoryid, $xml);
         $imported = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $imported);
-        $this->assertSame('erstimport', $imported['questions'][0]['status']);
+        $this->assertSame('first_import', $imported['questions'][0]['status']);
 
         global $DB;
         $entryid = $imported['questions'][0]['questionbankentryid'];
