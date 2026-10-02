@@ -168,7 +168,7 @@ jobs:
           node-version: '24'
 
       - name: AMD-Quellmodul syntaktisch pruefen
-        run: node --check Plugin/src/local_coursepilot/amd/src/ortswahl.js
+        run: node --check Plugin/src/local_coursepilot/amd/src/location_selection.js
 
       - name: Native JS-Suite (dokumentierter Ausschluss plattform-/altstandgebundener Faelle)
         run: node scripts/ci/run-js-tests.js
