@@ -70,9 +70,14 @@ Entscheidung der Lehrkraft nach der Umsetzung (#585):
 - **Kein dauerhafter Ausschluss.** `scorm`, `imscp`, `h5pactivity` und `lightboxgallery`
   sollen über einen **Datei-Nachtrag** erschlossen werden (#598): Nach dem Round-Trip und vor
   dem Sichtbarschalten füllt der Server die Dateibereiche aus Materialpfaden.
-- **Dateiinhalte kommen nie in den KI-Kontext.** Die KI nennt Pfade, der Server kopiert
-  (`material_files::resolve_into_draft`). Paketdateien sind zulässig, solange sie ohne Laden
-  der Dateiinhalte in den Kontext entstehen oder übernommen werden.
+- **Dateiinhalte gehören grundsätzlich nicht in den KI-Kontext.** Regelweg: Die KI nennt
+  Pfade, der Server kopiert (`material_files::resolve_into_draft`). Paketdateien sind
+  zulässig, solange sie ohne Laden der Dateiinhalte in den Kontext entstehen oder übernommen
+  werden.
+- **Ausnahme nur nach deutlicher Rückfrage.** Geht es für die Lehrkraft nicht anders, darf die
+  KI Dateiinhalte in den Kontext laden. Vorher nennt sie die Kosten transparent (voller
+  Kontext, deutlich höhere KI-Kosten, ungefähre Größe) und wartet auf eine ausdrückliche
+  Zustimmung. Ohne Zustimmung bleibt es beim Regelweg oder die Aktivität wird nicht angelegt.
 - **Erschlossen heißt vollständig.** Eine Art gilt erst als erschlossen, wenn auch ihre Dateien
   und die zugehörigen Texte mitkommen. Für die Lightboxgallery heißt das: Bilder samt
   Bildunterschriften (#599). Bis dahin bleiben die vier Arten mit dem Grund „Datei-Nachtrag
