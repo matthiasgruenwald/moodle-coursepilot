@@ -38,6 +38,9 @@ final class oauth_lib {
     /** @var string DB-Tabelle der per DCR/CIMD registrierten Clients. */
     private const CLIENT_TABLE = 'local_coursepilot_oauth_client';
 
+    /** @var int Maximum decoded CIMD response size: 1 MiB, enforced while receiving. */
+    private const CIMD_MAX_BYTES = 1048576;
+
     /** @var string DB-Tabelle der kurzlebigen, PKCE-gebundenen Autorisierungscodes. */
     private const CODE_TABLE = 'local_coursepilot_oauth_code';
 
@@ -307,20 +310,34 @@ final class oauth_lib {
     }
 
     /**
-     * Ruft ein CIMD-Dokument per HTTP ab. Duenne Netzwerk-Schale um
-     * {@see cache_cimd_client()} - die eigentliche Pruef-/Persistierlogik ist
-     * dort, netzwerkfrei und damit per PHPUnit ohne echten HTTP-Request
-     * pruefbar (#335: Erfolgsfall zuvor ungetestet, da nur ueber Netzwerk
-     * erreichbar).
+     * Fetch public HTTPS metadata using Moodle's host/port policy and CA trust.
+     * Verify the peer and hostname, refuse redirects, and retain at most 1 MiB
+     * of decoded response data within five seconds. No storage credentials are
+     * attached. Only a complete, successful response reaches metadata validation
+     * and persistence in {@see cache_cimd_client()}.
      *
      * @param string $url
      * @return \stdClass|null
      */
     protected static function fetch_and_cache_cimd_client(string $url): ?\stdClass {
         $curl = new \curl();
-        $body = $curl->get($url, [], ['CURLOPT_TIMEOUT' => 5, 'CURLOPT_FOLLOWLOCATION' => false]);
+        $body = '';
+        $curl->get($url, [], [
+            'CURLOPT_TIMEOUT' => 5,
+            'CURLOPT_FOLLOWLOCATION' => false,
+            'CURLOPT_SSL_VERIFYPEER' => true,
+            'CURLOPT_SSL_VERIFYHOST' => 2,
+            'CURLOPT_WRITEFUNCTION' => static function ($handle, string $chunk) use (&$body): int {
+                $length = strlen($chunk);
+                if (strlen($body) + $length > self::CIMD_MAX_BYTES) {
+                    return 0; // Abort the transfer before retaining an oversized chunk.
+                }
+                $body .= $chunk;
+                return $length;
+            },
+        ]);
         $info = $curl->get_info();
-        if (($info['http_code'] ?? 0) !== 200) {
+        if ($curl->get_errno() !== 0 || ($info['http_code'] ?? 0) !== 200) {
             return null;
         }
         $metadata = json_decode($body, true);
