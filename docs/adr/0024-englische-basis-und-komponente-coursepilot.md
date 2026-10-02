@@ -55,3 +55,18 @@ Bauzeit und wird vor dem Produktivbetrieb abgelöst.
 - Spec 0003 (Marketplace-Readiness) und Spec 0012 §10 sind überholt: Spec 0003 beschreibt
   den alten Weg über das Plugins Directory samt Spiegelrepository, und das Plugins Directory
   ist in den Marketplace übergegangen.
+
+## Nachtrag 2026-10-02: Ablageschlüssel und Skill-Dateinamen
+
+Entscheidung der Lehrkraft (#585, #602):
+
+- **Ordnernamen im Kontextbereich sind sprachunabhängige Ablageschlüssel, fest englisch**
+  (`question-types/`, `activity-types/` usw.), für alle Nutzersprachen gleich. Grund: Die KI
+  muss dort wiederfinden, was sie abgelegt hat; ein Sprachwechsel oder die Weitergabe an eine
+  Lehrkraft mit anderer Sprache darf das nicht brechen. Der *Inhalt* der Dateien darf in der
+  Sprache der Lehrkraft stehen.
+- **Skill-Dateinamen sind englisch** (z. B. `reference/question-types.md`), weil sie über
+  `get_skill(name)` Teil des Werkzeugvertrags sind. Der Inhalt des Korpus bleibt vorerst
+  deutsch (siehe oben); die Übersetzung des Korpus ist eine eigene Aufgabe.
+- Bestehende deutsche Ordner im Kontextbereich werden einmalig umbenannt (bisher nur
+  Testkonten).
