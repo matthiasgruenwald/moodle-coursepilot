@@ -128,6 +128,14 @@ Bau-Reihenfolge.
 
 - **Ablösen** (`replaces_cmid`): Die neue Aktivität kommt direkt hinter die alte; die alte
   wird nur versteckt (Titel bleibt).
+  Wiederholtes Überarbeiten läuft als Kette (A → B → C, sichtbar nur die neueste). Zwei
+  Hinweise, kein Blockieren (Entscheidung 2026-10-02, #600):
+  - Ist die Vorlage schon abgelöst, nennen Planvorschau und Antwort die Nachfolgerin und
+    fragen, ob stattdessen sie ersetzt werden soll. Der Aufruf läuft trotzdem durch.
+  - Bei jeder Ablösung nennen sie die Zahl der versteckten Vorgänger, mit Aufräum-Hinweis;
+    keine Schwelle.
+  Ein erneuter Versuch nach einer Fehlanlage braucht keine Sonderbehandlung, weil die
+  Fehlanlage nichts hinterlässt.
 - **Antwort** von `create_activity_from_xml`: cmid, dazu Moodle-Vorbelegungen als Hinweis,
   also Felder, die Moodle ergänzt hat, ohne dass sie in der Eingabe standen.
 - **Nutzerdaten-Inhalte** gehen nicht mit, weil `MODE_IMPORT` `users=0` erzwingt. Ein
