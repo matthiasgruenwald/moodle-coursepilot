@@ -1481,7 +1481,7 @@ Eine installierte Aktivitätsart ohne Feldkatalog, die sich Coursepilot über di
 _Avoid_: erschlossene Art als „unterstützt" bezeichnen, Ablage-Wissen ins Plugin übernehmen ohne Feldkatalog
 
 **Ausgeschlossene Aktivitätsart**:
-Eine Aktivitätsart, die weder katalogisiert ist noch über Aktivitäts-XML angelegt werden darf: lesson, quiz, Arten mit Dateien im Inhalt und Arten ohne Moodle-Backup. Coursepilot nennt den Grund.
+Eine Aktivitätsart, die weder katalogisiert ist noch über Aktivitäts-XML angelegt werden darf: lesson, quiz, Arten mit Dateien im Inhalt und Arten ohne Moodle-Backup. Coursepilot nennt den Grund. Arten mit Dateien im Inhalt sind nur vorläufig ausgeschlossen, bis der Datei-Nachtrag sie samt Dateien und zugehörigen Texten anlegen kann; vorher gelten sie nicht als erschlossen.
 _Avoid_: ausgeschlossene Art stillschweigend übergehen, Ausschluss als Positivliste führen
 
 **Aktivitätsart-Ablage**:

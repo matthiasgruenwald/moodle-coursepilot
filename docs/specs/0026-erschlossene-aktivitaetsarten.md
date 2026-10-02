@@ -61,8 +61,9 @@ Bau-Reihenfolge.
    - *erschlossen*,
    - *ausgeschlossen* (mit Grund als Sprachschlüssel).
 
-   Ausgeschlossen sind lesson, quiz, Arten mit Dateien im Inhalt und Arten ohne
-   `FEATURE_BACKUP_MOODLE2`. Keine Positivliste. Die fünf verstreuten
+   Ausgeschlossen sind lesson, quiz, Arten mit Dateien im Inhalt (`scorm`, `imscp`,
+   `h5pactivity`, `lightboxgallery`; vorläufig bis zum Datei-Nachtrag #598, ADR 0028
+   Nachtrag 2026-10-02) und Arten ohne `FEATURE_BACKUP_MOODLE2`. Keine Positivliste. Die fünf verstreuten
    `unknownmodname`-Prüfungen (`create_module`, `set_completion`,
    `restore_activity_version`, `update_module_settings`, `set_restriction`) werden zu einem
    Aufruf `registry::require_catalogued()`. Die neuen Werkzeuge lehnen katalogisierte Arten
@@ -173,4 +174,6 @@ Bau-Reihenfolge.
 - „Ersetzen“ (Überschreiben mit Sicherung und Verweisauflösung).
 - Nutzerdaten-Inhalte, etwa Glossar-Einträge — eigenes Ticket (#593), kein Seam auf Vorrat.
 - Textlinks (`view.php?id=`) im Verweis-Finder — erst bei Bedarf.
-- Arten mit Dateien im Inhalt sowie lesson und quiz.
+- lesson und quiz.
+- Arten mit Dateien im Inhalt — Datei-Nachtrag als eigenes Ticket (#598), Lightboxgallery
+  mit Bildunterschriften (#599).

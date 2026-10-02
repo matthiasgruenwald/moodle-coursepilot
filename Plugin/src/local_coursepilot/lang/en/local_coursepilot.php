@@ -461,7 +461,7 @@ $string['privacy:metadata:webdav_external_storage:path'] = 'The file and folder 
 $string['privacy:metadata:webdav_external_storage:content'] = 'The file content, including any marked personal data such as names from learning group profiles.';
 
 // Field catalog (#379).
-$string['kindexcludedfiles'] = 'This activity type keeps files in its content, which cannot be created from XML.';
+$string['kindexcludedfiles'] = 'This activity type needs files in its content. Creating it from XML is not available yet, because files cannot be added from the material store so far.';
 $string['kindexcludednobackup'] = 'This activity type does not support Moodle backup, so it cannot be created from XML.';
 $string['kindexcludedquestions'] = 'This activity type contains questions and cannot be created from XML.';
 $string['defaultactivitycatalogued'] = 'Activity type "{$a->modname}" is catalogued: create it with coursepilot_create_module (see coursepilot_describe_module_fields), not from XML.';

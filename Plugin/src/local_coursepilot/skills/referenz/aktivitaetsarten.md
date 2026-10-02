@@ -20,7 +20,7 @@ Eine Aktivitätsart ist genau eine von drei:
 |---|---|
 | **katalogisiert** (hat einen Feldkatalog, z. B. `page`, `label`, `assign`, `url`) | `coursepilot_create_module`. Dieser Referenzteil gilt nicht. |
 | **erschlossen** (installiert, ohne Feldkatalog, z. B. `book`, `checklist`, `glossary`) | Dieser Referenzteil: anlegen aus Aktivitäts-XML. |
-| **ausgeschlossen** (`lesson`, `quiz`, Arten mit Dateien im Inhalt, Arten ohne Moodle-Backup) | Coursepilot legt sie nicht an. Das Werkzeug nennt den Grund; gib ihn der Lehrkraft weiter und schlage vor, die Aktivität in Moodle selbst anzulegen. |
+| **ausgeschlossen** (`lesson`, `quiz`, Arten mit Dateien im Inhalt wie `scorm`, `imscp`, `h5pactivity`, `lightboxgallery`, Arten ohne Moodle-Backup) | Coursepilot legt sie nicht an. Das Werkzeug nennt den Grund; gib ihn der Lehrkraft weiter und schlage vor, die Aktivität in Moodle selbst anzulegen. Bei Arten mit Dateien sag dazu, dass Coursepilot sie noch nicht mit ihren Dateien anlegen kann. |
 
 `coursepilot_create_activity_from_xml` und `coursepilot_export_default_activity`
 lehnen katalogisierte und ausgeschlossene Arten selbst ab und nennen den Weg.

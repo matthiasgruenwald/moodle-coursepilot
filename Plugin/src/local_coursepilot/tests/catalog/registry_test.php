@@ -55,6 +55,7 @@ final class registry_test extends \advanced_testcase {
             'lesson' => ['lesson', 'kindexcludedquestions'],
             'scorm files' => ['scorm', 'kindexcludedfiles'],
             'imscp files' => ['imscp', 'kindexcludedfiles'],
+            'lightboxgallery files' => ['lightboxgallery', 'kindexcludedfiles'],
             'no backup support' => ['nosuchmod', 'kindexcludednobackup'],
         ];
     }

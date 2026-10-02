@@ -26,7 +26,8 @@ anlegt und damit nichts ändern kann. Das Anlegen war nie verworfen. Der Prototy
 gesperrt; dort gilt weiter ADR 0016.
 
 - **Keine Positivliste.** Zugelassen ist jede installierte Art ohne Feldkatalog, außer Arten
-  mit Fragen (lesson, quiz) und Arten mit Dateien im Inhalt.
+  mit Fragen (lesson, quiz) und Arten mit Dateien im Inhalt. Letztere sind nur vorläufig
+  gesperrt (siehe Nachtrag 2026-10-02).
 - **Round-Trip-Prüfung statt Zusage.** Nach dem Anlegen exportiert das Plugin die Aktivität
   und prüft Eingabe ⊆ Ausgabe. Ids, `time*`, contextid und Datei-Verweise bleiben
   unberücksichtigt. Moodle-Vorbelegungen gehen als Hinweis zurück.
@@ -61,3 +62,18 @@ gesperrt; dort gilt weiter ADR 0016.
 - Der Formularweg bleibt für katalogisierte Arten unverändert. Der Verlauf kennt einen
   weiteren Schreibweg und schreibt dort ausdrücklich mit.
 - Ergänzt ADR 0016, ohne sie aufzuheben.
+
+## Nachtrag 2026-10-02: Arten mit Dateien im Inhalt
+
+Entscheidung der Lehrkraft nach der Umsetzung (#585):
+
+- **Kein dauerhafter Ausschluss.** `scorm`, `imscp`, `h5pactivity` und `lightboxgallery`
+  sollen über einen **Datei-Nachtrag** erschlossen werden (#598): Nach dem Round-Trip und vor
+  dem Sichtbarschalten füllt der Server die Dateibereiche aus Materialpfaden.
+- **Dateiinhalte kommen nie in den KI-Kontext.** Die KI nennt Pfade, der Server kopiert
+  (`material_files::resolve_into_draft`). Paketdateien sind zulässig, solange sie ohne Laden
+  der Dateiinhalte in den Kontext entstehen oder übernommen werden.
+- **Erschlossen heißt vollständig.** Eine Art gilt erst als erschlossen, wenn auch ihre Dateien
+  und die zugehörigen Texte mitkommen. Für die Lightboxgallery heißt das: Bilder samt
+  Bildunterschriften (#599). Bis dahin bleiben die vier Arten mit dem Grund „Datei-Nachtrag
+  fehlt“ gesperrt.

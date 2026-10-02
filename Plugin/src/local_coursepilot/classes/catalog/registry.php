@@ -66,8 +66,11 @@ final class registry {
     /** Arten mit Fragen (Spec 0026): nie ueber Aktivitaets-XML. */
     private const EXCLUDED_QUESTIONS = ['lesson', 'quiz'];
 
-    /** Arten mit Dateien im Inhalt (Spec 0026): Restore aus XML traegt keine Dateien. */
-    private const EXCLUDED_FILES = ['scorm', 'imscp', 'h5pactivity'];
+    /**
+     * Arten mit Dateien im Inhalt (Spec 0026): Restore aus XML traegt keine
+     * Dateien. Gesperrt, bis der Datei-Nachtrag (#598) sie erschliesst.
+     */
+    private const EXCLUDED_FILES = ['scorm', 'imscp', 'h5pactivity', 'lightboxgallery'];
 
     /**
      * Art-Tor (ADR 0028): genau eine von drei Arten.
