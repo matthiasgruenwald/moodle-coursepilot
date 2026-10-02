@@ -302,3 +302,8 @@ table.tools td:last-child code {
   margin: 0.1rem 0;
   overflow-wrap: anywhere;
 }
+
+/* Tall client screenshots (menus, dialogs) stay readable without filling the page */
+.screenshot img.narrow {
+  max-width: min(100%, 24rem);
+}

@@ -52,23 +52,35 @@
     </figure>
 
     <h2 id="claude">Connector in Claude einrichten</h2>
-    <p>Gilt für claude.ai im Browser und die Claude-Desktop-App. Eigene Connectoren gibt es in allen Tarifen; im kostenlosen Tarif ist nur einer möglich.</p>
+    <p>Gilt für claude.ai im Browser und die Claude-Desktop-App. Eigene Connectoren gibt es in allen Tarifen; im kostenlosen Tarif ist nur einer möglich. Die roten Rahmen in den Bildern markieren, wo du klickst.</p>
     <ol class="steps">
-      <li>Öffne in Claude <em>Customize › Connectors</em>.</li>
-      <li>Wähle <em>+ Add</em> › <em>Add custom connector</em>.</li>
-      <li>Trag als Name <code>Coursepilot</code> und deine Anschlussadresse ein und speichere.</li>
-      <li>Wähle <em>Connect</em>. Es öffnet sich die Moodle-Seite „Coursepilot verbinden“: Melde dich an und wähle <em>Verbindung erlauben</em>.</li>
+      <li>Klick unten links auf deinen Namen und wähle <em>Einstellungen</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/claude-1.png" class="narrow" alt="Claude-Kontomenü mit markiertem Eintrag Einstellungen" loading="lazy">
+          <figcaption>Claude: Kontomenü unten links, „Einstellungen“.</figcaption>
+        </figure>
+      </li>
+      <li>Wähl links <em>Konnektoren</em>, dann oben rechts <em>Hinzufügen</em> › <em>Benutzerdefinierten Connector hinzufügen</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/claude-2.png" alt="Claude-Einstellungen, Bereich Konnektoren, Menü Hinzufügen mit Benutzerdefinierten Connector hinzufügen" loading="lazy">
+          <figcaption>Claude: Konnektoren › Hinzufügen › Benutzerdefinierten Connector hinzufügen.</figcaption>
+        </figure>
+      </li>
+      <li>Trag als Name <code>Coursepilot</code> und deine Anschlussadresse ein, dann <em>Weiter</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/claude-3.png" class="narrow" alt="Dialog Benutzerdefinierten Connector hinzufügen mit Name Coursepilot und Anschlussadresse" loading="lazy">
+          <figcaption>Claude: Name und Anschlussadresse eintragen, „Weiter“.</figcaption>
+        </figure>
+      </li>
+      <li>Claude erkennt die Anmeldung selbst: <em>Jetzt anmelden</em> und <em>Automatisch registrieren</em> sind schon gewählt. Klick auf <em>Hinzufügen</em>. Es öffnet sich die Moodle-Seite „Coursepilot verbinden“: Melde dich an und wähle <em>Verbindung erlauben</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/claude-4.png" class="narrow" alt="Zweiter Schritt des Dialogs mit Authentifizierung Jetzt anmelden, OAuth-Client Automatisch registrieren und Knopf Hinzufügen" loading="lazy">
+          <figcaption>Claude: Anmeldung und OAuth-Client wie erkannt lassen, „Hinzufügen“.</figcaption>
+        </figure>
+      </li>
       <li>Prüf im Chat über das Werkzeug-Menü, dass Coursepilot eingeschaltet ist.</li>
     </ol>
-    <figure class="screenshot">
-      <div class="placeholder">Screenshot folgt</div>
-      <figcaption>Claude: Dialog „Add custom connector“ mit Name und Anschlussadresse.</figcaption>
-    </figure>
-    <figure class="screenshot">
-      <div class="placeholder">Screenshot folgt</div>
-      <figcaption>Claude: Coursepilot im Werkzeug-Menü des Chats eingeschaltet.</figcaption>
-    </figure>
-    <p><strong>Team- oder Enterprise-Konto:</strong> Dort legt die Organisations-Verwaltung den Connector einmal an (<em>Organization settings › Connectors</em>). Danach verbindest du dich selbst unter <em>Customize › Connectors</em>.</p>
+    <p><strong>Team- oder Enterprise-Konto:</strong> Dort legt die Organisations-Verwaltung den Connector einmal an. Danach verbindest du dich selbst unter <em>Einstellungen › Konnektoren</em>.</p>
     <p><strong>Claude Code</strong> (Terminal): <code>claude mcp add --transport http coursepilot https://&lt;moodle-adresse&gt;/local/coursepilot/mcp.php</code>, danach rufst du in Claude Code <code>/mcp</code> auf und meldest dich an.</p>
 
     <h2 id="chatgpt">Connector in ChatGPT einrichten</h2>
@@ -92,16 +104,37 @@
     </figure>
 
     <h2 id="codex">Coursepilot in Codex einbinden</h2>
-    <p>Codex (Kommandozeile, Editor-Erweiterung, ChatGPT-Desktop-App) ist in allen ChatGPT-Tarifen enthalten und teilt seine Einstellungen über die Datei <code>~/.codex/config.toml</code>.</p>
-    <p><strong>Kommandozeile:</strong></p>
+    <p>Codex ist in allen ChatGPT-Tarifen enthalten. Am einfachsten geht es in der ChatGPT-Desktop-App im Codex-Modus; Kommandozeile und Editor-Erweiterung teilen dieselbe Einstellung (<code>~/.codex/config.toml</code>).</p>
+    <ol class="steps">
+      <li>Wechsle oben links von <em>ChatGPT</em> zu <em>Codex</em> und öffne <em>Plugins</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/codex-1.png" class="narrow" alt="ChatGPT-Desktop-App mit Auswahl Codex und dem Eintrag Plugins" loading="lazy">
+          <figcaption>Codex: oben links „Codex“ wählen, dann „Plugins“.</figcaption>
+        </figure>
+      </li>
+      <li>Wähl oben rechts <em>Hinzufügen</em> › <em>Benutzerdefinierten MCP-Server erstellen</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/codex-2.png" alt="Plugins-Seite mit Menü Hinzufügen und Eintrag Benutzerdefinierten MCP-Server erstellen" loading="lazy">
+          <figcaption>Codex: Hinzufügen › Benutzerdefinierten MCP-Server erstellen.</figcaption>
+        </figure>
+      </li>
+      <li>Trag als Name <code>coursepilot</code> ein, wähl bei <em>Verbindung</em> <em>Server-URL</em> und trag deine Anschlussadresse ein. <em>Authentifizierung</em> bleibt <em>OAuth</em>. Setz das Häkchen bei „Ich habe das verstanden und möchte weitermachen“ und klick <em>Als Plugin erstellen</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/codex-3.png" class="narrow" alt="Formular Benutzerdefinierten MCP-Server erstellen mit Name, Server-URL, OAuth, Häkchen und Knopf Als Plugin erstellen" loading="lazy">
+          <figcaption>Codex: Name, Server-URL, Häkchen, „Als Plugin erstellen“.</figcaption>
+        </figure>
+      </li>
+      <li>Im Fenster „coursepilot verbinden“ klickst du <em>Weiter zu coursepilot</em>. Es öffnet sich die Moodle-Seite „Coursepilot verbinden“: Melde dich an und wähle <em>Verbindung erlauben</em>.
+        <figure class="screenshot">
+          <img src="../assets/img/codex-4.png" class="narrow" alt="Fenster coursepilot verbinden mit Knopf Weiter zu coursepilot" loading="lazy">
+          <figcaption>Codex: „Weiter zu coursepilot“, danach in Moodle erlauben.</figcaption>
+        </figure>
+      </li>
+    </ol>
+    <p><strong>Kommandozeile</strong> statt App:</p>
     <div class="prompt"><pre><code>codex mcp add coursepilot --url https://&lt;moodle-adresse&gt;/local/coursepilot/mcp.php
 codex mcp login coursepilot</code></pre></div>
-    <p>Der zweite Befehl öffnet den Browser mit der Moodle-Seite „Coursepilot verbinden“: Melde dich an und wähle <em>Verbindung erlauben</em>.</p>
-    <p><strong>Editor-Erweiterung:</strong> <em>Settings › MCP servers › Add server</em>, Typ <em>Streamable HTTP</em>, Anschlussadresse eintragen, danach anmelden.</p>
-    <figure class="screenshot">
-      <div class="placeholder">Screenshot folgt</div>
-      <figcaption>Codex: Coursepilot als MCP-Server eingetragen und angemeldet.</figcaption>
-    </figure>
+    <p>Der zweite Befehl öffnet den Browser mit der Moodle-Seite „Coursepilot verbinden“.</p>
 
     <h2 id="andere">Andere MCP-Clients</h2>
     <p>Jeder Client, der entfernte MCP-Server mit Anmeldung unterstützt, funktioniert nach demselben Muster:</p>
