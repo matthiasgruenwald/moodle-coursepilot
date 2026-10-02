@@ -65,17 +65,17 @@ Discovery follows RFC 8414 and RFC 9728. Both work without a web server change, 
 
 Tested combinations (full native PHPUnit suite in CI): **Moodle 5.0 and Moodle 5.1**
 (`MOODLE_500_STABLE`, `MOODLE_501_STABLE`), each with **PHP 8.4 and MariaDB 11**.
-`version.php` requires Moodle 5.0 or later as a floor. No other Moodle, PHP or database
+`version.php` requires Moodle 5.0 or later as a floor. PHP 8.2 is the minimum
+(Moodle 5.0's own floor); PHP 8.4 is recommended and is what CI verifies. No other Moodle, PHP or database
 combination (for example PostgreSQL) has been verified.
 
 ## Language
 
-Moodle-facing strings ship in English only (`lang/en/`); this is the base language, and
-translations (including German) are expected to follow through
-[AMOS](https://lang.moodle.org/) after release rather than being bundled in the package. The
-teacher-facing skill corpus (`skills/`) is German prose, not a Moodle string, and is not
-covered by AMOS — it stays German for now (see
-`docs/adr/0024-englische-basis-und-komponente-coursepilot.md`).
+English is the base language (`lang/en/`). Until the plugin is listed in the Moodle
+plugins directory, a complete German translation ships temporarily in `lang/de/`; once
+[AMOS](https://lang.moodle.org/) carries the translations, the bundled `lang/de/` is
+removed (issue #189). The teacher-facing skill corpus (`skills/`) is not a Moodle string and
+is not covered by AMOS (see `docs/adr/0024-englische-basis-und-komponente-coursepilot.md`).
 
 ### WebDAV storage behind a reverse proxy
 
@@ -92,8 +92,8 @@ for everyone, including teachers whose storage is configured correctly.
 
 ## Status
 
-Alpha. The plugin is in real teaching use by its author; it has not yet been through a
-production deployment at another school.
+Beta (`2.0.0-beta`). The plugin is in real teaching use by its author; it has not yet been
+through a production deployment at another school.
 
 ## Development
 

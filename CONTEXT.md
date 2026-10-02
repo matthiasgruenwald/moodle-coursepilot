@@ -882,6 +882,18 @@ _Avoid_: vorgefundenen Stand als Entstehung darstellen, alle Bestandsaktivitäte
 Änderungen an einer Aktivität, die kein Moodle-Ereignis auslösen und deshalb im Änderungsverlauf fehlen — Testinhalte jenseits der Fragenanordnung, das Notenbuch, das Zurückspielen einer Sicherung, direkte Eingriffe in die Datenbank. Die Lücke ist erkennbar, aber nicht schließbar; aufgefangen wird sie durch den Vergleich des geplanten Standes mit dem Kurs-Ist.
 _Avoid_: Lückenlosigkeit des Verlaufs behaupten, Lücke verschweigen, Verlauf als Prüfnachweis anbieten
 
+**Einstiegsprompt**:
+Ein fertig formulierter Satz in der Lehrkraft-Anleitung, den die Lehrkraft in ihren KI-Client kopiert, um einen Anwendungsfall zu beginnen (Abschnitt planen, Test anlegen, Material einbinden). Er ist ein Startpunkt, kein Ablaufskript: den weiteren Weg führt der **Skill-Korpus**.
+_Avoid_: Prompt-Vorlage (kollidiert mit der Gestaltungsvorlage `vorlagen.md`), Rezept, Prompt-Baustein
+
+**Lehrkraft-Anleitung**:
+Die HTML-Anleitung für Lehrkräfte: Einrichten (Connector je KI-Client, WebDAV), erste Schritte (Kontext, Gestaltungsvorlage) und **Einstiegsprompts** zum Kopieren. Teil der **Dokumentationsseite**; zuerst deutsch, dann englisch.
+_Avoid_: README als Lehrkraft-Doku, Anleitung nur für einen KI-Client
+
+**Dokumentationsseite**:
+Die veröffentlichte Projektdoku, gegliedert nach Zielgruppe — Lehrkräfte, Admins, Entwickler — mit einer Übersicht der Besonderheiten für Außenstehende.
+_Avoid_: Doku nach Dateien statt nach Zielgruppe gliedern
+
 ## Relationships
 
 - Ein **Bestehender Kurs** ist die Voraussetzung fuer jede **Kursbefuellung**
