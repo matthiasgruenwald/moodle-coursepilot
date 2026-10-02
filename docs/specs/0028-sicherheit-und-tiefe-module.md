@@ -3,6 +3,9 @@
 Stand: 02.10.2026. Grundlage: Review von dev bei
 e69f2462e12e7a40ad3b1dd538110015b4673def.
 
+Umsetzungsissue: [#631](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/631)
+(ready-for-agent).
+
 Diese versionierte Spezifikation wird vollständig als GitHub-Umsetzungsissue mit
 ready-for-agent veröffentlicht. Issue und Dokument tragen denselben Vertrag.
 
