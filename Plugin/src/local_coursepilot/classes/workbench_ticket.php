@@ -104,7 +104,7 @@ final class workbench_ticket {
      * Datenbankzugriff, damit eine global gesperrte Instanz kein einziges
      * Ticket verbraucht), Ticket bekannt (und verbraucht es sofort - ab hier
      * ist es weg, unabhaengig vom Ausgang der folgenden Pruefungen), Ablauf,
-     * Bestand der ausstellenden Verbindung, aktives Konto, unveraenderter
+     * Bestand der ausstellenden Verbindung, aktives Konto, Fernzugriffsfreigabe, unveraenderter
      * `contenthash`.
      *
      * @param string $secret Das Ticketgeheimnis aus der URL.
@@ -112,7 +112,7 @@ final class workbench_ticket {
      *         content: string, size: int}
      * @throws workbench_ticket_redemption_failed remoteaccessdisabled, workbenchticketinvalid,
      *         workbenchticketexpired, workbenchticketconnectionrevoked,
-     *         workbenchticketaccountinactive, workbenchticketcontentchanged
+     *         workbenchticketaccountinactive, remoteaccessnotgranted, workbenchticketcontentchanged
      */
     public static function redeem(string $secret): array {
         global $DB;
@@ -179,6 +179,12 @@ final class workbench_ticket {
         $user = $DB->get_record('user', ['id' => (int) $ticket->userid, 'deleted' => 0, 'suspended' => 0]);
         if (!$user) {
             throw new workbench_ticket_redemption_failed('workbenchticketaccountinactive', $ticket->path);
+        }
+
+        // The anonymous download request is not the permission identity.
+        // A ticket never outlives its owner's remote access grant (ADR 0026).
+        if (!remote_access::is_granted((int) $ticket->userid)) {
+            throw new workbench_ticket_redemption_failed('remoteaccessnotgranted', $ticket->path);
         }
     }
 

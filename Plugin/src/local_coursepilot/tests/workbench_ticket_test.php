@@ -50,6 +50,7 @@ final class workbench_ticket_test extends \advanced_testcase {
         $this->assertSame(sha1('hallo welt'), $link['sha1']);
         $this->assertStringContainsString('/local/coursepilot/workbench/download.php?ticket=', $link['url']);
 
+        $this->setUser();
         $delivery = workbench_ticket::redeem($this->secret_from_url($link['url']));
 
         $this->assertSame('hallo welt', $delivery['content']);
@@ -324,15 +325,68 @@ final class workbench_ticket_test extends \advanced_testcase {
         );
     }
 
+    public function test_cohort_removal_blocks_anonymous_redemption_with_active_token(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/cohort/lib.php');
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $cohort = $this->getDataGenerator()->create_cohort(['contextid' => \context_system::instance()->id]);
+        cohort_add_member($cohort->id, $user->id);
+        set_config('remoteaccesscohorts', (string) $cohort->id, 'local_coursepilot');
+        $tokenid = $this->issue_connection((int) $user->id, false);
+        $this->store('blatt.pdf', 'private bytes');
+        $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
+
+        cohort_remove_member($cohort->id, $user->id);
+        $this->setUser();
+        $this->assertTrue(oauth_lib::connection_active($tokenid));
+        $this->expectException(workbench_ticket_redemption_failed::class);
+        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('remoteaccessnotgranted', 'local_coursepilot'), '/') . '/');
+        workbench_ticket::redeem($secret);
+    }
+
+    public function test_capability_removal_blocks_redemption_despite_granted_request_user(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $course = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'editingteacher');
+        $roleid = $this->grant_remote_access((int) $user->id);
+        $this->setUser($user);
+        $tokenid = $this->issue_connection((int) $user->id, false);
+        $this->store('blatt.pdf', 'private bytes');
+        $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
+
+        unassign_capability(remote_access::CAPABILITY, $roleid, \context_system::instance()->id);
+        accesslib_clear_all_caches(true);
+        $this->setAdminUser();
+        $this->assertTrue(remote_access::is_granted());
+        $this->assertTrue(oauth_lib::connection_active($tokenid));
+        $this->assertTrue(has_capability('local/coursepilot:use', \context_course::instance($course->id), $user->id));
+        $this->expectException(workbench_ticket_redemption_failed::class);
+        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('remoteaccessnotgranted', 'local_coursepilot'), '/') . '/');
+        workbench_ticket::redeem($secret);
+    }
+
+    private function grant_remote_access(int $userid): int {
+        $roleid = create_role('Remote access', 'remote' . $userid, '', '');
+        assign_capability(remote_access::CAPABILITY, CAP_ALLOW, $roleid, \context_system::instance()->id, true);
+        role_assign($roleid, $userid, \context_system::instance()->id);
+        return $roleid;
+    }
+
     private function secret_from_url(string $url): string {
         $query = parse_url($url, PHP_URL_QUERY);
         parse_str((string) $query, $params);
         return (string) $params['ticket'];
     }
 
-    private function issue_connection(int $userid): int {
+    private function issue_connection(int $userid, bool $grant = true): int {
         global $DB;
 
+        if ($grant) {
+            $this->grant_remote_access($userid);
+        }
         $accesstoken = oauth_lib::random_token(32);
         $record = new \stdClass();
         $record->accesstokenhash = hash('sha256', $accesstoken);

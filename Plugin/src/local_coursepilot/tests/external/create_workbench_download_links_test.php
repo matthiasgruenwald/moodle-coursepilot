@@ -102,6 +102,9 @@ final class create_workbench_download_links_test extends \advanced_testcase {
     private function issue_connection(int $userid): int {
         global $DB;
 
+        $roleid = create_role('Remote access', 'remote' . $userid, '', '');
+        assign_capability(\local_coursepilot\remote_access::CAPABILITY, CAP_ALLOW, $roleid, \context_system::instance()->id, true);
+        role_assign($roleid, $userid, \context_system::instance()->id);
         $record = new \stdClass();
         $record->accesstokenhash = hash('sha256', oauth_lib::random_token(32));
         $record->refreshtokenhash = hash('sha256', oauth_lib::random_token(32));
