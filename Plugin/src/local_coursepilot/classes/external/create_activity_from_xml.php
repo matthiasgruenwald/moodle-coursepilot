@@ -47,8 +47,8 @@ final class create_activity_from_xml extends external_api {
             'section' => new external_value(PARAM_INT, 'Section number (0 = general section)'),
             'activity_xml' => new external_value(PARAM_RAW, 'Activity XML (<module>.xml of a backup), e.g. from coursepilot_export_default_activity'),
             'hidden' => new external_value(PARAM_BOOL, 'Leave the activity hidden after the check', VALUE_DEFAULT, false),
-            'dry_run' => new external_value(PARAM_BOOL, 'Only with replaces_cmid: write nothing, return the references to the old activity (plan preview)', VALUE_DEFAULT, false),
             'replaces_cmid' => new external_value(PARAM_INT, 'Supersede this activity (same type, same course): the new one is placed directly behind it, the old one is only hidden. 0 = create only', VALUE_DEFAULT, 0),
+            'dry_run' => new external_value(PARAM_BOOL, 'Only with replaces_cmid: write nothing, return the references to the old activity (plan preview)', VALUE_DEFAULT, false),
         ]);
     }
 

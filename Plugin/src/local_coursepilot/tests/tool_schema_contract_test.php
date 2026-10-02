@@ -101,6 +101,26 @@ final class tool_schema_contract_test extends \advanced_testcase {
         }
     }
 
+    /** Moodle passes validated named inputs positionally, in declaration order. */
+    public function test_registered_external_parameters_match_execute_positions(): void {
+        foreach (tool_registry::service_function_names() as $name) {
+            $function = \core_external\external_api::external_function_info($name);
+            $method = new \ReflectionMethod($function->classname, $function->methodname);
+            $arguments = $method->getParameters();
+            $declarations = $function->parameters_desc->keys;
+            $this->assertCount(count($arguments), $declarations, $name);
+            foreach (array_values($declarations) as $position => $declaration) {
+                $key = array_keys($declarations)[$position];
+                $argument = $arguments[$position];
+                $this->assertSame(str_replace('_', '', $key), str_replace('_', '', strtolower($argument->getName())),
+                    "{$name}: parameter {$key} does not match execute position {$position}");
+                if ($declaration->required === VALUE_DEFAULT && $argument->isDefaultValueAvailable()) {
+                    $this->assertSame($declaration->default, $argument->getDefaultValue(), "{$name}: {$key} default");
+                }
+            }
+        }
+    }
+
     /**
      * Der oeffentliche MCP-Vertrag ist englisch: dieselbe Begriffsmenge gilt
      * fuer Eingaben und alle verschachtelten Rueckgabefelder.

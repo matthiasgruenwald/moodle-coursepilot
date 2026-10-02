@@ -100,6 +100,102 @@ final class dispatcher_test extends \advanced_testcase {
         return array_merge(['origin' => null, 'pathinfo' => '', 'method' => 'POST'], $overrides);
     }
 
+    /** Named MCP inputs must survive Moodle's positional External invocation (#633). */
+    public function test_xml_preview_requires_predecessor_without_mutation(): void {
+        $this->resetAfterTest();
+        [$token, $arguments] = $this->xml_supersede_fixture();
+        unset($arguments['replaces_cmid']);
+        $before = $this->xml_mutation_state();
+        $response = $this->xml_call($token, $arguments + ['dry_run' => true]);
+        $this->assertTrue($response['isError'] ?? false, json_encode($response));
+        $this->assertStringContainsString('dry_run needs replaces_cmid', json_encode($response));
+        $this->assertEquals($before, $this->xml_mutation_state());
+    }
+
+    public function test_xml_preview_with_predecessor_one_changes_no_modules_files_visibility_or_history(): void {
+        $this->resetAfterTest();
+        [$token, $arguments, $other] = $this->xml_supersede_fixture();
+        $this->assertSame(1, $arguments['replaces_cmid']);
+        $before = $this->xml_mutation_state();
+        // Deliberately reverse input order: only declaration order may govern positional invocation.
+        $response = $this->xml_call($token, array_reverse($arguments + ['dry_run' => true, 'hidden' => true], true));
+        $this->assertFalse($response['isError'] ?? false, json_encode($response));
+        $result = $response['structuredContent'];
+        $this->assertSame(0, $result['cmid']);
+        $this->assertSame($other->cmid, $result['references'][0]['location_id']);
+        $this->assertEquals($before, $this->xml_mutation_state());
+    }
+
+    public function test_xml_regular_supersede_keeps_predecessor_and_only_changes_intended_objects(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$token, $arguments, $other] = $this->xml_supersede_fixture();
+        $before = $this->xml_mutation_state();
+        $oldbook = $DB->get_record('book', ['id' => $before['course_modules'][1]->instance], '*', MUST_EXIST);
+        $response = $this->xml_call($token, $arguments + ['hidden' => true, 'dry_run' => false]);
+        $this->assertFalse($response['isError'] ?? false, json_encode($response));
+        $new = $response['structuredContent']['cmid'];
+        $this->assertGreaterThan(1, $new);
+        $this->assertSame(count($before['course_modules']) + 1, $DB->count_records('course_modules'));
+        $this->assertSame(0, (int) $DB->get_field('course_modules', 'visible', ['id' => 1], MUST_EXIST));
+        $this->assertSame(0, (int) $DB->get_field('course_modules', 'visible', ['id' => $new], MUST_EXIST));
+        $afterbook = $DB->get_record('book', ['id' => $oldbook->id], '*', MUST_EXIST);
+        // Moodle updates the modification timestamp when visibility changes.
+        unset($oldbook->timemodified, $afterbook->timemodified);
+        $this->assertEquals($oldbook, $afterbook);
+        $this->assertEquals($before['course_modules'][$other->cmid],
+            $DB->get_record('course_modules', ['id' => $other->cmid], '*', MUST_EXIST));
+        $this->assertEquals($before['files'], $DB->get_records('files', null, 'id'));
+        $oldsection = $before['course_modules'][1]->section;
+        $sequence = explode(',', $DB->get_field('course_sections', 'sequence', ['id' => $oldsection], MUST_EXIST));
+        $this->assertSame((string) $new, $sequence[array_search('1', $sequence, true) + 1]);
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['cmid' => $new]));
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['cmid' => 1]));
+    }
+
+    /** Synthetic first module has the historically dangerous truthy cmid 1. */
+    private function xml_supersede_fixture(): array {
+        global $DB;
+        [$teacher, $token] = $this->create_authenticated_user();
+        $course = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        // PHPUnit deliberately offsets sequences; request a genuine first cmid in this isolated fixture.
+        $DB->get_manager()->reset_sequence('course_modules');
+        $book = $this->getDataGenerator()->create_module('book', ['course' => $course->id]);
+        $this->assertSame(1, (int) $book->cmid);
+        $xml = \local_coursepilot\external\export_default_activity::execute($course->id, 'book')['xml'];
+        $other = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $DB->set_field('course_modules', 'availability',
+            json_encode(['op' => '&', 'c' => [['type' => 'completion', 'cm' => 1, 'e' => 1]], 'showc' => [true]]),
+            ['id' => $other->cmid]);
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_module::instance(1)->id, 'component' => 'mod_book', 'filearea' => 'intro',
+            'itemid' => 0, 'filepath' => '/', 'filename' => 'synthetic.txt',
+        ], 'synthetic content');
+        return [$token, ['courseid' => (int) $course->id, 'modname' => 'book', 'section' => 1,
+            'activity_xml' => $xml, 'replaces_cmid' => 1], $other];
+    }
+
+    private function xml_call(string $token, array $arguments): array {
+        $response = dispatcher::handle(['id' => 1, 'method' => 'tools/call',
+            'params' => ['name' => 'coursepilot_create_activity_from_xml', 'arguments' => $arguments]],
+            $token, $this->headers());
+        $this->assertSame(200, $response['status']);
+        return $response['body']['result'];
+    }
+
+    /** Snapshot durable activity state; ordinary access auditing is allowed. */
+    private function xml_mutation_state(): array {
+        global $DB;
+        $result = [];
+        foreach (['course_modules', 'course_sections', 'book', 'book_chapters', 'files',
+                'local_coursepilot_cm_version', 'local_coursepilot_cm_file', 'local_coursepilot_cm_version_file'] as $table) {
+            $result[$table] = $DB->get_records($table, null, 'id');
+        }
+        return $result;
+    }
+
     /** History never exposes submission metadata or profile values, including legacy rows. */
     public function test_history_comparison_protects_current_and_legacy_data(): void {
         global $DB, $CFG;
