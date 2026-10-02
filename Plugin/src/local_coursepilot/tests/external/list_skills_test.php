@@ -26,9 +26,12 @@ use PHPUnit\Framework\Attributes\CoversClass;
 
 defined('MOODLE_INTERNAL') || die();
 
+global $CFG;
+require_once($CFG->dirroot . '/cohort/lib.php');
+
 /**
  * Der Skill-Korpus-Katalog (Spec 0020 §4, Issue #450): ohne Kursbindung,
- * 'local/coursepilot:use' im Systemkontext genuegt.
+ * die Fernzugriffsfreigabe genuegt (Issue #630).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -45,7 +48,7 @@ final class list_skills_test extends \advanced_testcase {
     public function test_lists_catalog_without_course_binding(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         $result = list_skills::execute();
@@ -64,13 +67,18 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne 'local/coursepilot:use' im Systemkontext wird abgewiesen.
+     * Ohne Fernzugriffsfreigabe wird abgewiesen - auch eine Lehrkraft im
+     * Kurs (Issue #630).
      */
-    public function test_without_capability_is_rejected(): void {
+    public function test_without_remote_access_is_rejected(): void {
         $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
+        $generator = $this->getDataGenerator();
+        $user = $generator->create_user();
+        $generator->enrol_user($user->id, $generator->create_course()->id, 'editingteacher');
+        $this->setUser($user);
 
-        $this->expectException(\required_capability_exception::class);
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage(get_string('remoteaccessnotgranted', 'local_coursepilot'));
         list_skills::execute();
     }
 
@@ -81,7 +89,7 @@ final class list_skills_test extends \advanced_testcase {
     public function test_ausstaende_field_is_empty_by_default(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         $result = list_skills::execute();
@@ -98,7 +106,7 @@ final class list_skills_test extends \advanced_testcase {
     public function test_ausstaende_bundled_by_path_oldest_first_without_network_access(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         $fake = new fake_webdav_transport();
@@ -128,7 +136,7 @@ final class list_skills_test extends \advanced_testcase {
     public function test_hinweise_field_is_empty_without_webdav_freischaltung(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         $result = list_skills::execute();
@@ -145,7 +153,7 @@ final class list_skills_test extends \advanced_testcase {
     public function test_hinweise_field_names_open_location_selection_when_enabled_and_no_pointer(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
@@ -171,7 +179,7 @@ final class list_skills_test extends \advanced_testcase {
     public function test_hinweise_field_is_empty_once_a_pointer_exists(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
@@ -192,7 +200,7 @@ final class list_skills_test extends \advanced_testcase {
     public function test_hinweise_field_has_no_previouslocation_hint_by_default(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         $result = list_skills::execute();
@@ -208,7 +216,7 @@ final class list_skills_test extends \advanced_testcase {
     public function test_hinweise_field_names_open_previouslocation_without_counting(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
         $this->write_pointer_with_previous_location($user);
 
@@ -240,7 +248,7 @@ final class list_skills_test extends \advanced_testcase {
     public function test_broken_pointer_still_returns_skills_with_named_hint_and_no_network(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
@@ -285,7 +293,7 @@ final class list_skills_test extends \advanced_testcase {
     public function test_incomplete_pointer_still_returns_skills_with_named_hint_and_no_network(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
@@ -318,5 +326,20 @@ final class list_skills_test extends \advanced_testcase {
         } finally {
             \core\di::reset_container();
         }
+    }
+
+    /**
+     * Grants remote access the way a school does after #579: a selected
+     * system cohort, and the teacher role only inside a course - no
+     * system-level role (Issue #630).
+     *
+     * @param \stdClass $user
+     */
+    private function grant_remote_access(\stdClass $user): void {
+        $generator = $this->getDataGenerator();
+        $cohort = $generator->create_cohort(['contextid' => \context_system::instance()->id]);
+        cohort_add_member($cohort->id, $user->id);
+        set_config('remoteaccesscohorts', (string) $cohort->id, 'local_coursepilot');
+        $generator->enrol_user($user->id, $generator->create_course()->id, 'editingteacher');
     }
 }

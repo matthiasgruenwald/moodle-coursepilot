@@ -24,6 +24,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\pending_write_notice;
 use local_coursepilot\location_selection;
+use local_coursepilot\remote_access;
 use local_coursepilot\skill_corpus;
 use local_coursepilot\webdav\webdav_setup_steps;
 
@@ -32,8 +33,8 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Der Katalog des Skill-Korpus (Spec 0020 §4, Issue #450): Name, Auslöser,
  * Art (adapter/reference) und Umfang je Eintrag - kein Inhalt, das liefert
- * {@see get_skill}. Nicht kursgebunden: geprüft wird lediglich
- * 'local/coursepilot:use' im Systemkontext, keine Kurs-Zustimmung.
+ * {@see get_skill}. Nicht kursgebunden: geprüft wird lediglich die
+ * Fernzugriffsfreigabe, keine Kursfähigkeit (Issue #630).
  *
  * Meldet zusaetzlich die offenen Eintraege der Ausstandsnotiz (`pending_entries`,
  * Issue #492, ADR 0023 Punkt 4: "Der Server meldet, nicht die KI") -
@@ -67,7 +68,9 @@ final class list_skills extends external_api {
     public static function execute(): array {
         self::validate_parameters(self::execute_parameters(), []);
         self::validate_context(context_system::instance());
-        require_capability('local/coursepilot:use', context_system::instance());
+        // Course-independent product content: the remote access grant is the
+        // gate, not the course capability 'use' (Issue #630).
+        remote_access::require_granted();
 
         $skills = array_map(static fn (array $entry): array => [
             'name' => $entry['name'],

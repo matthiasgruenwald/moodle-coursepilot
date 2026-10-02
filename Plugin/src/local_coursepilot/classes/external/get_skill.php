@@ -22,6 +22,7 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_coursepilot\remote_access;
 use local_coursepilot\skill_corpus;
 
 defined('MOODLE_INTERNAL') || die();
@@ -66,7 +67,9 @@ final class get_skill extends external_api {
     public static function execute(string $name): array {
         $params = self::validate_parameters(self::execute_parameters(), ['name' => $name]);
         self::validate_context(context_system::instance());
-        require_capability('local/coursepilot:use', context_system::instance());
+        // Course-independent product content: the remote access grant is the
+        // gate, not the course capability 'use' (Issue #630).
+        remote_access::require_granted();
 
         return skill_corpus::get($params['name']);
     }
