@@ -36,8 +36,8 @@ final class field_test extends \advanced_testcase {
         $this->assertStringContainsString('catalog_fields::validate(', $core);
 
         $adapters = [
-            'classes/external/create_module.php' => 'write_target::create(',
-            'classes/external/update_module_settings.php' => 'write_target::update(',
+            'classes/external/create_module.php' => 'write_target::create_activity(',
+            'classes/external/update_module_settings.php' => 'write_target::update_activity(',
             'classes/external/create_quiz.php' => 'write_target::create(',
             'classes/external/update_quiz_settings.php' => 'write_target::update(',
             'classes/catalog/quiz_write_bridge.php' => null,
