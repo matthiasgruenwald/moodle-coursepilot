@@ -1,18 +1,19 @@
 # Coursepilot
 
-Coursepilot ist ein Node.js-MCP-Server mit Moodle-Plugin, der Codex/Claude per stdio mit der Moodle-REST-API verbindet.
+Coursepilot ist ein Moodle-Plugin (`Plugin/src/local_coursepilot/`), das selbst der MCP-Endpunkt ist (Server-MCP).
 
 ## Immer relevant
 
 - Kanonische Workflow-Doku: [CLAUDE.md](CLAUDE.md)
 - Vor jedem Edit Datei lesen; vor Funktionsänderungen alle Aufrufer suchen.
-- Kleine, fokussierte Dateien bevorzugen. Bewusst große Entrypoints wie `moodle-mcp.js` nur entlang bestehender ADRs aufteilen.
+- Kleine, fokussierte Dateien bevorzugen.
 
 ## Befehle
 
-- `npm test` - Smoke-Tests für den Server
-- `npm run build:plugin` - nach Änderungen in `Plugin/src/`; regeneriert `Plugin/local_coursepilot.zip`
-- `bash scripts/deploy-plugin.sh` - deployed Plugin/src/ direkt auf den LXC und führt `upgrade.php` aus. SSH-Key: `~/.ssh/id_moodle_deploy`. Kein neues Token nötig — bestehende Tokens bleiben gültig.
+- `npm test` - Node-Vertragstests (native Linie)
+- `npm run build:native-release` - Release-ZIP und Quellstand nach `dist/native-release/`
+- `bash scripts/deploy-plugin-spike.sh` - deployt `Plugin/src/` auf die Spike-Instanz und führt `upgrade.php` aus
+- `bash scripts/deploy-plugin-devstack.sh <tag>` - Hotfix-Deploy eines Tags auf die vier Devstack-Instanzen (siehe `docs/plugin-deploy.md`)
 
 ## Mehr Kontext
 

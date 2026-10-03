@@ -1,13 +1,10 @@
 # Mirror-Sync: Plugin-Quelle -> schreibgeschuetztes Marketplace-Repository.
 #
-# Dieser Workflow baut bei jedem Push auf `main`, der Dateien unter
-# `legacy/local_coursepilot/` aendert, den Mirror-Root neu
-# (scripts/build-mirror-export.js) und pusht ihn in das getrennte Repository
+# Dieser Workflow baut den Mirror-Root aus dem Quellstand des nativen
+# Release-Builds (scripts/build-native-release.js, also genau dem Inhalt des
+# Release-ZIPs) und pusht ihn in das getrennte Repository
 # matthiasgruenwald/moodle-local_coursepilot. Der Mirror enthaelt das Plugin
-# als alleiniges Root (ohne MCP, Installer, Skills, Tests, docs, .github).
-#
-# Laeuft NICHT bei jedem Commit (paths-Filter unten) und ist zusaetzlich
-# manuell ausloesbar (workflow_dispatch) - praktisch zum Testen.
+# als alleiniges Root (ohne Tests der Repo-Ebene, docs, .github).
 #
 # ERFORDERLICHES REPO-SECRET: MIRROR_PUSH_TOKEN
 #   Fine-Grained Personal Access Token mit Zugriff NUR auf
@@ -19,9 +16,8 @@
 
 name: Mirror-Sync (local_coursepilot)
 
-# Automatischer Push abgeschaltet (ADR 0027): der Mirror baut noch den
-# Altstand. Er wird erst mit der Marketplace-Einreichung (#192) auf die
-# native Linie umgestellt und bis dahin nur manuell ausgeloest.
+# Nur manuell ausgeloest (ADR 0027). Ob und wann der Mirror automatisch
+# laeuft, entscheidet die Marketplace-Einreichung (#192).
 on:
   workflow_dispatch:
 
@@ -45,8 +41,8 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Mirror-Root bauen (build-mirror-export.js, keine npm-Deps)
-        run: node scripts/build-mirror-export.js --output "${RUNNER_TEMP}/mirror"
+      - name: Mirror-Root bauen (build-native-release.js, keine npm-Deps)
+        run: node scripts/build-native-release.js --output "${RUNNER_TEMP}/release"
 
       - name: Mirror nach moodle-local_coursepilot pushen
         env:
@@ -58,7 +54,7 @@ jobs:
             echo "::error::Repo-Secret MIRROR_PUSH_TOKEN fehlt - Mirror-Push nicht moeglich (Fine-Grained-PAT mit Contents:write auf ${MIRROR_REPO} anlegen)."
             exit 1
           fi
-          EXPORT="${RUNNER_TEMP}/mirror"
+          EXPORT="${RUNNER_TEMP}/release/local_coursepilot"
           WORK="${RUNNER_TEMP}/mirror-repo"
           git clone "https://x-access-token:${MIRROR_TOKEN}@github.com/${MIRROR_REPO}.git" "$WORK"
           # Alten Inhalt (ausser .git) entfernen und frisch gebauten Export einsynchronisieren.

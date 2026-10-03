@@ -16,7 +16,7 @@
           },
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // empty' | grep -E '(^|/)(moodle-mcp\\.js|test/.*\\.test\\.js)$' | { read -r f; [ -n \"$f\" ] && npm test 2>&1 | grep -E '^(ℹ (tests|pass|fail)|not ok)'; } 2>/dev/null || true",
+            "command": "jq -r '.tool_input.file_path // empty' | grep -E '(^|/)(test/.*\\.test\\.js)$' | { read -r f; [ -n \"$f\" ] && npm test 2>&1 | grep -E '^(ℹ (tests|pass|fail)|not ok)'; } 2>/dev/null || true",
             "statusMessage": "npm test..."
           }
         ]

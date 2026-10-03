@@ -4,9 +4,8 @@
  * Vertragstest: Release-Kandidat der nativen Server-MCP-Linie (Issue #577,
  * Parent #567, Spec 0025 Abschnitt D).
  *
- * Anders als test/plugin-release-artifact.test.js (Altstand, legacy/,
- * GPL-3.0-or-later) prueft dieser Test den Release-Weg fuer Coursepilot 2.0
- * aus Plugin/src/local_coursepilot: AGPL-Lizenz samt Herkunftshinweisen,
+ * Prueft den Release-Weg fuer Coursepilot 2.0 aus
+ * Plugin/src/local_coursepilot: AGPL-Lizenz samt Herkunftshinweisen,
  * kanonische Versionsangabe statt eines Prototypwerts und ausschliesslich
  * englische Moodle-Sprachstrings im Paket.
  */

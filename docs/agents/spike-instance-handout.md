@@ -1,5 +1,7 @@
 # Handout: Spike-Instanz auf dem LXC aufsetzen
 
+> **Historisch (Aufbau der Spike-Instanz, Sommer 2026).** Die hier genannten Skripte des Altstands (`scripts/deploy-plugin.sh`, `scripts/moodle-credentials.js`) sind mit #587 entfernt; aktueller Weg: [`docs/plugin-deploy-spike.md`](../plugin-deploy-spike.md).
+
 Für eine Claude-Session, die **mit echtem Zugriff auf den LXC** läuft (SSH
 erreichbar, z. B. direkt auf dem Host oder per Tunnel/VPN) — von einer
 Laptop-Session aus ist `moodle-deploy@1.2.3.31` derzeit nicht erreichbar

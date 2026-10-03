@@ -14,7 +14,6 @@
 - Vor Funktionsänderungen alle Aufrufer suchen.
 - UI-, CLI-, Installer- und Benachrichtigungstexte für Lehrkräfte auf Deutsch halten.
 - Kleine, fokussierte Dateien bevorzugen.
-- `moodle-mcp.js` ist ein bewusster Entrypoint; Aufteilung nur entlang vorhandener ADRs statt opportunistisch.
 
 ## Git
 

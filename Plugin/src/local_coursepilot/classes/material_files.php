@@ -92,7 +92,7 @@ final class material_files {
 
     /**
      * Allgemeine Upload-Whitelist (Spec 0018 §6) - unveraendert aus dem
-     * lokalen Weg uebernommen, siehe lib/assign-tools.js UPLOAD_MIME_TYPES.
+     * lokalen Weg 1.x uebernommen (dort UPLOAD_MIME_TYPES).
      *
      * @var string[]
      */
@@ -103,7 +103,7 @@ final class material_files {
 
     /**
      * Engere Whitelist einbettbarer Bilder (Spec 0018 §6) - unveraendert aus
-     * dem lokalen Weg uebernommen, siehe lib/assign-tools.js EMBED_IMAGE_MIME_TYPES.
+     * dem lokalen Weg 1.x uebernommen (dort EMBED_IMAGE_MIME_TYPES).
      * SVG bleibt bewusst zulaessig (Spec 0018 §6).
      *
      * @var string[]
