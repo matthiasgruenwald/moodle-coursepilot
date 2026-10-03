@@ -2,18 +2,14 @@
   "name": "kurspilot",
   "version": "1.0.0",
   "private": true,
-  "description": "Kurspilot: Unterricht in Moodle planen und umsetzen, auf Basis von MoodleMCP",
-  "main": "moodle-mcp.js",
+  "description": "Coursepilot: Moodle-Plugin mit eingebautem MCP-Endpunkt (Server-MCP)",
   "engines": {
     "node": ">= 24"
   },
   "scripts": {
-    "test": "node --require ./test/helpers/no-browser.js --test 'test/**/*.test.js'",
+    "test": "node --test 'test/**/*.test.js'",
     "test:ci": "node scripts/ci/run-js-tests.js",
     "test:e2e": "playwright test",
-    "build:plugin": "node scripts/build-plugin.js",
-    "build:mirror": "node scripts/build-mirror-export.js",
-    "release:plugin": "node scripts/build-plugin.js && node scripts/build-mirror-export.js",
     "build:native-release": "node scripts/build-native-release.js"
   },
   "license": "AGPL-3.0-or-later",

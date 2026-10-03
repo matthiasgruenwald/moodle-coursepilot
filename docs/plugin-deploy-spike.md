@@ -2,14 +2,12 @@
 
 Schritt-für-Schritt-Anleitung, um Änderungen in `Plugin/src/local_coursepilot/`
 auf die native-MCP-Testinstanz (`https://spike.gruenwald.fun`) zu deployen.
-Gegenstück zu [`plugin-deploy.md`](plugin-deploy.md) (dort: `local_coursepilot`
-auf dem alten LXC-Container) — betrifft ausschließlich `local_coursepilot`,
-`local_coursepilot` bleibt unberührt.
+Gegenstück zu [`plugin-deploy.md`](plugin-deploy.md) (dort: Hotfix-Tags auf die
+vier Devstack-Instanzen).
 
 ## Voraussetzung: läuft nur auf der Kurspilot-Spike-LXC
 
-Anders als `scripts/deploy-plugin.sh` (SSH auf einen entfernten Host) läuft
-`scripts/deploy-plugin-spike.sh` **lokal auf derselben LXC**, auf der auch
+`scripts/deploy-plugin-spike.sh` läuft **lokal auf derselben LXC**, auf der auch
 der Spike-Docker-Stack (`/opt/kurspilot-spike`) liegt — kein SSH-Umweg.
 Von einem Laptop-Checkout aus schlägt das Skript mit einer klaren
 Fehlermeldung fehl (`/opt/kurspilot-spike/scripts/deploy-plugin.sh` fehlt).

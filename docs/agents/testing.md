@@ -2,16 +2,12 @@
 
 ## Standardbefehle
 
-- `npm test` - `node --test`, inklusive Smoke-Test für `moodle-mcp.js`
-- `npm run build:plugin` - nach Änderungen in `Plugin/src/`
+- `npm test` - `node --test`, Vertragstests der nativen Linie
+- `npm run build:native-release` - Release-ZIP aus `Plugin/src/local_coursepilot/`
 
 ## Plugin-Quelle
 
 - PHP-Quelle liegt in `Plugin/src/local_coursepilot/`.
-- `Plugin/local_coursepilot.zip` ist generiert und wird nie direkt editiert.
-- PHP-Quelle des Servermodell-Plugins liegt in `Plugin/src/local_coursepilot/`
-  (Branch `moodle-native-mcp`, Karte
-  [#289](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/289)).
 
 ## PHPUnit für `local_coursepilot`
 
@@ -79,39 +75,23 @@ fangen kann: ein Admin hängt dem Dienst nachträglich eine Funktion an.
 Dieselbe Prüffunktion (`\local_coursepilot\privacy_surface::check()`) nutzen
 auch die Laufzeit (`mcp.php`) und die Anzeige (`/local/coursepilot/surface.php`).
 
-### Später: CI statt Container
+### CI
 
-Der manuelle Lauf ist der Stand bis zur Abschaltung des lokalen Kurspiloten.
-Mit dem harten Schnitt aus
-[#299](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/299)
-zieht der Lauf in einen GitHub-Actions-Workflow um. Die Testdateien liegen
-deshalb bereits im `moodle-plugin-ci`-tauglichen Standardlayout
-(`tests/`, Klassenname = Dateiname, Namensraum = Verzeichnis) — der Umzug ist
-dann eine Workflow-Datei, keine Testumschreibung.
+Dieselbe Suite läuft zusätzlich in GitHub Actions, siehe
+[`docs/ci-native-server-mcp.md`](../ci-native-server-mcp.md).
 
-## E2E-Tests (Playwright) gegen Testmoodle
+## E2E-Tests (Playwright) gegen die Spike-Instanz
 
-Playwright-Specs liegen in `test/e2e/`. Config: `playwright.config.js`.
-
-**Credentials:** `.env.e2e` (gitignored, nicht committen). Enthält:
-
-| Variable | Bedeutung |
-|---|---|
-| `MOODLE_URL` | Testmoodle-URL |
-| `MOODLE_TOKEN` | Webservice-Token für `teacher_edit`-Rolle |
-| `MOODLE_TEST_COURSEID` | Kurs-ID des Testkurses |
-
-**Rollenprinzip:** Tests laufen ausschließlich mit `teacher_edit` — kein Admin-Login. Der Token-Benutzer muss im Zielkurs als Editing Teacher eingetragen sein.
-
-**Ausführen:**
+Playwright-Specs liegen in `test/e2e/`, Config: `playwright.config.js`. Es gibt
+nur noch Spike-Specs (`*.spike.e2e.spec.js`); sie laufen mit dem Profil
+`spike` gegen `.env.e2e.spike` (Werte siehe nächster Abschnitt) und brauchen
+zusätzlich `MOODLE_USERNAME`/`MOODLE_PASSWORD` für den Browser-Login:
 
 ```bash
-npx playwright test
+KURSPILOT_E2E_PROFILE=spike npx playwright test
 ```
 
-Ohne `.env.e2e` werden Moodle-abhängige Specs übersprungen (Skip, kein Fehler).
-
-**Voraussetzung auf Moodle-Seite:** Das Plugin `local_coursepilot` muss installiert und die Webservices registriert sein (Site administration > Server > Web services > External services). Plugin-Updates auf das Testmoodle deployen und verifizieren: [plugin-deploy.md](../plugin-deploy.md).
+Ohne Profil oder Zugangsdaten werden die Specs übersprungen (Skip, kein Fehler).
 
 ## Live-Tests gegen die Spike-Instanz (`local_coursepilot`)
 
@@ -139,8 +119,6 @@ Feste Testkonfiguration (Vorlage: `.env.e2e.spike.example`, ausgefüllt nach
 | Login | Passwort in `/opt/moodle-devstack-secrets/kurspilot-spike.env` (LXC, 0600) |
 | Container | `moodle-kurspilot-spike-webserver-1` |
 
-`.env.e2e` (alte Instanz, `local_coursepilot`) bleibt davon unberührt.
-
 Beispielaufruf:
 
 ```bash
@@ -156,4 +134,4 @@ Codex führt Claude-Hooks nicht zuverlässig automatisch aus. Nach passenden Än
 
 - `*.js` geändert -> `node --check <datei>`
 - `*.php` geändert -> `php -l <datei>`
-- `moodle-mcp.js` oder `test/*.test.js` geändert -> `npm test`
+- `test/*.test.js` geändert -> `npm test`

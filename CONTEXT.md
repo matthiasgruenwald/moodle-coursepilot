@@ -5,8 +5,8 @@
 > fruehere Name "Kurspilot" kommt nur noch dort vor, wo er ein technischer
 > Bezeichner des lokalen Altwegs ist: die Skills `kurspilot`, `kurspilot-einrichten`,
 > `kurspilot-planen`, `kurspilot-umsetzen`, die Datei `skills/kurspilot-core.md` und
-> der Wegweiser `KURSPILOT.md`. Diese bleiben unveraendert, bis der lokale Weg
-> abgekuendigt wird (ADR 0024). Aeltere ADRs und Spezifikationen tragen den alten
+> der Wegweiser `KURSPILOT.md`. Der lokale Weg ist seit #587 aus dem Repository
+> entfernt (ADR 0024/0027); die Begriffe bleiben hier als Glossar-Historie stehen. Aeltere ADRs und Spezifikationen tragen den alten
 > Namen weiter; ihr Wortlaut bleibt als Dokumentation stehen.
 
 Coursepilot ist die lehrkraftsichtbare Weiterentwicklung des MoodleMCP-Ansatzes. Technisch bleibt MoodleMCP der Herkunfts- und Referenzpunkt: ein MCP-basierter Automatisierungsbaustein, der bestehende Moodle-Kurse mit Unterrichtsmaterialien, Unterrichtseinheiten und Unterthemen befuellt. Fuer die aktuelle Einfuehrung ist das Ziel ein zuverlaessiger Golden Path in Codex, mit zusaetzlicher Claude-Kompatibilitaet wenn sie ohne Mehrfragilitaet erreichbar ist.

@@ -4,8 +4,6 @@
 # Local Moodle credentials and machine-specific config
 .env
 .env.*
-!.env.example
-!.env.plugin-deploy.example
 !.env.e2e.spike.example
 moodle-config.json
 moodle.config.json
@@ -25,17 +23,6 @@ generated/
 tmp/
 temp/
 
-# Alter kompilierter macOS-Installer (Build-Artefakt inkl. gebuendelter
-# Node-Runtime). Lokal als Referenz behalten, aber nicht mehr im Git/Tarball:
-# der neue curl/PowerShell-Bootstrap holt den main-Tarball, der sonst die
-# ~100-MB-Runtime mitschleppen wuerde. Loeschbar, sobald der neue Weg getestet
-# ist (siehe docs/adr/0008-curl-bootstrap-vertrieb.md).
-/dist/macos-installer/
-
-# Generierter Marketplace-Mirror-Export (npm run build:mirror): Das Root ist
-# ausschliesslich das GPL-Plugin. Entsteht lokal und bleibt aus dem Primaer-Repo
-# raus - der eigentliche Mirror ist ein separates, schreibgeschuetztes Repository.
-/dist/mirror/
 
 # Generiertes Release-Artefakt der nativen Server-MCP-Linie (npm run
 # build:native-release, Issue #577): ZIP und Quellstand aus

@@ -4,9 +4,8 @@
  * Quellstand der nativen Server-MCP-Linie aus Plugin/src/local_coursepilot
  * (Issue #577, Spec 0025 Abschnitt D).
  *
- * Anders als scripts/build-plugin.js (baut aus dem eingefrorenen Altstand
- * legacy/local_coursepilot) ist dies der Release-Weg fuer Coursepilot 2.0.
- * Der Altstand bleibt davon unberuehrt und weiterhin separat benutzbar.
+ * Einziger Release-Weg seit Coursepilot 2.0 (der Altstand 1.x ist mit #587
+ * aus dem Repo entfernt).
  *
  * Ausgabe unter --output (Standard: dist/native-release/):
  *   local_coursepilot/            Quellstand - genau der Inhalt des ZIPs,
