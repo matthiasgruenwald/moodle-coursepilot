@@ -201,7 +201,7 @@ final class pseudofield_carry_forward {
      * ->introeditor bereits mit dem Ist-Stand vorbelegt (Draftitemid
      * eingeschlossen); hier wird nur der Patch-Wert nachgezogen, ohne das
      * Itemid anzufassen - das bleibt Sache des Aufrufers (z.B.
-     * {@see \local_coursepilot\external\update_module_settings::resolve_intro_image_pseudofield()}
+     * {@see write_target::update_activity()}
      * fuer eingebettete Fachabbildungen, Issue #433).
      *
      * Gemeinsam fuer update_module_settings (alle Aktivitaetsarten mit

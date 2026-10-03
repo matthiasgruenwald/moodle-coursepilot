@@ -507,6 +507,7 @@ final class quiz implements module_catalog {
     public static function write_options(): array {
         return [
             'restores_arrangement' => true,
+            'date_order_rules' => [['reference' => 'timeopen', 'field' => 'timeclose', 'mode' => 'not_before']],
             // Riegel-Auswertung auf dem Ist-Stand (#583): das Formularfeld
             // "quizpassword" liegt in der Spalte "password".
             'settings_aliases' => ['quizpassword' => 'password'],

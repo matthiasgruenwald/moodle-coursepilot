@@ -38,11 +38,53 @@ final class oauth_lib {
     /** @var string DB-Tabelle der per DCR/CIMD registrierten Clients. */
     private const CLIENT_TABLE = 'local_coursepilot_oauth_client';
 
+    /** @var int Maximum decoded CIMD response size: 1 MiB, enforced while receiving. */
+    private const CIMD_MAX_BYTES = 1048576;
+
+    /** @var int Maximum CIMD client_id URL length, the clientid column size (#643). */
+    public const CIMD_MAX_URI_LENGTH = 255;
+
+    /** @var int Default first-time CIMD fetches per window for the whole site (setting oauthcimdsitelimit). */
+    public const CIMD_SITE_LIMIT = 100;
+
+    /** @var int Default first-time CIMD fetches per window for one source (setting oauthcimdsourcelimit). */
+    public const CIMD_SOURCE_LIMIT = 20;
+
+    /** @var int Default CIMD fetch budget window in seconds (setting oauthcimdwindow). */
+    public const CIMD_WINDOW = 3600;
+
+    /** @var int Fixed window of the CIMD negative cache: a failed URL is not fetched again until it ends (#643). */
+    public const CIMD_NEGATIVE_WINDOW = 600;
+
     /** @var string DB-Tabelle der kurzlebigen, PKCE-gebundenen Autorisierungscodes. */
     private const CODE_TABLE = 'local_coursepilot_oauth_code';
 
     /** @var string DB-Tabelle der Access-/Refresh-Token. */
     private const TOKEN_TABLE = 'local_coursepilot_oauth_token';
+
+    /** @var string Stable user/client connections, shared by every token generation. */
+    private const GRANT_TABLE = 'local_coursepilot_oauth_grant';
+
+    /** @var int|null Stable connection authenticated in this request. */
+    private static ?int $currentconnectionid = null;
+
+    /** @var int Maximum raw DCR request body; larger requests are rejected before decoding (#642). */
+    public const REGISTRATION_MAX_BODY_BYTES = 16384;
+
+    /** @var int Maximum length of one registered redirect URI (#642). */
+    public const REGISTRATION_MAX_URI_LENGTH = 2048;
+
+    /** @var int Maximum number of redirect URIs per registration (#642). */
+    public const REGISTRATION_MAX_REDIRECT_URIS = 10;
+
+    /** @var int Default registrations per window for the whole site (setting oauthregistersitelimit). */
+    public const REGISTRATION_SITE_LIMIT = 200;
+
+    /** @var int Default registrations per window for one source (setting oauthregistersourcelimit). */
+    public const REGISTRATION_SOURCE_LIMIT = 50;
+
+    /** @var int Default registration budget window in seconds (setting oauthregisterwindow). */
+    public const REGISTRATION_WINDOW = 3600;
 
     /** @var int Lebensdauer eines Autorisierungscodes in Sekunden (RFC 6749 empfiehlt kurz). */
     private const CODE_TTL = 120;
@@ -137,28 +179,50 @@ final class oauth_lib {
      *               Erfolg: vollstaendiger Client-Datensatz inkl. client_id.
      */
     public static function register_client(array $metadata): array {
-        $redirecturis = $metadata['redirect_uris'] ?? null;
-        if (!is_array($redirecturis) || empty($redirecturis)) {
-            return ['error' => 'invalid_client_metadata', 'error_description' => 'redirect_uris ist Pflicht.'];
+        $error = self::registration_error($metadata);
+        if ($error !== null) {
+            return $error;
         }
-        foreach ($redirecturis as $uri) {
-            if (!self::is_allowed_redirect_uri($uri)) {
-                return [
-                    'error' => 'invalid_redirect_uri',
-                    'error_description' => 'redirect_uri muss https sein oder ein Loopback (http://127.0.0.1 / http://localhost).',
-                ];
-            }
-        }
+        $redirecturis = $metadata['redirect_uris'];
 
         $authmethod = $metadata['token_endpoint_auth_method'] ?? 'none';
         if (!in_array($authmethod, ['none', 'client_secret_post'], true)) {
             $authmethod = 'none';
         }
-        $clientname = clean_param($metadata['client_name'] ?? '', PARAM_TEXT) ?: null;
+        $clientname = \core_text::substr(clean_param($metadata['client_name'] ?? '', PARAM_TEXT), 0, 255) ?: null;
         $clientsecret = $authmethod === 'client_secret_post' ? self::random_token(32) : null;
 
         $record = self::persist_client(self::random_token(24), $clientname, $redirecturis, $authmethod, $clientsecret, 'dcr');
         return self::client_registration_response($record);
+    }
+
+    /**
+     * Validate DCR metadata without side effects, so invalid requests are
+     * rejected before they consume budget (#642).
+     *
+     * @param array $metadata
+     * @return array|null RFC 7591 error, or null when valid.
+     */
+    private static function registration_error(array $metadata): ?array {
+        $redirecturis = $metadata['redirect_uris'] ?? null;
+        if (!is_array($redirecturis) || empty($redirecturis)) {
+            return ['error' => 'invalid_client_metadata', 'error_description' => 'redirect_uris is required.'];
+        }
+        if (count($redirecturis) > self::REGISTRATION_MAX_REDIRECT_URIS) {
+            return ['error' => 'invalid_client_metadata', 'error_description' => 'Too many redirect_uris.'];
+        }
+        foreach ($redirecturis as $uri) {
+            if (is_string($uri) && strlen($uri) > self::REGISTRATION_MAX_URI_LENGTH) {
+                return ['error' => 'invalid_redirect_uri', 'error_description' => 'redirect_uri is too long.'];
+            }
+            if (!self::is_allowed_redirect_uri($uri)) {
+                return [
+                    'error' => 'invalid_redirect_uri',
+                    'error_description' => 'redirect_uri must use https or a loopback address (http://127.0.0.1 / http://localhost).',
+                ];
+            }
+        }
+        return null;
     }
 
     /**
@@ -197,34 +261,52 @@ final class oauth_lib {
     }
 
     /**
-     * Registrierungs-Handler fuer oauth/register.php: Methodenpruefung,
-     * JSON-Parsing, Aufruf von register_client(), einheitliches
-     * Antwortformat - Fehlerantworten immer JSON (RFC 7591, Abschnitt 3.2.2).
+     * Registration handler for oauth/register.php; errors are always JSON
+     * (RFC 7591, section 3.2.2). Size is checked before decoding and metadata
+     * before the budget (#642); any rejection persists no client.
      *
      * @param string $method
-     * @param array|null $body Bereits dekodierter JSON-Rumpf, oder null bei
-     *        Parse-Fehler.
+     * @param string $rawbody Raw request body, read at most one byte beyond
+     *        {@see REGISTRATION_MAX_BODY_BYTES}.
+     * @param string $source Trusted request source ({@see oauth_budget::request_source()}).
      * @return array{status: int, headers: array<string, string>, body: array}
      */
-    public static function handle_registration(string $method, ?array $body): array {
+    public static function handle_registration(string $method, string $rawbody, string $source): array {
         if ($method !== 'POST') {
             return self::result(405, ['Allow' => 'POST'], [
                 'error' => 'invalid_request',
-                'error_description' => 'Nur POST ist erlaubt.',
+                'error_description' => 'Only POST is allowed.',
             ]);
         }
-        if ($body === null) {
+        if (strlen($rawbody) > self::REGISTRATION_MAX_BODY_BYTES) {
+            return self::result(413, [], [
+                'error' => 'invalid_client_metadata',
+                'error_description' => 'Registration request is too large.',
+            ]);
+        }
+        $body = json_decode($rawbody, true, 16);
+        if (!is_array($body)) {
             return self::result(400, [], [
                 'error' => 'invalid_client_metadata',
-                'error_description' => 'Ungueltiges JSON.',
+                'error_description' => 'Invalid JSON.',
             ]);
         }
-
-        $result = self::register_client($body);
-        if (isset($result['error'])) {
-            return self::result(400, [], $result);
+        $error = self::registration_error($body);
+        if ($error !== null) {
+            return self::result(400, [], $error);
         }
-        return self::result(201, ['Cache-Control' => 'no-store'], $result);
+
+        $retryafter = oauth_budget::consume('register', $source,
+            oauth_budget::setting('oauthregistersitelimit', self::REGISTRATION_SITE_LIMIT),
+            oauth_budget::setting('oauthregistersourcelimit', self::REGISTRATION_SOURCE_LIMIT),
+            oauth_budget::setting('oauthregisterwindow', self::REGISTRATION_WINDOW));
+        if ($retryafter > 0) {
+            return self::result(429, ['Retry-After' => (string) $retryafter], [
+                'error' => 'temporarily_unavailable',
+                'error_description' => 'Registration budget exhausted, retry later.',
+            ]);
+        }
+        return self::result(201, ['Cache-Control' => 'no-store'], self::register_client($body));
     }
 
     /**
@@ -279,20 +361,42 @@ final class oauth_lib {
      * legt jede Neuverbindung eines CIMD-Clients einen weiteren
      * DCR-Client an.
      *
+     * Stored clients never touch a budget. Before a first-time fetch (#643):
+     * overlong URLs and URLs in the negative cache are refused, then the
+     * shared site/source budget (scope 'cimd') is consumed; a rejection starts
+     * no network work. A failed fetch becomes a 'cimdfail' entry for
+     * {@see CIMD_NEGATIVE_WINDOW}; their number per window is capped by the
+     * site fetch limit.
+     *
      * @param string $clientid
+     * @param int $retryafter Set to the seconds until the CIMD budget window
+     *        ends when the budget refused the fetch, otherwise 0.
      * @return \stdClass|null
      */
-    public static function get_client(string $clientid): ?\stdClass {
+    public static function get_client(string $clientid, int &$retryafter = 0): ?\stdClass {
         global $DB;
 
+        $retryafter = 0;
         $record = $DB->get_record(self::CLIENT_TABLE, ['clientid' => $clientid]);
         if ($record) {
             return $record;
         }
-        if (!self::looks_like_cimd_url($clientid)) {
+        if (!self::looks_like_cimd_url($clientid) || strlen($clientid) > self::CIMD_MAX_URI_LENGTH
+                || oauth_budget::active('cimdfail', $clientid)) {
             return null;
         }
-        return self::fetch_and_cache_cimd_client($clientid);
+        $sitelimit = oauth_budget::setting('oauthcimdsitelimit', self::CIMD_SITE_LIMIT);
+        $retryafter = oauth_budget::consume('cimd', oauth_budget::request_source(), $sitelimit,
+            oauth_budget::setting('oauthcimdsourcelimit', self::CIMD_SOURCE_LIMIT),
+            oauth_budget::setting('oauthcimdwindow', self::CIMD_WINDOW));
+        if ($retryafter > 0) {
+            return null;
+        }
+        $client = self::fetch_and_cache_cimd_client($clientid);
+        if ($client === null) {
+            oauth_budget::consume('cimdfail', $clientid, $sitelimit, 1, self::CIMD_NEGATIVE_WINDOW);
+        }
+        return $client;
     }
 
     /**
@@ -307,20 +411,34 @@ final class oauth_lib {
     }
 
     /**
-     * Ruft ein CIMD-Dokument per HTTP ab. Duenne Netzwerk-Schale um
-     * {@see cache_cimd_client()} - die eigentliche Pruef-/Persistierlogik ist
-     * dort, netzwerkfrei und damit per PHPUnit ohne echten HTTP-Request
-     * pruefbar (#335: Erfolgsfall zuvor ungetestet, da nur ueber Netzwerk
-     * erreichbar).
+     * Fetch public HTTPS metadata using Moodle's host/port policy and CA trust.
+     * Verify the peer and hostname, refuse redirects, and retain at most 1 MiB
+     * of decoded response data within five seconds. No storage credentials are
+     * attached. Only a complete, successful response reaches metadata validation
+     * and persistence in {@see cache_cimd_client()}.
      *
      * @param string $url
      * @return \stdClass|null
      */
     protected static function fetch_and_cache_cimd_client(string $url): ?\stdClass {
         $curl = new \curl();
-        $body = $curl->get($url, [], ['CURLOPT_TIMEOUT' => 5, 'CURLOPT_FOLLOWLOCATION' => false]);
+        $body = '';
+        $curl->get($url, [], [
+            'CURLOPT_TIMEOUT' => 5,
+            'CURLOPT_FOLLOWLOCATION' => false,
+            'CURLOPT_SSL_VERIFYPEER' => true,
+            'CURLOPT_SSL_VERIFYHOST' => 2,
+            'CURLOPT_WRITEFUNCTION' => static function ($handle, string $chunk) use (&$body): int {
+                $length = strlen($chunk);
+                if (strlen($body) + $length > self::CIMD_MAX_BYTES) {
+                    return 0; // Abort the transfer before retaining an oversized chunk.
+                }
+                $body .= $chunk;
+                return $length;
+            },
+        ]);
         $info = $curl->get_info();
-        if (($info['http_code'] ?? 0) !== 200) {
+        if ($curl->get_errno() !== 0 || ($info['http_code'] ?? 0) !== 200) {
             return null;
         }
         $metadata = json_decode($body, true);
@@ -343,18 +461,19 @@ final class oauth_lib {
      * @return \stdClass|null null bei ungueltigen/fehlenden redirect_uris.
      */
     public static function cache_cimd_client(string $url, array $metadata): ?\stdClass {
-        $redirecturis = $metadata['redirect_uris'] ?? null;
-        if (!is_array($redirecturis) || empty($redirecturis)) {
+        // Same redirect URI count/length limits as DCR (#643).
+        if (self::registration_error($metadata) !== null) {
             return null;
         }
-        foreach ($redirecturis as $uri) {
-            if (!self::is_allowed_redirect_uri($uri)) {
-                return null;
-            }
-        }
 
-        $clientname = clean_param($metadata['client_name'] ?? '', PARAM_TEXT) ?: null;
-        return self::persist_client($url, $clientname, $redirecturis, 'none', null, 'cimd');
+        $clientname = \core_text::substr(clean_param($metadata['client_name'] ?? '', PARAM_TEXT), 0, 255) ?: null;
+        try {
+            return self::persist_client($url, $clientname, $metadata['redirect_uris'], 'none', null, 'cimd');
+        } catch (\dml_write_exception $e) {
+            // A parallel first lookup of the same URL stored it first (#643).
+            global $DB;
+            return $DB->get_record(self::CLIENT_TABLE, ['clientid' => $url], '*', MUST_EXIST);
+        }
     }
 
     /**
@@ -391,7 +510,12 @@ final class oauth_lib {
             ];
         }
 
-        $client = self::get_client($clientid);
+        $retryafter = 0;
+        $client = self::get_client($clientid, $retryafter);
+        if ($retryafter > 0) {
+            return ['error' => 'temporarily_unavailable',
+                'error_description' => 'Client metadata lookup budget exhausted, retry later.'];
+        }
         if (!$client) {
             return ['error' => 'invalid_client', 'error_description' => 'Unbekannter Client.'];
         }
@@ -540,24 +664,33 @@ final class oauth_lib {
         global $DB;
 
         $record = $DB->get_record(self::TOKEN_TABLE, ['refreshtokenhash' => self::token_hash($refreshtoken)]);
-        if (!$record || (int) $record->revoked === 1 || $record->refreshexpires < time()) {
-            return null;
-        }
-        if ($record->clientid !== $clientid) {
+        if (!$record || $record->clientid !== $clientid) {
             return null;
         }
 
-        // Gleiches Muster wie exchange_code(): Anspruch + Ausstellung als
-        // eine Datenbankgrenze (#574). `accesstokenhash` bleibt beim Claim
-        // unberuehrt, ist aber ueber dieselbe Zeile mitwiderrufen (`revoked`
-        // gilt fuer das ganze Paar, wie schon vor #574).
         $transaction = $DB->start_delegated_transaction();
         try {
-            if (!self::claim_row(self::TOKEN_TABLE, 'refreshtokenhash', 'revoked', $record->refreshtokenhash)) {
+            // UPDATE locks the shared grant until commit. Revocation uses the same
+            // row, so it either prevents issuance or invalidates its successor.
+            if (empty($record->connectionid) || !self::lock_connection((int) $record->connectionid)) {
                 $transaction->allow_commit();
                 return null;
             }
-            $tokens = self::issue_token_pair($clientid, (int) $record->userid);
+            $current = $DB->get_record(self::TOKEN_TABLE, ['id' => $record->id]);
+            if ($current && (int) $current->revoked === 1) {
+                // A consumed hash proves replay even after its old expiry. Check
+                // under the grant lock so concurrent rotation cannot escape it.
+                self::revoke_locked_connection((int) $record->connectionid);
+                $transaction->allow_commit();
+                return null;
+            }
+            if (!$current || $current->refreshexpires < time()) {
+                $transaction->allow_commit();
+                return null;
+            }
+            // Preserve the consumed refresh hash and its proven family identity.
+            $DB->set_field(self::TOKEN_TABLE, 'revoked', 1, ['id' => $record->id]);
+            $tokens = self::issue_token_pair($clientid, (int) $record->userid, (int) $record->connectionid);
         } catch (\Throwable $e) {
             $transaction->rollback($e);
         }
@@ -567,30 +700,15 @@ final class oauth_lib {
     }
 
     /**
-     * Beansprucht eine Zeile atomar per Compare-and-Swap (#574), gemeinsamer
-     * Kern fuer den Autorisierungscode- und den Refresh-Token-Anspruch -
-     * gleiches Muster wie {@see workbench_ticket::claim()} (#512), hier fuer
-     * zwei Tabellen verallgemeinert statt zweimal dupliziert. Eine einzige
-     * UPDATE-Anweisung setzt sowohl $column (eindeutig indiziert) auf einen
-     * frischen, nur diesem Aufruf bekannten Zufallswert als auch $flagcolumn
-     * auf 1, mit dem alten Wert und $flagcolumn = 0 in der WHERE-Klausel. Die
-     * Datenbank sperrt die Zeile fuer die Dauer dieser einen Anweisung; ein
-     * zeitgleicher zweiter Anspruch mit derselben WHERE-Bedingung trifft
-     * danach keine Zeile mehr. Der Read-back unter dem eigenen Zufallswert
-     * zeigt, ob dieser Aufruf gewonnen hat - ohne eine von Moodles
-     * DB-Abstraktion nicht angebotene Rueckgabe der Anzahl betroffener
-     * Zeilen zu brauchen. $column/$flagcolumn stammen ausschliesslich aus
-     * den beiden Aufrufstellen (feste Zeichenketten, nie Nutzereingabe) -
-     * Interpolation in die SQL ist damit unbedenklich. Rueckgabe bewusst
-     * bool statt der beanspruchten Zeile (anders als workbench_ticket::claim()):
-     * die Aufrufer lesen unveraenderliche Felder (userid, clientid) bereits
-     * aus dem vor dem Anspruch gelesenen Datensatz.
+     * Claim an authorization code exactly once using an unguessable CAS marker.
+     * Refresh generations retain their hashes and serialize on the stable grant.
+     * The column names are fixed at the sole caller, never user input.
      *
      * @param string $table
-     * @param string $column Eindeutig indizierte Spalte, die den CAS-Anspruch traegt.
-     * @param string $flagcolumn Zusaetzliches Verbrauchs-Flag (0/1), das mitgesetzt wird.
-     * @param string $value Aktueller Wert von $column.
-     * @return bool true, wenn dieser Aufruf die Zeile tatsaechlich beansprucht hat.
+     * @param string $column Unique code column.
+     * @param string $flagcolumn Consumption flag.
+     * @param string $value Original code.
+     * @return bool Whether this transaction claimed the code.
      */
     private static function claim_row(string $table, string $column, string $flagcolumn, string $value): bool {
         global $DB;
@@ -624,15 +742,23 @@ final class oauth_lib {
      *
      * @param string $clientid
      * @param int $userid
+     * @param int|null $connectionid Existing grant on rotation, otherwise a new authorisation.
      * @return array{access_token: string, token_type: string, expires_in: int, refresh_token: string}
      */
-    private static function issue_token_pair(string $clientid, int $userid): array {
+    private static function issue_token_pair(string $clientid, int $userid, ?int $connectionid = null): array {
         global $DB;
 
         $now = time();
+        if ($connectionid === null) {
+            $connectionid = (int) $DB->insert_record(self::GRANT_TABLE, (object) [
+                'userid' => $userid, 'clientid' => $clientid, 'revoked' => 0,
+                'statehash' => self::random_token(32), 'timecreated' => $now,
+            ]);
+        }
         $accesstoken = self::random_token(32);
         $refreshtoken = self::random_token(32);
         $record = new \stdClass();
+        $record->connectionid = $connectionid;
         $record->accesstokenhash = self::token_hash($accesstoken);
         $record->refreshtokenhash = self::token_hash($refreshtoken);
         $record->clientid = $clientid;
@@ -673,7 +799,11 @@ final class oauth_lib {
 
         $granttype = (string) ($body['grant_type'] ?? '');
         $clientid = (string) ($body['client_id'] ?? '');
-        $client = $clientid !== '' ? self::get_client($clientid) : null;
+        $retryafter = 0;
+        $client = $clientid !== '' ? self::get_client($clientid, $retryafter) : null;
+        if ($retryafter > 0) {
+            return self::result(429, ['Retry-After' => (string) $retryafter], ['error' => 'temporarily_unavailable']);
+        }
         if (!$client) {
             return self::result(400, [], ['error' => 'invalid_client']);
         }
@@ -728,11 +858,15 @@ final class oauth_lib {
     public static function authenticate_access_token(string $accesstoken): ?int {
         global $DB;
 
+        self::$currenttokenid = null;
+        self::$currentconnectionid = null;
         $record = $DB->get_record(self::TOKEN_TABLE, ['accesstokenhash' => self::token_hash($accesstoken)]);
-        if (!$record || (int) $record->revoked === 1 || $record->expires < time()) {
+        if (!$record || (int) $record->revoked === 1 || $record->expires < time()
+                || empty($record->connectionid) || !self::grant_active((int) $record->connectionid, (int) $record->userid)) {
             return null;
         }
         self::$currenttokenid = (int) $record->id;
+        self::$currentconnectionid = (int) $record->connectionid;
         return (int) $record->userid;
     }
 
@@ -749,19 +883,24 @@ final class oauth_lib {
     }
 
     /**
-     * Ob eine Verbindung (ein Access-/Refresh-Token-Paar) noch besteht - nicht
-     * widerrufen ist (#501, Spec #486 §13: "Bestand der ausstellenden
-     * Verbindung"). Bewusst ohne Ablaufpruefung: ein Werkbank-Downloadticket
-     * traegt seine eigene, kuerzere Gueltigkeit (15 Minuten), unabhaengig von
-     * der Restlaufzeit des Zugriffstokens, das es ausgestellt hat.
+     * Resolve a legacy token-row reference to its stable connection.
+     * Rotation consumes the pair without revoking the connection. Tickets have
+     * their own expiry and require the grant, independently of token lifetimes.
      *
-     * @param int $id local_coursepilot_oauth_token.id
+     * @param int $id Legacy local_coursepilot_oauth_token.id.
+     * @param int|null $owneruserid Optional ticket-owner boundary.
      * @return bool
      */
-    public static function connection_active(int $id): bool {
+    public static function connection_active(int $id, ?int $owneruserid = null): bool {
         global $DB;
 
-        return $DB->record_exists(self::TOKEN_TABLE, ['id' => $id, 'revoked' => 0]);
+        $conditions = ['id' => $id];
+        if ($owneruserid !== null) {
+            $conditions['userid'] = $owneruserid;
+        }
+        $record = $DB->get_record(self::TOKEN_TABLE, $conditions);
+        return $record && !empty($record->connectionid)
+            && self::grant_active((int) $record->connectionid, (int) $record->userid);
     }
 
     /**
@@ -778,7 +917,7 @@ final class oauth_lib {
     public static function has_active_connection(int $userid): bool {
         global $DB;
 
-        return $DB->record_exists(self::TOKEN_TABLE, ['userid' => $userid, 'revoked' => 0]);
+        return $DB->record_exists(self::GRANT_TABLE, ['userid' => $userid, 'revoked' => 0]);
     }
 
     /**
@@ -789,6 +928,7 @@ final class oauth_lib {
      */
     public static function reset_current_token_id(): void {
         self::$currenttokenid = null;
+        self::$currentconnectionid = null;
     }
 
     /**
@@ -803,8 +943,16 @@ final class oauth_lib {
     public static function revoke_all_tokens(): int {
         global $DB;
 
-        $count = $DB->count_records(self::TOKEN_TABLE, ['revoked' => 0]);
-        $DB->set_field(self::TOKEN_TABLE, 'revoked', 1, ['revoked' => 0]);
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            // Lock grants before tokens, matching rotation and single revocation.
+            $DB->set_field(self::GRANT_TABLE, 'revoked', 1, ['revoked' => 0]);
+            $count = $DB->count_records(self::TOKEN_TABLE, ['revoked' => 0]);
+            $DB->set_field(self::TOKEN_TABLE, 'revoked', 1, ['revoked' => 0]);
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
+        $transaction->allow_commit();
         return $count;
     }
 
@@ -826,16 +974,25 @@ final class oauth_lib {
     public static function revoke_token(int $id, ?int $owneruserid = null): bool {
         global $DB;
 
-        $conditions = ['id' => $id, 'revoked' => 0];
+        $conditions = ['id' => $id];
         if ($owneruserid !== null) {
             $conditions['userid'] = $owneruserid;
         }
         $record = $DB->get_record(self::TOKEN_TABLE, $conditions);
-        if (!$record) {
+        if (!$record || empty($record->connectionid)) {
             return false;
         }
-        $record->revoked = 1;
-        $DB->update_record(self::TOKEN_TABLE, $record);
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            if (!self::lock_connection((int) $record->connectionid)) {
+                $transaction->allow_commit();
+                return false;
+            }
+            self::revoke_locked_connection((int) $record->connectionid);
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
+        $transaction->allow_commit();
         return true;
     }
 
@@ -854,6 +1011,7 @@ final class oauth_lib {
         return $DB->get_records_sql(
             'SELECT t.id, t.clientid, t.userid, t.timecreated, t.expires, c.clientname
                FROM {' . self::TOKEN_TABLE . '} t
+               JOIN {' . self::GRANT_TABLE . '} g ON g.id = t.connectionid AND g.revoked = 0
           LEFT JOIN {' . self::CLIENT_TABLE . '} c ON c.clientid = t.clientid
               WHERE t.userid = :userid AND t.revoked = 0
            ORDER BY t.timecreated DESC',
@@ -879,11 +1037,40 @@ final class oauth_lib {
             'SELECT t.id, t.clientid, t.userid, t.timecreated, t.expires, c.clientname,
                     ' . $namefields . ', u.email
                FROM {' . self::TOKEN_TABLE . '} t
+               JOIN {' . self::GRANT_TABLE . '} g ON g.id = t.connectionid AND g.revoked = 0
           LEFT JOIN {' . self::CLIENT_TABLE . '} c ON c.clientid = t.clientid
           LEFT JOIN {user} u ON u.id = t.userid
               WHERE t.revoked = 0
            ORDER BY t.timecreated DESC'
         );
+    }
+
+    /** Stable issuing connection, independent of the token generation. */
+    public static function current_connection_id(): ?int {
+        return self::$currentconnectionid;
+    }
+
+    /** Tickets keep their own expiry; require the grant and its owner. */
+    public static function grant_active(int $id, int $userid): bool {
+        global $DB;
+        return $DB->record_exists(self::GRANT_TABLE, ['id' => $id, 'userid' => $userid, 'revoked' => 0]);
+    }
+
+    /** Acquire the shared connection row within a delegated transaction. */
+    private static function lock_connection(int $id): bool {
+        global $DB;
+        $marker = self::random_token(32);
+        $DB->execute('UPDATE {' . self::GRANT_TABLE . '}
+                         SET statehash = :marker WHERE id = :id AND revoked = 0',
+            ['marker' => $marker, 'id' => $id]);
+        return $DB->record_exists(self::GRANT_TABLE, ['id' => $id, 'statehash' => $marker, 'revoked' => 0]);
+    }
+
+    /** Revoke all generations and bound tickets while holding the grant lock. */
+    private static function revoke_locked_connection(int $id): void {
+        global $DB;
+        $DB->set_field(self::GRANT_TABLE, 'revoked', 1, ['id' => $id]);
+        $DB->set_field(self::TOKEN_TABLE, 'revoked', 1, ['connectionid' => $id]);
     }
 
     /**

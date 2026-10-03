@@ -22,16 +22,15 @@ namespace local_coursepilot;
  * reiner Wertesatz, ADR 0020) und relativem Pfad, mit einem Pruefwert fuer
  * bedingtes Schreiben.
  *
- * Genau eine Schnittstelle fuer beide kuenftigen Adapter (Moodles Private
- * Files, WebDAV) - welcher greift, entscheidet spaeter der Kontextpointer,
- * nicht dieses Interface (Spec 0021, Implementation Decisions). Noch ruft
- * kein Werkzeug einen Adapter dieses Vertrags auf - reines Danebenstellen
- * neben dem bisherigen Weg ({@see storage_anchor}, {@see context_files},
- * {@see material_files}), der unveraendert bleibt.
+ * Genau eine Schnittstelle fuer beide Adapter ({@see private_files_storage_port},
+ * {@see webdav_storage_port}). Welcher greift, entscheidet ausschliesslich
+ * {@see storage_anchor::port()} aus dem Kontextpointer; Kontextbereich,
+ * Materialbestand, Werkbank und der Nur-Lese-Zugriff auf den vorherigen Ort
+ * laufen ueber diesen Vertrag (Issue #645).
  *
  * Ein Pruefwert ist ein ortsneutraler Bezeichner fuer den Inhaltsstand einer
- * Datei (bei Private Files der Moodle-`contenthash`, spaeter beim
- * WebDAV-Adapter ein ETag/Aenderungszeit-Ersatz) - fuer den Aufrufer eine
+ * Datei (bei Private Files der Moodle-`contenthash`, beim WebDAV-Adapter ein
+ * schwaecherer ETag/Aenderungszeit-Ersatz ohne atomare Garantie) - fuer den Aufrufer eine
  * blanke Zeichenkette zum Vergleichen, kein Erkennungsmerkmal des Ortes
  * (Spec 0021 Implementation Decisions).
  *
@@ -96,6 +95,7 @@ interface storage_port {
      * @param storage_area $area
      * @param string $path
      * @param string $content Anzuhaengender Inhalt.
+     * @param string|null $expectedchecksum Preflight condition, as for write().
      * @return array{path: string, created: bool, size: int, checksum: string}
      * @throws \moodle_exception invalidpathkey/eigener Namensfehler des Bereichs,
      *         quotaerrorkey des Bereichs
@@ -105,7 +105,7 @@ interface storage_port {
      *         von aussen geaendert wurde - ein echter, wenn auch seltener Konflikt,
      *         kein Aufruffehler des Bereichs.
      */
-    public function append(storage_area $area, string $path, string $content): array;
+    public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array;
 
     /**
      * Loescht eine Datei, falls sie existiert.

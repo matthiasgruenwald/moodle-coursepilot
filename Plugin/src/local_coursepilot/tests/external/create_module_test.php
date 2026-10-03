@@ -861,7 +861,7 @@ final class create_module_test extends \advanced_testcase {
      * einzige Schreibweg ist add_moduleinfo().
      */
     public function test_source_never_writes_the_instance_table_directly(): void {
-        $source = file_get_contents(__DIR__ . '/../../classes/external/create_module.php');
+        $source = file_get_contents(__DIR__ . '/../../classes/catalog/write_target.php');
         $this->assertStringNotContainsString('$DB->update_record', $source);
         $this->assertStringNotContainsString('$DB->insert_record', $source);
         $this->assertStringContainsString('add_moduleinfo(', $source);

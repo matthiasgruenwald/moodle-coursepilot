@@ -297,5 +297,46 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026100201, 'local', 'coursepilot');
     }
 
+    if ($oldversion < 2026100300) {
+        local_coursepilot_migrate_oauth_connections($dbman);
+        upgrade_plugin_savepoint(true, 2026100300, 'local', 'coursepilot');
+    }
+
+    if ($oldversion < 2026100340) {
+        // #640: indexes for the scheduled history retention and metadata sweep.
+        foreach (['local_coursepilot_cm_version' => 'timecreated', 'local_coursepilot_cm_version_file' => 'fileid']
+                as $tablename => $field) {
+            $index = new xmldb_index($field, XMLDB_INDEX_NOTUNIQUE, [$field]);
+            $table = new xmldb_table($tablename);
+            if (!$dbman->index_exists($table, $index)) {
+                $dbman->add_index($table, $index);
+            }
+        }
+        upgrade_plugin_savepoint(true, 2026100340, 'local', 'coursepilot');
+    }
+
+    if ($oldversion < 2026100342) {
+        // #642: windowed budgets for anonymous OAuth registration and CIMD.
+        $table = new xmldb_table('local_coursepilot_oauth_budget');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('scope', XMLDB_TYPE_CHAR, '16', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('sourcekey', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('expires', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('hits', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_index('scope_source_expires', XMLDB_INDEX_UNIQUE, ['scope', 'sourcekey', 'expires']);
+        $table->add_index('expires', XMLDB_INDEX_NOTUNIQUE, ['expires']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2026100342, 'local', 'coursepilot');
+    }
+
+    if ($oldversion < 2026100344) {
+        // #644: indexes of the bounded OAuth cleanup; the task is renamed to oauth_cleanup.
+        local_coursepilot_add_oauth_cleanup_indexes($dbman);
+        upgrade_plugin_savepoint(true, 2026100344, 'local', 'coursepilot');
+    }
+
     return true;
 }

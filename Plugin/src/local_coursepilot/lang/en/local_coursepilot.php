@@ -86,7 +86,8 @@ $string['tool_delete_material_files'] = 'Deletes exactly the specified files fro
 $string['tool_clone_activity'] = 'Clones an activity within a course or across courses.';
 $string['tool_export_activity_backup'] = 'Returns the activity XML (backup file <module>.xml, without user data) of an existing activity - a template for how that activity type is built.';
 $string['tool_create_activity_from_xml'] = 'Creates an activity of a developed (not catalogued) type from an activity XML (build it from coursepilot_export_default_activity). The activity is created hidden, exported and compared with the input; on deviation it is removed again in the same call and nothing remains. Otherwise it becomes visible unless hidden is set. Creating only, never editing. With replaces_cmid the activity supersedes an existing one of the same type: the new one is placed directly behind it, the old one is only hidden (title unchanged, nothing deleted), and the response lists the places that still point at the old one (not resolved), the newest successor if the old one was already superseded (successor_cmid; ask the teacher whether to supersede that one instead, the call is not blocked) and the number of hidden earlier versions in the chain (hidden_predecessors); with dry_run=true nothing is written and only these hints are returned as a plan preview. Returns the cmid and the fields Moodle filled in by itself.';
-$string['tool_export_default_activity'] = 'Returns the activity XML of a developed (not catalogued) activity type with Moodle default values - a template for creating it from XML. The activity is created temporarily and removed again; nothing remains in the course.';
+$string['defaultactivitycleanupfailed'] = 'The temporary default activity could not be fully removed. No default XML is returned; check the course before retrying.';
+$string['tool_export_default_activity'] = 'Returns the activity XML of a developed (not catalogued) activity type with Moodle default values - a template for creating it from XML. This write operation creates a hidden temporary activity and removes it again before returning XML; nothing remains in the course. Use the existing plan and approval workflow.';
 $string['tool_report_clone_lineage'] = 'Reports whether quiz questions are copied or still shared with their source course.';
 $string['tool_list_skills'] = 'Lists the Coursepilot skill corpus shipped with the plugin. Before planning or writing, call coursepilot_list_skills first.';
 $string['tool_get_skill'] = 'Delivers one Coursepilot skill corpus entry by name.';
@@ -341,7 +342,23 @@ $string['contextfilehostnotallowed'] = 'File {$a}: this storage is not approved 
 
 // Change history: retention/deletion deadline (#387).
 $string['settinghistoryretentiondays'] = 'Change history retention period (days)';
-$string['settinghistoryretentiondays_desc'] = 'How long change-history states are kept per activity before being deleted on the next write to that same activity. No cron needed - cleanup runs alongside every write. At least 1 day; "no limit" is not an option.';
+$string['settinghistoryretentiondays_desc'] = 'How long change-history states are kept per activity. A daily background task deletes older states, including those of activities that are never changed again; a write to an activity also cleans its own expired states. At least 1 day; "no limit" is not an option.';
+$string['taskpurgehistory'] = 'Delete expired change history and orphaned history file metadata';
+
+// Anonymous OAuth registration budgets (#642).
+$string['settingoauthregistersitelimit'] = 'OAuth registrations per window (site)';
+$string['settingoauthregistersitelimit_desc'] = 'Maximum anonymous client registrations for the whole site per window. Further requests receive HTTP 429 until the window ends; already registered clients keep working. Zero or negative values mean 1; there is no unlimited option.';
+$string['settingoauthregistersourcelimit'] = 'OAuth registrations per window (per source)';
+$string['settingoauthregistersourcelimit_desc'] = 'Maximum anonymous client registrations per request source and window. The source is the remote address as determined by Moodle (forwarded headers only count with a configured reverse proxy; IPv6 per /64). Hosted AI clients register from shared provider addresses, so keep this high enough for your teachers. At least 1.';
+$string['settingoauthregisterwindow'] = 'OAuth registration window (seconds)';
+$string['settingoauthregisterwindow_desc'] = 'Length of the registration budget window. Changing it starts new windows. Budget records are deleted within an hour after their window has ended. At least 1 second.';
+$string['settingoauthcimdsitelimit'] = 'OAuth client metadata fetches per window (site)';
+$string['settingoauthcimdsitelimit_desc'] = 'Maximum first-time downloads of client metadata documents (clients that identify themselves with an https URL) for the whole site per window. Further unknown clients receive HTTP 429 until the window ends without any download; already known clients keep working. A failed download is not repeated for the same URL until the current 10-minute period ends. At least 1; there is no unlimited option.';
+$string['settingoauthcimdsourcelimit'] = 'OAuth client metadata fetches per window (per source)';
+$string['settingoauthcimdsourcelimit_desc'] = 'Maximum first-time client metadata downloads per request source and window, with the same source rules as for registrations. At least 1.';
+$string['settingoauthcimdwindow'] = 'OAuth client metadata fetch window (seconds)';
+$string['settingoauthcimdwindow_desc'] = 'Length of the client metadata fetch budget window. At least 1 second.';
+$string['taskoauthcleanup'] = 'Delete expired OAuth state';
 
 $string['connections'] = 'Coursepilot connections';
 $string['connectionsintro'] = 'All active remote-access connections on this site. Revoking a connection invalidates its token immediately — any further access then fails.';
@@ -439,16 +456,22 @@ $string['privacy:metadata:oauth_token:timecreated'] = 'Issuance time.';
 $string['privacy:metadata:core_files'] = 'Coursepilot context files in the teacher\'s private file area.';
 
 // classes/privacy/provider.php: change history (#385/#386/#387).
-$string['privacy:metadata:cm_version'] = 'Change history of activities: a full settings snapshot per write, with the user id of the teacher who triggered the write. Automatically deleted at most 1 year after the write (shortenable by the administration via the "Change history retention period" setting), and immediately when the activity or course is deleted.';
+$string['privacy:metadata:cm_version'] = 'Change history of activities: a full settings snapshot per write, with the user id of the teacher who triggered the write. A daily background task deletes states older than the retention period set by the administration (setting "Change history retention period", default 1 year, minimum 1 day); states are also deleted immediately when the activity or course is deleted, and on an approved privacy request for the teacher or the activity. A privacy export contains the teacher\'s own states as metadata; the snapshot content is course design shared with other editors and is not exported.';
 $string['privacy:metadata:cm_version:cmid'] = 'The activity this state belongs to.';
 $string['privacy:metadata:cm_version:courseid'] = 'The course this activity belonged to at the time of the write.';
+$string['privacy:metadata:cm_version:version'] = 'Sequential number of the state within the activity.';
+$string['privacy:metadata:cm_version:source'] = 'Origin of the write (Moodle form, discovered starting state, clone, activity XML).';
+$string['privacy:metadata:cm_version:sourcecmid'] = 'The related activity of a clone or replacement.';
+$string['privacy:metadata:cm_version:moduleinfo_json'] = 'Snapshot of the activity settings and content at the time of the write.';
+$string['privacy:metadata:cm_version:coursemodule_json'] = 'Snapshot of the course module record at the time of the write.';
+$string['privacy:metadata:cm_version:arrangement_json'] = 'Snapshot of the quiz question arrangement at the time of the write (quizzes only).';
 $string['privacy:metadata:cm_version:userid'] = 'The user id of the teacher the write ran under.';
 $string['privacy:metadata:cm_version:timecreated'] = 'Time of the write.';
 $string['privacy:metadata:cm_version_file'] = 'Links a history state to the files the activity had at that time (metadata only, see local_coursepilot_cm_file). Deleted along with its state.';
 $string['privacy:metadata:cm_version_file:versionid'] = 'The history state this file belongs to.';
 $string['privacy:metadata:cm_version_file:fileid'] = 'The referenced file metadata row (local_coursepilot_cm_file).';
 $string['privacy:metadata:cm_version_file:gap'] = 'Whether the file content is outside the description and cannot be written back.';
-$string['privacy:metadata:cm_file'] = 'Deduplicated file metadata (name, size, path) for the change history, without file content.';
+$string['privacy:metadata:cm_file'] = 'Deduplicated file metadata (name, size, path) for the change history, without file content. Deleted as soon as no history state references it any more.';
 $string['privacy:metadata:cm_file:pathnamehash'] = 'Hash of the file pathname, used for deduplication.';
 $string['privacy:metadata:cm_file:contenthash'] = 'Hash of the file content, used for deduplication.';
 $string['privacy:metadata:cm_file:filepath'] = 'Folder path of the file within the activity.';
@@ -598,3 +621,14 @@ $string['storagelocationmarkerdefect'] = 'broken pointer ({$a})';
 
 $string['settingwebdavheading'] = 'External storage location (WebDAV)';
 $string['settingwebdavheading_desc'] = 'What the school should know about the external storage location: names and images from the material store can go to the AI. A WebDAV user instance stores the password in plain text — an app password instead of the actual account password is recommended. Core gap: the repository provider for data access/deletion searches by "userid", but user instances carry "userid = 0" and are therefore not found. External context files have a write lock but no read lock. The current state of the four related status checks is on the <a href="{$a}">system status</a> page.';
+
+$string['activitycleanupincomplete'] = 'Activity cleanup is incomplete. Unproven ownership prevents automatic deletion; inspect the failed creation in Moodle.';
+
+// Stable OAuth connections (#638).
+$string['privacy:metadata:oauth_grant'] = 'Stable user and client connections shared by token generations and download tickets.';
+$string['privacy:metadata:oauth_grant:userid'] = 'The user who authorised the connection.';
+$string['privacy:metadata:oauth_grant:clientid'] = 'The authorised AI client id.';
+$string['privacy:metadata:oauth_grant:revoked'] = 'Whether the entire connection has been revoked.';
+$string['privacy:metadata:oauth_grant:timecreated'] = 'Connection creation time.';
+$string['privacy:metadata:oauth_token:connectionid'] = 'The stable connection owning this token generation.';
+$string['privacy:metadata:workbench_ticket:oauthconnectionid'] = 'The stable connection that issued this download ticket.';

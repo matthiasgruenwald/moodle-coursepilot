@@ -152,10 +152,9 @@ final class observer_test extends \advanced_testcase {
 
     /**
      * Abnahmekriterien: Datei-Zeilen des Modulkontexts werden erfasst,
-     * Intro-Dateien sind rueckschreibbar (keine Luecke), Dateien ausserhalb
-     * der Beschreibung sind als Luecke markiert.
+     * Intro files are restorable; unknown file areas are not captured.
      */
-    public function test_files_outside_intro_are_marked_as_gap(): void {
+    public function test_files_outside_allowed_design_areas_are_not_captured(): void {
         global $DB;
 
         $this->resetAfterTest();
@@ -195,12 +194,9 @@ final class observer_test extends \advanced_testcase {
         $this->assertSame(0, (int) $introlink->gap, 'Intro-Datei darf nicht als Luecke markiert sein.');
         $this->assertSame('intro-bild.png', $introrow->filename);
 
-        $otherrow = $DB->get_record('local_coursepilot_cm_file', ['pathnamehash' => $otherfile->get_pathnamehash()], '*', MUST_EXIST);
-        $otherlink = $DB->get_record('local_coursepilot_cm_version_file', [
-            'versionid' => $version->id,
-            'fileid' => $otherrow->id,
-        ], '*', MUST_EXIST);
-        $this->assertSame(1, (int) $otherlink->gap, 'Datei ausserhalb der Beschreibung muss als Luecke markiert sein.');
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', [
+            'pathnamehash' => $otherfile->get_pathnamehash(),
+        ]));
 
         // Keine Bytes gespeichert - nur Metadaten-Spalten, "content" existiert nicht als Feld.
         $this->assertObjectNotHasProperty('content', $introrow);

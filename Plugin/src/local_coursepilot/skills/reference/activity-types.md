@@ -106,7 +106,10 @@ beginnt.
    (`cmid`) ihre Aktivitäts-XML und zeigt, wie sie gebaut ist. Sonst liefert
    `coursepilot_export_default_activity` (`courseid`, `modname`) eine
    Muster-XML mit Moodle-Standardwerten; das Werkzeug legt dafür kurz an und
-   entfernt wieder, im Kurs bleibt nichts zurück.
+   entfernt wieder, im Kurs bleibt nichts zurück. Dieser Schreibzugriff wird im
+   bestehenden Plan-/Freigabeablauf (`implementation-plan-workflow`) angekündigt
+   und erst nach Freigabe ausgeführt; ohne Freigabe endet die Musterbeschaffung
+   hier.
 4. **Bauen.** Aus Ablage oder Muster die Aktivitäts-XML mit dem Inhalt der
    Lehrkraft bauen. Feldnamen, Reihenfolge und Wertebereiche stammen aus dem
    Muster.

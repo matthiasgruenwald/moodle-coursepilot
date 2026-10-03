@@ -109,11 +109,12 @@ final class private_files_storage_port implements storage_port {
     /**
      * @inheritDoc
      */
-    public function append(storage_area $area, string $path, string $content): array {
+    public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
         [$directory, $filename] = $this->resolve_writable_file($area, $path);
         $clientpath = storage_anchor::normalise_client_path($area, $path);
         $existing = storage_anchor::read_content($directory, $filename);
 
+        $this->require_checksum_match($existing, $expectedchecksum, $clientpath);
         storage_anchor::require_quota($area, strlen($content));
         $size = storage_anchor::append($directory, $filename, $content);
 

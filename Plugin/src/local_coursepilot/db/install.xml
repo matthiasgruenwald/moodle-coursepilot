@@ -20,6 +20,7 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="clientid" UNIQUE="true" FIELDS="clientid"/>
+        <INDEX NAME="timecreated" UNIQUE="false" FIELDS="timecreated" COMMENT="Unused client cleanup (#644)."/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_coursepilot_oauth_code" COMMENT="Kurzlebige Autorisierungscodes, PKCE-gebunden, genau einmal einloesbar (#336).">
@@ -38,11 +39,42 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="code" UNIQUE="true" FIELDS="code"/>
+        <INDEX NAME="expires" UNIQUE="false" FIELDS="expires" COMMENT="Expired code cleanup (#644)."/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_coursepilot_oauth_grant" COMMENT="Stable user/client connection; shared rotation and revocation state (#638).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="clientid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="revoked" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="statehash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS><KEY NAME="primary" TYPE="primary" FIELDS="id"/></KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_revoked" UNIQUE="false" FIELDS="userid, revoked"/>
+        <INDEX NAME="revoked_clientid" UNIQUE="false" FIELDS="revoked, clientid" COMMENT="Revoked connection and unused client cleanup (#644)."/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_coursepilot_oauth_budget" COMMENT="Windowed anonymous OAuth budgets per scope, site and source; rows expire with their window (#642).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="scope" TYPE="char" LENGTH="16" NOTNULL="true" SEQUENCE="false" COMMENT="register or cimd."/>
+        <FIELD NAME="sourcekey" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="* for the site counter, otherwise HMAC of the trusted request source."/>
+        <FIELD NAME="expires" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="End of the window."/>
+        <FIELD NAME="hits" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS><KEY NAME="primary" TYPE="primary" FIELDS="id"/></KEYS>
+      <INDEXES>
+        <INDEX NAME="scope_source_expires" UNIQUE="true" FIELDS="scope, sourcekey, expires"/>
+        <INDEX NAME="expires" UNIQUE="false" FIELDS="expires"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_coursepilot_oauth_token" COMMENT="SHA-256-Hashes der Access- und Refresh-Token, 1h/30d, Refresh-Rotation (#336, #534).">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="connectionid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Stable grant; NULL only for historical rows whose family is unknown."/>
         <FIELD NAME="accesstokenhash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="sha256(Access-Token); das Geheimnis selbst wird nie gespeichert."/>
         <FIELD NAME="refreshtokenhash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="sha256(Refresh-Token); das Geheimnis selbst wird nie gespeichert."/>
         <FIELD NAME="clientid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
@@ -56,6 +88,7 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
       <INDEXES>
+        <INDEX NAME="connectionid" UNIQUE="false" FIELDS="connectionid"/>
         <INDEX NAME="accesstokenhash" UNIQUE="true" FIELDS="accesstokenhash"/>
         <INDEX NAME="refreshtokenhash" UNIQUE="true" FIELDS="refreshtokenhash"/>
       </INDEXES>
@@ -81,6 +114,7 @@
         <INDEX NAME="cmid_version" UNIQUE="true" FIELDS="cmid, version"/>
         <INDEX NAME="courseid" UNIQUE="false" FIELDS="courseid"/>
         <INDEX NAME="cmid_timecreated" UNIQUE="false" FIELDS="cmid, timecreated" COMMENT="Traegt die opportunistische Loeschfrist-Bereinigung je cmid (#387)."/>
+        <INDEX NAME="timecreated" UNIQUE="false" FIELDS="timecreated" COMMENT="Scheduled retention batches across all activities (#640)."/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_coursepilot_cm_file" COMMENT="Deduplizierte Datei-Metadaten (keine Bytes) je pathnamehash+contenthash; ein Datensatz kann von mehreren Staenden referenziert werden (#385).">
@@ -116,6 +150,7 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="versionid" UNIQUE="false" FIELDS="versionid"/>
+        <INDEX NAME="fileid" UNIQUE="false" FIELDS="fileid" COMMENT="Reference check before deleting orphaned file metadata (#640)."/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_coursepilot_context_mark" COMMENT="Markierungsgedaechtnis (#493, Spec #486 Paragraph 6): nur das Bit 'markiert ja/nein' je Kontextdatei, Schluessel aus Pfad, Groesse, Aenderungszeit und ETag.">
@@ -143,6 +178,7 @@
         <FIELD NAME="path" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Client-Pfad der Werkbankdatei, relativ zur Werkbankwurzel."/>
         <FIELD NAME="contenthash" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false" COMMENT="Bei Abruf gegen den aktuellen Dateiinhalt geprueft - Aenderung seit Ausstellung wird abgelehnt."/>
         <FIELD NAME="tickethash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="sha256(Ticketgeheimnis) - das Geheimnis selbst wird nie gespeichert."/>
+        <FIELD NAME="oauthconnectionid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Stable issuing grant, independent of rotation."/>
         <FIELD NAME="oauthtokenid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="local_coursepilot_oauth_token.id der ausstellenden Verbindung, NULL wenn keine bekannt war."/>
         <FIELD NAME="expires" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
@@ -151,7 +187,9 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
       <INDEXES>
+        <INDEX NAME="oauthconnectionid" UNIQUE="false" FIELDS="oauthconnectionid"/>
         <INDEX NAME="tickethash" UNIQUE="true" FIELDS="tickethash"/>
+        <INDEX NAME="expires" UNIQUE="false" FIELDS="expires" COMMENT="Expired ticket cleanup (#644)."/>
       </INDEXES>
     </TABLE>
   </TABLES>

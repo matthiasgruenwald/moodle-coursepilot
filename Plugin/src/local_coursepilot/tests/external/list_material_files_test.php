@@ -342,6 +342,73 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
+     * Issue #645: the material store returns the same field set at both
+     * locations through the anchor's adapter; the weaker external check
+     * value is not presented as a content hash.
+     */
+    public function test_store_listing_has_the_same_fields_at_both_locations(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        get_file_storage()->create_file_from_string([
+            'contextid' => material_files::own_context()->id,
+            'component' => material_files::COMPONENT,
+            'filearea' => material_files::FILEAREA,
+            'itemid' => material_files::ITEMID,
+            'filepath' => '/coursepilot-material/',
+            'filename' => 'blatt.pdf',
+        ], 'Inhalt');
+        $moodle = external_api::clean_returnvalue(list_material_files::execute_returns(), list_material_files::execute());
+
+        [, $fake] = $this->set_up_external_material();
+        $fake->seed_folder('/Coursepilot/Material');
+        $fake->seed_file('/Coursepilot/Material/blatt.pdf', 'Inhalt');
+        $external = external_api::clean_returnvalue(list_material_files::execute_returns(), list_material_files::execute());
+
+        $moodleentry = $this->find_entry($moodle['entries'], 'blatt.pdf');
+        $externalentry = $this->find_entry($external['entries'], 'blatt.pdf');
+        $this->assertSame(array_keys($moodleentry), array_keys($externalentry));
+        $this->assertSame(sha1('Inhalt'), $moodleentry['contenthash']);
+        $this->assertSame('', $externalentry['contenthash']);
+        $this->assertSame($moodleentry['size'], $externalentry['size']);
+    }
+
+    /**
+     * Issue #645: the workbench lists and reads through the anchor's
+     * Private Files adapter with the unchanged directory, path and error
+     * contract.
+     */
+    public function test_workbench_lists_and_reads_through_the_anchor(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        get_file_storage()->create_file_from_string([
+            'contextid' => material_files::own_context()->id,
+            'component' => material_files::COMPONENT,
+            'filearea' => material_files::FILEAREA,
+            'itemid' => material_files::ITEMID,
+            'filepath' => '/coursepilot-material/faecher/',
+            'filename' => 'blatt.pdf',
+        ], 'Inhalt');
+
+        $listed = list_material_files::execute('faecher/', material_files::LOCATION_WORKBENCH);
+        $this->assertSame('faecher', $listed['path']);
+        $this->assertSame(sha1('Inhalt'), $this->find_entry($listed['entries'], 'blatt.pdf')['contenthash']);
+
+        $read = \local_coursepilot\material_area::read_for_location(material_files::LOCATION_WORKBENCH, 'faecher/blatt.pdf');
+        $this->assertSame('faecher/blatt.pdf', $read['path']);
+        $this->assertSame('Inhalt', $read['content']);
+        $this->assertSame(sha1('Inhalt'), $read['contenthash']);
+
+        foreach (['../blatt.pdf', ''] as $invalid) {
+            try {
+                \local_coursepilot\material_area::read_for_location(material_files::LOCATION_WORKBENCH, $invalid);
+                $this->fail('Invalid path accepted: ' . $invalid);
+            } catch (\moodle_exception $e) {
+                $this->assertSame('invalidmaterialpath', $e->errorcode);
+            }
+        }
+    }
+
+    /**
      * @param array $entries
      * @param string $name
      * @return array|null

@@ -84,6 +84,10 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
         $record->revoked = 0;
         $record->timecreated = time();
+        $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
+            'userid' => $record->userid, 'clientid' => $record->clientid, 'revoked' => $record->revoked,
+            'statehash' => bin2hex(random_bytes(32)), 'timecreated' => $record->timecreated,
+        ]);
         $record->id = $DB->insert_record('local_coursepilot_oauth_token', $record);
         $record->accesstoken = $accesstoken;
         $record->refreshtoken = $refreshtoken;

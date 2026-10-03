@@ -32,8 +32,7 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Default activity XML of a developed activity type (Spec 0026, #589): creates the
  * activity with the Moodle form defaults, exports it with {@see activity_backup::export()}
- * and removes it again ({@see self::remove()}). Nothing is left in the course.
- * Read-only for the caller (exception in tool_registry::is_write_class).
+ * and removes its own hidden activity again. Success means nothing is left in the course.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -61,7 +60,7 @@ final class export_default_activity extends external_api {
      * @throws moodle_exception defaultactivitycatalogued, kindexcluded*
      */
     public static function execute(int $courseid, string $modname): array {
-        global $CFG, $DB;
+        global $CFG;
         $params = self::validate_parameters(self::execute_parameters(), ['courseid' => $courseid, 'modname' => $modname]);
         $modname = $params['modname'];
 
@@ -75,16 +74,23 @@ final class export_default_activity extends external_api {
 
         require_once($CFG->dirroot . '/course/modlib.php');
         $course = get_course($params['courseid']);
-        $before = $DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$course->id]);
+        $moduleinfo = self::default_moduleinfo($course, $modname);
         try {
-            $xml = activity_backup::export(self::create_default($course, $modname));
+            // Native creation records its cm and instance on this same object, even on failure.
+            $created = \add_moduleinfo($moduleinfo, $course);
+            $cm = get_coursemodule_from_id($modname, $created->coursemodule, $course->id, false, MUST_EXIST);
+            $xml = activity_backup::export($cm);
         } finally {
-            // Also covers a create that fails after the cm row exists.
-            $created = array_diff($DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$course->id]), $before);
-            try {
-                self::remove($course, $created);
-            } catch (\Throwable $cleanup) {
-                debugging('export_default_activity cleanup failed: ' . $cleanup->getMessage(), DEBUG_DEVELOPER);
+            if (!empty($moduleinfo->coursemodule)) {
+                try {
+                    course_module_placement::discard_failed(
+                        (int) $moduleinfo->coursemodule,
+                        empty($moduleinfo->instance) ? null : (int) $moduleinfo->instance
+                    );
+                } catch (\Throwable $cleanup) {
+                    throw new moodle_exception('defaultactivitycleanupfailed', 'local_coursepilot', '', null,
+                        $cleanup->getMessage());
+                }
             }
         }
 
@@ -92,29 +98,14 @@ final class export_default_activity extends external_api {
     }
 
     /**
-     * Discards the throwaway activity: the history cascades with the delete event, the
-     * recycle bin stays untouched (see {@see course_module_placement::discard_failed()}).
-     * No transaction: the backup runs DDL, which commits implicitly on MySQL/MariaDB.
-     *
-     * @param \stdClass $course
-     * @param int[] $cmids course modules created by the run
-     */
-    private static function remove(\stdClass $course, array $cmids): void {
-        foreach ($cmids as $cmid) {
-            course_module_placement::discard_failed((int) $cmid);
-        }
-        rebuild_course_cache($course->id, true);
-    }
-
-    /**
-     * Creates the activity from the module form defaults, as course/modedit.php would
+     * Prepares the activity from the module form defaults, as course/modedit.php would
      * for an untouched "add" form.
      *
      * @param \stdClass $course
      * @param string $modname
-     * @return \stdClass course module record
+     * @return \stdClass native module creation data
      */
-    private static function create_default(\stdClass $course, string $modname): \stdClass {
+    private static function default_moduleinfo(\stdClass $course, string $modname): \stdClass {
         global $CFG;
         require_once($CFG->dirroot . "/mod/$modname/mod_form.php");
         [$module, , $cw, $cm, $data] = \prepare_new_moduleinfo_data($course, $modname, self::SECTION);
@@ -135,10 +126,9 @@ final class export_default_activity extends external_api {
         $moduleinfo->module = (int) $module->id;
         $moduleinfo->section = self::SECTION;
         $moduleinfo->cmidnumber ??= '';
-        $moduleinfo->visible = 1;
-        $moduleinfo->visibleoncoursepage = 1;
-        $created = \add_moduleinfo($moduleinfo, $course);
-        return get_coursemodule_from_id($modname, $created->coursemodule, $course->id, false, MUST_EXIST);
+        $moduleinfo->visible = 0;
+        $moduleinfo->visibleoncoursepage = 0;
+        return $moduleinfo;
     }
 
     /**

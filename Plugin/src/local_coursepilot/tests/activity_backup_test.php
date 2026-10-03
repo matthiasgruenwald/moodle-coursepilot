@@ -123,6 +123,129 @@ final class activity_backup_test extends \advanced_testcase {
         $this->assertSame($tempbefore, $this->tempdir_entries());
     }
 
+    public function test_failed_restore_preserves_concurrent_native_creation_and_recyclebin(): void {
+        global $DB, $CFG;
+        $this->resetAfterTest();
+        if ($DB->get_dbfamily() !== 'mysql') {
+            $this->markTestSkipped('MariaDB/MySQL named-lock fixture required.');
+        }
+        $course = $this->course_as_editing_teacher();
+        set_config('coursebinenable', 1, 'tool_recyclebin');
+        $token = 'cp' . bin2hex(random_bytes(8));
+        $gate = $token . 'gate';
+        $ready = $token . 'ready';
+        $trigger = $token . 'trigger';
+        $DB->get_field_sql('SELECT GET_LOCK(?, 10)', [$gate]);
+        $table = $DB->get_prefix() . 'page';
+        // The restore reaches native instance creation only after its cm/task identity exists.
+        $ddl = new \mysqli($CFG->dbhost, $CFG->dbuser, $CFG->dbpass, $CFG->dbname);
+        $ddl->query("CREATE TRIGGER $trigger BEFORE INSERT ON $table FOR EACH ROW BEGIN
+            IF NEW.name = 'Owned restore' THEN
+                SET @cp_ready = GET_LOCK('$ready', 10);
+                SET @cp_gate = GET_LOCK('$gate', 30);
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Synthetic restore failure';
+            END IF;
+        END");
+        $xmlfile = tempnam($CFG->tempdir, 'cp-restore');
+        file_put_contents($xmlfile, $this->page_xml('Owned restore'));
+        $command = [PHP_BINARY, __DIR__ . '/fixtures/failed_restore_process.php',
+            (string) $course->id, (string) $GLOBALS['USER']->id, $xmlfile];
+        $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        try {
+            $deadline = microtime(true) + 20;
+            do {
+                $waiting = $DB->get_field_sql('SELECT IS_USED_LOCK(?)', [$ready]);
+                if ($waiting) {
+                    break;
+                }
+                usleep(10000);
+            } while (microtime(true) < $deadline);
+            if (!$waiting) {
+                stream_set_blocking($pipes[1], false);
+                stream_set_blocking($pipes[2], false);
+                $this->fail('Restore barrier: ' . stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]));
+            }
+            $own = $DB->get_record('course_modules', ['course' => $course->id, 'instance' => 0], '*', MUST_EXIST);
+            $foreign = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Foreign']);
+            $deleted = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Foreign deleted']);
+            course_delete_module($deleted->cmid);
+            $bin = $DB->get_records('tool_recyclebin_course', ['courseid' => $course->id]);
+            $this->assertNotEmpty($bin);
+            $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);
+            $output = stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            $this->assertSame(0, proc_close($process), $output);
+            $process = null;
+            $this->assertFalse($DB->record_exists('course_modules', ['id' => $own->id]));
+            $this->assertFalse($DB->record_exists('context', ['contextlevel' => CONTEXT_MODULE, 'instanceid' => $own->id]));
+            $this->assertTrue($DB->record_exists('course_modules', ['id' => $foreign->cmid]));
+            $this->assertEquals($bin, $DB->get_records('tool_recyclebin_course', ['courseid' => $course->id]));
+        } finally {
+            $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);
+            if (is_resource($process)) {
+                proc_terminate($process);
+                proc_close($process);
+            }
+            $ddl->query("DROP TRIGGER IF EXISTS $trigger");
+            $ddl->close();
+            unlink($xmlfile);
+        }
+    }
+
+    public function test_partial_restore_removes_its_task_owned_instance_before_cm_linking(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        if ($DB->get_dbfamily() !== 'mysql') {
+            $this->markTestSkipped('MariaDB/MySQL trigger fixture required.');
+        }
+        $course = $this->course_as_editing_teacher();
+        $trigger = 'cp' . bin2hex(random_bytes(8));
+        $ddl = new \mysqli($CFG->dbhost, $CFG->dbuser, $CFG->dbpass, $CFG->dbname);
+        $table = $DB->get_prefix() . 'course_modules';
+        $DB->execute('SET @cp_link_failed = NULL');
+        $ddl->query("CREATE TRIGGER $trigger BEFORE UPDATE ON $table FOR EACH ROW BEGIN
+            IF NEW.instance > 0 AND OLD.instance = 0 AND @cp_link_failed IS NULL THEN
+                SET @cp_link_failed = 1;
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Synthetic instance-link failure';
+            END IF;
+        END");
+        try {
+            try {
+                activity_backup::restore((int) $course->id, 1, $this->page_xml('Unlinked owned instance'));
+                $this->fail('Restore must fail before linking its native instance.');
+            } catch (\dml_write_exception $e) {
+                $this->assertStringContainsString('Synthetic instance-link failure', $e->debuginfo);
+            }
+            $this->assertFalse($DB->record_exists('page', ['course' => $course->id]));
+            $this->assertSame([], $this->cmids((int) $course->id));
+        } finally {
+            $ddl->query("DROP TRIGGER IF EXISTS $trigger");
+            $ddl->close();
+            $DB->execute('SET @cp_link_failed = NULL');
+        }
+    }
+
+    public function test_missing_restore_identity_reports_incomplete_cleanup_without_deletion(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        $course = $this->course_as_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $backupid = activity_backup::backup(get_coursemodule_from_id('page', $page->cmid));
+        $path = $CFG->tempdir . '/backup/' . $backupid . '/moodle_backup.xml';
+        $xml = file_get_contents($path);
+        $xml = preg_replace('#<moodle_version>.*?</moodle_version>#s', '<moodle_version>9999999999</moodle_version>', $xml);
+        file_put_contents($path, $xml);
+        $before = $this->cmids((int) $course->id);
+        try {
+            activity_backup::restore((int) $course->id, null, $backupid);
+            $this->fail('Missing ownership must fail explicitly.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('activitycleanupincomplete', $e->errorcode);
+        }
+        $this->assertSame($before, $this->cmids((int) $course->id));
+    }
+
     public function test_restore_rejects_xml_that_is_not_an_activity(): void {
         $this->resetAfterTest();
         $course = $this->course_as_editing_teacher();

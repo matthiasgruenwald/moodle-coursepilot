@@ -114,7 +114,138 @@ final class export_default_activity_test extends \advanced_testcase {
         export_default_activity::execute($course->id, 'book');
     }
 
-    public function test_is_registered_as_read_tool(): void {
-        $this->assertFalse(tool_registry::is_write('coursepilot_export_default_activity'));
+    public function test_hidden_export_preserves_concurrent_native_creation_and_recyclebin(): void {
+        global $DB, $CFG;
+        [$course] = $this->setup_teacher();
+        if ($DB->get_dbfamily() !== 'mysql') {
+            $this->markTestSkipped('MariaDB/MySQL named-lock fixture required.');
+        }
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        set_config('coursebinenable', 1, 'tool_recyclebin');
+        $token = 'cp' . bin2hex(random_bytes(8));
+        $gate = $token . 'gate';
+        $ready = $token . 'ready';
+        $trigger = $token . 'trigger';
+        $DB->get_field_sql('SELECT GET_LOCK(?, 10)', [$gate]);
+        $table = $DB->get_prefix() . 'backup_controllers';
+        $cmtable = $DB->get_prefix() . 'course_modules';
+        $bookmodule = $DB->get_field('modules', 'id', ['name' => 'book'], MUST_EXIST);
+        $ddl = new \mysqli($CFG->dbhost, $CFG->dbuser, $CFG->dbpass, $CFG->dbname);
+        $ddl->query("CREATE TRIGGER $trigger BEFORE INSERT ON $table FOR EACH ROW BEGIN
+            IF NEW.type = 'activity' AND EXISTS (SELECT 1 FROM $cmtable WHERE id = NEW.itemid
+                    AND course = $course->id AND module = $bookmodule) THEN
+                SET @cp_ready = GET_LOCK('$ready', 10);
+                SET @cp_gate = GET_LOCK('$gate', 30);
+            END IF;
+        END");
+        $command = [PHP_BINARY, __DIR__ . '/../fixtures/default_export_process.php',
+            (string) $course->id, (string) $GLOBALS['USER']->id];
+        $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        try {
+            $deadline = microtime(true) + 20;
+            do {
+                $waiting = $DB->get_field_sql('SELECT IS_USED_LOCK(?)', [$ready]);
+                if ($waiting) {
+                    break;
+                }
+                usleep(10000);
+            } while (microtime(true) < $deadline);
+            if (!$waiting) {
+                stream_set_blocking($pipes[1], false);
+                stream_set_blocking($pipes[2], false);
+                $this->fail('Export barrier: ' . stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]));
+            }
+            $own = $DB->get_record('course_modules', ['course' => $course->id, 'module' => $DB->get_field('modules', 'id', ['name' => 'book'])], '*', MUST_EXIST);
+            $this->assertSame(0, (int) $own->visible);
+            $this->assertSame(0, (int) $own->visibleoncoursepage);
+            // Spec 0028 story 33 protects learners; teachers retain native hidden-activity access.
+            $learnercm = get_fast_modinfo($course->id, $student->id)->get_cm($own->id);
+            $this->assertFalse($learnercm->uservisible);
+            $this->assertFalse($learnercm->is_visible_on_course_page());
+            $teachercm = get_fast_modinfo($course->id, $GLOBALS['USER']->id)->get_cm($own->id);
+            $this->assertTrue($teachercm->is_visible_on_course_page());
+            $foreign = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Foreign']);
+            $deleted = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Foreign deleted']);
+            course_delete_module($deleted->cmid);
+            $bin = $DB->get_records('tool_recyclebin_course', ['courseid' => $course->id]);
+            $this->assertNotEmpty($bin);
+            $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);
+            $output = stream_get_contents($pipes[1]);
+            $errors = stream_get_contents($pipes[2]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            $this->assertSame(0, proc_close($process), $output . $errors);
+            $process = null;
+            $result = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+            $this->assertStringContainsString('<book id=', $result['xml']);
+            $this->assertFalse($DB->record_exists('course_modules', ['id' => $own->id]));
+            $this->assertFalse($DB->record_exists('local_coursepilot_cm_version', ['cmid' => $own->id]));
+            $this->assertTrue($DB->record_exists('course_modules', ['id' => $foreign->cmid]));
+            $this->assertEquals($bin, $DB->get_records('tool_recyclebin_course', ['courseid' => $course->id]));
+        } finally {
+            $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);
+            if (is_resource($process)) {
+                proc_terminate($process);
+                proc_close($process);
+            }
+            $ddl->query("DROP TRIGGER IF EXISTS $trigger");
+            $ddl->close();
+        }
+    }
+
+    public function test_cleanup_failure_returns_an_explicit_error_instead_of_xml(): void {
+        global $DB, $CFG;
+        [$course] = $this->setup_teacher();
+        if ($DB->get_dbfamily() !== 'mysql') {
+            $this->markTestSkipped('MariaDB/MySQL trigger fixture required.');
+        }
+        $trigger = 'cp' . bin2hex(random_bytes(8));
+        $table = $DB->get_prefix() . 'course_modules';
+        $ddl = new \mysqli($CFG->dbhost, $CFG->dbuser, $CFG->dbpass, $CFG->dbname);
+        $ddl->query("CREATE TRIGGER $trigger BEFORE DELETE ON $table FOR EACH ROW BEGIN
+            IF OLD.course = $course->id THEN
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Synthetic cleanup failure';
+            END IF;
+        END");
+        try {
+            try {
+                export_default_activity::execute($course->id, 'book');
+                $this->fail('Cleanup failure must not return XML success');
+            } catch (\moodle_exception $e) {
+                $this->assertSame('defaultactivitycleanupfailed', $e->errorcode);
+            }
+        } finally {
+            $ddl->query("DROP TRIGGER IF EXISTS $trigger");
+            $ddl->close();
+        }
+    }
+
+    public function test_native_creation_and_deletion_events_remain_observable(): void {
+        [$course] = $this->setup_teacher();
+        $sink = $this->redirectEvents();
+        $result = export_default_activity::execute($course->id, 'book');
+        $events = $sink->get_events();
+        $created = array_values(array_filter($events,
+            fn($event) => $event instanceof \core\event\course_module_created));
+        $deleted = array_values(array_filter($events,
+            fn($event) => $event instanceof \core\event\course_module_deleted));
+        $this->assertStringContainsString('<book id=', $result['xml']);
+        $this->assertCount(1, $created);
+        $this->assertCount(1, $deleted);
+        $this->assertSame((int) $created[0]->objectid, (int) $deleted[0]->objectid);
+        $sink->close();
+    }
+
+    public function test_requires_backup_capability(): void {
+        [$course] = $this->setup_teacher();
+        $roleid = $GLOBALS['DB']->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
+        assign_capability('moodle/backup:backupactivity', CAP_PROHIBIT, $roleid, \context_course::instance($course->id));
+        $this->expectException(\required_capability_exception::class);
+        export_default_activity::execute($course->id, 'book');
+    }
+
+    public function test_is_registered_as_write_tool(): void {
+        $this->assertTrue(tool_registry::is_write('coursepilot_export_default_activity'));
     }
 }

@@ -225,7 +225,15 @@ final class storage_anchor {
      * gelesen; Werkzeuge und Bereichsfassaden sehen ausschliesslich den Port.
      */
     public static function port(storage_area $area, int $courseid = 0): storage_port {
-        $location = self::effective_location($area);
+        return self::port_at(self::effective_location($area), $courseid);
+    }
+
+    /**
+     * The adapter for an already resolved location - only for the read-only
+     * previous location ({@see previous_location}), whose location comes from
+     * the pointer history instead of the current pointer.
+     */
+    public static function port_at(pointer_location $location, int $courseid = 0): storage_port {
         if ($location->kind === pointer_location::MOODLE) {
             return new private_files_storage_port($location);
         }

@@ -470,6 +470,46 @@ final class append_context_file_test extends \advanced_testcase {
         );
     }
 
+    /** A concurrent edit after preflight must not replace the checked/authorised target. */
+    #[\PHPUnit\Framework\Attributes\DataProvider('concurrent_edits')]
+    public function test_append_rejects_change_after_preflight(bool $withchecksum, bool $marked): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/journal.md', "# Journal\n");
+        $checksum = $withchecksum ? read_context_file::execute('journal.md')['contenthash'] : '';
+        $replacement = $marked ? $this->marked_content() : '# Concurrent edit';
+        $transport = new class($fake, $replacement) implements \local_coursepilot\webdav\webdav_transport {
+            private bool $changed = false;
+
+            public function __construct(private readonly fake_webdav_transport $inner, private readonly string $replacement) {
+            }
+
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+                $response = $this->inner->request($method, $url, $headers, $body);
+                if (!$this->changed && $method === 'GET' && str_ends_with($url, '/journal.md')) {
+                    $this->changed = true;
+                    $this->inner->seed_file('/Coursepilot/Kontext/journal.md', $this->replacement);
+                }
+                return $response;
+            }
+        };
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $transport);
+
+        try {
+            $this->append('journal.md', "\nAppend", $checksum);
+            $this->fail('A changed target must be rejected instead of appending to an unchecked state.');
+        } catch (\local_coursepilot\storage_conflict_exception $e) {
+            $this->assertSame('storageconflict', $e->errorcode);
+        }
+        $this->assertSame($replacement, $this->external_content($fake, '/Coursepilot/Kontext/journal.md'));
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
+    }
+
+    public static function concurrent_edits(): array {
+        return [[true, false], [false, true]];
+    }
+
     /**
      * Nachtragen mit "pending_entry=" ueberschreibt nie ungeprueft (Entscheidung
      * zu Issue #513): Fehlt der Pruefwert, obwohl die Zieldatei bereits

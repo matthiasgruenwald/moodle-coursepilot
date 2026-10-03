@@ -465,7 +465,7 @@ final class update_module_settings_test extends \advanced_testcase {
      * einzige Schreibweg ist update_moduleinfo().
      */
     public function test_source_never_writes_the_instance_table_directly(): void {
-        $source = file_get_contents(__DIR__ . '/../../classes/external/update_module_settings.php');
+        $source = file_get_contents(__DIR__ . '/../../classes/catalog/write_target.php');
         $this->assertStringNotContainsString('$DB->update_record', $source);
         $this->assertStringNotContainsString('$DB->insert_record', $source);
         $this->assertStringContainsString('update_moduleinfo(', $source);

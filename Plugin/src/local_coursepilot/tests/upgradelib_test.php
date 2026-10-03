@@ -159,6 +159,7 @@ final class upgradelib_test extends \advanced_testcase {
         ]);
 
         local_coursepilot_hash_oauth_tokens($dbman);
+        local_coursepilot_migrate_oauth_connections($dbman);
 
         $this->assertFalse($dbman->field_exists($tokentable, $accessfield));
         $this->assertFalse($dbman->field_exists($tokentable, $refreshfield));

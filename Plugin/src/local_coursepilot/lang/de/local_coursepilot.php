@@ -276,7 +276,7 @@ $string['contextfilehostnotallowed'] = 'Datei {$a}: Dieser Speicher ist für per
 
 // Aenderungsverlauf: Aufbewahrung/Loeschfrist (#387).
 $string['settinghistoryretentiondays'] = 'Aufbewahrungsfrist des Aenderungsverlaufs (Tage)';
-$string['settinghistoryretentiondays_desc'] = 'Wie lange Staende des Aenderungsverlaufs je Aktivität aufbewahrt werden, bevor sie beim naechsten Schreibvorgang derselben Aktivität geloescht werden. Kein Cron nötig - die Bereinigung läuft mit jedem Schreibvorgang mit. Mindestens 1 Tag; „keine Frist" ist ausgeschlossen.';
+$string['settinghistoryretentiondays_desc'] = 'Wie lange Stände des Änderungsverlaufs je Aktivität aufbewahrt werden. Eine tägliche Hintergrundaufgabe löscht ältere Stände, auch bei Aktivitäten, die nie wieder geändert werden; ein Schreibvorgang räumt zusätzlich die abgelaufenen Stände derselben Aktivität auf. Mindestens 1 Tag; „keine Frist" ist ausgeschlossen.';
 
 $string['connections'] = 'Coursepilot-Verbindungen';
 $string['connectionsintro'] = 'Alle aktiven Fernzugriffsverbindungen dieser Instanz. Ein Widerruf entwertet das zugehörige Token sofort — ein weiterer Zugriff damit schlägt danach fehl.';
@@ -369,7 +369,7 @@ $string['privacy:metadata:oauth_token:timecreated'] = 'Ausstellungszeitpunkt.';
 $string['privacy:metadata:core_files'] = 'Coursepilot-Kontextdateien im privaten Dateibereich der Lehrkraft.';
 
 // classes/privacy/provider.php: Aenderungsverlauf (#385/#386/#387).
-$string['privacy:metadata:cm_version'] = 'Aenderungsverlauf von Aktivitaeten: je Schreibvorgang ein Vollstand der Einstellungen, mit der Nutzer-ID der Lehrkraft, die den Schreibvorgang ausgeloest hat. Wird spaetestens 1 Jahr nach dem Schreibvorgang automatisch geloescht (admin-seitig verkuerzbar, Einstellung "Aufbewahrungsfrist des Aenderungsverlaufs"), sowie sofort beim Löschen der Aktivität oder des Kurses.';
+$string['privacy:metadata:cm_version'] = 'Änderungsverlauf von Aktivitäten: je Schreibvorgang ein Vollstand der Einstellungen, mit der Nutzer-ID der Lehrkraft, die den Schreibvorgang ausgelöst hat. Eine tägliche Hintergrundaufgabe löscht Stände, die älter als die von der Administration eingestellte Aufbewahrungsfrist sind (Einstellung „Aufbewahrungsfrist des Aenderungsverlaufs“, Voreinstellung 1 Jahr, mindestens 1 Tag); außerdem sofort beim Löschen der Aktivität oder des Kurses und bei einer genehmigten Datenschutzanfrage für die Lehrkraft oder die Aktivität. Die Auskunft enthält die eigenen Stände als Metadaten; der Vollstand ist gemeinsam bearbeitete Kursgestaltung und wird nicht exportiert.';
 $string['privacy:metadata:cm_version:cmid'] = 'Die Aktivität, zu der dieser Stand gehört.';
 $string['privacy:metadata:cm_version:courseid'] = 'Der Kurs, zu dem diese Aktivität zum Zeitpunkt des Schreibvorgangs gehoerte.';
 $string['privacy:metadata:cm_version:userid'] = 'Die Nutzer-ID der Lehrkraft, unter der der Schreibvorgang lief.';
@@ -378,7 +378,7 @@ $string['privacy:metadata:cm_version_file'] = 'Verknuepfung eines Verlaufs-Stand
 $string['privacy:metadata:cm_version_file:versionid'] = 'Der Verlaufs-Stand, zu dem diese Datei gehört.';
 $string['privacy:metadata:cm_version_file:fileid'] = 'Die referenzierte Datei-Metadaten-Zeile (local_coursepilot_cm_file).';
 $string['privacy:metadata:cm_version_file:gap'] = 'Ob der Dateiinhalt ausserhalb der Beschreibung liegt und nicht rückschreibbar ist.';
-$string['privacy:metadata:cm_file'] = 'Deduplizierte Datei-Metadaten (Name, Größe, Pfad) des Aenderungsverlaufs, ohne Dateiinhalt.';
+$string['privacy:metadata:cm_file'] = 'Deduplizierte Datei-Metadaten (Name, Größe, Pfad) des Änderungsverlaufs, ohne Dateiinhalt. Werden gelöscht, sobald kein Verlaufsstand mehr auf sie verweist.';
 $string['privacy:metadata:cm_file:pathnamehash'] = 'Hash des Datei-Pfadnamens, zur Deduplizierung.';
 $string['privacy:metadata:cm_file:contenthash'] = 'Hash des Dateiinhalts, zur Deduplizierung.';
 $string['privacy:metadata:cm_file:filepath'] = 'Ordnerpfad der Datei innerhalb der Aktivität.';
