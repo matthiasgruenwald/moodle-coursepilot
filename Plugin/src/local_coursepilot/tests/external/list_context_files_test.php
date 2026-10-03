@@ -508,6 +508,83 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
+     * Issue #645: the same request returns the same field set at both
+     * locations; folders carry no checksum at either location.
+     */
+    public function test_moodle_and_external_listings_share_the_field_set(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', '# Plan');
+        $this->create_context_file($user, '/coursepilot/faecher/', 'mathe.md', '# Mathe');
+        $moodle = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute());
+
+        [, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/plan.md', '# Plan');
+        $fake->seed_folder('/Coursepilot/Kontext/faecher');
+        $external = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute());
+
+        foreach (['plan.md', 'faecher'] as $name) {
+            $moodleentry = $this->find_entry($moodle['entries'], $name);
+            $externalentry = $this->find_entry($external['entries'], $name);
+            $this->assertSame(array_keys($moodleentry), array_keys($externalentry), $name);
+        }
+        $this->assertSame('', $this->find_entry($moodle['entries'], 'faecher')['contenthash']);
+        $this->assertSame('', $this->find_entry($external['entries'], 'faecher')['contenthash']);
+    }
+
+    /**
+     * Issue #645: listing the previous location evaluates the lock against
+     * the file at the previous location, not against the same path at the
+     * current location.
+     */
+    public function test_previous_location_lock_is_read_from_the_previous_location(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'lerngruppe.md', '# harmlos');
+        $this->create_context_file($user, '/previouslocation/', 'lerngruppe.md', $this->marked_content());
+        $this->write_pointer_with_previous_location($user, 'previouslocation');
+
+        $current = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute());
+        $previous = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute('', true));
+
+        $this->assertFalse($this->find_entry($current['entries'], 'lerngruppe.md')['locked']);
+        $this->assertTrue($this->find_entry($previous['entries'], 'lerngruppe.md')['locked']);
+    }
+
+    /**
+     * Issue #645: an external previous location is listed and read through
+     * the WebDAV adapter, read-only and with the same field set.
+     */
+    public function test_external_previous_location_is_listed_and_read_via_the_adapter(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $this->write_pointer_with_external_previous_location($user, $instanceid);
+        $fake = new \local_coursepilot\tests\webdav\fake_webdav_transport();
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
+        $fake->seed_folder('/Coursepilot/Alt');
+        $fake->seed_file('/Coursepilot/Alt/alt.md', '# Alt');
+
+        $listed = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute('', true));
+        $entry = $this->find_entry($listed['entries'], 'alt.md');
+        $this->assertNotNull($entry);
+        $this->assertNotSame('', $entry['contenthash']);
+        $this->assertFalse($entry['locked']);
+
+        $read = external_api::clean_returnvalue(
+            read_context_file::execute_returns(),
+            read_context_file::execute('alt.md', true)
+        );
+        $this->assertSame('# Alt', $read['content']);
+        $this->assertSame($entry['contenthash'], $read['contenthash']);
+    }
+
+    /**
      * @return string Kontextdatei-Inhalt mit Frontmatter-Markierung
      *         "coursepilot.personenbezug: true".
      */

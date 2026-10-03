@@ -16,31 +16,18 @@
 
 namespace local_coursepilot;
 
-use local_coursepilot\webdav\resolved_webdav_instance;
 use local_coursepilot\webdav\webdav_error;
-use local_coursepilot\webdav\webdav_instance;
-use local_coursepilot\webdav\webdav_setup_steps;
 
 /**
- * Schreibt in einen externen Bereich (Issue #491, Spec #486 §4/§6) - das
- * Gegenstueck zu {@see pointer_reader} fuer die beiden Schreibendpunkte
- * `write_context_file`/`append_context_file`. Nur fuer den externen Zweig:
- * der Moodle-Zweig bleibt vollstaendig in den Endpunkten selbst (Spec §6
- * "Für den Kontextbereich in Moodle bleibt alles wie heute") - die
- * Verzweigung faellt dort, nicht hier.
+ * Pending-note translation for external location failures (Issue #492, ADR
+ * 0023): the WebDAV failure vocabulary and the five-part failure answer.
+ * Writing itself runs through {@see webdav_storage_port} (Issue #645); this
+ * class only records failures that {@see context_area} observes before the
+ * adapter is reached (pointer resolution, preflight read).
  *
- * Bedingtes Schreiben (Spec §4): neu angelegt wird mit `If-None-Match: *`
- * ({@see \local_coursepilot\webdav\webdav_client::put_new()}), ueberschrieben
- * mit `If-Match` bzw. dem `getlastmodified`-Ersatz
- * ({@see \local_coursepilot\webdav\webdav_client::put_new()}/put_overwrite()}).
- * Ein `Konflikt` (412) geht als eigene, an die KI gerichtete Ausnahme zurueck -
- * neu lesen, zusammenfuehren, erneut schreiben. Legt dabei **nie** eine
- * Ausstandsnotiz an - ein Konflikt ist ein Aufruffehler, kein Ausfall (ADR
- * 0023 Punkt 2). Jeder andere Ausfall an Speicher, Verbindung oder Ort -
- * einschliesslich einer geloeschten Instanz, entzogenen Freischaltung oder
- * eines geaenderten Pruefmerkmals aus {@see \local_coursepilot\webdav\webdav_instance::resolve()} -
- * vermerkt dagegen einen Eintrag in der Ausstandsnotiz, bevor der Fehler
- * zurueckgeht (Issue #492, ADR 0023).
+ * A conflict is a caller error and never creates a pending note (ADR 0023
+ * point 2). Every other failure at storage, connection or location records
+ * an entry in the pending note before the error is returned.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -55,9 +42,6 @@ final class pointer_writer {
      *      {@see record_preread_failure()}.
      */
     public const OP_CREATE = pending_write_translation::OP_CREATE;
-
-    /** @var string Vorgang "ueberschreiben". */
-    public const OP_OVERWRITE = pending_write_translation::OP_OVERWRITE;
 
     /** @var string Vorgang "anhaengen". */
     public const OP_APPEND = pending_write_translation::OP_APPEND;
@@ -75,7 +59,7 @@ final class pointer_writer {
      *      {@see \local_coursepilot\webdav\webdav_instance::resolve()}
      *      (geloeschte Instanz, entzogene Freischaltung, geaendertes
      *      Pruefmerkmal, u.a.); `contextrootmissing` kommt dagegen aus
-     *      {@see require_root_exists()} selbst (Issue #514: die
+     *      {@see webdav_storage_port} (Issue #514: die
      *      Kontextbereich-Wurzel fehlt am externen Ort). Jeder andere
      *      moodle_exception-Fehlerschluessel, der aus diesem Zweig entkommt,
      *      ist ein Programmierfehler und laeuft unveraendert weiter.
@@ -136,284 +120,6 @@ final class pointer_writer {
     ];
 
     /**
-     * Legt eine externe Datei an oder ueberschreibt sie bedingt (Spec §4/§6).
-     * Ein einzelnes PUT ohne Zwischendatei - die Zwischendatei-Choreografie
-     * von {@see storage_anchor::replace()} loest die Deduplizierung im
-     * Moodle-Dateipool, die es extern nicht gibt.
-     *
-     * @param storage_area $area
-     * @param pointer_location $location Bereits aufgeloester externer Ort
-     *        (Issue #541) - der Aufrufer ({@see context_area}) hat den
-     *        Kontextpointer bereits gelesen und als *extern* erkannt, bevor
-     *        er hierher verzweigt; diese Methode loest ihn nicht erneut auf.
-     * @param string $path Client-Pfad, z.B. "plan.md" oder "faecher/mathe/profil.md".
-     * @param string $content Vollstaendiger neuer Inhalt.
-     * @param bool $createonly Nur anlegen, nie ueberschreiben (Issue #498,
-     *        Spec #486 §9: Kopieren aus dem Altbestand am neuen Ort) - eine
-     *        bereits vorhandene Datei wird abgewiesen (Aufruffehler, kein
-     *        Ausstand), statt sie bedingt zu ueberschreiben.
-     * @param string $expectedcontenthash Pruefwert aus einem frueheren Lesen
-     *        (Issue #513, {@see pointer_reader::external_checkvalue()}) -
-     *        passt er nicht zum inzwischen aktuellen Stand, wird ein
-     *        `Konflikt` gemeldet, statt die Handaenderung zu ueberschreiben.
-     *        Leer heisst: ohne Pruefwert wird wie bisher ueberschrieben.
-     * @param bool $requirecheckvalue Nachtragen (`pending_entry=`, Issue #513) -
-     *        eine bereits vorhandene Zieldatei ohne mitgegebenen Pruefwert
-     *        gilt dann selbst als `Konflikt`, statt gewachsenen Bestand
-     *        ungeprueft zu ersetzen. Wirkungslos, solange die Datei noch
-     *        fehlt - "anlegen" ist ueber `If-None-Match: *` bereits sicher.
-     * @param int $courseid Kurs-ID, nur fuer einen etwaigen Eintrag der
-     *        Ausstandsnotiz (Issue #516, Spec #486 §8) - 0, wenn der Aufruf
-     *        keinem Kurs zugeordnet ist.
-     * @return array{path: string, created: bool, size: int, oldsize: int}
-     * @throws \moodle_exception invalidpathkey/contextfilenotmarkdown des Bereichs,
-     *         contextfileexternalconflict bei 412 sowie bei einem nicht mehr
-     *         passenden oder (beim Nachtragen) fehlenden Pruefwert,
-     *         contextfilealreadyexists bei $createonly und vorhandener Datei,
-     *         sonst pendingwritefailed (Issue #492, Ausfall an Speicher/
-     *         Verbindung/Ort - legt einen Eintrag in der Ausstandsnotiz an)
-     *         bzw. pendingnotewritefailed, wenn selbst die Notiz nicht mehr
-     *         geschrieben werden kann.
-     */
-    public static function write(
-        storage_area $area,
-        pointer_location $location,
-        string $path,
-        string $content,
-        bool $createonly = false,
-        string $expectedcontenthash = '',
-        bool $requirecheckvalue = false,
-        int $courseid = 0
-    ): array {
-        [$folders, $filename] = storage_anchor::writable_segments($area, $path);
-        $clientpath = self::client_path($folders, $filename);
-        $operation = self::OP_CREATE;
-
-        try {
-            $instance = webdav_instance::resolve($location);
-            $fileurl = $instance->file_url(storage_anchor::external_relative_path($area, $location, $clientpath));
-            $client = $instance->client();
-            self::ensure_directory($instance, $location, $folders);
-            $existing = self::current_entry($client, $fileurl);
-            if ($existing !== null && $createonly) {
-                throw new \moodle_exception('contextfilealreadyexists', 'local_coursepilot', '', $clientpath);
-            }
-            if ($existing === null) {
-                $client->put_new($fileurl, $content);
-            } else {
-                $operation = self::OP_OVERWRITE;
-                self::require_checkvalue_match($existing, $expectedcontenthash, $requirecheckvalue, $clientpath);
-                $client->put_overwrite($fileurl, $content, $existing['etag'], $existing['timemodified']);
-            }
-        } catch (webdav_error $e) {
-            throw self::translate_or_record($e, $clientpath, $location, $operation, $courseid);
-        } catch (\moodle_exception $e) {
-            throw self::record_location_failure($e, $clientpath, $location, $operation, $courseid);
-        }
-
-        return [
-            'path' => $clientpath,
-            'created' => $existing === null,
-            'size' => strlen($content),
-            'oldsize' => $existing['size'] ?? 0,
-        ];
-    }
-
-    /**
-     * Haengt Inhalt an eine externe Datei an, legt sie an, falls sie noch
-     * nicht existiert (Spec §6) - ein Read-modify-write mit `If-Match` bzw.
-     * dem `getlastmodified`-Ersatz: der bisherige Inhalt wird gelesen, das
-     * Anhaengsel angefuegt, das Ganze bedingt zurueckgeschrieben.
-     *
-     * @param storage_area $area
-     * @param pointer_location $location Bereits aufgeloester externer Ort
-     *        (Issue #541) - siehe {@see write()}.
-     * @param string $path
-     * @param string $content Anzuhaengender Inhalt.
-     * @param string $expectedcontenthash Pruefwert aus einem frueheren Lesen
-     *        (Issue #513) - siehe {@see write()}, hier vor dem Read-modify-
-     *        write geprueft statt vor einem einzelnen PUT.
-     * @param bool $requirecheckvalue Nachtragen (`pending_entry=`, Issue #513) -
-     *        siehe {@see write()}.
-     * @param int $courseid Kurs-ID, nur fuer einen etwaigen Eintrag der
-     *        Ausstandsnotiz (Issue #516, Spec #486 §8) - 0, wenn der Aufruf
-     *        keinem Kurs zugeordnet ist.
-     * @return array{path: string, created: bool, size: int}
-     * @throws \moodle_exception invalidpathkey/contextfilenotmarkdown des Bereichs,
-     *         contextfileexternalconflict bei 412 sowie bei einem nicht mehr
-     *         passenden oder (beim Nachtragen) fehlenden Pruefwert, sonst
-     *         pendingwritefailed (Issue #492, Ausfall an Speicher/
-     *         Verbindung/Ort - legt einen Eintrag in der Ausstandsnotiz an)
-     *         bzw. pendingnotewritefailed, wenn selbst die Notiz nicht mehr
-     *         geschrieben werden kann.
-     */
-    public static function append(
-        storage_area $area,
-        pointer_location $location,
-        string $path,
-        string $content,
-        string $expectedcontenthash = '',
-        bool $requirecheckvalue = false,
-        int $courseid = 0
-    ): array {
-        [$folders, $filename] = storage_anchor::writable_segments($area, $path);
-        $clientpath = self::client_path($folders, $filename);
-
-        try {
-            $instance = webdav_instance::resolve($location);
-            $fileurl = $instance->file_url(storage_anchor::external_relative_path($area, $location, $clientpath));
-            $client = $instance->client();
-            self::ensure_directory($instance, $location, $folders);
-            $existing = self::current_entry($client, $fileurl);
-            if ($existing === null) {
-                $client->put_new($fileurl, $content);
-                return ['path' => $clientpath, 'created' => true, 'size' => strlen($content)];
-            }
-
-            self::require_checkvalue_match($existing, $expectedcontenthash, $requirecheckvalue, $clientpath);
-            $newcontent = $client->get($fileurl) . $content;
-            $client->put_overwrite($fileurl, $newcontent, $existing['etag'], $existing['timemodified']);
-        } catch (webdav_error $e) {
-            throw self::translate_or_record($e, $clientpath, $location, self::OP_APPEND, $courseid);
-        } catch (\moodle_exception $e) {
-            throw self::record_location_failure($e, $clientpath, $location, self::OP_APPEND, $courseid);
-        }
-
-        return ['path' => $clientpath, 'created' => false, 'size' => strlen($newcontent)];
-    }
-
-    /**
-     * @param string[] $folders
-     * @param string $filename
-     * @return string
-     */
-    private static function client_path(array $folders, string $filename): string {
-        return implode('/', [...$folders, $filename]);
-    }
-
-    /**
-     * Baut fehlende Unterordner *innerhalb* des Kontextbereichs per MKCOL
-     * (Spec §4) - Ebene fuer Ebene. Ein bereits vorhandenes Verzeichnis gilt
-     * als Erfolg ({@see \local_coursepilot\webdav\webdav_client::mkcol()}),
-     * diese Methode prueft also nie selbst, was schon existiert.
-     *
-     * Die Wurzel des Kontextbereichs selbst - der Pointer-Pfad
-     * ({@see $location}) - wird hier bewusst **nie** mitgebaut (Issue #514):
-     * bis dahin war sie Teil derselben MKCOL-Kette wie die Unterordner und
-     * entstand so still neu, wenn die Lehrkraft den Ordner verschoben,
-     * geloescht oder umbenannt hatte - ein leerer zweiter Kontextbereich statt
-     * eines benannten Fehlers. {@see require_root_exists()} prueft die Wurzel
-     * deshalb vorab nur, legt sie aber nie an.
-     *
-     * @param resolved_webdav_instance $instance
-     * @param pointer_location $location
-     * @param string[] $folders Vom Aufrufer gewuenschte Unterordner, relativ zur Wurzel.
-     * @throws \moodle_exception contextrootmissing, wenn die Wurzel fehlt.
-     * @throws webdav_error
-     */
-    private static function ensure_directory(resolved_webdav_instance $instance, pointer_location $location, array $folders): void {
-        $base = array_values(array_filter(explode('/', trim((string) $location->relativepath, '/')), static fn (string $s): bool => $s !== ''));
-        self::require_root_exists($instance, $base);
-        if (empty($folders)) {
-            return;
-        }
-        $instance->client()->mkcol_chain($instance->directory_url(implode('/', $base)), $folders);
-    }
-
-    /**
-     * Prueft, dass die Kontextbereich-Wurzel am externen Ort tatsaechlich
-     * existiert - ein reines PROPFIND, nie ein MKCOL (Issue #514, siehe
-     * {@see ensure_directory()}). "Serverseitig geschrieben wird
-     * ausschliesslich im Kontextbereich" gilt damit woertlich: fehlt die
-     * Wurzel, entsteht nichts, weder sie selbst noch ein Unterordner darin.
-     *
-     * @param resolved_webdav_instance $instance
-     * @param string[] $base Segmente des Pointer-Pfades.
-     * @throws \moodle_exception contextrootmissing, wenn die Wurzel fehlt.
-     * @throws webdav_error jeder andere Ausfall - unuebersetzt, der Aufrufer
-     *         (write()/append()) faengt ihn selbst, uebersetzt und vermerkt
-     *         ihn als Ausstand (Issue #492).
-     */
-    private static function require_root_exists(resolved_webdav_instance $instance, array $base): void {
-        try {
-            $instance->client()->propfind($instance->directory_url(implode('/', $base)), 0);
-        } catch (webdav_error $e) {
-            if ($e->errorclass !== webdav_error::NOT_FOUND) {
-                throw $e;
-            }
-            throw new \moodle_exception('contextrootmissing', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
-        }
-    }
-
-    /**
-     * Die aktuellen Eigenschaften der Zieldatei, oder null, wenn sie fehlt -
-     * der eine PROPFIND, den sich Anlegen/Ueberschreiben und Anhaengen teilen.
-     *
-     * @param \local_coursepilot\webdav\webdav_client $client
-     * @param string $fileurl
-     * @return array{etag: ?string, timemodified: int, size: int}|null
-     * @throws webdav_error Jeder Fehler ausser NOT_FOUND, unuebersetzt - der
-     *         Aufrufer (write()/append()) faengt ihn selbst, uebersetzt und
-     *         vermerkt ihn als Ausstand (Issue #492).
-     */
-    private static function current_entry(\local_coursepilot\webdav\webdav_client $client, string $fileurl): ?array {
-        try {
-            $meta = $client->propfind($fileurl, 0);
-        } catch (webdav_error $e) {
-            // Jeder andere Fehler bleibt unuebersetzt - der Aufrufer (write()/
-            // append()) faengt webdav_error ohnehin selbst ab, uebersetzt und
-            // vermerkt ihn als Ausstand (Issue #492). Wuerde hier schon
-            // uebersetzt, waere die Ausnahme dort keine webdav_error mehr und
-            // liefe am Ausstand-Fang vorbei.
-            return webdav_error::empty_when_missing($e, null, static fn (webdav_error $err): webdav_error => $err);
-        }
-        $entry = $meta[0] ?? null;
-        if ($entry === null) {
-            return null;
-        }
-        return ['etag' => $entry['etag'], 'timemodified' => $entry['timemodified'], 'size' => $entry['size']];
-    }
-
-    /**
-     * Der eigentliche Konfliktschutz mit dem gelesenen Pruefwert (Issue
-     * #513): anders als das transportnahe `If-Match`/`getlastmodified` in
-     * {@see \local_coursepilot\webdav\webdav_client::put_overwrite()} - das nur
-     * eine Handaenderung *innerhalb* dieses Aufrufs sieht, weil {@see current_entry()}
-     * ihren Stand unmittelbar vorher frisch liest - vergleicht diese Methode
-     * gegen einen Stand, den die KI womoeglich lange vor diesem Aufruf gelesen
-     * hat.
-     *
-     * Ohne mitgegebenen Pruefwert bleibt der Vertrag wie bisher (Entscheidung
-     * zu Issue #513: "ohne Pruefwert wird wie heute ueberschrieben") - ausser
-     * beim Nachtragen (`$requirecheckvalue`): dort ist ein fehlender
-     * Pruefwert gegen eine bereits vorhandene Datei selbst ein Konflikt, denn
-     * Nachtragen darf gewachsenen Bestand nie ungeprueft ersetzen.
-     *
-     * @param array{etag: ?string, timemodified: int, size: int} $existing
-     * @param string $expectedcontenthash
-     * @param bool $requirecheckvalue
-     * @param string $clientpath
-     * @throws \moodle_exception contextfileexternalconflict
-     */
-    private static function require_checkvalue_match(
-        array $existing,
-        string $expectedcontenthash,
-        bool $requirecheckvalue,
-        string $clientpath
-    ): void {
-        if ($expectedcontenthash === '') {
-            if ($requirecheckvalue) {
-                throw new \moodle_exception('contextfileexternalconflict', 'local_coursepilot', '', $clientpath);
-            }
-            return;
-        }
-        $actual = pointer_reader::external_checkvalue($existing['etag'], $existing['timemodified']);
-        if ($actual !== $expectedcontenthash) {
-            throw new \moodle_exception('contextfileexternalconflict', 'local_coursepilot', '', $clientpath);
-        }
-    }
-
-    /**
      * Uebersetzt einen Ausfall beim Vorab-Lesen genauso wie einen Ausfall
      * beim echten Schreiben (Issue #505 Befund #10): dieselbe Ausstandsnotiz,
      * derselbe fuenfteilige Text. Genutzt von den Personenbezugs-
@@ -429,14 +135,14 @@ final class pointer_writer {
      * durchreichen, koennte eine markierte Zieldatei ungeprueft ueberschrieben
      * werden, falls ausgerechnet nur dieses eine Vorab-GET scheitert, der
      * anschliessende PUT aber durchgeht - genau der Fall, den
-     * {@see \local_coursepilot\pointer_reader::peek_external_content()} laut
-     * Issue #515 nicht stillschweigend uebergehen darf.
+     * der Vorab-Lese-Check laut Issue #515 nicht stillschweigend uebergehen
+     * darf.
      *
      * @param webdav_error $e
      * @param pointer_location $location
      * @param string $clientpath
      * @param string $operation Eine der OP_*-Konstanten.
-     * @param int $courseid Siehe {@see write()}.
+     * @param int $courseid Kurs-ID fuer den Eintrag der Ausstandsnotiz, 0 ohne Kurs.
      * @return \moodle_exception
      */
     public static function record_preread_failure(
@@ -491,15 +197,13 @@ final class pointer_writer {
      *
      * Oeffentlich (Issue #541): {@see context_area} ruft dies inzwischen auch
      * direkt fuer `webdaviservfilesonly` auf, sobald die Pointer-Aufloesung
-     * selbst schon scheitert - vorher liess context_area denselben Fehler ein
-     * zweites Mal in {@see write()}/{@see append()} entstehen, nur um ihn dort
-     * zu uebersetzen.
+     * selbst schon scheitert.
      *
      * @param \moodle_exception $e
      * @param string $clientpath
      * @param pointer_location|null $location null bei `webdaviservfilesonly`.
      * @param string $operation Eine der OP_*-Konstanten.
-     * @param int $courseid Siehe {@see write()}.
+     * @param int $courseid Kurs-ID fuer den Eintrag der Ausstandsnotiz, 0 ohne Kurs.
      * @return \moodle_exception
      */
     public static function record_location_failure(

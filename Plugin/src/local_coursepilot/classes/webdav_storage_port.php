@@ -27,10 +27,7 @@ use local_coursepilot\webdav\webdav_transport;
  * Erfuellt {@see storage_port} vollstaendig ueber eine bereits benannte
  * WebDAV-Nutzerinstanz und einen relativen Basisordner darin - beide werden
  * dem Konstruktor uebergeben, nicht aus dem Kontextpointer gelesen. Welcher
- * Adapter fuer einen Bereich greift und wie die Instanz-ID/der Basisordner
- * aus dem Pointer aufgeloest werden, entscheidet ein spaeteres Ticket, nicht
- * dieser Adapter selbst - genau wie {@see private_files_storage_port} noch
- * kein Werkzeug kennt.
+ * Adapter fuer einen Bereich greift, entscheidet {@see storage_anchor::port()}.
  *
  * Die Pruefung "Repository-Instanz gehoert dem Token-Inhaber" (ADR 0021)
  * liegt an genau einer Stelle: {@see webdav_instance::resolve_owned()}, die
@@ -169,7 +166,10 @@ final class webdav_storage_port implements storage_port {
             'type' => $entry['type'],
             'size' => $entry['size'],
             'mimetype' => $entry['mimetype'],
-            'checksum' => pointer_reader::external_checkvalue($entry['etag'], $entry['timemodified']),
+            // Folders carry no checksum, like Private Files (same field set).
+            'checksum' => $entry['type'] === 'folder'
+                ? ''
+                : pointer_reader::external_checkvalue($entry['etag'], $entry['timemodified']),
             'timemodified' => $entry['timemodified'],
         ], $raw);
     }
