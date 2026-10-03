@@ -441,9 +441,15 @@ $string['privacy:metadata:oauth_token:timecreated'] = 'Issuance time.';
 $string['privacy:metadata:core_files'] = 'Coursepilot context files in the teacher\'s private file area.';
 
 // classes/privacy/provider.php: change history (#385/#386/#387).
-$string['privacy:metadata:cm_version'] = 'Change history of activities: a full settings snapshot per write, with the user id of the teacher who triggered the write. Automatically deleted at most 1 year after the write (shortenable by the administration via the "Change history retention period" setting), and immediately when the activity or course is deleted.';
+$string['privacy:metadata:cm_version'] = 'Change history of activities: a full settings snapshot per write, with the user id of the teacher who triggered the write. A daily background task deletes states older than the retention period set by the administration (setting "Change history retention period", default 1 year, minimum 1 day); states are also deleted immediately when the activity or course is deleted, and on an approved privacy request for the teacher or the activity. A privacy export contains the teacher\'s own states as metadata; the snapshot content is course design shared with other editors and is not exported.';
 $string['privacy:metadata:cm_version:cmid'] = 'The activity this state belongs to.';
 $string['privacy:metadata:cm_version:courseid'] = 'The course this activity belonged to at the time of the write.';
+$string['privacy:metadata:cm_version:version'] = 'Sequential number of the state within the activity.';
+$string['privacy:metadata:cm_version:source'] = 'Origin of the write (Moodle form, discovered starting state, clone, activity XML).';
+$string['privacy:metadata:cm_version:sourcecmid'] = 'The related activity of a clone or replacement.';
+$string['privacy:metadata:cm_version:moduleinfo_json'] = 'Snapshot of the activity settings and content at the time of the write.';
+$string['privacy:metadata:cm_version:coursemodule_json'] = 'Snapshot of the course module record at the time of the write.';
+$string['privacy:metadata:cm_version:arrangement_json'] = 'Snapshot of the quiz question arrangement at the time of the write (quizzes only).';
 $string['privacy:metadata:cm_version:userid'] = 'The user id of the teacher the write ran under.';
 $string['privacy:metadata:cm_version:timecreated'] = 'Time of the write.';
 $string['privacy:metadata:cm_version_file'] = 'Links a history state to the files the activity had at that time (metadata only, see local_coursepilot_cm_file). Deleted along with its state.';

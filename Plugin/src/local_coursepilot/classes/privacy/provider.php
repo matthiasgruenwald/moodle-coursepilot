@@ -24,6 +24,8 @@ use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use core_privacy\local\request\transform;
 use local_coursepilot\context_files;
+use local_coursepilot\history\retention;
+use local_coursepilot\history\version_history;
 
 /**
  * Voller Privacy-Provider (#336, erweitert in #345 um Kontextdateien aus
@@ -65,17 +67,13 @@ use local_coursepilot\context_files;
  * noetigen Merkmale (userid, contextid, component), siehe
  * classes/event/tool_access_*.php.
  *
- * Der Aenderungsverlauf (local_coursepilot_cm_version/_version_file/_cm_file,
- * #385/#386/#387) ist aus demselben Grund nur in get_metadata() beschrieben,
- * ohne eigenen Export-/Loeschpfad fuer die dort mitgefuehrte userid: dieses
- * Ticket (#387) verlangt eine beschriebene Aufbewahrung, keinen vollen
- * GDPR-Pfad je Nutzer. Anders als bei Log-Eintraegen gibt es hier aber
- * bereits eine harte Obergrenze durch Code, nicht durch einen Core-Provider:
- * die admin-seitige Loeschfrist (Standard 1 Jahr, siehe
- * local_coursepilot\history\retention) sowie die Kurs-/Aktivitaets-Kaskade
- * loeschen jeden Stand spaetestens automatisch. Ein manueller Export-/
- * Loeschpfad je Nutzer kann bei Bedarf nachgeruestet werden, sobald der
- * Verlauf ueber Ticket 10 hinaus tatsaechlich personenbezogene Inhalte traegt.
+ * The change history (local_coursepilot_cm_version/_version_file/_cm_file,
+ * #385/#641) belongs to the activity's module context: discovery by the
+ * states' userid (existing module contexts only; states of vanished modules
+ * are left to retention), export of the requester's own states as metadata
+ * without snapshot content and only with files allowed by
+ * {@see \local_coursepilot\history\file_policy}, deletion through the shared
+ * contract {@see \local_coursepilot\history\retention::delete_versions()}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -142,7 +140,13 @@ final class provider implements
         $collection->add_database_table('local_coursepilot_cm_version', [
             'cmid' => 'privacy:metadata:cm_version:cmid',
             'courseid' => 'privacy:metadata:cm_version:courseid',
+            'version' => 'privacy:metadata:cm_version:version',
+            'source' => 'privacy:metadata:cm_version:source',
+            'sourcecmid' => 'privacy:metadata:cm_version:sourcecmid',
             'userid' => 'privacy:metadata:cm_version:userid',
+            'moduleinfo_json' => 'privacy:metadata:cm_version:moduleinfo_json',
+            'coursemodule_json' => 'privacy:metadata:cm_version:coursemodule_json',
+            'arrangement_json' => 'privacy:metadata:cm_version:arrangement_json',
             'timecreated' => 'privacy:metadata:cm_version:timecreated',
         ], 'privacy:metadata:cm_version');
         // Beide Tabellen tragen keine userid, nur die Dateibeschreibung eines
@@ -228,6 +232,14 @@ final class provider implements
             $contextlist->add_user_context($userid);
         }
 
+        $contextlist->add_from_sql(
+            'SELECT ctx.id
+               FROM {context} ctx
+               JOIN {local_coursepilot_cm_version} v ON v.cmid = ctx.instanceid
+              WHERE ctx.contextlevel = :contextlevel AND v.userid = :userid',
+            ['contextlevel' => CONTEXT_MODULE, 'userid' => $userid]
+        );
+
         return $contextlist;
     }
 
@@ -247,6 +259,11 @@ final class provider implements
 
         if ($context instanceof \context_user && self::context_user_has_data($context)) {
             $userlist->add_user($context->instanceid);
+        }
+
+        if ($context instanceof \context_module) {
+            $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_cm_version} WHERE cmid = :cmid',
+                ['cmid' => $context->instanceid]);
         }
     }
 
@@ -296,7 +313,47 @@ final class provider implements
             if ($context instanceof \context_system) {
                 self::export_system_context($context, $userid);
             }
+
+            if ($context instanceof \context_module) {
+                self::export_history($context, $userid);
+            }
         }
+    }
+
+    /**
+     * Exports the requester's own history states of one activity: metadata and
+     * file names allowed by the history file policy, never the snapshot content
+     * (it may hold other teachers' design work) or files outside the policy.
+     *
+     * @param \context_module $context
+     * @param int $userid
+     */
+    private static function export_history(\context_module $context, int $userid): void {
+        global $DB;
+
+        $records = $DB->get_records('local_coursepilot_cm_version',
+            ['cmid' => $context->instanceid, 'userid' => $userid], 'version ASC');
+        if (!$records) {
+            return;
+        }
+        $modname = (string) get_coursemodule_from_id('', $context->instanceid, 0, false, MUST_EXIST)->modname;
+        $exportfile = static fn(\stdClass $file): \stdClass => (object) [
+            'filearea' => $file->filearea,
+            'filename' => $file->filename,
+            'gap' => transform::yesno($file->gap),
+        ];
+        $versions = array_map(static fn(\stdClass $record): \stdClass => (object) [
+            'version' => (int) $record->version,
+            'source' => $record->source,
+            'sourcecmid' => $record->sourcecmid,
+            'timecreated' => transform::datetime($record->timecreated),
+            'files' => array_map($exportfile, version_history::allowed_files((int) $record->id, $modname)),
+        ], array_values($records));
+
+        writer::with_context($context)->export_data(
+            [get_string('pluginname', 'local_coursepilot'), get_string('historytitle', 'local_coursepilot')],
+            (object) ['versions' => $versions]
+        );
     }
 
     /**
@@ -393,6 +450,11 @@ final class provider implements
             return;
         }
 
+        if ($context instanceof \context_module) {
+            retention::purge_cm((int) $context->instanceid);
+            return;
+        }
+
         if (!$context instanceof \context_system) {
             return;
         }
@@ -433,6 +495,9 @@ final class provider implements
             if ($context instanceof \context_user && (int) $context->instanceid === $userid) {
                 self::delete_context_files($context);
             }
+            if ($context instanceof \context_module) {
+                retention::purge_cm_for_users((int) $context->instanceid, [$userid]);
+            }
         }
 
         // Beide Seiten sind hier Zeichenketten, nicht Zahlen: Die Kontext-IDs
@@ -462,6 +527,11 @@ final class provider implements
 
         if ($context instanceof \context_user) {
             self::delete_context_files($context);
+            return;
+        }
+
+        if ($context instanceof \context_module) {
+            retention::purge_cm_for_users((int) $context->instanceid, $userlist->get_userids());
             return;
         }
 

@@ -134,8 +134,14 @@ final class version_history {
         return self::allowed_files((int) $record->id, (string) $cm->modname);
     }
 
-    /** Read old rows through the same allowlist used by capture. */
-    private static function allowed_files(int $versionid, string $modname): array {
+    /**
+     * Read old rows through the same allowlist used by capture; also used by the privacy export.
+     *
+     * @param int $versionid
+     * @param string $modname
+     * @return \stdClass[] Per row: id, fileid, component, filearea, filename, contenthash, gap.
+     */
+    public static function allowed_files(int $versionid, string $modname): array {
         global $DB;
         $files = $DB->get_records_sql(
             'SELECT vf.id, vf.fileid, f.component, f.filearea, f.filename, f.contenthash, vf.gap

@@ -97,6 +97,24 @@ final class retention {
     }
 
     /**
+     * Deletes the states the given users wrote on one activity (privacy deletion, #641).
+     *
+     * @param int $cmid
+     * @param int[] $userids
+     * @return void
+     */
+    public static function purge_cm_for_users(int $cmid, array $userids): void {
+        global $DB;
+
+        if (!$userids) {
+            return;
+        }
+        [$insql, $inparams] = $DB->get_in_or_equal(array_values($userids));
+        self::delete_versions($DB->get_fieldset_select('local_coursepilot_cm_version', 'id',
+            "cmid = ? AND userid $insql", array_merge([$cmid], $inparams)));
+    }
+
+    /**
      * Loescht den gesamten Verlauf eines Kurses - Kurs-Kaskade (course_deleted,
      * #387). Unbedingt, unabhaengig von der Frist.
      *

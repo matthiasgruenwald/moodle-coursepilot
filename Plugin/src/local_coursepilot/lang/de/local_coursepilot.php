@@ -369,7 +369,7 @@ $string['privacy:metadata:oauth_token:timecreated'] = 'Ausstellungszeitpunkt.';
 $string['privacy:metadata:core_files'] = 'Coursepilot-Kontextdateien im privaten Dateibereich der Lehrkraft.';
 
 // classes/privacy/provider.php: Aenderungsverlauf (#385/#386/#387).
-$string['privacy:metadata:cm_version'] = 'Aenderungsverlauf von Aktivitaeten: je Schreibvorgang ein Vollstand der Einstellungen, mit der Nutzer-ID der Lehrkraft, die den Schreibvorgang ausgeloest hat. Wird spaetestens 1 Jahr nach dem Schreibvorgang automatisch geloescht (admin-seitig verkuerzbar, Einstellung "Aufbewahrungsfrist des Aenderungsverlaufs"), sowie sofort beim Löschen der Aktivität oder des Kurses.';
+$string['privacy:metadata:cm_version'] = 'Änderungsverlauf von Aktivitäten: je Schreibvorgang ein Vollstand der Einstellungen, mit der Nutzer-ID der Lehrkraft, die den Schreibvorgang ausgelöst hat. Eine tägliche Hintergrundaufgabe löscht Stände, die älter als die von der Administration eingestellte Aufbewahrungsfrist sind (Einstellung „Aufbewahrungsfrist des Aenderungsverlaufs“, Voreinstellung 1 Jahr, mindestens 1 Tag); außerdem sofort beim Löschen der Aktivität oder des Kurses und bei einer genehmigten Datenschutzanfrage für die Lehrkraft oder die Aktivität. Die Auskunft enthält die eigenen Stände als Metadaten; der Vollstand ist gemeinsam bearbeitete Kursgestaltung und wird nicht exportiert.';
 $string['privacy:metadata:cm_version:cmid'] = 'Die Aktivität, zu der dieser Stand gehört.';
 $string['privacy:metadata:cm_version:courseid'] = 'Der Kurs, zu dem diese Aktivität zum Zeitpunkt des Schreibvorgangs gehoerte.';
 $string['privacy:metadata:cm_version:userid'] = 'Die Nutzer-ID der Lehrkraft, unter der der Schreibvorgang lief.';
