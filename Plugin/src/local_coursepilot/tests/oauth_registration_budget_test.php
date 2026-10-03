@@ -29,6 +29,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(oauth_lib::class)]
 #[CoversClass(task\oauth_budget_cleanup::class)]
 final class oauth_registration_budget_test extends \advanced_testcase {
+    use \local_coursepilot\tests\oauth_budget_race;
 
     private const TABLE = 'local_coursepilot_oauth_budget';
 
@@ -194,80 +195,12 @@ final class oauth_registration_budget_test extends \advanced_testcase {
 
     /** Real processes contend for the last allowed registration behind a DB barrier. */
     public function test_parallel_registrations_cannot_exceed_budget(): void {
-        global $DB;
         $this->resetAfterTest();
-        if ($DB->get_dbfamily() !== 'mysql') {
-            $this->markTestSkipped('MariaDB/MySQL named-lock fixture required.');
-        }
         $this->limits(1, 5);
         // Commit the settings so the separate processes see them.
         $this->assertSame(1, oauth_budget::setting('oauthregistersitelimit', 99));
 
-        $key = 'cp642' . bin2hex(random_bytes(8));
-        $gate = $key . 'gate';
-        $ready = $key . 'ready';
-        $DB->get_field_sql('SELECT GET_LOCK(?, 10)', [$gate]);
-        $cfg = $DB->export_dbconfig();
-        $options = (array) ($cfg->dboptions ?? []);
-        $ddl = new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
-            (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
-            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
-        $table = $DB->get_prefix() . self::TABLE;
-        $ddl->query("CREATE TRIGGER $key BEFORE UPDATE ON $table FOR EACH ROW BEGIN
-            IF NEW.sourcekey = '*' AND IS_FREE_LOCK('$ready') = 1 AND @cp_done IS NULL THEN
-                SET @cp_done = 1;
-                SET @cp_ready = GET_LOCK('$ready', 10);
-                SET @cp_gate = GET_LOCK('$gate', 30);
-            END IF;
-        END");
-        $processes = [];
-        $pipes = [];
-        try {
-            $processes[0] = proc_open([PHP_BINARY, __DIR__ . '/fixtures/oauth_registration_process.php', '192.0.2.1'],
-                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[0]);
-            $this->await(fn() => $DB->get_field_sql('SELECT IS_USED_LOCK(?)', [$ready]), 'First request did not reach barrier');
-            $processes[1] = proc_open([PHP_BINARY, __DIR__ . '/fixtures/oauth_registration_process.php', '192.0.2.2'],
-                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[1]);
-            $this->await(fn() => (int) $DB->get_field_sql(
-                'SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE INFO LIKE :query AND ID <> IS_USED_LOCK(:ready)',
-                ['query' => 'UPDATE ' . $table . '%', 'ready' => $ready]) > 0,
-                'Second request did not wait on the shared site budget row');
-            $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);
-            $statuses = [];
-            foreach ($processes as $i => $process) {
-                $output = stream_get_contents($pipes[$i][1]) . stream_get_contents($pipes[$i][2]);
-                fclose($pipes[$i][1]);
-                fclose($pipes[$i][2]);
-                $this->assertSame(0, proc_close($process), $output);
-                $processes[$i] = null;
-                $statuses[] = (int) $output;
-            }
-            sort($statuses);
-            $this->assertSame([201, 429], $statuses);
-            $this->assertSame(1, $this->clients());
-        } finally {
-            $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);
-            foreach ($processes as $process) {
-                if (is_resource($process)) {
-                    proc_terminate($process);
-                    proc_close($process);
-                }
-            }
-            $ddl->query("DROP TRIGGER IF EXISTS $key");
-            $ddl->close();
-        }
-    }
-
-    private function await(callable $condition, string $message): void {
-        $deadline = microtime(true) + 15;
-        do {
-            if ($condition()) {
-                return;
-            }
-            usleep(10000);
-        } while (microtime(true) < $deadline);
-        global $DB;
-        $this->fail($message . ' ' . json_encode($DB->get_records_sql(
-            'SELECT ID, STATE, INFO FROM information_schema.PROCESSLIST WHERE INFO IS NOT NULL')));
+        $this->assertSame([201, 429], $this->race_on_site_budget(['192.0.2.1'], ['192.0.2.2']));
+        $this->assertSame(1, $this->clients());
     }
 }

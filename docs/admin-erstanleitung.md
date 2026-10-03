@@ -76,6 +76,9 @@ instanzweite Notbremse und ersetzt keine Freigabe pro Person.
 | `oauthregistersitelimit` | 200 | Anonyme OAuth-Clientregistrierungen pro Zeitfenster für die ganze Instanz. Darüber antwortet der Endpunkt mit HTTP 429 (`temporarily_unavailable`, `Retry-After`); bereits registrierte Clients arbeiten weiter. 0 oder negativ gilt als 1, „unbegrenzt" gibt es nicht. Details: `docs/oauth-connections.md`. |
 | `oauthregistersourcelimit` | 50 | Dasselbe pro Anfragequelle (von Moodle ermittelte Absenderadresse, IPv6 je /64). KI-Anbieter registrieren von gemeinsamen Adressen aus – bei vielen Lehrkräften mit demselben Client großzügig wählen. |
 | `oauthregisterwindow` | 3600 | Länge des Registrierungsfensters in Sekunden. Eine Änderung beginnt neue Fenster. Budgetdaten werden spätestens eine Stunde nach Fensterende gelöscht. |
+| `oauthcimdsitelimit` | 100 | Erstabrufe von Client-Metadatendokumenten (Clients, die sich mit einer https-URL ausweisen) pro Zeitfenster für die ganze Instanz. Darüber HTTP 429 ohne Abruf; bekannte Clients arbeiten weiter. Ein fehlgeschlagener Abruf wird für dieselbe URL bis zum Ende des laufenden 10-Minuten-Abschnitts nicht wiederholt. Details: `docs/oauth-connections.md`. |
+| `oauthcimdsourcelimit` | 20 | Dasselbe pro Anfragequelle, gleiche Quellregeln wie bei der Registrierung. |
+| `oauthcimdwindow` | 3600 | Länge des Abruffensters in Sekunden. |
 | `personaldatahosts` | leer (nur Private Files) | Zugelassene externe Speicher für personenbezogene Kontextdaten (ADR 0021 §3), siehe Abschnitt 6. |
 | `webdavhint` | leer | Optionaler Freitext für Lehrkräfte ohne eigene WebDAV-Verbindung auf der Ortswahlseite, zusätzlich zu den drei Einrichtungsschritten — z. B. eine Empfehlung, welchen Cloud-Dienst die Schule bereitstellt. |
 

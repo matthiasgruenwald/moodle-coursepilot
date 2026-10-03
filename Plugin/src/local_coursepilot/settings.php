@@ -121,13 +121,17 @@ if ($hassiteconfig) {
         PARAM_INT
     ));
 
-    // Anonymous OAuth registration budgets (#642): finite site-wide and
+    // Anonymous OAuth registration (#642) and CIMD fetch (#643) budgets: finite site-wide and
     // per-source limits per window; no unlimited option, non-positive values
     // fall back defensively, see local_coursepilot\oauth_budget::setting().
     foreach ([
         'oauthregistersitelimit' => \local_coursepilot\oauth_lib::REGISTRATION_SITE_LIMIT,
         'oauthregistersourcelimit' => \local_coursepilot\oauth_lib::REGISTRATION_SOURCE_LIMIT,
         'oauthregisterwindow' => \local_coursepilot\oauth_lib::REGISTRATION_WINDOW,
+        // First-time CIMD client metadata fetches (#643).
+        'oauthcimdsitelimit' => \local_coursepilot\oauth_lib::CIMD_SITE_LIMIT,
+        'oauthcimdsourcelimit' => \local_coursepilot\oauth_lib::CIMD_SOURCE_LIMIT,
+        'oauthcimdwindow' => \local_coursepilot\oauth_lib::CIMD_WINDOW,
     ] as $name => $default) {
         $settings->add(new admin_setting_configtext(
             'local_coursepilot/' . $name,

@@ -21,6 +21,9 @@ while ($socket = stream_socket_accept($server, 15)) {
     file_put_contents($argv[3], $request . $headers, FILE_APPEND);
     $path = explode(' ', $request)[1];
     $body = json_encode(['client_name' => 'Synthetic TLS client', 'redirect_uris' => ['https://client.example/callback']]);
+    if ($path === '/invalid') {
+        $body = json_encode(['client_name' => 'Synthetic client without redirect URIs']);
+    }
     if ($path === '/redirect') {
         fwrite($socket, "HTTP/1.1 302 Found\r\nLocation: /valid\r\nContent-Length: 0\r\n\r\n");
     } else if ($path === '/slow') {

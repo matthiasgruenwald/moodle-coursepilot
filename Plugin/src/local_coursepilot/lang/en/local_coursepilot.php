@@ -351,6 +351,12 @@ $string['settingoauthregistersourcelimit'] = 'OAuth registrations per window (pe
 $string['settingoauthregistersourcelimit_desc'] = 'Maximum anonymous client registrations per request source and window. The source is the remote address as determined by Moodle (forwarded headers only count with a configured reverse proxy; IPv6 per /64). Hosted AI clients register from shared provider addresses, so keep this high enough for your teachers. At least 1.';
 $string['settingoauthregisterwindow'] = 'OAuth registration window (seconds)';
 $string['settingoauthregisterwindow_desc'] = 'Length of the registration budget window. Changing it starts new windows. Budget records are deleted within an hour after their window has ended. At least 1 second.';
+$string['settingoauthcimdsitelimit'] = 'OAuth client metadata fetches per window (site)';
+$string['settingoauthcimdsitelimit_desc'] = 'Maximum first-time downloads of client metadata documents (clients that identify themselves with an https URL) for the whole site per window. Further unknown clients receive HTTP 429 until the window ends without any download; already known clients keep working. A failed download is not repeated for the same URL until the current 10-minute period ends. At least 1; there is no unlimited option.';
+$string['settingoauthcimdsourcelimit'] = 'OAuth client metadata fetches per window (per source)';
+$string['settingoauthcimdsourcelimit_desc'] = 'Maximum first-time client metadata downloads per request source and window, with the same source rules as for registrations. At least 1.';
+$string['settingoauthcimdwindow'] = 'OAuth client metadata fetch window (seconds)';
+$string['settingoauthcimdwindow_desc'] = 'Length of the client metadata fetch budget window. At least 1 second.';
 $string['taskoauthbudgetcleanup'] = 'Delete expired OAuth budget records';
 
 $string['connections'] = 'Coursepilot connections';

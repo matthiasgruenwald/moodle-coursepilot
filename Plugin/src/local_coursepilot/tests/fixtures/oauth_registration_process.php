@@ -15,7 +15,9 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Synthetic process for native public DCR budget concurrency regressions (#642).
+ * Synthetic process for native anonymous OAuth budget concurrency regressions:
+ * argv[1] is the request source; with argv[2] (a CIMD client_id URL) the
+ * process asks the public token endpoint (#643), otherwise it registers (#642).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -25,5 +27,11 @@
 require_once(__DIR__ . '/../../../../../vendor/autoload.php');
 define('PHPUNIT_UTIL', true);
 require_once(__DIR__ . '/../../../../lib/phpunit/bootstrap.php');
-echo \local_coursepilot\oauth_lib::handle_registration('POST',
-    json_encode(['redirect_uris' => ['https://client.example/callback']]), $argv[1])['status'];
+if (isset($argv[2])) {
+    $_SERVER['REMOTE_ADDR'] = $argv[1];
+    echo \local_coursepilot\oauth_lib::handle_token('POST',
+        ['grant_type' => 'authorization_code', 'client_id' => $argv[2]])['status'];
+} else {
+    echo \local_coursepilot\oauth_lib::handle_registration('POST',
+        json_encode(['redirect_uris' => ['https://client.example/callback']]), $argv[1])['status'];
+}

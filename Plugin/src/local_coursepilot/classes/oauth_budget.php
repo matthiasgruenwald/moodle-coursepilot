@@ -93,7 +93,7 @@ final class oauth_budget {
         if ($sitehits === false || (int) $sitehits > $sitelimit) {
             return false;
         }
-        $key = hash_hmac('sha256', $source, get_site_identifier());
+        $key = self::key($source);
         $row = $DB->get_record(self::TABLE, ['scope' => $scope, 'sourcekey' => $key, 'expires' => $expires]);
         if (!$row) {
             $DB->insert_record(self::TABLE, (object) ['scope' => $scope, 'sourcekey' => $key,
@@ -106,6 +106,31 @@ final class oauth_budget {
         }
         $DB->execute('UPDATE {' . self::TABLE . '} SET hits = hits - 1 WHERE id = ?', [$siteid]);
         return false;
+    }
+
+    /**
+     * Whether $source holds an unexpired counter in $scope. Read-only, used
+     * for the CIMD negative cache (#643), whose entries are 'cimdfail'
+     * counters keyed by the failed URL.
+     *
+     * @param string $scope
+     * @param string $source
+     * @return bool
+     */
+    public static function active(string $scope, string $source): bool {
+        global $DB;
+        return $DB->record_exists_select(self::TABLE, 'scope = ? AND sourcekey = ? AND expires > ?',
+            [$scope, self::key($source), time()]);
+    }
+
+    /**
+     * Stored source key: an HMAC, so no raw address or URL is kept.
+     *
+     * @param string $source
+     * @return string
+     */
+    private static function key(string $source): string {
+        return hash_hmac('sha256', $source, get_site_identifier());
     }
 
     /**
