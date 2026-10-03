@@ -47,6 +47,12 @@ final class oauth_lib {
     /** @var string DB-Tabelle der Access-/Refresh-Token. */
     private const TOKEN_TABLE = 'local_coursepilot_oauth_token';
 
+    /** @var string Stable user/client connections, shared by every token generation. */
+    private const GRANT_TABLE = 'local_coursepilot_oauth_grant';
+
+    /** @var int|null Stable connection authenticated in this request. */
+    private static ?int $currentconnectionid = null;
+
     /** @var int Lebensdauer eines Autorisierungscodes in Sekunden (RFC 6749 empfiehlt kurz). */
     private const CODE_TTL = 120;
 
@@ -564,17 +570,22 @@ final class oauth_lib {
             return null;
         }
 
-        // Gleiches Muster wie exchange_code(): Anspruch + Ausstellung als
-        // eine Datenbankgrenze (#574). `accesstokenhash` bleibt beim Claim
-        // unberuehrt, ist aber ueber dieselbe Zeile mitwiderrufen (`revoked`
-        // gilt fuer das ganze Paar, wie schon vor #574).
         $transaction = $DB->start_delegated_transaction();
         try {
-            if (!self::claim_row(self::TOKEN_TABLE, 'refreshtokenhash', 'revoked', $record->refreshtokenhash)) {
+            // UPDATE locks the shared grant until commit. Revocation uses the same
+            // row, so it either prevents issuance or invalidates its successor.
+            if (empty($record->connectionid) || !self::lock_connection((int) $record->connectionid)) {
                 $transaction->allow_commit();
                 return null;
             }
-            $tokens = self::issue_token_pair($clientid, (int) $record->userid);
+            $current = $DB->get_record(self::TOKEN_TABLE, ['id' => $record->id]);
+            if (!$current || (int) $current->revoked === 1 || $current->refreshexpires < time()) {
+                $transaction->allow_commit();
+                return null;
+            }
+            // Preserve the consumed refresh hash and its proven family identity.
+            $DB->set_field(self::TOKEN_TABLE, 'revoked', 1, ['id' => $record->id]);
+            $tokens = self::issue_token_pair($clientid, (int) $record->userid, (int) $record->connectionid);
         } catch (\Throwable $e) {
             $transaction->rollback($e);
         }
@@ -584,30 +595,15 @@ final class oauth_lib {
     }
 
     /**
-     * Beansprucht eine Zeile atomar per Compare-and-Swap (#574), gemeinsamer
-     * Kern fuer den Autorisierungscode- und den Refresh-Token-Anspruch -
-     * gleiches Muster wie {@see workbench_ticket::claim()} (#512), hier fuer
-     * zwei Tabellen verallgemeinert statt zweimal dupliziert. Eine einzige
-     * UPDATE-Anweisung setzt sowohl $column (eindeutig indiziert) auf einen
-     * frischen, nur diesem Aufruf bekannten Zufallswert als auch $flagcolumn
-     * auf 1, mit dem alten Wert und $flagcolumn = 0 in der WHERE-Klausel. Die
-     * Datenbank sperrt die Zeile fuer die Dauer dieser einen Anweisung; ein
-     * zeitgleicher zweiter Anspruch mit derselben WHERE-Bedingung trifft
-     * danach keine Zeile mehr. Der Read-back unter dem eigenen Zufallswert
-     * zeigt, ob dieser Aufruf gewonnen hat - ohne eine von Moodles
-     * DB-Abstraktion nicht angebotene Rueckgabe der Anzahl betroffener
-     * Zeilen zu brauchen. $column/$flagcolumn stammen ausschliesslich aus
-     * den beiden Aufrufstellen (feste Zeichenketten, nie Nutzereingabe) -
-     * Interpolation in die SQL ist damit unbedenklich. Rueckgabe bewusst
-     * bool statt der beanspruchten Zeile (anders als workbench_ticket::claim()):
-     * die Aufrufer lesen unveraenderliche Felder (userid, clientid) bereits
-     * aus dem vor dem Anspruch gelesenen Datensatz.
+     * Claim an authorization code exactly once using an unguessable CAS marker.
+     * Refresh generations retain their hashes and serialize on the stable grant.
+     * The column names are fixed at the sole caller, never user input.
      *
      * @param string $table
-     * @param string $column Eindeutig indizierte Spalte, die den CAS-Anspruch traegt.
-     * @param string $flagcolumn Zusaetzliches Verbrauchs-Flag (0/1), das mitgesetzt wird.
-     * @param string $value Aktueller Wert von $column.
-     * @return bool true, wenn dieser Aufruf die Zeile tatsaechlich beansprucht hat.
+     * @param string $column Unique code column.
+     * @param string $flagcolumn Consumption flag.
+     * @param string $value Original code.
+     * @return bool Whether this transaction claimed the code.
      */
     private static function claim_row(string $table, string $column, string $flagcolumn, string $value): bool {
         global $DB;
@@ -641,15 +637,23 @@ final class oauth_lib {
      *
      * @param string $clientid
      * @param int $userid
+     * @param int|null $connectionid Existing grant on rotation, otherwise a new authorisation.
      * @return array{access_token: string, token_type: string, expires_in: int, refresh_token: string}
      */
-    private static function issue_token_pair(string $clientid, int $userid): array {
+    private static function issue_token_pair(string $clientid, int $userid, ?int $connectionid = null): array {
         global $DB;
 
         $now = time();
+        if ($connectionid === null) {
+            $connectionid = (int) $DB->insert_record(self::GRANT_TABLE, (object) [
+                'userid' => $userid, 'clientid' => $clientid, 'revoked' => 0,
+                'statehash' => self::random_token(32), 'timecreated' => $now,
+            ]);
+        }
         $accesstoken = self::random_token(32);
         $refreshtoken = self::random_token(32);
         $record = new \stdClass();
+        $record->connectionid = $connectionid;
         $record->accesstokenhash = self::token_hash($accesstoken);
         $record->refreshtokenhash = self::token_hash($refreshtoken);
         $record->clientid = $clientid;
@@ -745,11 +749,15 @@ final class oauth_lib {
     public static function authenticate_access_token(string $accesstoken): ?int {
         global $DB;
 
+        self::$currenttokenid = null;
+        self::$currentconnectionid = null;
         $record = $DB->get_record(self::TOKEN_TABLE, ['accesstokenhash' => self::token_hash($accesstoken)]);
-        if (!$record || (int) $record->revoked === 1 || $record->expires < time()) {
+        if (!$record || (int) $record->revoked === 1 || $record->expires < time()
+                || empty($record->connectionid) || !self::grant_active((int) $record->connectionid, (int) $record->userid)) {
             return null;
         }
         self::$currenttokenid = (int) $record->id;
+        self::$currentconnectionid = (int) $record->connectionid;
         return (int) $record->userid;
     }
 
@@ -766,19 +774,24 @@ final class oauth_lib {
     }
 
     /**
-     * Ob eine Verbindung (ein Access-/Refresh-Token-Paar) noch besteht - nicht
-     * widerrufen ist (#501, Spec #486 §13: "Bestand der ausstellenden
-     * Verbindung"). Bewusst ohne Ablaufpruefung: ein Werkbank-Downloadticket
-     * traegt seine eigene, kuerzere Gueltigkeit (15 Minuten), unabhaengig von
-     * der Restlaufzeit des Zugriffstokens, das es ausgestellt hat.
+     * Resolve a legacy token-row reference to its stable connection.
+     * Rotation consumes the pair without revoking the connection. Tickets have
+     * their own expiry and require the grant, independently of token lifetimes.
      *
-     * @param int $id local_coursepilot_oauth_token.id
+     * @param int $id Legacy local_coursepilot_oauth_token.id.
+     * @param int|null $owneruserid Optional ticket-owner boundary.
      * @return bool
      */
-    public static function connection_active(int $id): bool {
+    public static function connection_active(int $id, ?int $owneruserid = null): bool {
         global $DB;
 
-        return $DB->record_exists(self::TOKEN_TABLE, ['id' => $id, 'revoked' => 0]);
+        $conditions = ['id' => $id];
+        if ($owneruserid !== null) {
+            $conditions['userid'] = $owneruserid;
+        }
+        $record = $DB->get_record(self::TOKEN_TABLE, $conditions);
+        return $record && !empty($record->connectionid)
+            && self::grant_active((int) $record->connectionid, (int) $record->userid);
     }
 
     /**
@@ -795,7 +808,7 @@ final class oauth_lib {
     public static function has_active_connection(int $userid): bool {
         global $DB;
 
-        return $DB->record_exists(self::TOKEN_TABLE, ['userid' => $userid, 'revoked' => 0]);
+        return $DB->record_exists(self::GRANT_TABLE, ['userid' => $userid, 'revoked' => 0]);
     }
 
     /**
@@ -806,6 +819,7 @@ final class oauth_lib {
      */
     public static function reset_current_token_id(): void {
         self::$currenttokenid = null;
+        self::$currentconnectionid = null;
     }
 
     /**
@@ -820,8 +834,16 @@ final class oauth_lib {
     public static function revoke_all_tokens(): int {
         global $DB;
 
-        $count = $DB->count_records(self::TOKEN_TABLE, ['revoked' => 0]);
-        $DB->set_field(self::TOKEN_TABLE, 'revoked', 1, ['revoked' => 0]);
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            // Lock grants before tokens, matching rotation and single revocation.
+            $DB->set_field(self::GRANT_TABLE, 'revoked', 1, ['revoked' => 0]);
+            $count = $DB->count_records(self::TOKEN_TABLE, ['revoked' => 0]);
+            $DB->set_field(self::TOKEN_TABLE, 'revoked', 1, ['revoked' => 0]);
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
+        $transaction->allow_commit();
         return $count;
     }
 
@@ -843,16 +865,26 @@ final class oauth_lib {
     public static function revoke_token(int $id, ?int $owneruserid = null): bool {
         global $DB;
 
-        $conditions = ['id' => $id, 'revoked' => 0];
+        $conditions = ['id' => $id];
         if ($owneruserid !== null) {
             $conditions['userid'] = $owneruserid;
         }
         $record = $DB->get_record(self::TOKEN_TABLE, $conditions);
-        if (!$record) {
+        if (!$record || empty($record->connectionid)) {
             return false;
         }
-        $record->revoked = 1;
-        $DB->update_record(self::TOKEN_TABLE, $record);
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            if (!self::lock_connection((int) $record->connectionid)) {
+                $transaction->allow_commit();
+                return false;
+            }
+            $DB->set_field(self::GRANT_TABLE, 'revoked', 1, ['id' => $record->connectionid]);
+            $DB->set_field(self::TOKEN_TABLE, 'revoked', 1, ['connectionid' => $record->connectionid]);
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
+        $transaction->allow_commit();
         return true;
     }
 
@@ -871,6 +903,7 @@ final class oauth_lib {
         return $DB->get_records_sql(
             'SELECT t.id, t.clientid, t.userid, t.timecreated, t.expires, c.clientname
                FROM {' . self::TOKEN_TABLE . '} t
+               JOIN {' . self::GRANT_TABLE . '} g ON g.id = t.connectionid AND g.revoked = 0
           LEFT JOIN {' . self::CLIENT_TABLE . '} c ON c.clientid = t.clientid
               WHERE t.userid = :userid AND t.revoked = 0
            ORDER BY t.timecreated DESC',
@@ -896,11 +929,33 @@ final class oauth_lib {
             'SELECT t.id, t.clientid, t.userid, t.timecreated, t.expires, c.clientname,
                     ' . $namefields . ', u.email
                FROM {' . self::TOKEN_TABLE . '} t
+               JOIN {' . self::GRANT_TABLE . '} g ON g.id = t.connectionid AND g.revoked = 0
           LEFT JOIN {' . self::CLIENT_TABLE . '} c ON c.clientid = t.clientid
           LEFT JOIN {user} u ON u.id = t.userid
               WHERE t.revoked = 0
            ORDER BY t.timecreated DESC'
         );
+    }
+
+    /** Stable issuing connection, independent of the token generation. */
+    public static function current_connection_id(): ?int {
+        return self::$currentconnectionid;
+    }
+
+    /** Tickets keep their own expiry; require the grant and its owner. */
+    public static function grant_active(int $id, int $userid): bool {
+        global $DB;
+        return $DB->record_exists(self::GRANT_TABLE, ['id' => $id, 'userid' => $userid, 'revoked' => 0]);
+    }
+
+    /** Acquire the shared connection row within a delegated transaction. */
+    private static function lock_connection(int $id): bool {
+        global $DB;
+        $marker = self::random_token(32);
+        $DB->execute('UPDATE {' . self::GRANT_TABLE . '}
+                         SET statehash = :marker WHERE id = :id AND revoked = 0',
+            ['marker' => $marker, 'id' => $id]);
+        return $DB->record_exists(self::GRANT_TABLE, ['id' => $id, 'statehash' => $marker, 'revoked' => 0]);
     }
 
     /**

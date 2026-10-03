@@ -596,56 +596,6 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Beweist die Race-Condition-Sicherheit der Refresh-Rotation mit echter
-     * Ueberlappung ueber zwei getrennte Datenbankverbindungen (#574,
-     * Abnahmekriterium 1, gleiches Vorbild wie
-     * {@see test_exchange_code_at_most_one_of_two_separate_connections_wins_the_claim()}).
-     * Beide Verbindungen lesen denselben, noch nicht widerrufenen Datensatz,
-     * bevor eine von beiden schreibt; danach fuehrt jede ueber sich selbst
-     * genau die CAS-Anweisung aus, die auch {@see oauth_lib::claim_row()}
-     * intern verwendet.
-     */
-    public function test_rotate_refresh_token_at_most_one_of_two_separate_connections_wins_the_claim(): void {
-        global $DB;
-
-        $this->resetAfterTest();
-        $fixture = $this->registered_client_with_pkce();
-        global $USER;
-        $this->setUser($this->getDataGenerator()->create_user());
-        $code = oauth_lib::issue_code($fixture['clientid'], (int) $USER->id, $fixture['redirecturi'], $fixture['challenge']);
-        $original = oauth_lib::exchange_code($code, $fixture['clientid'], $fixture['redirecturi'], $fixture['verifier']);
-        $hash = hash('sha256', $original['refresh_token']);
-
-        $cfg = $DB->export_dbconfig();
-        $db2 = \moodle_database::get_driver_instance($cfg->dbtype, $cfg->dblibrary);
-        $db2->connect($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname, $cfg->prefix, (array) ($cfg->dboptions ?? []));
-
-        try {
-            $this->assertSame(0, (int) $DB->get_field('local_coursepilot_oauth_token', 'revoked', ['refreshtokenhash' => $hash]));
-            $this->assertSame(0, (int) $db2->get_field('local_coursepilot_oauth_token', 'revoked', ['refreshtokenhash' => $hash]));
-
-            $claima = hash('sha256', $hash . '|a');
-            $claimb = hash('sha256', $hash . '|b');
-            $DB->execute(
-                'UPDATE {local_coursepilot_oauth_token} SET refreshtokenhash = :claim, revoked = 1 '
-                    . 'WHERE refreshtokenhash = :hash AND revoked = 0',
-                ['claim' => $claima, 'hash' => $hash]
-            );
-            $db2->execute(
-                'UPDATE {local_coursepilot_oauth_token} SET refreshtokenhash = :claim, revoked = 1 '
-                    . 'WHERE refreshtokenhash = :hash AND revoked = 0',
-                ['claim' => $claimb, 'hash' => $hash]
-            );
-
-            $wona = $DB->record_exists('local_coursepilot_oauth_token', ['refreshtokenhash' => $claima]);
-            $wonb = $DB->record_exists('local_coursepilot_oauth_token', ['refreshtokenhash' => $claimb]);
-            $this->assertNotEquals($wona, $wonb, 'Genau eine der beiden ueberlappenden Verbindungen darf den Anspruch gewinnen.');
-        } finally {
-            $db2->dispose();
-        }
-    }
-
-    /**
      * Anspruch und Tokenausstellung bilden eine Datenbankgrenze (#574,
      * Abnahmekriterium 3): ein provozierter Ausstellungsfehler macht den
      * Anspruch per Rollback rueckgaengig, statt den Code dauerhaft zu
@@ -858,6 +808,10 @@ final class oauth_lib_test extends \advanced_testcase {
         $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
         $record->revoked = 0;
         $record->timecreated = time();
+        $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
+            'userid' => $record->userid, 'clientid' => $record->clientid, 'revoked' => $record->revoked,
+            'statehash' => bin2hex(random_bytes(32)), 'timecreated' => $record->timecreated,
+        ]);
         $record->id = $DB->insert_record('local_coursepilot_oauth_token', $record);
         $record->accesstoken = $accesstoken;
         $record->refreshtoken = $refreshtoken;

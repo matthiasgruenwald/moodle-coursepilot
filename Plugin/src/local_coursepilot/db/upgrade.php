@@ -297,5 +297,10 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026100201, 'local', 'coursepilot');
     }
 
+    if ($oldversion < 2026100300) {
+        local_coursepilot_migrate_oauth_connections($dbman);
+        upgrade_plugin_savepoint(true, 2026100300, 'local', 'coursepilot');
+    }
+
     return true;
 }

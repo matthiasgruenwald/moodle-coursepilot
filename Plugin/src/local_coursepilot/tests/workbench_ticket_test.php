@@ -151,7 +151,7 @@ final class workbench_ticket_test extends \advanced_testcase {
 
         $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
 
-        $DB->set_field('local_coursepilot_oauth_token', 'revoked', 1, ['id' => $tokenid]);
+        $this->assertTrue(oauth_lib::revoke_token($tokenid));
 
         $this->expectException(\moodle_exception::class);
         $this->expectExceptionMessageMatches('/' . preg_quote(get_string('workbenchticketconnectionrevoked', 'local_coursepilot'), '/') . '/');
@@ -397,6 +397,10 @@ final class workbench_ticket_test extends \advanced_testcase {
         $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
         $record->revoked = 0;
         $record->timecreated = time();
+        $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
+            'userid' => $record->userid, 'clientid' => $record->clientid, 'revoked' => $record->revoked,
+            'statehash' => bin2hex(random_bytes(32)), 'timecreated' => $record->timecreated,
+        ]);
         $id = (int) $DB->insert_record('local_coursepilot_oauth_token', $record);
 
         oauth_lib::authenticate_access_token($accesstoken);

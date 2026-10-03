@@ -253,3 +253,53 @@ function local_coursepilot_translate_pending_entries(array $entries): array {
     }
     return $result;
 }
+
+/**
+ * Add stable grants and backfill in bounded, independently committed batches.
+ * Unknown historical families stay NULL; never group by user/client or guess.
+ */
+function local_coursepilot_migrate_oauth_connections(database_manager $dbman): void {
+    global $DB;
+    $grant = new xmldb_table('local_coursepilot_oauth_grant');
+    $grant->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+    $grant->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+    $grant->add_field('clientid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL);
+    $grant->add_field('revoked', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+    $grant->add_field('statehash', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL);
+    $grant->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+    $grant->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+    $grant->add_index('userid_revoked', XMLDB_INDEX_NOTUNIQUE, ['userid', 'revoked']);
+    if (!$dbman->table_exists($grant)) {
+        $dbman->create_table($grant);
+    }
+    foreach (['local_coursepilot_oauth_token' => 'connectionid',
+            'local_coursepilot_workbench_ticket' => 'oauthconnectionid'] as $name => $column) {
+        $table = new xmldb_table($name);
+        $field = new xmldb_field($column, XMLDB_TYPE_INTEGER, '10');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $index = new xmldb_index($column, XMLDB_INDEX_NOTUNIQUE, [$column]);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+    }
+    while ($records = $DB->get_records_select('local_coursepilot_oauth_token',
+            'connectionid IS NULL AND revoked = 0', [], 'id', '*', 0, 100)) {
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            foreach ($records as $record) {
+                $id = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
+                    'userid' => $record->userid, 'clientid' => $record->clientid, 'revoked' => 0,
+                    'statehash' => bin2hex(random_bytes(32)), 'timecreated' => $record->timecreated,
+                ]);
+                $DB->set_field('local_coursepilot_oauth_token', 'connectionid', $id, ['id' => $record->id]);
+                $DB->set_field('local_coursepilot_workbench_ticket', 'oauthconnectionid', $id,
+                    ['oauthtokenid' => $record->id, 'userid' => $record->userid]);
+            }
+        } catch (Throwable $e) {
+            $transaction->rollback($e);
+        }
+        $transaction->allow_commit();
+    }
+}

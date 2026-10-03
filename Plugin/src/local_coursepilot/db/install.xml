@@ -40,9 +40,22 @@
         <INDEX NAME="code" UNIQUE="true" FIELDS="code"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="local_coursepilot_oauth_grant" COMMENT="Stable user/client connection; shared rotation and revocation state (#638).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="clientid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="revoked" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="statehash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS><KEY NAME="primary" TYPE="primary" FIELDS="id"/></KEYS>
+      <INDEXES><INDEX NAME="userid_revoked" UNIQUE="false" FIELDS="userid, revoked"/></INDEXES>
+    </TABLE>
     <TABLE NAME="local_coursepilot_oauth_token" COMMENT="SHA-256-Hashes der Access- und Refresh-Token, 1h/30d, Refresh-Rotation (#336, #534).">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="connectionid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Stable grant; NULL only for historical rows whose family is unknown."/>
         <FIELD NAME="accesstokenhash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="sha256(Access-Token); das Geheimnis selbst wird nie gespeichert."/>
         <FIELD NAME="refreshtokenhash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="sha256(Refresh-Token); das Geheimnis selbst wird nie gespeichert."/>
         <FIELD NAME="clientid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
@@ -56,6 +69,7 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
       <INDEXES>
+        <INDEX NAME="connectionid" UNIQUE="false" FIELDS="connectionid"/>
         <INDEX NAME="accesstokenhash" UNIQUE="true" FIELDS="accesstokenhash"/>
         <INDEX NAME="refreshtokenhash" UNIQUE="true" FIELDS="refreshtokenhash"/>
       </INDEXES>
@@ -143,6 +157,7 @@
         <FIELD NAME="path" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Client-Pfad der Werkbankdatei, relativ zur Werkbankwurzel."/>
         <FIELD NAME="contenthash" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false" COMMENT="Bei Abruf gegen den aktuellen Dateiinhalt geprueft - Aenderung seit Ausstellung wird abgelehnt."/>
         <FIELD NAME="tickethash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="sha256(Ticketgeheimnis) - das Geheimnis selbst wird nie gespeichert."/>
+        <FIELD NAME="oauthconnectionid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Stable issuing grant, independent of rotation."/>
         <FIELD NAME="oauthtokenid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="local_coursepilot_oauth_token.id der ausstellenden Verbindung, NULL wenn keine bekannt war."/>
         <FIELD NAME="expires" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
@@ -151,6 +166,7 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
       <INDEXES>
+        <INDEX NAME="oauthconnectionid" UNIQUE="false" FIELDS="oauthconnectionid"/>
         <INDEX NAME="tickethash" UNIQUE="true" FIELDS="tickethash"/>
       </INDEXES>
     </TABLE>

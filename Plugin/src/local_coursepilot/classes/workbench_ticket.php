@@ -84,7 +84,7 @@ final class workbench_ticket {
         $record->path = $relativepath;
         $record->contenthash = $info['contenthash'];
         $record->tickethash = hash('sha256', $secret);
-        $record->oauthtokenid = oauth_lib::current_token_id();
+        $record->oauthconnectionid = oauth_lib::current_connection_id();
         $record->expires = time() + self::TTL_SECONDS;
         $record->timecreated = time();
         $DB->insert_record(self::TABLE, $record);
@@ -169,9 +169,11 @@ final class workbench_ticket {
         // es damit weiterhin (kein zusaetzlicher Ausstellungs-Check noetig),
         // aber es ueberlebt einen Sammelwiderruf (#338) genauso wenig wie
         // ein Ticket mit bekannter Verbindung.
-        $hasconnection = $ticket->oauthtokenid !== null
-            ? oauth_lib::connection_active((int) $ticket->oauthtokenid)
-            : oauth_lib::has_active_connection((int) $ticket->userid);
+        $hasconnection = $ticket->oauthconnectionid !== null
+            ? oauth_lib::grant_active((int) $ticket->oauthconnectionid, (int) $ticket->userid)
+            : ($ticket->oauthtokenid !== null
+            ? oauth_lib::connection_active((int) $ticket->oauthtokenid, (int) $ticket->userid)
+            : oauth_lib::has_active_connection((int) $ticket->userid));
         if (!$hasconnection) {
             throw new workbench_ticket_redemption_failed('workbenchticketconnectionrevoked', $ticket->path);
         }
