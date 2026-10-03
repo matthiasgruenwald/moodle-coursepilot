@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_coursepilot';
-$plugin->version   = 2026100342;
+$plugin->version   = 2026100344;
 // 2.0.x sagt Moodle 5.0 zu (geprueft). Ab 2.1 gilt Moodle 5.1 als
 // Mindestversion (ADR 0027).
 $plugin->requires  = 2025041400;

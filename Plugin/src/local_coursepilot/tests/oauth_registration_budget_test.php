@@ -27,7 +27,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(oauth_budget::class)]
 #[CoversClass(oauth_lib::class)]
-#[CoversClass(task\oauth_budget_cleanup::class)]
+#[CoversClass(task\oauth_cleanup::class)]
 final class oauth_registration_budget_test extends \advanced_testcase {
     use \local_coursepilot\tests\oauth_budget_race;
 
@@ -88,11 +88,11 @@ final class oauth_registration_budget_test extends \advanced_testcase {
         $DB->insert_record(self::TABLE, (object) ['scope' => 'register', 'sourcekey' => 'stale',
             'expires' => time(), 'hits' => 1]);
 
-        (new task\oauth_budget_cleanup())->execute();
+        (new task\oauth_cleanup())->execute();
 
         $this->assertFalse($DB->record_exists(self::TABLE, ['sourcekey' => 'stale']));
         $this->assertSame(2, $DB->count_records(self::TABLE), 'Current site and source windows remain.');
-        $this->assertTrue((bool) \core\task\manager::get_scheduled_task(task\oauth_budget_cleanup::class));
+        $this->assertTrue((bool) \core\task\manager::get_scheduled_task(task\oauth_cleanup::class));
     }
 
     public function test_oversized_body_and_uris_are_rejected_without_client_or_budget(): void {

@@ -20,6 +20,7 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="clientid" UNIQUE="true" FIELDS="clientid"/>
+        <INDEX NAME="timecreated" UNIQUE="false" FIELDS="timecreated" COMMENT="Unused client cleanup (#644)."/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_coursepilot_oauth_code" COMMENT="Kurzlebige Autorisierungscodes, PKCE-gebunden, genau einmal einloesbar (#336).">
@@ -38,6 +39,7 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="code" UNIQUE="true" FIELDS="code"/>
+        <INDEX NAME="expires" UNIQUE="false" FIELDS="expires" COMMENT="Expired code cleanup (#644)."/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_coursepilot_oauth_grant" COMMENT="Stable user/client connection; shared rotation and revocation state (#638).">
@@ -50,7 +52,10 @@
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
       <KEYS><KEY NAME="primary" TYPE="primary" FIELDS="id"/></KEYS>
-      <INDEXES><INDEX NAME="userid_revoked" UNIQUE="false" FIELDS="userid, revoked"/></INDEXES>
+      <INDEXES>
+        <INDEX NAME="userid_revoked" UNIQUE="false" FIELDS="userid, revoked"/>
+        <INDEX NAME="revoked_clientid" UNIQUE="false" FIELDS="revoked, clientid" COMMENT="Revoked connection and unused client cleanup (#644)."/>
+      </INDEXES>
     </TABLE>
     <TABLE NAME="local_coursepilot_oauth_budget" COMMENT="Windowed anonymous OAuth budgets per scope, site and source; rows expire with their window (#642).">
       <FIELDS>
@@ -182,6 +187,7 @@
       <INDEXES>
         <INDEX NAME="oauthconnectionid" UNIQUE="false" FIELDS="oauthconnectionid"/>
         <INDEX NAME="tickethash" UNIQUE="true" FIELDS="tickethash"/>
+        <INDEX NAME="expires" UNIQUE="false" FIELDS="expires" COMMENT="Expired ticket cleanup (#644)."/>
       </INDEXES>
     </TABLE>
   </TABLES>

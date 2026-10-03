@@ -135,7 +135,7 @@ final class oauth_budget {
 
     /**
      * Delete counters whose window has ended. Called on every consume and by
-     * the scheduled task {@see task\oauth_budget_cleanup}.
+     * the scheduled task {@see task\oauth_cleanup}.
      *
      * @param int|null $now
      */

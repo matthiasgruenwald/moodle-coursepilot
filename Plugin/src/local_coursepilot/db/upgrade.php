@@ -319,5 +319,11 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026100342, 'local', 'coursepilot');
     }
 
+    if ($oldversion < 2026100344) {
+        // #644: indexes of the bounded OAuth cleanup; the task is renamed to oauth_cleanup.
+        local_coursepilot_add_oauth_cleanup_indexes($dbman);
+        upgrade_plugin_savepoint(true, 2026100344, 'local', 'coursepilot');
+    }
+
     return true;
 }

@@ -26,7 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 
 $tasks = [
     [
-        'classname' => 'local_coursepilot\task\oauth_budget_cleanup',
+        'classname' => 'local_coursepilot\task\oauth_cleanup',
         'blocking' => 0,
         'minute' => 'R',
         'hour' => '*',

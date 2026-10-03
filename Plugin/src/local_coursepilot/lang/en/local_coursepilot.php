@@ -357,7 +357,7 @@ $string['settingoauthcimdsourcelimit'] = 'OAuth client metadata fetches per wind
 $string['settingoauthcimdsourcelimit_desc'] = 'Maximum first-time client metadata downloads per request source and window, with the same source rules as for registrations. At least 1.';
 $string['settingoauthcimdwindow'] = 'OAuth client metadata fetch window (seconds)';
 $string['settingoauthcimdwindow_desc'] = 'Length of the client metadata fetch budget window. At least 1 second.';
-$string['taskoauthbudgetcleanup'] = 'Delete expired OAuth budget records';
+$string['taskoauthcleanup'] = 'Delete expired OAuth state';
 
 $string['connections'] = 'Coursepilot connections';
 $string['connectionsintro'] = 'All active remote-access connections on this site. Revoking a connection invalidates its token immediately — any further access then fails.';

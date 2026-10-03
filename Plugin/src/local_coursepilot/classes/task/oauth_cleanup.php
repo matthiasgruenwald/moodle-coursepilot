@@ -17,25 +17,26 @@
 namespace local_coursepilot\task;
 
 /**
- * Delete expired anonymous OAuth budget windows even without new requests (#642).
+ * Hourly bounded cleanup of expired OAuth state: budget windows (#642), codes,
+ * tickets, dead connections and unused clients (#644).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-final class oauth_budget_cleanup extends \core\task\scheduled_task {
+final class oauth_cleanup extends \core\task\scheduled_task {
 
     /**
      * @return string
      */
     public function get_name(): string {
-        return get_string('taskoauthbudgetcleanup', 'local_coursepilot');
+        return get_string('taskoauthcleanup', 'local_coursepilot');
     }
 
     /**
-     * Purge every budget row whose window has ended.
+     * Run one bounded cleanup pass, see {@see \local_coursepilot\oauth_cleanup}.
      */
     public function execute(): void {
-        \local_coursepilot\oauth_budget::purge_expired();
+        \local_coursepilot\oauth_cleanup::run();
     }
 }

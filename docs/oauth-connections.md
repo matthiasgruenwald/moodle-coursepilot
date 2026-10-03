@@ -1,4 +1,4 @@
-# Stabile OAuth-Verbindungen, Replay-Sperre, Registrierungs- und CIMD-Budget (#638–643)
+# Stabile OAuth-Verbindungen, Replay-Sperre, Registrierungs- und CIMD-Budget, Bereinigung (#638–644)
 
 Eine Verbindung (Grant) gehört genau einer Person und einem Client. Jede neue
 Autorisierung eröffnet eine eigene Verbindung, auch beim gleichen Nutzer und
@@ -66,7 +66,7 @@ Metadaten verbrauchen kein Budget.
 | Anzahl `redirect_uris` | 10 | fest, HTTP 400 `invalid_client_metadata` |
 | `client_name` | 255 Zeichen | wird gekürzt |
 | Löschhorizont Budgetdaten | Fensterende | bei jeder Budgetprüfung, sonst stündliche Aufgabe |
-| Löschhorizont unbenutzter Clients | – | folgt mit der OAuth-Bereinigung (#644) |
+| Löschhorizont unbenutzter Clients | 30 Tage nach Registrierung | fest (`oauth_cleanup::CLIENT_UNUSED_TTL`), siehe Bereinigung (#644) |
 
 Eine leere Einstellung nutzt den Standard, 0 oder negative Werte gelten als 1 –
 eine unbegrenzte Einstellung gibt es nicht. Die Fenster sind fest: An einer
@@ -89,7 +89,7 @@ Transaktion auf der Instanzzeile; die letzte erlaubte und die erste abgelehnte
 Anfrage sind auch parallel exakt. Eine Quellablehnung gibt die Instanzeinheit
 zurück, damit eine einzelne Quelle das Instanzbudget nicht leert. Abgelaufene
 Fenster löscht jede Budgetprüfung (`oauth_budget::purge_expired()`); ohne neue
-Anfragen übernimmt das die stündliche Aufgabe `oauth_budget_cleanup`. Eine an der
+Anfragen übernimmt das die stündliche Aufgabe `oauth_cleanup` (bis #644 `oauth_budget_cleanup`). Eine an der
 Fenstergrenze bereits gelöschte Instanzzeile gilt als Ablehnung, nie als leeres
 Budget. Derselbe Vertrag `oauth_budget::consume()` schützt den CIMD-Abruf (#643)
 im Bereich `cimd`.
@@ -126,6 +126,44 @@ begrenzt dann das Abrufbudget). Die Anzahl der Einträge ist auf das Instanzlimi
 je Abschnitt begrenzt, sie verfallen mit dem Abschnitt wie alle Budgetzeilen. Gespeichert werden nur HMACs, keine URL und keine
 Adresse; der Abruf protokolliert nichts. Gültige gespeicherte Clients
 (DCR wie CIMD) arbeiten auch bei erschöpftem Budget ohne erneuten Abruf.
+
+## Bereinigung abgelaufenen OAuth-Zustands (#644)
+
+Die stündliche Aufgabe `local_coursepilot\task\oauth_cleanup` ruft
+`oauth_cleanup::run()` auf. Jeder Schritt löscht pro Lauf höchstens 500 Zeilen
+über eine indizierte Auswahl; der nächste Lauf setzt fort, Wiederholung ist
+folgenlos. Die Löschgrenzen entsprechen genau den Gültigkeitsprüfungen: Nichts,
+was noch eingelöst, erneuert oder abgerufen werden kann, wird gelöscht, und keine
+Frist wird verlängert.
+
+| Zustand | Gelöscht, sobald | Frist |
+|---|---|---|
+| Budgetzeilen, Fehlcache (`cimdfail`) | Fensterende erreicht | höchstens ein Budgetfenster bzw. 600 s, siehe oben |
+| Autorisierungscodes | `expires` vorbei (eingelöst oder nicht) | 120 s nach Ausstellung |
+| Downloadtickets | `expires` vorbei | 15 min nach Ausstellung |
+| Widerrufene Verbindung samt allen Generationen | sofort im nächsten Lauf | – |
+| Verbindung ohne gültiges Refresh-Token samt Generationen | jüngstes `refreshexpires` vorbei | 30 Tage nach der letzten Erneuerung |
+| Historische Tokenzeilen ohne Verbindung (#638) | widerrufen oder Refresh abgelaufen | – |
+| DCR- und gecachte CIMD-Clients | 30 Tage nach Registrierung, ohne nicht widerrufene Verbindung irgendeiner Person und ohne offenen Code | `CLIENT_UNUSED_TTL` |
+
+Aktive Verbindungen (nicht widerrufen, mindestens ein noch gültiges
+Refresh-Token) behalten alle Generationen einschließlich der verbrauchten
+Refresh-Hashes – das ist die Replay-Evidenz aus #639. Ein alter verbrauchter
+Refresh-Wert sperrt also auch nach jeder Bereinigung die ganze Verbindung. Diese
+Evidenz wächst um eine Zeile je Erneuerung und endet mit der Verbindung. Ein
+Client mit aktiver Verbindung einer anderen Person gilt nie als unbenutzt.
+
+Ein gelöschter CIMD-Client wird bei der nächsten Verwendung neu abgerufen
+(innerhalb des CIMD-Budgets); ein gelöschter DCR-Client erhält `invalid_client`
+und registriert sich neu (innerhalb des Registrierungsbudgets). Tickets einer
+gelöschten Verbindung schlagen weiterhin geschlossen fehl. Effektive
+Client-Inaktivitätsfrist: höchstens 30 Tage nach Registrierung bzw. nach Ende der
+letzten Verbindung.
+
+Der Moodle-Schritt 2026100344 legt die Indizes idempotent an (Code- und
+Ticketablauf, Client-Registrierungszeit, Verbindung nach Widerruf und Client).
+Die frühere Aufgabe `oauth_budget_cleanup` entfällt; Moodle registriert beim
+Upgrade die Aufgabe `oauth_cleanup` aus `db/tasks.php`.
 
 ## Native Prüfbarkeit
 
