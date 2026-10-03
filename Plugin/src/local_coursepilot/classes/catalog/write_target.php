@@ -40,7 +40,8 @@ defined('MOODLE_INTERNAL') || die();
  * Construction only succeeds for an accepted write. create_activity() and
  * update_activity() add the file and native sequence (issue #647): editor
  * and file pseudofields are normalised and checked together with the
- * target, file references are validated, and only then drafts are resolved,
+ * target, file references are checked (capability, list shapes, embed
+ * whitelist), and only then drafts are resolved,
  * replaced files trashed and add_moduleinfo()/update_moduleinfo() run (ADR
  * 0016) - inside one delegated transaction, so neither a rejected request
  * nor a native partial failure leaves drafts, trash entries, sections or
@@ -110,7 +111,7 @@ final class write_target {
 
     /**
      * Checks and creates an activity in one sequence: normalise, check the
-     * target, validate file references, then resolve files and run
+     * target, check file references, then resolve files and run
      * add_moduleinfo() transactionally.
      *
      * @param class-string<module_catalog> $catalogclass
@@ -164,7 +165,7 @@ final class write_target {
 
     /**
      * Checks and applies a patch in one sequence: normalise, check against
-     * the current state, validate file references, then trash replaced
+     * the current state, check file references, then trash replaced
      * files, resolve drafts and run update_moduleinfo() transactionally.
      *
      * @param class-string<module_catalog> $catalogclass
@@ -496,14 +497,20 @@ final class write_target {
      */
     private static function in_transaction(callable $write): mixed {
         global $DB;
+        $nested = $DB->is_transaction_started();
         $transaction = $DB->start_delegated_transaction();
         try {
             $result = $write();
         } catch (\Throwable $e) {
-            // A native helper may leave its own inner transaction open
-            // (add_moduleinfo() does when a step throws an \Error); a
-            // delegated rollback would then only rethrow. Roll back the
-            // whole stack so no partial write survives, then rethrow.
+            if ($nested) {
+                // Moodle semantics: the caller's outer transaction is marked
+                // for rollback and fails as a whole.
+                $transaction->rollback($e);
+            }
+            // We own the stack: a native helper may leave its own inner
+            // transaction open (add_moduleinfo() does when a step throws an
+            // \Error), where a delegated rollback would only rethrow. Roll
+            // back the whole stack so no partial write survives.
             $DB->force_transaction_rollback();
             throw $e;
         }

@@ -171,6 +171,45 @@ final class catalog_file_write_test extends \advanced_testcase {
         $this->assertEquals($before, $this->snapshot());
     }
 
+    public function test_failure_mid_file_sequence_rolls_back_trash_and_drafts(): void {
+        $cmid = $this->assign_with_files();
+        $before = $this->snapshot();
+
+        try {
+            // "blatt.pdf" is trashed and copied into a draft before "missing.pdf" fails.
+            update_module_settings::execute($cmid, json_encode([
+                'name' => 'Changed',
+                'introattachments' => ['blatt.pdf', 'missing.pdf'],
+            ]));
+            $this->fail('Expected materialfilenotfound.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialfilenotfound', $e->errorcode);
+        }
+
+        $this->assertEquals($before, $this->snapshot());
+    }
+
+    public function test_update_without_file_permission_mutates_neither_files_nor_activity(): void {
+        global $DB;
+        $cmid = $this->assign_with_files();
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid,
+            \context_user::instance($this->teacher->id)->id, true);
+        $before = $this->snapshot();
+
+        try {
+            update_module_settings::execute($cmid, json_encode([
+                'name' => 'Changed',
+                'introattachments' => ['blatt.pdf'],
+            ]));
+            $this->fail('Expected capability rejection.');
+        } catch (\required_capability_exception $e) {
+            $this->assertSame(get_capability_string('moodle/user:manageownfiles'), $e->a);
+        }
+
+        $this->assertEquals($before, $this->snapshot());
+    }
+
     public function test_native_failure_during_update_rolls_back_files_and_activity(): void {
         $cmid = $this->assign_with_files();
         $before = $this->snapshot();

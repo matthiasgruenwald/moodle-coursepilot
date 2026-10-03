@@ -60,12 +60,11 @@ defined('MOODLE_INTERNAL') || die();
 class update_module_settings extends external_api {
 
     /**
-     * Die Materialreferenz-Pseudofelder (write_options() "material_reference_fields")
-     * einer Aktivitaetsart - wiederverwendet statt dupliziert von
-     * {@see \local_coursepilot\external\restore_activity_version}, das denselben
-     * component/filearea-Satz braucht, um ersetzte Dateien aus dem Papierkorb
-     * ({@see \local_coursepilot\activity_file_trash}) zurueckzuholen (Spec 0018
-     * §9.1, Issue #432).
+     * The material reference pseudofields (write_options() "material_reference_fields")
+     * of an activity type, for {@see \local_coursepilot\external\restore_activity_version},
+     * which needs the same component/filearea set to bring replaced files back
+     * from the trash ({@see \local_coursepilot\activity_file_trash}, Spec 0018
+     * §9.1, issue #432).
      *
      * @param string $modname
      * @return array<string, array{component: string, filearea: string}>
@@ -104,7 +103,7 @@ class update_module_settings extends external_api {
      * dem eigenen Aenderungsverlauf/Papierkorb, nicht aus Client-Eingaben.
      *
      * @param int $cmid
-     * @param string $fieldname Eines der material_reference_specs()-Felder dieser Aktivitaetsart.
+     * @param string $fieldname One of this activity type's material_reference_specs() fields.
      * @param int $draftitemid Fertiger Dateimanager-Entwurf, z.B. aus
      *        {@see \local_coursepilot\activity_file_trash::resolve_restore_into_draft()}.
      * @return void

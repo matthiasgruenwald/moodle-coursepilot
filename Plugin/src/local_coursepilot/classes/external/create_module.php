@@ -56,9 +56,9 @@ defined('MOODLE_INTERNAL') || die();
  * Pflichtfeld-Mechanismus ({@see \local_coursepilot\catalog\write_target::create()}).
  * "folder" bleibt anlegbar - ein leerer Ordner ist gueltig, "files" ist dort
  * optional und akzeptiert mehrere Pfade samt Zielunterordner (Spec 0018 §4.2).
- * Normalisierung, Pruefung, Dateiaufloesung und add_moduleinfo() laufen als
- * eine Folge in {@see \local_coursepilot\catalog\write_target::create_activity()}
- * (#647) - dieser Endpunkt ist nur noch der External-Adapter.
+ * Normalisation, checks, file resolution and add_moduleinfo() run as one
+ * sequence in {@see \local_coursepilot\catalog\write_target::create_activity()}
+ * (#647); this endpoint is only the external adapter.
  *
  * Feldbuendel (Spec 0015 §2.4) sind bewusst KEIN eigener Endpunkt-Parameter:
  * "Sie überleben als benannte Feldbündel im Katalog, nicht als
