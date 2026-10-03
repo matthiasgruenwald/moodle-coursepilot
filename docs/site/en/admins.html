@@ -50,13 +50,12 @@
         <tr><td>Reachability</td><td>Publicly reachable over <code>https://</code>. The AI clients call the site from their provider's cloud; a site that is only on the school network or behind a VPN can't be reached.</td></tr>
         <tr><td>Web services</td><td>Web services and the REST protocol enabled.</td></tr>
         <tr><td><code>slasharguments</code></td><td>on (Moodle default). OAuth discovery runs through it without touching the web server.</td></tr>
-        <tr><td>GD with FreeType</td><td>for image preview, cropping and composing. No ImageMagick needed.</td></tr>
+        <tr><td>GD with FreeType</td><td>for image preview, cropping and composing, e.g. adding a source credit above an image or combining two figures into one image.</td></tr>
       </tbody>
     </table>
 
     <h2 id="installation">Installation</h2>
     <ol class="steps">
-      <li><strong>Moving from Coursepilot 1.x</strong> (the local Node setup)? Uninstall the old <code>local_coursepilot</code> component first (Site administration › Plugins › Plugins overview). No data, settings or tokens carry over between the two lines.</li>
       <li>Unpack the plugin ZIP into <code>local/coursepilot</code> or upload it via "Install plugins".</li>
       <li>Run <code>admin/cli/upgrade.php</code> or confirm the upgrade in the web interface. This registers the web service functions (service "Coursepilot") and the capabilities.</li>
       <li>Enable web services and the REST protocol (Site administration › Server › Web services), if you haven't already.</li>

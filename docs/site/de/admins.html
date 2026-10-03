@@ -50,13 +50,12 @@
         <tr><td>Erreichbarkeit</td><td>Öffentlich über <code>https://</code> erreichbar. Die KI-Clients rufen die Instanz aus der Cloud ihres Anbieters auf; eine Instanz nur im Schulnetz oder hinter VPN ist nicht erreichbar.</td></tr>
         <tr><td>Web Services</td><td>Web Services und REST-Protokoll aktiviert.</td></tr>
         <tr><td><code>slasharguments</code></td><td>aktiv (Moodle-Standard). Darüber läuft die OAuth-Discovery ohne Eingriff am Webserver.</td></tr>
-        <tr><td>GD mit FreeType</td><td>für Bildvorschau, Bildausschnitt und Bildzusammenstellung. Kein ImageMagick nötig.</td></tr>
+        <tr><td>GD mit FreeType</td><td>für Bildvorschau, Bildausschnitt und Bildzusammenstellung, z.&nbsp;B. eine Quellenangabe über ein Bild setzen oder zwei Abbildungen zu einem Bild zusammenfügen.</td></tr>
       </tbody>
     </table>
 
     <h2 id="installation">Installation</h2>
     <ol class="steps">
-      <li><strong>Umstieg von Coursepilot 1.x</strong> (lokaler Node-Weg)? Deinstallier zuerst die alte Komponente <code>local_coursepilot</code> (Website-Administration › Plugins › Plugins verwalten). Es gibt keine Übernahme von Daten, Einstellungen oder Tokens zwischen den Linien.</li>
       <li>Entpack das Plugin-ZIP nach <code>local/coursepilot</code> oder lad es über „Plugin installieren“ hoch.</li>
       <li>Führ <code>admin/cli/upgrade.php</code> aus oder bestätige die Aktualisierung in der Weboberfläche. Das registriert die Webservice-Funktionen (Dienst „Coursepilot“) und die Fähigkeiten.</li>
       <li>Aktivier Web Services und das REST-Protokoll (Website-Administration › Plugins › Web Services), falls noch nicht geschehen.</li>
