@@ -50,16 +50,15 @@
         <tr><td>Erreichbarkeit</td><td>Öffentlich über <code>https://</code> erreichbar. Die KI-Clients rufen die Instanz aus der Cloud ihres Anbieters auf; eine Instanz nur im Schulnetz oder hinter VPN ist nicht erreichbar.</td></tr>
         <tr><td>Web Services</td><td>Web Services und REST-Protokoll aktiviert.</td></tr>
         <tr><td><code>slasharguments</code></td><td>aktiv (Moodle-Standard). Darüber läuft die OAuth-Discovery ohne Eingriff am Webserver.</td></tr>
-        <tr><td>GD mit FreeType</td><td>für Bildvorschau, Bildausschnitt und Bildzusammenstellung. Kein ImageMagick nötig.</td></tr>
+        <tr><td>GD mit FreeType</td><td>für Bildvorschau, Bildausschnitt und Bildzusammenstellung, z.&nbsp;B. eine Quellenangabe über ein Bild setzen oder zwei Abbildungen zu einem Bild zusammenfügen.</td></tr>
       </tbody>
     </table>
 
     <h2 id="installation">Installation</h2>
     <ol class="steps">
-      <li><strong>Umstieg von Coursepilot 1.x</strong> (lokaler Node-Weg)? Deinstallier zuerst die alte Komponente <code>local_coursepilot</code> (Website-Administration › Plugins › Plugins verwalten). Es gibt keine Übernahme von Daten, Einstellungen oder Tokens zwischen den Linien.</li>
       <li>Entpack das Plugin-ZIP nach <code>local/coursepilot</code> oder lad es über „Plugin installieren“ hoch.</li>
       <li>Führ <code>admin/cli/upgrade.php</code> aus oder bestätige die Aktualisierung in der Weboberfläche. Das registriert die Webservice-Funktionen (Dienst „Coursepilot“) und die Fähigkeiten.</li>
-      <li>Aktivier Web Services und das REST-Protokoll (Website-Administration › Plugins › Web Services), falls noch nicht geschehen.</li>
+      <li>Aktivier Webservices und das REST-Protokoll, falls noch nicht geschehen: Website-Administration › Server › Webservices › Übersicht, dort Schritt 1 „Webservices aktivieren“ und Schritt 2 „Protokolle aktivieren“ (REST).</li>
       <li>Gib den Lehrkräften den Fernzugriff frei (nächster Abschnitt).</li>
       <li>Ruf die <a href="#instanzpruefung">Instanzprüfung</a> auf und kontrollier, dass alle drei Voraussetzungen erfüllt sind.</li>
     </ol>
@@ -80,7 +79,7 @@
     <p>Eine Lehrkraft kann ihren KI-Client erst verbinden, wenn du ihr den Fernzugriff freigegeben hast. Eine Einschreibung als Lehrkraft im Kurs reicht nicht. Coursepilot legt dafür weder Kohorte noch Rolle an. Zwei Wege:</p>
     <ol>
       <li><strong>Kohorte (empfohlen):</strong> Wähl in den Plugin-Einstellungen bei <em>Fernzugriffs-Kohorten</em> eine oder mehrere bestehende <strong>Systemkohorten</strong>, z.&nbsp;B. die Kohorte, in der die Schule ihre Lehrkräfte ohnehin pflegt. Kohorten einer Kurskategorie sind nicht wählbar.</li>
-      <li><strong>Vorhandene Systemrolle:</strong> Erlaube <code>local/coursepilot:useremote</code> in einer systemweit vergebenen Rolle. Die Fähigkeit hat keine Vorbelegung; eine systemweite Lehrkraft-Rolle bringt den Fernzugriff also nicht nebenbei mit.</li>
+      <li><strong>Vorhandene Systemrolle:</strong> Erlaube <code>local/coursepilot:useremote</code> in einer systemweit vergebenen Rolle: Website-Administration › Nutzer/innen › Rechte › Rollen verwalten › bei der Rolle auf das Stiftsymbol ✎ „Bearbeiten“, im Filter <code>useremote</code> suchen, „Erlauben“ setzen. Die Fähigkeit hat keine Vorbelegung; eine systemweite Lehrkraft-Rolle bringt den Fernzugriff also nicht nebenbei mit. Nicht in „Authentifizierte/r Nutzer/in“ erlauben, sonst bekommen auch Schüler:innen den Fernzugriff.</li>
     </ol>
     <p>Die Freigabe wird bei <strong>jedem</strong> Aufruf geprüft. Wer aus der Kohorte entfernt wird oder die Rolle verliert, wird beim nächsten Aufruf abgewiesen, auch über eine bestehende Verbindung. Der Fernzugriff gibt keine Kursrechte: Niemand bekommt darüber Zugriff auf fremde Kurse. „Rechte prüfen“ in Moodle zeigt nur den Rollenweg, nicht die Kohortenmitgliedschaft.</p>
 
@@ -91,7 +90,7 @@
       <tbody>
         <tr><td>Fernzugriffs-Kohorten <code>remoteaccesscohorts</code></td><td>leer</td><td>Systemkohorten mit Fernzugriff (siehe oben)</td></tr>
         <tr><td>Fernzugriff erlauben <code>remoteaccessenabled</code></td><td>an</td><td><a href="#notfall">Notbremse</a> für alle weiteren Zugriffe</td></tr>
-        <tr><td>Protokollstufe <code>loglevel</code></td><td>Lesezugriffe und Fehler</td><td>Was über die Moodle-Ereignis-API in die üblichen Protokolle geht</td></tr>
+        <tr><td>Protokollstufe <code>loglevel</code></td><td>Zusätzlich Lesezugriffe (also Schreibzugriffe, Fehler und Lesezugriffe)</td><td>Was über die Moodle-Ereignis-API in die üblichen Protokolle geht</td></tr>
         <tr><td>Wurzelordner des Kontextbereichs <code>contextroot</code></td><td><code>coursepilot</code></td><td>Ordnername in „Meine Dateien“, rein organisatorisch, keine Sicherheitsgrenze</td></tr>
         <tr><td>Wurzelordner des Materialordners <code>materialroot</code></td><td><code>coursepilot-material</code></td><td>Ordnername der Werkbank, ebenso organisatorisch</td></tr>
         <tr><td>Personenbezogene Kontextdaten übertragen <code>allowpersonaldata</code></td><td><strong>aus</strong></td><td>Gibt Kontextdateien mit der Markierung <code>personenbezug: true</code> für die Lese-Werkzeuge frei (siehe <a href="#datenschutz">Datenschutz</a>)</td></tr>

@@ -22,8 +22,140 @@
   </header>
   <main>
     <h1>Architecture and contributing</h1>
-    <p><a class="diagram-link" href="../assets/diagrams/coursepilot-architecture.html">Architecture diagram</a></p>
-    <p class="placeholder">Content follows.</p>
+    <p class="lead">For you if you build similar Moodle AI tools or want to contribute. Source of the server MCP: <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/tree/main/Plugin/src/local_coursepilot"><code>Plugin/src/local_coursepilot/</code></a>.</p>
+
+    <nav class="toc" aria-label="On this page">
+      <a href="#prinzip">Principle</a>
+      <a href="#werkzeugvertrag">Tool contract</a>
+      <a href="#werkzeuge">Tools</a>
+      <a href="#adr">Decisions</a>
+      <a href="#tests">Tests and CI</a>
+      <a href="#branches">Branches</a>
+      <a href="#beitragen">Contributing</a>
+      <a href="#bekannte-grenzen">Known limits</a>
+    </nav>
+
+    <h2 id="prinzip">Principle: the plugin is the MCP endpoint</h2>
+    <p>Coursepilot is a local Moodle plugin that acts as an MCP server itself. The AI client speaks Streamable HTTP with <code>/local/coursepilot/mcp.php</code>; nothing runs on the teacher's computer.</p>
+    <p><a class="diagram-link" href="../assets/diagrams/coursepilot-architecture.html">Open the architecture diagram</a> (interactive, English labels)</p>
+    <pre><code>AI client --HTTPS + OAuth--&gt; mcp.php (thin shell)
+  -&gt; dispatcher::handle()   auth gate, protocol, privacy contract
+  -&gt; Moodle external functions (classes/external/*)
+  -&gt; facades: context_area, material_area, version_writer, catalog/*
+  -&gt; storage_port (Private Files | WebDAV)</code></pre>
+    <ul>
+      <li><strong>Seam pattern:</strong> <code>mcp.php</code> only does input and output. Decisions are made in <code>dispatcher</code>, <code>oauth_lib</code> and <code>instance_check</code> as pure functions (values in, values out), testable without a web server.</li>
+      <li><strong>Protocol:</strong> stateless, POST only, JSON. Served MCP revisions are 2025-06-18 (<code>initialize</code> handshake, e.g. Codex) and 2026-07-28 (<code>server/discover</code>, e.g. claude.ai).</li>
+      <li><strong>Sign-in:</strong> OAuth 2.1 with PKCE, discovery (RFC 8414/9728), Dynamic Client Registration (RFC 7591) and CIMD. No manual token handling.</li>
+      <li><strong>Writing:</strong> only through Moodle's form path (<code>add_moduleinfo()</code>/<code>update_moduleinfo()</code>) with a checked field catalog per activity type (ADR 0016/0017).</li>
+      <li><strong>Change history:</strong> a full snapshot per write in a shadow table, including manual changes; restoring writes a new version (ADR 0018).</li>
+      <li><strong>Storage:</strong> one anchor, one module, two adapters: the teacher's Private Files or WebDAV. If the storage fails, there's no fallback storage, only a pending note without content (ADR 0019–0023).</li>
+      <li><strong>Skill corpus:</strong> the AI's way of working (plan, approve, carry out) ships with the plugin and is fetched through <code>coursepilot_list_skills</code>/<code>coursepilot_get_skill</code>, not installed (ADR 0020).</li>
+    </ul>
+    <p>Not covered here: the earlier local setup (Node server on the laptop, Coursepilot 1.x) has been removed from the repository and is only reachable through the Git history.</p>
+
+    <h2 id="werkzeugvertrag">Tool contract</h2>
+    <ul>
+      <li><strong>One declaration per tool:</strong> <code>tool_registry::TOOLS</code> drives the web service registration (<code>db/services.php</code>), the MCP schema (derived from <code>execute_parameters()</code>) and the privacy allowlist. No second schema declaration.</li>
+      <li><strong>English base:</strong> tool names, parameters, return keys and descriptions are English; Moodle strings live only in <code>lang/en/</code> (ADR 0024).</li>
+      <li><strong>Writing or reading</strong> follows from the naming pattern. Mutating tools use the pattern of a confirmation parameter (<code>confirmed</code>).</li>
+      <li><strong>Contract tests:</strong> <code>tool_schema_contract_test.php</code> and <code>privacy_surface_test.php</code> check the surface actually registered.</li>
+    </ul>
+
+    <h2 id="werkzeuge">Tools by group (54)</h2>
+    <table class="tools">
+      <thead><tr><th>Group</th><th>Tools</th></tr></thead>
+      <tbody>
+        <tr><td>Orientation (7)</td><td><code>coursepilot_list_courses</code> <code>coursepilot_get_course_catalog</code> <code>coursepilot_get_modules</code> <code>coursepilot_get_module_settings</code> <code>coursepilot_get_sections</code> <code>coursepilot_describe_module_fields</code> <code>coursepilot_get_version_info</code> </td></tr>
+        <tr><td>Sections (3)</td><td><code>coursepilot_ensure_section</code> <code>coursepilot_update_section</code> <code>coursepilot_move_section</code> </td></tr>
+        <tr><td>Activities (8)</td><td><code>coursepilot_create_module</code> <code>coursepilot_update_module_settings</code> <code>coursepilot_move_module</code> <code>coursepilot_create_quiz</code> <code>coursepilot_update_quiz_settings</code> <code>coursepilot_set_completion</code> <code>coursepilot_set_restriction</code> <code>coursepilot_clone_activity</code> </td></tr>
+        <tr><td>Versions (3)</td><td><code>coursepilot_list_activity_versions</code> <code>coursepilot_compare_activity_versions</code> <code>coursepilot_restore_activity_version</code> </td></tr>
+        <tr><td>Quiz and question bank (13)</td><td><code>coursepilot_ensure_question_bank</code> <code>coursepilot_ensure_question_category</code> <code>coursepilot_update_question_category</code> <code>coursepilot_get_question_categories</code> <code>coursepilot_plan_question_category_cleanup</code> <code>coursepilot_get_question</code> <code>coursepilot_move_question</code> <code>coursepilot_create_mc_question</code> <code>coursepilot_update_mc_question</code> <code>coursepilot_import_questions_xml</code> <code>coursepilot_export_questions_xml</code> <code>coursepilot_add_questions_to_quiz</code> <code>coursepilot_plan_quiz_cleanup</code> </td></tr>
+        <tr><td>Clone lineage (1)</td><td><code>coursepilot_report_clone_lineage</code> </td></tr>
+        <tr><td>Context area (6)</td><td><code>coursepilot_list_context_files</code> <code>coursepilot_read_context_file</code> <code>coursepilot_write_context_file</code> <code>coursepilot_append_context_file</code> <code>coursepilot_dismiss_pending_entry</code> <code>coursepilot_dismiss_previous_location</code> </td></tr>
+        <tr><td>Material (8)</td><td><code>coursepilot_list_material_files</code> <code>coursepilot_upload_material_file</code> <code>coursepilot_preview_material_file</code> <code>coursepilot_crop_material_file</code> <code>coursepilot_compose_material_file</code> <code>coursepilot_report_loose_material_files</code> <code>coursepilot_delete_material_files</code> <code>coursepilot_create_workbench_download_links</code> </td></tr>
+        <tr><td>Derived types (3)</td><td><code>coursepilot_create_activity_from_xml</code> <code>coursepilot_export_activity_backup</code> <code>coursepilot_export_default_activity</code> </td></tr>
+        <tr><td>Skills (2)</td><td><code>coursepilot_list_skills</code> <code>coursepilot_get_skill</code> </td></tr>
+      </tbody>
+    </table>
+    <p>Descriptions: <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/Plugin/src/local_coursepilot/lang/en/local_coursepilot.php"><code>lang/en/local_coursepilot.php</code></a>. The list is checked against <code>tool_registry.php</code> (<code>test/docs-site.test.js</code>).</p>
+
+    <h3>Activity types</h3>
+    <ul>
+      <li><strong>Cataloged</strong> (field catalog, create and edit): text and media area, page, URL, folder, file, choice, forum, assignment, quiz.</li>
+      <li><strong>Derived</strong> (ADR 0028): any other installed type, create only. The activity XML is derived from an exported default, created hidden, exported again and compared; on a mismatch it's deleted in the same call. Changing means superseding: a new activity after the old one, the old one hidden.</li>
+      <li><strong>Not via XML:</strong> types with questions (lesson; quiz goes through the catalog) and, for now, types with files in their content (SCORM, IMS content package, H5P, lightbox gallery).</li>
+    </ul>
+
+    <h2 id="adr">Decisions (ADR map)</h2>
+    <p>ADRs 0002–0010 mostly concern the frozen legacy setup. Numbers 0012–0014 don't exist; 0020 is used twice. The ADRs themselves are written in German.</p>
+    <table>
+      <thead><tr><th>ADR</th><th>Decision</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0001-use-native-moodle-question-versioning.md">0001</a></td><td>Questions are changed as a new native Moodle version of the same question, never replaced or duplicated.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0002-use-an-igs-fork-as-training-version.md">0002</a></td><td>Development as a school-specific fork of MoodleMcp.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0003-allow-local-student-names-in-teacher-context.md">0003</a></td><td>A teacher's context files may contain real student names (carried forward in 0011).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0004-ocr-via-agent-vision.md">0004</a></td><td>Text recognition through the AI agent's vision instead of an OCR library, with a review step.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0005-imagemagick-fuer-bildausschnitt.md">0005</a></td><td>ImageMagick for image crops in the local legacy setup (replaced by GD in the server MCP).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0006-node-helper-fuer-moodle-token-speicher.md">0006</a></td><td>Node helper as token store (legacy).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0007-aktivitaets-mcp-aufteilung.md">0007</a></td><td>Split into a core MCP and activity MCPs with explicit form fields (legacy).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0008-curl-bootstrap-vertrieb.md">0008</a></td><td>Distribution via curl/PowerShell bootstrap instead of a compiled installer (legacy).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0009-opencode-als-bereitgehaltener-client.md">0009</a></td><td>opencode as a client kept in reserve (legacy).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0010-sicherheits-haertung-lieferkette-setup.md">0010</a></td><td>Supply-chain hardening of the setup: tag pin, SHA256, CSRF protection (legacy).</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0011-personenbezogene-kontextdaten-im-servermodell.md">0011</a></td><td>Personal context data in the server model: the school is responsible, switch off by default.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0015-fragen-identitaet-abstammung-und-stand.md">0015</a></td><td>Question identity: lineage via the idnumber, state via the question bank entry.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0016-modul-formularweg-statt-direkter-db-schreibung.md">0016</a></td><td>Activities only through Moodle's form path (add/update_moduleinfo), no direct DB writes.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0017-katalogpflege-selbstfreigabe-in-zwei-stufen.md">0017</a></td><td>Catalog maintenance in two stages: drift blocks only the affected activity type, reading continues.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0018-aenderungsverlauf-im-notenbuch-muster.md">0018</a></td><td>Change history as a full-snapshot shadow table following the gradebook pattern; going back is a new version.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0019-kontextbereich-in-private-files.md">0019</a></td><td>Context area in Moodle's Private Files instead of a separate file store.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0020-gemeinsamer-ablageort-anker.md">0020</a></td><td>One shared storage-location anchor instead of two parallel classes.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0020-skills-ueber-werkzeuge-statt-installation.md">0020</a></td><td>Ship the skill corpus through tools instead of installing it locally.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0021-isolierung-und-personenbezug-am-externen-ablageort.md">0021</a></td><td>Isolation through instance ownership; personal data at external locations as a write lock.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0022-eigener-webdav-client-auf-moodle-curl.md">0022</a></td><td>A lean WebDAV client of its own on Moodle's curl instead of webdav_client.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0023-ausfall-ohne-rueckfall-ausstandsnotiz-am-anker.md">0023</a></td><td>Failure without fallback: a pending note at the anchor, the AI writes it later.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0024-englische-basis-und-komponente-coursepilot.md">0024</a></td><td>English base, the name Coursepilot, component local_coursepilot; skill corpus German for now.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0025-agpl-fuer-das-gesamte-projekt.md">0025</a></td><td>AGPL-3.0-or-later for the whole project, plugin included.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0026-fernzugriffsfreigabe-ueber-kohorte-statt-eigener-rolle.md">0026</a></td><td>Remote access through selected system cohorts instead of a dedicated role.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0027-versionslinien-branches-und-moodle-mindestversion.md">0027</a></td><td>Release lines 2.0.x/2.1+, branches main/dev, minimum Moodle version, beta.</td></tr>
+        <tr><td><a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/docs/adr/0028-aktivitaets-xml-als-anlegeweg.md">0028</a></td><td>Activity XML as the creation path (never the editing path) for derived activity types.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="tests">Tests and CI</h2>
+    <ul>
+      <li><strong>PHPUnit:</strong> full native suite in <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/.github/workflows/native-ci.yml"><code>native-ci.yml</code></a>, matrix Moodle 5.0 and 5.1 with PHP 8.4 and MariaDB, plus a job that freshly installs the release artifact and runs one authorized tool call.</li>
+      <li><strong>Coverage gate:</strong> 80&nbsp;% line coverage (PCOV, Moodle 5.0 run), source scope in <code>tests/coverage.php</code>.</li>
+      <li><strong>Merge condition:</strong> only the aggregate check <code>Gate (required)</code>; a skipped required job counts as a failure.</li>
+      <li><strong>Node suite:</strong> <code>npm run test:ci</code> for helper scripts and this documentation site (links, image paths, language counterparts).</li>
+    </ul>
+
+    <h2 id="branches">Branch model (ADR 0027)</h2>
+    <table>
+      <thead><tr><th>Branch</th><th>Line</th><th>Moodle</th><th>Contents</th></tr></thead>
+      <tbody>
+        <tr><td><code>main</code></td><td>2.0.x</td><td>5.0 and later (tested 5.0, 5.1)</td><td>released state, hotfixes only, tagged, then merged into <code>dev</code></td></tr>
+        <tr><td><code>dev</code></td><td>2.1+</td><td>5.1 and later</td><td>new features, developed and tested against a Moodle 5.1 test site</td></tr>
+      </tbody>
+    </table>
+    <p>Feature, research and prototype branches branch off <code>dev</code> and are deleted once merged back.</p>
+
+    <h2 id="beitragen">Contributing</h2>
+    <ul>
+      <li>Report bugs and suggestions as a <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues">GitHub issue</a>; please open pull requests against <code>dev</code>.</li>
+      <li>Code language is English (identifiers, tool contract, <code>lang/en/</code>). Terms are in the glossary <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/CONTEXT.md"><code>CONTEXT.md</code></a> (German), decisions in <code>docs/adr/</code>, specifications in <code>docs/specs/</code>.</li>
+      <li>License: AGPL-3.0-or-later, the plugin included (ADR 0025). Contributions are under the same license.</li>
+    </ul>
+
+    <h2 id="bekannte-grenzen">Known limits</h2>
+    <ul>
+      <li><strong>Beta:</strong> <code>2.0.0-beta</code>, tried in the author's own teaching, not yet in production at another school. There are minor tool gaps in edge cases.</li>
+      <li><strong>No rate limiting</strong> at the MCP endpoint. Protection so far comes from OAuth, per-person remote access and the kill switch.</li>
+      <li><strong>Moodle plugins directory:</strong> submission is pending (<a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues/192">#192</a>); until then, the German translation ships inside the plugin instead of AMOS.</li>
+      <li><strong>Change history isn't complete:</strong> quiz content beyond question order, the gradebook, restored backups and direct DB changes are missing; for derived types only the instance row, not the child tables (chapters, entries). Replaced activity files come back on a restore.</li>
+      <li><strong>Derived activity types</strong> are only created or superseded, never edited; types with files in their content are still missing.</li>
+      <li><strong>Tested environment</strong> is PHP 8.4 with MariaDB only; PostgreSQL untested.</li>
+      <li><strong>Skill corpus</strong> German for now (<a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues/604">#604</a>).</li>
+    </ul>
   </main>
   <footer class="site-footer">
     <p>Coursepilot · Beta (2.0.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Source on GitHub</a> · AGPL-3.0-or-later</p>

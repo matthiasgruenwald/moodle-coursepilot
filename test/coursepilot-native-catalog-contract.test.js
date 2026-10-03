@@ -69,11 +69,9 @@ test('coursepilot_get_course_catalog is a self-contained port with the same cont
   assert.match(source, /require_capability\('local\/coursepilot:use', \$context\)/);
 
   // Das Plugin steht fuer sich: kein `use`-Import aus einem anderen
-  // local_*-Plugin. Urspruenglich gegen den lokalen Altstand gerichtet (Spec
-  // 0012, Fund aus dem PHPUnit-Lauf zu #341); der traegt seit ADR 0024
-  // denselben Komponentennamen und liegt in legacy/, wird also nie zusammen
-  // installiert. Ein Import aus einem fremden Plugin waere auf der Instanz ein
-  // Fatal Error "Class ... not found".
+  // local_*-Plugin (Spec 0012, Fund aus dem PHPUnit-Lauf zu #341). Ein Import
+  // aus einem fremden Plugin waere auf der Instanz ein Fatal Error
+  // "Class ... not found".
   assert.doesNotMatch(source, /^use local_(?!coursepilot\b)/m);
 
   // Maskierung ueber die eigene, geteilte reine Funktion, nicht inline im

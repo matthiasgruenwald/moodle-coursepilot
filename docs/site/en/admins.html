@@ -22,7 +22,138 @@
   </header>
   <main>
     <h1>Installation and operation</h1>
-    <p class="placeholder">Content follows.</p>
+    <p class="lead">For you if you set up and run Coursepilot (<code>local_coursepilot</code>) on a Moodle site. Teachers then connect their AI client themselves; see the <a href="teachers.html">teacher guide</a>.</p>
+
+    <nav class="toc" aria-label="On this page">
+      <a href="#voraussetzungen">Requirements</a>
+      <a href="#installation">Installation</a>
+      <a href="#fernzugriff">Remote access</a>
+      <a href="#einstellungen">Settings</a>
+      <a href="#oauth">OAuth</a>
+      <a href="#instanzpruefung">Site check</a>
+      <a href="#notfall">Kill switch and revocation</a>
+      <a href="#webdav">WebDAV</a>
+      <a href="#datenschutz">Data protection</a>
+      <a href="#sprache">Language pack</a>
+    </nav>
+
+    <h2>Maturity</h2>
+    <p>Coursepilot is a <strong>beta</strong> (version <code>2.0.0-beta</code>, Moodle maturity <code>MATURITY_BETA</code>). It runs in the author's own teaching; production use at another school is still to come. Known limits are listed on the <a href="developers.html#bekannte-grenzen">developer page</a>.</p>
+
+    <h2 id="voraussetzungen">Requirements</h2>
+    <table>
+      <thead><tr><th>Item</th><th>Requirement</th></tr></thead>
+      <tbody>
+        <tr><td>Moodle</td><td>5.0 or later. Tested in CI: 5.0 and 5.1. From Coursepilot 2.1, Moodle 5.1 becomes the minimum.</td></tr>
+        <tr><td>PHP</td><td>at least 8.2 (Moodle 5.0's minimum), 8.4 recommended. CI tests with PHP 8.4.</td></tr>
+        <tr><td>Database</td><td>Tested with MariaDB 11. Other databases (e.g. PostgreSQL) are untested.</td></tr>
+        <tr><td>Reachability</td><td>Publicly reachable over <code>https://</code>. The AI clients call the site from their provider's cloud; a site that is only on the school network or behind a VPN can't be reached.</td></tr>
+        <tr><td>Web services</td><td>Web services and the REST protocol enabled.</td></tr>
+        <tr><td><code>slasharguments</code></td><td>on (Moodle default). OAuth discovery runs through it without touching the web server.</td></tr>
+        <tr><td>GD with FreeType</td><td>for image preview, cropping and composing, e.g. adding a source credit above an image or combining two figures into one image.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="installation">Installation</h2>
+    <ol class="steps">
+      <li>Unpack the plugin ZIP into <code>local/coursepilot</code> or upload it via "Install plugins".</li>
+      <li>Run <code>admin/cli/upgrade.php</code> or confirm the upgrade in the web interface. This registers the web service functions (service "Coursepilot") and the capabilities.</li>
+      <li>Enable web services and the REST protocol, if you haven't already: Site administration › Server › Web services › Overview, step 1 "Enable web services" and step 2 "Enable protocols" (REST).</li>
+      <li>Grant teachers remote access (next section).</li>
+      <li>Open the <a href="#instanzpruefung">site check</a> and make sure all three requirements are met.</li>
+    </ol>
+    <p class="note"><strong>After every update:</strong> Run <code>upgrade.php</code> again. If capabilities or web service functions have changed, course navigation and tool calls otherwise fail with HTTP 500.</p>
+
+    <h3>Capabilities</h3>
+    <table>
+      <thead><tr><th>Capability</th><th>Context</th><th>Granted by default to</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>local/coursepilot:use</code></td><td>Course</td><td>Teacher, Non-editing teacher</td><td>Use Coursepilot in the course. The usual Moodle course permissions (e.g. manage activities) are still needed on top.</td></tr>
+        <tr><td><code>local/coursepilot:useremote</code></td><td>System</td><td><strong>nobody</strong></td><td>Connect an AI chat (remote access), the second route next to the cohort</td></tr>
+        <tr><td><code>local/coursepilot:viewhistory</code></td><td>Course</td><td>Teacher, Non-editing teacher</td><td>View the change history</td></tr>
+        <tr><td><code>local/coursepilot:restoreversion</code></td><td>Course</td><td>Teacher, Non-editing teacher</td><td>Restore an earlier version (also needs <code>moodle/course:manageactivities</code>)</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="fernzugriff">Grant remote access</h2>
+    <p>A teacher can only connect their AI client once you've granted them remote access. Being enrolled as a teacher in a course isn't enough. Coursepilot creates neither a cohort nor a role for this. There are two routes:</p>
+    <ol>
+      <li><strong>Cohort (recommended):</strong> In the plugin settings, pick one or more existing <strong>system cohorts</strong> under <em>Remote access cohorts</em>, e.g. the cohort your school already maintains for its teachers. Cohorts of a course category can't be selected.</li>
+      <li><strong>Existing system role:</strong> Allow <code>local/coursepilot:useremote</code> in a role assigned at system level: Site administration › Users › Permissions › Define roles › click the pencil icon ✎ "Edit" next to the role, filter for <code>useremote</code>, set "Allow". The capability has no default, so a system-wide teacher role doesn't bring remote access along by accident. Don't allow it in "Authenticated user", or students get remote access too.</li>
+    </ol>
+    <p>Access is checked on <strong>every</strong> call. Anyone removed from the cohort or losing the role is turned away on their next call, even over an existing connection. Remote access grants no course permissions: nobody gains access to other people's courses through it. "Check permissions" in Moodle only shows the role route, not cohort membership.</p>
+
+    <h2 id="einstellungen">Settings</h2>
+    <p>Site administration › Plugins › Local plugins › Coursepilot.</p>
+    <table>
+      <thead><tr><th>Setting</th><th>Default</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td>Remote access cohorts <code>remoteaccesscohorts</code></td><td>empty</td><td>System cohorts with remote access (see above)</td></tr>
+        <tr><td>Allow remote access <code>remoteaccessenabled</code></td><td>on</td><td><a href="#notfall">Kill switch</a> for all further access</td></tr>
+        <tr><td>Logging level <code>loglevel</code></td><td>Additionally reads</td><td>What goes into the usual logs through Moodle's event API</td></tr>
+        <tr><td>Context area root folder <code>contextroot</code></td><td><code>coursepilot</code></td><td>Folder name in "Private files", purely organizational, not a security boundary</td></tr>
+        <tr><td>Material folder root <code>materialroot</code></td><td><code>coursepilot-material</code></td><td>Folder name of the workbench, likewise organizational</td></tr>
+        <tr><td>Transfer personal context data <code>allowpersonaldata</code></td><td><strong>off</strong></td><td>Releases context files marked <code>personenbezug: true</code> to the read tools (see <a href="#datenschutz">data protection</a>)</td></tr>
+        <tr><td>Change history retention period <code>historyretentiondays</code></td><td>365</td><td>Days, at least 1. Deletion happens on the next write to the same activity, no cron.</td></tr>
+        <tr><td>Approved storage for personal data <code>personaldatahosts</code></td><td>empty (Moodle only)</td><td>External storage that marked files may be <em>written</em> to; one entry per line, subdomains included</td></tr>
+        <tr><td>School hint (location page) <code>webdavhint</code></td><td>empty</td><td>Free text for teachers on the location page, e.g. which cloud service is recommended</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="oauth">OAuth and clients</h2>
+    <p>Each teacher connects their AI client themselves: enter the endpoint <code>https://&lt;moodle&gt;/local/coursepilot/mcp.php</code>, sign in once, and allow the connection on the Moodle page "Connect Coursepilot". No token is ever passed around by hand.</p>
+    <ul>
+      <li><strong>Method:</strong> OAuth 2.1 with PKCE, discovery per RFC 8414/9728. Clients register themselves, via Dynamic Client Registration (RFC 7591) or Client ID Metadata Document (CIMD). There is no list of pre-registered clients.</li>
+      <li><strong>Lifetimes:</strong> authorization code 120 seconds, access token 1 hour, refresh token 30 days.</li>
+      <li><strong>Browser origin:</strong> If a request carries an <code>Origin</code> header, only the site's own address, <code>https://claude.ai</code> and <code>https://chatgpt.com</code> are allowed. Requests without <code>Origin</code> (e.g. from Codex or Claude Code) aren't affected.</li>
+      <li><strong>Who can connect:</strong> anyone with <a href="#fernzugriff">remote access</a>. Work always happens with that person's own Moodle permissions.</li>
+      <li><strong>FastCGI/CGI:</strong> The bearer token is also read from <code>REDIRECT_HTTP_AUTHORIZATION</code>.</li>
+    </ul>
+    <p>Teachers see their own connections under Profile › <em>My Coursepilot connections</em> and can revoke them there.</p>
+
+    <h2 id="instanzpruefung">Site check and reverse proxy</h2>
+    <p>The page <em>Coursepilot data surface</em> (<code>/local/coursepilot/surface.php</code>, requires <code>moodle/site:config</code>) shows the allowed tools compared with the web service surface actually registered, and checks three requirements by calling its own discovery address:</p>
+    <ul>
+      <li><strong>Public HTTPS</strong></li>
+      <li><strong>Egress:</strong> outgoing connections are possible and the response comes back.</li>
+      <li><strong>PATH_INFO:</strong> the path suffix of the discovery address reaches the script. A typical pitfall: a reverse proxy or upstream service cuts it off. Fix: set <code>AcceptPathInfo On</code> (Apache) explicitly.</li>
+    </ul>
+    <p>If a client can't connect even though the plugin is installed, check this page first.</p>
+
+    <h2 id="notfall">Kill switch and bulk revocation</h2>
+    <ul>
+      <li><strong>Kill switch:</strong> turning off <em>Allow remote access</em> immediately blocks any further access through the MCP endpoint. Access tokens already issued stay valid; the regular Moodle login isn't affected.</li>
+      <li><strong>Revocation:</strong> The page <em>Coursepilot connections</em> (<code>/local/coursepilot/admin/connections.php</code>, requires <code>moodle/site:config</code>) lists all active connections on the site. Revoke them one by one or use <em>Revoke all connections</em>: after that, every connection has to be set up again.</li>
+      <li><strong>In a security incident</strong> use both: the kill switch for new access, bulk revocation for existing tokens.</li>
+    </ul>
+
+    <h2 id="webdav">WebDAV for teachers</h2>
+    <p>Teachers can keep their context area and material in their own WebDAV storage instead of Moodle (e.g. IServ, Nextcloud). They set this up themselves on their location page. You enable it once:</p>
+    <ol>
+      <li>Enable the <strong>WebDAV</strong> repository type (Site administration › Plugins › Repositories).</li>
+      <li>For the WebDAV type, switch on <strong>"Allow users to add a repository instance into the user context"</strong>.</li>
+      <li>Give teachers the capability <code>repository/webdav:view</code> in their own user context, ideally through a dedicated system role.</li>
+    </ol>
+    <p>Coursepilot checks these three points on every access and shows them as Moodle status checks.</p>
+    <div class="note warning">
+      <p><strong>Reverse proxy in front of the WebDAV storage (<code>trusted_proxies</code>):</strong> If a teacher's storage (e.g. their own Nextcloud) sits behind a reverse proxy such as Cloudflare and the proxy's IP range isn't listed in the storage's <code>trusted_proxies</code>, the storage sees all requests coming from a single IP. Its brute-force protection then throttles normal write access for 15–30 seconds or longer. This concerns the storage, not Moodle or Coursepilot. If you hear "the connection hangs" or "a pending change is stuck", check <code>trusted_proxies</code> there first. Coursepilot retries silently for only 10 seconds, so that not every write call gets delayed for everyone.</p>
+    </div>
+
+    <h2 id="datenschutz">Data protection</h2>
+    <ul>
+      <li><strong>No student data:</strong> The tools are on an allowlist. Submissions, forum posts, quiz attempts, grades and participant lists aren't on it. Tool names containing <code>submission</code>, <code>discussion</code>, <code>attempt</code>, <code>participant</code>, <code>enrol</code>, <code>grade</code> or <code>user</code> are forbidden; a contract test checks this against the surface actually registered. You can view the list on the <a href="#instanzpruefung">data surface</a>.</li>
+      <li><strong>No AI calls of its own:</strong> The plugin doesn't call any AI provider. Whatever a tool returns goes to the provider of the teacher's AI client. This is also stated on the consent page every teacher sees when connecting.</li>
+      <li><strong>The school is responsible.</strong> <em>Transfer personal context data</em> is off by default. The switch acts on the marker <code>personenbezug: true</code> in a context file's header, not on content: it doesn't filter names out of unmarked files.</li>
+      <li><strong>External storage:</strong> Teachers are isolated from each other because the WebDAV instance has to belong to the person triggering the access. <code>personaldatahosts</code> is a write lock, not a read lock.</li>
+      <li><strong>Moodle privacy API:</strong> Coursepilot reports its own data (OAuth connections, download tickets, pointers to previous locations) for data export and deletion. Moodle handles files in "Private files" itself.</li>
+      <li><strong>Known Moodle gap:</strong> WebDAV user instances carry <code>userid = 0</code> and aren't found in a GDPR data request or deletion. They store the password in plain text, so recommend app passwords to teachers.</li>
+    </ul>
+
+    <h2>Status checks</h2>
+    <p>Moodle's system status page (<code>/report/status/index.php</code>) shows one check per fully described activity type ("drift") plus the WebDAV checks. Drift means a Moodle or plugin update has changed an activity type's form. Coursepilot then blocks writing for that type only; reading and all other types keep working. The page recalculates on every visit.</p>
+
+    <h2 id="sprache">Language pack</h2>
+    <p>The base language is English. Until translations are maintained through <a href="https://lang.moodle.org/">AMOS</a>, a complete German translation ships temporarily with the plugin (<code>lang/de/</code>). The instructions for the AI (skill corpus) aren't Moodle strings and are German for now.</p>
   </main>
   <footer class="site-footer">
     <p>Coursepilot · Beta (2.0.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Source on GitHub</a> · AGPL-3.0-or-later</p>

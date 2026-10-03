@@ -22,21 +22,37 @@
   </header>
   <main>
     <h1>Coursepilot</h1>
-    <p>Coursepilot is a Moodle plugin that lets teachers plan and fill their existing Moodle courses together with an AI client.</p>
+    <p class="lead">Coursepilot is a Moodle plugin that lets teachers plan, fill and revise their existing Moodle courses in a conversation with an AI client. The plugin itself is where the AI connects: you link your AI client (Claude, ChatGPT, Codex or any other MCP-capable client) to your Moodle account, and you install nothing on your own computer.</p>
 
     <h2>Who is what for?</h2>
     <table>
-      <thead><tr><th>Audience</th><th>Page</th></tr></thead>
+      <thead><tr><th>Audience</th><th>Page</th><th>Contents</th></tr></thead>
       <tbody>
-        <tr><td>Teachers</td><td><a href="teachers.html">Teacher guide</a></td></tr>
-        <tr><td>Admins</td><td><a href="admins.html">Installation and operation</a></td></tr>
-        <tr><td>Developers</td><td><a href="developers.html">Architecture and contributing</a></td></tr>
+        <tr><td>Teachers</td><td><a href="teachers.html">Teacher guide</a></td><td>Set up the connector, add WebDAV storage, first steps, starter prompts to copy</td></tr>
+        <tr><td>Admins</td><td><a href="admins.html">Installation and operation</a></td><td>Requirements, installation, remote access, OAuth, data protection</td></tr>
+        <tr><td>Developers</td><td><a href="developers.html">Architecture and contributing</a></td><td>Architecture, tool contract, decisions (ADRs), tests, known limits</td></tr>
+        <tr><td>Everyone</td><td><a href="#so-arbeitet-coursepilot">How Coursepilot works</a></td><td>The idea in one diagram, maturity, feedback</td></tr>
       </tbody>
     </table>
 
-    <h2>How Coursepilot works</h2>
-    <p><a class="diagram-link" href="../assets/diagrams/coursepilot-aus-nutzersicht.html">Diagram: Coursepilot from the user's view (German)</a></p>
-    <p class="placeholder">Content follows.</p>
+    <h2>What makes Coursepilot different</h2>
+    <ol class="features">
+      <li><strong>The plugin is the AI connection.</strong> Coursepilot serves its tools straight from Moodle at <code>/local/coursepilot/mcp.php</code>. You connect your AI client once and confirm the connection on a Moodle page; no program on your laptop, no access key to type in.</li>
+      <li><strong>Student data stays out, enforced in code.</strong> The tools don't read submissions, forum posts, quiz attempts, grades or participant lists. That is a fixed allowlist, and an automated test checks it against the tools actually offered on every change. The plugin never calls an AI provider itself.</li>
+      <li><strong>Every change can be undone.</strong> Coursepilot keeps a change history for every activity, including changes made by hand in the Moodle form. You can restore an earlier version in the chat or directly in Moodle, without a conversation running.</li>
+      <li><strong>Activity types without dedicated support, too.</strong> Besides the nine fully described types (e.g. page, assignment, quiz), Coursepilot can create other installed types such as book, glossary or checklist. Each one is checked right after creation and removed again if it doesn't match.</li>
+      <li><strong>Your context belongs to you.</strong> Plans, profiles and learned preferences live as files in your Moodle "Private files" or in your own WebDAV storage (e.g. IServ or Nextcloud). If the storage is down, Coursepilot doesn't quietly put anything somewhere else.</li>
+    </ol>
+
+    <h2 id="so-arbeitet-coursepilot">How Coursepilot works</h2>
+    <p>You tell your AI client what you have in mind. Through Coursepilot, the AI fetches the course as it stands and your working files, proposes a plan, and only writes to the course after you explicitly approve it in the chat. Coursepilot sits inside Moodle and works only with the permissions you already have there.</p>
+    <p><a class="diagram-link" href="../assets/diagrams/coursepilot-aus-nutzersicht.html">Open the diagram: Coursepilot from the user's view</a> (German labels; interactive, opens in its own view)</p>
+
+    <h2>Maturity</h2>
+    <p>Coursepilot is a <strong>beta</strong> (version <code>2.0.0-beta</code>) for Moodle 5.0 and later. It is in use in the author's own teaching; it hasn't been tried in production at another school yet. There are minor tool gaps in edge cases. What's still missing is listed openly on the <a href="developers.html#bekannte-grenzen">developer page</a>.</p>
+
+    <h2>Feedback</h2>
+    <p>Bugs, questions and feature requests are best reported as an <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues">issue on GitHub</a>.</p>
   </main>
   <footer class="site-footer">
     <p>Coursepilot · Beta (2.0.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Source on GitHub</a> · AGPL-3.0-or-later</p>

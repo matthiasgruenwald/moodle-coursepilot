@@ -25,7 +25,7 @@ namespace local_coursepilot\catalog;
  * Modultyp-Klasse dupliziert ihn (Abnahmekriterium #379).
  *
  * "coursepagevisibility" ist kein DB-Feld, sondern die von den Lese-Werkzeugen
- * (get_course_catalog, lib/core-tools.js) verwendete Vokabel fuer den aus
+ * (get_course_catalog) verwendete Vokabel fuer den aus
  * visible/visibleoncoursepage abgeleiteten Zustand - hier als Pseudofeld
  * gefuehrt, damit Katalog und Lese-Tools dasselbe Wort benutzen (Spec 0015
  * §3.5 "ein Vokabular").
@@ -232,7 +232,8 @@ final class shared_block {
                 'shown',
                 ['shown', 'stealth'],
                 null,
-                'lib/core-tools.js (Coursepilot-Vokabular, keine eigene Moodle-Spalte; wirkt auf visibleoncoursepage)'
+                'Plugin/src/local_coursepilot/classes/catalog/shared_block.php::derive_visibility() (Coursepilot-Vokabular, '
+                    . 'keine eigene Moodle-Spalte; wirkt auf visibleoncoursepage)'
             ),
             new field(
                 'availability_status',

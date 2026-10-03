@@ -3,8 +3,7 @@
 # Prueft ausschliesslich den nativen Server-MCP (Plugin/src/local_coursepilot)
 # reproduzierbar auf frischen GitHub-Actions-Runnern - kein Zugriff auf die
 # Spike- oder Produktivinstanz, keine persoenlichen Verbindungen, kein
-# Praxiskurs (User Story 2/14). Der eingefrorene Altstand (legacy/) wird
-# weder gebaut noch getestet noch veraendert.
+# Praxiskurs (User Story 2/14).
 #
 # Vier Pflichtjobs plus ein stabiler Gesamtcheck ("Gate (required)"), der als
 # einziger Merge-Check dient - Matrixleg-Namen duerfen sich aendern, ohne die

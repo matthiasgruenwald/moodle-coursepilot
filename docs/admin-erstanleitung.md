@@ -2,8 +2,7 @@
 
 Für eine Schulverwaltung, die Coursepilot zum ersten Mal auf einer Moodle-Instanz
 einrichtet — ohne Vorwissen über das Plugin, einmal von vorn bis hinten. Betrifft
-den aktuellen Server-MCP (`Plugin/src/local_coursepilot/`), nicht den eingefrorenen
-Laptop-Altstand (`legacy/local_coursepilot/`) — siehe [`CLAUDE.md`](../CLAUDE.md).
+den Server-MCP (`Plugin/src/local_coursepilot/`).
 
 Entwickler-Deploy-Anleitungen (`plugin-deploy.md`, `plugin-deploy-spike.md`) sind
 für dieses Repository gedacht, nicht für eine fremde Schulinstanz — diese Anleitung

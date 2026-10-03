@@ -6,6 +6,15 @@ lokalen Coursepilot-MCP. Entwicklungs- und Issue-Repository ist
 (primäres Repository); der Plugin-Quellbaum wird separat als Mirror für das Moodle Plugin
 Directory veröffentlicht.
 
+## Unveröffentlicht (dev) – Altstand 1.x entfernt
+
+Der lokale stdio-Weg (Coursepilot 1.x: `legacy/local_coursepilot/`, `moodle-mcp.js`,
+Installer und lokale `kurspilot-*`-Skills) ist aus dem Repository entfernt (#587). Auf
+keiner Instanz läuft das Altplugin mehr. Damit entfallen `npm run build:plugin`,
+`npm run release:plugin` und `npm run build:mirror`; einziger Release-Weg ist
+`npm run build:native-release`, aus dem auch der Marketplace-Mirror gebaut wird. Der
+Altstand bleibt über den Tag `v1.0.0` und die Git-Historie erreichbar.
+
 ## Coursepilot 2.0.0-beta (Server-MCP) – Artefakt, Version, Übergang
 
 Betrifft die native Linie unter `Plugin/src/local_coursepilot/` (Issue #577, Spec 0025
