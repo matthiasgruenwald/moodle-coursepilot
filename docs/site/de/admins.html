@@ -79,7 +79,7 @@
     <p>Eine Lehrkraft kann ihren KI-Client erst verbinden, wenn du ihr den Fernzugriff freigegeben hast. Eine Einschreibung als Lehrkraft im Kurs reicht nicht. Coursepilot legt dafür weder Kohorte noch Rolle an. Zwei Wege:</p>
     <ol>
       <li><strong>Kohorte (empfohlen):</strong> Wähl in den Plugin-Einstellungen bei <em>Fernzugriffs-Kohorten</em> eine oder mehrere bestehende <strong>Systemkohorten</strong>, z.&nbsp;B. die Kohorte, in der die Schule ihre Lehrkräfte ohnehin pflegt. Kohorten einer Kurskategorie sind nicht wählbar.</li>
-      <li><strong>Vorhandene Systemrolle:</strong> Erlaube <code>local/coursepilot:useremote</code> in einer systemweit vergebenen Rolle. Die Fähigkeit hat keine Vorbelegung; eine systemweite Lehrkraft-Rolle bringt den Fernzugriff also nicht nebenbei mit.</li>
+      <li><strong>Vorhandene Systemrolle:</strong> Erlaube <code>local/coursepilot:useremote</code> in einer systemweit vergebenen Rolle: Website-Administration › Nutzer/innen › Rechte › Rollen verwalten › Rolle bearbeiten, im Filter <code>useremote</code> suchen, „Erlauben“ setzen. Die Fähigkeit hat keine Vorbelegung; eine systemweite Lehrkraft-Rolle bringt den Fernzugriff also nicht nebenbei mit. Nicht in „Authentifizierte/r Nutzer/in“ erlauben, sonst bekommen auch Schüler:innen den Fernzugriff.</li>
     </ol>
     <p>Die Freigabe wird bei <strong>jedem</strong> Aufruf geprüft. Wer aus der Kohorte entfernt wird oder die Rolle verliert, wird beim nächsten Aufruf abgewiesen, auch über eine bestehende Verbindung. Der Fernzugriff gibt keine Kursrechte: Niemand bekommt darüber Zugriff auf fremde Kurse. „Rechte prüfen“ in Moodle zeigt nur den Rollenweg, nicht die Kohortenmitgliedschaft.</p>
 

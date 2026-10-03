@@ -79,7 +79,7 @@
     <p>A teacher can only connect their AI client once you've granted them remote access. Being enrolled as a teacher in a course isn't enough. Coursepilot creates neither a cohort nor a role for this. There are two routes:</p>
     <ol>
       <li><strong>Cohort (recommended):</strong> In the plugin settings, pick one or more existing <strong>system cohorts</strong> under <em>Remote access cohorts</em>, e.g. the cohort your school already maintains for its teachers. Cohorts of a course category can't be selected.</li>
-      <li><strong>Existing system role:</strong> Allow <code>local/coursepilot:useremote</code> in a role assigned at system level. The capability has no default, so a system-wide teacher role doesn't bring remote access along by accident.</li>
+      <li><strong>Existing system role:</strong> Allow <code>local/coursepilot:useremote</code> in a role assigned at system level: Site administration › Users › Permissions › Define roles › edit the role, filter for <code>useremote</code>, set "Allow". The capability has no default, so a system-wide teacher role doesn't bring remote access along by accident. Don't allow it in "Authenticated user", or students get remote access too.</li>
     </ol>
     <p>Access is checked on <strong>every</strong> call. Anyone removed from the cohort or losing the role is turned away on their next call, even over an existing connection. Remote access grants no course permissions: nobody gains access to other people's courses through it. "Check permissions" in Moodle only shows the role route, not cohort membership.</p>
 
