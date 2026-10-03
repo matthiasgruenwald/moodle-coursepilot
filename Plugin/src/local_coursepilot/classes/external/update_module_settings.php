@@ -24,11 +24,10 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\activity_file_trash;
 use local_coursepilot\catalog\module_catalog;
-use local_coursepilot\catalog\catalog_fields;
 use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\registry;
-use local_coursepilot\catalog\shared_block;
+use local_coursepilot\catalog\write_target;
 use local_coursepilot\material_files;
 use local_coursepilot\write_gate;
 use moodle_exception;
@@ -69,7 +68,7 @@ class update_module_settings extends external_api {
      * eigentlichen update_moduleinfo()-Aufruf wird jeder Pfad zu einer
      * bestehenden Materialdatei aufgeloest und in einen Dateimanager-Entwurf
      * kopiert ({@see material_files::resolve_into_draft()}) - derselbe
-     * Freigabeweg wie jeder andere Patch (validate_patch laeuft vorher,
+     * Freigabeweg wie jeder andere Patch (write_target::update() laeuft vorher,
      * unveraendert), kein Sonderweg fuer Binaerdaten.
      *
      * @var array<string, array<string, array{component: string, filearea: string}>>
@@ -189,14 +188,8 @@ class update_module_settings extends external_api {
         // Lese-Werkzeug ruft assert_writable() auf).
         write_gate::assert_writable($modname);
 
-        [$patch, $before] = self::decode_and_validate_patch($modname, $catalogclass, $cmid, $params['fields_json']);
-        // Riegel (#583): ein Patch, der einen bestehenden Riegel nur
-        // wiederholt, braucht keine erneute Bestaetigung.
-        learner_locks::assert_confirmed(
-            $modname,
-            learner_locks::find_changed($catalogclass, $patch, $before),
-            $params[learner_locks::PARAMETER]
-        );
+        [$patch, $before] = self::decode_and_validate_patch(
+            $catalogclass, $cmid, $params['fields_json'], $params[learner_locks::PARAMETER]);
 
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
@@ -238,20 +231,20 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Dekodiert fields_json und validiert den Patch (Issue #523: aus
-     * execute() ausgelagert).
+     * Decodes fields_json and lets the catalog write target decide every rule
+     * against the current state before anything is written (#646).
      *
-     * @param string $modname
      * @param class-string<module_catalog> $catalogclass
      * @param int $cmid
      * @param string $fieldsjson
+     * @param string[] $confirmedlocks
      * @return array{0: array, 1: array} [Patch, aktuelle Einstellungen vor dem Patch]
      */
     private static function decode_and_validate_patch(
-        string $modname,
         string $catalogclass,
         int $cmid,
-        string $fieldsjson
+        string $fieldsjson,
+        array $confirmedlocks
     ): array {
         $patch = json_decode($fieldsjson, true);
         if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
@@ -264,8 +257,7 @@ class update_module_settings extends external_api {
         // Extraktions-Schnitt: reiner Performance-/DRY-Fund, keine
         // Verhaltensaenderung).
         $before = self::read_settings($cmid);
-        catalog_fields::validate($catalogclass, $patch, true);
-        self::validate_patch($modname, $before, $patch);
+        write_target::update($catalogclass, $patch, $before, $confirmedlocks);
 
         return [$patch, $before];
     }
@@ -520,100 +512,6 @@ class update_module_settings extends external_api {
     private static function read_settings(int $cmid): array {
         $result = get_module_settings::execute($cmid);
         return json_decode($result['settings_json'], true);
-    }
-
-    /**
-     * Alles-oder-nichts-Pruefung VOR dem Schreiben: unbekanntes Feld,
-     * gesperrtes Feld, unerlaubter Wert, verletzte Kombinationsregel.
-     *
-     * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
-     * @param array $before Ist-Stand vor dem Patch (fuer Kombinationsregeln).
-     * @param array $patch
-     * @return void
-     * @throws moodle_exception blockedfield|unknownfield|invalidfieldvalue|combinationruleviolation|stealthnotallowed
-     */
-    private static function validate_patch(string $modname, array $before, array $patch): void {
-        self::validate_combination_rules($modname, $before, $patch);
-        self::assert_stealth_allowed($patch);
-    }
-
-    /**
-     * Stealth (Spec 0015 §7, Ticket #390) setzt voraus, dass die Instanz
-     * "allowstealth" erlaubt - sonst ignoriert Moodles eigener Formularweg
-     * visibleoncoursepage=0 kommentarlos (course/modlib.php:
-     * set_moduleinfo_defaults() faellt auf 1 zurueck), der Schreibvorgang
-     * wuerde also still wirkungslos bleiben statt zu scheitern. Nur der
-     * Zielwert 0 ist betroffen - visibleoncoursepage=1 (zurueck auf normal)
-     * bleibt immer erlaubt.
-     *
-     * @param array $patch
-     * @return void
-     * @throws moodle_exception stealthnotallowed
-     */
-    private static function assert_stealth_allowed(array $patch): void {
-        if (($patch['visibleoncoursepage'] ?? null) !== 0) {
-            return;
-        }
-        if (get_config(null, 'allowstealth')) {
-            return;
-        }
-        throw new moodle_exception('stealthnotallowed', 'local_coursepilot');
-    }
-
-    /**
-     * @param string $modname
-     * @param array $before
-     * @param array $patch
-     * @return void
-     * @throws moodle_exception combinationruleviolation
-     */
-    private static function validate_combination_rules(string $modname, array $before, array $patch): void {
-        $catalogclass = registry::for($modname);
-        $rules = $catalogclass::write_options()['date_order_rules'] ?? [];
-        if (!$rules) {
-            return;
-        }
-
-        $merged = array_merge($before, $patch);
-        foreach ($rules as $rule) {
-            // Nur pruefen, wenn der Patch tatsaechlich eines der beiden
-            // Felder beruehrt - unveraendert bleibende, bereits vorhandene
-            // Altdaten werden durch einen unabhaengigen Patch nicht neu
-            // bewertet.
-            if (!array_key_exists($rule['reference'], $patch) && !array_key_exists($rule['field'], $patch)) {
-                continue;
-            }
-            $reference = (int) ($merged[$rule['reference']] ?? 0);
-            $value = (int) ($merged[$rule['field']] ?? 0);
-            if ($reference === 0 || $value === 0) {
-                continue;
-            }
-
-            $violated = $rule['mode'] === 'must_be_after' ? ($value <= $reference) : ($value < $reference);
-            if ($violated) {
-                throw new moodle_exception(
-                    'combinationruleviolation',
-                    'local_coursepilot',
-                    '',
-                    ['modname' => $modname, 'message' => self::rule_violation_message($rule)]
-                );
-            }
-        }
-    }
-
-    /**
-     * Generischer Verstoss-Text aus reference/field/mode statt eines
-     * separat gepflegten Zitats der Katalogtexte (DRY, siehe
-     * {@see self::DATE_ORDER_RULES}).
-     *
-     * @param array{reference: string, field: string, mode: string} $rule
-     * @return string
-     */
-    private static function rule_violation_message(array $rule): string {
-        return $rule['mode'] === 'must_be_after'
-            ? '"' . $rule['field'] . '" muss nach "' . $rule['reference'] . '" liegen.'
-            : '"' . $rule['field'] . '" darf nicht vor "' . $rule['reference'] . '" liegen.';
     }
 
     /**

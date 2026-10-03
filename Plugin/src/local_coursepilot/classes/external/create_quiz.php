@@ -25,7 +25,7 @@ use core_external\external_value;
 use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\quiz;
 use local_coursepilot\catalog\quiz_write_bridge;
-use local_coursepilot\catalog\shared_block;
+use local_coursepilot\catalog\write_target;
 use local_coursepilot\write_gate;
 use moodle_exception;
 
@@ -132,19 +132,16 @@ final class create_quiz extends external_api {
         $bundle = self::bundle_fields($params['mode']);
         $merged = array_merge($bundle, $patch);
 
-        quiz_write_bridge::validate_fields($merged);
-        $newgrade = $params['grade'] >= 0 ? $params['grade'] : quiz_write_bridge::default_grade();
-        $effective = array_merge(self::catalog_defaults(), $merged);
-        quiz_write_bridge::validate_combination_rules($effective, $merged, $newgrade);
-        self::assert_no_required_field_missing($merged);
-        quiz_write_bridge::assert_stealth_allowed($merged);
-        // Riegel (#583): Formular-Defaults zaehlen mit; die Riegel des
-        // gewaehlten Modus bestaetigt die Moduswahl selbst.
-        learner_locks::assert_confirmed(
-            'quiz',
-            learner_locks::find(quiz::class, $merged, self::catalog_defaults()),
+        // Catalog rules (fields, dates, stealth, required fields, learner
+        // locks) are decided once in the write target (#646); the locks of the
+        // chosen mode are confirmed by choosing it.
+        $target = write_target::create(
+            quiz::class,
+            $merged,
             learner_locks::confirmed_with_mode($params[learner_locks::PARAMETER], $bundle, $patch)
         );
+        $newgrade = $params['grade'] >= 0 ? $params['grade'] : quiz_write_bridge::default_grade();
+        quiz_write_bridge::validate_combination_rules($target->state, $merged, $newgrade);
 
         $course = get_course($params['courseid']);
         require_once($CFG->dirroot . '/course/modlib.php');
@@ -161,7 +158,9 @@ final class create_quiz extends external_api {
         $fieldstowrite = $merged;
         unset($fieldstowrite['feedbacktext'], $fieldstowrite['feedbackboundaries']);
 
-        self::fill_form_defaults($moduleinfo, $fieldstowrite);
+        foreach ($target->defaults() as $fieldname => $value) {
+            $moduleinfo->{quiz_write_bridge::moduleinfo_property($fieldname)} = $value;
+        }
         foreach ($fieldstowrite as $fieldname => $value) {
             $moduleinfo->{quiz_write_bridge::moduleinfo_property($fieldname)} = $value;
         }
@@ -201,69 +200,6 @@ final class create_quiz extends external_api {
             ]);
         }
         return $bundles[$mode];
-    }
-
-    /**
-     * Katalog-Defaults (Kategorie 1) als Feldname => Wert - fuer die
-     * Kombinationsregeln beim Anlegen (z.B. timeopen/timeclose sind ohne
-     * Angabe beide 0 und verletzen dadurch keine Regel).
-     *
-     * @return array<string, mixed>
-     */
-    private static function catalog_defaults(): array {
-        $defaults = [];
-        foreach (array_merge(shared_block::fields(), quiz::fields()) as $field) {
-            if ($field->default !== null) {
-                $defaults[$field->name] = $field->default;
-            }
-        }
-        return $defaults;
-    }
-
-    /**
-     * Ein Pflichtfeld ganz ohne Formular-Default muss die Lehrkraft nennen -
-     * identische Regel wie {@see create_module::assert_no_required_field_missing()}.
-     *
-     * @param array $merged
-     * @return void
-     * @throws moodle_exception requiredfieldwithoutdefault
-     */
-    private static function assert_no_required_field_missing(array $merged): void {
-        $allfields = array_merge(shared_block::fields(), quiz::fields(), quiz::pseudofields());
-        foreach ($allfields as $field) {
-            if (!$field->required || $field->default !== null) {
-                continue;
-            }
-            if (array_key_exists($field->name, $merged)) {
-                continue;
-            }
-            throw new moodle_exception('requiredfieldwithoutdefault', 'local_coursepilot', '', [
-                'field' => $field->name,
-                'modname' => 'quiz',
-            ]);
-        }
-    }
-
-    /**
-     * Fuellt jedes vom Patch/Buendel nicht genannte Feld mit seinem
-     * katalogisierten FORMULAR-Default - identisches Prinzip wie
-     * {@see create_module::fill_form_defaults()}. Die 32 Review-Checkboxen
-     * sind ganz normale Pseudofelder mit Default 0 (keine Sonderbehandlung
-     * noetig, anders als beim Patch: es gibt beim Anlegen keinen Ist-Stand
-     * zum Carry-forward).
-     *
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt.
-     * @param array $merged
-     * @return void
-     */
-    private static function fill_form_defaults(\stdClass $moduleinfo, array $merged): void {
-        $allfields = array_merge(shared_block::fields(), quiz::fields(), quiz::pseudofields());
-        foreach ($allfields as $field) {
-            if (array_key_exists($field->name, $merged) || $field->default === null) {
-                continue;
-            }
-            $moduleinfo->{quiz_write_bridge::moduleinfo_property($field->name)} = $field->default;
-        }
     }
 
     /**

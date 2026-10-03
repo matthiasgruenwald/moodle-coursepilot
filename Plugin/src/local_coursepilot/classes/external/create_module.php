@@ -23,11 +23,10 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\module_catalog;
-use local_coursepilot\catalog\catalog_fields;
 use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\registry;
-use local_coursepilot\catalog\shared_block;
+use local_coursepilot\catalog\write_target;
 use local_coursepilot\material_files;
 use local_coursepilot\write_gate;
 use moodle_exception;
@@ -55,7 +54,7 @@ defined('MOODLE_INTERNAL') || die();
  * Hauptdatei entsteht eine kaputte Aktivitaetsseite
  * (mod/resource/view.php: resource_print_filenotfound()), die Pruefung
  * laeuft deshalb VOR add_moduleinfo() ueber den normalen
- * Pflichtfeld-Mechanismus ({@see self::assert_no_required_field_missing()}).
+ * Pflichtfeld-Mechanismus ({@see \local_coursepilot\catalog\write_target::create()}).
  * "folder" bleibt anlegbar - ein leerer Ordner ist gueltig, "files" ist dort
  * optional und akzeptiert mehrere Pfade samt Zielunterordner (Spec 0018 §4.2,
  * {@see self::resolve_material_reference_pseudofields()}).
@@ -130,13 +129,13 @@ final class create_module extends external_api {
         // eine Katalogabweichung ergeben hat. Lesen bleibt unberuehrt.
         write_gate::assert_writable($modname);
 
-        $merged = self::prepare_merged_fields($modname, $catalogclass, $coursecontext, $params);
+        [$merged, $defaults] = self::prepare_merged_fields($catalogclass, $coursecontext, $params);
         $modulefields = $merged;
         self::resolve_intro_image_pseudofield($modname, $catalogclass, $coursecontext, $modulefields, $params['location']);
 
         $course = get_course($params['courseid']);
         require_once($CFG->dirroot . '/course/modlib.php');
-        $cmid = self::create_activity($course, $modname, $catalogclass, $params['sectionnum'], $modulefields);
+        $cmid = self::create_activity($course, $modname, $catalogclass, $params['sectionnum'], $modulefields, $defaults);
 
         $after = self::read_settings($cmid);
         [$createdfields, $sideeffects] = self::report_and_side_effects($modname, $merged, $after);
@@ -173,22 +172,15 @@ final class create_module extends external_api {
     }
 
     /**
-     * Dekodiert und validiert die Felder-JSON, loest Pseudofelder auf (Issue
-     * #523: aus execute() ausgelagert, um die Funktion unter der
-     * 50-Zeilen-Grenze zu halten).
+     * Decodes fields_json, normalises pseudofields and lets the catalog write
+     * target decide every rule before any file is resolved (#646).
      *
-     * @param string $modname
      * @param class-string<module_catalog> $catalogclass
      * @param \context_course $coursecontext
-     * @param array $params Validierte Parameter von execute().
-     * @return array Die gepatchten Felder, bereit fuer add_moduleinfo().
+     * @param array $params Validated parameters of execute().
+     * @return array{0: array, 1: array} Named fields ready for add_moduleinfo(), filled form defaults.
      */
-    private static function prepare_merged_fields(
-        string $modname,
-        string $catalogclass,
-        \context_course $coursecontext,
-        array $params
-    ): array {
+    private static function prepare_merged_fields(string $catalogclass, \context_course $coursecontext, array $params): array {
         $merged = json_decode($params['fields_json'], true);
         if (!is_array($merged) || json_last_error() !== JSON_ERROR_NONE) {
             throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
@@ -199,28 +191,15 @@ final class create_module extends external_api {
         // Nicht-Array still aus, und die Seite entstuende leer (#405).
         pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $merged);
         self::derive_content_from_editor_pseudofield($catalogclass, $merged);
-
-        catalog_fields::validate($catalogclass, $merged);
-        self::validate_parallel_array_lengths($catalogclass, $modname, $merged);
-        self::validate_combination_rules($catalogclass, $modname, $merged);
-        // VOR assert_no_required_field_missing(): eine leere Pfadliste
-        // ("files": []) zaehlt als nicht genannt, sonst rutscht sie am
-        // Pflichtfeld-Check vorbei und resolve_into_draft() liefert einen
-        // gueltigen, aber LEEREN Entwurf - eine resource ohne Hauptdatei
-        // waere die Folge (Review-Fund zu Issue #434).
+        // Before the required-field check: an empty path list ("files": [])
+        // counts as not named, otherwise a resource without main file would
+        // slip through with an empty draft (review finding on #434).
         self::drop_empty_material_reference_pseudofields($catalogclass, $merged);
-        self::assert_no_required_field_missing($modname, $catalogclass, $merged);
-        self::assert_stealth_allowed($merged);
-        // Riegel (#583): die effektiv geschriebenen Werte zaehlen, also auch
-        // die aufgefuellten Formular-Defaults - vor jeder Dateiablage.
-        learner_locks::assert_confirmed(
-            $modname,
-            learner_locks::find($catalogclass, $merged, self::form_defaults($catalogclass, $merged)),
-            $params[learner_locks::PARAMETER]
-        );
+
+        $target = write_target::create($catalogclass, $merged, $params[learner_locks::PARAMETER]);
         self::resolve_material_reference_pseudofields($catalogclass, $coursecontext, $merged, $params['location']);
 
-        return $merged;
+        return [$merged, $target->defaults()];
     }
 
     /**
@@ -231,6 +210,7 @@ final class create_module extends external_api {
      * @param class-string<module_catalog> $catalogclass
      * @param int $sectionnum
      * @param array $merged
+     * @param array $defaults Filled form defaults from the write target.
      * @return int Die neue Kursmodul-ID.
      */
     private static function create_activity(
@@ -238,7 +218,8 @@ final class create_module extends external_api {
         string $modname,
         string $catalogclass,
         int $sectionnum,
-        array $merged
+        array $merged,
+        array $defaults
     ): int {
         // can_add_moduleinfo() prueft die native Capability (s.o.), ermittelt
         // die Modul-ID und legt den Zielabschnitt bei Bedarf an
@@ -249,7 +230,16 @@ final class create_module extends external_api {
         $moduleinfo->modulename = $modname;
         $moduleinfo->module = (int) $module->id;
         $moduleinfo->section = $sectionnum;
-        self::fill_form_defaults($modname, $catalogclass, $moduleinfo, $merged);
+        foreach ($defaults as $fieldname => $value) {
+            $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
+        }
+        // mod_folder reads "files" (draft itemid) unguarded in
+        // folder_add_instance(); an empty folder needs a "no draft" placeholder.
+        foreach ($catalogclass::write_options()['missing_form_values'] ?? [] as $field => $value) {
+            if (!property_exists($moduleinfo, $field)) {
+                $moduleinfo->{$field} = $value;
+            }
+        }
         foreach ($merged as $fieldname => $value) {
             $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
         }
@@ -285,7 +275,7 @@ final class create_module extends external_api {
     /**
      * Eine leere Pfadliste ("files": []) zaehlt wie ein nicht genanntes Feld
      * (Issue #434, Review-Fund: sonst rutscht sie an
-     * {@see self::assert_no_required_field_missing()} vorbei und
+     * {@see \local_coursepilot\catalog\write_target::create()} vorbei und
      * resolve_into_draft() liefert einen gueltigen, aber LEEREN Entwurf -
      * eine resource ohne Hauptdatei waere die Folge). Nur Listen werden
      * hier entfernt - ein Nicht-Array bleibt stehen und scheitert weiter
@@ -469,218 +459,6 @@ final class create_module extends external_api {
      */
     private static function moduleinfo_property(string $fieldname): string {
         return $fieldname === 'idnumber' ? 'cmidnumber' : $fieldname;
-    }
-
-    /**
-     * mod_url fuehrt "parameter_N"/"variable_N" (N=0..99) als EIN
-     * Katalogeintrag je Vorlage, nicht 200 Einzelfelder ({@see
-     * \local_coursepilot\catalog\url}) - eine Lehrkraft/KI schreibt aber
-     * konkrete Indizes wie "parameter_0". Bildet einen konkreten Index auf
-     * seine Vorlage ab, damit die Feldpruefung ihn erkennt; alles andere
-     * bleibt unveraendert (fuer die "unknownfield"-Fehlermeldung soll der
-     * echte, konkrete Feldname stehen bleiben, nicht die Vorlage).
-     *
-     * @param string $fieldname
-     * @return string
-     */
-    private static function templated_field_name(string $fieldname): string {
-        return preg_match('/^(parameter|variable)_\d+$/', $fieldname) === 1
-            ? preg_replace('/_\d+$/', '_N', $fieldname)
-            : $fieldname;
-    }
-
-    /**
-     * Alles-oder-nichts-Pruefung VOR dem Anlegen: unbekanntes Feld, gesperrtes
-     * Feld, unerlaubter Wert - dieselbe Pruefung wie
-     * {@see update_module_settings::validate_patch()}. Die Datumspaar-
-     * Kombinationsregeln laufen separat, siehe {@see self::validate_combination_rules()}.
-     *
-     * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
-     * @param array $merged
-     * @return void
-     * @throws moodle_exception blockedfield|unknownfield|invalidfieldvalue
-     */
-
-    /**
-     * choice: "limit[]" muss genauso viele Eintraege haben wie "option[]"
-     * (Katalogkommentar {@see \local_coursepilot\catalog\choice}), sonst
-     * begrenzt Moodle manche Optionen gar nicht, ohne einen Fehler zu melden -
-     * hier ausdruecklich erzwungen statt Moodles stiller Toleranz zu folgen
-     * (Abnahmekriterium #389: "eine Begrenzungsliste falscher Laenge
-     * scheitert").
-     *
-     * @param string $modname
-     * @param array $merged
-     * @return void
-     * @throws moodle_exception combinationruleviolation
-     */
-    private static function validate_parallel_array_lengths(string $catalogclass, string $modname, array $merged): void {
-        foreach ($catalogclass::write_options()['parallel_array_lengths'] ?? [] as $rule) {
-            if (!isset($merged[$rule['reference']], $merged[$rule['field']])
-                || !is_array($merged[$rule['reference']]) || !is_array($merged[$rule['field']])
-                || count($merged[$rule['reference']]) === count($merged[$rule['field']])) {
-                continue;
-            }
-            throw new moodle_exception('combinationruleviolation', 'local_coursepilot', '', [
-                'modname' => $modname,
-                'message' => '"' . $rule['field'] . '" muss genauso viele Eintraege haben wie "' . $rule['reference'] . '".',
-            ]);
-        }
-    }
-
-    /**
-     * Datumspaar-Kombinationsregeln (s.o. {@see self::DATE_ORDER_RULES}) -
-     * geprueft nur, wenn der Patch tatsaechlich eines der beiden Felder
-     * nennt (ein unbenanntes Feld bleibt beim Anlegen ohnehin auf seinem
-     * Katalog-Default 0 und kann keine Regel verletzen).
-     *
-     * @param string $modname
-     * @param array $merged
-     * @return void
-     * @throws moodle_exception combinationruleviolation
-     */
-    private static function validate_combination_rules(string $catalogclass, string $modname, array $merged): void {
-        $rules = $catalogclass::write_options()['date_order_rules'] ?? [];
-        foreach ($rules as $rule) {
-            if (!array_key_exists($rule['reference'], $merged) && !array_key_exists($rule['field'], $merged)) {
-                continue;
-            }
-            $reference = (int) ($merged[$rule['reference']] ?? 0);
-            $value = (int) ($merged[$rule['field']] ?? 0);
-            if ($reference === 0 || $value === 0) {
-                continue;
-            }
-
-            $violated = $rule['mode'] === 'must_be_after' ? ($value <= $reference) : ($value < $reference);
-            if (!$violated) {
-                continue;
-            }
-            $message = $rule['mode'] === 'must_be_after'
-                ? '"' . $rule['field'] . '" muss nach "' . $rule['reference'] . '" liegen.'
-                : '"' . $rule['field'] . '" darf nicht vor "' . $rule['reference'] . '" liegen.';
-            throw new moodle_exception(
-                'combinationruleviolation',
-                'local_coursepilot',
-                '',
-                ['modname' => $modname, 'message' => $message]
-            );
-        }
-    }
-
-    /**
-     * Ein Pflichtfeld ganz ohne Formular-Default (Katalog: required=true,
-     * default=null) muss die Lehrkraft nennen - anders als bei jedem anderen
-     * Feld gibt es hier keinen Formular-Default zum Auffuellen (Spec 0015
-     * §3.4).
-     *
-     * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
-     * @param array $merged
-     * @return void
-     * @throws moodle_exception requiredfieldwithoutdefault
-     */
-    private static function assert_no_required_field_missing(string $modname, string $catalogclass, array $merged): void {
-        $allfields = array_merge(shared_block::fields(), $catalogclass::fields(), $catalogclass::pseudofields());
-        // Alle fehlenden auf einmal, nicht das erste (#404): sonst muss sich
-        // die Lehrkraft (bzw. das Modell) Aufruf fuer Aufruf durch die
-        // Pflichtfelder raten, jedes Mal mit einer Fehlermeldung dazwischen.
-        $missing = [];
-        foreach ($allfields as $field) {
-            if (!$field->required || $field->default !== null) {
-                continue;
-            }
-            if (array_key_exists($field->name, $merged)) {
-                continue;
-            }
-            $missing[] = '"' . $field->name . '"';
-        }
-        if ($missing) {
-            throw new moodle_exception(
-                'requiredfieldwithoutdefault',
-                'local_coursepilot',
-                '',
-                ['field' => implode(', ', $missing), 'modname' => $modname]
-            );
-        }
-    }
-
-    /**
-     * Stealth (Spec 0015 §7, Ticket #390) setzt voraus, dass die Instanz
-     * "allowstealth" erlaubt - identische Regel wie
-     * {@see update_module_settings::assert_stealth_allowed()}. Beim Anlegen
-     * bleibt visibleoncoursepage ohne ausdrueckliche Angabe auf seinem
-     * Katalog-Default 1 (sichtbar), betroffen ist also nur ein
-     * ausdruecklicher Wunsch nach Stealth gleich beim Anlegen.
-     *
-     * @param array $merged
-     * @return void
-     * @throws moodle_exception stealthnotallowed
-     */
-    private static function assert_stealth_allowed(array $merged): void {
-        if (($merged['visibleoncoursepage'] ?? null) !== 0) {
-            return;
-        }
-        if (get_config(null, 'allowstealth')) {
-            return;
-        }
-        throw new moodle_exception('stealthnotallowed', 'local_coursepilot');
-    }
-
-    /**
-     * Die Werte, mit denen {@see self::fill_form_defaults()} jedes nicht
-     * genannte Feld auffuellt: katalogisierter FORMULAR-Default (nicht der
-     * DB-Default, siehe Klassendoku), fuer mod_assign zusaetzlich die
-     * admin-konfigurierten Abgabe-/Feedback-Enable-Felder. Auch die
-     * Riegel-Pruefung (#583) liest hier, was effektiv geschrieben wird.
-     *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array $merged
-     * @return array<string, mixed>
-     */
-    private static function form_defaults(string $catalogclass, array $merged): array {
-        $defaults = [];
-        $adminfields = $catalogclass::write_options()['admin_default_fields'] ?? [];
-        foreach (array_merge(shared_block::fields(), $catalogclass::fields(), $catalogclass::pseudofields()) as $field) {
-            if (array_key_exists($field->name, $merged)) {
-                continue;
-            }
-            if ($field->default !== null) {
-                $defaults[$field->name] = $field->default;
-            } else if (isset($adminfields[$field->name])) {
-                $defaults[$field->name] = (int) (bool) get_config($adminfields[$field->name], 'default');
-            }
-        }
-        return $defaults;
-    }
-
-    /**
-     * Fuellt jedes vom Patch/Buendel nicht genannte Feld mit seinem
-     * katalogisierten FORMULAR-Default (nicht dem DB-Default, siehe
-     * Klassendoku) - fuer mod_assign zusaetzlich die sechs dynamisch
-     * aufzuloesenden Abgabe-/Feedback-Enable-Felder (s.o.).
-     *
-     * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt.
-     * @param array $merged
-     * @return void
-     */
-    private static function fill_form_defaults(string $modname, string $catalogclass, \stdClass $moduleinfo, array $merged): void {
-        foreach (self::form_defaults($catalogclass, $merged) as $fieldname => $value) {
-            $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
-        }
-        // mod_folder liest "files" (Draft-Itemid) ungeschuetzt, ohne isset()-
-        // Wache (mod/folder/lib.php: folder_add_instance()) - das Feld ist
-        // bis Spec 0018 gesperrt (siehe Klassendoku), braucht aber trotzdem
-        // einen Platzhalter "kein Draftbereich", sonst ein PHP-Warning bei
-        // JEDEM Anlegen. Ein leerer Ordner ist gueltig (siehe
-        // \local_coursepilot\catalog\folder).
-        foreach ($catalogclass::write_options()['missing_form_values'] ?? [] as $field => $value) {
-            if (!property_exists($moduleinfo, $field)) {
-                $moduleinfo->{$field} = $value;
-            }
-        }
     }
 
     /**

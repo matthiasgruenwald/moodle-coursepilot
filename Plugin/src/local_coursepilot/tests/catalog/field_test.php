@@ -27,19 +27,29 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class field_test extends \advanced_testcase {
 
     /**
-     * Die vier Aktivitaets-Schreibpfade pruefen Feldnamen ausschliesslich im
-     * Katalog statt mit eigenen Literalen.
+     * Field release, date, stealth and learner-lock rules are decided once in
+     * the catalog write target (#646); the external adapters keep no second
+     * interpretation of them.
      */
     public function test_all_activity_field_validators_delegate_to_the_catalog(): void {
-        $callers = [
-            __DIR__ . '/../../classes/external/create_module.php',
-            __DIR__ . '/../../classes/external/update_module_settings.php',
-            __DIR__ . '/../../classes/catalog/quiz_write_bridge.php',
-        ];
+        $core = file_get_contents(__DIR__ . '/../../classes/catalog/write_target.php');
+        $this->assertStringContainsString('catalog_fields::validate(', $core);
 
-        foreach ($callers as $caller) {
-            $source = file_get_contents($caller);
-            $this->assertStringContainsString('catalog_fields::validate(', $source, $caller);
+        $adapters = [
+            'classes/external/create_module.php' => 'write_target::create(',
+            'classes/external/update_module_settings.php' => 'write_target::update(',
+            'classes/external/create_quiz.php' => 'write_target::create(',
+            'classes/external/update_quiz_settings.php' => 'write_target::update(',
+            'classes/catalog/quiz_write_bridge.php' => null,
+        ];
+        foreach ($adapters as $file => $entry) {
+            $source = file_get_contents(__DIR__ . '/../../' . $file);
+            if ($entry !== null) {
+                $this->assertStringContainsString($entry, $source, $file);
+            }
+            foreach (['catalog_fields::validate(', 'date_order_rules', 'allowstealth', 'learner_locks::find'] as $rule) {
+                $this->assertStringNotContainsString($rule, $source, $file . ' interprets ' . $rule . ' itself.');
+            }
         }
     }
 

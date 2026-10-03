@@ -113,7 +113,10 @@ final class write_target {
     private function assert_rules(string $catalogclass): void {
         $options = $catalogclass::write_options();
         foreach ($options['parallel_array_lengths'] ?? [] as $rule) {
-            if (!$this->touches($rule)) {
+            // Only a named dependent list is judged: the native write guards a
+            // missing entry (choice_update_instance(): isset($choice->limit[$key])),
+            // so changing the reference list alone stays valid.
+            if (!array_key_exists($rule['field'], $this->changes)) {
                 continue;
             }
             $reference = $this->state[$rule['reference']] ?? null;
@@ -159,7 +162,7 @@ final class write_target {
      * @param string $message
      * @return never
      */
-    private static function violation(string $catalogclass, string $message): void {
+    private static function violation(string $catalogclass, string $message): never {
         throw new moodle_exception('combinationruleviolation', 'local_coursepilot', '', [
             'modname' => $catalogclass::modname(),
             'message' => $message,
