@@ -22,16 +22,15 @@ namespace local_coursepilot;
  * reiner Wertesatz, ADR 0020) und relativem Pfad, mit einem Pruefwert fuer
  * bedingtes Schreiben.
  *
- * Genau eine Schnittstelle fuer beide kuenftigen Adapter (Moodles Private
- * Files, WebDAV) - welcher greift, entscheidet spaeter der Kontextpointer,
- * nicht dieses Interface (Spec 0021, Implementation Decisions). Noch ruft
- * kein Werkzeug einen Adapter dieses Vertrags auf - reines Danebenstellen
- * neben dem bisherigen Weg ({@see storage_anchor}, {@see context_files},
- * {@see material_files}), der unveraendert bleibt.
+ * Genau eine Schnittstelle fuer beide Adapter ({@see private_files_storage_port},
+ * {@see webdav_storage_port}). Welcher greift, entscheidet ausschliesslich
+ * {@see storage_anchor::port()} aus dem Kontextpointer; Kontextbereich,
+ * Materialbestand, Werkbank und der Nur-Lese-Zugriff auf den vorherigen Ort
+ * laufen ueber diesen Vertrag (Issue #645).
  *
  * Ein Pruefwert ist ein ortsneutraler Bezeichner fuer den Inhaltsstand einer
- * Datei (bei Private Files der Moodle-`contenthash`, spaeter beim
- * WebDAV-Adapter ein ETag/Aenderungszeit-Ersatz) - fuer den Aufrufer eine
+ * Datei (bei Private Files der Moodle-`contenthash`, beim WebDAV-Adapter ein
+ * schwaecherer ETag/Aenderungszeit-Ersatz ohne atomare Garantie) - fuer den Aufrufer eine
  * blanke Zeichenkette zum Vergleichen, kein Erkennungsmerkmal des Ortes
  * (Spec 0021 Implementation Decisions).
  *

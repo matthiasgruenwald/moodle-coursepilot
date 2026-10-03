@@ -23,7 +23,8 @@ namespace local_coursepilot;
  * zusaetzlich gedrosselt. Gemerkt wird deshalb nur das eine Bit "markiert
  * ja/nein" je Datei, in Moodle, ohne Netz.
  *
- * Der Schluessel ist Pfad, Groesse, Aenderungszeit und ETag (wo vorhanden) -
+ * Der Schluessel ist Pfad, Groesse, Aenderungszeit und der Pruefwert des
+ * Ablage-Adapters (Spalte `etag`, seit Issue #645 der {@see storage_port}-Pruefwert) -
  * alles bereits aus dem einen PROPFIND/Verzeichniseintrag der Auflistung
  * bekannt, kein zusaetzlicher Zugriff noetig, um den Schluessel zu bilden.
  * Passt der gespeicherte Schluessel nicht mehr zum aktuellen Eintrag, gilt

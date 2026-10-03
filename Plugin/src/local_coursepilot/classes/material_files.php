@@ -17,6 +17,7 @@
 namespace local_coursepilot;
 
 use core_external\external_value;
+use local_coursepilot\webdav\webdav_error;
 
 /**
  * Anker des Materialordners (Spec 0018 §2, Issue #428): Geschwisterordner zu
@@ -256,17 +257,6 @@ final class material_files {
     }
 
     /**
-     * Listet eine Ebene des Materialordners - ortsneutral (Issue #488).
-     *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
-     * @return array<int, array{name: string, type: string, size: int, mimetype: string,
-     *         contenthash: string, timemodified: int}>
-     */
-    public static function list_entries(string $directory): array {
-        return storage_anchor::list_entries($directory);
-    }
-
-    /**
      * Listet den Materialordner rekursiv, nur Dateien - ortsneutral (Issue
      * #488), fuer {@see \local_coursepilot\external\report_loose_material_files}.
      *
@@ -350,41 +340,42 @@ final class material_files {
     }
 
     /**
-     * Listet eine Ebene des angefragten Orts (Issue #495, Spec #486 §2/§7):
-     * "werkbank" bleibt die bisherige, pointerfreie Auflistung; "bestand"
-     * (Default) folgt dem Kontextpointer (Moodle oder extern, siehe
-     * {@see pointer_reader::list_entries()}). Beide Zweige weisen einen Pfad
-     * am oder unter dem Kontextbereich ab (ortsunabhaengig) und markieren
-     * einen unmittelbaren Kindordner, der selbst der Kontextbereich ist, als
+     * Listet eine Ebene des angefragten Orts (Issue #495, Spec #486 §2/§7)
+     * ueber den Adapter des Ankers ({@see storage_anchor::port()}): "werkbank"
+     * bleibt immer in Private Files, "bestand" (Default) folgt dem
+     * Kontextpointer (Moodle oder extern). Beide Zweige weisen einen Pfad am
+     * oder unter dem Kontextbereich ab (ortsunabhaengig) und markieren einen
+     * unmittelbaren Kindordner, der selbst der Kontextbereich ist, als
      * Eintragstyp "context_area" statt "folder".
      *
      * @param string $locationkey {@see LOCATION_STORE}/{@see LOCATION_WORKBENCH}.
      * @param string $path
      * @return array{directory: string, entries: array}
-     * @throws \moodle_exception invalidmateriallocation, materialpathiscontext, sowie
-     *         wie {@see pointer_reader::list_entries()}.
+     * @throws \moodle_exception invalidmateriallocation, materialpathiscontext,
+     *         materialexternalerror, sowie Orts-/Pointerfehler des Ankers.
      */
     public static function list_entries_for_location(string $locationkey, string $path): array {
-        $location = self::location_for_value($locationkey);
-        $contextlocation = storage_anchor::effective_location(context_files::area());
-        $normalisedpath = self::normalise_path($path);
-        self::guard_not_context_area($location, $contextlocation, $normalisedpath);
-
-        if ($locationkey === self::LOCATION_WORKBENCH) {
-            $directory = self::resolve_directory($path);
-            $result = ['directory' => self::relative_directory($directory), 'entries' => self::list_entries($directory)];
-        } else {
+        [$area, $location, $contextlocation, $normalisedpath] = self::guarded_location($locationkey, $path);
+        try {
+            $entries = storage_anchor::port($area)->list($area, $path);
+        } catch (webdav_error $e) {
             // Eigener Fehlertext statt des KI-gerichteten Kontext-Lücken-
-            // Textes (Issue #526, Spec #486 §8): der Materialbestand ist
-            // keine Kontext-Lücke im Sinne der Spec.
-            $result = pointer_reader::list_entries(self::area(), $path, null, 'materialexternalerror');
+            // Textes (Issue #526, Spec #486 §8).
+            throw pointer_reader::webdav_exception($e, 'materialexternalerror');
         }
 
-        $result['entries'] = array_map(
-            static fn (array $entry): array => self::mark_context_area_entry($entry, $location, $contextlocation, $normalisedpath),
-            $result['entries']
-        );
-        return $result;
+        return [
+            'directory' => $normalisedpath,
+            'entries' => array_map(
+                static fn (array $entry): array => self::mark_context_area_entry(
+                    self::with_contenthash($entry, $location),
+                    $location,
+                    $contextlocation,
+                    $normalisedpath
+                ),
+                $entries
+            ),
+        ];
     }
 
     /**
@@ -395,22 +386,52 @@ final class material_files {
      * @param string $path
      * @return array{path: string, content: string, mimetype: string, size: int,
      *         contenthash: string, timemodified: int}|null
-     * @throws \moodle_exception invalidmateriallocation, materialpathiscontext, sowie
-     *         wie {@see pointer_reader::read_content()}.
+     * @throws \moodle_exception wie {@see list_entries_for_location()}, sowie invalidmaterialpath.
      */
     public static function read_content_for_location(string $locationkey, string $path): ?array {
+        [$area, $location, , $normalisedpath] = self::guarded_location($locationkey, $path);
+        try {
+            $file = storage_anchor::port($area)->read($area, $path);
+        } catch (webdav_error $e) {
+            throw pointer_reader::webdav_exception($e, 'materialexternalerror');
+        }
+        return $file === null ? null : self::with_contenthash($file, $location) + ['path' => $normalisedpath];
+    }
+
+    /**
+     * Bereich und Orte einer Materialanfrage, nachdem der Kontextbereich-
+     * Schutz gegriffen hat.
+     *
+     * @param string $locationkey
+     * @param string $path
+     * @return array{0: storage_area, 1: pointer_location, 2: pointer_location, 3: string}
+     * @throws \moodle_exception invalidmateriallocation, materialpathiscontext
+     */
+    private static function guarded_location(string $locationkey, string $path): array {
         $location = self::location_for_value($locationkey);
         $contextlocation = storage_anchor::effective_location(context_files::area());
         $normalisedpath = self::normalise_path($path);
         self::guard_not_context_area($location, $contextlocation, $normalisedpath);
+        $area = $locationkey === self::LOCATION_WORKBENCH ? self::workbench_area() : self::area();
+        return [$area, $location, $contextlocation, $normalisedpath];
+    }
 
-        if ($locationkey === self::LOCATION_WORKBENCH) {
-            [$directory, $filename] = self::resolve_file($path);
-            $content = self::read_content($directory, $filename);
-            return $content === null ? null : ($content + ['path' => self::relative_file($directory, $filename)]);
-        }
-        // Siehe list_entries_for_location(): eigener Fehlertext, keine Kontext-Lücke.
-        return pointer_reader::read_content(self::area(), $path, null, 'materialexternalerror');
+    /**
+     * Adapter-Pruefwert unter dem oeffentlichen Namen "contenthash" - fuer
+     * beide Orte derselbe Feldsatz. Ordner tragen keinen; der externe
+     * Bestand ebenfalls nicht (Spec #486 §7: der schwaechere
+     * ETag/Aenderungszeit-Ersatz wird hier nicht als Inhaltspruefsumme
+     * ausgegeben).
+     *
+     * @param array $entry Eintrag oder Datei aus {@see storage_port}.
+     * @param pointer_location $location Ort, an dem der Eintrag liegt.
+     * @return array
+     */
+    private static function with_contenthash(array $entry, pointer_location $location): array {
+        $hascontenthash = $location->kind === pointer_location::MOODLE && ($entry['type'] ?? 'file') !== 'folder';
+        $entry['contenthash'] = $hascontenthash ? $entry['checksum'] : '';
+        unset($entry['checksum']);
+        return $entry;
     }
 
     /**

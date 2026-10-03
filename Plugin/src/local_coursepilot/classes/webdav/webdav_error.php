@@ -97,22 +97,19 @@ final class webdav_error extends \RuntimeException {
     /**
      * Das eine Fehlerbild des WebDAV-Speichers (Issue #506): "nicht
      * gefunden" heisst leer, jeder andere Fehler bleibt ein benannter Fehler.
-     * Vorher an vier fast identischen Stellen dupliziert
-     * ({@see \local_coursepilot\pointer_reader::list_entries()}/read_content(),
-     * {@see \local_coursepilot\pointer_writer}, {@see \local_coursepilot\location_selection}) -
-     * jetzt die eine Stelle, die alle vier benutzen. Was "jeder andere
-     * Fehler" konkret bedeutet, bleibt Sache des Aufrufers: `pointer_reader`
-     * uebersetzt sofort in eine Lehrkraft-Meldung, `pointer_writer` reicht den
-     * rohen Fehler unveraendert weiter (sein eigener Ausstand-Fang muss ihn
-     * noch als {@see webdav_error} erkennen).
+     * Geteilt von {@see \local_coursepilot\webdav_storage_port} und
+     * {@see \local_coursepilot\location_selection}. Was "jeder andere
+     * Fehler" konkret bedeutet, bleibt Sache des Aufrufers: der Adapter
+     * reicht den rohen Fehler unveraendert weiter (die Ausstandsbehandlung
+     * muss ihn noch als {@see webdav_error} erkennen), die Ortswahl
+     * uebersetzt sofort in eine Lehrkraft-Meldung.
      *
      * @template T
      * @param self $e
      * @param T $whenmissing Rueckgabewert, wenn $e "nicht gefunden" ist.
      * @param callable(self): \Throwable $onfailure Baut die Ausnahme fuer
      *        jeden anderen Fehler - oder reicht $e unveraendert durch
-     *        ({@see \local_coursepilot\pointer_writer}, dessen eigener
-     *        Ausstand-Fang die rohe {@see webdav_error} noch erkennen muss).
+     *        ({@see \local_coursepilot\webdav_storage_port}).
      * @return T
      * @throws \Throwable Das Ergebnis von $onfailure($e).
      */

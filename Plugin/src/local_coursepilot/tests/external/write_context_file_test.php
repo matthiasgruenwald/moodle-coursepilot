@@ -344,7 +344,7 @@ final class write_context_file_test extends \advanced_testcase {
      * {@see test_rejects_overwriting_a_marked_file_when_switch_off()} fuer
      * Moodle (Issue #515, Spec #486 §6: "allowpersonaldata wirkt unveraendert
      * am Inhalt"). Vor dieser Korrektur reichte der externe Zweig neuen,
-     * unmarkierten Inhalt ungeprueft an {@see \local_coursepilot\pointer_writer::write()}
+     * unmarkierten Inhalt ungeprueft an {@see \local_coursepilot\webdav_storage_port::write()}
      * durch.
      */
     public function test_rejects_overwriting_a_marked_external_file_when_switch_off(): void {
@@ -772,7 +772,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Anlegen ({@see \local_coursepilot\pointer_writer::write()} liest die
+     * Anlegen ({@see \local_coursepilot\webdav_storage_port::write()} liest die
      * Datei zunaechst als fehlend, faehrt dann `put_new()` mit
      * `If-None-Match: *`) gegen eine inzwischen angelegte Datei ergibt 412 -
      * `Konflikt`, und der zwischenzeitlich entstandene Inhalt bleibt

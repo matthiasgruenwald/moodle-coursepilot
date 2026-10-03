@@ -42,14 +42,12 @@ namespace local_coursepilot;
  * {@see material_files::write()} (unveraendert seit vor Issue #539, ohne
  * eigene Ortsverzweigung: die Werkbank ist ohnehin immer Moodle).
  *
- * Auflisten/Lesen des Materialbestands ("bestand") folgen weiterhin dem
- * Kontextpointer ueber {@see material_files::list_entries_for_location()}/
- * {@see material_files::read_content_for_location()} - dort liegt die
- * Ort-Entscheidung (Bestand/Werkbank, Moodle/extern) bereits ortsneutral,
- * dieselbe pointer_reader-Maschinerie, die auch der Kontextbereich extern
- * nutzt. {@see list()}/{@see read_for_location()} sind duenne Fassaden darueber,
- * die nur noch die interne Nachbearbeitung ("etag" entfernen) hier statt im
- * Werkzeug erledigen.
+ * Auflisten/Lesen von Bestand und Werkbank laufen ueber
+ * {@see material_files::list_entries_for_location()}/
+ * {@see material_files::read_content_for_location()} ebenfalls ueber
+ * {@see storage_anchor::port()} (Issue #645) - derselbe Adapter je Ort wie
+ * beim Kontextbereich. {@see list()}/{@see read_for_location()} sind duenne
+ * Fassaden darueber.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -58,10 +56,8 @@ namespace local_coursepilot;
 final class material_area {
 
     /**
-     * Listet eine Ebene des angefragten Materialorts - ortsneutral: kein
-     * Werkzeug sieht das nur intern gebrauchte "etag"-Feld mehr, das
-     * {@see pointer_reader} fuer den externen Bestand durchreicht (Issue
-     * #539, relocated aus {@see \local_coursepilot\external\list_material_files::execute()}).
+     * Listet eine Ebene des angefragten Materialorts - ortsneutral, derselbe
+     * Feldsatz fuer beide Orte (Issue #539/#645).
      *
      * @param string $locationkey {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH}.
      * @param string $path
@@ -69,15 +65,7 @@ final class material_area {
      * @throws \moodle_exception wie {@see material_files::list_entries_for_location()}.
      */
     public static function list(string $locationkey, string $path): array {
-        $result = material_files::list_entries_for_location($locationkey, $path);
-        $result['entries'] = array_map(
-            static function (array $entry): array {
-                unset($entry['etag']);
-                return $entry;
-            },
-            $result['entries']
-        );
-        return $result;
+        return material_files::list_entries_for_location($locationkey, $path);
     }
 
     /**
@@ -86,7 +74,7 @@ final class material_area {
      * Quell-Lesepfad von {@see \local_coursepilot\external\crop_material_file}
      * (Issue #539). Duenne Fassade ueber {@see material_files::read_content_for_location()}:
      * die Ort-Entscheidung (Bestand/Werkbank, Moodle/extern) bleibt dort,
-     * ortsneutral ueber {@see pointer_reader}.
+     * ortsneutral ueber {@see storage_anchor::port()}.
      *
      * @param string $locationkey {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH}.
      * @param string $path
@@ -165,12 +153,13 @@ final class material_area {
     }
 
     /**
-     * Der Ablage-Vertrag-Adapter dieser Fassade - immer Private Files
-     * (Issue #539): die Werkbank kennt keinen externen Ort, siehe Klassendoc.
+     * Der Ablage-Vertrag-Adapter der Werkbank ueber den Anker - immer
+     * Private Files (Issue #539/#645): die Werkbank kennt keinen externen
+     * Ort ({@see storage_area::$externalfallback}), siehe Klassendoc.
      *
      * @return storage_port
      */
     private static function port(): storage_port {
-        return new private_files_storage_port();
+        return storage_anchor::port(material_files::workbench_area());
     }
 }
