@@ -22,10 +22,8 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
-use local_coursepilot\activity_file_trash;
 use local_coursepilot\catalog\module_catalog;
 use local_coursepilot\catalog\learner_locks;
-use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\write_target;
 use local_coursepilot\material_files;
@@ -62,20 +60,8 @@ defined('MOODLE_INTERNAL') || die();
 class update_module_settings extends external_api {
 
     /**
-     * Pseudofelder, deren Patch-Wert kein Skalar ist, sondern eine Liste von
-     * Materialordner-Pfaden (Spec 0018 §4.2, Ticket #429) - der Verweisweg,
-     * der die Dateisperre aus Spec 0015 §4.3 fuer assign aufhebt. Vor dem
-     * eigentlichen update_moduleinfo()-Aufruf wird jeder Pfad zu einer
-     * bestehenden Materialdatei aufgeloest und in einen Dateimanager-Entwurf
-     * kopiert ({@see material_files::resolve_into_draft()}) - derselbe
-     * Freigabeweg wie jeder andere Patch (write_target::update() laeuft vorher,
-     * unveraendert), kein Sonderweg fuer Binaerdaten.
-     *
-     * @var array<string, array<string, array{component: string, filearea: string}>>
-     */
-    /**
-     * Oeffentlicher Blick auf {@see self::MATERIAL_REFERENCE_PSEUDOFIELDS} fuer
-     * eine Aktivitaetsart - wiederverwendet statt dupliziert von
+     * Die Materialreferenz-Pseudofelder (write_options() "material_reference_fields")
+     * einer Aktivitaetsart - wiederverwendet statt dupliziert von
      * {@see \local_coursepilot\external\restore_activity_version}, das denselben
      * component/filearea-Satz braucht, um ersetzte Dateien aus dem Papierkorb
      * ({@see \local_coursepilot\activity_file_trash}) zurueckzuholen (Spec 0018
@@ -89,27 +75,6 @@ class update_module_settings extends external_api {
         return $catalogclass === null ? [] : ($catalogclass::write_options()['material_reference_fields'] ?? []);
     }
 
-    /**
-     * Pseudofeld je Aktivitaetsart, dessen Pfadliste NICHT an eine eigene
-     * Datei-Filearea angehaengt wird, sondern in den Draft-Dateibereich der
-     * Intro selbst (Spec 0018 §4.2/§5, Issue #433: "Fachabbildung in die
-     * Aufgabenbeschreibung einbetten") - anders als
-     * {@see self::MATERIAL_REFERENCE_PSEUDOFIELDS} deshalb kein eigener
-     * moduleinfo-Eintrag, sondern {@see self::resolve_intro_image_pseudofield()}
-     * setzt direkt $moduleinfo->introeditor['itemid'].
-     *
-     * @var array<string, string>
-     */
-    /**
-     * Pseudofelder, die zwar {@see \local_coursepilot\catalog\module_catalog::blocklist()}
-     * nicht mehr sperrt (fuer create_module frei, Issue #434), auf DIESEM
-     * Patch-Weg aber scheitern muessen statt still wirkungslos zu bleiben -
-     * siehe {@see self::MATERIAL_REFERENCE_PSEUDOFIELDS} fuer die Begruendung
-     * (folder_update_instance() liest den Draft-Itemid aus $_REQUEST, nicht
-     * aus $data->files).
-     *
-     * @var array<string, string[]>
-     */
     /**
      * @return external_function_parameters
      */
@@ -127,7 +92,7 @@ class update_module_settings extends external_api {
 
     /**
      * Roher Schreibweg fuer genau EIN Materialreferenz-Pseudofeld
-     * ({@see self::MATERIAL_REFERENCE_PSEUDOFIELDS}), mit einem bereits
+     * ({@see self::material_reference_specs()}), mit einem bereits
      * fertigen Dateimanager-Entwurf statt Materialordner-Pfaden - fuer
      * {@see \local_coursepilot\external\restore_activity_version}, das Dateien
      * aus dem Papierkorb ({@see \local_coursepilot\activity_file_trash}) statt
@@ -139,7 +104,7 @@ class update_module_settings extends external_api {
      * dem eigenen Aenderungsverlauf/Papierkorb, nicht aus Client-Eingaben.
      *
      * @param int $cmid
-     * @param string $fieldname Eines der MATERIAL_REFERENCE_PSEUDOFIELDS-Felder dieser Aktivitaetsart.
+     * @param string $fieldname Eines der material_reference_specs()-Felder dieser Aktivitaetsart.
      * @param int $draftitemid Fertiger Dateimanager-Entwurf, z.B. aus
      *        {@see \local_coursepilot\activity_file_trash::resolve_restore_into_draft()}.
      * @return void
@@ -151,7 +116,7 @@ class update_module_settings extends external_api {
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
-        $moduleinfo->{self::moduleinfo_property($fieldname)} = $draftitemid;
+        $moduleinfo->{$fieldname} = $draftitemid;
         \update_moduleinfo($cm, $moduleinfo, $course);
     }
 
@@ -168,8 +133,6 @@ class update_module_settings extends external_api {
         string $location = material_files::LOCATION_STORE,
         array $confirmlearnerlocks = []
     ): array {
-        global $CFG;
-
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
             'fields_json' => $fieldsjson,
@@ -178,7 +141,7 @@ class update_module_settings extends external_api {
         ]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
-        $context = self::authorise($cm);
+        self::authorise($cm);
 
         $modname = (string) $cm->modname;
         $catalogclass = self::catalog_for($modname);
@@ -188,12 +151,21 @@ class update_module_settings extends external_api {
         // Lese-Werkzeug ruft assert_writable() auf).
         write_gate::assert_writable($modname);
 
-        [$patch, $before] = self::decode_and_validate_patch(
-            $catalogclass, $cmid, $params['fields_json'], $params[learner_locks::PARAMETER]);
-
-        $course = get_course((int) $cm->course);
-        require_once($CFG->dirroot . '/course/modlib.php');
-        self::apply_patch_to_module($cm, $course, $modname, $catalogclass, $context, $before, $patch, $params['location']);
+        $patch = json_decode($params['fields_json'], true);
+        if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
+            throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
+        }
+        $before = self::read_settings($cmid);
+        // Rules, file checks and the native sequence live in the catalog core (#646, #647).
+        $patch = write_target::update_activity(
+            $catalogclass,
+            $cm,
+            get_course((int) $cm->course),
+            $patch,
+            $before,
+            $params['location'],
+            $params[learner_locks::PARAMETER]
+        );
 
         $after = self::read_settings($cmid);
         [$changes, $sideeffects] = self::diff_and_side_effects($modname, $patch, $before, $after);
@@ -228,253 +200,6 @@ class update_module_settings extends external_api {
         require_capability('moodle/course:manageactivities', $context);
 
         return $context;
-    }
-
-    /**
-     * Decodes fields_json and lets the catalog write target decide every rule
-     * against the current state before anything is written (#646).
-     *
-     * @param class-string<module_catalog> $catalogclass
-     * @param int $cmid
-     * @param string $fieldsjson
-     * @param string[] $confirmedlocks
-     * @return array{0: array, 1: array} [Patch, aktuelle Einstellungen vor dem Patch]
-     */
-    private static function decode_and_validate_patch(
-        string $catalogclass,
-        int $cmid,
-        string $fieldsjson,
-        array $confirmedlocks
-    ): array {
-        $patch = json_decode($fieldsjson, true);
-        if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
-            throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
-        }
-
-        pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $patch);
-        // Issue #523: einmal gelesen und an execute() zurueckgegeben, statt
-        // dort ein zweites Mal denselben Stand zu lesen (Review-Fund am
-        // Extraktions-Schnitt: reiner Performance-/DRY-Fund, keine
-        // Verhaltensaenderung).
-        $before = self::read_settings($cmid);
-        write_target::update($catalogclass, $patch, $before, $confirmedlocks);
-
-        return [$patch, $before];
-    }
-
-    /**
-     * Wendet den Patch auf das native Formularweg-Objekt an und schreibt es
-     * (Issue #523: aus execute() ausgelagert).
-     *
-     * @param \stdClass $cm
-     * @param \stdClass $course
-     * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
-     * @param \context_module $context
-     * @param array $before
-     * @param array $patch
-     * @param string $locationkey
-     */
-    private static function apply_patch_to_module(
-        \stdClass $cm,
-        \stdClass $course,
-        string $modname,
-        string $catalogclass,
-        \context_module $context,
-        array $before,
-        array $patch,
-        string $locationkey
-    ): void {
-        // get_moduleinfo_data() gibt das Tupel [cm, context, module, data, cw]
-        // zurueck (course/modlib.php) - "data" (Positon 3) ist das
-        // Formularweg-Feldobjekt, das ueberlagert und zurueckgeschrieben wird.
-        [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
-        pseudofield_carry_forward::apply($modname, $catalogclass, $moduleinfo, $before, $cm, $patch);
-        self::resolve_material_reference_pseudofields($modname, $context, $patch, $locationkey);
-        self::resolve_intro_image_pseudofield($modname, $context, $moduleinfo, $patch, $locationkey);
-        foreach ($patch as $fieldname => $value) {
-            $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
-        }
-
-        // Ein reiner "intro"-Patch wuerde sonst stillschweigend verpuffen -
-        // siehe pseudofield_carry_forward::sync_intro_editor_from_patch().
-        pseudofield_carry_forward::sync_intro_editor_from_patch($moduleinfo, $patch);
-
-        \update_moduleinfo($cm, $moduleinfo, $course);
-    }
-
-    /**
-     * Katalogfeldname => tatsaechlicher $moduleinfo-Eigenschaftsname -
-     * identische Abbildung wie {@see create_module::moduleinfo_property()}.
-     * Einzige Ausnahme "idnumber": get_moduleinfo_data() liefert das
-     * Feldobjekt bereits mit der realen Formularweg-Eigenschaft
-     * "cmidnumber" (course/modlib.php: `$data->cmidnumber = $cm->idnumber`),
-     * update_moduleinfo() liest ebenso nur `$moduleinfo->cmidnumber`
-     * (course/modlib.php:70) - ein Patch, der stattdessen "idnumber" auf das
-     * Objekt schreibt, würde folgenlos verpuffen (das ungenutzte
-     * "cmidnumber" bliebe unveraendert). "idnumber" bleibt trotzdem der
-     * lehrkraftverstaendliche Katalogname (Spec 0015 §2.3, Ticket #390).
-     *
-     * @param string $fieldname
-     * @return string
-     */
-    private static function moduleinfo_property(string $fieldname): string {
-        return $fieldname === 'idnumber' ? 'cmidnumber' : $fieldname;
-    }
-
-    /**
-     * Loest Materialordner-Verweis-Pseudofelder ({@see self::MATERIAL_REFERENCE_PSEUDOFIELDS})
-     * im Patch zu Dateimanager-Entwurfs-Itemids auf, bevor sie auf
-     * $moduleinfo landen - Spec 0018 §4.2: "Ab hier ist der Weg fuer alle
-     * Herkuenfte derselbe: die Datei landet immer erst im Materialordner,
-     * die Aktivitaet verweist darauf." Ohne Treffer keine Wirkung, kein
-     * zusaetzlicher Dateizugriff.
-     *
-     * @param string $modname
-     * @param \context_module $context Modulkontext - Ziel der Dateiablage.
-     * @param array $patch Wird in-place ersetzt: Pfadliste -> Entwurfs-Itemid.
-     * @param string $locationkey {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
-     *        Quelle der Pfade (Issue #496).
-     * @return void
-     * @throws moodle_exception materialfilenotfound / invalidmaterialpath / invalidmateriallocation /
-     *         materialpathiscontext / materialembedtoolarge
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
-     */
-    private static function resolve_material_reference_pseudofields(
-        string $modname,
-        \context_module $context,
-        array &$patch,
-        string $locationkey
-    ): void {
-        $catalogclass = registry::for($modname);
-        $specs = $catalogclass::write_options()['material_reference_fields'] ?? [];
-        $relevant = array_intersect_key($specs, $patch);
-        if (!$relevant) {
-            return;
-        }
-
-        material_files::require_manage_own_files();
-        foreach ($relevant as $fieldname => $spec) {
-            if (!is_array($patch[$fieldname])) {
-                throw new moodle_exception('invalidmaterialreferencelist', 'local_coursepilot', '', $fieldname);
-            }
-            self::trash_files_about_to_be_replaced($context, $spec, $patch[$fieldname]);
-            $patch[$fieldname] = material_files::resolve_into_draft(
-                $context->id,
-                $spec['component'],
-                $spec['filearea'],
-                0,
-                $patch[$fieldname],
-                $locationkey
-            );
-        }
-    }
-
-    /**
-     * Loest ein {@see self::INTRO_IMAGE_PSEUDOFIELDS}-Pseudofeld auf (Spec
-     * 0018 §4.2/§5, Issue #433): jeder Materialordner-Pfad muss zur engeren
-     * Einbett-Whitelist gehoeren (§6) - eine andere Endung (z.B. ein PDF)
-     * scheitert mit klarer Meldung statt still zu verpuffen. Ein bereits
-     * unter demselben Dateinamen eingebettetes Bild wird wie bei
-     * introattachments zuerst in den Papierkorb verdraengt (Spec 0018 §9.1,
-     * {@see self::trash_files_about_to_be_replaced()}). Anders als
-     * {@see self::resolve_material_reference_pseudofields()} landet das
-     * Ergebnis nicht in $patch (introimages ist keine echte moduleinfo-
-     * Eigenschaft), sondern direkt in $moduleinfo->introeditor['itemid'] -
-     * update_moduleinfo() loest @@PLUGINFILE@@-Verweise im "intro"-Patch
-     * (s.o.) gegen genau diesen Draft-Dateibereich auf.
-     *
-     * @param string $modname
-     * @param \context_module $context
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt (introeditor-Itemid).
-     * @param array $patch Wird in-place bereinigt: introimages entfernt.
-     * @param string $locationkey {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
-     *        Quelle der Pfade (Issue #496).
-     * @return void
-     * @throws moodle_exception invalidmaterialreferencelist / materialfiledisallowedtype /
-     *         materialfilenotfound / invalidmaterialpath / invalidmateriallocation / materialpathiscontext /
-     *         materialembedtoolarge
-     */
-    private static function resolve_intro_image_pseudofield(
-        string $modname,
-        \context_module $context,
-        \stdClass $moduleinfo,
-        array &$patch,
-        string $locationkey
-    ): void {
-        $catalogclass = registry::for($modname);
-        $fieldname = $catalogclass::write_options()['intro_image_field'] ?? null;
-        if ($fieldname === null || !array_key_exists($fieldname, $patch)) {
-            return;
-        }
-
-        $paths = $patch[$fieldname];
-        if (!is_array($paths)) {
-            throw new moodle_exception('invalidmaterialreferencelist', 'local_coursepilot', '', $fieldname);
-        }
-
-        // Capability zuerst pruefen, wie resolve_material_reference_pseudofields()
-        // es fuer introattachments schon tut - sonst saehe ein Aufrufer ohne
-        // moodle/user:manageownfiles die Dateityp-Meldung, bevor die
-        // Berechtigung ueberhaupt geprueft wurde.
-        material_files::require_manage_own_files();
-
-        foreach ($paths as $path) {
-            if (!is_string($path) || !material_files::is_allowed_embed_image_extension($path)) {
-                // Dieselbe Meldung wie beim Upload (materialfiledisallowedtype) -
-                // nur die Whitelist ist enger (Einbett- statt Upload-Whitelist, §6).
-                throw new moodle_exception('materialfiledisallowedtype', 'local_coursepilot', '', (object) [
-                    'filename' => (string) $path,
-                    'allowed' => implode(', ', material_files::allowed_embed_image_extensions()),
-                ]);
-            }
-        }
-
-        $introspec = ['component' => 'mod_' . $modname, 'filearea' => 'intro'];
-        self::trash_files_about_to_be_replaced($context, $introspec, $paths);
-        $draftitemid = material_files::resolve_into_draft(
-            $context->id, $introspec['component'], $introspec['filearea'], 0, $paths, $locationkey);
-        if (!isset($moduleinfo->introeditor) || !is_array($moduleinfo->introeditor)) {
-            $moduleinfo->introeditor = ['text' => $moduleinfo->intro ?? '', 'format' => $moduleinfo->introformat ?? FORMAT_HTML];
-        }
-        $moduleinfo->introeditor['itemid'] = $draftitemid;
-
-        unset($patch[$fieldname]);
-    }
-
-    /**
-     * Verdraengt jede derzeit angehaengte Datei, deren Dateiname unter den
-     * neu referenzierten Materialordner-Pfaden erneut vorkommt, in den
-     * Papierkorb ({@see activity_file_trash}) - BEVOR update_moduleinfo()
-     * lauft und Moodle-Core den alten `files`-Datensatz tief in
-     * file_save_draft_area_files() loescht (Spec 0018 §9.1, Issue #432).
-     * Ohne Namenskollision keine Wirkung: reines Hinzufuegen bleibt
-     * kostenlos.
-     *
-     * @param \context_module $context
-     * @param array{component: string, filearea: string} $spec
-     * @param array $paths Materialordner-Pfade aus dem Patch - Strings oder
-     *        `['path' => ..., 'target_folder' => ...]`-Objekte (Issue #434).
-     * @return void
-     */
-    private static function trash_files_about_to_be_replaced(\context_module $context, array $spec, array $paths): void {
-        $newfilenames = array_map(
-            static fn($entry): string => basename(material_files::entry_path($entry)),
-            $paths
-        );
-        $existing = get_file_storage()->get_area_files(
-            $context->id,
-            $spec['component'],
-            $spec['filearea'],
-            0,
-            'filename',
-            false
-        );
-        foreach ($existing as $file) {
-            if (in_array($file->get_filename(), $newfilenames, true)) {
-                activity_file_trash::trash($file, $context->instanceid);
-            }
-        }
     }
 
     /**

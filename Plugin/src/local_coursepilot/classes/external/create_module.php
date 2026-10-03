@@ -24,7 +24,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\module_catalog;
 use local_coursepilot\catalog\learner_locks;
-use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\write_target;
 use local_coursepilot\material_files;
@@ -56,8 +55,10 @@ defined('MOODLE_INTERNAL') || die();
  * laeuft deshalb VOR add_moduleinfo() ueber den normalen
  * Pflichtfeld-Mechanismus ({@see \local_coursepilot\catalog\write_target::create()}).
  * "folder" bleibt anlegbar - ein leerer Ordner ist gueltig, "files" ist dort
- * optional und akzeptiert mehrere Pfade samt Zielunterordner (Spec 0018 §4.2,
- * {@see self::resolve_material_reference_pseudofields()}).
+ * optional und akzeptiert mehrere Pfade samt Zielunterordner (Spec 0018 §4.2).
+ * Normalisierung, Pruefung, Dateiaufloesung und add_moduleinfo() laufen als
+ * eine Folge in {@see \local_coursepilot\catalog\write_target::create_activity()}
+ * (#647) - dieser Endpunkt ist nur noch der External-Adapter.
  *
  * Feldbuendel (Spec 0015 §2.4) sind bewusst KEIN eigener Endpunkt-Parameter:
  * "Sie überleben als benannte Feldbündel im Katalog, nicht als
@@ -109,8 +110,6 @@ final class create_module extends external_api {
         string $location = material_files::LOCATION_STORE,
         array $confirmlearnerlocks = []
     ): array {
-        global $CFG;
-
         $params = self::validate_parameters(self::execute_parameters(), [
             'courseid' => $courseid,
             'sectionnum' => $sectionnum,
@@ -120,7 +119,7 @@ final class create_module extends external_api {
             learner_locks::PARAMETER => $confirmlearnerlocks,
         ]);
 
-        $coursecontext = self::authorise($params['courseid']);
+        self::authorise($params['courseid']);
 
         $modname = $params['modname'];
         $catalogclass = self::catalog_for($modname);
@@ -129,13 +128,19 @@ final class create_module extends external_api {
         // eine Katalogabweichung ergeben hat. Lesen bleibt unberuehrt.
         write_gate::assert_writable($modname);
 
-        [$merged, $defaults] = self::prepare_merged_fields($catalogclass, $coursecontext, $params);
-        $modulefields = $merged;
-        self::resolve_intro_image_pseudofield($modname, $catalogclass, $coursecontext, $modulefields, $params['location']);
-
-        $course = get_course($params['courseid']);
-        require_once($CFG->dirroot . '/course/modlib.php');
-        $cmid = self::create_activity($course, $modname, $catalogclass, $params['sectionnum'], $modulefields, $defaults);
+        $merged = json_decode($params['fields_json'], true);
+        if (!is_array($merged) || json_last_error() !== JSON_ERROR_NONE) {
+            throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
+        }
+        // Rules, file checks and the native sequence live in the catalog core (#646, #647).
+        ['cmid' => $cmid, 'changes' => $merged] = write_target::create_activity(
+            $catalogclass,
+            get_course($params['courseid']),
+            $params['sectionnum'],
+            $merged,
+            $params['location'],
+            $params[learner_locks::PARAMETER]
+        );
 
         $after = self::read_settings($cmid);
         [$createdfields, $sideeffects] = self::report_and_side_effects($modname, $merged, $after);
@@ -172,83 +177,6 @@ final class create_module extends external_api {
     }
 
     /**
-     * Decodes fields_json, normalises pseudofields and lets the catalog write
-     * target decide every rule before any file is resolved (#646).
-     *
-     * @param class-string<module_catalog> $catalogclass
-     * @param \context_course $coursecontext
-     * @param array $params Validated parameters of execute().
-     * @return array{0: array, 1: array} Named fields ready for add_moduleinfo(), filled form defaults.
-     */
-    private static function prepare_merged_fields(string $catalogclass, \context_course $coursecontext, array $params): array {
-        $merged = json_decode($params['fields_json'], true);
-        if (!is_array($merged) || json_last_error() !== JSON_ERROR_NONE) {
-            throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
-        }
-
-        self::expand_scalar_to_repeated_fields($catalogclass, $merged);
-        // Vor derive_content_from_editor_pseudofield(): die steigt bei einem
-        // Nicht-Array still aus, und die Seite entstuende leer (#405).
-        pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $merged);
-        self::derive_content_from_editor_pseudofield($catalogclass, $merged);
-        // Before the required-field check: an empty path list ("files": [])
-        // counts as not named, otherwise a resource without main file would
-        // slip through with an empty draft (review finding on #434).
-        self::drop_empty_material_reference_pseudofields($catalogclass, $merged);
-
-        $target = write_target::create($catalogclass, $merged, $params[learner_locks::PARAMETER]);
-        self::resolve_material_reference_pseudofields($catalogclass, $coursecontext, $merged, $params['location']);
-
-        return [$merged, $target->defaults()];
-    }
-
-    /**
-     * Legt die Aktivitaet nativ an (Issue #523: aus execute() ausgelagert).
-     *
-     * @param \stdClass $course
-     * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
-     * @param int $sectionnum
-     * @param array $merged
-     * @param array $defaults Filled form defaults from the write target.
-     * @return int Die neue Kursmodul-ID.
-     */
-    private static function create_activity(
-        \stdClass $course,
-        string $modname,
-        string $catalogclass,
-        int $sectionnum,
-        array $merged,
-        array $defaults
-    ): int {
-        // can_add_moduleinfo() prueft die native Capability (s.o.), ermittelt
-        // die Modul-ID und legt den Zielabschnitt bei Bedarf an
-        // (course/modlib.php).
-        [$module] = \can_add_moduleinfo($course, $modname, $sectionnum);
-
-        $moduleinfo = new \stdClass();
-        $moduleinfo->modulename = $modname;
-        $moduleinfo->module = (int) $module->id;
-        $moduleinfo->section = $sectionnum;
-        foreach ($defaults as $fieldname => $value) {
-            $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
-        }
-        // mod_folder reads "files" (draft itemid) unguarded in
-        // folder_add_instance(); an empty folder needs a "no draft" placeholder.
-        foreach ($catalogclass::write_options()['missing_form_values'] ?? [] as $field => $value) {
-            if (!property_exists($moduleinfo, $field)) {
-                $moduleinfo->{$field} = $value;
-            }
-        }
-        foreach ($merged as $fieldname => $value) {
-            $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
-        }
-
-        $created = \add_moduleinfo($moduleinfo, $course);
-        return (int) $created->coursemodule;
-    }
-
-    /**
      * Die Katalogklasse fuer $modname, sofern der Schreibweg dieser Endpunkt
      * ist (Spec 0015 §3.1: manche Aktivitaetsarten haben ein eigenes
      * Einzelwerkzeug, z.B. quiz -> update_quiz_settings) - identische Pruefung
@@ -270,195 +198,6 @@ final class create_module extends external_api {
             );
         }
         return $catalogclass;
-    }
-
-    /**
-     * Eine leere Pfadliste ("files": []) zaehlt wie ein nicht genanntes Feld
-     * (Issue #434, Review-Fund: sonst rutscht sie an
-     * {@see \local_coursepilot\catalog\write_target::create()} vorbei und
-     * resolve_into_draft() liefert einen gueltigen, aber LEEREN Entwurf -
-     * eine resource ohne Hauptdatei waere die Folge). Nur Listen werden
-     * hier entfernt - ein Nicht-Array bleibt stehen und scheitert weiter
-     * unten in {@see self::resolve_material_reference_pseudofields()} mit
-     * der generischen invalidmaterialreferencelist-Meldung.
-     *
-     * @param string $modname
-     * @param array $merged Wird in-place bereinigt.
-     * @return void
-     */
-    private static function drop_empty_material_reference_pseudofields(string $catalogclass, array &$merged): void {
-        foreach (array_keys($catalogclass::write_options()['material_reference_fields'] ?? []) as $fieldname) {
-            if (array_key_exists($fieldname, $merged) && $merged[$fieldname] === []) {
-                unset($merged[$fieldname]);
-            }
-        }
-    }
-
-    /**
-     * Loest Materialordner-Verweis-Pseudofelder ({@see self::MATERIAL_REFERENCE_PSEUDOFIELDS})
-     * im zusammengefuehrten Feldsatz zu Dateimanager-Entwurfs-Itemids auf,
-     * bevor add_moduleinfo() laeuft (Spec 0018 §4.2, Issue #434) - identisches
-     * Muster wie {@see update_module_settings::resolve_material_reference_pseudofields()},
-     * hier ohne Papierkorb-Verdraengung (es gibt noch keine bestehende
-     * Aktivitaet, die etwas zu verdraengen haette). Ohne Treffer keine
-     * Wirkung, kein zusaetzlicher Dateizugriff.
-     *
-     * @param string $modname
-     * @param context_course $coursecontext targetcontextid fuer
-     *        file_prepare_draft_area() - der Modulkontext existiert beim
-     *        Anlegen noch nicht.
-     * @param array $merged Wird in-place ersetzt: Pfadliste -> Entwurfs-Itemid.
-     * @param string $location {@see \local_coursepilot\material_files::LOCATION_STORE}/{@see \local_coursepilot\material_files::LOCATION_WORKBENCH}
-     *        - Quelle der Pfade (Issue #496).
-     * @return void
-     * @throws moodle_exception materialfilenotfound / invalidmaterialpath / invalidmateriallocation /
-     *         materialpathiscontext / invalidmaterialreferencelist / materialembedtoolarge
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
-     */
-    private static function resolve_material_reference_pseudofields(
-        string $catalogclass,
-        context_course $coursecontext,
-        array &$merged,
-        string $location
-    ): void {
-        $specs = $catalogclass::write_options()['material_reference_fields'] ?? [];
-        $relevant = array_intersect_key($specs, $merged);
-        if (!$relevant) {
-            return;
-        }
-
-        material_files::require_manage_own_files();
-        foreach ($relevant as $fieldname => $spec) {
-            if (!is_array($merged[$fieldname])) {
-                throw new moodle_exception('invalidmaterialreferencelist', 'local_coursepilot', '', $fieldname);
-            }
-            $merged[$fieldname] = material_files::resolve_into_draft(
-                $coursecontext->id,
-                $spec['component'],
-                $spec['filearea'],
-                0,
-                $merged[$fieldname],
-                $location
-            );
-        }
-    }
-
-    /**
-     * Resolves catalog intro images before creation. The course context is
-     * only used to prepare the draft; add_moduleinfo() saves it to the new
-     * module context. Keep the original fields separately for the report.
-     *
-     * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
-     * @param context_course $coursecontext
-     * @param array $fields Replaces the image pseudofield with introeditor.
-     * @param string $location
-     */
-    private static function resolve_intro_image_pseudofield(
-        string $modname,
-        string $catalogclass,
-        context_course $coursecontext,
-        array &$fields,
-        string $location
-    ): void {
-        $fieldname = $catalogclass::write_options()['intro_image_field'] ?? null;
-        if ($fieldname === null || !array_key_exists($fieldname, $fields)) {
-            return;
-        }
-        $paths = $fields[$fieldname];
-        if (!is_array($paths) || !array_is_list($paths)) {
-            throw new moodle_exception('invalidmaterialreferencelist', 'local_coursepilot', '', $fieldname);
-        }
-        material_files::require_manage_own_files();
-        foreach ($paths as $path) {
-            if (!is_string($path) || !material_files::is_allowed_embed_image_extension($path)) {
-                throw new moodle_exception('materialfiledisallowedtype', 'local_coursepilot', '', (object) [
-                    'filename' => is_string($path) ? $path : '',
-                    'allowed' => implode(', ', material_files::allowed_embed_image_extensions()),
-                ]);
-            }
-        }
-        $draftitemid = material_files::resolve_into_draft(
-            $coursecontext->id, 'mod_' . $modname, 'intro', 0, $paths, $location);
-        $fields['introeditor'] = [
-            'text' => $fields['intro'] ?? '',
-            'format' => $fields['introformat'] ?? FORMAT_HTML,
-            'itemid' => $draftitemid,
-        ];
-        unset($fields[$fieldname]);
-    }
-
-    /**
-     * Das Buendel "allocation" (choice) fuehrt "limit" als EINEN Wert
-     * (dieselbe Begrenzung fuer jede Option, siehe
-     * {@see \local_coursepilot\catalog\choice::bundles()}), waehrend das echte
-     * Formularfeld ein Array je Option ist. Ohne diese Aufloesung wuerde
-     * choice_add_instance() den skalaren Wert als $choice->limit[$key]
-     * fehlinterpretieren. Nur choice hat dieses Buendelmuster - ponytail: bei
-     * Bedarf fuer weitere Buendel mit demselben Muster verallgemeinern.
-     *
-     * @param string $modname
-     * @param array $merged Wird in-place ergaenzt.
-     * @return void
-     */
-    private static function expand_scalar_to_repeated_fields(string $catalogclass, array &$merged): void {
-        foreach ($catalogclass::write_options()['scalar_to_repeated'] ?? [] as $field => $reference) {
-            if (array_key_exists($field, $merged) && !is_array($merged[$field]) && isset($merged[$reference]) && is_array($merged[$reference])) {
-                $merged[$field] = array_fill(0, count($merged[$reference]), (int) $merged[$field]);
-            }
-        }
-    }
-
-    /**
-     * mod_page: das Pseudofeld "page" (Editor-Array text/format/itemid) ist
-     * der einzige Formularweg zu den echten Spalten "content"/"contentformat"
-     * (mod/page/lib.php: page_add_instance() liest sie nur aus $data->page,
-     * UND NUR wenn ein $mform-Objekt vorhanden ist - add_moduleinfo() ruft
-     * *_add_instance() hier ohne $mform (Spec 0015 §3.4 nennt keinen
-     * Formularobjekt-Aufbau), die Umrechnung muss deshalb hier selbst
-     * passieren, nicht erst in Moodle. Ohne diesen Schritt bliebe "content"
-     * das per Katalog als Pflichtfeld ohne Default gefuehrte Feld dauerhaft
-     * unbelegt, obwohl die Lehrkraft "page" genannt hat.
-     *
-     * ponytail: nur page hat dieses Editor-nach-Spalte-Muster beim Anlegen
-     * (siehe {@see update_module_settings::REQUIRED_EDITOR_PSEUDOFIELDS} fuer
-     * dieselbe Beobachtung auf dem Patch-Weg) - bei einer weiteren
-     * Aktivitaetsart mit demselben Muster hier ergaenzen.
-     *
-     * @param string $modname
-     * @param array $merged Wird in-place ergaenzt.
-     * @return void
-     */
-    private static function derive_content_from_editor_pseudofield(string $catalogclass, array &$merged): void {
-        foreach ($catalogclass::write_options()['editor_content'] ?? [] as $editor => $fields) {
-            if (!isset($merged[$editor]) || !is_array($merged[$editor])) {
-                continue;
-            }
-            if (!array_key_exists($fields[0], $merged)) {
-                $merged[$fields[0]] = (string) ($merged[$editor]['text'] ?? '');
-            }
-            if (!array_key_exists($fields[1], $merged)) {
-                $merged[$fields[1]] = (int) ($merged[$editor]['format'] ?? FORMAT_HTML);
-            }
-        }
-    }
-
-    /**
-     * Katalogfeldname => tatsaechlicher $moduleinfo-Eigenschaftsname. Fuer
-     * fast jedes Feld identisch - Ausnahme "idnumber"
-     * ({@see \local_coursepilot\catalog\shared_block}): der echte Formularweg-
-     * Name ist "cmidnumber" (course/modlib.php: get_moduleinfo_data() setzt
-     * `$data->cmidnumber = $cm->idnumber`, add_moduleinfo() liest
-     * `$moduleinfo->cmidnumber`) - "idnumber" bleibt der lehrkraftverstaendliche
-     * Katalogname (Spec 0015 §2.3), wird hier aber auf die reale Eigenschaft
-     * abgebildet, damit edit_module_post_actions() (course/modlib.php) nicht
-     * mit einer undefinierten Eigenschaft auf "cmidnumber" laeuft.
-     *
-     * @param string $fieldname
-     * @return string
-     */
-    private static function moduleinfo_property(string $fieldname): string {
-        return $fieldname === 'idnumber' ? 'cmidnumber' : $fieldname;
     }
 
     /**

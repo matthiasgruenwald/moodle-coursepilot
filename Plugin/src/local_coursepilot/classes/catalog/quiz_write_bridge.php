@@ -194,7 +194,7 @@ final class quiz_write_bridge {
 
     /**
      * Katalogfeldname => tatsaechlicher $moduleinfo-Eigenschaftsname -
-     * identische Ausnahme wie {@see \local_coursepilot\external\update_module_settings::moduleinfo_property()}.
+     * identische Ausnahme wie der Modulschreibweg in {@see write_target}.
      *
      * @param string $fieldname
      * @return string
