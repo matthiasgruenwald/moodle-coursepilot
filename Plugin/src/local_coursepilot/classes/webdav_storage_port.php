@@ -214,7 +214,7 @@ final class webdav_storage_port implements storage_port {
     /**
      * @inheritDoc
      */
-    public function append(storage_area $area, string $path, string $content): array {
+    public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = implode('/', [...$folders, $filename]);
 
@@ -224,6 +224,7 @@ final class webdav_storage_port implements storage_port {
             $fileurl = $resolved->file_url($this->relative_path($folders, $filename));
 
             $existing = $this->current_entry($client, $fileurl);
+            $this->require_checksum_match($existing, $expectedchecksum, $clientpath);
             $this->ensure_directory($resolved, $folders);
 
             $newcontent = $existing === null ? $content : ($client->get($fileurl) . $content);

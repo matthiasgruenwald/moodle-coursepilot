@@ -124,6 +124,17 @@ final class context_area_pending_test extends \advanced_testcase {
         $this->assertSame([], pending_write_notice::list_grouped());
     }
 
+    public function test_append_conflict_from_the_port_is_not_recorded_as_an_ausstand(): void {
+        $port = $this->failing_port(new storage_conflict_exception('journal.md'));
+        try {
+            $this->invoke_persist_append($port, 'journal.md', 'line', pending_write_translation::OP_APPEND, 0);
+            $this->fail('A checksum conflict must remain a conflict.');
+        } catch (storage_conflict_exception $e) {
+            $this->assertSame('storageconflict', $e->errorcode);
+        }
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
     /**
      * @param \Throwable $failure Wird von write()/append() des Doppelgaengers geworfen.
      * @return storage_port
@@ -145,7 +156,7 @@ final class context_area_pending_test extends \advanced_testcase {
                 throw $this->failure;
             }
 
-            public function append(storage_area $area, string $path, string $content): array {
+            public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
                 throw $this->failure;
             }
 

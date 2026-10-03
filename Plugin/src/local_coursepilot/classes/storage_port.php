@@ -95,6 +95,7 @@ interface storage_port {
      * @param storage_area $area
      * @param string $path
      * @param string $content Anzuhaengender Inhalt.
+     * @param string|null $expectedchecksum Preflight condition, as for write().
      * @return array{path: string, created: bool, size: int, checksum: string}
      * @throws \moodle_exception invalidpathkey/eigener Namensfehler des Bereichs,
      *         quotaerrorkey des Bereichs
@@ -104,7 +105,7 @@ interface storage_port {
      *         von aussen geaendert wurde - ein echter, wenn auch seltener Konflikt,
      *         kein Aufruffehler des Bereichs.
      */
-    public function append(storage_area $area, string $path, string $content): array;
+    public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array;
 
     /**
      * Loescht eine Datei, falls sie existiert.

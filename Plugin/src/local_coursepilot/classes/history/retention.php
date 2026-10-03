@@ -239,14 +239,15 @@ final class retention {
      * @return void
      */
     private static function delete_orphan_files(array $fileids): void {
-        // ponytail: a capture that reuses a row between this check and the delete
-        // leaves a link without metadata, which reads skip (JOIN). Lock if it shows up.
         global $DB;
 
         if (!$fileids) {
             return;
         }
         [$insql, $inparams] = $DB->get_in_or_equal(array_values($fileids));
+        // Capture takes the same row lock until its reference is inserted. Decide
+        // orphan status only after any concurrent capture has committed its link.
+        $DB->execute("UPDATE {local_coursepilot_cm_file} SET id = id WHERE id $insql", $inparams);
         $referenced = $DB->get_fieldset_select('local_coursepilot_cm_version_file', 'DISTINCT fileid', "fileid $insql", $inparams);
         $orphans = array_diff($fileids, $referenced);
         if ($orphans) {

@@ -399,9 +399,12 @@ final class context_area {
         if ($pendingentry !== '' && $existing !== null && $expectedcontenthash === '') {
             throw new storage_conflict_exception($path);
         }
+        // Keep the authorised preflight state through the adapter's conditional write,
+        // even when the caller supplied no checksum (personal-data guard).
+        $condition = $existing['checksum'] ?? storage_port::MISSING_CHECKSUM;
         $written = $location->kind === pointer_location::MOODLE
-            ? self::persist_moodle_append($port, $path, $content, pending_write_translation::OP_APPEND, $courseid)
-            : $port->append($area, $path, $content);
+            ? self::persist_moodle_append($port, $path, $content, pending_write_translation::OP_APPEND, $courseid, $condition)
+            : $port->append($area, $path, $content, $condition);
         return ['path' => $written['path'], 'created' => $written['created'], 'size' => $written['size']];
     }
 
@@ -414,6 +417,7 @@ final class context_area {
      * @param string $content
      * @param string $operation
      * @param int $courseid
+     * @param string|null $expectedchecksum Checked preflight state.
      * @return array{path: string, created: bool, size: int, checksum: string}
      * @throws \moodle_exception contextquotaexceeded, pendingwritefailed, pendingnotewritefailed
      */
@@ -422,10 +426,13 @@ final class context_area {
         string $path,
         string $content,
         string $operation,
-        int $courseid
+        int $courseid,
+        ?string $expectedchecksum = null
     ): array {
         try {
-            return $port->append(context_files::area(), $path, $content);
+            return $port->append(context_files::area(), $path, $content, $expectedchecksum);
+        } catch (storage_conflict_exception $e) {
+            throw $e;
         } catch (\moodle_exception $e) {
             if (self::is_moodle_call_error($e)) {
                 throw $e;

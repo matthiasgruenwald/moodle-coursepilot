@@ -24,9 +24,7 @@
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 
-require_once(__DIR__ . '/../../../../../vendor/autoload.php');
-define('PHPUNIT_UTIL', true);
-require_once(__DIR__ . '/../../../../lib/phpunit/bootstrap.php');
+require_once(__DIR__ . '/phpunit_process_bootstrap.php');
 if (isset($argv[2])) {
     $_SERVER['REMOTE_ADDR'] = $argv[1];
     echo \local_coursepilot\oauth_lib::handle_token('POST',

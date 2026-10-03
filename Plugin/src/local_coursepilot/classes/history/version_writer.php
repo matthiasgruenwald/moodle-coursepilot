@@ -129,36 +129,40 @@ final class version_writer {
         $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);
         $context = \context_module::instance($cm->id);
 
-        $nextversion = (int) $DB->get_field_sql(
-            'SELECT COALESCE(MAX(version), 0) + 1 FROM {local_coursepilot_cm_version} WHERE cmid = ?',
-            [$cm->id]
-        );
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            $nextversion = (int) $DB->get_field_sql(
+                'SELECT COALESCE(MAX(version), 0) + 1 FROM {local_coursepilot_cm_version} WHERE cmid = ?',
+                [$cm->id]
+            );
 
-        $versionid = (int) $DB->insert_record('local_coursepilot_cm_version', (object) [
-            'cmid' => $cm->id,
-            'courseid' => (int) $cm->course,
-            'version' => $nextversion,
-            'source' => $source,
-            'sourcecmid' => $sourcecmid,
-            'userid' => $userid,
-            'moduleinfo_json' => json_encode(self::build_moduleinfo($cm), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'coursemodule_json' => json_encode(
-                (array) $DB->get_record('course_modules', ['id' => $cm->id], '*', MUST_EXIST),
-                JSON_UNESCAPED_UNICODE
-            ),
-            'arrangement_json' => self::build_arrangement_json($cm),
-            'timecreated' => time(),
-        ]);
+            $versionid = (int) $DB->insert_record('local_coursepilot_cm_version', (object) [
+                'cmid' => $cm->id,
+                'courseid' => (int) $cm->course,
+                'version' => $nextversion,
+                'source' => $source,
+                'sourcecmid' => $sourcecmid,
+                'userid' => $userid,
+                'moduleinfo_json' => json_encode(self::build_moduleinfo($cm), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'coursemodule_json' => json_encode(
+                    (array) $DB->get_record('course_modules', ['id' => $cm->id], '*', MUST_EXIST),
+                    JSON_UNESCAPED_UNICODE
+                ),
+                'arrangement_json' => self::build_arrangement_json($cm),
+                'timecreated' => time(),
+            ]);
 
-        self::capture_files($versionid, $context->id, (string) $cm->modname);
+            self::capture_files($versionid, $context->id, (string) $cm->modname);
 
-        // Opportunistische Loeschfrist-Bereinigung (#387): kein Scheduled Task,
-        // der die gesamte Tabelle scannt - stattdessen raeumt jeder Schreibvor-
-        // gang die eigene cmid auf. Nach dem Insert, damit der frisch erzeugte
-        // Stand (timecreated = jetzt) niemals mitgeloescht wird.
-        retention::purge_expired_for_cm($cm->id);
+            // Purge old states of this activity after recording the complete new state.
+            // The scheduled task also covers activities without further writes.
+            retention::purge_expired_for_cm($cm->id);
 
-        return $versionid;
+            $transaction->allow_commit();
+            return $versionid;
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
     }
 
     /**
@@ -296,7 +300,6 @@ final class version_writer {
         global $DB;
 
         $files = $DB->get_records_select('files', 'contextid = ? AND filename <> ?', [$contextid, '.']);
-
         foreach ($files as $file) {
             if (!file_policy::allows($modname, $file->component, $file->filearea)) {
                 continue;
@@ -325,6 +328,11 @@ final class version_writer {
     private static function dedup_file(\stdClass $file): int {
         global $DB;
 
+        // Share the metadata row lock with retention before deciding whether to reuse it.
+        // Moodle transactions use READ COMMITTED: after waiting, the read sees a
+        // cleanup deletion and recreates metadata instead of linking a vanished row.
+        $DB->execute('UPDATE {local_coursepilot_cm_file} SET id = id
+                       WHERE pathnamehash = ? AND contenthash = ?', [$file->pathnamehash, $file->contenthash]);
         $existing = $DB->get_record('local_coursepilot_cm_file', [
             'pathnamehash' => $file->pathnamehash,
             'contenthash' => $file->contenthash,
