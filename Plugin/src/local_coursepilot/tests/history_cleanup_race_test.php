@@ -24,7 +24,8 @@ use local_coursepilot\history\version_writer;
 #[\PHPUnit\Framework\Attributes\CoversClass(retention::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(version_writer::class)]
 final class history_cleanup_race_test extends \advanced_testcase {
-    public function test_failed_capture_leaves_no_partial_state_or_open_transaction(): void {
+    #[\PHPUnit\Framework\Attributes\DataProvider('capture_modes')]
+    public function test_failed_capture_leaves_no_partial_state_or_open_transaction(bool $update): void {
         global $DB, $USER;
         $this->resetAfterTest();
         if ($DB->get_dbfamily() !== 'mysql') {
@@ -50,7 +51,11 @@ final class history_cleanup_race_test extends \advanced_testcase {
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Synthetic history link failure'");
         try {
             try {
-                version_writer::capture((int) $page->cmid, (int) $USER->id);
+                if ($update) {
+                    version_writer::capture_on_update((int) $page->cmid, (int) $USER->id);
+                } else {
+                    version_writer::capture((int) $page->cmid, (int) $USER->id);
+                }
                 $this->fail('The injected history failure must propagate.');
             } catch (\dml_exception $e) {
                 $this->assertStringContainsString('Synthetic history link failure', $e->debuginfo);
@@ -59,9 +64,16 @@ final class history_cleanup_race_test extends \advanced_testcase {
             $this->assertEquals($before, $DB->get_records('local_coursepilot_cm_version', ['cmid' => $page->cmid]));
             $this->assertSame(0, $DB->count_records('local_coursepilot_cm_file'));
         } finally {
+            if ($DB->is_transaction_started()) {
+                $DB->force_transaction_rollback(); // Clean up the deliberately broken red fixture.
+            }
             $ddl->query("DROP TRIGGER IF EXISTS $key");
             $ddl->close();
         }
+    }
+
+    public static function capture_modes(): array {
+        return [[false], [true]];
     }
 
     public function test_cleanup_does_not_remove_metadata_being_reused_by_capture(): void {

@@ -99,14 +99,16 @@ final class version_writer {
         // Advisory-Lock je cmid ergaenzen.
         $transaction = $DB->start_delegated_transaction();
 
-        if (!$DB->record_exists('local_coursepilot_cm_version', ['cmid' => $cmid])) {
-            self::capture($cmid, $userid, self::SOURCE_DISCOVERED);
+        try {
+            if (!$DB->record_exists('local_coursepilot_cm_version', ['cmid' => $cmid])) {
+                self::capture($cmid, $userid, self::SOURCE_DISCOVERED);
+            }
+            $versionid = self::capture($cmid, $userid, $source);
+            $transaction->allow_commit();
+            return $versionid;
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
         }
-        $versionid = self::capture($cmid, $userid, $source);
-
-        $transaction->allow_commit();
-
-        return $versionid;
     }
 
     /**
