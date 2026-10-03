@@ -15,21 +15,23 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Coursepilot: MCP-Endpunkt auf dem Moodle-Server.
+ * Synthetic process for native anonymous OAuth budget concurrency regressions:
+ * argv[1] is the request source; with argv[2] (a CIMD client_id URL) the
+ * process asks the public token endpoint (#643), otherwise it registers (#642).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->component = 'local_coursepilot';
-$plugin->version   = 2026100344;
-// 2.0.x sagt Moodle 5.0 zu (geprueft). Ab 2.1 gilt Moodle 5.1 als
-// Mindestversion (ADR 0027).
-$plugin->requires  = 2025041400;
-// Beta nach dem Praxistest (ADR 0027). Die Linie setzt Coursepilot 1.x fort:
-// der Neubau ist Version 2, keine zweite Produktlinie.
-$plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '2.0.0-beta';
+require_once(__DIR__ . '/../../../../../vendor/autoload.php');
+define('PHPUNIT_UTIL', true);
+require_once(__DIR__ . '/../../../../lib/phpunit/bootstrap.php');
+if (isset($argv[2])) {
+    $_SERVER['REMOTE_ADDR'] = $argv[1];
+    echo \local_coursepilot\oauth_lib::handle_token('POST',
+        ['grant_type' => 'authorization_code', 'client_id' => $argv[2]])['status'];
+} else {
+    echo \local_coursepilot\oauth_lib::handle_registration('POST',
+        json_encode(['redirect_uris' => ['https://client.example/callback']]), $argv[1])['status'];
+}

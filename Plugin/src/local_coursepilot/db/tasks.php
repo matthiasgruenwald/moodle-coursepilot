@@ -15,7 +15,7 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Scheduled tasks.
+ * Scheduled tasks of local_coursepilot.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -25,6 +25,15 @@
 defined('MOODLE_INTERNAL') || die();
 
 $tasks = [
+    [
+        'classname' => 'local_coursepilot\task\oauth_cleanup',
+        'blocking' => 0,
+        'minute' => 'R',
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+    ],
     [
         'classname' => \local_coursepilot\task\purge_history::class,
         'minute' => 'R',

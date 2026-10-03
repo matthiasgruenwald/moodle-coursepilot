@@ -179,9 +179,9 @@ final class oauth_connection_test extends \advanced_testcase {
 
     public function test_token_endpoint_does_not_disclose_replay_or_secrets(): void {
         $this->resetAfterTest();
-        $client = oauth_lib::handle_registration('POST', [
+        $client = oauth_lib::handle_registration('POST', json_encode([
             'client_name' => 'Synthetic client', 'redirect_uris' => ['https://client.example/callback'],
-        ])['body']['client_id'];
+        ]), '192.0.2.1')['body']['client_id'];
         $user = $this->getDataGenerator()->create_user();
         $original = $this->tokens($client, (int) $user->id);
         $request = ['grant_type' => 'refresh_token', 'client_id' => $client,

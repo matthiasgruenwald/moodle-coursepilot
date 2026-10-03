@@ -303,3 +303,31 @@ function local_coursepilot_migrate_oauth_connections(database_manager $dbman): v
         $transaction->allow_commit();
     }
 }
+
+/**
+ * Indexes of the bounded OAuth cleanup (#644), keyed by table.
+ *
+ * @return array<string, xmldb_index>
+ */
+function local_coursepilot_oauth_cleanup_indexes(): array {
+    return [
+        'local_coursepilot_oauth_client' => new xmldb_index('timecreated', XMLDB_INDEX_NOTUNIQUE, ['timecreated']),
+        'local_coursepilot_oauth_code' => new xmldb_index('expires', XMLDB_INDEX_NOTUNIQUE, ['expires']),
+        'local_coursepilot_oauth_grant' => new xmldb_index('revoked_clientid', XMLDB_INDEX_NOTUNIQUE, ['revoked', 'clientid']),
+        'local_coursepilot_workbench_ticket' => new xmldb_index('expires', XMLDB_INDEX_NOTUNIQUE, ['expires']),
+    ];
+}
+
+/**
+ * Add the OAuth cleanup indexes where missing; safe to repeat.
+ *
+ * @param database_manager $dbman
+ */
+function local_coursepilot_add_oauth_cleanup_indexes(database_manager $dbman): void {
+    foreach (local_coursepilot_oauth_cleanup_indexes() as $name => $index) {
+        $table = new xmldb_table($name);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+    }
+}

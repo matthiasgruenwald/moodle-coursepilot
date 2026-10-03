@@ -90,10 +90,10 @@ final class oauth_lib_test extends \advanced_testcase {
     public function test_register_client_creates_client_and_returns_metadata(): void {
         $this->resetAfterTest();
 
-        $response = oauth_lib::handle_registration('POST', [
+        $response = oauth_lib::handle_registration('POST', json_encode([
             'client_name' => 'Testclient',
             'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
-        ]);
+        ]), '192.0.2.1');
 
         $this->assertSame(201, $response['status']);
         $this->assertNotEmpty($response['body']['client_id']);
@@ -112,9 +112,9 @@ final class oauth_lib_test extends \advanced_testcase {
     public function test_register_client_rejects_disallowed_redirect_uri(): void {
         $this->resetAfterTest();
 
-        $response = oauth_lib::handle_registration('POST', [
+        $response = oauth_lib::handle_registration('POST', json_encode([
             'redirect_uris' => ['http://evil.example/callback'],
-        ]);
+        ]), '192.0.2.1');
 
         $this->assertSame(400, $response['status']);
         $this->assertSame('invalid_redirect_uri', $response['body']['error']);
@@ -126,9 +126,9 @@ final class oauth_lib_test extends \advanced_testcase {
     public function test_register_client_allows_loopback_redirect_uri(): void {
         $this->resetAfterTest();
 
-        $response = oauth_lib::handle_registration('POST', [
+        $response = oauth_lib::handle_registration('POST', json_encode([
             'redirect_uris' => ['http://127.0.0.1:51000/callback'],
-        ]);
+        ]), '192.0.2.1');
 
         $this->assertSame(201, $response['status']);
     }
@@ -140,7 +140,7 @@ final class oauth_lib_test extends \advanced_testcase {
     public function test_register_client_requires_redirect_uris(): void {
         $this->resetAfterTest();
 
-        $response = oauth_lib::handle_registration('POST', []);
+        $response = oauth_lib::handle_registration('POST', json_encode([]), '192.0.2.1');
 
         $this->assertSame(400, $response['status']);
         $this->assertSame('invalid_client_metadata', $response['body']['error']);
@@ -151,7 +151,7 @@ final class oauth_lib_test extends \advanced_testcase {
      * JSON, kein HTML.
      */
     public function test_registration_rejects_non_post_method(): void {
-        $response = oauth_lib::handle_registration('GET', []);
+        $response = oauth_lib::handle_registration('GET', json_encode([]), '192.0.2.1');
 
         $this->assertSame(405, $response['status']);
         $this->assertIsArray($response['body']);
@@ -162,7 +162,7 @@ final class oauth_lib_test extends \advanced_testcase {
      * PHP-Exception.
      */
     public function test_registration_rejects_invalid_json(): void {
-        $response = oauth_lib::handle_registration('POST', null);
+        $response = oauth_lib::handle_registration('POST', '{not json', '192.0.2.1');
 
         $this->assertSame(400, $response['status']);
         $this->assertSame('invalid_client_metadata', $response['body']['error']);
@@ -176,9 +176,9 @@ final class oauth_lib_test extends \advanced_testcase {
 
         $responses = [
             oauth_lib::handle_discovery(self::WWWROOT, 'nonsense'),
-            oauth_lib::handle_registration('GET', []),
-            oauth_lib::handle_registration('POST', null),
-            oauth_lib::handle_registration('POST', ['redirect_uris' => ['not a uri']]),
+            oauth_lib::handle_registration('GET', json_encode([]), '192.0.2.1'),
+            oauth_lib::handle_registration('POST', '{not json', '192.0.2.1'),
+            oauth_lib::handle_registration('POST', json_encode(['redirect_uris' => ['not a uri']]), '192.0.2.1'),
         ];
 
         foreach ($responses as $response) {
@@ -269,10 +269,10 @@ final class oauth_lib_test extends \advanced_testcase {
      * @return array{clientid: string, redirecturi: string, verifier: string, challenge: string}
      */
     private function registered_client_with_pkce(): array {
-        $response = oauth_lib::handle_registration('POST', [
+        $response = oauth_lib::handle_registration('POST', json_encode([
             'client_name' => 'Testclient',
             'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
-        ]);
+        ]), '192.0.2.1');
         $verifier = bin2hex(random_bytes(32));
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
 
