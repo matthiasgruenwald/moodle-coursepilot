@@ -26,6 +26,7 @@ use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\quiz;
 use local_coursepilot\catalog\quiz_write_bridge;
+use local_coursepilot\catalog\write_target;
 use local_coursepilot\write_gate;
 use moodle_exception;
 
@@ -139,18 +140,17 @@ final class update_quiz_settings extends external_api {
         $bundle = self::bundle_fields($params['mode']);
         $merged = array_merge($bundle, $patch);
 
-        quiz_write_bridge::validate_fields($merged);
-        $newgrade = $params['grade'] >= 0 ? $params['grade'] : (float) $quiz->grade;
-        quiz_write_bridge::validate_combination_rules(array_merge($before, $merged), $merged, $newgrade);
-        quiz_write_bridge::assert_stealth_allowed($merged);
-        // Riegel (#583): ein nur wiederholter bestehender Riegel braucht
-        // keine erneute Bestaetigung; die Riegel des gewaehlten Modus
-        // bestaetigt die Moduswahl selbst.
-        learner_locks::assert_confirmed(
-            'quiz',
-            learner_locks::find_changed(quiz::class, $merged, $before),
+        // Catalog rules are decided once in the write target (#646): a
+        // repeated existing lock needs no new confirmation, the locks of the
+        // chosen mode are confirmed by choosing it.
+        $target = write_target::update(
+            quiz::class,
+            $merged,
+            $before,
             learner_locks::confirmed_with_mode($params[learner_locks::PARAMETER], $bundle, $patch)
         );
+        $newgrade = $params['grade'] >= 0 ? $params['grade'] : (float) $quiz->grade;
+        quiz_write_bridge::validate_combination_rules($target->state, $merged, $newgrade);
 
         // Eine Grade-Aenderung laeuft ZUERST (Moodles eigener Grade-Calculator,
         // siehe quiz_write_bridge-Klassendoku): er skaliert bestehende

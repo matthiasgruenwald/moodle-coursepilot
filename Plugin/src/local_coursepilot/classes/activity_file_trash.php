@@ -20,8 +20,7 @@ namespace local_coursepilot;
  * Papierkorb fuer ersetzte Aktivitaetsdateien (Spec 0018 §9.1, Issue #432).
  *
  * Moodle-Core loescht beim Ersetzen einer Aktivitaetsdatei (z.B. ueber
- * {@see \local_coursepilot\external\update_module_settings}'s
- * MATERIAL_REFERENCE_PSEUDOFIELDS-Weg) den alten `files`-Datensatz tief in
+ * {@see \local_coursepilot\catalog\write_target::update_activity()}) den alten `files`-Datensatz tief in
  * lib/filelib.php::file_save_draft_area_files() - eine Stelle, die dieses
  * Plugin nicht abfangen kann. Der einzig verlaessliche Hebel ist deshalb,
  * VOR dem eigentlichen Schreibaufruf eine zweite Kopie des Datensatzes

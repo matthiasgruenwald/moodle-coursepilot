@@ -80,9 +80,7 @@ final class material_files {
     /**
      * component/filearea je Aktivitaetsart fuer deren "content"-Dateibereich
      * (Issue #434) - eine Quelle statt zweier auseinanderlaufender Kopien in
-     * {@see \local_coursepilot\external\create_module::MATERIAL_REFERENCE_PSEUDOFIELDS}
-     * und {@see \local_coursepilot\external\update_module_settings::MATERIAL_REFERENCE_PSEUDOFIELDS}
-     * (beide referenzieren "resource"/"folder" identisch).
+     * den write_options() "material_reference_fields" von resource und folder.
      *
      * @var array<string, array{component: string, filearea: string}>
      */
@@ -752,7 +750,7 @@ final class material_files {
     /**
      * Der reine Materialordner-Pfad eines {@see self::resolve_into_draft()}-
      * Listeneintrags, ohne Zielordner - oeffentlich, damit Aufrufer wie
-     * {@see \local_coursepilot\external\update_module_settings::trash_files_about_to_be_replaced()}
+     * {@see \local_coursepilot\catalog\write_target::update_activity()}
      * denselben String/Objekt-Fall nicht ein zweites Mal von Hand
      * unterscheiden muessen (Issue #434).
      *

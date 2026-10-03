@@ -194,7 +194,7 @@ final class quiz_write_bridge {
 
     /**
      * Katalogfeldname => tatsaechlicher $moduleinfo-Eigenschaftsname -
-     * identische Ausnahme wie {@see \local_coursepilot\external\update_module_settings::moduleinfo_property()}.
+     * identische Ausnahme wie der Modulschreibweg in {@see write_target}.
      *
      * @param string $fieldname
      * @return string
@@ -204,43 +204,12 @@ final class quiz_write_bridge {
     }
 
     /**
-     * Alles-oder-nichts-Feldpruefung (Spec 0015 §3.6): unbekanntes Feld,
-     * gesperrtes Feld ("grade"/"sumgrades" ueber quiz::blocklist()),
-     * unerlaubter Wert.
+     * Quiz-only combination rules (Spec 0015 §2.2 category 4, quiz::combination_rules()),
+     * all BEFORE writing (Spec 0015 §3.6). The date order is a catalog rule
+     * decided by {@see write_target}; like there, a rule only fires when the
+     * patch touches one of its fields, so unchanged legacy values are not re-judged.
      *
-     * @param array $merged
-     * @return void
-     * @throws moodle_exception blockedfield|unknownfield|invalidfieldvalue
-     */
-    public static function validate_fields(array $merged): void {
-        catalog_fields::validate(quiz::class, $merged);
-    }
-
-    /**
-     * Stealth-Regel, identisch zu
-     * {@see \local_coursepilot\external\update_module_settings::assert_stealth_allowed()}.
-     *
-     * @param array $merged
-     * @return void
-     * @throws moodle_exception stealthnotallowed
-     */
-    public static function assert_stealth_allowed(array $merged): void {
-        if (($merged['visibleoncoursepage'] ?? null) !== 0) {
-            return;
-        }
-        if (get_config(null, 'allowstealth')) {
-            return;
-        }
-        throw new moodle_exception('stealthnotallowed', 'local_coursepilot');
-    }
-
-    /**
-     * Kombinationsregeln (Spec 0015 §2.2 Kategorie 4, quiz::combination_rules()):
-     * nur die pruefbaren, alle VOR dem Schreiben (Spec 0015 §3.6).
-     *
-     * @param array $effective Alle wirksamen Werte fuer die Datumsregeln (Vorher-Stand ueberlagert mit
-     *        Patch/Buendel, oder Katalog-Defaults ueberlagert mit Patch/Buendel beim Anlegen) - ein
-     *        unveraendert bleibender Altwert darf eine Regel nicht neu ausloesen (siehe Aufrufer).
+     * @param array $effective Checked target state ({@see write_target::$state}).
      * @param array $patch Nur die vom Patch/Buendel selbst gesetzten Felder - massgeblich fuer die
      *        Gesamtfeedback-Regel: ein Patch ohne "feedbacktext" hat nichts zu pruefen, das
      *        Carry-forward des Ist-Stands ist per Definition bereits gueltig.
@@ -259,13 +228,8 @@ final class quiz_write_bridge {
                 throw new moodle_exception('invalidquizgradepass', 'local_coursepilot', '', ['maximum' => $grade]);
             }
         }
-        $timeopen = (int) ($effective['timeopen'] ?? 0);
-        $timeclose = (int) ($effective['timeclose'] ?? 0);
-        if ($timeopen > 0 && $timeclose > 0 && $timeclose < $timeopen) {
-            self::throw_combination_violation('"timeclose" darf nicht vor "timeopen" liegen.');
-        }
-
-        if (($effective['overduehandling'] ?? '') === 'graceperiod') {
+        $gracetouched = array_key_exists('overduehandling', $patch) || array_key_exists('graceperiod', $patch);
+        if ($gracetouched && ($effective['overduehandling'] ?? '') === 'graceperiod') {
             $min = (int) get_config('quiz', 'graceperiodmin');
             $grace = (int) ($effective['graceperiod'] ?? 0);
             if ($grace <= $min) {
