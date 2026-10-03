@@ -302,5 +302,18 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026100300, 'local', 'coursepilot');
     }
 
+    if ($oldversion < 2026100340) {
+        // #640: indexes for the scheduled history retention and metadata sweep.
+        foreach (['local_coursepilot_cm_version' => 'timecreated', 'local_coursepilot_cm_version_file' => 'fileid']
+                as $tablename => $field) {
+            $index = new xmldb_index($field, XMLDB_INDEX_NOTUNIQUE, [$field]);
+            $table = new xmldb_table($tablename);
+            if (!$dbman->index_exists($table, $index)) {
+                $dbman->add_index($table, $index);
+            }
+        }
+        upgrade_plugin_savepoint(true, 2026100340, 'local', 'coursepilot');
+    }
+
     return true;
 }
