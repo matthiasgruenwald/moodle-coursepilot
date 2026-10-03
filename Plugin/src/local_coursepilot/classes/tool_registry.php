@@ -121,7 +121,6 @@ final class tool_registry {
         if (in_array($classname, [
             'local_coursepilot\\external\\create_workbench_download_links',
             'local_coursepilot\\external\\export_activity_backup',
-            'local_coursepilot\\external\\export_default_activity',
         ], true)) {
             return false;
         }
