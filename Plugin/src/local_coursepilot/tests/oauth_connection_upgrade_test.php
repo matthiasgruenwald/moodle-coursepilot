@@ -83,7 +83,18 @@ final class oauth_connection_upgrade_test extends \advanced_testcase {
         $this->assertSame((int) $DB->get_field('local_coursepilot_oauth_token', 'connectionid', ['id' => $ids[0]]),
             (int) $ticketrecord->oauthconnectionid);
         $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token('access638-0'));
-        $this->assertNotNull(oauth_lib::rotate_refresh_token('refresh638-0', 'legacy'));
+        $successor = oauth_lib::rotate_refresh_token('refresh638-0', 'legacy');
+        $this->assertNotNull($successor);
+        // Unknown historical hashes must not be guessed into a same-user/client family.
+        $this->assertNull(oauth_lib::rotate_refresh_token('overwritten-historical-refresh', 'legacy'));
+        $this->assertNull(oauth_lib::rotate_refresh_token('unrecoverable-original-refresh', 'legacy'));
+        $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token($successor['access_token']));
+        $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token('access638-1'));
+        // The first retained, consumed value after migration is a proven replay.
+        $this->assertNull(oauth_lib::rotate_refresh_token('refresh638-0', 'legacy'));
+        $this->assertNull(oauth_lib::authenticate_access_token($successor['access_token']));
+        $this->assertNull(oauth_lib::rotate_refresh_token($successor['refresh_token'], 'legacy'));
+        $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token('access638-1'));
         $errors = $DB->get_manager()->check_database_schema($DB->get_manager()->get_install_xml_schema());
         $this->assertSame([], array_intersect_key($errors, array_flip([
             'local_coursepilot_oauth_grant', 'local_coursepilot_oauth_token', workbench_ticket::TABLE,

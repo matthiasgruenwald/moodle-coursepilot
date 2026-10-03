@@ -563,10 +563,7 @@ final class oauth_lib {
         global $DB;
 
         $record = $DB->get_record(self::TOKEN_TABLE, ['refreshtokenhash' => self::token_hash($refreshtoken)]);
-        if (!$record || (int) $record->revoked === 1 || $record->refreshexpires < time()) {
-            return null;
-        }
-        if ($record->clientid !== $clientid) {
+        if (!$record || $record->clientid !== $clientid) {
             return null;
         }
 
@@ -579,7 +576,14 @@ final class oauth_lib {
                 return null;
             }
             $current = $DB->get_record(self::TOKEN_TABLE, ['id' => $record->id]);
-            if (!$current || (int) $current->revoked === 1 || $current->refreshexpires < time()) {
+            if ($current && (int) $current->revoked === 1) {
+                // A consumed hash proves replay even after its old expiry. Check
+                // under the grant lock so concurrent rotation cannot escape it.
+                self::revoke_locked_connection((int) $record->connectionid);
+                $transaction->allow_commit();
+                return null;
+            }
+            if (!$current || $current->refreshexpires < time()) {
                 $transaction->allow_commit();
                 return null;
             }
@@ -879,8 +883,7 @@ final class oauth_lib {
                 $transaction->allow_commit();
                 return false;
             }
-            $DB->set_field(self::GRANT_TABLE, 'revoked', 1, ['id' => $record->connectionid]);
-            $DB->set_field(self::TOKEN_TABLE, 'revoked', 1, ['connectionid' => $record->connectionid]);
+            self::revoke_locked_connection((int) $record->connectionid);
         } catch (\Throwable $e) {
             $transaction->rollback($e);
         }
@@ -956,6 +959,13 @@ final class oauth_lib {
                          SET statehash = :marker WHERE id = :id AND revoked = 0',
             ['marker' => $marker, 'id' => $id]);
         return $DB->record_exists(self::GRANT_TABLE, ['id' => $id, 'statehash' => $marker, 'revoked' => 0]);
+    }
+
+    /** Revoke all generations and bound tickets while holding the grant lock. */
+    private static function revoke_locked_connection(int $id): void {
+        global $DB;
+        $DB->set_field(self::GRANT_TABLE, 'revoked', 1, ['id' => $id]);
+        $DB->set_field(self::TOKEN_TABLE, 'revoked', 1, ['connectionid' => $id]);
     }
 
     /**

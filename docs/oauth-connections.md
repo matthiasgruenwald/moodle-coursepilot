@@ -1,4 +1,4 @@
-# Stabile OAuth-Verbindungen (#638)
+# Stabile OAuth-Verbindungen und Replay-Sperre (#638–639)
 
 Eine Verbindung (Grant) gehört genau einer Person und einem Client. Jede neue
 Autorisierung eröffnet eine eigene Verbindung, auch beim gleichen Nutzer und
@@ -31,18 +31,34 @@ Nutzer-/Clientgleichheit oder Zeitnähe sind kein Familiennachweis. Ein Ticket m
 unbekannter alter Tokenreferenz bleibt gesperrt. Seit diesem Upgrade behalten
 verbrauchte Refresh-Hashes ihre nachgewiesene Verbindungszuordnung.
 
-**#638 schließt F5 noch nicht vollständig.** Replay eines verbrauchten Refresh-
-Tokens wird weiterhin abgelehnt, löst aber noch keine automatische Sperre der
-Familie aus. Diese Reaktion folgt separat in #639. Historische unbekannte
-Familien dürfen dabei weiterhin nicht erfunden werden.
+Seit #639 widerruft Replay eines verbrauchten Refresh-Tokens die nachgewiesene
+Verbindung und alle Generationen atomar unter derselben Grant-Sperre wie Rotation
+und expliziter Widerruf. Damit werden auch alle an dieses Grant gebundenen Tickets
+ungültig. Der Verbrauch wird nach Erwerb der Sperre erneut geprüft: Hat ein
+konkurrierender Refresh bereits einen Nachfolger erzeugt, sperrt der zweite
+Aufruf auch diesen. Das gilt auch nach Ablauf des verbrauchten Tokens; dessen
+Nachfolger haben eigene Fristen. Ein falscher Client oder ein unbekannter Hash
+löst keinen Widerruf aus. Andere Verbindungen derselben Person bleiben gültig.
+Nach außen liefert der Token-Endpunkt unverändert nur `invalid_grant`.
+
+Die Replay-Garantie beginnt mit nachweislich erhaltenen, verbrauchten Hashes seit
+dem Upgrade 2026100300 (#638) und der aktivierten Sperrreaktion (#639). Vorher
+überschriebene Hashes und unbekannte historische Familien werden nicht erfunden.
+Bestandsverbindungen gewinnen den Replay-Nachweis mit ihrer ersten Rotation nach
+diesem Upgrade. Erfordert ein Sicherheitsvorfall auch Schutz ohne erhaltenen
+Nachweis, muss die Administration die bestehenden Verbindungen widerrufen.
 
 ## Native Prüfbarkeit
 
 Die Regressionen verwenden synthetische Nutzer, Clients, Dateien und Geheimnisse
 an den öffentlichen OAuth-/Downloadgrenzen. Separate PHP-Prozesse prüfen beide
-Reihenfolgen Rotation/Widerruf und zwei konkurrierende Rotationen; ein DB-Trigger
+Reihenfolgen Rotation/Widerruf, Rotation/Replay und zwei konkurrierende Rotationen; ein DB-Trigger
 hält die erste Transaktion am Barrier, während die zweite die gemeinsame
-Grant-Zeile aktualisieren will. Ein weiterer Trigger unterbricht den zweiten
+Grant-Zeile aktualisieren will. Kein Rennen lässt einen dauerhaft gültigen
+Nachfolger oder ein gültiges gebundenes Ticket zurück. Eine injizierte
+Token-Widerrufs-Störung prüft das gemeinsame Rollback von Grant und Generationen;
+ein noch uncommitteter Widerruf veröffentlicht keine Teilsperre.
+Ein weiterer Trigger unterbricht den zweiten
 Migrationsbatch; Wiederholung prüft die unveränderten ersten 100 Zuordnungen,
 getrennte Grants und erhaltene Ticketfristen. Moodle prüft das resultierende
 Schema gegen install.xml. Native Fresh-Install und Upgrade laufen ausschließlich
