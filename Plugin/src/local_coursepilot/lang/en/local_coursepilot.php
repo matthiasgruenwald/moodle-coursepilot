@@ -342,7 +342,8 @@ $string['contextfilehostnotallowed'] = 'File {$a}: this storage is not approved 
 
 // Change history: retention/deletion deadline (#387).
 $string['settinghistoryretentiondays'] = 'Change history retention period (days)';
-$string['settinghistoryretentiondays_desc'] = 'How long change-history states are kept per activity before being deleted on the next write to that same activity. No cron needed - cleanup runs alongside every write. At least 1 day; "no limit" is not an option.';
+$string['settinghistoryretentiondays_desc'] = 'How long change-history states are kept per activity. A daily background task deletes older states, including those of activities that are never changed again; a write to an activity also cleans its own expired states. At least 1 day; "no limit" is not an option.';
+$string['taskpurgehistory'] = 'Delete expired change history and orphaned history file metadata';
 
 $string['connections'] = 'Coursepilot connections';
 $string['connectionsintro'] = 'All active remote-access connections on this site. Revoking a connection invalidates its token immediately — any further access then fails.';
@@ -449,7 +450,7 @@ $string['privacy:metadata:cm_version_file'] = 'Links a history state to the file
 $string['privacy:metadata:cm_version_file:versionid'] = 'The history state this file belongs to.';
 $string['privacy:metadata:cm_version_file:fileid'] = 'The referenced file metadata row (local_coursepilot_cm_file).';
 $string['privacy:metadata:cm_version_file:gap'] = 'Whether the file content is outside the description and cannot be written back.';
-$string['privacy:metadata:cm_file'] = 'Deduplicated file metadata (name, size, path) for the change history, without file content.';
+$string['privacy:metadata:cm_file'] = 'Deduplicated file metadata (name, size, path) for the change history, without file content. Deleted as soon as no history state references it any more.';
 $string['privacy:metadata:cm_file:pathnamehash'] = 'Hash of the file pathname, used for deduplication.';
 $string['privacy:metadata:cm_file:contenthash'] = 'Hash of the file content, used for deduplication.';
 $string['privacy:metadata:cm_file:filepath'] = 'Folder path of the file within the activity.';

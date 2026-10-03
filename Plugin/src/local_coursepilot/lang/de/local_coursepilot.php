@@ -276,7 +276,7 @@ $string['contextfilehostnotallowed'] = 'Datei {$a}: Dieser Speicher ist für per
 
 // Aenderungsverlauf: Aufbewahrung/Loeschfrist (#387).
 $string['settinghistoryretentiondays'] = 'Aufbewahrungsfrist des Aenderungsverlaufs (Tage)';
-$string['settinghistoryretentiondays_desc'] = 'Wie lange Staende des Aenderungsverlaufs je Aktivität aufbewahrt werden, bevor sie beim naechsten Schreibvorgang derselben Aktivität geloescht werden. Kein Cron nötig - die Bereinigung läuft mit jedem Schreibvorgang mit. Mindestens 1 Tag; „keine Frist" ist ausgeschlossen.';
+$string['settinghistoryretentiondays_desc'] = 'Wie lange Stände des Änderungsverlaufs je Aktivität aufbewahrt werden. Eine tägliche Hintergrundaufgabe löscht ältere Stände, auch bei Aktivitäten, die nie wieder geändert werden; ein Schreibvorgang räumt zusätzlich die abgelaufenen Stände derselben Aktivität auf. Mindestens 1 Tag; „keine Frist" ist ausgeschlossen.';
 
 $string['connections'] = 'Coursepilot-Verbindungen';
 $string['connectionsintro'] = 'Alle aktiven Fernzugriffsverbindungen dieser Instanz. Ein Widerruf entwertet das zugehörige Token sofort — ein weiterer Zugriff damit schlägt danach fehl.';
@@ -378,7 +378,7 @@ $string['privacy:metadata:cm_version_file'] = 'Verknuepfung eines Verlaufs-Stand
 $string['privacy:metadata:cm_version_file:versionid'] = 'Der Verlaufs-Stand, zu dem diese Datei gehört.';
 $string['privacy:metadata:cm_version_file:fileid'] = 'Die referenzierte Datei-Metadaten-Zeile (local_coursepilot_cm_file).';
 $string['privacy:metadata:cm_version_file:gap'] = 'Ob der Dateiinhalt ausserhalb der Beschreibung liegt und nicht rückschreibbar ist.';
-$string['privacy:metadata:cm_file'] = 'Deduplizierte Datei-Metadaten (Name, Größe, Pfad) des Aenderungsverlaufs, ohne Dateiinhalt.';
+$string['privacy:metadata:cm_file'] = 'Deduplizierte Datei-Metadaten (Name, Größe, Pfad) des Änderungsverlaufs, ohne Dateiinhalt. Werden gelöscht, sobald kein Verlaufsstand mehr auf sie verweist.';
 $string['privacy:metadata:cm_file:pathnamehash'] = 'Hash des Datei-Pfadnamens, zur Deduplizierung.';
 $string['privacy:metadata:cm_file:contenthash'] = 'Hash des Dateiinhalts, zur Deduplizierung.';
 $string['privacy:metadata:cm_file:filepath'] = 'Ordnerpfad der Datei innerhalb der Aktivität.';

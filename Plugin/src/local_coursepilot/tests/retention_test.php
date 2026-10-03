@@ -30,6 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(retention::class)]
 #[CoversClass(observer::class)]
+#[CoversClass(\local_coursepilot\task\purge_history::class)]
 final class retention_test extends \advanced_testcase {
 
     /**
@@ -179,5 +180,158 @@ final class retention_test extends \advanced_testcase {
         update_moduleinfo($cm, $moduleinfo, $course, null);
 
         $this->assertCount(2, $DB->get_records('local_coursepilot_cm_version', ['cmid' => $cm->id]));
+    }
+
+    /** Ages every state of a cm by $seconds. */
+    private function age(int $cmid, int $seconds): void {
+        global $DB;
+        $DB->set_field('local_coursepilot_cm_version', 'timecreated', time() - $seconds, ['cmid' => $cmid]);
+    }
+
+    /** Inserts synthetic file metadata and links it to a version. */
+    private function link_file(int $versionid, string $component, string $filearea, string $name): int {
+        global $DB;
+        $fileid = $DB->get_field('local_coursepilot_cm_file', 'id', ['pathnamehash' => sha1($name)]);
+        if (!$fileid) {
+            $fileid = $DB->insert_record('local_coursepilot_cm_file', (object) [
+                'pathnamehash' => sha1($name), 'contenthash' => sha1('synthetic'),
+                'component' => $component, 'filearea' => $filearea, 'itemid' => 0,
+                'filepath' => '/', 'filename' => $name, 'filesize' => 9, 'mimetype' => 'image/png',
+                'timemodified' => time(),
+            ]);
+        }
+        $DB->insert_record('local_coursepilot_cm_version_file', (object) [
+            'versionid' => $versionid, 'fileid' => $fileid, 'gap' => 0,
+        ]);
+        return (int) $fileid;
+    }
+
+    /** Runs the registered scheduled task like cron does. */
+    private function run_task(): void {
+        $task = \core\task\manager::get_scheduled_task(\local_coursepilot\task\purge_history::class);
+        $this->assertNotNull($task);
+        ob_start();
+        $task->execute();
+        ob_end_clean();
+    }
+
+    /** An unchanged activity loses expired states in the task run, without any further write. */
+    public function test_task_purges_expired_states_of_unchanged_activity(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course, $cm] = $this->create_page();
+        $fresh = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
+        $this->age($cm->id, 366 * DAYSECS);
+        $freshcount = $DB->count_records('local_coursepilot_cm_version', ['cmid' => $fresh->cmid]);
+        $current = $DB->get_record('page', ['id' => $cm->instance]);
+
+        $this->run_task();
+
+        $this->assertSame(0, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $cm->id]));
+        $this->assertSame($freshcount, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $fresh->cmid]));
+        $this->assertEquals($current, $DB->get_record('page', ['id' => $cm->instance]), 'Current content untouched.');
+    }
+
+    /** States just inside the period stay, states just outside go. */
+    public function test_task_respects_retention_boundary(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course, $cm] = $this->create_page();
+        $other = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
+        set_config('historyretentiondays', 1, 'local_coursepilot');
+        $this->age($cm->id, DAYSECS + 60);
+        $this->age($other->cmid, DAYSECS - 60);
+
+        $this->run_task();
+
+        $this->assertSame(0, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $cm->id]));
+        $this->assertGreaterThan(0, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $other->cmid]));
+    }
+
+    /** Bounded batches continue on the next run; a repeated run changes nothing more. */
+    public function test_expiry_continues_across_runs_in_bounded_batches(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->create_page();
+        for ($i = 0; $i < 2; $i++) {
+            $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
+        }
+        $DB->set_field('local_coursepilot_cm_version', 'timecreated', time() - 400 * DAYSECS);
+        $total = $DB->count_records('local_coursepilot_cm_version');
+        $this->assertGreaterThanOrEqual(3, $total);
+
+        retention::enforce(1, 2);
+        $this->assertSame($total - 2, $DB->count_records('local_coursepilot_cm_version'));
+
+        retention::enforce(1, $total);
+        $this->assertSame(0, $DB->count_records('local_coursepilot_cm_version'));
+
+        retention::enforce(1, $total);
+        $this->assertSame(0, $DB->count_records('local_coursepilot_cm_version'));
+    }
+
+    /** Shared metadata survives until its last reference is gone; no orphans remain. */
+    public function test_shared_file_metadata_kept_until_last_reference_goes(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course, $cm] = $this->create_page();
+        $other = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
+        $oldversion = (int) $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $cm->id], MUST_EXIST);
+        $keptversion = (int) $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $other->cmid], MUST_EXIST);
+        $shared = $this->link_file($oldversion, 'mod_page', 'intro', 'shared.png');
+        $this->link_file($keptversion, 'mod_page', 'intro', 'shared.png');
+        $own = $this->link_file($oldversion, 'mod_page', 'intro', 'own.png');
+        $this->age($cm->id, 400 * DAYSECS);
+
+        $this->run_task();
+
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_version_file', ['versionid' => $oldversion]));
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['id' => $own]));
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_file', ['id' => $shared]));
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version_file',
+            ['versionid' => $keptversion, 'fileid' => $shared]));
+
+        retention::purge_cm((int) $other->cmid);
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['id' => $shared]));
+    }
+
+    /** Historical disallowed metadata and old orphans are cleaned in resumable batches. */
+    public function test_historical_cleanup_removes_disallowed_metadata_and_orphans(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [, $cm] = $this->create_page();
+        $versionid = (int) $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $cm->id], MUST_EXIST);
+        $allowed = $this->link_file($versionid, 'mod_page', 'intro', 'design.png');
+        $shareddisallowed = $this->link_file($versionid, 'assignsubmission_file', 'submission_files', 'student.pdf');
+        $unknown = $this->link_file($versionid, 'mod_page', 'unknown', 'unknown.pdf');
+        $orphan = $this->link_file($versionid, 'mod_page', 'intro', 'orphan.png');
+        $DB->delete_records('local_coursepilot_cm_version_file', ['fileid' => $orphan]);
+        $versions = $DB->get_records('local_coursepilot_cm_version', null, 'id');
+
+        retention::enforce(1, 2);
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_file', ['id' => $orphan]), 'Third row not reached yet.');
+        retention::enforce(1, 10);
+        retention::enforce(1, 10);
+
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['id' => $shareddisallowed]));
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['id' => $unknown]));
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['id' => $orphan]));
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_version_file', ['fileid' => $shareddisallowed]));
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version_file',
+            ['versionid' => $versionid, 'fileid' => $allowed]));
+        $this->assertEquals($versions, $DB->get_records('local_coursepilot_cm_version', null, 'id'),
+            'Unexpired states stay unchanged.');
+    }
+
+    /** Fresh install registers the task and the indexes it relies on. */
+    public function test_install_registers_task_and_indexes(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->assertNotNull(\core\task\manager::get_scheduled_task(\local_coursepilot\task\purge_history::class));
+        $dbman = $DB->get_manager();
+        $this->assertTrue($dbman->index_exists(new \xmldb_table('local_coursepilot_cm_version'),
+            new \xmldb_index('timecreated', XMLDB_INDEX_NOTUNIQUE, ['timecreated'])));
+        $this->assertTrue($dbman->index_exists(new \xmldb_table('local_coursepilot_cm_version_file'),
+            new \xmldb_index('fileid', XMLDB_INDEX_NOTUNIQUE, ['fileid'])));
     }
 }

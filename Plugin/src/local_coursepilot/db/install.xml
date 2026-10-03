@@ -95,6 +95,7 @@
         <INDEX NAME="cmid_version" UNIQUE="true" FIELDS="cmid, version"/>
         <INDEX NAME="courseid" UNIQUE="false" FIELDS="courseid"/>
         <INDEX NAME="cmid_timecreated" UNIQUE="false" FIELDS="cmid, timecreated" COMMENT="Traegt die opportunistische Loeschfrist-Bereinigung je cmid (#387)."/>
+        <INDEX NAME="timecreated" UNIQUE="false" FIELDS="timecreated" COMMENT="Scheduled retention batches across all activities (#640)."/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_coursepilot_cm_file" COMMENT="Deduplizierte Datei-Metadaten (keine Bytes) je pathnamehash+contenthash; ein Datensatz kann von mehreren Staenden referenziert werden (#385).">
@@ -130,6 +131,7 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="versionid" UNIQUE="false" FIELDS="versionid"/>
+        <INDEX NAME="fileid" UNIQUE="false" FIELDS="fileid" COMMENT="Reference check before deleting orphaned file metadata (#640)."/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_coursepilot_context_mark" COMMENT="Markierungsgedaechtnis (#493, Spec #486 Paragraph 6): nur das Bit 'markiert ja/nein' je Kontextdatei, Schluessel aus Pfad, Groesse, Aenderungszeit und ETag.">
