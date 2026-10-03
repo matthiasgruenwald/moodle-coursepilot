@@ -1,0 +1,27 @@
+<activity id="1" moduleid="900001" modulename="checklist" contextid="1">
+  <checklist id="1">
+    <name>KI-Checkliste: Mikroskopieren</name>
+    <intro>&lt;p&gt;Hake ab, was du erledigt hast.&lt;/p&gt;</intro>
+    <introformat>1</introformat>
+    <timecreated>0</timecreated>
+    <timemodified>0</timemodified>
+    <useritemsallowed>0</useritemsallowed>
+    <studentcomments>0</studentcomments>
+    <teacheredit>0</teacheredit>
+    <theme>default</theme>
+    <duedatesoncalendar>0</duedatesoncalendar>
+    <teachercomments>1</teachercomments>
+    <maxgrade>0</maxgrade>
+    <autopopulate>0</autopopulate>
+    <autoupdate>1</autoupdate>
+    <completionpercent>0</completionpercent>
+    <completionpercenttype>percent</completionpercenttype>
+    <emailoncomplete>0</emailoncomplete>
+    <lockteachermarks>0</lockteachermarks>
+    <items>
+      <item id="1"><userid>0</userid><displaytext>Objektträger vorbereiten</displaytext><position>1</position><indent>0</indent><itemoptional>0</itemoptional><duetime>0</duetime><colour>black</colour><moduleid>0</moduleid><hidden>0</hidden><linkcourseid>$@NULL@$</linkcourseid><linkurl>$@NULL@$</linkurl><openlinkinnewwindow>0</openlinkinnewwindow><checks></checks><comments></comments><studentcomments></studentcomments></item>
+      <item id="2"><userid>0</userid><displaytext>Kleinste Vergrößerung einstellen</displaytext><position>2</position><indent>0</indent><itemoptional>0</itemoptional><duetime>0</duetime><colour>black</colour><moduleid>0</moduleid><hidden>0</hidden><linkcourseid>$@NULL@$</linkcourseid><linkurl>$@NULL@$</linkurl><openlinkinnewwindow>0</openlinkinnewwindow><checks></checks><comments></comments><studentcomments></studentcomments></item>
+      <item id="3"><userid>0</userid><displaytext>Skizze anfertigen (optional)</displaytext><position>3</position><indent>1</indent><itemoptional>1</itemoptional><duetime>0</duetime><colour>red</colour><moduleid>0</moduleid><hidden>0</hidden><linkcourseid>$@NULL@$</linkcourseid><linkurl>$@NULL@$</linkurl><openlinkinnewwindow>0</openlinkinnewwindow><checks></checks><comments></comments><studentcomments></studentcomments></item>
+    </items>
+  </checklist>
+</activity>
