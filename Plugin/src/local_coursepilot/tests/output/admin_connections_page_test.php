@@ -62,10 +62,10 @@ final class admin_connections_page_test extends \advanced_testcase {
      * @return int Die ID der Tokenzeile.
      */
     private function issue_token(int $userid): int {
-        $registration = oauth_lib::handle_registration('POST', [
+        $registration = oauth_lib::handle_registration('POST', json_encode([
             'client_name' => 'Claude Desktop',
             'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
-        ]);
+        ]), '192.0.2.1');
         $clientid = $registration['body']['client_id'];
         $verifier = bin2hex(random_bytes(32));
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');

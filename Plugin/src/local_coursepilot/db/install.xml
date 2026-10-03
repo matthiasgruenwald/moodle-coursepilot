@@ -52,6 +52,20 @@
       <KEYS><KEY NAME="primary" TYPE="primary" FIELDS="id"/></KEYS>
       <INDEXES><INDEX NAME="userid_revoked" UNIQUE="false" FIELDS="userid, revoked"/></INDEXES>
     </TABLE>
+    <TABLE NAME="local_coursepilot_oauth_budget" COMMENT="Windowed anonymous OAuth budgets per scope, site and source; rows expire with their window (#642).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="scope" TYPE="char" LENGTH="16" NOTNULL="true" SEQUENCE="false" COMMENT="register or cimd."/>
+        <FIELD NAME="sourcekey" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="* for the site counter, otherwise HMAC of the trusted request source."/>
+        <FIELD NAME="expires" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="End of the window."/>
+        <FIELD NAME="hits" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS><KEY NAME="primary" TYPE="primary" FIELDS="id"/></KEYS>
+      <INDEXES>
+        <INDEX NAME="scope_source_expires" UNIQUE="true" FIELDS="scope, sourcekey, expires"/>
+        <INDEX NAME="expires" UNIQUE="false" FIELDS="expires"/>
+      </INDEXES>
+    </TABLE>
     <TABLE NAME="local_coursepilot_oauth_token" COMMENT="SHA-256-Hashes der Access- und Refresh-Token, 1h/30d, Refresh-Rotation (#336, #534).">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>

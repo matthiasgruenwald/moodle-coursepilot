@@ -53,6 +53,24 @@ final class oauth_lib {
     /** @var int|null Stable connection authenticated in this request. */
     private static ?int $currentconnectionid = null;
 
+    /** @var int Maximum raw DCR request body; larger requests are rejected before decoding (#642). */
+    public const REGISTRATION_MAX_BODY_BYTES = 16384;
+
+    /** @var int Maximum length of one registered redirect URI (#642). */
+    public const REGISTRATION_MAX_URI_LENGTH = 2048;
+
+    /** @var int Maximum number of redirect URIs per registration (#642). */
+    public const REGISTRATION_MAX_REDIRECT_URIS = 10;
+
+    /** @var int Default registrations per window for the whole site (setting oauthregistersitelimit). */
+    public const REGISTRATION_SITE_LIMIT = 200;
+
+    /** @var int Default registrations per window for one source (setting oauthregistersourcelimit). */
+    public const REGISTRATION_SOURCE_LIMIT = 50;
+
+    /** @var int Default registration budget window in seconds (setting oauthregisterwindow). */
+    public const REGISTRATION_WINDOW = 3600;
+
     /** @var int Lebensdauer eines Autorisierungscodes in Sekunden (RFC 6749 empfiehlt kurz). */
     private const CODE_TTL = 120;
 
@@ -146,28 +164,50 @@ final class oauth_lib {
      *               Erfolg: vollstaendiger Client-Datensatz inkl. client_id.
      */
     public static function register_client(array $metadata): array {
-        $redirecturis = $metadata['redirect_uris'] ?? null;
-        if (!is_array($redirecturis) || empty($redirecturis)) {
-            return ['error' => 'invalid_client_metadata', 'error_description' => 'redirect_uris ist Pflicht.'];
+        $error = self::registration_error($metadata);
+        if ($error !== null) {
+            return $error;
         }
-        foreach ($redirecturis as $uri) {
-            if (!self::is_allowed_redirect_uri($uri)) {
-                return [
-                    'error' => 'invalid_redirect_uri',
-                    'error_description' => 'redirect_uri muss https sein oder ein Loopback (http://127.0.0.1 / http://localhost).',
-                ];
-            }
-        }
+        $redirecturis = $metadata['redirect_uris'];
 
         $authmethod = $metadata['token_endpoint_auth_method'] ?? 'none';
         if (!in_array($authmethod, ['none', 'client_secret_post'], true)) {
             $authmethod = 'none';
         }
-        $clientname = clean_param($metadata['client_name'] ?? '', PARAM_TEXT) ?: null;
+        $clientname = \core_text::substr(clean_param($metadata['client_name'] ?? '', PARAM_TEXT), 0, 255) ?: null;
         $clientsecret = $authmethod === 'client_secret_post' ? self::random_token(32) : null;
 
         $record = self::persist_client(self::random_token(24), $clientname, $redirecturis, $authmethod, $clientsecret, 'dcr');
         return self::client_registration_response($record);
+    }
+
+    /**
+     * Validate DCR metadata without side effects, so invalid requests are
+     * rejected before they consume budget (#642).
+     *
+     * @param array $metadata
+     * @return array|null RFC 7591 error, or null when valid.
+     */
+    private static function registration_error(array $metadata): ?array {
+        $redirecturis = $metadata['redirect_uris'] ?? null;
+        if (!is_array($redirecturis) || empty($redirecturis)) {
+            return ['error' => 'invalid_client_metadata', 'error_description' => 'redirect_uris is required.'];
+        }
+        if (count($redirecturis) > self::REGISTRATION_MAX_REDIRECT_URIS) {
+            return ['error' => 'invalid_client_metadata', 'error_description' => 'Too many redirect_uris.'];
+        }
+        foreach ($redirecturis as $uri) {
+            if (is_string($uri) && strlen($uri) > self::REGISTRATION_MAX_URI_LENGTH) {
+                return ['error' => 'invalid_redirect_uri', 'error_description' => 'redirect_uri is too long.'];
+            }
+            if (!self::is_allowed_redirect_uri($uri)) {
+                return [
+                    'error' => 'invalid_redirect_uri',
+                    'error_description' => 'redirect_uri must use https or a loopback address (http://127.0.0.1 / http://localhost).',
+                ];
+            }
+        }
+        return null;
     }
 
     /**
@@ -206,34 +246,52 @@ final class oauth_lib {
     }
 
     /**
-     * Registrierungs-Handler fuer oauth/register.php: Methodenpruefung,
-     * JSON-Parsing, Aufruf von register_client(), einheitliches
-     * Antwortformat - Fehlerantworten immer JSON (RFC 7591, Abschnitt 3.2.2).
+     * Registration handler for oauth/register.php; errors are always JSON
+     * (RFC 7591, section 3.2.2). Size is checked before decoding and metadata
+     * before the budget (#642); any rejection persists no client.
      *
      * @param string $method
-     * @param array|null $body Bereits dekodierter JSON-Rumpf, oder null bei
-     *        Parse-Fehler.
+     * @param string $rawbody Raw request body, read at most one byte beyond
+     *        {@see REGISTRATION_MAX_BODY_BYTES}.
+     * @param string $source Trusted request source ({@see oauth_budget::request_source()}).
      * @return array{status: int, headers: array<string, string>, body: array}
      */
-    public static function handle_registration(string $method, ?array $body): array {
+    public static function handle_registration(string $method, string $rawbody, string $source): array {
         if ($method !== 'POST') {
             return self::result(405, ['Allow' => 'POST'], [
                 'error' => 'invalid_request',
-                'error_description' => 'Nur POST ist erlaubt.',
+                'error_description' => 'Only POST is allowed.',
             ]);
         }
-        if ($body === null) {
+        if (strlen($rawbody) > self::REGISTRATION_MAX_BODY_BYTES) {
+            return self::result(413, [], [
+                'error' => 'invalid_client_metadata',
+                'error_description' => 'Registration request is too large.',
+            ]);
+        }
+        $body = json_decode($rawbody, true, 16);
+        if (!is_array($body)) {
             return self::result(400, [], [
                 'error' => 'invalid_client_metadata',
-                'error_description' => 'Ungueltiges JSON.',
+                'error_description' => 'Invalid JSON.',
             ]);
         }
-
-        $result = self::register_client($body);
-        if (isset($result['error'])) {
-            return self::result(400, [], $result);
+        $error = self::registration_error($body);
+        if ($error !== null) {
+            return self::result(400, [], $error);
         }
-        return self::result(201, ['Cache-Control' => 'no-store'], $result);
+
+        $retryafter = oauth_budget::consume('register', $source,
+            oauth_budget::setting('oauthregistersitelimit', self::REGISTRATION_SITE_LIMIT),
+            oauth_budget::setting('oauthregistersourcelimit', self::REGISTRATION_SOURCE_LIMIT),
+            oauth_budget::setting('oauthregisterwindow', self::REGISTRATION_WINDOW));
+        if ($retryafter > 0) {
+            return self::result(429, ['Retry-After' => (string) $retryafter], [
+                'error' => 'temporarily_unavailable',
+                'error_description' => 'Registration budget exhausted, retry later.',
+            ]);
+        }
+        return self::result(201, ['Cache-Control' => 'no-store'], self::register_client($body));
     }
 
     /**

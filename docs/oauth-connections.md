@@ -1,4 +1,4 @@
-# Stabile OAuth-Verbindungen und Replay-Sperre (#638–639)
+# Stabile OAuth-Verbindungen, Replay-Sperre und Registrierungsbudget (#638–642)
 
 Eine Verbindung (Grant) gehört genau einer Person und einem Client. Jede neue
 Autorisierung eröffnet eine eigene Verbindung, auch beim gleichen Nutzer und
@@ -47,6 +47,54 @@ dem Upgrade 2026100300 (#638) und der aktivierten Sperrreaktion (#639). Vorher
 Bestandsverbindungen gewinnen den Replay-Nachweis mit ihrer ersten Rotation nach
 diesem Upgrade. Erfordert ein Sicherheitsvorfall auch Schutz ohne erhaltenen
 Nachweis, muss die Administration die bestehenden Verbindungen widerrufen.
+
+## Anonyme Registrierung begrenzt (#642)
+
+Die Clientregistrierung (`oauth/register.php`) bleibt ohne Anmeldung erreichbar,
+legt aber nur innerhalb endlicher Budgets Clients an. Reihenfolge: Methode,
+Größengrenze vor dem JSON-Dekodieren, Metadatenprüfung, Budget, erst dann der
+Datensatz. Jede Ablehnung legt keinen Client an; abgelehnte Größen und ungültige
+Metadaten verbrauchen kein Budget.
+
+| Grenze | Wert | Art |
+|---|---|---|
+| Registrierungen pro Fenster, Instanz | 200 | Einstellung `oauthregistersitelimit` |
+| Registrierungen pro Fenster, Quelle | 50 | Einstellung `oauthregistersourcelimit` |
+| Zeitfenster | 3600 s | Einstellung `oauthregisterwindow` |
+| Anfragekörper | 16 KiB | fest (`REGISTRATION_MAX_BODY_BYTES`), HTTP 413 |
+| Länge je `redirect_uri` | 2048 Zeichen | fest, HTTP 400 `invalid_redirect_uri` |
+| Anzahl `redirect_uris` | 10 | fest, HTTP 400 `invalid_client_metadata` |
+| `client_name` | 255 Zeichen | wird gekürzt |
+| Löschhorizont Budgetdaten | Fensterende | bei jeder Budgetprüfung, sonst stündliche Aufgabe |
+| Löschhorizont unbenutzter Clients | – | folgt mit der OAuth-Bereinigung (#644) |
+
+Eine leere Einstellung nutzt den Standard, 0 oder negative Werte gelten als 1 –
+eine unbegrenzte Einstellung gibt es nicht. Die Fenster sind fest: An einer
+Fenstergrenze sind kurzzeitig bis zu zwei Limits möglich. Eine geänderte
+Fensterlänge beginnt neue Fenster und damit neue Zähler. Erschöpftes Budget liefert HTTP 429 mit
+`temporarily_unavailable` und `Retry-After` bis zum Fensterende. Autorisierung,
+PKCE-Pflicht, Codeeinlösung und Refresh bereits registrierter Clients sind davon
+unberührt.
+
+Die Quelle ist Moodles `getremoteaddr()`: Weitergeleitete Header zählen nur, wenn
+die Administration einen Reverse-Proxy konfiguriert hat. IPv6-Adressen werden auf
+ihr /64-Netz reduziert. Gespeichert wird ein HMAC der Quelle mit der
+Instanzkennung, keine Klartextadresse. Die Instanzkennung ist kein Geheimnis;
+der Schutz liegt vor allem in der Lebensdauer von höchstens einem Fenster.
+
+Zustand (`local_coursepilot_oauth_budget`): je Fenster ein Instanzzähler und ein
+Zähler je Quelle, die das Instanzbudget passiert hat – höchstens Instanzlimit + 1
+Zeilen pro Fenster. Alle Anfragen eines Bereichs serialisieren sich in einer
+Transaktion auf der Instanzzeile; die letzte erlaubte und die erste abgelehnte
+Anfrage sind auch parallel exakt. Eine Quellablehnung gibt die Instanzeinheit
+zurück, damit eine einzelne Quelle das Instanzbudget nicht leert. Abgelaufene
+Fenster löscht jede Budgetprüfung (`oauth_budget::purge_expired()`); ohne neue
+Anfragen übernimmt das die stündliche Aufgabe `oauth_budget_cleanup`. Eine an der
+Fenstergrenze bereits gelöschte Instanzzeile gilt als Ablehnung, nie als leeres
+Budget. Derselbe Vertrag `oauth_budget::consume()`
+ist für den CIMD-Schutz (#643) mit eigenem Bereich vorgesehen.
+
+Der Moodle-Schritt 2026100342 legt die Tabelle idempotent an und registriert die Aufgabe.
 
 ## Native Prüfbarkeit
 

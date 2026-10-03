@@ -344,6 +344,15 @@ $string['contextfilehostnotallowed'] = 'File {$a}: this storage is not approved 
 $string['settinghistoryretentiondays'] = 'Change history retention period (days)';
 $string['settinghistoryretentiondays_desc'] = 'How long change-history states are kept per activity before being deleted on the next write to that same activity. No cron needed - cleanup runs alongside every write. At least 1 day; "no limit" is not an option.';
 
+// Anonymous OAuth registration budgets (#642).
+$string['settingoauthregistersitelimit'] = 'OAuth registrations per window (site)';
+$string['settingoauthregistersitelimit_desc'] = 'Maximum anonymous client registrations for the whole site per window. Further requests receive HTTP 429 until the window ends; already registered clients keep working. Zero or negative values mean 1; there is no unlimited option.';
+$string['settingoauthregistersourcelimit'] = 'OAuth registrations per window (per source)';
+$string['settingoauthregistersourcelimit_desc'] = 'Maximum anonymous client registrations per request source and window. The source is the remote address as determined by Moodle (forwarded headers only count with a configured reverse proxy; IPv6 per /64). Hosted AI clients register from shared provider addresses, so keep this high enough for your teachers. At least 1.';
+$string['settingoauthregisterwindow'] = 'OAuth registration window (seconds)';
+$string['settingoauthregisterwindow_desc'] = 'Length of the registration budget window. Changing it starts new windows. Budget records are deleted within an hour after their window has ended. At least 1 second.';
+$string['taskoauthbudgetcleanup'] = 'Delete expired OAuth budget records';
+
 $string['connections'] = 'Coursepilot connections';
 $string['connectionsintro'] = 'All active remote-access connections on this site. Revoking a connection invalidates its token immediately — any further access then fails.';
 $string['myconnections'] = 'My Coursepilot connections';

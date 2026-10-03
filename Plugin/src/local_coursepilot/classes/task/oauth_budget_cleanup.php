@@ -14,22 +14,28 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
+namespace local_coursepilot\task;
+
 /**
- * Coursepilot: MCP-Endpunkt auf dem Moodle-Server.
+ * Delete expired anonymous OAuth budget windows even without new requests (#642).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
+final class oauth_budget_cleanup extends \core\task\scheduled_task {
 
-defined('MOODLE_INTERNAL') || die();
+    /**
+     * @return string
+     */
+    public function get_name(): string {
+        return get_string('taskoauthbudgetcleanup', 'local_coursepilot');
+    }
 
-$plugin->component = 'local_coursepilot';
-$plugin->version   = 2026100342;
-// 2.0.x sagt Moodle 5.0 zu (geprueft). Ab 2.1 gilt Moodle 5.1 als
-// Mindestversion (ADR 0027).
-$plugin->requires  = 2025041400;
-// Beta nach dem Praxistest (ADR 0027). Die Linie setzt Coursepilot 1.x fort:
-// der Neubau ist Version 2, keine zweite Produktlinie.
-$plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '2.0.0-beta';
+    /**
+     * Purge every budget row whose window has ended.
+     */
+    public function execute(): void {
+        \local_coursepilot\oauth_budget::purge_expired();
+    }
+}
