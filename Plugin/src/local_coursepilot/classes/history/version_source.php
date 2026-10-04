@@ -99,12 +99,14 @@ final class version_source {
     }
 
     /**
+     * @param string $lang Explicit language for UI or tool callers.
      * @return string teacher-facing label
      */
-    public function label(): string {
+    public function label(string $lang = 'en'): string {
         if (!isset(self::LABELS[$this->key])) {
             return $this->key;
         }
-        return get_string(self::LABELS[$this->key], 'local_coursepilot', (string) ($this->refcmid ?? '?'));
+        return get_string_manager()->get_string(
+            self::LABELS[$this->key], 'local_coursepilot', (string) ($this->refcmid ?? '?'), $lang);
     }
 }

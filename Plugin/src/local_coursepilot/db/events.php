@@ -34,8 +34,8 @@
  * Moodle 5.0.8 nirgends getriggert) zaehlen bewusst NICHT dazu: eine neue
  * Frage ist ein Inhaltswechsel, kein Anordnungswechsel (siehe
  * catalog\quiz-Klassendoku "Anordnung ist nicht Teil dieses Katalogs" und
- * version_history::GAPS_HINT "Quiz-Inhalt jenseits der Anordnung ... nicht
- * erfasst").
+ * version_history gap notice: "quiz content beyond the arrangement ... not
+ * recorded").
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

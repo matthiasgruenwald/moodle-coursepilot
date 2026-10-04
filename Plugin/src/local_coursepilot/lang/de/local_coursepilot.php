@@ -53,6 +53,18 @@ $string['historysourcediscovered'] = 'vorgefundener Ausgangsstand vor Coursepilo
 $string['historysourcecloned'] = 'Klon der Aktivität {$a}';
 $string['historysourcefromxml'] = 'aus Aktivitäts-XML angelegt';
 $string['historysourcesuperseded'] = 'abgelöst durch Aktivität {$a}';
+$string['historygapnotice'] = 'Der Verlauf ist nicht lückenlos: Quiz-Inhalt jenseits der Anordnung, das Notenbuch, eine Wiederherstellung eines ganzen Kurses aus dem Papierkorb (Restore) und direkte Datenbankschreibungen werden nicht erfasst. Ersetzte Aktivitätsdateien in freigeschalteten Feldern (z. B. Anhänge) sind davon ausgenommen und werden bei einer Rückkehr zu einem alten Stand mitgeholt. Bei erschlossenen Aktivitätsarten (z. B. Buch, Glossar, Lektion) erfasst der Verlauf nur die Instanzzeile, nicht die Kindtabellen (Kapitel, Einträge, Seiten, Punkte). Die Lücke ist erkennbar, aber nicht schließbar.';
+$string['historysummarymarker'] = 'Version {$a->version} ({$a->source}) - {$a->user}, {$a->time}.';
+$string['historysummarychange'] = 'Version {$a->version} - {$a->user}, {$a->time}: {$a->change}.';
+$string['historymorefields'] = ' und {$a} weitere Felder';
+$string['historyfieldschanged'] = '{$a} geändert';
+$string['historyfileadded'] = '{$a} Datei hinzugefügt';
+$string['historyfilesadded'] = '{$a} Dateien hinzugefügt';
+$string['historyfileremoved'] = '{$a} Datei entfernt';
+$string['historyfilesremoved'] = '{$a} Dateien entfernt';
+$string['historynochange'] = 'keine inhaltliche Änderung erkennbar';
+$string['historyunknownuser'] = 'Nutzer #{$a}';
+
 
 // Plugin-Beschreibung auf der Einstellungsseite (Issue #500, Spec #486 §11).
 $string['settingintroheading'] = 'Über Coursepilot';

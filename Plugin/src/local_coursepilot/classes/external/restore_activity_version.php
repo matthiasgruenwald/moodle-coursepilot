@@ -316,7 +316,7 @@ final class restore_activity_version extends external_api {
      * die arrangement_json (vor #396 angelegt) oder stimmt die Anordnung
      * bereits mit dem Ist-Stand ueberein, wird nichts unternommen - das
      * gehoert zu den dokumentierten Verlaufsluecken
-     * ({@see version_history} GAPS_HINT).
+     * ({@see version_history} gap notice).
      *
      * @param \stdClass $cm
      * @param int $targetversion

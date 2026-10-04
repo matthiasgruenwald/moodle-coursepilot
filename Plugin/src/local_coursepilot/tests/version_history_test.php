@@ -134,6 +134,28 @@ final class version_history_test extends \advanced_testcase {
         $this->assertSame('moodle', $result['versions'][0]['source']);
     }
 
+    public function test_tool_history_stays_english_for_a_german_user(): void {
+        global $DB, $CFG;
+        $this->resetAfterTest();
+        $CFG->langotherroot = $CFG->libdir . '/tests/fixtures/langtest';
+        get_string_manager(true);
+        [$course, $cm] = $this->create_page();
+        force_current_language('de');
+        $this->assertSame('de', current_language());
+        $this->update_page($course, $cm, 'Second version');
+        $DB->set_field('local_coursepilot_cm_version', 'userid', 0, ['cmid' => $cm->id]);
+
+        $result = version_history::list_versions($cm->id);
+        $this->assertStringContainsString('first recorded state', $result['versions'][0]['summary_line']);
+        $this->assertSame('User #0', $result['versions'][0]['user']);
+        $this->assertMatchesRegularExpression('/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/', $result['versions'][0]['summary_line']);
+        $this->assertStringContainsString('changed', $result['versions'][1]['summary_line']);
+        $this->assertStringContainsString('The history is incomplete', $result['gap_notice']);
+        $comparison = version_history::compare($cm->id, 1, 2);
+        $this->assertSame($result['gap_notice'], $comparison['gap_notice']);
+        $this->assertSame('User #0', $comparison['before']['user']);
+    }
+
     /**
      * Abnahmekriterium 1+2: der Einzeiler nennt wer/wann/wodurch und wird
      * serverseitig aus den Vollstaenden berechnet (das geaenderte Feld
@@ -161,10 +183,10 @@ final class version_history_test extends \advanced_testcase {
         [, $cm] = $this->create_page();
 
         $result = version_history::list_versions($cm->id);
-        $this->assertStringContainsString('Notenbuch', $result['gap_notice']);
+        $this->assertStringContainsString('gradebook', $result['gap_notice']);
         $this->assertStringContainsString('Restore', $result['gap_notice']);
-        $this->assertStringContainsString('Quiz', $result['gap_notice']);
-        $this->assertStringContainsString('Datenbankschreibungen', $result['gap_notice']);
+        $this->assertStringContainsString('quiz', $result['gap_notice']);
+        $this->assertStringContainsString('database writes', $result['gap_notice']);
     }
 
     /**
@@ -193,7 +215,7 @@ final class version_history_test extends \advanced_testcase {
         $this->assertNotNull($namefield, 'Feld "name" muss im Diff auftauchen.');
         $this->assertSame(json_encode('Erste Fassung'), $namefield['before_json']);
         $this->assertSame(json_encode('Dritte Fassung'), $namefield['after_json']);
-        $this->assertStringContainsString('Notenbuch', $result['gap_notice']);
+        $this->assertStringContainsString('gradebook', $result['gap_notice']);
     }
 
     /**
@@ -214,9 +236,11 @@ final class version_history_test extends \advanced_testcase {
      * echten Draft-Datei-Upload zu pruefen.
      */
     public function test_compare_reports_added_and_removed_files(): void {
-        global $DB;
+        global $DB, $CFG;
 
         $this->resetAfterTest();
+        $CFG->langotherroot = $CFG->libdir . '/tests/fixtures/langtest';
+        get_string_manager(true);
         [$course, $cm] = $this->create_page();
         $this->update_page($course, $cm, 'Zweite Fassung');
 
@@ -271,6 +295,26 @@ final class version_history_test extends \advanced_testcase {
         $hinzugefuegt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['change_type'] === 'added'));
         $this->assertSame('alt.pdf', $entfernt[0]['filename']);
         $this->assertSame('neu.pdf', $hinzugefuegt[0]['filename']);
+
+        $summary = version_history::list_versions($cm->id)['versions'][1]['summary_line'];
+        $this->assertStringContainsString('1 file added', $summary);
+        $this->assertStringContainsString('1 file removed', $summary);
+
+        $secondfile = $DB->get_record('local_coursepilot_cm_file', ['id' => $newfileid], '*', MUST_EXIST);
+        unset($secondfile->id);
+        $secondfile->pathnamehash = sha1('second');
+        $secondfile->contenthash = sha1('second-content');
+        $secondfile->filename = 'second.pdf';
+        $secondfileid = $DB->insert_record('local_coursepilot_cm_file', $secondfile);
+        $DB->insert_record('local_coursepilot_cm_version_file', (object) [
+            'versionid' => $version2id,
+            'fileid' => $secondfileid,
+            'gap' => 1,
+        ]);
+        $rows = version_history::list_versions($cm->id)['versions'];
+        $this->assertStringContainsString('2 files added', $rows[1]['summary_line']);
+        $reverse = version_history::list_versions($cm->id, 'de')['versions'];
+        $this->assertStringContainsString('2 Dateien hinzugefügt', $reverse[1]['summary_line']);
     }
 
     /**
@@ -366,7 +410,7 @@ final class version_history_test extends \advanced_testcase {
         [, $cm] = $this->create_page();
 
         $notice = version_history::list_versions($cm->id)['gap_notice'];
-        $this->assertStringContainsString('erschlossenen Aktivitätsarten', $notice);
-        $this->assertStringContainsString('nur die Instanzzeile', $notice);
+        $this->assertStringContainsString('activity types created from XML', $notice);
+        $this->assertStringContainsString('only the instance row', $notice);
     }
 }

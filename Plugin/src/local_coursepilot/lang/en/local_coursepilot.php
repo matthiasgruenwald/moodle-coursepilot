@@ -117,6 +117,18 @@ $string['historysourcediscovered'] = 'starting state found before Coursepilot';
 $string['historysourcecloned'] = 'clone of activity {$a}';
 $string['historysourcefromxml'] = 'created from activity XML';
 $string['historysourcesuperseded'] = 'superseded by activity {$a}';
+$string['historygapnotice'] = 'The history is incomplete: quiz content beyond the arrangement, the gradebook, restoring a whole course from the recycle bin (Restore), and direct database writes are not recorded. Replaced activity files in supported fields (e.g. attachments) are an exception and are retrieved when returning to an earlier state. For activity types created from XML (e.g. book, glossary, lesson), the history records only the instance row, not the child tables (chapters, entries, pages, points). The gap is visible but cannot be closed.';
+$string['historysummarymarker'] = 'Version {$a->version} ({$a->source}) - {$a->user}, {$a->time}.';
+$string['historysummarychange'] = 'Version {$a->version} - {$a->user}, {$a->time}: {$a->change}.';
+$string['historymorefields'] = ' and {$a} more fields';
+$string['historyfieldschanged'] = '{$a} changed';
+$string['historyfileadded'] = '{$a} file added';
+$string['historyfilesadded'] = '{$a} files added';
+$string['historyfileremoved'] = '{$a} file removed';
+$string['historyfilesremoved'] = '{$a} files removed';
+$string['historynochange'] = 'no content change detected';
+$string['historyunknownuser'] = 'User #{$a}';
+
 
 // Plugin description on the settings page (Issue #500, Spec #486 §11).
 $string['settingintroheading'] = 'About Coursepilot';

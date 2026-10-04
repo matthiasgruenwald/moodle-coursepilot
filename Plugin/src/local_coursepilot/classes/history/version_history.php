@@ -32,27 +32,14 @@ defined('MOODLE_INTERNAL') || die();
 final class version_history {
 
     /**
-     * Fester Hinweis auf die strukturellen Luecken des Verlaufs (Spec 0015
-     * §10.2, Issue #394): wird nicht pro Version berechnet, sondern immer
-     * unveraendert mitgeliefert - "die Luecke ist erkennbar, nicht
-     * schliessbar".
-     */
-    private const GAPS_HINT = 'Der Verlauf ist nicht lückenlos: Quiz-Inhalt jenseits der Anordnung, das '
-        . 'Notenbuch, eine Wiederherstellung eines ganzen Kurses aus dem Papierkorb (Restore) und direkte '
-        . 'Datenbankschreibungen werden nicht erfasst. Ersetzte Aktivitätsdateien in freigeschalteten Feldern '
-        . '(z. B. Anhänge) sind davon ausgenommen und werden bei einer Rückkehr zu einem alten Stand '
-        . 'mitgeholt. Bei erschlossenen Aktivitätsarten (z. B. Buch, Glossar, Lektion) erfasst der Verlauf '
-        . 'nur die Instanzzeile, nicht die Kindtabellen (Kapitel, Einträge, Seiten, Punkte). '
-        . 'Die Lücke ist erkennbar, aber nicht schließbar.';
-
-    /**
      * Alle Versionen einer Aktivitaet, aufsteigend, mit je einem Einzeiler
      * gegenueber dem Vorgaenger (Spec 0015 §10.6, Abnahmekriterium 1+2).
      *
      * @param int $cmid
+     * @param string $lang UI language; tool callers keep the English default.
      * @return array{cmid: int, modname: string, versions: array, gap_notice: string}
      */
-    public static function list_versions(int $cmid): array {
+    public static function list_versions(int $cmid, string $lang = 'en'): array {
         global $DB;
 
         $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);
@@ -61,7 +48,7 @@ final class version_history {
         $rows = [];
         $previous = null;
         foreach ($records as $record) {
-            $rows[] = self::describe_version($record, $previous);
+            $rows[] = self::describe_version($record, $previous, $lang);
             $previous = $record;
         }
 
@@ -69,7 +56,7 @@ final class version_history {
             'cmid' => $cmid,
             'modname' => (string) $cm->modname,
             'versions' => $rows,
-            'gap_notice' => self::GAPS_HINT,
+            'gap_notice' => get_string_manager()->get_string('historygapnotice', 'local_coursepilot', null, $lang),
         ];
     }
 
@@ -95,7 +82,7 @@ final class version_history {
             'after' => self::describe_meta($tostate),
             'changes' => self::diff_fields(self::public_state($fromstate), self::public_state($tostate)),
             'files' => self::diff_files((int) $fromstate->id, (int) $tostate->id),
-            'gap_notice' => self::GAPS_HINT,
+            'gap_notice' => get_string_manager()->get_string('historygapnotice', 'local_coursepilot', null, 'en'),
         ];
     }
 
@@ -235,11 +222,12 @@ final class version_history {
     /**
      * @param \stdClass $record
      * @param \stdClass|null $previous
+     * @param string $lang
      * @return array
      */
-    private static function describe_version(\stdClass $record, ?\stdClass $previous): array {
-        $meta = self::describe_meta($record);
-        $meta['summary_line'] = self::summary_line($previous, $record, $meta);
+    private static function describe_version(\stdClass $record, ?\stdClass $previous, string $lang): array {
+        $meta = self::describe_meta($record, $lang);
+        $meta['summary_line'] = self::summary_line($previous, $record, $meta, $lang);
         return $meta;
     }
 
@@ -248,9 +236,10 @@ final class version_history {
      * list_versions als auch fuer die before/after-Bloecke von compare().
      *
      * @param \stdClass $record
+     * @param string $lang
      * @return array{version: int, source: string, discovered: bool, source_cmid: int|null, userid: int, user: string, timestamp: int}
      */
-    private static function describe_meta(\stdClass $record): array {
+    private static function describe_meta(\stdClass $record, string $lang = 'en'): array {
         $source = version_source::from_record($record);
         return [
             'version' => (int) $record->version,
@@ -258,7 +247,7 @@ final class version_history {
             'discovered' => $source->is_discovered(),
             'source_cmid' => $source->refcmid,
             'userid' => (int) $record->userid,
-            'user' => self::fullname((int) $record->userid),
+            'user' => self::fullname((int) $record->userid, $lang),
             'timestamp' => (int) $record->timecreated,
         ];
     }
@@ -267,49 +256,58 @@ final class version_history {
      * @param \stdClass|null $previous
      * @param \stdClass $record
      * @param array $meta
+     * @param string $lang
      * @return string
      */
-    private static function summary_line(?\stdClass $previous, \stdClass $record, array $meta): string {
-        $timetext = userdate($meta['timestamp']);
+    private static function summary_line(?\stdClass $previous, \stdClass $record, array $meta, string $lang): string {
+        // Numeric dates avoid locale-dependent month/day names in the English tool contract.
+        $meta['time'] = userdate($meta['timestamp'], '%Y-%m-%d %H:%M', 99, false, false);
 
         $source = version_source::from_record($record);
         if ($previous === null || $source->is_marker()) {
-            return sprintf('Version %d (%s) - %s, %s.', $meta['version'], $source->label(), $meta['user'], $timetext);
+            $meta['source'] = $source->label($lang);
+            return get_string_manager()->get_string('historysummarymarker', 'local_coursepilot', (object) $meta, $lang);
         }
 
-        $summary = self::summarize_change($previous, $record);
-        return sprintf('Version %d - %s, %s: %s.', $meta['version'], $meta['user'], $timetext, $summary);
+        $meta['change'] = self::summarize_change($previous, $record, $lang);
+        return get_string_manager()->get_string('historysummarychange', 'local_coursepilot', (object) $meta, $lang);
     }
 
     /**
-     * Lehrkraft-deutsche Kurzfassung dessen, was sich gegenueber dem
-     * Vorgaenger geaendert hat - Felder und Dateien.
+     * Localized summary of field and file changes compared with the predecessor.
      *
      * @param \stdClass $before
      * @param \stdClass $after
+     * @param string $lang
      * @return string
      */
-    private static function summarize_change(\stdClass $before, \stdClass $after): string {
+    private static function summarize_change(\stdClass $before, \stdClass $after, string $lang): string {
         $fields = self::changed_fields(self::public_state($before), self::public_state($after));
         $filechanges = self::diff_files((int) $before->id, (int) $after->id);
 
         $parts = [];
         if ($fields) {
-            $parts[] = (count($fields) > 4
-                ? implode(', ', array_slice($fields, 0, 4)) . ' und ' . (count($fields) - 4) . ' weitere Felder'
-                : implode(', ', $fields)) . ' geändert';
+            $fieldnames = implode(', ', array_slice($fields, 0, 4));
+            if (count($fields) > 4) {
+                $fieldnames .= get_string_manager()->get_string(
+                    'historymorefields', 'local_coursepilot', count($fields) - 4, $lang);
+            }
+            $parts[] = get_string_manager()->get_string('historyfieldschanged', 'local_coursepilot', $fieldnames, $lang);
         }
 
         $added = count(array_filter($filechanges, static fn(array $c): bool => $c['change_type'] === 'added'));
         $removed = count($filechanges) - $added;
         if ($added) {
-            $parts[] = $added . ' Datei' . ($added === 1 ? '' : 'en') . ' hinzugefügt';
+            $parts[] = get_string_manager()->get_string(
+                $added === 1 ? 'historyfileadded' : 'historyfilesadded', 'local_coursepilot', $added, $lang);
         }
         if ($removed) {
-            $parts[] = $removed . ' Datei' . ($removed === 1 ? '' : 'en') . ' entfernt';
+            $parts[] = get_string_manager()->get_string(
+                $removed === 1 ? 'historyfileremoved' : 'historyfilesremoved', 'local_coursepilot', $removed, $lang);
         }
 
-        return $parts ? implode(', ', $parts) : 'keine inhaltliche Änderung erkennbar';
+        return $parts ? implode(', ', $parts)
+            : get_string_manager()->get_string('historynochange', 'local_coursepilot', null, $lang);
     }
 
     /**
@@ -426,15 +424,17 @@ final class version_history {
 
     /**
      * @param int $userid
+     * @param string $lang
      * @return string
      */
-    private static function fullname(int $userid): string {
+    private static function fullname(int $userid, string $lang): string {
         global $DB;
 
         // Volle Zeile statt einer schmalen Feldauswahl: fullname() beschwert
         // sich per debugging(), wenn ihr z.B. die Zweitnamensfelder fehlen,
         // selbst wenn sie fuer die Anzeige ungenutzt bleiben.
         $user = $DB->get_record('user', ['id' => $userid]);
-        return $user ? fullname($user) : ('Nutzer #' . $userid);
+        return $user ? fullname($user)
+            : get_string_manager()->get_string('historyunknownuser', 'local_coursepilot', $userid, $lang);
     }
 }

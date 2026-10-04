@@ -37,8 +37,8 @@ defined('MOODLE_INTERNAL') || die();
  * Regelfall - ein Slot, der im Zielstand vorkommt, im aktuellen Stand aber
  * nicht mehr existiert (Frage seither entfernt) oder umgekehrt, ist ein
  * Inhaltswechsel, keine Anordnungsfrage (siehe
- * {@see \local_coursepilot\history\version_history} GAPS_HINT: "Quiz-Inhalt
- * jenseits der Anordnung ... nicht erfasst"). Solche Slots werden beim
+ * {@see \local_coursepilot\history\version_history} gap notice: "quiz content
+ * beyond the arrangement ... not recorded"). Solche Slots werden beim
  * Rueckschreiben stillschweigend uebersprungen statt per remove_slot/
  * add_question nachgebildet zu werden - Erweiterung erst, wenn Spec 0017
  * (Fragenanordnung als eigenes Werkzeug) das Zusammenspiel mit Inhaltsaenderungen

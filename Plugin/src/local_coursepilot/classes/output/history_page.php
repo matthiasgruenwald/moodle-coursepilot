@@ -46,7 +46,7 @@ final class history_page {
         bool $canrestore,
         \moodle_url $listurl
     ): array {
-        $data = version_history::list_versions($cmid);
+        $data = version_history::list_versions($cmid, current_language());
         $newest = $data['versions'] ? end($data['versions'])['version'] : null;
 
         $rows = [];
