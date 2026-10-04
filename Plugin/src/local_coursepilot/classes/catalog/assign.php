@@ -455,7 +455,7 @@ final class assign implements module_catalog {
                 [0, 1],
                 null,
                 'mod/assign/mod_form.php:246-250 (selectyesno, hideIf markingworkflow/blindmarking eq 0); '
-                    . 'mod/assign/locallib.php:795-802/1591-1595 (Erzwingung); column '
+                    . 'mod/assign/locallib.php:795-802/1591-1595 (enforcement); column '
                     . 'mod/assign/db/install.xml (assign.markinganonymous)'
             ),
             new field(

@@ -1,13 +1,13 @@
 'use strict';
 
 /**
- * Issue #559: "Ordner anlegen" muss state.lastResult sofort auf ein leeres
- * Ergebnis fuer den neuen Pfad zuruecksetzen, sonst zeigt "Ordner auswaehlen"
- * direkt danach die Uebergabe-Warnung (Issue #497) fuer den *alten*
- * Browse-Stand der Elternebene an, statt den (leeren) neuen Ordner zu sehen.
+ * Issue #559: "Create folder" must immediately reset state.lastResult to an empty
+ * result for the new path, otherwise "Choose this folder" right afterwards shows the
+ * handover warning (issue #497) for the *old* browse state of the parent level
+ * instead of seeing the (empty) new folder.
  *
- * Seit Issue #551 ist amd/src/location_selection.js ein AMD-Modul; der gemeinsame
- * Test-Unterbau (DOM-/fetch-/AMD-Stub) liegt in
+ * Since issue #551 amd/src/location_selection.js is an AMD module; the shared
+ * test scaffolding (DOM/fetch/AMD stub) lives in
  * test/helpers/location-selection-amd-test-utils.js.
  */
 
@@ -20,18 +20,18 @@ test('Creating a folder immediately resets state.lastResult to an empty result (
   var ctx = loadLocationSelectionModule(baseConfig(), [parentBrowseResult]);
   await ctx.ready;
 
-  // Fenster fuer "context_area" oeffnen -> browse() der Elternebene laeuft.
+  // Open the window for "context_area" -> browse() of the parent level runs.
   ctx.pickerButtons[0].dispatch('click');
   await flushPromises();
 
-  // Neuen Unterordner anlegen.
+  // Create a new subfolder.
   ctx.elements['coursepilot-location-selection-newfolder'].value = 'Kontext';
   ctx.elements['coursepilot-location-selection-createfolder'].dispatch('click');
   await flushPromises();
 
-  // "Ordner auswaehlen" direkt danach darf KEINE Uebergabe-Warnung anzeigen
-  // (Kriterium 2): das confirm-Modal darf nicht sichtbar geschaltet werden,
-  // und die Auswahl muss sofort (unbestaetigt) uebernommen werden.
+  // "Choose this folder" right afterwards must NOT show a handover warning
+  // (criterion 2): the confirm modal must not be made visible,
+  // and the selection must be adopted immediately (unconfirmed).
   ctx.elements['coursepilot-location-selection-confirmfolder'].dispatch('click');
 
   assert.notStrictEqual(ctx.elements['coursepilot-location-selection-confirm-modal'].style.display, 'block');
@@ -47,11 +47,11 @@ test('Selecting a folder with real parent content still shows the handover warni
   ctx.pickerButtons[0].dispatch('click');
   await flushPromises();
 
-  // Kein "Ordner anlegen" - direkt "Ordner auswaehlen" auf der Elternebene
-  // mit echtem, von browse() geliefertem Inhalt.
+  // No "Create folder" - "Choose this folder" directly on the parent level
+  // with real content delivered by browse().
   ctx.elements['coursepilot-location-selection-confirmfolder'].dispatch('click');
 
   assert.strictEqual(ctx.elements['coursepilot-location-selection-confirm-modal'].style.display, 'block');
-  // Die Auswahl darf noch NICHT uebernommen sein - erst nach Bestaetigung.
+  // The selection must NOT be adopted yet - only after confirmation.
   assert.strictEqual(ctx.elements['coursepilot-location-selection-context_area_path'].value, '');
 });

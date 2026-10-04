@@ -115,7 +115,7 @@ final class get_course_catalog_test extends \advanced_testcase {
         $this->assertArrayHasKey('sections', $result);
 
         $module = self::find_module($result, (int) $page->cmid);
-        $this->assertNotNull($module, 'Die angelegte Seite muss im Katalog auftauchen.');
+        $this->assertNotNull($module, 'The created page must appear in the catalog.');
         $this->assertArrayHasKey('visible', $module);
         $this->assertArrayHasKey('completion', $module);
         $this->assertArrayHasKey('availability', $module);

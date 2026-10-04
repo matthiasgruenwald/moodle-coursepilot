@@ -487,9 +487,9 @@ final class update_module_settings_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
 
         $modnames = registry::known_modnames();
-        $this->assertContains('quiz', $modnames, 'quiz muss weiterhin katalogisiert sein (eigener Schreibweg).');
+        $this->assertContains('quiz', $modnames, 'quiz must remain cataloged (own write path).');
         $modnamesviaupdatemodulesettings = array_values(array_diff($modnames, ['quiz']));
-        $this->assertCount(8, $modnamesviaupdatemodulesettings, 'Erwartet acht Aktivitaetsarten ueber dieses Vehikel.');
+        $this->assertCount(8, $modnamesviaupdatemodulesettings, 'Expected eight activity types via this vehicle.');
 
         foreach ($modnamesviaupdatemodulesettings as $modname) {
             $instance = $this->getDataGenerator()->get_plugin_generator('mod_' . $modname)->create_instance([
@@ -748,7 +748,7 @@ final class update_module_settings_test extends \advanced_testcase {
 
         try {
             update_module_settings::execute($cmid, json_encode(['introattachments' => ['kontext/plan.md']]));
-            $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
+            $this->fail('A path under the context area should have thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialpathiscontext', $e->errorcode);
         }
@@ -1198,7 +1198,7 @@ final class update_module_settings_test extends \advanced_testcase {
 
         try {
             update_module_settings::execute($page->cmid, json_encode(['name' => 'Neuer Titel']));
-            $this->fail('execute() haette wegen Drift werfen muessen.');
+            $this->fail('execute() should have thrown because of drift.');
         } catch (\moodle_exception $e) {
             // write_gate_test.php checks the exact language-pack wording. The test
             // instance has only plugin German strings, not a full German pack;
@@ -1243,7 +1243,7 @@ final class update_module_settings_test extends \advanced_testcase {
             'itemid',
             false
         );
-        $this->assertNotEmpty($trashed, 'Die ersetzte Hauptdatei muss in den Papierkorb wandern.');
+        $this->assertNotEmpty($trashed, 'The replaced main file must move to the trash.');
     }
 
     /**
@@ -1283,7 +1283,7 @@ final class update_module_settings_test extends \advanced_testcase {
 
         try {
             update_module_settings::execute($assign->cmid, $patch);
-            $this->fail('attemptreopenmethod=manual haette bestaetigt werden muessen.');
+            $this->fail('attemptreopenmethod=manual should have required confirmation.');
         } catch (\moodle_exception $e) {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
         }

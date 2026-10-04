@@ -100,7 +100,7 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
         $result = add_questions_to_quiz::execute((int) $quiz->cmid, [$question->id]);
         $result = external_api::clean_returnvalue(add_questions_to_quiz::execute_returns(), $result);
 
-        $this->assertCount(1, $result['slots'], 'Kein zweiter Slot fuer dieselbe Frage.');
+        $this->assertCount(1, $result['slots'], 'No second slot for the same question.');
         $this->assertFalse($result['appended'][0]['added']);
         $this->assertStringContainsString('skipped', $result['message']);
     }
@@ -127,7 +127,7 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
         $result2 = add_questions_to_quiz::execute((int) $quiz->cmid, [$question->id]);
         $result2 = external_api::clean_returnvalue(add_questions_to_quiz::execute_returns(), $result2);
 
-        $this->assertCount(1, $result2['slots'], 'Bearbeitete Frage bleibt derselbe Bank-Eintrag, kein zweiter Slot.');
+        $this->assertCount(1, $result2['slots'], 'Edited question stays the same bank entry, no second slot.');
         $this->assertSame(2, $result2['slots'][0]['version']);
         $this->assertSame('Frage A (bearbeitet)', $result2['slots'][0]['name']);
     }
@@ -157,7 +157,7 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
             $this->assertSame('addquestionstoquizblocked', $e->errorcode);
         }
 
-        $this->assertCount(1, $DB->get_records('quiz_slots', ['quizid' => $quiz->id]), 'Kein Slot wurde hinzugefuegt.');
+        $this->assertCount(1, $DB->get_records('quiz_slots', ['quizid' => $quiz->id]), 'No slot was added.');
     }
 
     /**

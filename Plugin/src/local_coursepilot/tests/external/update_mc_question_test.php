@@ -76,7 +76,7 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->assertFalse($result['idnumber_added']);
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-        $this->assertSame($countbefore, $countafter, 'Kein neuer Bank-Eintrag, nur eine neue Version.');
+        $this->assertSame($countbefore, $countafter, 'No new bank entry, only a new version.');
 
         $readback = get_question::execute($categoryid, '', $result['questionid']);
         $readback = external_api::clean_returnvalue(get_question::execute_returns(), $readback);
@@ -180,11 +180,11 @@ final class update_mc_question_test extends \advanced_testcase {
 
         $this->assertSame('updated', $result['status']);
         $this->assertTrue($result['idnumber_added']);
-        $this->assertSame($target['questionbankentryid'], $result['questionbankentryid'], 'Neue Version, kein neuer Eintrag.');
+        $this->assertSame($target['questionbankentryid'], $result['questionbankentryid'], 'New version, no new entry.');
 
         $newidnumber = $DB->get_field(
             'question_bank_entries', 'idnumber', ['id' => $target['questionbankentryid']], MUST_EXIST);
-        $this->assertNotEmpty($newidnumber, 'Genau diese eine Frage hat jetzt eine idnumber.');
+        $this->assertNotEmpty($newidnumber, 'Exactly this one question now has an idnumber.');
 
         // The neighboring question remains unchanged.
         $unchangedneighbouridnumber = $DB->get_field(
@@ -242,7 +242,7 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->assertStringContainsString('@@PLUGINFILE@@/diagramm.png', $newquestiontext);
 
         $stored = $this->stored_question_file('question', 'questiontext', $result['questionid'], 'diagramm.png');
-        $this->assertNotFalse($stored, 'Datei liegt physisch in der question/questiontext-Filearea.');
+        $this->assertNotFalse($stored, 'File is physically stored in the question/questiontext filearea.');
         $this->assertSame('Bildinhalt-1', $stored->get_content());
     }
 
@@ -332,7 +332,7 @@ final class update_mc_question_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
 
         $stored = $this->stored_question_file('question', 'questiontext', $result['questionid'], 'diagramm.png');
-        $this->assertSame('Version-2', $stored->get_content(), 'Einbettung nutzt den aktuellen Materialinhalt.');
+        $this->assertSame('Version-2', $stored->get_content(), 'Embedding uses the current material content.');
     }
 
     /**
@@ -369,7 +369,7 @@ final class update_mc_question_test extends \advanced_testcase {
             $this->assertSame(
                 1,
                 $DB->count_records('question_versions', ['questionbankentryid' => $created['questionbankentryid']]),
-                'Keine neue Version angelegt, wenn die Einbett-Validierung vorher scheitert.'
+                'No new version created when the embed validation fails beforehand.'
             );
         }
     }
@@ -509,7 +509,7 @@ final class update_mc_question_test extends \advanced_testcase {
 
         $this->assertSame('updated', $result['status']);
         $stored = $this->stored_question_file('question', 'questiontext', $result['questionid'], 'diagramm.png');
-        $this->assertNotFalse($stored, 'Datei liegt physisch in der question/questiontext-Filearea.');
+        $this->assertNotFalse($stored, 'File is physically stored in the question/questiontext filearea.');
         $this->assertSame('Bildinhalt-1', $stored->get_content());
     }
 

@@ -100,12 +100,12 @@ final class get_module_settings_test extends \advanced_testcase {
             $this->assertSame(
                 (string) $modulesrow[$field],
                 (string) $catalogrow[$field],
-                "$field weicht zwischen get_modules und get_course_catalog ab."
+                "$field differs between get_modules and get_course_catalog."
             );
             $this->assertSame(
                 (string) $modulesrow[$field],
                 (string) $settings[$field],
-                "$field weicht zwischen get_modules und get_module_settings ab."
+                "$field differs between get_modules and get_module_settings."
             );
         }
         $this->assertSame('stealth', $settings['coursepagevisibility']);

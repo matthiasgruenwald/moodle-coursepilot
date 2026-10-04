@@ -80,10 +80,10 @@ final class describe_module_fields_test extends \advanced_testcase {
             describe_module_fields::execute('label', true)
         );
 
-        $this->assertNotEquals($short, $full, 'Kurzform und vollständige Form müssen sich unterscheiden.');
+        $this->assertNotEquals($short, $full, 'Short form and full form must differ.');
 
         $sperrliste = $full['module']['blocked_fields'];
-        $this->assertContains('name', $sperrliste, 'label.name muss gesperrt sein - es wird aus dem Intro abgeleitet.');
+        $this->assertContains('name', $sperrliste, 'label.name must be blocked - it is derived from the intro.');
         $this->assertContains('course', $sperrliste);
         $this->assertContains('timemodified', $sperrliste);
 
@@ -105,13 +105,13 @@ final class describe_module_fields_test extends \advanced_testcase {
         );
 
         $names = array_column($result['module']['fields'], 'name');
-        $this->assertContains('intro', $names, 'label-eigenes Feld fehlt.');
+        $this->assertContains('intro', $names, "label's own field is missing.");
         $this->assertContains('visible', $names, 'Gemeinsamer Block fehlt.');
         $this->assertContains('groupmode', $names, 'Gemeinsamer Block fehlt.');
         $this->assertContains('idnumber', $names, 'Gemeinsamer Block fehlt.');
 
         // No duplicates: each field name appears exactly once.
-        $this->assertSame(count($names), count(array_unique($names)), 'Ein Feld ist dupliziert.');
+        $this->assertSame(count($names), count(array_unique($names)), 'A field is duplicated.');
     }
 
     /**
@@ -129,7 +129,7 @@ final class describe_module_fields_test extends \advanced_testcase {
         $allfields = array_merge($result['module']['fields'], $result['module']['pseudo_fields']);
         $this->assertNotEmpty($allfields);
         foreach ($allfields as $field) {
-            $this->assertNotSame('', trim($field['meaning']), $field['name'] . ' hat keine deutsche Bedeutung.');
+            $this->assertNotSame('', trim($field['meaning']), $field['name'] . ' has no meaning text.');
         }
     }
 
@@ -145,14 +145,14 @@ final class describe_module_fields_test extends \advanced_testcase {
                 describe_module_fields::execute_returns(),
                 describe_module_fields::execute($modname, false)
             );
-            $this->assertNotEmpty($short['module']['fields'], "$modname: Kurzform liefert keine Felder.");
+            $this->assertNotEmpty($short['module']['fields'], "$modname: short form returns no fields.");
 
             $full = external_api::clean_returnvalue(
                 describe_module_fields::execute_returns(),
                 describe_module_fields::execute($modname, true)
             );
-            $this->assertNotEmpty($full['module']['pseudo_fields'], "$modname: vollstaendige Form ohne Pseudofelder.");
-            $this->assertNotEmpty($full['module']['blocked_fields'], "$modname: vollstaendige Form ohne Sperrliste.");
+            $this->assertNotEmpty($full['module']['pseudo_fields'], "$modname: full form without pseudo fields.");
+            $this->assertNotEmpty($full['module']['blocked_fields'], "$modname: full form without blocklist.");
         }
     }
 
@@ -190,11 +190,11 @@ final class describe_module_fields_test extends \advanced_testcase {
             );
 
             $pseudonames = array_column($full['module']['pseudo_fields'], 'name');
-            $this->assertContains('files', $pseudonames, "$modname: 'files' fehlt in den Pseudofeldern.");
+            $this->assertContains('files', $pseudonames, "$modname: 'files' is missing from the pseudo fields.");
             $this->assertNotContains(
                 'files',
                 $full['module']['blocked_fields'],
-                "$modname: 'files' darf seit Issue #434 nicht mehr gesperrt sein."
+                "$modname: 'files' must no longer be blocked since issue #434."
             );
         }
     }
@@ -222,7 +222,7 @@ final class describe_module_fields_test extends \advanced_testcase {
 
         $this->assertContains('name', $shortnames);
         $this->assertContains('duedate', $shortnames);
-        $this->assertNotContains('markinganonymous', $shortnames, 'Kurzform darf nicht alle Felder auflisten.');
+        $this->assertNotContains('markinganonymous', $shortnames, 'Short form must not list all fields.');
         $this->assertLessThan(count($fullnames), count($shortnames));
 
         $this->assertNotEmpty($short['module']['field_bundles']);
@@ -230,7 +230,7 @@ final class describe_module_fields_test extends \advanced_testcase {
         $this->assertContains('standard', $bundlenames);
         $this->assertContains('exercise', $bundlenames);
 
-        $this->assertContains('markinganonymous', $fullnames, 'Vollstaendige Form muss alle Felder enthalten.');
+        $this->assertContains('markinganonymous', $fullnames, 'Full form must contain all fields.');
     }
 
     /**

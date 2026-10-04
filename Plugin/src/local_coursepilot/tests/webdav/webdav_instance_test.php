@@ -90,7 +90,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location(999999));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavinstancemissing', $e->errorcode);
         }
@@ -109,7 +109,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavinstanceforeign', $e->errorcode);
         }
@@ -133,7 +133,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavinstanceforeign', $e->errorcode);
         }
@@ -149,7 +149,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavnotenabled', $e->errorcode);
         }
@@ -169,7 +169,7 @@ final class webdav_instance_test extends \advanced_testcase {
         set_config('enableuserinstances', 0, 'webdav');
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavnotenabled', $e->errorcode);
         }
@@ -184,7 +184,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavauthunsupported', $e->errorcode);
         }
@@ -199,7 +199,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavauthunsupported', $e->errorcode);
         }
@@ -214,7 +214,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavauthunsupported', $e->errorcode);
         }
@@ -229,7 +229,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavfingerprintchanged', $e->errorcode);
         }
@@ -244,7 +244,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavfingerprintchanged', $e->errorcode);
         }
@@ -259,7 +259,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavfingerprintchanged', $e->errorcode);
         }
@@ -284,7 +284,7 @@ final class webdav_instance_test extends \advanced_testcase {
         foreach ($attempts as $attempt) {
             try {
                 $attempt();
-                $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+                $this->fail('Expected moodle_exception was not thrown.');
             } catch (\moodle_exception $e) {
                 $this->assertStringNotContainsString($password, $e->getMessage());
             }

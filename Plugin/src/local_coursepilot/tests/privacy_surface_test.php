@@ -87,7 +87,7 @@ final class privacy_surface_test extends \advanced_testcase {
     public function test_forbidden_tokens_are_rejected(string $name): void {
         $violations = privacy_surface::check([$name]);
 
-        $this->assertContains('forbidden_token', array_column($violations, 'type'), $name . ' haette auffallen muessen.');
+        $this->assertContains('forbidden_token', array_column($violations, 'type'), $name . ' should have been noticed.');
     }
 
     /**
@@ -120,7 +120,7 @@ final class privacy_surface_test extends \advanced_testcase {
                 $this->assertStringNotContainsStringIgnoringCase(
                     $token,
                     $name,
-                    $name . ' enthaelt den verbotenen Bestandteil "' . $token . '".'
+                    $name . ' contains the forbidden component "' . $token . '".'
                 );
             }
         }

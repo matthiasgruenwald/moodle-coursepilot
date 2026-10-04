@@ -17,8 +17,8 @@
 {{!
     @template local_coursepilot/location_selection_progress
 
-    Fortschrittsband der Ortswahl (Issue #551): je Ziel ein Badge, gefuellt
-    vom AMD-Modul amd/src/location_selection.js statt aus Zeichenketten zusammengebaut.
+    Progress band for location selection (Issue #551): one badge per target, filled
+    by amd/src/location_selection.js instead of being assembled from strings.
 
     Context variables required for this template:
     * targets - array - list of {badgeclass, text} per pickable target
@@ -26,8 +26,8 @@
     Example context (json):
     {
         "targets": [
-            {"badgeclass": "bg-secondary", "text": "Kontextbereich: offen"},
-            {"badgeclass": "bg-success", "text": "Materialbestand: Eigener Ordner"}
+            {"badgeclass": "bg-secondary", "text": "Context area: open"},
+            {"badgeclass": "bg-success", "text": "Material store: own folder"}
         ]
     }
 }}

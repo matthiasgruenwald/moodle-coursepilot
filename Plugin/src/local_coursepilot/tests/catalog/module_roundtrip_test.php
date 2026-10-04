@@ -197,7 +197,7 @@ final class module_roundtrip_test extends \advanced_testcase {
                 'field' => 'name',
                 'value' => 'Neuer Testtitel',
             ],
-            default => throw new \coding_exception("Kein Szenario fuer Modultyp {$modname}."),
+            default => throw new \coding_exception("No scenario for module type {$modname}."),
         };
     }
 
@@ -221,16 +221,16 @@ final class module_roundtrip_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
 
         $case = $this->scenario($modname, $course->id);
-        $this->assertGreaterThan(0, $case['cmid'], "{$modname}: Anlegen muss eine cmid liefern.");
+        $this->assertGreaterThan(0, $case['cmid'], "{$modname}: creating must return a cmid.");
 
         $before = $this->read($case['cmid']);
-        $this->assertArrayHasKey($case['field'], $before, "{$modname}: gepatchtes Feld muss lesbar sein.");
-        $this->assertNotSame($case['value'], $before[$case['field']], "{$modname}: Ausgangswert darf nicht bereits der Zielwert sein.");
+        $this->assertArrayHasKey($case['field'], $before, "{$modname}: patched field must be readable.");
+        $this->assertNotSame($case['value'], $before[$case['field']], "{$modname}: initial value must not already be the target value.");
 
         $this->patch($modname, $case['cmid'], [$case['field'] => $case['value']]);
 
         $after = $this->read($case['cmid']);
-        $this->assertSame($case['value'], $after[$case['field']], "{$modname}: Patch muss beim erneuten Lesen sichtbar sein.");
+        $this->assertSame($case['value'], $after[$case['field']], "{$modname}: patch must be visible when read again.");
     }
 
     /**
@@ -251,9 +251,9 @@ final class module_roundtrip_test extends \advanced_testcase {
         ])['cmid'];
 
         $before = $this->read($cmid);
-        $this->assertSame(['Ja', 'Nein'], $before['option'], 'Angelegte Optionen muessen beim Lesen sichtbar sein.');
-        $this->assertSame([2, 3], array_map('intval', $before['limit']), 'Gesetzte Limits muessen beim Lesen sichtbar sein.');
-        $this->assertCount(2, $before['optionid'], 'Bestehende choice_options-IDs muessen beim Lesen sichtbar sein.');
+        $this->assertSame(['Ja', 'Nein'], $before['option'], 'Created options must be visible when read.');
+        $this->assertSame([2, 3], array_map('intval', $before['limit']), 'Configured limits must be visible when read.');
+        $this->assertCount(2, $before['optionid'], 'Existing choice_options IDs must be visible when read.');
 
         // Supply optionid; otherwise choice_update_instance() adds options
         // instead of replacing them. See choice::pseudofields(), matching
@@ -268,9 +268,9 @@ final class module_roundtrip_test extends \advanced_testcase {
         $this->assertSame(
             ['Vielleicht', 'Auf jeden Fall'],
             $after['option'],
-            'Geaenderte Optionen muessen beim erneuten Lesen sichtbar sein.'
+            'Changed options must be visible when read again.'
         );
-        $this->assertSame([4, 5], array_map('intval', $after['limit']), 'Geaenderte Limits muessen beim erneuten Lesen sichtbar sein.');
+        $this->assertSame([4, 5], array_map('intval', $after['limit']), 'Changed limits must be visible when read again.');
     }
 
     /**

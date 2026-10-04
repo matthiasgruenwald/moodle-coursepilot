@@ -212,7 +212,7 @@ final class list_context_files_test extends \advanced_testcase {
 
         try {
             list_context_files::execute('', true);
-            $this->fail('Ohne offenen Altbestand haette der Schalter abgewiesen werden muessen.');
+            $this->fail('Without open legacy items the switch should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('previouslocationclosed', $e->errorcode);
         }

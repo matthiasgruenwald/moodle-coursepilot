@@ -98,10 +98,10 @@ final class material_files_test extends \advanced_testcase {
     public function test_allowed_extensions_cover_both_whitelists(): void {
         $extensions = material_files::allowed_extensions();
         foreach (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'html', 'png', 'jpg'] as $general) {
-            $this->assertContains($general, $extensions, $general . ' fehlt aus der allgemeinen Whitelist.');
+            $this->assertContains($general, $extensions, $general . ' is missing from the general whitelist.');
         }
         foreach (['png', 'jpg', 'gif', 'svg', 'webp'] as $embeddable) {
-            $this->assertContains($embeddable, $extensions, $embeddable . ' fehlt aus der Bild-Whitelist.');
+            $this->assertContains($embeddable, $extensions, $embeddable . ' is missing from the image whitelist.');
         }
     }
 

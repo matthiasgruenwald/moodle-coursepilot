@@ -122,7 +122,7 @@ final class append_context_file_test extends \advanced_testcase {
         // incorrectly record a pending entry; see write_context_file_test.
         try {
             $this->append('notiz.txt', 'x');
-            $this->fail('Falsche Dateiendung haette abgewiesen werden muessen.');
+            $this->fail('Wrong file extension should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilenotmarkdown', $e->errorcode);
         }
@@ -188,7 +188,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('lerngruppe.md', "\n- Notiz");
-            $this->fail('Personenbezug haette abgewiesen werden muessen.');
+            $this->fail('Personal data should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilelocked', $e->errorcode);
         }
@@ -244,7 +244,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('lerngruppe.md', "\n- Notiz");
-            $this->fail('Nicht zugelassener Speicher haette abgewiesen werden muessen.');
+            $this->fail('Disallowed storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilehostnotallowed', $e->errorcode);
         }
@@ -262,7 +262,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('lerngruppe.md', $this->marked_content());
-            $this->fail('Nicht zugelassener Speicher haette abgewiesen werden muessen.');
+            $this->fail('Disallowed storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilehostnotallowed', $e->errorcode);
         }
@@ -320,7 +320,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', str_repeat('x', 2048));
-            $this->fail('Quotenueberschreitung haette abgewiesen werden muessen.');
+            $this->fail('Quota overrun should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString('MB', $e->getMessage());
         }
@@ -425,7 +425,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', "- Stunde 1\n", $gelesen['contenthash']);
-            $this->fail('Konflikt haette abgewiesen werden muessen.');
+            $this->fail('Conflict should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
@@ -509,7 +509,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', 'x');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -522,7 +522,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             append_context_file::execute('journal.md', 'x', $kennung);
-            $this->fail('Nachtragen ohne Pruefwert haette abgewiesen werden muessen.');
+            $this->fail('Backfilling without a check value should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
@@ -556,7 +556,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', '# Journal');
-            $this->fail('Fehlende Kontextbereich-Wurzel haette abgewiesen werden muessen.');
+            $this->fail('Missing context-area root should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -640,7 +640,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', 'x');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
             $this->assertStringContainsString('journal.md', $e->getMessage());
@@ -670,7 +670,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', 'x');
-            $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
+            $this->fail('Rejected login should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -699,7 +699,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', 'x');
-            $this->fail('Geloeschte Instanz haette abgewiesen werden muessen.');
+            $this->fail('Deleted instance should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -720,7 +720,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             append_context_file::execute('journal.md', 'x', '', '', 42);
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -750,7 +750,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', 'x');
-            $this->fail('Pfad ausserhalb von "Files/" haette abgewiesen werden muessen.');
+            $this->fail('Path outside "Files/" should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -782,7 +782,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('notiz.txt', 'x');
-            $this->fail('Eine unerlaubte Endung haette abgewiesen werden muessen.');
+            $this->fail('A disallowed extension should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilenotmarkdown', $e->errorcode);
         }
@@ -803,7 +803,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', 'x');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -913,7 +913,7 @@ final class append_context_file_test extends \advanced_testcase {
      */
     private function read_stored(\stdClass $user, string $filepath, string $filename): string {
         $file = $this->stored_file($user, $filepath, $filename);
-        $this->assertNotNull($file, 'Erwartete Datei fehlt: ' . $filepath . $filename);
+        $this->assertNotNull($file, 'Expected file missing: ' . $filepath . $filename);
         return $file->get_content();
     }
 

@@ -54,8 +54,8 @@ final class forum_catalog_contract_test extends \advanced_testcase {
         $this->assertSame(
             $realcolumns,
             array_values(array_unique($known)),
-            "Die Spalten der Tabelle 'forum' und der Feldkatalog (forum::fields()/blocklist()) sind "
-                . 'auseinandergelaufen - Moodle hat vermutlich eine Spalte hinzugefuegt, entfernt oder umbenannt.'
+            "The columns of table 'forum' and the field catalog (forum::fields()/blocklist()) have "
+                . 'diverged - Moodle probably added, removed or renamed a column.'
         );
     }
 
@@ -84,7 +84,7 @@ final class forum_catalog_contract_test extends \advanced_testcase {
         $this->assertContains(
             'rating_manager::get_aggregate_types()',
             $callables,
-            'assessed muss rating_manager::get_aggregate_types() referenzieren statt die Werte abzuschreiben.'
+            'assessed must reference rating_manager::get_aggregate_types() instead of copying the values.'
         );
         $this->assertContains('forum_get_forum_types()', $callables);
         $this->assertContains('forum_get_subscriptionmode_options()', $callables);

@@ -54,7 +54,7 @@ final class workbench_ticket_test extends \advanced_testcase {
         $delivery = workbench_ticket::redeem($this->secret_from_url($link['url']));
 
         $this->assertSame('hallo welt', $delivery['content']);
-        $this->assertSame(sha1($delivery['content']), $link['sha1'], 'SHA-1 der Antwort muss zu den ausgelieferten Bytes passen.');
+        $this->assertSame(sha1($delivery['content']), $link['sha1'], 'SHA-1 of the response must match the delivered bytes.');
     }
 
     public function test_second_redemption_is_rejected(): void {

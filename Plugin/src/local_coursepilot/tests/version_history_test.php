@@ -206,7 +206,7 @@ final class version_history_test extends \advanced_testcase {
                 $namefield = $change;
             }
         }
-        $this->assertNotNull($namefield, 'Feld "name" muss im Diff auftauchen.');
+        $this->assertNotNull($namefield, 'Field "name" must appear in the diff.');
         $this->assertSame(json_encode('Erste Fassung'), $namefield['before_json']);
         $this->assertSame(json_encode('Dritte Fassung'), $namefield['after_json']);
         $this->assertStringContainsString('gradebook', $result['gap_notice']);

@@ -554,7 +554,7 @@ final class webdav_client_test extends \advanced_testcase {
 
             try {
                 $action($client, $fake);
-                $this->fail($name . ': ein benannter Fehler wurde erwartet.');
+                $this->fail($name . ': a named error was expected.');
             } catch (webdav_error $e) {
                 $this->assertStringNotContainsString($secret, $e->getMessage(), $name);
                 $this->assertStringNotContainsString($secret, $e->errorclass, $name);

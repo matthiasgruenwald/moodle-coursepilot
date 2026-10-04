@@ -216,7 +216,7 @@ final class list_material_files_test extends \advanced_testcase {
 
         try {
             list_material_files::execute('', 'woanders');
-            $this->fail('Ein unbekannter Ort-Wert haette werfen muessen.');
+            $this->fail('An unknown location value should have thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('invalidmateriallocation', $e->errorcode);
         }
@@ -328,7 +328,7 @@ final class list_material_files_test extends \advanced_testcase {
 
         try {
             list_material_files::execute('kontext');
-            $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
+            $this->fail('A path under the context area should have thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialpathiscontext', $e->errorcode);
         }

@@ -324,13 +324,13 @@ final class context_files_test extends \advanced_testcase {
                 context_files::filerecord($contextid, 'kein-absoluter-pfad', 'journal.md'),
                 'neuer Inhalt'
             );
-            $this->fail('Ein ungueltiger Ordnerpfad haette den Vorgang abbrechen muessen.');
+            $this->fail('An invalid folder path should have aborted the operation.');
         } catch (\Throwable $e) {
             $this->assertNotEmpty($e->getMessage());
         }
 
         $survivor = $this->journal($contextid);
-        $this->assertNotNull($survivor, 'Die Zieldatei wurde geloescht, obwohl das Anlegen fehlschlug.');
+        $this->assertNotNull($survivor, 'The target file was deleted although creation failed.');
         $this->assertSame('wichtiger Bestand', $survivor->get_content());
     }
 
@@ -349,7 +349,7 @@ final class context_files_test extends \advanced_testcase {
                 context_files::filerecord($contextid, '/coursepilot/', ''),
                 'neuer Inhalt'
             );
-            $this->fail('Ein leerer Dateiname haette den Vorgang abbrechen muessen.');
+            $this->fail('An empty file name should have aborted the operation.');
         } catch (\Throwable $e) {
             $this->assertNotEmpty($e->getMessage());
         }
@@ -366,7 +366,7 @@ final class context_files_test extends \advanced_testcase {
             fn(\stored_file $file) => str_starts_with($file->get_filename(), context_files::TEMP_PREFIX)
         );
 
-        $this->assertCount(1, $leftovers, 'Der neue Inhalt muesste als Zwischendatei liegengeblieben sein.');
+        $this->assertCount(1, $leftovers, 'The new content should have been left behind as an intermediate file.');
         $this->assertSame('neuer Inhalt', reset($leftovers)->get_content());
     }
 
@@ -423,7 +423,7 @@ final class context_files_test extends \advanced_testcase {
 
         foreach ($names as $name) {
             foreach ($forbidden as $token) {
-                $this->assertStringNotContainsStringIgnoringCase($token, $name, $name . ' nennt einen Speicherort.');
+                $this->assertStringNotContainsStringIgnoringCase($token, $name, $name . ' names a storage location.');
             }
         }
     }

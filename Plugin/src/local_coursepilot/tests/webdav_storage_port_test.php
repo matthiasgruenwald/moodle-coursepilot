@@ -107,7 +107,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
         try {
             (new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $onlyputfails))
                 ->write($this->area(), 'plan.md', '# Plan');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
             $this->assertStringContainsString('plan.md', $e->getMessage());
@@ -142,7 +142,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
         try {
             (new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $onlyputfails))
                 ->append($this->area(), 'journal.md', 'erste Zeile');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -163,8 +163,8 @@ final class webdav_storage_port_test extends storage_port_contract_test {
         $port->write($area, 'plan.md', 'inzwischen geaendert');
 
         try {
-            $port->write($area, 'plan.md', 'wuerde ueberschreiben', $written['checksum']);
-            $this->fail('Konflikt haette abgewiesen werden muessen.');
+            $port->write($area, 'plan.md', 'would overwrite', $written['checksum']);
+            $this->fail('Conflict should have been rejected.');
         } catch (storage_conflict_exception $e) {
             // Erwartet.
         }
@@ -182,7 +182,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
 
         try {
             $this->port()->write($this->area(), 'plan.md', '# Plan');
-            $this->fail('Geloeschte Instanz haette abgewiesen werden muessen.');
+            $this->fail('Deleted instance should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }

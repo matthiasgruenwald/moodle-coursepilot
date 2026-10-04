@@ -53,8 +53,8 @@ final class assign_catalog_contract_test extends \advanced_testcase {
         $this->assertSame(
             $realcolumns,
             array_values(array_unique($known)),
-            "Die Spalten der Tabelle 'assign' und der Feldkatalog (assign::fields()/blocklist()) sind "
-                . 'auseinandergelaufen - Moodle hat vermutlich eine Spalte hinzugefuegt, entfernt oder umbenannt.'
+            "The columns of table 'assign' and the field catalog (assign::fields()/blocklist()) have "
+                . 'diverged - Moodle probably added, removed or renamed a column.'
         );
     }
 
@@ -70,7 +70,7 @@ final class assign_catalog_contract_test extends \advanced_testcase {
         $this->assertCount(
             34,
             assign::checked_constants(),
-            'Testannahme verletzt: die Liste selbst muss 34 Eintraege haben.'
+            'Test assumption violated: the list itself must have 34 entries.'
         );
 
         foreach (assign::checked_constants() as $constname) {
@@ -79,7 +79,7 @@ final class assign_catalog_contract_test extends \advanced_testcase {
 
         $this->assertFalse(
             in_array('ASSIGN_MARKER_FILTER_NO_MARKER', assign::checked_constants(), true),
-            'ASSIGN_MARKER_FILTER_NO_MARKER ist eine Filter-UI-Kennung, kein Feldwert - bewusst ausgeschlossen.'
+            'ASSIGN_MARKER_FILTER_NO_MARKER is a filter UI identifier, not a field value - deliberately excluded.'
         );
     }
 
@@ -182,7 +182,7 @@ final class assign_catalog_contract_test extends \advanced_testcase {
     public function test_introattachments_is_catalogued_and_unlocked(): void {
         $pseudonames = array_map(static fn (field $f): string => $f->name, assign::pseudofields());
 
-        $this->assertContains('introattachments', $pseudonames, '"introattachments" muss vollstaendig katalogisiert sein.');
+        $this->assertContains('introattachments', $pseudonames, '"introattachments" must be fully cataloged.');
         $this->assertNotContains(
             'introattachments',
             assign::blocklist(),
@@ -210,12 +210,12 @@ final class assign_catalog_contract_test extends \advanced_testcase {
         $this->assertNotEmpty($fields);
 
         foreach ($fields as $f) {
-            $this->assertNotEmpty($f->source, "Feld {$f->name} hat keine Quellenangabe.");
+            $this->assertNotEmpty($f->source, "Field {$f->name} has no source reference.");
             if ($f->values !== null && $f->sourcecallable === null) {
                 $this->assertMatchesRegularExpression(
                     '/[A-Za-z0-9_\/.]+\.php:\d+/',
                     $f->source,
-                    "Literal gefuehrtes Feld {$f->name} braucht eine Datei:Zeile-Quellenangabe."
+                    "Literal-tracked field {$f->name} needs a file:line source reference."
                 );
             }
         }

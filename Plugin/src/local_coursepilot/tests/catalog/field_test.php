@@ -71,7 +71,7 @@ final class field_test extends \advanced_testcase {
         foreach ([0, true, null, []] as $fieldname) {
             try {
                 field::assert_name($fieldname);
-                $this->fail('Die nicht-string Feldangabe haette abgelehnt werden muessen.');
+                $this->fail('The non-string field specification should have been rejected.');
             } catch (\moodle_exception $e) {
                 $this->assertSame('invalidfieldname', $e->errorcode);
                 $messages[] = $e->getMessage();

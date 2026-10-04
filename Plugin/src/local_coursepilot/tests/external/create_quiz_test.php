@@ -303,7 +303,7 @@ final class create_quiz_test extends \advanced_testcase {
 
         try {
             $this->create($course->id, 0, $this->minimal_fields(), 'mini-check');
-            $this->fail('execute() haette wegen Drift werfen muessen.');
+            $this->fail('execute() should have thrown because of drift.');
         } catch (\moodle_exception $e) {
             // write_gate_test.php checks exact wording against the language pack.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
@@ -323,7 +323,7 @@ final class create_quiz_test extends \advanced_testcase {
 
         try {
             $this->create($course->id, 0, $this->minimal_fields_without_mode() + ['attempts' => 2]);
-            $this->fail('Versuchslimit ohne Modus haette bestaetigt werden muessen.');
+            $this->fail('Attempt limit without a mode should have required confirmation.');
         } catch (\moodle_exception $e) {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
             $this->assertStringContainsString('attempts', $e->getMessage());

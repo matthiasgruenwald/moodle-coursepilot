@@ -118,7 +118,7 @@ final class list_skills_test extends \advanced_testcase {
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
+            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills must not reach the external storage.');
             $this->assertCount(2, $result['pending_entries']);
             $this->assertSame('plan.md', $result['pending_entries'][0]['path']);
             $this->assertSame([$aelter, $neuer], array_column($result['pending_entries'][0]['entries'], 'identifier'));
@@ -162,7 +162,7 @@ final class list_skills_test extends \advanced_testcase {
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
+            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills must not reach the external storage.');
             $this->assertCount(1, $result['notices']);
             $this->assertStringContainsString('/local/coursepilot/location_selection.php', $result['notices'][0]['link']);
         } finally {
@@ -264,7 +264,7 @@ final class list_skills_test extends \advanced_testcase {
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
+            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills must not reach the external storage.');
             $this->assertNotEmpty($result['skills']);
             $this->assertCount(1, $result['notices']);
             $this->assertSame(
@@ -307,7 +307,7 @@ final class list_skills_test extends \advanced_testcase {
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
+            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills must not reach the external storage.');
             $this->assertNotEmpty($result['skills']);
             $this->assertCount(1, $result['notices']);
             $this->assertSame(

@@ -72,7 +72,7 @@ final class delete_material_files_test extends \advanced_testcase {
         try {
             delete_material_files::execute(['vorhanden.pdf', 'nichtda.pdf']);
         } finally {
-            $this->assertTrue($this->exists('vorhanden.pdf'), 'Kein Teilerfolg: die gueltige Datei bleibt erhalten.');
+            $this->assertTrue($this->exists('vorhanden.pdf'), 'No partial success: the valid file is kept.');
         }
     }
 

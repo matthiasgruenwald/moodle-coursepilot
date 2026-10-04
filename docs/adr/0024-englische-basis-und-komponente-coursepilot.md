@@ -15,7 +15,7 @@ Parametern deutsch (`ort`, `felder_json`, `nur_anlegen`, `bestaetigt`, …), daz
 Rückgabeschlüssel wie `meldung` (56×) und `ort` (22×), rund 1.450 Zeilen deutscher
 Werkzeugbeschreibungen und vier deutsche Klassennamen.
 
-**2. Der Skill-Korpus bleibt vorerst deutsch.** Er ist Prosa für Lehrkräfte, kein String und
+**2. Der Skill-Korpus bleibt vorerst deutsch.** *(Überholt: Der Korpus ist seit #604 englisch, siehe Nachtrag 2026-10-04.)* Er ist Prosa für Lehrkräfte, kein String und
 von AMOS nicht erfasst. Zweisprachigkeit (`skills/en/`, `skills/de/` mit Auswahl über die
 Moodle-Sprache) ist das Ziel, aber ein eigener Schnitt. Für die Einreichung genügt, dass das
 Listing es benennt.
@@ -66,8 +66,8 @@ Entscheidung der Lehrkraft (#585, #602):
   Lehrkraft mit anderer Sprache darf das nicht brechen. Der *Inhalt* der Dateien darf in der
   Sprache der Lehrkraft stehen.
 - **Skill-Dateinamen sind englisch** (z. B. `reference/question-types.md`), weil sie über
-  `get_skill(name)` Teil des Werkzeugvertrags sind. Der Inhalt des Korpus bleibt vorerst
-  deutsch (siehe oben); die Übersetzung des Korpus ist eine eigene Aufgabe.
+  `get_skill(name)` Teil des Werkzeugvertrags sind. Der Inhalt des Korpus blieb zunächst
+  deutsch; die Übersetzung folgte mit #604 (siehe Nachtrag 2026-10-04).
 - Bestehende deutsche Ordner im Kontextbereich werden einmalig umbenannt (bisher nur
   Testkonten).
 

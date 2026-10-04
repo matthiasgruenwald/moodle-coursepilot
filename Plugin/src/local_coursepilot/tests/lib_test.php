@@ -81,7 +81,7 @@ final class local_coursepilot_lib_test extends advanced_testcase {
         $this->assertCount(count(\local_coursepilot\catalog\registry::known_modnames()), $driftchecks);
 
         $ids = array_map(static fn (\core\check\check $check): string => $check->get_id(), $checks);
-        $this->assertSame($ids, array_unique($ids), 'Check-IDs muessen eindeutig sein.');
+        $this->assertSame($ids, array_unique($ids), 'Check IDs must be unique.');
     }
 
     /**

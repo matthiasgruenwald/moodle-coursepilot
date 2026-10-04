@@ -61,7 +61,7 @@ final class create_mc_question_test extends \advanced_testcase {
 
         global $DB;
         $entry = $DB->get_record('question_bank_entries', ['id' => $result['questionbankentryid']], '*', MUST_EXIST);
-        $this->assertNotEmpty($entry->idnumber, 'Eine idnumber wurde generiert.');
+        $this->assertNotEmpty($entry->idnumber, 'An idnumber was generated.');
 
         $readback = get_question::execute($categoryid, 'Additionsfrage');
         $readback = external_api::clean_returnvalue(get_question::execute_returns(), $readback);
@@ -108,7 +108,7 @@ final class create_mc_question_test extends \advanced_testcase {
         $this->assertSame('Dopplung', $second['candidates'][0]['name']);
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-        $this->assertSame($countbefore, $countafter, 'Nichts wurde angelegt.');
+        $this->assertSame($countbefore, $countafter, 'Nothing was created.');
 
         // Confirmed creation still makes a separate bank entry with its own idnumber, without merging.
         $confirmed = create_mc_question::execute(

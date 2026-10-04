@@ -49,7 +49,7 @@ final class get_modules_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(get_modules::execute_returns(), $result);
 
         $module = self::find_module($result, (int) $page->cmid);
-        $this->assertNotNull($module, 'Die angelegte Seite muss in der Modulliste auftauchen.');
+        $this->assertNotNull($module, 'The created page must appear in the module list.');
         $this->assertSame('page', $module['modname']);
         $this->assertSame('Testseite', $module['name']);
         $this->assertArrayHasKey('visible', $module);

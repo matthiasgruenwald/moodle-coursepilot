@@ -52,7 +52,7 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         $this->assertSame(sha1('inhalt eins'), $result['links'][0]['sha1']);
         $this->assertStringContainsString('/local/coursepilot/workbench/download.php?ticket=', $result['links'][0]['url']);
         $this->assertSame('blatt2.pdf', $result['links'][1]['name']);
-        $this->assertSame('blatt.pdf, ordner/blatt2.pdf', $result['path'], 'Fuer den access_log: alle Pfade kommagetrennt.');
+        $this->assertSame('blatt.pdf, ordner/blatt2.pdf', $result['path'], 'For the access_log: all paths comma-separated.');
 
         // Return only URL, name, size and SHA-1, never ready-made curl commands (Spec #486 §13).
         $this->assertSame(['path', 'name', 'size', 'sha1', 'url'], array_keys($result['links'][0]));

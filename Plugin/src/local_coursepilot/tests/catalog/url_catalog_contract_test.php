@@ -53,8 +53,8 @@ final class url_catalog_contract_test extends \advanced_testcase {
         $this->assertSame(
             $realcolumns,
             array_values(array_unique($known)),
-            "Die Spalten der Tabelle 'url' und der Feldkatalog (url::fields()/blocklist()) sind "
-                . 'auseinandergelaufen - Moodle hat vermutlich eine Spalte hinzugefuegt, entfernt oder umbenannt.'
+            "The columns of table 'url' and the field catalog (url::fields()/blocklist()) have "
+                . 'diverged - Moodle probably added, removed or renamed a column.'
         );
     }
 
@@ -82,12 +82,12 @@ final class url_catalog_contract_test extends \advanced_testcase {
 
         $externalurl = current(array_filter(url::fields(), static fn (field $f): bool => $f->name === 'externalurl'));
 
-        $this->assertNotFalse($externalurl, 'Feld externalurl fehlt im Katalog.');
+        $this->assertNotFalse($externalurl, 'Field externalurl is missing from the catalog.');
         $this->assertNotSame('PARAM_URL', $externalurl->type);
         $this->assertSame('url_appears_valid_url()', $externalurl->sourcecallable);
         $this->assertTrue(
             function_exists('url_appears_valid_url'),
-            'url_appears_valid_url() existiert auf dieser Instanz nicht mehr.'
+            'url_appears_valid_url() no longer exists on this instance.'
         );
     }
 

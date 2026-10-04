@@ -20,7 +20,7 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Volles Diff zweier frei gewaehlter Staende (Spec 0015 §10.6, #394).
+ * Full diff of two freely chosen states (Spec 0015 §10.6, #394).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

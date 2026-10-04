@@ -69,8 +69,8 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
         $this->assertSame(
             $realcolumns,
             array_values(array_unique($known)),
-            "Die Spalten der Tabelle 'quiz' und der Feldkatalog (quiz::fields()/blocklist()) sind "
-                . 'auseinandergelaufen - Moodle hat vermutlich eine Spalte hinzugefuegt, entfernt oder umbenannt.'
+            "The columns of table 'quiz' and the field catalog (quiz::fields()/blocklist()) have "
+                . 'diverged - Moodle probably added, removed or renamed a column.'
         );
     }
 
@@ -93,7 +93,7 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
         require_once($CFG->dirroot . '/mod/quiz/classes/access_manager.php');
         require_once($CFG->dirroot . '/question/engine/lib.php');
 
-        $this->assertCount(6, self::EXPECTED_CALLABLE_SOURCES, 'Testannahme verletzt: es muessen sechs Quellen sein.');
+        $this->assertCount(6, self::EXPECTED_CALLABLE_SOURCES, 'Test assumption violated: there must be sechs Quellen.');
 
         foreach (self::EXPECTED_CALLABLE_SOURCES as [$callable, $isstatic]) {
             $bare = rtrim($callable, '()');
@@ -117,7 +117,7 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
             array_merge(quiz::fields(), quiz::pseudofields())
         );
         foreach (self::EXPECTED_CALLABLE_SOURCES as [$callable, $unused]) {
-            $this->assertContains($callable, $sources, "$callable ist in keinem Feld als sourcecallable referenziert.");
+            $this->assertContains($callable, $sources, "$callable is not referenced as sourcecallable in any field.");
         }
     }
 
@@ -142,9 +142,9 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
             'reviewrightanswer',
             'reviewoverallfeedback',
         ];
-        $this->assertCount(8, $reviewbitmasks, 'Testannahme verletzt: es muessen acht Bitmasken sein.');
+        $this->assertCount(8, $reviewbitmasks, 'Test assumption violated: there must be acht Bitmasken.');
         foreach ($reviewbitmasks as $bitmask) {
-            $this->assertContains($bitmask, $blocklist, "$bitmask fehlt auf der Sperrliste.");
+            $this->assertContains($bitmask, $blocklist, "$bitmask is missing from the blocklist.");
         }
     }
 
@@ -169,10 +169,10 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
                 $reviewbooleans[] = $type . $timing;
             }
         }
-        $this->assertCount(32, $reviewbooleans, 'Testannahme verletzt: es muessen 32 Kombinationen sein.');
+        $this->assertCount(32, $reviewbooleans, 'Test assumption violated: there must be 32 Kombinationen.');
 
         foreach ($reviewbooleans as $expected) {
-            $this->assertContains($expected, $names, "$expected fehlt in den Pseudofeldern.");
+            $this->assertContains($expected, $names, "$expected is missing from the pseudo fields.");
         }
     }
 
@@ -234,8 +234,8 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
         $this->assertNotEmpty($fields);
 
         foreach ($fields as $f) {
-            $this->assertNotSame('', trim($f->meaning), "Feld {$f->name} hat keine deutsche Bedeutung.");
-            $this->assertNotEmpty($f->source, "Feld {$f->name} hat keine Quellenangabe.");
+            $this->assertNotSame('', trim($f->meaning), "Field {$f->name} has no meaning text.");
+            $this->assertNotEmpty($f->source, "Field {$f->name} has no source reference.");
         }
     }
 

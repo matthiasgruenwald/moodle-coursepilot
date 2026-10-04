@@ -64,7 +64,7 @@ final class dismiss_previous_location_test extends \advanced_testcase {
 
         try {
             dismiss_previous_location::execute();
-            $this->fail('Ohne offenen Altbestand haette abgewiesen werden muessen.');
+            $this->fail('Without open legacy items this should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('previouslocationclosed', $e->errorcode);
         }
@@ -136,14 +136,14 @@ final class dismiss_previous_location_test extends \advanced_testcase {
         $this->setUser($teacherb);
         try {
             dismiss_previous_location::execute();
-            $this->fail('Ohne eigenen Altbestand haette abgewiesen werden muessen.');
+            $this->fail('Without own legacy items this should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('previouslocationclosed', $e->errorcode);
         }
         $this->assertTrue(true);
 
         $this->setUser($teachera);
-        $this->assertTrue(previous_location::open(), 'Der Altbestand von Person A darf unberuehrt bleiben.');
+        $this->assertTrue(previous_location::open(), "Person A's legacy items must stay untouched.");
     }
 
     /**

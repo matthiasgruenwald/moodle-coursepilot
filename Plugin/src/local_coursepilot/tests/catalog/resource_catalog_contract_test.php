@@ -54,8 +54,8 @@ final class resource_catalog_contract_test extends \advanced_testcase {
         $this->assertSame(
             $realcolumns,
             array_values(array_unique($known)),
-            "Die Spalten der Tabelle 'resource' und der Feldkatalog (resource::fields()/blocklist()) sind "
-                . 'auseinandergelaufen - Moodle hat vermutlich eine Spalte hinzugefuegt, entfernt oder umbenannt.'
+            "The columns of table 'resource' and the field catalog (resource::fields()/blocklist()) have "
+                . 'diverged - Moodle probably added, removed or renamed a column.'
         );
     }
 
@@ -66,13 +66,13 @@ final class resource_catalog_contract_test extends \advanced_testcase {
     public function test_files_is_catalogued_required_and_unlocked(): void {
         $pseudofields = resource::pseudofields();
         $pseudonames = array_map(static fn (field $f): string => $f->name, $pseudofields);
-        $this->assertContains('files', $pseudonames, '"files" muss vollstaendig katalogisiert sein.');
+        $this->assertContains('files', $pseudonames, '"files" must be fully cataloged.');
 
         $filesfield = current(array_filter($pseudofields, static fn (field $f): bool => $f->name === 'files'));
-        $this->assertTrue($filesfield->required, '"files" muss beim Anlegen Pflicht sein.');
-        $this->assertNull($filesfield->default, '"files" darf keinen Formular-Default haben.');
+        $this->assertTrue($filesfield->required, '"files" must be required on creation.');
+        $this->assertNull($filesfield->default, '"files" must not have a form default.');
 
-        $this->assertNotContains('files', resource::blocklist(), '"files" darf nicht mehr gesperrt sein.');
+        $this->assertNotContains('files', resource::blocklist(), '"files" must no longer be blocked.');
     }
 
     /**

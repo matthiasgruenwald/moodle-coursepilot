@@ -44,7 +44,7 @@ final class activity_drift_test extends \advanced_testcase {
     }
 
     /**
-     * Simulierter Drift -> result::ERROR, Detail nennt den Verstoss.
+     * Simulated drift -> result::ERROR, detail names the violation.
      */
     public function test_result_is_error_when_drifted(): void {
         $this->resetAfterTest();

@@ -146,11 +146,11 @@ final class update_question_category_test extends \advanced_testcase {
         $storage = get_file_storage();
         $this->assertTrue(
             $storage->file_exists((int) $result['contextid'], 'question', 'questiontext', $question->id, '/', 'zelle.png'),
-            'Die Datei liegt nach dem Umzug im neuen Kontext.'
+            'After the move the file is in the new context.'
         );
         $this->assertFalse(
             $storage->file_exists($sourcecontextid, 'question', 'questiontext', $question->id, '/', 'zelle.png'),
-            'Im alten Kontext bleibt nichts zurueck.'
+            'Nothing is left behind in the old context.'
         );
     }
 

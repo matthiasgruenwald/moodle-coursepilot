@@ -110,7 +110,7 @@ abstract class storage_port_contract_test extends \advanced_testcase {
         $port->write($area, 'plan.md', 'inzwischen geaendert');
 
         $this->expectException(storage_conflict_exception::class);
-        $port->write($area, 'plan.md', 'wuerde ueberschreiben', $written['checksum']);
+        $port->write($area, 'plan.md', 'would overwrite', $written['checksum']);
     }
 
     public function test_write_with_a_checksum_against_a_missing_file_raises_conflict(): void {

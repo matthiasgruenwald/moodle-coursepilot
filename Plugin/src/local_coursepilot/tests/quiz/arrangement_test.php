@@ -203,7 +203,7 @@ final class arrangement_test extends \advanced_testcase {
             'questionarea' => 'slot',
             'itemid' => $target['slots'][0]['id'],
         ], '*', MUST_EXIST);
-        $this->assertNull($reference->version, 'version=null muss unveraendert bleiben - kein nachtraegliches Pinnen.');
+        $this->assertNull($reference->version, 'version=null must stay unchanged - no retroactive pinning.');
 
         $displayedname = $DB->get_field_sql(
             'SELECT q.name

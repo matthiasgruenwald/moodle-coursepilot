@@ -56,7 +56,7 @@ final class dismiss_pending_entry_test extends \advanced_testcase {
 
         try {
             dismiss_pending_entry::execute('UNBEKANNT1');
-            $this->fail('Unbekannte Kennung haette abgewiesen werden muessen.');
+            $this->fail('Unknown identifier should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingunknown', $e->errorcode);
         }
@@ -100,7 +100,7 @@ final class dismiss_pending_entry_test extends \advanced_testcase {
         $this->setUser($teacherb);
         try {
             dismiss_pending_entry::execute($kennung);
-            $this->fail('Fremde Kennung haette abgewiesen werden muessen.');
+            $this->fail('Foreign identifier should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingunknown', $e->errorcode);
         }

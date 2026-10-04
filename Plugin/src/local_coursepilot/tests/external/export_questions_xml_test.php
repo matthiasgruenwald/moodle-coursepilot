@@ -53,7 +53,7 @@ final class export_questions_xml_test extends \advanced_testcase {
         $exported = external_api::clean_returnvalue(export_questions_xml::execute_returns(), $exported);
 
         $this->assertSame(1, $exported['count']);
-        $this->assertSame('', $exported['xml'], 'Standard-Modus: kein Bildbyte/XML in der Werkzeugantwort');
+        $this->assertSame('', $exported['xml'], 'Default mode: no image bytes/XML in the tool response');
         $this->assertSame('export.xml', $exported['path']);
         $this->assertStringContainsString('File: export.xml', $exported['message']);
         $this->assertStringNotContainsString('PLACEHOLDER', $exported['message']);
@@ -63,7 +63,7 @@ final class export_questions_xml_test extends \advanced_testcase {
 
         $this->assertSame('reimport', $reimported['questions'][0]['status']);
         $this->assertSame('Rundlauf-Frage', $reimported['questions'][0]['name']);
-        $this->assertSame($entryid, $reimported['questions'][0]['questionbankentryid'], 'Derselbe Bank-Eintrag, neue Version.');
+        $this->assertSame($entryid, $reimported['questions'][0]['questionbankentryid'], 'Same bank entry, new version.');
         $this->assertSame(2, $reimported['questions'][0]['version']);
     }
 
@@ -100,7 +100,7 @@ final class export_questions_xml_test extends \advanced_testcase {
         $exported = export_questions_xml::execute([(int) $question->id], 'bild-export.xml');
         $exported = external_api::clean_returnvalue(export_questions_xml::execute_returns(), $exported);
 
-        $this->assertSame('', $exported['xml'], 'kein Bildbyte in der Werkzeugantwort');
+        $this->assertSame('', $exported['xml'], 'no image bytes in the tool response');
         $this->assertSame('bild-export.xml', $exported['path']);
 
         // Real Base64 in the stored file proves standards compliance.
@@ -134,7 +134,7 @@ final class export_questions_xml_test extends \advanced_testcase {
             false
         );
         $filenames = array_map(static fn($f) => $f->get_filename(), $reimportedfiles);
-        $this->assertContains('diagramm.png', $filenames, 'Bild kam beim Reimport mit an');
+        $this->assertContains('diagramm.png', $filenames, 'Image arrived with the reimport');
     }
 
     /**
@@ -171,10 +171,10 @@ final class export_questions_xml_test extends \advanced_testcase {
         $exported = export_questions_xml::execute([(int) $question->id], '', true);
         $exported = external_api::clean_returnvalue(export_questions_xml::execute_returns(), $exported);
 
-        $this->assertSame('', $exported['path'], 'Platzhalter-Modus schreibt keine Materialdatei');
-        $this->assertStringNotContainsString('<file', $exported['xml'], 'kein <file>-Block, nur der Platzhalter');
-        $this->assertStringNotContainsString('fake-bildinhalt', $exported['xml'], 'kein Base64-Dateiinhalt');
-        $this->assertStringContainsString('diagramm.png', $exported['xml'], 'Platzhalter nennt den Dateinamen');
+        $this->assertSame('', $exported['path'], 'Placeholder mode writes no material file');
+        $this->assertStringNotContainsString('<file', $exported['xml'], 'no <file> block, only the placeholder');
+        $this->assertStringNotContainsString('fake-bildinhalt', $exported['xml'], 'no base64 file content');
+        $this->assertStringContainsString('diagramm.png', $exported['xml'], 'Placeholder names the file name');
         $this->assertStringContainsString('Frage mit Bild', $exported['message']);
         $this->assertStringContainsString('diagramm.png', $exported['message']);
         $this->assertStringContainsString('PLACEHOLDER MODE', $exported['message']);

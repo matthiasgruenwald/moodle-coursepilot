@@ -140,7 +140,7 @@ final class write_context_file_test extends \advanced_testcase {
         // and incorrectly record a pending entry.
         try {
             $this->write('notiz.txt', 'Text');
-            $this->fail('Falsche Dateiendung haette abgewiesen werden muessen.');
+            $this->fail('Wrong file extension should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilenotmarkdown', $e->errorcode);
         }
@@ -195,7 +195,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', 'neu', sha1('alt'));
-            $this->fail('Konflikt haette abgewiesen werden muessen.');
+            $this->fail('Conflict should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
@@ -227,7 +227,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('lerngruppe.md', $this->marked_content());
-            $this->fail('Personenbezug haette abgewiesen werden muessen.');
+            $this->fail('Personal data should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString('personenbezug', strtolower($e->getMessage()));
         }
@@ -247,7 +247,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('lerngruppe.md', '# harmlos');
-            $this->fail('Ueberschreiben haette abgewiesen werden muessen.');
+            $this->fail('Overwriting should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilelocked', $e->errorcode);
         }
@@ -285,7 +285,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('lerngruppe.md', $this->marked_content());
-            $this->fail('Nicht zugelassener Speicher haette abgewiesen werden muessen.');
+            $this->fail('Disallowed storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilehostnotallowed', $e->errorcode);
         }
@@ -322,7 +322,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('lerngruppe.md', $this->marked_content());
-            $this->fail('Personenbezug haette abgewiesen werden muessen.');
+            $this->fail('Personal data should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilelocked', $e->errorcode);
         }
@@ -342,7 +342,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('lerngruppe.md', '# harmlos');
-            $this->fail('Ueberschreiben haette abgewiesen werden muessen.');
+            $this->fail('Overwriting should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilelocked', $e->errorcode);
         }
@@ -379,7 +379,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('lerngruppe.md', '# harmlos');
-            $this->fail('Das veraltete Markierungsgedaechtnis haette die Sperre nicht aushebeln duerfen.');
+            $this->fail('The stale marker memory must not have overridden the lock.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilelocked', $e->errorcode);
         }
@@ -403,7 +403,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             append_context_file::execute('lerngruppe.md', "\n- Notiz");
-            $this->fail('Anhaengen haette abgewiesen werden muessen.');
+            $this->fail('Appending should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilelocked', $e->errorcode);
         }
@@ -462,7 +462,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', str_repeat('x', 2048));
-            $this->fail('Quotenueberschreitung haette abgewiesen werden muessen.');
+            $this->fail('Quota overrun should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString('MB', $e->getMessage());
             $this->assertStringContainsString(
@@ -548,7 +548,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', '# Neuer Plan', $gelesen['contenthash']);
-            $this->fail('Konflikt haette abgewiesen werden muessen.');
+            $this->fail('Conflict should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
@@ -592,7 +592,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', '# Neuer Plan', $gelesen['contenthash']);
-            $this->fail('Konflikt haette abgewiesen werden muessen.');
+            $this->fail('Conflict should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
@@ -611,7 +611,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', '# Plan');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -624,7 +624,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             write_context_file::execute('plan.md', '# Plan', '', $kennung);
-            $this->fail('Nachtragen ohne Pruefwert haette abgewiesen werden muessen.');
+            $this->fail('Backfilling without a check value should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
@@ -643,7 +643,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', '# Plan');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -696,7 +696,7 @@ final class write_context_file_test extends \advanced_testcase {
         $message = '';
         try {
             $this->write('faecher/mathe/profil.md', '# Mathe');
-            $this->fail('Fehlende Kontextbereich-Wurzel haette abgewiesen werden muessen.');
+            $this->fail('Missing context-area root should have been rejected.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
             $this->assertSame('pendingwritefailed', $e->errorcode);
@@ -729,7 +729,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', '# Neuer Plan');
-            $this->fail('Konflikt haette abgewiesen werden muessen.');
+            $this->fail('Conflict should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
@@ -754,7 +754,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', '# Neuer Plan');
-            $this->fail('Konflikt haette abgewiesen werden muessen.');
+            $this->fail('Conflict should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
@@ -777,7 +777,7 @@ final class write_context_file_test extends \advanced_testcase {
         $message = '';
         try {
             $this->write('plan.md', '# Plan');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
             $this->assertSame('pendingwritefailed', $e->errorcode);
@@ -820,7 +820,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', '# Neu');
-            $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
+            $this->fail('Rejected login should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -848,7 +848,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', '# Neu');
-            $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
+            $this->fail('Rejected login should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -889,7 +889,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', '# Neuer Plan');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -913,7 +913,7 @@ final class write_context_file_test extends \advanced_testcase {
         $message = '';
         try {
             $this->write('plan.md', '# Plan');
-            $this->fail('Geloeschte Instanz haette abgewiesen werden muessen.');
+            $this->fail('Deleted instance should have been rejected.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
             $this->assertSame('pendingwritefailed', $e->errorcode);
@@ -940,7 +940,7 @@ final class write_context_file_test extends \advanced_testcase {
         $message = '';
         try {
             $this->write('plan.md', '# Plan');
-            $this->fail('Entzogene Freischaltung haette abgewiesen werden muessen.');
+            $this->fail('Revoked enablement should have been rejected.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
             $this->assertSame('pendingwritefailed', $e->errorcode);
@@ -970,7 +970,7 @@ final class write_context_file_test extends \advanced_testcase {
         $message = '';
         try {
             $this->write('plan.md', '# Plan');
-            $this->fail('Geaendertes Pruefmerkmal haette abgewiesen werden muessen.');
+            $this->fail('Changed check attribute should have been rejected.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
             $this->assertSame('pendingwritefailed', $e->errorcode);
@@ -1007,7 +1007,7 @@ final class write_context_file_test extends \advanced_testcase {
         $message = '';
         try {
             $this->write('plan.md', '# Plan');
-            $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
+            $this->fail('Rejected login should have been rejected.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
             $this->assertSame('pendingwritefailed', $e->errorcode);
@@ -1047,7 +1047,7 @@ final class write_context_file_test extends \advanced_testcase {
         $message = '';
         try {
             $this->write('plan.md', '# Plan');
-            $this->fail('Nicht erreichbarer Speicher haette abgewiesen werden muessen.');
+            $this->fail('Unreachable storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
             $this->assertSame('pendingwritefailed', $e->errorcode);
@@ -1087,7 +1087,7 @@ final class write_context_file_test extends \advanced_testcase {
         $message = '';
         try {
             $this->write('plan.md', '# Plan');
-            $this->fail('Unklarer Speicherzustand haette abgewiesen werden muessen.');
+            $this->fail('Unclear storage state should have been rejected.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
             $this->assertSame('pendingwritefailed', $e->errorcode);
@@ -1123,7 +1123,7 @@ final class write_context_file_test extends \advanced_testcase {
         $message = '';
         try {
             $this->write('plan.md', '# Plan');
-            $this->fail('Pfad ausserhalb von "Files/" haette abgewiesen werden muessen.');
+            $this->fail('Path outside "Files/" should have been rejected.');
         } catch (\moodle_exception $e) {
             $message = $e->getMessage();
             $this->assertSame('pendingwritefailed', $e->errorcode);
@@ -1160,7 +1160,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('notiz.txt', 'Inhalt');
-            $this->fail('Eine unerlaubte Endung haette abgewiesen werden muessen.');
+            $this->fail('A disallowed extension should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilenotmarkdown', $e->errorcode);
         }
@@ -1191,7 +1191,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('lerngruppe.md', $this->marked_content());
-            $this->fail('Personenbezogener Inhalt bei ausgeschaltetem Schalter haette abgewiesen werden muessen.');
+            $this->fail('Personal content with the switch off should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilelocked', $e->errorcode);
         }
@@ -1212,7 +1212,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             write_context_file::execute('plan.md', '# Plan', '', '', false, 42);
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -1235,7 +1235,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', '# Neuer Plan');
-            $this->fail('Konflikt haette abgewiesen werden muessen.');
+            $this->fail('Conflict should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
@@ -1272,7 +1272,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             $this->write('plan.md', '# Plan');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -1382,7 +1382,7 @@ final class write_context_file_test extends \advanced_testcase {
             'pendingdismissed',
             'storagelocationmarkerpending',
         ] as $key) {
-            $this->assertStringNotContainsString('Ausstand', $string[$key], "\"$key\" darf nicht \"Ausstand\" enthalten.");
+            $this->assertStringNotContainsString('Ausstand', $string[$key], "\"$key\" must not contain \"Ausstand\".");
         }
 
         // Unapproved-storage errors explicitly explain that this storage is
@@ -1430,7 +1430,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             write_context_file::execute('plan.md', '# Neu', '', '', true);
-            $this->fail('Ueberschreiben haette mit nur_anlegen abgewiesen werden muessen.');
+            $this->fail('Overwriting should have been rejected with nur_anlegen.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilealreadyexists', $e->errorcode);
         }
@@ -1462,7 +1462,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             write_context_file::execute('plan.md', '# Neu', '', '', true);
-            $this->fail('Ueberschreiben haette mit nur_anlegen abgewiesen werden muessen.');
+            $this->fail('Overwriting should have been rejected with nur_anlegen.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilealreadyexists', $e->errorcode);
         }
@@ -1484,7 +1484,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             write_context_file::execute('lerngruppe.md', '# Neu', '', '', true);
-            $this->fail('Ueberschreiben haette mit nur_anlegen abgewiesen werden muessen.');
+            $this->fail('Overwriting should have been rejected with nur_anlegen.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilealreadyexists', $e->errorcode);
         }
@@ -1559,7 +1559,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         try {
             write_context_file::execute('plan.md', '# Plan', '', 'IRGENDEINEKENNUNG');
-            $this->fail('Nachtragen ohne Pruefwert haette abgewiesen werden muessen.');
+            $this->fail('Backfilling without a check value should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
@@ -1642,7 +1642,7 @@ final class write_context_file_test extends \advanced_testcase {
      */
     private function read_stored(\stdClass $user, string $filepath, string $filename): string {
         $file = $this->stored_file($user, $filepath, $filename);
-        $this->assertNotNull($file, 'Erwartete Datei fehlt: ' . $filepath . $filename);
+        $this->assertNotNull($file, 'Expected file missing: ' . $filepath . $filename);
         return $file->get_content();
     }
 

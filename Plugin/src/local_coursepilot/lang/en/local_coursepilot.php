@@ -200,7 +200,7 @@ $string['webdavstep1instruction'] = 'The administration must enable the "WebDAV"
 $string['webdavstep2instruction'] = 'The administration must turn on "Allow user instances" for the "WebDAV" repository type.';
 $string['webdavstep3instruction'] = 'The administration must grant the teacher the "repository/webdav:view" capability in their own user context (recommended via a dedicated system role).';
 
-// Location page "Ortswahl" (issue #494, spec #486 §5/§10).
+// Location selection page (issue #494, spec #486 §5/§10).
 $string['locationselection'] = 'Coursepilot: locations for context area and material collection';
 $string['coursepilotsettingsheading'] = 'Coursepilot';
 $string['locationselectiontitle'] = 'Where the context area and material stock live';

@@ -53,8 +53,8 @@ final class folder_catalog_contract_test extends \advanced_testcase {
         $this->assertSame(
             $realcolumns,
             array_values(array_unique($known)),
-            "Die Spalten der Tabelle 'folder' und der Feldkatalog (folder::fields()/blocklist()) sind "
-                . 'auseinandergelaufen - Moodle hat vermutlich eine Spalte hinzugefuegt, entfernt oder umbenannt.'
+            "The columns of table 'folder' and the field catalog (folder::fields()/blocklist()) have "
+                . 'diverged - Moodle probably added, removed or renamed a column.'
         );
     }
 
@@ -65,12 +65,12 @@ final class folder_catalog_contract_test extends \advanced_testcase {
     public function test_files_is_catalogued_optional_and_unlocked(): void {
         $pseudofields = folder::pseudofields();
         $pseudonames = array_map(static fn (field $f): string => $f->name, $pseudofields);
-        $this->assertContains('files', $pseudonames, '"files" muss vollstaendig katalogisiert sein.');
+        $this->assertContains('files', $pseudonames, '"files" must be fully cataloged.');
 
         $filesfield = current(array_filter($pseudofields, static fn (field $f): bool => $f->name === 'files'));
-        $this->assertFalse($filesfield->required, '"files" muss beim Anlegen optional bleiben (leerer Ordner gueltig).');
+        $this->assertFalse($filesfield->required, '"files" must stay optional on creation (empty folder valid).');
 
-        $this->assertNotContains('files', folder::blocklist(), '"files" darf nicht mehr gesperrt sein.');
+        $this->assertNotContains('files', folder::blocklist(), '"files" must no longer be blocked.');
     }
 
     /**

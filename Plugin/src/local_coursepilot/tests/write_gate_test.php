@@ -97,7 +97,7 @@ final class write_gate_test extends \advanced_testcase {
 
         try {
             write_gate::assert_writable('forum');
-            $this->fail('assert_writable() haette werfen muessen.');
+            $this->fail('assert_writable() should have thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('modnamedriftlocked', $e->errorcode);
             $this->assertStringContainsString('forum', $e->getMessage());

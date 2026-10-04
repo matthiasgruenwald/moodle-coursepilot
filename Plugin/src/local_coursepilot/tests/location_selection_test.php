@@ -115,7 +115,7 @@ final class location_selection_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
         $this->enable_webdav_repository_type();
-        // Schritt 1+2 erfuellt, Schritt 3 (Capability) fehlt.
+        // Steps 1+2 fulfilled, step 3 (capability) missing.
 
         $text = location_selection::missing_steps_text((int) $user->id);
 
@@ -363,7 +363,7 @@ final class location_selection_test extends \advanced_testcase {
             $this->assertSame(['context_area'], $changed);
 
             $mkcols = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'MKCOL'));
-            $this->assertCount(2, $mkcols, 'Ebene fuer Ebene: "Unterricht", dann "Unterricht/Kontext".');
+            $this->assertCount(2, $mkcols, 'Level by level: "Unterricht", then "Unterricht/Kontext".');
 
             $state = location_selection::page_state((int) $user->id);
             $this->assertSame('selected', $state['locations']['context_area']['state']);
@@ -394,7 +394,7 @@ final class location_selection_test extends \advanced_testcase {
                 'context_area' => ['type' => 'external', 'instanceid' => $instanceid, 'path' => 'Unterricht'],
                 'material_store' => ['type' => 'moodle'],
             ]);
-            $this->fail('locationselectionfolderconfirmrequired haette geworfen werden muessen.');
+            $this->fail('locationselectionfolderconfirmrequired should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('locationselectionfolderconfirmrequired', $e->errorcode);
         } finally {
@@ -545,7 +545,7 @@ final class location_selection_test extends \advanced_testcase {
         }
     }
 
-    // --- Issue #497: Sperren, IServ-Erkennung, Uebergabe eines gefuellten Ordners ---
+    // --- Issue #497: locks, IServ detection, handover of a filled folder ---
 
     public function test_browse_root_is_not_selectable(): void {
         $this->resetAfterTest();
@@ -598,7 +598,7 @@ final class location_selection_test extends \advanced_testcase {
         $sink->close();
         $this->assertNotEmpty(
             $failures,
-            'Ein gescheiterter IServ-Check muss protokolliert werden, nicht schweigend als "nein" gelten.'
+            'A failed IServ check must be logged, not silently treated as "no".'
         );
     }
 
@@ -613,7 +613,7 @@ final class location_selection_test extends \advanced_testcase {
         try {
             $root = location_selection::browse($this->lastinstanceid, '');
             $this->assertTrue($root['iserv']);
-            $this->assertFalse($root['selectable'], 'Die Wurzel bleibt zusaetzlich immer gesperrt.');
+            $this->assertFalse($root['selectable'], 'The root additionally always stays locked.');
             $this->assertSame(
                 ['Files', 'Groups', 'Print', 'Temp', 'Windows'],
                 array_map(static fn (array $f): string => $f['name'], $root['folders'])
@@ -621,12 +621,12 @@ final class location_selection_test extends \advanced_testcase {
 
             $groups = location_selection::browse($this->lastinstanceid, 'Groups');
             $this->assertTrue($groups['iserv']);
-            $this->assertFalse($groups['selectable'], 'Ausserhalb von Files/ ist bei IServ nichts waehlbar.');
+            $this->assertFalse($groups['selectable'], 'Outside Files/ nothing is selectable on IServ.');
             $this->assertSame('locationselectioniservfilesonly', $groups['reasonkey']);
 
             $files = location_selection::browse($this->lastinstanceid, 'Files');
             $this->assertTrue($files['iserv']);
-            $this->assertTrue($files['selectable'], 'Unterhalb von Files/ bleibt bei IServ waehlbar.');
+            $this->assertTrue($files['selectable'], 'Below Files/ stays selectable on IServ.');
 
             $nested = location_selection::browse($this->lastinstanceid, 'Files/Unterricht');
             $this->assertTrue($nested['selectable']);
@@ -751,7 +751,7 @@ final class location_selection_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
 
-        $this->assertFalse(location_selection::open_with_access((int) $user->id), 'Ohne Freischaltung kein Fakt.');
+        $this->assertFalse(location_selection::open_with_access((int) $user->id), 'No fact without enablement.');
 
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
@@ -763,13 +763,13 @@ final class location_selection_test extends \advanced_testcase {
                 'context_area' => ['type' => 'external', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
                 'material_store' => ['type' => 'moodle'],
             ]);
-            $this->assertFalse(location_selection::open_with_access((int) $user->id), 'Ortswahl nicht mehr offen, sobald ein Ort gewaehlt ist.');
+            $this->assertFalse(location_selection::open_with_access((int) $user->id), 'Location selection is no longer open once a location is chosen.');
         } finally {
             \core\di::reset_container();
         }
     }
 
-    // --- Issue #498: Altbestand (vorheriger Ort) ---
+    // --- Issue #498: legacy items (previous location) ---
 
     /**
      * Record the previous Moodle location only when it contains context

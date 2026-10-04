@@ -265,6 +265,11 @@ final class skill_corpus_test extends \advanced_testcase {
                 $content,
                 $entry['name'] . ': German prose remains in the English corpus'
             );
+            $this->assertDoesNotMatchRegularExpression(
+                '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u',
+                $content,
+                $entry['name'] . ': German umlauts or function words in the English corpus'
+            );
         }
         foreach (['coursepilot', 'coursepilot-plan', 'coursepilot-implement'] as $name) {
             $content = strtolower(preg_replace('/\s+/u', ' ', skill_corpus::get($name)['content']));

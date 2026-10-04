@@ -178,7 +178,7 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('buchseite.png', 'ausschnitt.png', $x0, $y0, $x1, $y1);
-            $this->fail('materialcropinvalidcoordinates haette geworfen werden muessen.');
+            $this->fail('materialcropinvalidcoordinates should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialcropinvalidcoordinates', $e->errorcode);
         }
@@ -202,7 +202,7 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('diagramm.svg', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
-            $this->fail('materialcropsourceunsupported haette geworfen werden muessen.');
+            $this->fail('materialcropsourceunsupported should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialcropsourceunsupported', $e->errorcode);
         }
@@ -220,7 +220,7 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.1, 0.1, 0.6, 0.6, 'falscherhash');
-            $this->fail('materialfilechanged haette geworfen werden muessen.');
+            $this->fail('materialfilechanged should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialfilechanged', $e->errorcode);
         }
@@ -252,7 +252,7 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('buchseite.png', 'ausschnitt.svg', 0.0, 0.0, 0.5, 0.5);
-            $this->fail('materialcropoutputunsupported haette geworfen werden muessen.');
+            $this->fail('materialcropoutputunsupported should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialcropoutputunsupported', $e->errorcode);
         }
@@ -274,7 +274,7 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
-            $this->fail('materialgdmissing haette geworfen werden muessen.');
+            $this->fail('materialgdmissing should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialgdmissing', $e->errorcode);
         } finally {
@@ -318,7 +318,7 @@ final class crop_material_file_test extends \advanced_testcase {
             '/coursepilot-material/',
             'ausschnitt.png'
         );
-        $this->assertNotFalse($stored, 'Das Ergebnis muss auf der Werkbank (Moodle) liegen.');
+        $this->assertNotFalse($stored, 'The result must be on the workbench (Moodle).');
     }
 
     /**
@@ -345,7 +345,7 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5, '', 'woanders');
-            $this->fail('Ein unbekannter Ort-Wert haette werfen muessen.');
+            $this->fail('An unknown location value should have thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('invalidmateriallocation', $e->errorcode);
         }
@@ -364,7 +364,7 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('kontext/buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
-            $this->fail('Eine Quelle unter dem Kontextbereich haette werfen muessen.');
+            $this->fail('A source under the context area should have thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialpathiscontext', $e->errorcode);
         }

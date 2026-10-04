@@ -20,7 +20,7 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Schreibkern 13 (Spec 0015 Phase 3, Ticket #391).
+ * Write core 13 (Spec 0015 Phase 3, Ticket #391).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

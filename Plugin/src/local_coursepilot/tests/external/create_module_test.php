@@ -146,7 +146,7 @@ final class create_module_test extends \advanced_testcase {
         ]);
 
         $after = $this->read($result['cmid']);
-        $this->assertEquals(0, $after['nosubmissions'], 'nosubmissions muss 0 sein - mindestens eine Abgabeart aktiv.');
+        $this->assertEquals(0, $after['nosubmissions'], 'nosubmissions must be 0 - at least one submission type active.');
         $this->assertSame('Beschreibung', $after['intro']);
         $this->assertSame([], get_file_storage()->get_area_files(
             \context_module::instance($result['cmid'])->id, 'mod_assign', 'intro', 0, 'filename', false));
@@ -320,7 +320,7 @@ final class create_module_test extends \advanced_testcase {
         $this->assertSame('resource', $result['modname']);
         $modulecontext = \context_module::instance($result['cmid']);
         $stored = get_file_storage()->get_file($modulecontext->id, 'mod_resource', 'content', 0, '/', 'arbeitsblatt.pdf');
-        $this->assertNotFalse($stored, 'Die Hauptdatei muss unter mod_resource/content liegen.');
+        $this->assertNotFalse($stored, 'The main file must be under mod_resource/content.');
         $this->assertSame('Arbeitsblattinhalt', $stored->get_content());
     }
 
@@ -342,7 +342,7 @@ final class create_module_test extends \advanced_testcase {
         $this->assertSame('resource', $result['modname']);
         $modulecontext = \context_module::instance($result['cmid']);
         $stored = get_file_storage()->get_file($modulecontext->id, 'mod_resource', 'content', 0, '/', 'arbeitsblatt.pdf');
-        $this->assertNotFalse($stored, 'Die Hauptdatei muss unter mod_resource/content liegen.');
+        $this->assertNotFalse($stored, 'The main file must be under mod_resource/content.');
         $this->assertSame('Arbeitsblattinhalt', $stored->get_content());
     }
 
@@ -390,7 +390,7 @@ final class create_module_test extends \advanced_testcase {
         $this->assertSame(
             0,
             $this->count_resource_coursemodules($course->id),
-            'Ohne "files" darf keine resource-Aktivitaet im Kurs entstehen.'
+            'Without "files" no resource activity may be created in the course.'
         );
     }
 
@@ -482,8 +482,8 @@ final class create_module_test extends \advanced_testcase {
         $fs = get_file_storage();
         $atroot = $fs->get_file($modulecontext->id, 'mod_folder', 'content', 0, '/', 'wurzel.pdf');
         $insubfolder = $fs->get_file($modulecontext->id, 'mod_folder', 'content', 0, '/unterordner/', 'blatt.pdf');
-        $this->assertNotFalse($atroot, 'Die Datei ohne Zielordner muss an der Wurzel liegen.');
-        $this->assertNotFalse($insubfolder, 'Die Datei mit "zielordner" muss im Unterordner liegen.');
+        $this->assertNotFalse($atroot, 'The file without a target folder must be at the root.');
+        $this->assertNotFalse($insubfolder, 'The file with "zielordner" must be in the subfolder.');
         $this->assertSame('im Unterordner', $insubfolder->get_content());
     }
 
@@ -671,7 +671,7 @@ final class create_module_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString('page', $e->getMessage());
         }
-        $this->assertSame($before, $DB->count_records('page'), 'Es darf nichts angelegt worden sein.');
+        $this->assertSame($before, $DB->count_records('page'), 'Nothing may have been created.');
     }
 
     /**
@@ -910,7 +910,7 @@ final class create_module_test extends \advanced_testcase {
                 'name' => 'x',
                 'page' => ['text' => 'Inhalt', 'format' => FORMAT_HTML, 'itemid' => 0],
             ]);
-            $this->fail('execute() haette wegen Drift werfen muessen.');
+            $this->fail('execute() should have thrown because of drift.');
         } catch (\moodle_exception $e) {
             // write_gate_test.php checks exact wording against the language pack.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
@@ -934,7 +934,7 @@ final class create_module_test extends \advanced_testcase {
 
         try {
             $this->create($course->id, 0, 'assign', $felder);
-            $this->fail('attemptreopenmethod=manual haette bestaetigt werden muessen.');
+            $this->fail('attemptreopenmethod=manual should have required confirmation.');
         } catch (\moodle_exception $e) {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
             $this->assertStringContainsString('attemptreopenmethod', $e->getMessage());
@@ -961,7 +961,7 @@ final class create_module_test extends \advanced_testcase {
 
         try {
             $this->create($course->id, 0, 'choice', $felder);
-            $this->fail('Default-Riegel allowupdate=0 haette gemeldet werden muessen.');
+            $this->fail('Default guard allowupdate=0 should have been reported.');
         } catch (\moodle_exception $e) {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
             $this->assertStringContainsString('form default', $e->getMessage());

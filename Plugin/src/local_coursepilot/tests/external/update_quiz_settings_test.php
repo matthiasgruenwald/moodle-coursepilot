@@ -250,7 +250,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
         $raw = $this->raw_quiz($quiz->cmid);
         $this->assertSame('Neue Beschreibung', $raw->intro);
         $records = $DB->get_records('quiz_feedback', ['quizid' => $raw->id]);
-        $this->assertCount(2, $records, 'Gesamtfeedback darf durch einen unbeteiligten Patch nicht verschwinden.');
+        $this->assertCount(2, $records, 'Overall feedback must not disappear through an unrelated patch.');
     }
 
     /**
@@ -265,7 +265,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
 
         $raw = $this->raw_quiz($quiz->cmid);
         $this->assertEquals(9, $raw->attempts);
-        $this->assertSame('immediatefeedback', $raw->preferredbehaviour, 'Buendel muss sonst greifen.');
+        $this->assertSame('immediatefeedback', $raw->preferredbehaviour, 'Bundle must otherwise apply.');
     }
 
     /**
@@ -311,7 +311,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
 
         $records = array_values($DB->get_records('quiz_feedback', ['quizid' => $raw->id], 'mingrade DESC'));
         $feedback = current(array_filter($records, fn ($record) => $record->feedbacktext === 'Bestanden'));
-        $this->assertEqualsWithDelta(25.0, (float) $feedback->mingrade, 0.0001, 'Grenze muss anteilig umgerechnet sein (50->25 bei Halbierung).');
+        $this->assertEqualsWithDelta(25.0, (float) $feedback->mingrade, 0.0001, 'Boundary must be converted proportionally (50->25 when halved).');
     }
 
     /**
@@ -339,7 +339,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
 
         $records = array_values($DB->get_records('quiz_feedback', ['quizid' => $raw->id], 'mingrade DESC'));
         $feedback = current(array_filter($records, fn ($record) => $record->feedbacktext === 'Bestanden'));
-        $this->assertEqualsWithDelta(25.0, (float) $feedback->mingrade, 0.0001, 'Explizit gegebene Grenze darf nicht zusaetzlich skaliert werden.');
+        $this->assertEqualsWithDelta(25.0, (float) $feedback->mingrade, 0.0001, 'Explicitly given boundary must not be scaled additionally.');
     }
 
     /**
@@ -474,7 +474,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
 
         try {
             $this->patch($quiz->cmid, ['intro' => 'Neue Beschreibung']);
-            $this->fail('execute() haette wegen Drift werfen muessen.');
+            $this->fail('execute() should have thrown because of drift.');
         } catch (\moodle_exception $e) {
             // write_gate_test.php checks exact wording against the language pack.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
@@ -496,7 +496,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
 
         try {
             update_quiz_settings::execute($quiz->cmid, json_encode(['attempts' => 1]));
-            $this->fail('attempts=1 haette bestaetigt werden muessen.');
+            $this->fail('attempts=1 should have required confirmation.');
         } catch (\moodle_exception $e) {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
         }

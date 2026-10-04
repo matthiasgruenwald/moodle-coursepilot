@@ -188,7 +188,7 @@ final class context_pointer_test extends \advanced_testcase {
 
         try {
             context_pointer::resolve_target($decoded, 'material_store');
-            $this->fail('materialstoreincontext haette geworfen werden muessen.');
+            $this->fail('materialstoreincontext should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialstoreincontext', $e->errorcode);
         }
@@ -290,7 +290,7 @@ final class context_pointer_test extends \advanced_testcase {
 
         try {
             context_pointer::resolve_target($decoded, 'material_store');
-            $this->fail('materialstoreincontext haette geworfen werden muessen.');
+            $this->fail('materialstoreincontext should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialstoreincontext', $e->errorcode);
         }
@@ -313,7 +313,7 @@ final class context_pointer_test extends \advanced_testcase {
 
         try {
             context_pointer::resolve_target($decoded, 'context_area');
-            $this->fail('webdaviservfilesonly haette geworfen werden muessen.');
+            $this->fail('webdaviservfilesonly should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdaviservfilesonly', $e->errorcode);
         }
@@ -407,7 +407,7 @@ final class context_pointer_test extends \advanced_testcase {
                 'path' => 'Groups/Alt',
                 'fingerprint' => ['server' => 's', 'basepath' => 'b', 'account' => 'k', 'iserv' => true],
             ]);
-            $this->fail('webdaviservfilesonly haette geworfen werden muessen.');
+            $this->fail('webdaviservfilesonly should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdaviservfilesonly', $e->errorcode);
         }

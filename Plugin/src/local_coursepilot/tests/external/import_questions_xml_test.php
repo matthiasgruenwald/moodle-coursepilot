@@ -59,7 +59,7 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         global $DB;
         $entry = $DB->get_record('question_bank_entries', ['id' => $question['questionbankentryid']], '*', MUST_EXIST);
-        $this->assertNotEmpty($entry->idnumber, 'Eine idnumber wurde generiert.');
+        $this->assertNotEmpty($entry->idnumber, 'An idnumber was generated.');
     }
 
     /**
@@ -92,7 +92,7 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         global $DB;
         $versions = $DB->get_records('question_versions', ['questionbankentryid' => $entryid]);
-        $this->assertCount(2, $versions, 'Genau eine neue Version, kein neuer Bank-Eintrag.');
+        $this->assertCount(2, $versions, 'Exactly one new version, no new bank entry.');
     }
 
     /**
@@ -111,7 +111,7 @@ final class import_questions_xml_test extends \advanced_testcase {
             import_questions_xml::execute($categoryid, 'das ist kein XML');
         } finally {
             $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-            $this->assertSame($countbefore, $countafter, 'Nichts wurde geschrieben.');
+            $this->assertSame($countbefore, $countafter, 'Nothing was written.');
         }
     }
 
@@ -138,7 +138,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         $this->assertSame($categoryid, $question['categoryid']);
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-        $this->assertSame($countbefore, $countafter, 'Nichts wurde geschrieben.');
+        $this->assertSame($countbefore, $countafter, 'Nothing was written.');
     }
 
     /**
@@ -191,7 +191,7 @@ final class import_questions_xml_test extends \advanced_testcase {
             import_questions_xml::execute($categoryid, $xml);
         } finally {
             $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-            $this->assertSame($countbefore, $countafter, 'Nichts wurde geschrieben.');
+            $this->assertSame($countbefore, $countafter, 'Nothing was written.');
         }
     }
 
@@ -258,7 +258,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         }
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-        $this->assertSame($countbefore, $countafter, 'Nichts wurde geschrieben.');
+        $this->assertSame($countbefore, $countafter, 'Nothing was written.');
     }
 
     /**
@@ -365,7 +365,7 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         try {
             import_questions_xml::execute($categoryid, '', false, 'kontext/export.xml');
-            $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
+            $this->fail('A path under the context area should have thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialpathiscontext', $e->errorcode);
         }
@@ -390,7 +390,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         }
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-        $this->assertSame($countbefore, $countafter, 'Nichts wurde geschrieben.');
+        $this->assertSame($countbefore, $countafter, 'Nothing was written.');
     }
 
     /**
@@ -448,7 +448,7 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         try {
             $method->invoke(null, 2048, 1024);
-            $this->fail('Erwartete invalid_parameter_exception wegen Ueberschreitung der Groessengrenze.');
+            $this->fail('Expected invalid_parameter_exception because the size limit was exceeded.');
         } catch (\invalid_parameter_exception $e) {
             $this->assertStringContainsString(display_size(2048), $e->getMessage());
             $this->assertStringContainsString(display_size(1024), $e->getMessage());
@@ -472,7 +472,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         $this->assertGreaterThan(
             import_questions_xml::MAX_XML_BYTES,
             get_max_upload_file_size(),
-            'Testannahme: die Serveruploadgrenze liegt ueber der Fachgrenze.'
+            'Test assumption: the server upload limit is above the domain limit.'
         );
 
         try {
@@ -539,16 +539,16 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         try {
             import_questions_xml::execute($categoryid, $xml);
-            $this->fail('Erwartete moodle_exception statt eines stillen Erfolgs.');
+            $this->fail('Expected moodle_exception instead of a silent success.');
         } catch (\TypeError $e) {
-            $this->fail('TypeError durchgesickert statt sprechender moodle_exception: ' . $e->getMessage());
+            $this->fail('TypeError leaked instead of a descriptive moodle_exception: ' . $e->getMessage());
         } catch (\moodle_exception $e) {
             $this->assertStringNotContainsString('stdClass', $e->getMessage());
             $this->assertStringContainsString('calculated', $e->getMessage());
         }
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-        $this->assertSame($countbefore, $countafter, 'Nichts wurde geschrieben.');
+        $this->assertSame($countbefore, $countafter, 'Nothing was written.');
     }
 
     /**

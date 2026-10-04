@@ -56,7 +56,7 @@ final class upgradelib_test extends \advanced_testcase {
             $this->introduce_drift($dbman);
 
             $before = $this->schema_errors();
-            $this->assertNotEmpty($before, 'Die kuenstliche Drift wurde von der Schema-Pruefung nicht gesehen.');
+            $this->assertNotEmpty($before, 'The artificial drift was not detected by the schema check.');
         } finally {
             // Repair even if assertions fail: resetAfterTest() does not undo DDL
             // and unrepaired schema changes would break later tests.

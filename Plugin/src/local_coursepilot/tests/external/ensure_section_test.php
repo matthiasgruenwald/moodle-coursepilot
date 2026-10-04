@@ -20,7 +20,7 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Schreibkern 13 (Spec 0015 Phase 3, Ticket #391).
+ * Write core 13 (Spec 0015 Phase 3, Ticket #391).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -71,7 +71,7 @@ final class ensure_section_test extends \advanced_testcase {
         $this->assertSame($first['id'], $second['id']);
 
         $countafter = count(get_fast_modinfo($course)->get_section_info_all());
-        $this->assertSame($countbefore, $countafter, 'Ein erneuter Aufruf darf keinen zweiten Abschnitt erzeugen.');
+        $this->assertSame($countbefore, $countafter, 'A repeated call must not create a second section.');
     }
 
     /**
