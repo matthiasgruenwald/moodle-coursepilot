@@ -21,9 +21,8 @@ use local_coursepilot\webdav\webdav_setup_steps;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Pruefwert und Fehleruebersetzung von {@see pointer_reader} (Issue #513,
- * #526, #529) direkt - die Lese-/Listenzweige laufen ueber die
- * Kontext- und Materialwerkzeug-Tests.
+ * Direct check-value and error-translation tests for pointer_reader
+ * (Issues #513/#526/#529). Context/material tool tests cover reads and lists.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -33,8 +32,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class pointer_reader_test extends \advanced_testcase {
 
     /**
-     * Ein ETag hat Vorrang vor getlastmodified; der Wert ist sha1-hex und
-     * damit PARAM_ALPHANUMEXT-sicher, auch bei ETags mit Anfuehrungszeichen.
+     * ETag takes precedence over getlastmodified; SHA-1 hex is safe for
+     * PARAM_ALPHANUMEXT even when ETags contain quotes.
      */
     public function test_external_checkvalue_prefers_etag(): void {
         $withetag = pointer_reader::external_checkvalue('"abc"', 1700000000);
@@ -45,8 +44,8 @@ final class pointer_reader_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne ETag (IServ) tritt getlastmodified ein - eine Aenderung der
-     * Zeit aendert den Pruefwert.
+     * Without ETags (IServ), getlastmodified supplies the check value;
+     * a changed timestamp changes that value.
      */
     public function test_external_checkvalue_falls_back_to_timemodified(): void {
         $first = pointer_reader::external_checkvalue(null, 1700000000);
@@ -56,8 +55,8 @@ final class pointer_reader_test extends \advanced_testcase {
     }
 
     /**
-     * Standardschluessel: Fehlerklasse als Label und Ortswahlseite im
-     * Text, nie der rohe Fehlertext (Geheimnis-Test, Spec #486).
+     * Default key: include localized error class and location-selection page,
+     * never raw error details (secret-protection test, Spec #486).
      */
     public function test_webdav_exception_uses_default_key_without_raw_detail(): void {
         $error = new webdav_error(webdav_error::AUTH_REJECTED, 'secret-host user:hunter2 HTTP 401');
@@ -72,8 +71,7 @@ final class pointer_reader_test extends \advanced_testcase {
     }
 
     /**
-     * Drosselung wechselt am Standardschluessel auf den Warte-und-
-     * Wiederholen-Text (Issue #529).
+     * Throttling replaces the default message with wait-and-retry guidance (#529).
      */
     public function test_webdav_exception_switches_to_unclear_text_on_default_key(): void {
         $exception = pointer_reader::webdav_exception(new webdav_error(webdav_error::UNCLEAR));
@@ -82,8 +80,8 @@ final class pointer_reader_test extends \advanced_testcase {
     }
 
     /**
-     * Ein eigener Schluessel (Ortswahl, Material) bleibt auch bei Drosselung
-     * unveraendert - andere Zielgruppe, andere Textlogik.
+     * Explicit location-selection/material keys remain unchanged during
+     * throttling because they address different audiences.
      */
     public function test_webdav_exception_keeps_custom_key_on_unclear(): void {
         $exception = pointer_reader::webdav_exception(new webdav_error(webdav_error::UNCLEAR), 'materialexternalerror');

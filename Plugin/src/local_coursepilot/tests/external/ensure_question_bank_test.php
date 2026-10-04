@@ -19,7 +19,7 @@ namespace local_coursepilot\external;
 use core_external\external_api;
 
 /**
- * Ensure-Anlegen einer Fragensammlung (Spec 0017 §1, Ticket #412).
+ * Find or create a question bank (Spec 0017 §1, issue #412).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -29,7 +29,7 @@ use core_external\external_api;
 final class ensure_question_bank_test extends \advanced_testcase {
 
     /**
-     * Neuanlage: keine gleichnamige Fragensammlung im Kurs vorhanden.
+     * Create when the course has no question bank with this name.
      */
     public function test_creates_new_question_bank(): void {
         $this->resetAfterTest();
@@ -51,8 +51,8 @@ final class ensure_question_bank_test extends \advanced_testcase {
     }
 
     /**
-     * Wiederverwendung: ein zweiter Lauf mit demselben Namen legt nichts
-     * doppelt an, sondern liefert dieselbe Bank mit created=false.
+     * Repeating the same name reuses the bank with created=false
+     * instead of creating a duplicate.
      */
     public function test_reuses_existing_question_bank_with_same_name(): void {
         $this->resetAfterTest();

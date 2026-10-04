@@ -19,8 +19,8 @@ namespace local_coursepilot\external;
 use core_external\external_api;
 
 /**
- * Je externer Funktion ein Test (Abnahmekriterium 3 aus #309) plus der
- * Capability-Test (Abnahmekriterium 4).
+ * One test per external function plus capability checks
+ * (acceptance #309 criteria 3/4).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,7 +30,7 @@ use core_external\external_api;
 final class list_courses_test extends \advanced_testcase {
 
     /**
-     * Eine Lehrkraft sieht ihre Kurse.
+     * Teachers see their own courses.
      */
     public function test_teacher_sees_own_courses(): void {
         $this->resetAfterTest();
@@ -51,8 +51,8 @@ final class list_courses_test extends \advanced_testcase {
     }
 
     /**
-     * Kurse ohne 'local/coursepilot:use' tauchen nicht auf, auch wenn die
-     * Lehrkraft dort eingeschrieben ist (#295, Punkt 3).
+     * Hide courses without local/coursepilot:use even for enrolled teachers
+     * (#295 point 3).
      */
     public function test_courses_without_capability_are_omitted(): void {
         $this->resetAfterTest();
@@ -81,8 +81,8 @@ final class list_courses_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne 'local/coursepilot:use' gibt es CAPABILITY_MISSING und keine Daten
-     * (Abnahmekriterium 4 aus #309, Fehlerform aus #295, Punkt 4).
+     * Without local/coursepilot:use, return CAPABILITY_MISSING and no data
+     * (acceptance #309 criterion 4, #295 point 4).
      */
     public function test_user_without_capability_gets_capability_missing(): void {
         $this->resetAfterTest();
@@ -99,7 +99,7 @@ final class list_courses_test extends \advanced_testcase {
     }
 
     /**
-     * Auch eine Lehrkraft ohne jede Einschreibung bekommt keine Kursdaten.
+     * Teachers with no enrollments receive no course data.
      */
     public function test_user_without_enrolment_gets_no_data(): void {
         $this->resetAfterTest();

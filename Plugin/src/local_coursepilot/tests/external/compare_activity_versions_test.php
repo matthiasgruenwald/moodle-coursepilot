@@ -92,7 +92,7 @@ final class compare_activity_versions_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 6: local/coursepilot:viewhistory wird geprueft.
+     * Require local/coursepilot:viewhistory (criterion 6).
      */
     public function test_rejects_user_without_capability(): void {
         $this->resetAfterTest();

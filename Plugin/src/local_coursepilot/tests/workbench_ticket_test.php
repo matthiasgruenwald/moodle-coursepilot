@@ -21,7 +21,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Einmal-Downloadticket fuer Werkbankdateien (#501, Spec #486 §13).
+ * Single-use workbench download tickets (#501, Spec #486 §13).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -94,7 +94,7 @@ final class workbench_ticket_test extends \advanced_testcase {
         $this->store('blatt.pdf', 'urspruenglich');
         $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
 
-        // Datei nach Ausstellung, vor Abruf geaendert.
+        // Change the file after issuing the ticket but before redemption.
         $this->store('blatt.pdf', 'geaendert', true);
 
         $this->expectException(\moodle_exception::class);
@@ -103,10 +103,8 @@ final class workbench_ticket_test extends \advanced_testcase {
     }
 
     /**
-     * Das Ticket ist an die ausstellende Person gebunden, nicht an die zum
-     * Abrufzeitpunkt angemeldete Sitzung - eine andere, gleichzeitig
-     * angemeldete Lehrkraft (hier: mit einer gleichnamigen eigenen
-     * Werkbankdatei) bekommt nie deren Inhalt geliefert.
+     * Bind the ticket to its issuing user, not the session active at redemption.
+     * Another logged-in teacher with a same-named file cannot receive its contents.
      */
     public function test_ticket_stays_bound_to_issuing_person(): void {
         $this->resetAfterTest();
@@ -175,7 +173,7 @@ final class workbench_ticket_test extends \advanced_testcase {
             $this->fail('Erwartete workbench_ticket_redemption_failed ausgeblieben.');
         } catch (workbench_ticket_redemption_failed $e) {
             $this->assertSame('workbenchticketaccountinactive', $e->errorcode);
-            $this->assertSame('blatt.pdf', $e->path, 'Fehlschlag traegt den Pfad fuer den access_log (Spec #486 §13).');
+            $this->assertSame('blatt.pdf', $e->path, 'Failure retains the path for access_log (Spec #486 §13).');
         }
     }
 
@@ -197,12 +195,9 @@ final class workbench_ticket_test extends \advanced_testcase {
     }
 
     /**
-     * Kein authenticate_access_token()-Aufruf vorher - genau der Fall eines
-     * PHPUnit-Aufrufs der externen Funktion ohne MCP-Dispatcher davor.
-     * oauthtokenid bleibt null. Ein solches Ticket ist nie staerker als
-     * seine Verbindung (#512, Spec #486 §13): ohne bekannte ausstellende
-     * Verbindung verlangt die Einloesung ersatzweise irgendeine noch
-     * bestehende Verbindung der Person - hat sie gar keine, scheitert sie.
+     * Without an MCP dispatcher/authenticate_access_token() call, oauthtokenid
+     * is null. The ticket remains bounded by the user's connections (#512,
+     * Spec #486 §13): require any active connection, failing if none remains.
      */
     public function test_redemption_without_a_known_issuing_connection_needs_some_active_connection(): void {
         $this->resetAfterTest();
@@ -218,9 +213,7 @@ final class workbench_ticket_test extends \advanced_testcase {
     }
 
     /**
-     * Gegenprobe zum Test oben: dieselbe Ausgangslage (kein oauthtokenid am
-     * Ticket), aber die Person hat eine andere, noch bestehende Verbindung -
-     * dann loest das Ticket trotzdem ein.
+     * Same null-oauthtokenid case with another active connection: redemption succeeds.
      */
     public function test_redemption_without_a_known_issuing_connection_succeeds_with_another_active_connection(): void {
         $this->resetAfterTest();
@@ -229,9 +222,8 @@ final class workbench_ticket_test extends \advanced_testcase {
         $this->store('blatt.pdf', 'inhalt');
         $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
 
-        // Verbindung erst NACH dem Ausstellen angelegt, ohne
-        // authenticate_access_token() fuer diese Anfrage aufzurufen -
-        // oauthtokenid am Ticket bleibt null.
+        // Create a connection after issuance without authenticating this request;
+        // the ticket's oauthtokenid remains null.
         $this->issue_connection((int) $user->id);
         oauth_lib::reset_current_token_id();
 
@@ -241,12 +233,9 @@ final class workbench_ticket_test extends \advanced_testcase {
     }
 
     /**
-     * Zwei gleichzeitige Einloeseversuche desselben Tickets duerfen die
-     * Datei hoechstens einmal liefern (#512). Echte parallele Datenbank-
-     * verbindungen sind in dieser PHPUnit-Umgebung nicht praktikabel - dieser
-     * Test prueft deshalb nur den Ausgang (zwei sequenzielle Abrufe, der
-     * zweite scheitert), nicht den Mechanismus selbst. Der eigentliche
-     * Beweis der Nebenlaeufigkeitssicherheit steckt im naechsten Test.
+     * Two redemptions deliver the file at most once (#512). Parallel DB
+     * connections are impractical here, so this checks two sequential calls.
+     * The next test checks the atomic claim mechanism.
      */
     public function test_concurrent_redemption_delivers_file_at_most_once(): void {
         $this->resetAfterTest();
@@ -257,34 +246,26 @@ final class workbench_ticket_test extends \advanced_testcase {
         $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
 
         $first = workbench_ticket::redeem($secret);
-        $this->assertSame('inhalt', $first['content'], 'Der erste Abruf muss die Datei liefern.');
+        $this->assertSame('inhalt', $first['content'], 'The first redemption must deliver the file.');
 
         try {
             workbench_ticket::redeem($secret);
-            $this->fail('Der zweite, gleichzeitige Abruf haette scheitern muessen.');
+            $this->fail('The second concurrent redemption must fail.');
         } catch (workbench_ticket_redemption_failed $e) {
             $this->assertSame(
                 'workbenchticketinvalid',
                 $e->errorcode,
-                'Der zweite Abruf muss dasselbe "unbekannt" sehen wie ein nie ausgestelltes Ticket.'
+                'The second redemption must report unknown, like a ticket never issued.'
             );
         }
     }
 
     /**
-     * Belegt den eigentlichen Mechanismus hinter der Nebenlaeufigkeits-
-     * sicherheit (#512, Review-Befund zum ersten Entwurf dieses Tickets):
-     * echte parallele Prozesse lassen sich in PHPUnit nicht erzeugen, aber
-     * der Effekt eines Gleichzeitigkeitsrennens - eine andere Verbindung
-     * beansprucht dieselbe Zeile im selben Moment - laesst sich exakt
-     * nachstellen, indem genau die Anweisung nachgeahmt wird, die
-     * {@see workbench_ticket::claim()} selbst fuer den Claim verwendet (ein
-     * UPDATE mit dem alten Tickethash in der WHERE-Klausel). Direkt danach
-     * hat unser eigener Abruf keine passende Zeile mehr - nicht weil eine
-     * zweite Anfrage sequenziell zuerst dran war (das prueft der Test oben),
-     * sondern weil das Claim-UPDATE selbst atomar ist: eine SELECT-dann-
-     * DELETE-Implementierung (der vorherige Stand) haette hier faelschlich
-     * noch die Ticketdaten gefunden und die Datei ausgeliefert.
+     * Test atomic claim safety (#512, review finding). Simulate another
+     * connection claiming the same row using the same UPDATE/old tickethash
+     * condition as workbench_ticket::claim(). Our subsequent redemption finds
+     * no matching row. A SELECT-then-DELETE implementation would incorrectly
+     * find the changed row and deliver content.
      */
     public function test_claim_loses_to_a_rival_update_that_already_changed_the_tickethash(): void {
         global $DB;
@@ -297,9 +278,8 @@ final class workbench_ticket_test extends \advanced_testcase {
         $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
         $hash = hash('sha256', $secret);
 
-        // Simuliert den Sieger eines echten Gleichzeitigkeitsrennens: eine
-        // andere Verbindung hat im selben Moment per UPDATE denselben Claim
-        // ausgefuehrt, den auch workbench_ticket::claim() verwenden wuerde.
+        // Simulate a competing connection winning the atomic UPDATE claim
+        // that workbench_ticket::claim() would perform.
         $rivalclaim = hash('sha256', 'rival');
         $DB->set_field_select(
             workbench_ticket::TABLE,
@@ -311,17 +291,16 @@ final class workbench_ticket_test extends \advanced_testcase {
 
         try {
             workbench_ticket::redeem($secret);
-            $this->fail('Der Abruf haette am bereits geaenderten Tickethash scheitern muessen.');
+            $this->fail('Redemption must fail after the ticket hash changes.');
         } catch (workbench_ticket_redemption_failed $e) {
             $this->assertSame('workbenchticketinvalid', $e->errorcode);
         }
 
-        // Die "gewinnende" Zeile (des simulierten Rivalen) blieb unberuehrt -
-        // unser gescheiterter Versuch hat weder sie geloescht noch ihre Daten
-        // gelesen.
+        // Preserve the rival's winning row; our failed attempt neither deletes
+        // it nor reads its data.
         $this->assertTrue(
             $DB->record_exists(workbench_ticket::TABLE, ['tickethash' => $rivalclaim]),
-            'Der gescheiterte Abruf darf die Zeile des Rennsiegers nicht anfassen.'
+            'Failed redemption must preserve the winning row.'
         );
     }
 

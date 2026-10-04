@@ -25,8 +25,9 @@ global $CFG;
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 /**
- * Quiz-Anschluss (Spec 0017 §7.4, Ticket #420): Anhaengen in Reihenfolge,
- * Dublettenpruefung, Slot-Stand mit aktuellster Version, Versuchs-Gate.
+ * Attach questions to a quiz (Spec 0017 §7.4, issue #420): preserve append
+ * order, skip duplicates, use the latest question versions and reject
+ * changes after attempts exist.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -36,7 +37,7 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 final class add_questions_to_quiz_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass} Kurs, Test, Fragenkategorie.
+     * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass} Course, quiz, question category.
      */
     private function create_course_with_quiz(): array {
         $course = $this->getDataGenerator()->create_course();
@@ -60,7 +61,7 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: Fragen werden in der genannten Reihenfolge angehaengt.
+     * Questions are appended in the supplied order.
      */
     public function test_appends_questions_in_given_order(): void {
         $this->resetAfterTest();
@@ -84,8 +85,8 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: eine bereits vorhandene Frage wird uebersprungen und
-     * im Ergebnis als solche ausgewiesen ("added": false), kein zweiter Slot.
+     * An existing question is skipped and reported with "added": false;
+     * no second slot is created.
      */
     public function test_skips_already_present_question_and_marks_it(): void {
         $this->resetAfterTest();
@@ -105,8 +106,8 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: der Slot-Stand zeigt die aktuellste Version je Frage,
-     * nicht die urspruenglich angehaengte.
+     * Slots show the latest question version rather than the version
+     * originally attached.
      */
     public function test_slots_show_latest_version(): void {
         $this->resetAfterTest();
@@ -132,8 +133,8 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: bei vorhandenen Versuchen kommt eine klare Absage,
-     * keine Slot-Aenderung - kein Teilerfolg.
+     * Existing attempts cause a clear rejection with no slot changes
+     * or partial success.
      */
     public function test_refuses_with_no_change_when_quiz_has_attempts(): void {
         global $DB;
@@ -160,8 +161,8 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: der Vorgang erzeugt einen Aenderungsverlauf-Stand
-     * ueber die Quiz-Struktur (arrangement_json mit dem neuen Slot).
+     * The operation records a quiz arrangement history entry containing
+     * the new slot in arrangement_json.
      */
     public function test_creates_change_history_entry_with_new_slot(): void {
         global $DB;
@@ -186,9 +187,8 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Aufruf, der ausschliesslich bereits vorhandene Fragen nennt,
-     * aendert nichts an der Anordnung - dann entsteht auch kein neuer
-     * Aenderungsverlauf-Stand (kein Rauschen ohne echte Aenderung).
+     * A request containing only existing questions leaves the arrangement
+     * unchanged and creates no history entry.
      */
     public function test_pure_duplicate_call_creates_no_new_change_history_stand(): void {
         global $DB;
@@ -210,7 +210,7 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne Berechtigung: mod/quiz:manage fehlt trotz Einschreibung.
+     * Reject users without mod/quiz:manage despite their course enrollment.
      */
     public function test_rejects_user_without_capability(): void {
         $this->resetAfterTest();
@@ -236,7 +236,7 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Der Endpunkt haengt am Coursepilot-Dienst und steht in der Allowlist.
+     * The endpoint is registered in the Coursepilot service and allowlist.
      */
     public function test_registered_in_service_and_allowlist(): void {
         $this->assertArrayHasKey(

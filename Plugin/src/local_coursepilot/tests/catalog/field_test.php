@@ -54,7 +54,7 @@ final class field_test extends \advanced_testcase {
     }
 
     /**
-     * Der Fehlertext ist ein englischer Moodle-Sprachstring, kein Literal.
+     * Error text comes from an English Moodle language string.
      */
     public function test_invalid_field_name_uses_the_english_language_string(): void {
         $this->assertSame(

@@ -17,10 +17,9 @@
 namespace local_coursepilot;
 
 /**
- * Das Markierungsgedaechtnis (Issue #493, Spec #486 §6) selbst, unabhaengig
- * von seinem Aufrufer {@see \local_coursepilot\external\list_context_files}:
- * Schluesselvergleich (Pfad, Groesse, Aenderungszeit, ETag), Trefferfall,
- * Fehltrefferfall bei Aenderung, Personentrennung.
+ * Marking memory (Issue #493, Spec #486 §6), independently of
+ * list_context_files: path/size/modification-time/ETag keys, hits,
+ * misses after changes and user isolation.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,7 +29,7 @@ namespace local_coursepilot;
 final class mark_memory_test extends \advanced_testcase {
 
     /**
-     * Ohne vorheriges remember() liefert lookup() null.
+     * lookup() returns null before remember().
      */
     public function test_lookup_without_prior_remember_returns_null(): void {
         $this->resetAfterTest();
@@ -40,7 +39,7 @@ final class mark_memory_test extends \advanced_testcase {
     }
 
     /**
-     * Ein gemerktes Bit kommt bei unveraendertem Schluessel zurueck.
+     * Return the remembered bit when the key is unchanged.
      */
     public function test_remembered_bit_is_returned_when_key_matches(): void {
         $this->resetAfterTest();
@@ -52,7 +51,7 @@ final class mark_memory_test extends \advanced_testcase {
     }
 
     /**
-     * Ein "nicht markiert" wird ebenso gemerkt wie ein "markiert".
+     * Remember unmarked files as well as marked files.
      */
     public function test_remembered_unmarked_bit_is_returned(): void {
         $this->resetAfterTest();
@@ -64,8 +63,7 @@ final class mark_memory_test extends \advanced_testcase {
     }
 
     /**
-     * Aendert sich die Groesse, gilt der Schluessel als veraltet - lookup()
-     * liefert null, der Aufrufer liest neu.
+     * Changed size invalidates the key; lookup() returns null so callers reread.
      */
     public function test_changed_size_invalidates_the_entry(): void {
         $this->resetAfterTest();
@@ -76,7 +74,7 @@ final class mark_memory_test extends \advanced_testcase {
     }
 
     /**
-     * Aendert sich die Aenderungszeit, gilt der Schluessel ebenfalls als veraltet.
+     * Changed modification time invalidates the key.
      */
     public function test_changed_timemodified_invalidates_the_entry(): void {
         $this->resetAfterTest();
@@ -87,8 +85,7 @@ final class mark_memory_test extends \advanced_testcase {
     }
 
     /**
-     * Aendert sich der ETag, gilt der Schluessel ebenfalls als veraltet -
-     * relevant, wenn Groesse und Zeit zufaellig gleich bleiben.
+     * Changed ETag invalidates the key even if size and time remain equal.
      */
     public function test_changed_etag_invalidates_the_entry(): void {
         $this->resetAfterTest();
@@ -99,8 +96,8 @@ final class mark_memory_test extends \advanced_testcase {
     }
 
     /**
-     * remember() ueberschreibt einen bestehenden Eintrag statt einen zweiten
-     * anzulegen (derselbe Pfad).
+     * remember() replaces an existing entry for the same path instead
+     * of creating a second one.
      */
     public function test_remember_overwrites_existing_entry(): void {
         global $DB;
@@ -115,7 +112,7 @@ final class mark_memory_test extends \advanced_testcase {
     }
 
     /**
-     * Zwei Personen haben getrennte Eintraege fuer denselben Client-Pfad.
+     * Users have separate entries for the same client path.
      */
     public function test_entries_are_isolated_per_user(): void {
         $this->resetAfterTest();

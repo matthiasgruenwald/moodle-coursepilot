@@ -21,7 +21,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Quiz als Einzelwerkzeug, Patch (Spec 0015 §5, Ticket #398).
+ * Dedicated quiz patch tool (Spec 0015 §5, issue #398).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,7 +31,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 final class update_quiz_settings_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs, Lehrkraft (editingteacher).
+     * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
         $course = $this->getDataGenerator()->create_course();
@@ -46,7 +46,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
      * @param array $felder
      * @param string $mode
      * @param float $grade
-     * @param string[] $confirmlearnerlocks Bewusst gesetzte Riegel (#583).
+     * @param string[] $confirmlearnerlocks Explicitly confirmed learner restrictions (#583).
      * @return array
      */
     private function patch(
@@ -64,7 +64,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
 
     /**
      * @param int $cmid
-     * @return \stdClass Rohe quiz-Tabellenzeile.
+     * @return \stdClass Raw quiz table row.
      */
     private function raw_quiz(int $cmid): \stdClass {
         global $DB;
@@ -228,8 +228,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Die Beschreibung eines Tests laesst sich aendern, ohne das
-     * Gesamtfeedback zu verlieren (Abnahmekriterium 2).
+     * Changing the description preserves overall feedback (criterion 2).
      */
     public function test_updating_intro_preserves_overall_feedback(): void {
         global $DB;
@@ -255,8 +254,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Modus-Buendel ueberstimmt keine ausdruecklich genannten Felder
-     * (Abnahmekriterium 3).
+     * Mode presets preserve explicit fields (criterion 3).
      */
     public function test_bundle_does_not_override_explicitly_named_fields(): void {
         $this->resetAfterTest();
@@ -271,9 +269,8 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * "grade" laeuft ueber Moodles eigenen Bewertungsweg
-     * (grade_calculator::update_quiz_maximum_grade()), nicht ueber
-     * felder_json (Abnahmekriterium 4).
+     * grade uses Moodle’s grade_calculator::update_quiz_maximum_grade(),
+     * not fields_json (criterion 4).
      */
     public function test_grade_via_felder_json_is_blocked(): void {
         $this->resetAfterTest();
@@ -289,10 +286,9 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * "grade" laesst sich stattdessen ueber den eigenen Parameter aendern -
-     * und skaliert bestehende Gesamtfeedback-Grenzen anteilig um (Beleg,
-     * dass der Moodle-eigene Grade-Calculator lief, nicht eine direkte
-     * DB-Schreibung).
+     * Changing the dedicated grade parameter proportionally scales existing
+     * feedback boundaries, proving use of Moodle’s grade calculator
+     * rather than direct database writes.
      */
     public function test_grade_parameter_changes_grade_via_native_path(): void {
         global $DB;
@@ -319,12 +315,9 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Grade-Aenderung UND explizit neue Gesamtfeedback-Grenzen im selben
-     * Aufruf duerfen die Grenzen nicht doppelt umskalieren: die Grenzen sind
-     * bereits gegen die NEUE Bewertung gueltig (von der Aufruferin so
-     * gemeint) - der Grade-Wechsel muss deshalb VOR dem Schreiben der neuen
-     * Grenzen laufen, nicht danach (sonst wuerden frisch geschriebene 25 bei
-     * einer Halbierung auf 12.5 verzerrt).
+     * When changing grade and feedback boundaries together, apply grade
+     * first. Explicit boundaries already refer to the new maximum; scaling
+     * them afterward would incorrectly halve a freshly supplied 25 to 12.5.
      */
     public function test_grade_change_and_new_feedback_boundaries_in_one_call_are_not_double_scaled(): void {
         global $DB;
@@ -335,8 +328,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
             'grade' => 100,
         ]);
 
-        // Halbierung von 100 auf 50 UND neue, gegen 50 gueltige Grenze (25)
-        // im selben Aufruf.
+        // Halve 100 to 50 and supply a new boundary of 25, already valid for 50, in the same call.
         $this->patch($quiz->cmid, [
             'feedbacktext' => ['Bestanden', 'Nicht bestanden'],
             'feedbackboundaries' => [25],
@@ -351,7 +343,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Unbekannter Feldname scheitert, nichts wird geschrieben.
+     * Reject unknown fields without writes.
      */
     public function test_unknown_field_fails_and_writes_nothing(): void {
         $this->resetAfterTest();
@@ -372,7 +364,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Unerlaubter Wert scheitert, nichts wird geschrieben.
+     * Reject invalid values without writes.
      */
     public function test_invalid_value_fails_and_writes_nothing(): void {
         $this->resetAfterTest();
@@ -390,8 +382,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Eine verletzte Kombinationsregel (feedbackboundaries ausserhalb des
-     * gueltigen Bereichs) scheitert, nichts wird geschrieben.
+     * Reject invalid feedback-boundary combinations without writes.
      */
     public function test_combination_rule_violation_fails_and_writes_nothing(): void {
         global $DB;
@@ -416,8 +407,8 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Native Capability-Pruefung im Kurskontext: lesend bleibt Coursepilot
-     * nutzbar, Schreiben ohne moodle/course:manageactivities scheitert.
+     * Require moodle/course:manageactivities to write in the course
+     * context; read-only Coursepilot access remains available.
      */
     public function test_write_without_native_capability_fails(): void {
         $this->resetAfterTest();
@@ -436,7 +427,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Der Patch erzeugt einen Stand im Aenderungsverlauf.
+     * Patching creates a history entry.
      */
     public function test_patch_creates_a_history_version(): void {
         global $DB;
@@ -450,8 +441,8 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Die Anordnung (quiz_slots) wird von diesem Endpunkt nicht angefasst
-     * (Abnahmekriterium 9) - grep-Beleg wie bei den generischen Endpunkten.
+     * This endpoint does not alter quiz_slots (criterion 9). Verify through
+     * source inspection, as for generic endpoints.
      */
     public function test_source_never_touches_quiz_slots(): void {
         $source = file_get_contents(__DIR__ . '/../../classes/external/update_quiz_settings.php');
@@ -460,7 +451,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Keine direkte DB-Schreibung auf der quiz-Tabelle (ADR 0016).
+     * No direct quiz-table writes (ADR 0016).
      */
     public function test_source_never_writes_the_quiz_table_directly(): void {
         $source = file_get_contents(__DIR__ . '/../../classes/external/update_quiz_settings.php');
@@ -469,9 +460,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #399: dasselbe Regime gilt fuer update_quiz_settings -
-     * Drift sperrt den Patch, mit der Meldung "bitte der Administration
-     * melden".
+     * Drift blocks update_quiz_settings and advises contacting administration (#399).
      */
     public function test_drift_blocks_update_quiz_settings(): void {
         $this->resetAfterTest();
@@ -487,14 +476,13 @@ final class update_quiz_settings_test extends \advanced_testcase {
             $this->patch($quiz->cmid, ['intro' => 'Neue Beschreibung']);
             $this->fail('execute() haette wegen Drift werfen muessen.');
         } catch (\moodle_exception $e) {
-            // Die genaue deutsche Formulierung wird in write_gate_test.php
-            // gegen das Sprachpaket geprueft.
+            // write_gate_test.php checks exact wording against the language pack.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
         }
     }
 
     /**
-     * Riegel (#583): Versuchsbegrenzung per Quiz-Patch nur mit Bestaetigung.
+     * Attempt limits in quiz patches require confirmation (#583).
      */
     public function test_attempt_limit_needs_confirmation(): void {
         global $DB;
@@ -518,8 +506,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Riegel (#583): der Wechsel in den Modus "final-test" bestaetigt
-     * dessen Versuchslimit selbst.
+     * Switching to final-test itself confirms the preset’s attempt limit (#583).
      */
     public function test_switching_to_final_test_mode_needs_no_extra_confirmation(): void {
         global $DB;

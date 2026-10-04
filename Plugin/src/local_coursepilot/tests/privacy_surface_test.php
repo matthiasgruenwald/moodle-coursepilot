@@ -20,14 +20,12 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Vertragstest: real registrierte Oberflaeche <-> Allowlist <-> verbotene
- * Namensbestandteile (Abnahmekriterium 2 aus #309, Vertrag aus #300).
+ * Contract between registered service surface, allowlist and forbidden
+ * name fragments (acceptance #309 criterion 2, contract #300).
  *
- * Vorbild: test/data-protection-contract.test.js von local_coursepilot. Der
- * Unterschied und der Grund fuer PHPUnit: dieser Test prueft nicht die
- * Repo-Quelle, sondern die auf der laufenden Instanz **registrierte**
- * Oberflaeche - er faengt damit den Fall, dass ein Admin dem Dienst
- * nachtraeglich eine Funktion anhaengt.
+ * Following data-protection-contract.test.js, but checking the running
+ * instance's registrations rather than repository declarations. This
+ * catches functions added to the service by an administrator.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -37,21 +35,21 @@ use PHPUnit\Framework\Attributes\DataProvider;
 final class privacy_surface_test extends \advanced_testcase {
 
     /**
-     * Die real registrierte Oberflaeche entspricht dem Vertrag.
+     * The registered service surface matches the contract.
      */
     public function test_registered_surface_matches_contract(): void {
         $this->resetAfterTest();
 
         $registered = privacy_surface::registered_functions();
-        $this->assertNotEmpty($registered, 'Der Coursepilot-Dienst hat keine registrierten Funktionen.');
+        $this->assertNotEmpty($registered, 'The Coursepilot service has no registered functions.');
 
         $violations = privacy_surface::check($registered);
         $this->assertSame([], $violations, self::describe($violations));
     }
 
     /**
-     * Eine nachtraeglich angehaengte Funktion faellt auf - der Fall, den kein
-     * Repo-Test fangen kann (#300, Punkt 1).
+     * Detect a function added after installation, which repository tests
+     * cannot catch (#300 point 1).
      */
     public function test_function_added_to_service_by_admin_is_detected(): void {
         global $DB;
@@ -72,9 +70,7 @@ final class privacy_surface_test extends \advanced_testcase {
     }
 
     /**
-     * Eine in der Allowlist stehende, aber nicht registrierte Funktion faellt
-     * ebenfalls auf - sonst behauptet die Allowlist eine Oberflaeche, die es
-     * nicht gibt.
+     * Detect allowlisted functions missing from actual registration.
      */
     public function test_missing_registration_is_detected(): void {
         $violations = privacy_surface::check([]);
@@ -83,8 +79,7 @@ final class privacy_surface_test extends \advanced_testcase {
     }
 
     /**
-     * Die verbotenen Bestandteile greifen auf registrierten Namen, unabhaengig
-     * von Gross-/Kleinschreibung.
+     * Forbidden name fragments apply case-insensitively to registered names.
      *
      * @param string $name
      */
@@ -112,7 +107,7 @@ final class privacy_surface_test extends \advanced_testcase {
     }
 
     /**
-     * Kein registrierter Coursepilot-Name traegt einen verbotenen Bestandteil.
+     * No registered Coursepilot name contains a forbidden fragment.
      */
     public function test_own_surface_carries_no_forbidden_token(): void {
         $names = array_merge(

@@ -19,8 +19,8 @@ namespace local_coursepilot;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Die Ausstandsnotiz selbst (Issue #492, ADR 0023) - unabhaengig vom
- * WebDAV-Ausfallpfad ({@see pointer_writer}), der sie nur aufruft.
+ * Pending note (Issue #492, ADR 0023), independently of pointer_writer
+ * and its WebDAV failure handling.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,8 +30,8 @@ defined('MOODLE_INTERNAL') || die();
 final class pending_write_notice_test extends \advanced_testcase {
 
     /**
-     * Ein Eintrag je gescheitertem Vorgang, nie den Inhalt - nur Kennung,
-     * Zeitpunkt, Pfad, Vorgang, Fehlerklasse (ADR 0023).
+     * One entry per failed operation: identifier, time, path, operation and
+     * error class, without content (ADR 0023).
      */
     public function test_record_returns_kennung_and_is_listed(): void {
         $this->resetAfterTest();
@@ -53,9 +53,8 @@ final class pending_write_notice_test extends \advanced_testcase {
     }
 
     /**
-     * Zwei gescheiterte Vorgaenge auf dieselbe Datei ergeben zwei Eintraege
-     * mit verschiedenen Kennungen (ADR 0023: "ein Eintrag je gescheitertem
-     * Vorgang").
+     * Two failed operations on the same file create separate entries with
+     * distinct identifiers (ADR 0023).
      */
     public function test_two_failures_on_the_same_file_get_separate_entries(): void {
         $this->resetAfterTest();
@@ -71,8 +70,8 @@ final class pending_write_notice_test extends \advanced_testcase {
     }
 
     /**
-     * Verwerfen entfernt den Eintrag und meldet Erfolg; eine unbekannte
-     * Kennung meldet false statt eines stillen Erfolgs.
+     * Dismissal removes the entry and reports success; unknown IDs return
+     * false rather than silently succeeding.
      */
     public function test_dismiss_removes_entry_and_reports_unknown_kennung(): void {
         $this->resetAfterTest();
@@ -86,8 +85,7 @@ final class pending_write_notice_test extends \advanced_testcase {
     }
 
     /**
-     * Person A sieht nie den Ausstand von Person B - der Eintrag liegt im
-     * eigenen Nutzerkontext.
+     * Users cannot see each other's pending notes, stored in separate user contexts.
      */
     public function test_entries_are_isolated_per_person(): void {
         $this->resetAfterTest();
@@ -102,10 +100,8 @@ final class pending_write_notice_test extends \advanced_testcase {
     }
 
     /**
-     * Reicht die Private-Files-Quote nicht mehr, sagt der Fehler das
-     * ausdruecklich (ADR 0023 Consequences: "Kann das Plugin die Notiz
-     * nicht schreiben, weil die Quote von Private Files voll ist, sagt die
-     * Fehlermeldung das ausdrücklich.").
+     * Explicitly report when Private Files quota prevents saving the note
+     * (ADR 0023 consequences).
      */
     public function test_record_fails_explicitly_when_quota_is_exhausted(): void {
         global $CFG;
@@ -115,15 +111,15 @@ final class pending_write_notice_test extends \advanced_testcase {
 
         try {
             pending_write_notice::record('plan.md', 'create', 'storage_full', 7);
-            $this->fail('Quotenueberschreitung haette abgewiesen werden muessen.');
+            $this->fail('Quota overflow should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingnotequotaexceeded', $e->errorcode);
         }
     }
 
     /**
-     * Ohne angemeldete Person ist die Notiz leer statt einen DB-Zugriff zu
-     * erzwingen (dieselbe Grenze wie {@see storage_anchor::raw_pointer()}).
+     * Without an authenticated user, return an empty note without DB access,
+     * as in storage_anchor::raw_pointer().
      */
     public function test_list_grouped_is_empty_without_logged_in_user(): void {
         $this->resetAfterTest();

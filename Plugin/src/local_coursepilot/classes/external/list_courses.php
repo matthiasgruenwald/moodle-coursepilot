@@ -48,7 +48,7 @@ class list_courses extends external_api {
 
     /**
      * @return array
-     * @throws moodle_exception CAPABILITY_MISSING, wenn kein Kurs freigegeben ist.
+     * @throws moodle_exception CAPABILITY_MISSING if no course is authorized.
      */
     public static function execute(): array {
         self::validate_parameters(self::execute_parameters(), []);

@@ -19,8 +19,7 @@ namespace local_coursepilot\external;
 use core_external\external_api;
 
 /**
- * Umbenennen/Verschieben einer Fragenbank-Kategorie (Spec 0017 §1,
- * Ticket #413).
+ * Rename and move question-bank categories (Spec 0017 §1, issue #413).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,7 +29,7 @@ use core_external\external_api;
 final class update_question_category_test extends \advanced_testcase {
 
     /**
-     * Reines Umbenennen: Name aendert sich, Elternkategorie bleibt.
+     * Renaming changes the name and preserves the parent category.
      */
     public function test_renames_category(): void {
         $this->resetAfterTest();
@@ -50,7 +49,7 @@ final class update_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Reines Verschieben: Elternkategorie aendert sich, Name bleibt.
+     * Moving changes the parent category and preserves the name.
      */
     public function test_moves_category_under_different_parent(): void {
         $this->resetAfterTest();
@@ -73,8 +72,8 @@ final class update_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Verschieben in eine andere Fragensammlung (anderer Kontext) zieht den
-     * gesamten Unterbaum (inkl. Kind-Kategorien) mit.
+     * Moving to another question bank (a different context) moves the entire
+     * subtree, including child categories.
      */
     public function test_moves_subtree_context_when_target_bank_differs(): void {
         $this->resetAfterTest();
@@ -104,14 +103,12 @@ final class update_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Beim Umzug in eine andere Fragensammlung wandern die Dateien der
-     * Fragen mit.
+     * Question files move with their categories to the new question bank.
      *
-     * Fragebilder liegen als stored_file im Kontext der Fragensammlung. Wer
-     * beim Umzug nur die contextid-Spalte der Kategorien umschreibt, laesst
-     * sie im alten Kontext zurueck - die Frage zeigt danach ein totes Bild,
-     * und zwar erst sichtbar, wenn jemand sie im Test aufschlaegt.
-     * Moodle erledigt das in question_move_category_to_context().
+     * Question images are stored files in the bank context. Changing only the
+     * category contextid leaves files behind and produces broken images when
+     * the question is opened in a quiz. Moodle handles this through
+     * question_move_category_to_context().
      */
     public function test_question_files_move_along_to_the_target_bank(): void {
         $this->resetAfterTest();
@@ -158,7 +155,7 @@ final class update_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Fragen und ihre Versionen bleiben unangetastet.
+     * Questions and their versions remain unchanged.
      */
     public function test_questions_and_versions_survive_rename_and_move(): void {
         $this->resetAfterTest();
@@ -191,7 +188,7 @@ final class update_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne native Berechtigung: moodle/question:managecategory fehlt.
+     * Reject users without moodle/question:managecategory.
      */
     public function test_rejects_user_without_managecategory_capability(): void {
         $this->resetAfterTest();
@@ -219,8 +216,7 @@ final class update_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Die oberste Kategorie einer Fragensammlung darf nicht umbenannt oder
-     * verschoben werden.
+     * The top category of a question bank cannot be renamed or moved.
      */
     public function test_rejects_renaming_top_category(): void {
         $this->resetAfterTest();
@@ -233,8 +229,7 @@ final class update_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Zyklus-Schutz: eine Kategorie kann nicht in eine ihrer eigenen
-     * Unterkategorien verschoben werden.
+     * Reject moves into a category’s own descendants to prevent cycles.
      */
     public function test_rejects_move_into_own_descendant(): void {
         $this->resetAfterTest();
@@ -253,7 +248,7 @@ final class update_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Namenskollision unter demselben Ziel-Elternteil wird abgelehnt.
+     * Reject name collisions under the same target parent.
      */
     public function test_rejects_name_collision_under_target_parent(): void {
         $this->resetAfterTest();
@@ -270,7 +265,7 @@ final class update_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Baut Kurs + Lehrkraft + frische Fragensammlung auf und liefert
+     * Create a course, teacher and fresh question bank; return
      * [$course, $topcategoryid].
      *
      * @return array{0: \stdClass, 1: int}

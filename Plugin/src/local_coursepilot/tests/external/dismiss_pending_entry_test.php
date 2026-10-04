@@ -22,9 +22,8 @@ use local_coursepilot\pending_write_notice;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Ausdruecklich verwerfen (Issue #492, ADR 0023 Punkt 3) - der zweite Weg,
- * auf dem ein Eintrag der Ausstandsnotiz verschwindet, neben dem
- * Nachtragen ueber `write_context_file`/`append_context_file`.
+ * Explicitly dismiss pending entries (Issue #492, ADR 0023 point 3),
+ * as an alternative to retrying through write_context_file/append_context_file.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -34,7 +33,7 @@ defined('MOODLE_INTERNAL') || die();
 final class dismiss_pending_entry_test extends \advanced_testcase {
 
     /**
-     * Ein vorhandener Eintrag verschwindet und die Antwort bestaetigt das.
+     * Remove an existing entry and confirm it in the response.
      */
     public function test_dismisses_existing_entry(): void {
         $this->resetAfterTest();
@@ -49,7 +48,7 @@ final class dismiss_pending_entry_test extends \advanced_testcase {
     }
 
     /**
-     * Eine unbekannte Kennung ist ein benannter Fehler, kein stiller Erfolg.
+     * Unknown identifiers produce named errors rather than silent success.
      */
     public function test_rejects_unknown_kennung(): void {
         $this->resetAfterTest();
@@ -64,8 +63,7 @@ final class dismiss_pending_entry_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne moodle/user:manageownfiles kein Zugriff - dasselbe Recht wie bei
-     * den beiden Schreibendpunkten.
+     * Require moodle/user:manageownfiles, as in both write endpoints.
      */
     public function test_rejects_missing_manageownfiles_capability(): void {
         global $DB;
@@ -88,8 +86,8 @@ final class dismiss_pending_entry_test extends \advanced_testcase {
     }
 
     /**
-     * Person A verwirft nie einen Eintrag von Person B - schon die Kennung
-     * ist nur im eigenen Bestand bekannt.
+     * Users cannot dismiss another user's entry; identifiers exist only
+     * in their own notes.
      */
     public function test_person_a_cannot_dismiss_person_bs_entry(): void {
         $this->resetAfterTest();
@@ -109,7 +107,7 @@ final class dismiss_pending_entry_test extends \advanced_testcase {
     }
 
     /**
-     * Der Endpunkt haengt am Coursepilot-Dienst und steht in der Allowlist.
+     * The endpoint belongs to the Coursepilot service and allowlist.
      */
     public function test_registered_in_service_and_allowlist(): void {
         $this->assertArrayHasKey(

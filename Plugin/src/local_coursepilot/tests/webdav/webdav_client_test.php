@@ -20,10 +20,9 @@ use local_coursepilot\tests\webdav\fake_webdav_transport;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Der eigene WebDAV-Client gegen den In-Memory-Fake (Issue #489, Spec #486
- * §4/Testing Decisions, ADR 0022): Fehlerklassen statt Statuscodes, die
- * 404-Unterscheidung, stille Wiederholung, bedingtes Schreiben, PROPFIND-
- * Auswertung, Ordnerketten und der Geheimnis-Test.
+ * WebDAV client against an in-memory fake (Issue #489, Spec #486 §4/
+ * Testing Decisions, ADR 0022): named errors, 404 distinction, silent
+ * retry, conditional writes, PROPFIND parsing, folder chains and secrets.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -34,9 +33,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class webdav_client_test extends \advanced_testcase {
 
     /**
-     * Fester Zeitgeber fuer den Wiederholungs-Takt (Spec: "Im Test wird
-     * nicht wirklich gewartet") - der Sleeper ruckt die Uhr vor, statt zu
-     * schlafen.
+     * Fixed retry clock: the sleeper advances time rather than waiting,
+     * as required by the specification.
      *
      * @return array{0: webdav_client, 1: fake_webdav_transport}
      */
@@ -73,12 +71,10 @@ final class webdav_client_test extends \advanced_testcase {
     }
 
     /**
-     * PROPFIND bleibt rein endungsbasiert (`.md` also `document/unknown`) -
-     * Sniffing wuerde hier einen zusaetzlichen GET pro Datei mit unbekannter
-     * Endung erzwingen und damit den Zero-GET-Vertrag des Auflistens
-     * verletzen (Issue #560, siehe Kommentar an {@see webdav_client::parse_multistatus()}).
-     * Ortsneutralitaet entsteht stattdessen im Lesepfad, siehe
-     * {@see test_sniff_mimetype_from_content_recognises_markdown_text()}.
+     * PROPFIND uses extension-based mimetypes (.md: document/unknown).
+     * Sniffing would require extra GETs and violate zero-GET listing
+     * (Issue #560, webdav_client::parse_multistatus()). Read-time sniffing
+     * provides location neutrality instead.
      */
     public function test_propfind_leaves_unrecognised_extension_as_document_unknown(): void {
         [$client, $fake] = $this->client(new fake_webdav_transport());
@@ -89,15 +85,13 @@ final class webdav_client_test extends \advanced_testcase {
 
         $this->assertSame('document/unknown', $entries[0]['mimetype']);
         $gets = array_filter($fake->requests(), static fn (array $r) => $r['method'] === 'GET');
-        $this->assertCount(0, $gets, 'PROPFIND darf fuer die Mimetyp-Ermittlung keinen GET ausloesen.');
+        $this->assertCount(0, $gets, 'PROPFIND must not issue a GET to determine mimetype.');
     }
 
     /**
-     * Reines Inhalts-Sniffing ohne Netzwerk (Issue #560): derselbe Ausweg
-     * wie Moodle-Core ({@see \file_storage::mimetype_from_file()}), nur auf
-     * einen bereits vorliegenden Inhalt statt einen Dateipfad angewandt -
-     * fuer Aufrufer, die den Inhalt schon aus einem anderen Grund geholt
-     * haben (z.B. {@see webdav_storage_port::read()}).
+     * Pure content sniffing without network (Issue #560), following
+     * file_storage::mimetype_from_file() but using already-read content.
+     * Callers such as webdav_storage_port::read() have fetched the bytes anyway.
      */
     public function test_sniff_mimetype_from_content_recognises_markdown_text(): void {
         $this->assertSame(
@@ -107,8 +101,8 @@ final class webdav_client_test extends \advanced_testcase {
     }
 
     /**
-     * Ein leerer Inhalt liefert null, genau wie Moodle-Core bei einer
-     * fehlenden Datei bei `document/unknown` bleibt (kein `finfo_buffer('')`).
+     * Empty content returns null, retaining document/unknown like Moodle
+     * core for missing files, without calling finfo_buffer on an empty string.
      */
     public function test_sniff_mimetype_from_content_returns_null_for_empty_content(): void {
         $this->assertNull(webdav_client::sniff_mimetype_from_content(''));
@@ -241,7 +235,7 @@ final class webdav_client_test extends \advanced_testcase {
         $fake->seed_folder('/dav');
 
         $client->mkcol_chain($this->url(), ['faecher', 'mathe']);
-        // Zweiter Lauf ueber dieselbe Kette darf nicht scheitern (405 wird toleriert).
+        // Repeating the same chain must succeed; tolerate 405.
         $client->mkcol_chain($this->url(), ['faecher', 'mathe']);
 
         $entries = $client->propfind($this->url('/faecher'), 1);
@@ -369,9 +363,8 @@ final class webdav_client_test extends \advanced_testcase {
     }
 
     /**
-     * Jede 3xx-Antwort ist ein benannter Fehler (Issue #510) - der Client
-     * folgt keiner Weiterleitung, sonst koennten Anmeldedaten an eine vom
-     * Server bestimmte, moeglicherweise unverschluesselte Adresse gelangen.
+     * Every 3xx is a named error (Issue #510). Following redirects could
+     * send credentials to a server-chosen, possibly unencrypted URL.
      *
      * @dataProvider redirect_statuscodes
      */
@@ -395,19 +388,17 @@ final class webdav_client_test extends \advanced_testcase {
         } catch (webdav_error $e) {
             $this->assertSame(webdav_error::REDIRECTED, $e->errorclass);
         }
-        // Genau eine Anfrage - keine automatische Weiterleitung, keine stille Wiederholung.
+        // Exactly one request, without redirects or silent retries.
         $this->assertSame(1, $transport->calls);
     }
 
     /**
-     * Eine 2xx-Antwort auf PROPFIND, deren Rumpf nicht als XML lesbar ist,
-     * gilt als "unklar" - nie als leerer Ordner (Issue #510, sonst entfallen
-     * Uebergabe-Hinweis und Altbestand-Erkennung still).
+     * A PROPFIND 2xx response with unreadable XML is UNCLEAR rather than an
+     * empty folder (Issue #510), preserving handover and legacy detection.
      */
     /**
-     * Spec §"kein PUT landet an einer Adresse, die der Server bestimmt"
-     * (Issue #510): eine 3xx-Antwort auf PUT ist derselbe benannte Fehler wie
-     * bei GET, nie ein zweiter PUT an die vom Server genannte `Location`.
+     * A PUT 3xx is the same named error as GET, without a second PUT to
+     * the server-chosen Location (Issue #510, Spec: no server-selected PUT URL).
      */
     public function test_put_on_3xx_is_redirected_and_never_repeated_at_the_server_chosen_address(): void {
         $transport = new class implements webdav_transport {
@@ -426,7 +417,7 @@ final class webdav_client_test extends \advanced_testcase {
         } catch (webdav_error $e) {
             $this->assertSame(webdav_error::REDIRECTED, $e->errorclass);
         }
-        $this->assertSame(1, $transport->calls, 'Kein zweiter PUT an die vom Server genannte Adresse.');
+        $this->assertSame(1, $transport->calls, 'No second PUT to the server-selected URL.');
     }
 
     public function test_propfind_with_unreadable_body_on_2xx_is_unclear_not_an_empty_folder(): void {
@@ -440,18 +431,16 @@ final class webdav_client_test extends \advanced_testcase {
 
         try {
             $client->propfind('https://fake.example/dav/ordner', 1);
-            $this->fail('UNCLEAR erwartet, keine leere Liste.');
+            $this->fail('Expected UNCLEAR rather than an empty list.');
         } catch (webdav_error $e) {
             $this->assertSame(webdav_error::UNCLEAR, $e->errorclass);
         }
     }
 
     /**
-     * XML-Parsing laedt nichts aus dem Netz (Issue #510): ein PROPFIND-Rumpf
-     * mit einer externen Entity darf keinen Netzzugriff ausloesen. Ohne echten
-     * Netzzugriff im Testlauf laesst sich ein unterbliebener Fetch nicht am
-     * Ergebnis, aber an der Laufzeit erkennen - ein Versuch, die Adresse
-     * aufzuloesen, wuerde die Anfrage spuerbar verzoegern oder haengen lassen.
+     * XML parsing does not fetch external entities (Issue #510). An external
+     * entity must not trigger network access. With no live network in the test,
+     * request timing detects attempted fetching, which would delay or hang.
      */
     public function test_propfind_never_resolves_an_external_entity_in_the_body(): void {
         $xxe = '<?xml version="1.0"?>'
@@ -473,7 +462,7 @@ final class webdav_client_test extends \advanced_testcase {
         } catch (webdav_error $e) {
             $this->assertSame(webdav_error::UNCLEAR, $e->errorclass);
         }
-        $this->assertLessThan(2.0, microtime(true) - $start, 'Kein Netzversuch darf die Antwort verzoegern.');
+        $this->assertLessThan(2.0, microtime(true) - $start, 'No network attempt may delay the response.');
     }
 
     public function test_http_urls_are_rejected(): void {
@@ -501,31 +490,30 @@ final class webdav_client_test extends \advanced_testcase {
     }
 
     /**
-     * Geheimnis-Test (Spec §3/§8): Das Passwort "der Fake-Instanz" erscheint
-     * in keiner Ausnahme, ueber alle sieben Fehlerklassen hinweg. Jedes
-     * Szenario baut seinen eigenen, mit demselben Geheimnis versehenen Fake
-     * und fuehrt die tatsaechlich fehlschlagende Aktion selbst aus.
+     * Secret-protection test (Spec §3/§8): no exception includes the fake
+     * instance password across all seven error classes. Each scenario builds
+     * its own fake with the same secret and performs the failing operation.
      *
      * @return array<string, callable(webdav_client, fake_webdav_transport): void>
      */
     private function secret_leak_scenarios(): array {
         return [
-            'nicht gefunden' => static function (webdav_client $client): void {
+            'not_found' => static function (webdav_client $client): void {
                 $client->get('https://fake.example/dav/fehlt.md');
             },
-            'unklar/gedrosselt' => static function (webdav_client $client, fake_webdav_transport $fake): void {
+            'unclear' => static function (webdav_client $client, fake_webdav_transport $fake): void {
                 $fake->throttle(1_000);
                 $client->get('https://fake.example/dav/x.md');
             },
-            'Anmeldung abgelehnt' => static function (webdav_client $client, fake_webdav_transport $fake): void {
+            'auth_rejected' => static function (webdav_client $client, fake_webdav_transport $fake): void {
                 $fake->deny_auth();
                 $client->get('https://fake.example/dav/x.md');
             },
-            'Speicher voll' => static function (webdav_client $client, fake_webdav_transport $fake): void {
+            'storage_full' => static function (webdav_client $client, fake_webdav_transport $fake): void {
                 $fake->fill_storage();
                 $client->put_new('https://fake.example/dav/x.md', 'x');
             },
-            'Konflikt' => static function (webdav_client $client, fake_webdav_transport $fake): void {
+            'conflict' => static function (webdav_client $client, fake_webdav_transport $fake): void {
                 $fake->seed_file('/dav/da.md', 'alt');
                 $client->put_new('https://fake.example/dav/da.md', 'neu');
             },
@@ -533,9 +521,8 @@ final class webdav_client_test extends \advanced_testcase {
     }
 
     /**
-     * Wie {@see secret_leak_scenarios()}, aber fuer REDIRECTED, das keinen
-     * eigenen Fake-Zustand hat, sondern einen eigenen Transport braucht -
-     * der In-Memory-Fake kann kein 3xx liefern.
+     * Like secret_leak_scenarios(), for REDIRECTED: the in-memory fake
+     * has no 3xx state, so use a dedicated transport.
      */
     public function test_secret_never_leaks_via_a_redirected_error(): void {
         $secret = 'g3h31m-' . uniqid();
@@ -574,7 +561,7 @@ final class webdav_client_test extends \advanced_testcase {
             }
         }
 
-        // UNREACHABLE: der Transport selbst wirft, ohne je ein Geheimnis zu sehen.
+        // UNREACHABLE: the transport throws without ever seeing a secret.
         $transport = new class implements webdav_transport {
             public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
                 throw new webdav_transport_exception('Zeitueberschreitung.');

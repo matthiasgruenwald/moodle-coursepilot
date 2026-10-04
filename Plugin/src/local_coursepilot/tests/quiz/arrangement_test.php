@@ -24,9 +24,9 @@ global $CFG;
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 /**
- * Anordnungs-Stand eines Tests (#396, Spec 0015 §10): Schnappschuss und
- * Rueckschreiben unabhaengig vom Aenderungsverlauf-Beobachter getestet -
- * {@see \local_coursepilot\observer_test} deckt die Beobachter-Anbindung ab.
+ * Quiz arrangement snapshots and restoration (#396, Spec 0015 §10),
+ * independent of history observers.
+ * {@see \local_coursepilot\observer_test} covers observer integration.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -36,7 +36,7 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 final class arrangement_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass, 3: \stdClass} Kurs, Test, Frage 1, Frage 2.
+     * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass, 3: \stdClass} Course, quiz, question 1, question 2.
      */
     private function create_quiz_with_two_questions(): array {
         global $DB;
@@ -62,7 +62,7 @@ final class arrangement_test extends \advanced_testcase {
 
     /**
      * @param int $quizid
-     * @return \stdClass[] Slot-Zeilen, aufsteigend nach "slot".
+     * @return \stdClass[] Slot rows in ascending slot order.
      */
     private function slots(int $quizid): array {
         global $DB;
@@ -70,8 +70,7 @@ final class arrangement_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: der Anordnungs-Stand enthaelt Slots (mit
-     * Fragereferenz), Abschnitte und Feedback.
+     * Snapshots include slots with question references, sections and feedback.
      */
     public function test_capture_contains_slots_sections_and_feedback(): void {
         global $DB;
@@ -100,14 +99,12 @@ final class arrangement_test extends \advanced_testcase {
             MUST_EXIST
         );
         $this->assertSame($entryid, $captured['slots'][0]['questionbankentryid']);
-        // Frisch angelegte Referenzen zeigen "immer aktuellste" (version=null) -
-        // die Schutzschiene Fragereferenzen darf das nicht auf einen Wert pinnen.
+        // New references mean always latest (version=null); the reference guard must not pin them.
         $this->assertNull($captured['slots'][0]['version']);
     }
 
     /**
-     * Abnahmekriterium: eine Umsortierung ist ueber den Anordnungs-Stand
-     * erkennbar - {@see arrangement::differs()} liefert true.
+     * Reordering is detected by {@see arrangement::differs()}.
      */
     public function test_reordering_slots_is_detected_as_a_difference(): void {
         $this->resetAfterTest();
@@ -127,7 +124,7 @@ final class arrangement_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: eine Umsortierung ist ueber restore() zurueckholbar.
+     * restore() reverses reordering.
      */
     public function test_restore_recreates_original_slot_order(): void {
         $this->resetAfterTest();
@@ -147,10 +144,9 @@ final class arrangement_test extends \advanced_testcase {
     }
 
     /**
-     * Schutzschiene Versuche: quiz_has_attempts() wird VOR dem Schreiben
-     * geprueft und bricht mit einer eigenen, klaren Meldung ab - nicht als
-     * abgefangene coding_exception aus structure::check_can_be_edited().
-     * Nichts wird angefasst, auch nicht teilweise.
+     * Check quiz_has_attempts() before writing and reject with a clear
+     * message, not a caught structure::check_can_be_edited() coding_exception.
+     * Change nothing, even partially.
      */
     public function test_restore_refuses_before_writing_when_quiz_has_attempts(): void {
         global $DB;
@@ -174,14 +170,13 @@ final class arrangement_test extends \advanced_testcase {
             $this->assertSame('arrangementrestoreblocked', $e->errorcode);
         }
 
-        // Nichts wurde geschrieben - die Anordnung ist beim veraenderten Stand geblieben.
+        // Nothing was written; the changed arrangement is preserved.
         $this->assertSame($changedorder, array_column(arrangement::capture((int) $quiz->id)['slots'], 'id'));
     }
 
     /**
-     * Abnahmekriterium: eine inzwischen bearbeitete Frage erscheint nach der
-     * Rueckkehr in ihrer aktuellen Fassung - kein nachtraegliches Pinnen.
-     * version=null ("immer aktuellste") bleibt unveraendert null.
+     * Restored arrangements show the current question version without
+     * retrospective pinning. version=null (always latest) stays null.
      */
     public function test_restore_keeps_version_null_and_shows_current_question_edit(): void {
         global $DB;
@@ -191,14 +186,12 @@ final class arrangement_test extends \advanced_testcase {
         $target = arrangement::capture((int) $quiz->id);
         $this->assertNull($target['slots'][0]['version']);
 
-        // Frage seither bearbeitet: eine neue Version derselben Fragensammlungs-
-        // Eintragung entsteht.
+        // Editing the question creates a new version of the same bank entry.
         /** @var \core_question_generator $questiongenerator */
         $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $questiongenerator->update_question($question1, null, ['name' => 'Frage 1 (bearbeitet)']);
 
-        // Anordnung veraendern und wiederherstellen (die Fragensammlungs-
-        // Bearbeitung selbst ist keine Anordnungsaenderung).
+        // Change and restore the arrangement; editing a bank question is not an arrangement change.
         $slots = $this->slots((int) $quiz->id);
         $quizobj = \mod_quiz\quiz_settings::create($quiz->id);
         \mod_quiz\structure::create_for_quiz($quizobj)->move_slot($slots[1]->id, 0, 1);

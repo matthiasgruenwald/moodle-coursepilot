@@ -19,8 +19,8 @@ namespace local_coursepilot\catalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Katalog-gegen-Moodle-Vertragstest fuer mod_choice (Ticket #381, Vorbild
- * resource_catalog_contract_test.php aus #380).
+ * Catalog/Moodle contract for mod_choice (Ticket #381), following
+ * resource_catalog_contract_test from #380.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,8 +31,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class choice_catalog_contract_test extends \advanced_testcase {
 
     /**
-     * Jede von choice gefuehrte Datenbankspalte muss die reale Spaltenmenge
-     * von {choice} exakt ergeben.
+     * Cataloged columns exactly match the choice table.
      */
     public function test_choice_table_columns_match_the_catalog(): void {
         global $DB;
@@ -59,7 +58,7 @@ final class choice_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Jede referenzierte aufrufbare Quelle existiert wirklich.
+     * Every referenced callable source actually exists.
      */
     public function test_referenced_callable_sources_exist(): void {
         $fields = array_merge(
@@ -74,23 +73,21 @@ final class choice_catalog_contract_test extends \advanced_testcase {
             $fields
         ));
 
-        $this->assertNotEmpty($callables, 'Kein Feld referenziert eine aufrufbare Quelle - Testannahme verletzt.');
+        $this->assertNotEmpty($callables, 'No field references a callable source; test assumption violated.');
 
         foreach ($callables as $callable) {
             $functionname = rtrim($callable, '()');
             $this->assertTrue(
                 function_exists($functionname),
-                "Referenzierte aufrufbare Quelle $callable existiert auf dieser Instanz nicht mehr."
+                "Referenced callable source $callable no longer exists on this instance."
             );
         }
     }
 
     /**
-     * Abnahmekriterium #381: der Katalog fuehrt keine Coursepilot-eigene
-     * Obergrenze fuer Optionen - die 2-6-Grenze gehoert zum aelteren lokalen
-     * Weg (local_coursepilot\external\create_choice), nicht zu diesem
-     * Katalog. Weder ein Feld noch eine Kombinationsregel darf eine solche
-     * Obergrenze nennen.
+     * Acceptance #381: neither fields nor combination rules impose a
+     * Coursepilot option-count limit. The legacy local create_choice limit
+     * of 2-6 does not belong to this catalog.
      */
     public function test_no_coursepilot_option_upper_bound(): void {
         $allfieldnames = array_merge(
@@ -106,9 +103,8 @@ final class choice_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #381: "limit[] so lang wie option[]" ist eine eigene
-     * Kombinationsregel (Kategorie 4), keine Eigenschaft des Felds "limit"
-     * selbst.
+     * Matching limit[] and option[] lengths is a separate combination
+     * rule (category 4), not a property of limit itself (#381).
      */
     public function test_limit_length_rule_is_a_combination_rule(): void {
         $rules = implode(' ', choice::combination_rules());
@@ -123,8 +119,8 @@ final class choice_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #381: "publish" traegt einen Nebenwirkungsvermerk zum
-     * Wechsel anonym -> namentlich.
+     * Acceptance #381: publish documents the side effect of switching
+     * from anonymous to named responses.
      */
     public function test_publish_side_effect_notes_the_anonymous_to_named_switch(): void {
         $notes = implode(' ', choice::side_effects());
@@ -133,8 +129,7 @@ final class choice_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #381: das Feldbuendel "allocation" wird ausgeliefert
-     * und enthaelt genau die sechs genannten Felder.
+     * Acceptance #381: allocation bundle contains exactly the six specified fields.
      */
     public function test_zuteilung_bundle_has_the_six_named_fields(): void {
         $bundles = choice::bundles();
@@ -153,31 +148,22 @@ final class choice_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #381: ein Feldbuendel belegt nur Felder vor, die nicht
-     * ausdruecklich genannt wurden - ein ausdruecklich genanntes Feld schlaegt
-     * das Buendel. Spec 0015 §2.4: "die KI setzt ein Buendel ein und
-     * ueberschreibt einzelne Felder daraus" - das ist array_merge(bundle,
-     * explizit), Bundle zuerst.
+     * Acceptance #381: explicitly named fields override bundle defaults
+     * (Spec 0015 §2.4), using array_merge(bundle, explicit).
      *
-     * Es gibt in dieser Phase (nur der Lesekatalog, #381) noch keinen
-     * Schreib-Endpunkt, der ein Buendel tatsaechlich anwendet - der
-     * Merge-Vertrag ist deshalb genau die array_merge()-Semantik, die hier
-     * geprueft wird; sie legt fest, wie ein spaeterer Schreibendpunkt
-     * (Phase 3) das Buendel konsumieren muss. Kein apply_bundle() vorab
-     * bauen, ohne einen Aufrufer dafuer (YAGNI) - diese Regel entsteht mit
-     * dem Schreibkern selbst.
+     * At the read-catalog stage (#381), this tests merge semantics for the later
+     * phase-3 writer. Avoid creating apply_bundle() without a caller (YAGNI).
      */
     public function test_explicit_field_overrides_the_bundle(): void {
         $bundle = choice::bundles()['allocation'];
 
-        // Partnerarbeit statt Geraetezuteilung: die Lehrkraft nennt "limit"
-        // und "publish" ausdruecklich, das Buendel darf sie nicht zuruecksetzen.
+        // Pair work: explicit limit and publish values override allocation defaults.
         $explizit = ['limit' => 2, 'publish' => 0];
         $merged = array_merge($bundle, $explizit);
 
-        $this->assertSame(2, $merged['limit'], 'Ausdruecklich genanntes Feld "limit" wurde vom Buendel ueberschrieben.');
-        $this->assertSame(0, $merged['publish'], 'Ausdruecklich genanntes Feld "publish" wurde vom Buendel ueberschrieben.');
-        // Nicht genannte Buendelfelder bleiben unveraendert.
+        $this->assertSame(2, $merged['limit'], 'Bundle overwrote explicit limit.');
+        $this->assertSame(0, $merged['publish'], 'Bundle overwrote explicit publish.');
+        // Unspecified bundle fields remain unchanged.
         $this->assertSame(1, $merged['limitanswers']);
         $this->assertSame(3, $merged['showresults']);
         $this->assertSame(1, $merged['display']);

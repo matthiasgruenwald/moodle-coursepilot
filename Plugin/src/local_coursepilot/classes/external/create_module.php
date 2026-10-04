@@ -183,9 +183,9 @@ final class create_module extends external_api {
     }
 
     /**
-     * Ist-Stand nach dem Anlegen als assoziatives Array - dieselbe
-     * Zusammenstellung wie {@see get_module_settings}, wiederverwendet statt
-     * dupliziert (wie {@see update_module_settings::read_settings()}).
+     * Return current state after creation as an associative array, reusing
+     * get_module_settings rather than duplicating it, like
+     * {@see update_module_settings::read_settings()}.
      *
      * @param int $cmid
      * @return array

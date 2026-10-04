@@ -30,8 +30,8 @@ global $CFG;
 require_once($CFG->dirroot . '/cohort/lib.php');
 
 /**
- * Der Skill-Korpus-Katalog (Spec 0020 §4, Issue #450): ohne Kursbindung,
- * die Fernzugriffsfreigabe genuegt (Issue #630).
+ * Skill catalog (Spec 0020 §4, #450): no course binding; remote-access
+ * authorization suffices (#630).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -42,8 +42,8 @@ final class list_skills_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     /**
-     * Nennt je Eintrag Name, Auslöser, Art und Umfang - keinen Inhalt, ohne
-     * dass ein Kurs existiert oder die Lehrkraft in einem eingeschrieben ist.
+     * Return name, trigger, kind and size without content. No existing course
+     * or teacher enrollment is needed.
      */
     public function test_lists_catalog_without_course_binding(): void {
         $this->resetAfterTest();
@@ -67,8 +67,8 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne Fernzugriffsfreigabe wird abgewiesen - auch eine Lehrkraft im
-     * Kurs (Issue #630).
+     * Reject users without remote-access authorization, including enrolled
+     * teachers (#630).
      */
     public function test_without_remote_access_is_rejected(): void {
         $this->resetAfterTest();
@@ -83,8 +83,8 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne offene Ausstaende liefert das Feld ein leeres Array, nie null
-     * (Issue #492, ADR 0023 Punkt 4).
+     * Return an empty array rather than null when no pending entries exist
+     * (#492, ADR 0023 §4).
      */
     public function test_ausstaende_field_is_empty_by_default(): void {
         $this->resetAfterTest();
@@ -99,9 +99,8 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Offene Ausstaende sind je Zieldatei gebuendelt, die aeltesten zuerst
-     * (Issue #492, ADR 0023 Punkt 4) - und der Handshake sieht dabei keinen
-     * Netzzugriff: der WebDAV-Fake protokolliert keine Anfrage.
+     * Group pending entries by target file, oldest first (#492, ADR 0023 §4).
+     * The handshake performs no network requests through fake WebDAV.
      */
     public function test_ausstaende_bundled_by_path_oldest_first_without_network_access(): void {
         $this->resetAfterTest();
@@ -130,8 +129,8 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne WebDAV-Freischaltung fehlt der Ortswahl-Hinweisfakt (Issue #494
-     * Akzeptanzkriterium) - 'hinweise' bleibt ein leeres Array, nie null.
+     * Without WebDAV authorization, omit the location-selection notice and
+     * return an empty notices array (#494).
      */
     public function test_hinweise_field_is_empty_without_webdav_freischaltung(): void {
         $this->resetAfterTest();
@@ -146,9 +145,8 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Mit Freischaltung und noch offener Ortswahl (kein Kontextpointer)
-     * nennt 'hinweise' den Fakt samt Link zur Ortswahlseite - ohne
-     * Netzzugriff (Issue #494 Akzeptanzkriterium).
+     * With authorization but no context pointer, include the pending
+     * location-selection fact and link without network requests (#494).
      */
     public function test_hinweise_field_names_open_location_selection_when_enabled_and_no_pointer(): void {
         $this->resetAfterTest();
@@ -173,8 +171,8 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Sobald ein Kontextpointer existiert, gilt die Ortswahl nicht mehr als
-     * offen - der Fakt verschwindet, obwohl die Freischaltung weiterbesteht.
+     * An existing context pointer removes the pending-location fact even
+     * while authorization remains enabled.
      */
     public function test_hinweise_field_is_empty_once_a_pointer_exists(): void {
         $this->resetAfterTest();
@@ -195,7 +193,7 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne offenen Altbestand fehlt der Hinweisfakt.
+     * Without pending old content, omit its notice.
      */
     public function test_hinweise_field_has_no_previouslocation_hint_by_default(): void {
         $this->resetAfterTest();
@@ -210,8 +208,8 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Ein offener Altbestand (Issue #498, Spec #486 §9/§10) erscheint als
-     * Fakt in 'hinweise', ohne Zaehlung - der Hinweistext nennt keine Anzahl.
+     * Pending old content appears as a notice without counts
+     * (#498, Spec #486 §9/§10).
      */
     public function test_hinweise_field_names_open_previouslocation_without_counting(): void {
         $this->resetAfterTest();
@@ -232,18 +230,17 @@ final class list_skills_test extends \advanced_testcase {
             ),
             $result['notices'][0]['text']
         );
-        // Kein Zaehlwert (Issue #498 Akzeptanzkriterium: "ohne Zaehlung") -
-        // am deutschen Sprachpaket geprueft, echte Umlaute, keine Ziffern.
+        // Old-content notices contain no count (#498). Check the German pack
+        // for real umlauts and absence of digits.
         $string = [];
         require(__DIR__ . '/../../lang/de/local_coursepilot.php');
         $this->assertDoesNotMatchRegularExpression('/\d/', $string['listskillspreviouslocationhint']);
     }
 
     /**
-     * Ein kaputter Kontextpointer (kein gueltiges JSON-Objekt) darf den
-     * Handshake nicht scheitern lassen (Issue #519, Spec #486 §10): der
-     * Skillkatalog kommt trotzdem, dazu ein benannter Hinweis auf die
-     * Ortswahlseite - ohne Netzzugriff.
+     * Invalid context-pointer JSON must not break the handshake. Return
+     * the skill catalog plus a named notice linking to location selection,
+     * without network requests (#519, Spec #486 §10).
      */
     public function test_broken_pointer_still_returns_skills_with_named_hint_and_no_network(): void {
         $this->resetAfterTest();
@@ -285,10 +282,8 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Ein unvollstaendiger Kontextpointer (gueltiges JSON-Objekt, aber ohne
-     * die Pflichtfelder) faellt unter denselben Fakt wie ein unlesbarer
-     * Pointer (Issue #519, Spec #486 §10: "unlesbar oder unvollstaendig") -
-     * derselbe benannte Hinweis, weiterhin ohne Netzzugriff.
+     * Valid JSON missing required pointer fields produces the same notice
+     * as an unreadable pointer, without network requests (#519, Spec #486 §10).
      */
     public function test_incomplete_pointer_still_returns_skills_with_named_hint_and_no_network(): void {
         $this->resetAfterTest();

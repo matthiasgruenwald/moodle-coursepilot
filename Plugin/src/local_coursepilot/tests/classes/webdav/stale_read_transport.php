@@ -20,18 +20,11 @@ use local_coursepilot\webdav\webdav_response;
 use local_coursepilot\webdav\webdav_transport;
 
 /**
- * Test-Decorator um {@see fake_webdav_transport} (Issue #491): erzeugt einen
- * echten Konflikt, den ein einzelner, synchroner Testaufruf sonst nie
- * hervorruft - `pointer_writer` liest die aktuellen Eigenschaften einer Datei
- * unmittelbar vor dem bedingten PUT, das Fenster fuer eine echte
- * Gleichzeitigkeit ist also mit dem Fake allein nicht nachstellbar.
- *
- * Dieser Decorator tut genau das: nach der ersten PROPFIND-Antwort auf die
- * beobachtete Adresse - der Stand, den `pointer_writer` fuer sein bedingtes
- * Schreiben zwischenspeichert - aendert er die Datei im Fake heimlich ein
- * zweites Mal ("Handaenderung"), sodass das anschliessende `PUT` mit dem
- * inzwischen veralteten `If-Match`/`getlastmodified`-Stand serverseitig auf
- * 412 laeuft.
+ * Decorator around {@see fake_webdav_transport} producing a real conflict
+ * (#491). pointer_writer reads current properties immediately before its
+ * conditional PUT, so a synchronous fake alone cannot reproduce concurrency.
+ * After the first PROPFIND response for the watched URL, edit the fake file
+ * again. The subsequent stale If-Match/getlastmodified write returns 412.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -42,12 +35,10 @@ final class stale_read_transport implements webdav_transport {
     private bool $triggered = false;
 
     /**
-     * @param fake_webdav_transport $fake Der zugrunde liegende Speicher - auch
-     *        das Ziel der heimlichen Zweitaenderung.
-     * @param string $urlsubstring Adressbestandteil der beobachteten Datei.
-     * @param fake_webdav_transport $inner In Produktivcode waere das ein
-     *        anderer Transport als `$fake`; im Test ist es bewusst
-     *        dieselbe Instanz - der Decorator veraendert ihren Speicher direkt.
+     * @param fake_webdav_transport $fake Underlying storage, also modified by the simulated concurrent edit.
+     * @param string $urlsubstring URL substring identifying the watched file.
+     * @param fake_webdav_transport $inner Production would use another transport; the test intentionally
+     *        uses the same instance and edits its storage directly.
      */
     public function __construct(
         private readonly fake_webdav_transport $fake,

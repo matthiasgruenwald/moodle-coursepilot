@@ -19,8 +19,8 @@ namespace local_coursepilot\catalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Gemeinsame Vorbereitung des $moduleinfo-Feldobjekts ausserhalb des
- * Formularwegs (#388/#392/#400).
+ * Prepare the shared moduleinfo field object outside the form path
+ * (#388/#392/#400).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -38,7 +38,7 @@ final class pseudofield_carry_forward_test extends \advanced_testcase {
         $this->resetAfterTest();
         $moduleinfo = (object) [
             'gradepass' => format_float(12.5, 2),
-            // Aktivitaetsarten mit mehreren Bewertungsspalten (workshop).
+            // Activity types with multiple grade columns (workshop).
             'submissiongradepass' => format_float(7.0, 2),
             'name' => 'unberuehrt',
         ];
@@ -51,7 +51,7 @@ final class pseudofield_carry_forward_test extends \advanced_testcase {
     }
 
     /**
-     * Ein leeres Feld bleibt leer - "keine Bestehensgrenze" ist keine 0.
+     * Empty stays empty; no passing threshold is not zero.
      */
     public function test_empty_gradepass_is_left_alone(): void {
         $this->resetAfterTest();

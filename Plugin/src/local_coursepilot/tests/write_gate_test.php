@@ -19,9 +19,9 @@ namespace local_coursepilot;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Selbstfreigabe des Feldkatalogs in zwei Stufen (Ticket #399, ADR 0017):
- * Drift sperrt nur die betroffene Aktivitätsart, alle anderen bleiben
- * schreibbar; Lesen ist von diesem Gate nie betroffen.
+ * Two-stage catalog approval (Ticket #399, ADR 0017): drift locks only
+ * the affected activity type; other types remain writable and reads
+ * are never gated.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,10 +31,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class write_gate_test extends \advanced_testcase {
 
     /**
-     * Auf der aktuellen Testinstanz ist jede katalogisierte Aktivitätsart
-     * gruen: "geprueft", solange reviewed_up_to_major() die laufende
-     * Moodle-Hauptversion abdeckt, sonst "automatisch_geprueft" (z. B. im
-     * CI-Leg MOODLE_501_STABLE bei manuellem Review bis 5.0).
+     * All catalogs pass on the current instance: reviewed when the manual
+     * review covers its Moodle major version, otherwise automatically checked
+     * (e.g. Moodle 5.1 CI with manual review through 5.0).
      */
     public function test_all_catalogs_are_green_on_the_current_instance(): void {
         global $CFG;
@@ -49,7 +48,7 @@ final class write_gate_test extends \advanced_testcase {
     }
 
     /**
-     * assert_writable() wirft nicht, solange kein Drift vorliegt.
+     * assert_writable() returns without throwing when there is no drift.
      */
     public function test_assert_writable_does_not_throw_when_green(): void {
         $this->resetAfterTest();
@@ -59,19 +58,16 @@ final class write_gate_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #399: Drift in einer Aktivitätsart sperrt genau diese
-     * fuers Schreiben und laesst die uebrigen acht schreibbar.
+     * Acceptance #399: drift locks exactly the affected activity type
+     * while the other eight remain writable.
      */
     public function test_drift_locks_only_the_affected_activity_type(): void {
         $this->resetAfterTest();
 
-        // Erster Aufruf erzwingt die Tiefenpruefung und cached das Ergebnis
-        // (alle gruen auf dieser Instanz).
+        // First call performs deep validation and caches passing results.
         write_gate::all_statuses();
 
-        // Simuliert eine erkannte Katalogabweichung fuer "label" - genau so,
-        // wie ensure_fresh() sie nach einem echten Versionswechsel selbst
-        // cachen wuerde.
+        // Simulate label drift as ensure_fresh() would cache after a version change.
         set_config('driftviolations_label', json_encode(['Spalte "intro" fehlt.']), 'local_coursepilot');
 
         $labelstatus = write_gate::status_for('label');
@@ -83,7 +79,7 @@ final class write_gate_test extends \advanced_testcase {
                 continue;
             }
             $status = write_gate::status_for($modname);
-            $this->assertNotSame('needs_work', $status['state'], "$modname sollte durch den Drift von label nicht gesperrt sein.");
+            $this->assertNotSame('needs_work', $status['state'], "$modname must remain writable despite label drift.");
         }
 
         $this->expectException(\moodle_exception::class);
@@ -91,8 +87,7 @@ final class write_gate_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #399: die Meldung an die Lehrkraft nennt die
-     * Handlung "bitte der Administration melden".
+     * Acceptance #399: advise the teacher to report the problem to administration.
      */
     public function test_drift_message_tells_the_teacher_to_report_it(): void {
         $this->resetAfterTest();
@@ -108,10 +103,8 @@ final class write_gate_test extends \advanced_testcase {
             $this->assertStringContainsString('forum', $e->getMessage());
         }
 
-        // Die PHPUnit-Testumgebung hat kein vollstaendiges de-Sprachpaket im
-        // eigenen Dataroot (nur "en") - deshalb direkt gegen die
-        // ausgelieferte deutsche Zeichenkette geprueft statt gegen Moodles
-        // Spracherkennung zur Laufzeit.
+        // PHPUnit has only the English language pack. Read the German source
+        // directly rather than depending on runtime language resolution.
         $string = [];
         require(__DIR__ . '/../lang/de/local_coursepilot.php');
         $this->assertArrayHasKey('modnamedriftlocked', $string);
@@ -119,10 +112,8 @@ final class write_gate_test extends \advanced_testcase {
     }
 
     /**
-     * Andere Aktivitätsarten bleiben trotz Drift woanders unbeeintraechtigt
-     * schreibbar - {@see test_drift_locks_only_the_affected_activity_type()}
-     * prueft den Status, hier zusaetzlich, dass assert_writable() fuer sie
-     * tatsaechlich folgenlos zurueckkehrt.
+     * Unaffected types remain writable despite drift elsewhere. In addition
+     * to the status assertion, assert_writable() actually returns successfully.
      */
     public function test_other_activity_types_stay_writable_during_drift(): void {
         $this->resetAfterTest();

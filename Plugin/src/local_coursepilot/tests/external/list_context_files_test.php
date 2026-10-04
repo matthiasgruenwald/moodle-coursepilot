@@ -24,10 +24,9 @@ use local_coursepilot\webdav\webdav_instance;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Auflisten des Kontextbereichs (Issue #343). Sicherheitsrelevant: gedeckt
- * werden neben dem Happy-Path echte Angriffstests fuer Pfadausbruch und
- * Personen-Isolation. Seit Issue #490 zusaetzlich der externe Zweig ueber
- * einen Kontextpointer der zweiten Fassung und den WebDAV-Transport-Fake.
+ * Context listing (#343): normal operation, path-escape attacks and
+ * user isolation. External storage (#490) uses a v2 context pointer and
+ * fake WebDAV transport.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -45,8 +44,7 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Die Vorlagendatei an der Wurzel ist ohne Sonderweg erreichbar - der
-     * Standardaufruf ohne "path" listet die Wurzel.
+     * The template file is accessible at the root. Omitting path lists the root.
      */
     public function test_lists_root_including_template_file(): void {
         $this->resetAfterTest();
@@ -65,8 +63,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Jeder Dateieintrag traegt contenthash und timemodified (Spec 0016 §2);
-     * Ordnereintraege haben beides leer bzw. 0.
+     * Each file has contenthash and timemodified (Spec 0016 §2). Folders
+     * carry an empty hash and zero modification time.
      */
     public function test_file_entries_carry_contenthash_and_timemodified(): void {
         $this->resetAfterTest();
@@ -89,8 +87,7 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Unterordner erscheint an der Wurzel als Ordnereintrag und ist
-     * ueber "path" selbst auflistbar.
+     * Subfolders appear at the root and can themselves be listed using path.
      */
     public function test_lists_subfolder_contents(): void {
         $this->resetAfterTest();
@@ -110,12 +107,10 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der zurueckgegebene "path" ist derselbe Pfad, den die Werkzeuge auch
-     * entgegennehmen: relativ zur Kontextwurzel, die Wurzel selbst leer.
-     *
-     * Vorher wurde der Wurzelordner mitgeliefert ("coursepilot"); wer daraus
-     * einen Unterpfad baute, schrieb nach "coursepilot/..." und landete in
-     * /coursepilot/coursepilot/... - genau der Fehler aus #425 F1.
+     * Returned paths match tool inputs: relative to the context root, with
+     * an empty path for the root. Previously including coursepilot caused
+     * clients to build coursepilot/... and write to /coursepilot/coursepilot/
+     * (#425 F1).
      */
     public function test_returned_path_is_relative_to_the_context_root(): void {
         $this->resetAfterTest();
@@ -134,18 +129,16 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Seit dem Umzug auf Private Files (#407) kann die Lehrkraft ueber
-     * "Meine Dateien" beliebige Dateien im Ordner ablegen. Die Auflistung
-     * liest deren Inhalt nicht ein - die Personenbezug-Markierung steht nur
-     * im Frontmatter einer Markdown-Datei - und listet sie ungesperrt.
+     * After moving to Private Files (#407), teachers can add arbitrary files
+     * through My files. Listing does not read non-Markdown content and
+     * leaves it unlocked; personal-data frontmatter exists only in Markdown.
      */
     public function test_non_markdown_files_are_listed_without_reading_them(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
 
-        // Der Frontmatter-Marker steht hier drin, greift aber nicht: keine
-        // .md-Datei, also auch keine Kontextdatei mit Frontmatter.
+        // This frontmatter marker does not apply: the file is not Markdown.
         $this->create_context_file($user, '/coursepilot/', 'notizen.txt', $this->marked_content());
 
         $result = list_context_files::execute();
@@ -157,19 +150,15 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Pfad, der aus dem Bereich herausfuehren wuerde, wird abgewiesen
-     * (CRITICAL) - Moodles eigene Parametervalidierung lehnt ein "../"-
-     * Segment bereits an der API-Grenze ab, bevor der Aufloesungscode
-     * ueberhaupt laeuft.
+     * Reject paths escaping the root at Moodle’s API parameter boundary
+     * before resolution runs (CRITICAL).
      */
     public function test_traversal_attempt_is_rejected(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
 
-        // Ausserhalb der organisatorischen Wurzel "/coursepilot/", aber noch
-        // im selben Dateibereich - darf unter keinen Umstaenden ueber einen
-        // Ausbruchsversuch erreichbar sein.
+        // Outside /coursepilot/ but within the same file area: traversal must never expose it.
         $this->create_context_file($user, '/', 'secret.txt', 'geheim');
 
         $this->expectException(\moodle_exception::class);
@@ -177,10 +166,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Auch ein Pfad, der die API-Grenze irgendwie passieren wuerde (z.B.
-     * weil eine kuenftige Aenderung PARAM_PATH lockert), landet nicht
-     * ausserhalb der Wurzel - die eigene Aufloesung in context_files prueft
-     * unabhaengig davon jedes Segment.
+     * Even if future PARAM_PATH changes allow traversal through the API
+     * boundary, context_files independently checks every segment.
      */
     public function test_resolved_directory_never_leaves_root(): void {
         $this->resetAfterTest();
@@ -188,9 +175,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Person A erreicht unter keinen Umstaenden den Bereich von Person B
-     * (CRITICAL) - es gibt keinen Parameter, der einen fremden Bereich
-     * adressieren koennte.
+     * User A cannot access user B’s context area; no parameter addresses
+     * another user’s area (CRITICAL).
      */
     public function test_person_a_never_sees_person_bs_files(): void {
         $this->resetAfterTest();
@@ -208,9 +194,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Kein Parameter erlaubt es, einen anderen Dateibereich, eine fremde
-     * itemid oder contextid anzugeben - strukturell erzwungen, nicht per
-     * Konvention.
+     * No parameter accepts another file area, itemid or contextid.
+     * Isolation is structural rather than conventional.
      */
     public function test_execute_parameters_expose_no_area_selector(): void {
         $definition = list_context_files::execute_parameters()->keys;
@@ -218,9 +203,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * "vorheriger_ort" ohne offenen Altbestand ist ein benannter Fehler,
-     * kein stilles leeres Ergebnis (Issue #498, Spec #486 §6: "wirkt nur,
-     * solange Altbestand offen ist").
+     * previous_location without pending old content is a named error,
+     * not a silent empty result (#498, Spec #486 §6).
      */
     public function test_vorheriger_ort_switch_without_open_previouslocation_is_rejected(): void {
         $this->resetAfterTest();
@@ -235,8 +219,7 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Mit offenem Altbestand listet der Schalter den vorherigen Ort, nicht
-     * den aktuellen.
+     * With pending old content, the flag lists the previous location.
      */
     public function test_vorheriger_ort_switch_lists_the_previous_location(): void {
         $this->resetAfterTest();
@@ -257,8 +240,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der gesperrte Eintrag erscheint sichtbar gesperrt in der Liste, nicht
-     * weggelassen (#344, ADR 0011).
+     * Show locked entries visibly locked rather than omitting them
+     * (#344, ADR 0011).
      */
     public function test_personal_data_marked_file_appears_locked_in_listing(): void {
         $this->resetAfterTest();
@@ -275,7 +258,7 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Bei eingeschaltetem Schalter ist derselbe Eintrag entsperrt gelistet.
+     * Show the same entry unlocked when the switch is enabled.
      */
     public function test_personal_data_marked_file_unlocked_when_switch_on(): void {
         $this->resetAfterTest();
@@ -293,8 +276,7 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Unmarkierte Dateien sind in beiden Stellungen des Schalters
-     * unveraendert entsperrt gelistet.
+     * Unmarked files remain unlocked with either switch setting.
      */
     public function test_unmarked_file_never_locked(): void {
         $this->resetAfterTest();
@@ -313,9 +295,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der Kontextpointer (Issue #445) ist keine Arbeitsdatei und taucht
-     * deshalb nicht in der Auflistung auf, obwohl er physisch im selben
-     * Ordner liegt wie ohne Pointer die Kontextdateien selbst.
+     * The context pointer (#445) is not a working file and stays out of
+     * listings even though it physically shares the context folder.
      */
     public function test_pointer_file_is_excluded_from_listing(): void {
         $this->resetAfterTest();
@@ -339,9 +320,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der externe Kontextbereich (Issue #490, Spec #486 §2/§6) listet ueber
-     * den WebDAV-Client, statt ueber Moodles Dateispeicher - dieselbe
-     * Werkzeugantwort wie im Moodle-Zweig.
+     * External context storage (#490, Spec #486 §2/§6) lists through WebDAV
+     * with the same tool-response contract as Moodle storage.
      */
     public function test_lists_external_context_files_via_webdav(): void {
         $this->resetAfterTest();
@@ -356,10 +336,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Konfliktschutz (Issue #513, Spec #486 §4/§6): Auflisten liefert extern
-     * einen nicht leeren Pruefwert - ohne ihn koennte die KI beim Schreiben
-     * nie ein "expected_contenthash" mitgeben, das den externen Speicher
-     * tatsaechlich prueft.
+     * External listing returns a nonempty check value for expected_contenthash
+     * so writes can actually detect conflicts (#513, Spec #486 §4/§6).
      */
     public function test_external_listing_returns_a_nonempty_checkvalue(): void {
         $this->resetAfterTest();
@@ -376,9 +354,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne ETag (IServ) traegt der Pruefwert die Aenderungszeit - schwaecher,
-     * aber ebenfalls nicht leer (Issue #513, Spec §4: "getlastmodified als
-     * schwacher Ersatz").
+     * Without an ETag (IServ), use modification time as a weaker, nonempty
+     * check value (#513, Spec §4).
      */
     public function test_external_listing_returns_a_nonempty_checkvalue_without_etag(): void {
         $this->resetAfterTest();
@@ -396,13 +373,13 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Eine noch nicht angelegte externe Ebene ist leer, nie ein Fehler -
-     * dieselbe Bedeutung wie eine fehlende Moodle-Wurzel.
+     * Missing external folders produce an empty listing, just like a
+     * missing Moodle root.
      */
     public function test_listing_missing_external_directory_is_empty(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->set_up_external_context();
-        // "/Coursepilot/Kontext" bleibt unangelegt.
+        // Leave /Coursepilot/Kontext uncreated.
 
         $result = list_context_files::execute();
         $result = external_api::clean_returnvalue(list_context_files::execute_returns(), $result);
@@ -411,8 +388,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Die Personenbezug-Prüfung wirkt extern am Inhalt genauso wie in
-     * Moodle (Spec §6) - ein markierter Eintrag erscheint gesperrt gelistet.
+     * External content uses the same personal-data checks as Moodle
+     * (Spec §6); marked entries appear locked.
      */
     public function test_personal_data_marked_file_appears_locked_in_external_listing(): void {
         $this->resetAfterTest();
@@ -429,8 +406,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Weder Werkzeugname noch -antwort verraten den Speicherort (Spec §6/§15):
-     * kein Server, kein Konto, keine Instanz-ID in der Antwort.
+     * Neither tool names nor responses reveal the server, account or
+     * instance ID (Spec §6/§15).
      */
     public function test_external_listing_response_reveals_no_storage_location(): void {
         $this->resetAfterTest();
@@ -447,9 +424,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Markierungsgedaechtnis (Issue #493, Spec #486 §6): eine zweite
-     * Auflistung ohne Aenderung holt die `.md`-Datei nicht erneut - genau ein
-     * GET ueber beide Aufrufe hinweg.
+     * Mark cache (#493, Spec #486 §6): two unchanged listings fetch a
+     * Markdown file only once.
      */
     public function test_second_listing_without_change_does_not_refetch_marked_file(): void {
         $this->resetAfterTest();
@@ -465,9 +441,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Eine geaenderte Datei (neuer Inhalt, damit neue Groesse/ETag) wird bei
-     * der naechsten Auflistung neu gelesen - das Gedaechtnis erkennt den
-     * veralteten Schluessel.
+     * A changed file has a new size or ETag, invalidating its cached key
+     * and causing another read on the next listing.
      */
     public function test_changed_file_is_refetched_on_next_listing(): void {
         $this->resetAfterTest();
@@ -479,7 +454,7 @@ final class list_context_files_test extends \advanced_testcase {
         $first = external_api::clean_returnvalue(list_context_files::execute_returns(), $first);
         $this->assertTrue($this->find_entry($first['entries'], 'lerngruppe.md')['locked']);
 
-        // Handaenderung: die Markierung entfaellt, Groesse und ETag aendern sich.
+        // Manual edit removes the marking and changes size and ETag.
         $fake->seed_file('/Coursepilot/Kontext/lerngruppe.md', '# Unmarkiert, neu geschrieben');
 
         $second = list_context_files::execute();
@@ -491,8 +466,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Bei eingeschaltetem #344-Schalter entfaellt die Pruefung ganz - kein
-     * GET fuer die `.md`-Datei, weil "locked" ohnehin immer false ist.
+     * When #344 is enabled, skip checks and Markdown GETs because locked
+     * is always false.
      */
     public function test_switch_on_never_fetches_marked_file_content(): void {
         $this->resetAfterTest();
@@ -585,7 +560,7 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * @return string Kontextdatei-Inhalt mit Frontmatter-Markierung
+     * @return string Context-file content with the legacy frontmatter marking
      *         "coursepilot.personenbezug: true".
      */
     private function marked_content(): string {

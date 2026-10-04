@@ -32,7 +32,7 @@ use local_coursepilot\history\version_history;
 final class history_page {
 
     /**
-     * Versionsliste einer Aktivitaet (?cmid=).
+     * Activity version list (?cmid=).
      *
      * @param int $cmid
      * @param string $activityname

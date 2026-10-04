@@ -20,7 +20,7 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Mehrversionen-Ueberblick des Aenderungsverlaufs (Spec 0015 §10.6, #394).
+ * Activity history version overview (Spec 0015 §10.6, #394).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -45,9 +45,8 @@ final class list_activity_versions_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 6: eine editierende Lehrkraft mit der Standard-
-     * Rollenzuweisung darf lesen (Archetyp-Voreinstellung von
-     * local/coursepilot:viewhistory).
+     * Acceptance criterion 6: editing teachers can read with the standard
+     * role assignment, through the viewhistory archetype default.
      */
     public function test_returns_versions_for_teacher(): void {
         $this->resetAfterTest();
@@ -63,8 +62,7 @@ final class list_activity_versions_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 6: local/coursepilot:viewhistory wird geprueft - ohne
-     * sie wird abgewiesen.
+     * Acceptance criterion 6: reject users without local/coursepilot:viewhistory.
      */
     public function test_rejects_user_without_capability(): void {
         $this->resetAfterTest();

@@ -59,8 +59,8 @@ final class url_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * url hat KEINE "revision"-Spalte - ein Regressionswaechter gegen ein
-     * versehentliches Uebertragen aus page/resource/folder.
+     * url has no revision column; guard against accidental copying from
+     * page, resource or folder.
      */
     public function test_url_has_no_revision_column(): void {
         global $DB;
@@ -100,7 +100,7 @@ final class url_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Jede referenzierte aufrufbare Quelle existiert wirklich.
+     * Every referenced callable source exists.
      */
     public function test_referenced_callable_sources_exist(): void {
         global $CFG;
@@ -114,13 +114,13 @@ final class url_catalog_contract_test extends \advanced_testcase {
             $fields
         ));
 
-        $this->assertNotEmpty($callables, 'Kein Feld referenziert eine aufrufbare Quelle - Testannahme verletzt.');
+        $this->assertNotEmpty($callables, 'No field references a callable source; test assumption violated.');
 
         foreach ($callables as $callable) {
             $functionname = rtrim($callable, '()');
             $this->assertTrue(
                 function_exists($functionname),
-                "Referenzierte aufrufbare Quelle $callable existiert auf dieser Instanz nicht mehr."
+                "Referenced callable source $callable no longer exists on this instance."
             );
         }
     }

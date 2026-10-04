@@ -25,12 +25,11 @@ use local_coursepilot\webdav\webdav_instance;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Schreiben in den Kontextbereich (Issue #408, Spec 0016 Paragraph 4.1).
- * Neben dem Happy-Path die Absagen, die das Werkzeug eng halten: Pfad,
- * Dateiendung, Groesse, Gleichzeitigkeit, Personenbezug, Quote. Seit Issue
- * #491 zusaetzlich der externe Zweig: bedingtes Anlegen/Ueberschreiben ueber
- * WebDAV, Nextcloud-Modus (mit ETag) und IServ-Modus (ohne ETag), Konflikt,
- * fehlende Ordnerebenen, voller Speicher, keine Moodle-Quote/-Capability.
+ * Context writes (#408, Spec 0016 §4.1): normal operation and guards for
+ * paths, extensions, size, concurrency, personal data and quota. External
+ * storage (#491) covers conditional WebDAV writes with Nextcloud ETags
+ * and IServ modification times, conflicts, missing folders, full storage
+ * and independence from Moodle quotas and capabilities.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -49,8 +48,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Eine neue Datei entsteht, und die Antwort sagt ausdruecklich "neu
-     * angelegt" - damit ein Tippfehler im Pfad im Chat sichtbar wird.
+     * Create new files and explicitly report creation so path typos are
+     * visible in chat.
      */
     public function test_creates_new_file(): void {
         $this->resetAfterTest();
@@ -69,7 +68,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Auch ein Unterordner entsteht ohne Sonderfall.
+     * Create subfolders without a special case.
      */
     public function test_creates_file_in_subfolder(): void {
         $this->resetAfterTest();
@@ -82,7 +81,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ueberschreiben nennt vorherige und neue Groesse (Spec 0016 §5.4).
+     * Overwrite reports previous and new sizes (Spec 0016 §5.4).
      */
     public function test_overwrites_existing_file(): void {
         $this->resetAfterTest();
@@ -105,7 +104,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Pfadsegment ausserhalb [A-Za-z0-9_-] wird abgewiesen.
+     * Reject path segments outside [A-Za-z0-9_-].
      */
     public function test_rejects_invalid_path_segment(): void {
         $this->resetAfterTest();
@@ -116,7 +115,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * "../" fuehrt nicht aus dem Bereich heraus.
+     * A ../ segment cannot escape the context area.
      */
     public function test_rejects_traversal(): void {
         $this->resetAfterTest();
@@ -127,20 +126,18 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Nur .md - der Kontextbereich nimmt kein Material auf (Spec 0016 §5.1).
+     * Accept only .md files; context storage contains no materials
+     * (Spec 0016 §5.1).
      */
     public function test_rejects_non_markdown_extension(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        // Ausdruecklich der genaue Fehlerschluessel, nicht nur "irgendeine
-        // moodle_exception" (Issue #540 Regressionsschutz): die Endungs-
-        // pruefung liegt im private_files_storage_port-Adapter, tief innerhalb
-        // der seit #540 neu umschliessenden Ausfallbehandlung - ohne die
-        // Ausnahme in context_area::is_moodle_call_error() wuerde sie
-        // faelschlich als "pendingwritefailed" statt als
-        // "contextfilenotmarkdown" zurueckkommen und dabei sogar einen
-        // Ausstand anlegen.
+        // Assert the exact error key, not just any moodle_exception (#540).
+        // Extension validation lives inside private_files_storage_port and the
+        // new outage wrapper. Without context_area::is_moodle_call_error(), it
+        // would return pendingwritefailed rather than contextfilenotmarkdown
+        // and incorrectly record a pending entry.
         try {
             $this->write('notiz.txt', 'Text');
             $this->fail('Falsche Dateiendung haette abgewiesen werden muessen.');
@@ -151,7 +148,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ueber 1 MB je Vorgang ist ein harter Fehler (Spec 0016 §5.2).
+     * Reject operations exceeding 1 MB (Spec 0016 §5.2).
      */
     public function test_rejects_oversized_content(): void {
         $this->resetAfterTest();
@@ -162,7 +159,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Genau 1 MB geht noch durch - die Grenze ist einschliessend.
+     * Accept exactly 1 MB; the limit is inclusive.
      */
     public function test_accepts_content_at_the_size_limit(): void {
         $this->resetAfterTest();
@@ -174,7 +171,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Passt der uebergebene contenthash, geht der Vorgang durch.
+     * A matching contenthash permits writing.
      */
     public function test_accepts_matching_contenthash(): void {
         $this->resetAfterTest();
@@ -188,8 +185,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Weicht er ab, bricht der Vorgang ab - und die Datei bleibt unangetastet
-     * (alles-oder-nichts).
+     * A mismatched hash aborts atomically, preserving the file.
      */
     public function test_rejects_stale_contenthash_and_leaves_file_untouched(): void {
         $this->resetAfterTest();
@@ -211,8 +207,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ein contenthash fuer eine Datei, die es nicht (mehr) gibt, ist
-     * ebenfalls ein Konflikt - sie wurde zwischendurch geloescht.
+     * A hash for a deleted or missing file is also a conflict.
      */
     public function test_rejects_contenthash_for_missing_file(): void {
         $this->resetAfterTest();
@@ -223,8 +218,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Personenbezogen markierter Inhalt geht bei ausgeschaltetem
-     * #344-Schalter nicht durch, und es entsteht keine Datei.
+     * Reject marked personal data when #344 is disabled; create no file.
      */
     public function test_rejects_personal_data_when_switch_off(): void {
         $this->resetAfterTest();
@@ -242,9 +236,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Was bei ausgeschaltetem Schalter nicht lesbar ist, darf auch nicht
-     * ueberschrieben werden - sonst waere die #344-Grenze auf dem
-     * zerstoerenden Weg offen (Spec 0016 §4.2 begruendet das fuer Append).
+     * Files blocked from reading must also be protected from overwriting
+     * to prevent destructive bypass of #344 (Spec 0016 §4.2).
      */
     public function test_rejects_overwriting_a_marked_file_when_switch_off(): void {
         $this->resetAfterTest();
@@ -266,7 +259,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Bei eingeschaltetem Schalter geht derselbe Inhalt durch.
+     * Allow the same content when the switch is enabled.
      */
     public function test_accepts_personal_data_when_switch_on(): void {
         $this->resetAfterTest();
@@ -281,9 +274,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Eine personenbezogen markierte Datei geht extern nicht an einen nicht
-     * zugelassenen Speicher, auch wenn der #344-Schalter an ist (Issue #493,
-     * ADR 0021 §3) - und es entsteht kein PUT.
+     * Reject marked personal data on unapproved external storage even with
+     * #344 enabled (#493, ADR 0021 §3); perform no PUT.
      */
     public function test_rejects_marked_content_at_disallowed_external_host(): void {
         $this->resetAfterTest();
@@ -305,8 +297,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Am zugelassenen Speicher (Domain samt Unterdomain) geht dieselbe
-     * markierte Datei durch.
+     * Allow marked files on approved domains and subdomains.
      */
     public function test_accepts_marked_content_at_allowed_external_host(): void {
         $this->resetAfterTest();
@@ -321,9 +312,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Bei ausgeschaltetem #344-Schalter greift weiterhin "contextfilelocked",
-     * nicht die Speicher-Zulassungspruefung - beide Gruende sind unabhaengig
-     * voneinander.
+     * With #344 disabled, contextfilelocked takes precedence over storage
+     * approval. These are independent checks.
      */
     public function test_marked_content_at_disallowed_host_with_switch_off_reports_locked(): void {
         $this->resetAfterTest();
@@ -339,13 +329,10 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Was bei ausgeschaltetem Schalter nicht lesbar ist, darf auch am
-     * externen Ort nicht ueberschrieben werden - dieselbe Garantie wie
-     * {@see test_rejects_overwriting_a_marked_file_when_switch_off()} fuer
-     * Moodle (Issue #515, Spec #486 §6: "allowpersonaldata wirkt unveraendert
-     * am Inhalt"). Vor dieser Korrektur reichte der externe Zweig neuen,
-     * unmarkierten Inhalt ungeprueft an {@see \local_coursepilot\webdav_storage_port::write()}
-     * durch.
+     * External targets blocked from reading must also be protected from
+     * overwriting, like {@see test_rejects_overwriting_a_marked_file_when_switch_off()}
+     * for Moodle (#515, Spec #486 §6). Previously the external path passed
+     * unmarked replacement content directly to webdav_storage_port::write().
      */
     public function test_rejects_overwriting_a_marked_external_file_when_switch_off(): void {
         $this->resetAfterTest();
@@ -371,10 +358,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ein veraltetes Markierungsgedaechtnis (Issue #493, hier zweckentfremdet
-     * fuer den Test) darf die Sperre nicht aushebeln - entschieden wird am
-     * tatsaechlichen Inhalt der externen Zieldatei, nicht am gemerkten Bit
-     * (Issue #515, Akzeptanzkriterium 3).
+     * A stale mark cache must not bypass the lock. Inspect actual external
+     * target content, not the cached flag (#515, criterion 3).
      */
     public function test_stale_mark_memory_cannot_bypass_the_external_lock(): void {
         $this->resetAfterTest();
@@ -382,9 +367,8 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_folder('/Coursepilot/Kontext');
         $seeded = $fake->seed_file('/Coursepilot/Kontext/lerngruppe.md', $this->marked_content());
 
-        // Das Gedaechtnis behauptet "nicht markiert" fuer genau diesen
-        // Schluessel (Pfad, Groesse, Aenderungszeit, ETag) - waere die
-        // Sperre darauf angewiesen, ginge das Ueberschreiben durch.
+        // The cache says unmarked for this exact path/size/time/ETag key.
+        // A cache-dependent lock would incorrectly allow overwrite.
         \local_coursepilot\mark_memory::remember(
             'lerngruppe.md',
             strlen($this->marked_content()),
@@ -407,10 +391,9 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Anhaengen bei ausgeschaltetem Schalter greift auf der externen
-     * Zieldatei ebenso (Issue #515, Akzeptanzkriterium 2) - siehe
+     * External append already checks the target when the switch is off
+     * (#515, criterion 2). See
      * {@see \local_coursepilot\external\append_context_file::execute_external()}.
-     * Dieser Test dokumentiert das bereits vorhandene Verhalten dort.
      */
     public function test_appending_to_a_marked_external_file_when_switch_off_is_rejected_too(): void {
         $this->resetAfterTest();
@@ -432,8 +415,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Unmarkierter Inhalt geht an jeden Speicher, unabhaengig von
-     * `personaldatahosts` - die Pruefung gilt nur der Markierung.
+     * Unmarked content may use any storage; personaldatahosts applies
+     * only to marked files.
      */
     public function test_unmarked_content_ignores_host_allowlist(): void {
         $this->resetAfterTest();
@@ -446,7 +429,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne moodle/user:manageownfiles kein Schreibzugriff (Spec 0016 §1.1).
+     * Require moodle/user:manageownfiles for writes (Spec 0016 §1.1).
      */
     public function test_rejects_missing_manageownfiles_capability(): void {
         global $DB;
@@ -468,10 +451,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Reicht die Nutzerquote nicht, nennt die Absage den Restplatz in MB
-     * (Spec 0016 §1.3) und verweist auf die Ortswahlseite (Issue #491, Spec
-     * #486 §6: "Scheitert dort ein Schreibvorgang an der Quote, verweist die
-     * Meldung auf die Ortswahlseite.").
+     * Quota errors report remaining MB (Spec 0016 §1.3) and link to
+     * location selection (#491, Spec #486 §6).
      */
     public function test_rejects_when_user_quota_exceeded(): void {
         global $CFG;
@@ -492,8 +473,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Extern legt {@see write_context_file} mit `If-None-Match: *` an
-     * (Issue #491, Spec #486 §4/§6) - Nextcloud-Modus, der Fake liefert ETags.
+     * External {@see write_context_file} creates with If-None-Match: *
+     * (#491, Spec #486 §4/§6). The Nextcloud fake supplies ETags.
      */
     public function test_creates_new_external_file_with_if_none_match_star(): void {
         $this->resetAfterTest();
@@ -511,8 +492,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Extern ueberschreibt {@see write_context_file} mit `If-Match: <ETag>`
-     * (Nextcloud-Modus).
+     * External {@see write_context_file} overwrites with If-Match: <ETag>
+     * in Nextcloud mode.
      */
     public function test_overwrites_existing_external_file_with_if_match(): void {
         $this->resetAfterTest();
@@ -529,8 +510,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne ETag (IServ) dient `getlastmodified` als schwacher Ersatz -
-     * dasselbe Werkzeug, ohne dass der Aufrufer etwas davon merkt.
+     * IServ without ETags uses getlastmodified as a weaker substitute
+     * without changing the caller’s tool contract.
      */
     public function test_overwrites_existing_external_file_without_etag_iserv_mode(): void {
         $this->resetAfterTest();
@@ -548,13 +529,10 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Konfliktschutz mit dem gelesenen Pruefwert (Issue #513, Spec #486
-     * §4/§6): Ein zweiter Chat schreibt zwischen dem Lesen und dem Schreiben
-     * des ersten - nicht innerhalb des Schreibaufrufs, sondern lange davor
-     * (Transport-Fake: die Handaenderung passiert direkt am Fake-Speicher,
-     * kein Decorator noetig). Der mitgegebene "expected_contenthash" aus dem
-     * fruehen Lesen passt dann nicht mehr zum aktuellen Stand - `Konflikt`,
-     * der urspruengliche Inhalt bleibt die Handaenderung, nicht der Versuch.
+     * Concurrency protection (#513, Spec #486 §4/§6): simulate another chat
+     * editing directly in fake storage between read and write, before the
+     * request. The earlier expected_contenthash is stale; return a conflict
+     * and preserve the intervening edit rather than the attempted content.
      */
     public function test_stale_checkvalue_from_earlier_read_is_rejected_as_conflict(): void {
         $this->resetAfterTest();
@@ -565,8 +543,7 @@ final class write_context_file_test extends \advanced_testcase {
         $gelesen = read_context_file::execute('plan.md');
         $gelesen = external_api::clean_returnvalue(read_context_file::execute_returns(), $gelesen);
 
-        // Der zweite Chat schreibt, lange bevor der erste ueberhaupt zum
-        // Schreiben kommt - nicht im Aufruf selbst.
+        // The second chat writes before the first begins its write request.
         $fake->seed_file('/Coursepilot/Kontext/plan.md', 'handaenderung');
 
         try {
@@ -580,8 +557,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Passt der mitgegebene Pruefwert zum aktuellen Stand, geht das
-     * Ueberschreiben wie gewohnt durch (Issue #513).
+     * A matching current check value permits overwriting (#513).
      */
     public function test_matching_checkvalue_allows_overwrite(): void {
         $this->resetAfterTest();
@@ -599,9 +575,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne ETag (IServ) wirkt der Vergleich ueber die Aenderungszeit (Issue
-     * #513, Spec §4) - derselbe Konfliktschutz, nur mit dem schwaecheren
-     * Ersatzmerkmal.
+     * Without an ETag, compare modification times for weaker concurrency
+     * protection (#513, Spec §4).
      */
     public function test_stale_checkvalue_without_etag_is_rejected_as_conflict_iserv_mode(): void {
         $this->resetAfterTest();
@@ -624,10 +599,9 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Nachtragen mit "pending_entry=" ueberschreibt nie ungeprueft (Entscheidung
-     * zu Issue #513): Fehlt der Pruefwert, obwohl die Zieldatei bereits
-     * existiert, geht das Nachtragen als Konflikt zurueck statt gewachsenen
-     * Bestand stillschweigend zu ersetzen.
+     * Pending-entry replay never overwrites unchecked (#513). Missing check
+     * values for existing targets cause conflicts instead of replacing
+     * changed content.
      */
     public function test_ausstand_retry_without_checkvalue_is_rejected_when_file_exists(): void {
         $this->resetAfterTest();
@@ -658,8 +632,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Nachtragen auf eine weiterhin fehlende Zieldatei braucht keinen
-     * Pruefwert - "anlegen" ist ueber "If-None-Match: *" bereits sicher.
+     * Replay to a still-missing target needs no check value; creation is
+     * already protected by If-None-Match: *.
      */
     public function test_ausstand_retry_creates_missing_file_without_checkvalue(): void {
         $this->resetAfterTest();
@@ -687,7 +661,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Fehlende Ordnerebenen werden per MKCOL angelegt (Issue #491, Spec #486 §4).
+     * Create missing intermediate folders with MKCOL (#491, Spec #486 §4).
      */
     public function test_creates_missing_folder_levels_via_mkcol(): void {
         $this->resetAfterTest();
@@ -701,9 +675,8 @@ final class write_context_file_test extends \advanced_testcase {
         $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
         $this->assertCount(1, $puts);
 
-        // Issue #514, Akzeptanzkriterium 3: kein MKCOL trifft die
-        // Kontextbereich-Wurzel selbst ("/Coursepilot/Kontext" ohne
-        // abschliessenden Schraegstrich) - nur Unterordner darin.
+        // MKCOL never targets /Coursepilot/Kontext itself, only its subfolders
+        // (#514, criterion 3).
         $roottargets = array_filter($mkcols, static function (array $r): bool {
             return rtrim((string) parse_url($r['url'], PHP_URL_PATH), '/') === '/Coursepilot/Kontext';
         });
@@ -711,16 +684,14 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Fehlt die Kontextbereich-Wurzel am externen Ort (verschoben, geloescht,
-     * umbenannt), legt das Schreiben nichts an - weder die Wurzel noch einen
-     * Unterordner darin (Issue #514, Akzeptanzkriterium 1+3). Es entsteht
-     * weder ein PUT noch ein MKCOL, dafuer ein benannter Fehler und ein
-     * Ausstand.
+     * Missing, moved or renamed external context roots prevent all
+     * creation, including subfolders (#514, criteria 1+3). Perform no PUT
+     * or MKCOL; return a named error and record a pending entry.
      */
     public function test_rejects_write_when_context_root_is_missing_and_creates_no_folder(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->set_up_external_context();
-        // Bewusst kein $fake->seed_folder('/Coursepilot/Kontext') - die Wurzel fehlt.
+        // Do not seed /Coursepilot/Kontext; the root is intentionally missing.
 
         $message = '';
         try {
@@ -744,10 +715,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ein 412 (Konflikt zwischen Lesen und Schreiben) ergibt `Konflikt` mit
-     * der Anweisung, neu zu lesen und zusammenzufuehren - und legt keinen
-     * Ausstand an (Issue #491, Spec #486 §4/§6). Der Inhalt bleibt dabei
-     * unangetastet.
+     * HTTP 412 produces a conflict with reread-and-merge instructions,
+     * preserves content and creates no pending entry (#491, Spec #486 §4/§6).
      */
     public function test_external_conflict_reports_konflikt_and_leaves_content_unchanged(): void {
         $this->resetAfterTest();
@@ -765,19 +734,15 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('storageconflict', $e->errorcode);
         }
 
-        // Weder der alte noch der neu versuchte Inhalt kommt vom
-        // fehlgeschlagenen PUT - stehen bleibt die "Handaenderung", die der
-        // Decorator zwischen Lesen und Schreiben simuliert hat.
+        // The failed PUT preserves the intervening manual edit simulated by
+        // the decorator between reading and writing.
         $this->assertSame('handaenderung', $this->external_content($fake, '/Coursepilot/Kontext/plan.md'));
     }
 
     /**
-     * Anlegen ({@see \local_coursepilot\webdav_storage_port::write()} liest die
-     * Datei zunaechst als fehlend, faehrt dann `put_new()` mit
-     * `If-None-Match: *`) gegen eine inzwischen angelegte Datei ergibt 412 -
-     * `Konflikt`, und der zwischenzeitlich entstandene Inhalt bleibt
-     * unangetastet (Issue #491 Testvorgabe: "Ein Anlegen auf eine vorhandene
-     * Datei ergibt 412 und laesst den Inhalt unveraendert.").
+     * Creating through webdav_storage_port::write() first observes a missing
+     * file, then uses put_new() with If-None-Match: *. If another writer creates
+     * it meanwhile, return 412 and preserve that file (#491).
      */
     public function test_external_create_conflicts_when_file_appears_meanwhile(): void {
         $this->resetAfterTest();
@@ -798,12 +763,10 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ein voller externer Speicher (507) ist ein Ausfall im Sinne von ADR
-     * 0023 (Issue #492): die Antwort nennt Pfad+Vorgang, die Ursache in
-     * Lehrkraftsprache, "noch nicht gespeichert" mit Kennung, eine Anweisung
-     * an die KI und Verbindung (Instanzname + Host) - nie einen HTTP-Code
-     * oder Antwortrumpf. Zusaetzlich entsteht ein Eintrag in der
-     * Ausstandsnotiz.
+     * Full external storage (507) is an outage (#492, ADR 0023). Report
+     * path, operation, teacher-facing cause, unsaved status with identifier,
+     * AI instructions and connection name/host, never raw HTTP details.
+     * Also record a pending entry.
      */
     public function test_external_storage_full_records_ausstand_with_five_part_message(): void {
         $this->resetAfterTest();
@@ -830,27 +793,23 @@ final class write_context_file_test extends \advanced_testcase {
             $ausstaende[0]['entries'][0]['error_class']
         );
 
-        // Sprachneutral: die variablen Teile muessen auftauchen, unabhaengig
-        // davon, welches Sprachpaket die PHPUnit-Instanz aufloest (Englisch,
-        // siehe test_german_messages_carry_the_required_wording()).
+        // Check variable values independently of the resolved language pack
+        // (English here; see test_german_messages_carry_the_required_wording()).
         $kennung = $ausstaende[0]['entries'][0]['identifier'];
         $this->assertStringContainsString('plan.md', $message);
         $this->assertStringContainsString('create', $message);
         $this->assertStringContainsString($kennung, $message);
         $this->assertStringContainsString('Meine Cloud', $message);
         $this->assertStringContainsString($this->fixtureserver, $message);
-        // Geheimnis-Test (Spec #486 Testing Decisions): kein HTTP-Code, kein
-        // Antwortrumpf, kein Passwort.
+        // Secret-leak test (Spec #486): no HTTP code, response body or password.
         $this->assertStringNotContainsString('507', $message);
         $this->assertStringNotContainsString($fake->secret(), $message);
     }
 
     /**
-     * Eine abgelehnte Anmeldung (401) *beim Vorab-Lesen* (Personenbezugs-
-     * Vorpruefung der bereits vorhandenen Zieldatei) darf den Vorgang nicht
-     * ohne Ausstand abbrechen (Issue #505 Befund #10): derselbe Ausfall
-     * trifft den anschliessenden echten Schreibversuch erneut, der ihn dann
-     * vollstaendig behandelt.
+     * Authentication rejected during personal-data preflight (401) must
+     * not abort without a pending entry (#505 finding 10). The actual write
+     * encounters the same outage and handles it completely.
      */
     public function test_external_write_records_ausstand_on_login_rejected_during_preread(): void {
         $this->resetAfterTest();
@@ -876,13 +835,10 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Issue #561: Schlaegt der Vorab-Lese-Check selbst fehl (hier: Anmeldung
-     * abgelehnt), weiss das System nicht, ob am Ort schon etwas lag. Anders
-     * als {@see test_external_write_records_ausstand_on_login_rejected_during_preread}
-     * (dort liegt am Ort bereits eine Datei) betrifft dieser Test einen Pfad,
-     * an dem nie zuvor etwas lag - ein normaler Schreibaufruf (kein
-     * `nur_anlegen`) darf den Vorgang trotzdem nicht als "überschreiben"
-     * vermerken, denn das waere hier schlicht falsch.
+     * Failed preflight authentication leaves prior existence unknown (#561).
+     * Unlike test_external_write_records_ausstand_on_login_rejected_during_preread,
+     * this target never existed. A normal write without create_only must
+     * not incorrectly record an overwrite.
      */
     public function test_preread_failure_on_a_never_written_path_records_unknown_operation(): void {
         $this->resetAfterTest();
@@ -905,8 +861,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ueberschreiben einer bestehenden externen Datei traegt den Vorgang
-     * "überschreiben" in den Ausstand ein, nicht "anlegen".
+     * Overwriting an existing external file records overwrite rather than
+     * create in its pending entry.
      */
     public function test_external_overwrite_failure_records_ueberschreiben_operation(): void {
         $this->resetAfterTest();
@@ -914,13 +870,10 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_folder('/Coursepilot/Kontext');
         $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
 
-        // Nur PUT scheitert - MKCOL (Ordner existiert bereits) und PROPFIND
-        // (Existenzpruefung, entscheidet "anlegen" vs. "ueberschreiben")
-        // laufen normal durch. fake_webdav_transport::fill_storage() liesse
-        // sich hier nicht nutzen: es blockt MKCOL VOR der Existenzpruefung
-        // pauschal, bevor pointer_writer ueberhaupt weiss, ob die Datei
-        // schon da ist (siehe test_external_storage_full_records_ausstand_with_five_part_message
-        // fuer den "anlegen"-Fall, der genau das ausnutzt).
+        // Only PUT fails. MKCOL and existence-check PROPFIND succeed, allowing
+        // create/overwrite classification. fill_storage() instead blocks MKCOL
+        // before existence is known; test_external_storage_full_records_ausstand_with_five_part_message
+        // uses that behavior for the creation case.
         $onlyputfails = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
             public function __construct(private readonly fake_webdav_transport $inner) {
             }
@@ -946,8 +899,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Eine geloeschte WebDAV-Instanz (ADR 0023: "eine geloeschte Instanz")
-     * legt ebenfalls einen Ausstand an - nicht nur ein {@see \local_coursepilot\webdav\webdav_error}.
+     * Deleted WebDAV instances create pending entries, not merely a
+     * webdav_error (ADR 0023).
      */
     public function test_deleted_webdav_instance_records_ausstand(): void {
         global $DB;
@@ -969,14 +922,12 @@ final class write_context_file_test extends \advanced_testcase {
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
         $this->assertSame('webdavinstancemissing', $ausstaende[0]['entries'][0]['error_class']);
-        // Issue #516 Akzeptanzkriterium: "Instanz gelöscht" fuehrt zu "an
-        // Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
+        // A deleted instance requires action at storage rather than later retry (#516).
         $this->assertStringContainsString('something needs to be done on your storage', $message);
     }
 
     /**
-     * Eine entzogene WebDAV-Freischaltung (ADR 0023: "eine entzogene
-     * Freischaltung") legt ebenfalls einen Ausstand an.
+     * Revoked WebDAV authorization also creates a pending entry (ADR 0023).
      */
     public function test_revoked_webdav_freischaltung_records_ausstand(): void {
         global $DB;
@@ -997,14 +948,12 @@ final class write_context_file_test extends \advanced_testcase {
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame('webdavnotenabled', $ausstaende[0]['entries'][0]['error_class']);
-        // Issue #516 Akzeptanzkriterium: "Freischaltung entzogen" fuehrt zu
-        // "an Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
+        // Revoked authorization requires action at storage rather than later retry (#516).
         $this->assertStringContainsString('something needs to be done on your storage', $message);
     }
 
     /**
-     * Ein geaendertes Pruefmerkmal (ADR 0023: "ein geaendertes
-     * Pruefmerkmal") legt ebenfalls einen Ausstand an.
+     * Changed verification markers also create pending entries (ADR 0023).
      */
     public function test_changed_fingerprint_records_ausstand(): void {
         global $DB;
@@ -1029,15 +978,13 @@ final class write_context_file_test extends \advanced_testcase {
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame('webdavfingerprintchanged', $ausstaende[0]['entries'][0]['error_class']);
-        // Issue #516 Akzeptanzkriterium: "Prüfmerkmal geändert" fuehrt zu
-        // "an Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
+        // Changed verification markers require action at storage rather than later retry (#516).
         $this->assertStringContainsString('something needs to be done on your storage', $message);
     }
 
     /**
-     * Anmeldung abgelehnt (401/403, ADR 0022: benannte Fehlerklasse
-     * "Anmeldung abgelehnt") fuehrt ebenfalls zu "an Ihrem Speicher ist
-     * etwas zu tun" (Issue #516 Akzeptanzkriterium, Test je Klasse).
+     * Rejected authentication (401/403, ADR 0022) advises action at the
+     * storage location (#516).
      */
     public function test_auth_rejected_classifies_as_etwas_zu_tun(): void {
         $this->resetAfterTest();
@@ -1075,17 +1022,15 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * "nicht erreichbar" (Zeitueberschreitung/DNS-Fehler, ADR 0022) fuehrt
-     * zu "spaeter nachtragen" (Issue #516 Akzeptanzkriterium, Test je Klasse).
+     * Unreachable storage (timeout/DNS, ADR 0022) advises later replay (#516).
      */
     public function test_unreachable_classifies_as_spaeter_nachtragen(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->set_up_external_context();
         $fake->seed_folder('/Coursepilot/Kontext');
 
-        // Nur PUT scheitert - PROPFIND (Existenzpruefung, Personenbezug-Peek)
-        // laeuft normal ueber den echten Fake, sonst schluege der Aufruf schon
-        // vorher als Leseausfall fehl statt beim eigentlichen Schreiben.
+        // Only PUT fails. Existence and personal-data PROPFIND reads work so
+        // the request reaches the actual write rather than failing on a read.
         $onlyputfails = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
             public function __construct(private readonly fake_webdav_transport $inner) {
             }
@@ -1117,9 +1062,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * "unklar/gedrosselt" (jeder nicht benannte Status, ADR 0022) fuehrt
-     * ebenfalls zu "spaeter nachtragen" (Issue #516 Akzeptanzkriterium, Test
-     * je Klasse) - nach Ablauf der stillen Wiederholung (hoechstens 5s).
+     * Unclear or throttled responses (unnamed statuses, ADR 0022) advise
+     * later replay after silent retries lasting at most 5 seconds (#516).
      */
     public function test_unclear_classifies_as_spaeter_nachtragen(): void {
         $this->resetAfterTest();
@@ -1158,9 +1102,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Pruefung 8 (IServ-Bereich, Issue #497/#516, Spec #486 §2/§8): ein Pfad
-     * ausserhalb von "Files/" scheitert beim Schreiben genauso wie die
-     * Pruefungen 2-6 - mit Ausstand, nicht nur mit einem benannten Fehler.
+     * IServ check 8 rejects paths outside Files/ with a pending entry,
+     * just like checks 2–6 (#497/#516, Spec #486 §2/§8).
      */
     public function test_iserv_pruefung_8_records_ausstand_on_write(): void {
         $this->resetAfterTest();
@@ -1191,17 +1134,14 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertSame('webdaviservfilesonly', $ausstaende[0]['entries'][0]['error_class']);
         $this->assertSame('create', $ausstaende[0]['entries'][0]['operation']);
         $this->assertStringContainsString('something needs to be done on your storage', $message);
-        // Kein Netzzugriff: Pruefung 8 scheitert schon bei der reinen
-        // Pointer-Aufloesung, bevor ueberhaupt eine WebDAV-Anfrage entsteht.
+        // No network access: check 8 fails during pointer resolution before WebDAV requests.
         $this->assertSame([], $fake->requests());
     }
 
     /**
-     * Ein ungueltiger Pfad bleibt ein Aufruffehler, auch wenn zugleich
-     * Pruefung 8 (IServ) den Ort scheitern liesse (Issue #541 Code-Review-
-     * Befund): der Pfad wird geprueft, bevor der Ort-Ausfall in einen
-     * Ausstand uebersetzt wird - kein Ausstand fuer einen Inhalt, der wegen
-     * seines Namens ohnehin nie hätte geschrieben werden koennen.
+     * Invalid paths remain request errors even if IServ check 8 would fail
+     * the location (#541 review). Validate paths before translating location
+     * failures; never record pending content that could not be written.
      */
     public function test_iserv_pruefung_8_does_not_shadow_an_invalid_path(): void {
         $this->resetAfterTest();
@@ -1230,11 +1170,9 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Personenbezug-Inhaltspruefung bleibt auch dann in Kraft, wenn Pruefung
-     * 8 den Ort unaufloesbar macht (Issue #516 Befund aus dem Standards-/
-     * Spec-Review): "ist der Inhalt markiert, obwohl der Schalter aus ist?"
-     * ist ein reiner Inhalts-Gate ohne Ortsbezug und darf nicht durch einen
-     * unaufloesbaren Ort umgangen werden - kein Ausstand, ein Aufruffehler.
+     * Personal-data validation remains active when check 8 makes a location
+     * unresolvable (#516 review). Marked content with the switch off is
+     * a location-independent request error, not a pending entry.
      */
     public function test_iserv_pruefung_8_still_rejects_marked_content_when_switch_off(): void {
         $this->resetAfterTest();
@@ -1263,8 +1201,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Jeder Eintrag der Ausstandsnotiz nennt die Kurs-ID (Issue #516
-     * Akzeptanzkriterium) - nie Inhalt, Hash oder Serverdaten.
+     * Every pending entry includes course ID, never content, hashes or
+     * server details (#516).
      */
     public function test_ausstand_entry_carries_course_id(): void {
         $this->resetAfterTest();
@@ -1284,8 +1222,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Konflikt (412) legt ausdruecklich keinen Ausstand an (ADR 0023 Punkt
-     * 2: "Ausgenommen sind Aufruffehler und Konflikt").
+     * Conflicts (412) explicitly create no pending entry (ADR 0023 §2).
      */
     public function test_external_conflict_records_no_ausstand_entry(): void {
         $this->resetAfterTest();
@@ -1307,8 +1244,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Aufruffehler (hier: zu grosser Inhalt) legt keinen Ausstand an
-     * (ADR 0023 Punkt 2) - der Inhalt liegt noch im Gespraech.
+     * Request errors, such as oversized content, create no pending entry;
+     * the content remains in the conversation (ADR 0023 §2).
      */
     public function test_call_error_records_no_ausstand_entry(): void {
         $this->resetAfterTest();
@@ -1324,8 +1261,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * `pending_entry=<Kennung>` an einem erfolgreichen Schreibvorgang hakt den
-     * Eintrag im selben Aufruf ab (ADR 0023 Punkt 3: Nachtragen).
+     * A successful write with pending_entry=<id> marks the entry complete
+     * within the same request (ADR 0023 §3).
      */
     public function test_ausstand_parameter_dismisses_entry_on_successful_retry(): void {
         $this->resetAfterTest();
@@ -1341,7 +1278,7 @@ final class write_context_file_test extends \advanced_testcase {
         }
         $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['entries'][0]['identifier'];
 
-        // Neuer Fake statt des vollen - "der Speicher antwortet wieder".
+        // Replace the full-storage fake to simulate storage responding again.
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake2);
@@ -1354,8 +1291,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Extern meldet die Restquote "keine Grenze" - die Moodle-Quotenpruefung
-     * wirkt nicht (Issue #491, Spec #486 §6).
+     * External remaining quota reports no limit; Moodle quotas do not
+     * apply (#491, Spec #486 §6).
      */
     public function test_external_write_ignores_moodle_quota(): void {
         global $CFG;
@@ -1370,7 +1307,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * `moodle/user:manageownfiles` wirkt extern nicht (Issue #491, Spec #486 §6).
+     * moodle/user:manageownfiles does not apply externally (#491, Spec #486 §6).
      */
     public function test_external_write_succeeds_without_manageownfiles_capability(): void {
         global $DB;
@@ -1398,17 +1335,15 @@ final class write_context_file_test extends \advanced_testcase {
      * @return string
      */
     private function external_content(fake_webdav_transport $fake, string $path): string {
-        // Kein oeffentlicher Lesezugriff auf den internen Speicher des Fakes -
-        // ueber den Client selbst nachlesen, exakt wie ein echter Aufrufer.
+        // Read through the client like a real caller; fake internal storage has no public read access.
         $client = new \local_coursepilot\webdav\webdav_client($fake);
         return $client->get('https://fake.example' . $path);
     }
 
     /**
-     * Die Lehrkraft liest die Antwort auf Deutsch - dort muss ausdruecklich
-     * "neu angelegt" bzw. "ueberschrieben" mit vorheriger und neuer Groesse
-     * stehen (Spec 0016 §5.4). Geprueft am deutschen Sprachpaket, weil die
-     * PHPUnit-Instanz nur Englisch aufgeloest bekommt.
+     * The German language pack explicitly describes creation or overwrite
+     * and previous/new sizes (Spec 0016 §5.4). Inspect it directly because
+     * PHPUnit resolves only English.
      */
     public function test_german_messages_carry_the_required_wording(): void {
         $string = [];
@@ -1421,9 +1356,9 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertStringContainsString('neu lesen', $string['contextfilechanged']);
         $this->assertStringContainsString('MB', $string['contextquotaexceeded']);
 
-        // Fuenfteilige Ausfallantwort (Issue #492, ADR 0023): Pfad+Vorgang,
-        // Ursache, "noch nicht gespeichert" mit Kennung, Anweisung an die
-        // KI, Instanzname+Host - echte Umlaute, kein ae/oe/ue-Ersatz.
+        // Five-part outage message (#492, ADR 0023): path/operation, cause,
+        // unsaved status with ID, AI instruction, instance name/host.
+        // German wording uses real umlauts.
         $this->assertStringContainsString('{$a->path}', $string['pendingwritefailed']);
         $this->assertStringContainsString('{$a->operation}', $string['pendingwritefailed']);
         $this->assertStringContainsString('{$a->reason}', $string['pendingwritefailed']);
@@ -1434,13 +1369,11 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertStringContainsString('voll', $string['pendingnotewritefailed']);
         $this->assertStringContainsString('Speicherplatz', $string['pendingnotequotaexceeded']);
 
-        // Teil (4): die Anweisung an die KI nennt ausdruecklich "pending_entry="
-        // zum Nachtragen und verbietet einen anderen Ort (Issue #516
-        // Akzeptanzkriterium).
+        // Part 4 explicitly names pending_entry= for replay and prohibits
+        // choosing another storage location (#516).
         $this->assertStringContainsString('keinesfalls an einem anderen Ort ablegen', $string['pendingwritefailed']);
 
-        // Kein Text an die Lehrkraft nennt das Wort "Ausstand" (Issue #516
-        // Akzeptanzkriterium, CONTEXT.md).
+        // Teacher-facing German text never calls pending writes Ausstand (#516, CONTEXT.md).
         foreach ([
             'pendingwritefailed',
             'pendingnotewritefailed',
@@ -1452,9 +1385,8 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertStringNotContainsString('Ausstand', $string[$key], "\"$key\" darf nicht \"Ausstand\" enthalten.");
         }
 
-        // Der Fehlertext fuer einen nicht zugelassenen Speicher (Issue #493,
-        // ADR 0021 §3) lautet wortwoertlich "Dieser Speicher ist für
-        // personenbezogene Daten nicht zugelassen".
+        // Unapproved-storage errors explicitly explain that this storage is
+        // not approved for personal data (#493, ADR 0021 §3).
         $this->assertStringContainsString(
             'Dieser Speicher ist für personenbezogene Daten nicht zugelassen',
             $string['contextfilehostnotallowed']
@@ -1462,7 +1394,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Der Endpunkt haengt am Coursepilot-Dienst und steht in der Allowlist.
+     * The endpoint is registered in the Coursepilot service and allowlist.
      */
     public function test_registered_in_service_and_allowlist(): void {
         $this->assertArrayHasKey(
@@ -1477,7 +1409,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Kein Parameter erlaubt es, contextid/itemid/component zu waehlen.
+     * No parameter selects contextid, itemid or component.
      */
     public function test_execute_parameters_expose_no_area_selector(): void {
         $this->assertSame(
@@ -1487,9 +1419,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * "nur_anlegen" schuetzt eine vorhandene Moodle-Datei vor Ueberschreiben -
-     * die Garantie fuer das Kopieren aus dem Altbestand (Issue #498, Spec
-     * #486 §9: "am neuen Ort wird also nie ueberschrieben").
+     * create_only protects existing Moodle files, guaranteeing safe copying
+     * of old content without overwriting (#498, Spec #486 §9).
      */
     public function test_nur_anlegen_rejects_existing_moodle_file(): void {
         $this->resetAfterTest();
@@ -1508,7 +1439,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne vorhandene Datei legt "nur_anlegen" ganz normal an.
+     * create_only creates normally when the target is missing.
      */
     public function test_nur_anlegen_creates_new_moodle_file(): void {
         $this->resetAfterTest();
@@ -1521,8 +1452,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Extern schuetzt "nur_anlegen" ebenso vor Ueberschreiben - kein PUT auf
-     * die vorhandene Datei.
+     * External create_only also prevents overwriting; no PUT to existing files.
      */
     public function test_nur_anlegen_rejects_existing_external_file(): void {
         $this->resetAfterTest();
@@ -1542,11 +1472,9 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ist die vorhandene externe Zieldatei zusaetzlich markiert und der
-     * #344-Schalter aus, geht "contextfilealreadyexists" trotzdem vor
-     * "contextfilelocked" - dieselbe Reihenfolge wie im Moodle-Zweig (Issue
-     * #515, siehe die Docblock-Begruendung an
-     * {@see write_context_file::require_personal_data_allowed()}).
+     * For marked existing external targets with #344 off,
+     * contextfilealreadyexists precedes contextfilelocked, matching Moodle
+     * (#515). See {@see write_context_file::require_personal_data_allowed()}.
      */
     public function test_nur_anlegen_reports_already_exists_even_for_a_marked_external_file(): void {
         $this->resetAfterTest();
@@ -1568,12 +1496,9 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ein echter Lesefehler beim Vorab-Blick auf die externe Zieldatei
-     * (Issue #515) bricht das Schreiben ab, statt die Sperre stillschweigend
-     * zu umgehen: anders als eine tatsaechlich fehlende Datei (404, sicher
-     * "kein Personenbezug") darf ein unklarer Fehler nie als Erfolg gelten
-     * (Grundsatz aus {@see \local_coursepilot\webdav\webdav_client}, "nie
-     * stillschweigend Erfolg").
+     * A real external preflight read error aborts writing rather than
+     * bypassing locks (#515). Unlike missing files (404), unclear errors
+     * cannot imply success; see webdav_client’s no-silent-success rule.
      */
     public function test_peek_read_failure_aborts_the_write_instead_of_bypassing_the_lock(): void {
         $this->resetAfterTest();
@@ -1606,8 +1531,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Person A schreibt nie in den Bereich von Person B - der Schreibvorgang
-     * landet im eigenen Nutzerkontext.
+     * User A always writes in their own context, never user B’s area.
      */
     public function test_writes_only_into_own_area(): void {
         $this->resetAfterTest();
@@ -1622,12 +1546,10 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Nachtragen mit "pending_entry=" ueberschreibt auch in Private Files nie
-     * ungeprueft (Issue #540, symmetrisch zu
+     * Private Files replay also rejects missing check values for existing
+     * targets (#540), matching
      * {@see test_ausstand_retry_without_checkvalue_is_rejected_when_file_exists()}
-     * fuer den externen Ort): Fehlt der Pruefwert, obwohl die Zieldatei
-     * bereits existiert, geht das Nachtragen als Konflikt zurueck statt
-     * gewachsenen Bestand stillschweigend zu ersetzen.
+     * externally rather than silently replacing changed content.
      */
     public function test_moodle_ausstand_retry_without_checkvalue_is_rejected_when_file_exists(): void {
         $this->resetAfterTest();
@@ -1646,9 +1568,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Nachtragen auf eine weiterhin fehlende Zieldatei braucht in Private
-     * Files ebenso keinen Pruefwert wie extern - "anlegen" ist bereits
-     * sicher, weil noch nichts da ist, das ueberschrieben werden koennte.
+     * Private Files replay to missing targets needs no check value, just
+     * like external storage; no existing content can be overwritten.
      */
     public function test_moodle_ausstand_retry_creates_missing_file_without_checkvalue(): void {
         $this->resetAfterTest();
@@ -1661,10 +1582,9 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ein erfolgreiches Nachtragen hakt den Eintrag im selben Aufruf ab,
-     * auch wenn der Kontextbereich der Lehrkraft in Moodle liegt (Issue #540
-     * Abnahmekriterium 3, "an beiden Orten") - unabhaengig davon, an welchem
-     * Ort der Ausstand urspruenglich entstand.
+     * Successful replay completes the entry in the same call for Moodle
+     * context storage too, regardless of the original outage location
+     * (#540, criterion 3).
      */
     public function test_moodle_successful_write_dismisses_the_ausstand_entry(): void {
         $this->resetAfterTest();
@@ -1682,7 +1602,7 @@ final class write_context_file_test extends \advanced_testcase {
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash
-     * @return array Bereinigte Antwort des Endpunkts.
+     * @return array Validated endpoint response.
      */
     private function write(string $path, string $content, string $expectedcontenthash = ''): array {
         $result = write_context_file::execute($path, $content, $expectedcontenthash);
@@ -1690,7 +1610,7 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * @return string Inhalt mit Frontmatter-Markierung "personenbezug: true".
+     * @return string Content with the legacy frontmatter marking "personenbezug: true".
      */
     private function marked_content(): string {
         return "---\ntype: lerngruppe\ncoursepilot:\n  personenbezug: true\n---\n# S. M., 7a";

@@ -20,19 +20,13 @@ use local_coursepilot\webdav\webdav_response;
 use local_coursepilot\webdav\webdav_transport;
 
 /**
- * In-Memory-WebDAV-Fake (Issue #489, Spec #486 Testing Decisions): der eine
- * Test-Seam fuer {@see \local_coursepilot\webdav\webdav_client} und alles, was
- * spaeter darauf aufsetzt - von allen kommenden Tickets wiederzuverwenden,
- * deshalb bewusst ohne Bezug zu einem bestimmten Endpunkt.
+ * In-memory WebDAV fake (#489, Spec #486 testing decisions), shared by
+ * webdav_client and all higher-level tests without endpoint-specific logic.
+ * Unlike curl::mock_response(), which fixes HTTP 200 and only supplies a
+ * body, maintain a file tree and evaluate conditional headers.
  *
- * `\curl::mock_response()` taugt dafuer nicht (nur ein Rumpf, fest HTTP 200).
- * Dieser Fake haelt stattdessen einen echten kleinen Dateibaum im Speicher
- * und wertet bedingte Koepfe selbst aus.
- *
- * Liegt unter `tests/classes/`, damit Moodles PHPUnit-Autoloader ihn ueber
- * den Namensraum `local_coursepilot\tests\webdav` laedt (siehe
- * `core\component::class_loader()`), ohne dass jeder Test ihn von Hand
- * einbindet.
+ * Place under tests/classes for Moodle’s PHPUnit autoloader to load
+ * local_coursepilot\tests\webdav classes without manual includes.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -40,43 +34,41 @@ use local_coursepilot\webdav\webdav_transport;
  */
 final class fake_webdav_transport implements webdav_transport {
 
-    /** @var array<string, array{content: string, etag: ?string, lastmodified: int, collection: bool}> Pfad => Eintrag. */
+    /** @var array<string, array{content: string, etag: ?string, lastmodified: int, collection: bool}> Path => entry. */
     private array $store = ['' => ['content' => '', 'etag' => null, 'lastmodified' => 0, 'collection' => true]];
 
-    /** @var bool Ob PUT/PROPFIND ueberhaupt ETags liefern (aus bei IServ). */
+    /** @var bool Whether PUT/PROPFIND return ETags (disabled for IServ). */
     private bool $etagsenabled = true;
 
-    /** @var string|null Normalisierter Pfad, an dem statt des Speicherinhalts das IServ-Bereichsmenue erscheint. */
+    /** @var string|null Normalized path displaying the IServ area menu instead of storage contents. */
     private ?string $iservrootpath = null;
 
-    /** @var int Anzahl der verbleibenden gedrosselten Antworten (404 mit HTML), danach Erholung. */
+    /** @var int Remaining throttled responses (404 with HTML) before recovery. */
     private int $throttleremaining = 0;
 
-    /** @var bool Ob PUT/MKCOL mit 507 (Speicher voll) antworten. */
+    /** @var bool Whether PUT/MKCOL return 507 (storage full). */
     private bool $full = false;
 
-    /** @var int|null 401 oder 403, falls jede Anfrage abgelehnt werden soll (Anmeldung abgelehnt). */
+    /** @var int|null 401 or 403 to reject authentication on every request. */
     private ?int $denyauthstatus = null;
 
-    /** @var array{path: string, statuscode: int}|null Naechste Anfrage an diesen Pfad antwortet einmalig mit diesem Status. */
+    /** @var array{path: string, statuscode: int}|null The next request to this path returns this status once. */
     private ?array $failonce = null;
 
-    /** @var int Fortlaufender Zeitstempel-Takt, damit Aenderungszeiten deterministisch auseinanderliegen. */
+    /** @var int Monotonic timestamp clock for deterministically distinct modification times. */
     private int $clocktick = 1_700_000_000;
 
-    /** @var array<int, array{method: string, url: string, headers: array<string, string>, body: ?string}> Log aller Anfragen, fuer Erwartungen wie "PUT mit If-None-Match: *". */
+    /** @var array<int, array{method: string, url: string, headers: array<string, string>, body: ?string}> Request log for assertions such as PUT with If-None-Match: *. */
     private array $log = [];
 
     /**
-     * @param string $secretpassword Das Passwort "der Fake-Instanz" fuer den
-     *        Geheimnis-Test - der Fake benutzt es zu nichts, ausser dass ein
-     *        Test darauf pruefen kann, dass es in keiner Antwort, Ausnahme
-     *        oder Fehlermeldung auftaucht.
+     * @param string $secretpassword Fake-instance password used only to verify that responses,
+     *        exceptions and error messages never leak it.
      */
     public function __construct(private readonly string $secretpassword = 'g3h31m-nie-sichtbar') {
     }
 
-    /** @return string Siehe Konstruktor. */
+    /** @return string See constructor. */
     public function secret(): string {
         return $this->secretpassword;
     }
@@ -87,11 +79,11 @@ final class fake_webdav_transport implements webdav_transport {
     }
 
     /**
-     * Legt eine Datei im Speicher an - Testvorbereitung, kein HTTP.
+     * Create a stored file for test setup without HTTP.
      *
-     * @param string $path z.B. "/ordner/datei.md".
+     * @param string $path For example, "/folder/file.md".
      * @param string $content
-     * @return array{etag: ?string, lastmodified: int} Der entstandene Stand, fuer bedingte Folgeaufrufe im Test.
+     * @return array{etag: ?string, lastmodified: int} Created version for subsequent conditional test requests.
      */
     public function seed_file(string $path, string $content): array {
         $entry = [
@@ -105,7 +97,7 @@ final class fake_webdav_transport implements webdav_transport {
     }
 
     /**
-     * @param string $path z.B. "/ordner".
+     * @param string $path For example, "/folder".
      */
     public function seed_folder(string $path): void {
         $this->store[$this->normalise($path)] = [
@@ -116,26 +108,24 @@ final class fake_webdav_transport implements webdav_transport {
         ];
     }
 
-    /** IServ liefert keine ETags - schwacher `getlastmodified`-Ersatz gilt dort als einzige Vergleichsbasis. */
+    /** IServ returns no ETags; weak getlastmodified is the only comparison value. */
     public function without_etags(): void {
         $this->etagsenabled = false;
     }
 
     /**
-     * Ab dann zeigt PROPFIND an diesem Pfad das IServ-Bereichsmenue
-     * (`Files/`, `Groups/`, `Print/`, `Temp/`, `Windows/`) statt des
-     * gespeicherten Inhalts - unabhaengig davon, was dort im Speicher liegt.
+     * PROPFIND at this path shows the IServ area menu
+     * (Files/, Groups/, Print/, Temp/, Windows/) instead of stored content.
      *
-     * @param string $path Standard "/", die Wurzel der Instanz.
+     * @param string $path Default "/", the instance root.
      */
     public function as_iserv_root(string $path = '/'): void {
         $this->iservrootpath = $this->normalise($path);
     }
 
     /**
-     * Die naechsten `$failures` Anfragen (jedes Verb) antworten mit 404 und
-     * HTML-Gastseiten-Rumpf, egal was angefragt wird - danach "erholt" sich
-     * der Fake und beantwortet normal.
+     * The next failures requests, regardless of method, return 404 and an
+     * HTML guest page. Then the fake resumes normal responses.
      *
      * @param int $failures
      */
@@ -143,30 +133,27 @@ final class fake_webdav_transport implements webdav_transport {
         $this->throttleremaining = $failures;
     }
 
-    /** Ab dann antworten PUT und MKCOL mit 507 (Speicher voll). */
+    /** PUT and MKCOL subsequently return 507 (storage full). */
     public function fill_storage(): void {
         $this->full = true;
     }
 
     /**
-     * Ab dann antwortet jede Anfrage mit `$statuscode` (Anmeldung
-     * abgelehnt) - 401 (nicht angemeldet) oder 403 (angemeldet, aber ohne
-     * Recht) zaehlen laut Spec §4 gleich.
+     * All requests return the rejected-authentication status. Both 401
+     * (unauthenticated) and 403 (unauthorized) have the same meaning in Spec §4.
      *
-     * @param int $statuscode 401 oder 403.
+     * @param int $statuscode 401 or 403.
      */
     public function deny_auth(int $statuscode = 401): void {
         $this->denyauthstatus = $statuscode;
     }
 
     /**
-     * Genau die naechste Anfrage an `$path` (egal welches Verb) antwortet
-     * einmalig mit `$statuscode`, danach wieder normal - anders als
-     * {@see deny_auth()}/{@see throttle()}, die jede Anfrage treffen. Damit
-     * lassen sich zwei Anfragen in Folge unterscheiden (z.B. eine gelingende
-     * Hauptauflistung und eine scheiternde IServ-Erkennung auf der Wurzel).
+     * Only the next request to path returns statuscode, regardless of method.
+     * Unlike {@see deny_auth()} and {@see throttle()}, later requests recover.
+     * This distinguishes successful listing from failed IServ root detection.
      *
-     * @param string $path z.B. "/Coursepilot".
+     * @param string $path For example, "/Coursepilot".
      * @param int $statuscode
      */
     public function fail_once(string $path, int $statuscode = 401): void {
@@ -237,9 +224,8 @@ final class fake_webdav_transport implements webdav_transport {
             return new webdav_response(507, [], '');
         }
 
-        // Anders als MKCOL prueft PUT nicht, ob der Elternordner existiert -
-        // die Basisadresse ist im Betrieb immer ein schon aufgeloester,
-        // vorhandener Ort (Spec §2), kein Konstrukt des Fakes.
+        // Unlike MKCOL, PUT does not check parent existence. Real base paths
+        // are already resolved and present (Spec §2), not constructs of the fake.
         $existing = $this->store[$path] ?? null;
         $ifnonematch = $headers['If-None-Match'] ?? null;
         if ($ifnonematch === '*' && $existing !== null) {
@@ -267,7 +253,7 @@ final class fake_webdav_transport implements webdav_transport {
             return new webdav_response(507, [], '');
         }
         if (isset($this->store[$path])) {
-            // Bereits vorhanden - vom Client (mkcol_chain()) als Erfolg behandelt.
+            // Already exists; mkcol_chain() treats this as success.
             return new webdav_response(405, [], '');
         }
         $parent = $this->parent_of($path);
@@ -318,8 +304,8 @@ final class fake_webdav_transport implements webdav_transport {
     }
 
     /**
-     * @param string $requesturl Fuer den href der aufgeloesten Ebene selbst - der Client vergleicht darauf.
-     * @param array<string, array{content: string, etag: ?string, lastmodified: int, collection: bool}> $entries Pfad => Eintrag.
+     * @param string $requesturl href of the resolved level itself, used for client comparison.
+     * @param array<string, array{content: string, etag: ?string, lastmodified: int, collection: bool}> $entries Path => entry.
      */
     private function multistatus_xml(string $requesturl, array $entries): string {
         $base = $this->origin($requesturl);
@@ -343,14 +329,14 @@ final class fake_webdav_transport implements webdav_transport {
         return $xml;
     }
 
-    /** @return string Schema+Host der Anfrage-URL, ohne abschliessenden Schraegstrich. */
+    /** @return string Request URL scheme and host without a trailing slash. */
     private function origin(string $url): string {
         $scheme = parse_url($url, PHP_URL_SCHEME) ?? 'https';
         $host = parse_url($url, PHP_URL_HOST) ?? 'fake.example';
         return $scheme . '://' . $host;
     }
 
-    /** @return string Prozentkodierter Pfad, jedes Segment einzeln (Spec: "liefert prozentkodierte href"). */
+    /** @return string Percent-encoded path, encoding each segment individually. */
     private function encode_path(string $path): string {
         if ($path === '') {
             return '';
@@ -363,7 +349,7 @@ final class fake_webdav_transport implements webdav_transport {
         return (string) (parse_url($url, PHP_URL_PATH) ?? '');
     }
 
-    /** @return string Dekodiert, ohne abschliessenden Schraegstrich, Wurzel als "". */
+    /** @return string Decoded path without a trailing slash; root is "". */
     private function normalise(string $path): string {
         return rtrim(rawurldecode($path), '/');
     }

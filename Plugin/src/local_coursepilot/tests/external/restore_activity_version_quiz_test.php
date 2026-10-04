@@ -48,7 +48,7 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
      * contains no slots yet). Tests restore against this baseline, not
      * against version 1.
      *
-     * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass, 3: \stdClass, 4: int} Kurs, Test, Frage 1,
+     * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass, 3: \stdClass, 4: int} Course, quiz, question 1,
      *         question 2, version number of the baseline.
      */
     private function create_quiz_with_two_questions(): array {

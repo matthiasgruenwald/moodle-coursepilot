@@ -515,7 +515,7 @@ final class read_context_file_test extends \advanced_testcase {
     /**
      * Returns context content with the coursepilot.personenbezug: true marker.
      *
-     * @return string Kontextdatei-Inhalt mit Frontmatter-Markierung
+     * @return string Context-file content with the legacy frontmatter marking
      *         "coursepilot.personenbezug: true".
      */
     private function marked_content(): string {

@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class ensure_section_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs, Lehrkraft (editingteacher).
+     * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
         $course = $this->getDataGenerator()->create_course(['numsections' => 2]);
@@ -75,8 +75,8 @@ final class ensure_section_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: gleicht bei vorhandenem Abschnitt nur den Namen ab -
-     * Zusammenfassung/Sichtbarkeit bleiben unangetastet.
+     * For existing sections, update only the name and preserve summary
+     * and visibility.
      */
     public function test_reconciles_only_name_on_existing_section(): void {
         global $DB;

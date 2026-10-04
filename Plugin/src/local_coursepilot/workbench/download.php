@@ -40,9 +40,8 @@ use local_coursepilot\workbench_ticket;
 
 $toolname = 'coursepilot_workbench_download';
 
-// PARAM_ALPHANUM passt zum Geheimnisformat aus oauth_lib::random_token()
-// (bin2hex() - reine Hex-Zeichen); bei einem kuenftig anderen Tokenformat
-// (z.B. base64url) muss diese Zeile mitziehen.
+// PARAM_ALPHANUM matches oauth_lib::random_token() hexadecimal secrets.
+// Update this validation if the format changes, for example to base64url.
 $ticket = optional_param('ticket', '', PARAM_ALPHANUM);
 
 if ($ticket === '') {

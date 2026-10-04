@@ -29,7 +29,6 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 /**
  * Change-history observer (#385, Spec 0015 §10): every manual change in the
  * module form triggers a snapshot via the native course_module_updated event.
- * Schnappschuss aus.
  *
  * The real Moodle write path is triggered directly
  * (get_moduleinfo_data()/update_moduleinfo() from course/modlib.php - the same

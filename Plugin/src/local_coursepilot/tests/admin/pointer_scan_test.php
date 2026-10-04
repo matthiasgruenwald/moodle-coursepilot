@@ -20,9 +20,9 @@ use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Pointer- und Ausstandslesen fuer beliebige Personen, ohne $USER-Bezug und
- * ohne Netz (Issue #499, Spec #486 §12) - Grundlage der Statusprüfungen und
- * der Spalte Ablageort.
+ * Read arbitrary users' pointers and pending notes without $USER or
+ * network access (Issue #499, Spec #486 §12), supporting setup checks
+ * and the storage-location column.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -33,9 +33,8 @@ final class pointer_scan_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     /**
-     * Issue #507 (Spec #486, Review von #486): die Ablageort-Zustaende und
-     * -Defekte sind benannte Konstanten statt roher Zeichenketten - genutzt
-     * von {@see pointer_scan} selbst und von {@see connection_storage_location}.
+     * Storage states and defects use named constants shared by pointer_scan
+     * and connection_storage_location (Issue #507, Spec #486 review).
      */
     public function test_state_and_defect_constants_have_the_expected_values(): void {
         $this->assertSame('open', pointer_scan::STATE_OPEN);
@@ -127,8 +126,7 @@ final class pointer_scan_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $instanceid = $this->create_webdav_instance($user);
-        // Von Hand aufgebaut statt write_v2_pointer(), damit hier nur die
-        // Aufloesung getestet wird.
+        // Build directly rather than through write_v2_pointer(), isolating resolution.
         $decoded = [
             'context_area' => [
                 'location' => 'external',

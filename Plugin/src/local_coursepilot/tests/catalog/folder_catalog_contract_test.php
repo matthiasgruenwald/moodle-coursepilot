@@ -89,7 +89,7 @@ final class folder_catalog_contract_test extends \advanced_testcase {
     public function test_folder_display_constants_exist(): void {
         $this->assertSame(['FOLDER_DISPLAY_PAGE', 'FOLDER_DISPLAY_INLINE'], folder::checked_constants());
         foreach (folder::checked_constants() as $constname) {
-            $this->assertTrue(defined($constname), "Konstante $constname existiert auf dieser Instanz nicht mehr.");
+            $this->assertTrue(defined($constname), "Constant $constname no longer exists on this instance.");
         }
         $this->assertSame([0, 1], [FOLDER_DISPLAY_PAGE, FOLDER_DISPLAY_INLINE]);
     }

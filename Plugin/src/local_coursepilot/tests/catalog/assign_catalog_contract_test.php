@@ -19,8 +19,8 @@ namespace local_coursepilot\catalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Katalog-gegen-Moodle-Vertragstest fuer mod_assign (Ticket #382, Vorbild
- * forum_catalog_contract_test.php aus #381).
+ * Catalog/Moodle contract for mod_assign (Ticket #382), following
+ * forum_catalog_contract_test from #381.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,10 +31,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class assign_catalog_contract_test extends \advanced_testcase {
 
     /**
-     * Jede von assign gefuehrte Datenbankspalte muss die reale Spaltenmenge
-     * von {assign} exakt ergeben - inklusive der drei modulweit gesperrten
-     * Spalten (nosubmissions, revealidentities, completionsubmit), die ganz
-     * normal ueber assign::blocklist() mitgezaehlt werden.
+     * Cataloged columns, including nosubmissions, revealidentities and
+     * completionsubmit from assign::blocklist(), exactly match the assign table.
      */
     public function test_assign_table_columns_match_the_catalog(): void {
         global $DB;
@@ -61,11 +59,9 @@ final class assign_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Die 34 Konstanten ohne aufrufbare Wertemenge (Spec 0015 §11) existieren
-     * noch auf dieser Instanz - der Billigteil der Katalogpflege (ADR 0017)
-     * fuer den Teil, der maschinell prüfbar ist. Liste jetzt in
-     * assign::checked_constants() statt hier dupliziert (Ticket #399,
-     * wiederverwendet von der Laufzeit-Tiefenpruefung).
+     * The 34 constants without callable value sets still exist (Spec 0015 §11,
+     * ADR 0017). Use assign::checked_constants(), shared with runtime drift
+     * validation, instead of duplicating the list (Ticket #399).
      */
     public function test_the_34_constants_without_callable_source_still_exist(): void {
         global $CFG;
@@ -78,7 +74,7 @@ final class assign_catalog_contract_test extends \advanced_testcase {
         );
 
         foreach (assign::checked_constants() as $constname) {
-            $this->assertTrue(defined($constname), "Konstante $constname existiert auf dieser Instanz nicht mehr.");
+            $this->assertTrue(defined($constname), "Constant $constname no longer exists on this instance.");
         }
 
         $this->assertFalse(
@@ -88,7 +84,7 @@ final class assign_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Jede referenzierte aufrufbare Quelle existiert wirklich.
+     * Every referenced callable source actually exists.
      */
     public function test_referenced_callable_sources_exist(): void {
         global $CFG;
@@ -106,7 +102,7 @@ final class assign_catalog_contract_test extends \advanced_testcase {
             $fields
         ));
 
-        $this->assertNotEmpty($callables, 'Kein Feld referenziert eine aufrufbare Quelle - Testannahme verletzt.');
+        $this->assertNotEmpty($callables, 'No field references a callable source; test assumption violated.');
         $this->assertContains('format_text_menu()', $callables);
         $this->assertContains('get_max_upload_sizes()', $callables);
 
@@ -114,15 +110,14 @@ final class assign_catalog_contract_test extends \advanced_testcase {
             $functionname = rtrim($callable, '()');
             $this->assertTrue(
                 function_exists($functionname),
-                "Referenzierte aufrufbare Quelle $callable existiert auf dieser Instanz nicht mehr."
+                "Referenced callable source $callable no longer exists on this instance."
             );
         }
     }
 
     /**
-     * Abnahmekriterium #382: die ~20 (real: 13) assignsubmission_* und
-     * assignfeedback_*-Pseudofelder sind gefuehrt, mit dem Vermerk, dass ihr
-     * Fehlen alle Abgabe-Plugins abschaltet.
+     * Acceptance #382: the 13 assignsubmission/assignfeedback pseudofields
+     * are cataloged with a warning that omitting them disables submission plugins.
      */
     public function test_submission_and_feedback_pseudofields_carry_the_shutdown_warning(): void {
         $pseudofields = assign::pseudofields();
@@ -150,10 +145,8 @@ final class assign_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #382: "nosubmissions" und die Vervollstaendigungsfelder
-     * stehen auf der Sperrliste - "nosubmissions"/"completionsubmit" modulweit
-     * bei assign, die generischen "completion*"-Spalten durchgängig im
-     * gemeinsamen Block.
+     * Acceptance #382: nosubmissions and completionsubmit are blocklisted in
+     * assign; generic completion columns are blocklisted in the shared block.
      */
     public function test_nosubmissions_and_completion_fields_are_blocked(): void {
         $this->assertContains('nosubmissions', assign::blocklist());
@@ -167,8 +160,7 @@ final class assign_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #382: "teamsubmissiongroupingid" traegt die
-     * Einschraenkung auf denselben Kurs.
+     * Acceptance #382: teamsubmissiongroupingid is restricted to the same course.
      */
     public function test_teamsubmissiongroupingid_notes_same_course_restriction(): void {
         $field = null;
@@ -183,15 +175,9 @@ final class assign_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #429 (Spec 0018 §4.2/§7): "introattachments"
-     * ("Zusaetzliche Dateien") ist vollstaendig katalogisiert und - anders
-     * als resource::files/folder::files (siehe
-     * resource_catalog_contract_test::test_files_is_catalogued_and_locked())
-     * - NICHT gesperrt. Anders als bei resource/folder war "introattachments"
-     * bei assign vorher gar nicht katalogisiert (kein Blocklist-Eintrag zum
-     * Entfernen) - dieser Test belegt den Zielzustand aus Spec 0018 §4.2/§7
-     * (katalogisiert, ungesperrt), nicht eine Sperre-zu-Freigabe-Transition
-     * im Code.
+     * Acceptance #429 (Spec 0018 §4.2/§7): introattachments is cataloged and
+     * unblocked. It was previously absent from assign rather than blocklisted,
+     * so test the resulting contract, not a blocklist-to-allowlist transition.
      */
     public function test_introattachments_is_catalogued_and_unlocked(): void {
         $pseudonames = array_map(static fn (field $f): string => $f->name, assign::pseudofields());
@@ -200,13 +186,12 @@ final class assign_catalog_contract_test extends \advanced_testcase {
         $this->assertNotContains(
             'introattachments',
             assign::blocklist(),
-            '"introattachments" darf ab Spec 0018 nicht mehr gesperrt sein.'
+            'introattachments must remain unblocked since Spec 0018.'
         );
     }
 
     /**
-     * Abnahmekriterium #382: Feldbündel "standard" und "exercise" werden
-     * mitgeliefert.
+     * Acceptance #382: standard and exercise bundles are provided.
      */
     public function test_standard_and_uebung_bundles_are_shipped(): void {
         $bundles = assign::bundles();
@@ -217,9 +202,8 @@ final class assign_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #382: jede literal gefuehrte Wertemenge traegt eine
-     * Quellenangabe "Datei:Zeile" - jedes Feld hat ueberhaupt eine nicht
-     * leere source-Angabe.
+     * Acceptance #382: literal value sets have file/line citations, and every
+     * field has a nonempty source.
      */
     public function test_every_field_carries_a_file_line_source(): void {
         $fields = array_merge(assign::fields(), assign::pseudofields());
@@ -238,8 +222,7 @@ final class assign_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #382: die Kombinationsregeln aus validation() sind
-     * gefuehrt.
+     * Acceptance #382: combination rules from validation() are cataloged.
      */
     public function test_combination_rules_are_present(): void {
         $rules = assign::combination_rules();

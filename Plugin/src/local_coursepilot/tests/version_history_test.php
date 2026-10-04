@@ -22,9 +22,8 @@ use local_coursepilot\history\version_writer;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Lesende Oberflaeche des Aenderungsverlaufs (#394, Spec 0015 §10.6):
- * list_versions (Einzeiler serverseitig berechnet) und compare (volles
- * Diff zweier frei gewaehlter Staende).
+ * Read-only history surface (#394, Spec 0015 §10.6): list_versions
+ * computes summary lines server-side; compare diffs any two versions.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -34,9 +33,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class version_history_test extends \advanced_testcase {
 
     /**
-     * Legt einen Kurs samt Seiten-Aktivitaet und editierender Lehrkraft an.
-     * Die Erstanlage feuert bereits course_module_created (Version 1, Quelle
-     * "moodle" - #386, Spec 0015 §10.3).
+     * Create a course, page and editing teacher. Creation already fires
+     * course_module_created (version 1, source moodle, #386, Spec 0015 §10.3).
      *
      * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass}
      */
@@ -56,9 +54,8 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Aendert Name und Sichtbarkeit der Seite ueber den Formularweg -
-     * loest course_module_updated aus, damit version_writer eine weitere
-     * Version anlegt.
+     * Update page name and visibility through the form path, triggering
+     * course_module_updated and a new version from version_writer.
      *
      * @param \stdClass $course
      * @param \stdClass $cm
@@ -78,9 +75,8 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Simuliert eine Bestandsaktivitaet, die es schon vor Coursepilot gab:
-     * loescht die bereits vorhandene Version 1 (aus dem Anlegen), sodass der
-     * naechste Schreibvorgang die Vorgefunden-Backfill-Logik ausloest
+     * Simulate a preexisting activity by deleting its creation version,
+     * so the next write triggers the observed-version backfill
      * (#386, Spec 0015 §10.3).
      *
      * @param int $cmid
@@ -96,8 +92,7 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: Version 1 ist als vorgefunden erkennbar, sowohl im
-     * "quelle"-Feld als auch im Einzeiler.
+     * Version 1 is identifiable as observed in its source and summary.
      */
     public function test_legacy_version_one_is_marked_as_discovered(): void {
         $this->resetAfterTest();
@@ -121,8 +116,8 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Aktivitaet, die erst nach Coursepilot angelegt wurde, hat eine
-     * "moodle"-Version 1 - keine falsch positive Vorgefunden-Markierung.
+     * Activities created after Coursepilot have a moodle first version,
+     * without a false observed marker.
      */
     public function test_freshly_created_activity_version_one_is_not_discovered(): void {
         $this->resetAfterTest();
@@ -157,9 +152,9 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 1+2: der Einzeiler nennt wer/wann/wodurch und wird
-     * serverseitig aus den Vollstaenden berechnet (das geaenderte Feld
-     * "name" taucht im Einzeiler auf, ohne dass der Aufrufer es mitgibt).
+     * Summary lines include who, when and source, computed from full versions
+     * server-side. They mention changed fields without caller-supplied hints
+     * (criteria 1+2).
      */
     public function test_einzeiler_names_who_when_and_changed_field(): void {
         $this->resetAfterTest();
@@ -175,8 +170,8 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 5: die Antwort weist die bekannten Luecken des
-     * Verlaufs aus - fest, nicht pro Version berechnet.
+     * Report fixed known history gaps rather than deriving them per version
+     * (criterion 5).
      */
     public function test_list_includes_fixed_gaps_hint(): void {
         $this->resetAfterTest();
@@ -190,8 +185,7 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 3: compare vergleicht zwei beliebige, nicht nur
-     * benachbarte Staende.
+     * Compare any two versions, including nonadjacent ones (criterion 3).
      */
     public function test_compare_diffs_non_adjacent_versions(): void {
         $this->resetAfterTest();
@@ -219,8 +213,7 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Vergleich mit einer nicht existierenden Version scheitert mit
-     * einer Meldung statt einem stillen leeren Ergebnis.
+     * Reject missing versions with a message instead of an empty result.
      */
     public function test_compare_with_unknown_version_throws(): void {
         $this->resetAfterTest();
@@ -231,9 +224,8 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Dateiaenderungen zwischen zwei Staenden werden ausgewiesen - direkte
-     * Manipulation der Datei-Verknuepfungstabellen, um den Diff-Pfad ohne
-     * echten Draft-Datei-Upload zu pruefen.
+     * Report file changes between versions. Manipulate file-reference tables
+     * directly to exercise diffing without a real draft upload.
      */
     public function test_compare_reports_added_and_removed_files(): void {
         global $DB, $CFG;
@@ -318,8 +310,7 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Grundlage der Aktivitaetenliste auf history.php (#397): eine
-     * Aktivitaet mit erfasstem Verlauf erscheint, mit Name und Aktivitaetstyp.
+     * history.php lists activities with captured history, names and types (#397).
      */
     public function test_course_activities_lists_activity_with_history(): void {
         $this->resetAfterTest();
@@ -334,8 +325,7 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Kurs ohne jeden Schreibvorgang hat eine leere Aktivitaetenliste -
-     * kein Fehler, keine Platzhalterzeile.
+     * Courses without writes have an empty activity list.
      */
     public function test_course_activities_empty_without_history(): void {
         $this->resetAfterTest();
@@ -345,20 +335,16 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Verlaufszeilen einer zwischenzeitlich geloeschten Aktivitaet duerfen
-     * die Aktivitaetenliste eines anderen Kurses nicht crashen lassen -
-     * sie werden stillschweigend uebersprungen (#387: die Kurs-Kaskade
-     * greift nur beim ganzen Kurs).
+     * Skip history rows for deleted activities instead of crashing another
+     * course’s list. Course cascading applies only to whole-course deletion (#387).
      */
     public function test_course_activities_skips_deleted_activity(): void {
         global $DB;
 
         $this->resetAfterTest();
         [$course, $cm] = $this->create_page();
-        // Direkter DB-Eingriff statt course_delete_module(): dessen
-        // eigentliche Loeschung laeuft asynchron ueber eine Ad-hoc-Aufgabe,
-        // im Test soll nur der Zustand "Verlaufszeile ohne Aktivitaet mehr"
-        // simuliert werden.
+        // Delete directly in the database to simulate a history row without an
+        // activity. course_delete_module() deletes asynchronously via an ad hoc task.
         $DB->delete_records('course_modules', ['id' => $cm->id]);
         rebuild_course_cache($course->id, true);
 
@@ -366,8 +352,8 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * #596: Vermerk-Stand an der alten cmid - Quelle "superseded", Bezug = neue
-     * cmid ueber sourcecmid (keine Schemaaenderung), Einzeiler nennt den Bezug.
+     * Record superseded at the old cmid, referencing the new cmid through
+     * sourcecmid without schema changes; the summary names the reference (#596).
      */
     public function test_superseded_marker_references_new_cmid(): void {
         $this->resetAfterTest();
@@ -386,7 +372,7 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * #596: Quelle "from_xml" als Begriff - Schluessel und Beschriftung.
+     * Provide the from_xml source key and label (#596).
      */
     public function test_from_xml_source_is_described(): void {
         $this->resetAfterTest();
@@ -403,7 +389,7 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * #596: der Hinweis nennt die Luecke bei erschlossenen Arten ehrlich.
+     * The notice accurately reports gaps for inferred activity types (#596).
      */
     public function test_gap_notice_names_instance_row_only_gap_for_catalogued_kinds(): void {
         $this->resetAfterTest();

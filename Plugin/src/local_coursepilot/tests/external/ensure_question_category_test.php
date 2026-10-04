@@ -19,8 +19,7 @@ namespace local_coursepilot\external;
 use core_external\external_api;
 
 /**
- * Ensure-Finden-oder-Anlegen einer Fragenbank-Kategorie (Spec 0017 §1,
- * Ticket #412).
+ * Find or create a question-bank category (Spec 0017 §1, issue #412).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,7 +29,7 @@ use core_external\external_api;
 final class ensure_question_category_test extends \advanced_testcase {
 
     /**
-     * Neuanlage unter der Top-Kategorie einer frischen Fragensammlung.
+     * Create a category below the top category of a fresh question bank.
      */
     public function test_creates_new_category(): void {
         $this->resetAfterTest();
@@ -48,8 +47,7 @@ final class ensure_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Wiederverwendung: gleicher Name unter demselben Elternteil liefert die
-     * bestehende Kategorie statt einer zweiten.
+     * The same name under the same parent reuses the existing category.
      */
     public function test_reuses_existing_category_with_same_name_and_parent(): void {
         $this->resetAfterTest();
@@ -75,8 +73,8 @@ final class ensure_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Eine gleichnamige Kategorie unter einer anderen Elternkategorie ist
-     * kein Treffer - es entsteht eine zweite, eigenstaendige Kategorie.
+     * The same name under another parent is not a match; create a separate
+     * category.
      */
     public function test_same_name_under_different_parent_is_not_a_match(): void {
         $this->resetAfterTest();
@@ -101,11 +99,11 @@ final class ensure_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne native Berechtigung: moodle/question:managecategory fehlt.
+     * Reject users without moodle/question:managecategory.
      *
-     * Prohibit wird vor dem setUser() der zweiten Lehrkraft gesetzt (Muster
-     * aus get_question_categories_test::test_rejects_user_without_capability()),
-     * damit kein in-process Capability-Cache umgangen werden muss.
+     * Set the prohibition before setUser() for the second teacher, following
+     * get_question_categories_test::test_rejects_user_without_capability(),
+     * to avoid bypassing the in-process capability cache.
      */
     public function test_rejects_user_without_managecategory_capability(): void {
         $this->resetAfterTest();
@@ -130,7 +128,7 @@ final class ensure_question_category_test extends \advanced_testcase {
     }
 
     /**
-     * Baut Kurs + Lehrkraft + frische Fragensammlung auf und liefert
+     * Create a course, teacher and fresh question bank; return
      * [$course, $topcategoryid].
      *
      * @return array{0: \stdClass, 1: int}

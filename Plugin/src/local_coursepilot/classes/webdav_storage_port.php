@@ -459,7 +459,6 @@ final class webdav_storage_port implements storage_port {
      * conditionally - a transport-level conflict (412) becomes the location-neutral
      * {@see storage_conflict_exception}, so that the caller never sees a
      * webdav_error as a conflict.
-     * webdav_error als Konflikt sieht.
      *
      * @param webdav_client $client
      * @param string $fileurl

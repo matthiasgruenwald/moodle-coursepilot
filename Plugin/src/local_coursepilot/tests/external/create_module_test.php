@@ -24,7 +24,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Der zweite Schreibvorgang (Spec 0015 §3.4, Ticket #389).
+ * Second write operation (Spec 0015 §3.4, issue #389).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -40,7 +40,7 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs, Lehrkraft (editingteacher).
+     * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
         $course = $this->getDataGenerator()->create_course();
@@ -51,8 +51,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Richtet den externen Materialbestand (WebDAV-Fake) fuer eine bereits
-     * angemeldete Lehrkraft ein (Issue #496) - siehe
+     * Set up fake external material storage for a logged-in teacher (#496).
+     * See
      * {@see \local_coursepilot\external\update_module_settings_test::set_up_external_material_for()}.
      *
      * @param \stdClass $teacher
@@ -75,7 +75,7 @@ final class create_module_test extends \advanced_testcase {
      * @param array $felder
      * @param string $ort {@see \local_coursepilot\material_files::LOCATION_STORE}/{@see \local_coursepilot\material_files::LOCATION_WORKBENCH}
      *        (Issue #496).
-     * @param string[] $confirmlearnerlocks Bewusst gesetzte Riegel (#583).
+     * @param string[] $confirmlearnerlocks Explicitly confirmed learner restrictions (#583).
      * @return array
      */
     private function create(
@@ -93,9 +93,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Simuliert, was die KI vor dem Aufruf selbst tut (Spec 0015 §2.4:
-     * Feldbuendel sind kein Endpunkt-Parameter): Buendelwerte zuerst, die
-     * ausdruecklich genannten Felder ueberschreiben sie.
+     * Simulate AI preparation: apply bundle values first, then explicit
+     * fields. Bundles are not endpoint parameters (Spec 0015 §2.4).
      *
      * @param array $bundle
      * @param array $felder
@@ -107,7 +106,7 @@ final class create_module_test extends \advanced_testcase {
 
     /**
      * @param int $cmid
-     * @return array Ist-Stand, dieselbe Form wie get_module_settings.
+     * @return array Current state, with the same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -118,10 +117,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Die Anlegemeldung zitiert den gesetzten Wert woertlich - bei einem
-     * Textfeld also HTML. Als PARAM_TEXT deklariert liess das jeden Aufruf
-     * am Rueckgabewert scheitern ("Ungueltiger Rueckgabewert"), obwohl die
-     * Aktivitaet bereits angelegt war (#400).
+     * Creation messages quote supplied values, including HTML. PARAM_TEXT
+     * previously rejected the response even after successful creation (#400).
      */
     public function test_message_may_quote_html_content(): void {
         $this->resetAfterTest();
@@ -135,9 +132,9 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Aufgabe ohne genannte Abgabe-Einstellungen bekommt trotzdem
-     * aktive Abgabemoeglichkeiten - der Formular-Default (admin-konfigurierbar,
-     * ueblicherweise "Datei-Abgabe" aktiv) statt eines stillen "alles aus".
+     * Assignments without explicit submission settings still use
+     * administrator-configurable form defaults, normally file submission,
+     * instead of silently disabling all submission methods.
      */
     public function test_assign_without_submission_settings_gets_active_submissions(): void {
         $this->resetAfterTest();
@@ -157,9 +154,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Ein externer Link mit genannten Parametern behaelt sie beim Anlegen -
-     * das Auffuellen fehlender Felder darf gegebene parameter_N/variable_N
-     * nicht verwerfen.
+     * Preserve supplied parameter_N/variable_N fields when filling missing
+     * URL defaults.
      */
     public function test_url_keeps_given_parameters(): void {
         $this->resetAfterTest();
@@ -177,9 +173,9 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Erstellt eine Materialdatei fuer den aktuell angemeldeten Nutzer -
-     * derselbe Ablageort, den upload_material_file bespielt (Issue #428),
-     * Vorbild {@see \local_coursepilot\external\update_module_settings_test::create_material_file()}.
+     * Create material for the current user in upload_material_file’s
+     * storage location (#428). See
+     * {@see \local_coursepilot\external\update_module_settings_test::create_material_file()}.
      *
      * @param string $path
      * @param string $content
@@ -307,10 +303,9 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * "resource" legt Aktivitaet samt Hauptdatei in einem Aufruf an (Spec
-     * 0018 §4/§7, Issue #434): "files" verweist auf eine liegende
-     * Materialdatei, die vor add_moduleinfo() in die "content"-Filearea der
-     * neuen Aktivitaet kopiert wird.
+     * Create a resource with its main file in one call (Spec 0018 §4/§7,
+     * #434). Resolve files references into the new activity’s content file
+     * area before add_moduleinfo().
      */
     public function test_resource_creates_activity_with_main_file_in_one_call(): void {
         $this->resetAfterTest();
@@ -330,8 +325,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Einbettung direkt aus dem externen Materialbestand (Issue #496, Spec
-     * #486 §7, Default "ort" = "bestand"): kein Umweg ueber die Werkbank.
+     * Embed directly from external inventory without routing through
+     * the workbench (#496, Spec #486 §7).
      */
     public function test_resource_creates_activity_with_main_file_from_external_bestand(): void {
         $this->resetAfterTest();
@@ -352,9 +347,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Explizit "ort" = "werkbank" greift weiterhin auf die Werkbank zu, auch
-     * wenn der Materialbestand extern liegt (Issue #496) - derselbe Vertrag
-     * wie bei den lesenden Materialwerkzeugen (Issue #495).
+     * Explicit location = workbench still uses the workbench when inventory
+     * is external, matching material readers (#495/#496).
      */
     public function test_resource_with_ort_werkbank_ignores_external_bestand(): void {
         $this->resetAfterTest();
@@ -378,9 +372,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne "files" scheitert das Anlegen einer "resource" ueber den
-     * bestehenden Pflichtfeld-Mechanismus - klare Meldung, KEINE Aktivitaet
-     * im Kurs (Kern-Akzeptanzkriterium #434).
+     * Missing resource files trigger the mandatory-field mechanism with
+     * a clear message and no new activity (#434).
      */
     public function test_resource_without_files_fails_and_creates_no_activity(): void {
         $this->resetAfterTest();
@@ -402,10 +395,9 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Eine LEERE Pfadliste ("files": []) muss wie ein nicht genanntes Feld
-     * scheitern - sonst rutscht sie am Pflichtfeld-Check vorbei und
-     * resolve_into_draft() liefert einen gueltigen, aber leeren Entwurf: eine
-     * resource ohne Hauptdatei waere die Folge (Review-Fund zu Issue #434).
+     * An empty files list must fail like a missing field. Otherwise
+     * resolve_into_draft() supplies a valid empty draft and creates a resource
+     * without a main file (#434 review).
      */
     public function test_resource_with_empty_files_list_fails_and_creates_no_activity(): void {
         $this->resetAfterTest();
@@ -422,8 +414,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Verweis auf eine nicht existierende Materialdatei scheitert VOR
-     * add_moduleinfo() - keine leere Aktivitaet bleibt zurueck.
+     * Reject missing material references before add_moduleinfo(); leave no
+     * empty activity behind.
      */
     public function test_resource_with_missing_material_file_fails_and_creates_no_activity(): void {
         $this->resetAfterTest();
@@ -440,9 +432,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Zaehlt course_modules-Zeilen fuer "resource" in $courseid direkt ueber
-     * die DB - unabhaengig vom Modinfo-Cache, der einen fehlgeschlagenen
-     * add_moduleinfo()-Aufruf sonst erst nach einem rebuild sicher widerspiegelt.
+     * Count resource course_modules rows directly in the database. Modinfo
+     * cache may reflect failed add_moduleinfo() only after a rebuild.
      *
      * @param int $courseid
      * @return int
@@ -457,7 +448,7 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * "folder" bleibt ohne "files" anlegbar (leerer Ordner ist gueltig).
+     * Create a folder without files; empty folders are valid.
      */
     public function test_folder_without_files_is_still_creatable(): void {
         $this->resetAfterTest();
@@ -470,9 +461,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Mehrere Materialdateien in einem Aufruf, eine davon mit
-     * "zielordner" - "Dateien lassen sich einem folder hinzufuegen, auch
-     * mehrere in einem Aufruf" + "Zielverzeichnis waehlbar" (Issue #434).
+     * Add several material files to a folder in one call, including an
+     * entry with a selected target subfolder (#434).
      */
     public function test_folder_accepts_multiple_files_with_target_subfolder(): void {
         $this->resetAfterTest();
@@ -498,8 +488,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Abstimmung mit 30 Optionen (Geraete-Zuteilung) laesst sich anlegen -
-     * keine erfundene Obergrenze.
+     * Create choices with 30 options for device allocation, without an
+     * invented upper limit.
      */
     public function test_choice_with_thirty_options_can_be_created(): void {
         global $DB;
@@ -520,8 +510,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Der Anlegebericht liest wiederholte Pseudofelder aus choice_options
-     * zurueck statt den nicht existierenden Spaltenwert null zu melden (#564).
+     * Read repeated pseudofields back from choice_options instead of
+     * reporting null from nonexistent columns (#564).
      */
     public function test_choice_create_report_uses_persisted_options_and_limits(): void {
         $this->resetAfterTest();
@@ -541,7 +531,7 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Begrenzungsliste falscher Laenge scheitert.
+     * Reject limit lists of the wrong length.
      */
     public function test_choice_with_mismatched_limit_length_fails(): void {
         $this->resetAfterTest();
@@ -562,8 +552,7 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Das Feldbuendel "allocation" erzeugt die sechs dokumentierten
-     * Einstellungen.
+     * The allocation bundle produces all six documented settings.
      */
     public function test_choice_zuteilung_bundle_sets_documented_fields(): void {
         global $DB;
@@ -589,8 +578,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Ein ausdruecklich genanntes Feld schlaegt das Buendel - ein Buendel
-     * belegt nur vor, es ueberstimmt nichts.
+     * Explicit fields override bundle defaults; bundles never override
+     * explicit input.
      */
     public function test_explicit_field_beats_bundle(): void {
         $this->resetAfterTest();
@@ -610,8 +599,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Pflichtfeld ohne Formular-Default (hier: "name" bei mod_page) fuehrt
-     * zu einem Fehler, der das Feld nennt.
+     * Missing mandatory fields without form defaults (mod_page name here)
+     * produce errors naming the field.
      */
     public function test_required_field_without_default_fails(): void {
         $this->resetAfterTest();
@@ -628,11 +617,9 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Textseite entsteht aus Name und Pseudofeld "page" allein.
-     *
-     * "content" war zusaetzlich als Pflichtfeld gefuehrt, obwohl es aus "page"
-     * gesetzt wird - das ergab eine Sackgasse: "content" nennen forderte
-     * "page", "page" nennen forderte "content" (#404).
+     * Create pages from name and the page pseudofield alone. Requiring
+     * content as well caused circular mandatory-field errors (#404), though
+     * page already supplies content.
      */
     public function test_page_needs_only_the_editor_pseudofield(): void {
         $this->resetAfterTest();
@@ -648,12 +635,9 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Der Seiteninhalt darf auch direkt als Text kommen, nicht nur als
-     * Editor-Array.
-     *
-     * page_update_instance() liest $data->page['text']; auf einem String
-     * ergibt das null - die Seite entstand leer, mit Erfolgsmeldung und ohne
-     * jeden Fehler (#405, Fund aus der Claude-Gegenprobe).
+     * Accept page content as text as well as an editor array.
+     * page_update_instance() reads page[text]; passing strings previously
+     * created empty pages with success messages (#405, Claude cross-check).
      */
     public function test_page_accepts_plain_string_as_content(): void {
         $this->resetAfterTest();
@@ -669,8 +653,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Was weder Text noch ein Objekt mit "text" ist, scheitert mit einer
-     * Meldung - statt still eine leere Seite anzulegen (#405).
+     * Reject input that is neither text nor an object with text instead
+     * of silently creating an empty page (#405).
      */
     public function test_editor_pseudofield_without_text_fails(): void {
         global $DB;
@@ -691,9 +675,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Fehlen mehrere Pflichtfelder ohne Formular-Default, nennt die Meldung
-     * alle auf einmal - sonst raet sich der Aufrufer Aufruf fuer Aufruf durch
-     * (#404).
+     * Report all missing mandatory fields without form defaults together
+     * to prevent repeated guessing (#404).
      */
     public function test_all_missing_required_fields_are_named_at_once(): void {
         $this->resetAfterTest();
@@ -709,9 +692,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Lese-Vokabular der Lese-Werkzeuge ("coursepagevisibility") ist kein
-     * Schreibfeld - die Meldung sagt das und nennt den Schreibweg, statt das
-     * Feld als unbekannt abzutun (#404).
+     * coursepagevisibility is read vocabulary, not a write field. Explain
+     * the supported write path instead of reporting an unknown field (#404).
      */
     public function test_read_only_vocabulary_points_to_the_writable_field(): void {
         $this->resetAfterTest();
@@ -731,8 +713,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Eine verletzte Datumspaar-Kombinationsregel scheitert auch beim Anlegen
-     * (Spec 0015 §3.6 gilt fuer beide Schreibwege) - nichts wird angelegt.
+     * Creation also rejects date-pair combination-rule violations without
+     * creating anything (Spec 0015 §3.6).
      */
     public function test_combination_rule_violation_fails_and_creates_nothing(): void {
         global $DB;
@@ -743,7 +725,7 @@ final class create_module_test extends \advanced_testcase {
             $this->create($course->id, 0, 'forum', [
                 'name' => 'Ankuendigungen',
                 'intro' => 'Wichtige Hinweise',
-                // cutoffdate liegt vor duedate - verletzt die Kombinationsregel.
+                // cutoffdate before duedate violates the combination rule.
                 'duedate' => 2000000000,
                 'cutoffdate' => 1000000000,
             ]);
@@ -757,8 +739,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Textseite, Textfeld, externer Link, Aufgabe, Abstimmung und Forum
-     * lassen sich nacheinander in einen bestehenden Kurs schreiben.
+     * Create page, label, URL, assignment, choice and forum activities
+     * sequentially in an existing course.
      */
     public function test_all_catalogued_types_can_be_created_in_sequence(): void {
         $this->resetAfterTest();
@@ -803,8 +785,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Die Antwort ist die Anlegemeldung in Lehrkraft-Deutsch inklusive
-     * Nebenwirkungen (forcesubscribe=2 abonniert sofort alle Teilnehmenden).
+     * The localized creation response reports side effects, including
+     * forcesubscribe=2 immediately subscribing all participants.
      */
     public function test_response_is_the_creation_message_including_side_effects(): void {
         $this->resetAfterTest();
@@ -823,8 +805,7 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Schreiben im fremden Kurs ohne native Bearbeiten-Berechtigung scheitert
-     * mit klarer Meldung.
+     * Clearly reject writes without native editing capability.
      */
     public function test_create_without_native_capability_fails(): void {
         $this->resetAfterTest();
@@ -842,8 +823,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Jedes Anlegen erzeugt Version 1 im Aenderungsverlauf (course_module_created
-     * wird ueber add_moduleinfo() nativ ausgeloest und beobachtet, #385).
+     * Every creation records history version 1 through add_moduleinfo()’s
+     * native course_module_created event (#385).
      */
     public function test_create_produces_a_history_version(): void {
         global $DB;
@@ -857,8 +838,7 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Keine direkte DB-Schreibung auf einer Instanztabelle (ADR 0016) - der
-     * einzige Schreibweg ist add_moduleinfo().
+     * Use only add_moduleinfo(), never direct instance-table writes (ADR 0016).
      */
     public function test_source_never_writes_the_instance_table_directly(): void {
         $source = file_get_contents(__DIR__ . '/../../classes/catalog/write_target.php');
@@ -868,9 +848,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Aktivitaet kann gleich beim Anlegen stealth (visibleoncoursepage=0)
-     * gestellt werden, wenn allowstealth an ist - idnumber wird ebenfalls
-     * uebernommen (Ticket #390).
+     * Create stealth activities (visibleoncoursepage=0) with allowstealth
+     * enabled and preserve idnumber (#390).
      */
     public function test_stealth_and_idnumber_can_be_set_on_create(): void {
         $this->resetAfterTest();
@@ -891,8 +870,7 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Bei abgeschaltetem allowstealth scheitert das Anlegen mit
-     * visibleoncoursepage=0, es wird nichts angelegt (Ticket #390).
+     * With allowstealth off, reject visibleoncoursepage=0 without creation (#390).
      */
     public function test_stealth_on_create_fails_with_clear_message_when_allowstealth_is_off(): void {
         global $DB;
@@ -917,9 +895,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #399: Drift sperrt nur die betroffene Aktivitätsart -
-     * "folder" bleibt anlegbar, waehrend "page" wegen simulierter
-     * Katalogabweichung gesperrt ist.
+     * Drift blocks only affected types: folder remains creatable while
+     * page is blocked by simulated catalog drift (#399).
      */
     public function test_drift_blocks_only_the_affected_activity_type(): void {
         $this->resetAfterTest();
@@ -935,19 +912,18 @@ final class create_module_test extends \advanced_testcase {
             ]);
             $this->fail('execute() haette wegen Drift werfen muessen.');
         } catch (\moodle_exception $e) {
-            // Die genaue deutsche Formulierung wird in write_gate_test.php
-            // gegen das Sprachpaket geprueft.
+            // write_gate_test.php checks exact wording against the language pack.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
         }
 
-        // "folder" bleibt anlegbar - nur "page" ist gesperrt.
+        // folder remains creatable; only page is blocked.
         $this->create($course->id, 0, 'folder', ['name' => 'x']);
         $this->addToAssertionCount(1);
     }
 
     /**
-     * Riegel (#583, Abnahme): attemptreopenmethod=manual ohne Bestaetigung
-     * abgelehnt, nichts angelegt; mit Bestaetigung angelegt.
+     * Reject attemptreopenmethod=manual without confirmation; create
+     * with confirmation (#583).
      */
     public function test_assign_manual_reopen_needs_confirmation(): void {
         global $DB;
@@ -975,8 +951,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
-     * Ein aufgefuellter Formular-Default, der selbst ein Riegel ist, zaehlt
-     * mit (#583): choice.allowupdate steht per Default auf 0.
+     * Form defaults that impose learner restrictions also require
+     * confirmation; choice.allowupdate defaults to 0 (#583).
      */
     public function test_choice_default_lock_counts_unless_named_open(): void {
         $this->resetAfterTest();

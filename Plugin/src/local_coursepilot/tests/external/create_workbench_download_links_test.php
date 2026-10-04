@@ -23,8 +23,7 @@ use local_coursepilot\workbench_ticket;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Rein lesendes Werkzeug: Einmal-Downloadlinks fuer Werkbankdateien (#501,
- * Spec #486 §13).
+ * Read-only tool for single-use workbench download links (#501, Spec #486 §13).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -55,8 +54,7 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         $this->assertSame('blatt2.pdf', $result['links'][1]['name']);
         $this->assertSame('blatt.pdf, ordner/blatt2.pdf', $result['path'], 'Fuer den access_log: alle Pfade kommagetrennt.');
 
-        // Kein fertiges "curl ..." o.ae. in der Antwort - nur URL, Name,
-        // Groesse, SHA-1 (Spec #486 §13).
+        // Return only URL, name, size and SHA-1, never ready-made curl commands (Spec #486 §13).
         $this->assertSame(['path', 'name', 'size', 'sha1', 'url'], array_keys($result['links'][0]));
     }
 
@@ -64,11 +62,9 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
-        // Ohne bekannte Verbindung braucht die Einloesung ersatzweise
-        // irgendeine noch bestehende Verbindung der Person (#512) - dieser
-        // Aufruf simuliert wie die anderen Tests hier den externen
-        // Funktionsaufruf ohne MCP-Dispatcher davor (oauthtokenid am
-        // Ticket bleibt null).
+        // Without a known connection, redemption requires another active user
+        // connection (#512). Like other tests, simulate the external function
+        // without MCP dispatch; the ticket’s oauthtokenid remains null.
         $this->issue_connection((int) $user->id);
         oauth_lib::reset_current_token_id();
         $this->store('blatt.pdf', 'originalbytes');

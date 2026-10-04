@@ -83,7 +83,7 @@ final class page_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Jede referenzierte aufrufbare Quelle existiert wirklich.
+     * Every referenced callable source exists.
      */
     public function test_referenced_callable_sources_exist(): void {
         global $CFG;
@@ -96,13 +96,13 @@ final class page_catalog_contract_test extends \advanced_testcase {
             $fields
         ));
 
-        $this->assertNotEmpty($callables, 'Kein Feld referenziert eine aufrufbare Quelle - Testannahme verletzt.');
+        $this->assertNotEmpty($callables, 'No field references a callable source; test assumption violated.');
 
         foreach ($callables as $callable) {
             $functionname = rtrim($callable, '()');
             $this->assertTrue(
                 function_exists($functionname),
-                "Referenzierte aufrufbare Quelle $callable existiert auf dieser Instanz nicht mehr."
+                "Referenced callable source $callable no longer exists on this instance."
             );
         }
     }
@@ -117,7 +117,7 @@ final class page_catalog_contract_test extends \advanced_testcase {
 
         $this->assertSame(['RESOURCELIB_DISPLAY_POPUP'], page::checked_constants());
         foreach (page::checked_constants() as $constname) {
-            $this->assertTrue(defined($constname), "Konstante $constname existiert auf dieser Instanz nicht mehr.");
+            $this->assertTrue(defined($constname), "Constant $constname no longer exists on this instance.");
         }
         $this->assertSame(6, RESOURCELIB_DISPLAY_POPUP);
     }

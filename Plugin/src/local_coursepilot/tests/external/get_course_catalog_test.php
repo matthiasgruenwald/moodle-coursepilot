@@ -21,11 +21,9 @@ use local_coursepilot\catalog\module_state;
 use local_coursepilot\catalog\registry;
 
 /**
- * Kurskatalog serverseitig (#341): der Vertrag ist die reine Delegation an
- * local_coursepilot\external\get_course_catalog - dieser Test belegt, dass
- * die Delegation tatsaechlich denselben Vertrag liefert (Feldnamen,
- * Maskierung des Personenbezugs, keine Gruppennamen), statt es blind
- * anzunehmen.
+ * Server-side course catalog (#341). Verify delegation to
+ * local_coursepilot\external\get_course_catalog preserves field names,
+ * personal-data masking and absence of group names.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -36,9 +34,8 @@ use local_coursepilot\catalog\registry;
 final class get_course_catalog_test extends \advanced_testcase {
 
     /**
-     * Alle freigegebenen Modultypen liefern ihren Zustand aus dem Katalog.
-     * Die bisherigen Settings-Schluessel der Sonderleser bleiben dabei Teil
-     * des unveraenderten Katalogvertrags.
+     * All supported module types return catalog-backed state. Preserve
+     * existing specialized-reader settings keys in the catalog contract.
      */
     public function test_catalog_reads_every_registered_module_type(): void {
         $this->resetAfterTest();
@@ -96,8 +93,8 @@ final class get_course_catalog_test extends \advanced_testcase {
     }
 
     /**
-     * Der Katalog liefert Abschnitte, Inhalte, Sichtbarkeit, Abschluss und
-     * Voraussetzungen - Grundvertrag, identisch zum lokalen Werkzeug.
+     * Return sections, content, visibility, completion and availability
+     * under the same contract as the local tool.
      */
     public function test_catalog_covers_sections_content_completion_and_availability(): void {
         $this->resetAfterTest();
@@ -126,7 +123,7 @@ final class get_course_catalog_test extends \advanced_testcase {
     }
 
     /**
-     * detail=full liefert Vollinhalte, detail=compact (Standard) nicht.
+     * detail=full returns complete content; the default compact mode does not.
      */
     public function test_full_detail_returns_content_compact_does_not(): void {
         $this->resetAfterTest();
@@ -152,10 +149,9 @@ final class get_course_catalog_test extends \advanced_testcase {
     }
 
     /**
-     * Kernkriterium #341: eine echte Profilbeschraenkung (Fachgruppe) wird
-     * maskiert - Typ, Feld und Operator bleiben, der Wert wird ersetzt.
-     * Weglassen waere schlimmer als Maskieren, deshalb muss der Schluessel
-     * "type"/"sf"/"op" bestehen bleiben und nur "v" veraendert werden.
+     * Mask actual profile restrictions (#341), replacing only v while
+     * preserving type, sf and op. Omitting the condition would hide useful
+     * structure.
      */
     public function test_profile_restriction_value_is_masked_but_type_field_operator_remain(): void {
         global $DB;
@@ -191,8 +187,7 @@ final class get_course_catalog_test extends \advanced_testcase {
     }
 
     /**
-     * Gruppennamen erscheinen nie im Katalog - nur der Gruppenmodus als
-     * Zahl, keine Gruppen-/Namensliste.
+     * Never expose group names or group lists; return only numeric group mode.
      */
     public function test_group_names_never_appear_only_groupmode(): void {
         $this->resetAfterTest();
@@ -219,12 +214,9 @@ final class get_course_catalog_test extends \advanced_testcase {
     }
 
     /**
-     * Die eigene Capability local/coursepilot:use wird durchgesetzt, nicht nur
-     * die des delegierten lokalen Werkzeugs (local/coursepilot:use) - sonst
-     * waere die in db/services.php und privacy_surface deklarierte
-     * Capability reine Metadaten ohne Wirkung (Fund aus dem Code-Review zu
-     * #341). Eine Lehrkraft mit local/coursepilot:use, aber ohne
-     * local/coursepilot:use, muss abgewiesen werden.
+     * Enforce the endpoint’s local/coursepilot:use capability rather than
+     * leaving db/services.php and privacy_surface declarations as ineffective
+     * metadata (#341 review).
      */
     public function test_rejects_user_with_only_coursepilot_capability(): void {
         $this->resetAfterTest();

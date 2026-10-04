@@ -19,8 +19,8 @@ namespace local_coursepilot;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Protokollstufen (#339): vier Stufen, Voreinstellung "Lesezugriffe und
- * Fehler", keine Geheimnisse im Protokolltext.
+ * Four logging levels (#339), defaulting to reads and errors, without
+ * secrets in log text.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,8 +30,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class access_log_test extends \advanced_testcase {
 
     /**
-     * Frische Installation, Konfigwert nie gesetzt: Voreinstellung ist
-     * "Lesezugriffe und Fehler".
+     * Fresh installs without a configured value default to read access
+     * and errors.
      */
     public function test_default_level_is_reads_and_errors(): void {
         $this->resetAfterTest();
@@ -40,7 +40,7 @@ final class access_log_test extends \advanced_testcase {
     }
 
     /**
-     * Stufe "kein Protokoll": weder Erfolg noch Fehler erzeugen einen Eintrag.
+     * With logging disabled, neither success nor failure creates an event.
      */
     public function test_level_none_logs_nothing(): void {
         $this->resetAfterTest();
@@ -55,7 +55,7 @@ final class access_log_test extends \advanced_testcase {
     }
 
     /**
-     * Stufe "nur Fehler": Erfolg erzeugt keinen Eintrag, Fehler schon.
+     * Errors-only mode records failures but not successful operations.
      */
     public function test_level_errors_only_skips_success_but_logs_failure(): void {
         $this->resetAfterTest();
@@ -72,7 +72,7 @@ final class access_log_test extends \advanced_testcase {
     }
 
     /**
-     * Stufe "Lesezugriffe und Fehler": beides erzeugt einen Eintrag.
+     * Read-access-and-errors mode records both operations.
      */
     public function test_level_reads_logs_success_and_failure(): void {
         $this->resetAfterTest();
@@ -88,7 +88,7 @@ final class access_log_test extends \advanced_testcase {
     }
 
     /**
-     * Stufe "Alles": beides erzeugt ebenfalls einen Eintrag.
+     * All-events mode also records both operations.
      */
     public function test_level_all_logs_success_and_failure(): void {
         $this->resetAfterTest();
@@ -104,9 +104,8 @@ final class access_log_test extends \advanced_testcase {
     }
 
     /**
-     * Interne Feldpfade helfen nur bei der bewusst eingeschalteten Diagnose.
-     * Die normale Fehlerstufe speichert sie nicht, damit sie nicht in jedem
-     * Moodle-Protokollbericht auftauchen (#457).
+     * Internal field paths appear only in explicitly enabled diagnostics.
+     * Normal error logging omits them from routine Moodle reports (#457).
      */
     public function test_failure_detail_is_logged_only_at_level_all(): void {
         $this->resetAfterTest();
@@ -128,9 +127,8 @@ final class access_log_test extends \advanced_testcase {
     }
 
     /**
-     * Stufe "Schreibzugriffe und Fehler" (#388): ein Schreibzugriff erzeugt
-     * einen Eintrag, ein Lesezugriff (noch) nicht - erst Stufe 2 (Lesen)
-     * schaltet das dazu.
+     * Writes-and-errors logging records writes but not reads. Reads begin
+     * at logging level 2 (#388).
      */
     public function test_level_errors_logs_write_success_but_not_read_success(): void {
         $this->resetAfterTest();
@@ -147,8 +145,8 @@ final class access_log_test extends \advanced_testcase {
     }
 
     /**
-     * Die uebliche Moodle-Merkmale (crud, edulevel, Kontext, Komponente)
-     * sind gesetzt, damit Filterung/Berichte funktionieren.
+     * Set standard Moodle event metadata (crud, edulevel, context and component)
+     * for filtering and reports.
      */
     public function test_success_event_carries_usual_moodle_characteristics(): void {
         $this->resetAfterTest();
@@ -165,8 +163,8 @@ final class access_log_test extends \advanced_testcase {
     }
 
     /**
-     * Materialvorgaenge sind nachvollziehbar (Spec 0018 §9.2, #428): das
-     * Ereignis fuehrt den Dateipfad mit, wenn der Aufrufer einen mitgibt.
+     * Material operations carry the file path supplied by the caller
+     * (Spec 0018 §9.2, #428).
      */
     public function test_success_event_carries_path_when_given(): void {
         $this->resetAfterTest();
@@ -180,8 +178,7 @@ final class access_log_test extends \advanced_testcase {
     }
 
     /**
-     * Werkzeuge ohne Dateipfad (die meisten) protokollieren weiterhin ohne
-     * Fehler - der Pfad ist optional, kein Pflichtfeld.
+     * Tools without file paths still log successfully; path is optional.
      */
     public function test_success_event_path_is_null_when_not_given(): void {
         $this->resetAfterTest();
@@ -195,8 +192,7 @@ final class access_log_test extends \advanced_testcase {
     }
 
     /**
-     * Kein Zugangsgeheimnis landet im Protokolltext - der Grundtext ist
-     * ein fester Code/Text, kein Token.
+     * Log fixed reason codes/text rather than access secrets or tokens.
      */
     public function test_failure_event_never_contains_a_secret_looking_token(): void {
         $this->resetAfterTest();

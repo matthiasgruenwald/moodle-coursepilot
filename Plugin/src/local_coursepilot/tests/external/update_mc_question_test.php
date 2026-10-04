@@ -21,8 +21,8 @@ use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use local_coursepilot\webdav\webdav_instance;
 
 /**
- * Read-modify-write plus idnumber-Backfill fuer MC-Fragen (Spec 0017 §7.1,
- * Ticket #419).
+ * Read-modify-write and idnumber backfill for multiple-choice questions
+ * (Spec 0017 §7.1, issue #419).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -38,9 +38,8 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Kerntest: ein Patch, der nur "questiontext" nennt, laesst Name,
-     * Antwortoptionen, Feedbacktexte und Teilbewertungen unveraendert - und
-     * schreibt eine neue Version DESSELBEN Bank-Eintrags, keinen neuen.
+     * A questiontext-only patch preserves the name, answers, feedback and
+     * partial grades. It creates a new version of the same bank entry.
      */
     public function test_partial_patch_preserves_untouched_fields_as_new_version_of_same_entry(): void {
         $this->resetAfterTest();
@@ -82,10 +81,10 @@ final class update_mc_question_test extends \advanced_testcase {
         $readback = get_question::execute($categoryid, '', $result['questionid']);
         $readback = external_api::clean_returnvalue(get_question::execute_returns(), $readback);
 
-        // Gepatchtes Feld geaendert ...
+        // The patched field changed ...
         $this->assertSame('Was ist 3+4?', $readback['questiontext']);
-        // ... alles Uebrige unangetastet: Name, Teilbewertung (defaultmark),
-        // allgemeines Feedback, Antwortoptionen inkl. Feedbacktexte.
+        // ... all other fields remain unchanged: name, defaultmark,
+        // general feedback, answer options and their feedback.
         $this->assertSame('Additionsfrage', $readback['name']);
         $this->assertEqualsWithDelta(2.5, $readback['defaultmark'], 0.0001);
         $this->assertSame('Allgemeines Feedback', $readback['generalfeedback']);
@@ -100,13 +99,10 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Kein Rekonstruktionsrisiko: Felder, die weder von felder_json NOCH von
-     * create_mc_question::build_xml()'s Vorlagenwerten abgedeckt sind
-     * (penalty, shuffleanswers, answernumbering - vom Lehrkraft-Vokabular
-     * dieses Endpunkts gar nicht adressierbar), bleiben exakt erhalten, weil
-     * der native Fragenobjekt-Weg sie nie anfasst - anders als eine erneute
-     * Text-XML-Vorlage, die sie stillschweigend auf feste Werte zuruecksetzen
-     * wuerde.
+     * Preserve fields outside fields_json and create_mc_question::build_xml()
+     * (penalty, shuffleanswers, answernumbering). The native question-object
+     * path leaves them untouched; rebuilding an XML template would silently
+     * reset them to fixed defaults.
      */
     public function test_patch_preserves_fields_outside_the_patchable_vocabulary(): void {
         $this->resetAfterTest();
@@ -126,10 +122,8 @@ final class update_mc_question_test extends \advanced_testcase {
         );
         $created = external_api::clean_returnvalue(create_mc_question::execute_returns(), $created);
 
-        // Sentinel-Werte, die von create_mc_question::build_xml() NIE gesetzt
-        // werden (dort fest: penalty 0.3333333, shuffleanswers true,
-        // answernumbering "abc") - direkt in der DB gesetzt, um einen
-        // Fremdbestand mit abweichenden Werten zu simulieren.
+        // Set sentinels directly in the DB to simulate imported questions.
+        // build_xml() fixes penalty=0.3333333, shuffleanswers=true and answernumbering="abc".
         $DB->set_field('question', 'penalty', 0.5, ['id' => $created['questionid']]);
         $DB->set_field('qtype_multichoice_options', 'shuffleanswers', 0, ['questionid' => $created['questionid']]);
         $DB->set_field('qtype_multichoice_options', 'answernumbering', '123', ['questionid' => $created['questionid']]);
@@ -151,9 +145,8 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * idnumber-Backfill: eine vorgefundene Frage ohne idnumber (simulierter
-     * Fremdbestand) bekommt beim ersten Schreibzugriff genau fuer sich eine
-     * generiert - eine Nachbarfrage in derselben Kategorie bleibt unberuehrt.
+     * An imported question without an idnumber receives one on its first
+     * write. Neighboring questions in the same category remain unchanged.
      */
     public function test_idnumber_backfill_touches_only_the_one_question(): void {
         $this->resetAfterTest();
@@ -174,7 +167,7 @@ final class update_mc_question_test extends \advanced_testcase {
         $neighbouridnumber = $DB->get_field(
             'question_bank_entries', 'idnumber', ['id' => $neighbour['questionbankentryid']], MUST_EXIST);
 
-        // Simuliert einen Fremdbestand: die idnumber der Zielfrage fehlt.
+        // Simulate an imported question with no idnumber.
         $DB->set_field('question_bank_entries', 'idnumber', null, ['id' => $target['questionbankentryid']]);
         $this->assertEmpty(
             $DB->get_field('question_bank_entries', 'idnumber', ['id' => $target['questionbankentryid']], MUST_EXIST));
@@ -193,20 +186,19 @@ final class update_mc_question_test extends \advanced_testcase {
             'question_bank_entries', 'idnumber', ['id' => $target['questionbankentryid']], MUST_EXIST);
         $this->assertNotEmpty($newidnumber, 'Genau diese eine Frage hat jetzt eine idnumber.');
 
-        // Nachbarfrage in derselben Kategorie blieb unberuehrt.
+        // The neighboring question remains unchanged.
         $unchangedneighbouridnumber = $DB->get_field(
             'question_bank_entries', 'idnumber', ['id' => $neighbour['questionbankentryid']], MUST_EXIST);
         $this->assertSame($neighbouridnumber, $unchangedneighbouridnumber);
     }
 
     /**
-     * Ein Bild aus dem Materialordner wird in den Fragetext eingebettet
-     * (Spec 0018 §4/§7, Issue #435): questiontext traegt bereits das
-     * @@PLUGINFILE@@-Verweis-HTML samt Alt-Text (gleiche Konvention wie
-     * update_module_settings::INTRO_IMAGE_PSEUDOFIELDS/#433),
-     * questiontext_images nennt den Materialordner-Pfad. Der komplette Weg
-     * wird durchlaufen: Materialordner -> Verweisweg -> in der Frage
-     * sichtbar (physische Datei in der question/questiontext-Filearea).
+     * Embed a material image into question text (Spec 0018 §4/§7, #435).
+     * questiontext contains @@PLUGINFILE@@ HTML and alt text, following
+     * update_module_settings::INTRO_IMAGE_PSEUDOFIELDS (#433).
+     * questiontext_images supplies the material path. Verify the entire path
+     * from material storage through the reference to a physical file in the
+     * question/questiontext file area.
      */
     public function test_embeds_material_image_into_questiontext(): void {
         $this->resetAfterTest();
@@ -242,11 +234,9 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->assertSame($entryid, $result['questionbankentryid'], 'Neue Version DESSELBEN Bank-Eintrags.');
         $this->assertSame(2, $result['version']);
 
-        // Moodle speichert Text mit dem @@PLUGINFILE@@-Platzhalter in der DB
-        // (gleiche Konvention wie intro/#433) - die Aufloesung zur echten
-        // pluginfile.php-URL passiert erst beim Rendern (format_text());
-        // hier zaehlt, dass Platzhalter UND Alt-Text unangetastet blieben
-        // und die Datei physisch existiert (naechste Zeilen).
+        // Moodle stores @@PLUGINFILE@@ like intro (#433). format_text() resolves
+        // pluginfile.php URLs at rendering time. Verify the placeholder, alt text
+        // and the physical file rather than a rendered URL.
         $newquestiontext = (string) $DB->get_field('question', 'questiontext', ['id' => $result['questionid']], MUST_EXIST);
         $this->assertStringContainsString('alt="Saeulendiagramm der Messreihe"', $newquestiontext);
         $this->assertStringContainsString('@@PLUGINFILE@@/diagramm.png', $newquestiontext);
@@ -257,10 +247,9 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Dasselbe fuer das Feedback einer einzelnen Antwortoption (Issue #435):
-     * "feedback_images" je answers-Eintrag statt eines globalen Feldes, weil
-     * "answers" ohnehin die gesamte Liste patcht (Alles-oder-nichts,
-     * bestehende Semantik dieses Endpunkts).
+     * Embed images in individual answer feedback (#435) using feedback_images
+     * per answers entry. There is no global field because answers already
+     * patches the whole list atomically.
      */
     public function test_embeds_material_image_into_a_single_answer_feedback(): void {
         $this->resetAfterTest();
@@ -311,10 +300,8 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Ein zweites Bild mit demselben Dateinamen ersetzt das vorhandene
-     * Materialbild (upload_material_file, Issue #428) statt still ein
-     * zweites anzulegen - eine spaetere Einbettung nutzt automatisch den
-     * neuen Inhalt, weil der Verweisweg zur Einbettzeit aufloest.
+     * Uploading the same material filename replaces the image (#428). Later
+     * embedding uses the new content because references resolve at embedding time.
      */
     public function test_reembedding_after_material_replace_uses_new_content(): void {
         $this->resetAfterTest();
@@ -332,7 +319,7 @@ final class update_mc_question_test extends \advanced_testcase {
         );
         $created = external_api::clean_returnvalue(create_mc_question::execute_returns(), $created);
 
-        // Materialbild ersetzt (gleicher Dateiname, neuer Inhalt) - Kern von #428/#432.
+        // Replace material content under the same filename (#428/#432).
         $this->upload_material('diagramm.png', 'Version-2');
 
         $result = update_mc_question::execute(
@@ -349,9 +336,8 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Endung ausserhalb der engeren Einbett-Whitelist (Spec 0018 §6)
-     * scheitert mit derselben klaren Meldung wie beim Materialupload -
-     * genau wie introimages (#433).
+     * Reject extensions outside the embedding whitelist (Spec 0018 §6) with
+     * the same clear message as material uploads and introimages (#433).
      */
     public function test_rejects_disallowed_extension_for_questiontext_embed(): void {
         $this->resetAfterTest();
@@ -379,9 +365,7 @@ final class update_mc_question_test extends \advanced_testcase {
             );
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
-            // Alles-oder-nichts: die Endungspruefung laeuft VOR der
-            // Schreib-Transaktion, es entsteht keine halb-eingebettete
-            // neue Version.
+            // Check extensions before the write transaction; create no partially embedded version.
             $this->assertSame(
                 1,
                 $DB->count_records('question_versions', ['questionbankentryid' => $created['questionbankentryid']]),
@@ -391,9 +375,7 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Ein referenzierter, aber nicht vorhandener Materialordner-Pfad
-     * scheitert mit klarer Meldung statt stillschweigend eine kaputte
-     * Referenz zu schreiben.
+     * Reject missing material paths clearly instead of writing broken references.
      */
     public function test_reference_to_missing_material_file_fails_with_clear_message(): void {
         $this->resetAfterTest();
@@ -438,9 +420,8 @@ final class update_mc_question_test extends \advanced_testcase {
      */
     private function stored_question_file(string $component, string $filearea, int $itemid, string $filename) {
         global $DB;
-        // ponytail: direkt per SQL statt ueber get_area_files() - dafuer
-        // braeuchte man den Kategoriekontext, den component/filearea/itemid/
-        // filename hier eindeutig genug identifizieren.
+        // ponytail: query directly. get_area_files() would need the category
+        // context; component/filearea/itemid/filename identifies the file here.
         $record = $DB->get_record('files', [
             'component' => $component,
             'filearea' => $filearea,
@@ -454,7 +435,7 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Baut Kurs + Lehrkraft + Fragensammlung + Kategorie auf und liefert
+     * Create a course, teacher, question bank and category; return
      * [$course, $categoryid, $teacher].
      *
      * @return array{0: \stdClass, 1: int, 2: \stdClass}
@@ -475,8 +456,8 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Richtet den externen Materialbestand (WebDAV-Fake) fuer eine bereits
-     * angemeldete Lehrkraft ein (Issue #496) - siehe
+     * Set up external material storage (fake WebDAV) for a logged-in teacher
+     * (#496). See
      * {@see \local_coursepilot\external\update_module_settings_test::set_up_external_material_for()}.
      *
      * @param \stdClass $teacher
@@ -493,8 +474,8 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Einbettung direkt aus dem externen Materialbestand (Issue #496, Spec
-     * #486 §7, Default "ort" = "bestand"): kein Umweg ueber die Werkbank.
+     * Embed directly from external material storage (#496, Spec #486 §7,
+     * default location = inventory), without routing through the workbench.
      */
     public function test_embeds_material_image_from_external_bestand_into_questiontext(): void {
         $this->resetAfterTest();
@@ -533,8 +514,8 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Explizit "ort" = "werkbank" greift weiterhin auf die Werkbank zu, auch
-     * wenn der Materialbestand extern liegt (Issue #496).
+     * Explicit location = workbench still uses the workbench when material
+     * storage is external (#496).
      */
     public function test_embeds_material_image_with_ort_werkbank_ignores_external_bestand(): void {
         $this->resetAfterTest();

@@ -21,8 +21,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Der Skill-Korpus (Spec 0020 §3.1/§4, Issue #450): das Verzeichnis ist die
- * Quelle, der Name ist ein Bezeichner, kein Pfad.
+ * Skill corpus (Spec 0020 §3.1/§4, #450): the directory is authoritative;
+ * names are identifiers rather than paths.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -33,7 +33,7 @@ defined('MOODLE_INTERNAL') || die();
 final class skill_corpus_test extends \advanced_testcase {
 
     /**
-     * list() liefert Name, Art, Auslöser und Umfang - keinen Inhalt.
+     * list() returns names, kinds, triggers and sizes without content.
      */
     public function test_list_reports_catalog_without_content(): void {
         $entries = skill_corpus::list();
@@ -57,10 +57,9 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
-     * Die drei V1-Adapter (Spec 0020 §3.2) stehen als `art` = `adapter` im
-     * Korpus; `coursepilot-einrichten` ist serverseitig entkernt und
-     * existiert nicht mehr (die `spike-*`-Adapter fallen erst mit Issue
-     * #453, spike-Praefix, weg).
+     * The three v1 adapters (Spec 0020 §3.2) have kind=adapter.
+     * coursepilot-einrichten was removed after server-side extraction;
+     * #453 later removes the spike prefixes.
      */
     public function test_lists_the_three_v1_adapters_and_not_einrichten(): void {
         $adapters = array_column(
@@ -75,8 +74,8 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
-     * Das Verzeichnis ist die Quelle (Spec 0020 §3.1): eine neu abgelegte
-     * Markdown-Datei erscheint in der Liste, ohne dass PHP geaendert wurde.
+     * New Markdown files appear without PHP changes because the directory
+     * is authoritative (Spec 0020 §3.1).
      */
     public function test_new_file_on_disk_appears_without_code_change(): void {
         global $CFG;
@@ -93,8 +92,7 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
-     * get() liefert Inhalt, referenzierte Teile (aus den Bestandspfaden
-     * `skills/<name>.md` erkannt) und den Korpus-Stand.
+     * get() returns content, parts referenced via skills/<name>.md and corpus version.
      */
     public function test_get_returns_content_referenced_parts_and_corpus_stand(): void {
         global $CFG;
@@ -112,7 +110,7 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
-     * Unbekannter Name: die Meldung nennt die gueltigen Namen.
+     * Unknown names produce a message listing valid names.
      */
     public function test_unknown_name_names_valid_names(): void {
         $this->expectException(\moodle_exception::class);
@@ -125,8 +123,8 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Name mit Pfadanteilen wird gleichermassen abgewiesen - geprueft
-     * gegen die Verzeichnisliste, nicht per Zeichenfilter.
+     * Reject path components by matching the directory listing, not
+     * filtering characters.
      *
      * @param string $name
      */
@@ -150,9 +148,8 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
-     * Jeder im Korpus genannte Werkzeugname muss in der Live-Werkzeugliste
-     * vorkommen (Issue #459): ein Name aus dem lokalen Weg (`moodle_*`) oder
-     * ein abgebautes Werkzeug faellt hier auf, statt erst im Abnahmelauf.
+     * Every documented tool exists in the live registry (#459). Catch
+     * legacy moodle_* names and removed tools before acceptance.
      */
     public function test_every_mentioned_tool_name_exists_in_tool_registry(): void {
         $validnames = tool_registry::allowed_tools();
@@ -177,10 +174,8 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
-     * Und die Gegenrichtung (Issue #464): jedes Werkzeug aus der
-     * Werkzeugliste muss im Korpus mindestens einmal vorkommen. Ein
-     * Werkzeug, das der Korpus nicht nennt, existiert fuer ein Modell
-     * nicht - es raet Name und Parameter und raet falsch.
+     * Every registered tool appears in the corpus (#464). Undocumented
+     * tools force models to guess incorrect names and parameters.
      */
     public function test_every_registered_tool_is_mentioned_in_the_corpus(): void {
         $corpus = '';
@@ -203,8 +198,8 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
-     * Dokumentierte Feldnamen muessen im registrierten MCP-Schema stehen.
-     * Die Gegenrichtung fuer Werkzeugnamen prueft der Test direkt darueber.
+     * Documented field names must exist in registered MCP schemas.
+     * The preceding test checks tool-name coverage.
      */
     public function test_documented_contract_fields_match_registered_schemas(): void {
         $corpus = '';

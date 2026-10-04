@@ -20,9 +20,8 @@ use local_coursepilot\history\retention;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Aufbewahrung/Loeschfrist des Aenderungsverlaufs (#387, Spec 0015 §10.7):
- * Kurs-Kaskade, Aktivitaets-Kaskade und opportunistische Loeschfrist-
- * Bereinigung ohne alles scannenden Scheduled Task.
+ * History retention (#387, Spec 0015 §10.7): course and activity cascades
+ * and opportunistic expiry cleanup.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -34,7 +33,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class retention_test extends \advanced_testcase {
 
     /**
-     * Legt einen Kurs samt Seiten-Aktivitaet und editierender Lehrkraft an.
+     * Create a course, page activity and editing teacher.
      *
      * @return array{0: \stdClass, 1: \stdClass}
      */
@@ -53,7 +52,7 @@ final class retention_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: die Voreinstellung ist 1 Jahr (365 Tage).
+     * Acceptance: default retention is one year (365 days).
      */
     public function test_default_retention_is_365_days(): void {
         $this->resetAfterTest();
@@ -62,7 +61,7 @@ final class retention_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: die Frist laesst sich verkuerzen.
+     * Acceptance: retention can be shortened.
      */
     public function test_retention_can_be_shortened_via_setting(): void {
         $this->resetAfterTest();
@@ -71,8 +70,8 @@ final class retention_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: "keine Frist" ist nicht waehlbar - ein manipulierter
-     * oder ungueltiger Rohwert (0, negativ) wird auf mindestens 1 Tag geklemmt.
+     * Acceptance: unlimited retention is unavailable; invalid raw values
+     * (0 or negative) are clamped to at least one day.
      */
     public function test_zero_or_negative_raw_value_is_clamped_to_one_day(): void {
         $this->resetAfterTest();
@@ -85,9 +84,8 @@ final class retention_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: ein gelöschter Kurs nimmt seinen Verlauf mit -
-     * course_modules ist beim course_deleted-Event bereits weg, die
-     * Zuordnung muss also ueber die mitgeschriebene courseid laufen.
+     * Acceptance: course deletion removes history through stored courseid,
+     * since course_modules is already gone by the course_deleted event.
      */
     public function test_course_deletion_removes_its_history(): void {
         global $DB;
@@ -104,8 +102,8 @@ final class retention_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: eine geloeschte Aktivitaet nimmt ihren Verlauf mit,
-     * andere Aktivitaeten (auch im selben Kurs) bleiben unberuehrt.
+     * Acceptance: activity deletion removes only its own history; other
+     * activities, including those in the same course, remain unchanged.
      */
     public function test_activity_deletion_removes_only_its_own_history(): void {
         global $CFG, $DB;
@@ -129,9 +127,8 @@ final class retention_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: Staende jenseits der Frist werden entfernt, ausgeloest
-     * vom naechsten Schreibvorgang derselben cmid - kein Cron. Ein junger
-     * Stand (der frisch erzeugte) darf dabei nicht mitgeloescht werden.
+     * Acceptance: the next write to the same cmid removes expired states
+     * while preserving the newly created state.
      */
     public function test_write_purges_expired_versions_of_same_cm_but_keeps_fresh_one(): void {
         global $CFG, $DB;
@@ -142,7 +139,7 @@ final class retention_test extends \advanced_testcase {
 
         set_config('historyretentiondays', 1, 'local_coursepilot');
 
-        // Simuliert einen alten Stand jenseits der 1-Tages-Frist.
+        // Simulate an expired state beyond the one-day retention period.
         $DB->set_field('local_coursepilot_cm_version', 'timecreated', time() - (2 * DAYSECS), [
             'cmid' => $cm->id,
         ]);
@@ -155,13 +152,12 @@ final class retention_test extends \advanced_testcase {
         update_moduleinfo($cm, $moduleinfo, $course, null);
 
         $versions = array_values($DB->get_records('local_coursepilot_cm_version', ['cmid' => $cm->id], 'version ASC'));
-        $this->assertCount(1, $versions, 'Der alte Stand jenseits der Frist muss weg sein, nur der frische bleibt.');
+        $this->assertCount(1, $versions, 'Expired state must be removed; only the fresh state remains.');
         $this->assertSame('Neuer Titel', json_decode($versions[0]->moduleinfo_json, true)['name']);
     }
 
     /**
-     * Ein Stand innerhalb der Frist bleibt bei einem weiteren Schreibvorgang
-     * unangetastet.
+     * A state within retention survives another write.
      */
     public function test_write_keeps_versions_within_retention_period(): void {
         global $CFG, $DB;

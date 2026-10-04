@@ -17,9 +17,8 @@
 namespace local_coursepilot;
 
 /**
- * Pfadaufloesung des Kontextbereichs (Issue #343). Sicherheitsrelevant:
- * jeder Pfad, der aus der Wurzel herausfuehren wuerde, muss abgewiesen
- * werden - Angriffstests, nicht nur Happy-Path.
+ * Context paths (#343): test attacks as well as normal operation.
+ * Reject every path that would escape the root.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -41,9 +40,8 @@ final class context_files_test extends \advanced_testcase {
     public function test_resolve_directory_rejects_dotdot_segment(): void {
         $this->resetAfterTest();
         $this->expectException(\moodle_exception::class);
-        // Ein rohes '..'-Segment, wie es ankaeme, wenn PARAM_PATH es je nicht
-        // schon vorher entfernt haette - die eigene Pruefung darf sich nicht
-        // allein auf die Moodle-Parametersaeuberung verlassen.
+        // A raw .. segment could reach this check if PARAM_PATH stopped removing
+        // it. Do not rely solely on Moodle parameter sanitization.
         context_files::resolve_directory('faecher/../../../etc');
     }
 
@@ -77,9 +75,9 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der Ablageort ist Moodles Private Files (Spec 0016 §1.2, Issue #407) -
-     * damit die Lehrkraft ihre Arbeitsdateien in "Meine Dateien" ohne
-     * Coursepilot-Endpunkt verwalten kann.
+     * Store context in Moodle Private Files so teachers can manage working
+     * files through My files without a Coursepilot endpoint
+     * (Spec 0016 §1.2, #407).
      */
     public function test_storage_anchor_is_private_files(): void {
         $this->assertSame('user', context_files::COMPONENT);
@@ -88,8 +86,8 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Die alte Filearea bleibt als Konstante erhalten - Altbestand und
-     * Privacy-Provider adressieren sie weiterhin (Spec 0016 §3).
+     * Keep the legacy file-area constant for old content and the privacy
+     * provider (Spec 0016 §3).
      */
     public function test_legacy_anchor_still_addressable(): void {
         $this->assertSame('local_coursepilot', context_files::LEGACY_COMPONENT);
@@ -97,8 +95,8 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Schreibendpunkte brauchen das Standard-Nutzerrecht auf die eigenen
-     * Dateien (Spec 0016 §1.1) - ohne es bricht die Pruefung ab.
+     * Writing requires the standard capability for managing one’s own files
+     * (Spec 0016 §1.1).
      */
     public function test_require_manage_own_files_passes_for_standard_user(): void {
         $this->resetAfterTest();
@@ -110,14 +108,13 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne das Recht bricht die Pruefung ab - der Schreibpfad bleibt zu.
+     * Missing capability blocks the write path.
      */
     public function test_require_manage_own_files_rejects_user_without_capability(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
-        // CAP_PROHIBIT schlaegt jede andere Zuweisung - der sauberste Weg,
-        // das Standardrecht in einem Test wegzunehmen.
+        // CAP_PROHIBIT overrides every assignment, removing the default capability in tests.
         $roleid = $this->getDataGenerator()->create_role();
         role_assign($roleid, $user->id, \context_system::instance()->id);
         assign_capability(
@@ -133,8 +130,8 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Restplatz nach Nutzerquote (Spec 0016 §1.3): file_storage setzt
-     * $CFG->userquota nicht selbst durch, Coursepilot muss es tun.
+     * Coursepilot enforces $CFG->userquota because file_storage does not
+     * (Spec 0016 §1.3).
      */
     public function test_remaining_quota_reports_free_space(): void {
         global $CFG;
@@ -159,7 +156,7 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne gesetzte Quote (0 = unbegrenzt) gibt es keinen Restplatz-Wert.
+     * Unlimited quota (0) has no remaining-space value.
      */
     public function test_remaining_quota_is_null_without_quota(): void {
         global $CFG;
@@ -172,8 +169,7 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Admins duerfen die Quote ignorieren (moodle/user:ignoreuserquota) -
-     * dann gibt es keine Grenze zu melden.
+     * Admins with moodle/user:ignoreuserquota have no limit to report.
      */
     public function test_remaining_quota_is_null_for_quota_ignorers(): void {
         global $CFG;
@@ -186,9 +182,8 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der Umzug (Spec 0016 §3.1) kopiert den Altbestand in die Private
-     * Files - unter demselben relativen Pfad, damit er weiter erreichbar
-     * bleibt.
+     * Migration copies old content into Private Files at the same relative
+     * paths, preserving access (Spec 0016 §3.1).
      */
     public function test_migrate_legacy_files_copies_into_private_files(): void {
         $this->resetAfterTest();
@@ -212,8 +207,8 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der Altbestand bleibt liegen - er ist der Rueckweg, und die Lehrkraft
-     * entscheidet selbst, wann sie ihn raeumt (Spec 0016 §3.1).
+     * Keep old content as a fallback until the teacher chooses to remove it
+     * (Spec 0016 §3.1).
      */
     public function test_migrate_legacy_files_keeps_the_original(): void {
         $this->resetAfterTest();
@@ -235,7 +230,7 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Kollision = ueberspringen, nichts ueberschreiben (Spec 0016 §3.1).
+     * Skip collisions without overwriting (Spec 0016 §3.1).
      */
     public function test_migrate_legacy_files_skips_collisions(): void {
         $this->resetAfterTest();
@@ -269,9 +264,8 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Altbestand ausserhalb des Wurzelordners bleibt liegen - er wuerde sonst
-     * lose in der Wurzel von "Meine Dateien" landen, wo Coursepilot ihn ohnehin
-     * nicht mehr sieht.
+     * Preserve old content outside the root instead of copying it loosely
+     * into My files, where Coursepilot would not see it.
      */
     public function test_migrate_legacy_files_skips_files_outside_the_root(): void {
         $this->resetAfterTest();
@@ -314,15 +308,11 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Die Zusage aus Spec 0016 §5.3, Teil eins: scheitert das Anlegen des
-     * neuen Inhalts, bleibt die Zieldatei unangetastet. Das ist der Grund
-     * fuer die Reihenfolge in replace() - andersherum waere der Bestand der
-     * Lehrkraft fuer die Dauer eines Schrittes ungesichert, und eine
-     * Transaktion wuerde ihn nicht retten: stored_file::delete() entfernt den
-     * Blob physisch aus dem Dateipool, ein Rollback holt ihn nicht zurueck.
-     *
-     * Erzwungen ueber einen ungueltigen Ordnerpfad im Ziel - den weist
-     * file_storage beim Anlegen zurueck, also vor dem Loeschen.
+     * Replacement safety, part 1 (Spec 0016 §5.3): failure to create new
+     * content preserves the target. replace() must create before deleting
+     * because stored_file::delete() physically removes the pool blob and
+     * transaction rollback cannot restore it. Force creation failure with
+     * an invalid target folder path.
      */
     public function test_replace_keeps_target_when_creation_fails(): void {
         $this->resetAfterTest();
@@ -345,11 +335,9 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Teil zwei, das verbleibende Restrisiko: bricht es zwischen Loeschen und
-     * Umbenennen ab, ist die Zieldatei weg - aber der vollstaendige neue
-     * Inhalt liegt als Zwischendatei in "Meine Dateien". Unschoen und
-     * sichtbar, nicht verloren. Genau diese Zusage macht der Docblock von
-     * replace(), also wird sie auch geprueft.
+     * Replacement safety, part 2: failure between deletion and rename removes
+     * the target, but preserves complete new content in a temporary My files
+     * entry. This visible residual risk matches replace() documentation.
      */
     public function test_replace_leaves_content_behind_when_rename_fails(): void {
         $this->resetAfterTest();
@@ -384,7 +372,7 @@ final class context_files_test extends \advanced_testcase {
 
     /**
      * @param string $content
-     * @return int Kontext-ID der frisch angemeldeten Lehrkraft.
+     * @return int Context ID of the newly logged-in teacher.
      */
     private function context_with_journal(string $content): int {
         $this->setUser($this->getDataGenerator()->create_user());
@@ -423,8 +411,8 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Kein Toolname nennt einen Speicherort oder einen verbotenen
-     * Namensbestandteil (Akzeptanzkriterium aus #343).
+     * Tool names contain no storage location or forbidden name component
+     * (#343 acceptance).
      */
     public function test_tool_names_reveal_no_storage_location(): void {
         $forbidden = ['private', 'pluginfile', 'nextcloud', 'webdav', 'moodlefile', 'filesystem'];
