@@ -1,27 +1,25 @@
 ---
 name: coursepilot
-description: Coursepilot-Einstieg. Nutze diesen Skill bei der Formulierung "Mach mit Bio weiter.", wenn eine Lehrkraft mit bestehenden Moodle-Kursen weiterarbeiten will und noch kein Spezialmodus eindeutig genannt wurde.
+description: Coursepilot entry. Use this skill for requests such as "Continue with biology" when a teacher wants to work on existing Moodle courses without clearly selecting a specialist mode.
 ---
 
 # coursepilot
 
-Lies zuerst `coursepilot_get_skill("coursepilot-core")`. Bei Mehrdeutigkeit über
-Klasse, Fach oder Thema zusätzlich `coursepilot_get_skill("context-onboarding")`.
+First read `coursepilot_get_skill("coursepilot-core")`. If the class, subject
+or topic is ambiguous, also read `coursepilot_get_skill("context-onboarding")`.
 
-Benenne transparent den passenden Modus (`coursepilot-plan` oder
-`coursepilot-implement`) und den Grund für den Wechsel. Halte die Planstrenge
-aus dem Kern ein.
+State the appropriate mode (`coursepilot-plan` or `coursepilot-implement`)
+and explain the switch briefly. Follow the core's plan discipline and
+respond in the teacher's language.
 
-## Servermodus
+## Server mode
 
-Im Servermodus gelten ausschliesslich die Skills aus `coursepilot_list_skills`.
-Findet Coursepilot daneben lokal installierte Coursepilot-Skills, benennt es das
-gegenueber der Lehrkraft und arbeitet mit den Server-Skills weiter, statt sie
-zu mischen.
+Use only skills returned by `coursepilot_list_skills`. If locally installed
+Coursepilot skills are also present, tell the teacher and continue with
+server skills rather than mixing both sources.
 
-Nicht leere Felder `ausstände`/`hinweise` aus derselben Antwort zu
-Sitzungsbeginn melden (siehe `coursepilot_get_skill("context-area")`).
+Report nonempty `pending_entries` and `notices` from that same response
+at session start; see `coursepilot_get_skill("context-area")`.
 
-Bei einer Bestandsänderung, die gerade nicht ausführbar ist, oder bei
-einem Client mit lokalen Dateiwerkzeugen zu Sitzungsbeginn:
-`coursepilot_get_skill("notepad")`.
+Read `coursepilot_get_skill("notepad")` when an inventory change cannot
+currently be performed, or at session start for clients with local file tools.

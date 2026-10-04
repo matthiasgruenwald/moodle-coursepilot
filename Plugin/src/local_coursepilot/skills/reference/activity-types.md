@@ -1,185 +1,150 @@
 ---
 name: activity-types
-description: Lies diese Datei, wenn Coursepilot eine Aktivität einer Art anlegen soll, die keinen Feldkatalog hat (etwa Buch, Checkliste, Glossar), oder wenn die Lehrkraft eine solche Aktivität durch eine neue Fassung ablösen will.
+description: Read this to create an activity without a field catalog, such as book, checklist or glossary, or to supersede an existing activity with a new version.
 ---
 
-# Referenz: Aktivitätsart-Ablage und Lernschleife
+# Reference: activity-type files and learning loop
 
-Grundlage: Spec 0026 und ADR 0028
-(`docs/specs/0026-erschlossene-aktivitaetsarten.md`). Setzt den Kontextbereich
-aus `coursepilot_get_skill("context-area")` voraus (Werkzeuge,
-Schreibangebot, Handänderungs-Routine) — hier steht nur, was für
-Aktivitätsarten ohne Feldkatalog zusätzlich gilt. Der Aufbau folgt
-`coursepilot_get_skill("question-types")`.
+Basis: Spec 0026 and ADR 0028
+(`docs/specs/0026-erschlossene-aktivitaetsarten.md`). Use context-area tools,
+write offers and manual-edit checks. This adds rules for uncataloged types
+and follows `coursepilot_get_skill("question-types")`.
 
-## Welche Art ist es?
+## Classify the type
 
-Eine Aktivitätsart ist genau eine von drei:
-
-| Art | Weg |
+| Type | Path |
 |---|---|
-| **katalogisiert** (hat einen Feldkatalog, z. B. `page`, `label`, `assign`, `url`) | `coursepilot_create_module`. Dieser Referenzteil gilt nicht. |
-| **erschlossen** (installiert, ohne Feldkatalog, z. B. `book`, `checklist`, `glossary`) | Dieser Referenzteil: anlegen aus Aktivitäts-XML. |
-| **ausgeschlossen** (`lesson`, `quiz`, Arten mit Dateien im Inhalt wie `scorm`, `imscp`, `h5pactivity`, `lightboxgallery`, Arten ohne Moodle-Backup) | Coursepilot legt sie nicht an. Das Werkzeug nennt den Grund; gib ihn der Lehrkraft weiter und schlage vor, die Aktivität in Moodle selbst anzulegen. Bei Arten mit Dateien sag dazu, dass Coursepilot sie noch nicht mit ihren Dateien anlegen kann. |
+| Cataloged, e.g. page, label, assign, url | coursepilot_create_module; this reference does not apply |
+| Learned: installed without a catalog, e.g. book, checklist, glossary | Create from activity XML under this reference |
+| Excluded: lesson, quiz, content-file types such as scorm, imscp, h5pactivity, lightboxgallery, or types without Moodle backup | Do not create through this path. Pass on the tool's reason and suggest manual Moodle creation. Explain file-bearing types cannot yet be created with their files |
 
-`coursepilot_create_activity_from_xml` und `coursepilot_export_default_activity`
-lehnen katalogisierte und ausgeschlossene Arten selbst ab und nennen den Weg.
-Das Werkzeug entscheidet, nicht du aus dem Gedächtnis.
+`coursepilot_create_activity_from_xml` and `coursepilot_export_default_activity`
+reject cataloged/excluded types and name the right path. The tool decides;
+do not classify from memory alone.
 
-## Sprache zur Lehrkraft
+## Teacher-facing vocabulary
 
-Der Vorgang heißt zur Lehrkraft **„anlegen“**. „Unterstützt“ gehört dem
-Feldkatalog; für erschlossene Arten sagt Coursepilot nichts zu und prüft nur
-nach dem Anlegen, ob Moodle gespeichert hat, was gebaut wurde. Sag etwa: „Ein
-Buch kenne ich noch nicht fest. Ich probiere das Anlegen aus und prüfe danach,
-ob Moodle alles so gespeichert hat.“
+Call the operation create. Reserve supported for field-catalog guarantees:
+learned types make no such promise and are checked after creation to see
+whether Moodle retained the supplied content. Say, in the teacher's
+language: "I do not have fixed knowledge of book yet. I will try creating
+it and check whether Moodle saved everything as intended."
 
-Anlegen erzeugt immer eine neue Aktivität. Eine geänderte Fassung einer
-bestehenden Aktivität entsteht als neue Aktivität, die die alte ablöst (siehe
-„Ablösen“).
+Creation always makes a new activity. A revision creates a successor that
+supersedes the old one, as described below.
 
-## Die Aktivitätsart-Ablage
+## Activity-type learning files
 
-Was beim Anlegen gelernt wird, landet als gewöhnliche Kontextdatei im Bereich
-der Lehrkraft, fester Pfad **relativ zur Kontextwurzel** (siehe „Ablageordnung“
-in `coursepilot_get_skill("context-area")`):
+Store learning as ordinary teacher context at a fixed relative path:
 
 ```
 activity-types/<modname>.md
 ```
 
-`<modname>` ist der Moodle-Kurzname der Art (`book`, `checklist`, `glossary`).
-Eine Datei je Art; die Ablage hält Wissen fest und ist keine Klonvorlage.
+modname is the Moodle shortname, such as book, checklist or glossary.
+One file per type records knowledge, not a clone template. Import experience
+about tar structure, previews and checklist references is in
+`coursepilot_get_skill("activity-backup-experience")`. These are hints,
+not verified rules; record confirmed observations in the type file.
 
-Erfahrungswerte aus echten Importen (Tar-Aufbau, Vorschaubilder, Checklisten-Verweise)
-stehen in `coursepilot_get_skill("activity-backup-experience")`. Sie sind Hinweise,
-keine geprüften Regeln: Was du davon bestätigst, gehört in die Ablage der Art.
+### Required structure
 
-### Verbindliche Gliederung
-
-| Abschnitt | Inhalt |
+| Section | Content |
 |---|---|
-| **Kopf** | Art (`modname`), Moodle-Release, Plugin-Release und -Version, zuletzt verifiziert am |
-| **Minimal-Beispiel** | wortgleich die Aktivitäts-XML, die tatsächlich angelegt wurde |
-| **Pflichtstruktur** | was fehlen darf und was nicht |
-| **Stolpersteine** | je Eintrag: Symptom → Ursache → Abhilfe |
+| Header | modname, Moodle release, plugin release/version, last verification date |
+| Minimal example | Exact activity XML actually created |
+| Required structure | What can be omitted and what cannot |
+| Pitfalls | Symptom → cause → remedy per entry |
 
-Der Kopf ist die Verfallsanzeige. Hole die Angaben **vor dem Schreiben** mit
-`coursepilot_get_version_info` und trage sie im Klartext ein
-(Moodle-Release, Plugin-Release, Plugin-Version), immer mit konkreten Werten.
+Retrieve concrete header versions through coursepilot_get_version_info
+before writing; the header detects outdated knowledge.
 
-### Das Minimal-Beispiel ist ein Beleg, keine Skizze
+### Minimal examples are evidence
 
-Abgelegt wird **wortgleich die XML, die `coursepilot_create_activity_from_xml`
-ohne Abweichung angelegt hat**, mit `<?xml …?>`-Zeile und `<activity>`-Rahmen.
-Eine gekürzte, umgebaute oder rekonstruierte Fassung kommt erst in die Datei,
-wenn *sie selbst* angelegt wurde und den Round-Trip bestanden hat. Eine
-Ablage, die ungeprüftes Wissen konserviert, ist schlechter als keine.
+Store the exact XML accepted by coursepilot_create_activity_from_xml
+without deviation, including its declaration and activity wrapper.
+Shortened, modified or reconstructed examples must themselves pass
+creation and round-trip checks before storage. Untested retained
+knowledge is worse than no file.
 
-### Schreibregel
+### Write rule
 
-Geschrieben wird mit `coursepilot_write_context_file` samt
-`expected_contenthash` (Vollersatz mit Konfliktschutz), nicht mit
-`coursepilot_append_context_file`: Neues Wissen wird in den passenden Abschnitt
-eingeordnet, nicht ans Ende gehängt.
+Use coursepilot_write_context_file with expected_contenthash for full
+replacement, not append. Integrate knowledge into the appropriate section.
+After the first successful creation of a new type, offer to save the
+learning; write only after confirmation.
 
-Geschrieben wird nur auf Schreibangebot, nie automatisch: Nach dem ersten
-erfolgreichen Anlegen einer neuen Art fragt Coursepilot, ob das Gelernte
-festgehalten werden soll. Erst nach Bestätigung wird geschrieben.
+## Learning loop
 
-## Die Lernschleife
+Explain each step briefly to the teacher. Announce learned types, report
+failures/corrections per attempt and settle each yes/no branch before
+proceeding.
 
-Jeder Schritt wird der Lehrkraft in einem Satz gesagt: eine erschlossene Art
-wird angesagt, je Versuch wird berichtet, was fehlschlug und was korrigiert
-wurde. Die Stufen mit **Ja/Nein** stehen fest, bevor der nächste Schritt
-beginnt.
+1. Read activity-types/<modname>.md using coursepilot_read_context_file
+   with manual-edit checking. Present? Yes: step 2; no: step 3.
+2. Compare header Moodle release/plugin version with coursepilot_get_version_info.
+   Match? Yes: step 4. No: report a contradiction, then step 4 using the
+   file as a hint only.
+3. Obtain a template. Export an existing teacher-course activity through
+   coursepilot_export_activity_backup(cmid). Otherwise use
+   coursepilot_export_default_activity(courseid, modname), which briefly
+   creates and removes an activity, leaving nothing. Announce this write
+   in the existing plan/approval workflow and execute only after approval;
+   without approval, template acquisition stops here.
+4. Build XML from the learning file or template using teacher content.
+   Template determines fields, order and ranges.
+5. Create through coursepilot_create_activity_from_xml with courseid,
+   modname, section, activity_xml and optional hidden/replaces_cmid/dry_run.
+   The plugin creates hidden, exports and checks retention. Passed? Yes:
+   report cmid; presets are Moodle-supplied defaults, not errors; step 7.
+   No: the same call removed the activity, leaving nothing in course or
+   trash. Use its deviation message for step 6.
+6. Correct, at most three times. Fix the specific deviation and return
+   to step 5. After the third unsuccessful correction, stop and explicitly
+   ask the teacher to create an example manually and provide its cmid;
+   export_activity_backup supplies that version-specific template.
+7. Is there new knowledge to record? Yes if the type has no file, corrections
+   taught something or a contradiction occurred: make the write offer.
 
-1. **Ablage lesen.** Gibt es `activity-types/<modname>.md`
-   (`coursepilot_read_context_file`, mit Handänderungs-Prüfung)?
-   **Ja:** weiter mit 2. **Nein:** weiter mit 3.
-2. **Kopf abgleichen.** Stimmen Moodle-Release und Plugin-Version im Kopf mit
-   `coursepilot_get_version_info` überein? **Ja:** weiter mit 4.
-   **Nein:** als Widerspruch melden (siehe unten), dann weiter mit 4; die
-   Ablage gilt nur noch als Hinweis.
-3. **Muster beschaffen.** Gibt es in den Kursen der Lehrkraft schon eine
-   Aktivität dieser Art, liefert `coursepilot_export_activity_backup`
-   (`cmid`) ihre Aktivitäts-XML und zeigt, wie sie gebaut ist. Sonst liefert
-   `coursepilot_export_default_activity` (`courseid`, `modname`) eine
-   Muster-XML mit Moodle-Standardwerten; das Werkzeug legt dafür kurz an und
-   entfernt wieder, im Kurs bleibt nichts zurück. Dieser Schreibzugriff wird im
-   bestehenden Plan-/Freigabeablauf (`implementation-plan-workflow`) angekündigt
-   und erst nach Freigabe ausgeführt; ohne Freigabe endet die Musterbeschaffung
-   hier.
-4. **Bauen.** Aus Ablage oder Muster die Aktivitäts-XML mit dem Inhalt der
-   Lehrkraft bauen. Feldnamen, Reihenfolge und Wertebereiche stammen aus dem
-   Muster.
-5. **Anlegen und Round-Trip.** `coursepilot_create_activity_from_xml`
-   (`courseid`, `modname`, `section`, `activity_xml`, optional `hidden`,
-   `replaces_cmid`, `dry_run`). Das Plugin legt intern versteckt an, exportiert
-   und prüft, ob alles Gebaute in Moodle angekommen ist. **Bestanden?**
-   **Ja:** `cmid` nennen; `presets` (Felder, die Moodle selbst ergänzt hat)
-   sind ein Hinweis, kein Fehler; weiter mit 7. **Nein:** Das Plugin hat die
-   Anlage im selben Aufruf entfernt, im Kurs und im Papierkorb liegt nichts;
-   die Meldung nennt die Abweichung und ist der Lernstoff für Schritt 6.
-6. **Korrigieren, höchstens dreimal.** Die Abweichung gezielt beheben, zurück
-   zu 5. Nach der dritten Korrektur ohne Erfolg endet das Probieren: Bitte die
-   Lehrkraft ausdrücklich, eine solche Aktivität einmal selbst in Moodle
-   anzulegen und die `cmid` zu nennen; daraus liefert
-   `coursepilot_export_activity_backup` die Vorlage dieser Moodle-Version.
-7. **Schreibangebot.** Gibt es etwas festzuhalten (**Ja/Nein**)? **Ja**, wenn
-   die Art noch keine Ablage hat oder Korrekturen oder ein Widerspruch etwas
-   Neues gezeigt haben: Schreibangebot machen (siehe „Schreibregel“).
+### Contradictions
 
-### Widerspruchsprüfung
+Explicitly report version mismatches from step 2 and behavior mismatches
+when a documented rule fails or an excluded error occurs. Offer to revise
+the affected section with likely cause and current header versions.
+Until then, use the template from step 3.
 
-Zwei Fälle zählen als Widerspruch und werden ausdrücklich gemeldet:
+## Supersede rather than edit
 
-- **Versionsabweichung** (Schritt 2).
-- **Verhaltensabweichung:** Eine in der Ablage dokumentierte Regel stimmt
-  nicht mehr, oder ein Fehler tritt auf, den die Datei ausschließt.
+For requested changes to an existing learned-type activity:
 
-Coursepilot bietet an, den betroffenen Abschnitt zu überarbeiten, mit
-Ursachenvermutung und aktualisiertem Kopf, und arbeitet bis dahin mit dem
-Muster aus Schritt 3.
+1. Ask whether the new version should supersede the old, retaining the
+   old hidden with all learner data.
+2. Call coursepilot_create_activity_from_xml with replaces_cmid and
+   dry_run:true. This writes nothing and returns references to the old
+   activity (availability/course-completion criteria), successor_cmid and
+   hidden_predecessors.
+3. Report references. Coursepilot does not rewrite them; update them manually.
+4. Already superseded (successor_cmid != 0)? No: step 5. Yes: report the
+   successor cmid and ask whether to supersede it instead. If yes, return
+   to step 2 with that successor. If no, continue with the original;
+   the call is not blocked.
+5. Report actual hidden_predecessors count: hidden old versions in the
+   chain after superseding, with only the latest visible. Explain that
+   the teacher may delete unneeded old versions in Moodle. Always report
+   the real count, without a threshold.
+6. After approval, repeat without dry_run. New activity appears directly
+   after old; old is hidden, with title and data preserved. Omit section;
+   type and course must match. Report returned notices as in steps 3–5.
+7. Failed creation leaves nothing; retrying the same replaces_cmid needs
+   no special handling.
 
-## Ablösen statt Ändern
+## User-data content
 
-Soll eine bestehende Aktivität einer erschlossenen Art „geändert“ werden:
+Activity XML carries settings and teacher-designed content such as
+chapters/checklist items. User-data content fails round-trip checking and
+is removed as in step 5.
 
-1. Frage die Lehrkraft, ob die neue Fassung die alte **ablösen** soll (die
-   alte bleibt versteckt erhalten, mit allen Daten der Lernenden).
-2. Rufe `coursepilot_create_activity_from_xml` mit `replaces_cmid` und
-   `dry_run: true` auf. Es schreibt nichts und liefert nur Hinweise:
-   `references` (Stellen, die auf die alte Aktivität zeigen: Voraussetzungen,
-   Kursabschluss-Kriterien), `successor_cmid` und `hidden_predecessors`.
-3. Nenne der Lehrkraft diese Verweise. Coursepilot löst sie nicht auf; sie
-   werden von Hand auf die neue Aktivität umgestellt.
-4. **Ist die Vorlage schon abgelöst?** Ist `successor_cmid` ungleich 0
-   (**Ja/Nein**)? **Nein:** weiter mit 5. **Ja:** Nenne die Nachfolgerin
-   (`cmid`) und frage die Lehrkraft: Soll stattdessen sie abgelöst werden
-   (**Ja/Nein**)? **Ja:** zurück zu 2 mit `replaces_cmid` = Nachfolgerin.
-   **Nein:** weiter mit 5 an der ursprünglichen Vorlage; der Aufruf wird
-   nicht blockiert.
-5. Nenne die Zahl `hidden_predecessors`: so viele versteckte ältere Fassungen
-   liegen nach dem Ablösen in der Kette (A → B → C, sichtbar nur die
-   neueste). Gib den Aufräum-Hinweis weiter: Nicht mehr gebrauchte
-   Altfassungen kann die Lehrkraft in Moodle löschen. Keine Schwelle, immer
-   die tatsächliche Zahl.
-6. Nach Freigabe: derselbe Aufruf ohne `dry_run`. Die neue Aktivität steht
-   direkt hinter der alten, die alte ist nur versteckt (Titel bleibt, nichts
-   gelöscht). `section` entfällt dabei; Art und Kurs müssen gleich sein. Die
-   Antwort trägt dieselben Hinweise; gib sie wie in 3–5 weiter.
-7. Schlägt die Anlage fehl, bleibt nichts zurück; ein neuer Versuch mit
-   derselben `replaces_cmid` braucht keine Sonderbehandlung.
-
-## Nutzerdaten-Inhalte
-
-Die Aktivitäts-XML trägt Einstellungen und den Inhalt, den die Lehrkraft
-gestaltet (Kapitel, Checklisten-Punkte). Nutzerdaten-Inhalte besteht der
-Round-Trip nicht; die Anlage wird dann wie in Schritt 5 entfernt.
-
-**Stolperstein `glossary`: wird leer angelegt.** Glossar-Einträge gehen über
-die Aktivitäts-XML nicht mit; eine XML mit `<entry>` besteht den Round-Trip
-nicht. Lege das Glossar ohne Einträge an und sage der Lehrkraft vorher, dass
-sie die Einträge in Moodle selbst anlegt. Gehört in die Ablage
-`activity-types/glossary.md`.
+Glossary pitfall: creation is empty. Entries are not carried through
+activity XML; XML containing entry fails the round trip. Create without
+entries and tell the teacher beforehand to add them in Moodle. Record
+this in activity-types/glossary.md.

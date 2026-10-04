@@ -49,7 +49,7 @@ final class skill_corpus_test extends \advanced_testcase {
 
         $this->assertArrayHasKey('coursepilot', $byname);
         $this->assertSame('adapter', $byname['coursepilot']['kind']);
-        $this->assertStringContainsString('Coursepilot-Einstieg', $byname['coursepilot']['trigger']);
+        $this->assertStringContainsString('Coursepilot entry', $byname['coursepilot']['trigger']);
 
         $this->assertArrayHasKey('coursepilot-core', $byname);
         $this->assertSame('reference', $byname['coursepilot-core']['kind']);
@@ -167,8 +167,8 @@ final class skill_corpus_test extends \advanced_testcase {
             $this->assertArrayHasKey(
                 $name,
                 $validnames,
-                "Werkzeugname '$name' (genannt in: " . implode(', ', array_unique($files))
-                    . ") steht nicht in tool_registry::allowed_tools()."
+                "Tool name '$name' (mentioned in: " . implode(', ', array_unique($files))
+                    . ") is absent from tool_registry::allowed_tools()."
             );
         }
     }
@@ -193,7 +193,7 @@ final class skill_corpus_test extends \advanced_testcase {
         $this->assertSame(
             [],
             $missing,
-            'Diese Werkzeuge kommen im Skill-Korpus nicht vor: ' . implode(', ', $missing)
+            'These tools are absent from the skill corpus: ' . implode(', ', $missing)
         );
     }
 
@@ -227,30 +227,59 @@ final class skill_corpus_test extends \advanced_testcase {
             $schema = tool_registry::schemas()[$tool]['properties'];
             foreach ($fields as $field) {
                 $this->assertMatchesRegularExpression('/`[^`]*\\b' . preg_quote($field, '/') . '\\b/', $corpus);
-                $this->assertArrayHasKey($field, $schema, "{$tool}: {$field} fehlt im Schema.");
+                $this->assertArrayHasKey($field, $schema, "{$tool}: {$field} is absent from the schema.");
             }
         }
     }
     public function test_graphics_reference_exposes_source_header_and_composition_rules(): void {
         $content = preg_replace('/\s+/u', ' ', skill_corpus::get('graphics')['content']);
         foreach ([
-            'standardmäßig einen Quellenkopf mit ihrem Lehrwerkverweis',
-            'Lehrkraft kann den Quellenkopf abwählen',
-            'Dateiname oder Kontext eindeutig',
-            'einmal nach dem Kürzel fragen',
-            'Fach- oder Lerngruppenkontext im Kontextbereich',
-            'Seitenzahl aus Vorschau oder Dateiname',
-            'Kopftext steht im Plan',
-            'normalen Planfreigabe',
-            'keine Extra-Rückfrage',
-            'Zusammensetzen anbieten',
-            'einen Alt-Text',
-            'derselben Seite',
-            'Kopf am ersten Teil',
+            'Add a source header by default for textbook illustrations',
+            'The teacher can opt out of the source header',
+            'abbreviation is unambiguous from the filename or context',
+            'ask once for the abbreviation',
+            'subject or learning-group context in the context area',
+            'Take the page number from the preview or filename',
+            'The header text appears in the plan',
+            'Normal plan approval',
+            'no extra question',
+            'Offer composition',
+            'one alt text',
+            'the same page',
+            'a header on the first part',
         ] as $rule) {
             $this->assertStringContainsString($rule, $content);
         }
         $this->assertStringContainsString('coursepilot_compose_material_file', $content);
         $this->assertStringContainsString('coursepilot_get_skill("graphics")', skill_corpus::get('coursepilot-plan')['content']);
+    }
+
+    /**
+     * English is the corpus base; teacher-facing conversations retain the teacher's language.
+     */
+    public function test_corpus_is_english_and_preserves_teacher_language(): void {
+        foreach (skill_corpus::list() as $entry) {
+            $content = skill_corpus::get($entry['name'])['content'];
+            $this->assertDoesNotMatchRegularExpression(
+                '/\b(?:Lehrkraft|Lehrkräfte|Auslöser|anschließend|Schüler|Werkzeuge|gewählt|ausführen|Unterricht)\b/u',
+                $content,
+                $entry['name'] . ': German prose remains in the English corpus'
+            );
+        }
+        foreach (['coursepilot', 'coursepilot-plan', 'coursepilot-implement'] as $name) {
+            $content = strtolower(preg_replace('/\s+/u', ' ', skill_corpus::get($name)['content']));
+            $this->assertStringContainsString("respond in the teacher's language", $content);
+        }
+        $core = preg_replace('/\s+/u', ' ', skill_corpus::get('coursepilot-core')['content']);
+        $this->assertStringContainsString("Respond to the teacher in the teacher's language", $core);
+        $this->assertStringContainsString("Match teaching content to the teacher's requested language", $core);
+    }
+
+    /**
+     * Learned creation attempts must not promise field-catalog support.
+     */
+    public function test_learned_activity_types_distinguish_creation_from_support(): void {
+        $content = preg_replace('/\s+/u', ' ', skill_corpus::get('activity-types')['content']);
+        $this->assertStringContainsString('Call the operation create. Reserve supported for field-catalog guarantees', $content);
     }
 }

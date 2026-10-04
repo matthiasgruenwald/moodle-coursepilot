@@ -1,365 +1,295 @@
 ---
 name: context-area
-description: Lies diese Datei, wenn eine Arbeitsdatei der Lehrkraft (plan.md, status.md, Journal, Materialnotizen, Kontextprofile) gelesen, geschrieben oder angehängt werden soll.
+description: Read this when listing, reading, writing or appending teacher working files such as plan.md, status.md, journals, material notes or context profiles.
 ---
 
-# Referenz: Kontextbereich
+# Reference: context area
 
-Arbeitsdateien (`plan.md`, `status.md`, Journal, Materialnotizen,
-Kontextprofile) liegen serverseitig im Kontextbereich der Lehrkraft. Es gibt
-keinen lokalen Dateipfad und keinen lokal auszuführenden Code — jede
-Arbeitsdatei-Operation läuft ausschließlich über die vier Werkzeuge unten.
-Grundlage: Spec 0016 §7/§8 (`docs/specs/0016-kontextbereich-schreibend.md`).
+Working files live server-side in the teacher's context area. They have no
+local path or locally executable code. Every working-file operation uses
+the four file tools below. Basis: Spec 0016 §7/§8
+(`docs/specs/0016-kontextbereich-schreibend.md`).
 
-## Werkzeuge
+## Tools
 
-| Tool | Zweck | Antwort enthält |
+| Tool | Purpose | Response |
 |---|---|---|
-| `coursepilot_list_context_files` | Ordnerinhalt auflisten, optional `previous_location` (Altbestand) | je Eintrag `contenthash`, `timemodified`, `locked` |
-| `coursepilot_read_context_file` | Datei lesen, optional `previous_location` (Altbestand) | `content`, `contenthash`, `timemodified` |
-| `coursepilot_write_context_file` | Anlegen/vollständig überschreiben, optional `expected_contenthash`, optional `pending_entry` (Kennung), optional `create_only` (Kopieren aus dem Altbestand) | Meldung "neu angelegt" / "überschrieben"; bei Konflikt Fehler `contextfilechanged`/`contextfilealreadyexists` |
-| `coursepilot_append_context_file` | Anhängen in einem Serveraufruf, kein `expected_contenthash` (kein vorheriges Lesen nötig), optional `pending_entry` (Kennung) | Meldung "angehängt" / "neu angelegt", ggf. Rotationshinweis |
-| `coursepilot_dismiss_pending_entry` | Einen Eintrag der Ausstandsnotiz ausdrücklich verwerfen (`identifier`) | Bestätigung |
-| `coursepilot_dismiss_previous_location` | Den Altbestand (vorheriger Ort) ausdrücklich beenden, kein Parameter | Bestätigung |
+| `coursepilot_list_context_files` | List folders; optional `previous_location` for old content | Per entry: `contenthash`, `timemodified`, `locked` |
+| `coursepilot_read_context_file` | Read files; optional `previous_location` | `content`, `contenthash`, `timemodified` |
+| `coursepilot_write_context_file` | Create/fully overwrite; optional `expected_contenthash`, `pending_entry` identifier and `create_only` for copying old content | Created/overwritten message; conflicts: `contextfilechanged`/`contextfilealreadyexists` |
+| `coursepilot_append_context_file` | Append in one server call; optional `expected_contenthash` for external storage and `pending_entry` | Appended/created message, with rotation advice when needed |
+| `coursepilot_dismiss_pending_entry` | Explicitly dismiss a pending-note entry by `identifier` | Confirmation |
+| `coursepilot_dismiss_previous_location` | Explicitly end the previous-location state; no parameters | Confirmation |
 
-Nur `.md`-Dateien; Pfadsegmente `[A-Za-z0-9_-]`, kein `.`/`..`.
+Only `.md` files; path segments use `[A-Za-z0-9_-]`, never `.` or `..`.
 
-## Offene Ortswahl (Issue #494)
+## Pending location selection (#494)
 
-Solange die Lehrkraft noch keinen Ort gewählt hat und die Schule externe
-Speicher freigeschaltet hat, liefert `coursepilot_list_skills` im Feld
-`notices` einen Satz mit Link zur Ortswahlseite. Diesen Satz **genau einmal
-je Sitzung** an die Lehrkraft weitergeben. Antwortet sie mit "später" (oder
-sinngemäß), in derselben Sitzung nicht erneut ansprechen — eine offene
-Ortswahl sperrt ohnehin nichts, Coursepilot arbeitet einfach weiter.
+If the teacher has not selected a location and the school enables external
+storage, `coursepilot_list_skills` returns a `notices` entry linking to the
+location-selection page. Present it exactly once per session. If the teacher
+says later or equivalent, do not repeat it in that session. Pending selection
+blocks nothing; continue working.
 
-## Altbestand (vorheriger Ort)
+## Old content: previous location
 
-`coursepilot_list_skills` nennt im selben Feld `notices` — nach den
-`pending_entries` gemeldet, also erst wenn offene Ausstände schon benannt sind —
-ohne Zählung den Fakt "Altbestand offen", wenn nach einem Ortswechsel des
-Kontextbereichs am früheren Ort noch Kontextdateien liegen.
-`coursepilot_list_context_files`/`coursepilot_read_context_file` mit
-`previous_location: true` lesen diesen alten Ort — nur lesend, nie schreibend
-(**Nur-Lese-Schalter**). Zum Kopieren: gelesenen Inhalt per
-`coursepilot_write_context_file` mit `create_only: true` an den neuen Ort
-schreiben — legt nur an, überschreibt nie. Nach dem Kopieren (oder wenn die
-Lehrkraft auf den Rest verzichtet) `coursepilot_dismiss_previous_location` aufrufen,
-um ihn ausdrücklich zu beenden. Der Altbestand endet nie von selbst durch
-Zeitablauf oder Namensgleichheit.
+After a context-location change, `coursepilot_list_skills` reports pending
+old content in `notices`, without a count. Present this after
+`pending_entries`, once unsaved writes have been reported.
 
-**Das Altbestandsangebot:**
+`coursepilot_list_context_files` and `coursepilot_read_context_file` with
+`previous_location: true` read the old location only; it is a read-only
+switch. To copy, write the read content to the new location through
+`coursepilot_write_context_file` with `create_only: true`. This creates
+but never overwrites. After copying, or when the teacher declines the rest,
+call `coursepilot_dismiss_previous_location` to end it explicitly.
+Time or matching filenames never end old-content state automatically.
 
-- Anzahl der am alten Ort liegenden Dateien nennen (aus
-  `coursepilot_list_context_files` mit `previous_location: true`), dann **eine**
-  Bestätigung für alle einholen — nicht Datei für Datei fragen.
-  Uebernommen wird nur nach dieser Bestätigung.
-- Existiert eine Datei am neuen Ort bereits (`contextfilealreadyexists`),
-  wird sie **nicht** überschrieben; die übersprungenen Namen der Lehrkraft
-  nennen, statt sie stillschweigend auszulassen.
-- Löschen ist Sache der Lehrkraft, nie von Coursepilot. Das **einmal** sagen
-  (in "Meine Dateien" bzw. der eigenen Cloud) — nicht bei jedem weiteren
-  Altbestand-Kontakt derselben Sitzung wiederholen.
-- Geht der Weg zurück nach Moodle (externe Quelle → Kontextbereich in
-  Moodle), vor dem Kopieren die Größe des Altbestands als **reinen
-  Faktenvergleich** nennen (z.B. "der Altbestand ist 3,4 MB, in Moodle sind
-  aktuell 8 MB frei") — Moodle hat eine Quote, der externe Speicher praktisch
-  nicht. Das ist eine Information, keine Empfehlung gegen den Umzug.
+**Old-content offer:**
 
-## Ablageordnung — Wurzel und relative Pfade (Spec 0012 §5, Spec 0010)
+- List the old files with `previous_location: true`, report their count,
+  and obtain one confirmation for all files, rather than asking per file.
+  Copy only after confirmation.
+- If a new-location file exists (`contextfilealreadyexists`), preserve it
+  and name the skipped file rather than silently omitting it.
+- Tell the teacher once that deletion is their responsibility, in My files
+  or their cloud. Do not repeat this during every old-content interaction.
+- Before copying from external storage back to Moodle, provide a factual
+  size comparison, e.g. "Old content is 3.4 MB; Moodle currently has 8 MB
+  free." Moodle has a quota; external storage effectively does not. This
+  is information, not advice against moving.
 
-Der Kontextbereich hat **eine** Wurzel. Wie ihr Ordner heißt und wo er
-liegt, löst das Plugin selbst auf — aus seiner Einstellung, oder aus dem
-Ort, den die Lehrkraft auf der Ortswahlseite gewählt hat (siehe „Offene
-Ortswahl" oben) — unabhängig davon, wie die KI-Anbindung selbst eingerichtet
-wurde. Der Wurzelname ist damit nichts, was hier festgeschrieben werden
-könnte, und nichts, was ein Werkzeugaufruf kennen müsste.
+## Storage layout: root and relative paths (Spec 0012 §5, Spec 0010)
 
-**Jeder Pfad, den ein Werkzeug bekommt, ist relativ zu dieser Wurzel** —
-`question-types/match.md`, nie mit einem Wurzelordner davor. Ein vorangestellter
-Wurzelname legt die Datei eine Ebene zu tief ab (`<wurzel>/<wurzel>/…`) und
-ist immer ein Fehler. Dasselbe gilt für die Rückgaben: der `path` einer
-Auflistung ist ebenfalls relativ zur Wurzel, die Wurzel selbst ist der leere
-Pfad.
+The context area has one root, resolved by the plugin from configuration
+or the teacher's location-selection page choice. This is independent of
+AI connection setup. Neither instructions nor callers need its folder name.
 
-An der Wurzel liegen:
+Every tool path is relative to the root: `question-types/match.md`, never
+prefixed with a root folder. Adding that prefix creates
+`<root>/<root>/...`, always an error. Returned listing paths are also
+relative; the root itself has an empty path.
 
-| Eintrag | Was |
+Root entries:
+
+| Entry | Purpose |
 |---|---|
-| `index.md` | globale Uebersicht über die Vorhaben (Spec 0010) |
-| `templates.md` | gemerkte Aktivitätsvorlagen (Spec 0013/0012 §5) |
-| `question-types/` | ein `<fragetyp>.md` je erschlossenem Fragetyp (`coursepilot_get_skill("question-types")`) |
-| `activity-types/` | ein `<modname>.md` je erschlossener Aktivitätsart (`coursepilot_get_skill("activity-types")`) |
-| `<schuljahr>/<klasse-oder-lerngruppe>/<fach>/<vorhaben>/` | die eigentliche Arbeitsablage: Profile, `plan.md`, `status.md`, Journal, Material |
+| `index.md` | Global project overview (Spec 0010) |
+| `templates.md` | Remembered activity templates (Spec 0013/0012 §5) |
+| `question-types/` | One `<type>.md` per learned question type; `coursepilot_get_skill("question-types")` |
+| `activity-types/` | One `<modname>.md` per learned activity type; `coursepilot_get_skill("activity-types")` |
+| `<school-year>/<class-or-group>/<subject>/<project>/` | Profiles, `plan.md`, `status.md`, journal and material |
 
-### Bestehende deutsche Dateinamen (#605)
+### Existing German filenames (#605)
 
-Neue Dateien heißen `templates.md`, `notepad.md` und `CONTEXT-people.md`.
-Beim Lesen dieser Namen sucht `coursepilot_read_context_file` nur dann nach
-`vorlagen.md`, `merkzettel.md` bzw. `CONTEXT.personen.md` im selben Ordner,
-wenn die englische Datei fehlt. Bestehen beide, gilt die englische Datei.
-Ein Speicher- oder Verbindungsfehler bleibt ein Fehler; er löst keinen
-Namenswechsel aus. `previous_location` bleibt dabei am gewählten alten Ort.
+New files use `templates.md`, `notepad.md` and `CONTEXT-people.md`.
+When reading those names, `coursepilot_read_context_file` falls back to
+`vorlagen.md`, `merkzettel.md` or `CONTEXT.personen.md` in the same folder
+only if the English file is missing. If both exist, the English file wins.
+Storage/connection errors stay errors and never cause a name switch.
+`previous_location` still refers to the selected old location.
 
-Die Antwort liefert den tatsächlich gelesenen `path` und dessen `contenthash`.
-Beim Fortschreiben einer gelesenen Datei genau diesen Pfad mit
-`expected_contenthash` verwenden. Alte Dateien werden weiter gelesen, auch
-bei direkter Angabe ihres deutschen Namens. Externe WebDAV-Dateien werden
-nicht automatisch umbenannt oder migriert. Die Personenbezug-Sperre gilt
-für den tatsächlich gelesenen Inhalt unabhängig vom Dateinamen.
+The response returns the actual `path` and its `contenthash`. To update a
+read file, use that exact path with `expected_contenthash`. German files
+remain directly readable too. External WebDAV files are not automatically
+renamed or migrated. Personal-data checks inspect actual read content
+regardless of filename.
 
-Neue Ablageorte kommen an die Wurzel oder in einen Vorhabenordner — kein
-zweiter, thematisch sortierter Ordnerbaum.
+Add new storage entries at the root or in project folders; do not create
+another topic-sorted tree.
 
-## Schreibangebot für plan/status/vorlagen (Spec 0016 §8.2)
+## Write offer for plans, status, templates and profiles (Spec 0016 §8.2)
 
-`plan.md`, `status.md`, Vorlagen und Profildateien werden nie still
-geschrieben. An natürlichen Haltepunkten (Planungsrunde abgeschlossen,
-Freigabe erteilt) fasst Coursepilot das Vereinbarte zusammen und fragt, ob es
-jetzt per `coursepilot_write_context_file` geschrieben werden soll. Erst nach
-Bestätigung wird geschrieben. Nichts Vereinbartes bleibt ungeschrieben liegen.
+Never write these silently. At natural stopping points, such as completed
+planning or granted approval, summarize the agreement and offer to write
+it through `coursepilot_write_context_file`. Write after confirmation;
+leave no confirmed agreement unwritten.
 
-## Journal-Append unter der Sitzungs-Kontextfreigabe (Spec 0016 §8.1)
+## Journal append under session context authorization (Spec 0016 §8.1)
 
-Journal-Einträge sind davon ausdrücklich ausgenommen: Sie laufen automatisch
-per `coursepilot_append_context_file`, sobald die einmalige
-Sitzungs-Kontextfreigabe (siehe `CONTEXT.md`, Glossareintrag "Kontextfreigabe")
-zu Sitzungsbeginn erteilt ist — keine Einzelbestätigung je Eintrag.
+Journal entries are explicitly exempt from individual write offers. Append
+automatically through `coursepilot_append_context_file` after the one-time
+session context authorization at session start (`CONTEXT.md`, context
+authorization). Do not request confirmation for each entry.
 
-## Handänderungs-Routine (Spec 0016 §7)
+## Manual-edit routine (Spec 0016 §7)
 
-Die Lehrkraft kann jede Datei jederzeit an ihrem Ablageort selbst bearbeiten
-— in Moodle über "Meine Dateien", am externen Speicher über dessen eigene
-Oberfläche. Coursepilot merkt sich je gelesener Datei den zuletzt gesehenen
-`contenthash` und prüft ihn:
+Teachers can edit files at their storage location at any time: My files
+in Moodle or the external storage UI. Remember the last read `contenthash`
+per file and check it:
 
-1. **Bei Sitzungsstart**, für alle Dateien, die diese Sitzung voraussichtlich
-   braucht: `coursepilot_list_context_files` (oder erneutes
-   `coursepilot_read_context_file`) gegen den zuletzt bekannten Stand
-   vergleichen.
-2. **Vor jedem Schreibvorgang** (write und append) erneut, unmittelbar bevor
-   geschrieben wird.
+1. At session start, compare listing or fresh reads for files the session
+   expects to need against the last known state.
+2. Immediately before each write or append, check again.
 
-Weicht der `contenthash` ab: Datei neu lesen, der Lehrkraft die Aenderung
-kurz benennen ("Die Datei wurde seit dem letzten Lesen extern geändert") und
-fragen, ob mit dem neuen Stand weitergearbeitet werden soll, bevor irgendetwas
-geschrieben wird. Kein Verlauf alter Versionen — nur der zuletzt gelesene
-`contenthash` wird vorgehalten.
+If the hash changed, reread, briefly report the external edit and ask
+whether to use the new state before writing anything. Keep only the last
+read hash, not a version history.
 
-Bei `coursepilot_write_context_file` zusätzlich technisch abgesichert: den
-zuletzt gelesenen `contenthash` als `expected_contenthash` mitgeben. Bricht
-der Server mit `contextfilechanged` ab, ist das derselbe Fall — neu lesen,
-nachfragen. `coursepilot_append_context_file` kennt kein
-`expected_contenthash` (kein vorheriges Lesen im Vertrag); die Skill-seitige
-Prüfung vor dem Aufruf bleibt hier die einzige Absicherung.
+For `coursepilot_write_context_file`, pass that hash as
+`expected_contenthash`. A `contextfilechanged` error requires the same
+reread and clarification. Moodle append reads and writes atomically without
+requiring a prior read; the skill-side manual-edit check still applies.
+External append also accepts `expected_contenthash` for concurrency checks.
 
-## Journal-Rotation (Spec 0016 §8.4)
+## Journal rotation (Spec 0016 §8.4)
 
-Antwortet `coursepilot_append_context_file` mit dem Zusatz "... überschreitet
-1 MB — Rotation empfohlen" (Wortlaut laut Plugin: "Die Datei überschreitet
-1 MB — Rotation empfohlen."), legt Coursepilot **nicht**
-automatisch eine neue Datei an. Es benennt den Hinweis der Lehrkraft und
-schlägt einen Archivnamen vor (z.B. `journal-2026-06.md` für das laufende
-Archiv, neu `journal-2026-07.md`). Stimmt die Lehrkraft zu:
+When append advises that a file exceeds 1 MB and recommends rotation,
+do not create a new journal automatically. Tell the teacher and propose
+an archive name, such as current `journal-2026-06.md` and new
+`journal-2026-07.md`. After agreement:
 
-1. Neue Journaldatei per `coursepilot_write_context_file` anlegen (leer oder mit
-   Header).
-2. Künftige Appends für diesen Kontext auf die neue Datei umstellen.
-3. Die bisherige Datei bleibt unverändert liegen — kein Löschen, kein
-   Zusammenführen.
+1. Create the new journal through `coursepilot_write_context_file`, empty
+   or with a header.
+2. Direct future appends for that context to the new file.
+3. Preserve the old file unchanged; neither delete nor merge it.
 
-## Lerndatei: ersetzen statt anhängen (Spec 0020 §7)
+## Learning files: replace rather than append (Spec 0020 §7)
 
-Eine Lerndatei (`question-types/<typ>.md`, `activity-types/<modname>.md` — feste Gliederung, Schreibregel siehe
-`coursepilot_get_skill("question-types")` — sowie `templates.md`) darf sonst zu
-Schicht auf Schicht wachsen: Anhängen fühlt sich sicher an, Löschen
-riskant, und der Kontext wird mit jeder Sitzung teurer und widersprüchlicher.
+`question-types/<type>.md` and `activity-types/<modname>.md` have a fixed
+structure and the write rule in `coursepilot_get_skill("question-types")`.
+They and `templates.md` must not accumulate contradictory layers as
+appending feels safer than deletion and makes each session more expensive.
 
-Deshalb geht eine neue Erkenntnis in den **vorhandenen Abschnitt** und ersetzt
-dort die schwächere Formulierung, statt inhaltlich ans Dateiende angehängt
-zu werden. Geschrieben wird technisch ohnehin immer per
-`coursepilot_write_context_file` (Vollersatz, siehe Schreibregel in
-`coursepilot_get_skill("question-types")`) — "Anhängen" meint hier den Inhalt, nicht
-das Werkzeug. Inhaltlich blindes Anhängen ist der Ausnahmefall (z. B.
-`templates.md`, das als freie Liste ohne feste Gliederung geführt wird und wo
-ein neuer Eintrag deshalb regulär dazukommt statt einen Abschnitt zu
-ersetzen) und wird als solcher benannt, wenn er eintritt.
+Integrate new knowledge into the existing section, replacing weaker wording.
+Technically use full replacement through `coursepilot_write_context_file`.
+Appending here means adding prose, not the append tool. Blindly adding
+content at the end is exceptional: `templates.md` is an unstructured list,
+so a genuinely new entry can be added normally. Name such exceptions.
 
-Vor jeder Ergänzung einer Lerndatei gilt dieselbe Prüfung wie für den
-Skill-Korpus selbst (Spec 0020 §8):
+Before every learning-file addition, apply the corpus test (Spec 0020 §8):
 
-> Ändert diese Zeile gegenüber dem Default Verhalten, und sagt sie etwas, das
-> nicht schon woanders steht?
+> Does this line change default behavior and add something not already said elsewhere?
 
-Eine Zeile, die diese Prüfung nicht besteht, wird nicht geschrieben — weder
-neu noch als Ersatz.
+If not, write neither an addition nor a replacement.
 
-## Verdichtungsangebot bei wachsender Lerndatei (Spec 0020 §7)
+## Offer to condense growing learning files (Spec 0020 §7)
 
-`coursepilot_write_context_file` und `coursepilot_append_context_file` melden bei
-jedem Schreibvorgang die neue Dateigröße (`size`, in Byte). Bei einer
-Lerndatei ist diese Prüfung bei jeder Ergänzung das Arbeitsmittel — nicht
-erst die 1-MB-Grenze aus Spec 0016 §5.2, die der harte Fangnetzwert bleibt.
-Wächst eine Lerndatei spürbar, bietet Coursepilot an, sie zu verdichten
-(Dopplungen, veraltete Stolpersteine oder überholte Ausbaustufen
-zusammenfassen) — analog zur Journal-Rotation, aber als Angebot statt als
-Umbenennung: Die Lehrkraft entscheidet, ob und wann verdichtet wird.
+Write and append responses report the new `size` in bytes. Check growth
+on every learning-file addition rather than waiting for the 1 MB hard
+safety limit (Spec 0016 §5.2). If growth is substantial, offer to condense
+duplicates, obsolete pitfalls or superseded stages. Like journal rotation,
+this is an offer; the teacher decides whether and when to condense.
 
-## Keine Klarnamen in unmarkierten Dateien (Spec 0016 §8.3)
+## No real names in unmarked files (Spec 0016 §8.3)
 
-Schülernamen, Schüler-IDs und anderer Personenbezug gehören ausschließlich
-in Dateien mit Frontmatter `coursepilot.personenbezug: true`. Das Plugin prüft
-nur die Markierung (Schreibsperre bei ausgeschaltetem #344-Schalter), nicht
-den Inhalt — die Klarnamen-Grenze selbst ist reine Skill-Regel:
+Student names, IDs and other personal data belong only in files with
+frontmatter `coursepilot.personenbezug: true`. This established marking
+remains unchanged. The plugin checks marking and blocks writes with #344
+off; it does not inspect names. The real-name boundary is a skill rule:
 
-- Vor jedem Schreiben/Anhängen mit Personenbezug prüfen, ob die Zieldatei
-  bereits `coursepilot.personenbezug: true` trägt; falls nicht, das
-  Frontmatter beim nächsten `coursepilot_write_context_file` ergänzen statt
-  Klarnamen unmarkiert abzulegen.
-- Ist eine Datei nicht markiert und der Inhalt braucht Personenbezug, entweder
-  die Markierung ergänzen (mit Lehrkraftfreigabe, da das den #344-Schalter
-  aktiviert) oder anonymisiert/pseudonymisiert schreiben (Kürzel statt Name).
+- Before personal-data writes/appends, check the target marking. If absent,
+  add frontmatter on the next full write rather than storing unmarked names.
+- If personal data is needed, either add marking with teacher approval,
+  making the #344 switch relevant, or write anonymously/pseudonymously
+  using abbreviations instead of names.
 
-## Wenn der Speicher nicht antwortet (ADR 0023, Issue #492/#495)
+## When storage does not respond (ADR 0023, #492/#495)
 
-Der Kontextbereich kann in Moodle oder an einem externen WebDAV-Speicher der
-Lehrkraft liegen (Ortswahl, siehe unten) — was folgt, gilt für beide
-gleichermaßen und benennt nie den Ort.
+Context may be in Moodle or external WebDAV. These rules apply equally
+without assuming a storage location.
 
-### Ausstand und Nachtragen (Schreibausfall)
+### Pending writes and replay: write outage
 
-Scheitert ein gültiger `coursepilot_write_context_file`/`coursepilot_append_context_file`-
-Aufruf am Speicher, der Verbindung oder dem Ort (nicht bei einem Konflikt und
-nicht bei einem Aufruffehler wie der `.md`-Regel oder der Personenbezug-Sperre),
-legt das Plugin selbst einen Eintrag in der **Ausstandsnotiz** an und meldet
-eine Kennung — der Inhalt liegt nirgendwo, es gibt keinen Rückfall. Die
-Antwort nennt Pfad und Vorgang, die Ursache und die Kennung.
+A valid write/append failing because of storage, connection or location
+creates a pending-note entry and returns an identifier. Conflicts and
+request errors, such as extension or personal-data checks, do not.
+Content is stored nowhere; there is no fallback. The response reports
+path, operation, cause and identifier.
 
-- Den Inhalt im Gespräch behalten, nicht verwerfen. Die Anweisung an die KI:
-  **keinen anderen Ort nehmen** — also nicht ausweichend in eine andere
-  Kontextdatei oder ein anderes Verzeichnis schreiben, auch nicht
-  vorübergehend.
-- Sobald die Verbindung wieder steht, denselben Aufruf erneut senden, diesmal
-  mit `pending_entry=<Kennung>` — gelingt er, verschwindet der Eintrag im selben
-  Aufruf (**Nachtragen**). Ein Nachtragen überschreibt nie einen inzwischen
-  gewachsenen Bestand.
-- `coursepilot_list_skills` meldet zu Sitzungsbeginn offene Einträge im Feld
-  `ausstände`, gebündelt je Zieldatei. Soll ein Eintrag nicht mehr
-  nachgetragen werden: **erst** eine Rekonstruktion anbieten, wo eine
-  möglich ist (z.B. aus dem Aenderungsverlauf einer Aktivität), **danach
-  erst** `coursepilot_dismiss_pending_entry` aufrufen — nie ohne ausdrückliches
-  Wort der Lehrkraft.
-- "Ausstand" ist ein interner Bezeichner; zur Lehrkraft heißt es "noch nicht
-  gespeichert", nie "Ausstand".
+- Keep content in the conversation. Do not choose another storage location,
+  context file or directory, even temporarily.
+- Once the connection works, repeat the same call with
+  `pending_entry=<identifier>`. Success completes the entry in that call.
+  Replay never blindly overwrites content that has changed meanwhile.
+- At session start, `coursepilot_list_skills` returns `pending_entries`
+  grouped by target. Before dismissing an entry, first offer reconstruction
+  when possible, e.g. from activity history. Only then call
+  `coursepilot_dismiss_pending_entry` after explicit teacher instruction.
+- Pending entry is internal vocabulary. Tell the teacher "not yet saved",
+  translated into their language, rather than exposing internal jargon.
 
-### Kontext-Lücke (Leseausfall)
+### Context gap: read outage
 
-Ist der Kontextbereich nicht lesbar, obwohl Moodle antwortet, ist das eine
-**Kontext-Lücke** — kein Ausstand, denn es ist nichts verloren gegangen:
+Unreadable context while Moodle responds is a context gap, not a pending
+write: no content has been lost.
 
-- Einmal je Sitzung ausdrücklich ansagen, dass gerade ohne Journal, Profile
-  und Plan gearbeitet wird — danach nicht wiederholen.
-- Weiterplanen im Gespräch bleibt erlaubt, ebenso das Schreiben in Moodle.
-- Gesperrt ist nur, was an einer ungelesenen Datei hängt: Soll ein
-  **gespeicherter** Plan umgesetzt werden und ist er gerade nicht lesbar,
-  nicht aus der Erinnerung umsetzen, sondern die Lücke benennen und auf das
-  erneute Lesen warten.
-- Ein Plan, der im selben Gespräch entstanden und freigegeben ist (also nie
-  gelesen werden musste), trägt die Umsetzung trotzdem.
+- Explicitly say once per session that work currently lacks journal,
+  profiles and plan; do not keep repeating it.
+- Planning in conversation and Moodle writing remain allowed.
+- Block only work dependent on unread files. Do not implement an unreadable
+  saved plan from memory; name the gap and wait for a successful read.
+- A plan created and approved in the same conversation can still be
+  implemented because it never required reading from storage.
 
-### Konflikt beim Schreiben
+### Write conflict
 
-Meldet `coursepilot_write_context_file` einen Konflikt (`contextfilechanged`;
-am externen Speicher dieselbe Fehlerklasse "Konflikt"): die Datei neu lesen,
-die Aenderungen mit dem eigenen Stand zusammenführen und erst dann erneut
-schreiben. Kein Ausstand, kein Aufgeben.
+For `contextfilechanged` or the equivalent external conflict, reread,
+merge with your own changes and only then retry. No pending entry and
+no abandonment.
 
-### Quotenfehler
+### Quota error
 
-Scheitert ein Schreibvorgang am Speicherplatz (`contextquotaexceeded`), steht
-in der Fehlermeldung bereits ein Verweis auf die Ortswahlseite — diesen Satz
-an die Lehrkraft weitergeben, statt selbst einen Ausweg zu erfinden.
+For `contextquotaexceeded`, pass on the existing location-selection link
+in the error message instead of inventing a storage workaround.
 
-## Aufräumfrage nach Aufbau (Spec 0018 §8.3, Issue #439)
+## Cleanup question after a build (Spec 0018 §8.3, #439)
 
-Am Ende eines abgeschlossenen Aufbaus (mindestens ein Moodle-Schreibzugriff
-dieser Sitzung abgeschlossen, kein offener Blocker) ruft `coursepilot-implement`
-einmal `coursepilot_report_loose_material_files` auf und prüft die Antwort:
+After a completed build with at least one successful Moodle write in the
+session and no open blocker, `coursepilot-implement` calls
+`coursepilot_report_loose_material_files` once and checks the response:
 
-- **`files` ist leer:** keine Frage. Nichts liegt lose, also gibt es nichts zu
-  entscheiden.
-- **`files` ist nicht leer:** fragt aktiv, ohne dass die Lehrkraft danach
-  fragen muss, z.B.: *„Im Material liegen noch 3 Dateien (4,2 MB), die in
-  keiner Aktivität verwendet werden: `altes-blatt.pdf` (1,1 MB, 40 Tage),
-  `entwurf.png` (0,3 MB, 12 Tage), `screenshot-quelle.jpg` (2,8 MB, 3 Tage —
-  Original eines bereits eingebetteten Zuschnitts). Löschen?"* — Anzahl,
-  Gesamtgröße (`total_size`, in Byte geliefert, für die Anzeige in MB
-  umrechnen) und jede einzelne Datei mit Pfad und Größe werden genannt,
-  nicht nur die Zahl.
-- Ist `remaining_quota_mb` gesetzt und knapp (Restplatz niedrig gemessen an
-  dem, was diese Sitzung an Uploads/Zuschnitten gesehen hat, oder eine
-  Quotenwarnung ist in dieser Sitzung bereits bei einem Schreibzugriff
-  aufgetreten — Form wie Spec 0016 §5.4/§8.1: Warnung unter 10 % Restplatz,
-  Restplatz in MB), nennt die Frage zusätzlich den Restplatz, z.B. „…
-  löschen? Aktuell nur noch 8,4 MB Restplatz."
+- Empty `files`: ask nothing; there is no cleanup decision.
+- Nonempty `files`: proactively ask about deletion. Report count, total MB
+  (convert `total_size` bytes) and every file's path, size and age. Example:
+  "Three unused files remain (4.2 MB): old-sheet.pdf (1.1 MB, 40 days),
+  draft.png (0.3 MB, 12 days), source-screenshot.jpg (2.8 MB, 3 days,
+  original of an embedded crop). Delete them?" Use the teacher's language.
+- If `remaining_quota_mb` is set and low relative to session uploads/crops,
+  or a write already warned of quota this session, also report remaining
+  MB. Follow Spec 0016 §5.4/§8.1: warn below 10% remaining space.
 
-Gelöscht wird ausschließlich auf ausdrückliche Antwort ("ja", eine
-Teilauswahl der genannten Dateien o.ae.) per `coursepilot_delete_material_files`
-mit genau den bestätigten Pfaden — nie automatisch, keine Altersregel als
-Löschgrund. Eine Ablehnung oder keine Antwort löscht nichts; die Dateien
-bleiben liegen, ohne dass die Frage in derselben Sitzung wiederholt wird.
+Delete only explicitly confirmed paths through
+`coursepilot_delete_material_files`. A yes or selected subset authorizes
+only those files. Never auto-delete or use age as a deletion rule. Refusal
+or silence preserves files without repeating the question that session.
 
-Diese Regel ist eine Skill-Regel, kein Serververhalten (Spec 0016 §7: „der
-Server hat kein Session-Konzept"), und gilt daher unverändert für jeden
-Client, der `coursepilot-implement` ausführt — Claude Desktop wie Codex.
+This is a skill rule, not server behavior: the server has no session
+concept (Spec 0016 §7). Apply it equally in Claude Desktop and Codex.
 
-## Materialbestand: `location`, Eintragstyp `context_area` und Sperre (Issue #495)
+## Material inventory: location, context_area and exclusion (#495)
 
-Die lesenden Materialwerkzeuge (`coursepilot_list_material_files`,
-`coursepilot_preview_material_file`, die Quelle von `coursepilot_crop_material_file`,
-je Teil die Quelle von `coursepilot_compose_material_file`,
-Materialpfade bei `coursepilot_create_module`/`coursepilot_update_module_settings`)
-nehmen den Parameter `location` mit den Werten `store` (Standard, der gewachsene
-Materialordner der Lehrkraft — nur gelesen) und `workbench` (Chat-Anhänge,
-Zuschnitte — hier wird auch geschrieben). Liegt der Materialbestand in
-Moodle, zeigen beide Werte auf denselben Ort. Schreibziele liegen immer auf
-der Werkbank; `location` wählt ausschließlich die Quelle, beim Zusammensetzen
-für jeden Teil einzeln.
+Material readers (`coursepilot_list_material_files`,
+`coursepilot_preview_material_file`, crop sources, individual compose
+sources and material paths for create/update module settings) accept
+`location`: `store` by default for read-only teacher inventory, or
+`workbench` for chat attachments and crops, where writes also occur.
+In Moodle both values resolve to the same location. Write targets always
+use the workbench; location selects sources only, per part when composing.
 
-Liegt der Kontextbereich innerhalb des Materialbestands, erscheint sein
-Ordner beim Auflisten (`location: store`) als eigener Eintragstyp
-`context_area`, nicht als `folder` — sichtbar, aber über die Materialwege
-nicht zu betreten. Ein Versuch, einen Pfad darin oder darunter zu lesen oder
-aufzulisten, scheitert mit einer benannten Sperrmeldung
-(`materialpathiscontext`), die auf `coursepilot_list_context_files`/
-`coursepilot_read_context_file` verweist — dorthin umlenken, nicht selbst einen
-Workaround suchen.
+If context is nested inside inventory, listing with `location: store`
+shows it as `context_area`, not `folder`. It is visible but inaccessible
+through material paths. Reads/listings at or below it fail with
+`materialpathiscontext` and direct callers to context-list/read tools.
+Follow that direction rather than finding a workaround.
 
-## Planen an einem nicht zugelassenen Speicher
+## Planning on unapproved storage
 
-Liegt der Kontextbereich an einem externen Speicher, den die Schule nicht als
-**zugelassenen Speicher** für personenbezogene Daten führt (ADR 0021 §3),
-scheitert ein Schreiben mit `coursepilot.personenbezug: true` ausdrücklich
-("Dieser Speicher ist für personenbezogene Daten nicht zugelassen") — ein
-Aufruffehler, kein Ausstand. Geplant wird trotzdem weiter, nur ohne
-Klarnamen in der Datei:
+Marked personal-data writes fail on external storage not approved by
+the school (ADR 0021 §3). This is a request error, not a pending write.
+Continue planning without real names:
 
-- Kürzel statt Klarnamen verwenden (wie in "Keine Klarnamen in unmarkierten
-  Dateien" oben).
-- Einzelheiten, die ohne Personenbezug nicht sinnvoll sind, weglassen statt
-  erzwungen zu anonymisieren.
-- Wo eine vollständige Notiz nicht ohne Klarnamen geht, in geringerem Detail
-  schreiben statt gar nicht.
-- **Lerngruppenprofile entstehen an einem solchen Speicher trotzdem** — als
-  gewöhnliche, unmarkierte Kontextdatei mit Kürzeln statt Namen. Sie
-  bleiben nur inhaltlich schwächer, nicht ungeschrieben.
+- Use abbreviations, following the unmarked-file rule above.
+- Omit details that make no sense without personal data rather than forcing
+  anonymization.
+- Record less detail instead of recording nothing when a full note requires
+  names.
+- Still create learning-group profiles as ordinary unmarked files with
+  abbreviations. Their content is weaker, not absent.
 
-## Was hier nicht gilt
+## Scope
 
-Ein lokaler Arbeitsbereich, eine lokale Konfigurationsdatei oder lokal
-auszuführender Code gelten für den Kontextbereich nicht — es gibt keinen
-lokalen Pfad, den sie auflösen könnten. Planstrenge, Ein-Plan-Regel und
-Statusprüfung vor Schreibzugriff (siehe `coursepilot_get_skill("coursepilot-core")`,
-Ankerbegriffe) gelten inhaltlich unverändert weiter, nur das *wie* des
-Lesens/Schreibens der Arbeitsdateien läuft ausschließlich über diese vier
-Tools.
+Local workspaces, configuration files and executable code do not apply to
+context-area access: there is no local path to resolve. Plan discipline,
+the one-plan rule and the status check before writing still apply unchanged;
+only file access uses these four server file tools exclusively.

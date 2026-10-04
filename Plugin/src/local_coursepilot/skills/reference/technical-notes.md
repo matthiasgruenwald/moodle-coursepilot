@@ -1,86 +1,75 @@
 ---
 name: technical-notes
-description: Lies diese Datei bei technischen Details rund um Aktivitaetsnamen, Formeln oder als Checkliste kurz vor dem Anlegen einer Aktivitaet.
+description: Read this for activity names, formulas or a final quality check before creating an activity.
 ---
 
-# Referenz: Technische Hinweise, Formeln, Benennung, Qualitaetspruefung
+# Reference: technical notes, formulas, naming and quality
 
-Lies diese Datei bei technischen Details rund um Aktivitaetsnamen, Formeln
-oder als Checkliste kurz vor dem Anlegen einer Aktivitaet.
+## Technical rules
 
-## Wichtige technische Hinweise
+- Avoid emoji in activity name fields for database compatibility. Use HTML
+  entities in content, e.g. &#127919; instead of an emoji character.
+- Section numbers are zero-based; section 1 has sectionnum:1.
+- Briefly report progress after tool calls.
+- Code pages use highlight.js with pre/code class language-XY.
+- Drawing tasks use a canvas, never an empty div; see drawing-canvas.
 
-- KEINE Emojis in Aktivitaetstiteln (name-Feld) – Moodle-DB kein UTF8MB4
-  Im HTML-Content HTML-Entities verwenden: &#127919; statt 🎯
-- Abschnittsnummer ist 0-basiert: Abschnitt 1 = sectionnum: 1
-- Nach jedem Tool-Aufruf kurz den Fortschritt berichten
-- Codeseiten IMMER mit highlight.js: <pre><code class="language-XY">
-- Zeichenaufgaben IMMER mit Canvas (siehe `coursepilot_get_skill("drawing-canvas")`), NIEMALS mit leerem Div
+## Mathematical formulas: LaTeX/MathJax
 
-## Mathematische Formeln (LaTeX / MathJax)
+Moodle renders LaTeX through MathJax. Always use LaTeX notation:
 
-Moodle rendert LaTeX-Formeln automatisch via MathJax. Formeln IMMER in LaTeX-Notation schreiben:
-
-| Darstellung | LaTeX |
+| Display | LaTeX |
 |---|---|
-| Inline-Formel | `\( f = \frac{1}{T} \)` |
-| Block-Formel (eigene Zeile) | `\[ f = \frac{1}{T} \]` |
-| Bruch | `\frac{Zaehler}{Nenner}` |
-| Index unten | `U_{GPIO}` |
-| Index oben | `cm^2` |
-| Multiplikationszeichen | `\times` |
+| Inline | `\( f = \frac{1}{T} \)` |
+| Block | `\[ f = \frac{1}{T} \]` |
+| Fraction | `\frac{numerator}{denominator}` |
+| Subscript | `U_{GPIO}` |
+| Superscript | `cm^2` |
+| Multiplication | `\times` |
 | Omega | `\Omega` |
-| Einheit mit Abstand | `220\,\Omega` oder `1\,\text{Hz}` |
+| Spaced unit | `220\,\Omega` or `1\,\text{Hz}` |
 
-Beispiele aus der ESP32-Unterrichtseinheit:
+ESP32 unit examples:
+
 ```
 \[ f = \frac{1}{T} \qquad T = 2 \times BLINK\_INTERVAL \qquad R = \frac{U_{GPIO} - U_{LED}}{I_{LED}} \]
 ```
+
 ```
-Die Periodendauer betr&auml;gt \( T = 100\,\text{ms} \), also gilt \( f = 10\,\text{Hz} \).
+The period is \( T = 100\,\text{ms} \), so \( f = 10\,\text{Hz} \).
 ```
 
-NIEMALS Formeln als Plain-Text schreiben (z.B. `f = 1/T` oder `U_GPIO`).
+Do not use plain-text formulas such as f = 1/T or U_GPIO.
 
-## Benennung von Labels und Aktivitaeten (KRITISCH)
+## Critical naming rules
 
-**Labels (Phasen-Header):** `name` ist fuer `label` gesperrt – Moodle leitet den in der
-Kursnavigation sichtbaren Namen selbst aus `intro` ab (`get_label_name()`). IMMER den
-Phasennamen als HTML in `intro` schreiben, NIEMALS `name` in `fields_json` mitgeben:
+For phase labels, name is blocked. Moodle derives the navigation name
+from intro through get_label_name(). Put the phase name in intro HTML,
+never name in fields_json:
+
 ```
 coursepilot_create_module(courseid, sectionnum, modname="label",
-   fields_json='{"intro": "<h3>Phase 1 – Informieren &amp; Analysieren</h3>"}')
+   fields_json='{"intro": "<h3>Phase 1 – Inform &amp; analyze</h3>"}')
 ```
 
-**Aufgaben, Seiten und Links:** NIEMALS einen "Phase x –" Prefix im `name`-Feld verwenden.
-Der Phasenkontext ergibt sich bereits aus dem Label darueber. Kurze, beschreibende Namen:
+For assignments, pages and links, omit Phase x prefixes because the
+preceding label already supplies that context. Use short descriptive names:
+
 ```
-RICHTIG: name="Analysebogen: ESP32 und Kundenauftrag"
-FALSCH:  name="Phase 1 – Analysebogen: ESP32 und Kundenauftrag"
-
-RICHTIG: name="Frequenzberechnung und Schaltplan"
-FALSCH:  name="Phase 2 – Frequenzberechnung und Schaltplan"
+Correct: name="Analysis sheet: ESP32 and client request"
+Wrong:   name="Phase 1 – Analysis sheet: ESP32 and client request"
+Correct: name="Frequency calculation and circuit"
+Wrong:   name="Phase 2 – Frequency calculation and circuit"
 ```
 
-## Qualitaetspruefung vor dem Erstellen
+Translate content and names into the teacher's requested course language.
 
-Fuer jede Aktivitaet pruefen:
+## Before creation
 
-1. Textseite oder Aufgabe?
-   - SuS liest nur → `coursepilot_create_module(modname="page", ...)`
-   - SuS gibt etwas ab → `coursepilot_create_module(modname="assign", ...)`
-
-2. Name korrekt?
-   - Label: Hat es einen `name`-Parameter mit dem Phasennamen? → Pflicht!
-   - Aufgabe/Seite/Link: Enthält der Name einen "Phase x –" Prefix? → Entfernen!
-
-3. Placeholder-Texte korrekt? (siehe `coursepilot_get_skill("interactive-elements")`)
-   - Verrät der Placeholder die Antwort? → Anpassen!
-   - Ist der Placeholder zu konkret (z.B. "z.B. esp32dev")? → Generischer formulieren!
-
-4. Zeichenaufgaben?
-   - Ist ein Canvas eingebaut? → Pflicht!
-
-5. Tabellen mit Eingabefeldern?
-   - Stehen in den Eingabefeldern schon die Antworten? → Leeren!
-   - Sind die Placeholder neutral formuliert? → Pruefen!
+1. Page or assignment? Reading-only uses page; submissions use assign.
+2. Naming? label uses intro for its phase name and no name parameter.
+   Remove Phase x prefixes from assignments/pages/links.
+3. Placeholders? Follow `coursepilot_get_skill("interactive-elements")`.
+   Remove answers and overly concrete hints, such as esp32dev examples.
+4. Drawing? Include a canvas; see `coursepilot_get_skill("drawing-canvas")`.
+5. Input tables? Clear prefilled answers and verify neutral placeholders.

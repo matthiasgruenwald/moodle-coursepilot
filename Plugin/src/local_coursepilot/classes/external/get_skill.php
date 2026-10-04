@@ -39,10 +39,9 @@ defined('MOODLE_INTERNAL') || die();
  * filter: the name arrives at the check unchanged, the rejection
  * is a matter of the directory list, not of character cleaning.
  *
- * Declared in English directly (#571, Spec 0025 §A): "referenced_parts"
- * instead of "referenzierte_teile", "corpus_version" instead of "korpus_stand" - the
- * underlying skill corpus ({@see \local_coursepilot\skill_corpus})
- * stays German internally, the translation happens here.
+ * Response keys are English end to end (#571, #602). The corpus content
+ * is also English (#604); its adapters instruct the AI to respond in
+ * the teacher's language. Delivery returns the stored Markdown unchanged.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

@@ -1,33 +1,38 @@
 ---
 name: worksheets
-description: Lies diese Datei, wenn zu einer Phase ein ausfuellbares Word-Arbeitsblatt (.docx) erstellt und in eine Aufgabe hochgeladen werden soll.
+description: Read this to create a fillable Word worksheet (.docx) for a phase and attach it to an assignment.
 ---
 
-# Referenz: Arbeitsblätter für Moodle-Aufgaben (mod_assign)
+# Reference: worksheets for Moodle assignments
 
-Lies diese Datei, wenn zu einer Phase ein ausfüllbares Word-Arbeitsblatt
-(.docx) erstellt und in eine Aufgabe hochgeladen werden soll.
+## No grading grid
 
-## Kein Bewertungsraster
-Arbeitsblätter dürfen **kein Bewertungsraster und keine Punktetabelle** enthalten. Moodle hat eine eigene Bewertungsfunktion — ein Raster im Dokument wäre eine überflüssige Dopplung.
+Worksheets contain no grading rubric or points table. Moodle handles
+grading; embedding another grid duplicates that function.
 
-## Keine Metadaten-Felder
-Arbeitsblätter dürfen **keine Felder für Name, Klasse oder Datum** enthalten. Moodle protokolliert diese Informationen automatisch bei der Abgabe.
+## No metadata fields
 
-## Thematisches Design
-Das Design richtet sich nach dem **Fachthema der Unterrichtseinheit**, nicht nach einem generischen Schul-Layout.
-- Header: dunkler Hintergrund, fachspezifische Akzentfarbe, thematisches Icon
-- Jede Phase bekommt eine eigene Akzentfarbe passend zur Phase
-- Beispiel IoT/ESP32: Cyan `#06B6D4`, Dark Slate `#0F172A`, Monospace für Code, Icons wie `>>--[GPIO]-->>` oder `f=1/T`
+Omit name, class and date fields. Moodle records them on submission.
 
-## Pflicht-Struktur
-1. **Thematischer Header** — einspaltig, dunkler Hintergrund, Akzentfarbe, Phasenname + Themen-Icon
-2. **Einleitungssatz** — kurze Aufgabenbeschreibung
-3. **Nummerierte Fragen** mit Badge-Nummern
-4. **Ausfüllbare Antwortfelder** — graue Tabellenzellen (`#F8FAFC`) mit gestrichelter Unterlinie
-5. **Fußzeile** — Abgabehinweis (kursiv, grau)
+## Subject-specific design
+
+Follow the unit's subject rather than a generic school layout:
+
+- Dark header, subject accent color and thematic icon.
+- A distinct accent color appropriate to each phase.
+- IoT/ESP32 example: cyan #06B6D4, dark slate #0F172A, monospace code,
+  icons such as >>--[GPIO]-->> or f=1/T.
+
+## Required structure
+
+1. Thematic single-column header with dark background, accent, phase name and icon.
+2. A short introductory task sentence.
+3. Numbered questions with badge numbers.
+4. Fillable answer fields: gray table cells (#F8FAFC) with dashed underlines.
+5. Footer: italic gray submission hint.
 
 ## Upload
-Die erzeugte .docx-Datei per `coursepilot_upload_material_file` (Dateiinhalt
-base64-kodiert) in den Materialordner der Lehrkraft legen, dann von dort aus
-in die Aufgabe einbinden.
+
+Upload the generated .docx through coursepilot_upload_material_file with
+Base64 content into the teacher's workbench, then attach it to the
+assignment from there.

@@ -40,7 +40,7 @@ Der Server-MCP liegt unter `Plugin/src/local_coursepilot/` und wird für Entwick
 ## Aufgabenhandling
 
 - Vor jedem Edit: Datei lesen. Vor Funktionsänderung: alle Aufrufer grep-en.
-- **Code-Sprache (ADR 0024, englische Basis):** Im Server-MCP sind Bezeichner, Klassennamen **und der Werkzeugvertrag** (Parameternamen, Rückgabeschlüssel, Werkzeugbeschreibungen) englisch. Moodle-Strings liegen ausschließlich in `lang/en/`; Übersetzungen laufen nach der Freigabe über AMOS. Ausnahme: der Skill-Korpus (`skills/`) bleibt vorerst deutsche Prosa für Lehrkräfte.
+- **Code-Sprache (ADR 0024, englische Basis):** Im Server-MCP sind Bezeichner, Klassennamen **und der Werkzeugvertrag** (Parameternamen, Rückgabeschlüssel, Werkzeugbeschreibungen) englisch. Moodle-Strings liegen ausschließlich in `lang/en/`; Übersetzungen laufen nach der Freigabe über AMOS. Auch Kommentare, Docblocks und der Skill-Korpus (`skills/`) sind englisch. Die KI antwortet in der Sprache der Lehrkraft und erstellt Unterrichtsinhalte in der angefragten Sprache.
 - Pläne gehören nach `docs/plans/` (versioniert).
 - Single-context Repo: `CONTEXT.md` im Root, `docs/adr/` für Architekturentscheidungen, `docs/specs/` für Produktspezifikationen.
 

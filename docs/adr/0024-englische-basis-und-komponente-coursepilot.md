@@ -88,3 +88,18 @@ Berechtigungsfehler werden unverändert gemeldet. Rückgaben nennen den
 wirklich gelesenen Pfad und dessen Hash; die Personenbezug-Sperre prüft den
 wirklich gelesenen Inhalt. Externe WebDAV-Dateien werden nicht automatisch
 umbenannt oder migriert.
+
+## Nachtrag 2026-10-04: Englischer Skill-Korpus (#604)
+
+Die vorläufige Ausnahme in Entscheidung 2 ist aufgehoben: Alle Adapter und
+Referenzen unter `skills/` haben englische Prosa und englisches Frontmatter.
+Die KI antwortet in der Sprache der Lehrkraft, einschließlich Rückfragen,
+Vorschauen, Freigaben und Berichten. Unterrichtsinhalte folgen der angefragten
+Sprache; englische Beispiele legen keine Kurssprache fest.
+
+Werkzeugnamen, Ablageschlüssel, Dateipfade und etablierte Statuskennungen
+bleiben unverändert. Das bestehende `coursepilot.personenbezug`-Frontmatter
+bleibt wegen der Personenbezug-Sperre erhalten. Deutsche Legacy-Dateinamen
+werden nur als Kompatibilitätspfade beschrieben. Vertragstests prüfen
+Werkzeug- und Feldabdeckung, englische Prosa, Lehrkraftsprache und die
+Unterscheidung zwischen erlernter Erstellung und garantierter Feldunterstützung.

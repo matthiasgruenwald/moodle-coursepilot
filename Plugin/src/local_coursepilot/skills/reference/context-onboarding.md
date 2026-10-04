@@ -1,203 +1,157 @@
 ---
 name: context-onboarding
-description: Lies diese Datei beim bewusst gestarteten Einrichten des Coursepilot-Kontexts oder wenn eine Startformulierung mehrdeutig ist und geklaert werden muss, welche Klasse/welches Fach gemeint ist.
+description: Read this for explicitly requested Coursepilot context setup or when an ambiguous opening request needs clarification about class or subject.
 ---
 
-# Referenz: Kontext-Onboarding
+# Reference: context onboarding
 
-Lies diese Datei beim bewusst gestarteten Einrichten des Coursepilot-Kontexts
-(Referenzteil des Einstiegs-Skills `coursepilot`) oder wenn eine
-Startformulierung mehrdeutig ist und geklaert werden muss, welche
-Klasse/welches Fach gemeint ist.
+Use for deliberate setup or ambiguous class/subject selection. Before
+building learning situations, use applicable course context from the
+teacher's area: learning-group and subject profiles. These may contain
+real student names under ADR 0003 and the marking rules in
+`coursepilot_get_skill("context-area")`. Read/write only through its tools.
+Before planning, implementation or other writes, read existing context
+in the agreed order.
 
-Bevor eine Lernsituation in Moodle aufgebaut wird, kann passender **Kurskontext**
-aus dem Kontextbereich genutzt werden (Lerngruppenprofil + Fachprofil). Diese
-Dateien duerfen echte Schuelernamen enthalten (siehe
-`docs/adr/0003-allow-local-student-names-in-teacher-context.md`) und werden
-ausschliesslich ueber die Werkzeuge aus
-`coursepilot_get_skill("context-area")` gelesen und geschrieben.
-Vor Planung, Umsetzung oder anderen Schreibschritten liest Coursepilot zuerst
-den bestehenden Kontext in der vereinbarten Reihenfolge.
+## Brief clarification for ambiguity
 
-## Kurze Kontextklaerung bei Mehrdeutigkeit
+Offer a few suitable candidates rather than assuming a wrong context or
+asking a long questionnaire. Example, in the teacher's language:
 
-Wenn eine Startformulierung mehrere Klassen, Faecher oder Themen meinen koennte,
-stellt Coursepilot eine kurze Rueckfrage mit wenigen passenden Kandidaten – statt
-den falschen Kontext stillschweigend anzunehmen oder lange Rueckfragen zu stellen.
+> Teacher: "Continue with biology."
+> Coursepilot: "I found two open plans: 7a (photosynthesis) and 7c (cell
+> structure). Which do you mean?"
 
-Beispiel:
-> **Lehrkraft:** "Mach mit Bio weiter."
-> **Coursepilot:** "Ich habe zwei offene Planungen fuer Bio gefunden: 7a
-> (Photosynthese) und 7c (Zellaufbau). Welche meinst du?"
+## When setup starts
 
-## Wann startet das Setup?
+Only as an explicitly selected setup option, never automatically.
+Examples: "Set up context for 7a science", "Create a learning-group profile
+for 7a" or "Set up my class/group".
 
-Nur als bewusst gestartete **Setup-Option** – nicht automatisch. Typische
-Ausloeser sind natuerliche Formulierungen wie:
+If `<school-year>/<class>/CONTEXT.md` already exists according to
+`coursepilot_list_context_files`, point to it rather than offering setup again.
 
-- "Richte den Kontext fuer 7a Nawi ein"
-- "Lege ein Lerngruppenprofil fuer die 7a an"
-- "Setup fuer meine Klasse/Lerngruppe"
+## Required context
 
-Existiert `<schuljahr>/<klasse>/CONTEXT.md` im Kontextbereich bereits
-(`coursepilot_list_context_files`), das Setup nicht erneut anbieten, sondern
-auf den vorhandenen Kontext hinweisen.
+Only these details are mandatory:
 
-## Pflichtkontext (immer abfragen)
+1. School year, e.g. 2025-26.
+2. Class or learning group, e.g. 7a. Split/mixed groups have independent
+   names, such as 7a-science-advanced, directly under the school year,
+   not nested inside 7a.
+3. Subject/teaching folder, e.g. science, only when creating a subject profile.
 
-Nur diese drei Angaben sind zwingend:
+Names use letters, digits, hyphens and underscores, no path separators or .. .
 
-1. **Schuljahr** (z.B. `2025-26`)
-2. **Klasse oder Lerngruppe** (z.B. `7a`; bei geteilten/gemischten Gruppen ein
-   eigener Lerngruppenname als **eigenstaendige Teilgruppe**, z.B.
-   `7a-e-kurs-nawi` – liegt als eigener Ordner direkt unter dem Schuljahr,
-   NICHT verschachtelt unter `7a`)
-3. **Fach/Unterrichtsordner** (z.B. `naturwissenschaften`) – nur wenn ein
-   Fachprofil angelegt werden soll
+## File layout
 
-Erlaubt sind Buchstaben, Ziffern, `-` und `_`. Keine Pfadtrenner oder `..`.
+Paths are relative to the context root; see context-area storage layout.
 
-## Ablage der Kontextdateien
-
-Alle Pfade sind relativ zur Kontextwurzel (siehe "Ablageordnung" in
-`coursepilot_get_skill("context-area")`):
-
-| Datei | Ablage |
+| File | Location |
 |---|---|
-| Lerngruppenprofil | `<schuljahr>/<klasse>/CONTEXT.md` |
-| Fachprofil | `<schuljahr>/<klasse>/<fach>/CONTEXT.md` |
+| Learning-group profile | `<school-year>/<class>/CONTEXT.md` |
+| Subject profile | `<school-year>/<class>/<subject>/CONTEXT.md` |
 
-Teilgruppen (z.B. `7a-e-kurs-nawi`) sind eigene `<klasse>`-Werte und liegen
-dadurch automatisch als eigenstaendiger Ordner direkt unter dem Schuljahr.
+Independent subgroups use their own class value and folder under the year.
 
-## Setup-Ablauf (Erklaerendes Setup)
+## Explanatory setup
 
-Sechs nummerierte Schritte, jeder mit einem pruefbaren Abschlusskriterium.
-Einrichten ist erst fertig, wenn Schritt 6 sein Abschlusskriterium erfuellt –
-also wenn die Setup-Abschlussweiche angeboten wurde.
+Six steps with verifiable completion criteria. Setup ends only after
+step 6's next-step choice has been offered.
 
-### Schritt 1: Pflichtkontext erfragen
+### Step 1: request required context
 
-Schuljahr, Klasse/Lerngruppe und ggf. Fach/Unterrichtsordner abfragen (siehe
-Pflichtkontext oben).
+Ask for year, class/group and subject/folder when needed.
 
-**Abschlusskriterium:** Alle noetigen Pflichtangaben (mindestens Schuljahr und
-Klasse/Lerngruppe) liegen vor.
+Completion: all required details, at least year and class/group, are available.
 
-### Schritt 2: Anlage erklaeren
+### Step 2: explain creation
 
-Kurz erklaeren, was angelegt wird und warum (z.B. "Ich lege
-`2025-26/7a/CONTEXT.md` in deinem Kontextbereich an – das Lerngruppenprofil
-haelt faecheruebergreifende Infos zur Klasse fest.").
+Briefly name files, location and purpose before requesting content.
+Example: "I will create 2025-26/7a/CONTEXT.md in your context area. It records
+cross-subject information about the group." Use the teacher's language.
 
-**Abschlusskriterium:** Die Lehrkraft kennt Zielort und Zweck der anzulegenden
-Datei(en), bevor Inhalte erfragt werden.
+Completion: the teacher knows targets and purposes before content questions.
 
-### Schritt 3: Optionalen Planungskontext anbieten
+### Step 3: offer optional planning context
 
-Anbieten, nicht erzwingen: Leistungsstand, besondere Lernbedarfe,
-Gruppendynamik, Sprachstand, technische Rahmenbedingungen
-(Lerngruppenprofil) bzw. Kompetenzstand, Arbeitsweisen, laufende Themen,
-Teststand (Fachprofil). Bei "spaeter"/"weiss ich noch nicht" einfach leer
-lassen (Platzhalter `_(noch nicht erfasst)_` bleibt stehen).
+Offer, without requiring: attainment, learning needs, dynamics, language
+and technical conditions for group profiles; competency, working methods,
+current topics and assessment state for subject profiles. On later/unknown,
+leave the not-yet-recorded placeholder, translated into the teacher's language.
 
-**Abschlusskriterium:** Jedes optionale Feld wurde entweder befuellt oder
-bewusst mit Platzhalter uebersprungen – keine stillschweigend ausgelassene
-Frage.
+Completion: every optional field is filled or deliberately skipped;
+no question silently disappears.
 
-### Schritt 4: Verwandten Kontext abfragen
+### Step 4: ask about related context
 
-Nur als leichte Referenz abfragen (z.B. "Ist das eine Teilgruppe einer
-Stammklasse, oder gibt es eine verwandte Lerngruppe?"). Es wird nur ein
-Verweistext gespeichert – KEINE automatische Uebernahme von Inhalten aus dem
-verwandten Profil.
+Ask lightly whether this is a subgroup or has a related learning group.
+Store a reference only, never automatically copy related-profile content.
 
-**Abschlusskriterium:** Die Frage nach verwandtem Kontext wurde gestellt und
-beantwortet oder ausdruecklich uebersprungen.
+Completion: the question is answered or explicitly skipped.
 
-### Schritt 5: Vorschau zeigen und nach Bestaetigung anlegen
+### Step 5: preview and create after confirmation
 
-Vorschau der zu erstellenden CONTEXT.md(s) zeigen, dann erst auf Bestaetigung
-per `coursepilot_write_context_file` anlegen. Bestehende Dateien werden nicht
-ueberschrieben. Ohne bestaetigte Vorschau wird keine Datei angelegt.
+Show CONTEXT.md previews before `coursepilot_write_context_file`.
+Do not overwrite existing files or create without confirmed preview.
 
-**Abschlusskriterium:** Die Lehrkraft hat die Vorschau bestaetigt, und die
-Datei(en) existieren danach exakt wie in der Vorschau gezeigt (oder das
-Anlegen wurde mangels Bestaetigung bewusst nicht ausgefuehrt).
+Completion: confirmed files exactly match their previews, or creation
+was deliberately withheld because confirmation was absent.
 
-### Schritt 6: Setup-Abschlussweiche anbieten
+### Step 6: offer the next-step choice
 
-Kurz anbieten, wie es weitergeht: jetzt planen (`coursepilot-plan`), einen
-bereits freigegebenen Plan umsetzen (`coursepilot-implement`) oder spaeter
-weiterarbeiten.
+Offer planning now (coursepilot-plan), implementing an already approved
+plan (coursepilot-implement), or continuing later.
 
-**Abschlusskriterium:** Einrichten ist fertig, wenn die Setup-Abschlussweiche
-angeboten wurde – unabhaengig davon, welche Option die Lehrkraft waehlt.
+Completion: the choice was offered, regardless of the selected option.
 
-## Frontmatter und Index (OKF, Spezifikation 0010/0011)
+## Frontmatter and index (OKF, Specs 0010/0011)
 
-Jede angelegte `CONTEXT.md` (Lerngruppenprofil, Fachprofil, Unterrichtsvorhaben)
-bekommt beim Anlegen das begrenzte YAML-Frontmatter aus Spezifikation 0010
-(`type`, `title`, `tags`, `status`, `created`, `updated`, `about`,
-`gradeLevel`, `coursepilot.personenbezug`, `coursepilot.weitergabe`), von
-Coursepilot selbst formuliert und im Vorschauschritt gezeigt. Coursepilot erfindet
-keine eigene Frontmatter-Syntax im Chat.
+Created CONTEXT.md profiles/projects use only Spec 0010's limited YAML:
+type, title, tags, status, created, updated, about, gradeLevel,
+coursepilot.personenbezug and coursepilot.weitergabe. Formulate it and
+show it in preview; invent no new frontmatter syntax.
 
-Beim Anlegen eines Unterrichtsvorhabens traegt Coursepilot den Vorhabenordner
-automatisch best-effort in `index.md` an der Kontextwurzel ein (Fach,
-Jahrgangsstufe, Tags, Kurzbeschreibung, Status). Ist `index.md` nicht lesbar
-oder widerspruechlich (kaputte/doppelte Marker), warnt Coursepilot sichtbar und
-laesst die Datei unveraendert statt sie zu ueberschreiben; das Anlegen des
-Vorhabens selbst wird dadurch nicht blockiert.
+When creating a teaching project, best-effort add its folder to root
+index.md with subject, year level, tags, summary and status. If index.md
+is unreadable or has broken/duplicate markers, warn and preserve it.
+This must not block creation of the project itself.
 
-Personenbezogene Beobachtungen (z.B. zu einzelnen Schuelerinnen und Schuelern)
-gehoeren nicht in die teilbare Sachdatei, sondern in ein eigenes Sidecar
-(`CONTEXT-people.md`), per `coursepilot_write_context_file` angelegt. Ein
-Sidecar traegt immer `coursepilot.personenbezug: true` (siehe Klarnamen-Regel in
-`coursepilot_get_skill("context-area")`) und wird von der Sachdatei aus
-sichtbar verlinkt.
+Personal observations about individual students go in a separate
+CONTEXT-people.md sidecar created with `coursepilot_write_context_file`,
+not the shareable subject file. Always mark the sidecar with
+coursepilot.personenbezug:true and visibly link it from the subject file;
+see the context-area real-name rule.
 
-## Vorlagen-Ablage für Klon-Quellen (KP-010)
+## Clone-source templates (KP-010)
 
-Häufig genutzte Klon-Quellen für `coursepilot_clone_activity` (Issue #328,
-Spezifikation 0013) können Lehrkräfte in einer einfachen Textdatei
-`templates.md` an der Kontextwurzel festhalten (Geschwisterebene zu den
-Schuljahresordnern). Keine Registry im Plugin, keine Datenbank — eine
-„Vorlage" ist eine normale Aktivität im Kurs, adressiert per `cmid`.
+Teachers may store frequent `coursepilot_clone_activity` sources (#328,
+Spec 0013) in root templates.md beside school-year folders. No plugin
+registry or database: a template is a regular course activity addressed
+by cmid.
 
 ### Format
 
-Freie Markdown-Liste, ein Eintrag pro Punkt. Empfohlene Eintragsstruktur:
-
-- Aktivitätstyp
-- Kursname + Kurs-ID
-- `cmid`
-- kurze Beschreibung, was die Aktivität besonders macht
-- optional: Verweis auf ergänzende Unterlagen
-
-Beispiel:
+A free Markdown list with one item per template. Recommended fields:
+activity type, course name/ID, cmid, a short explanation of distinctive
+settings and optional supplementary-document links.
 
 ```markdown
-- **Aufgabe** – Bio 7a (Kurs-ID 42), cmid 318: Dateiabgabe mit
-  Rubrik-Bewertung und Peer-Feedback-Fenster. Vorlage für alle
-  Präsentationsabgaben.
+- **Assignment** — Biology 7a (course ID 42), cmid 318: file submission
+  with rubric grading and a peer-feedback window. Template for
+  presentation submissions.
 ```
 
-### Wann liest der Agent die Datei?
+### Read triggers
 
-Nur bei einem der drei Trigger, nicht präventiv bei jeder Sitzung:
+Read only when:
 
-1. Die Lehrkraft verlangt eine Einstellung, die MCP nicht setzen kann (z.B.
-   eine Plugin-Konfiguration eines Abgabetyps).
-2. Sie verweist auf eine frühere Lösung ("wie bei der letzten Aufgabe", "so
-   wie im Bio-Kurs").
-3. Unmittelbar vor einem `coursepilot_clone_activity`-Aufruf, wenn keine `cmid`
-   genannt wurde.
+1. The teacher requests settings MCP cannot set, such as submission-plugin configuration.
+2. They refer to a previous solution, such as the last assignment or biology course.
+3. Immediately before cloning without a supplied cmid.
 
-### Schreiben nur nach Bestätigung
+### Write only after confirmation
 
-Anlegen und Pflegen der Datei obliegt der Lehrkraft. Coursepilot kann nach
-einem erfolgreichen Klon einen Eintrag vorschlagen, schreibt `templates.md`
-aber nie still — nur nach ausdrücklicher Bestätigung durch die Lehrkraft
-(`coursepilot_write_context_file`), analog zur Vorschau/Bestätigung-Regel bei
-Kontextprofilen (Schritt 5 oben).
+Teachers own template maintenance. After successful cloning, propose an
+entry if helpful, but write templates.md only after explicit confirmation,
+following the same preview/confirmation rule as profile setup.

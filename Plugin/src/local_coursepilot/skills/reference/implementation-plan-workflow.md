@@ -1,239 +1,209 @@
 ---
 name: implementation-plan-workflow
-description: Lies diese Datei vor jedem schreibenden Moodle-Zugriff, beim Aufbau und bei der Ausfuehrung eines Implementierungsplans.
+description: Read this before every Moodle write and when building or executing an implementation plan.
 ---
 
-# Referenz: Implementierungsplan-Workflow
+# Reference: implementation-plan workflow
 
-Lies diese Datei vor jedem schreibenden Moodle-Zugriff (`coursepilot_create_module`,
-`coursepilot_update_module_settings`, `coursepilot_move_section`, `coursepilot_move_module`,
-`coursepilot_set_completion`, `coursepilot_set_restriction`) – also beim Aufbau und bei
-der Ausfuehrung eines Implementierungsplans in `coursepilot-plan` und
-`coursepilot-implement`.
+Read before every Moodle write, including `coursepilot_create_module`,
+`coursepilot_update_module_settings`, `coursepilot_move_section`,
+`coursepilot_move_module`, `coursepilot_set_completion` and
+`coursepilot_set_restriction`, while building and executing plans in
+coursepilot-plan and coursepilot-implement.
 
-## Grundprinzipien fuer die Phasenanalyse
+## Principles for phase analysis
 
-### Phasenanzahl ist flexibel
+### Flexible phase count
 
-Es gibt KEINE feste Anzahl von Phasen. Analysiere die vorliegende
-Unterrichtseinheit oder das Unterthema und erstelle so viele Phasen wie darin
-beschrieben sind. Typisch sind 3-6 Phasen – aber es koennen auch 2 oder 8 sein.
+There is no fixed count. Analyze the supplied unit/subtopic and create as
+many phases as it describes, typically 3–6 but possibly 2 or 8.
 
-### Phasen-Design ist frei waehlbar
+### Free phase design
 
-Phasen muessen keinem starren Schema folgen. Moegliche Phasenmodelle:
-- Handlungsorientiert: Informieren / Planen / Durchfuehren / Kontrollieren / Reflektieren
-- Projektbasiert: Analyse / Konzept / Implementierung / Test / Abnahme
-- Problembasiert: Problem / Hypothese / Experiment / Auswertung
-- Eigene Struktur aus der Unterrichtseinheit oder dem Unterthema ableiten
+No rigid model is required. Examples:
 
-### Inhalte aus der Unterrichtseinheit ableiten
+- Action-oriented: inform, plan, execute, check, reflect.
+- Project-based: analyze, design, implement, test, accept.
+- Problem-based: problem, hypothesis, experiment, evaluation.
+- A structure derived from the supplied unit/subtopic.
 
-Alle Texte, Aufgaben und Materialien werden AUS DER VORLIEGENDEN UNTERRICHTSEINHEIT
-bzw. dem Unterthema abgeleitet. Nicht erfinden, nicht aus Beispielen kopieren.
+### Derive content from the teaching unit
 
-Fuer Planung und Umsetzung gilt dabei durchgaengig die **Planstrenge** (siehe
-Ankerbegriffe in `coursepilot_get_skill("coursepilot-core")`).
+Derive all texts, tasks and materials from the supplied unit or subtopic.
+Do not invent them or copy example content. Apply plan discipline throughout
+planning and implementation; see `coursepilot_get_skill("coursepilot-core")`.
 
-## Implementierungsplan-Workflow (Pflicht vor jedem Schreibzugriff)
+## Mandatory workflow before every write
 
-Bevor irgendein schreibendes MCP-Tool aufgerufen wird, wird immer zuerst ein
-**Implementierungsplan** erstellt und der Lehrkraft als **gestufte Vorschau**
-gezeigt. Erst nach expliziter Freigabe ("ja, so umsetzen", "Plan ist gut, leg
-los", "freigegeben") werden die Aenderungen in Moodle geschrieben.
+Before any writing MCP tool, create an implementation plan and show a
+staged preview. Write Moodle changes only after explicit approval such
+as "Yes, implement it this way", "The plan looks good, go ahead" or
+"Approved", including equivalents in the teacher's language.
 
-Der Plan ist `plan.md` im Kontextbereich der Lehrkraft (siehe
-`coursepilot_get_skill("context-area")`) — kein lokales Datenobjekt. Coursepilot
-haelt Abschnitte, Aktivitaeten, Gate-Status und Planabweichungen darin fest
-und aktualisiert die Datei bei jeder Planaenderung ueber das Schreibangebot.
+The plan is plan.md in the teacher's context area, not a local data object;
+see `coursepilot_get_skill("context-area")`. Record sections, activities,
+gate status and deviations there. Update after each plan change through
+the write offer.
 
-### Natuerliche Startformulierungen
+### Natural opening requests
 
-Diese Formulierungen starten den Plan-Workflow (statt direkt Tools aufzurufen):
+These start planning rather than direct tool calls:
 
-- "Plane den Abschnitt fuer ..."
-- "Erstelle mir einen Implementierungsplan fuer ..."
-- "Wie wuerdest du den Kurs befuellen? Zeig mir erst den Plan."
-- "Bevor du loslegst: was ist der Plan?"
+- "Plan the section for ..."
+- "Create an implementation plan for ..."
+- "How would you populate the course? Show me the plan first."
+- "Before you start, what is the plan?"
 
-### Ablauf
+### Procedure
 
-Vier nummerierte Schritte, jeder mit einem pruefbaren Abschlusskriterium.
-Zusaetzlich gilt fuer den gesamten Ablauf ein erschoepfendes
-**Gesamt-Abschlusskriterium**: Planen ist erst fertig, wenn jeder Punkt des
-Lehrkraftauftrags entweder als Planelement in `plan.md` erscheint oder
-ausdruecklich als Werkzeugluecke benannt ist (siehe Abschnitt "Werkzeugluecken
-bei Aktivitaeten" in `coursepilot_get_skill("coursepilot-core")`). Kein
-Auftragspunkt faellt stillschweigend weg.
+Four numbered steps, each with a verifiable completion criterion. The
+overall criterion is exhaustive: every part of the teacher's request must
+appear in plan.md or be explicitly named as a tool gap under the core's
+Activity tool gaps rule. No request item silently disappears.
 
-#### Schritt 1: Plan aufbauen
+#### Step 1: build the plan
 
-Zuerst die benannte Kurs-/Projekt-Fragensammlung als eigene
-Planungsentscheidung festlegen (siehe `coursepilot_get_skill("quiz-and-question-bank")`).
-Fuer jede geplante Aktivitaet danach Typ, Name, Inhalt/Beschreibung, ob sie
-ein Lernpfad-Gate ist und ob eine digitale Abgabe vorgesehen ist festhalten;
-daraus leitet sich automatisch die passende Completion-Konfiguration ab
-(siehe Planungsgrundsaetze unten). Das Ergebnis ist `plan.md`.
+First establish the named course/project question bank as a distinct
+planning decision; see `coursepilot_get_skill("quiz-and-question-bank")`.
+For every activity record type, name, content/description, whether it is
+a learning-path gate and whether digital submission is planned. Derive
+completion configuration from the planning principles below. Save plan.md.
 
-**Abschlusskriterium:** Das Gesamt-Abschlusskriterium (siehe oben) ist fuer
-`plan.md` erfuellt – bevor zu Schritt 2 gewechselt wird.
+Completion criterion: plan.md meets the overall criterion before step 2.
 
-#### Schritt 2: Kurzuebersicht zeigen
+#### Step 2: show a compact overview
 
-Zeigt Abschnitte, Aktivitaeten in Reihenfolge, Typ, Gate-Status,
-Completion/Restriction sowie die benannte Fragensammlung (Name + Struktur)
-und die Liste der Planungsgrundsaetze und Planabweichungen – OHNE Volltext
-(z.B. ganze Textseiteninhalte).
+Show sections, ordered activities, types, gate status, completion and
+restrictions, the named bank with structure, and planning principles and
+deviations. Omit full content such as entire information pages.
 
-**Abschlusskriterium:** Die Lehrkraft hat die Kurzuebersicht gesehen, inklusive
-aller benannten Werkzeugluecken.
+Completion criterion: the teacher has seen the overview and all tool gaps.
 
-#### Schritt 3: Volltext nur auf Nachfrage
+#### Step 3: show full content on request
 
-Wenn die Lehrkraft z.B. "Zeig mir den ganzen Text der Infoseite" sagt, wird
-der vollstaendige Inhalt einer einzelnen Aktivitaet nachgeliefert.
+When asked, such as "Show me the whole information page", show complete
+content for that individual activity.
 
-**Abschlusskriterium:** Jede von der Lehrkraft angefragte Aktivitaet wurde im
-Volltext gezeigt, bevor weiter geplant oder freigegeben wird.
+Completion criterion: every requested activity has been shown in full
+before further planning or approval.
 
-#### Schritt 4: Freigabe abwarten
+#### Step 4: wait for approval
 
-Erst wenn die Lehrkraft den Plan ausdruecklich bestaetigt ("ja, so umsetzen",
-"Plan ist gut, leg los", "freigegeben"), werden die Aenderungen in Moodle
-geschrieben. Ohne diese Bestaetigung wird KEIN schreibendes Tool aufgerufen.
-Es gilt dabei die **Ein-Plan-Regel** und die **Status-gesteuerte
-Planfreigabe** (siehe `CONTEXT.md`): genau eine aktive `plan.md` pro
-Unterrichtsvorhaben, Freigabe wird in `status.md` nachgefuehrt statt nur im
-Chat bestaetigt.
+Write only after explicit teacher confirmation. Without it, call no
+writing tool. Follow the one-plan rule and status-controlled approval in
+CONTEXT.md: exactly one active plan.md per project, approval recorded in
+status.md rather than only chat.
 
-**Abschlusskriterium:** `status.md` steht auf `freigegeben`, bevor
-`coursepilot-implement` einen Moodle-Schreibzugriff ausfuehrt.
+Completion criterion: status.md has the established freigegeben (approved)
+state before coursepilot-implement performs a Moodle write.
 
-### Abschnitts- und Aktivitaetsverschiebung
+### Section and activity moves
 
-Fuer eine reine **Abschnittsverschiebung** wird die geplante neue
-Abschnittsreihenfolge zuerst in `plan.md` nachgefuehrt und von der Lehrkraft
-bestaetigt; erst danach wird `coursepilot_move_section` ausgefuehrt. Eine
-planexterne Ausnahme ist nur erlaubt, wenn die Lehrkraft ausdruecklich
-bestaetigt, dass der freigegebene Plan fachlich unveraendert bleibt und nur
-der bestehende Moodle-Kurs organisatorisch sortiert werden soll. Dann ist vor
-dem Moodle-Schreibzugriff ein Journal-Eintrag Pflicht (siehe
-`coursepilot_get_skill("journal")`), und es werden keine weiteren
-Abschnittsinhalte oder Sichtbarkeiten
-mitveraendert.
+For section moves, first update and confirm the new order in plan.md,
+then call `coursepilot_move_section`. A journal-only exception requires
+explicit teacher confirmation that the approved subject plan is unchanged
+and only the existing course is being reorganized. Record a journal entry
+before writing; see `coursepilot_get_skill("journal")`. Change no other
+section content or visibility.
 
-Fuer eine reine **Aktivitaetsverschiebung** gilt dieselbe Planbindung:
-`coursepilot_move_module` verschiebt nur eine bestehende Aktivitaet per `cmid`
-in einen (anderen) Abschnitt, optional an eine bestimmte Position darin. Das Tool darf keine
-Inhalte, Sichtbarkeit, Abschlussbedingungen, Voraussetzungen, Quizsettings,
-Fragenreferenzen oder Fragedaten aendern.
+The same binding applies to `coursepilot_move_module`: move an existing
+activity by cmid into another section or a chosen position. Preserve
+content, visibility, completion, prerequisites, quiz settings, question
+references and question data.
 
-### Planungsgrundsaetze (werden nicht pro Aktivitaet wiederholt)
+### Planning principles: do not repeat per activity
 
-- **Aufgabe ohne Abgabe als Gate** -> manuelle Schueler-Abschlussmarkierung
+- Assignment without submission used as a gate: manual learner completion
   (`completion=1`).
-- **Aufgabe mit digitaler Abgabe als Gate** -> Abgabe-Completion
+- Assignment with digital submission used as a gate: submission completion
   (`completion=2`, `completionsubmit=1`).
-- **Textseite ohne Gate per Default**; manuelle Abschlussmarkierung nur wenn
-  die Textseite explizit als Pflichtlektuere geplant ist.
-- **Freigabe-Voraussetzung (Restriction)** wird nur gesetzt, wenn sie im Plan
-  ausdruecklich geplant und begruendet ist.
-- **Offene Abgabe als Standard** -> Aufgaben bekommen `submissiondrafts=0`:
-  Lernende ueberarbeiten ihre Abgabe selbst, bis sie bewertet ist oder der
-  Abgabeschluss erreicht ist. Sind mehrere Versuche geplant
-  (`maxattempts` != 1), gilt `attemptreopenmethod=untilpass` oder `automatic`.
-- **Riegel** sind Einstellungen, nach denen eine lernende Person eine
-  Handlung der Lehrkraft braucht, um weiterzuarbeiten oder nachzubessern.
-  Welche Felder Riegel sind, steht im Feldkatalog
-  (`coursepilot_describe_module_fields`, Angabe `learner_lock` je Feld);
-  bestehende Riegel meldet `coursepilot_get_module_settings`. Ein Riegel
-  kommt nur in den Plan, wenn die Lehrkraft ihn im Auftrag oder Kontext
-  ausdrücklich nennt, und erscheint dann als Planabweichung mit Begründung.
-  Wählt die Lehrkraft einen Modus (z.B. Quiz `final-test`), gelten seine
-  Einstellungen samt Riegel als gewählt: im Plan die Einstellungen des Modus
-  nennen, das Werkzeug bestätigt sie über den Modus selbst.
-- **Riegel-Ablehnung beim Schreiben:** Lehnt ein Schreibwerkzeug den Aufruf
-  wegen eines Riegels ab (`learnerlocksunconfirmed`), ist nichts
-  geschrieben. Hat die Lehrkraft genau diesen Riegel ausdrücklich genannt,
-  den Aufruf mit `confirm_learner_locks` und den gemeldeten Kennungen
-  wiederholen. Sonst das Feld weglassen oder den offenen Wert setzen (die
-  Meldung nennt den Grund) und neu aufrufen.
+- Pages have no gate by default; manual completion only for explicitly
+  planned required reading.
+- Set restrictions only when explicitly planned and justified.
+- Open submission is the default: `submissiondrafts=0`. Learners revise
+  until grading or the submission deadline. For multiple attempts
+  (`maxattempts` != 1), use attemptreopenmethod=untilpass or automatic.
+- Learner locks are settings requiring teacher action before learners can
+  continue or revise. Field-catalog learner_lock describes them;
+  `coursepilot_get_module_settings` reports existing locks. Plan a lock
+  only when explicitly requested or specified in context, and show it as
+  a justified deviation. Choosing a mode such as final-test chooses its
+  settings and locks too: list them in the plan; the tool confirms them
+  through mode selection itself.
+- If a write rejects with learnerlocksunconfirmed, nothing was written.
+  If the teacher explicitly requested that exact lock, retry with
+  confirm_learner_locks and the reported identifiers. Otherwise omit the
+  field or choose its open value as explained in the error, then retry.
 
-### Planabweichungen
+### Plan deviations
 
-Weicht eine Aktivitaet von einem Planungsgrundsatz ab (z.B. Textseite als
-Pflichtlektuere mit Gate, oder eine zusaetzliche Restriction), MUSS beim
-Hinzufuegen eine kurze Begruendung notiert werden. Ohne Begruendung wird die
-Abweichung nicht in den Plan aufgenommen. Die Abweichung erscheint danach als
-eigener Punkt in `plan.md` und damit auch in der Kurzuebersicht – fuer die
-Lehrkraft gut sichtbar mit Begruendung, statt versteckt in einer langen
-Liste.
+Every activity deviating from a principle, such as required-reading pages
+with gates or additional restrictions, needs a short justification when
+added. Without justification, exclude it. Show it as a separate plan.md
+item and in the overview, visibly explained rather than hidden in a list.
 
-## Ausfuehrung: Schrittfolge in Moodle
+## Execution: Moodle steps
 
-### Schritt 1: Unterrichtseinheit oder Unterthema analysieren
+### Step 1: analyze the unit or subtopic
 
-Vor dem ersten API-Aufruf die Unterrichtseinheit bzw. das Unterthema lesen und notieren:
-- Wie viele Phasen gibt es? Wie heissen sie?
-- Welche Farbe bekommt jede Phase? (Frei waehlbar, aber konsistent)
-- Welche Aktivitaeten gehoeren zu welcher Phase?
-- Was muessen SuS NUR LESEN? Was muessen sie ABGEBEN?
+Before the first API call, read the unit and record:
 
-### Schritt 2: Kursstruktur pruefen
+- Phase count and names.
+- Phase colors, freely chosen but consistent.
+- Activities belonging to each phase.
+- What learners only read and what they submit.
+
+### Step 2: check course structure
 
 ```
-coursepilot_get_sections(courseid=KURS_ID)
+coursepilot_get_sections(courseid=COURSE_ID)
 ```
 
-Geplanten Zielabschnitt mit dem freigegebenen Plan abgleichen. Abschnitt 0
-beziehungsweise "Allgemeines" ist ein normaler fachlicher Kursabschnitt und
-kein technischer Ablageort fuer Coursepilot-Versionierung, Status, Debug-Hinweise
-oder sonstige Prozessdaten. Ohne freigegebenen Plan keinen "freien Abschnitt"
-als Default befuellen.
+Match the target section to the approved plan. Section 0/General is a
+normal subject section, not technical storage for versions, status,
+debug hints or process data. Never populate an arbitrary free section
+without an approved plan.
 
-### Schritt 3: Abschnitt benennen und nur bei Planbezug einen Abschnittseinstieg setzen
+### Step 3: name the section and add an introduction only if planned
 
 ```
 coursepilot_update_section(courseid, sectionnum, fields_json='{"name": ..., "summary": ...}')
 ```
 
-Ein Abschnittseinstieg im `summary` ist kein automatischer Default. Nutze ihn
-nur, wenn der freigegebene Plan fuer genau diesen Abschnitt einen sichtbaren
-Einstieg vorsieht.
+A summary introduction is not automatic. Use it only when the approved
+plan specifies a visible introduction for that exact section.
 
-### Schritt 4: Pro Phase die geplanten Elemente anlegen
+### Step 4: create planned elements per phase
 
-Fuer jede Phase der Unterrichtseinheit bzw. des Unterthemas alles ueber
-`coursepilot_create_module(courseid, sectionnum, modname, fields_json)` anlegen:
-1. `modname="label"` – nur wenn ein sichtbarer Phasen-Trenner geplant ist
-2. Je nach Inhalt: `modname="page"`, `"url"`, `"assign"`, `"resource"`,
-   `"folder"`, `"choice"`, `"forum"`
+Use `coursepilot_create_module(courseid, sectionnum, modname, fields_json)`:
 
-## Aktivitaetstypen waehlen
+1. label only when a visible phase separator is planned.
+2. According to content: page, url, assign, resource, folder, choice or forum.
 
-| Situation | `modname` |
+## Choose activity types
+
+| Situation | modname |
 |---|---|
-| SuS liest nur (Infoblatt, Leitfaden, Anleitung, Codebeispiel) | `page` |
-| SuS fuellt etwas aus / gibt etwas ab / reflektiert | `assign` |
-| Externe Dokumentation, GitHub, MDN, Referenz | `url` |
-| Phasen-Trenner (direkt auf Kursseite sichtbar) | `label` |
-| Datei zum Herunterladen (PDF, Arbeitsblatt, Vorlage) | `resource` |
-| Datei-Sammlung in einem Ordner | `folder` |
-| SuS waehlt eine Option (Umfrage, Meinungsbild) | `choice` |
-| SuS diskutiert asynchron (Austausch, Frage-Antwort) | `forum` |
+| Learners only read information, guides, instructions or code examples | page |
+| Learners fill in, submit or reflect | assign |
+| External documentation, GitHub, MDN or references | url |
+| Phase separator visible on the course page | label |
+| Downloadable PDF, worksheet or template | resource |
+| File collection | folder |
+| Option selection, survey or opinion poll | choice |
+| Asynchronous discussion or questions/answers | forum |
 
-`resource` ist bis Spec 0018 gesperrt (kaputte Seite ohne Hauptdatei) – fuer
-Dateien zum Herunterladen bis dahin `folder` verwenden.
+resource was blocked before Spec 0018 because a missing main file produced
+a broken page; folder was the temporary download alternative. Spec 0018's
+material-file path now permits resource creation with its main file.
 
-**GOLDENE REGEL:** Sobald SuS irgendetwas ausfullen, eintragen, ankreuzen
-oder hochladen sollen -> IMMER `coursepilot_create_module(modname="assign")`,
-NIEMALS `modname="page"`!
+Golden rule: whenever learners fill in, enter, tick or upload anything,
+use `coursepilot_create_module(modname="assign")`, never page.
 
-### Abstimmung (`coursepilot_create_module` mit `modname="choice"`): Optionenzahl didaktisch pruefen
+### Choice: assess option count pedagogically
 
-Moodle setzt fuer `option[]` keine Obergrenze, und Coursepilot prueft die Anzahl
-nicht (Spec 0015 §4.5). Ab etwa acht Optionen lohnt trotzdem eine
-Rueckfrage, ob eine Abstimmung noch das passende Werkzeug ist, statt einer
-Liste, Gruppierung oder Tabelle – das ist eine didaktische Empfehlung, keine
-Wertpruefung: Coursepilot lehnt keine Optionenzahl ab und erfindet keine
-Obergrenze.
+Moodle imposes no upper bound on option[], and Coursepilot does not
+validate count (Spec 0015 §4.5). Around eight options, consider asking
+whether a choice is still appropriate instead of a list, grouping or
+table. This is a teaching recommendation, not validation: reject no count
+and invent no upper limit.

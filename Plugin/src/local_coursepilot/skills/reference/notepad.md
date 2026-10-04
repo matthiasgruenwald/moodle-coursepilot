@@ -1,119 +1,92 @@
 ---
 name: notepad
-description: Lies diese Datei, wenn eine Bestandsänderung gerade nicht ausführbar ist, wenn ein Client mit lokalen Dateiwerkzeugen eine Sitzung startet, oder wenn eine Werkbankdatei in Originalqualität in den Bestand soll.
+description: Read this when inventory changes cannot currently be performed, when a client with local file tools starts a session, or when a workbench file should enter inventory at original quality.
 ---
 
-# Referenz: Merkzettel
+# Reference: notepad
 
-Der **Merkzettel** (`notepad.md`) hält Aenderungen am Materialbestand
-fest, die die KI gerade nicht ausführen kann, und wird am Laptop
-abgearbeitet. Er ist eine gewöhnliche Kontextdatei — gelesen und geschrieben
-ausschliesslich über die Werkzeuge aus `coursepilot_get_skill("context-area")`,
-kein eigenes Feld im Handshake. Den Merkzettel gibt es nur, wenn der
-Materialbestand extern liegt (WebDAV-Speicher der Lehrkraft).
+`notepad.md` records inventory changes the AI cannot currently perform,
+for later execution on a laptop. It is an ordinary context file using only
+context-area tools, not a handshake field. It exists only for external
+teacher inventory (WebDAV).
 
-## Aufschreiben (Spec #486 §14)
+## Record changes (Spec #486 §14)
 
-Findet die KI eine Bestandsänderung (umbenennen, verschieben, anlegen), die
-sie in dieser Sitzung nicht ausführen kann, hält sie das sofort mit einem
-Satz fest statt nur im Gespräch zu bleiben. Ein Punkt nennt:
+Immediately record inventory changes such as renaming, moving or creating
+that cannot be performed in this session, instead of leaving them in chat.
+Each item contains what, path relative to inventory root, why it cannot
+be done now and date. Use no real names; items need no
+`coursepilot.personenbezug: true`, following context-area's unmarked-file rule.
 
-- **was**: die Aenderung,
-- **wo**: der Pfad relativ zur Bestandswurzel,
-- **warum**: der Grund, warum es gerade nicht geht,
-- **wann**: das Datum,
+For clients with local file tools, such as laptop Codex or filesystem-server
+clients, read notepad.md at session start before the test below. Otherwise
+skip this step; the server-side notepad remains available.
 
-ohne Klarnamen — ein Merkzettelpunkt trägt kein
-`coursepilot.personenbezug: true` (siehe "Keine Klarnamen in unmarkierten
-Dateien", `coursepilot_get_skill("context-area")`).
+## Three-step test before inventory access (Spec #486 §14, #477)
 
-Hat der aktuelle Client lokale Dateiwerkzeuge (Codex am Laptop, ein Client
-mit Dateisystem-Server)? Ja: `notepad.md` zu Sitzungsbeginn lesen, bevor
-der dreistufige Test unten läuft. Nein: entfällt — der Merkzettel bleibt
-serverseitig unverändert erreichbar.
+Before executing each item, check in order with yes/no answers:
 
-## Dreistufiger Test vor jedem Bestandszugriff (Spec #486 §14, Issue #477)
+1. Working directory and tools available? If not, ask the teacher to start
+   the CLI in their material folder or open it as a Codex App project.
+   Execute nothing. Otherwise continue.
+2. Not explicitly read-only? If read-only, report that and execute nothing.
+   Otherwise continue.
+3. Root-level name sets match after exclusions? Compare server names from
+   `coursepilot_list_material_files` with `location: store` at the root
+   against local working-directory root names. Remove the exclusion list
+   first. On mismatch, name differences and execute nothing. On a match,
+   inventory is found; proceed to the offer.
 
-Vor jeder Ausführung eines Merkzettelpunkts prüft die KI der Reihe nach,
-mit je Ja oder Nein:
+Exclusion list, authoritative only here: `.DS_Store`, `._*`, `.sync_*.db*`,
+`.owncloudsync.log`, `*.nextcloud`, `*.owncloud`, `Thumbs.db`, `desktop.ini`.
 
-1. **Arbeitsverzeichnis und Werkzeug vorhanden?** Nein: nichts ausführen,
-   "Starte mich in deinem Materialordner" (CLI) bzw. "öffne deinen
-   Materialordner als Projekt" (Codex App) nennen. Ja: weiter zu 2.
-2. **Nicht ausdrücklich schreibgeschützt?** Nein (schreibgeschützt):
-   nichts ausführen, das nennen. Ja: weiter zu 3.
-3. **Namensmengen an der Wurzelebene gleich nach Ignorierliste?** Die vom
-   Server gemeldeten Namen (`coursepilot_list_material_files`, `location: store`,
-   Wurzel) gegen die lokalen Namen an der Wurzel des Arbeitsverzeichnisses
-   vergleichen, nach Abzug der Ignorierliste. Nein (Abweichung): die
-   Abweichung benennen, nichts ausführen. Ja: der Bestand gilt als
-   gefunden, weiter mit dem Angebot unten.
+## Offer to process items (Spec #486 §14, #483)
 
-**Ignorierliste** (gilt ausschliesslich hier, keine Kopie an anderer
-Stelle): `.DS_Store`, `._*`, `.sync_*.db*`, `.owncloudsync.log`,
-`*.nextcloud`, `*.owncloud`, `Thumbs.db`, `desktop.ini`.
+After the test passes, name all open items and obtain one confirmation,
+allowing a subset such as the first two. Each confirmed item takes exactly
+one of three paths, never simply "do it yourself":
 
-## Angebot: Merkzettelpunkte abarbeiten (Spec #486 §14, Issue #483)
+- Execute when tools exist and the change is unambiguous.
+- Remove as completed when the teacher already did it; do not execute again.
+- Propose a concrete solution and wait for confirmation when automatic
+  execution remains ambiguous.
 
-Nach bestandenem Test macht die KI **ein** Angebot für alle offenen Punkte,
-nicht Punkt für Punkt nachfragen: Punkte nennen, eine Bestätigung
-einholen (Teilauswahl möglich, z.B. "die ersten zwei"). Für jeden
-bestätigten Punkt gilt genau einer von drei Fällen — nie "mach das
-selbst":
+When inventory changes location, transfer open notepad items instead of
+abandoning them. This is separate from context-area old content: inventory
+has no old-content state, and its old location remains without a dedicated
+handover step. The notepad is current pending state; the journal is the
+history of decisions and completed work. Move completed items into journal
+entries, not the reverse.
 
-- **ausführen** — Werkzeug vorhanden, Aenderung eindeutig.
-- **als erledigt streichen** — die Lehrkraft hat es längst selbst erledigt,
-  der Punkt entfällt ohne Ausführung.
-- **Lösung vorschlagen** — die Aenderung ist nicht eindeutig genug für eine
-  automatische Ausführung; die KI schlägt einen konkreten Schritt vor und
-  wartet auf Bestätigung.
+## Workbench to inventory (Spec #486 §13/§14, #484)
 
-Wechselt der Materialbestand über die Ortswahl den Ort, werden offene
-Merkzettelpunkte mitübertragen, nicht verworfen. Das ist ein eigener
-Vorgang, kein Altbestand: den Altbestand (vorheriger Ort,
-`coursepilot_get_skill("context-area")`) kennt nur der Kontextbereich, der
-Materialbestand hat keinen — sein alter Ort bleibt einfach liegen, ohne
-eigenen Übernahmeschritt. **Der Merkzettel ist der Zustand**, was noch
-aussteht — **das Journal ist die Geschichte**, was bereits entschieden oder
-erledigt wurde. Ein abgearbeiteter Punkt wandert vom Merkzettel in einen
-Journal-Eintrag, nicht umgekehrt.
+An item can transfer a workbench attachment or crop into inventory at
+original quality, e.g. a phone photo of the board into a subject folder.
+See `coursepilot_get_skill("mcp-tools")`.
 
-## Werkbank → Bestand (Spec #486 §13/§14, Issue #484)
+First check for a shell tool. Without one, say in the teacher's language:
+"I cannot do this in this program; I can do it in Codex on your laptop."
+Attempt nothing. With a shell:
 
-Ein Merkzettelpunkt kann eine Werkbankdatei (Chat-Anhänge, Zuschnitte,
-siehe `coursepilot_get_skill("mcp-tools")`) in Originalqualität in den Bestand
-holen — z.B. ein am Handy fotografiertes Tafelbild soll im Fachordner
-landen.
+1. Before Codex asks for shell authorization, state the intended transfer,
+   such as fetching N workbench files into inventory.
+2. Request `coursepilot_create_workbench_download_links` for all workbench
+   items in one call, not per file.
+3. Download and verify each file:
+   - POSIX: `curl -fsSL -o <target> <url>`, then `shasum -a 1 <target>`
+     or `sha1sum <target>`.
+   - Windows: `Invoke-WebRequest -OutFile <target> <url>` or `curl.exe`,
+     then `Get-FileHash -Algorithm SHA1 <target>`.
+4. When the local checksum matches reported sha1, delete the workbench
+   file with `coursepilot_delete_material_files`; inventory now contains
+   the original bytes.
+5. On mismatch, try once more with a fresh download and checksum. Only
+   afterward notify the teacher; preserve the workbench file.
 
-**Vorbedingung: Habe ich ein Shell-Werkzeug?** Nein: nichts versuchen,
-stattdessen sagen: "Das kann ich in diesem Programm nicht, in Codex am
-Laptop erledige ich es." Ja: weiter.
+## Setup: connections apply per user (Spec #486 §14)
 
-Mit Shell-Werkzeug:
-
-1. Vor der Codex-Rückfrage nach Shell-Freigabe ankündigen, was gleich
-   passiert (z.B. "Ich hole jetzt N Dateien von der Werkbank in den
-   Bestand").
-2. `coursepilot_create_workbench_download_links` für **alle** Werkbankpunkte
-   dieser Sitzung **in einem Aufruf**, nicht Datei für Datei.
-3. Je Datei Abruf und Prüfsumme:
-   - POSIX: `curl -fsSL -o <ziel> <url>`, danach `shasum -a 1 <ziel>` (oder
-     `sha1sum <ziel>`).
-   - Windows: `Invoke-WebRequest -OutFile <ziel> <url>` (oder `curl.exe`),
-     danach `Get-FileHash -Algorithm SHA1 <ziel>`.
-4. Stimmt die lokale Prüfsumme mit dem gemeldeten `sha1` überein: die
-   Werkbankdatei per `coursepilot_delete_material_files` löschen — der
-   Bestand hat jetzt die Originalbytes.
-5. Weicht sie ab: **ein zweiter Versuch** (erneuter Abruf, erneute
-   Prüfsumme) — erst danach die Lehrkraft benachrichtigen, die
-   Werkbankdatei dabei nicht löschen.
-
-## Einrichtungstext: Verbindung gilt nutzerweit (Spec #486 §14)
-
-Schritt 1 des dreistufigen Tests ("Arbeitsverzeichnis und Werkzeug
-vorhanden?") scheitert, wenn die Coursepilot-Verbindung nur für ein
-Projektverzeichnis eingerichtet ist — der Materialordner ist ein anderes
-Arbeitsverzeichnis. Die Coursepilot-Verbindung gilt deshalb **nutzerweit**,
-nicht projektbezogen: Claude Code `claude mcp add ... --scope user`; Codex
-lädt MCP-Server ohnehin global aus `~/.codex/config.toml`, keine gesonderte
-Einrichtung je Ordner.
+The first test fails when Coursepilot is configured only for one project
+because the material folder is another working directory. Configure the
+connection per user: Claude Code `claude mcp add ... --scope user`;
+Codex loads MCP servers globally from `~/.codex/config.toml`, with no
+separate setup per folder.
