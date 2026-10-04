@@ -1489,15 +1489,15 @@ Eine Aktivitätsart mit geprüftem Feldkatalog. Coursepilot sagt zu, dass sie fu
 _Avoid_: katalogisierte Art per Aktivitäts-XML anlegen, „Coursepilot kann alle Aktivitätsarten"
 
 **Erschlossene Aktivitätsart**:
-Eine installierte Aktivitätsart ohne Feldkatalog, die sich Coursepilot über die Aktivitätsart-Ablage selbst erschließt. Das Wissen gehört der Lehrkraft, es gibt keine Zusage — nur die Round-Trip-Prüfung beim Anlegen.
-_Avoid_: erschlossene Art als „unterstützt" bezeichnen, Ablage-Wissen ins Plugin übernehmen ohne Feldkatalog
+Eine installierte Aktivitätsart ohne Feldkatalog, die sich Coursepilot über die Aktivitätsart-Ablage erschließt. Verifizierte mitgelieferte Beispiele sind eine Plugin-Zusage für den angegebenen Moodle-Versionsstand; jede konkrete Anlage wird weiterhin per Round-Trip geprüft. Zusätzlich gelerntes Wissen gehört der Lehrkraft.
+_Avoid_: erschlossene Art pauschal als „unterstützt" bezeichnen, Verifikation auf andere Moodle-Versionen übertragen
 
 **Ausgeschlossene Aktivitätsart**:
 Eine Aktivitätsart, die weder katalogisiert ist noch über Aktivitäts-XML angelegt werden darf: lesson, quiz, Arten mit Dateien im Inhalt ohne deklarierten Datei-Nachtrag, nicht installierte Arten und Arten ohne Moodle-Backup. Coursepilot nennt den Grund. Arten mit Dateien im Inhalt sind nur vorläufig ausgeschlossen, bis der Datei-Nachtrag sie samt Dateien und zugehörigen Texten anlegen kann. Lightboxgallery ist der erste Pilot; scorm, imscp und h5pactivity bleiben gesperrt.
 _Avoid_: ausgeschlossene Art stillschweigend übergehen, Ausschluss als Positivliste führen
 
 **Aktivitätsart-Ablage**:
-Zweite Form der Lerndatei, analog zur Fragetyp-Ablage: eine Kontextdatei je erschlossener Aktivitätsart (`aktivitaetsarten/<modname>.md`) mit Minimal-Beispiel (wortgleich, verifiziert), Pflichtstruktur, Stolpersteinen und Moodle-Versionsstand. Sie hält nur Wissen fest und ist keine klonbare Quelle — keine Vorlage im Sinn von Aktivitaetsvorlage oder Vorlagen-Datei.
+Zweite Form der Lerndatei, analog zur Fragetyp-Ablage: eine Kontextdatei je erschlossener Aktivitätsart (`activity-types/<modname>.md`) mit Minimal-Beispiel (wortgleich, verifiziert), Pflichtstruktur, Stolpersteinen und Moodle-Versionsstand. Das Plugin liefert verifizierte Vorlagen für Buch, Checkliste und Glossar mit und ergänzt bei jeder Ortswahl nur fehlende Dateien. Vorhandene Lehrerdateien bleiben unverändert; wiederholte Ortswahl schreibt und meldet nichts Neues. Ablagefehler unterbrechen die Ortswahl nicht. Die mitgelieferten Beispiele sind eine Plugin-Zusage für ihren Verifikationsstand (ADR 0028, #603). Die Ablage hält Wissen fest und ist keine klonbare Aktivitätsquelle.
 _Avoid_: „Aktivitätstyp-Ablage" (Ticket-Sprache), Ablage mit Aktivitaetsvorlage oder Vorlagen-Datei verwechseln, Ablage ohne Versionsstand führen
 
 **Anlegen aus XML**:

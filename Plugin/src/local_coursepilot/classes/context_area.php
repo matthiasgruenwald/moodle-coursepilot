@@ -166,6 +166,32 @@ final class context_area {
     }
 
     /**
+     * Adds missing context files without touching any teacher-owned content.
+     * Pre-read failures and conditional-create conflicts are best-effort failures,
+     * never a reason to interrupt location selection (#603).
+     *
+     * @param array<string, string> $files Relative path => complete content.
+     * @return string[] Paths actually created.
+     */
+    public static function supplement_missing(array $files): array {
+        $created = [];
+        foreach ($files as $path => $content) {
+            try {
+                if (self::read($path) !== null) {
+                    continue;
+                }
+                self::write($path, $content, createonly: true);
+                $created[] = $path;
+            } catch (\Throwable $e) {
+                // Includes pre-read outages, locked files and concurrent creation.
+                // The normal write path retains its pending-write failure policy.
+                continue;
+            }
+        }
+        return $created;
+    }
+
+    /**
      * Writes a context file through the adapter of the current location
      * ({@see storage_anchor::port()}); no tool sees the location decision.
      *

@@ -109,7 +109,12 @@ function local_coursepilot_handle_location_selection_finish(?array $oauthreturn)
     }
     require_sesskey();
     try {
-        $changed = location_selection::apply(local_coursepilot_read_location_selection());
+        $providedtemplates = [];
+        $changed = location_selection::apply(local_coursepilot_read_location_selection(), $providedtemplates);
+        if ($providedtemplates) {
+            \core\notification::success(get_string('activitytypetemplatesprovided', 'local_coursepilot',
+                implode(', ', $providedtemplates)));
+        }
         if ($oauthreturn !== null) {
             // Return to consent (#563) whether or not locations changed: the teacher
             // is in the middle of establishing a connection.
