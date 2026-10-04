@@ -36,7 +36,7 @@ Anlegen aus XML, Aktivitäts-XML, Ablösen.
   der Lösch-Kaskade). Eine Transaktion trägt nicht: Das Backup führt DDL aus, das auf MariaDB
   implizit committet (#589, am Test belegt). Im Kurs bleibt nichts außer den Moodle-Logeinträgen. Das ersetzt in der Lernschleife den Schritt
   „Lehrkraft legt selbst an und exportiert“.
-- `create_activity_from_xml(courseid, modname, section, activity_xml, hidden?, replaces_cmid?)`
+- `create_activity_from_xml(courseid, modname, section, activity_xml, hidden?, replaces_cmid?, dry_run?, files?)`
   legt an. Mit `replaces_cmid` wird die Aktivität abgelöst.
 
 Alle drei Werkzeuge sind dünne Adapter: Sie prüfen Parameter und Rechte, rufen ein Modul
@@ -61,9 +61,10 @@ Bau-Reihenfolge.
    - *erschlossen*,
    - *ausgeschlossen* (mit Grund als Sprachschlüssel).
 
-   Ausgeschlossen sind lesson, quiz, Arten mit Dateien im Inhalt (`scorm`, `imscp`,
-   `h5pactivity`, `lightboxgallery`; vorläufig bis zum Datei-Nachtrag #598, ADR 0028
-   Nachtrag 2026-10-02) und Arten ohne `FEATURE_BACKUP_MOODLE2`. Keine Positivliste. Die fünf verstreuten
+   Ausgeschlossen sind lesson, quiz, Arten mit Dateien im Inhalt ohne deklarierten
+   Datei-Nachtrag (`scorm`, `imscp`, `h5pactivity` bleiben gesperrt; `lightboxgallery`
+   ist der Pilot von #598/#599), nicht installierte Arten und Arten ohne
+   `FEATURE_BACKUP_MOODLE2`. Keine Positivliste. Die fünf verstreuten
    `unknownmodname`-Prüfungen (`create_module`, `set_completion`,
    `restore_activity_version`, `update_module_settings`, `set_restriction`) werden zu einem
    Aufruf `registry::require_catalogued()`. Die neuen Werkzeuge lehnen katalogisierte Arten
@@ -76,7 +77,11 @@ Bau-Reihenfolge.
    4. Exportieren und Round-Trip-Vergleich.
    5. Bei Abweichung: im selben Aufruf entfernen (Kursmodul-Platzierung) und die Abweichung
       melden.
-   6. Sonst: platzieren, sichtbar schalten (außer `hidden`), **danach** den ersten Stand im
+   6. Optionaler Datei-Nachtrag: Materialpfade serverseitig in die je Art deklarierten
+      Dateibereiche kopieren; Bildunterschriften und native Thumbnails ergänzen.
+      Fehler verwirft nur die eigene, noch unsichtbare Anlage. Der Nachtrag läuft nach
+      dem Backup-DDL in einer eigenen Transaktion; auch temporäre Entwürfe werden entfernt.
+   7. Sonst: platzieren, sichtbar schalten (außer `hidden`), **danach** den ersten Stand im
       Verlauf erfassen. Würde vor dem Sichtbarschalten erfasst, entstünde über
       `course_module_updated` eine Version 2.
 
@@ -155,6 +160,31 @@ Bau-Reihenfolge.
 
 ## Testing Decisions
 
+### Datei-Nachtrag (#598/#599)
+
+`files` ist eine optionale Liste im vorhandenen Werkzeug, kein Folgewerkzeug.
+Je Eintrag: `path`, `filearea`, optional `caption` (Klartext, Standard leer) und
+`location` (`store` als Standard oder `workbench`). Ohne Liste bleibt der
+bestehende Anlegeweg erhalten. `dry_run` liest keine Materialdateien und prüft
+deren Inhalt nicht.
+
+Der allgemeine Ablauf kennt nur die Deklaration je Art. Lightboxgallery erlaubt
+`gallery_images`, `itemid=0`, Wurzelpfad; Bildunterschriften hängen am Dateinamen.
+Darum werden doppelte Basisdateinamen abgewiesen. `lightboxgallery_image` erzeugt
+fehlende Thumbnails selbst mit seinem festen Crop und schreibt Captions über
+`set_caption()`. Es werden keine Moodle-Nutzerkommentare angelegt. Das Materialrecht
+`moodle/user:manageownfiles` und das native `mod/lightboxgallery:addimage` gelten.
+
+Die öffentlichen Tests nutzen das reale Zusatzplugin in einer eigenen Moodle-Instanz:
+drei Bilder verschiedener Seitenverhältnisse mit Captions, ein fehlender zweiter Pfad
+beim Ablösen (Bestand, Dateien und Papierkorb unverändert), ungültige Zuordnungen/Bilder,
+Rechteentzug, `hidden`, `workbench`, leere Liste und nicht installierte Art trotz
+vorhandener Quelldateien. Native Abschnittszeitstempel und gewöhnliche Moodle-Logs
+können durch Restore/Aufräumen aktualisiert werden. Exakte geprüfte Minimal-XML:
+`Plugin/src/local_coursepilot/tests/fixtures/lightboxgallery.xml`.
+Spike-Abnahme und verifizierte Ablage im Kontextbereich bleiben ein eigener,
+abgestimmt freizugebender Schritt.
+
 - **Jedes Modul wird über sein Interface getestet** (PHPUnit im Spike-Container):
   - Aktivitäts-Backup: Export und Restore aus beiden Quellen; eine halbe Anlage wird
     entfernt. Die bestehenden `clone_activity`-Tests laufen unverändert grün.
@@ -183,5 +213,5 @@ Bau-Reihenfolge.
 - Nutzerdaten-Inhalte, etwa Glossar-Einträge — eigenes Ticket (#593), kein Seam auf Vorrat.
 - Textlinks (`view.php?id=`) im Verweis-Finder — erst bei Bedarf.
 - lesson und quiz.
-- Arten mit Dateien im Inhalt — Datei-Nachtrag als eigenes Ticket (#598), Lightboxgallery
-  mit Bildunterschriften (#599).
+- Die Paketarten `scorm`, `imscp`, `h5pactivity` bleiben für Folge-Issues gesperrt.
+  Lightboxgallery mit Datei-Nachtrag und Bildunterschriften gehört zu #598/#599.
