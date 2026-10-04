@@ -14,19 +14,18 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Das Dateifenster und Fortschrittsband der Ortswahlseite (Issue #494, Spec
- * #486 §5; AMD-Umstellung Issue #551, Spec 0023): fetch() gegen
- * location_selection_browse.php, 8s-Timeout mit drei Ausweg-Aktionen, Ordner-anlegen
- * nur im Speicher des Browsers (serverseitig entsteht der Ordner erst beim
- * Abschliessen, siehe local_coursepilot\location_selection::apply()).
+ * The file picker and progress band for location selection (Issue #494,
+ * Spec #486 §5; AMD migration #551, Spec 0023): fetch() calls
+ * location_selection_browse.php with an 8-second timeout and three escape
+ * routes. New folders exist only in browser memory until completion creates
+ * them on the server (local_coursepilot\location_selection::apply()).
  *
- * Alle Teilansichten (Instanzliste, Ordnerliste, Breadcrumb, Ladeanzeige,
- * Fehlerbox) kommen aus Mustache-Vorlagen (core/templates); dieses Modul baut
- * keine Auszeichnung mehr aus Zeichenketten zusammen, sondern reicht nur noch
- * Zustand an die Vorlagen weiter.
+ * All views (instances, folders, breadcrumb, loading and errors) come from
+ * Mustache templates (core/templates). This module passes state to templates
+ * instead of assembling markup from strings.
  *
- * Nie gespeichert, nie protokolliert: dieses Modul haelt Auflistungen nur im
- * laufenden DOM/JS-Zustand, schreibt nichts in localStorage o.ae.
+ * Never stored or logged: listings live only in current DOM/JS state;
+ * nothing is written to localStorage or similar storage.
  *
  * @module     local_coursepilot/location_selection
  * @copyright  2026 Coursepilot
@@ -36,13 +35,11 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
     'use strict';
 
     /**
-     * Alle Uebersetzungen der Seite, per core/str geladen statt ueber
-     * js_call_amd() eingebettet (Debugging-Warnung "Too much data passed as
-     * arguments"; ueber 1024 Zeichen bei 21 teils langen Textbausteinen). Der
-     * Schluessel ist der Alias, unter dem config.strings die Uebersetzung
-     * traegt; bei den drei "reasonkey"/"errorkey"-Eintraegen (vom Server als
-     * String-Identifier mitgeschickt) ist er identisch mit dem Moodle-
-     * String-Identifier.
+     * Load page translations through core/str instead of embedding them in
+     * js_call_amd() (the 21 partly lengthy strings exceeded the 1024-character
+     * "Too much data passed as arguments" debugging threshold). Each key is
+     * the config.strings alias. For the three reasonkey/errorkey entries sent
+     * by the server, the alias is also the Moodle string identifier.
      *
      * @type {Array<{alias: string, key: string, param: (string|undefined)}>}
      */
@@ -83,7 +80,7 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
     }
 
     /**
-     * Wires up one rendering of the Ortswahl editor.
+     * Wires up one rendering of the location-selection editor.
      *
      * @param {Object} config Page state delivered by local_coursepilot\output\location_selection::editor_data(),
      *   with config.strings already resolved by init().
@@ -99,21 +96,18 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
             target: null,
             instanceid: null,
             path: '',
-            // Segmente, die im Browser als "angelegt" markiert wurden, aber auf
-            // dem Server noch nicht existieren - je Instanz eine Menge von
-            // Pfaden, damit sie ohne Netzzugriff sofort betretbar sind.
+            // Segments marked as created in the browser but absent from the server:
+            // a set of paths per instance, immediately browsable without network access.
             pendingFolders: {},
-            // Letztes browse()-Ergebnis der aktuellen Ebene (Issue #497): traegt
-            // Waehlbarkeit/Begruendung und Eintragszahl fuer die Uebergabe-
-            // Bestaetigung eines gefuellten Ordners. Ein im Fenster angelegter
-            // Ordner braucht keine Rueckfrage (Spec §5) - dafuer gilt er als leer.
+            // Latest browse() result for this level (Issue #497): selectability,
+            // reason and entry count for populated-folder handover confirmation.
+            // A folder created in this window is treated as empty (Spec §5).
             lastResult: null
         };
 
         /**
-         * Vorbelegung bereits gewaehlter Ziele (Issue #525, Spec #486 §5): nur
-         * ein Ziel, das der Pointer schon ausdruecklich aufloest ("chosen"),
-         * gilt als erledigt.
+         * Preselect chosen targets (Issue #525, Spec #486 §5): only targets
+         * explicitly resolved as "chosen" by the pointer count as complete.
          *
          * @param {string} target "context_area" or "material_store".
          * @return {Object} the selection shape used throughout this module.
@@ -165,8 +159,8 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
 
         /**
          * Marks (or unmarks) a target's button as the current selection
-         * (Issue #562): "Verbindung waehlen" already got an immediate echo
-         * through the opening window, "In Moodle lassen" did not - the click
+         * (Issue #562): "Choose connection" already got an immediate echo
+         * through the opening window, "Keep in Moodle" did not - the click
          * looked unresponsive until the far-away progress band changed.
          *
          * @param {Element} btn Button element, or null.
@@ -273,11 +267,10 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
         }
 
         /**
-         * Naeherung des Vergleichsschluessels (Issue #495, #497): fuer zwei
-         * *live* auf dieser Seite gewaehlte Ziele reicht Instanz-Gleichheit
-         * (bzw. beide "in Moodle") plus Pfad-Praefix. Die verbindliche
-         * Pruefung laeuft serverseitig beim Abschliessen (location_selection::apply());
-         * dies ist nur der fruehe UI-Hinweis am Knopf.
+         * Approximate comparison key (Issue #495, #497): for two live selections,
+         * matching instances (or both in Moodle) plus path prefixes suffice.
+         * The authoritative check runs server-side on completion
+         * (location_selection::apply()); this is only the early button hint.
          *
          * @param {string} path Raw path.
          * @return {string} Normalised path, always starting and ending with "/".
@@ -290,8 +283,8 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
         /**
          * Whether both selections point at the same storage root.
          *
-         * @param {Object} contextSelection Kontextbereich selection.
-         * @param {Object} material Materialbestand selection.
+         * @param {Object} contextSelection Context-area selection.
+         * @param {Object} material Material-store selection.
          * @return {boolean}
          */
         function overlapsSameRoot(contextSelection, material) {
@@ -303,7 +296,7 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
         }
 
         /**
-         * Whether the current selections overlap and must block "Abschliessen".
+         * Whether the current selections overlap and must block "Finish".
          *
          * @return {boolean}
          */
@@ -367,17 +360,16 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
             renderProgress();
         }
 
-        // Die versteckten Formularfelder tragen erst nach einer Interaktion
-        // einen Wert - ein bereits gewaehltes Ziel muss aber auch ohne erneute
-        // Interaktion mitgeschickt werden, sonst verwirft das Abschliessen eine
-        // unveraenderte Auswahl als ungueltig.
+        // Hidden form fields get values after interaction. Populate previously
+        // chosen targets even without new interaction, or completion would reject
+        // an unchanged selection as invalid.
         ['context_area', 'material_store'].forEach(function(target) {
             if (selections[target].type) {
                 applySelection(target, selections[target]);
             }
         });
 
-        // --- "In Moodle lassen" ---------------------------------------------
+        // --- "Keep in Moodle" ---
 
         Object.keys(keepMoodleButtons).forEach(function(target) {
             keepMoodleButtons[target].addEventListener('click', function() {
@@ -389,7 +381,7 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
             });
         });
 
-        // --- Dateifenster ----------------------------------------------------
+        // --- File picker ---
 
         var modalEl = el('coursepilot-location-selection-modal');
         var bsModal = (window.bootstrap && window.bootstrap.Modal) ? new window.bootstrap.Modal(modalEl) : null;
@@ -590,10 +582,9 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
         }
 
         /**
-         * Gemeinsame Fehlerbox fuer beide Ausfallarten beim Blaettern (Issue
-         * #526, Spec #486 §5/§8): der Client-Zeitueberschreitungsfall (8s ohne
-         * Antwort) und ein vom Server tatsaechlich beantworteter Fehler
-         * ({ok:false, error:...}).
+         * Shared browse error box for both failures (Issue #526, Spec #486 §5/§8):
+         * a client timeout (8 seconds without a response) and a server error
+         * response ({ok:false, error:...}).
          *
          * @param {string} title Error heading.
          * @param {string} text Error detail text.
@@ -631,7 +622,7 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
         }
 
         /**
-         * Sperren einer Ebene (Issue #497, Spec §5: Wurzel, IServ).
+         * Lock one level (Issue #497, Spec §5: root, IServ).
          *
          * @param {Object} result Browse result: {path, folders, selectable, reasonkey, entrycount, entrynames}.
          * @return {void}
@@ -658,9 +649,8 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
             renderBreadcrumb();
             showLoading();
 
-            // POST statt GET (Spec §5: "Auflistungen werden ... nicht
-            // protokolliert") - instanceid/Pfad/Sesskey landen so nicht in der
-            // Query-String-Zeile eines Webserver-Zugriffsprotokolls.
+            // POST instead of GET (Spec §5: listings must not be logged), keeping
+            // instance ID, path and session key out of web-server query-string logs.
             var body = 'instanceid=' + encodeURIComponent(state.instanceid) +
                 '&path=' + encodeURIComponent(state.path) +
                 '&sesskey=' + encodeURIComponent(config.sesskey);
@@ -674,9 +664,9 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
                 }
             }, config.timeoutms);
 
-            // Ausserhalb der Promise-Kette gemerkt statt verschachtelt
-            // .then()-t, damit renderFolders()/applyBrowseResult() in einem
-            // eigenen, flachen Kettenglied laufen (promise/no-nesting).
+            // Keep state outside the promise chain so renderFolders() and
+            // applyBrowseResult() run in a flat chain rather than nested then() calls
+            // (promise/no-nesting).
             var browseState = null;
 
             fetch(config.browseurl, {
@@ -691,13 +681,11 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
                 .then(function(result) {
                     clearTimeout(timer);
                     if (!result.ok) {
-                        // Der Server hat geantwortet, aber mit einem Fehler
-                        // (Issue #526) - der benannte Fehler wird erst hier
-                        // uebersetzt, nie als Satz im Seitenzustand transportiert.
-                        // Issue #565: config.strings deckt nur die vorab ohne
-                        // Platzhalter geladenen Texte ab; locationselectionexternalerror
-                        // braucht {$a->errorclass}/{$a->page} und wird deshalb
-                        // hier live nachgeladen statt aus config.strings gelesen.
+                        // The server responded with an error (Issue #526). Translate its named
+                        // error here instead of transporting sentences in page state.
+                        // Issue #565: config.strings covers preloaded strings without placeholders;
+                        // locationselectionexternalerror needs {$a->errorclass}/{$a->page}, so
+                        // load it here rather than reading it from config.strings.
                         if (!result.errorkey) {
                             return showBrowseError(config.strings.browseerrorheading, config.strings.timeouttext);
                         }
@@ -710,8 +698,8 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
                             return showBrowseError(config.strings.browseerrorheading, config.strings.timeouttext);
                         });
                     }
-                    // Test-Fakes und aeltere Antworten liefern die Ebene direkt;
-                    // der Endpunkt liefert sie als Teil des Seitenzustands.
+                    // Test fakes and older responses return the level directly;
+                    // the endpoint includes it in page state.
                     browseState = result.state ? result.state.browse : result;
                     return renderFolders(browseState.folders || []);
                 })
@@ -730,7 +718,7 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
                 });
         }
 
-        // --- Ordner anlegen (nur im Browser, siehe Moduldoc) -----------------
+        // --- Create folders (browser only; see module documentation) ---
 
         el('coursepilot-location-selection-createfolder').addEventListener('click', function() {
             var input = el('coursepilot-location-selection-newfolder');
@@ -746,11 +734,10 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
             input.value = '';
             state.path = path;
             renderBreadcrumb();
-            // Ein gerade angelegter Ordner ist per Definition leer (Spec §5) -
-            // ohne dies bliebe state.lastResult auf dem letzten echten
-            // browse()-Ergebnis der Elternebene stehen und "Ordner auswaehlen"
-            // wuerde faelschlich deren Inhalt fuer die Uebergabe-Warnung
-            // heranziehen (Issue #559).
+            // A newly created folder is empty by definition (Spec §5). Otherwise
+            // state.lastResult would retain the real parent browse result and folder
+            // selection would incorrectly use that content for the handover warning
+            // (Issue #559).
             renderFolders([])
                 .then(function() {
                     state.lastResult = {path: path, folders: [], selectable: true, reasonkey: null, entrycount: 0, entrynames: []};
@@ -759,9 +746,9 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
                 .catch(Notification.exception);
         });
 
-        // --- Ordner waehlen, mit Uebergabe-Bestaetigung eines gefuellten Ordners
-        // (Issue #497, Spec §5: nur der Kontextbereich fragt nach; ein leerer
-        // oder im Fenster angelegter Ordner braucht keine Rueckfrage) ----------
+        // --- Select folder with populated-folder handover confirmation ---
+        // Issue #497, Spec §5: only the context area asks; empty folders and
+        // folders created in this window need no confirmation.
 
         var confirmModalEl = el('coursepilot-location-selection-confirm-modal');
         var bsConfirmModal = (window.bootstrap && window.bootstrap.Modal) ? new window.bootstrap.Modal(confirmModalEl) : null;
@@ -828,7 +815,7 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
             finalizeFolderSelection(true);
         });
 
-        // --- Abschliessen: Client-seitige Vollstaendigkeitspruefung ----------
+        // --- Finish: client-side completeness check ---
 
         el('coursepilot-location-selection-form').addEventListener('submit', function(e) {
             if (!selections.context_area.type || !selections.material_store.type) {

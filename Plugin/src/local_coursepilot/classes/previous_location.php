@@ -85,7 +85,6 @@ final class previous_location {
      *
      * @return bool true if open legacy files were removed; false
      *         if none were open.
-     *         wenn keiner offen war.
      */
     public static function dismiss(): bool {
         $document = storage_anchor::read_raw_pointer();

@@ -17,10 +17,10 @@
 {{!
     @template local_coursepilot/location_selection_editor
 
-    Ortswahl und Dateifenster. Dynamische Listen fuellt amd/src/location_selection.js
-    (Issue #551) ueber Mustache-Vorlagen statt aus Zeichenketten; die
-    Konfiguration erreicht das Modul ueber $PAGE->requires->js_call_amd(),
-    nicht ueber eingebettete Daten in diesem Template.
+    Location selection and file picker. amd/src/location_selection.js renders
+    dynamic lists with Mustache templates instead of strings (Issue #551).
+    Configuration reaches the module through $PAGE->requires->js_call_amd(),
+    rather than data embedded in this template.
 
     Context variables required for this template:
     * actionurl - string - form action URL
@@ -30,7 +30,7 @@
     * targets - array - list of {name, first, context_area, fields} per pickable target
       * name - string - target identifier (context_area or material_store)
       * first - bool - whether this is the first tab (active by default)
-      * context_area - bool - true for the Kontextbereich target, false for Materialbestand
+      * context_area - bool - true for the context-area target, false for the material store
       * fields - array - list of {name, id} hidden inputs filled by amd/src/location_selection.js
 
     Example context (json):
