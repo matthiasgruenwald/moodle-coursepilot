@@ -15,27 +15,22 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Aenderungsverlauf (#385/#386/#387, Spec 0015 §10): jedes course_module_updated
- * schnappt einen Vollstand, egal ob Formularweg, Kursseite,
- * Massenbearbeitung, Handaenderung oder spaeter ein Coursepilot-Schreibvorgang
- * ueber denselben Weg. course_module_created legt Version 1 direkt beim
- * Anlegen an (#386) - fuer Bestandsaktivitaeten ohne dieses Ereignis holt
- * course_module_updated die fehlende Version rueckwirkend als
- * Vorgefunden-Stand nach. course_module_deleted und course_deleted loeschen
- * den Verlauf mit (#387, Kaskade).
+ * History (#385/#386/#387, Spec 0015 §10): course_module_updated captures
+ * a full snapshot regardless of forms, course pages, bulk/manual edits or
+ * Coursepilot writes through the same path. course_module_created records
+ * version 1 immediately (#386); older activities missing that event get
+ * a retroactive discovered snapshot on update. Module/course deletion
+ * also removes history (#387 cascade).
  *
- * Die 16 mod_quiz-Struktur-Ereignisse (#396, Spec 0015 §10): jedes davon kann
- * den Anordnungs-Stand eines Tests (quiz_slots+question_references,
- * quiz_sections, quiz_feedback) aendern - Reihenfolge, Seiten, Abschnitte,
- * Fragereferenz-Version, Sub-Notenzuordnung. Genau die Ereignisse, die
- * mod/quiz/classes/structure.php selbst ausloest (grep nach "::create([" in
- * dieser Datei) - slot_created (neue Frage) und quiz_repaginated/
- * quiz_grade_items_reordered (nicht aus structure.php ausgeloest bzw. in
- * Moodle 5.0.8 nirgends getriggert) zaehlen bewusst NICHT dazu: eine neue
- * Frage ist ein Inhaltswechsel, kein Anordnungswechsel (siehe
- * catalog\quiz-Klassendoku "Anordnung ist nicht Teil dieses Katalogs" und
- * version_history gap notice: "quiz content beyond the arrangement ... not
- * recorded").
+ * Sixteen quiz structure events (#396, Spec 0015 §10) change arrangement
+ * (quiz_slots/question_references, quiz_sections, quiz_feedback): ordering,
+ * pages, sections, question-reference versions and grade-item assignment.
+ * These are the events emitted by mod/quiz/classes/structure.php (search
+ * ::create([). Deliberately exclude slot_created (new question),
+ * quiz_repaginated and quiz_grade_items_reordered (not emitted there,
+ * or anywhere in Moodle 5.0.8). New questions change content, not
+ * arrangement; see catalog\quiz documentation and the version_history
+ * gap notice about quiz content beyond the recorded arrangement.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

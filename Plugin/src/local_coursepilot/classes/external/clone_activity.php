@@ -34,37 +34,29 @@ global $CFG;
 require_once($CFG->dirroot . '/course/lib.php');
 
 /**
- * Klonen (Spec 0017 §7.5, Ticket #421): ein Endpunkt fuer beide Moodle-Wege.
- * Derselbe Mechanismus fuer Intra-Kurs UND kursuebergreifend: Einzelaktivitaets-
- * Backup (MODE_IMPORT), sofort in den Zielkurs restauriert (TARGET_CURRENT_ADDING)
- * - genau die Primitiven, die Moodles eigenes duplicate_module() (course/lib.php)
- * intern selbst nutzt. duplicate_module() wird bewusst NICHT aufgerufen: es zaehlt
- * zu den in Moodle 5.2 deprecated Funktionen (Ticket #391, MDL-86854-Nachbarschaft,
- * siehe tests/external/no_deprecated_move_functions_test.php) - derselbe Grund, aus
- * dem move_module.php stateactions::cm_move() statt moveto_module() nutzt. Titel und
- * Sichtbarkeit werden danach immer explizit gesetzt (kein "(Kopie)"-Suffix, keine
- * geerbte/zufaellige Sichtbarkeit). Vorbild fuer den Backup/Restore-Teil: lokal
- * local_coursepilot\external\clone_activity_to_course (kursuebergreifender Pfad
- * des alten Plugins).
+ * Cloning (Spec 0017 §7.5, #421): one endpoint for both Moodle paths.
+ * Within-course and cross-course clones use single-activity backup
+ * (MODE_IMPORT), restored immediately into the target (TARGET_CURRENT_ADDING),
+ * the same primitives used by duplicate_module() in course/lib.php.
+ * We do not call that Moodle 5.2 deprecated function (#391, MDL-86854;
+ * see no_deprecated_move_functions_test.php), just as move_module.php uses
+ * stateactions::cm_move() instead of moveto_module(). Set title and visibility
+ * explicitly, without an automatic copy suffix or inherited visibility.
+ * The backup/restore model was the old clone_activity_to_course endpoint.
  *
- * Backup und Restore liegen im Modul {@see activity_backup} (Spec 0026, #588).
+ * {@see activity_backup} owns backup/restore (Spec 0026, #588).
  *
- * Kaputte Voraussetzungen (#332): Moodle kann cmid-Verweise in
- * Abschlussbedingungen beim kursuebergreifenden Klonen nicht uebersetzen
- * (die Backup-Grundlage ist eine Einzelaktivitaet, nicht der ganze Kurs) und
- * setzt den Verweis auf 0 - ohne Bereinigung eine Aktivitaet, die fuer
- * niemanden sichtbar sein kann. {@see self::cleanup_dangling_availability()}
- * erkennt genau diesen Fall (type=completion, cm=0) und entfernt ihn, mit
- * Klartext-Meldung. Einzige Stelle dieses Specs, die etwas wegnimmt.
+ * Dangling prerequisites (#332): cross-course single-activity restore
+ * cannot translate completion cmid references outside its backup and
+ * sets them to 0, potentially hiding the activity from everyone.
+ * {@see self::cleanup_dangling_availability()} removes exactly these
+ * completion/cm=0 conditions and reports them; the spec's only deletion.
  *
- * Aenderungsverlauf (ADR 0018): unabhaengig davon, was der Beobachter waehrend
- * des Klonens (course_module_created/-updated) bereits mitgeschrieben hat,
- * wird der gesamte bisherige Verlauf der neuen cmid verworfen und durch genau
- * einen Stand ersetzt - Version 1, Quelle "geklont", Quell-Modul-ID gesetzt
- * (#421). Das macht den Endstand unabhaengig davon, wie viele
- * Zwischenereignisse Moodle intern beim Duplizieren/Restore feuert.
+ * History (ADR 0018): replace all intermediate observer snapshots for the
+ * new cmid with one version 1, source cloned and source module ID (#421).
+ * This makes the result independent of Moodle's intermediate events.
  *
- * Unmittelbar englisch deklariert (#572, Spec 0025 §A): "message" statt "meldung".
+ * Declared directly in English (#572, Spec 0025 §A): message replaces meldung.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -128,24 +120,22 @@ final class clone_activity extends external_api {
 
         self::authorize($cm, $sourcecourseid, $newtargetcourseid, $crosscourse);
 
-        // Einzelaktivitaets-Backup (MODE_IMPORT) und Restore (TARGET_CURRENT_ADDING) im
-        // Modul activity_backup, fuer BEIDE Pfade (siehe Klassenkommentar).
+        // Single-activity backup (MODE_IMPORT) and restore (TARGET_CURRENT_ADDING)
+        // use activity_backup for both paths; see the class documentation.
         $newcmid = activity_backup::restore($newtargetcourseid, null, activity_backup::backup($cm));
 
         set_coursemodule_name($newcmid, $title);
         course_module_placement::set_visible($newcmid, $visible);
 
-        // Kaputte Voraussetzungen (#332) entstehen nur kursuebergreifend -
-        // die Bereinigung selbst ist ungefaehrlich, auch unconditional
-        // aufgerufen (sie entfernt ausschliesslich cm=0-Bedingungen, die es
-        // beim Intra-Kurs-Klon nie gibt), aber nur dort noetig.
+        // Dangling prerequisites (#332) arise only across courses. Cleanup is
+        // harmless even unconditionally (it only removes cm=0 conditions),
+        // but within-course clones never need it.
         $removedmessage = $crosscourse ? self::cleanup_dangling_availability($newcmid, $cm) : null;
 
         rebuild_course_cache($newtargetcourseid, true);
 
-        // Aenderungsverlauf: verwirft, was der Beobachter waehrend des
-        // Klonens bereits mitgeschrieben hat, und ersetzt es durch genau
-        // einen Stand mit korrekter Herkunft (#421) - siehe Klassenkommentar.
+        // History: discard intermediate observer snapshots and replace them
+        // with one version carrying the correct origin (#421).
         retention::purge_cm($newcmid);
         version_writer::capture($newcmid, (int) $USER->id, version_writer::SOURCE_CLONED, (int) $cm->id);
 
@@ -157,19 +147,13 @@ final class clone_activity extends external_api {
     }
 
     /**
-     * Capability-Pruefung in Quell- UND Zielkurs (#421 Abnahmekriterium 3) -
-     * kursuebergreifend zusaetzlich die Backup-/Restore-Rechte. Bei
-     * Intra-Kurs sind Quell- und Zielkurs derselbe Kontext; die Pruefung
-     * laeuft trotzdem fuer beide, damit das Verhalten unabhaengig vom Pfad
-     * gleich bleibt.
+     * Check capabilities in both source and target courses (#421 criterion 3),
+     * plus backup/restore capabilities for cross-course clones. Within-course
+     * clones check the same context twice to keep both paths consistent.
      *
-     * Der FEATURE_BACKUP_MOODLE2-Check gilt fuer BEIDE Pfade, nicht nur
-     * kursuebergreifend: {@see activity_backup} nutzt
-     * Einzelaktivitaets-Backup/Restore fuer Intra-Kurs genauso wie fuer
-     * kursuebergreifend (siehe Klassenkommentar) - ohne diesen Check wuerde
-     * ein nicht backup-faehiger Aktivitaetstyp im Intra-Kurs-Fall mit einer
-     * rohen backup_controller-Ausnahme statt der lokalisierten Meldung
-     * scheitern.
+     * FEATURE_BACKUP_MOODLE2 applies to both paths: {@see activity_backup}
+     * always uses backup/restore. Otherwise a non-backup-capable module would
+     * throw a raw backup_controller exception instead of the localized error.
      *
      * @param \stdClass $cm
      * @param int $sourcecourseid
@@ -200,17 +184,15 @@ final class clone_activity extends external_api {
     }
 
     /**
-     * Erkennt Abschlussbedingungen, deren cmid-Verweis Moodle beim
-     * kursuebergreifenden Klonen nicht uebersetzen konnte (#332,
-     * availability_completion\condition::update_after_restore() setzt
-     * cmid auf 0, wenn das referenzierte Modul nicht mitrestauriert wurde),
-     * entfernt sie aus dem "availability"-Baum und benennt sie im Klartext -
-     * anhand des VOR dem Klonen gelesenen Quell-Baums, in dem die
-     * urspruengliche cmid noch steht.
+     * Detects completion conditions whose cmid could not be translated during
+     * cross-course restore (#332). availability_completion\condition::
+     * update_after_restore() sets cmid to 0 if its activity was not restored.
+     * Remove such conditions and describe them using the source tree captured
+     * before cloning, where the original cmid is still available.
      *
      * @param int $newcmid
      * @param \stdClass $sourcecm
-     * @return string|null Meldung ueber entfernte Bedingungen, null wenn keine.
+     * @return string|null Message about removed conditions, null if none.
      */
     private static function cleanup_dangling_availability(int $newcmid, \stdClass $sourcecm): ?string {
         global $DB;
@@ -246,16 +228,14 @@ final class clone_activity extends external_api {
     }
 
     /**
-     * Rekursiv, damit auch verschachtelte Bedingungsgruppen (native
-     * Formularoberflaeche kann UND/ODER-Gruppen bauen, nicht nur der flache
-     * Baum von {@see set_restriction}) bereinigt werden. Eine Gruppe, die
-     * dadurch leer wird, faellt selbst weg statt als leere Huelle stehen zu
-     * bleiben.
+     * Recursively cleans nested AND/OR groups produced by native forms, not
+     * only the flat tree from {@see set_restriction}. Remove groups emptied
+     * by cleanup instead of leaving empty wrappers.
      *
      * @param array $node
-     * @param array|null $sourcenode Derselbe Knoten im Quell-Baum vor dem Klonen (fuer die Meldung).
-     * @param array $removed Referenz: Meldungstexte je entfernter Bedingung.
-     * @return array|null null, wenn der Knoten (oder der ganze Baum) leer wurde.
+     * @param array|null $sourcenode The same source-tree node before cloning, used for the message.
+     * @param array $removed By reference: message for each removed condition.
+     * @return array|null null if the node or entire tree became empty.
      */
     private static function strip_dangling_completion(array $node, ?array $sourcenode, array &$removed): ?array {
         if (!isset($node['c']) || !is_array($node['c'])) {
@@ -298,9 +278,9 @@ final class clone_activity extends external_api {
     }
 
     /**
-     * Lehrkraft-deutsche Beschreibung der entfernten Bedingung - nennt die
-     * ursprünglich referenzierte Aktivität, wenn der Quell-Baum sie noch
-     * kennt (die neue Bedingung selbst weiss nur noch "cm: 0").
+     * Teacher-facing description of the removed condition, naming the originally
+     * referenced activity when the source tree retains it. The new tree only
+     * knows cm: 0.
      *
      * @param array|null $sourcechild
      * @return string
@@ -320,7 +300,7 @@ final class clone_activity extends external_api {
     }
 
     /**
-     * @param int $expectedcompletion COMPLETION_xx-Wert aus completionlib.php
+     * @param int $expectedcompletion COMPLETION_xx value from completionlib.php
      * @return string
      */
     private static function completion_label(int $expectedcompletion): string {

@@ -15,12 +15,12 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Externer Dienst und Webservice-Funktionen.
+ * External service and webservice functions.
  *
- * Abgeleitet aus {@see \local_coursepilot\tool_registry} - der einen
- * Werkzeug-Registrierung (#378). Die Funktionsliste ist damit automatisch
- * deckungsgleich mit {@see \local_coursepilot\privacy_surface::allowed_tools()}
- * - weiterhin erzwungen durch tests/privacy_surface_test.php.
+ * Derived from the single {@see \local_coursepilot\tool_registry} (#378),
+ * so the functions automatically match
+ * {@see \local_coursepilot\privacy_surface::allowed_tools()}.
+ * tests/privacy_surface_test.php continues to enforce that contract.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
