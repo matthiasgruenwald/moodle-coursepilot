@@ -670,3 +670,14 @@ $string['questionimportversion'] = 'Question "{$a->name}" imported as a new vers
 $string['versioninfosummary'] = 'Moodle {$a->moodlerelease} (branch {$a->branch}), Coursepilot plugin {$a->pluginrelease} (version {$a->pluginversion}).';
 $string['versioninfoupgradewarning'] = 'Warning: The database records version {$a} - upgrade.php was not run after the last deployment.';
 $string['quizcreatedfields'] = 'Quiz created: {$a}.';
+
+// Teacher-authored glossary entries (#593).
+$string['tool_add_glossary_entries'] = 'Adds teacher-authored entries to a fresh or existing glossary by cmid. Entries support concept, definition/definitionformat, aliases, category names, automatic linking, case sensitivity, whole-word matching, approval, tags, attachment_files and definition_files from store/workbench. Missing categories require mod/glossary:managecategories; explicit approval requires mod/glossary:approve. Requires mod/glossary:write and local/coursepilot:use. Each entry returns success or a safe error reason independently; forbidden duplicates fail only that entry. Existing learner entries, comments and ratings are never returned. Glossary child content is not covered by activity version history.';
+$string['glossaryentrybusy'] = 'The glossary is being updated. Please retry.';
+$string['glossaryentryrequired'] = 'Concept and definition must not be empty.';
+$string['glossaryentrycategoryrequired'] = 'Category names must not be empty.';
+$string['glossaryentryfailed'] = 'The glossary entry could not be saved.';
+$string['glossaryentryfilelimit'] = 'Entry files exceed Moodle\'s file count or upload size limit.';
+$string['glossaryentryformat'] = 'Definition format must be Moodle, HTML, plain text or Markdown.';
+$string['glossaryentrytagsdisabled'] = 'Tags are disabled for glossary entries.';
+$string['glossaryentrystandardtags'] = 'This glossary allows only existing standard tags.';

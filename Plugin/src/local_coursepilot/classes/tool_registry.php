@@ -43,6 +43,7 @@ final class tool_registry {
         'coursepilot_plan_question_category_cleanup' => ['classname' => 'local_coursepilot\external\get_question_category_cleanup_plan', 'descriptionkey' => 'tool_plan_question_category_cleanup'],
         'coursepilot_get_question' => ['classname' => 'local_coursepilot\external\get_question', 'descriptionkey' => 'tool_get_question'],
         'coursepilot_plan_quiz_cleanup' => ['classname' => 'local_coursepilot\external\get_quiz_cleanup_plan', 'descriptionkey' => 'tool_plan_quiz_cleanup'],
+        'coursepilot_add_glossary_entries' => ['classname' => 'local_coursepilot\\external\\add_glossary_entries', 'descriptionkey' => 'tool_add_glossary_entries'],
         'coursepilot_add_questions_to_quiz' => ['classname' => 'local_coursepilot\external\add_questions_to_quiz', 'descriptionkey' => 'tool_add_questions_to_quiz'],
         'coursepilot_get_version_info' => ['classname' => 'local_coursepilot\external\get_version_info', 'descriptionkey' => 'tool_get_version_info'],
         'coursepilot_list_context_files' => ['classname' => 'local_coursepilot\external\list_context_files', 'descriptionkey' => 'tool_list_context_files'],

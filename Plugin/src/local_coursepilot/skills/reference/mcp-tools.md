@@ -33,6 +33,7 @@ Read this to select the responsible read or write tool.
 | `coursepilot_ensure_section` | Idempotently create a missing sectionnum; existing sections receive only name reconciliation |
 | `coursepilot_get_module_settings` | Read complete current state by cmid before every patch; report existing learner_locks |
 | `coursepilot_describe_module_fields` | Read fields, meanings, blocked fields and learner_lock values; modname and optional full |
+| `coursepilot_add_glossary_entries` | Add teacher-authored entries to fresh/existing glossary cmid; entries accept concept, definition/definitionformat, aliases, category names, usedynalink/casesensitive/fullmatch, optional approved, tags, attachment_files/definition_files and location (store/workbench). Explicit approval requires mod/glossary:approve; new categories require mod/glossary:managecategories. Returns per-entry index/success/entryid/approved/errorcode/message and gap_notice. Preserve successful entries on partial failure; retry failed entries only. No learner-content reads or entry history restoration. See activity-types |
 | `coursepilot_clone_activity` | Duplicate by cmid/title within a course or into optional targetcourseid |
 
 Settings writers (create/update module, completion, restrictions and quiz
