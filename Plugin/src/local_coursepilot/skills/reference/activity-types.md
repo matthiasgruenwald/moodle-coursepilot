@@ -146,5 +146,26 @@ is removed as in step 5.
 
 Glossary pitfall: creation is empty. Entries are not carried through
 activity XML; XML containing entry fails the round trip. Create without
-entries and tell the teacher beforehand to add them in Moodle. Record
-this in activity-types/glossary.md.
+entries, then use coursepilot_add_glossary_entries(cmid, entries) after
+plan approval to add teacher-authored content to the new or an existing glossary.
+Record this two-step path in activity-types/glossary.md.
+
+Each entry accepts concept, definition, definitionformat (0 Moodle, 1 HTML,
+2 plain text, 4 Markdown), aliases, categories (names), usedynalink,
+casesensitive, fullmatch, optional approved, tags, attachment_files,
+definition_files and location (store by default, or workbench). Use
+@@PLUGINFILE@@/filename in definition for definition_files; list material
+paths rather than file contents. Files are copied and sources stay intact.
+Tags must be enabled for glossary entries; standard-only tagging permits
+only existing standard tags in the glossary tag collection. Missing category creation needs
+mod/glossary:managecategories; explicit approved needs mod/glossary:approve.
+Omit approved to follow Moodle's default approval. Autolinking also requires
+the glossary's own linking setting and Moodle's glossary filter.
+
+Report every result by its zero-based index: success, entryid, actual approved
+or errorcode/message. Earlier successes survive a later error; retry only
+failed entries to avoid duplicates. Moodle's duplicate-entry setting applies.
+This tool adds only: editing/deleting entries, comments and ratings remain
+outside its scope. Existing learner content is never returned. Activity
+version history covers the glossary instance only; entries and their files
+cannot be restored through it. Report gap_notice rather than promising undo.
