@@ -17,17 +17,17 @@
 namespace local_coursepilot;
 
 /**
- * OAuth-2.1-Discovery und Client-Registrierung (#335).
+ * OAuth 2.1 discovery and client registration (#335).
  *
- * Scope bewusst eng gehalten: Discovery-Metadaten (RFC 8414 + RFC 9728),
- * Dynamic Client Registration (RFC 7591) und Client ID Metadata Document
- * (CIMD) als zweiter Registrierungsweg. Authorize/Consent/Token-Ausgabe
- * folgen erst in #336 - diese Klasse legt keine Codes oder Access-Token an.
+ * Scope: RFC 8414/RFC 9728 discovery metadata, RFC 7591 dynamic client
+ * registration and Client ID Metadata Documents (CIMD) as a second
+ * registration route. Authorization, consent and token issuance followed
+ * in #336.
  *
- * Seam-Muster wie {@see dispatcher} (#334): jede handle_*-Methode ist eine
- * reine Funktion (Werte rein, Antwortwert raus, kein exit, keine HTTP-
- * Superglobals), per PHPUnit ohne laufenden Webserver pruefbar. Die duennen
- * PHP-Dateien unter oauth/ und oauth.php tun nur noch Ein-/Ausgabe.
+ * Follow dispatcher's handler seam (#334): each handle_* method consumes
+ * values and returns a response without exit or HTTP superglobals, allowing
+ * PHPUnit checks without a web server. Thin oauth/ files and oauth.php only
+ * handle input/output. Persistence stays inside the relevant helpers.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -35,7 +35,7 @@ namespace local_coursepilot;
  */
 final class oauth_lib {
 
-    /** @var string DB-Tabelle der per DCR/CIMD registrierten Clients. */
+    /** @var string Database table for DCR/CIMD-registered clients. */
     private const CLIENT_TABLE = 'local_coursepilot_oauth_client';
 
     /** @var int Maximum decoded CIMD response size: 1 MiB, enforced while receiving. */
@@ -56,10 +56,10 @@ final class oauth_lib {
     /** @var int Fixed window of the CIMD negative cache: a failed URL is not fetched again until it ends (#643). */
     public const CIMD_NEGATIVE_WINDOW = 600;
 
-    /** @var string DB-Tabelle der kurzlebigen, PKCE-gebundenen Autorisierungscodes. */
+    /** @var string Database table for short-lived, PKCE-bound authorization codes. */
     private const CODE_TABLE = 'local_coursepilot_oauth_code';
 
-    /** @var string DB-Tabelle der Access-/Refresh-Token. */
+    /** @var string Database table for access/refresh tokens. */
     private const TOKEN_TABLE = 'local_coursepilot_oauth_token';
 
     /** @var string Stable user/client connections, shared by every token generation. */
@@ -86,31 +86,28 @@ final class oauth_lib {
     /** @var int Default registration budget window in seconds (setting oauthregisterwindow). */
     public const REGISTRATION_WINDOW = 3600;
 
-    /** @var int Lebensdauer eines Autorisierungscodes in Sekunden (RFC 6749 empfiehlt kurz). */
+    /** @var int Authorization code lifetime in seconds (RFC 6749 recommends a short lifetime). */
     private const CODE_TTL = 120;
 
-    /** @var int Lebensdauer eines Zugriffstokens in Sekunden - 1 Stunde (#336). */
+    /** @var int Access token lifetime in seconds: one hour (#336). */
     public const ACCESS_TOKEN_TTL = 3600;
 
-    /** @var int Lebensdauer eines Erneuerungstokens in Sekunden - 30 Tage (#336). */
+    /** @var int Refresh token lifetime in seconds: 30 days (#336). */
     public const REFRESH_TOKEN_TTL = 30 * 24 * 3600;
 
     /**
-     * @var int|null Datensatz-ID des zuletzt per {@see authenticate_access_token()}
-     *      erfolgreich aufgeloesten Access-Tokens (#501) - die "ausstellende
-     *      Verbindung" eines waehrend dieser Anfrage ausgestellten
-     *      Werkbank-Downloadtickets ({@see \local_coursepilot\workbench_ticket::issue()}).
-     *      Prozessweites Request-Gedaechtnis wie $USER, kein DB-Zustand -
-     *      ponytail: keine Dependency-Injection-Kette durch dispatcher ->
-     *      external_api::call_external_function() -> Werkzeug, nur damit ein
-     *      einzelner Wert durchgereicht wird.
+     * @var int|null Last access-token row successfully resolved by
+     *      authenticate_access_token() (#501), identifying the issuing
+     *      connection for workbench_ticket::issue(). Request-local state,
+     *      like USER, rather than database state.
+     *      ponytail: avoid passing one value through a dependency-injection
+     *      chain from dispatcher via external_api to every tool.
      */
     private static ?int $currenttokenid = null;
 
     /**
-     * Autorisierungsserver-Metadaten (RFC 8414). Reine Funktion des
-     * Ausstellers - kein globaler Zugriff, damit ohne Moodle-Bootstrap
-     * pruefbar.
+     * Authorization server metadata (RFC 8414). A pure function of the issuer,
+     * without global access, so it can be tested without bootstrapping Moodle.
      *
      * @param string $wwwroot
      * @return array
@@ -127,8 +124,8 @@ final class oauth_lib {
             'code_challenge_methods_supported' => ['S256'],
             'token_endpoint_auth_methods_supported' => ['none', 'client_secret_post'],
             'scopes_supported' => ['coursepilot.read'],
-            // OIDC-Pflichtfelder - erzwungen durch den Namensraum, obwohl das
-            // Plugin kein OIDC-Provider ist (#302, Punkt 2).
+            // OIDC-required fields imposed by the namespace even though this plugin
+            // is not an OIDC provider (#302, item 2).
             'jwks_uri' => $wwwroot . '/local/coursepilot/oauth/jwks.php',
             'subject_types_supported' => ['public'],
             'id_token_signing_alg_values_supported' => ['RS256'],
@@ -136,11 +133,10 @@ final class oauth_lib {
     }
 
     /**
-     * Metadaten der geschuetzten Ressource (RFC 9728). Wird unter zwei
-     * Adressen ausgeliefert (#312, #335): oauth/protected-resource.php (aus
-     * dem WWW-Authenticate-Header verlinkt) und als PATH_INFO auf mcp.php
-     * selbst (von Clients, die den Header nie lesen und den Pfad aus der
-     * Ressourcen-URL ableiten) - beide rufen diese eine Quelle auf.
+     * Protected resource metadata (RFC 9728). Served at two URLs (#312, #335):
+     * oauth/protected-resource.php linked from WWW-Authenticate, and PATH_INFO
+     * on mcp.php for clients deriving the path from the resource URL instead
+     * of reading that header. Both use this source.
      *
      * @param string $wwwroot
      * @return array
@@ -155,12 +151,11 @@ final class oauth_lib {
     }
 
     /**
-     * Discovery-Handler fuer oauth.php: bedient ausschliesslich die beiden
-     * bekannten Namen unter PATH_INFO (OAuth- und OIDC-Namensraum, #302).
-     * Alles andere ist ein Irrlaeufer und liefert 404 als JSON, nie HTML.
+     * Discovery handler for oauth.php. Serves only the two known PATH_INFO
+     * names (OAuth/OIDC namespaces, #302). Other paths return JSON 404, never HTML.
      *
      * @param string $wwwroot
-     * @param string $pathinfo Bereits getrimmter PATH_INFO-Wert.
+     * @param string $pathinfo Already trimmed PATH_INFO value.
      * @return array{status: int, headers: array<string, string>, body: array}
      */
     public static function handle_discovery(string $wwwroot, string $pathinfo): array {
@@ -172,11 +167,11 @@ final class oauth_lib {
     }
 
     /**
-     * Registriert einen Client per DCR (RFC 7591).
+     * Register a client through DCR (RFC 7591).
      *
-     * @param array $metadata Decodierter JSON-Body der Registrierungsanfrage.
-     * @return array Fehlerfall: ['error' => ..., 'error_description' => ...].
-     *               Erfolg: vollstaendiger Client-Datensatz inkl. client_id.
+     * @param array $metadata Decoded JSON registration body.
+     * @return array On error: ['error' => ..., 'error_description' => ...].
+     *               On success: complete client record including client_id.
      */
     public static function register_client(array $metadata): array {
         $error = self::registration_error($metadata);
@@ -226,16 +221,15 @@ final class oauth_lib {
     }
 
     /**
-     * Legt einen Client-Datensatz an - gemeinsamer letzter Schritt fuer DCR
-     * (register_client()) und CIMD (cache_cimd_client()), die sich nur in
-     * Herkunft und ein paar Feldwerten unterscheiden.
+     * Persist a client: the shared final step for DCR (register_client()) and
+     * CIMD (cache_cimd_client()), differing only in origin and some field values.
      *
      * @param string $clientid
      * @param string|null $clientname
      * @param array $redirecturis
      * @param string $tokenendpointauthmethod
      * @param string|null $clientsecret
-     * @param string $source 'dcr' oder 'cimd'.
+     * @param string $source 'dcr' or 'cimd'.
      * @return \stdClass
      */
     private static function persist_client(
@@ -310,7 +304,7 @@ final class oauth_lib {
     }
 
     /**
-     * Formt einen Client-Datensatz in die RFC-7591-Antwortform.
+     * Convert a client row to the RFC 7591 response shape.
      *
      * @param \stdClass $record
      * @return array
@@ -331,8 +325,8 @@ final class oauth_lib {
     }
 
     /**
-     * https-Redirect-URIs sind Pflicht, ausser Loopback fuer lokale
-     * CLI-Clients (RFC 8252, von OAuth 2.1 fuer native Apps uebernommen).
+     * Require HTTPS redirects, except loopback for local CLI clients
+     * (RFC 8252, adopted by OAuth 2.1 for native apps).
      *
      * @param mixed $uri
      * @return bool
@@ -355,18 +349,16 @@ final class oauth_lib {
     }
 
     /**
-     * Holt einen Client per client_id. Fehlt er lokal und sieht die
-     * client_id wie eine URL aus, wird sie als CIMD-Dokument abgerufen und
-     * gecacht - der zweite, DCR-lose Registrierungsweg (#291, #335): sonst
-     * legt jede Neuverbindung eines CIMD-Clients einen weiteren
-     * DCR-Client an.
+     * Find a client by client_id. When it is absent locally and looks like a
+     * URL, fetch and cache its CIMD document: the second registration route
+     * without DCR (#291, #335). Otherwise each new CIMD connection would create
+     * another DCR client.
      *
-     * Stored clients never touch a budget. Before a first-time fetch (#643):
-     * overlong URLs and URLs in the negative cache are refused, then the
-     * shared site/source budget (scope 'cimd') is consumed; a rejection starts
-     * no network work. A failed fetch becomes a 'cimdfail' entry for
-     * {@see CIMD_NEGATIVE_WINDOW}; their number per window is capped by the
-     * site fetch limit.
+     * Stored clients consume no budget. Before a first fetch (#643), reject
+     * long URLs and negative-cache entries, then consume the site/source budget
+     * (scope cimd). Rejection starts no network work. A failed fetch creates a
+     * cimdfail entry lasting CIMD_NEGATIVE_WINDOW; their count per window is
+     * capped by the site fetch limit.
      *
      * @param string $clientid
      * @param int $retryafter Set to the seconds until the CIMD budget window
@@ -400,7 +392,7 @@ final class oauth_lib {
     }
 
     /**
-     * Ist diese client_id eine https-URL (CIMD-Kandidat)?
+     * Whether client_id is an HTTPS URL and thus a CIMD candidate.
      *
      * @param string $clientid
      * @return bool
@@ -449,16 +441,15 @@ final class oauth_lib {
     }
 
     /**
-     * Prueft ein bereits dekodiertes CIMD-Dokument und legt bei Gueltigkeit
-     * einen Client-Datensatz an, dessen clientid die URL selbst ist.
+     * Validate decoded CIMD metadata and, when valid, persist a client whose
+     * clientid is the URL itself.
      *
-     * ponytail: kein Cache-Refresh-Mechanismus - ein einmal gecachter
-     * CIMD-Client bleibt bei den Werten des ersten Abrufs. Nachziehen, falls
-     * sich in der Praxis zeigt, dass CIMD-Dokumente sich aendern muessen.
+     * ponytail: no cache refresh. A cached CIMD client retains its first values;
+     * add refresh only if changing documents prove necessary in practice.
      *
-     * @param string $url Die client_id (= CIMD-URL).
-     * @param array $metadata Dekodiertes CIMD-Dokument.
-     * @return \stdClass|null null bei ungueltigen/fehlenden redirect_uris.
+     * @param string $url client_id (the CIMD URL).
+     * @param array $metadata Decoded CIMD metadata.
+     * @return \stdClass|null null for invalid or missing redirect_uris.
      */
     public static function cache_cimd_client(string $url, array $metadata): ?\stdClass {
         // Same redirect URI count/length limits as DCR (#643).
@@ -477,16 +468,14 @@ final class oauth_lib {
     }
 
     /**
-     * Prueft eine Autorisierungsanfrage rein logisch (#336): response_type,
-     * PKCE/S256-Pflicht, bekannter Client, registriertes Umleitungsziel.
-     * Reine Funktion - kein require_login(), kein HTML, damit ohne
-     * laufenden Webserver per PHPUnit pruefbar (Schalenmuster wie
-     * handle_discovery()/handle_registration()). oauth/authorize.php ruft
-     * dies nach require_login() auf und rendert bei Erfolg den
-     * Zustimmungsdialog, bei Fehler eine Fehlerseite.
+     * Validate authorization parameters (#336): response_type, mandatory
+     * PKCE/S256, a known client and its registered redirect. No login, HTML or
+     * HTTP response writes: PHPUnit can call this seam without a web server,
+     * as with handle_discovery()/handle_registration(). oauth/authorize.php
+     * calls it after login and renders either consent or an error page.
      *
      * @param array $params response_type, client_id, redirect_uri,
-     *        code_challenge, code_challenge_method (alle als string erwartet).
+     *        code_challenge, code_challenge_method (all expected as strings).
      * @return array{error: string, error_description: string}|array{client: \stdClass}
      */
     public static function validate_authorize_request(array $params): array {
@@ -499,14 +488,14 @@ final class oauth_lib {
         if ($responsetype !== 'code' || $clientid === '' || $redirecturi === '' || $codechallenge === '') {
             return [
                 'error' => 'invalid_request',
-                'error_description' => 'response_type=code, client_id, redirect_uri und code_challenge sind Pflicht.',
+                'error_description' => 'response_type=code, client_id, redirect_uri and code_challenge are required.',
             ];
         }
         if ($codechallengemethod !== 'S256') {
-            // OAuth 2.1: PKCE ist fuer alle Clients Pflicht, nur S256 erlaubt.
+            // OAuth 2.1 requires PKCE for every client and permits only S256.
             return [
                 'error' => 'invalid_request',
-                'error_description' => 'PKCE ist Pflicht, nur code_challenge_method=S256 wird akzeptiert.',
+                'error_description' => 'PKCE is required; only code_challenge_method=S256 is accepted.',
             ];
         }
 
@@ -517,19 +506,19 @@ final class oauth_lib {
                 'error_description' => 'Client metadata lookup budget exhausted, retry later.'];
         }
         if (!$client) {
-            return ['error' => 'invalid_client', 'error_description' => 'Unbekannter Client.'];
+            return ['error' => 'invalid_client', 'error_description' => 'Unknown client.'];
         }
         if (!self::redirect_uri_matches($client, $redirecturi)) {
-            // Kein Redirect zu einer unverifizierten Ziel-URI (OAuth Security BCP).
-            return ['error' => 'invalid_request', 'error_description' => 'redirect_uri ist bei diesem Client nicht registriert.'];
+            // Redirect only to verified target URIs (OAuth Security BCP).
+            return ['error' => 'invalid_request', 'error_description' => 'redirect_uri is not registered for this client.'];
         }
 
         return ['client' => $client];
     }
 
     /**
-     * Exakter Abgleich gegen die bei der Registrierung hinterlegten
-     * redirect_uris (RFC 6749, 3.1.2.3: kein Praefixvergleich).
+     * Match redirect_uris registered for the client exactly
+     * (RFC 6749 §3.1.2.3: no prefix comparison).
      *
      * @param \stdClass $client
      * @param string $redirecturi
@@ -541,14 +530,13 @@ final class oauth_lib {
     }
 
     /**
-     * Stellt einen Autorisierungscode aus - erst nach erfolgreicher
-     * Zustimmung durch die Lehrkraft (oauth/authorize.php).
+     * Issue an authorization code only after teacher consent in oauth/authorize.php.
      *
      * @param string $clientid
      * @param int $userid
-     * @param string $redirecturi Muss beim Einloesen exakt wiederkehren.
-     * @param string $codechallenge PKCE-S256-Challenge des Clients.
-     * @return string Der Autorisierungscode.
+     * @param string $redirecturi Must match exactly on redemption.
+     * @param string $codechallenge Client PKCE-S256 challenge.
+     * @return string Authorization code.
      */
     public static function issue_code(string $clientid, int $userid, string $redirecturi, string $codechallenge): string {
         global $DB;
@@ -568,9 +556,8 @@ final class oauth_lib {
     }
 
     /**
-     * Haengt Query-Parameter an ein Umleitungsziel an - fuer den
-     * Erfolgs-Redirect (code, state) wie den Ablehnungs-Redirect (error,
-     * error_description, state). Leere/fehlende Werte werden weggelassen.
+     * Append query parameters to success redirects (code/state) and denial
+     * redirects (error/error_description/state). Omit empty or absent values.
      *
      * @param string $redirecturi
      * @param array<string, ?string> $params
@@ -586,9 +573,8 @@ final class oauth_lib {
     }
 
     /**
-     * Baut das Umleitungsziel fuer eine Ablehnung im Zustimmungsdialog
-     * (RFC 6749, 4.1.2.1: error=access_denied) - eine saubere Fehlerantwort
-     * an den Client, kein Autorisierungscode, kein Token (#336).
+     * Build the denial redirect (RFC 6749 §4.1.2.1: error=access_denied):
+     * a client error response without an authorization code or token (#336).
      *
      * @param string $redirecturi
      * @param string|null $state
@@ -597,23 +583,22 @@ final class oauth_lib {
     public static function denial_redirect_url(string $redirecturi, ?string $state): string {
         return self::build_redirect_url($redirecturi, [
             'error' => 'access_denied',
-            'error_description' => 'Die Lehrkraft hat die Zustimmung verweigert.',
+            'error_description' => 'The teacher denied consent.',
             'state' => $state,
         ]);
     }
 
     /**
-     * Tauscht einen Autorisierungscode gegen ein Token-Paar (RFC 6749
-     * 4.1.3). Prueft Einmaligkeit, Ablauf, Client- und
-     * Umleitungsziel-Bindung sowie den PKCE-Code-Verifier gegen die bei
-     * issue_code() hinterlegte Challenge.
+     * Exchange an authorization code for a token pair (RFC 6749 §4.1.3).
+     * Check single use, expiry, client/redirect binding and the PKCE verifier
+     * against the challenge stored by issue_code().
      *
      * @param string $code
      * @param string $clientid
      * @param string $redirecturi
      * @param string $codeverifier
-     * @return array|null null bei jeglichem Fehler (RFC 6749: invalid_grant,
-     *         kein Detailgrund nach aussen).
+     * @return array|null null on any error (RFC 6749: invalid_grant,
+     *         without exposing the detailed cause).
      */
     public static function exchange_code(string $code, string $clientid, string $redirecturi, string $codeverifier): ?array {
         global $DB;
@@ -629,14 +614,12 @@ final class oauth_lib {
             return null;
         }
 
-        // Anspruch (claim_row()) und Tokenausstellung als eine Datenbank-
-        // grenze (#574): schlaegt die Ausstellung fehl, macht das Rollback
-        // den Anspruch rueckgaengig statt den Code dauerhaft zu verbrennen.
+        // Claim and token issuance share one database transaction (#574). If
+        // issuance fails, roll back the claim rather than permanently consuming the code.
         $transaction = $DB->start_delegated_transaction();
         try {
             if (!self::claim_row(self::CODE_TABLE, 'code', 'used', $record->code)) {
-                // Rivalisierender Anspruch war schneller - fuer den Aufrufer
-                // ununterscheidbar von invalid_grant.
+                // Another claimant won: indistinguishable from invalid_grant to the caller.
                 $transaction->allow_commit();
                 return null;
             }
@@ -650,15 +633,14 @@ final class oauth_lib {
     }
 
     /**
-     * Erneuert ein Token-Paar per Refresh-Token, mit Rotation (#336): das
-     * alte Refresh-Token wird entwertet, ein neues Paar ausgestellt - ein
-     * Rechteentzug wirkt so spaetestens nach Ablauf des Zugriffstokens
-     * (1 Stunde), nicht erst nach 30 Tagen.
+     * Rotate a refresh token (#336): invalidate the old token and issue a new
+     * pair. Permission revocation therefore takes effect by access-token
+     * expiry (one hour), rather than waiting 30 days.
      *
      * @param string $refreshtoken
      * @param string $clientid
-     * @return array|null null bei ungueltigem/abgelaufenem/widerrufenem Token
-     *         oder Client-Mismatch.
+     * @return array|null null for an invalid, expired or revoked token
+     *         or a client mismatch.
      */
     public static function rotate_refresh_token(string $refreshtoken, string $clientid): ?array {
         global $DB;
@@ -722,9 +704,8 @@ final class oauth_lib {
     }
 
     /**
-     * PKCE-S256-Verifikation (RFC 7636, 4.6): BASE64URL(SHA256(verifier))
-     * muss der bei der Autorisierungsanfrage hinterlegten Challenge
-     * entsprechen. hash_equals() gegen Timing-Angriffe.
+     * Verify PKCE-S256 (RFC 7636 §4.6): BASE64URL(SHA256(verifier)) must equal
+     * the stored authorization challenge. hash_equals() prevents timing attacks.
      *
      * @param string $codeverifier
      * @param string $codechallenge
@@ -736,9 +717,8 @@ final class oauth_lib {
     }
 
     /**
-     * Legt ein neues Access-/Refresh-Token-Paar an und liefert die
-     * RFC-6749-Antwortform. Gemeinsamer letzter Schritt fuer exchange_code()
-     * und rotate_refresh_token().
+     * Create an access/refresh token pair in the RFC 6749 response shape.
+     * Shared final step of exchange_code() and rotate_refresh_token().
      *
      * @param string $clientid
      * @param int $userid
@@ -778,12 +758,10 @@ final class oauth_lib {
     }
 
     /**
-     * Token-Handler fuer oauth/token.php (#336): Methodenpruefung,
-     * Grant-Type-Dispatch (authorization_code/refresh_token),
-     * client_secret_post-Pruefung, einheitliches Antwortformat. Reine
-     * Funktion (Schalenmuster wie handle_registration()) - kein exit(),
-     * $body ist bereits eingelesen (Formular- oder JSON-Rumpf, das
-     * Unterscheiden ist Ein-/Ausgabe und bleibt in der Schale).
+     * Token handler for oauth/token.php (#336): check method, dispatch
+     * authorization_code/refresh_token and authenticate client_secret_post.
+     * Like handle_registration(), return a response without exit(). The shell
+     * already read body and distinguishes form input from JSON.
      *
      * @param string $method
      * @param array|null $body
@@ -807,8 +785,8 @@ final class oauth_lib {
         if (!$client) {
             return self::result(400, [], ['error' => 'invalid_client']);
         }
-        // client_secret_post-Clients authentifizieren sich zusaetzlich - PKCE
-        // deckt oeffentliche Clients bereits ab (#291).
+        // client_secret_post clients also authenticate with a secret; PKCE already
+        // covers public clients (#291).
         if ($client->tokenendpointauthmethod === 'client_secret_post') {
             $secret = (string) ($body['client_secret'] ?? '');
             if ($secret === '' || !hash_equals((string) $client->clientsecret, $secret)) {
@@ -841,19 +819,17 @@ final class oauth_lib {
     }
 
     /**
-     * Loest ein OAuth-Access-Token auf eine Moodle-userid auf (#337). Gueltig
-     * heisst: der Datensatz existiert, ist nicht widerrufen/rotiert
-     * (revoked=0) und noch nicht abgelaufen. Ersetzt die bisherige
-     * Webservice-Token-Kruecke aus dem Prototypen vollstaendig - ein
-     * external_tokens-Eintrag wird hier nie geprueft.
+     * Resolve an OAuth access token to a Moodle user ID (#337). Validity requires
+     * a stored row, no revocation/rotation (revoked=0), no expiry and an active
+     * grant. Replaces the prototype's web service token path; external_tokens
+     * is never queried here.
      *
-     * Reine DB-Lookup-Funktion, kein $USER/Session-Aufbau - das bleibt
-     * Aufgabe des Aufrufers (dispatcher::authenticate()), analog zum
-     * bestehenden Seam-Muster.
+     * Only performs database lookup. The caller dispatcher::authenticate()
+     * establishes USER/session state, following the existing seam.
      *
      * @param string $accesstoken
-     * @return int|null userid, oder null wenn das Token unbekannt, widerrufen
-     *         oder abgelaufen ist.
+     * @return int|null userid, or null for an unknown, revoked
+     *         or expired token.
      */
     public static function authenticate_access_token(string $accesstoken): ?int {
         global $DB;
@@ -871,10 +847,9 @@ final class oauth_lib {
     }
 
     /**
-     * Die Datensatz-ID der Verbindung, die die laufende Anfrage authentifiziert
-     * hat - siehe {@see $currenttokenid}. Null ausserhalb einer per
-     * {@see authenticate_access_token()} authentifizierten Anfrage (z.B. ein
-     * Werkzeugtest, der die externe Funktion direkt aufruft).
+     * ID of the token row authenticating the current request; see currenttokenid.
+     * Null outside authenticate_access_token()-authenticated requests, e.g.
+     * tool tests calling an external function directly.
      *
      * @return int|null
      */
@@ -904,12 +879,10 @@ final class oauth_lib {
     }
 
     /**
-     * Ob eine Person ueberhaupt noch irgendeine Coursepilot-Verbindung hat -
-     * fuer ein Werkbank-Ticket, das ohne bekannte ausstellende Verbindung
-     * ausgestellt wurde (#512, Nachtrag zu Spec #486 §13: "nie staerker als
-     * seine Verbindung", auch wenn beim Ausstellen keine Verbindungskennung
-     * vorlag). Ohne diese Pruefung waere ein solches Ticket der einzige Weg
-     * an eine Werkbankdatei, der einen Sammelwiderruf (#338) ueberlebt.
+     * Whether the user still has any Coursepilot connection. Workbench tickets
+     * issued without a known connection (#512, Spec #486 §13 addendum) must
+     * still be no stronger than their connection. Without this check, such a
+     * ticket would be the only file access surviving mass revocation (#338).
      *
      * @param int $userid
      * @return bool
@@ -921,8 +894,8 @@ final class oauth_lib {
     }
 
     /**
-     * Setzt {@see $currenttokenid} zurueck - nur fuer Tests, die mehrere,
-     * voneinander unabhaengige Anfragen im selben PHPUnit-Prozess simulieren.
+     * Reset currenttokenid for tests simulating multiple independent requests
+     * in the same PHPUnit process.
      *
      * @return void
      */
@@ -932,13 +905,12 @@ final class oauth_lib {
     }
 
     /**
-     * Sammelwiderruf (#338): entwertet alle noch aktiven Access-/Refresh-
-     * Token, unabhaengig von Person oder Client - das Werkzeug fuer den
-     * Sicherheitsvorfall. Im Unterschied zur Notbremse (dispatcher-
-     * Killswitch ueber die Einstellung remoteaccessenabled), die nur neue
-     * Zugriffe sperrt, ausgegebene Token dabei aber unangetastet laesst.
+     * Mass revocation (#338): invalidate every active access/refresh token,
+     * regardless of user/client, for incident response. Unlike the dispatcher
+     * emergency stop (remoteaccessenabled), which blocks access while leaving
+     * issued tokens unchanged.
      *
-     * @return int Anzahl der widerrufenen Token.
+     * @return int Number of revoked tokens.
      */
     public static function revoke_all_tokens(): int {
         global $DB;
@@ -957,19 +929,17 @@ final class oauth_lib {
     }
 
     /**
-     * Widerruft ein einzelnes Token per Datensatz-ID (#338).
+     * Revoke a token family by token row ID (#338).
      *
-     * $owneruserid erzwingt Eigentuemerschaft direkt in der Abfrage, statt
-     * sich auf eine Pruefung im Aufrufer zu verlassen - die
-     * Selbstverwaltungsseite der Lehrkraft uebergibt hier $USER->id, die
-     * Administrationsuebersicht laesst den Parameter weg.
+     * Enforce owneruserid in the query rather than relying on the caller.
+     * Teacher self-management passes USER->id; the admin view omits it.
      *
      * @param int $id
-     * @param int|null $owneruserid Nur setzen, wenn ausschliesslich eigene
-     *        Token widerrufbar sein sollen.
-     * @return bool false, wenn kein passender aktiver Datensatz existiert
-     *         (unbekannte ID, bereits widerrufen oder - bei gesetztem
-     *         $owneruserid - ein fremdes Token).
+     * @param int|null $owneruserid Set to restrict revocation to the owner's
+     *        own tokens.
+     * @return bool false if no matching active row exists
+     *         (unknown ID, already revoked or, when
+     *         owneruserid is supplied, a foreign token).
      */
     public static function revoke_token(int $id, ?int $owneruserid = null): bool {
         global $DB;
@@ -997,13 +967,12 @@ final class oauth_lib {
     }
 
     /**
-     * Aktive Verbindungen einer einzelnen Person (Selbstverwaltungsseite,
-     * #338) - nie fremde, weil die WHERE-Klausel selbst die Grenze zieht,
-     * statt sich auf die Anzeige zu verlassen.
+     * A user's active token rows for connection self-management (#338). The
+     * WHERE clause enforces ownership rather than leaving it to the view.
      *
      * @param int $userid
-     * @return \stdClass[] Absteigend nach Ausstellungszeitpunkt, jeweils mit
-     *         clientname (kann null sein).
+     * @return \stdClass[] Newest issuance first, each including
+     *         clientname (possibly null).
      */
     public static function active_tokens_for_user(int $userid): array {
         global $DB;
@@ -1020,17 +989,16 @@ final class oauth_lib {
     }
 
     /**
-     * Alle aktiven Verbindungen ueber alle Personen (Administrations-
-     * Uebersicht, #338).
+     * Active token rows across all users for the admin overview (#338).
      *
-     * @return \stdClass[] Absteigend nach Ausstellungszeitpunkt, jeweils mit
-     *         clientname sowie Name/E-Mail der Person.
+     * @return \stdClass[] Newest issuance first, each including
+     *         clientname and the user's name/email.
      */
     public static function active_tokens(): array {
         global $DB;
 
-        // Alle Namensfelder, die fullname() erwartet - sonst meldet Moodle
-        // fehlende Felder per debugging() (#578).
+        // Supply every name field expected by fullname(); otherwise Moodle emits
+        // debugging() messages for missing fields (#578).
         $namefields = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
 
         return $DB->get_records_sql(
@@ -1074,15 +1042,12 @@ final class oauth_lib {
     }
 
     /**
-     * JWKS-Dokument (#336): leer, aber valide. jwks_uri ist nur deklariert,
-     * weil der OIDC-Namensraum es erzwingt (#302, Punkt 2) -
-     * local_coursepilot ist kein OIDC-Provider und stellt keine signierten
-     * ID-Token aus; Access-Token sind opake DB-Werte.
+     * Valid empty JWKS (#336). jwks_uri is declared only because the OIDC
+     * namespace requires it (#302, item 2). Coursepilot is not an OIDC provider:
+     * it issues no signed ID tokens, and access tokens are opaque database values.
      *
-     * ponytail: kein Schluesselmaterial, weil es keinen Verwendungszweck
-     * hat. Wird einer sichtbar (signierte ID-Token fuer echtes OIDC), kommt
-     * hier RS256-Schluesselmaterial rein - Moodle vendort firebase/php-jwt
-     * bereits.
+     * ponytail: no key material without a use. If real OIDC with signed ID tokens
+     * becomes necessary, add RS256 keys here; Moodle already vendors firebase/php-jwt.
      *
      * @return array{keys: array}
      */
@@ -1091,7 +1056,7 @@ final class oauth_lib {
     }
 
     /**
-     * Kryptografisch zufaelliger Token als Hex-String.
+     * Cryptographically random token encoded as a hexadecimal string.
      *
      * @param int $bytes
      * @return string
@@ -1101,9 +1066,9 @@ final class oauth_lib {
     }
 
     /**
-     * Der DB-Lookup verwendet nur den festen SHA-256-Hash des Geheimnisses.
-     * Damit werden Tokens weder persistiert noch als Klartext-Abfragewert
-     * verarbeitet; der Unique-Index bleibt fuer die Authentifizierung nutzbar.
+     * Database lookups use only a fixed SHA-256 hash of the secret. Tokens are
+     * neither persisted nor used as plaintext query values; the unique index
+     * remains usable for authentication.
      *
      * @param string $token
      * @return string
