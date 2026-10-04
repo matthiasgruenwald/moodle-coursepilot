@@ -291,12 +291,12 @@ final class clone_activity extends external_api {
         if ($sourcechild !== null && !empty($sourcechild['cm'])) {
             $sourceactivity = get_coursemodule_from_id('', (int) $sourcechild['cm'], 0, false, IGNORE_MISSING);
             if ($sourceactivity) {
-                return "Abschlussbedingung auf \"{$sourceactivity->name}\" ({$status}) - "
-                    . 'die referenzierte Aktivität wurde beim kursübergreifenden Klonen nicht mitkopiert';
+                return "Completion condition on \"{$sourceactivity->name}\" ({$status}) - "
+                    . 'the referenced activity was not copied along when cloning across courses';
             }
         }
 
-        return "Abschlussbedingung auf eine nicht mitkopierte Aktivität ({$status})";
+        return "Completion condition on an activity that was not copied along ({$status})";
     }
 
     /**
@@ -330,8 +330,8 @@ final class clone_activity extends external_api {
      */
     private static function build_message(string $title, bool $crosscourse, ?string $removedmessage): string {
         $basis = $crosscourse
-            ? "Aktivität als \"{$title}\" in den Zielkurs geklont."
-            : "Aktivität als \"{$title}\" im selben Kurs geklont.";
+            ? "Activity cloned as \"{$title}\" into the target course."
+            : "Activity cloned as \"{$title}\" in the same course.";
 
         return $removedmessage !== null ? $basis . ' ' . $removedmessage : $basis;
     }

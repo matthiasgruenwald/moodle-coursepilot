@@ -268,7 +268,7 @@ final class create_module extends external_api {
         foreach ($createdfields as $field) {
             $parts[] = '"' . $field['field'] . '" = ' . $field['value_json'];
         }
-        $message = 'Aktivität "' . $modname . '" angelegt';
+        $message = 'Activity "' . $modname . '" created';
         $message .= $parts ? (': ' . implode(', ', $parts) . '.') : '.';
 
         if ($sideeffects) {

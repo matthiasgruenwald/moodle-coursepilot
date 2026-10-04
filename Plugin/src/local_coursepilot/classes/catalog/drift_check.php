@@ -83,7 +83,7 @@ final class drift_check {
     public static function check(string $modname): array {
         $catalogclass = registry::for($modname);
         if ($catalogclass === null) {
-            return ["Unbekannte Aktivitätsart \"$modname\" - kein Katalog gefuehrt."];
+            return ["Unknown activity type \"$modname\" - no catalog maintained."];
         }
 
         return self::check_catalog($modname, $catalogclass);

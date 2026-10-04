@@ -110,7 +110,7 @@ class get_quiz_cleanup_plan extends external_api {
                 'questionname' => (string) $row->questionname,
                 'categoryid' => (int) $row->questioncategoryid,
                 'categoryname' => (string) $row->categoryname,
-                'reason' => 'Nicht in der neuen Quizversion vorgesehen. Nur aus diesem Quiz entfernen; die Frage wird nicht aus der Fragensammlung gelöscht und bleibt wiederverwendbar.',
+                'reason' => 'Not part of the new quiz version. Remove it from this quiz only; the question is not deleted from the question bank and stays reusable.',
             ];
         }
 

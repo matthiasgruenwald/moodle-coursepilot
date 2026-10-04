@@ -324,7 +324,7 @@ final class forum implements module_catalog {
     public static function write_options(): array {
         return [
             'date_order_rules' => [['reference' => 'duedate', 'field' => 'cutoffdate', 'mode' => 'not_before']],
-            'side_effect_triggers' => ['forcesubscribe' => [2 => 'Alle Kursteilnehmenden wurden für dieses Forum abonniert.']],
+            'side_effect_triggers' => ['forcesubscribe' => [2 => 'All course participants have been subscribed to this forum.']],
         ];
     }
 

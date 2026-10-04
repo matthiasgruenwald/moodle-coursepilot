@@ -106,7 +106,7 @@ final class report_clone_lineage_test extends \advanced_testcase {
         $this->assertSame('shared_reference', $bystatus['Geteilte Referenz']['status']);
         $this->assertSame((int) $foreigncourse->id, $bystatus['Geteilte Referenz']['source_course_id']);
 
-        $this->assertStringContainsString('eigene Kopie angelegt', $result['message']);
+        $this->assertStringContainsString('created as their own copy', $result['message']);
         $this->assertStringContainsString('geteilte Referenz', $result['message']);
     }
 
@@ -169,7 +169,7 @@ final class report_clone_lineage_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(report_clone_lineage::execute_returns(), $result);
 
         $this->assertSame([], $result['questions']);
-        $this->assertStringContainsString('keine Fragen', $result['message']);
+        $this->assertStringContainsString('no questions', $result['message']);
     }
 
     /**

@@ -149,17 +149,17 @@ final class add_questions_to_quiz extends external_api {
         $skipped = array_filter($appended, static fn(array $item): bool => !$item['added']);
 
         if (!$added && !$skipped) {
-            return 'Keine Frage angehängt.';
+            return 'No question appended.';
         }
 
         $parts = [];
         if ($added) {
             $names = array_map(static fn(array $item): string => '"' . $item['name'] . '"', $added);
-            $parts[] = count($added) . ' Frage(n) angehängt: ' . implode(', ', $names) . '.';
+            $parts[] = count($added) . ' question(s) appended: ' . implode(', ', $names) . '.';
         }
         if ($skipped) {
             $names = array_map(static fn(array $item): string => '"' . $item['name'] . '"', $skipped);
-            $parts[] = count($skipped) . ' bereits vorhanden, übersprungen: ' . implode(', ', $names) . '.';
+            $parts[] = count($skipped) . ' already present, skipped: ' . implode(', ', $names) . '.';
         }
 
         return implode(' ', $parts);

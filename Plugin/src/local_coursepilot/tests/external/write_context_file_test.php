@@ -971,7 +971,7 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertSame('webdavinstancemissing', $ausstaende[0]['entries'][0]['error_class']);
         // Issue #516 Akzeptanzkriterium: "Instanz gelöscht" fuehrt zu "an
         // Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
-        $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
+        $this->assertStringContainsString('something needs to be done on your storage', $message);
     }
 
     /**
@@ -999,7 +999,7 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertSame('webdavnotenabled', $ausstaende[0]['entries'][0]['error_class']);
         // Issue #516 Akzeptanzkriterium: "Freischaltung entzogen" fuehrt zu
         // "an Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
-        $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
+        $this->assertStringContainsString('something needs to be done on your storage', $message);
     }
 
     /**
@@ -1031,7 +1031,7 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertSame('webdavfingerprintchanged', $ausstaende[0]['entries'][0]['error_class']);
         // Issue #516 Akzeptanzkriterium: "Prüfmerkmal geändert" fuehrt zu
         // "an Ihrem Speicher ist etwas zu tun", nicht zu "spaeter".
-        $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
+        $this->assertStringContainsString('something needs to be done on your storage', $message);
     }
 
     /**
@@ -1071,7 +1071,7 @@ final class write_context_file_test extends \advanced_testcase {
             \local_coursepilot\webdav\webdav_error::AUTH_REJECTED,
             $ausstaende[0]['entries'][0]['error_class']
         );
-        $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
+        $this->assertStringContainsString('something needs to be done on your storage', $message);
     }
 
     /**
@@ -1113,7 +1113,7 @@ final class write_context_file_test extends \advanced_testcase {
             \local_coursepilot\webdav\webdav_error::UNREACHABLE,
             $ausstaende[0]['entries'][0]['error_class']
         );
-        $this->assertStringContainsString('später nachtragen', $message);
+        $this->assertStringContainsString('can be added later', $message);
     }
 
     /**
@@ -1154,7 +1154,7 @@ final class write_context_file_test extends \advanced_testcase {
             \local_coursepilot\webdav\webdav_error::UNCLEAR,
             $ausstaende[0]['entries'][0]['error_class']
         );
-        $this->assertStringContainsString('später nachtragen', $message);
+        $this->assertStringContainsString('can be added later', $message);
     }
 
     /**
@@ -1190,7 +1190,7 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertCount(1, $ausstaende);
         $this->assertSame('webdaviservfilesonly', $ausstaende[0]['entries'][0]['error_class']);
         $this->assertSame('create', $ausstaende[0]['entries'][0]['operation']);
-        $this->assertStringContainsString('an Ihrem Speicher ist etwas zu tun', $message);
+        $this->assertStringContainsString('something needs to be done on your storage', $message);
         // Kein Netzzugriff: Pruefung 8 scheitert schon bei der reinen
         // Pointer-Aufloesung, bevor ueberhaupt eine WebDAV-Anfrage entsteht.
         $this->assertSame([], $fake->requests());

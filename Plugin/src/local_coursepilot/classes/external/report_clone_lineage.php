@@ -169,7 +169,7 @@ final class report_clone_lineage extends external_api {
      */
     private static function build_message(array $questions): string {
         if (!$questions) {
-            return 'Der Test enthält keine Fragen.';
+            return 'The quiz contains no questions.';
         }
 
         $owncopies = 0;
@@ -183,11 +183,11 @@ final class report_clone_lineage extends external_api {
         }
 
         if ($shared === 0) {
-            return $owncopies . ' Frage(n) als eigene Kopie angelegt.';
+            return $owncopies . ' question(s) created as their own copy.';
         }
         if ($owncopies === 0) {
-            return $shared . ' Frage(n) zeigen weiterhin auf den Quellkurs (geteilte Referenz) - eine Korrektur '
-                . 'dort ändert auch dort die Frage.';
+            return $shared . ' question(s) still point to the source course (shared reference) - a correction '
+                . 'there also changes the question here.';
         }
 
         return $owncopies . ' Frage(n) als eigene Kopie angelegt, ' . $shared . ' Frage(n) zeigen weiterhin auf '

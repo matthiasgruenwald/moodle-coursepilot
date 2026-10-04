@@ -130,9 +130,9 @@ final class ensure_section extends external_api {
                 : "Abschnitt {$sectionnum} angelegt.";
         }
         if ($namechanged) {
-            return "Abschnitt {$sectionnum} existierte bereits, Name von \"{$oldname}\" auf \"{$finalname}\" geändert.";
+            return "Section {$sectionnum} already existed, name changed from \"{$oldname}\" to \"{$finalname}\".";
         }
-        return "Abschnitt {$sectionnum} existierte bereits, Name unverändert.";
+        return "Section {$sectionnum} already existed, name unchanged.";
     }
 
     /**

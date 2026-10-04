@@ -102,21 +102,21 @@ final class pointer_writer {
         // durch den eingebauten Bruteforce-/Rate-Schutz einer fremden
         // Nextcloud-Instanz ist ein erwartbarer, normaler Vorgang, keine
         // Störung, über die man sich wundern müsste.
-        webdav_error::UNCLEAR => 'der Speicher drosselt gerade kurzfristig (bei manchen Nextcloud-Instanzen normal)',
-        webdav_error::NOT_FOUND => 'der Zielordner ist dort nicht erreichbar',
-        webdav_error::AUTH_REJECTED => 'die Anmeldung am Speicher wurde abgelehnt',
-        webdav_error::UNREACHABLE => 'der Speicher ist gerade nicht erreichbar',
-        webdav_error::STORAGE_FULL => 'der Speicher ist voll',
-        webdav_error::BLOCKED => 'der Zugriff auf den Speicher ist gesperrt',
-        webdav_error::REDIRECTED => 'der Speicher hat auf eine andere Adresse umgeleitet',
-        'webdavinstancemissing' => 'die Verbindung existiert nicht mehr',
-        'webdavinstanceforeign' => 'die Verbindung gehört nicht mehr zu Ihnen',
-        'webdavnotenabled' => 'externe Speicher sind für Sie nicht mehr freigeschaltet',
-        'webdavauthunsupported' => 'die Verbindung nutzt eine nicht mehr unterstützte Anmeldeart',
-        'webdavfingerprintchanged' => 'Server, Pfad oder Konto der Verbindung haben sich geändert',
-        'contextrootmissing' => 'der gewählte Kontextbereich ist dort nicht mehr vorhanden (verschoben, gelöscht'
-            . ' oder umbenannt) — bitte auf der Ortswahlseite neu wählen',
-        'webdaviservfilesonly' => 'der gewählte Pfad liegt bei IServ außerhalb von „Files/“',
+        webdav_error::UNCLEAR => 'the storage is briefly throttling requests (normal on some Nextcloud instances)',
+        webdav_error::NOT_FOUND => 'the target folder cannot be reached there',
+        webdav_error::AUTH_REJECTED => 'the login to the storage was rejected',
+        webdav_error::UNREACHABLE => 'the storage is currently unreachable',
+        webdav_error::STORAGE_FULL => 'the storage is full',
+        webdav_error::BLOCKED => 'access to the storage is blocked',
+        webdav_error::REDIRECTED => 'the storage redirected to a different address',
+        'webdavinstancemissing' => 'the connection no longer exists',
+        'webdavinstanceforeign' => 'the connection no longer belongs to you',
+        'webdavnotenabled' => 'external storage is no longer enabled for you',
+        'webdavauthunsupported' => 'the connection uses a login method that is no longer supported',
+        'webdavfingerprintchanged' => 'server, path or account of the connection have changed',
+        'contextrootmissing' => 'the selected context area no longer exists there (moved, deleted'
+            . ' or renamed) — please choose again on the location selection page',
+        'webdaviservfilesonly' => 'the selected path is outside "Files/" on IServ',
     ];
 
     /**
@@ -282,7 +282,7 @@ final class pointer_writer {
      * @return string
      */
     public static function reason_for(string $errorclass): string {
-        $reason = self::REASONS[$errorclass] ?? ('Fehlerklasse "' . $errorclass . '"');
+        $reason = self::REASONS[$errorclass] ?? ('error class "' . $errorclass . '"');
         return $reason . ' – ' . self::classify($errorclass);
     }
 
@@ -296,8 +296,8 @@ final class pointer_writer {
      */
     private static function classify(string $errorclass): string {
         return in_array($errorclass, self::LATER_CLASSES, true)
-            ? 'das lässt sich später nachtragen'
-            : 'an Ihrem Speicher ist etwas zu tun';
+            ? 'this can be added later'
+            : 'something needs to be done on your storage';
     }
 
     /**

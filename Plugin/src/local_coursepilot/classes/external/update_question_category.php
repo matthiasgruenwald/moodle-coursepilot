@@ -188,7 +188,7 @@ final class update_question_category extends external_api {
         if ($moved) {
             return 'Kategorie "' . $name . '" verschoben.';
         }
-        return 'Keine Änderung: Name und Elternkategorie sind unverändert.';
+        return 'No change: name and parent category are unchanged.';
     }
 
     /**

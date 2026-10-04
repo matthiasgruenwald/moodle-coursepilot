@@ -340,7 +340,7 @@ final class crop_material_file_test extends \advanced_testcase {
         $result = crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
 
         $this->assertMatchesRegularExpression(
-            '/^store:buchseite\.png \(\d+ Byte, geändert \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\)$/u',
+            '/^store:buchseite\.png \(\d+ bytes, modified \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\)$/u',
             $result['source']
         );
     }

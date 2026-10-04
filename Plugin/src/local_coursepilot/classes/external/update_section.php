@@ -184,18 +184,18 @@ final class update_section extends external_api {
      */
     private static function build_message(array $changes, bool $hidesactivities): string {
         if (!$changes) {
-            $message = 'Keine Änderung: der Patch stimmte bereits mit dem aktuellen Stand überein.';
+            $message = 'No change: the patch already matched the current state.';
         } else {
             $parts = [];
             foreach ($changes as $change) {
-                $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
+                $parts[] = '"' . $change['field'] . '" from ' . $change['before_json'] . ' to ' . $change['after_json'];
             }
-            $message = 'Geändert: ' . implode(', ', $parts) . '.';
+            $message = 'Changed: ' . implode(', ', $parts) . '.';
         }
 
         if ($hidesactivities) {
-            $message .= ' Alle Aktivitäten in diesem Abschnitt sind dadurch ebenfalls unsichtbar, '
-                . 'unabhängig von ihrer eigenen Sichtbarkeitseinstellung.';
+            $message .= ' All activities in this section are therefore hidden as well, '
+                . 'regardless of their own visibility setting.';
         }
 
         return $message;

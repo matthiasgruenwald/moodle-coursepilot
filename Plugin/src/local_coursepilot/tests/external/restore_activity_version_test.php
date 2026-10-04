@@ -310,7 +310,7 @@ final class restore_activity_version_test extends \advanced_testcase {
         );
 
         $this->assertEmpty($result['changes']);
-        $this->assertStringContainsString('Keine Änderung', $result['message']);
+        $this->assertStringContainsString('No change', $result['message']);
         $this->assertSame(1, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $cmid]));
     }
 

@@ -64,7 +64,7 @@ final class get_quiz_cleanup_plan_test extends \advanced_testcase {
         $removal = $result['removals'][0];
         $this->assertSame($entryid, $removal['questionbankentryid']);
         $this->assertSame($question->name, $removal['questionname']);
-        $this->assertStringContainsString('nicht aus der Fragensammlung gelöscht', $removal['reason']);
+        $this->assertStringContainsString('not deleted from the question bank', $removal['reason']);
         $this->assertStringContainsString('/mod/quiz/edit.php?cmid=' . $quiz->cmid, $result['editurl']);
 
         // Immer noch vorhanden: Coursepilot hat den Slot nicht geloescht.

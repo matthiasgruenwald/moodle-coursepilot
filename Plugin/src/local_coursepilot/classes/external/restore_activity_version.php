@@ -339,8 +339,8 @@ final class restore_activity_version extends external_api {
         // abgefangene Exception der Core-API.
         arrangement::restore($quizid, $target);
 
-        return 'Die Fragenanordnung wurde ebenfalls auf Version ' . $targetversion . ' zurückgeschrieben. '
-            . 'Hinweis: Fragen erscheinen dabei in der jeweils neuesten Fassung, keine Version wird nachträglich gepinnt.';
+        return 'The question arrangement was also restored to version ' . $targetversion . '. '
+            . 'Note: questions appear in their latest version; no version is pinned retroactively.';
     }
 
     /**
@@ -458,28 +458,28 @@ final class restore_activity_version extends external_api {
         array $restoredfiles = []
     ): string {
         if (!$changes && !$restoredfiles && $arrangementmessage === null) {
-            $base = 'Keine Änderung: die Aktivität entspricht bereits Version ' . $targetversion . '.';
+            $base = 'No change: the activity already matches version ' . $targetversion . '.';
         } else if (!$changes && !$restoredfiles) {
-            $base = 'Auf Version ' . $targetversion . ' zurückgeschrieben - keine Einstellungsfelder abweichend.';
+            $base = 'Restored to version ' . $targetversion . ' - no settings fields differ.';
         } else {
             $parts = [];
             foreach ($changes as $change) {
-                $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
+                $parts[] = '"' . $change['field'] . '" from ' . $change['before_json'] . ' to ' . $change['after_json'];
             }
             $base = $parts
-                ? ('Auf Version ' . $targetversion . ' zurückgeschrieben - der alte Stand wird zur neuen jüngsten '
-                    . 'Version fortgeschrieben: ' . implode(', ', $parts) . '.')
-                : ('Auf Version ' . $targetversion . ' zurückgeschrieben.');
+                ? ('Restored to version ' . $targetversion . ' - the old state becomes the new latest '
+                    . 'version: ' . implode(', ', $parts) . '.')
+                : ('Restored to version ' . $targetversion . '.');
         }
 
         if ($restoredfiles) {
-            $base .= ' Datei' . (count($restoredfiles) === 1 ? '' : 'en') . ' aus dem Papierkorb wiederhergestellt: '
+            $base .= ' File' . (count($restoredfiles) === 1 ? '' : 's') . ' restored from the recycle bin: '
                 . implode(', ', $restoredfiles) . '.';
         }
 
         if ($completionwarning !== null) {
-            $base .= ' Abschlussfelder nicht mitgeschrieben: ' . $completionwarning
-                . ' Erneuter Aufruf von restore_activity_version mit "confirmed": true schreibt sie ebenfalls zurück.';
+            $base .= ' Completion fields not restored: ' . $completionwarning
+                . ' Calling restore_activity_version again with "confirmed": true restores them as well.';
         }
 
         if ($arrangementmessage !== null) {

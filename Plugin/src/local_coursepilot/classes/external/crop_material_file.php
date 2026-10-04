@@ -352,7 +352,7 @@ class crop_material_file extends external_api {
      */
     private static function describe_source(string $location, string $path, array $stored): string {
         return sprintf(
-            '%s:%s (%d Byte, geändert %s)',
+            '%s:%s (%d bytes, modified %s)',
             $location,
             $path,
             $stored['size'],

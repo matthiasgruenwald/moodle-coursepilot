@@ -123,7 +123,7 @@ final class move_module extends external_api {
         return [
             'cmid' => (int) $cm->id,
             'sectionnum' => (int) $params['sectionnum'],
-            'message' => "Aktivität \"{$cm->name}\" in Abschnitt \"{$sectionname}\"{$positionmessage} verschoben.",
+            'message' => "Activity \"{$cm->name}\" moved to section \"{$sectionname}\"{$positionmessage}.",
         ];
     }
 

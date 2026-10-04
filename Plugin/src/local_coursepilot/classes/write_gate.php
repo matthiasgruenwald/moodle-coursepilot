@@ -107,7 +107,7 @@ final class write_gate {
 
         $catalogclass = registry::for($modname);
         if ($catalogclass === null) {
-            return ['modname' => $modname, 'state' => 'needs_work', 'violations' => ['Unbekannte Aktivitätsart.']];
+            return ['modname' => $modname, 'state' => 'needs_work', 'violations' => ['Unknown activity type.']];
         }
 
         $violations = self::cached_violations($modname);

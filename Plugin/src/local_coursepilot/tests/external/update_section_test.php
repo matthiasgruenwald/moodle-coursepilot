@@ -64,7 +64,7 @@ final class update_section_test extends \advanced_testcase {
         ]);
 
         $this->assertCount(3, $result['changes']);
-        $this->assertStringContainsString('Geändert', $result['message']);
+        $this->assertStringContainsString('Changed', $result['message']);
 
         $section = get_fast_modinfo($course)->get_section_info(1);
         $this->assertSame('LS 1: Einführung', $section->name);
