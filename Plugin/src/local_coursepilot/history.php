@@ -15,28 +15,22 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Verlaufsseite an der Kursnavigation (#397, Spec 0015 §10.6/§10.7,
- * Phase 4): die Lehrkraft sieht und schreibt den Verlauf auch ohne
- * laufenden Chat - direkt in Moodle, Vorbild Papierkorb. Kein
- * Coursepilot-Freigabeakt: die Lehrkraft handelt hier selbst, wie im
- * Modulformular.
+ * Course-navigation history page (#397, Spec 0015 §10.6/§10.7, phase 4).
+ * Teachers inspect and restore history directly in Moodle without an
+ * active chat, like the recycle bin. No Coursepilot approval is needed:
+ * they act directly, as in an activity form.
  *
- * Duenne Schale (#334-Muster): die Datenaufbereitung lebt in
- * {@see \local_coursepilot\history\version_history}, das eigentliche
- * Zurueckschreiben unveraendert in
- * {@see \local_coursepilot\external\restore_activity_version} - direkt
- * aufgerufen, ohne Webservice-Layer (die Lehrkraft ist bereits eingeloggt),
- * aber mit denselben Capability-Pruefungen und Schutzschienen wie ueber
- * den Chat (Abnahmekriterium 4). Diese Seite legt keine eigene Zeile in
- * local_coursepilot_cm_version an und liest die Tabelle nirgends direkt
- * ausser der reinen Existenzpruefung in
- * {@see version_history::course_activities()} - die Speicherung des
- * Verlaufs bleibt von dieser Oberflaeche getrennt, herauslösbar als
- * eigenstaendiges Plugin (Abnahmekriterium 7).
+ * Thin I/O shell (#334): {@see \local_coursepilot\history\version_history}
+ * prepares data and {@see \local_coursepilot\external\restore_activity_version}
+ * performs restores, called directly without webservices because the
+ * teacher is logged in. The same capabilities and guards apply as in chat
+ * (criterion 4). This page neither writes history rows nor reads the table
+ * directly, except the existence check through course_activities().
+ * Persistence remains separate and extractable as its own plugin (criterion 7).
  *
- * Zwei Modi ueber die Query-Parameter:
- * - ?id=<courseid>: Liste der Aktivitaeten des Kurses mit Verlauf.
- * - ?cmid=<cmid>: Versionen einer Aktivitaet, mit Zurueckschreiben.
+ * Query modes:
+ * - ?id=<courseid>: activities with history in the course.
+ * - ?cmid=<cmid>: activity versions with restore actions.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -68,14 +62,13 @@ if ($cmid) {
 
 require_login($course, true, $cmid ? $cm : null);
 $coursecontext = context_course::instance($course->id);
-// local/coursepilot:viewhistory ist auf CONTEXT_COURSE definiert (db/access.php) -
-// im cmid-Modus deshalb am Kurskontext geprueft, nicht am Modulkontext.
+// local/coursepilot:viewhistory uses CONTEXT_COURSE (db/access.php),
+// so check the course context even in cmid mode.
 require_capability('local/coursepilot:viewhistory', $coursecontext);
 
-// local/coursepilot:restoreversion UND moodle/course:manageactivities (Spec 0015
-// §10.7) - nur mit beiden ist Zurueckschreiben moeglich, sonst reines Ansehen
-// (Abnahmekriterium 5). Einmal berechnet, sowohl fuer den Schreibzweig als
-// auch fuer die Anzeige der Zurueckschreiben-Links.
+// Restore requires both local/coursepilot:restoreversion and
+// moodle/course:manageactivities (Spec 0015 §10.7, criterion 5).
+// Calculate once for both the write branch and restore-link display.
 $canrestore = $cmid
     && has_capability('local/coursepilot:restoreversion', $modcontext)
     && has_capability('moodle/course:manageactivities', $modcontext);
@@ -88,12 +81,11 @@ $PAGE->set_heading($course->fullname);
 
 $listurl = new moodle_url('/local/coursepilot/history.php', ['id' => $course->id]);
 
-// Zurueckschreiben: erst Bestaetigung, dann Ausfuehrung (Abnahmekriterium 3).
+// Restore: confirm first, execute second (criterion 3).
 if ($cmid && $restoreversion) {
-    // Beide Faehigkeiten einzeln erzwingen statt nur $canrestore abzufragen:
-    // jede der beiden wirft ihre eigene required_capability_exception, wenn
-    // sie fehlt - ohne restoreversion ODER ohne manageactivities ist der
-    // Restore-Zweig dieser Seite gar nicht erreichbar (Abnahmekriterium 5).
+    // Require each capability separately so missing permissions throw their
+    // own required_capability_exception. Without either restoreversion or
+    // manageactivities, the restore branch is unreachable (criterion 5).
     require_capability('local/coursepilot:restoreversion', $modcontext);
     require_capability('moodle/course:manageactivities', $modcontext);
 
@@ -123,10 +115,9 @@ if ($cmid && $restoreversion) {
         if ($e->errorcode !== 'completiondatalossconfirmationrequired' || $confirmed) {
             throw $e;
         }
-        // set_completion's Zweitakt (Ticket #392) greift ueber
-        // restore_activity_version unveraendert - die Seite fragt hier
-        // erneut nach, statt das Loeschen von Abschlussdaten stillschweigend
-        // zu ueberspringen.
+        // The two-step set_completion flow (#392) also applies through
+        // restore_activity_version. Ask again rather than silently skipping
+        // completion-data deletion.
         echo $OUTPUT->header();
         echo $OUTPUT->confirm(
             get_string('historydatalossconfirm', 'local_coursepilot', $e->getMessage()),

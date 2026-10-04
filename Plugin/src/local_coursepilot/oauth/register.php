@@ -17,14 +17,14 @@
 /**
  * Dynamic Client Registration (RFC 7591, #335).
  *
- * Unauthentifiziert erreichbar wie bei jedem DCR-Endpunkt - der Schutz liegt
- * bei authorize.php (Moodle-Login, #336), nicht hier.
+ * Public like every DCR endpoint; authorize.php enforces Moodle login
+ * (#336), not this registration endpoint.
  *
- * Reine Schale (#334-Muster): liest Methode und JSON-Rumpf ein, uebergibt an
- * {@see \local_coursepilot\oauth_lib::handle_registration()}.
+ * Thin I/O shell (#334): reads method and JSON body, then delegates
+ * to {@see \local_coursepilot\oauth_lib::handle_registration()}.
  *
- * The body is read with a hard size cap; site-wide and per-source budgets
- * (#642) use Moodle's trusted remote address, see oauth_budget.
+ * Hard body-size cap plus site/source budgets (#642) using Moodle's
+ * trusted remote address; see oauth_budget.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

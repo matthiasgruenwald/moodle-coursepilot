@@ -28,35 +28,27 @@ use invalid_parameter_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Abstammungs-Meldung nach dem Klon (Spec 0017 SS7.5, Ticket #422): meldet je
- * Frage eines Tests, ob der Klon (#421) eine eigene Kopie der Frage angelegt
- * hat oder ob die Fragereferenz weiterhin auf den Bank-Eintrag im Quellkurs
- * zeigt. Reines Lesen ueber {question_references} - keine idnumber wird
- * nachgetragen, keine Frage oder Referenz veraendert; die Anbindung an eine
- * Fragenidentitaet (ADR 0015) geschieht weiterhin erst beim ersten echten
- * Schreibzugriff auf die einzelne Frage (z.B. update_mc_question).
+ * Report question lineage after cloning (Spec 0017 §7.5, #422). For each
+ * quiz question, identify whether clone_activity (#421) made an own copy or
+ * kept a reference to the source course's bank entry. Only reads
+ * question_references: no idnumber, question or reference is changed.
+ * Identity binding (ADR 0015) still happens at the first actual write to an
+ * individual question, e.g. update_mc_question.
  *
- * Unterscheidung eigene Kopie vs. geteilte Referenz: Moodles Backup/Restore
- * kopiert beim kursuebergreifenden Klonen nur Fragenkategorien, die im
- * Backup-Umfang der einzelnen Aktivitaet lagen (typischerweise der eigene
- * Modulkontext des Tests) - eine Referenz auf eine Kategorie ausserhalb
- * dieses Umfangs (z.B. eine separate Fragenbank-Aktivitaet im Quellkurs)
- * bleibt unveraendert auf denselben questionbankentryid zeigen. Der Kurs, in
- * dem die Fragenkategorie tatsaechlich liegt (ueber deren contextid), wird
- * daher mit dem Kurs des Tests verglichen: gleicher Kurs = eigene Kopie,
- * anderer Kurs = geteilte Referenz.
+ * Own copy versus shared reference: cross-course backup/restore copies only
+ * question categories inside the single-activity backup scope, usually the
+ * quiz's own module context. References outside that scope, e.g. to a separate
+ * question bank activity in the source course, retain their questionbankentryid.
+ * Compare the category's course (via contextid) with the quiz's course:
+ * same course means own copy, another course means shared reference.
  *
- * Antwortform ohne das gemeinsame Verdachtsfall-Gate-Format
- * ({@see \local_coursepilot\question_suspect_gate}): das Envelope wurde
- * anfangs der Einheitlichkeit halber mitgefuehrt, kann hier aber nie
- * gefuellt werden - dieses Werkzeug schreibt nichts und loest folglich kein
- * Gate aus. Fuenf konstant leere Felder in jeder Antwort sind keine
- * Einheitlichkeit, sondern Rauschen (#424 Nachlauf 4).
+ * The response omits question_suspect_gate's shared envelope. It was initially
+ * included for consistency but this read-only tool never triggers a gate;
+ * five always-empty fields add noise (#424 follow-up 4).
  *
- * Unmittelbar englisch deklariert (#572, Spec 0025 §A): "message" statt
- * "meldung", "source_course_id" statt "quellkurs_id" - die Statuswerte
- * "own_copy"/"shared_reference" bleiben Domainvokabular (glossiert in
- * execute_returns()), wie bereits bei list_skills' "kind"-Feld (#571).
+ * The published contract directly uses message/source_course_id instead of
+ * legacy meldung/quellkurs_id (#572, Spec 0025 §A). own_copy/shared_reference
+ * remain domain vocabulary, glossed in execute_returns(), as with list_skills' kind (#571).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -69,7 +61,7 @@ final class report_clone_lineage extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID des Tests (mod_quiz), i.d.R. das Ergebnis eines vorherigen clone_activity'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the quiz (mod_quiz), usually returned by clone_activity'),
         ]);
     }
 
@@ -89,8 +81,8 @@ final class report_clone_lineage extends external_api {
         $context = context_module::instance($cm->id);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // moodle/question:view existiert nicht (mehr); Moodle kennt nur
-        // moodle/question:viewall/viewmine (Vorbild: get_question, export_questions_xml).
+        // moodle/question:view no longer exists. Use moodle/question:viewall/viewmine,
+        // as in get_question and export_questions_xml.
         require_capability('moodle/question:viewall', $context);
 
         $rows = self::slot_lineage_rows((int) $cm->instance);
@@ -121,10 +113,9 @@ final class report_clone_lineage extends external_api {
     }
 
     /**
-     * Slots eines Tests mit Fragereferenz auf die jeweils aktuellste Version -
-     * dasselbe Join-Muster wie {@see \local_coursepilot\external\add_questions_to_quiz::slot_state()},
-     * zusaetzlich die Fragenkategorie (fuer die Kurszuordnung ueber deren
-     * contextid) und die idnumber des Bank-Eintrags.
+     * Quiz slots referencing the latest question version, following
+     * add_questions_to_quiz::slot_state()'s joins. Include the category context
+     * for course attribution and the bank entry idnumber.
      *
      * @param int $quizid
      * @return \stdClass[]
@@ -151,12 +142,12 @@ final class report_clone_lineage extends external_api {
     }
 
     /**
-     * Kurs-ID des Kurses, dem ein Kontext angehoert (0, wenn keiner - z.B.
-     * Systemkontext). Je Kontext-ID gecacht, damit ein Test mit vielen
-     * Fragen aus derselben Kategorie nicht wiederholt aufloest.
+     * Course ID belonging to a context, or zero for e.g. the system context.
+     * Cache by context ID so a quiz with many questions in one category does
+     * not repeatedly resolve it.
      *
      * @param int $contextid
-     * @param array<int, int> $cache Referenz, contextid => courseid
+     * @param array<int, int> $cache By reference, contextid => courseid
      * @return int
      */
     private static function course_of_context(int $contextid, array &$cache): int {
@@ -208,13 +199,13 @@ final class report_clone_lineage extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID des gepruften Tests'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the inspected quiz'),
             'questions' => new external_multiple_structure(new external_single_structure([
-                'slot' => new external_value(PARAM_INT, 'Slotnummer im Test'),
-                'questionbankentryid' => new external_value(PARAM_INT, 'Frage-Identitaet (Bank-Eintrag), auf den der Slot zeigt'),
-                'questionid' => new external_value(PARAM_INT, 'ID der aktuellsten Fragen-Version'),
-                'name' => new external_value(PARAM_TEXT, 'Fragename'),
-                'idnumber' => new external_value(PARAM_TEXT, 'idnumber des Bank-Eintrags, leer wenn keine vergeben'),
+                'slot' => new external_value(PARAM_INT, 'Slot number in the quiz'),
+                'questionbankentryid' => new external_value(PARAM_INT, 'Question identity (bank entry) referenced by the slot'),
+                'questionid' => new external_value(PARAM_INT, 'ID of the latest question version'),
+                'name' => new external_value(PARAM_TEXT, 'Question name'),
+                'idnumber' => new external_value(PARAM_TEXT, 'Bank entry idnumber, empty if none is assigned'),
                 'status' => new external_value(
                     PARAM_ALPHANUMEXT,
                     '"own_copy" (own copy) or "shared_reference" (shared reference)'
@@ -223,8 +214,8 @@ final class report_clone_lineage extends external_api {
                     PARAM_INT,
                     'Course ID the reference still points to (0 when status = "own_copy")'
                 ),
-            ]), 'Ergebnis je Slot des Tests, in Slot-Reihenfolge'),
-            'message' => new external_value(PARAM_RAW, 'Lehrkraft-deutsche Zusammenfassung: eigene Kopien vs. geteilte Referenzen'),
+            ]), 'One result per quiz slot, ordered by slot'),
+            'message' => new external_value(PARAM_RAW, 'Localized teacher-facing summary of own copies and shared references'),
         ]);
     }
 }

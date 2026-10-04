@@ -27,22 +27,18 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/questionlib.php');
 
 /**
- * Idempotentes Finden-oder-Anlegen einer Fragenbank-Kategorie (Spec 0017 §1,
- * Ticket #412): zieht zusammen, was im lokalen Weg zwei Werkzeuge waren
- * (Suchen ueber get_question_categories, Anlegen ueber
- * create_question_category) - der Skill soll nicht bei jedem Lauf erst
- * "gibt es die schon?" fragen muessen.
+ * Idempotently find or create a question bank category (Spec 0017 §1, #412).
+ * Combines what used to be get_question_categories plus create_question_category,
+ * so a skill need not first ask whether the category exists on every run.
  *
- * Kontextauflösung ueber die Elternkategorie (Spec 0017, Muster aus
- * local_coursepilot\external\update_question_category::resolve_question_bank_context()):
- * "parent" ist die ID einer bestehenden Kategorie (typischerweise die
- * topcategoryid aus ensure_question_bank, oder eine zuvor angelegte
- * Unterkategorie) - daraus ergibt sich der Fragenbank-Kontext, kein
- * zusaetzlicher courseid/questionbankid-Parameter noetig.
+ * Resolve the context from the parent category (Spec 0017, following
+ * local_coursepilot\external\update_question_category::resolve_question_bank_context()).
+ * parent identifies an existing category, usually ensure_question_bank's
+ * topcategoryid or a previously created child. That supplies the question bank
+ * context without an additional courseid/questionbankid parameter.
  *
- * Ein gleichnamiger Treffer zaehlt nur unter demselben Elternteil - eine
- * gleichnamige Kategorie unter einer anderen Elternkategorie (z.B. in einer
- * anderen Fragensammlung) wird nicht als Treffer gewertet.
+ * A same-named category matches only under the same parent. A namesake under
+ * another parent, e.g. in another question collection, does not count.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -50,7 +46,7 @@ require_once($CFG->libdir . '/questionlib.php');
  */
 final class ensure_question_category extends external_api {
 
-    /** @var int Sortierposition neu angelegter Kategorien - identisch zu local_coursepilot\question_category_defaults::SORTORDER. */
+    /** @var int Sort position of new categories; identical to local_coursepilot\question_category_defaults::SORTORDER. */
     private const SORTORDER = 999;
 
     /**
@@ -58,7 +54,7 @@ final class ensure_question_category extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'name' => new external_value(PARAM_TEXT, 'Category name, convention: "<section number> <title>", e.g. "7.2 Stoffe und ihre Eigenschaften"'),
+            'name' => new external_value(PARAM_TEXT, 'Category name, convention: "<section number> <title>", e.g. "7.2 Materials and their properties"'),
             'parent' => new external_value(PARAM_INT, 'ID of the parent category (e.g. topcategoryid from ensure_question_bank)'),
         ]);
     }

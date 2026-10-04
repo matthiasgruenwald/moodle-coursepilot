@@ -25,23 +25,18 @@ use local_coursepilot\plugin_meta;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Versionsauskunft ueber Moodle und das Plugin (#425 F3).
+ * Moodle and plugin version information (#425 F3).
  *
- * Anlass war der Kopf der Fragetyp-Ablage (`spike-fragetypen.md`): er ist die
- * Verfallsanzeige der Datei, konnte seinen Versionsstand aber von keinem
- * Werkzeug beziehen und blieb deshalb bei "nicht ermittelt" - eine
- * Verfallsanzeige, die nichts anzeigt. Derselbe Bedarf besteht bei der
- * Instanzpruefung (#340) und in jedem Support-Fall ("welche Version laeuft
- * dort eigentlich?").
+ * The question-type notes header (spike-fragetypen.md) indicates freshness
+ * but previously had no tool to obtain versions and stayed undetermined.
+ * Instance checks (#340) and support also need this information.
  *
- * Rein lesend, keine Kurs-Capability: die Angaben stehen ohnehin in jeder
- * Moodle-Fusszeile und sind an keinen Kurs gebunden. Der Fernzugriff selbst
- * ist bereits durch 'local/coursepilot:useremote' im Dispatcher geprueft.
+ * Read-only without course capabilities: these versions appear in Moodle
+ * footers and belong to no course. Dispatcher already checks remote access.
  *
- * #573: die Rueckgabeschluessel "date"/"message" waren bis hierher als
- * "datum"/"meldung" deklariert - eine von #569-#572 uebersehene Luecke, die
- * beim Entfernen der Uebersetzungsschicht aufgefallen ist. Jetzt unmittelbar
- * englisch wie jedes andere Werkzeug.
+ * #573: date/message previously used datum/meldung, a gap missed by
+ * #569–#572 and found while removing the translation layer. Now declared
+ * directly in English like every other tool.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -64,11 +59,10 @@ final class get_version_info extends external_api {
 
         self::validate_context(\context_system::instance());
 
-        // $plugin->version/->release kommen aus version.php der laufenden
-        // Dateien, nicht aus config_plugins: bei einem Deploy ohne
-        // upgrade.php-Lauf laufen beide auseinander, und genau dieser Fall
-        // ist der, den ein Support-Blick sehen muss. Dieselbe kanonische
-        // Quelle wie dispatcher::plugin_release() (#577).
+        // Read version/release from the running version.php, not config_plugins.
+        // Deploying without upgrade.php can diverge from installed DB metadata:
+        // support must see that mismatch. Same canonical source as
+        // dispatcher::plugin_release() (#577).
         $plugin = plugin_meta::current();
         $installed = get_config('local_coursepilot', 'version');
 
@@ -99,14 +93,14 @@ final class get_version_info extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'moodle_release' => new external_value(PARAM_TEXT, 'Moodle-Release, z.B. "5.0.2 (Build: 20250714)"'),
-            'moodle_version' => new external_value(PARAM_TEXT, 'Moodle-Versionsstempel, z.B. "2025041400.05"'),
-            'moodle_branch' => new external_value(PARAM_TEXT, 'Moodle-Zweig, z.B. "500"'),
-            'plugin_version' => new external_value(PARAM_INT, '$plugin->version aus version.php der laufenden Dateien'),
-            'plugin_release' => new external_value(PARAM_TEXT, '$plugin->release, z.B. "2.0.0-beta"'),
+            'moodle_release' => new external_value(PARAM_TEXT, 'Moodle release, e.g. "5.0.2 (Build: 20250714)"'),
+            'moodle_version' => new external_value(PARAM_TEXT, 'Moodle version stamp, e.g. "2025041400.05"'),
+            'moodle_branch' => new external_value(PARAM_TEXT, 'Moodle branch, e.g. "500"'),
+            'plugin_version' => new external_value(PARAM_INT, '$plugin->version from the running source version.php'),
+            'plugin_release' => new external_value(PARAM_TEXT, '$plugin->release, e.g. "2.0.0-beta"'),
             'plugin_version_db' => new external_value(
                 PARAM_INT,
-                'In der Datenbank eingetragene Plugin-Version; weicht sie ab, fehlt ein upgrade.php-Lauf'
+                'Plugin version registered in the database; a mismatch indicates a missing upgrade.php run'
             ),
             'date' => new external_value(PARAM_TEXT, 'Server date YYYY-MM-DD - fills "last verified on"'),
             'message' => new external_value(PARAM_RAW, 'Teacher-facing German summary of the same version data'),

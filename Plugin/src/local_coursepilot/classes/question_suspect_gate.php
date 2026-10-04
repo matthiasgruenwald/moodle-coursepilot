@@ -23,18 +23,15 @@ use core_external\external_value;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Das gemeinsame Verdachtsfall-Gate-Antwortformat (ADR 0015, Spec 0017 §7.1,
- * Ticket #414) - "ein Gate, das je Endpunkt anders aussieht, sind vier
- * Gates". Ab diesem Ticket traegt {@see \local_coursepilot\external\move_question}
- * dieses Format; import_questions_xml, create_mc_question und die
- * Klon-Nachbereitung sollen es spaeter uebernehmen statt eigene Formen zu
- * bauen.
+ * Shared suspected-question collision response (ADR 0015, Spec 0017 §7.1,
+ * #414): endpoint-specific gates would be four separate gates. Started
+ * with move_question, then intended for import_questions_xml,
+ * create_mc_question and clone follow-up rather than separate shapes.
  *
- * Ein Verdachtsfall schreibt nichts - die Antwort nennt die mitgebrachte
- * idnumber, die Zielkategorie, nahe Kandidaten und, wo vorhanden, alten und
- * neuen Fragetext. Erst der erneute, ausdruecklich bestaetigte Aufruf
- * schreibt (Parameter "bestaetigt" je Endpunkt, wie ueberall im Bestand
- * z.B. set_completion, restore_activity_version).
+ * A suspected collision writes nothing. Return supplied idnumber, target
+ * category, nearby candidates and available old/new question text.
+ * Only an explicitly confirmed repeated call writes, as with
+ * set_completion and restore_activity_version.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -43,11 +40,9 @@ defined('MOODLE_INTERNAL') || die();
 final class question_suspect_gate {
 
     /**
-     * Felddefinitionen des Gates - von jedem Endpunkt in die eigene
-     * execute_returns()-Struktur zu mischen (array_merge). Immer vorhanden
-     * (mit leeren Standardwerten ausserhalb eines Verdachtsfalls), damit
-     * jeder Endpunkt dieselbe feste Antwortform hat, unabhaengig davon, ob
-     * gerade ein Verdachtsfall vorliegt.
+     * Gate declarations merged into each endpoint's execute_returns() through
+     * array_merge. Always present, with empty defaults outside a suspected
+     * collision, keeping a fixed response shape for every endpoint.
      *
      * @return array<string, \core_external\external_description>
      */
@@ -55,35 +50,35 @@ final class question_suspect_gate {
         return [
             'idnumber' => new external_value(
                 PARAM_TEXT,
-                'Mitgebrachte idnumber des Verdachtsfalls (leer ausserhalb eines Verdachtsfalls)',
+                'Supplied idnumber for a suspected collision; empty otherwise',
                 VALUE_DEFAULT,
                 ''
             ),
             'categoryid' => new external_value(
                 PARAM_INT,
-                'Zielkategorie des Verdachtsfalls (0 ausserhalb eines Verdachtsfalls)',
+                'Target category for a suspected collision; 0 otherwise',
                 VALUE_DEFAULT,
                 0
             ),
             'candidates' => new external_multiple_structure(
                 new external_single_structure([
-                    'questionid' => new external_value(PARAM_INT, 'questionid der aktuellsten Version des Kandidaten'),
-                    'name' => new external_value(PARAM_TEXT, 'Fragename des Kandidaten'),
-                    'idnumber' => new external_value(PARAM_TEXT, 'idnumber des Kandidaten'),
+                    'questionid' => new external_value(PARAM_INT, 'questionid of the candidate\'s latest version'),
+                    'name' => new external_value(PARAM_TEXT, 'Candidate question name'),
+                    'idnumber' => new external_value(PARAM_TEXT, 'Candidate idnumber'),
                 ]),
-                'Nahe Kandidaten in der Zielkategorie (leer ausserhalb eines Verdachtsfalls)',
+                'Nearby candidates in the target category; empty without suspicion',
                 VALUE_DEFAULT,
                 []
             ),
             'questiontext_old' => new external_value(
                 PARAM_RAW,
-                'Fragetext des bestehenden Kandidaten, wo vorhanden',
+                'Existing candidate question text, when available',
                 VALUE_DEFAULT,
                 ''
             ),
             'questiontext_new' => new external_value(
                 PARAM_RAW,
-                'Fragetext der zu schreibenden/verschobenen Frage, wo vorhanden',
+                'Question text to write or move, when available',
                 VALUE_DEFAULT,
                 ''
             ),
@@ -91,9 +86,8 @@ final class question_suspect_gate {
     }
 
     /**
-     * Leere Gate-Felder fuer den Nicht-Verdachtsfall - denselben Schluesseln
-     * wie {@see response_fields()}, damit jeder Endpunkt eine feste
-     * Antwortform ausliefert.
+     * Empty fields for the non-collision case, using the same keys as
+     * {@see response_fields()} for a stable response shape.
      *
      * @return array{idnumber: string, categoryid: int, candidates: array, questiontext_old: string, questiontext_new: string}
      */
@@ -108,16 +102,15 @@ final class question_suspect_gate {
     }
 
     /**
-     * Sucht einen bestehenden Fragenbank-Eintrag mit derselben idnumber in
-     * der Zielkategorie - ausser dem eigenen Eintrag (sonst waere jeder
-     * Umzug einer Frage mit idnumber in ihre eigene Kategorie ein falscher
-     * Treffer). Die (questioncategoryid, idnumber)-Kombination ist in Moodle
-     * eindeutig indiziert - es kann also hoechstens einen Kandidaten geben.
+     * Finds an existing bank entry with the same idnumber in the target
+     * category, excluding the current entry to avoid false collisions when
+     * moving a question within its own category. Moodle uniquely indexes
+     * (questioncategoryid, idnumber), so at most one candidate exists.
      *
      * @param int $categoryid
      * @param string $idnumber
-     * @param int $excludeentryid questionbankentryid, der nie als Kollision zaehlt
-     * @return \stdClass|null {entryid, questionid, name, idnumber, questiontext} oder null ohne Kollision
+     * @param int $excludeentryid questionbankentryid excluded from collision detection
+     * @return \stdClass|null {entryid, questionid, name, idnumber, questiontext}, or null without collision
      */
     public static function find_idnumber_collision(int $categoryid, string $idnumber, int $excludeentryid): ?\stdClass {
         global $DB;
@@ -145,11 +138,11 @@ final class question_suspect_gate {
     }
 
     /**
-     * Baut die Gate-Antwort (Verdachtsfall) aus einem Kollisionstreffer.
+     * Builds the suspected-collision response from a matching entry.
      *
-     * @param \stdClass $collision Ergebnis von {@see find_idnumber_collision()}
-     * @param int $categoryid Zielkategorie
-     * @param string $newquestiontext Fragetext der zu schreibenden/verschobenen Frage
+     * @param \stdClass $collision Result of {@see find_idnumber_collision()}
+     * @param int $categoryid Target category
+     * @param string $newquestiontext Question text to write or move
      * @return array{idnumber: string, categoryid: int, candidates: array, questiontext_old: string, questiontext_new: string}
      */
     public static function response(\stdClass $collision, int $categoryid, string $newquestiontext): array {
@@ -167,13 +160,10 @@ final class question_suspect_gate {
     }
 
     /**
-     * Nahe Kandidaten fuer einen namensbasierten Verdachtsfall: gleichnamige
-     * Eintraege in der Zielkategorie. Gemeinsam genutzt von
-     * {@see \local_coursepilot\external\import_questions_xml} (Kandidaten zu
-     * einer mitgebrachten idnumber ohne Treffer) und
-     * {@see \local_coursepilot\external\create_mc_question} (Kandidaten zu
-     * einem gleichnamigen Eintrag, da eine Neuanlage nie eine idnumber
-     * mitbringt, gegen die gematcht werden koennte).
+     * Nearby candidates for name-based suspicion: identically named entries
+     * in the target category. Shared by import_questions_xml (supplied
+     * idnumber without a match) and create_mc_question (new questions have
+     * no supplied idnumber to match).
      *
      * @param int $categoryid
      * @param string $name
@@ -203,7 +193,7 @@ final class question_suspect_gate {
     }
 
     /**
-     * Laedt die question-Zeile der neuesten Version eines Fragenbank-Eintrags.
+     * Loads the question row for the latest version of a question-bank entry.
      *
      * @param int $entryid
      * @return \stdClass

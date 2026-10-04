@@ -27,25 +27,21 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Schreibkern 13 (Spec 0015 Phase 3, Ticket #391): verschiebt eine Aktivitaet
- * in einen (anderen) Abschnitt, optional an eine bestimmte Position darin.
+ * Write core 13 (Spec 0015 phase 3, #391): move an activity to another
+ * section, optionally to a specific position within it.
  *
- * Ticket #391 nennt cmactions::move_before()/move_end_section() als
- * Zielapi der 5.2-Nachfolge (MDL-86854). Auf dieser Instanz (echte
- * Moodle-5.0.8-Quelle, /opt/moodle/course/format/classes/local/cmactions.php)
- * fuehrt cmactions bisher nur rename()/set_visibility() - kein move. Der
- * tatsaechlich existierende, NICHT-deprecated Kommando-Bus fuer diese Aktion
- * ist {@see \core_courseformat\stateactions::cm_move()} - dieselbe Methode,
- * die core_courseformat\external\update_course ("core_courseformat_update_course",
- * von der JS-Kursbearbeitung genutzt) fuer die Aktion "cm_move" aufruft.
- * cm_move() prueft 'moodle/course:manageactivities' bereits selbst. Kein
- * direkter Aufruf von moveto_module() - das bleibt Moodles eigene interne
- * Implementierung hinter dieser Abstraktion.
+ * #391 names cmactions::move_before()/move_end_section() as the Moodle 5.2
+ * successor API (MDL-86854). This Moodle 5.0.8 installation's cmactions
+ * (/opt/moodle/course/format/classes/local/cmactions.php) only implements
+ * rename()/set_visibility(), not move. The available, non-deprecated command
+ * bus is {@see \core_courseformat\stateactions::cm_move()}, also called by
+ * core_courseformat\external\update_course for the course editor's cm_move
+ * action. It checks moodle/course:manageactivities itself. Do not call
+ * moveto_module() directly; Moodle keeps that implementation behind the API.
  *
- * "position" bildet cmactions::move_before() nach: der Index (0-basiert) der
- * Aktivitaet im Zielabschnitt, VOR die verschoben wird. Ohne Angabe, mit
- * negativem Index oder mit Index >= Anzahl vorhandener Aktivitaeten entspricht
- * das move_end_section() - ans Ende des Zielabschnitts.
+ * position mirrors move_before(): the zero-based index of the activity to
+ * move BEFORE in the target section. Omitted, negative or out-of-range
+ * indices mirror move_end_section() and append at the end.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -62,8 +58,8 @@ final class move_module extends external_api {
             'sectionnum' => new external_value(PARAM_INT, 'Target section number (0-based)'),
             'position' => new external_value(
                 PARAM_INT,
-                'Optionaler 0-basierter Zielindex im Zielabschnitt (vor die dort aktuell stehende Aktivitaet); '
-                    . 'ohne Angabe ans Ende des Zielabschnitts',
+                'Optional zero-based index in the target section (before the activity currently at that index); '
+                    . 'omit to append at the end of the target section',
                 VALUE_DEFAULT,
                 null,
                 NULL_ALLOWED
@@ -89,30 +85,25 @@ final class move_module extends external_api {
         $context = context_course::instance($cm->course);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // Native Berechtigungspruefung: stateactions::cm_move() prueft
-        // 'moodle/course:manageactivities' ohnehin selbst erneut - der
-        // Aufruf hier ist billig und stellt sicher, dass eine fehlende
-        // Berechtigung nicht hinter einer Positionsvalidierung versteckt
-        // bleibt.
+        // Check native permissions even though stateactions::cm_move() repeats it.
+        // This cheap check ensures a missing capability cannot be hidden behind
+        // position validation.
         require_capability('moodle/course:manageactivities', $context);
 
         $course = get_course($cm->course);
         $modinfo = get_fast_modinfo($course);
         $sections = $modinfo->get_section_info_all();
-        // Eigene Coursepilot-Fehlermeldung statt get_section_info(...,
-        // MUST_EXIST) - dieselbe Fehlerstrategie (deutsche, mit
-        // describe-naheliegender Meldung) wie update_section/move_section
-        // fuer denselben Fall "Zielabschnitt existiert nicht".
+        // Use a Coursepilot error instead of get_section_info(..., MUST_EXIST),
+        // matching update_section/move_section for a missing target section, with
+        // a localized message that points toward the describe tools.
         if (!array_key_exists($params['sectionnum'], $sections)) {
             throw new moodle_exception('sectionnotfound', 'local_coursepilot', '', ['sectionnum' => $params['sectionnum']]);
         }
         $targetsection = $sections[$params['sectionnum']];
 
         $targetcmids = $modinfo->sections[$params['sectionnum']] ?? [];
-        // Die eigene cmid darf im Zielabschnitt (Verschiebung innerhalb
-        // desselben Abschnitts) nicht als "vor sich selbst"-Ziel gezaehlt
-        // werden, sonst wird eine Positionsangabe hinter der eigenen
-        // aktuellen Stelle um eins verschoben.
+        // Exclude this cmid when moving within its current section. Counting it as
+        // a "before itself" target would shift positions after the current one by one.
         $targetcmids = array_values(array_filter($targetcmids, static fn (int $id): bool => $id !== $cm->id));
 
         $position = $params['position'];

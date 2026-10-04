@@ -69,20 +69,20 @@ final class clone_activity extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID der zu klonenden Aktivitaet'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity to clone'),
             'title' => new external_value(
                 PARAM_TEXT,
-                'Titel der geklonten Aktivitaet - wird immer explizit gesetzt, kein "(Kopie)"-Suffix'
+                'Title of the cloned activity, explicitly set without an automatic copy suffix'
             ),
             'targetcourseid' => new external_value(
                 PARAM_INT,
-                'Ziel-Kurs-ID; weggelassen oder gleich dem Quellkurs = Klon im selben Kurs',
+                'Target course ID; omitted or equal to the source course means a clone in the same course',
                 VALUE_DEFAULT,
                 0
             ),
             'visible' => new external_value(
                 PARAM_BOOL,
-                'Sichtbarkeit der geklonten Aktivitaet, immer explizit gesetzt',
+                'Visibility of the cloned activity, always explicitly set',
                 VALUE_DEFAULT,
                 true
             ),
@@ -341,11 +341,11 @@ final class clone_activity extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID der neuen (geklonten) Aktivitaet'),
-            'courseid' => new external_value(PARAM_INT, 'Kurs, in dem der Klon liegt'),
+            'cmid' => new external_value(PARAM_INT, 'Course module ID of the new cloned activity'),
+            'courseid' => new external_value(PARAM_INT, 'Course containing the clone'),
             'message' => new external_value(
                 PARAM_RAW,
-                'Lehrkraft-deutsche Meldung; nennt entfernte kaputte Voraussetzungen im Klartext, falls vorhanden'
+                'Teacher-facing message describing any removed dangling prerequisites'
             ),
         ]);
     }

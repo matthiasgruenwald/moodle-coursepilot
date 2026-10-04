@@ -15,15 +15,12 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Selbstverwaltungsseite (#338): eine Lehrkraft sieht ausschliesslich die
- * eigenen aktiven Fernzugriffsverbindungen und kann einzelne widerrufen -
- * nie fremde, weil oauth_lib::active_tokens_for_user()/revoke_token() die
- * Eigentuemerschaft direkt in der Abfrage erzwingen, nicht nur in der
- * Anzeige. Aus dem Profil verlinkt (siehe lib.php,
- * local_coursepilot_myprofile_navigation()).
+ * Connection self-service (#338): teachers see and revoke only their own
+ * active remote connections. oauth_lib::active_tokens_for_user()/revoke_token()
+ * enforce ownership in database queries, not merely in display. Linked
+ * from the profile by local_coursepilot_myprofile_navigation() in lib.php.
  *
- * Duenne Schale (#334-Muster): die eigentliche Logik lebt testbar in
- * {@see \local_coursepilot\oauth_lib}, diese Datei tut nur noch Ein-/Ausgabe.
+ * Thin I/O shell (#334): {@see \local_coursepilot\oauth_lib} owns testable logic.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -51,7 +48,7 @@ $PAGE->set_heading(get_string('myconnections', 'local_coursepilot'));
 $revokeid = optional_param('revoke', 0, PARAM_INT);
 if ($revokeid) {
     require_sesskey();
-    // $USER->id als Eigentuemerfilter - eine fremde ID revoked hier nichts.
+    // Filter by $USER->id ownership: a foreign token ID revokes nothing.
     oauth_lib::revoke_token($revokeid, (int) $USER->id);
     redirect(new moodle_url('/local/coursepilot/connections.php'));
 }

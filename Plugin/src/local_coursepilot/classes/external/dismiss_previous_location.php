@@ -27,11 +27,10 @@ use local_coursepilot\pointer_location;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Beendet den Altbestand ausdruecklich (Issue #498, Spec #486 §9), nach dem
- * Muster von {@see dismiss_pending_entry}: die KI schliesst ihn nach dem
- * Kopieren, oder die Lehrkraft verzichtet auf den Rest. Nie durch
- * Zeitablauf, nie durch Namensgleichheit. Ruehrt nie an den Dateien des
- * vorherigen Ortes selbst - siehe {@see previous_location::dismiss()}.
+ * Explicitly closes legacy context (#498, Spec #486 §9), following
+ * {@see dismiss_pending_entry}: after copying, or when the teacher
+ * waives the rest. Never closes by elapsed time or identical names.
+ * Never modifies previous-location files; see {@see previous_location::dismiss()}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -48,10 +47,10 @@ class dismiss_previous_location extends external_api {
 
     /**
      * @return array
-     * @throws \moodle_exception previouslocationclosed, wenn kein Altbestand offen ist.
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles,
-     *         nur wenn der Altbestand selbst *in Moodle* liegt (Issue #517,
-     *         Spec §6: das Recht wirkt extern nicht).
+     * @throws \moodle_exception previouslocationclosed if legacy context is not open.
+     * @throws \required_capability_exception without moodle/user:manageownfiles,
+     *         only for legacy context in Moodle (#517,
+     *         Spec §6: the capability does not apply to external storage).
      */
     public static function execute(): array {
         self::validate_parameters(self::execute_parameters(), []);
@@ -59,11 +58,9 @@ class dismiss_previous_location extends external_api {
         $context = context_files::own_context();
         self::validate_context($context);
 
-        // Zeigerbewusst wie der Schreibzweig (Issue #491): das Recht gilt nur
-        // fuer Moodles Private Files, ein externer Altbestand kennt es nicht.
-        // Ohne offenen Altbestand (Ort unbekannt) bleibt die Pruefung wie
-        // zuvor bestehen - nur ein positiv erkannter externer Ort schaltet
-        // sie ab, kein blosses Fehlen.
+        // Pointer-aware capability check as in writes (#491): own-file management
+        // applies only to Moodle Private Files. With no open legacy location, keep
+        // the check; disable it only for a positively resolved external location.
         $previouslocation = previous_location::current();
         if ($previouslocation === null || $previouslocation['location'] === pointer_location::MOODLE) {
             context_files::require_manage_own_files();
@@ -81,7 +78,7 @@ class dismiss_previous_location extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'message' => new external_value(PARAM_RAW, 'Bestaetigung in Lehrkraft-Deutsch'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing confirmation'),
         ]);
     }
 }

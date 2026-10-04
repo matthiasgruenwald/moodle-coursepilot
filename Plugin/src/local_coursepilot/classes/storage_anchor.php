@@ -19,19 +19,16 @@ namespace local_coursepilot;
 use local_coursepilot\webdav\webdav_setup_steps;
 
 /**
- * Gemeinsamer Ablageort-Anker (Issue #444, Spec: Ablageort als eine Sache
- * #442 §1/§4/§5): haelt, was
- * {@see context_files} und {@see material_files} bislang doppelt trugen -
- * Komponente/Dateibereich/Itembezug, eigener Nutzerkontext, Wurzelaufloesung,
- * Segmentpruefung, Verzeichnis-/Dateiaufloesung in beide Richtungen, Recht
- * auf die eigenen Dateien, Restquote, Quotenpruefung, Dateisatz und die
- * Schreibchoreografie mit Zwischendatei.
+ * Shared storage anchor (#444, storage specification #442 §1/§4/§5):
+ * centralizes component/filearea/itemid, own user context, root/segment
+ * validation, path conversion, capabilities, quota and file records, plus
+ * temporary-file write sequencing formerly duplicated in
+ * {@see context_files} and {@see material_files}.
  *
- * Ein Bereich ({@see storage_area}) ist ein Wertesatz, kein Typ - es gibt
- * bewusst keinen Ortsadapter mit eigener Schnittstelle, solange nur ein
- * Ablageort (Moodles Private Files) existiert (siehe ADR zu Issue #444).
- * context_files und material_files bleiben die oeffentliche Schnittstelle
- * fuer ihre rund 20 Aufrufer unveraendert und delegieren intern hierher.
+ * A {@see storage_area} is a value record, not a type. The original
+ * Private-Files-only design required no separate adapter interface
+ * (ADR #444). Area facades retain their existing public interfaces and
+ * delegate shared operations here.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -39,52 +36,51 @@ use local_coursepilot\webdav\webdav_setup_steps;
  */
 final class storage_anchor {
 
-    /** @var string Moodle-Dateikomponente - Moodles Private Files. */
+    /** @var string Moodle file component: Private Files. */
     public const COMPONENT = 'user';
 
-    /** @var string Alleiniger, fuer die KI erreichbarer Dateibereich. */
+    /** @var string The only file area accessible to the model. */
     public const FILEAREA = 'private';
 
-    /** @var int Fester Item-Bezug - kein Bereich kennt weitere Items. */
+    /** @var int Fixed item ID; no area has other items. */
     public const ITEMID = 0;
 
-    /** @var string Namensvorsatz der Zwischendatei in {@see replace()}. */
+    /** @var string Temporary-file prefix in {@see replace()}. */
     public const TEMP_PREFIX = '.coursepilot-new-';
 
     /**
-     * @var string Einstellungsname des Ankers (Issue #445): der einzige, nicht
-     *      per Kontextpointer ueberschreibbare Ort - sonst waere die Aufloesung
-     *      zirkulaer. Identisch mit dem Wurzel-Einstellungsnamen des
-     *      Kontextbereichs {@see context_files}, der den Anker damit woertlich
-     *      *ist* statt ihn nur zu benennen.
+     * @var string Anchor setting name (#445): the only location that cannot be
+     *      overridden by a context pointer, to avoid circular
+     *      resolution. Matches the context-area root setting:
+     *      {@see context_files} is literally the anchor,
+     *      rather than merely sharing its name.
      */
     public const ANCHOR_ROOTSETTING = 'contextroot';
 
-    /** @var string Standardwurzel des Ankers, falls die Einstellung leer ist. */
+    /** @var string Default anchor root when the setting is empty. */
     public const ANCHOR_DEFAULT_ROOT = 'coursepilot';
 
     /**
-     * @var string Dateiname des Kontextpointers im Anker-Ordner (Issue #445,
-     *      Spec: Ablageort als eine Sache #442 §2). Fuehrender Punkt und
-     *      `.json`-Endung halten ihn ausserhalb der `.md`-Regel des
-     *      Kontextbereichs und der Endungs-Whitelist des Materialordners -
-     *      keine der beiden Schreibendpunkte kann ihn ueberschreiben, er wird
-     *      ausschliesslich von Hand ueber "Meine Dateien" angelegt.
+     * @var string Pointer filename in the anchor folder (#445,
+     *      storage spec #442 §2). Leading dot and
+     *      .json extension exclude it from the context-area .md rule
+     *      and material extension allowlist;
+     *      neither tool can overwrite it. The original design
+     *      created it manually through Private Files only.
      */
     public const POINTER_FILENAME = '.coursepilot-location.json';
 
     /**
-     * @var string Dateiname der Ausstandsnotiz im Anker-Ordner (Issue #492,
-     *      ADR 0023, Spec #486 §8/§10): liegt neben dem Kontextpointer,
-     *      denselben Gruenden folgend - fuehrender Punkt und `.json`-Endung
-     *      halten sie ausserhalb der `.md`-Regel des Kontextbereichs und der
-     *      Auflistung ({@see list_entries()}).
+     * @var string Pending-note filename in the anchor folder (#492,
+     *      ADR 0023, Spec #486 §8/§10), beside the pointer.
+     *      For the same reason, leading dot and .json extension
+     *      exclude it from the context-area .md rule and
+     *      listing ({@see list_entries()}).
      */
     public const PENDING_FILENAME = '.coursepilot-pending.json';
 
     /**
-     * Der eigene Nutzerkontext der angemeldeten Person - niemals aus
-     * Client-Eingaben ableitbar.
+     * The logged-in person's own context, never derived from client inputs.
      *
      * @return \context_user
      */
@@ -94,19 +90,16 @@ final class storage_anchor {
     }
 
     /**
-     * Wurzelordner eines Bereichs. Zweistufig aufgeloest (Issue #445, Spec:
-     * Ablageort als eine Sache #442 §2): erst die per Plugin-Einstellung
-     * konfigurierte Standardwurzel, dann - falls der Bereich einen
-     * {@see storage_area::$pointerkey} hat und im festen Anker ein
-     * Kontextpointer liegt - der dort genannte tatsaechliche Ort. Kein
-     * Pointer im Anker heisst schlicht: die Standardwurzel gilt, wie schon
-     * vor diesem Issue.
+     * Resolves an area root in two steps (#445, storage spec #442 §2): first
+     * the configured default, then the actual target from a pointer in the
+     * fixed anchor when the area has {@see storage_area::$pointerkey}.
+     * Without a pointer, the configured root applies as before.
      *
      * @param storage_area $area
-     * @return string Immer mit fuehrendem und abschliessendem "/".
+     * @return string Always with leading and trailing "/".
      * @throws \moodle_exception pointerunreadable/pointerincomplete/pointerunreachable -
-     *         nie ein stiller Rueckfall auf die Standardwurzel, sobald der
-     *         Pointer existiert, aber fehlerhaft ist (siehe {@see resolve_pointer()}).
+     *         never silently fall back to the default when a
+     *         pointer exists but is invalid (see {@see resolve_pointer_location()}).
      */
     private static function root(storage_area $area): string {
         $configured = self::configured_root($area->rootsetting, $area->defaultroot);
@@ -116,26 +109,23 @@ final class storage_anchor {
         }
         if ($location->kind === pointer_location::EXTERNAL) {
             if ($area->externalfallback) {
-                // Werkbank (Issue #520, Spec #486 §1): bleibt bei einem
-                // externen Materialbestand an der Standardwurzel im Anker -
-                // kein benannter Fehler, denn die Werkbank ist nie das Ziel,
-                // das der Pointer beschreibt.
+                // The workbench (#520, Spec #486 §1) stays at the default anchor root
+                // when material storage is external. No error: the pointer does not
+                // describe the workbench as its target.
                 return $configured;
             }
-            // Dieser Aufrufer (Schreiben/Material) kennt noch keine externen
-            // Orte (Issue #490 baut nur den Lesepfad) - ein stiller
-            // Rueckfall auf die Standardwurzel legte einen zweiten, halben
-            // Bereich an, deshalb ein benannter Fehler statt dessen.
+            // This caller does not support external storage (#490 originally
+            // provided reads only). Falling back silently would create a second,
+            // partial area, so return a named error instead.
             throw new \moodle_exception('pointerexternalnotsupported', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
         }
         return $location->path;
     }
 
     /**
-     * Der aufgeloeste Pointer-Zustand eines Bereichs (Issue #490, Spec #486
-     * §2), ohne Netz: liest den rohen Pointer aus dem Anker und deutet ihn
-     * ueber {@see context_pointer}. `null` heisst *offen* - kein Pointer,
-     * die Standardwurzel gilt.
+     * Resolves an area pointer without network access (#490, Spec #486 §2),
+     * reading raw data from the anchor and interpreting it through
+     * {@see context_pointer}. null means open/no pointer: use the default root.
      *
      * @param storage_area $area
      * @return pointer_location|null
@@ -153,20 +143,18 @@ final class storage_anchor {
     }
 
     /**
-     * Liest die rohe Pointer-Datei aus dem festen Anker-Ordner und dekodiert
-     * sie als JSON-Objekt - reine Dateizugriffslogik, die Deutung
-     * (erste/zweite Fassung, Feldpruefung) uebernimmt {@see context_pointer}.
+     * Reads the fixed anchor's pointer file and decodes its JSON object.
+     * File I/O only; {@see context_pointer} interprets generations and fields.
      *
-     * @return array|null null, wenn keine Pointer-Datei existiert (*offen*).
+     * @return array|null null without a pointer file (open).
      * @throws \moodle_exception pointerunreadable
      */
     private static function raw_pointer(): ?array {
         global $USER;
 
-        // Ohne angemeldete Person gibt es keine "eigenen" Private Files, in
-        // denen ein Pointer liegen koennte - reine Pfadaufloesung (z.B. in
-        // Tests ohne setUser()) bleibt deshalb DB-frei und verhaelt sich wie
-        // vor Issue #445 (Standardwurzel, kein own_context()-Zugriff).
+        // Without a logged-in person there are no owned Private Files containing
+        // a pointer. Pure resolution (tests without setUser()) stays DB-free
+        // as before #445: default root, without own_context() access.
         if (empty($USER->id)) {
             return null;
         }
@@ -192,13 +180,10 @@ final class storage_anchor {
     }
 
     /**
-     * Der aufgeloeste Ort eines Bereichs, nie `null` (Issue #495): wie
-     * {@see resolve_pointer_location()}, aber ein *offener* Zustand (kein
-     * Pointer) wird direkt zu einem {@see pointer_location::moodle()} an der
-     * konfigurierten Standardwurzel aufgeloest - fuer Aufrufer, die einen
-     * Vergleichsschluessel ({@see pointer_location::comparison_key()}) bauen
-     * wollen und dafuer immer einen Ort brauchen, nie die Sonderbedeutung
-     * "offen".
+     * Resolved area location, never null (#495). Like
+     * {@see resolve_pointer_location()}, but an open/no-pointer state becomes
+     * {@see pointer_location::moodle()} at the configured root. Callers building
+     * {@see pointer_location::comparison_key()} always need a concrete place.
      *
      * @param storage_area $area
      * @return pointer_location
@@ -211,18 +196,17 @@ final class storage_anchor {
             return pointer_location::moodle(self::configured_root($area->rootsetting, $area->defaultroot));
         }
         if ($location->kind === pointer_location::EXTERNAL && $area->externalfallback) {
-            // Werkbank (Issue #520): bleibt bei einem externen Materialbestand
-            // an der Standardwurzel im Anker, deckungsgleich mit {@see root()} -
-            // sonst wiche der hier gemeldete Ort vom tatsaechlich
-            // aufgeloesten Verzeichnis ab.
+            // Workbench (#520) stays at its default Moodle anchor when material
+            // is external, matching {@see root()} so the reported location cannot
+            // differ from the actual directory.
             return pointer_location::moodle(self::configured_root($area->rootsetting, $area->defaultroot));
         }
         return $location;
     }
 
     /**
-     * Der eine Orts-Dispatcher fuer Werkzeugpfade. Der Pointer wird nur hier
-     * gelesen; Werkzeuge und Bereichsfassaden sehen ausschliesslich den Port.
+     * Single location dispatcher for tool paths. Only this layer reads the
+     * pointer; tools and area facades use the returned port.
      */
     public static function port(storage_area $area, int $courseid = 0): storage_port {
         return self::port_at(self::effective_location($area), $courseid);
@@ -241,13 +225,12 @@ final class storage_anchor {
     }
 
     /**
-     * Die per Plugin-Einstellung konfigurierte Standardwurzel eines Ortes -
-     * ohne Pointer-Aufloesung. Wird sowohl fuer die Standardwurzel eines
-     * Bereichs als auch fuer den Anker selbst benutzt (Issue #445).
+     * Configured default root without pointer resolution. Used both for
+     * area defaults and the fixed anchor itself (#445).
      *
      * @param string $settingname
      * @param string $defaultvalue
-     * @return string Immer mit fuehrendem und abschliessendem "/".
+     * @return string Always with leading and trailing "/".
      */
     private static function configured_root(string $settingname, string $defaultvalue): string {
         $configured = trim((string) (get_config('local_coursepilot', $settingname) ?: $defaultvalue), '/');
@@ -255,10 +238,8 @@ final class storage_anchor {
     }
 
     /**
-     * Die konfigurierte Standardwurzel eines Bereichs, ohne fuehrenden/
-     * abschliessenden Schraegstrich - fuer die Ortswahlseite (Issue #494):
-     * der Pfad, den ein "in Moodle lassen" fuer diesen Bereich in den
-     * Kontextpointer schreibt.
+     * Configured area root without leading/trailing slashes, for location
+     * selection (#494): the path written to the pointer when choosing Moodle.
      *
      * @param storage_area $area
      * @return string
@@ -268,11 +249,10 @@ final class storage_anchor {
     }
 
     /**
-     * Liest den rohen Kontextpointer, oeffentlich (Issue #494) - die
-     * Ortswahlseite braucht das vollstaendige Dokument (inkl. Ortsverlauf),
-     * nicht nur ein aufgeloestes Ziel wie {@see resolve_pointer_location()}.
+     * Public raw-pointer read (#494): location selection needs the complete
+     * document, including history, rather than only one resolved target.
      *
-     * @return array|null null, wenn keine Pointer-Datei existiert.
+     * @return array|null null without a pointer file.
      * @throws \moodle_exception pointerunreadable
      */
     public static function read_raw_pointer(): ?array {
@@ -280,16 +260,14 @@ final class storage_anchor {
     }
 
     /**
-     * Schreibt ein vollstaendiges Pointer-Dokument neu (Issue #494) - der
-     * einzige Schreibweg des Pointers, aufgerufen ausschliesslich von der
-     * bewussten Ortswahl auf ihrer eigenen Seite im Moodle-Profil
-     * ({@see \local_coursepilot\location_selection}, Spec #442 §3), nie im
-     * Zustimmungsdialog und nie im Chat (CONTEXT.md, Issue #476). Kein
-     * Coursepilot-Endpunkt ruft dies auf. Bewegt keine Datei - schreibt
-     * ausschliesslich die kleine Pointer-Datei selbst, per {@see replace()}
-     * mit der ueblichen Zwischendatei-Choreografie.
+     * Writes a complete pointer (#494), exclusively through deliberate
+     * location selection on its Moodle profile page
+     * ({@see \local_coursepilot\location_selection}, Spec #442 §3). Never from
+     * consent or chat (CONTEXT.md, #476), and no Coursepilot tool calls it.
+     * Moves no files, only replaces the small pointer with the usual
+     * temporary-file choreography in {@see replace()}.
      *
-     * @param array $document Vollstaendiges Pointer-Dokument (context_area,
+     * @param array $document Complete pointer document (context_area,
      *        material_store, location_history).
      */
     public static function write_pointer_document(array $document): void {
@@ -298,9 +276,8 @@ final class storage_anchor {
     }
 
     /**
-     * Speichert eine in der Ortswahl bestaetigte Auswahl als vollstaendiges
-     * Pointer-Dokument. Die Seitenlogik liefert nur Werte, nie einen
-     * Dateischreibzugriff am Anker vorbei.
+     * Saves confirmed location selection as a complete pointer document.
+     * Page logic supplies values, never bypasses the anchor for file writes.
      *
      * @param array<string, array> $locations
      * @param array<int, array> $history
@@ -319,20 +296,19 @@ final class storage_anchor {
     }
 
     /**
-     * Der feste Anker-Ordner selbst - fuer alles, was direkt darin liegt
-     * (Kontextpointer, Ausstandsnotiz), nicht in einem Bereich darunter.
+     * The fixed anchor directory itself, containing the pointer and pending
+     * note directly rather than an area beneath it.
      *
-     * @return string Immer mit fuehrendem und abschliessendem "/".
+     * @return string Always with leading and trailing "/".
      */
     public static function anchor_root(): string {
         return self::configured_root(self::ANCHOR_ROOTSETTING, self::ANCHOR_DEFAULT_ROOT);
     }
 
     /**
-     * Der eine Schreibvorgang der Pointer-Datei selbst, genutzt von
-     * {@see write_pointer_document()}.
+     * Single pointer-file write used by {@see write_pointer_document()}.
      *
-     * @param string $content Bereits fertig kodierter JSON-Inhalt.
+     * @param string $content Already encoded JSON content.
      */
     private static function write_pointer_file(string $content): void {
         $anchor = self::configured_root(self::ANCHOR_ROOTSETTING, self::ANCHOR_DEFAULT_ROOT);
@@ -349,8 +325,8 @@ final class storage_anchor {
     }
 
     /**
-     * Zerlegt einen Client-Pfad in saubere Segmente und weist jedes `.`/`..`
-     * ab - das erzwingt "kein Pfad, der herausfuehrt" direkt im Plugincode.
+     * Splits client paths into clean segments and rejects . and .., enforcing
+     * the no-escape boundary directly in plugin code.
      *
      * @param storage_area $area
      * @param string $path
@@ -372,12 +348,11 @@ final class storage_anchor {
     }
 
     /**
-     * Loest einen optionalen Client-Unterordner zu einem vollstaendigen
-     * Moodle-Dateipfad innerhalb des Bereichs auf.
+     * Resolves an optional client subfolder to a full Moodle path inside the area.
      *
      * @param storage_area $area
-     * @param string $path Relativer Unterordner, z.B. "" oder "faecher/mathe".
-     * @return string Immer mit fuehrendem und abschliessendem "/".
+     * @param string $path Relative subfolder, e.g. "" or "subjects/math".
+     * @return string Always with leading and trailing "/".
      */
     public static function resolve_directory(storage_area $area, string $path): string {
         $segments = self::segments($area, $path);
@@ -385,12 +360,11 @@ final class storage_anchor {
     }
 
     /**
-     * Der Client-Pfad zu einem aufgeloesten Verzeichnis - relativ zur
-     * Wurzel, also in derselben Schreibweise, die jedes Werkzeug auch
-     * entgegennimmt. Die Wurzel selbst ist der leere Pfad.
+     * Client path of a resolved directory, relative to the root in the same
+     * notation tools accept. The root itself is the empty path.
      *
      * @param storage_area $area
-     * @param string $directory Ergebnis von {@see resolve_directory()}
+     * @param string $directory Result of {@see resolve_directory()}
      * @return string
      */
     public static function relative_directory(storage_area $area, string $directory): string {
@@ -398,11 +372,11 @@ final class storage_anchor {
     }
 
     /**
-     * Der Client-Pfad einer Datei - wie {@see relative_directory()}, nur mit
-     * Dateinamen. Eine Datei an der Wurzel ist schlicht ihr Dateiname.
+     * Client file path: like {@see relative_directory()} plus its filename.
+     * A root-level file is simply its filename.
      *
      * @param storage_area $area
-     * @param string $directory Ergebnis von {@see resolve_directory()}
+     * @param string $directory Result of {@see resolve_directory()}
      * @param string $filename
      * @return string
      */
@@ -412,11 +386,11 @@ final class storage_anchor {
     }
 
     /**
-     * Loest einen Client-Dateipfad (Ordner + Dateiname) auf.
+     * Resolves a client file path (directory and filename).
      *
      * @param storage_area $area
-     * @param string $path z.B. "vorlagen.md" oder "faecher/mathe/notiz.md".
-     * @return array{0: string, 1: string} [Ordnerpfad, Dateiname]
+     * @param string $path For example "templates.md" or "subjects/math/note.md".
+     * @return array{0: string, 1: string} [Directory path, filename]
      */
     public static function resolve_file(storage_area $area, string $path): array {
         $segments = self::segments($area, $path);
@@ -428,17 +402,15 @@ final class storage_anchor {
     }
 
     /**
-     * Wie {@see resolve_file()}, aber mit den engeren Schreibregeln:
-     * Ordnersegmente nur aus `[A-Za-z0-9_-]`, Dateiname geprueft ueber die
-     * bereichseigene Namensregel ({@see storage_area::$checkwritablename}) -
-     * die eine echte, bereichsspezifische Policy-Methode. Lesen bleibt
-     * bewusst grosszuegiger - der Altbestand und von Hand angelegte Dateien
-     * sollen lesbar bleiben, auch wenn Coursepilot sie so nie geschrieben haette.
+     * Like {@see resolve_file()} with stricter write rules: folder segments
+     * use [A-Za-z0-9_-], filenames use {@see storage_area::$checkwritablename},
+     * the area-specific policy. Reads intentionally remain permissive for
+     * legacy/manual files that Coursepilot would not create itself.
      *
      * @param storage_area $area
-     * @param string $path z.B. "plan.md" oder "faecher/mathe/profil.md".
-     * @return array{0: string, 1: string} [Ordnerpfad, Dateiname]
-     * @throws \moodle_exception invalidpathkey des Bereichs / bereichseigener Namensfehler
+     * @param string $path For example "plan.md" or "subjects/math/profile.md".
+     * @return array{0: string, 1: string} [Directory path, filename]
+     * @throws \moodle_exception area invalidpathkey or area-specific filename error
      */
     public static function resolve_writable_file(storage_area $area, string $path): array {
         [$folders, $filename] = self::writable_segments($area, $path);
@@ -446,17 +418,15 @@ final class storage_anchor {
     }
 
     /**
-     * Die engeren Schreibregeln aus {@see resolve_writable_file()}, aber ohne
-     * Wurzelaufloesung - fuer den externen Schreibzweig (Issue #491), der
-     * keinen Moodle-Verzeichnispfad braucht und deshalb nie {@see root()}
-     * beruehrt (die dort fuer externe Ziele wirft). Ordnersegmente nur aus
-     * `[A-Za-z0-9_-]`, Dateiname geprueft ueber die bereichseigene Namensregel
-     * ({@see storage_area::$checkwritablename}).
+     * Write validation from {@see resolve_writable_file()} without root
+     * resolution, for external writes (#491) needing no Moodle directory.
+     * Avoids {@see root()}, which rejects external targets. Folder segments
+     * use [A-Za-z0-9_-]; filenames use {@see storage_area::$checkwritablename}.
      *
      * @param storage_area $area
-     * @param string $path z.B. "plan.md" oder "faecher/mathe/profil.md".
-     * @return array{0: string[], 1: string} [Ordnersegmente, Dateiname]
-     * @throws \moodle_exception invalidpathkey des Bereichs / bereichseigener Namensfehler
+     * @param string $path For example "plan.md" or "subjects/math/profile.md".
+     * @return array{0: string[], 1: string} [Folder segments, filename]
+     * @throws \moodle_exception area invalidpathkey or area-specific filename error
      */
     public static function writable_segments(storage_area $area, string $path): array {
         $segments = self::segments($area, $path);
@@ -474,11 +444,10 @@ final class storage_anchor {
     }
 
     /**
-     * Der volle relative Pfad innerhalb einer WebDAV-Nutzerinstanz: der im
-     * Pointer gewaehlte Ordner ({@see pointer_location::$relativepath}) plus
-     * der vom Aufrufer gewuenschte Unterpfad, beide segmentweise geprueft.
-     * Geteilt von {@see pointer_reader} und {@see pointer_writer} - lesender
-     * und schreibender Zweig bauen dieselbe Adresse.
+     * Full relative path in an owned WebDAV instance: selected pointer folder
+     * ({@see pointer_location::$relativepath}) plus requested client subpath,
+     * both segment-validated. {@see pointer_reader}/{@see pointer_writer}
+     * share it so reads and writes address the same resource.
      *
      * @param storage_area $area
      * @param pointer_location $location
@@ -495,9 +464,8 @@ final class storage_anchor {
     }
 
     /**
-     * Standard-Nutzerrecht auf die eigenen Dateien - fuer alle
-     * Schreibendpunkte, unabhaengig vom Bereich: beide schreiben in denselben
-     * Bereich wie "Meine Dateien", also gilt dieselbe Freigabe.
+     * Standard own-file capability for every write endpoint regardless of
+     * area: both use Moodle Private Files and its permissions.
      *
      * @throws \required_capability_exception
      */
@@ -506,13 +474,12 @@ final class storage_anchor {
     }
 
     /**
-     * Restplatz in Byte nach Nutzerquote - `file_storage` setzt
-     * `$CFG->userquota` nicht selbst durch, nur die Core-UI tut das.
-     * Root-unabhaengig: bezieht sich auf die gesamte Nutzerquote, nicht auf
-     * einen Unterordner.
+     * Remaining user quota in bytes. file_storage does not itself enforce
+     * $CFG->userquota, unlike core UI. Independent of the area root: quota
+     * counts all user storage, not one subfolder.
      *
-     * @return int|null Restplatz in Byte, oder null wenn keine Grenze gilt
-     *         (Quote aus, unbegrenzt, oder `moodle/user:ignoreuserquota`).
+     * @return int|null Remaining bytes, or null if no limit applies
+     *         (quota disabled, unlimited or moodle/user:ignoreuserquota).
      */
     public static function remaining_quota(): ?int {
         global $CFG;
@@ -525,23 +492,21 @@ final class storage_anchor {
     }
 
     /**
-     * Weist einen Schreibvorgang ab, der die Nutzerquote sprengen wuerde.
+     * Rejects writes that would exceed the user quota.
      *
      * @param storage_area $area
-     * @param int $additionalbytes Zuwachs gegenueber dem bisherigen Stand.
-     * @throws \moodle_exception quotaerrorkey des Bereichs
+     * @param int $additionalbytes Increase over the current size.
+     * @throws \moodle_exception area quotaerrorkey
      */
     public static function require_quota(storage_area $area, int $additionalbytes): void {
         $remaining = self::remaining_quota();
         if ($remaining === null || $additionalbytes <= $remaining) {
             return;
         }
-        // ponytail: 'page' wird fuer jeden Bereich mitgegeben, auch fuer
-        // materialquotaexceeded, das {$a->page} (noch) nicht nutzt - ein
-        // bereichsspezifisches Umschalten waere hier mehr Code als der
-        // ungenutzte Objektschluessel kostet (get_string() ignoriert ihn
-        // stillschweigend). Aufteilen, sobald ein zweiter Bereich die Seite
-        // ausdruecklich NICHT nennen soll.
+        // ponytail: include page for every area even though materialquotaexceeded
+        // does not currently use it. A per-area branch would cost more code than
+        // the unused key (get_string ignores it). Split only when another area
+        // must explicitly omit the page.
         throw new \moodle_exception($area->quotaerrorkey, 'local_coursepilot', '', (object) [
             'remaining' => format_float($remaining / 1048576, 1),
             'needed' => format_float($additionalbytes / 1048576, 1),
@@ -550,7 +515,7 @@ final class storage_anchor {
     }
 
     /**
-     * Moodle-Dateisatz fuer eine Datei in einem Bereich.
+     * Moodle file record for a file in an area.
      *
      * @param int $contextid
      * @param string $directory
@@ -569,28 +534,24 @@ final class storage_anchor {
     }
 
     /**
-     * Listet eine Ebene eines aufgeloesten Verzeichnisses - ortsneutral
-     * (Issue #487): Name, Typ, Groesse, MIME-Typ, `contenthash` und
-     * Aenderungszeit je Eintrag, kein Moodle-Dateiobjekt verlaesst diese
-     * Methode. Der Kontextpointer ({@see POINTER_FILENAME}) ist keine
-     * Arbeitsdatei und bleibt wie bisher aussen vor.
+     * Lists one level as location-independent values (#487): name, type, size,
+     * MIME type, contenthash and modification time. No stored_file leaves
+     * this layer. The pointer is not a working file and stays excluded.
      *
-     * Bewusst ohne Personenbezugs-Markierung ("locked") - das ist eine
-     * Policy des Kontextbereichs (ADR 0011), nicht des Ankers. Ein Aufrufer,
-     * der sie braucht, liest sie ueber {@see read_content()} je Eintrag nach.
+     * No personal-data locked flag: that is context-area policy (ADR 0011),
+     * not anchor policy. Callers can use {@see read_content()} to inspect it.
      *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $directory Result of {@see resolve_directory()}.
      * @return array<int, array{name: string, type: string, size: int, mimetype: string,
      *         contenthash: string, timemodified: int}>
      */
     /**
-     * Die Moodle-Datei hinter Verzeichnis+Dateiname, oder null - der eine
-     * Nachschlagevorgang, den sich {@see read_content()}, {@see write()} und
-     * {@see append()} teilen.
+     * Moodle file behind directory/filename, or null. Shared lookup for
+     * {@see read_content()}, {@see write()} and {@see append()}.
      *
      * @param string $directory
      * @param string $filename
-     * @return \stored_file|null Nie ein Ordner-Platzhalter.
+     * @return \stored_file|null Never a directory placeholder.
      */
     private static function find_file(string $directory, string $filename): ?\stored_file {
         $file = get_file_storage()->get_file(
@@ -605,20 +566,15 @@ final class storage_anchor {
     }
 
     /**
-     * Listet einen Verzeichnisbaum rekursiv, nur Dateien (keine Ordner) -
-     * ortsneutral (Issue #488): fuer den Aufraeumbericht
-     * ({@see \local_coursepilot\external\report_loose_material_files}), der
-     * jede Datei unter der Wurzel braucht, unabhaengig von der Ordnertiefe.
-     * Anders als {@see list_entries()} traegt jeder Eintrag `timecreated`
-     * statt `timemodified` (Alter seit Anlage, nicht seit letzter Aenderung)
-     * und den vollen Verzeichnispfad, weil ein rekursiver Treffer aus jeder
-     * Tiefe stammen kann - der Aufrufer bildet daraus mit
-     * {@see relative_file()} den Client-Pfad. Der Kontextpointer wird hier
-     * bewusst nicht ausgefiltert (Altverhalten unveraendert): er kann nur im
-     * Anker-Wurzelordner liegen, den der Materialordner-Aufraeumbericht nicht
-     * durchsucht.
+     * Recursively lists files without folders (#488) for
+     * {@see \local_coursepilot\external\report_loose_material_files}, which
+     * needs every file regardless of nesting. Uses timecreated rather than
+     * timemodified (age since creation), plus full directories so callers
+     * can derive client paths through {@see relative_file()}. The pointer
+     * is not filtered here (unchanged legacy behavior): it can only live
+     * in the anchor root, outside material cleanup's searched area.
      *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $directory Result of {@see resolve_directory()}.
      * @return array<int, array{directory: string, name: string, size: int,
      *         contenthash: string, timecreated: int}>
      */
@@ -637,10 +593,9 @@ final class storage_anchor {
     }
 
     /**
-     * Der eine `get_directory_files()`-Aufruf, den sich {@see list_entries()}
-     * und {@see list_entries_recursive()} teilen (Issue #488 Standards-Review) -
-     * nur `$recursive`/`$includedirs` und die Ergebnisform unterscheiden die
-     * beiden Aufrufer.
+     * Shared get_directory_files() for {@see list_entries()} and
+     * {@see list_entries_recursive()} (#488 standards review). Only recursive,
+     * includedirs and the result shape differ.
      *
      * @param string $directory
      * @param bool $recursive
@@ -668,9 +623,8 @@ final class storage_anchor {
                 continue;
             }
             if ($file->is_directory()) {
-                // get_directory_files() schliesst den eigenen Ordner-
-                // Platzhalter (":dirid") bereits aus - hier landen nur
-                // unmittelbare Unterordner.
+                // get_directory_files() excludes the requested directory's own
+                // placeholder (:dirid); only immediate subfolders appear here.
                 $entries[] = [
                     'name' => trim(substr($file->get_filepath(), strlen($directory)), '/'),
                     'type' => 'folder',
@@ -694,13 +648,12 @@ final class storage_anchor {
     }
 
     /**
-     * Liest den Inhalt einer Datei - ortsneutral (Issue #487): kein Moodle-
-     * Dateiobjekt verlaesst diese Methode, nur seine Werte.
+     * Reads location-independent file values (#487), never returns a Moodle file object.
      *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $directory Result of {@see resolve_directory()}.
      * @param string $filename
      * @return array{content: string, mimetype: string, size: int, contenthash: string,
-     *         timemodified: int}|null null, wenn die Datei fehlt oder ein Ordner ist.
+     *         timemodified: int}|null null for missing files or directory placeholders.
      */
     public static function read_content(string $directory, string $filename): ?array {
         $file = self::find_file($directory, $filename);
@@ -717,20 +670,18 @@ final class storage_anchor {
     }
 
     /**
-     * Legt eine Datei an oder ersetzt ihren Inhalt vollstaendig - ortsneutral
-     * (Issue #487). Absagen (Pfad, Endung, Groesse, Personenbezug,
-     * Gleichzeitigkeit, Quote) sind Sache des Aufrufers, der dafuer den
-     * bisherigen Stand ueber {@see read_content()} liest, bevor er hier
-     * schreibt; diese Methode fuehrt nur noch den einen Schreibvorgang aus.
+     * Creates/replaces full file content (#487). Callers validate path, extension,
+     * size, personal-data policy, concurrency and quota using
+     * {@see read_content()} before writing. This method only persists the write.
      *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $directory Result of {@see resolve_directory()}.
      * @param string $filename
-     * @param string $content Vollstaendiger neuer Inhalt.
-     * @param array $recordoverrides Zusaetzliche/ueberschreibende Felder fuer
-     *        den Dateisatz (Issue #488) - z.B. das `source`-Feld eines
-     *        Bildausschnitts ({@see \local_coursepilot\external\crop_material_file}).
-     *        Leer laesst den gewoehnlichen Dateisatz aus {@see filerecord()}
-     *        unveraendert.
+     * @param string $content Complete new content.
+     * @param array $recordoverrides Additional/overriding file-record fields
+     *        (#488), e.g. the source field for an image crop
+     *        ({@see \local_coursepilot\external\crop_material_file}).
+     *        Empty leaves the ordinary {@see filerecord()} record
+     *        unchanged.
      */
     public static function write(string $directory, string $filename, string $content, array $recordoverrides = []): void {
         $contextid = self::own_context()->id;
@@ -740,14 +691,12 @@ final class storage_anchor {
     }
 
     /**
-     * Loescht eine Datei, falls sie existiert - ortsneutral (Issue #488).
-     * Absagen (Recht, "alle Pfade existieren" vorab) sind Sache des
-     * Aufrufers, der dafuer den bisherigen Stand ueber {@see read_content()}
-     * prueft, bevor er hier loescht.
+     * Deletes a file if present (#488). Callers validate capability and existence
+     * of every requested path through {@see read_content()} before deleting.
      *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $directory Result of {@see resolve_directory()}.
      * @param string $filename
-     * @return bool true, wenn eine Datei geloescht wurde; false, wenn keine existierte.
+     * @return bool true if deleted; false if no file existed.
      */
     public static function delete(string $directory, string $filename): bool {
         $file = self::find_file($directory, $filename);
@@ -759,22 +708,16 @@ final class storage_anchor {
     }
 
     /**
-     * Haengt Inhalt an eine Datei an, legt sie an, falls sie noch nicht
-     * existiert - ortsneutral (Issue #487). Wie bei {@see write()} sind
-     * Absagen Sache des Aufrufers; diese Methode liest den bisherigen Inhalt
-     * selbst noch einmal, um ihn mit dem Anhaengsel zusammenzufuegen - der
-     * Aufrufer bekam seinen eigenen Stand zuvor nur als Wertekopie ueber
-     * {@see read_content()}, kein stored_file, das sich hier wiederverwenden
-     * liesse. Gibt die tatsaechlich geschriebene Gesamtgroesse zurueck, nicht
-     * die aus dem fruehreren Lesen des Aufrufers hochgerechnete - die beiden
-     * koennen bei echter Gleichzeitigkeit auseinanderlaufen (Spec 0016 §5.3
-     * verbietet ohnehin Locks), und die Antwort soll immer den tatsaechlich
-     * geschriebenen Stand melden.
+     * Appends content, creating the file if absent (#487). Like {@see write()},
+     * validation belongs to callers. Rereads stored content to concatenate it:
+     * the caller received values, not a reusable stored_file. Returns the
+     * actual persisted total size, not an estimate from the earlier read;
+     * concurrent changes can differ (Spec 0016 §5.3 excludes locks).
      *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $directory Result of {@see resolve_directory()}.
      * @param string $filename
-     * @param string $content Anzuhaengender Inhalt.
-     * @return int Gesamtgroesse der Datei nach dem Anhaengen, in Byte.
+     * @param string $content Content to append.
+     * @return int Total file size after appending, in bytes.
      */
     public static function append(string $directory, string $filename, string $content): int {
         $contextid = self::own_context()->id;
@@ -785,25 +728,21 @@ final class storage_anchor {
     }
 
     /**
-     * Setzt den Inhalt einer Datei neu - der eine Schreibvorgang, den sich
-     * alle Schreibendpunkte teilen.
+     * Shared content replacement for all write endpoints.
      *
-     * Der neue Inhalt kommt zuerst unter einem Zwischennamen in den Dateipool,
-     * erst danach faellt die alte Datei weg. Die naheliegende Reihenfolge -
-     * loeschen, dann neu anlegen - ist nicht rettbar: `stored_file::delete()`
-     * entfernt den Blob der letzten Referenz physisch aus dem Dateipool, und
-     * eine umschliessende Transaktion holt ihn nicht zurueck. Sie stellt beim
-     * Rollback nur die Datenbankzeile wieder her, die dann auf einen Blob
-     * zeigt, den es nicht mehr gibt - die Lehrkraft haette ihre Datei
-     * verloren, ohne dass jemand sie ueberschrieben hat.
+     * Put new bytes into the file pool under a temporary name before deleting
+     * the old reference. Delete-then-create cannot be safely rolled back:
+     * stored_file::delete() physically removes the last referenced blob,
+     * while a DB transaction restores only its row, leaving a missing blob
+     * and a lost teacher file without a successful overwrite.
      *
-     * Bricht es zwischen Loeschen und Umbenennen ab, bleibt die Zwischendatei
-     * mit dem vollstaendigen neuen Inhalt in "Meine Dateien" liegen. Sichtbar
-     * und unschoen, aber nichts ist weg - der Zweck der Uebung.
+     * If interrupted between deletion and rename, the complete new content
+     * remains visible under the temporary name in Private Files. Untidy,
+     * but preserves the content.
      *
-     * @param \stored_file|null $existing Bisherige Datei, falls vorhanden.
-     * @param array $filerecord Ziel aus {@see filerecord()}.
-     * @param string $content Vollstaendiger neuer Inhalt.
+     * @param \stored_file|null $existing Existing file, if present.
+     * @param array $filerecord Target from {@see filerecord()}.
+     * @param string $content Complete new content.
      */
     public static function replace(?\stored_file $existing, array $filerecord, string $content): void {
         $fs = get_file_storage();
@@ -820,11 +759,9 @@ final class storage_anchor {
     }
 
     /**
-     * Der Client-Pfad, so wie er in jedem Endpunkt entgegengenommen wird -
-     * geprueft (keine `.`/`..`-Segmente), aber nicht an eine Wurzel gebunden.
-     * Fuer Moodle- und WebDAV-Ort identisch (Spec #486 §2: "dasselbe
-     * Koordinatensystem"), deshalb hier statt in einem der beiden Zweige von
-     * {@see list_pointer_aware()}/{@see read_pointer_aware()}.
+     * Validated client path (no . or ..) without binding to a root.
+     * Moodle and WebDAV share this coordinate system (Spec #486 §2), so it
+     * belongs here rather than in their separate pointer-aware branches.
      *
      * @param storage_area $area
      * @param string $path

@@ -50,7 +50,7 @@ final class dispatcher {
      * instructions. Only routing belongs here: planning discipline, privacy
      * and tool knowledge are supplied through get_skill.
      */
-    public const HANDSHAKE_INSTRUCTIONS = 'Vor Planung oder Schreibzugriff zuerst coursepilot_list_skills aufrufen.';
+    public const HANDSHAKE_INSTRUCTIONS = 'Before planning or writing, call coursepilot_list_skills first.';
 
     /** @var string[] Allowed origins in addition to $CFG->wwwroot. */
     private const EXTRA_ALLOWED_ORIGINS = ['https://claude.ai', 'https://chatgpt.com'];
