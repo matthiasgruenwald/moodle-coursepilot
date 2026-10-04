@@ -89,7 +89,21 @@ final class private_files_storage_port implements storage_port {
 
         $oldsize = $existing['size'] ?? 0;
         storage_anchor::require_quota($area, strlen($content) - $oldsize);
-        storage_anchor::write($directory, $filename, $content);
+        if ($expectedchecksum === storage_port::MISSING_CHECKSUM) {
+            // A missing preflight must stay create-only through persistence.
+            // storage_anchor::write() rereads and may replace a concurrent file.
+            $record = storage_anchor::filerecord(storage_anchor::own_context()->id, $directory, $filename);
+            try {
+                get_file_storage()->create_file_from_string($record, $content);
+            } catch (\stored_file_creation_exception $e) {
+                if (storage_anchor::read_content($directory, $filename) !== null) {
+                    throw new storage_conflict_exception($clientpath);
+                }
+                throw $e;
+            }
+        } else {
+            storage_anchor::write($directory, $filename, $content);
+        }
 
         $written = storage_anchor::read_content($directory, $filename);
         return [

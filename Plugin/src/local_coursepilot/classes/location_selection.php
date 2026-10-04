@@ -376,10 +376,12 @@ final class location_selection {
      *        ['type' => 'external', 'instanceid' => int, 'path' => string, 'confirmed' => bool].
      *        confirmed applies only to context_area (#518, Spec §5):
      *        explicit handover of a populated folder.
+     * @param string[] $providedtemplates Output: activity types actually supplied.
      * @return string[] Targets that actually changed.
      * @throws \moodle_exception for invalid selection or folder-creation failure.
      */
-    public static function apply(array $selection): array {
+    public static function apply(array $selection, array &$providedtemplates = []): array {
+        $providedtemplates = [];
         $wanted = self::resolve_wanted_targets($selection);
         $current = self::resolve_current_targets();
 
@@ -395,11 +397,20 @@ final class location_selection {
 
         ['changed' => $changed, 'location_history' => $locationhistory, 'previouslocation' => $previouslocation]
             = self::record_changes($wanted, $current);
-        if (empty($changed)) {
-            return [];
+        if (!empty($changed)) {
+            storage_anchor::save_location_selection($wanted, $locationhistory, $previouslocation);
         }
-
-        storage_anchor::save_location_selection($wanted, $locationhistory, $previouslocation);
+        $files = [];
+        foreach (['book', 'checklist', 'glossary'] as $modname) {
+            $content = @file_get_contents(__DIR__ . '/../activity-types/' . $modname . '.md');
+            if ($content !== false) {
+                $files['activity-types/' . $modname . '.md'] = $content;
+            }
+        }
+        $providedtemplates = array_map(
+            static fn (string $path): string => basename($path, '.md'),
+            context_area::supplement_missing($files)
+        );
         return $changed;
     }
 

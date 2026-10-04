@@ -333,7 +333,7 @@ final class location_selection_test extends \advanced_testcase {
         location_selection::browse($instanceid, '');
     }
 
-    public function test_apply_writes_nothing_when_both_targets_stay_in_moodle(): void {
+    public function test_apply_keeps_pointer_unchanged_when_both_targets_stay_in_moodle(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
@@ -363,7 +363,9 @@ final class location_selection_test extends \advanced_testcase {
             $this->assertSame(['context_area'], $changed);
 
             $mkcols = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'MKCOL'));
-            $this->assertCount(2, $mkcols, 'Level by level: "Unterricht", then "Unterricht/Kontext".');
+            $this->assertCount(5, $mkcols, 'Two location levels, then best-effort activity-types creation for each template.');
+            $this->assertStringEndsWith('/Unterricht/', $mkcols[0]['url']);
+            $this->assertStringEndsWith('/Unterricht/Kontext/', $mkcols[1]['url']);
 
             $state = location_selection::page_state((int) $user->id);
             $this->assertSame('selected', $state['locations']['context_area']['state']);
@@ -957,6 +959,11 @@ final class location_selection_test extends \advanced_testcase {
             $this->assertSame('moodle', $vorheriger['location']);
             $this->assertSame('coursepilot', $vorheriger['path']);
 
+            // The teacher removes the supplied templates and their empty folder.
+            foreach (['book', 'checklist', 'glossary'] as $modname) {
+                storage_anchor::port(context_files::area())->delete(context_files::area(), 'activity-types/' . $modname . '.md');
+            }
+            $fake->request('DELETE', 'https://' . $this->fixtureserver . '/' . $this->fixturebasispfad . '/B/activity-types');
             // B (external, empty) -> A (Moodle): empty B still replaces previous
             // content, otherwise the previous location would point to current A.
             location_selection::apply([
@@ -1016,12 +1023,10 @@ final class location_selection_test extends \advanced_testcase {
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
 
         try {
-            // Alt has only a non-context file and no subfolder, requiring handover
-            // confirmation (#518); Neu is empty.
-            location_selection::apply([
-                'context_area' => ['type' => 'external', 'instanceid' => $instanceid, 'path' => 'Alt', 'confirmed' => true],
-                'material_store' => ['type' => 'moodle'],
-            ]);
+            // Establish the old location without selecting it here: selection now
+            // supplies Markdown templates, which would no longer be this fixture.
+            $this->write_v2_pointer($user, 'context_area', $instanceid, 'Alt',
+                $this->fixture_fingerprint() + ['iserv' => false]);
             location_selection::apply([
                 'context_area' => ['type' => 'external', 'instanceid' => $instanceid, 'path' => 'Neu'],
                 'material_store' => ['type' => 'moodle'],

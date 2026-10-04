@@ -82,3 +82,36 @@ Entscheidung der Lehrkraft nach der Umsetzung (#585):
   und die zugehörigen Texte mitkommen. Für die Lightboxgallery heißt das: Bilder samt
   Bildunterschriften (#599). Bis dahin bleiben die vier Arten mit dem Grund „Datei-Nachtrag
   fehlt“ gesperrt.
+
+
+## Nachtrag 2026-10-04: Verifizierte Aktivitätsart-Vorlagen (#603)
+
+- **Mitgeliefertes Wissen ist eine Plugin-Zusage.** Für Buch (`book`), Checkliste
+  (`checklist`) und Glossar (`glossary`) liefert das Plugin geprüfte Minimal-Beispiele,
+  Pflichtstruktur, Stolpersteine und den Moodle-Verifikationsstand. Die Zusage gilt für
+  diese Beispiele auf der genannten Version; jede konkrete Anlage durchläuft weiterhin
+  den Round-Trip. „Unterstützt“ bleibt die Bezeichnung für katalogisierte Arten.
+- **Ortswahl ergänzt fehlende Dateien.** Nach erfolgreicher Wahl oder Bestätigung des
+  Kontextorts werden die Ressourcen aus `activity-types/` im Plugin unter demselben
+  relativen Pfad im gewählten Kontextbereich abgelegt. Nur tatsächlich angelegte Dateien
+  ergeben einen Hinweis. Vorhandene Dateien werden nie verglichen, aktualisiert oder
+  überschrieben; wiederholte Wahl erzeugt keine Schreibzugriffe und keinen Vorlagenhinweis.
+- **Ausfälle sind kein Ortswahlfehler.** Vorab-Lesefehler, fehlende Schreibrechte, Quote,
+  Locks und Ablagefehler werden je Datei abgefangen. Andere fehlende Dateien können
+  weiterhin ergänzt werden. Der gewöhnliche Schreibpfad behält seine Ausstandsnotizen;
+  es gibt keinen Rückfall auf einen anderen Ort. Konkurrierendes Anlegen bleibt durch
+  bedingte Writes geschützt (WebDAV `If-None-Match: *`, Private Files eindeutiger Dateisatz).
+- **Nachweis statt erfundener Beispiele.** Grundlage sind die über den externen
+  teacher_edit-Kontext lesend gesicherten Spike-Vorlagen aus #592, verifiziert auf
+  Moodle 5.1.7+ (Build 20260928) am 01.10.2026. Die englischen Beispiele werden auf
+  derselben Moodle-Version isoliert erneut angelegt und exportiert; die öffentliche
+  Ortswahl liefert genau die anschließend geprüften Ressourcen.
+- **Glossar bleibt zweistufig.** Die XML enthält keine Einträge. Danach fügt
+  `coursepilot_add_glossary_entries` Lehrerinhalt hinzu (#593). Die Vorlage nennt diesen
+  Weg, die Rechte, Teilfehler und die Grenzen des Änderungsverlaufs.
+- **Keine erfundene Lightboxgallery-Zusage.** Der Datei-Nachtrag aus #598/#599 allein
+  ersetzt keine verifizierte Aktivitätsart-Datei. Lightboxgallery wird hier nicht
+  mitgeliefert. Neue Vorlagen und Neu-Verifikation je Moodle-Version bleiben eigene Arbeit.
+
+Dieser Nachtrag ersetzt die pauschalen Aussagen „Wissen nicht im Plugin“ und
+„keine Zusage“ für die ausdrücklich mitgelieferten, verifizierten Beispiele.

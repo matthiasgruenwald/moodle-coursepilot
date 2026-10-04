@@ -25,10 +25,11 @@ do not classify from memory alone.
 ## Teacher-facing vocabulary
 
 Call the operation create. Reserve supported for field-catalog guarantees:
-learned types make no such promise and are checked after creation to see
-whether Moodle retained the supplied content. Say, in the teacher's
-language: "I do not have fixed knowledge of book yet. I will try creating
-it and check whether Moodle saved everything as intended."
+learned types are checked after creation to see whether Moodle retained the
+supplied content. Bundled examples for book, checklist and glossary are verified
+for the Moodle release named in their header; do not extend that promise to
+other versions or arbitrary input. Read the teacher's file before claiming
+that knowledge is missing.
 
 Creation always makes a new activity. A revision creates a successor that
 supersedes the old one, as described below.
@@ -42,6 +43,12 @@ activity-types/<modname>.md
 ```
 
 modname is the Moodle shortname, such as book, checklist or glossary.
+At location selection the plugin supplies missing verified book, checklist and
+glossary files automatically. Existing teacher files are never overwritten;
+only newly supplied files cause a notice. Storage failures do not interrupt
+location selection. Read the file and check its version before using it.
+Additional learning still requires the write offer below.
+
 One file per type records knowledge, not a clone template. Import experience
 about tar structure, previews and checklist references is in
 `coursepilot_get_skill("activity-backup-experience")`. These are hints,

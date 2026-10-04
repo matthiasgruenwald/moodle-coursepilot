@@ -67,6 +67,16 @@ test('Release candidate contains native source and an installable ZIP', { timeou
   assert.ok(entries.includes('local_coursepilot/LICENSE'), 'Lizenzdatei ist im Archiv enthalten');
   assert.ok(entries.includes('local_coursepilot/NOTICE'), 'Herkunftshinweis ist im Archiv enthalten');
 
+  for (const modname of ['book', 'checklist', 'glossary']) {
+    const template = `activity-types/${modname}.md`;
+    assert.ok(entries.includes(`local_coursepilot/${template}`), 'verified activity-type template is shipped');
+    const source = fs.readFileSync(path.join(SRC_DIR, template), 'utf8');
+    assert.equal(fs.readFileSync(path.join(staged, template), 'utf8'), source,
+      'staged template preserves the verified source');
+    assert.equal(execFileSync('unzip', ['-p', zipPath, `local_coursepilot/${template}`], { encoding: 'utf8' }),
+      source, 'ZIP template preserves the verified source');
+  }
+
   for (const entry of entries) {
     assert.doesNotMatch(entry, /\.DS_Store$/, 'keine macOS-Metadaten im Archiv');
   }

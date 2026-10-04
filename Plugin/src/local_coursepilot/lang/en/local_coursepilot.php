@@ -685,3 +685,6 @@ $string['glossaryentryfilelimit'] = 'Entry files exceed Moodle\'s file count or 
 $string['glossaryentryformat'] = 'Definition format must be Moodle, HTML, plain text or Markdown.';
 $string['glossaryentrytagsdisabled'] = 'Tags are disabled for glossary entries.';
 $string['glossaryentrystandardtags'] = 'This glossary allows only existing standard tags.';
+
+// Verified activity-type knowledge supplied at location selection (#603).
+$string['activitytypetemplatesprovided'] = 'Activity-type templates supplied: {$a}.';
