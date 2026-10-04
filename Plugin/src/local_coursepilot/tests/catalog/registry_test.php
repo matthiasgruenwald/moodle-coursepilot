@@ -55,7 +55,7 @@ final class registry_test extends \advanced_testcase {
             'lesson' => ['lesson', 'kindexcludedquestions'],
             'scorm files' => ['scorm', 'kindexcludedfiles'],
             'imscp files' => ['imscp', 'kindexcludedfiles'],
-            'lightboxgallery files' => ['lightboxgallery', 'kindexcludedfiles'],
+            'h5p files' => ['h5pactivity', 'kindexcludedfiles'],
             'no backup support' => ['nosuchmod', 'kindexcludednobackup'],
         ];
     }
@@ -71,6 +71,14 @@ final class registry_test extends \advanced_testcase {
 
     public function test_require_catalogued_returns_the_catalog_class(): void {
         $this->assertSame(page::class, registry::require_catalogued('page'));
+    }
+
+    public function test_gallery_requires_installation_even_with_a_file_declaration(): void {
+        global $DB;
+        $installed = $DB->record_exists('modules', ['name' => 'lightboxgallery']);
+        $kind = registry::kind('lightboxgallery');
+        $this->assertSame($installed ? activity_kind::DEVELOPED : activity_kind::EXCLUDED, $kind->kind);
+        $this->assertSame($installed ? null : 'kindexcludednobackup', $kind->reasonkey);
     }
 
     public function test_require_catalogued_rejects_everything_else_with_unknownmodname(): void {

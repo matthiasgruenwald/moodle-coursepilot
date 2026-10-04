@@ -63,6 +63,7 @@ final class xml_activity_creator {
      * @param bool $hidden leave the activity hidden after the check
      * @param int|null $replacescmid supersede this activity of the same type in the same course;
      *        $sectionnum is then ignored (the new one lands behind the old one)
+     * @param array $files Declared file-area supplements from material paths.
      * @return array{cmid: int, presets: string[], references: array, successor_cmid: int, hidden_predecessors: int}
      * references: {@see cm_references::references_to()} of the old cmid, empty without $replacescmid;
      * successor_cmid/hidden_predecessors: {@see self::chain()}, 0 without $replacescmid
@@ -75,7 +76,8 @@ final class xml_activity_creator {
         int $sectionnum,
         string $activityxml,
         bool $hidden = false,
-        ?int $replacescmid = null
+        ?int $replacescmid = null,
+        array $files = []
     ): array {
         global $USER;
         registry::require_developed($modname, 'createfromxmlcatalogued');
@@ -102,8 +104,7 @@ final class xml_activity_creator {
                     'count' => count($result['mismatches']),
                 ]);
             }
-            // ponytail: #593 (content follow-up, e.g. glossary entries) goes HERE, after the passed
-            // round trip and before showing; no seam until a second adapter exists.
+            activity_file_supplement::apply($cm, $files);
             if (!$hidden) {
                 course_module_placement::set_visible($cmid, true);
             }

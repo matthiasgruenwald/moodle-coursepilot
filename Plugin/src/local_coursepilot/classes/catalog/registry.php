@@ -83,6 +83,7 @@ final class registry {
      * @return activity_kind
      */
     public static function kind(string $modname): activity_kind {
+        global $DB;
         $catalog = self::for($modname);
         if ($catalog !== null) {
             return new activity_kind(activity_kind::CATALOGUED, $catalog);
@@ -90,10 +91,12 @@ final class registry {
         if (in_array($modname, self::EXCLUDED_QUESTIONS, true)) {
             return new activity_kind(activity_kind::EXCLUDED, null, 'kindexcludedquestions');
         }
-        if (in_array($modname, self::EXCLUDED_FILES, true)) {
+        if (in_array($modname, self::EXCLUDED_FILES, true)
+                && !\local_coursepilot\activity_file_supplement::supports($modname)) {
             return new activity_kind(activity_kind::EXCLUDED, null, 'kindexcludedfiles');
         }
-        if (!plugin_supports('mod', $modname, FEATURE_BACKUP_MOODLE2, false)) {
+        if (!$DB->record_exists('modules', ['name' => $modname])
+                || !plugin_supports('mod', $modname, FEATURE_BACKUP_MOODLE2, false)) {
             return new activity_kind(activity_kind::EXCLUDED, null, 'kindexcludednobackup');
         }
         return new activity_kind(activity_kind::DEVELOPED);

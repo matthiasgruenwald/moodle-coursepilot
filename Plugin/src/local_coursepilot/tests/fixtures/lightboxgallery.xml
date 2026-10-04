@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<activity id="1" moduleid="1" modulename="lightboxgallery" contextid="1">
+  <lightboxgallery id="1">
+    <name>Material gallery</name>
+    <intro>Three scenes</intro>
+    <introformat>1</introformat>
+    <timemodified>0</timemodified>
+    <captionfull>1</captionfull>
+    <captionpos>0</captionpos>
+  </lightboxgallery>
+</activity>

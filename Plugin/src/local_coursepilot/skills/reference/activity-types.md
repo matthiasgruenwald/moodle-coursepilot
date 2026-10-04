@@ -15,8 +15,8 @@ and follows `coursepilot_get_skill("question-types")`.
 | Type | Path |
 |---|---|
 | Cataloged, e.g. page, label, assign, url | coursepilot_create_module; this reference does not apply |
-| Learned: installed without a catalog, e.g. book, checklist, glossary | Create from activity XML under this reference |
-| Excluded: lesson, quiz, content-file types such as scorm, imscp, h5pactivity, lightboxgallery, or types without Moodle backup | Do not create through this path. Pass on the tool's reason and suggest manual Moodle creation. Explain file-bearing types cannot yet be created with their files |
+| Learned: installed without a catalog, e.g. book, checklist, glossary, lightboxgallery | Create from activity XML under this reference; lightboxgallery accepts images and captions through files |
+| Excluded: lesson, quiz, scorm, imscp, h5pactivity, uninstalled types or types without Moodle backup | Do not create through this path. Pass on the tool's reason and suggest manual Moodle creation. The three package types still lack a file supplement |
 
 `coursepilot_create_activity_from_xml` and `coursepilot_export_default_activity`
 reject cataloged/excluded types and name the right path. The tool decides;
@@ -94,7 +94,7 @@ proceeding.
 4. Build XML from the learning file or template using teacher content.
    Template determines fields, order and ranges.
 5. Create through coursepilot_create_activity_from_xml with courseid,
-   modname, section, activity_xml and optional hidden/replaces_cmid/dry_run.
+   modname, section, activity_xml and optional hidden/replaces_cmid/dry_run/files.
    The plugin creates hidden, exports and checks retention. Passed? Yes:
    report cmid; presets are Moodle-supplied defaults, not errors; step 7.
    No: the same call removed the activity, leaving nothing in course or
@@ -137,6 +137,30 @@ For requested changes to an existing learned-type activity:
    type and course must match. Report returned notices as in steps 3–5.
 7. Failed creation leaves nothing; retrying the same replaces_cmid needs
    no special handling.
+
+## File supplement: lightboxgallery
+
+When lightboxgallery is installed, pass images as a `files` list in the same
+create call. Each entry has `path` (material path), `filearea: "gallery_images"`,
+optional `caption` (plain text, default empty) and optional `location`
+(`"store"` by default, or `"workbench"`). The server copies images after the
+successful XML round trip, generates thumbnails through the native module
+and sets captions before making the activity visible. A failed file step
+discards only the new activity; a predecessor stays intact. `hidden` still
+keeps the completed activity hidden. `dry_run` writes nothing and does not
+read material paths or validate image contents.
+
+Use distinct basenames: the gallery stores images at its root, itemid 0,
+and captions are keyed by filename. Other areas and caller-supplied item IDs
+are unavailable. Use captionfull/captionpos from a real export to control
+caption display. Captions are image metadata, not Moodle learner comments.
+
+Binary contents stay on the server: name paths, never put image bytes or
+Base64 into activity XML or the AI context. For the exceptional consent
+rule, see `coursepilot_get_skill("activity-backup-experience")` (ADR 0028).
+Record only what the actual target instance verified in
+`activity-types/lightboxgallery.md`; an isolated automated module test does
+not prove Spike rendering or real Claude/Codex/ChatGPT use.
 
 ## User-data content
 
