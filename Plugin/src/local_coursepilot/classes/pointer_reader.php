@@ -32,53 +32,36 @@ use local_coursepilot\webdav\webdav_setup_steps;
 final class pointer_reader {
 
     /**
-     * Der aus ETag oder `getlastmodified` abgeleitete Pruefwert (Issue #513,
-     * Spec #486 §4/§6) - was {@see webdav_storage_port} als Pruefwert
-     * (`contenthash` an der Werkzeuggrenze) zurueckgibt und als
-     * `expected_contenthash` wieder entgegennimmt und gegen den dann
-     * aktuellen Stand prueft.
+     * Derive a check value from ETag or `getlastmodified` (Issue #513,
+     * Spec #486 §4/§6). {@see webdav_storage_port} returns it as `contenthash`
+     * and accepts it as `expected_contenthash` to compare with the current state.
      *
-     * Kein Moodle-`contenthash`: WebDAV kennt keinen Inhalts-Hash, dieser
-     * Wert ist ein rein opakes Vergleichsmerkmal. Ein ETag hat Vorrang
-     * (Nextcloud); fehlt er (IServ), tritt `getlastmodified` als schwacher
-     * Ersatz ein - Sekundenaufloesung, die Werkzeugbeschreibung nennt diese
-     * Grenze.
+     * This opaque value is not Moodle's content hash. Prefer an ETag (Nextcloud);
+     * otherwise use `getlastmodified` (IServ), with the documented limitation of
+     * second-level resolution.
      *
      * @param string|null $etag
      * @param int $timemodified
-     * @return string 40-stelliger Hexwert (sha1) - PARAM_ALPHANUMEXT-sicher,
-     *         anders als ein roher ETag, der haeufig Anfuehrungszeichen traegt.
+     * @return string 40-character SHA-1 hex value, safe for PARAM_ALPHANUMEXT, unlike quoted raw ETags.
      */
     public static function external_checkvalue(?string $etag, int $timemodified): string {
         return $etag !== null ? sha1('etag:' . $etag) : sha1('mtime:' . $timemodified);
     }
 
     /**
-     * Uebersetzt einen {@see webdav_error} in eine an die Lehrkraft
-     * gerichtete Meldung - nie mit Host, Konto, Passwort, HTTP-Code oder
-     * Antwortrumpf (Geheimnis-Test, Spec #486 Testing Decisions), nur die
-     * benannte Fehlerklasse und der Verweis auf die Ortswahlseite.
+     * Translate a {@see webdav_error} into a teacher-facing message containing
+     * only the error class and location selection page, without host, account,
+     * password, HTTP status or response body (Spec #486 Testing Decisions).
+     * Shared with {@see \local_coursepilot\location_selection} (Issue #494).
      *
-     * Oeffentlich, weil auch {@see \local_coursepilot\location_selection} (Issue
-     * #494: Auflisten/Anlegen auf der Ortswahlseite) denselben Fehlertext
-     * braucht - eine Uebersetzung statt zwei fast identischer Kopien.
+     * The default `webdavexternalerror` addresses the AI about a context gap.
+     * Location selection and material tools supply their own message keys for
+     * their different audience and scope (Issue #526, Spec #486 §5/§8).
      *
-     * Der Sprachstring ist seit Issue #526 (Spec #486 §5/§8) waehlbar: der
-     * Default "webdavexternalerror" ist an die KI gerichtet (Kontext-Lücke),
-     * passt aber weder auf die Ortswahlseite selbst (an die Lehrkraft
-     * gerichtet, keine KI-Anweisung) noch auf die Materialwerkzeuge (kein
-     * Kontextbereich betroffen) - {@see \local_coursepilot\location_selection} und
-     * {@see \local_coursepilot\material_files} uebergeben hier ihren eigenen
-     * Schluessel.
-     *
-     * `unklar/gedrosselt` (Issue #529) wechselt am Standardschluessel auf
-     * einen eigenen Text: eine Drosselung ist typischerweise binnen Sekunden
-     * vorbei, deshalb soll die KI dort selbst kurz warten und denselben
-     * Aufruf wiederholen, statt sofort die Lehrkraft zu informieren - anders
-     * als bei den uebrigen Fehlerklassen (Anmeldung abgelehnt, Speicher
-     * voll, ...), die sich nicht von selbst loesen. Nur am Standardschluessel:
-     * ein von Ortswahl/Materialwerkzeugen uebergebener eigener Schluessel
-     * bleibt unveraendert - andere Zielgruppe, andere Textlogik.
+     * For `UNCLEAR`, the default key selects a short retry instruction: throttling
+     * often clears within seconds, whereas rejected authentication or full
+     * storage requires intervention. Explicit caller keys are unchanged
+     * (Issue #529).
      *
      * @param webdav_error $e
      * @param string $stringkey
@@ -89,8 +72,7 @@ final class pointer_reader {
             $stringkey = 'webdavexternalerrorunclear';
         }
         return new \moodle_exception($stringkey, 'local_coursepilot', '', (object) [
-            // Issue #565: uebersetztes Label statt der fest-deutschen
-            // internen Konstante, siehe webdav_error::label().
+            // Issue #565: localized label rather than the internal constant; see webdav_error::label().
             'errorclass' => webdav_error::label($e->errorclass),
             'page' => webdav_setup_steps::LOCATION_SELECTION_PAGE,
         ]);

@@ -25,15 +25,13 @@ use local_coursepilot\webdav\webdav_setup_steps;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Statusprüfung Schritt 1 des WebDAV-Schrittkatalogs (Issue #499, Spec #486
- * §12): "WebDAV-Repository aktiv". Aus heisst `INFO` ("optional"), solange
- * kein Kontextpointer extern zeigt - niemand nutzt es, also ist "aus" der
- * datensparsame Normalzustand. Zeigt trotzdem ein Pointer extern, ist das
- * Repository fuer diese Personen unerreichbar geworden: `WARNING` mit
- * Anzahl.
+ * WebDAV setup check 1 (Issue #499, Spec #486 §12): repository enabled.
+ * Disabled returns INFO (optional) while no context pointer targets external
+ * storage. Otherwise return WARNING with the affected-user count: the
+ * repository has become unreachable for those users.
  *
- * Nutzt denselben Schrittkatalog ({@see webdav_setup_steps}) und denselben
- * Wortlaut wie der Admin-Text der Ortswahlseite (Akzeptanzkriterium).
+ * Uses {@see webdav_setup_steps} and the same wording as the location
+ * selection page admin instructions.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

@@ -27,12 +27,11 @@ use local_coursepilot\history\version_history;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Mehrversionen-Ueberblick des Aenderungsverlaufs (Spec 0015 §10.6, Ticket
- * #394): alle Versionen einer Aktivitaet mit je einem serverseitig
- * berechneten Einzeiler gegenueber dem Vorgaenger. Rein lesend, eigene
- * Faehigkeit 'local/coursepilot:viewhistory' statt 'local/coursepilot:use'
- * (Spec 0015 §10.6 sieht fuer den Verlauf ausdruecklich eigene Faehigkeiten
- * vor).
+ * Multi-version overview of the change history (Spec 0015 §10.6, ticket
+ * #394): all versions of an activity, each with a server-side
+ * computed one-liner relative to its predecessor. Read-only, own
+ * capability 'local/coursepilot:viewhistory' instead of 'local/coursepilot:use'
+ * (Spec 0015 §10.6 explicitly provides its own capabilities for the history).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -97,7 +96,7 @@ class list_activity_versions extends external_api {
                     'timestamp' => new external_value(PARAM_INT, 'Unix timestamp of the write'),
                     'summary_line' => new external_value(
                         PARAM_TEXT,
-                        'Server-computed teacher-facing German change line against the direct predecessor '
+                        'Server-computed teacher-facing change line against the direct predecessor '
                             . '(who, when, what)'
                     ),
                 ]),

@@ -54,8 +54,7 @@ final class ensure_section_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: legt einen fehlenden Abschnitt an und erzeugt bei
-     * erneutem Aufruf KEINEN zweiten.
+     * Acceptance: create a missing section and reuse it without duplication.
      */
     public function test_creates_missing_section_and_is_idempotent(): void {
         $this->resetAfterTest();

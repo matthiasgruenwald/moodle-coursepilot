@@ -19,16 +19,12 @@ namespace local_coursepilot;
 use local_coursepilot\tests\storage_port_contract_test;
 
 /**
- * Der Ablage-Vertrag gegen den ersten Adapter (Issue #536, Spec 0021):
- * {@see private_files_storage_port} tritt hier gegen die gemeinsame
- * {@see storage_port_contract_test} an.
+ * Storage contract against the first adapter (Issue #536, Spec 0021):
+ * private_files_storage_port runs the shared storage_port_contract_test.
  *
- * Der Testbereich ({@see area()}) ist frei erfunden, wie schon der
- * Zweitort-Beweis in {@see storage_anchor_test} - eigene Wurzel, eigene
- * Namensregel (.md), aber die generischen Fehlerschluessel des
- * Kontextbereichs geliehen (kein Testbereich rechtfertigt eigene
- * lang-Strings). Kein Pointer-Feld, damit der Adapter nie in die
- * Pointer-Aufloesung des bisherigen Wegs verzweigt.
+ * The test area has an independent root and .md naming rule, borrowing
+ * context-area error keys rather than adding test-only language strings.
+ * It has no pointer field, so it cannot enter legacy pointer resolution.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

@@ -216,7 +216,7 @@ final class create_quiz extends external_api {
 
         $sideeffects = [];
         if ((int) ($merged['timeopen'] ?? 0) > 0 || (int) ($merged['timeclose'] ?? 0) > 0) {
-            $sideeffects[] = 'Der Kalendereintrag fuer den Test wurde angelegt.';
+            $sideeffects[] = 'The calendar entry for the quiz was created.';
         }
 
         return [$createdfields, $sideeffects];
@@ -234,7 +234,7 @@ final class create_quiz extends external_api {
         foreach ($createdfields as $field) {
             $parts[] = '"' . $field['field'] . '" = ' . $field['value_json'];
         }
-        $message = 'Test angelegt: ' . implode(', ', $parts) . '.';
+        $message = get_string('quizcreatedfields', 'local_coursepilot', implode(', ', $parts));
 
         if ($sideeffects) {
             $message .= ' ' . implode(' ', $sideeffects);
@@ -249,7 +249,7 @@ final class create_quiz extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID of the newly created quiz'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German creation message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing creation message'),
             'created_fields' => new external_multiple_structure(
                 new external_single_structure([
                     'field' => new external_value(PARAM_TEXT, 'Field name'),
@@ -258,7 +258,7 @@ final class create_quiz extends external_api {
                 'One entry per field set by the patch/bundle, plus "grade"'
             ),
             'side_effects' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                new external_value(PARAM_TEXT, 'Teacher-facing side-effect note'),
                 'Triggered side effects, empty when none were triggered'
             ),
         ]);

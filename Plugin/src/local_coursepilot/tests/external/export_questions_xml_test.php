@@ -58,8 +58,8 @@ final class export_questions_xml_test extends \advanced_testcase {
         $this->assertSame(1, $exported['count']);
         $this->assertSame('', $exported['xml'], 'Standard-Modus: kein Bildbyte/XML in der Werkzeugantwort');
         $this->assertSame('export.xml', $exported['path']);
-        $this->assertStringContainsString('Datei: export.xml', $exported['message']);
-        $this->assertStringNotContainsString('PLATZHALTER', $exported['message']);
+        $this->assertStringContainsString('File: export.xml', $exported['message']);
+        $this->assertStringNotContainsString('PLACEHOLDER', $exported['message']);
 
         $reimported = import_questions_xml::execute($categoryid, '', false, 'export.xml');
         $reimported = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $reimported);
@@ -186,8 +186,8 @@ final class export_questions_xml_test extends \advanced_testcase {
         $this->assertStringContainsString('diagramm.png', $exported['xml'], 'Platzhalter nennt den Dateinamen');
         $this->assertStringContainsString('Frage mit Bild', $exported['message']);
         $this->assertStringContainsString('diagramm.png', $exported['message']);
-        $this->assertStringContainsString('PLATZHALTER-MODUS', $exported['message']);
-        $this->assertStringContainsString('NICHT zur Weitergabe geeignet', $exported['message']);
+        $this->assertStringContainsString('PLACEHOLDER MODE', $exported['message']);
+        $this->assertStringContainsString('NOT suitable for sharing', $exported['message']);
     }
 
     /**

@@ -17,19 +17,15 @@
 namespace local_coursepilot\event;
 
 /**
- * Ein Coursepilot-Werkzeugaufruf ueber den MCP-Endpunkt ist erfolgreich
- * durchgelaufen (#339).
+ * Successful Coursepilot tool call through MCP (#339).
  *
- * Ueber die Moodle-Ereignis-API ausgeloest, damit der Zugriff nativ in den
- * Protokollberichten der Administration erscheint - kein zweites Werkzeug
- * noetig. Wird nur ausgeloest, wenn die Protokollstufe
- * ({@see \local_coursepilot\access_log}) mindestens "Lesezugriffe und Fehler"
- * ist.
+ * Emitted through Moodle's event API for native admin log reports when
+ * access_log is set to at least reads and errors.
  *
  * @property-read array $other {
- *      - string toolname: Name des aufgerufenen MCP-Werkzeugs.
- *      - string|null path: Dateipfad, wenn das Werkzeug einen Kontext- oder
- *        Materialordner-Pfad berührt hat (Spec 0018 §9.2), sonst null.
+ *      - string toolname: Called MCP tool name.
+ *      - string|null path: Context or material path touched by the tool
+ *        (Spec 0018 §9.2), otherwise null.
  * }
  *
  * @package    local_coursepilot

@@ -29,25 +29,25 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/questionlib.php');
 
 /**
- * Verschiebt einen Fragenbank-Eintrag samt aller Versionen in eine andere
- * Kategorie (Spec 0017 §7.1, Ticket #414) - Portierung von
- * local_coursepilot\external\move_question, jetzt mit Verdachtsfall-Gate
- * *vor* dem Umzug.
+ * Moves a question bank entry with all of its versions to another
+ * category (Spec 0017 §7.1, ticket #414) - port of
+ * local_coursepilot\external\move_question, now with a suspect-case gate
+ * *before* the move.
  *
- * Der Core (question_move_questions_to_category() in lib/questionlib.php,
- * ueber core_question\external\move_questions ->
- * qbank_bulkmove\helper::bulk_move_questions()) loest eine
- * idnumber-Kollision in der Zielkategorie still mit einem "_N"-Suffix -
- * genau in dem Moment, in dem die Lehrkraft glaubt, nur aufzuraeumen, zerreisst
- * das die Abstammung (ADR 0015). Dieser Endpunkt prueft dieselbe Kollision
- * (eindeutiger DB-Index (questioncategoryid, idnumber), siehe
- * lib/db/install.xml) *vor* dem Aufruf und meldet sie ueber das gemeinsame
- * Verdachtsfall-Gate-Format ({@see \local_coursepilot\question_suspect_gate}),
- * statt sie dem Core-Suffix-Mechanismus stillschweigend zu ueberlassen.
- * Bestaetigt die Lehrkraft ausdruecklich ("bestaetigt": true), laeuft der
- * Core-Suffix-Mechanismus bewusst mit - er ist non-destruktiv (Suffix statt
- * Ueberschreiben) und war bereits vor diesem Ticket der Weg, auf dem eine
- * Frage ihre alte idnumber im Zweifel behaelt.
+ * The core (question_move_questions_to_category() in lib/questionlib.php,
+ * via core_question\external\move_questions ->
+ * qbank_bulkmove\helper::bulk_move_questions()) silently resolves an
+ * idnumber collision in the target category with a "_N" suffix -
+ * exactly at the moment the teacher thinks they are merely tidying up, this
+ * tears the lineage apart (ADR 0015). This endpoint checks the same collision
+ * (unique DB index (questioncategoryid, idnumber), see
+ * lib/db/install.xml) *before* the call and reports it via the shared
+ * suspect-case gate format ({@see \local_coursepilot\question_suspect_gate})
+ * instead of silently leaving it to the core suffix mechanism.
+ * If the teacher explicitly confirms ("confirmed": true), the core suffix
+ * mechanism deliberately runs - it is non-destructive (suffix instead of
+ * overwriting) and was already the way, before this ticket, in which a
+ * question keeps its old idnumber when in doubt.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -118,7 +118,7 @@ final class move_question extends external_api {
         );
 
         if ($collision !== null && !$params['confirmed']) {
-            // Verdachtsfall: nichts wird geschrieben (ADR 0015, Spec 0017 §7.1).
+            // Suspect case: nothing is written (ADR 0015, Spec 0017 §7.1).
             $latestversion = end($versions);
             $newquestiontext = $latestversion
                 ? (string) $DB->get_field('question', 'questiontext', ['id' => (int) $latestversion->questionid], MUST_EXIST)
@@ -130,30 +130,30 @@ final class move_question extends external_api {
                     'questionbankentryid' => (int) $entry->id,
                     'versionids' => [],
                     'idnumber_disambiguated' => false,
-                    'message' => 'Verdachtsfall: In der Zielkategorie gibt es bereits einen Eintrag mit der '
-                        . 'idnumber "' . $idnumber . '". Nichts wurde verschoben. Zum Verschieben trotz Kollision '
-                        . 'erneut mit confirmed=true aufrufen.',
+                    'message' => 'Suspect case: the target category already has an entry with the '
+                        . 'idnumber "' . $idnumber . '". Nothing was moved. To move despite the collision, '
+                        . 'call again with confirmed=true.',
                 ],
                 question_suspect_gate::response($collision, (int) $targetcategory->id, $newquestiontext)
             );
         }
 
-        // Core-Eigenheit (lib/questionlib.php::question_move_questions_to_category()):
-        // die Funktion verschiebt pro *Version* in $questionids, nicht pro
-        // Bank-Eintrag - bei mehreren mitgegebenen Versionsids derselben
-        // Frage kollidiert der zweite Durchlauf mit dem bereits verschobenen
-        // Eintrag der ersten Iteration und haengt der idnumber faelschlich
-        // einen Suffix an, obwohl gar keine echte Kollision vorliegt. Ein
-        // Bank-Eintrag ist EIN Umzug (die entryid traegt questioncategoryid,
-        // nicht die einzelne Version) - genau eine Versionsid genuegt, alle
-        // Versionen haengen an derselben entryid und ziehen mit.
+        // Core quirk (lib/questionlib.php::question_move_questions_to_category()):
+        // the function moves per *version* in $questionids, not per
+        // bank entry - if several version ids of the same question are
+        // passed, the second pass collides with the entry already moved
+        // by the first iteration and wrongly appends a suffix to the
+        // idnumber although there is no real collision. A bank entry is
+        // ONE move (the entryid carries questioncategoryid, not the
+        // individual version) - exactly one version id suffices, all
+        // versions hang off the same entryid and move along.
         //
-        // Core-Eigenheit #2: move_questions::execute() ist als "?string"
-        // deklariert, faellt bei leerem $returnurlstring aber ohne
-        // "return null;" durch - ein TypeError ("none returned"). Ein
-        // Platzhalter-Pfad umgeht das, wie im lokalen Vorbild
-        // local_coursepilot\external\move_question - die zurueckgegebene URL
-        // wird hier ohnehin verworfen.
+        // Core quirk #2: move_questions::execute() is declared as "?string"
+        // but falls through without "return null;" when $returnurlstring is
+        // empty - a TypeError ("none returned"). A placeholder path avoids
+        // that, as in the local model
+        // local_coursepilot\external\move_question - the returned URL
+        // is discarded here anyway.
         \core_question\external\move_questions::execute(
             $targetcontext->id,
             $targetcategory->id,
@@ -166,10 +166,10 @@ final class move_question extends external_api {
         $newidnumber = (string) ($entry->idnumber ?? '');
         $idnumberdisambiguated = $collision !== null && $newidnumber !== $idnumber;
 
-        $message = 'Frage in Zielkategorie verschoben.';
+        $message = 'Question moved to the target category.';
         if ($idnumberdisambiguated) {
-            $message .= ' Die idnumber "' . $idnumber . '" war in der Zielkategorie bereits vergeben und wurde '
-                . 'auf "' . $newidnumber . '" umbenannt.';
+            $message .= ' The idnumber "' . $idnumber . '" was already taken in the target category and was '
+                . 'renamed to "' . $newidnumber . '".';
         }
 
         return array_merge(
@@ -200,7 +200,7 @@ final class move_question extends external_api {
                     PARAM_BOOL,
                     'true if a confirmed move resolved an idnumber collision via the core suffix mechanism'
                 ),
-                'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
+                'message' => new external_value(PARAM_RAW, 'Teacher-facing message'),
             ],
             question_suspect_gate::response_fields()
         ));

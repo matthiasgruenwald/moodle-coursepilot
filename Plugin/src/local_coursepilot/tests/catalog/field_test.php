@@ -64,7 +64,7 @@ final class field_test extends \advanced_testcase {
     }
 
     /**
-     * Jede nicht-string Feldangabe liefert dieselbe katalogisierte Meldung.
+     * Every non-string field specification returns the same cataloged error.
      */
     public function test_invalid_field_names_always_get_the_same_message(): void {
         $messages = [];

@@ -102,7 +102,7 @@ final class choice_catalog_contract_test extends \advanced_testcase {
 
         $rules = implode(' ', choice::combination_rules());
         $this->assertStringNotContainsString('2-6', $rules);
-        $this->assertStringNotContainsString('hoechstens', $rules);
+        $this->assertStringNotContainsString('at most', $rules);
     }
 
     /**
@@ -128,8 +128,8 @@ final class choice_catalog_contract_test extends \advanced_testcase {
      */
     public function test_publish_side_effect_notes_the_anonymous_to_named_switch(): void {
         $notes = implode(' ', choice::side_effects());
-        $this->assertStringContainsString('anonym', $notes);
-        $this->assertStringContainsString('namentlich', $notes);
+        $this->assertStringContainsString('anonymous', $notes);
+        $this->assertStringContainsString('named', $notes);
     }
 
     /**

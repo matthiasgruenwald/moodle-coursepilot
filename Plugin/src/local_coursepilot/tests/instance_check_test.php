@@ -19,10 +19,9 @@ namespace local_coursepilot;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Urteilsteil der Instanzpruefung (#340): rein, ohne echten HTTP-Request
- * pruefbar. Der Selbstabruf selbst ({@see instance_check::self_check()}) ist
- * absichtlich nicht Teil dieser Suite - er braucht eine erreichbare Instanz
- * und wird ueber die Anzeigeseite (surface.php) manuell verifiziert.
+ * Pure instance-check evaluation (#340), testable without HTTP. The
+ * self_check() request requires a reachable instance and is manually
+ * verified through surface.php rather than this suite.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

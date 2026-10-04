@@ -19,8 +19,8 @@ namespace local_coursepilot\catalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Katalog-gegen-Moodle-Vertragstest fuer mod_url (Ticket #380, Vorbild
- * label_catalog_contract_test.php aus #379).
+ * Catalog/Moodle contract for mod_url (Ticket #380), following
+ * label_catalog_contract_test from #379.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,8 +31,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class url_catalog_contract_test extends \advanced_testcase {
 
     /**
-     * Jede von url gefuehrte Datenbankspalte muss die reale Spaltenmenge von
-     * {url} exakt ergeben.
+     * Catalog fields, real blocklisted columns and id exactly match the
+     * url table columns. Pseudofields do not count as database columns.
      */
     public function test_url_table_columns_match_the_catalog(): void {
         global $DB;
@@ -73,8 +73,8 @@ final class url_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * "externalurl" ist bewusst KEIN PARAM_URL (Ticket #380/Spec 0015 §4.4) -
-     * geprueft wird gegen url_appears_valid_url().
+     * externalurl uses url_appears_valid_url(), rather than PARAM_URL
+     * (Ticket #380, Spec 0015 §4.4).
      */
     public function test_externalurl_is_not_param_url(): void {
         global $CFG;
@@ -92,7 +92,7 @@ final class url_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * "displayoptions" und "parameters" stehen auf der Sperrliste (Ticket #380).
+     * displayoptions and parameters are blocklisted (Ticket #380).
      */
     public function test_displayoptions_and_parameters_are_blocked(): void {
         $this->assertContains('displayoptions', url::blocklist());

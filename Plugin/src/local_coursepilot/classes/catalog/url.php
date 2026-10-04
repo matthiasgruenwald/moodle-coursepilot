@@ -17,26 +17,22 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Feldkatalog fuer mod_url (Spec 0015 §4.1/§4.4, gelb: benannte
- * Sonderbehandlung).
+ * Field catalog for mod_url (Spec 0015 §4.1/§4.4, yellow: named special handling).
  *
- * Fallstricke aus dem Bestand (Ticket #380):
- * - "externalurl" ist bewusst KEIN PARAM_URL: `clean_param()` verwirft bei
- *   jeder Syntaxabweichung still zu '' (lib/classes/param.php:1039-1052) -
- *   strenger als Moodles eigenes Formular, das serverrelative Links und
- *   "mailto:" akzeptiert. Der Bestand (#357, ae58d76) nimmt PARAM_RAW_TRIMMED
- *   plus eine explizite Pruefung gegen url_appears_valid_url() - der Katalog
- *   uebernimmt genau das als Wertebereich.
- * - "displayoptions" und "parameters" werden von url_add_instance()/
- *   url_update_instance() unmittelbar aus anderen Feldern nachgerechnet und
- *   stehen deshalb auf der Sperrliste.
- * - "popupwidth"/"popupheight" sind Pseudofelder, nur bei display=6 (Popup)
- *   wirksam.
- * - "parameter_N"/"variable_N" (N=0..99) sind Pseudofelder: ohne sie beim
- *   Update loescht url_update_instance() saemtliche bestehenden
- *   URL-Parameter, weil parameters() jedes Mal aus $data->parameter_N/
- *   $data->variable_N komplett neu aufgebaut wird (Spec 0015 §3.4).
- * - url hat KEINE "revision"-Spalte (anders als page/resource/folder).
+ * Existing pitfalls (ticket #380):
+ * - externalurl deliberately does NOT use PARAM_URL: clean_param() silently
+ *   returns an empty string for syntax deviations (lib/classes/param.php:1039-1052).
+ *   That is stricter than Moodle's form, which accepts server-relative links
+ *   and mailto:. The existing implementation (#357, ae58d76) uses
+ *   PARAM_RAW_TRIMMED with explicit url_appears_valid_url() validation;
+ *   this catalog keeps that exact value range.
+ * - url_add_instance()/url_update_instance() recompute displayoptions and
+ *   parameters from other fields, so both are blocked.
+ * - popupwidth/popupheight are pseudofields effective only for display=6 (popup).
+ * - parameter_N/variable_N (N=0..99) are pseudofields: without them on update,
+ *   url_update_instance() deletes all existing URL parameters because parameters()
+ *   is rebuilt from $data->parameter_N/$data->variable_N every time (Spec 0015 §3.4).
+ * - Unlike page/resource/folder, url has no revision column.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -53,18 +49,18 @@ final class url implements module_catalog {
             new field(
                 'name',
                 'PARAM_TEXT',
-                'Anzeigename des Links.',
+                'Display name of the link.',
                 true,
                 null,
                 null,
                 null,
-                'mod/url/mod_form.php:42-45 (PARAM_TEXT bzw. PARAM_CLEANHTML je nach $CFG->formatstringstriptags)'
+                'mod/url/mod_form.php:42-45 (PARAM_TEXT or PARAM_CLEANHTML depending on $CFG->formatstringstriptags)'
             ),
             new field(
                 'intro',
                 'PARAM_RAW',
-                'Beschreibungstext (Intro), optional oberhalb des Links eingeblendet (Pseudofeld "printintro" '
-                    . 'steuert ob, nur bei bestimmten display-Werten wirksam).',
+                'Description (intro), optionally shown above the link (pseudofield "printintro" '
+                    . 'controls whether it is shown; only effective for certain display values).',
                 false,
                 null,
                 null,
@@ -74,37 +70,37 @@ final class url implements module_catalog {
             new field(
                 'introformat',
                 'PARAM_INT',
-                'Textformat des Intros.',
+                'Text format of the intro.',
                 false,
                 FORMAT_HTML,
                 null,
                 'format_text_menu()',
-                'lib/weblib.php:464 (format_text_menu()); Spalte mod/url/db/install.xml (url.introformat)'
+                'lib/weblib.php:464 (format_text_menu()); column mod/url/db/install.xml (url.introformat)'
             ),
             new field(
                 'externalurl',
                 'PARAM_RAW_TRIMMED',
-                'Die Ziel-URL. KEIN PARAM_URL (siehe Klassenkommentar) - geprueft wird gegen '
+                'Target URL. NOT PARAM_URL (see class comment) - validated against '
                     . 'url_appears_valid_url().',
                 true,
                 null,
                 null,
                 'url_appears_valid_url()',
-                'mod/url/locallib.php:39-46 (url_appears_valid_url()); Typ mod/url/mod_form.php:50 '
-                    . '(PARAM_RAW_TRIMMED); Spalte mod/url/db/install.xml (url.externalurl, NOTNULL)'
+                'mod/url/locallib.php:39-46 (url_appears_valid_url()); type mod/url/mod_form.php:50 '
+                    . '(PARAM_RAW_TRIMMED); column mod/url/db/install.xml (url.externalurl, NOTNULL)'
             ),
             new field(
                 'display',
                 'PARAM_INT',
-                'Darstellung des Links (z.B. eingebettet, neues Fenster, Popup). Die tatsaechlich waehlbaren '
-                    . 'Optionen sind eine von der Moodle-Administration konfigurierte Teilmenge, keine feste Liste.',
+                'Link display (e.g. embedded, new window, popup). Available '
+                    . 'options are a subset configured by Moodle administration, not a fixed list.',
                 false,
                 0,
                 null,
                 'resourcelib_get_displayoptions()',
-                'lib/resourcelib.php:30-42 (RESOURCELIB_DISPLAY_*-Konstanten), :111 (resourcelib_get_displayoptions()); '
-                    . 'Teilmenge aus admin_setting_configmultiselect(\'url/displayoptions\', ...) in '
-                    . 'mod/url/settings.php:31-39; Spalte mod/url/db/install.xml (url.display)'
+                'lib/resourcelib.php:30-42 (RESOURCELIB_DISPLAY_*-constants), :111 (resourcelib_get_displayoptions()); '
+                    . 'Subset from admin_setting_configmultiselect(\'url/displayoptions\', ...) in '
+                    . 'mod/url/settings.php:31-39; column mod/url/db/install.xml (url.display)'
             ),
         ];
     }
@@ -135,58 +131,58 @@ final class url implements module_catalog {
             new field(
                 'printintro',
                 'PARAM_BOOL',
-                'Intro zusaetzlich anzeigen - nur wirksam bei display=0 (Auto), 1 (Embed) oder 2 (Frame). Kein '
-                    . 'DB-Feld - fliesst in die serialisierte "displayoptions"-Spalte ein.',
+                'Show intro as well - only effective for display=0 (auto), 1 (embed) or 2 (frame). Not a '
+                    . 'DB field - stored in the serialized "displayoptions" column.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/url/lib.php (url_update_instance(): nur gesetzt, wenn display in [AUTO, EMBED, FRAME])'
+                'mod/url/lib.php (url_update_instance(): only set when display in [AUTO, EMBED, FRAME])'
             ),
             new field(
                 'popupwidth',
                 'PARAM_INT',
-                'Fensterbreite in Pixeln, nur wirksam bei display=6 (Popup). Kein DB-Feld - fliesst in '
-                    . '"displayoptions" ein.',
+                'Window width in pixels, only effective for display=6 (popup). Not a DB field - stored in '
+                    . '"displayoptions".',
                 false,
                 620,
                 null,
                 null,
-                'mod/url/lib.php (url_update_instance(): nur gesetzt, wenn display==RESOURCELIB_DISPLAY_POPUP); '
+                'mod/url/lib.php (url_update_instance(): only set when display==RESOURCELIB_DISPLAY_POPUP); '
                     . 'Default mod/url/settings.php'
             ),
             new field(
                 'popupheight',
                 'PARAM_INT',
-                'Fensterhoehe in Pixeln, nur wirksam bei display=6 (Popup). Kein DB-Feld - fliesst in '
-                    . '"displayoptions" ein.',
+                'Window height in pixels, only effective for display=6 (popup). Not a DB field - stored in '
+                    . '"displayoptions".',
                 false,
                 450,
                 null,
                 null,
-                'mod/url/lib.php (url_update_instance(): nur gesetzt, wenn display==RESOURCELIB_DISPLAY_POPUP)'
+                'mod/url/lib.php (url_update_instance(): only set when display==RESOURCELIB_DISPLAY_POPUP)'
             ),
             new field(
                 'parameter_N',
                 'PARAM_RAW',
-                'Name des N-ten URL-Parameters (N=0..99, mit variable_N gepaart). OHNE dieses Feld beim Update '
-                    . 'loescht Moodle saemtliche bestehenden Parameter - url_update_instance() baut sie bei jedem '
-                    . 'Aufruf komplett neu aus parameter_N/variable_N auf.',
+                'Name of the Nth URL parameter (N=0..99, paired with variable_N). WITHOUT this field on update, '
+                    . 'Moodle deletes all existing parameters - url_update_instance() rebuilds them completely on each '
+                    . 'call from parameter_N/variable_N.',
                 false,
                 null,
                 null,
                 null,
-                'mod/url/lib.php (url_add_instance()/url_update_instance(): Schleife ueber parameter_0..parameter_99)'
+                'mod/url/lib.php (url_add_instance()/url_update_instance(): loop over parameter_0..parameter_99)'
             ),
             new field(
                 'variable_N',
                 'PARAM_RAW',
-                'Wert des N-ten URL-Parameters (N=0..99, mit parameter_N gepaart). Siehe parameter_N.',
+                'Value of the Nth URL parameter (N=0..99, paired with parameter_N). See parameter_N.',
                 false,
                 null,
                 null,
                 null,
-                'mod/url/lib.php (url_add_instance()/url_update_instance(): Schleife ueber variable_0..variable_99)'
+                'mod/url/lib.php (url_add_instance()/url_update_instance(): loop over variable_0..variable_99)'
             ),
         ];
     }
@@ -200,7 +196,7 @@ final class url implements module_catalog {
 
     public static function combination_rules(): array {
         return [
-            'parameter_N und variable_N muessen beide gesetzt sein, sonst wird das Paar ignoriert '
+            'parameter_N and variable_N must both be set, otherwise the pair is ignored '
                 . '(mod/url/lib.php: url_add_instance()/url_update_instance()).',
         ];
     }

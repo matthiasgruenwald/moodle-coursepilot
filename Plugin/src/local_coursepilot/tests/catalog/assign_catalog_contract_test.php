@@ -146,7 +146,7 @@ final class assign_catalog_contract_test extends \advanced_testcase {
         }
         $this->assertNotNull($warningcarrier, 'assignsubmission_file_enabled fehlt im Pseudofeldkatalog.');
         $this->assertStringContainsString('nosubmissions', $warningcarrier->meaning);
-        $this->assertStringContainsString('nimmt', $warningcarrier->meaning);
+        $this->assertStringContainsString('accepts no submissions', $warningcarrier->meaning);
     }
 
     /**
@@ -179,7 +179,7 @@ final class assign_catalog_contract_test extends \advanced_testcase {
             }
         }
         $this->assertNotNull($field, 'teamsubmissiongroupingid fehlt im Feldkatalog.');
-        $this->assertStringContainsString('desselben Kurses', $field->meaning);
+        $this->assertStringContainsString('same course', $field->meaning);
     }
 
     /**

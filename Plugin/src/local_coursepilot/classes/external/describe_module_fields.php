@@ -56,8 +56,8 @@ class describe_module_fields extends external_api {
      * (update_module_settings/create_module): #379 provides the read catalog,
      * while the write core follows in phase 3.
      */
-    private const VEHICLE_WRITE_ROUTE = 'Formularweg (update_moduleinfo() bzw. add_moduleinfo()); eigener '
-        . 'Schreib-Endpunkt folgt in einer spaeteren Ausbaustufe.';
+    private const VEHICLE_WRITE_ROUTE = 'Form route (update_moduleinfo() or add_moduleinfo()); own '
+        . 'write endpoint follows in a later development stage.';
 
     /**
      * @return external_function_parameters
@@ -100,8 +100,8 @@ class describe_module_fields extends external_api {
         if ($modname === '') {
             return [
                 'known_modnames' => $knownmodnames,
-                'notice' => 'Coursepilot kann die Aktivitaetsarten, die er kennt: '
-                    . implode(', ', $knownmodnames) . '. describe_module_fields(modname) fragt eine davon ab.',
+                'notice' => 'Coursepilot knows these activity types: '
+                    . implode(', ', $knownmodnames) . '. describe_module_fields(modname) queries one of them.',
                 'module' => null,
             ];
         }
@@ -157,9 +157,9 @@ class describe_module_fields extends external_api {
         return [
             'known_modnames' => $knownmodnames,
             'notice' => $full
-                ? 'Vollstaendige Form: alle fuenf Katalogkategorien.'
-                : 'Kurzform: nur die haeufig gesetzten Felder und Feldbuendel. Pseudofelder, Sperrliste, '
-                    . 'Kombinationsregeln und Nebenwirkungen fehlen - mit full:true abrufen.',
+                ? 'Full form: all five catalog categories.'
+                : 'Short form: only the frequently set fields and field bundles. Pseudo fields, blocklist, '
+                    . 'combination rules and side effects are missing - retrieve with full:true.',
             'module' => $module,
         ];
     }
@@ -187,7 +187,7 @@ class describe_module_fields extends external_api {
         $fieldstructure = new external_single_structure([
             'name' => new external_value(PARAM_TEXT, 'Moodle field name (form-path contract)'),
             'type' => new external_value(PARAM_TEXT, 'PARAM_* constant or short type description'),
-            'meaning' => new external_value(PARAM_TEXT, 'Teacher-facing German meaning of the field'),
+            'meaning' => new external_value(PARAM_TEXT, 'Teacher-facing meaning of the field'),
             'required' => new external_value(PARAM_BOOL, 'Required field without a default?'),
             'default_json' => new external_value(PARAM_RAW, 'JSON-encoded form default, "null" if none'),
             'value_range' => new external_single_structure([
@@ -214,7 +214,7 @@ class describe_module_fields extends external_api {
                 new external_value(PARAM_TEXT, 'Modname'),
                 'Activity types Coursepilot knows'
             ),
-            'notice' => new external_value(PARAM_TEXT, 'Teacher-facing German notice text'),
+            'notice' => new external_value(PARAM_TEXT, 'Teacher-facing notice text'),
             'module' => new external_single_structure([
                 'modname' => new external_value(PARAM_TEXT, 'Activity type'),
                 'write_route' => new external_value(
@@ -244,7 +244,7 @@ class describe_module_fields extends external_api {
                     'Category 4: only with full:true'
                 ),
                 'side_effects' => new external_multiple_structure(
-                    new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                    new external_value(PARAM_TEXT, 'Teacher-facing side-effect note'),
                     'Category 5: only with full:true'
                 ),
             ], 'The requested module catalog, null when modname was empty', VALUE_DEFAULT, null, NULL_ALLOWED),

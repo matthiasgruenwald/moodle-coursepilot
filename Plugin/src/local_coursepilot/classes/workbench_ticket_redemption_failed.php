@@ -17,12 +17,10 @@
 namespace local_coursepilot;
 
 /**
- * Ein fehlgeschlagener Ticketabruf (#501, Spec #486 §13), mit dem betroffenen
- * Werkbankpfad, sofern zum Fehlerzeitpunkt schon bekannt - fuer den
- * Zugriffsprotokoll-Eintrag von `workbench/download.php` ("mit Datei und
- * Ergebnis"): ein gewoehnlicher {@see \moodle_exception} verliert den Pfad,
- * sobald {@see workbench_ticket::redeem()} die Ticketzeile bereits geloescht
- * hat, bevor eine spaetere Pruefung scheitert.
+ * Failed ticket redemption (#501, Spec #486 §13), retaining the workbench
+ * path when known for workbench/download.php access logging. A regular
+ * moodle_exception loses the path if workbench_ticket::redeem() has already
+ * deleted the ticket row before a later check fails.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,9 +29,8 @@ namespace local_coursepilot;
 final class workbench_ticket_redemption_failed extends \moodle_exception {
 
     /**
-     * @param string $errorcode Sprachschluessel in local_coursepilot.
-     * @param string|null $path Werkbankpfad, oder null, wenn das Ticket
-     *        selbst schon unbekannt war (kein Pfad zu kennen).
+     * @param string $errorcode Language key in local_coursepilot.
+     * @param string|null $path Workbench path, or null if the ticket was already unknown.
      */
     public function __construct(string $errorcode, public readonly ?string $path) {
         parent::__construct($errorcode, 'local_coursepilot');

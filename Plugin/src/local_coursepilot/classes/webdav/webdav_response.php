@@ -17,13 +17,11 @@
 namespace local_coursepilot\webdav;
 
 /**
- * Eine einzelne WebDAV-Antwort, wie sie {@see webdav_transport::request()}
- * liefert (Issue #489, Spec #486 §4, ADR 0022) - roh, ohne jede Deutung
- * anhand von Statuscode/Rumpf. Diese Deutung (die benannten Fehlerklassen)
- * sitzt in {@see webdav_client::classify()}. Einzige Ausnahme ist `gesperrt`:
- * Moodles Hostsperre erkennt {@see curl_transport} schon vor jeder Antwort
- * und wirft dafuer direkt eine {@see webdav_error}, statt ueberhaupt ein
- * webdav_response zu liefern.
+ * Raw WebDAV response from webdav_transport::request() (Issue #489,
+ * Spec #486 §4, ADR 0022). webdav_client::classify() interprets status/body
+ * into named error classes. The exception is BLOCKED: curl_transport
+ *  detects Moodle host restrictions before any response and throws
+ * webdav_error directly.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -32,10 +30,9 @@ namespace local_coursepilot\webdav;
 final class webdav_response {
 
     /**
-     * @param int $statuscode HTTP-Status.
-     * @param array<string, string> $headers Antwortkoepfe, Schluessel
-     *        kleingeschrieben (z.B. 'etag', 'content-type').
-     * @param string $body Rumpf, unveraendert.
+     * @param int $statuscode HTTP status.
+     * @param array<string, string> $headers Response headers with lowercased keys (e.g. etag, content-type).
+     * @param string $body Unmodified response body.
      */
     public function __construct(
         public readonly int $statuscode,
@@ -45,7 +42,7 @@ final class webdav_response {
     }
 
     /**
-     * Ein Antwortkopf, gross-/kleinschreibungsunabhaengig gelesen.
+     * Read a response header case-insensitively.
      *
      * @param string $name
      * @return string|null

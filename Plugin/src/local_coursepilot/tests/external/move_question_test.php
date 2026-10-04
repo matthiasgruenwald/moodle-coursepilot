@@ -19,8 +19,8 @@ namespace local_coursepilot\external;
 use core_external\external_api;
 
 /**
- * Umzug einer Frage samt aller Versionen, mit Verdachtsfall-Gate vor der
- * idnumber-Kollision (Spec 0017 §7.1, Ticket #414).
+ * Move of a question with all its versions, with a suspect-case gate before the
+ * idnumber collision (Spec 0017 §7.1, ticket #414).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,8 +30,8 @@ use core_external\external_api;
 final class move_question_test extends \advanced_testcase {
 
     /**
-     * Alle Versionen der Frage kommen mit dem Umzug mit, questionbankentryid
-     * bleibt unveraendert.
+     * All versions of the question move along, questionbankentryid
+     * stays unchanged.
      */
     public function test_moves_question_with_all_versions(): void {
         $this->resetAfterTest();
@@ -49,7 +49,7 @@ final class move_question_test extends \advanced_testcase {
             null,
             ['category' => $sourcecategory['id'], 'idnumber' => 'q-414-move']
         );
-        // Zweite Version desselben Bank-Eintrags anlegen.
+        // Create a second version of the same bank entry.
         $questiongenerator->update_question($question, null, ['category' => $sourcecategory['id']]);
 
         global $DB;
@@ -58,7 +58,7 @@ final class move_question_test extends \advanced_testcase {
             'question_versions',
             ['questionbankentryid' => $entrybefore->questionbankentryid]
         );
-        $this->assertCount(2, $allversionsbefore, 'Vorbedingung: zwei Versionen vor dem Umzug.');
+        $this->assertCount(2, $allversionsbefore, 'Precondition: two versions before the move.');
 
         $result = move_question::execute($question->id, $targetcategory['id']);
         $result = external_api::clean_returnvalue(move_question::execute_returns(), $result);
@@ -73,8 +73,8 @@ final class move_question_test extends \advanced_testcase {
     }
 
     /**
-     * idnumber-Kollision in der Zielkategorie wird VOR dem Umzug gegatet -
-     * nichts wird geschrieben.
+     * An idnumber collision in the target category is gated BEFORE the move -
+     * nothing is written.
      */
     public function test_gates_idnumber_collision_without_writing(): void {
         $this->resetAfterTest();
@@ -118,7 +118,7 @@ final class move_question_test extends \advanced_testcase {
         $this->assertSame((int) $existingquestion->id, $result['candidates'][0]['questionid']);
         $this->assertSame('Bestehende Frage', $result['candidates'][0]['name']);
 
-        // Nichts geschrieben: Quellkategorie unveraendert.
+        // Nothing written: source category unchanged.
         $categoryafter = $DB->get_field(
             'question_bank_entries',
             'questioncategoryid',
@@ -129,7 +129,7 @@ final class move_question_test extends \advanced_testcase {
     }
 
     /**
-     * Bestaetigter Zweitaufruf fuehrt den Umzug trotz Kollision aus.
+     * A confirmed second call performs the move despite the collision.
      */
     public function test_confirmed_call_moves_despite_collision(): void {
         $this->resetAfterTest();
@@ -169,8 +169,8 @@ final class move_question_test extends \advanced_testcase {
     }
 
     /**
-     * Fehlende moodle/question:add-Berechtigung im Zielkontext wird
-     * abgelehnt.
+     * A missing moodle/question:add capability in the target context is
+     * rejected.
      */
     public function test_rejects_user_without_add_capability_in_target(): void {
         $this->resetAfterTest();
@@ -203,7 +203,7 @@ final class move_question_test extends \advanced_testcase {
     }
 
     /**
-     * Baut Kurs + Lehrkraft + frische Fragensammlung auf und liefert
+     * Sets up course + teacher + fresh question bank and returns
      * [$course, $topcategoryid].
      *
      * @return array{0: \stdClass, 1: int}

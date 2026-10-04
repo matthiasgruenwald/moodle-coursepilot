@@ -247,9 +247,9 @@ final class import_questions_xml extends external_api {
         }
 
         throw new \invalid_parameter_exception(
-            'Die XML ist zu gross (' . display_size($bytes) . ', Grenze ' . display_size($maxbytes)
-                . '). Bitte den Import auf mehrere kleinere Dateien aufteilen - z.B. eine Datei je '
-                . 'Fragenkategorie.'
+            'The XML is too large (' . display_size($bytes) . ', limit ' . display_size($maxbytes)
+                . '). Split the import across smaller files - e.g. one file per '
+                . 'question category.'
         );
     }
 
@@ -270,14 +270,14 @@ final class import_questions_xml extends external_api {
 
         if ($xmlcontent !== '' && $xmlpath !== '') {
             throw new \invalid_parameter_exception(
-                'xmlcontent und xmlpath duerfen nicht gleichzeitig angegeben werden - genau eine Tuer waehlen: '
-                    . 'XML als Text (xmlcontent) oder Verweis auf eine XML-Datei im Materialordner (xmlpath).'
+                'xmlcontent and xmlpath cannot both be supplied - choose exactly one input: '
+                    . 'XML as text (xmlcontent) or a reference to an XML file in the material store (xmlpath).'
             );
         }
         if ($xmlcontent === '' && $xmlpath === '') {
             throw new \invalid_parameter_exception(
-                'Weder xmlcontent noch xmlpath angegeben - genau eine Tuer waehlen: XML als Text (xmlcontent) oder '
-                    . 'Verweis auf eine XML-Datei im Materialordner (xmlpath).'
+                'Neither xmlcontent nor xmlpath supplied - choose exactly one input: XML as text (xmlcontent) or '
+                    . 'a reference to an XML file in the material store (xmlpath).'
             );
         }
 
@@ -374,10 +374,10 @@ final class import_questions_xml extends external_api {
         }
 
         throw new \invalid_parameter_exception(
-            'Dem XML fehlt das umschliessende <quiz>-Element. Moodle-Fragen-XML besteht immer aus <quiz> mit einem '
-                . 'oder mehreren <question>-Bloecken darin - ein einzelner <question>-Block laesst sich nicht '
-                . 'importieren. Bitte den vollstaendigen Moodle-Export senden oder die Fragen in <quiz>...</quiz> '
-                . 'einfassen.'
+            'The XML lacks the enclosing <quiz> element. Moodle question XML always consists of <quiz> with one '
+                . 'or more <question> blocks inside it - a single <question> block cannot be '
+                . 'imported. Send the complete Moodle export or wrap the questions in <quiz>...</quiz> '
+                . 'instead.'
         );
     }
 
@@ -397,9 +397,9 @@ final class import_questions_xml extends external_api {
             return $e->getMessage();
         }
 
-        return 'Ungueltiges Moodle-XML: Die Datei liess sich nicht als Moodle-Fragen-XML lesen. Haeufigste '
-            . 'Ursachen: die Datei ist unvollstaendig oder abgeschnitten, ein Element ist nicht geschlossen, oder '
-            . 'die Struktur weicht vom Moodle-Export ab. Bitte einen vollstaendigen, unveraenderten Export senden.';
+        return 'Invalid Moodle XML: The file could not be read as Moodle question XML. Common '
+            . 'causes: the file is incomplete or truncated, an element is not closed, or '
+            . 'the structure differs from a Moodle export. Send a complete, unmodified export.';
     }
 
     /**
@@ -435,7 +435,7 @@ final class import_questions_xml extends external_api {
         $errortext = trim(strip_tags((string) ob_get_clean()));
 
         if ($questions === false || !is_array($questions) || $qformat->importerrors > 0) {
-            throw new \invalid_parameter_exception('Ungueltiges Moodle-XML' . ($errortext !== '' ? ': ' . $errortext : '.'));
+            throw new \invalid_parameter_exception('Invalid Moodle XML' . ($errortext !== '' ? ': ' . $errortext : '.'));
         }
 
         // Category directives ($CATEGORY:) are not questions. This endpoint writes
@@ -445,7 +445,7 @@ final class import_questions_xml extends external_api {
         }));
 
         if (empty($questions)) {
-            throw new \invalid_parameter_exception('Das XML enthaelt keine importierbaren Fragen.');
+            throw new \invalid_parameter_exception('The XML contains no importable questions.');
         }
 
         return $questions;
@@ -528,9 +528,7 @@ final class import_questions_xml extends external_api {
                 'questionbankentryid' => 0,
                 'version' => 0,
                 'status' => 'suspect',
-                'message' => 'Verdachtsfall: Die mitgebrachte idnumber "' . $xmlidnumber . '" hat keinen '
-                    . 'Treffer in der Zielkategorie. Nichts wurde importiert. Zum Anlegen als neuer Eintrag '
-                    . 'trotzdem erneut mit confirmed=true aufrufen.',
+                'message' => get_string('questionimportsuspect', 'local_coursepilot', $xmlidnumber),
             ],
             [
                 'idnumber' => $xmlidnumber,
@@ -617,10 +615,10 @@ final class import_questions_xml extends external_api {
             return $e->getMessage();
         }
 
-        return 'Fragetyp "' . $qtype . '" liess sich mit dieser XML-Struktur nicht speichern. Haeufigste Ursache: '
-            . 'eine fragetyp-spezifische Struktur (z.B. Dataset-Definitionen bei "calculated") weicht von der '
-            . 'internen Form ab, die dieser Fragetyp beim Speichern erwartet. Bitte die Fragetyp-Ablage pruefen '
-            . 'oder die Struktur vereinfachen.';
+        return 'Question type "' . $qtype . '" could not be saved with this XML structure. Common cause: '
+            . 'a question-type-specific structure (e.g. dataset definitions for "calculated") differs from the '
+            . 'internal form this question type expects when saving. Check the question type reference '
+            . 'or simplify the structure.';
     }
 
     /**
@@ -714,11 +712,11 @@ final class import_questions_xml extends external_api {
         $errortext = trim(strip_tags((string) ob_get_clean()));
 
         if ($reparsed === false || !is_array($reparsed) || $reparser->importerrors > 0) {
-            throw self::roundtrip_exception('parse', $errortext !== '' ? $errortext : 'Parse-Fehler');
+            throw self::roundtrip_exception('parse', $errortext !== '' ? $errortext : 'Parse error');
         }
         $reparsedquestion = reset($reparsed);
         if (!$reparsedquestion) {
-            throw self::roundtrip_exception('parse', 'keine Frage im zurueckgelesenen XML');
+            throw self::roundtrip_exception('parse', 'no question in the reparsed XML');
         }
 
         return $reparsedquestion;
@@ -836,8 +834,8 @@ final class import_questions_xml extends external_api {
 
         $version = $DB->get_record('question_versions', ['questionid' => $saved->id], '*', MUST_EXIST);
         $message = $status === 'first_import'
-            ? 'Frage "' . $name . '" neu angelegt (Version ' . $version->version . ').'
-            : 'Frage "' . $name . '" als neue Version (Version ' . $version->version . ') desselben Bank-Eintrags importiert.';
+            ? get_string('questionimportcreated', 'local_coursepilot', (object) ['name' => $name, 'version' => $version->version])
+            : get_string('questionimportversion', 'local_coursepilot', (object) ['name' => $name, 'version' => $version->version]);
 
         return array_merge(
             [
@@ -897,7 +895,7 @@ final class import_questions_xml extends external_api {
                             'New version number (0 for "suspect")'
                         ),
                         'status' => new external_value(PARAM_ALPHAEXT, '"first_import" (first import) | "reimport" (new version of the same entry) | "suspect" (suspect case)'),
-                        'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
+                        'message' => new external_value(PARAM_RAW, 'Teacher-facing message'),
                     ],
                     question_suspect_gate::response_fields()
                 )),

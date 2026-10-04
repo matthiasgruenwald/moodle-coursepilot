@@ -227,7 +227,7 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
         $doccomment = $reflection->getDocComment();
 
         $this->assertNotFalse($doccomment);
-        $this->assertStringContainsString('Anordnung', $doccomment);
+        $this->assertStringContainsString('Arrangement', $doccomment);
         $this->assertStringContainsString('quiz_slots', $doccomment);
     }
 
@@ -261,6 +261,6 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
      */
     public function test_side_effects_note_calendar_entries(): void {
         $notes = implode(' ', quiz::side_effects());
-        $this->assertStringContainsString('Kalendereintrag', $notes);
+        $this->assertStringContainsString('calendar event', $notes);
     }
 }

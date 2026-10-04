@@ -110,7 +110,7 @@ final class clone_activity extends external_api {
 
         $title = trim($params['title']);
         if ($title === '') {
-            throw new invalid_parameter_exception('title darf nicht leer sein.');
+            throw new invalid_parameter_exception('title must not be empty.');
         }
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
@@ -306,8 +306,8 @@ final class clone_activity extends external_api {
     private static function completion_label(int $expectedcompletion): string {
         return match ($expectedcompletion) {
             2 => 'bestanden',
-            3 => 'nicht bestanden',
-            0 => 'nicht abgeschlossen',
+            3 => 'not passed',
+            0 => 'not completed',
             default => 'abgeschlossen',
         };
     }

@@ -731,7 +731,7 @@ final class write_context_file_test extends \advanced_testcase {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
-        $this->assertStringContainsString('Ortswahlseite', $message);
+        $this->assertStringContainsString('location selection page', $message);
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);

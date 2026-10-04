@@ -818,8 +818,8 @@ final class create_module_test extends \advanced_testcase {
 
         $this->assertStringContainsString('Ankuendigungen', $result['message']);
         $this->assertNotEmpty($result['side_effects']);
-        $this->assertStringContainsString('Kursteilnehmenden', $result['side_effects'][0]);
-        $this->assertStringContainsString('Kursteilnehmenden', $result['message']);
+        $this->assertStringContainsString('course participants', $result['side_effects'][0]);
+        $this->assertStringContainsString('course participants', $result['message']);
     }
 
     /**

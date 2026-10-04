@@ -17,9 +17,9 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Die Freigabeliste des Feldkatalogs (Spec 0015 §2.5): "eine Aktivitätsart
- * ist unterstützt, wenn ihr Katalog geprüft ist". Eine neue Art ist eine neue
- * Katalogdatei plus ein Eintrag hier, kein neuer Endpunkt.
+ * Catalog allowlist (Spec 0015 §2.5): an activity type is supported when
+ * its catalog has been reviewed. A new type needs a catalog file and an
+ * entry here, rather than a new endpoint.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -28,7 +28,7 @@ namespace local_coursepilot\catalog;
 final class registry {
 
     /**
-     * modname => Katalogklasse.
+     * Module name to catalog class.
      *
      * @var array<string, class-string<module_catalog>>
      */
@@ -45,8 +45,8 @@ final class registry {
     ];
 
     /**
-     * Katalogisierte Modultypen, gleich ob per Vehikel oder Einzelwerkzeug
-     * geschrieben (Spec 0015 §3.1: "fuer jeden katalogisierten Modultyp").
+     * Cataloged module types, regardless of whether they use the generic
+     * write route or a dedicated tool (Spec 0015 §3.1).
      *
      * @return string[]
      */
@@ -56,27 +56,28 @@ final class registry {
 
     /**
      * @param string $modname
-     * @return module_catalog|null Die Katalogklasse selbst - null, wenn die
-     *         Aktivitaetsart nicht gefuehrt wird.
+     * @return module_catalog|null The catalog class, or null when the activity type has no catalog.
      */
     public static function for(string $modname): ?string {
         return self::CATALOGS[$modname] ?? null;
     }
 
-    /** Arten mit Fragen (Spec 0026): nie ueber Aktivitaets-XML. */
+    /**
+     * Types containing questions (Spec 0026): never use activity XML.
+     */
     private const EXCLUDED_QUESTIONS = ['lesson', 'quiz'];
 
     /**
-     * Arten mit Dateien im Inhalt (Spec 0026): Restore aus XML traegt keine
-     * Dateien. Gesperrt, bis der Datei-Nachtrag (#598) sie erschliesst.
+     * Types with embedded files (Spec 0026): XML restore carries no files.
+     * Excluded until file restoration (#598) supports them.
      */
     private const EXCLUDED_FILES = ['scorm', 'imscp', 'h5pactivity', 'lightboxgallery'];
 
     /**
-     * Art-Tor (ADR 0028): genau eine von drei Arten.
+     * Activity-kind gate (ADR 0028): exactly one of three kinds.
      *
-     * Katalogisiert gewinnt vor Ausschluss (quiz hat einen Katalog).
-     * Keine Positivliste: alles Uebrige ist erschlossen.
+     * A catalog takes precedence over exclusion (quiz has a catalog).
+     * All remaining types are developed, without a separate positive list.
      *
      * @param string $modname
      * @return activity_kind
@@ -100,8 +101,8 @@ final class registry {
 
     /**
      * @param string $modname
-     * @return class-string<module_catalog> Die Katalogklasse.
-     * @throws \moodle_exception unknownmodname, wenn die Art nicht katalogisiert ist.
+     * @return class-string<module_catalog> The catalog class.
+     * @throws \moodle_exception unknownmodname when the type is not cataloged.
      */
     public static function require_catalogued(string $modname): string {
         $catalog = self::for($modname);

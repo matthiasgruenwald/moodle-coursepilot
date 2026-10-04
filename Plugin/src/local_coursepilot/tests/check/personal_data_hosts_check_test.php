@@ -20,8 +20,8 @@ use core\check\result;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Statusprüfung Schritt 4 des WebDAV-Schrittkatalogs (Issue #499, Spec #486
- * §12): eine leere Liste zugelassener Speicher heisst `INFO`, kein Mangel.
+ * WebDAV setup check 4 (Issue #499, Spec #486 §12): an empty approved-host
+ * list returns INFO rather than reporting a configuration defect.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

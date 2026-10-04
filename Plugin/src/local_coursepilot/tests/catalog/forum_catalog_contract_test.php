@@ -130,9 +130,9 @@ final class forum_catalog_contract_test extends \advanced_testcase {
     public function test_forcesubscribe_side_effect_notes_mass_mail(): void {
         $notes = implode(' ', forum::side_effects());
         $this->assertStringContainsString('forcesubscribe', $notes);
-        $this->assertStringContainsString('Mail', $notes);
-        $this->assertStringContainsString('alle', $notes);
-        $this->assertStringContainsString('Kursteilnehmenden', $notes);
+        $this->assertStringContainsString('email', $notes);
+        $this->assertStringContainsString('all', $notes);
+        $this->assertStringContainsString('course participants', $notes);
     }
 
     /**
@@ -140,7 +140,7 @@ final class forum_catalog_contract_test extends \advanced_testcase {
      */
     public function test_side_effects_note_calendar_entries(): void {
         $notes = implode(' ', forum::side_effects());
-        $this->assertStringContainsString('Kalendereintrag', $notes);
+        $this->assertStringContainsString('calendar entry', $notes);
     }
 
     /**

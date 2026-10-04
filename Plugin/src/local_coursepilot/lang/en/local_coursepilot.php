@@ -644,3 +644,29 @@ $string['privacy:metadata:oauth_grant:revoked'] = 'Whether the entire connection
 $string['privacy:metadata:oauth_grant:timecreated'] = 'Connection creation time.';
 $string['privacy:metadata:oauth_token:connectionid'] = 'The stable connection owning this token generation.';
 $string['privacy:metadata:workbench_ticket:oauthconnectionid'] = 'The stable connection that issued this download ticket.';
+
+// Localized question and section tool messages (#605).
+$string['questionbankreused'] = 'Question bank "{$a}" already existed, reusing it.';
+$string['questionbankcreated'] = 'Question bank "{$a}" created.';
+$string['questioncategoryreused'] = 'Category "{$a}" already existed, reusing it.';
+$string['questioncategorycreated'] = 'Category "{$a}" created.';
+$string['sectioncreatednamed'] = 'Section {$a->sectionnum} created, name set to "{$a->name}".';
+$string['sectioncreated'] = 'Section {$a->sectionnum} created.';
+$string['sectionreusedrenamed'] = 'Section {$a->sectionnum} already existed, name changed from "{$a->oldname}" to "{$a->name}".';
+$string['sectionreused'] = 'Section {$a->sectionnum} already existed, name unchanged.';
+$string['mcquestionsuspect'] = 'Suspect case: The target category already contains an entry named "{$a}". Nothing was created. To create a new entry anyway, call again with confirmed=true.';
+$string['mcquestioncreated'] = 'MC question "{$a->name}" created (bank entry {$a->entryid}, version {$a->version}).';
+$string['questionexportpath'] = 'File: {$a}.';
+$string['questionexportone'] = '1 question exported.';
+$string['questionexportmany'] = '{$a} questions exported.';
+$string['questionexportplaceholder'] = 'PLACEHOLDER MODE: This output is incomplete (embedded files have been replaced by comment placeholders) and NOT suitable for sharing - only for templates (learning question structure). For complete, shareable XML, use placeholder=false (default).';
+$string['questionexportmissingdetail'] = 'Question "{$a->name}": {$a->files}';
+$string['questionexportmissing'] = 'WARNING: Embedded files are missing from the export and have been replaced by placeholders ({$a}).';
+
+$string['questionimportsuspect'] = 'Suspect case: The supplied idnumber "{$a}" has no match in the target category. Nothing was imported. To create a new entry anyway, call again with confirmed=true.';
+$string['questionimportcreated'] = 'Question "{$a->name}" created (version {$a->version}).';
+$string['questionimportversion'] = 'Question "{$a->name}" imported as a new version (version {$a->version}) of the same bank entry.';
+
+$string['versioninfosummary'] = 'Moodle {$a->moodlerelease} (branch {$a->branch}), Coursepilot plugin {$a->pluginrelease} (version {$a->pluginversion}).';
+$string['versioninfoupgradewarning'] = 'Warning: The database records version {$a} - upgrade.php was not run after the last deployment.';
+$string['quizcreatedfields'] = 'Quiz created: {$a}.';

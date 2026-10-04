@@ -28,17 +28,17 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Schreibkern 13 (Spec 0015 Phase 3, Ticket #391): patcht Name, Zusammenfassung
- * und Sichtbarkeit eines bestehenden Abschnitts - nur die uebergebenen Felder
- * aendern sich (Patch, wie {@see update_module_settings}).
+ * Write core 13 (Spec 0015 Phase 3, ticket #391): patches name, summary
+ * and visibility of an existing section - only the supplied fields
+ * change (patch, like {@see update_module_settings}).
  *
- * Schreibt ueber course_update_section() (course/lib.php), das intern
- * {@see \core_courseformat\local\sectionactions::update()} aufruft. Genau
- * diese Methode loest bei einer Sichtbarkeitsaenderung bereits nativ
- * transfer_visibility_to_cms() aus: ein unsichtbar geschalteter Abschnitt
- * macht seine Aktivitaeten unsichtbar, unabhaengig von deren eigenem Wert -
- * Coursepilot erzeugt diesen Nebeneffekt nicht selbst, spricht ihn aber in der
- * Antwort aus (Ticket #391 Abnahmekriterium).
+ * Writes via course_update_section() (course/lib.php), which internally calls
+ * {@see \core_courseformat\local\sectionactions::update()}. This very
+ * method natively triggers transfer_visibility_to_cms() on a visibility
+ * change: a section that is hidden makes its activities invisible,
+ * regardless of their own value - Coursepilot does not produce this side
+ * effect itself, but states it in the response (ticket #391 acceptance
+ * criterion).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -46,7 +46,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class update_section extends external_api {
 
-    /** @var string[] Katalog der ueber diesen Endpunkt patchbaren Felder. */
+    /** @var string[] Catalog of the fields patchable via this endpoint. */
     private const SETTABLE_FIELDS = ['name', 'summary', 'visible'];
 
     /**
@@ -82,8 +82,8 @@ final class update_section extends external_api {
         $context = context_course::instance($params['courseid']);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // Native Berechtigungspruefung: dieselbe Capability, die
-        // course/editsection.php beim Speichern verlangt.
+        // Native permission check: the same capability that
+        // course/editsection.php requires when saving.
         require_capability('moodle/course:update', $context);
 
         $patch = json_decode($params['fields_json'], true);
@@ -123,18 +123,18 @@ final class update_section extends external_api {
     }
 
     /**
-     * Alles-oder-nichts-Pruefung VOR dem Schreiben: unbekanntes Feld,
-     * unerlaubter Wert fuer "visible".
+     * All-or-nothing check BEFORE writing: unknown field,
+     * disallowed value for "visible".
      *
      * @param array $patch
-     * @return array Moodle-Feldnamen => Wert, direkt fuer course_update_section().
+     * @return array Moodle field names => value, directly for course_update_section().
      * @throws moodle_exception unknownfield|invalidfieldvalue
      */
     private static function validate_patch(array $patch): array {
         $fields = [];
         foreach ($patch as $fieldname => $value) {
             if (!is_string($fieldname)) {
-                throw new coding_exception('fields_json muss ein JSON-Objekt sein, kein Array.');
+                throw new coding_exception('fields_json must be a JSON object, not an array.');
             }
             if (!in_array($fieldname, self::SETTABLE_FIELDS, true)) {
                 throw new moodle_exception(
@@ -208,7 +208,7 @@ final class update_section extends external_api {
         return new external_single_structure([
             'id' => new external_value(PARAM_INT, 'Section DB ID'),
             'sectionnum' => new external_value(PARAM_INT, 'Section number (0-based)'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
             'changes' => new external_multiple_structure(
                 new external_single_structure([
                     'field' => new external_value(PARAM_TEXT, 'Field name'),

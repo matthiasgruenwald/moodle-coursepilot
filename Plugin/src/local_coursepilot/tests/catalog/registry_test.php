@@ -20,7 +20,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Art-Tor (Spec 0026, ADR 0028): registry::kind und require_catalogued.
+ * Activity-kind gate (Spec 0026, ADR 0028): registry::kind and require_catalogued.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

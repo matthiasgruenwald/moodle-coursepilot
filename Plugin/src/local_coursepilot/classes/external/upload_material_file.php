@@ -78,7 +78,7 @@ class upload_material_file extends external_api {
 
         $content = base64_decode($params['content_base64'], true);
         if ($content === false) {
-            throw new \invalid_parameter_exception('content_base64 ist kein gueltiges base64.');
+            throw new \invalid_parameter_exception('content_base64 is not valid base64.');
         }
         self::guard_server_size_limit(strlen($content));
 

@@ -19,11 +19,9 @@ namespace local_coursepilot\catalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Katalog-gegen-Moodle-Vertragstest fuer mod_resource (Ticket #380, Vorbild
- * label_catalog_contract_test.php aus #379).
- *
- * Prueft ausdruecklich nur die Tabelle "resource" (nicht "resource_old",
- * dem 1.9-Migrationsarchiv aus mod/resource/db/install.xml).
+ * Catalog/Moodle contract for mod_resource (Ticket #380), following
+ * label_catalog_contract_test from #379.
+ * Check only resource, excluding the resource_old Moodle 1.9 migration archive.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -34,10 +32,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class resource_catalog_contract_test extends \advanced_testcase {
 
     /**
-     * Jede von resource gefuehrte Datenbankspalte muss die reale
-     * Spaltenmenge von {resource} exakt ergeben. "files" ist kein DB-Feld
-     * (Pseudofeld, Spec 0018 §4.2) und steht auch nicht mehr auf der
-     * Sperrliste - es taucht deshalb weder hier noch dort auf.
+     * Catalog fields, real blocklisted columns and id exactly match the
+     * resource table columns. Pseudofields do not count as database columns.
      */
     public function test_resource_table_columns_match_the_catalog(): void {
         global $DB;
@@ -64,8 +60,8 @@ final class resource_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * "files" ist vollstaendig katalogisiert (Pseudofeld), Pflichtfeld ohne
-     * Default und nicht mehr gesperrt (Issue #434).
+     * files is a required cataloged pseudofield without a default, no longer
+     * blocked (Issue #434).
      */
     public function test_files_is_catalogued_required_and_unlocked(): void {
         $pseudofields = resource::pseudofields();
@@ -80,8 +76,8 @@ final class resource_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * resource verlangt "files" als Pflichtfeld beim Anlegen (Spec 0018
-     * §4.2/§7) - der Katalog vermerkt das ausdruecklich.
+     * The catalog explicitly requires files when creating resource
+     * (Spec 0018 §4.2/§7).
      */
     public function test_side_effects_note_files_is_required(): void {
         $notes = implode(' ', resource::side_effects());
@@ -89,7 +85,7 @@ final class resource_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * "revision" und "displayoptions" stehen auf der Sperrliste (Ticket #380).
+     * revision and displayoptions are blocklisted (Ticket #380).
      */
     public function test_revision_and_displayoptions_are_blocked(): void {
         $this->assertContains('revision', resource::blocklist());

@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class move_module_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs (3 Abschnitte), Lehrkraft.
+     * @return array{0: \stdClass, 1: \stdClass} Course (3 sections), teacher.
      */
     private function course_with_editing_teacher(): array {
         $course = $this->getDataGenerator()->create_course(['numsections' => 2]);
@@ -66,7 +66,7 @@ final class move_module_test extends \advanced_testcase {
         $cm = $modinfo->get_cm($page->cmid);
         $this->assertSame(1, (int) $cm->sectionnum);
         $cmids = array_map('intval', $modinfo->sections[1]);
-        $this->assertSame($page->cmid, end($cmids), 'Ohne Positionsangabe landet die Aktivitaet am Ende des Zielabschnitts.');
+        $this->assertSame($page->cmid, end($cmids), 'Without a position the activity ends up at the end of the target section.');
     }
 
     public function test_moves_to_specific_position_within_section(): void {

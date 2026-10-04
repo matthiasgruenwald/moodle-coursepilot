@@ -15,10 +15,9 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Upgrade-Schritte. Das Plugin war bereits installiert (#309/#312/#334),
- * bevor die OAuth-Client-Tabelle (#335) hinzukam - Moodle diff't install.xml
- * nicht automatisch gegen ein bestehendes Plugin, deshalb legen wir sie hier
- * an. Gleiches Muster fuer die Code-/Token-Tabellen aus #336.
+ * Upgrade steps. The plugin existed (#309/#312/#334) before the OAuth
+ * client table (#335). Moodle does not diff install.xml on existing
+ * installations, so create new tables here, including codes/tokens (#336).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -94,9 +93,8 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
     }
 
     if ($oldversion < 2026082701) {
-        // Aenderungsverlauf (#385): Beobachter schreibt ab jetzt, kein
-        // Massen-Backfill bestehender Aktivitaeten hier - der erste
-        // course_module_updated je cmid legt Version 1 an.
+        // Change history (#385): the observer starts recording now. No bulk
+        // backfill; the first course_module_updated event per cmid creates version 1.
         $versiontable = new xmldb_table('local_coursepilot_cm_version');
         $versiontable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
         $versiontable->add_field('cmid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
@@ -145,9 +143,9 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
     }
 
     if ($oldversion < 2026082801) {
-        // Aufbewahrung/Loeschfrist (#387): courseid noetig fuer die Kurs-Kaskade -
-        // course_modules ist beim course_deleted-Event bereits geloescht, die
-        // Zuordnung cmid->courseid muss also schon in der Verlaufszeile stehen.
+        // Retention (#387): record courseid for cascading course deletion.
+        // course_modules is already deleted by course_deleted, so history rows
+        // must retain the cmid/courseid mapping.
         $versiontable = new xmldb_table('local_coursepilot_cm_version');
         $courseidfield = new xmldb_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'cmid');
         if (!$dbman->field_exists($versiontable, $courseidfield)) {
@@ -164,17 +162,15 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
             $dbman->add_index($versiontable, $cmidtimecreatedindex);
         }
 
-        // Bestandszeilen (aus #385/#386) tragen courseid=0 - kein Massen-Backfill,
-        // gleiche Linie wie #386. Sie fallen bis zur naechsten Handaenderung
-        // dieser cmid einfach aus der Kurs-Kaskade heraus (Rand-fall aus dem
-        // kurzen Zeitraum vor #387).
+        // Existing rows (#385/#386) retain courseid=0 without bulk backfill,
+        // as in #386. They are outside the course cascade until the next manual
+        // change, an edge case from the short period before #387.
         upgrade_plugin_savepoint(true, 2026082801, 'local', 'coursepilot');
     }
 
     if ($oldversion < 2026082903) {
-        // Anordnungs-Stand (#396): nur fuer quiz befuellt, sonst NULL - Bestands-
-        // zeilen (aus #385/#386/#387) bleiben mit arrangement_json=NULL zurueck,
-        // kein Massen-Backfill (gleiche Linie wie #386/#387).
+        // Arrangement state (#396): populated only for quiz, otherwise NULL.
+        // Existing rows (#385/#386/#387) retain NULL without bulk backfill.
         $versiontable = new xmldb_table('local_coursepilot_cm_version');
         $arrangementfield = new xmldb_field(
             'arrangement_json',
@@ -194,20 +190,18 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
     }
 
     if ($oldversion < 2026083100) {
-        // Umzug des Kontextbereichs auf Moodles Private Files (#407, Spec 0016
-        // Abschnitt 3.1): Der Altbestand wird kopiert, nicht verschoben - er
-        // bleibt als Rueckweg liegen, und die Lehrkraft raeumt ihn selbst in
-        // "Meine Dateien". Kollision = ueberspringen und ins Upgrade-Log.
+        // Move context storage to Private Files (#407, Spec 0016 §3.1). Copy
+        // legacy files rather than moving them, preserving a fallback for teachers
+        // to clear manually. Skip collisions and report them in the upgrade log.
         $migrated = \local_coursepilot\context_files::migrate_legacy_files();
-        mtrace('local_coursepilot: ' . $migrated . ' Kontextdatei(en) nach "Meine Dateien" kopiert.');
+        mtrace('local_coursepilot: ' . $migrated . ' context file(s) copied to Private Files.');
 
         upgrade_plugin_savepoint(true, 2026083100, 'local', 'coursepilot');
     }
 
     if ($oldversion < 2026090108) {
-        // Klonen (#421, Spec 0017 §7.5): Quell-Modul-ID eines geklonten Standes
-        // (source=geklont) - NULL fuer alle anderen Ursprungsarten, kein
-        // Massen-Backfill (gleiche Linie wie #386/#387/#396).
+        // Cloning (#421, Spec 0017 §7.5): source module ID for cloned states,
+        // NULL for other sources. No bulk backfill, as in #386/#387/#396.
         $versiontable = new xmldb_table('local_coursepilot_cm_version');
         $sourcecmidfield = new xmldb_field('sourcecmid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'source');
         if (!$dbman->field_exists($versiontable, $sourcecmidfield)) {
@@ -218,18 +212,17 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
     }
 
     if ($oldversion < 2026090202) {
-        // Schema-Drift der OAuth-Tabellen (#424 Nachlauf 3): install.xml wurde
-        // waehrend #335/#336 nachgezogen, der Bestand nicht - eine
-        // Neuinstallation verhielt sich anders als eine hochgezogene Instanz.
+        // OAuth schema drift (#424 follow-up 3): install.xml was updated during
+        // #335/#336 without migrating existing instances, causing behavior to
+        // differ between new and upgraded installations.
         local_coursepilot_repair_oauth_schema_drift($dbman);
 
         upgrade_plugin_savepoint(true, 2026090202, 'local', 'coursepilot');
     }
 
     if ($oldversion < 2026091101) {
-        // Markierungsgedaechtnis (#493, Spec #486 §6): nur das Bit "markiert
-        // ja/nein" je Kontextdatei, Schluessel aus Pfad, Groesse,
-        // Aenderungszeit und ETag - siehe local_coursepilot\mark_memory.
+        // Marking memory (#493, Spec #486 §6): marked/unmarked bit per context
+        // file, keyed by path, size, modification time and ETag. See mark_memory.
         $marktable = new xmldb_table('local_coursepilot_context_mark');
         $marktable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
         $marktable->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
@@ -249,10 +242,9 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
     }
 
     if ($oldversion < 2026091202) {
-        // Einmal-Downloadticket fuer Werkbankdateien (#501, Spec #486 §13):
-        // gebunden an Person, Pfad und contenthash, 15 Minuten gueltig,
-        // gespeichert wird nur der Hash des Tickets - siehe
-        // local_coursepilot\workbench_ticket (bis #602 werkbank_ticket).
+        // Single-use workbench ticket (#501, Spec #486 §13), tied to user,
+        // path and contenthash, valid for 15 minutes. Store only its hash;
+        // see workbench_ticket (named werkbank_ticket before #602).
         $tickettable = new xmldb_table('local_coursepilot_werkbank_ticket');
         $tickettable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
         $tickettable->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
@@ -278,15 +270,15 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
     }
 
     if ($oldversion < 2026100200) {
-        // #602 (ADR 0024): Quellschluessel des Verlaufs englisch.
+        // #602 (ADR 0024): English history source keys.
         local_coursepilot_migrate_history_sources();
 
         upgrade_plugin_savepoint(true, 2026100200, 'local', 'coursepilot');
     }
 
     if ($oldversion < 2026100201) {
-        // #602 (ADR 0024): Werkbank-Tickettabelle englisch, Ablagedateien am
-        // Anker englisch benannt und mit englischen Schluesseln.
+        // #602 (ADR 0024): English workbench ticket table, anchor filenames
+        // and stored keys.
         $oldtable = new xmldb_table('local_coursepilot_werkbank_ticket');
         if ($dbman->table_exists($oldtable)
                 && !$dbman->table_exists(new xmldb_table('local_coursepilot_workbench_ticket'))) {

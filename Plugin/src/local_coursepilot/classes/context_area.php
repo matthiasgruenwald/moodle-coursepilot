@@ -313,8 +313,8 @@ final class context_area {
             'Private Files ' . $errorclass . ': ' . $rawmessage,
             $path,
             $operation,
-            'Ihre privaten Dateien in Moodle sind gerade nicht beschreibbar – an Ihrem Speicher ist etwas zu tun',
-            'Ihre privaten Dateien in Moodle',
+            'Your private files in Moodle are currently not writable - something needs to be done about your storage',
+            'Your private files in Moodle',
             $courseid
         );
     }

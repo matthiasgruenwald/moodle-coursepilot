@@ -29,27 +29,19 @@ use local_coursepilot\catalog\registry;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Vollstaendiger Ist-Stand einer Aktivitaet (Spec 0015 §3.2, Ticket #384):
- * das get_moduleinfo_data()-Feldobjekt als JSON, ohne Coursepilot-eigene
- * Zwischendarstellung - jede Uebersetzungsschicht muesste bei jedem
- * Moodle-Update nachgezogen werden.
+ * Full activity state (Spec 0015 §3.2, Ticket #384), exposed as field JSON
+ * without a plugin-specific intermediate representation that would need
+ * maintenance after every Moodle update.
  *
- * Kein Aufruf von course/modlib.php::get_moduleinfo_data(): die Funktion
- * ruft intern can_update_moduleinfo(), das 'moodle/course:manageactivities'
- * verlangt - dieser Endpunkt ist laut Abnahmekriterium auch ohne
- * Bearbeitungsrecht nutzbar (nur 'local/coursepilot:use', wie die uebrigen
- * Lesewerkzeuge). Die Feldzusammenstellung ist deshalb hier dupliziert, mit
- * der Lese-Capability statt der Bearbeiten-Capability.
+ * Avoid get_moduleinfo_data(): it calls can_update_moduleinfo(), requiring
+ * manageactivities. This read endpoint needs only local/coursepilot:use.
+ * Reproduce its field assembly with read permissions.
  *
- * ponytail: drei Anreicherungsbloecke aus get_moduleinfo_data() bleiben aussen
- * vor - introeditor legt einen Draft-Dateibereich an (Schreib-Nebenwirkung in
- * einem Lesewerkzeug, unerwuenscht; intro/introformat stehen bereits roh in
- * der Instanzzeile), "advancedgradingmethod_*" sind Formular-Hilfsfelder fuer
- * den Bewertungsdialog, und die outcome_<id>/gradepass-/gradecat-Feldnamen aus
- * den Grade-Items der Instanz (course/modlib.php:848-886) sind kein
- * DB-Ist-Stand der Aktivitaet selbst, sondern vom Gradebook abgeleitet. Falls
- * ein Rundtrip sie braucht: gezielt ergaenzen. Fuer Quiz liest module_state
- * gradepass/grademax aus dem primaeren Grade-Item (#580), ohne Formatierung.
+ * ponytail: omit introeditor (creates a draft file area; raw intro/introformat
+ * already exist), advancedgradingmethod_* form helpers, and derived gradebook
+ * outcome/gradepass/gradecat fields. Add them selectively if a round trip
+ * requires them. For quiz, module_state reads unformatted gradepass/grademax
+ * from the primary grade item (#580).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

@@ -137,7 +137,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['name' => 'Gleicher Titel']))
         );
 
-        $this->assertStringContainsString('Keine Aenderung', $result['message']);
+        $this->assertStringContainsString('No change', $result['message']);
     }
 
     /**
@@ -162,7 +162,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($cmid, json_encode(['assignsubmission_file_enabled' => 1]))
         );
 
-        $this->assertStringNotContainsString('Keine Aenderung', $result['message']);
+        $this->assertStringNotContainsString('No change', $result['message']);
         $this->assertStringContainsString('assignsubmission_file_enabled', $result['message']);
         $this->assertEquals(1, $DB->get_field('assign_plugin_config', 'value', [
             'assignment' => $assign->id,
@@ -337,9 +337,9 @@ final class update_module_settings_test extends \advanced_testcase {
         );
 
         $this->assertNotEmpty($result['side_effects']);
-        $this->assertStringContainsString('Kursteilnehmenden', $result['side_effects'][0]);
-        $this->assertStringContainsString('abonniert', $result['side_effects'][0]);
-        $this->assertStringContainsString('Kursteilnehmenden', $result['message']);
+        $this->assertStringContainsString('course participants', $result['side_effects'][0]);
+        $this->assertStringContainsString('subscribed', $result['side_effects'][0]);
+        $this->assertStringContainsString('course participants', $result['message']);
     }
 
     /**

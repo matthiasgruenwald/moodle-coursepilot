@@ -30,11 +30,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class pseudofield_carry_forward_test extends \advanced_testcase {
 
     /**
-     * get_moduleinfo_data() liefert "gradepass" im Anzeigeformat der
-     * eingestellten Sprache ("0,00" auf Deutsch). Zurueckgeschrieben muss es
-     * wieder eine Zahl sein, sonst bricht der Schreibvorgang in der
-     * Bewertungstabelle ab - nachdem die eigentliche Aenderung schon
-     * persistiert ist (#400).
+     * get_moduleinfo_data() formats gradepass for the active language ("0,00"
+     * in German). Convert it back to a number before writing; otherwise the
+     * gradebook write fails after the activity change has persisted (#400).
      */
     public function test_localised_gradepass_becomes_a_number(): void {
         $this->resetAfterTest();

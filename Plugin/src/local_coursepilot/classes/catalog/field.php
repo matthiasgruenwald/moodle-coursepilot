@@ -19,18 +19,18 @@ namespace local_coursepilot\catalog;
 use moodle_exception;
 
 /**
- * Ein Katalogfeld (Spec 0015 §2.2, Kategorie 1 "Felder" und Kategorie 2
- * "Pseudofelder" - gleiche Form, unterschiedliche Liste).
+ * A catalog field (Spec 0015 §2.2, category 1 "fields" and category 2
+ * "pseudofields" - same shape, different list).
  *
- * Traegt immer eine deutsche Bedeutung (Abnahmekriterium #379: "kein Feld
- * wird nur mit englischem Namen ausgeliefert") und eine Quellenangabe: wo
- * Moodle eine aufrufbare Quelle hat, steht ihr Name in $sourcecallable -
- * sonst ist $source die literale Datei:Zeile-Angabe (Spec 0015 §2.2).
+ * Always carries a meaning (acceptance criterion #379: "no field is
+ * delivered with only an English name") and a source reference: where
+ * Moodle has a callable source, its name is in $sourcecallable -
+ * otherwise $source is the literal file:line reference (Spec 0015 §2.2).
  *
- * Die PHP-Bezeichner dieser Klasse sind Englisch (CLAUDE.md); seit #569 sind
- * auch die ausgelieferten JSON-Schluessel in {@see to_array()} unmittelbar
- * Englisch - der eigentliche Lehrkraft-/KI-Vertrag bleibt die deutsche
- * Bedeutung ("meaning"), nicht der Schluesselname selbst (#379).
+ * The PHP identifiers of this class are English (CLAUDE.md); since #569 the
+ * delivered JSON keys in {@see to_array()} are English as well - the actual
+ * teacher/AI contract remains the meaning ("meaning"), not the key name
+ * itself (#379).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -39,7 +39,7 @@ use moodle_exception;
 final class field {
 
     /**
-     * Feldangaben aus JSON-Objekten muessen String-Schluessel sein.
+     * Field specifications from JSON objects must have string keys.
      *
      * @param mixed $fieldname
      * @return void
@@ -52,17 +52,17 @@ final class field {
     }
 
     /**
-     * @param string $name Moodle-Feldname (Formularweg-Vertrag).
-     * @param string $type PARAM_*-Konstante oder Kurzbeschreibung des Typs.
-     * @param string $meaning Deutsche Bedeutung fuer die Lehrkraft/KI.
-     * @param bool $required Pflichtfeld ohne Default?
-     * @param mixed $default Formular-Default, null wenn keiner existiert.
-     * @param array|null $values Erlaubte Werte, literal - null, wenn nur ueber
-     *        $sourcecallable bestimmbar.
-     * @param string|null $sourcecallable Name einer aufrufbaren Moodle-Quelle
-     *        fuer den Wertebereich, z.B. "format_text_menu()".
-     * @param string $source Datei:Zeile-Beleg - immer angegeben, auch wenn
-     *        $sourcecallable gesetzt ist (wo die Funktion selbst lebt).
+     * @param string $name Moodle field name (form path contract).
+     * @param string $type PARAM_* constant or short description of the type.
+     * @param string $meaning Meaning for the teacher/AI.
+     * @param bool $required Required field without a default?
+     * @param mixed $default Form default, null if none exists.
+     * @param array|null $values Allowed values, literal - null if only determinable via
+     *        $sourcecallable.
+     * @param string|null $sourcecallable Name of a callable Moodle source
+     *        for the value range, e.g. "format_text_menu()".
+     * @param string $source File:line reference - always given, even if
+     *        $sourcecallable is set (where the function itself lives).
      */
     public function __construct(
         public readonly string $name,
@@ -77,9 +77,9 @@ final class field {
     }
 
     /**
-     * JSON-kodiert Default und Wertliste, weil Moodles externe API pro Feld
-     * genau einen PARAM_*-Typ deklariert - "default" kann hier je nach
-     * Katalogfeld int, string, bool oder null sein (#379).
+     * JSON-encodes default and value list, because Moodle's external API declares
+     * exactly one PARAM_* type per field - "default" can be int, string, bool
+     * or null here depending on the catalog field (#379).
      *
      * @return array{name: string, type: string, meaning: string, required: bool,
      *     default_json: string, value_range: array{values_json: string, source_callable: ?string, source: string}}

@@ -91,7 +91,7 @@ final class ensure_question_category extends external_api {
                 'parent' => (int) $existing->parent,
                 'contextid' => (int) $context->id,
                 'created' => false,
-                'message' => 'Kategorie "' . $params['name'] . '" existierte bereits, wird wiederverwendet.',
+                'message' => get_string('questioncategoryreused', 'local_coursepilot', $params['name']),
             ];
         }
 
@@ -113,7 +113,7 @@ final class ensure_question_category extends external_api {
             'parent' => (int) $parentcategory->id,
             'contextid' => (int) $context->id,
             'created' => true,
-            'message' => 'Kategorie "' . $params['name'] . '" angelegt.',
+            'message' => get_string('questioncategorycreated', 'local_coursepilot', $params['name']),
         ];
     }
 
@@ -127,7 +127,7 @@ final class ensure_question_category extends external_api {
             'parent' => new external_value(PARAM_INT, 'ID of the parent category'),
             'contextid' => new external_value(PARAM_INT, 'Context ID of the question bank'),
             'created' => new external_value(PARAM_BOOL, 'true if newly created; false if a same-named one under the same parent was reused'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing message'),
         ]);
     }
 }

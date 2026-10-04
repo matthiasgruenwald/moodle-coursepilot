@@ -240,8 +240,8 @@ final class context_files {
                 continue;
             }
             if (!str_starts_with($record->filepath, $root)) {
-                mtrace('local_coursepilot: Kontextdatei uebersprungen (liegt ausserhalb von "' . $root . '"): '
-                    . $record->filepath . $record->filename . ' (Kontext ' . $record->contextid . ')');
+                mtrace('local_coursepilot: Context file skipped (outside "' . $root . '"): '
+                    . $record->filepath . $record->filename . ' (context ' . $record->contextid . ')');
                 continue;
             }
             $target = [
@@ -253,8 +253,8 @@ final class context_files {
                 'filename' => $record->filename,
             ];
             if ($fs->file_exists(...array_values($target))) {
-                mtrace('local_coursepilot: Kontextdatei uebersprungen (existiert bereits in "Meine Dateien"): '
-                    . $record->filepath . $record->filename . ' (Kontext ' . $record->contextid . ')');
+                mtrace('local_coursepilot: Context file skipped (already exists in Private Files): '
+                    . $record->filepath . $record->filename . ' (context ' . $record->contextid . ')');
                 continue;
             }
             $fs->create_file_from_storedfile($target, (int) $record->id);

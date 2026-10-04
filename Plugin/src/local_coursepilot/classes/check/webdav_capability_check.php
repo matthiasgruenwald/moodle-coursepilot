@@ -25,15 +25,13 @@ use local_coursepilot\webdav\webdav_setup_steps;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Statusprüfung Schritt 3 des WebDAV-Schrittkatalogs (Issue #499, Spec #486
- * §12): "WebDAV-Recht im Nutzerkontext", geprüft an der **Wirkung** über
- * `has_capability` im eigenen Nutzerkontext jeder Person mit aktiver
- * Coursepilot-Verbindung - nicht an einer Rollenzuweisung, denn nur die
- * Wirkung zaehlt (mehrere Wege fuehren zur selben Capability).
+ * WebDAV setup check 3 (Issue #499, Spec #486 §12): effective WebDAV
+ * capability in each connected user's own context. Check has_capability,
+ * rather than role assignments, since multiple roles can grant the right.
  *
- * `NA` ohne Verbindungen oder solange Schritt 1 aus ist, `OK`, wenn alle
- * verbundenen Personen das Recht haben, sonst `WARNING` mit "n von m
- * verbundenen Lehrkräften fehlt ..." und den Namen in den Details.
+ * Return NA without connections or an enabled repository, OK if all
+ * connected users have the capability, otherwise WARNING with counts
+ * and names in the details.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -70,9 +68,8 @@ final class webdav_capability_check extends check {
 
         $missing = [];
         foreach ($connecteduserids as $userid) {
-            // $userid explizit als dritter Parameter - sonst prueft
-            // has_capability() die anmeldete Administrationsperson statt der
-            // verbundenen Lehrkraft, deren Wirkung hier gefragt ist.
+            // Pass $userid explicitly: otherwise has_capability checks the current
+            // administrator rather than the connected teacher.
             if (!has_capability('repository/webdav:view', \context_user::instance($userid), $userid)) {
                 $user = $DB->get_record('user', ['id' => $userid]);
                 $missing[] = $user ? fullname($user) : (string) $userid;

@@ -117,7 +117,7 @@ final class move_module extends external_api {
 
         $sectionname = $format->get_section_name($targetsection);
         $positionmessage = $targetcmid !== null
-            ? " an Position {$position}"
+            ? " at position {$position}"
             : '';
 
         return [
@@ -134,7 +134,7 @@ final class move_module extends external_api {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID of the moved activity'),
             'sectionnum' => new external_value(PARAM_INT, 'Target section number'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
         ]);
     }
 }

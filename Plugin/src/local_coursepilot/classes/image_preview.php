@@ -17,14 +17,15 @@
 namespace local_coursepilot;
 
 /**
- * Baut die Bildvorschau aus Spec 0018 §3.1: laengste Kante 768px, JPEG.
- * Dient dem Beurteilen (Modell waehlt Ausschnitt/schreibt Alt-Text), nicht
- * dem Verarbeiten - das Original bleibt unangetastet, der Zuschnitt (spaeter,
- * eigener Endpunkt, §5) schneidet aus dem Original, nicht aus dieser
- * Vorschau.
+ * Builds the image preview from spec 0018 §3.1: longest edge 768px, JPEG.
+ * Serves judging (the model picks a crop/writes alt text), not
+ * processing - the original stays untouched, the crop (later,
+ * own endpoint, §5) cuts from the original, not from this
+ * preview.
  *
- * GD ist raster-only (§3.3/§5) - SVG kann hierueber nicht gerendert werden,
- * das ist Aufgabe des Aufrufers (preview_material_file), nicht dieser Klasse.
+ * GD is raster-only (§3.3/§5) - SVG cannot be rendered through it,
+ * that is the caller's job (preview_material_file), not this class's.
+ *
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -32,17 +33,17 @@ namespace local_coursepilot;
  */
 final class image_preview {
 
-    /** @var int Laengste Kante der Vorschau in Pixeln (Spec 0018 §3.1). */
+    /** @var int Longest edge of the preview in pixels (spec 0018 §3.1). */
     private const MAX_EDGE = 768;
 
-    /** @var int JPEG-Qualitaet - "wenige zehn Kilobyte" statt Bestqualitaet (Spec 0018 §3.1). */
+    /** @var int JPEG quality - "a few tens of kilobytes" instead of best quality (spec 0018 §3.1). */
     private const JPEG_QUALITY = 80;
 
     /**
-     * @param string $binary Rohinhalt der Quelldatei.
+     * @param string $binary Raw content of the source file.
      * @return array{image_base64: string, mimetype: string, width: int, height: int}
-     * @throws \moodle_exception materialpreviewunsupported, wenn GD den
-     *         Inhalt nicht als Rasterbild lesen kann (z.B. SVG, defektes Bild).
+     * @throws \moodle_exception materialpreviewunsupported if GD cannot
+     *         read the content as a raster image (e.g. SVG, broken image).
      */
     public static function build(string $binary): array {
         $source = @imagecreatefromstring($binary);
@@ -56,9 +57,9 @@ final class image_preview {
         $newwidth = max(1, (int) round($width * $scale));
         $newheight = max(1, (int) round($height * $scale));
 
-        // Immer auf eine weisse, alphakanalfreie Leinwand kopieren - JPEG
-        // kennt keine Transparenz, ohne diesen Schritt wuerde GD
-        // transparente PNG-Bereiche als Schwarz ausgeben.
+        // Always copy onto a white canvas without alpha channel - JPEG
+        // has no transparency, without this step GD would
+        // output transparent PNG areas as black.
         $canvas = imagecreatetruecolor($newwidth, $newheight);
         imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
         imagecopyresampled($canvas, $source, 0, 0, 0, 0, $newwidth, $newheight, $width, $height);

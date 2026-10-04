@@ -372,7 +372,7 @@ final class location_selection {
      * without real changes, leave the pointer untouched.
      *
      * @param array<string, array{type: string, instanceid?: int, path?: string, confirmed?: bool}> $selection
-     *        For each target either ['type' => 'moodle'] oder
+     *        For each target either ['type' => 'moodle'] or
      *        ['type' => 'external', 'instanceid' => int, 'path' => string, 'confirmed' => bool].
      *        confirmed applies only to context_area (#518, Spec §5):
      *        explicit handover of a populated folder.
@@ -482,8 +482,7 @@ final class location_selection {
         return ['changed' => $changed, 'location_history' => $locationhistory, 'previouslocation' => $previouslocation];
     }
 
-    /**
-    /**
+        /**
      * @var string[] Error keys indicating the old location itself is no longer
      *      valid (missing/foreign instance, revoked
      *      access, unsupported authentication). Same

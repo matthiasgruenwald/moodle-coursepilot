@@ -17,60 +17,48 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Feldkatalog fuer mod_quiz (Spec 0015 §4.6, Ticket #383) - ein Vokabular,
- * zwei Schreibwege: {@see schreibweg()} liefert "update_quiz_settings", weil
- * quiz laut ADR 0016 eine begruendete Ausnahme vom Formularweg
- * (update_moduleinfo()) bleibt: Feldnamen decken sich nicht durchgaengig mit
- * Spaltennamen, "grade" ist ueber den Formularweg gar nicht aenderbar, und
- * die Substanz (Fragen/Seiten/Abschnitte) liegt in quiz_slots, nicht in
- * dieser Tabelle. Der Katalog selbst benennt trotzdem dieselben Felder wie
- * eine Aufgabe (assign), wo es dasselbe Feld ist - z.B. "timelimit" -, damit
- * eine Lehrkraft fuer den Test kein zweites Nachschlagewerk braucht.
+ * Field catalog for mod_quiz (Spec 0015 §4.6, ticket #383): one vocabulary,
+ * two write paths. {@see write_route()} returns update_quiz_settings because
+ * quiz remains the justified exception to update_moduleinfo() in ADR 0016.
+ * Field names do not always match columns, grade cannot be changed through
+ * the form path, and question/page/section content lives in quiz_slots.
+ * Shared concepts use the same names as assign (e.g. timelimit), so teachers
+ * need no second reference for a quiz.
  *
- * Fallstricke aus dem Bestand:
- * - **Sechs aufrufbare Quiz-Quellen** liefern hier Wertebereiche, keine davon
- *   ist abgeschrieben: quiz_get_overdue_handling_options(),
- *   quiz_get_grading_options(), quiz_questions_per_page_options(),
- *   quiz_get_navigation_options() (alle mod/quiz/locallib.php bzw. lib.php)
- *   sowie \mod_quiz\access_manager::get_browser_security_choices() und
+ * Existing pitfalls:
+ * - Six live quiz sources provide value ranges rather than copied lists:
+ *   quiz_get_overdue_handling_options(), quiz_get_grading_options(),
+ *   quiz_questions_per_page_options(), quiz_get_navigation_options()
+ *   (mod/quiz/locallib.php or lib.php),
+ *   \mod_quiz\access_manager::get_browser_security_choices(), and
  *   \question_engine::get_behaviour_options() (question/engine/lib.php).
- * - **"password" ist ueber den Formularweg NICHT unter seinem eigenen Namen
- *   erreichbar**: das Formularfeld heisst "quizpassword"
- *   (mod/quiz/mod_form.php:289-291, passwordunmask), erst
- *   data_preprocessing()/data_postprocessing() spiegeln es auf die Spalte
- *   "password". "password" steht deshalb auf der Sperrliste, "quizpassword"
- *   ist das Pseudofeld dafuer.
- * - **Die acht "review*"-Spalten sind reine Bitmasken**, ueber den
- *   Formularweg nicht direkt setzbar: quiz_process_options()
- *   (mod/quiz/lib.php) berechnet sie aus 32 Einzel-Checkboxen
- *   "<art><zeitpunkt>" (z.B. "attemptduring"), acht Arten (attempt,
- *   correctness, maxmarks, marks, specificfeedback, generalfeedback,
- *   rightanswer, overallfeedback) mal vier Zeitpunkte (during, immediately,
- *   open, closed) - siehe \mod_quiz\question\display_options::DURING &Co.
- *   Sperrliste fuer die acht Bitmasken, die 32 Einzel-Checkboxen sind die
- *   Pseudofelder.
- * - **"completionattemptsexhausted"/"completionminattempts"** sind wie
- *   assign::completionsubmit (#382) modulspezifische Vervollstaendigungsfelder
- *   mit Datenverlustrisiko ohne "completionunlocked"
- *   (mod/quiz/mod_form.php:531-541, data_postprocessing() setzt
- *   "completionminattempts" still auf 0 zurueck). Sperrliste statt stillem
- *   No-Op, wie bei assign.
- * - **"allowofflineattempts"** ist eine echte Spalte, aber kein Kernfeld des
- *   Formulars - sie kommt ausschliesslich vom Zugriffsregel-Plugin
- *   quizaccess_offlineattempts ueber access_manager::add_settings_form_fields()
- *   (mod/quiz/accessrule/offlineattempts/rule.php:100-107). Trotzdem ein
- *   ganz normaler Formularweg, deshalb Feld statt Sperrliste.
- * - **Die drei Modus-Buendel** (mini-check, lernstandscheck, abschlusstest)
- *   uebernehmen die Settings-Kombinationen aus dem aelteren
- *   local_coursepilot\external\create_quiz::mode_defaults(), aber nur fuer
- *   tatsaechlich schreibbare Felder/Pseudofelder dieses Katalogs - "grade"
- *   und die generischen "completion*"-Felder sind dort blockiert und fehlen
- *   deshalb im Buendel; die acht Bitmask-Bevorzugungen sind auf die 32
- *   Pseudofeld-Checkboxen uebersetzt.
- * - **Anordnung ist nicht Teil dieses Katalogs**: Fragen, Seiten und
- *   Abschnitte (quiz_slots/quiz_sections) laufen ueber die Kern-Struktur-API
- *   (\mod_quiz\structure), nicht ueber update_quiz_settings - siehe ADR 0016.
- *   Dieser Katalog beschreibt ausschliesslich die Instanz-Settings.
+ * - password is unavailable under its own name through the form path.
+ *   The form uses quizpassword (mod/quiz/mod_form.php:289-291, passwordunmask);
+ *   data_preprocessing()/data_postprocessing() mirror it to password.
+ *   password is blocked; quizpassword is its pseudofield.
+ * - Eight review* columns are bitmasks, not directly writable through the form.
+ *   quiz_process_options() (mod/quiz/lib.php) computes them from 32 checkboxes:
+ *   eight types (attempt, correctness, maxmarks, marks, specificfeedback,
+ *   generalfeedback, rightanswer, overallfeedback) times four timings
+ *   (during, immediately, open, closed), e.g. attemptduring. See
+ *   \mod_quiz\question\display_options::DURING and peers. The masks are blocked;
+ *   the 32 individual checkboxes are pseudofields.
+ * - completionattemptsexhausted/completionminattempts, like
+ *   assign::completionsubmit (#382), are module-specific completion fields.
+ *   Without completionunlocked they risk data loss (mod/quiz/mod_form.php:531-541;
+ *   data_postprocessing() silently resets completionminattempts to 0).
+ *   Blocked instead of silently ignored, as in assign.
+ * - allowofflineattempts is a real column provided by quizaccess_offlineattempts
+ *   through access_manager::add_settings_form_fields()
+ *   (mod/quiz/accessrule/offlineattempts/rule.php:100-107), not the form core.
+ *   It still uses the regular form path, so it is a field rather than blocked.
+ * - Three mode bundles (mini-check, progress-check, final-test) reuse combinations
+ *   from local_coursepilot\external\create_quiz::mode_defaults(), restricted
+ *   to writable catalog fields/pseudofields. grade and generic completion*
+ *   fields are blocked and omitted; eight bitmask preferences become 32 checkboxes.
+ * - Arrangement is outside this catalog. Questions, pages and sections
+ *   (quiz_slots/quiz_sections) use the core structure API (\mod_quiz\structure),
+ *   not update_quiz_settings (ADR 0016). This catalog describes instance settings.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -79,36 +67,35 @@ namespace local_coursepilot\catalog;
 final class quiz implements module_catalog {
 
     /**
-     * Die acht Review-Arten (Spaltenname ohne "review"-Praefix => deutsche
-     * Kurzbeschreibung), je mal vier Zeitpunkt-Suffixe "during"/"immediately"/
-     * "open"/"closed" = die 32 Pseudofeld-Checkboxen (mod/quiz/mod_form.php:
+     * Eight review types (column name without the review prefix => short
+     * English description) times four timings (during/immediately/open/closed)
+     * give 32 pseudofield checkboxes (mod/quiz/mod_form.php:
      * self::$reviewfields, add_review_options_group()).
      *
      * @var array<string, string>
      */
     private const REVIEW_TYPES = [
-        'attempt' => 'Ob der Testversuch selbst überhaupt einsehbar ist.',
-        'correctness' => 'Ob die Richtig/Falsch-Kennzeichnung je Frage sichtbar ist.',
-        'maxmarks' => 'Ob die maximal erreichbare Punktzahl je Frage sichtbar ist.',
-        'marks' => 'Ob die erreichte Punktzahl je Frage sichtbar ist. Ohne "maxmarks" desselben '
-            . 'Zeitpunkts wirkungslos.',
-        'specificfeedback' => 'Ob das spezifische Feedback je Antwort sichtbar ist.',
-        'generalfeedback' => 'Ob das allgemeine Feedback der Frage sichtbar ist.',
-        'rightanswer' => 'Ob die richtige Antwort sichtbar ist.',
-        'overallfeedback' => 'Ob das Gesamtfeedback des Tests sichtbar ist.',
+        'attempt' => 'Whether the quiz attempt itself can be reviewed.',
+        'correctness' => 'Whether each question shows the correct/incorrect indicator.',
+        'maxmarks' => 'Whether the maximum marks for each question are visible.',
+        'marks' => 'Whether the earned marks for each question are visible. Ineffective without "maxmarks" for the same '
+            . 'review time.',
+        'specificfeedback' => 'Whether answer-specific feedback is visible.',
+        'generalfeedback' => 'Whether general question feedback is visible.',
+        'rightanswer' => 'Whether the correct answer is visible.',
+        'overallfeedback' => 'Whether overall quiz feedback is visible.',
     ];
 
     /**
-     * Die vier Zeitpunkt-Suffixe in Formularreihenfolge, je mit deutscher
-     * Bedeutung.
+     * Four timing suffixes in form order, each with its English meaning.
      *
      * @var array<string, string>
      */
     private const REVIEW_TIMINGS = [
-        'during' => 'während des Versuchs',
-        'immediately' => 'unmittelbar nach Abgabe',
-        'open' => 'später, solange der Test noch offen ist',
-        'closed' => 'nachdem der Test geschlossen wurde',
+        'during' => 'during the attempt',
+        'immediately' => 'immediately after submission',
+        'open' => 'later, while the quiz is still open',
+        'closed' => 'after the quiz has closed',
     ];
 
     public static function modname(): string {
@@ -120,308 +107,308 @@ final class quiz implements module_catalog {
             new field(
                 'name',
                 'PARAM_TEXT',
-                'Anzeigename des Tests.',
+                'Display name of the quiz.',
                 true,
                 null,
                 null,
                 null,
-                'mod/quiz/mod_form.php:76-83 (PARAM_TEXT bzw. PARAM_CLEANHTML je nach $CFG->formatstringstriptags)'
+                'mod/quiz/mod_form.php:76-83 (PARAM_TEXT or PARAM_CLEANHTML depending on $CFG->formatstringstriptags)'
             ),
             new field(
                 'intro',
                 'PARAM_RAW',
-                'Beschreibungstext (Intro) des Tests.',
+                'Description (intro) of the quiz.',
                 true,
                 null,
                 null,
                 null,
-                'mod/quiz/db/install.xml (quiz.intro, NOTNULL ohne DB-Default)'
+                'mod/quiz/db/install.xml (quiz.intro, NOTNULL without DB default)'
             ),
             new field(
                 'introformat',
                 'PARAM_INT',
-                'Textformat des Intros.',
+                'Text format of the intro.',
                 false,
                 FORMAT_HTML,
                 null,
                 'format_text_menu()',
-                'lib/weblib.php:464 (format_text_menu()); Spalte mod/quiz/db/install.xml (quiz.introformat)'
+                'lib/weblib.php:464 (format_text_menu()); column mod/quiz/db/install.xml (quiz.introformat)'
             ),
             new field(
                 'timeopen',
                 'PARAM_INT',
-                'Unix-Zeitstempel: Test öffnet. 0 = kein Startzeitpunkt. Erzeugt einen Kalendereintrag '
-                    . '(siehe Nebenwirkungen).',
+                'Unix timestamp: quiz opens. 0 = no opening time. Creates a calendar event '
+                    . '(see side effects).',
                 false,
                 0,
                 null,
                 null,
-                'mod/quiz/mod_form.php:92-94 (date_time_selector, optional); Spalte '
+                'mod/quiz/mod_form.php:92-94 (date_time_selector, optional); column '
                     . 'mod/quiz/db/install.xml (quiz.timeopen)'
             ),
             new field(
                 'timeclose',
                 'PARAM_INT',
-                'Unix-Zeitstempel: Test schließt. 0 = kein Endzeitpunkt. Erzeugt einen Kalendereintrag '
-                    . '(siehe Nebenwirkungen).',
+                'Unix timestamp: quiz closes. 0 = no closing time. Creates a calendar event '
+                    . '(see side effects).',
                 false,
                 0,
                 null,
                 null,
-                'mod/quiz/mod_form.php:96-97 (date_time_selector, optional); Spalte '
+                'mod/quiz/mod_form.php:96-97 (date_time_selector, optional); column '
                     . 'mod/quiz/db/install.xml (quiz.timeclose)'
             ),
             new field(
                 'timelimit',
                 'PARAM_INT',
-                'Bearbeitungszeit in Sekunden ab Versuchsbeginn. 0 = kein Zeitlimit. Dasselbe Feld wie bei '
-                    . 'einer Aufgabe (assign::timelimit).',
+                'Time limit in seconds from attempt start. 0 = no time limit. Same field as for '
+                    . 'an assignment (assign::timelimit).',
                 false,
                 0,
                 null,
                 null,
-                'mod/quiz/mod_form.php:100-102 (duration, optional); Spalte '
+                'mod/quiz/mod_form.php:100-102 (duration, optional); column '
                     . 'mod/quiz/db/install.xml (quiz.timelimit)'
             ),
             new field(
                 'overduehandling',
                 'PARAM_ALPHA',
-                'Umgang mit überzogenen Versuchen: automatisch abschicken, Kulanzzeit gewähren oder den '
-                    . 'Versuch verwerfen.',
+                'Overdue attempt handling: automatically submit, allow a grace period, or '
+                    . 'abandon the attempt.',
                 false,
                 'autoabandon',
                 ['autosubmit', 'graceperiod', 'autoabandon'],
                 'quiz_get_overdue_handling_options()',
-                'mod/quiz/locallib.php:939 (quiz_get_overdue_handling_options()); Spalte '
+                'mod/quiz/locallib.php:939 (quiz_get_overdue_handling_options()); column '
                     . 'mod/quiz/db/install.xml (quiz.overduehandling, DEFAULT=autoabandon)'
             ),
             new field(
                 'graceperiod',
                 'PARAM_INT',
-                'Kulanzzeit in Sekunden nach Ablauf des Zeitlimits, in der eine Abgabe noch angenommen wird. '
-                    . 'Nur wirksam bei "overduehandling"="graceperiod" und muss länger sein als eine '
-                    . 'serverweite Mindestdauer (siehe Kombinationsregeln).',
+                'Grace period in seconds after the time limit, during which submission is still accepted. '
+                    . 'Only effective for "overduehandling"="graceperiod"; must exceed a '
+                    . 'server-wide minimum duration (see combination rules).',
                 false,
                 0,
                 null,
                 null,
                 'mod/quiz/mod_form.php:113-116 (duration, optional, hideIf overduehandling neq graceperiod); '
-                    . 'Spalte mod/quiz/db/install.xml (quiz.graceperiod)'
+                    . 'column mod/quiz/db/install.xml (quiz.graceperiod)'
             ),
             new field(
                 'preferredbehaviour',
                 'PARAM_ALPHA',
-                'Fragebearbeitungsverhalten: wie und wann eine Antwort bewertet/rückgemeldet wird (z.B. '
-                    . 'direktes Feedback, verzögertes Feedback, verzögert mit Sicherheitsgrad).',
+                'Question behaviour: how and when an answer is graded and feedback given (e.g. '
+                    . 'immediate feedback, deferred feedback, deferred feedback with certainty-based marking).',
                 true,
                 null,
                 null,
                 '\\question_engine::get_behaviour_options()',
                 'question/engine/lib.php (question_engine::get_behaviour_options()); '
-                    . 'mod/quiz/mod_form.php:202-205; Spalte mod/quiz/db/install.xml '
-                    . '(quiz.preferredbehaviour, NOTNULL ohne DB-Default)'
+                    . 'mod/quiz/mod_form.php:202-205; column mod/quiz/db/install.xml '
+                    . '(quiz.preferredbehaviour, NOTNULL without DB default)'
             ),
             new field(
                 'canredoquestions',
                 'PARAM_BOOL',
-                'Lernende dürfen eine innerhalb des Versuchs bereits abgeschlossene Frage erneut bearbeiten. '
-                    . 'Nur bei Verhalten wirksam, die ein Fragenende während des Versuchs kennen.',
+                'Learners may redo a question already completed within the attempt. '
+                    . 'Only effective for behaviours that allow a question to finish during the attempt.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/quiz/mod_form.php:208-215 (select); Spalte mod/quiz/db/install.xml (quiz.canredoquestions)'
+                'mod/quiz/mod_form.php:208-215 (select); column mod/quiz/db/install.xml (quiz.canredoquestions)'
             ),
             new field(
                 'attempts',
                 'PARAM_INT',
-                'Maximale Anzahl erlaubter Versuche. 0 = unbegrenzt.',
+                'Maximum number of allowed attempts. 0 = unlimited.',
                 false,
                 0,
                 null,
                 null,
-                'mod/quiz/mod_form.php:151-156 (select, 0-QUIZ_MAX_ATTEMPT_OPTION); Spalte '
+                'mod/quiz/mod_form.php:151-156 (select, 0-QUIZ_MAX_ATTEMPT_OPTION); column '
                     . 'mod/quiz/db/install.xml (quiz.attempts)'
             ),
             new field(
                 'attemptonlast',
                 'PARAM_BOOL',
-                'Ein neuer Versuch übernimmt die Antworten des letzten Versuchs (1) statt leer zu beginnen '
-                    . '(0). Nur sichtbar, wenn mehr als ein Versuch erlaubt ist.',
+                'A new attempt carries forward the last attempt\'s answers (1) instead of starting empty '
+                    . '(0). Only visible when more than one attempt is allowed.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/quiz/mod_form.php:218-223 (selectyesno, hideIf attempts eq 1); Spalte '
+                'mod/quiz/mod_form.php:218-223 (selectyesno, hideIf attempts eq 1); column '
                     . 'mod/quiz/db/install.xml (quiz.attemptonlast)'
             ),
             new field(
                 'grademethod',
                 'PARAM_INT',
-                'Wie die Testnote aus mehreren Versuchen berechnet wird: höchste Note, Durchschnitt, erster '
-                    . 'oder letzter Versuch.',
+                'How the quiz grade is calculated across attempts: highest grade, average, first '
+                    . 'or last attempt.',
                 false,
                 1,
                 [1, 2, 3, 4],
                 'quiz_get_grading_options()',
                 'mod/quiz/lib.php:61-64 (QUIZ_GRADEHIGHEST/AVERAGE/ATTEMPTFIRST/ATTEMPTLAST); '
-                    . 'mod/quiz/locallib.php:916 (quiz_get_grading_options()); Spalte '
+                    . 'mod/quiz/locallib.php:916 (quiz_get_grading_options()); column '
                     . 'mod/quiz/db/install.xml (quiz.grademethod, DEFAULT=1)'
             ),
             new field(
                 'decimalpoints',
                 'PARAM_INT',
-                'Nachkommastellen bei der Anzeige der Gesamtnote.',
+                'Decimal places displayed for the overall grade.',
                 false,
                 2,
                 null,
                 null,
-                'mod/quiz/mod_form.php:264-269 (select, 0-QUIZ_MAX_DECIMAL_OPTION); Spalte '
+                'mod/quiz/mod_form.php:264-269 (select, 0-QUIZ_MAX_DECIMAL_OPTION); column '
                     . 'mod/quiz/db/install.xml (quiz.decimalpoints, DEFAULT=2)'
             ),
             new field(
                 'questiondecimalpoints',
                 'PARAM_INT',
-                'Nachkommastellen bei der Anzeige einzelner Fragenoten. -1 = wie "decimalpoints".',
+                'Decimal places displayed for individual question grades. -1 = same as "decimalpoints".',
                 false,
                 -1,
                 null,
                 null,
-                'mod/quiz/mod_form.php:272-278 (select, -1 bis QUIZ_MAX_Q_DECIMAL_OPTION); Spalte '
+                'mod/quiz/mod_form.php:272-278 (select, -1 to QUIZ_MAX_Q_DECIMAL_OPTION); column '
                     . 'mod/quiz/db/install.xml (quiz.questiondecimalpoints, DEFAULT=-1)'
             ),
             new field(
                 'questionsperpage',
                 'PARAM_INT',
-                'Nach wie vielen Fragen beim Bearbeiten/Mischen eine neue Seite beginnt. 0 = alle Fragen auf '
-                    . 'einer Seite.',
+                'Number of questions before a new page starts when editing/shuffling. 0 = all questions on '
+                    . 'one page.',
                 false,
                 0,
                 null,
                 'quiz_questions_per_page_options()',
-                'mod/quiz/locallib.php:1001 (quiz_questions_per_page_options()); Spalte '
+                'mod/quiz/locallib.php:1001 (quiz_questions_per_page_options()); column '
                     . 'mod/quiz/db/install.xml (quiz.questionsperpage)'
             ),
             new field(
                 'navmethod',
                 'PARAM_ALPHA',
-                'Navigation im Test: frei zwischen Fragen springen ("free") oder nur der Reihe nach '
+                'Quiz navigation: jump freely between questions ("free") or proceed in order only '
                     . '("sequential").',
                 false,
                 'free',
                 ['free', 'sequential'],
                 'quiz_get_navigation_options()',
-                'mod/quiz/lib.php:76-77,1849 (QUIZ_NAVMETHOD_FREE/SEQ, quiz_get_navigation_options()); Spalte '
+                'mod/quiz/lib.php:76-77,1849 (QUIZ_NAVMETHOD_FREE/SEQ, quiz_get_navigation_options()); column '
                     . 'mod/quiz/db/install.xml (quiz.navmethod, DEFAULT=free)'
             ),
             new field(
                 'shuffleanswers',
                 'PARAM_BOOL',
-                'Innerhalb jeder Frage die Antwortteile mischen, sofern der Fragetyp das unterstützt.',
+                'Shuffle answer parts within each question if supported by its type.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/quiz/mod_form.php:192-194 (selectyesno); Spalte mod/quiz/db/install.xml (quiz.shuffleanswers)'
+                'mod/quiz/mod_form.php:192-194 (selectyesno); column mod/quiz/db/install.xml (quiz.shuffleanswers)'
             ),
             new field(
                 'subnet',
                 'PARAM_RAW',
-                'Erlaubte IP-Adressen/-bereiche, aus denen ein Testversuch gestartet werden darf (Format wie '
-                    . 'address_in_subnet()). Leer = keine Einschränkung.',
+                'Allowed IP addresses/ranges from which a quiz attempt may be started (format as in '
+                    . 'address_in_subnet()). Empty = unrestricted.',
                 true,
                 null,
                 null,
                 null,
-                'mod/quiz/mod_form.php:294-296 (text); Spalte mod/quiz/db/install.xml '
-                    . '(quiz.subnet, NOTNULL ohne DB-Default)'
+                'mod/quiz/mod_form.php:294-296 (text); column mod/quiz/db/install.xml '
+                    . '(quiz.subnet, NOTNULL without DB default)'
             ),
             new field(
                 'browsersecurity',
                 'PARAM_ALPHANUMEXT',
-                'Einschränkung des verwendeten Browsers während des Versuchs, z.B. sicherer Vollbildmodus. '
-                    . '"-" = keine Einschränkung.',
+                'Browser restriction during the attempt, e.g. secure fullscreen mode. '
+                    . '"-" = unrestricted.',
                 true,
                 null,
                 null,
                 '\\mod_quiz\\access_manager::get_browser_security_choices()',
                 'mod/quiz/classes/access_manager.php:128 (get_browser_security_choices()); '
-                    . 'mod/quiz/mod_form.php:315-317; Spalte mod/quiz/db/install.xml '
-                    . '(quiz.browsersecurity, NOTNULL ohne DB-Default)'
+                    . 'mod/quiz/mod_form.php:315-317; column mod/quiz/db/install.xml '
+                    . '(quiz.browsersecurity, NOTNULL without DB default)'
             ),
             new field(
                 'delay1',
                 'PARAM_INT',
-                'Erzwungene Wartezeit in Sekunden zwischen dem ersten und dem zweiten Versuch.',
+                'Enforced delay in seconds between the first and second attempts.',
                 false,
                 0,
                 null,
                 null,
-                'mod/quiz/mod_form.php:299-304 (duration, optional, hideIf attempts eq 1); Spalte '
+                'mod/quiz/mod_form.php:299-304 (duration, optional, hideIf attempts eq 1); column '
                     . 'mod/quiz/db/install.xml (quiz.delay1)'
             ),
             new field(
                 'delay2',
                 'PARAM_INT',
-                'Erzwungene Wartezeit in Sekunden zwischen dem zweiten und weiteren Versuchen.',
+                'Enforced delay in seconds between the second and subsequent attempts.',
                 false,
                 0,
                 null,
                 null,
-                'mod/quiz/mod_form.php:306-312 (duration, optional, hideIf attempts eq 1 oder eq 2); Spalte '
+                'mod/quiz/mod_form.php:306-312 (duration, optional, hideIf attempts eq 1 or eq 2); column '
                     . 'mod/quiz/db/install.xml (quiz.delay2)'
             ),
             new field(
                 'showuserpicture',
                 'PARAM_INT',
-                'Nutzerbild während des Versuchs und auf der Review-Seite anzeigen: keins, klein oder groß.',
+                'Show the user picture during the attempt and on the review page: none, small or large.',
                 false,
                 0,
                 [0, 1, 2],
                 'quiz_get_user_image_options()',
                 'mod/quiz/locallib.php:69-79 (QUIZ_SHOWIMAGE_NONE/SMALL/LARGE), :951 '
-                    . '(quiz_get_user_image_options()); Spalte mod/quiz/db/install.xml (quiz.showuserpicture)'
+                    . '(quiz_get_user_image_options()); column mod/quiz/db/install.xml (quiz.showuserpicture)'
             ),
             new field(
                 'showblocks',
                 'PARAM_BOOL',
-                'Blöcke während des Testversuchs anzeigen.',
+                'Show blocks during the quiz attempt.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/quiz/mod_form.php:282-283 (selectyesno); Spalte mod/quiz/db/install.xml (quiz.showblocks)'
+                'mod/quiz/mod_form.php:282-283 (selectyesno); column mod/quiz/db/install.xml (quiz.showblocks)'
             ),
             new field(
                 'allowofflineattempts',
                 'PARAM_BOOL',
-                'Test darf offline in der Moodle-App bearbeitet werden. Kommt vom Zugriffsregel-Plugin '
-                    . 'quizaccess_offlineattempts, nicht vom Formularkern selbst.',
+                'Allow offline quiz attempts in the Moodle app. Provided by access rule plugin '
+                    . 'quizaccess_offlineattempts, not the form core itself.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/quiz/accessrule/offlineattempts/rule.php:100-107 (add_settings_form_fields()); Spalte '
+                'mod/quiz/accessrule/offlineattempts/rule.php:100-107 (add_settings_form_fields()); column '
                     . 'mod/quiz/db/install.xml (quiz.allowofflineattempts)'
             ),
             new field(
                 'precreateattempts',
                 'PARAM_BOOL',
-                'Versuche für Lernende vorab anlegen. Nur sichtbar, wenn der Admin ein '
-                    . 'Vorab-Anlage-Zeitfenster konfiguriert hat UND "timeopen" gesetzt ist.',
+                'Precreate attempts for learners. Only visible when administration has configured a '
+                    . 'precreation time window AND "timeopen" is set.',
                 false,
                 null,
                 [0, 1],
                 null,
-                'mod/quiz/mod_form.php:118-135 (select, bedingt sichtbar); Spalte '
+                'mod/quiz/mod_form.php:118-135 (select, conditionally visible); column '
                     . 'mod/quiz/db/install.xml (quiz.precreateattempts, NULLable)'
             ),
         ];
     }
 
     /**
-     * Quiz bleibt die ADR-0016-Ausnahme: Bewertung und Fragenanordnung liegen
-     * ausserhalb des generischen Formularwegs und werden deshalb hier gelesen.
+     * Quiz remains the ADR 0016 exception: grading and question arrangement
+     * sit outside the generic form path and are therefore read here.
      */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         global $DB;
@@ -445,8 +432,8 @@ final class quiz implements module_catalog {
     }
 
     /**
-     * Fragenanordnung eines Tests im Katalogvokabular - reiner Lesezugriff,
-     * die Anordnung selbst läuft über die Kern-Struktur-API (ADR 0016).
+     * Quiz question arrangement in catalog vocabulary: read-only.
+     * Arrangement changes use the core structure API (ADR 0016).
      *
      * @param int $quizid
      * @return array
@@ -463,8 +450,8 @@ final class quiz implements module_catalog {
     }
 
     /**
-     * Vollstand des Tests im Katalogvokabular. Bewertung und Fragenanordnung
-     * bleiben die in ADR 0016 begruendete Quiz-Ausnahme.
+     * Full quiz state in catalog vocabulary. Grading and question arrangement
+     * remain the quiz exception justified in ADR 0016.
      *
      * @param \stdClass $cm
      * @param \stdClass $instance
@@ -508,8 +495,8 @@ final class quiz implements module_catalog {
         return [
             'restores_arrangement' => true,
             'date_order_rules' => [['reference' => 'timeopen', 'field' => 'timeclose', 'mode' => 'not_before']],
-            // Riegel-Auswertung auf dem Ist-Stand (#583): das Formularfeld
-            // "quizpassword" liegt in der Spalte "password".
+            // Learner-lock evaluation on current settings (#583): the form field
+            // "quizpassword" maps to the "password" column.
             'settings_aliases' => ['quizpassword' => 'password'],
         ];
     }
@@ -544,34 +531,34 @@ final class quiz implements module_catalog {
             new field(
                 'quizpassword',
                 'PARAM_TEXT',
-                'Passwort, das vor Beginn/Fortsetzung eines Testversuchs eingegeben werden muss. Leer = kein '
-                    . 'Passwort. Formularname der Spalte "password" (siehe Sperrliste) - beide meinen dasselbe '
-                    . 'Feld, aber nur "quizpassword" ist über den Formularweg schreibbar.',
+                'Password required before starting/resuming a quiz attempt. Empty = no '
+                    . 'password. Form name for the "password" column (see blocklist) - both refer to the same '
+                    . 'field, but only "quizpassword" is writable through the form path.',
                 false,
                 '',
                 null,
                 null,
                 'mod/quiz/mod_form.php:289-291 (passwordunmask "quizpassword"); data_preprocessing()/'
-                    . 'data_postprocessing() spiegeln auf die Spalte "password"'
+                    . 'data_postprocessing() mirror to the "password" column'
             ),
             new field(
                 'feedbacktext',
                 'array',
-                'Gesamtfeedback-Texte je Notenband, absteigend sortiert - EIN Feld, keine Feldreihe: '
-                    . 'feedbacktext[0] ist das Feedback für 100% bis zur ersten Grenze. Nur wirksam, wenn '
-                    . '"grade" (Sperrliste) größer 0 ist.',
+                'Overall feedback texts by grade band, sorted descending - ONE field, not a field sequence: '
+                    . 'feedbacktext[0] is feedback for 100% down to the first boundary. Only effective when '
+                    . '"grade" (blocklist) is greater than 0.',
                 false,
                 null,
                 null,
                 null,
-                'mod/quiz/mod_form.php:339-368 (repeat_elements() der Gruppe feedbacktext/feedbackboundaries)'
+                'mod/quiz/mod_form.php:339-368 (repeat_elements() of the feedbacktext/feedbackboundaries group)'
             ),
             new field(
                 'feedbackboundaries',
                 'float[]',
-                'Notengrenzen der Feedback-Bänder, über denselben Schlüssel wie "feedbacktext" verknüpft - '
-                    . 'eine weniger als feedbacktext-Einträge. Absolut oder als Prozentsatz (z.B. "50%"), muss '
-                    . 'absteigend sortiert und zwischen 0 und "grade" liegen (siehe Kombinationsregeln).',
+                'Grade boundaries for feedback bands, linked by the same key as "feedbacktext" - '
+                    . 'one fewer than feedbacktext entries. Absolute or percentage (e.g. "50%"), must be '
+                    . 'sorted descending and between 0 and "grade" (see combination rules).',
                 false,
                 null,
                 null,
@@ -585,15 +572,15 @@ final class quiz implements module_catalog {
                 $fields[] = new field(
                     $type . $timing,
                     'PARAM_BOOL',
-                    $typemeaning . ' Zeitpunkt: ' . $timingmeaning . '. Eine von 32 Einzel-Checkboxen, aus '
-                        . 'denen Moodle die Bitmaske "review' . $type . '" berechnet (Sperrliste) - dasselbe '
-                        . 'Vokabular wie die acht gesperrten Spalten, nur pro Zeitpunkt aufgeschlüsselt.',
+                    $typemeaning . ' Timing: ' . $timingmeaning . '. One of 32 individual checkboxes from '
+                        . 'which Moodle computes the "review' . $type . '" bitmask (blocklist) - the same '
+                        . 'vocabulary as the eight blocked columns, broken down by review time.',
                     false,
                     0,
                     [0, 1],
                     null,
                     'mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); '
-                        . 'mod/quiz/lib.php: quiz_process_options() (Zusammenbau zur Bitmaske)'
+                        . 'mod/quiz/lib.php: quiz_process_options() (bitmask assembly)'
                 );
             }
         }
@@ -621,19 +608,19 @@ final class quiz implements module_catalog {
 
     public static function combination_rules(): array {
         return [
-            '"timeclose" darf nicht vor "timeopen" liegen, wenn beide gesetzt sind (mod/quiz/mod_form.php: '
+            '"timeclose" must not precede "timeopen" when both are set (mod/quiz/mod_form.php: '
                 . 'validation()).',
-            '"graceperiod" muss größer sein als eine serverweite Mindestdauer (Admin-Einstellung '
-                . '"graceperiodmin"), wenn "overduehandling"="graceperiod" (validation()).',
-            '"feedbackboundaries[]" muss absteigend sortiert sein und jeder Wert zwischen 0 und "grade" '
-                . 'liegen; die Anzahl muss genau eine weniger sein als "feedbacktext[]" (validation()).',
+            '"graceperiod" must exceed a server-wide minimum duration (admin setting '
+                . '"graceperiodmin") when "overduehandling"="graceperiod" (validation()).',
+            '"feedbackboundaries[]" must be sorted descending and each value must be between 0 and "grade" '
+                . '; the count must be exactly one fewer than "feedbacktext[]" (validation()).',
             get_string('quizgradepassrule', 'local_coursepilot'),
         ];
     }
 
     public static function side_effects(): array {
         return [
-            '"timeopen"/"timeclose" erzeugen bzw. aktualisieren je einen Kalendereintrag '
+            '"timeopen"/"timeclose" each create or update a calendar event '
                 . '(mod/quiz/lib.php: quiz_update_events()).',
         ];
     }
@@ -655,7 +642,7 @@ final class quiz implements module_catalog {
             ], self::review_bundle_fields(
                 // attempt, correctness, maxmarks, marks, specificfeedback, generalfeedback: immer sichtbar.
                 ['attempt', 'correctness', 'maxmarks', 'marks', 'specificfeedback', 'generalfeedback'],
-                // overallfeedback: nach dem Versuch, nicht während. rightanswer bleibt in allen drei Modi 0.
+                // overallfeedback: after the attempt, not during. rightanswer stays 0 in all three modes.
                 ['overallfeedback']
             )),
             'progress-check' => array_merge([
@@ -694,15 +681,14 @@ final class quiz implements module_catalog {
     }
 
     /**
-     * Baut die 32 review*-Pseudofeld-Checkboxen fuer ein Modus-Buendel:
-     * eine Uebersetzung der alten Bitmasken-Kombinationen
-     * (local_coursepilot\external\create_quiz::mode_defaults()) auf die
-     * einzeln schreibbaren Pseudofelder dieses Katalogs (Sperrliste kennt
-     * nur die acht Bitmask-Spalten selbst, siehe Klassendoku).
+     * Builds 32 review* pseudofield checkboxes for a mode bundle by translating
+     * legacy bitmask combinations (local_coursepilot\external\create_quiz::mode_defaults())
+     * to individually writable pseudofields. The blocklist contains only the
+     * eight bitmask columns themselves; see class documentation.
      *
-     * @param string[] $duringtypes Review-Arten, die zusaetzlich "during"=1 haben.
-     * @param string[] $afterattempttypes Review-Arten mit "immediately"/"open"/"closed"=1. Nicht gelistete
-     *        Arten (in allen drei Modi: "rightanswer") bleiben zu jedem Zeitpunkt 0.
+     * @param string[] $duringtypes Review types that also have "during"=1.
+     * @param string[] $afterattempttypes Review types with "immediately"/"open"/"closed"=1. Unlisted
+     *        types ("rightanswer" in all three modes) stay 0 at every timing.
      * @return array<string, int>
      */
     private static function review_bundle_fields(array $duringtypes, array $afterattempttypes): array {
@@ -745,9 +731,8 @@ final class quiz implements module_catalog {
     }
 
     /**
-     * Automatisch bewertet - ausser eine Instanz enthaelt eine manuell zu
-     * bewertende Frage (z.B. Freitext): dann entsteht die Note erst durch
-     * die Lehrkraft (#583).
+     * Automatically graded unless an instance contains a manually graded
+     * question (e.g. essay); then the teacher determines the grade (#583).
      */
     public static function grade_origin(int $instanceid = 0): string {
         global $CFG;

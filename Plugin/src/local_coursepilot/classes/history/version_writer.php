@@ -19,16 +19,16 @@ namespace local_coursepilot\history;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Schnappschuss-Speicher des Aenderungsverlaufs (#385, Spec 0015 §10.4/§10.8).
+ * Snapshot store of the change history (#385, Spec 0015 §10.4/§10.8).
  *
- * Baut absichtlich NICHT auf course/modlib.php::get_moduleinfo_data() auf:
- * die Funktion verlangt can_update_moduleinfo() (moodle/course:manageactivities)
- * und legt bei jedem Aufruf einen neuen Draft-Dateibereich fuer introeditor an
- * - ein Schreib-Nebeneffekt, den ein Beobachter, der nur lesen/serialisieren
- * soll, nicht ausloesen darf. Die Feldzusammenstellung ist deshalb hier
- * dupliziert (gleiches Vorgehen wie {@see \local_coursepilot\external\get_module_settings}),
- * ergaenzt um die dort bewusst ausgeklammerten gradepass/gradecat/Outcome-Felder,
- * die Spec 0015 §10.4 fuer den Verlauf ausdruecklich verlangt.
+ * Deliberately does NOT build on course/modlib.php::get_moduleinfo_data():
+ * that function requires can_update_moduleinfo() (moodle/course:manageactivities)
+ * and creates a new draft file area for introeditor on every call
+ * - a write side effect that an observer which should only read/serialize
+ * must not trigger. The field assembly is therefore duplicated here
+ * (same approach as {@see \local_coursepilot\external\get_module_settings}),
+ * extended by the gradepass/gradecat/outcome fields deliberately left out there,
+ * which Spec 0015 §10.4 explicitly requires for the history.
  *
  * Intro and allowed material files are captured without introeditor/draft side effects.
  * Only their metadata is deduplicated in local_coursepilot_cm_file.
@@ -39,64 +39,64 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class version_writer {
 
-    /** @var string Ursprung, solange nur der native Moodle-Schreibweg beobachtet wird. */
+    /** @var string Origin while only the native Moodle write path is observed. */
     public const SOURCE_MOODLE = version_source::MOODLE;
 
-    /** @var string Ursprung des rueckwirkend angelegten Vorher-Standes (#386, Spec 0015 §10.3). */
+    /** @var string Origin of the retroactively created prior state (#386, Spec 0015 §10.3). */
     public const SOURCE_DISCOVERED = version_source::DISCOVERED;
 
-    /** @var string Ursprung eines Klons (#421, Spec 0017 §7.5) - immer Version 1, nie ueber capture_on_update(). */
+    /** @var string Origin of a clone (#421, Spec 0017 §7.5) - always version 1, never via capture_on_update(). */
     public const SOURCE_CLONED = version_source::CLONED;
 
-    /** @var string Ursprung einer Aktivitaet aus Aktivitaets-XML (ADR 0028, #596). */
+    /** @var string Origin of an activity from activity XML (ADR 0028, #596). */
     public const SOURCE_FROM_XML = version_source::FROM_XML;
 
-    /** @var string Vermerk-Stand an der alten cmid nach dem Abloesen; sourcecmid = neue cmid (#596). */
+    /** @var string Marker state on the old cmid after supersession; sourcecmid = new cmid (#596). */
     public const SOURCE_SUPERSEDED = version_source::SUPERSEDED;
 
     /**
-     * Vermerk-Stand an der alten cmid: "abgeloest durch $newcmid" (#596, Spec 0026).
-     * Bezug laeuft ueber das vorhandene Feld sourcecmid, keine Schemaaenderung.
+     * Marker state on the old cmid: "superseded by $newcmid" (#596, Spec 0026).
+     * The reference runs through the existing sourcecmid field, no schema change.
      *
      * @param int $oldcmid
      * @param int $newcmid
      * @param int $userid
-     * @return int id der neuen Version
+     * @return int id of the new version
      */
     public static function capture_superseded(int $oldcmid, int $newcmid, int $userid): int {
         return self::capture($oldcmid, $userid, self::SOURCE_SUPERSEDED, $newcmid);
     }
 
     /**
-     * Schnappt den Ist-Stand bei einer Aenderung (course_module_updated). Fehlt
-     * fuer die cmid noch jeder Stand - eine Aktivitaet, die es schon vor
-     * Coursepilot gab und fuer die deshalb nie ein course_module_created-Ereignis
-     * beobachtet wurde -, wird zuerst rueckwirkend eine Vorgefunden-Version 1
-     * angelegt (#386, Spec 0015 §10.3). Das eigentliche Vorher (der Stand vor
-     * genau diesem Schreibvorgang) ist zu diesem Zeitpunkt technisch nicht
-     * mehr rekonstruierbar - course_module_updated feuert nach dem Schreiben,
-     * und Moodle liefert im Event keinen Volldump des Altzustands. Die
-     * Vorgefunden-Version faengt deshalb den zum Event-Zeitpunkt aktuellen
-     * (bereits geschriebenen) Stand ein; sie ist bewusst inhaltsgleich mit der
-     * direkt danach angelegten Version 2 - besser als keine Rueckfallposition,
-     * und "kostet im Leerlauf nichts" (Spec 0015 §10.3).
+     * Captures the current state on a change (course_module_updated). If no
+     * state exists yet for the cmid - an activity that existed before
+     * Coursepilot and for which no course_module_created event was therefore
+     * ever observed - a retroactive "discovered" version 1 is created first
+     * (#386, Spec 0015 §10.3). The actual prior state (the state before
+     * exactly this write) is technically no longer reconstructible at this
+     * point - course_module_updated fires after the write, and Moodle
+     * delivers no full dump of the old state in the event. The
+     * discovered version therefore captures the state current at event time
+     * (already written); it is deliberately identical in content to the
+     * version 2 created right after - better than no fallback position,
+     * and "costs nothing when idle" (Spec 0015 §10.3).
      *
      * @param int $cmid
      * @param int $userid
      * @param string $source
-     * @return int id der neu angelegten (juengsten) Version
+     * @return int id of the newly created (latest) version
      */
     public static function capture_on_update(int $cmid, int $userid, string $source = self::SOURCE_MOODLE): int {
         global $DB;
 
-        // Transaktion statt zweier freistehender Anweisungen: schliesst die
-        // Check-then-Act-Luecke zwischen record_exists() und dem Insert fuer
-        // den ueblichen Fall. Ein truly gleichzeitiger zweiter Schreibvorgang
-        // auf dieselbe cmid waere weiterhin ein DML-Fehler statt einer zweiten
-        // stillen Vorgefunden-Version - der cmid+version-Unique-Index greift.
-        // ponytail: kein SELECT-FOR-UPDATE-Lock auf eine noch nicht existente
-        // Zeile; bei echtem Bedarf (Massenbearbeitung mit Parallelrequests)
-        // Advisory-Lock je cmid ergaenzen.
+        // Transaction instead of two free-standing statements: closes the
+        // check-then-act gap between record_exists() and the insert for
+        // the usual case. A truly concurrent second write
+        // on the same cmid would still be a DML error instead of a second
+        // silent discovered version - the cmid+version unique index applies.
+        // ponytail: no SELECT-FOR-UPDATE lock on a row that does not exist yet;
+        // if really needed (bulk editing with parallel requests)
+        // add an advisory lock per cmid.
         $transaction = $DB->start_delegated_transaction();
 
         try {
@@ -112,13 +112,13 @@ final class version_writer {
     }
 
     /**
-     * Schnappt den Ist-Stand einer Aktivitaet als neue Version.
+     * Captures the current state of an activity as a new version.
      *
      * @param int $cmid
-     * @param int $userid Nutzer/in, unter der der Schreibvorgang lief (Event-userid).
+     * @param int $userid User under which the write ran (event userid).
      * @param string $source
-     * @param int|null $sourcecmid Bezugs-cmid, siehe {@see version_source}: Klon-Quelle (geklont) bzw. neue cmid (superseded), sonst null.
-     * @return int id der neu angelegten Version
+     * @param int|null $sourcecmid Reference cmid, see {@see version_source}: clone source (cloned) or new cmid (superseded), otherwise null.
+     * @return int id of the newly created version
      */
     public static function capture(
         int $cmid,
@@ -168,12 +168,12 @@ final class version_writer {
     }
 
     /**
-     * Anordnungs-Stand (#396, Spec 0015 §10): nur fuer quiz, sonst null - Slots,
-     * Fragereferenzen, Abschnitte und Feedback laufen bei jeder anderen
-     * Aktivitaetsart gar nicht ueber eine eigene Struktur-API.
+     * Arrangement state (#396, Spec 0015 §10): only for quiz, otherwise null - slots,
+     * question references, sections and feedback do not run through a
+     * dedicated structure API at all for any other activity type.
      *
      * @param \stdClass $cm
-     * @return string|null JSON-kodierter Anordnungs-Stand, null fuer Nicht-quiz.
+     * @return string|null JSON-encoded arrangement state, null for non-quiz.
      */
     private static function build_arrangement_json(\stdClass $cm): ?string {
         if ($cm->modname !== 'quiz') {
@@ -183,9 +183,9 @@ final class version_writer {
     }
 
     /**
-     * Repliziert das get_moduleinfo_data()-Feldobjekt (Instanz-Record, Tags,
-     * availability, gradepass/gradecat/Outcomes), ohne dessen
-     * Formular-Nebenwirkungen auszuloesen.
+     * Replicates the get_moduleinfo_data() field object (instance record, tags,
+     * availability, gradepass/gradecat/outcomes) without triggering its
+     * form side effects.
      *
      * @param \stdClass $cm
      * @return array
@@ -221,9 +221,9 @@ final class version_writer {
         ]);
 
         if (!empty($CFG->enableavailability)) {
-            // Rohe Bedingungen wie get_moduleinfo_data(); die Profil-Maskierung
-            // (ADR 0011) ist Sache der kuenftigen Ansichts-Werkzeuge, nicht der
-            // Speicherung - "das Diff wird beim Ansehen berechnet" (Spec 0015 §10.1).
+            // Raw conditions as in get_moduleinfo_data(); profile masking
+            // (ADR 0011) is the job of the future view tools, not of
+            // storage - "the diff is computed on viewing" (Spec 0015 §10.1).
             $data['availabilityconditionsjson'] = (string) ($cm->availability ?? '');
         }
 
@@ -233,8 +233,8 @@ final class version_writer {
     }
 
     /**
-     * gradepass/gradecat/Outcome-Felder wie course/modlib.php::get_moduleinfo_data()
-     * (Zeilen 848-885), bewusst ausserhalb von get_module_settings gehalten.
+     * gradepass/gradecat/outcome fields as in course/modlib.php::get_moduleinfo_data()
+     * (lines 848-885), deliberately kept outside of get_module_settings.
      *
      * @param array $data
      * @param \stdClass $cm
@@ -274,7 +274,7 @@ final class version_writer {
             if (!isset($gradecat[$item->itemnumber])) {
                 $gradecat[$item->itemnumber] = $item->categoryid;
             } else if ($gradecat[$item->itemnumber] != $item->categoryid) {
-                $gradecat[$item->itemnumber] = false; // Gemischte Kategorien - nicht setzen.
+                $gradecat[$item->itemnumber] = false; // Mixed categories - do not set.
             }
         }
         foreach ($gradecat as $itemnumber => $cat) {
@@ -316,13 +316,13 @@ final class version_writer {
     }
 
     /**
-     * Legt Datei-Metadaten nur an, wenn diese Kombination aus pathnamehash
-     * und contenthash noch nicht bekannt ist - Dedup ueber mehrere Staende
-     * hinweg. Nur der pathnamehash zu dedupen wuerde bei einer inhaltlich
-     * geaenderten Datei am gleichen Pfad (z.B. ausgetauschtes Intro-Bild)
-     * die veralteten Metadaten (Groesse, Mimetype, contenthash) an neuere
-     * Staende zurueckgeben - der contenthash muss deshalb Teil des
-     * Dedup-Schluessels sein.
+     * Creates file metadata only if this combination of pathnamehash
+     * and contenthash is not yet known - dedup across multiple states.
+     * Deduplicating on the pathnamehash alone would, for a file whose content
+     * changed at the same path (e.g. a replaced intro image), hand the
+     * outdated metadata (size, mimetype, contenthash) to newer
+     * states - the contenthash must therefore be part of the
+     * dedup key.
      *
      * @param \stdClass $file
      * @return int

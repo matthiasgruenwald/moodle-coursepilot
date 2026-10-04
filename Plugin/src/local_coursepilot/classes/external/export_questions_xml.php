@@ -33,27 +33,23 @@ require_once($CFG->dirroot . '/question/format.php');
 require_once($CFG->dirroot . '/question/format/xml/format.php');
 
 /**
- * Export-Gegenpart zum XML-Kern (Spec 0017 §7.1, Ticket #417; volle Datei
- * Spec 0018 §7.2, Ticket #437): liest eine oder mehrere Fragen als
- * Moodle-XML - derselbe Formatter (qformat_xml), den die Round-Trip-Pruefung
- * in {@see import_questions_xml} ohnehin serverseitig verwendet, hier als
- * eigenstaendiges Werkzeug herausgefuehrt.
+ * Export counterpart of the XML core (Spec 0017 §7.1, ticket #417; full
+ * file in Spec 0018 §7.2, ticket #437): reads one or more questions as Moodle
+ * XML through qformat_xml, the same server-side formatter used for the
+ * round-trip check in {@see import_questions_xml}, exposed as its own tool.
  *
- * Standard-Modus (placeholder=false, Default): die VOLLSTAENDIGE,
- * standardkonforme XML - mit echtem Base64 in den <file>-Bloecken - wird als
- * Datei in den Materialordner geschrieben (Spec 0018 §2); die Antwort nennt
- * nur den Pfad, kein Bildbyte passiert den KI-Kontext. Diese Datei ist in
- * jedes andere Moodle importierbar (Weitergabe) und ueber die Verweistuer von
- * {@see import_questions_xml} wieder einlesbar (Rundlauf).
+ * Standard mode (placeholder=false, default): writes COMPLETE, standard
+ * XML with actual base64 in <file> blocks to the material store (Spec 0018
+ * §2). The response names only the path; no image bytes enter AI context.
+ * The file can be imported into any other Moodle for sharing or read again
+ * through the reference input of {@see import_questions_xml} for a round trip.
  *
- * Platzhalter-Modus (placeholder=true): der urspruengliche Export aus Spec
- * 0017 §4.2 - <file>-Bloecke werden durch einen benannten XML-Kommentar-
- * Platzhalter ersetzt und die XML kommt direkt in der Antwort zurueck. Fuer
- * den Vorlagenzweck (die KI soll die Struktur lernen, nicht 400 KB Bild) ist
- * das weiterhin die richtige Form - NICHT zur Weitergabe geeignet, die
- * Meldung sagt das ausdruecklich. Der Platzhalter beginnt bewusst NICHT mit
- * "<file", damit ein re-importierter Export nicht faelschlich als
- * eingebettete Datei behandelt wird.
+ * Placeholder mode (placeholder=true): the original export from Spec 0017
+ * §4.2 replaces <file> blocks with named XML comment placeholders and returns
+ * XML directly. Suitable for templates (learning structure rather than a
+ * 400 KB image), NOT for sharing; the message states this explicitly.
+ * The placeholder deliberately does NOT start with "<file", so reimporting
+ * it cannot mistake it for an embedded file.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -104,12 +100,12 @@ final class export_questions_xml extends external_api {
         $ids = $params['questionids'];
 
         if (empty($ids)) {
-            throw new \invalid_parameter_exception('Es muss mindestens eine questionid angegeben werden.');
+            throw new \invalid_parameter_exception('Specify at least one questionid.');
         }
         if (!$params['placeholder'] && trim($params['targetpath']) === '') {
             throw new \invalid_parameter_exception(
-                'targetpath ist im Standard-Modus Pflicht (Materialordner-Pfad der zu schreibenden XML-Datei), '
-                    . 'z.B. "export.xml". Fuer den Platzhalter-Modus stattdessen placeholder=true setzen.'
+                'targetpath is required in standard mode (material store path of the XML file to write), '
+                    . 'e.g. "export.xml". For placeholder mode, set placeholder=true instead.'
             );
         }
 
@@ -138,9 +134,9 @@ final class export_questions_xml extends external_api {
     }
 
     /**
-     * Schreibt das Export-XML in den Materialordner und baut die
-     * Standard-Modus-Antwort (Issue #523: aus execute() ausgelagert, um die
-     * Funktion unter der Zeilengrenze zu halten).
+     * Writes export XML to the material store and builds the standard-mode
+     * response (issue #523: extracted from execute() to keep the function
+     * below the line limit).
      *
      * @param string $targetpath
      * @param string $xml
@@ -149,7 +145,7 @@ final class export_questions_xml extends external_api {
      */
     private static function write_and_report(string $targetpath, string $xml, int $count): array {
         [$path, $warning] = self::write_material_file($targetpath, $xml);
-        $message = self::build_message($count, [], false) . ' Datei: ' . $path . '.';
+        $message = self::build_message($count, [], false) . ' ' . get_string('questionexportpath', 'local_coursepilot', $path);
         if ($warning !== null) {
             $message .= ' ' . $warning;
         }
@@ -163,23 +159,22 @@ final class export_questions_xml extends external_api {
     }
 
     /**
-     * Loest eine questionid (beliebige Version) auf die neueste Version
-     * ihres Bank-Eintrags auf, prueft die native Lese-Capability im
-     * Kategoriekontext und exportiert die Frage ueber qformat_xml -
-     * dasselbe Vorgehen wie import_questions_xml::verify_roundtrip(), hier
-     * fuer eine bereits bestehende Frage statt einer frisch geschriebenen.
+     * Resolves a questionid (any version) to the latest version of its bank
+     * entry, checks native read permission in the category context, and exports
+     * through qformat_xml. Same approach as import_questions_xml::verify_roundtrip(),
+     * for an existing question instead of a newly written one.
      *
      * @param int $questionid
-     * @param bool $placeholder true: eingebettete Dateien durch Platzhalter ersetzen (Spec 0017 §4.2)
-     * @return array{0: string, 1: string, 2: string[]} [XML-Fragment, Fragename, entfernte Dateinamen (nur Platzhalter-Modus)]
+     * @param bool $placeholder true: replace embedded files with placeholders (Spec 0017 §4.2)
+     * @return array{0: string, 1: string, 2: string[]} [XML fragment, question name, removed filenames (placeholder mode only)]
      */
     private static function export_one(int $questionid, bool $placeholder): array {
         [$question, $category, $context] = self::resolve_native_question($questionid);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // moodle/question:view existiert nicht (mehr); Moodle kennt nur
-        // viewmine/viewall (siehe get_question.php). viewall passt zur
-        // Lese-Capability hier - Export ist ein Lesevorgang.
+        // moodle/question:view no longer exists; Moodle only knows
+        // viewmine/viewall (see get_question.php). viewall matches the
+        // read permission here: export is a read operation.
         require_capability('moodle/question:viewall', $context);
 
         [$xml, $filenames] = self::question_to_xml($question, $category, $context, $placeholder);
@@ -188,20 +183,18 @@ final class export_questions_xml extends external_api {
     }
 
     /**
-     * Schreibt das vollstaendige Export-XML (echtes Base64, Standard-Modus)
-     * in den Materialordner der aufrufenden Lehrkraft, ohne dessen
-     * Endungs-Whitelist: ".xml" steht bewusst nicht auf der Upload-Whitelist
-     * (Spec 0018 §6, siehe {@see material_files::resolve_writable_file()}),
-     * die hier ueber {@see material_files::resolve_file()} umgangen wird -
-     * derselbe Weg, ueber den auch die Verweistuer von
-     * {@see import_questions_xml} liest. Die eigentliche
-     * Groessen-/Quote-/Schreib-Choreografie ist gemeinsamer Kern mit
-     * {@see \local_coursepilot\external\upload_material_file}, siehe
-     * {@see material_files::write()}.
+     * Writes complete export XML (actual base64, standard mode) to the calling
+     * teacher's material store, without its extension allowlist: ".xml" is
+     * intentionally absent from the upload allowlist (Spec 0018 §6, see
+     * {@see material_files::resolve_writable_file()}). This uses
+     * {@see material_files::resolve_file()}, the same path read by the reference
+     * input of {@see import_questions_xml}. Size, quota and write handling are
+     * shared with {@see \local_coursepilot\external\upload_material_file};
+     * see {@see material_files::write()}.
      *
      * @param string $targetpath
      * @param string $content
-     * @return array{0: string, 1: string|null} [Materialordner-Pfad, Quotenwarnung oder null]
+     * @return array{0: string, 1: string|null} [material store path, quota warning or null]
      */
     private static function write_material_file(string $targetpath, string $content): array {
         $context = material_files::own_context();
@@ -219,22 +212,20 @@ final class export_questions_xml extends external_api {
     }
 
     /**
-     * Laedt die neueste Version einer Frage in genau der nativen Objektform,
-     * die {@see \qformat_xml::writequestion()} erwartet (question-Zeile plus
-     * qtype-Optionen ueber {@see \question_type::get_question_options()}) -
-     * OHNE Capability-Pruefung, das bleibt Sache des Aufrufers (Export prueft
-     * eine Lese-, {@see \local_coursepilot\external\update_mc_question} eine
-     * Schreib-Capability).
+     * Loads the latest question version in the native object shape expected
+     * by {@see \qformat_xml::writequestion()}: the question row plus qtype options
+     * from {@see \question_type::get_question_options()}. No capability check;
+     * the caller checks read permission for export or write permission for
+     * {@see \local_coursepilot\external\update_mc_question}.
      *
-     * Wiederverwendet von update_mc_question (Ticket #419): dort wird NICHT
-     * die XML gepatcht, sondern gezielt einzelne Properties auf diesem
-     * nativen Objekt ueberschrieben (name/questiontext/generalfeedback/
-     * defaultmark/options->single/options->answers) - alles andere (penalty,
-     * shuffleanswers, answernumbering, Kombi-Feedback, Tags, Hints, ...)
-     * bleibt dadurch automatisch unangetastet, weil es nie angefasst wird.
+     * Reused by update_mc_question (ticket #419): instead of patching XML, it
+     * overrides selected native properties (name/questiontext/generalfeedback/
+     * defaultmark/options->single/options->answers). Other values (penalty,
+     * shuffleanswers, answernumbering, combined feedback, tags, hints, etc.)
+     * automatically remain untouched because they are never modified.
      *
      * @param int $questionid
-     * @return array{0: \stdClass, 1: \stdClass, 2: \context} [natives Fragenobjekt, Kategorie, Kontext]
+     * @return array{0: \stdClass, 1: \stdClass, 2: \context} [native question object, category, context]
      */
     public static function resolve_native_question(int $questionid): array {
         global $DB;
@@ -242,7 +233,7 @@ final class export_questions_xml extends external_api {
         $version = $DB->get_record('question_versions', ['questionid' => $questionid]);
         if (!$version) {
             throw new \moodle_exception('notfound', 'error', '',
-                null, 'Keine Frage mit questionid ' . $questionid . ' gefunden.');
+                null, 'No question with questionid ' . $questionid . ' found.');
         }
 
         $latest = $DB->get_record_sql(
@@ -269,17 +260,16 @@ final class export_questions_xml extends external_api {
     }
 
     /**
-     * Schreibt ein natives Fragenobjekt (siehe {@see self::resolve_native_question()})
-     * ueber qformat_xml als XML, fuer Wiederverwendung ausserhalb dieser
-     * Klasse public.
+     * Writes a native question object (see {@see self::resolve_native_question()})
+     * as XML through qformat_xml. Public for reuse outside this class.
      *
      * @param \stdClass $question
      * @param \stdClass $category
      * @param \context $context
-     * @param bool $stripfiles true (Default, back-kompatibel fuer bestehende Aufrufer wie
-     *        update_mc_question): eingebettete Dateien durch Platzhalter ersetzen (siehe Klassendoku).
-     *        false: echtes Base64 unveraendert belassen (Standard-Modus des Exports, Spec 0018 §7.2).
-     * @return array{0: string, 1: string[]} [XML-Fragment, entfernte Dateinamen (leer, wenn nicht gestrippt)]
+     * @param bool $stripfiles true (default, backward-compatible for existing callers such as
+     *        update_mc_question): replace embedded files with placeholders (see class documentation).
+     *        false: retain actual base64 unchanged (standard export mode, Spec 0018 §7.2).
+     * @return array{0: string, 1: string[]} [XML fragment, removed filenames (empty when not stripped)]
      */
     public static function question_to_xml(
         \stdClass $question,
@@ -299,13 +289,12 @@ final class export_questions_xml extends external_api {
     }
 
     /**
-     * Ersetzt jeden <file>-Block (Base64-Dateiinhalt) durch einen
-     * XML-Kommentar-Platzhalter, der den urspruenglichen Dateinamen nennt.
-     * Bewusst KEIN Strippen ohne Spur - die Lehrkraft/KI muss sehen, dass
-     * und welche Datei fehlt (Spec 0017 "Bilder und Groessen").
+     * Replaces each <file> block (base64 file content) with an XML comment
+     * placeholder naming the original file. Never strip without a trace:
+     * the teacher/AI must see which file is missing (Spec 0017, image and size rules).
      *
      * @param string $xml
-     * @return array{0: string, 1: string[]} [bereinigtes XML, entfernte Dateinamen]
+     * @return array{0: string, 1: string[]} [cleaned XML, removed filenames]
      */
     private static function strip_embedded_files(string $xml): array {
         $filenames = [];
@@ -314,9 +303,9 @@ final class export_questions_xml extends external_api {
             static function (array $m) use (&$filenames): string {
                 $filename = $m[1];
                 $filenames[] = $filename;
-                // "--" wuerde den XML-Kommentar vorzeitig beenden.
+                // "--" would prematurely close the XML comment.
                 $safe = str_replace('--', '- -', $filename);
-                return '<!-- Datei entfernt (kein Binaertransport im Export): ' . $safe . " -->\n";
+                return '<!-- File removed (no binary transport in export): ' . $safe . " -->\n";
             },
             $xml
         );
@@ -325,11 +314,10 @@ final class export_questions_xml extends external_api {
     }
 
     /**
-     * Baut die Lehrkraft-deutsche Gesamtmeldung - sagt bei fehlenden
-     * Dateien (Platzhalter-Modus) AUSDRUECKLICH, welche Frage(n) betroffen
-     * sind und dass die Dateien nicht mitexportiert wurden, und nennt im
-     * Platzhalter-Modus ausdruecklich, dass die Ausgabe unvollstaendig und
-     * nicht zur Weitergabe geeignet ist (Spec 0018 §7.2, Ticket #437).
+     * Builds the teacher-facing message. For missing files in placeholder
+     * mode it explicitly names the affected questions and states that files
+     * were not exported. It also states that placeholder output is incomplete
+     * and unsuitable for sharing (Spec 0018 §7.2, ticket #437).
      *
      * @param int $count
      * @param array<int, array{name: string, files: string[]}> $missing
@@ -337,13 +325,10 @@ final class export_questions_xml extends external_api {
      * @return string
      */
     private static function build_message(int $count, array $missing, bool $placeholder): string {
-        $base = $count === 1 ? '1 Frage exportiert.' : $count . ' Fragen exportiert.';
+        $base = $count === 1 ? get_string('questionexportone', 'local_coursepilot') : get_string('questionexportmany', 'local_coursepilot', $count);
 
         if ($placeholder) {
-            $base .= ' PLATZHALTER-MODUS: Diese Ausgabe ist unvollstaendig (eingebettete Dateien sind durch '
-                . 'Kommentar-Platzhalter ersetzt) und NICHT zur Weitergabe geeignet - nur fuer den Vorlagenzweck '
-                . '(Struktur einer Frage lernen). Fuer eine vollstaendige, weitergebbare XML placeholder=false '
-                . '(Default) verwenden.';
+            $base .= ' ' . get_string('questionexportplaceholder', 'local_coursepilot');
         }
 
         if (empty($missing)) {
@@ -352,11 +337,10 @@ final class export_questions_xml extends external_api {
 
         $details = [];
         foreach ($missing as $entry) {
-            $details[] = 'Frage "' . $entry['name'] . '": ' . implode(', ', $entry['files']);
+            $details[] = get_string('questionexportmissingdetail', 'local_coursepilot', (object) ['name' => $entry['name'], 'files' => implode(', ', $entry['files'])]);
         }
 
-        return $base . ' ACHTUNG: Eingebettete Dateien fehlen im Export und wurden durch Platzhalter ersetzt ('
-            . implode('; ', $details) . ').';
+        return $base . ' ' . get_string('questionexportmissing', 'local_coursepilot', implode('; ', $details));
     }
 
     /**
@@ -382,7 +366,7 @@ final class export_questions_xml extends external_api {
             'count' => new external_value(PARAM_INT, 'Number of exported questions'),
             'message' => new external_value(
                 PARAM_RAW,
-                'Teacher-facing German message; explicitly names in the placeholder mode that the output is '
+                'Teacher-facing message; explicitly names in the placeholder mode that the output is '
                     . 'incomplete and not suitable for sharing, and which question is affected for missing files'
             ),
         ]);

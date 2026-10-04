@@ -32,35 +32,33 @@ use stdClass;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Der einzige Schreibweg fuer Voraussetzungen (Spec 0015, Ticket #393): baut
- * das native "availability"-JSON aus lehrkraftverstaendlichen Argumenten
- * statt es roh entgegenzunehmen - rohes JSON ist kein Vertrag, den eine KI
- * zuverlaessig trifft, und ein kaputter Wert macht ueber den direkten
- * DB-Weg die Kursseite unaufrufbar (availability/classes/info.php baut aus
- * dem gespeicherten JSON einen Baum auf und wirft bei ungueltiger Struktur
- * eine coding_exception).
+ * The only write path for restrictions (Spec 0015, ticket #393): builds the
+ * native "availability" JSON from teacher-friendly arguments instead of
+ * accepting it raw - raw JSON is not a contract an AI hits reliably, and a
+ * broken value written via the direct DB route makes the course page
+ * unreachable (availability/classes/info.php builds a tree from the stored
+ * JSON and throws a coding_exception on an invalid structure).
  *
- * Ueber diesen Endpunkt entsteht das JSON ausschliesslich aus den nativen
- * "get_json()"-Fabriken der drei praktisch relevanten Bedingungstypen
+ * Through this endpoint the JSON is created exclusively from the native
+ * "get_json()" factories of the three practically relevant condition types
  * (availability_completion, availability_date, availability_group - Spec
- * 0015, bewusste Ponytail-Beschraenkung statt vollstaendigem Nachbau der
- * Availability-API) und wird VOR dem Schreiben mit core_availability\tree
- * geprueft - eine ungueltige Bedingung scheitert dadurch schon hier, nie
- * erst beim naechsten Seitenaufruf.
+ * 0015, deliberate ponytail restriction instead of a full rebuild of the
+ * availability API) and is checked with core_availability\tree BEFORE
+ * writing - an invalid condition therefore fails right here, never only on
+ * the next page view.
  *
- * "availability"/"availabilityconditionsjson" bleibt auf der Sperrliste von
- * update_module_settings (shared_block::BLOCKLIST fuehrt es gar nicht erst
- * als Feld) - dieser Endpunkt ist der einzige Schreibweg.
+ * "availability"/"availabilityconditionsjson" stays on the blocklist of
+ * update_module_settings (shared_block::BLOCKLIST does not list it as a
+ * field at all) - this endpoint is the only write path.
  *
- * Geschrieben wird ueber get_moduleinfo_data()/update_moduleinfo() (ADR
- * 0016), nie direkt in course_modules.availability - der Aenderungsverlauf
- * (#385-387) beobachtet course_module_updated automatisch.
+ * Writing goes through get_moduleinfo_data()/update_moduleinfo() (ADR
+ * 0016), never directly into course_modules.availability - the change
+ * history (#385-387) observes course_module_updated automatically.
  *
- * "profile"-Bedingungen werden von diesem Endpunkt nicht angeboten (sie
- * bleiben ohnehin nur ueber den nativen Formularweg oder
- * update_module_settings/direkte Bearbeitung setzbar, nicht ueber
- * Coursepilot) - der Lese-Weg (get_module_settings) maskiert sie unveraendert
- * weiter (ADR 0011).
+ * "profile" conditions are not offered by this endpoint (they remain
+ * settable only via the native form route or
+ * update_module_settings/direct editing, not via Coursepilot) - the read
+ * path (get_module_settings) keeps masking them unchanged (ADR 0011).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -69,11 +67,11 @@ defined('MOODLE_INTERNAL') || die();
 final class set_restriction extends external_api {
 
     /**
-     * Lehrkraft-deutsche Statuswoerter fuer "abschluss" -> Moodles
-     * COMPLETION_xx-Werte (lib/completionlib.php: INCOMPLETE=0, COMPLETE=1,
-     * COMPLETE_PASS=2, COMPLETE_FAIL=3). Als Literale statt Konstanten
-     * referenziert, damit diese Klassenkonstante beim Laden der Datei nicht
-     * von der Ladereihenfolge von completionlib.php abhaengt.
+     * Teacher-facing status words for "completion" -> Moodle's
+     * COMPLETION_xx values (lib/completionlib.php: INCOMPLETE=0, COMPLETE=1,
+     * COMPLETE_PASS=2, COMPLETE_FAIL=3). Referenced as literals instead of
+     * constants so that this class constant does not depend on the load
+     * order of completionlib.php when the file is loaded.
      *
      * @var array<string, int>
      */
@@ -85,9 +83,9 @@ final class set_restriction extends external_api {
     ];
 
     /**
-     * Lehrkraft-deutsche Richtungswoerter fuer "datum" -> Moodles
-     * DIRECTION_xx-Werte (availability_date\condition::DIRECTION_FROM/
-     * DIRECTION_UNTIL). Als Literale referenziert, aus demselben Grund wie
+     * Teacher-facing direction words for "date" -> Moodle's
+     * DIRECTION_xx values (availability_date\condition::DIRECTION_FROM/
+     * DIRECTION_UNTIL). Referenced as literals, for the same reason as
      * {@see self::COMPLETION_STATUS}.
      *
      * @var array<string, string>
@@ -134,15 +132,15 @@ final class set_restriction extends external_api {
         $context = context_module::instance($cm->id);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // Native Berechtigungspruefung im Kurskontext (Spec 0015 §3.3/§9.2),
-        // identisch zu update_module_settings/set_completion - keine eigene
-        // Coursepilot-Schreib-Capability.
+        // Native permission check in the course context (Spec 0015 §3.3/§9.2),
+        // identical to update_module_settings/set_completion - no dedicated
+        // Coursepilot write capability.
         require_capability('moodle/course:manageactivities', $context);
 
         if (empty($CFG->enableavailability)) {
-            // Ohne instanzweit aktivierte bedingte Verfuegbarkeit wuerde
-            // Moodle das Feld ohnehin verwerfen (course/modlib.php) -
-            // klare Meldung statt stillem No-op.
+            // Without conditional availability enabled site-wide, Moodle
+            // would discard the field anyway (course/modlib.php) - clear
+            // message instead of a silent no-op.
             throw new moodle_exception('restrictionsnotenabled', 'local_coursepilot');
         }
 
@@ -157,7 +155,7 @@ final class set_restriction extends external_api {
         $conditions = [];
         foreach ($conditionsraw as $condition) {
             if (!is_array($condition) || self::is_json_object($condition) === false) {
-                throw new coding_exception('conditions_json muss ein Array von JSON-Objekten sein.');
+                throw new coding_exception('conditions_json must be an array of JSON objects.');
             }
             $conditions[] = self::build_condition((int) $cm->course, $condition);
         }
@@ -172,10 +170,10 @@ final class set_restriction extends external_api {
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
-        // Dieselbe Vorbereitung wie update_module_settings/set_completion
-        // (#388/#392): ohne sie liest z.B. page_update_instance() ein
-        // fehlendes Pseudofeld ungeschuetzt und schreibt Inhalt auf null,
-        // obwohl dieser Endpunkt gar kein anderes Feld patcht.
+        // Same preparation as update_module_settings/set_completion
+        // (#388/#392): without it, e.g. page_update_instance() reads a
+        // missing pseudo-field unguarded and writes content to null, even
+        // though this endpoint does not patch any other field.
         $before = self::read_settings((int) $cmid);
         pseudofield_carry_forward::apply($modname, $catalogclass, $moduleinfo, $before, $cm, []);
         $moduleinfo->availabilityconditionsjson = $availabilityjson;
@@ -191,7 +189,7 @@ final class set_restriction extends external_api {
 
     /**
      * @param int $cmid
-     * @return array Ist-Stand, dieselbe Form wie get_module_settings.
+     * @return array Current state, same shape as get_module_settings.
      */
     private static function read_settings(int $cmid): array {
         $result = get_module_settings::execute($cmid);
@@ -199,13 +197,13 @@ final class set_restriction extends external_api {
     }
 
     /**
-     * Manche Testdatengeneratoren/DB-Treiber liefern numerische IDs als
-     * Zeichenkette statt als Ganzzahl - lehrkraftverstaendliche Argumente
-     * sollen trotzdem als gueltig gelten, solange sie eindeutig eine
-     * positive Ganzzahl meinen (kein "3.5", kein "3abc").
+     * Some test data generators/DB drivers return numeric IDs as strings
+     * instead of integers - teacher-friendly arguments should still count as
+     * valid as long as they unambiguously mean a positive integer (no
+     * "3.5", no "3abc").
      *
      * @param mixed $value
-     * @return int|null Positive Ganzzahl, oder null wenn ungueltig.
+     * @return int|null Positive integer, or null if invalid.
      */
     private static function positive_int($value): ?int {
         if (is_int($value)) {
@@ -218,9 +216,9 @@ final class set_restriction extends external_api {
     }
 
     /**
-     * PHP kennt beim Dekodieren keinen Unterschied zwischen JSON-Array und
-     * JSON-Objekt - beide werden zu assoziativen Arrays. "conditions_json"
-     * muss aber eine Liste (JSON-Array) sein, kein Objekt.
+     * When decoding, PHP makes no distinction between a JSON array and a
+     * JSON object - both become associative arrays. "conditions_json" must
+     * however be a list (JSON array), not an object.
      *
      * @param array $value
      * @return bool
@@ -230,9 +228,9 @@ final class set_restriction extends external_api {
     }
 
     /**
-     * Baut ein natives Bedingungs-Objekt (core_availability\condition::save()
-     * -Form) aus einer lehrkraftverstaendlichen Bedingung - jeweils ueber die
-     * offizielle get_json()-Fabrik der drei unterstuetzten Bedingungstypen.
+     * Builds a native condition object (core_availability\condition::save()
+     * shape) from a teacher-friendly condition - each time via the official
+     * get_json() factory of the three supported condition types.
      *
      * @param int $courseid
      * @param array $condition
@@ -340,14 +338,14 @@ final class set_restriction extends external_api {
     }
 
     /**
-     * Riegel (#583): eine Abschlussbedingung auf eine Aktivitaet, deren Note
-     * von der Lehrkraft kommt, laesst Lernende warten - sobald die Bedingung
-     * an der Note haengt ("pass"/"fail") oder der Abschluss der Aktivitaet
-     * selbst ueber die Note laeuft. Eine schon bestehende, unveraenderte
-     * Bedingung braucht keine erneute Bestaetigung.
+     * Lock (#583): a completion condition on an activity whose grade comes
+     * from the teacher makes learners wait - as soon as the condition
+     * depends on the grade ("pass"/"fail") or the activity's own completion
+     * runs via the grade. An already existing, unchanged condition needs no
+     * renewed confirmation.
      *
-     * @param stdClass[] $conditions Native Bedingungen aus {@see self::build_condition()}.
-     * @param string $currentavailability Bisheriges Verfuegbarkeits-JSON der Aktivitaet.
+     * @param stdClass[] $conditions Native conditions from {@see self::build_condition()}.
+     * @param string $currentavailability Current availability JSON of the activity.
      * @return array<int, array{id: string, detail: string}>
      */
     private static function grade_condition_locks(array $conditions, string $currentavailability): array {
@@ -377,14 +375,14 @@ final class set_restriction extends external_api {
     }
 
     /**
-     * Verpackt die einzelnen Bedingungen in den nativen Baum
-     * (core_availability\tree-Wurzelformat, UND-Verknuepfung, alle sichtbar
-     * fuer Lernende) und prueft das Ergebnis mit core_availability\tree VOR
-     * dem Schreiben - eine Struktur, die core_availability\tree ablehnt,
-     * wuerde auch availability/classes/info.php beim naechsten Seitenaufruf
-     * ablehnen (dort ungefangen: das macht die Kursseite unaufrufbar). Ein
-     * leeres Bedingungs-Array liefert einen leeren String (Voraussetzung
-     * entfernt, siehe course/modlib.php).
+     * Wraps the individual conditions into the native tree
+     * (core_availability\tree root format, AND combination, all visible to
+     * learners) and checks the result with core_availability\tree BEFORE
+     * writing - a structure that core_availability\tree rejects would also
+     * be rejected by availability/classes/info.php on the next page view
+     * (uncaught there: that makes the course page unreachable). An empty
+     * conditions array yields an empty string (restriction removed, see
+     * course/modlib.php).
      *
      * @param stdClass[] $conditions
      * @return string
@@ -404,9 +402,9 @@ final class set_restriction extends external_api {
         try {
             new tree($structure);
         } catch (coding_exception $e) {
-            // Sollte durch die Validierung oben nie erreicht werden - letzte
-            // Absicherung, damit niemals eine Struktur geschrieben wird, die
-            // availability/classes/info.php spaeter ablehnen wuerde.
+            // Should never be reached thanks to the validation above - last
+            // safeguard so that a structure is never written which
+            // availability/classes/info.php would reject later.
             throw new moodle_exception('invalidrestrictionjson', 'local_coursepilot', '', ['field' => 'conditions_json']);
         }
 
@@ -419,11 +417,11 @@ final class set_restriction extends external_api {
      */
     private static function build_message(int $count): string {
         if ($count === 0) {
-            return 'Alle Voraussetzungen wurden entfernt.';
+            return 'All restrictions were removed.';
         }
         return $count === 1
-            ? 'Voraussetzung gesetzt: 1 Bedingung muss erfuellt sein.'
-            : 'Voraussetzungen gesetzt: ' . $count . ' Bedingungen muessen alle erfuellt sein.';
+            ? 'Restriction set: 1 condition must be met.'
+            : 'Restrictions set: ' . $count . ' conditions must all be met.';
     }
 
     /**
@@ -433,7 +431,7 @@ final class set_restriction extends external_api {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
             'modname' => new external_value(PARAM_TEXT, 'Activity type'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
         ]);
     }
 }

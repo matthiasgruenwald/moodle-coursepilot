@@ -30,18 +30,18 @@ use local_coursepilot\catalog\shared_block;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Kurskatalog serverseitig (#341): kompakte, filterbare Lesesicht auf einen
- * Kurs - Abschnitte, sichtbare Inhalte, Teststruktur, Sichtbarkeit, Abschluss
- * und Voraussetzungen, mit maskiertem Personenbezug.
+ * Course catalog server-side (#341): compact, filterable read view of a
+ * course - sections, visible content, quiz structure, visibility, completion
+ * and prerequisites, with masked personal data.
  *
- * Eigenstaendige Portierung von
- * local_coursepilot\external\get_course_catalog: local_coursepilot hat laut
- * Spec 0012 ("keine Abhaengigkeit zu local_coursepilot") keine
- * Laufzeitabhaengigkeit auf das andere Plugin - eine direkte Delegation an
- * dessen Klasse ist auf der lokal_coursepilot-Testinstanz (Spike, traegt
- * ausschliesslich local_coursepilot) ein Fatal Error ("Class ... not found",
- * Fund aus dem PHPUnit-Lauf zu #341). Der Vertrag (Feldnamen, Maskierung,
- * detail=compact/full) bleibt bewusst identisch zum lokalen Werkzeug.
+ * Standalone port of
+ * local_coursepilot\external\get_course_catalog: per
+ * Spec 0012 ("no dependency on local_coursepilot") local_coursepilot has no
+ * runtime dependency on the other plugin - a direct delegation to
+ * its class is a fatal error on the lokal_coursepilot test instance (Spike, carries
+ * only local_coursepilot) ("Class ... not found",
+ * finding from the PHPUnit run for #341). The contract (field names, masking,
+ * detail=compact/full) deliberately stays identical to the local tool.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

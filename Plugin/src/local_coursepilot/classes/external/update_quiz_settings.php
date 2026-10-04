@@ -290,10 +290,10 @@ final class update_quiz_settings extends external_api {
 
         if ((array_key_exists('timeopen', $merged) && (int) $after['timeopen'] > 0)
                 || (array_key_exists('timeclose', $merged) && (int) $after['timeclose'] > 0)) {
-            $sideeffects[] = 'Der Kalendereintrag fuer den Test wurde aktualisiert.';
+            $sideeffects[] = 'The calendar event for the quiz was updated.';
         }
         if ($gradechanged) {
-            $sideeffects[] = 'Bestehende Versuchsnoten und Gesamtfeedback-Grenzen wurden anteilig auf die neue Bewertung umgerechnet.';
+            $sideeffects[] = 'Existing attempt grades and overall feedback boundaries were rescaled proportionally to the new grade.';
         }
 
         return [$changes, $sideeffects];
@@ -308,14 +308,14 @@ final class update_quiz_settings extends external_api {
      */
     private static function build_message(array $changes, array $sideeffects): string {
         if (!$changes) {
-            return 'Keine Aenderung: der Patch stimmte bereits mit dem aktuellen Stand ueberein.';
+            return 'No change: the patch already matched the current state.';
         }
 
         $parts = [];
         foreach ($changes as $change) {
-            $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
+            $parts[] = '"' . $change['field'] . '" from ' . $change['before_json'] . ' to ' . $change['after_json'];
         }
-        $message = 'Geaendert: ' . implode(', ', $parts) . '.';
+        $message = 'Changed: ' . implode(', ', $parts) . '.';
 
         if ($sideeffects) {
             $message .= ' ' . implode(' ', $sideeffects);
@@ -330,7 +330,7 @@ final class update_quiz_settings extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
             'changes' => new external_multiple_structure(
                 new external_single_structure([
                     'field' => new external_value(PARAM_TEXT, 'Field name'),
@@ -340,7 +340,7 @@ final class update_quiz_settings extends external_api {
                 'One entry per field that actually changed'
             ),
             'side_effects' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                new external_value(PARAM_TEXT, 'Teacher-facing side-effect note'),
                 'Triggered side effects, empty when none were triggered'
             ),
         ]);

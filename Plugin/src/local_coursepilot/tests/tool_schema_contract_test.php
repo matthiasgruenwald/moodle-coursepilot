@@ -173,6 +173,25 @@ final class tool_schema_contract_test extends \advanced_testcase {
         $this->assertDoesNotMatchRegularExpression($forbidden, dispatcher::HANDSHAKE_INSTRUCTIONS);
     }
 
+    /** Field catalog descriptions also reach the model as tool result data (#605). */
+    public function test_every_catalog_description_is_english(): void {
+        $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
+        foreach (\local_coursepilot\catalog\registry::known_modnames() as $modname) {
+            $catalog = \local_coursepilot\catalog\registry::for($modname);
+            $fields = array_merge($catalog::fields(), $catalog::pseudofields(),
+                \local_coursepilot\catalog\shared_block::fields(), \local_coursepilot\catalog\shared_block::pseudofields());
+            foreach ($fields as $field) {
+                foreach ([$field->type, $field->meaning, $field->source] as $text) {
+                    $this->assertDoesNotMatchRegularExpression($forbidden, $text, "{$modname}: {$field->name}");
+                }
+            }
+            foreach (array_merge($catalog::combination_rules(), $catalog::side_effects(),
+                    \local_coursepilot\catalog\shared_block::side_effects()) as $text) {
+                $this->assertDoesNotMatchRegularExpression($forbidden, $text, $modname);
+            }
+        }
+    }
+
     private function assert_english_schema_descriptions(array $schema, string $forbidden, string $name): void {
         foreach ($schema as $key => $value) {
             if ($key === 'description') {

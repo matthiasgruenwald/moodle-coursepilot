@@ -17,10 +17,10 @@
 {{!
     @template local_coursepilot/location_selection_browse_error
 
-    Fehlerbox beim Blaettern im Dateifenster der Ortswahl (Issue #526, #551):
-    Zeitueberschreitung oder ein vom Server beantworteter Fehler, mit den drei
-    Ausweg-Aktionen (erneut versuchen, Zugang pruefen, spaeter). Gefuellt vom
-    AMD-Modul amd/src/location_selection.js statt per createElement-Handarbeit.
+    Error box when browsing in the file window of the location selection (Issue #526, #551):
+    timeout or an error answered by the server, with the three
+    escape actions (retry, check credentials, later). Filled by the
+    AMD module amd/src/location_selection.js instead of hand-built createElement calls.
 
     Context variables required for this template:
     * title - string - error heading
@@ -32,12 +32,12 @@
 
     Example context (json):
     {
-        "title": "Zeitueberschreitung",
-        "text": "Der Speicher hat nicht rechtzeitig geantwortet.",
-        "retrylabel": "Erneut versuchen",
+        "title": "Timeout",
+        "text": "The storage did not respond in time.",
+        "retrylabel": "Try again",
         "checkcredentialsurl": "https://example.org/repository/manage_instances.php",
-        "checkcredentialslabel": "Zugang pruefen",
-        "laterlabel": "Spaeter"
+        "checkcredentialslabel": "Check credentials",
+        "laterlabel": "Later"
     }
 }}
 <div class="alert alert-warning">

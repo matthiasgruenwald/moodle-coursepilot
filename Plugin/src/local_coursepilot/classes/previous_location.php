@@ -17,19 +17,19 @@
 namespace local_coursepilot;
 
 /**
- * Der Altbestand (Issue #498, Spec #486 §9): die Kontextdateien, die nach
- * einem Ortswechsel noch am vorherigen Ort liegen. Betrifft nur den
- * Kontextbereich - der Materialbestand kennt keinen Altbestand (die alte
- * Materialwurzel in Moodle ist die Werkbank und bleibt).
+ * The legacy files (Issue #498, Spec #486 §9): the context files that after
+ * a location change still lie at the previous location. Concerns only the
+ * context area - the material stock has no legacy files (the old
+ * material root in Moodle is the workbench and stays).
  *
- * Kein eigener Speicherplatz: der vorherige Ort steht im Feld
- * `vorheriger_ort` des Kontextpointer-Dokuments ({@see storage_anchor::write_pointer_document()}),
- * geschrieben ausschliesslich von {@see location_selection::apply()} beim
- * Abschliessen. Es gibt immer nur einen - ein neuer Wechsel verdraengt ihn,
- * die Dateien des verdraengten Ortes bleiben unberuehrt liegen (Spec §9).
+ * No storage space of its own: the previous location is in the field
+ * `previous_location` of the context pointer document ({@see storage_anchor::write_pointer_document()}),
+ * written exclusively by {@see location_selection::apply()} on
+ * completion. There is only ever one - a new switch displaces it,
+ * the files of the displaced location stay untouched (Spec §9).
  *
- * Endet nur ausdruecklich, ueber {@see dismiss()} - nie durch Zeitablauf,
- * nie durch Namensgleichheit (dasselbe Prinzip wie {@see pending_write_notice}).
+ * Ends only explicitly, via {@see dismiss()} - never by the passage of time,
+ * never by name equality (the same principle as {@see pending_write_notice}).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -38,9 +38,9 @@ namespace local_coursepilot;
 final class previous_location {
 
     /**
-     * Der rohe Wert des Feldes "vorheriger_ort" im Kontextpointer-Dokument,
-     * oder null, wenn kein Altbestand offen ist (kein Pointer, Pointer der
-     * ersten Fassung, oder das Feld fehlt/ist ungueltig).
+     * The raw value of the field "previous_location" in the context pointer document,
+     * or null if no legacy files are open (no pointer, pointer of the
+     * first version, or the field is missing/invalid).
      *
      * @return array|null
      */
@@ -51,8 +51,8 @@ final class previous_location {
     }
 
     /**
-     * Ob ein Altbestand offen ist - der Fakt fuer `coursepilot_list_skills`
-     * (Issue #498 Akzeptanzkriterium: "ohne Zaehlung").
+     * Whether legacy files are open - the fact for `coursepilot_list_skills`
+     * (Issue #498 acceptance criterion: "without counting").
      *
      * @return bool
      */
@@ -61,13 +61,12 @@ final class previous_location {
     }
 
     /**
-     * Der aufgeloeste vorherige Ort, fuer den Nur-Lese-Schalter an
-     * `list_context_files`/`read_context_file` (Spec §6/§9). Wirkt nur,
-     * solange Altbestand offen ist - ohne offenen Altbestand ein benannter
-     * Fehler statt eines stillen leeren Ergebnisses.
-     *
+     * The resolved previous location, for the read-only switch on
+     * `list_context_files`/`read_context_file` (Spec §6/§9). Only applies
+     * while legacy files are open - without open legacy files a named
+     * error instead of a silent empty result.
      * @return pointer_location
-     * @throws \moodle_exception previouslocationclosed, oder wie {@see context_pointer::resolve_previous()}.
+     * @throws \moodle_exception previouslocationclosed, or as {@see context_pointer::resolve_previous()}.
      */
     public static function require_open_location(): pointer_location {
         $value = self::current();
@@ -78,13 +77,14 @@ final class previous_location {
     }
 
     /**
-     * Beendet den Altbestand ausdruecklich (Spec §9: "Ende nur ausdruecklich") -
-     * entfernt nur das Feld "vorheriger_ort" aus dem Pointer-Dokument, laesst
-     * Kontextbereich, Materialbestand und Ortsverlauf unveraendert. Ruehrt
-     * nie an den Dateien des vorherigen Ortes selbst (Spec §9: "seine Dateien
-     * bleiben unberuehrt liegen").
+     * Explicitly ends the legacy files (Spec §9: "Ends only explicitly") -
+     * removes only the field "previous_location" from the pointer document, leaves
+     * context area, material stock and location history unchanged. Never touches
+     * the files of the previous location themselves (Spec §9: "its files
+     * stay untouched").
      *
-     * @return bool true, wenn ein offener Altbestand entfernt wurde; false,
+     * @return bool true if open legacy files were removed; false
+     *         if none were open.
      *         wenn keiner offen war.
      */
     public static function dismiss(): bool {

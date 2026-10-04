@@ -21,9 +21,8 @@ use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Statusprüfung Schritt 1 des WebDAV-Schrittkatalogs (Issue #499, Spec #486
- * §12): aus heisst `INFO` ("optional"), solange kein Pointer extern zeigt,
- * sonst `WARNING` mit Anzahl.
+ * WebDAV setup check 1 (Issue #499, Spec #486 §12): disabled returns INFO
+ * while no pointer targets external storage, otherwise WARNING with a count.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

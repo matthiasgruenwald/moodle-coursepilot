@@ -29,19 +29,18 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/questionlib.php');
 
 /**
- * Fassade ueber dem XML-Kern (Spec 0017 §7.1, Ticket #418): eine Lehrkraft
- * legt eine Multiple-Choice-Frage weiterhin ueber typisierte Felder an und
- * sieht nie XML - der SERVER baut die XML aus einer festen Vorlage und
- * schreibt ueber {@see \local_coursepilot\external\import_questions_xml}
- * (T4), inklusive Round-Trip-Pruefung und Rollback. Fuer Multiple-Choice
- * schreibt die KI damit strukturell nie fehlerhafte XML.
+ * Facade over the XML core (Spec 0017 §7.1, ticket #418): the teacher
+ * creates a multiple-choice question through typed fields and never sees
+ * XML. The SERVER builds XML from a fixed template and writes through
+ * {@see \local_coursepilot\external\import_questions_xml} (T4), including
+ * round-trip verification and rollback. The AI cannot generate structurally
+ * invalid XML for multiple-choice questions.
  *
- * Verdachtsfall-Gate (T414-Format): eine Neuanlage bringt nie eine idnumber
- * mit, gegen die gematcht werden koennte - anders als bei
- * import_questions_xml ist deshalb bereits ein gleichnamiger Eintrag in der
- * Zielkategorie der Verdachtsfall, nicht erst eine idnumber-Kollision.
- * Dieses Gate wird VOR dem Bau der XML geprueft; ein Verdachtsfall schreibt
- * nichts. Erst ein erneuter, ausdruecklich bestaetigter Aufruf schreibt.
+ * Suspect gate (T414 format): creation supplies no idnumber to match.
+ * Unlike import_questions_xml, an existing entry with the same name in the
+ * target category already counts as suspect, without an idnumber collision.
+ * The gate runs BEFORE building XML and writes nothing on suspicion.
+ * Only a repeated, explicitly confirmed call writes.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -118,10 +117,9 @@ final class create_mc_question extends external_api {
 
         self::validate_answers($params['answers'], $params['selectionmode']);
 
-        // Verdachtsfall-Gate VOR dem Bau der XML: eine Neuanlage bringt nie
-        // eine idnumber mit, gegen die gematcht werden koennte - deshalb
-        // zaehlt bereits ein gleichnamiger Eintrag in der Zielkategorie als
-        // Verdachtsfall (anders als bei import_questions_xml).
+        // Suspect gate BEFORE building XML: creation supplies no idnumber
+        // to match, so an existing entry with the same name in the target
+        // category already counts as suspect (unlike import_questions_xml).
         $candidates = question_suspect_gate::find_name_candidates((int) $params['categoryid'], $params['name']);
         if (!empty($candidates) && !$params['confirmed']) {
             return array_merge(
@@ -131,9 +129,7 @@ final class create_mc_question extends external_api {
                     'questionbankentryid' => 0,
                     'version' => 0,
                     'status' => 'suspect',
-                    'message' => 'Verdachtsfall: In der Zielkategorie gibt es bereits einen Eintrag mit dem Namen "'
-                        . $params['name'] . '". Nichts wurde angelegt. Zum Anlegen als neuer Eintrag trotzdem '
-                        . 'erneut mit confirmed=true aufrufen.',
+                    'message' => get_string('mcquestionsuspect', 'local_coursepilot', $params['name']),
                 ],
                 [
                     'idnumber' => '',
@@ -161,23 +157,22 @@ final class create_mc_question extends external_api {
                 'questionbankentryid' => (int) $question['questionbankentryid'],
                 'version' => (int) $question['version'],
                 'status' => $question['status'],
-                'message' => 'MC-Frage "' . $params['name'] . '" angelegt (Bank-Eintrag '
-                    . $question['questionbankentryid'] . ', Version ' . $question['version'] . ').',
+                'message' => get_string('mcquestioncreated', 'local_coursepilot', (object) ['name' => $params['name'], 'entryid' => $question['questionbankentryid'], 'version' => $question['version']]),
             ],
             question_suspect_gate::empty_result()
         );
     }
 
     /**
-     * Prueft die Antwortoptionen gegen dieselben Regeln wie das lokale
-     * Vorbild ({@see \local_coursepilot\external\create_mc_question}):
-     * mindestens 2 Antworten, fraction/correct-Konsistenz, genau eine
-     * richtige Antwort bei "single", positive fractions summieren zu genau 1
-     * (qtype_multichoice::save_question_options() verlangt das zwingend -
-     * sonst interner Moodle-Fehler statt sauberer Rueckmeldung).
+     * Validates answer options against the same rules as the local original
+     * ({@see \local_coursepilot\external\create_mc_question}): at least two
+     * answers, fraction/correct consistency, exactly one correct answer for
+     * "single", and positive fractions summing to exactly 1.
+     * qtype_multichoice::save_question_options() requires this; otherwise an
+     * internal Moodle error would replace a useful response.
      *
-     * Public: wiederverwendet von {@see \local_coursepilot\external\update_mc_question}
-     * (Ticket #419), das dieselben schlichten Felder patcht statt neu anlegt.
+     * Public: reused by {@see \local_coursepilot\external\update_mc_question}
+     * (ticket #419), which patches the same simple fields rather than creating.
      *
      * @param array $answers
      * @param string $selectionmode
@@ -185,38 +180,37 @@ final class create_mc_question extends external_api {
      */
     public static function validate_answers(array $answers, string $selectionmode): void {
         if (count($answers) < 2) {
-            throw new \invalid_parameter_exception('Eine Multiple-Choice-Frage braucht mindestens 2 Antworten.');
+            throw new \invalid_parameter_exception('A multiple-choice question needs at least 2 answers.');
         }
         if (!in_array($selectionmode, ['single', 'multiple'], true)) {
-            throw new \invalid_parameter_exception('selectionmode muss single oder multiple sein.');
+            throw new \invalid_parameter_exception('selectionmode must be single or multiple.');
         }
         foreach ($answers as $answer) {
             if ($answer['fraction'] < -1 || $answer['fraction'] > 1) {
-                throw new \invalid_parameter_exception('fraction muss zwischen -1 und 1 liegen.');
+                throw new \invalid_parameter_exception('fraction must be between -1 and 1.');
             }
         }
         $correctcount = count(array_filter($answers, static fn($answer) => (float) $answer['fraction'] > 0));
         if ($selectionmode === 'single' && $correctcount !== 1) {
-            throw new \invalid_parameter_exception('Eine Einfachauswahl braucht genau eine richtige Antwort.');
+            throw new \invalid_parameter_exception('Single selection needs exactly one correct answer.');
         }
         if ($correctcount === 0) {
-            throw new \invalid_parameter_exception('Mindestens eine Antwort muss eine positive fraction haben.');
+            throw new \invalid_parameter_exception('At least one answer must have a positive fraction.');
         }
         $positivesum = round(array_sum(array_map(
             static fn($answer) => max(0.0, (float) $answer['fraction']), $answers)), 2);
         if (abs($positivesum - 1.0) > 0.001) {
             throw new \invalid_parameter_exception(
-                'Die positiven fraction-Werte muessen in Summe genau 1 ergeben (aktuell ' . $positivesum . ').');
+                'Positive fraction values must sum to exactly 1 (currently ' . $positivesum . ').');
         }
     }
 
     /**
-     * Baut die Moodle-XML fuer eine multichoice-Frage aus einer festen
-     * Vorlage - die KI schreibt fuer Multiple-Choice nie XML, nur der
-     * Server. Keine idnumber im XML: das laesst den XML-Kern
-     * (import_questions_xml) eine neue generieren und vergeben - "echter
-     * Erstimport", kein weiteres Gate dort (das Gate dieses Endpunkts hat
-     * bereits VOR diesem Aufruf entschieden).
+     * Builds Moodle XML for a multichoice question from a fixed template.
+     * Only the server writes XML for multiple-choice questions. No idnumber
+     * is included: the XML core (import_questions_xml) generates and assigns
+     * one for a first import. No further gate is needed there, as this
+     * endpoint's gate has already decided BEFORE this call.
      *
      * @param array $params
      * @return string
@@ -260,17 +254,14 @@ XML;
     }
 
     /**
-     * Macht einen Text fuer einen CDATA-Abschnitt sicher.
+     * Makes text safe for a CDATA section.
      *
-     * In CDATA gibt es keine Maskierung - die einzige Zeichenfolge, die den
-     * Abschnitt beenden kann, ist "]]>". Der uebliche Kniff ist, sie auf zwei
-     * Abschnitte aufzuteilen: der erste endet nach "]]", der zweite beginnt
-     * vor ">". Der zusammengesetzte Textinhalt bleibt Zeichen fuer Zeichen
-     * derselbe.
+     * CDATA has no escaping; only "]]>" can close the section. Split it across
+     * two sections: the first ends after "]]", the second starts before ">".
+     * The combined text remains identical character by character.
      *
-     * Ohne das zerbricht jede Frage, deren Text "]]>" enthaelt - im
-     * Informatikunterricht (XML, HTML, CDATA selbst) Unterrichtsstoff, kein
-     * Randfall.
+     * Without this, questions containing "]]>" break. In computing lessons
+     * (XML, HTML, CDATA itself), that is teaching material, not an edge case.
      *
      * @param string $text
      * @return string
@@ -293,7 +284,7 @@ XML;
                 ),
                 'version' => new external_value(PARAM_INT, 'Version number (initially 1, 0 for "suspect")'),
                 'status' => new external_value(PARAM_ALPHAEXT, '"first_import" (first import) | "suspect" (suspect case)'),
-                'message' => new external_value(PARAM_RAW, 'Teacher-facing German message with bank entry and version'),
+                'message' => new external_value(PARAM_RAW, 'Teacher-facing message with bank entry and version'),
             ],
             question_suspect_gate::response_fields()
         ));

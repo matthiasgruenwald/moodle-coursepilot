@@ -17,21 +17,16 @@
 namespace local_coursepilot;
 
 /**
- * Erster Adapter des Ablage-Vertrags (Issue #536, Spec 0021): Moodles
- * Private Files. Erfuellt {@see storage_port} vollstaendig, indem er fuer
- * Pfadaufloesung, Segmentpruefung, Quotenpruefung und die
- * Schreibchoreografie mit Zwischendatei auf {@see storage_anchor} aufsetzt -
- * dieselben Bausteine, die {@see context_files} und {@see material_files}
- * heute schon nutzen, hier hinter der neuen, ortsneutralen Schnittstelle.
+ * First storage contract adapter (issue #536, Spec 0021): Moodle Private
+ * Files. Implements {@see storage_port} through {@see storage_anchor} for
+ * path resolution, segment validation, quota and temporary-file writes.
+ * Reuses the building blocks of {@see context_files} and {@see material_files}
+ * behind the location-neutral interface.
  *
- * Kennt bewusst keinen Kontextpointer: die Bereiche, die dieser Adapter
- * entgegennimmt, tragen keinen {@see storage_area::$pointerkey}, damit
- * {@see storage_anchor::root()} nie in die Pointer-Aufloesung des
- * bisherigen Wegs verzweigt (siehe dortige Kurzschlussregel). Welcher
- * Adapter greift, entscheidet erst ein spaeteres Ticket, nicht dieser
- * Adapter selbst.
- *
- * Der Pruefwert dieses Adapters ist Moodles `contenthash`.
+ * Does not resolve context pointers: supplied areas have no
+ * {@see storage_area::$pointerkey}, so {@see storage_anchor::root()} never
+ * branches into the previous pointer resolution path. Adapter selection is
+ * handled elsewhere, not by this adapter. Its checksum is Moodle contenthash.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -40,9 +35,8 @@ namespace local_coursepilot;
 final class private_files_storage_port implements storage_port {
 
     /**
-     * @param pointer_location|null $location Der bereits serverseitig
-     *        aufgeloeste Moodle-Ort. `null` bleibt fuer den Vertragstest ohne
-     *        Pointer moeglich.
+     * @param pointer_location|null $location Already resolved Moodle location.
+     *        Null is allowed for contract tests without a pointer.
      */
     public function __construct(private readonly ?pointer_location $location = null) {
     }
@@ -161,15 +155,14 @@ final class private_files_storage_port implements storage_port {
     }
 
     /**
-     * Weist ein bedingtes Schreiben ab, dessen Pruefwert nicht (mehr) zum
-     * aktuellen Stand passt - auch wenn die Datei inzwischen ganz fehlt.
-     * Kein Vergleich, wenn kein Pruefwert mitgegeben wurde (`null`): dann
-     * gilt weiterhin ungeprueftes Ueberschreiben/Anlegen.
+     * Rejects a conditional write whose checksum no longer matches current
+     * content, including a now missing file. A null checksum skips comparison
+     * and keeps unconditional overwrite/create behaviour.
      *
      * @param array{content: string, mimetype: string, size: int, contenthash: string,
      *        timemodified: int}|null $existing
      * @param string|null $expectedchecksum
-     * @param string $clientpath Fuer die Fehlermeldung.
+     * @param string $clientpath For the error message.
      * @throws storage_conflict_exception
      */
     private function require_checksum_match(?array $existing, ?string $expectedchecksum, string $clientpath): void {

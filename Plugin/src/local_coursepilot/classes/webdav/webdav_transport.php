@@ -17,10 +17,10 @@
 namespace local_coursepilot\webdav;
 
 /**
- * Der austauschbare Transport-Seam von {@see webdav_client} (Issue #489,
- * Spec #486 §4/Testing Decisions, ADR 0022). Im Betrieb genau eine
- * Implementierung, {@see curl_transport}, auf Moodles \curl. Im Test der
- * wiederverwendbare In-Memory-Fake
+ * The swappable transport seam of {@see webdav_client} (Issue #489,
+ * Spec #486 §4/Testing Decisions, ADR 0022). In operation exactly one
+ * implementation, {@see curl_transport}, on Moodle's \curl. In tests the
+ * reusable in-memory fake
  * `\local_coursepilot\tests\webdav\fake_webdav_transport`.
  *
  * @package    local_coursepilot
@@ -30,22 +30,22 @@ namespace local_coursepilot\webdav;
 interface webdav_transport {
 
     /**
-     * Eine einzelne HTTP-Anfrage. Der Transport deutet den Status nicht -
-     * das ist Sache von {@see webdav_client}.
+     * A single HTTP request. The transport does not interpret the status -
+     * that is the job of {@see webdav_client}.
      *
      * @param string $method PROPFIND|GET|PUT|MKCOL|MOVE|DELETE.
-     * @param string $url Vollstaendige https-Adresse.
-     * @param array<string, string> $headers Zusaetzliche Anfragekoepfe
-     *        (z.B. Depth, If-Match, If-None-Match, Destination), ohne
-     *        Anmeldekopf - den setzt der Transport selbst.
-     * @param string|null $body Rumpf, z.B. PROPFIND-XML oder Dateiinhalt.
+     * @param string $url Complete https address.
+     * @param array<string, string> $headers Additional request headers
+     *        (e.g. Depth, If-Match, If-None-Match, Destination), without
+     *        the auth header - the transport sets that itself.
+     * @param string|null $body Body, e.g. PROPFIND XML or file content.
      * @return webdav_response
-     * @throws webdav_transport_exception bei Verbindungsfehlern
-     *         (Zeitueberschreitung, DNS) - siehe {@see webdav_client}, das
-     *         daraus die Fehlerklasse `nicht erreichbar` macht.
-     * @throws webdav_error direkt, wenn der Transport selbst schon eine
-     *         benannte Fehlerklasse kennt (z.B. `gesperrt` durch Moodles
-     *         Hostsperre in {@see curl_transport}).
+     * @throws webdav_transport_exception on connection errors
+     *         (timeout, DNS) - see {@see webdav_client}, which turns
+     *         them into the error class `unreachable`.
+     * @throws webdav_error directly, if the transport itself already knows a
+     *         named error class (e.g. `blocked` by Moodle's
+     *         host block in {@see curl_transport}).
      */
     public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response;
 }

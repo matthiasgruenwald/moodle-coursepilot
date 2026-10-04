@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class move_section_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs (4 Abschnitte), Lehrkraft.
+     * @return array{0: \stdClass, 1: \stdClass} Course (4 sections), teacher.
      */
     private function course_with_editing_teacher(): array {
         global $DB;

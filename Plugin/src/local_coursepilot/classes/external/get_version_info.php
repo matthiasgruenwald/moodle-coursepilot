@@ -69,11 +69,14 @@ final class get_version_info extends external_api {
         $pluginversion = (int) $plugin->version;
         $pluginrelease = (string) $plugin->release;
 
-        $message = 'Moodle ' . $CFG->release . ' (Branch ' . $CFG->branch . '), Coursepilot-Plugin '
-            . $pluginrelease . ' (Version ' . $pluginversion . ').';
+        $message = get_string('versioninfosummary', 'local_coursepilot', (object) [
+            'moodlerelease' => $CFG->release,
+            'branch' => $CFG->branch,
+            'pluginrelease' => $pluginrelease,
+            'pluginversion' => $pluginversion,
+        ]);
         if ($installed !== false && (int) $installed !== $pluginversion) {
-            $message .= ' Achtung: In der Datenbank steht Version ' . (int) $installed
-                . ' - upgrade.php wurde nach dem letzten Deploy nicht ausgefuehrt.';
+            $message .= ' ' . get_string('versioninfoupgradewarning', 'local_coursepilot', (int) $installed);
         }
 
         return [
@@ -103,7 +106,7 @@ final class get_version_info extends external_api {
                 'Plugin version registered in the database; a mismatch indicates a missing upgrade.php run'
             ),
             'date' => new external_value(PARAM_TEXT, 'Server date YYYY-MM-DD - fills "last verified on"'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German summary of the same version data'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing summary of the same version data'),
         ]);
     }
 }

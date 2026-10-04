@@ -23,69 +23,68 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->dirroot . '/grade/grading/lib.php');
 
 /**
- * Feldkatalog fuer mod_assign (Spec 0015 §2.2/§4.1, Ticket #382). Der
- * Stresstest der Zweistufigkeit: ~35 Instanzspalten, 13 Plugin-Pseudofelder,
- * dazu der gemeinsame Block (§2.3) und die 34 Konstanten ohne aufrufbare
- * Wertemenge (mod/assign/locallib.php, Zeilen 30-92 - alle "define()" dort
- * ausser ASSIGN_MARKER_FILTER_NO_MARKER, das eine Filter-UI-Kennung fuer die
- * Bewertungstabelle ist, kein Feldwert einer Instanz).
+ * Field catalog for mod_assign (Spec 0015 §2.2/§4.1, ticket #382). The
+ * stress test of the two-tier design: ~35 instance columns, 13 plugin pseudo-fields,
+ * plus the shared block (§2.3) and the 34 constants without a callable
+ * value set (mod/assign/locallib.php, lines 30-92 - every "define()" there
+ * except ASSIGN_MARKER_FILTER_NO_MARKER, which is a filter-UI marker for the
+ * grading table, not a field value of an instance).
  *
- * Fallstricke aus dem Bestand:
- * - **Pseudofelder statt Enable-Spalten:** mod_assign hat fuer die
- *   Abgabe-/Feedback-Plugins keine eigenen assign-Tabellenspalten - jedes
- *   Plugin traegt seinen Zustand in {assign_plugin_config}. Der Formularweg
- *   erwartet dafuer je Plugin ein Feld "{subtype}_{type}_enabled"
+ * Pitfalls from the existing code:
+ * - **Pseudo-fields instead of enable columns:** mod_assign has no own assign
+ *   table columns for the submission/feedback plugins - every plugin keeps
+ *   its state in {assign_plugin_config}. The form path expects one field
+ *   "{subtype}_{type}_enabled" per plugin
  *   (assign_update_plugin_instance(), mod/assign/locallib.php:1359-1373):
  *   `if (!empty($formdata->$enabledname)) { enable() } else { disable() }`.
- *   Ein FEHLENDES Feld disabled das Plugin ebenso wie ein explizites 0 - der
- *   gefaehrlichste Fall dieses Katalogs, weil er durch Weglassen entsteht.
- *   Sind am Ende ALLE Abgabe-Plugins deaktiviert, cached
- *   is_any_submission_plugin_enabled() das als "nosubmissions=1"
- *   (add_instance()/update_instance():843/1629) - die Aufgabe nimmt dann gar
- *   keine Abgaben mehr an.
- * - **"nosubmissions" ist reiner Cache-Ausgang**, kein Eingabefeld: Moodle
- *   berechnet es selbst aus den Enable-Pseudofeldern (s.o.) unmittelbar nach
- *   jedem add_instance()/update_instance() - ein Patch darauf wuerde beim
- *   naechsten Speichern ueberschrieben. Sperrliste.
- * - **"revealidentities"** ist eine echte Spalte, aber ueber KEINEN
- *   Formularpfad erreichbar: weder add_instance() noch update_instance()
- *   uebernehmen sie aus $formdata - sie wird ausschliesslich ueber die
- *   "Identitaeten aufdecken"-Aktion gesetzt (mod/assign/locallib.php, Methode
- *   reveal_identities()). Ueber das Vehikel unschreibbar, deshalb Sperrliste
- *   statt stillem No-Op.
- * - **"completionsubmit"** ist Vervollstaendigungsfeld UND echte Spalte
- *   zugleich: update_instance() schreibt es nur, wenn "completionunlocked"
- *   gesetzt ist (mod/assign/locallib.php:1569-1571) - sonst still verworfen,
- *   ohne "completionunlocked" aber loescht ein Schreibvorgang laut Spec 0015
- *   §8 die Vervollstaendigungsdaten der Lernenden. Deshalb hier wie die
- *   generischen Vervollstaendigungsfelder (course_modules, siehe
- *   {@see shared_block::BLOCKLIST}) auf die Sperrliste - geschrieben wird es
- *   ueber `set_completion` im Zweitakt (Ticket #461; dort als
- *   modulspezifisches Vervollstaendigungsfeld fuer "assign" und "choice"
- *   freigeschaltet).
- * - **"teamsubmissiongroupingid"** listet im Formular nur Gruppierungen des
- *   eigenen Kurses (mod/assign/mod_form.php:195:
- *   `groups_get_all_groupings($assignment->get_course()->id)`), aber weder
- *   add_instance() noch update_instance() prueft das beim Schreiben nach -
- *   eine Gruppierungs-ID aus einem fremden Kurs würde unbeanstandet
- *   uebernommen. Deshalb im Feld selbst vermerkt, wie choice::optionid.
- * - **"activity"/"activityformat"** kommen im Formular als ein Editor-Feld
- *   "activityeditor" (Text+Format+Draftitem), werden hier aber wie
- *   "intro"/"introformat" als zwei flache Felder gefuehrt - gleiche
- *   Vereinfachung wie bei allen anderen Katalogen dieser Spec (§3.2: das
- *   flache get_moduleinfo_data()-Feldobjekt, kein Editor-Array-Vertrag).
- * - **"introattachments"** ("Zusaetzliche Dateien") ist ab Spec 0018/#429
- *   katalogisiert und - anders als resource/folder - NICHT gesperrt: die
- *   Sperre aus Spec 0015 §4.3 galt fuer den Fall "Coursepilot hat noch keinen
- *   Ablageort fuer Binaerdateien", der mit dem Materialordner (Spec 0018 §2)
- *   entfaellt. Aufloesung der Materialordner-Pfade in einen
- *   Dateimanager-Entwurf uebernimmt update_module_settings vor dem
- *   update_moduleinfo()-Aufruf.
- * - **"introimages"** (Issue #433) haengt Materialdateien NICHT an, sondern
- *   in den Draft-Dateibereich der Intro selbst (component=mod_assign,
- *   filearea=intro) - update_moduleinfo() liest "intro" ausschliesslich aus
- *   $moduleinfo->introeditor['text'] (course/modlib.php:675-680), ein reiner
- *   ->intro-Patch verpufft sonst stillschweigend (siehe update_module_settings).
+ *   A MISSING field disables the plugin just like an explicit 0 - the
+ *   most dangerous case of this catalog, because it arises by omission.
+ *   If ALL submission plugins end up disabled, Moodle caches
+ *   is_any_submission_plugin_enabled() as "nosubmissions=1"
+ *   (add_instance()/update_instance():843/1629) - the assignment then accepts
+ *   no submissions at all.
+ * - **"nosubmissions" is a pure cache output**, not an input field: Moodle
+ *   computes it itself from the enable pseudo-fields (see above) right after
+ *   every add_instance()/update_instance() - a patch on it would be overwritten
+ *   on the next save. Blocklist.
+ * - **"revealidentities"** is a real column, but reachable through NO
+ *   form path: neither add_instance() nor update_instance()
+ *   takes it from $formdata - it is set exclusively via the
+ *   "Reveal identities" action (mod/assign/locallib.php, method
+ *   reveal_identities()). Unwritable via the vehicle, hence blocklist
+ *   instead of a silent no-op.
+ * - **"completionsubmit"** is a completion field AND a real column
+ *   at once: update_instance() only writes it if "completionunlocked"
+ *   is set (mod/assign/locallib.php:1569-1571) - otherwise silently discarded,
+ *   and without "completionunlocked" a write deletes the learners'
+ *   completion data according to Spec 0015
+ *   §8. Therefore, like the generic completion fields (course_modules, see
+ *   {@see shared_block::BLOCKLIST}), it is on the blocklist - it is written
+ *   via `set_completion` in the two-beat flow (ticket #461; unlocked there as a
+ *   module-specific completion field for "assign" and "choice").
+ * - **"teamsubmissiongroupingid"** lists only groupings of the
+ *   own course in the form (mod/assign/mod_form.php:195:
+ *   `groups_get_all_groupings($assignment->get_course()->id)`), but neither
+ *   add_instance() nor update_instance() re-checks this on write -
+ *   a grouping ID from a foreign course would be accepted unchallenged.
+ *   Therefore noted in the field itself, like choice::optionid.
+ * - **"activity"/"activityformat"** come in the form as one editor field
+ *   "activityeditor" (text+format+draftitem), but are kept here like
+ *   "intro"/"introformat" as two flat fields - the same
+ *   simplification as in all other catalogs of this spec (§3.2: the
+ *   flat get_moduleinfo_data() field object, no editor-array contract).
+ * - **"introattachments"** ("Additional files") is cataloged as of Spec 0018/#429
+ *   and - unlike resource/folder - NOT blocked: the
+ *   block from Spec 0015 §4.3 applied to the case "Coursepilot has no storage
+ *   location for binary files yet", which is gone with the material folder (Spec 0018 §2).
+ *   Resolving the material-folder paths into a
+ *   file-manager draft is done by update_module_settings before the
+ *   update_moduleinfo() call.
+ * - **"introimages"** (issue #433) does NOT attach material files, but puts them
+ *   into the draft file area of the intro itself (component=mod_assign,
+ *   filearea=intro) - update_moduleinfo() reads "intro" exclusively from
+ *   $moduleinfo->introeditor['text'] (course/modlib.php:675-680), a plain
+ *   ->intro patch would otherwise fizzle silently (see update_module_settings).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -98,13 +97,13 @@ final class assign implements module_catalog {
     }
 
     /**
-     * Die haeufig gesetzten Felder fuer die Kurzform von describe_module_fields
-     * (Spec 0015 §3.1, Ticket #382: "die zwoelf Felder, die eine Lehrkraft je
-     * benennt, nicht markinganonymous"). Kein Interface-Vertrag - ein optionaler
-     * Haken, den describe_module_fields per is_callable() abfragt; Katalogklassen
-     * ohne diese Methode liefern unveraendert alle ihre Felder in der Kurzform
-     * (bei sechs bis zwoelf Feldern wie label/choice/forum ist "alle" bereits
-     * die Kurzform).
+     * The commonly set fields for the short form of describe_module_fields
+     * (Spec 0015 §3.1, ticket #382: "the twelve fields a teacher
+     * names each time, not markinganonymous"). Not an interface contract - an optional
+     * hook that describe_module_fields queries via is_callable(); catalog classes
+     * without this method return all their fields unchanged in the short form
+     * (with six to twelve fields like label/choice/forum, "all" is already
+     * the short form).
      *
      * @return string[]
      */
@@ -130,344 +129,344 @@ final class assign implements module_catalog {
             new field(
                 'name',
                 'PARAM_TEXT',
-                'Anzeigename der Aufgabe.',
+                'Display name of the assignment.',
                 true,
                 null,
                 null,
                 null,
-                'mod/assign/mod_form.php:50-57 (PARAM_TEXT bzw. PARAM_CLEANHTML je nach $CFG->formatstringstriptags)'
+                'mod/assign/mod_form.php:50-57 (PARAM_TEXT or PARAM_CLEANHTML depending on $CFG->formatstringstriptags)'
             ),
             new field(
                 'intro',
                 'PARAM_RAW',
-                'Beschreibungstext (Intro) der Aufgabe.',
+                'Description text (intro) of the assignment.',
                 true,
                 null,
                 null,
                 null,
-                'mod/assign/db/install.xml (assign.intro, NOTNULL ohne DB-Default)'
+                'mod/assign/db/install.xml (assign.intro, NOTNULL without DB default)'
             ),
             new field(
                 'introformat',
                 'PARAM_INT',
-                'Textformat des Intros.',
+                'Text format of the intro.',
                 false,
                 FORMAT_HTML,
                 null,
                 'format_text_menu()',
-                'lib/weblib.php:464 (format_text_menu()); Spalte mod/assign/db/install.xml (assign.introformat)'
+                'lib/weblib.php:464 (format_text_menu()); column mod/assign/db/install.xml (assign.introformat)'
             ),
             new field(
                 'activity',
                 'PARAM_RAW',
-                'Zusaetzlicher Aktivitaetstext (eigener Editor-Block unterhalb des Intros), z.B. fuer '
-                    . 'Arbeitsauftraege. Leer = kein Zusatztext.',
+                'Additional activity text (separate editor block below the intro), e.g. for '
+                    . 'work assignments. Empty = no additional text.',
                 false,
                 null,
                 null,
                 null,
-                'mod/assign/mod_form.php:62-66 (Editor "activityeditor"); Spalte '
+                'mod/assign/mod_form.php:62-66 (Editor "activityeditor"); column '
                     . 'mod/assign/db/install.xml (assign.activity, NOTNULL=false)'
             ),
             new field(
                 'activityformat',
                 'PARAM_INT',
-                'Textformat des Aktivitaetstexts.',
+                'Text format of the activity text.',
                 false,
                 FORMAT_HTML,
                 null,
                 'format_text_menu()',
-                'lib/weblib.php:464 (format_text_menu()); Spalte mod/assign/db/install.xml (assign.activityformat)'
+                'lib/weblib.php:464 (format_text_menu()); column mod/assign/db/install.xml (assign.activityformat)'
             ),
             new field(
                 'alwaysshowdescription',
                 'PARAM_BOOL',
-                'Intro schon vor "allowsubmissionsfromdate" anzeigen statt erst danach.',
+                'Show the intro before "allowsubmissionsfromdate" instead of only after it.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:123-126 (checkbox); Spalte '
+                'mod/assign/mod_form.php:123-126 (checkbox); column '
                     . 'mod/assign/db/install.xml (assign.alwaysshowdescription)'
             ),
             new field(
                 'submissiondrafts',
                 'PARAM_BOOL',
-                'Abgaben gelten erst als Entwurf, bis die/der Lernende ausdruecklich abschickt.',
+                'Submissions count as drafts until the learner explicitly submits.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:132-137 (selectyesno); Spalte '
+                'mod/assign/mod_form.php:132-137 (selectyesno); column '
                     . 'mod/assign/db/install.xml (assign.submissiondrafts)'
             ),
             new field(
                 'requiresubmissionstatement',
                 'PARAM_BOOL',
-                'Lernende muessen vor dem Abschicken eine Selbststaendigkeitserklaerung akzeptieren.',
+                'Learners must accept an authorship statement before submitting.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:139-144 (selectyesno); Spalte '
+                'mod/assign/mod_form.php:139-144 (selectyesno); column '
                     . 'mod/assign/db/install.xml (assign.requiresubmissionstatement)'
             ),
             new field(
                 'maxattempts',
                 'PARAM_INT',
-                'Maximale Zahl an Abgabeversuchen. -1 = unbegrenzt.',
+                'Maximum number of submission attempts. -1 = unlimited.',
                 false,
                 1,
                 null,
                 null,
                 'mod/assign/mod_form.php:146-149 (Select 1-30 plus ASSIGN_UNLIMITED_ATTEMPTS); '
-                    . 'mod/assign/locallib.php:61 (ASSIGN_UNLIMITED_ATTEMPTS = -1); Spalte '
+                    . 'mod/assign/locallib.php:61 (ASSIGN_UNLIMITED_ATTEMPTS = -1); column '
                     . 'mod/assign/db/install.xml (assign.maxattempts, DEFAULT=1)'
             ),
             new field(
                 'attemptreopenmethod',
                 'PARAM_ALPHA',
-                'Wie ein neuer Versuch nach dem ersten geoeffnet wird: manuell, automatisch (nach jeder '
-                    . 'Bewertung) oder bis zum Bestehen. Nur sichtbar, wenn "maxattempts" != 1.',
+                'How a new attempt is opened after the first one: manually, automatically (after each '
+                    . 'grading) or until pass. Only visible if "maxattempts" != 1.',
                 false,
                 'untilpass',
                 ['manual', 'automatic', 'untilpass'],
                 null,
                 'mod/assign/locallib.php:55-58 (ASSIGN_ATTEMPT_REOPEN_METHOD_MANUAL/AUTOMATIC/UNTILPASS); '
-                    . 'mod/assign/mod_form.php:151-170 (choicedropdown); Spalte '
+                    . 'mod/assign/mod_form.php:151-170 (choicedropdown); column '
                     . 'mod/assign/db/install.xml (assign.attemptreopenmethod, DEFAULT=untilpass)'
             ),
             new field(
                 'duedate',
                 'PARAM_INT',
-                'Unix-Zeitstempel: Abgabetermin, nur informativ (kein Sperrzeitpunkt, das ist "cutoffdate"). '
-                    . 'Erzeugt einen Kalendereintrag (siehe Nebenwirkungen).',
+                'Unix timestamp: due date, informational only (not a lock time, that is "cutoffdate"). '
+                    . 'Creates a calendar event (see side effects).',
                 false,
                 0,
                 null,
                 null,
-                'mod/assign/mod_form.php:102-105 (date_time_selector, optional); Spalte '
+                'mod/assign/mod_form.php:102-105 (date_time_selector, optional); column '
                     . 'mod/assign/db/install.xml (assign.duedate)'
             ),
             new field(
                 'cutoffdate',
                 'PARAM_INT',
-                'Unix-Zeitstempel: ab hier nimmt Moodle keine Abgaben mehr an, auch keine spaeten. '
-                    . '0 = kein Cutoff.',
+                'Unix timestamp: from here on Moodle accepts no more submissions, not even late ones. '
+                    . '0 = no cut-off.',
                 false,
                 0,
                 null,
                 null,
-                'mod/assign/mod_form.php:107-109 (date_time_selector, optional); Spalte '
+                'mod/assign/mod_form.php:107-109 (date_time_selector, optional); column '
                     . 'mod/assign/db/install.xml (assign.cutoffdate)'
             ),
             new field(
                 'allowsubmissionsfromdate',
                 'PARAM_INT',
-                'Unix-Zeitstempel: Abgaben werden erst ab hier angenommen. 0 = ab sofort.',
+                'Unix timestamp: submissions are only accepted from here on. 0 = immediately.',
                 false,
                 0,
                 null,
                 null,
-                'mod/assign/mod_form.php:81-84 (date_time_selector, optional); Spalte '
+                'mod/assign/mod_form.php:81-84 (date_time_selector, optional); column '
                     . 'mod/assign/db/install.xml (assign.allowsubmissionsfromdate)'
             ),
             new field(
                 'gradingduedate',
                 'PARAM_INT',
-                'Unix-Zeitstempel: erwarteter Bewertungstermin, nur informativ. Erzeugt einen Kalendereintrag '
-                    . '(siehe Nebenwirkungen).',
+                'Unix timestamp: expected grading date, informational only. Creates a calendar event '
+                    . '(see side effects).',
                 false,
                 0,
                 null,
                 null,
-                'mod/assign/mod_form.php:111-113 (date_time_selector, optional); Spalte '
+                'mod/assign/mod_form.php:111-113 (date_time_selector, optional); column '
                     . 'mod/assign/db/install.xml (assign.gradingduedate)'
             ),
             new field(
                 'timelimit',
                 'PARAM_INT',
-                'Bearbeitungszeit in Sekunden ab Versuchsbeginn, sofern der Admin Zeitlimits aktiviert hat '
-                    . '($CFG->assign->enabletimelimit). 0 = kein Zeitlimit.',
+                'Working time in seconds from the start of an attempt, provided the admin has enabled time limits '
+                    . '($CFG->assign->enabletimelimit). 0 = no time limit.',
                 false,
                 0,
                 null,
                 null,
-                'mod/assign/mod_form.php:115-121 (duration, optional, nur bei aktivierter Admin-Einstellung); '
-                    . 'Spalte mod/assign/db/install.xml (assign.timelimit)'
+                'mod/assign/mod_form.php:115-121 (duration, optional, only with the admin setting enabled); '
+                    . 'column mod/assign/db/install.xml (assign.timelimit)'
             ),
             new field(
                 'grade',
                 'PARAM_INT',
-                'Bewertungstyp: positiv = Punkte-Maximum, negativ = ID einer benutzerdefinierten Skala, '
-                    . '0 = keine Bewertung.',
+                'Grade type: positive = maximum points, negative = ID of a custom scale, '
+                    . '0 = no grading.',
                 false,
                 0,
                 null,
                 null,
-                'course/moodleform_mod.php (standard_grading_coursemodule_elements(), modgrade-Element); '
-                    . 'mod/assign/mod_form.php:225 (Aufruf); Spalte mod/assign/db/install.xml (assign.grade)'
+                'course/moodleform_mod.php (standard_grading_coursemodule_elements(), modgrade element); '
+                    . 'mod/assign/mod_form.php:225 (call); column mod/assign/db/install.xml (assign.grade)'
             ),
             new field(
                 'gradepenalty',
                 'PARAM_BOOL',
-                'Verspaetungsabzuege aktivieren. Nur sichtbar, wenn das Penalty-Feature serverweit aktiv ist '
+                'Enable late penalties. Only visible if the penalty feature is active server-wide '
                     . '(core_grades\\penalty_manager::is_penalty_enabled_for_module()).',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:253-272 (selectyesno, bedingt sichtbar); Spalte '
+                'mod/assign/mod_form.php:253-272 (selectyesno, conditionally visible); column '
                     . 'mod/assign/db/install.xml (assign.gradepenalty)'
             ),
             new field(
                 'sendnotifications',
                 'PARAM_BOOL',
-                'Lehrkraefte per Mail ueber neue Abgaben benachrichtigen. Nebenwirkung: siehe Nebenwirkungen.',
+                'Notify teachers by email about new submissions. Side effect: see side effects.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:212-214 (selectyesno); Spalte '
+                'mod/assign/mod_form.php:212-214 (selectyesno); column '
                     . 'mod/assign/db/install.xml (assign.sendnotifications)'
             ),
             new field(
                 'sendlatenotifications',
                 'PARAM_BOOL',
-                'Auch bei verspaeteten Abgaben benachrichtigen. Nur wirksam bei "sendnotifications"=0 - bei '
-                    . '1 sind ohnehin schon alle Benachrichtigungen an.',
+                'Also notify about late submissions. Only effective with "sendnotifications"=0 - with '
+                    . '1 all notifications are on anyway.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:216-219 (selectyesno, disabledIf sendnotifications eq 1); Spalte '
+                'mod/assign/mod_form.php:216-219 (selectyesno, disabledIf sendnotifications eq 1); column '
                     . 'mod/assign/db/install.xml (assign.sendlatenotifications)'
             ),
             new field(
                 'sendstudentnotifications',
                 'PARAM_BOOL',
-                'Vorbelegung der "Lernende benachrichtigen"-Checkbox beim Bewerten.',
+                'Default for the "Notify learners" checkbox when grading.',
                 false,
                 1,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:221-223 (selectyesno); Spalte '
+                'mod/assign/mod_form.php:221-223 (selectyesno); column '
                     . 'mod/assign/db/install.xml (assign.sendstudentnotifications, DEFAULT=1)'
             ),
             new field(
                 'teamsubmission',
                 'PARAM_BOOL',
-                'Lernende geben in Gruppen ab statt einzeln.',
+                'Learners submit in groups instead of individually.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:174-179 (selectyesno); Spalte '
+                'mod/assign/mod_form.php:174-179 (selectyesno); column '
                     . 'mod/assign/db/install.xml (assign.teamsubmission)'
             ),
             new field(
                 'requireallteammemberssubmit',
                 'PARAM_BOOL',
-                'Eine Gruppenabgabe gilt erst als abgeschickt, wenn alle Mitglieder zugestimmt haben. Nur '
-                    . 'sichtbar bei "teamsubmission"=1.',
+                'A group submission only counts as submitted once all members have agreed. Only '
+                    . 'visible with "teamsubmission"=1.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:189-193 (selectyesno, hideIf teamsubmission eq 0); Spalte '
+                'mod/assign/mod_form.php:189-193 (selectyesno, hideIf teamsubmission eq 0); column '
                     . 'mod/assign/db/install.xml (assign.requireallteammemberssubmit)'
             ),
             new field(
                 'teamsubmissiongroupingid',
                 'PARAM_INT',
-                'Gruppierung, deren Gruppen fuer Gruppenabgaben verwendet werden (0 = alle Gruppen des Kurses). '
-                    . 'ACHTUNG: nur Gruppierungs-IDs desselben Kurses sind gueltig - das Formular listet nur '
-                    . 'diese, Moodle prueft das aber beim Schreiben selbst nicht nach.',
+                'Grouping whose groups are used for group submissions (0 = all groups of the course). '
+                    . 'WARNING: only grouping IDs of the same course are valid - the form lists only '
+                    . 'those, but Moodle does not re-check this itself on write.',
                 false,
                 0,
                 null,
                 null,
-                'mod/assign/mod_form.php:195-205 (groups_get_all_groupings($assignment->get_course()->id)); Spalte '
+                'mod/assign/mod_form.php:195-205 (groups_get_all_groupings($assignment->get_course()->id)); column '
                     . 'mod/assign/db/install.xml (assign.teamsubmissiongroupingid)'
             ),
             new field(
                 'preventsubmissionnotingroup',
                 'PARAM_BOOL',
-                'Abgabe verweigern, wenn die/der Lernende in keiner Gruppe ist. Nur sichtbar bei '
+                'Refuse submission if the learner is in no group. Only visible with '
                     . '"teamsubmission"=1.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:181-187 (selectyesno, hideIf teamsubmission eq 0); Spalte '
+                'mod/assign/mod_form.php:181-187 (selectyesno, hideIf teamsubmission eq 0); column '
                     . 'mod/assign/db/install.xml (assign.preventsubmissionnotingroup)'
             ),
             new field(
                 'blindmarking',
                 'PARAM_BOOL',
-                'Anonyme Bewertung: Namen der Lernenden vor der Lehrkraft verbergen, bis sie aufgedeckt werden.',
+                'Anonymous grading: hide learners\' names from the teacher until they are revealed.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:226-231 (selectyesno); Spalte mod/assign/db/install.xml (assign.blindmarking)'
+                'mod/assign/mod_form.php:226-231 (selectyesno); column mod/assign/db/install.xml (assign.blindmarking)'
             ),
             new field(
                 'hidegrader',
                 'PARAM_BOOL',
-                'Umgekehrte Anonymitaet: Name der bewertenden Person vor den Lernenden verbergen.',
+                'Reverse anonymity: hide the grader\'s name from the learners.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:233-235 (selectyesno); Spalte mod/assign/db/install.xml (assign.hidegrader)'
+                'mod/assign/mod_form.php:233-235 (selectyesno); column mod/assign/db/install.xml (assign.hidegrader)'
             ),
             new field(
                 'markingworkflow',
                 'PARAM_BOOL',
-                'Mehrstufigen Bewertungsworkflow (in Bearbeitung/zur Durchsicht/freigegeben, ...) verwenden.',
+                'Use a multi-stage grading workflow (in marking/ready for review/released, ...).',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:237-239 (selectyesno); Spalte mod/assign/db/install.xml (assign.markingworkflow)'
+                'mod/assign/mod_form.php:237-239 (selectyesno); column mod/assign/db/install.xml (assign.markingworkflow)'
             ),
             new field(
                 'markingallocation',
                 'PARAM_BOOL',
-                'Bewertende Personen je Abgabe zuteilen. Nur sichtbar bei "markingworkflow"=1; wird beim '
-                    . 'Speichern auf 0 erzwungen, wenn "markingworkflow"=0.',
+                'Allocate graders per submission. Only visible with "markingworkflow"=1; forced to 0 '
+                    . 'on save if "markingworkflow"=0.',
                 false,
                 0,
                 [0, 1],
                 null,
                 'mod/assign/mod_form.php:241-244 (selectyesno, hideIf markingworkflow eq 0); '
-                    . 'mod/assign/locallib.php:791-794/1587-1590 (Erzwingung); Spalte '
+                    . 'mod/assign/locallib.php:791-794/1587-1590 (enforcement); column '
                     . 'mod/assign/db/install.xml (assign.markingallocation)'
             ),
             new field(
                 'markinganonymous',
                 'PARAM_BOOL',
-                'Bewertende Personen sehen bei der Zuteilung nicht, wer wem zugeteilt ist. Nur sichtbar bei '
-                    . '"markingworkflow"=1 und "blindmarking"=1; wird beim Speichern auf 0 erzwungen, wenn eine '
-                    . 'der beiden Bedingungen fehlt.',
+                'Graders do not see who is allocated to whom when allocating. Only visible with '
+                    . '"markingworkflow"=1 and "blindmarking"=1; forced to 0 on save if one '
+                    . 'of the two conditions is missing.',
                 false,
                 0,
                 [0, 1],
                 null,
                 'mod/assign/mod_form.php:246-250 (selectyesno, hideIf markingworkflow/blindmarking eq 0); '
-                    . 'mod/assign/locallib.php:795-802/1591-1595 (Erzwingung); Spalte '
+                    . 'mod/assign/locallib.php:795-802/1591-1595 (Erzwingung); column '
                     . 'mod/assign/db/install.xml (assign.markinganonymous)'
             ),
             new field(
                 'submissionattachments',
                 'PARAM_BOOL',
-                'Abgabe-Zusammenfassung auf der Bewertungsseite um die Liste angehaengter Dateien ergaenzen.',
+                'Add the list of attached files to the submission summary on the grading page.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/mod_form.php:73-74 (advcheckbox); Spalte '
+                'mod/assign/mod_form.php:73-74 (advcheckbox); column '
                     . 'mod/assign/db/install.xml (assign.submissionattachments)'
             ),
         ];
@@ -519,10 +518,10 @@ final class assign implements module_catalog {
     }
 
     /**
-     * Übersetzt eine Zeile aus assign_plugin_config auf den Formularfeldnamen
-     * des Katalogs - vier Ausnahmen tragen im Formular einen anderen Namen als
+     * Translates a row from assign_plugin_config to the form field name
+     * of the catalog - four exceptions carry a different name in the form than
      * "{subtype}_{plugin}_{name}" (mod/assign/locallib.php: save_settings()
-     * der jeweiligen Pluginklasse).
+     * of the respective plugin class).
      *
      * @param \stdClass $config
      * @return string
@@ -564,8 +563,8 @@ final class assign implements module_catalog {
             new field(
                 'activityeditor',
                 'array{text: string, format: int, itemid: int}',
-                'Editor-Array fuer den zusaetzlichen Aktivitaetstext. Der flache Vertrag nutzt "activity" und '
-                    . '"activityformat"; dieses Feld dient dem nativen Formularweg.',
+                'Editor array for the additional activity text. The flat contract uses "activity" and '
+                    . '"activityformat"; this field serves the native form path.',
                 false,
                 null,
                 null,
@@ -574,57 +573,57 @@ final class assign implements module_catalog {
             ),
             new field(
                 'introimages',
-                'string[] (Materialordner-Pfade, nur Bild-Endungen)',
-                'Fachabbildungen, die IN den Beschreibungstext eingebettet werden (Spec 0018 §4.2/§5, Issue '
-                    . '#433 - schliesst den Weg aus #430/#431: Vorschau ansehen, Ausschnitt waehlen, hier '
-                    . 'einbetten). Jeder Pfad muss bereits als Materialdatei vorliegen und eine Endung aus der '
-                    . 'engeren Einbett-Whitelist tragen (png/jpg/jpeg/gif/svg/webp) - eine andere Endung (z.B. '
-                    . 'pdf) scheitert mit klarer Meldung. Der Patch traegt den Verweis selbst: der "intro"-Text '
-                    . 'muss ein Bild-Element enthalten, dessen Quelle mit "@@PLUGINFILE@@/" plus dem Dateinamen '
-                    . 'beginnt (Moodles Draft-Platzhalterpraefix), mit einem Alt-Text, den die KI selbst '
-                    . 'formuliert (Glossar: Alt-Text als KI-Qualitätsroutine). Ohne begleitenden "intro"-Patch '
-                    . 'bleibt die Datei nur im Dateibereich verfuegbar, aber unverlinkt.',
+                'string[] (material folder paths, image extensions only)',
+                'Subject images that are embedded IN the description text (Spec 0018 §4.2/§5, issue '
+                    . '#433 - closes the path from #430/#431: view preview, choose crop, embed '
+                    . 'here). Each path must already exist as a material file and carry an extension from the '
+                    . 'narrower embedding whitelist (png/jpg/jpeg/gif/svg/webp) - any other extension (e.g. '
+                    . 'pdf) fails with a clear message. The patch carries the reference itself: the "intro" text '
+                    . 'must contain an image element whose source begins with "@@PLUGINFILE@@/" plus the file name '
+                    . '(Moodle\'s draft placeholder prefix), with an alt text that the AI '
+                    . 'writes itself (glossary: alt text as AI quality routine). Without an accompanying "intro" patch '
+                    . 'the file is only available in the file area, but unlinked.',
                 false,
                 null,
                 null,
                 null,
-                'course/modlib.php:675-680 (update_moduleinfo(): file_save_draft_area_files() aus '
-                    . '$moduleinfo->introeditor löst @@PLUGINFILE@@ gegen den Draft-Dateibereich auf)'
+                'course/modlib.php:675-680 (update_moduleinfo(): file_save_draft_area_files() from '
+                    . '$moduleinfo->introeditor resolves @@PLUGINFILE@@ against the draft file area)'
             ),
             new field(
                 'introattachments',
-                'string[] (Materialordner-Pfade)',
-                'Zusaetzliche Dateien der Aufgabe ("Zusaetzliche Dateien"/introattachments-Feld) - Liste von '
-                    . 'Pfaden relativ zum Materialordner (Spec 0018 §4.2/§7: die Sperre aus Spec 0015 §4.3 entfaellt '
-                    . 'fuer assign). Jeder Pfad wird serverseitig zu einer bestehenden Materialdatei aufgeloest und '
-                    . 'unveraendert uebernommen; bereits vorhandene Anhaenge bleiben erhalten. Kein Chat-Anhang '
-                    . 'direkt - die Datei muss zuerst ueber upload_material_file im Materialordner liegen.',
+                'string[] (material folder paths)',
+                'Additional files of the assignment ("Additional files"/introattachments field) - list of '
+                    . 'paths relative to the material folder (Spec 0018 §4.2/§7: the block from Spec 0015 §4.3 is gone '
+                    . 'for assign). Each path is resolved server-side to an existing material file and '
+                    . 'taken over unchanged; already existing attachments are kept. Not a chat attachment '
+                    . 'directly - the file must first be in the material folder via upload_material_file.',
                 false,
                 null,
                 null,
                 null,
-                'mod/assign/locallib.php:1648-1650 (save_intro_draft_files(), isset-Wache); '
+                'mod/assign/locallib.php:1648-1650 (save_intro_draft_files(), isset guard); '
                     . 'mod/assign/locallib.php:82 (ASSIGN_INTROATTACHMENT_FILEAREA="introattachment")'
             ),
             new field(
                 'assignsubmission_file_enabled',
                 'PARAM_BOOL',
-                'Abgabeart "Datei" aktivieren. Kein DB-Feld: fehlt es, deaktiviert Moodle diese Abgabeart '
-                    . 'still (siehe Klassendoku). Ohne JEDE aktive Abgabeart wird "nosubmissions"=1 gesetzt - '
-                    . 'die Aufgabe nimmt dann gar keine Abgaben mehr an. Formular-Default ist '
-                    . 'admin-konfigurierbar (Site-Administration), deshalb hier ohne festen Default.',
+                'Enable the submission type "File". Not a DB field: if it is missing, Moodle silently disables this '
+                    . 'submission type (see class doc). With NO active submission type "nosubmissions"=1 is set - '
+                    . 'the assignment then accepts no submissions at all. The form default is '
+                    . 'admin-configurable (site administration), hence no fixed default here.',
                 false,
                 null,
                 [0, 1],
                 null,
                 'mod/assign/locallib.php:1359-1373 (update_plugin_instance(), "{subtype}_{type}_enabled"); '
-                    . 'mod/assign/locallib.php:1713-1716 (Default aus get_config(\'assignsubmission_file\', \'default\')); '
-                    . 'mod/assign/submission/file/settings.php:28 (Admin-Einstellung "default")'
+                    . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignsubmission_file\', \'default\')); '
+                    . 'mod/assign/submission/file/settings.php:28 (admin setting "default")'
             ),
             new field(
                 'assignsubmission_file_maxfiles',
                 'PARAM_INT',
-                'Maximale Anzahl Dateien je Abgabe. Nur wirksam bei "assignsubmission_file_enabled"=1.',
+                'Maximum number of files per submission. Only effective with "assignsubmission_file_enabled"=1.',
                 false,
                 20,
                 null,
@@ -634,8 +633,8 @@ final class assign implements module_catalog {
             new field(
                 'assignsubmission_file_maxsizebytes',
                 'PARAM_INT',
-                'Maximale Dateigroesse je Datei in Byte. Die waehlbaren Werte sind eine von Kurs- und '
-                    . 'Serverlimit abhaengige Teilmenge, keine feste Liste. Nur wirksam bei '
+                'Maximum file size per file in bytes. The selectable values are a subset depending on course and '
+                    . 'server limit, not a fixed list. Only effective with '
                     . '"assignsubmission_file_enabled"=1.',
                 false,
                 0,
@@ -647,83 +646,83 @@ final class assign implements module_catalog {
             new field(
                 'assignsubmission_file_filetypes',
                 'PARAM_RAW',
-                'Erlaubte Dateiendungen/-typen, kommasepariert (leer = alle). Nur wirksam bei '
+                'Allowed file extensions/types, comma-separated (empty = all). Only effective with '
                     . '"assignsubmission_file_enabled"=1.',
                 false,
                 '',
                 null,
                 null,
-                'mod/assign/submission/file/locallib.php:116 (filetypes-Element), :132-134 (save_settings())'
+                'mod/assign/submission/file/locallib.php:116 (filetypes element), :132-134 (save_settings())'
             ),
             new field(
                 'assignsubmission_onlinetext_enabled',
                 'PARAM_BOOL',
-                'Abgabeart "Online-Text" aktivieren. Kein DB-Feld, gleiches Risiko wie '
-                    . '"assignsubmission_file_enabled" (siehe Klassendoku). Formular-Default ist '
-                    . 'admin-konfigurierbar, deshalb hier ohne festen Default.',
+                'Enable the submission type "Online text". Not a DB field, same risk as '
+                    . '"assignsubmission_file_enabled" (see class doc). The form default is '
+                    . 'admin-configurable, hence no fixed default here.',
                 false,
                 null,
                 [0, 1],
                 null,
                 'mod/assign/locallib.php:1359-1373 (update_plugin_instance()); '
-                    . 'mod/assign/locallib.php:1713-1716 (Default aus get_config(\'assignsubmission_onlinetext\', \'default\')); '
-                    . 'mod/assign/submission/onlinetext/settings.php:26 (Admin-Einstellung "default")'
+                    . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignsubmission_onlinetext\', \'default\')); '
+                    . 'mod/assign/submission/onlinetext/settings.php:26 (admin setting "default")'
             ),
             new field(
                 'assignsubmission_onlinetext_wordlimit',
                 'PARAM_INT',
-                'Maximale Wortzahl des Online-Texts. Nur wirksam, wenn zusaetzlich '
-                    . '"assignsubmission_onlinetext_wordlimit_enabled"=1 gesetzt ist.',
+                'Maximum word count of the online text. Only effective if additionally '
+                    . '"assignsubmission_onlinetext_wordlimit_enabled"=1 is set.',
                 false,
                 0,
                 null,
                 null,
-                'mod/assign/submission/onlinetext/locallib.php:97 (Textfeld in der Wordlimit-Gruppe)'
+                'mod/assign/submission/onlinetext/locallib.php:97 (text field in the word-limit group)'
             ),
             new field(
                 'assignsubmission_onlinetext_wordlimit_enabled',
                 'PARAM_BOOL',
-                'Wortlimit fuer den Online-Text ueberhaupt anwenden. Ohne dieses Feld bleibt '
-                    . '"assignsubmission_onlinetext_wordlimit" wirkungslos (Kombinationsregel).',
+                'Apply the word limit to the online text at all. Without this field '
+                    . '"assignsubmission_onlinetext_wordlimit" has no effect (combination rule).',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/assign/submission/onlinetext/locallib.php:98-99 (Checkbox in der Wordlimit-Gruppe)'
+                'mod/assign/submission/onlinetext/locallib.php:98-99 (checkbox in the word-limit group)'
             ),
             new field(
                 'assignsubmission_comments_enabled',
                 'PARAM_BOOL',
-                'Abgabeart "Kommentare" (Diskussion zur Abgabe) aktivieren. Kein DB-Feld, gleiches Risiko wie '
-                    . '"assignsubmission_file_enabled" (siehe Klassendoku). Anders als die anderen '
-                    . 'Abgabe-Plugins hat dieses keine eigene Admin-Einstellung - der Formularwert folgt '
-                    . 'ausschliesslich davon, ob das Plugin serverweit aktiv ist.',
+                'Enable the submission type "Comments" (discussion about the submission). Not a DB field, same risk as '
+                    . '"assignsubmission_file_enabled" (see class doc). Unlike the other '
+                    . 'submission plugins, this one has no admin setting of its own - the form value follows '
+                    . 'solely whether the plugin is active server-wide.',
                 false,
                 0,
                 [0, 1],
                 null,
                 'mod/assign/locallib.php:1359-1373 (update_plugin_instance()); '
                     . 'mod/assign/submission/comments/locallib.php:187-188 (is_configurable() === false, '
-                    . 'kein settings.php)'
+                    . 'no settings.php)'
             ),
             new field(
                 'assignfeedback_comments_enabled',
                 'PARAM_BOOL',
-                'Feedbackart "Kommentarfeld" aktivieren. Kein DB-Feld; ihr Fehlen deaktiviert nur diese '
-                    . 'Feedbackart, nicht die Abgabe selbst. Formular-Default ist admin-konfigurierbar, '
-                    . 'deshalb hier ohne festen Default.',
+                'Enable the feedback type "Feedback comments". Not a DB field; its absence disables only this '
+                    . 'feedback type, not the submission itself. The form default is admin-configurable, '
+                    . 'hence no fixed default here.',
                 false,
                 null,
                 [0, 1],
                 null,
                 'mod/assign/locallib.php:1359-1373 (update_plugin_instance()); '
-                    . 'mod/assign/locallib.php:1713-1716 (Default aus get_config(\'assignfeedback_comments\', \'default\')); '
-                    . 'mod/assign/feedback/comments/settings.php:26 (Admin-Einstellung "default")'
+                    . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_comments\', \'default\')); '
+                    . 'mod/assign/feedback/comments/settings.php:26 (admin setting "default")'
             ),
             new field(
                 'assignfeedback_comments_commentinline',
                 'PARAM_BOOL',
-                'Feedbackkommentar direkt in die Abgabe einfuegen statt daneben anzuzeigen. Nur wirksam bei '
+                'Insert the feedback comment directly into the submission instead of showing it alongside. Only effective with '
                     . '"assignfeedback_comments_enabled"=1.',
                 false,
                 0,
@@ -734,43 +733,43 @@ final class assign implements module_catalog {
             new field(
                 'assignfeedback_editpdf_enabled',
                 'PARAM_BOOL',
-                'Feedbackart "Anmerkungen im PDF" (Annotate PDF) aktivieren. Kein DB-Feld, gleiches Muster '
-                    . 'wie "assignfeedback_comments_enabled" - Formular-Default admin-konfigurierbar.',
+                'Enable the feedback type "Annotate PDF". Not a DB field, same pattern '
+                    . 'as "assignfeedback_comments_enabled" - form default admin-configurable.',
                 false,
                 null,
                 [0, 1],
                 null,
                 'mod/assign/locallib.php:1359-1373 (update_plugin_instance()); '
-                    . 'mod/assign/locallib.php:1713-1716 (Default aus get_config(\'assignfeedback_editpdf\', \'default\')); '
-                    . 'mod/assign/feedback/editpdf/settings.php:29 (Admin-Einstellung "default")'
+                    . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_editpdf\', \'default\')); '
+                    . 'mod/assign/feedback/editpdf/settings.php:29 (admin setting "default")'
             ),
             new field(
                 'assignfeedback_file_enabled',
                 'PARAM_BOOL',
-                'Feedbackart "Feedback-Datei" (Datei-Rueckgabe an die Lernenden) aktivieren. Kein DB-Feld, '
-                    . 'gleiches Muster wie "assignfeedback_comments_enabled" - Formular-Default '
-                    . 'admin-konfigurierbar.',
+                'Enable the feedback type "Feedback files" (returning files to the learners). Not a DB field, '
+                    . 'same pattern as "assignfeedback_comments_enabled" - form default '
+                    . 'admin-configurable.',
                 false,
                 null,
                 [0, 1],
                 null,
                 'mod/assign/locallib.php:1359-1373 (update_plugin_instance()); '
-                    . 'mod/assign/locallib.php:1713-1716 (Default aus get_config(\'assignfeedback_file\', \'default\')); '
-                    . 'mod/assign/feedback/file/settings.php:26 (Admin-Einstellung "default")'
+                    . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_file\', \'default\')); '
+                    . 'mod/assign/feedback/file/settings.php:26 (admin setting "default")'
             ),
             new field(
                 'assignfeedback_offline_enabled',
                 'PARAM_BOOL',
-                'Feedbackart "Bewertungstabelle offline" (Export/Import als Tabelle) aktivieren. Kein DB-Feld, '
-                    . 'gleiches Muster wie "assignfeedback_comments_enabled" - Formular-Default '
-                    . 'admin-konfigurierbar.',
+                'Enable the feedback type "Offline grading worksheet" (export/import as a table). Not a DB field, '
+                    . 'same pattern as "assignfeedback_comments_enabled" - form default '
+                    . 'admin-configurable.',
                 false,
                 null,
                 [0, 1],
                 null,
                 'mod/assign/locallib.php:1359-1373 (update_plugin_instance()); '
-                    . 'mod/assign/locallib.php:1713-1716 (Default aus get_config(\'assignfeedback_offline\', \'default\')); '
-                    . 'mod/assign/feedback/offline/settings.php:26 (Admin-Einstellung "default")'
+                    . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_offline\', \'default\')); '
+                    . 'mod/assign/feedback/offline/settings.php:26 (admin setting "default")'
             ),
         ];
     }
@@ -785,26 +784,26 @@ final class assign implements module_catalog {
 
     public static function combination_rules(): array {
         return [
-            '"duedate" muss nach "allowsubmissionsfromdate" liegen, wenn beide gesetzt sind '
+            '"duedate" must be after "allowsubmissionsfromdate" if both are set '
                 . '(mod/assign/mod_form.php: validation()).',
-            '"cutoffdate" darf nicht vor "duedate" liegen, wenn beide gesetzt sind (validation()).',
-            '"cutoffdate" darf nicht vor "allowsubmissionsfromdate" liegen, wenn beide gesetzt sind '
+            '"cutoffdate" must not be before "duedate" if both are set (validation()).',
+            '"cutoffdate" must not be before "allowsubmissionsfromdate" if both are set '
                 . '(validation()).',
-            '"gradingduedate" muss nach "allowsubmissionsfromdate" liegen, wenn beide gesetzt sind '
+            '"gradingduedate" must be after "allowsubmissionsfromdate" if both are set '
                 . '(validation()).',
-            '"gradingduedate" muss nach "duedate" liegen, wenn beide gesetzt sind (validation()).',
-            '"attemptreopenmethod"="untilpass" ist nicht mit "blindmarking"=1 kombinierbar, sobald mehr als '
-                . 'ein Versuch erlaubt ist ("maxattempts" > 1 oder unbegrenzt) (validation()).',
+            '"gradingduedate" must be after "duedate" if both are set (validation()).',
+            '"attemptreopenmethod"="untilpass" cannot be combined with "blindmarking"=1 as soon as more than '
+                . 'one attempt is allowed ("maxattempts" > 1 or unlimited) (validation()).',
         ];
     }
 
     public static function side_effects(): array {
         return [
-            '"sendnotifications"=1 verschickt ab dann bei jeder neuen Abgabe eine Mail an alle Lehrkraefte '
-                . 'der Aufgabe (mod/assign/locallib.php: email_graders()).',
-            '"duedate"/"gradingduedate" erzeugen bzw. aktualisieren je einen Kalendereintrag '
-                . '(mod/assign/locallib.php: update_calendar()); "cutoffdate"/"allowsubmissionsfromdate" tun '
-                . 'das nicht.',
+            '"sendnotifications"=1 sends an email to all teachers of the assignment '
+                . 'on every new submission from then on (mod/assign/locallib.php: email_graders()).',
+            '"duedate"/"gradingduedate" each create or update a calendar event '
+                . '(mod/assign/locallib.php: update_calendar()); "cutoffdate"/"allowsubmissionsfromdate" do '
+                . 'not.',
         ];
     }
 
@@ -840,11 +839,11 @@ final class assign implements module_catalog {
     }
 
     public static function checked_constants(): array {
-        // Die 34 Konstanten aus mod/assign/locallib.php ohne aufrufbare
-        // Wertemenge (Spec 0015 §11, Ticket #382/#399). Genau eine Ausnahme:
-        // ASSIGN_MARKER_FILTER_NO_MARKER ist eine Filter-UI-Kennung der
-        // Bewertungstabelle, kein Feldwert einer Instanz - deshalb absichtlich
-        // nicht mitgezaehlt.
+        // The 34 constants from mod/assign/locallib.php without a callable
+        // value set (Spec 0015 §11, ticket #382/#399). Exactly one exception:
+        // ASSIGN_MARKER_FILTER_NO_MARKER is a filter-UI marker of the
+        // grading table, not a field value of an instance - hence deliberately
+        // not counted.
         return [
             'ASSIGN_SUBMISSION_STATUS_NEW',
             'ASSIGN_SUBMISSION_STATUS_REOPENED',
@@ -884,7 +883,7 @@ final class assign implements module_catalog {
     }
 
     public static function learner_locks(): array {
-        // Ausgangsbestand aus #582, geprueft gegen Moodle 5.0.8
+        // Baseline from #582, verified against Moodle 5.0.8
         // (mod/assign/locallib.php: submissions_open(), is_blind_marking(),
         // get_marking_workflow_states_for_current_user()).
         return [
@@ -908,8 +907,8 @@ final class assign implements module_catalog {
     }
 
     /**
-     * Die Lehrkraft bewertet - ausser eine Instanz hat keine Bewertung
-     * (grade = 0, z.B. Buendel "exercise").
+     * The teacher grades - unless an instance has no grading
+     * (grade = 0, e.g. bundle "exercise").
      */
     public static function grade_origin(int $instanceid = 0): string {
         global $DB;

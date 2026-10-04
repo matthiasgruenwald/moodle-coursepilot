@@ -19,11 +19,11 @@ namespace local_coursepilot\history;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Lesende Oberflaeche des Aenderungsverlaufs (#394, Spec 0015 §10.6):
- * list_activity_versions (Einzeiler je Version gegenueber dem Vorgaenger) und
- * compare_activity_versions (volles Diff zweier frei gewaehlter Staende).
- * Beide berechnen serverseitig aus den Vollstaenden, die
- * {@see version_writer} anlegt - es gibt keine gespeicherte Diff-Kette.
+ * Read interface of the change history (#394, Spec 0015 §10.6):
+ * list_activity_versions (one-line summary per version against its predecessor) and
+ * compare_activity_versions (full diff of two freely chosen states).
+ * Both compute server-side from the full states that
+ * {@see version_writer} creates - there is no stored diff chain.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -32,8 +32,8 @@ defined('MOODLE_INTERNAL') || die();
 final class version_history {
 
     /**
-     * Alle Versionen einer Aktivitaet, aufsteigend, mit je einem Einzeiler
-     * gegenueber dem Vorgaenger (Spec 0015 §10.6, Abnahmekriterium 1+2).
+     * All versions of an activity, ascending, each with a one-line summary
+     * against its predecessor (Spec 0015 §10.6, acceptance criterion 1+2).
      *
      * @param int $cmid
      * @param string $lang UI language; tool callers keep the English default.
@@ -61,8 +61,8 @@ final class version_history {
     }
 
     /**
-     * Volles Diff zweier frei gewaehlter Staende, nicht nur benachbarter
-     * (Spec 0015 §10.6, Abnahmekriterium 3).
+     * Full diff of two freely chosen states, not only adjacent ones
+     * (Spec 0015 §10.6, acceptance criterion 3).
      *
      * @param int $cmid
      * @param int $fromversion
@@ -87,12 +87,12 @@ final class version_history {
     }
 
     /**
-     * Voller Zielzustand einer Version als diffbares Array - dieselbe
-     * Zusammenfuehrung (moduleinfo_json ueber coursemodule_json) wie fuer
-     * compare(), oeffentlich fuer {@see \local_coursepilot\external\restore_activity_version}
-     * (#395: "kein eigener Schreibmechanismus" - restore baut daraus einen
-     * Patch fuer update_module_settings/set_completion, genau wie compare()
-     * daraus ein Diff baut).
+     * Full target state of a version as a diffable array - the same
+     * merge (moduleinfo_json over coursemodule_json) as for
+     * compare(), public for {@see \local_coursepilot\external\restore_activity_version}
+     * (#395: "no separate write mechanism" - restore builds a patch for
+     * update_module_settings/set_completion from it, just as compare()
+     * builds a diff from it).
      *
      * @param int $cmid
      * @param int $version
@@ -104,15 +104,15 @@ final class version_history {
     }
 
     /**
-     * Datei-Metadaten eines Standes - fuer den Dateiwiederherstellungsschritt
-     * von {@see \local_coursepilot\external\restore_activity_version} (Spec
-     * 0018 §9.1, Issue #432): welche Dateien (component/filearea/filename/
-     * contenthash) gehoerten zu diesem Stand, und ist die jeweilige Zeile
-     * rueckschreibbar (gap=0, siehe {@see version_writer::capture_files()})?
+     * File metadata of a state - for the file restoration step
+     * of {@see \local_coursepilot\external\restore_activity_version} (Spec
+     * 0018 §9.1, issue #432): which files (component/filearea/filename/
+     * contenthash) belonged to this state, and can the respective row be
+     * written back (gap=0, see {@see version_writer::capture_files()})?
      *
      * @param int $cmid
      * @param int $version
-     * @return \stdClass[] Je Zeile: component, filearea, filename, contenthash, gap.
+     * @return \stdClass[] Per row: component, filearea, filename, contenthash, gap.
      * @throws \moodle_exception versionnotfound
      */
     public static function files_at(int $cmid, int $version): array {
@@ -142,10 +142,10 @@ final class version_history {
     }
 
     /**
-     * Anordnungs-Stand (#396, Spec 0015 §10) eines Standes - null fuer
-     * Nicht-quiz-Aktivitaeten und fuer Staende, die vor #396 angelegt wurden
-     * (keine arrangement_json mitgeschrieben). Oeffentlich fuer
-     * {@see \local_coursepilot\external\restore_activity_version}, analog zu
+     * Arrangement state (#396, Spec 0015 §10) of a state - null for
+     * non-quiz activities and for states created before #396
+     * (no arrangement_json recorded). Public for
+     * {@see \local_coursepilot\external\restore_activity_version}, analogous to
      * {@see self::state_at()}.
      *
      * @param int $cmid
@@ -162,12 +162,12 @@ final class version_history {
     }
 
     /**
-     * Aktivitaeten eines Kurses, die mindestens einen erfassten Verlaufs-
-     * Stand haben - Grundlage der Aktivitaetenliste auf history.php (#397).
-     * Reine Existenzabfrage ueber die eigene Tabelle, gefolgt vom normalen
-     * Moodle-Weg fuer die Aktivitaetsdaten (get_fast_modinfo) - damit bleibt
-     * die Speicherung des Verlaufs von der Oberflaeche getrennt (Spec 0015
-     * §10.6, Abnahmekriterium 7).
+     * Activities of a course that have at least one captured history
+     * state - basis of the activity list on history.php (#397).
+     * Pure existence query on the own table, followed by the normal
+     * Moodle route for the activity data (get_fast_modinfo) - this keeps
+     * history storage separate from the interface (Spec 0015
+     * §10.6, acceptance criterion 7).
      *
      * @param int $courseid
      * @return array<int, array{cmid: int, name: string, modname: string}>
@@ -189,9 +189,9 @@ final class version_history {
             try {
                 $cm = $modinfo->get_cm($cmid);
             } catch (\moodle_exception $e) {
-                // Aktivitaet zwischenzeitlich geloescht - Verlaufszeilen bleiben,
-                // aber es gibt nichts mehr anzuzeigen (#387 Kurs-Kaskade greift
-                // nur beim ganzen Kurs, nicht bei Einzelaktivitaeten).
+                // Activity deleted in the meantime - history rows remain,
+                // but there is nothing left to display (#387 course cascade
+                // only applies to the whole course, not to single activities).
                 continue;
             }
             $activities[] = ['cmid' => (int) $cmid, 'name' => $cm->name, 'modname' => $cm->modname];
@@ -232,8 +232,8 @@ final class version_history {
     }
 
     /**
-     * Metadaten eines Standes ohne Einzeiler - Grundlage sowohl fuer
-     * list_versions als auch fuer die before/after-Bloecke von compare().
+     * Metadata of a state without the one-line summary - basis for both
+     * list_versions and the before/after blocks of compare().
      *
      * @param \stdClass $record
      * @param string $lang
@@ -311,9 +311,9 @@ final class version_history {
     }
 
     /**
-     * moduleinfo_json und coursemodule_json zu einem diffbaren Zustand
-     * zusammengefuehrt - bei ueberlappenden Feldern gewinnt moduleinfo_json,
-     * die reichhaltigere Quelle (Tags, availability, Instanzfelder).
+     * moduleinfo_json and coursemodule_json merged into one diffable state -
+     * for overlapping fields moduleinfo_json wins, being the richer
+     * source (tags, availability, instance fields).
      *
      * @param \stdClass $record
      * @return array
@@ -336,14 +336,14 @@ final class version_history {
     }
 
     /**
-     * Feldnamen, deren Wert sich zwischen $before und $after unterscheidet -
-     * lose verglichen (wie {@see \local_coursepilot\external\update_module_settings::diff_and_side_effects()}),
-     * damit gleichwertige, aber unterschiedlich kodierte Werte nicht faelschlich
-     * als Aenderung erscheinen.
+     * Names of fields whose value differs between $before and $after -
+     * compared loosely (like {@see \local_coursepilot\external\update_module_settings::diff_and_side_effects()}),
+     * so that equivalent but differently encoded values do not falsely
+     * appear as a change.
      *
      * @param array $before
      * @param array $after
-     * @return string[] sortiert
+     * @return string[] sorted
      */
     private static function changed_fields(array $before, array $after): array {
         $fields = [];
@@ -357,8 +357,8 @@ final class version_history {
     }
 
     /**
-     * Vollstaendiges Feld-Diff mit Vorher-/Nachher-Wert je geaendertem Feld,
-     * fuer compare_activity_versions.
+     * Complete field diff with before/after value per changed field,
+     * for compare_activity_versions.
      *
      * @param array $before
      * @param array $after
@@ -377,7 +377,7 @@ final class version_history {
     }
 
     /**
-     * Datei-id => Dateiname der zu einem Stand gehoerenden Dateien.
+     * File id => file name of the files belonging to a state.
      *
      * @param int $versionid
      * @return array<int, string>
@@ -395,10 +395,10 @@ final class version_history {
     }
 
     /**
-     * Dateien, die zwischen zwei Staenden hinzugekommen bzw. weggefallen
-     * sind - eine inhaltlich geaenderte Datei am gleichen Pfad erscheint als
-     * ein Entfernen und ein Hinzufuegen (dedupliziert ueber den contenthash,
-     * siehe {@see version_writer::dedup_file()}).
+     * Files added or dropped between two states - a file whose content
+     * changed at the same path appears as one removal and one addition
+     * (deduplicated via the contenthash, see
+     * {@see version_writer::dedup_file()}).
      *
      * @param int $beforeversionid
      * @param int $afterversionid
@@ -430,9 +430,9 @@ final class version_history {
     private static function fullname(int $userid, string $lang): string {
         global $DB;
 
-        // Volle Zeile statt einer schmalen Feldauswahl: fullname() beschwert
-        // sich per debugging(), wenn ihr z.B. die Zweitnamensfelder fehlen,
-        // selbst wenn sie fuer die Anzeige ungenutzt bleiben.
+        // Full row instead of a narrow field selection: fullname() complains
+        // via debugging() when e.g. the alternate name fields are missing,
+        // even if they remain unused for display.
         $user = $DB->get_record('user', ['id' => $userid]);
         return $user ? fullname($user)
             : get_string_manager()->get_string('historyunknownuser', 'local_coursepilot', $userid, $lang);

@@ -66,8 +66,7 @@ final class compare_activity_versions_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 3: vergleicht zwei beliebige Staende, hier direkt
-     * benachbarte, mit den vollstaendigen Vorher-/Nachher-Werten.
+     * Acceptance criterion 6: check local/coursepilot:viewhistory.
      */
     public function test_compares_two_versions(): void {
         $this->resetAfterTest();

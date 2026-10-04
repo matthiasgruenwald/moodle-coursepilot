@@ -465,7 +465,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         } catch (\invalid_parameter_exception $e) {
             $this->assertStringContainsString(display_size(2048), $e->getMessage());
             $this->assertStringContainsString(display_size(1024), $e->getMessage());
-            $this->assertStringContainsString('aufteilen', $e->getMessage());
+            $this->assertStringContainsString('Split', $e->getMessage());
         }
 
         // Unterhalb der Grenze wirft die Methode nicht.
@@ -532,7 +532,7 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         $internal = $method->invoke(null, new \Error('Cannot access offset of type string on string'));
         $this->assertStringNotContainsString('offset', $internal);
-        $this->assertStringContainsString('Moodle-XML', $internal);
+        $this->assertStringContainsString('Moodle XML', $internal);
 
         $formaterror = new \moodle_exception('errorreadingfile', 'error', '', 'fragen.xml');
         $this->assertSame($formaterror->getMessage(), $method->invoke(null, $formaterror));
@@ -610,7 +610,7 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Baut ein minimales Moodle-XML mit einer einzelnen multichoice-Frage.
+     * Baut ein minimales Moodle XML mit einer einzelnen multichoice-Frage.
      *
      * @param string $name
      * @param string $questiontext

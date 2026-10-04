@@ -17,45 +17,41 @@
 namespace local_coursepilot\webdav;
 
 /**
- * Der Schrittkatalog der WebDAV-Freischaltung (Issue #490, Spec #486 §12):
- * eine Quelle fuer die drei Freischaltungsschritte, die spaeter auch die
- * Statusprüfung und die Leerzustaende der Ortswahlseite lesen. Jeder Schritt
- * traegt eine Pruefung, eine Handlungsanweisung und eine Zielseite und wird
- * bei jedem Aufruf live abgelesen - nichts hier wird gespeichert oder
- * zwischengespeichert, ein Entzug wirkt sofort (Spec §2 Pruefung 4).
+ * The step catalog of the WebDAV enablement (issue #490, spec #486 §12):
+ * one source for the three enablement steps, which later also feed the
+ * status check and the empty states of the location selection page. Each step
+ * carries a check, an instruction and a target page and is
+ * read live on every call - nothing here is stored or
+ * cached, a revocation takes effect immediately (spec §2 check 4).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class webdav_setup_steps {
-
-    /** @var string Repository-Typname, wie im Core-Table "repository" und im Config-Plugin. */
+    /** @var string Repository type name, as in the core table "repository" and in the config plugin. */
     private const REPOSITORY_TYPE = 'webdav';
-
-    /** @var string Capability, die im eigenen Nutzerkontext der Lehrkraft wirken muss. */
+    /** @var string Capability that must take effect in the teacher's own user context. */
     private const CAPABILITY = 'repository/webdav:view';
-
     /**
-     * @var string Adresse der Ortswahlseite (Spec §2/§5) - hier festgelegt,
-     *      die Seite selbst folgt in einem spaeteren Issue (#494). Jede
-     *      Fehlermeldung der Pointer-Aufloesung verweist hierher.
+     * @var string Address of the location selection page (spec §2/§5) - fixed here,
+     *      the page itself follows in a later issue (#494). Every
+     *      error message of the pointer resolution points here.
      */
     public const LOCATION_SELECTION_PAGE = '/local/coursepilot/location_selection.php';
 
     public const STEP_REPOSITORY_ACTIVE = 'repository_active';
     public const STEP_USER_INSTANCES = 'user_instances';
     public const STEP_CAPABILITY = 'capability';
-
     /**
-     * Die drei Schritte, live ausgewertet fuer eine bestimmte Person - jeder
-     * Schritt fuer sich (Issue #528, Spec #486 §5): vorher koppelte diese
-     * Methode `ok` an die vorherigen Schritte ("Schritt 1 aus" liess 2 und 3
-     * automatisch als fehlend gelten), obwohl Konfiguration und
-     * Rollenzuweisung unabhaengig voneinander gesetzt sein koennen. Der
-     * kopierbare Text an die Administration ({@see \local_coursepilot\location_selection::missing_steps_text()})
-     * nennt dadurch nur, was tatsaechlich fehlt. Die tatsaechliche Wirkung
-     * (alle drei zusammen) bleibt {@see enabled_for_user()} vorbehalten.
+     * The three steps, evaluated live for a specific person - each
+     * step on its own (issue #528, spec #486 §5): previously this
+     * method coupled `ok` to the previous steps ("step 1 off" made 2 and 3
+     * automatically count as missing), although configuration and
+     * role assignment can be set independently of each other. The
+     * copyable text to the administration ({@see \local_coursepilot\location_selection::missing_steps_text()})
+     * therefore names only what is actually missing. The actual effect
+     * (all three together) remains reserved for {@see enabled_for_user()}.
      *
      * @param int $userid
      * @return array<string, array{ok: bool, instruction: string, targeturl: \moodle_url}>
@@ -66,9 +62,9 @@ final class webdav_setup_steps {
         $repositoryrecord = $DB->get_record('repository', ['type' => self::REPOSITORY_TYPE]);
         $repositoryactive = $repositoryrecord !== false && (int) $repositoryrecord->visible === 1;
         $userinstancesallowed = (bool) get_config(self::REPOSITORY_TYPE, 'enableuserinstances');
-        // $userid > 0 vor dem Kontextzugriff (Issue #505 Befund #1): die CLI
-        // ruft mit $USER->id = 0 auf, context_user::instance(0) wirft dort
-        // dml_missing_record. Ohne Person ist die Capability ohnehin "nein".
+        // $userid > 0 before the context access (issue #505 finding #1): the CLI
+        // calls with $USER->id = 0, context_user::instance(0) throws
+        // dml_missing_record there. Without a person the capability is "no" anyway.
         $hascapability = $userid > 0 && has_capability(self::CAPABILITY, \context_user::instance($userid));
 
         return [
@@ -91,11 +87,11 @@ final class webdav_setup_steps {
     }
 
     /**
-     * Ob alle drei Schritte fuer diese Person erfuellt sind - die
-     * WebDAV-Freischaltung aus Spec §2 Pruefung 4. Seit Issue #528 werten
-     * die drei Schritte in {@see catalog()} unabhaengig voneinander aus,
-     * deshalb hier die ausdrueckliche UND-Verknuepfung statt sich auf eine
-     * bereits gekoppelte `ok`-Angabe zu verlassen.
+     * Whether all three steps are fulfilled for this person - the
+     * WebDAV enablement from spec §2 check 4. Since issue #528 the
+     * three steps in {@see catalog()} are evaluated independently of each other,
+     * hence the explicit AND here instead of relying on an
+     * already coupled `ok` value.
      *
      * @param int $userid
      * @return bool

@@ -28,14 +28,14 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/questionlib.php');
 
 /**
- * Fragenbank-Kategorien einer benannten Fragensammlung (#342): fuer
- * Wiederverwendung statt Doppelanlage.
+ * Question bank categories of a named question collection (#342): for
+ * reuse instead of duplicate creation.
  *
- * Eigenstaendige Portierung von
- * local_coursepilot\external\get_question_categories - local_coursepilot hat
- * laut Spec 0012 keine Laufzeitabhaengigkeit auf das andere Plugin (siehe
- * get_course_catalog.php aus #341, derselbe Fund). Vertrag (Feldnamen,
- * Top-Kategorie enthalten) bleibt identisch zum lokalen Werkzeug.
+ * Standalone port of
+ * local_coursepilot\external\get_question_categories - local_coursepilot has
+ * no runtime dependency on the other plugin per Spec 0012 (see
+ * get_course_catalog.php from #341, same finding). Contract (field names,
+ * top category included) stays identical to the local tool.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -68,7 +68,7 @@ class get_question_categories extends external_api {
 
         [, $qbankcontext] = question_bank_context::resolve($params['courseid'], $params['questionbankid']);
 
-        // Stellt sicher, dass die top-Kategorie existiert (legt sie ggf. an).
+        // Make sure the top category exists (creates it if necessary).
         question_get_top_category($qbankcontext->id, true);
 
         $categories = $DB->get_records('question_categories',

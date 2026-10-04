@@ -44,7 +44,7 @@ final class ensure_question_category_test extends \advanced_testcase {
         $this->assertGreaterThan(0, $result['id']);
         $this->assertSame($topcategoryid, $result['parent']);
         $this->assertSame('7.2 Stoffe und ihre Eigenschaften', $result['name']);
-        $this->assertStringContainsString('angelegt', $result['message']);
+        $this->assertStringContainsString('created', $result['message']);
     }
 
     /**
@@ -64,7 +64,7 @@ final class ensure_question_category_test extends \advanced_testcase {
 
         $this->assertFalse($second['created']);
         $this->assertSame($first['id'], $second['id']);
-        $this->assertStringContainsString('wiederverwendet', $second['message']);
+        $this->assertStringContainsString('reusing', $second['message']);
 
         global $DB;
         $count = $DB->count_records('question_categories', [

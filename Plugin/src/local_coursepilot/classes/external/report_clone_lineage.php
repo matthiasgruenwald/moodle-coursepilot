@@ -75,7 +75,7 @@ final class report_clone_lineage extends external_api {
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
         if ($cm->modname !== 'quiz') {
-            throw new invalid_parameter_exception('cmid muss ein Test (mod_quiz) sein, hier: "' . $cm->modname . '".');
+            throw new invalid_parameter_exception('cmid must be a quiz (mod_quiz), got: "' . $cm->modname . '".');
         }
 
         $context = context_module::instance($cm->id);
@@ -190,8 +190,8 @@ final class report_clone_lineage extends external_api {
                 . 'there also changes the question here.';
         }
 
-        return $owncopies . ' Frage(n) als eigene Kopie angelegt, ' . $shared . ' Frage(n) zeigen weiterhin auf '
-            . 'den Quellkurs (geteilte Referenz).';
+        return $owncopies . ' question(s) created as their own copy, ' . $shared . ' question(s) still point to '
+            . 'the source course (shared reference).';
     }
 
     /**

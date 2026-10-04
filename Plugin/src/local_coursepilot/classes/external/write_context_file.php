@@ -27,21 +27,22 @@ use local_coursepilot\context_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Legt eine Datei im Kontextbereich der aufrufenden Lehrkraft an oder
- * ueberschreibt sie vollstaendig (Issue #408, Spec 0016 §4.1).
+ * Creates a file in the calling teacher's context area or overwrites it
+ * completely (Issue #408, Spec 0016 §4.1).
  *
- * Ortsneutral seit Issue #538 (Spec 0021): dieses Werkzeug kennt weder
- * Ortsart noch Ortsfehlerschluessel noch ein "etag"-Sonderfeld - die
- * Entscheidung, ob Private Files oder der externe Ort greift, trifft
- * {@see context_area::write()}. Nichts wird angefasst, bevor nicht alles
- * geprueft ist - diese Reihenfolge (Pfad, Endung, Groesse, Personenbezug,
- * Gleichzeitigkeit, Quote) bleibt weiterhin Absicht, liegt aber jetzt dort.
+ * Location-independent since Issue #538 (Spec 0021): this tool knows
+ * neither a location type nor a location error key nor a special "etag"
+ * field - the decision whether Private Files or the external location
+ * applies is made by {@see context_area::write()}. Nothing is touched
+ * before everything has been checked - this order (path, extension, size,
+ * personal data, concurrency, quota) remains intentional, but now lives
+ * there.
  *
- * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "pending_entry" statt
- * "ausstand", "create_only" statt "nur_anlegen" - dasselbe Nachtragsverhalten
- * (ein erfolgreiches Schreiben mit "pending_entry" verwirft den Eintrag im
- * selben Aufruf ueber {@see \local_coursepilot\pending_write_notice::dismiss()})
- * bleibt unveraendert.
+ * Declared directly in English (#571, Spec 0025 §A): "pending_entry" instead
+ * of "ausstand", "create_only" instead of "nur_anlegen" - the same catch-up
+ * behaviour (a successful write with "pending_entry" discards the entry in
+ * the same call via {@see \local_coursepilot\pending_write_notice::dismiss()})
+ * remains unchanged.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -97,7 +98,7 @@ class write_context_file extends external_api {
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
      *         contextfiletoolarge, contextfilelocked, contextfilechanged,
      *         contextfilealreadyexists, contextquotaexceeded
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     * @throws \required_capability_exception without moodle/user:manageownfiles
      */
     public static function execute(
         string $path,
@@ -135,8 +136,8 @@ class write_context_file extends external_api {
     }
 
     /**
-     * Baut die Lehrkraft-Deutsch-Aenderungsmeldung aus dem ortsneutralen
-     * Ergebnis von {@see context_area::write()}.
+     * Builds the teacher-facing change message from the location-independent
+     * result of {@see context_area::write()}.
      *
      * @param array{path: string, created: bool, size: int, oldsize: int} $result
      * @return array
@@ -166,7 +167,7 @@ class write_context_file extends external_api {
             'path' => new external_value(PARAM_TEXT, 'Resolved file path, relative to the context area'),
             'created' => new external_value(PARAM_BOOL, 'true if the file was newly created'),
             'size' => new external_value(PARAM_INT, 'New file size in bytes'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
         ]);
     }
 }

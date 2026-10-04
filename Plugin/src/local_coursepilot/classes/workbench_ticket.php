@@ -17,28 +17,27 @@
 namespace local_coursepilot;
 
 /**
- * Einmal-Downloadticket fuer eine Werkbankdatei (Issue #501, Spec #486 §13):
- * ein Client mit Shell (curl) holt eine Werkbankdatei in Originalbytes ueber
- * einen eigenen, unauthentifizierten Endpunkt ({@see \local_coursepilot\workbench_ticket}
- * ist die Entscheidungslogik dahinter, `workbench/download.php` die duenne
- * Schale) - das Ticket selbst ist der Berechtigungsnachweis, kein
- * OAuth-Bearer-Header noetig.
+ * One-time download ticket for a workbench file (issue #501, spec #486 §13):
+ * a client with a shell (curl) fetches a workbench file as original bytes via
+ * a dedicated, unauthenticated endpoint ({@see \local_coursepilot\workbench_ticket}
+ * is the decision logic behind it, `workbench/download.php` the thin
+ * shell) - the ticket itself is the proof of authorization, no OAuth bearer
+ * header needed.
  *
- * Gebunden an Person, Pfad und `contenthash`, oeffnet nur die Werkbank (jeder
- * Pfad laeuft ueber {@see material_files::resolve_file()}, das immer die
- * Werkbank auflöst und einen Ausbruch per "."/".." bereits ablehnt). Gilt
- * einmal ab dem ersten Abruf - die Zeile wird beim Nachschlagen atomar per
- * Compare-and-Swap beansprucht ({@see claim()}, #512), unabhaengig davon, ob
- * die anschliessenden Pruefungen bestehen: zwei gleichzeitige Abrufe
- * desselben Tickets liefern die Datei hoechstens einmal, auch wenn beide
- * Anfragen exakt im selben Moment eintreffen. Fest 15 Minuten gueltig, ohne
- * Range-Unterstuetzung (das setzt der Endpunkt um, der nie auf einen
- * Range-Header eingeht).
+ * Bound to person, path and `contenthash`, opens only the workbench (every
+ * path goes through {@see material_files::resolve_file()}, which always
+ * resolves the workbench and already rejects a breakout via "."/".."). Valid
+ * once from the first redemption - the row is claimed atomically via
+ * compare-and-swap on lookup ({@see claim()}, #512), regardless of whether
+ * the subsequent checks pass: two simultaneous redemptions of the same
+ * ticket deliver the file at most once, even if both requests arrive at
+ * exactly the same moment. Valid for a fixed 15 minutes, without range
+ * support (the endpoint implements this and never honors a Range header).
  *
- * Gespeichert wird nur der Hash des Tickets ({@see issue()}/{@see redeem()}),
- * nie das Geheimnis selbst. Abgelaufene Zeilen werden opportunistisch beim
- * naechsten Ausstellen entfernt ({@see purge_expired()}) - kein eigener
- * geplanter Task fuer eine einzelne, kleine Tabelle.
+ * Only the hash of the ticket is stored ({@see issue()}/{@see redeem()}),
+ * never the secret itself. Expired rows are removed opportunistically on the
+ * next issue ({@see purge_expired()}) - no dedicated scheduled task for a
+ * single, small table.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -46,19 +45,19 @@ namespace local_coursepilot;
  */
 final class workbench_ticket {
 
-    /** @var string DB-Tabelle der ausgestellten Tickets. */
+    /** @var string DB table of the issued tickets. */
     public const TABLE = 'local_coursepilot_workbench_ticket';
 
-    /** @var int Gueltigkeitsdauer in Sekunden - Spec #486 §13: "fest 15 Minuten". */
+    /** @var int Validity period in seconds - spec #486 §13: "fixed 15 minutes". */
     public const TTL_SECONDS = 900;
 
     /**
-     * Stellt ein Ticket fuer eine Werkbankdatei der angemeldeten Person aus.
+     * Issues a ticket for a workbench file of the signed-in person.
      *
-     * @param string $path Pfad relativ zur Werkbankwurzel, z.B. "blatt.pdf".
+     * @param string $path Path relative to the workbench root, e.g. "blatt.pdf".
      * @return array{path: string, name: string, size: int, sha1: string, url: string}
-     * @throws \moodle_exception invalidmaterialpath (Pfad ausserhalb der
-     *         Werkbank), materialfilenotfound (Datei fehlt)
+     * @throws \moodle_exception invalidmaterialpath (path outside the
+     *         workbench), materialfilenotfound (file missing)
      */
     public static function issue(string $path): array {
         global $USER, $CFG, $DB;
@@ -99,15 +98,15 @@ final class workbench_ticket {
     }
 
     /**
-     * Loest ein Ticket ein - der einzige Weg, die dahinterliegenden Bytes zu
-     * lesen. Prueft in dieser Reihenfolge: Notbremse (vor jedem
-     * Datenbankzugriff, damit eine global gesperrte Instanz kein einziges
-     * Ticket verbraucht), Ticket bekannt (und verbraucht es sofort - ab hier
-     * ist es weg, unabhaengig vom Ausgang der folgenden Pruefungen), Ablauf,
-     * Bestand der ausstellenden Verbindung, aktives Konto, Fernzugriffsfreigabe, unveraenderter
+     * Redeems a ticket - the only way to read the bytes behind it. Checks in
+     * this order: emergency brake (before any database access, so a globally
+     * locked instance consumes no ticket at all), ticket known (and consumes
+     * it immediately - from here on it is gone, regardless of the outcome of
+     * the following checks), expiry, existence of the issuing connection,
+     * active account, remote access grant, unchanged
      * `contenthash`.
      *
-     * @param string $secret Das Ticketgeheimnis aus der URL.
+     * @param string $secret The ticket secret from the URL.
      * @return array{userid: int, path: string, filename: string, mimetype: string,
      *         content: string, size: int}
      * @throws workbench_ticket_redemption_failed remoteaccessdisabled, workbenchticketinvalid,
@@ -123,10 +122,10 @@ final class workbench_ticket {
 
         $ticket = self::claim(hash('sha256', $secret));
         if (!$ticket) {
-            // Kein Pfad bekannt - entweder war das Ticket nie ausgestellt,
-            // oder ein gleichzeitiger Abruf hat es uns per {@see claim()}
-            // bereits vor der Nase weggeschnappt. Aus Sicht dieser Anfrage
-            // ununterscheidbar, und das ist gewollt (kein Zeitkanal).
+            // No path known - either the ticket was never issued, or a
+            // concurrent redemption already snatched it from under us via
+            // {@see claim()}. Indistinguishable from this request's point of
+            // view, and that is intended (no timing channel).
             throw new workbench_ticket_redemption_failed('workbenchticketinvalid', null);
         }
 
@@ -146,9 +145,8 @@ final class workbench_ticket {
     }
 
     /**
-     * Prueft Ablauf, Verbindung und Konto des Ticket-Inhabers (Issue #523:
-     * aus redeem() ausgelagert, um die Funktion unter der 50-Zeilen-Grenze
-     * zu halten).
+     * Checks expiry, connection and account of the ticket owner (issue #523:
+     * extracted from redeem() to keep the function under the 50-line limit).
      *
      * @param \stdClass $ticket
      * @throws workbench_ticket_redemption_failed
@@ -160,15 +158,15 @@ final class workbench_ticket {
             throw new workbench_ticket_redemption_failed('workbenchticketexpired', $ticket->path);
         }
 
-        // Nie staerker als seine Verbindung (Spec #486 §13): ein Ticket mit
-        // bekannter ausstellenden Verbindung braucht sie noch bestehend.
-        // Ein Ticket OHNE bekannte Verbindung (#512: z.B. weil die
-        // ausstellende Anfrage nie durch den OAuth-Dispatcher lief) ist
-        // deshalb nicht automatisch staerker - es verlangt ersatzweise
-        // irgendeine noch bestehende Verbindung der Person. Ausstellbar ist
-        // es damit weiterhin (kein zusaetzlicher Ausstellungs-Check noetig),
-        // aber es ueberlebt einen Sammelwiderruf (#338) genauso wenig wie
-        // ein Ticket mit bekannter Verbindung.
+        // Never stronger than its connection (spec #486 §13): a ticket with
+        // a known issuing connection needs it to still exist.
+        // A ticket WITHOUT a known connection (#512: e.g. because the
+        // issuing request never ran through the OAuth dispatcher) is
+        // therefore not automatically stronger - it requires, as a substitute,
+        // any still existing connection of the person. It can still be issued
+        // (no additional issuance check needed),
+        // but it survives a bulk revocation (#338) just as little as
+        // a ticket with a known connection.
         $hasconnection = $ticket->oauthconnectionid !== null
             ? oauth_lib::grant_active((int) $ticket->oauthconnectionid, (int) $ticket->userid)
             : ($ticket->oauthtokenid !== null
@@ -191,9 +189,8 @@ final class workbench_ticket {
     }
 
     /**
-     * Loest die Werkbankdatei auf und prueft den Contenthash (Issue #523:
-     * aus redeem() ausgelagert).
-     *
+     * Resolves the workbench file and checks the contenthash (issue #523:
+     * extracted from redeem()).
      * @param \stdClass $ticket
      * @param string $directory
      * @param string $filename
@@ -218,27 +215,26 @@ final class workbench_ticket {
     }
 
     /**
-     * Beansprucht die Ticketzeile zum gegebenen Tickethash atomar und liefert
-     * sie zurueck - oder null, wenn keine (mehr) existiert (#512).
+     * Atomically claims the ticket row for the given ticket hash and returns
+     * it - or null if none exists (any more) (#512).
      *
-     * Vorher stand hier ein SELECT nach `tickethash`, gefolgt von einem
-     * DELETE nach `id`: zwei getrennte Anweisungen mit einer Luecke
-     * dazwischen. Zwei gleichzeitige Abrufe desselben Tickets konnten beide
-     * das SELECT bestehen, bevor eine von beiden das DELETE ausfuehrte -
-     * beide haetten die Datei ausgeliefert. Diese Methode ersetzt das durch
-     * eine einzige atomare UPDATE-Anweisung mit dem alten Tickethash in der
-     * WHERE-Klausel (Compare-and-Swap): die Datenbank sperrt die betroffene
-     * Zeile fuer die Dauer der Anweisung, ein zeitgleiches zweites UPDATE mit
-     * derselben WHERE-Bedingung sieht danach den bereits geaenderten Wert und
-     * trifft keine Zeile mehr. Das gilt fuer jede SQL-Datenbank mit
-     * zeilenweiser Sperrung bei UPDATE (MySQL/InnoDB, PostgreSQL) und braucht
-     * keine von Moodles DB-Abstraktion nicht angebotene Rueckgabe der Anzahl
-     * betroffener Zeilen: der Erfolg zeigt sich daran, ob die Zeile danach
-     * unter dem eigenen, aus dem Prozess frischen Anspruchsmarker auffindbar
-     * ist - kein anderer Prozess kennt ihn.
+     * Previously this was a SELECT by `tickethash`, followed by a DELETE by
+     * `id`: two separate statements with a gap in between. Two simultaneous
+     * redemptions of the same ticket could both pass the SELECT before either
+     * ran the DELETE - both would have delivered the file. This method
+     * replaces that with a single atomic UPDATE statement with the old ticket
+     * hash in the WHERE clause (compare-and-swap): the database locks the
+     * affected row for the duration of the statement, a simultaneous second
+     * UPDATE with the same WHERE condition then sees the already changed value
+     * and matches no row. This holds for every SQL database with row-level
+     * locking on UPDATE (MySQL/InnoDB, PostgreSQL) and needs no return of the
+     * number of affected rows, which Moodle's DB abstraction does not offer:
+     * success shows in whether the row can afterwards be found under the own
+     * claim marker, freshly generated in this process - no other process
+     * knows it.
      *
-     * @param string $tickethash sha256 des Ticketgeheimnisses.
-     * @return \stdClass|null Die beanspruchte Zeile, oder null.
+     * @param string $tickethash SHA-256 hash of the ticket secret.
+     * @return \stdClass|null Claimed row, or null.
      */
     private static function claim(string $tickethash): ?\stdClass {
         global $DB;
@@ -250,16 +246,16 @@ final class workbench_ticket {
         if (!$ticket) {
             return null;
         }
-        // Beansprucht, ab hier weg - unabhaengig vom Ausgang der folgenden
-        // Pruefungen (Ablauf, Verbindung, Konto, contenthash).
+        // Claimed, gone from here on - regardless of the outcome of the
+        // following checks (expiry, connection, account, contenthash).
         $DB->delete_records(self::TABLE, ['id' => $ticket->id]);
         return $ticket;
     }
 
     /**
-     * Entfernt abgelaufene Ticketzeilen - opportunistisch bei jedem
-     * Ausstellen, statt ueber einen eigenen geplanten Task (Spec #486 §13:
-     * "abgelaufene Tickets bleiben nicht dauerhaft liegen").
+     * Removes expired ticket rows - opportunistically on every issue,
+     * instead of via a dedicated scheduled task (spec #486 §13:
+     * "expired tickets do not stay around permanently").
      *
      * @return void
      */

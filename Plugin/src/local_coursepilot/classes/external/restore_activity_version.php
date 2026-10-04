@@ -32,39 +32,39 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * "Vor drei Versionen war das besser" als ausfuehrbarer Schreibvorgang
- * (Spec 0015 §10.7, Ticket #395, Phase 4): der alte Stand wird als neue
- * juengste Version fortgeschrieben, statt die Aktivitaet zurueckzuspulen
- * oder als Sicherungskopie zu duplizieren - cmid bleibt stabil, Links und
- * Voraussetzungen bleiben gueltig.
+ * "Three versions ago it was better" as an executable write
+ * (Spec 0015 §10.7, ticket #395, phase 4): the old state is carried forward
+ * as the new latest version instead of rewinding the activity or
+ * duplicating it as a backup copy - cmid stays stable, links and
+ * prerequisites stay valid.
  *
- * Kein eigener Schreibmechanismus: der Zielstand wird in zwei Patches
- * zerlegt und ausschliesslich ueber die bestehenden Schreibwege gesetzt -
- * die "normalen" Instanzfelder ueber {@see update_module_settings::execute()},
- * die fuenf Vervollstaendigungsfelder ueber {@see set_completion::execute()}
- * (Ticket #392, der einzige Schreibweg dafuer). Damit erbt dieser Endpunkt
- * automatisch jede Validierung, jede Nebenwirkungsmeldung und den
- * course_module_updated-Beobachter, der den Rueckschreibvorgang selbst als
- * neue Version erfasst (#385) - keine Sonderbehandlung noetig.
+ * No write mechanism of its own: the target state is split into two patches
+ * and set exclusively through the existing write paths - the "normal"
+ * instance fields via {@see update_module_settings::execute()}, the five
+ * completion fields via {@see set_completion::execute()} (ticket #392, the
+ * only write path for them). This endpoint therefore inherits every
+ * validation, every side-effect message and the course_module_updated
+ * observer, which records the write-back itself as a new version (#385) -
+ * no special handling needed.
  *
- * Schutzschiene Vervollstaendigung (Spec 0015 §8): die Abschlussfelder
- * laufen ueber genau denselben Zweitakt wie jeder andere set_completion()-
- * Aufruf (Ticket #392) - "confirmed" wird unveraendert durchgereicht, statt
- * an dieser Stelle hart auf true gesetzt zu werden. Wuerde das Schreiben
- * bestehende Abschlussdaten von Lernenden loeschen und ist "confirmed"
- * nicht gesetzt, schreibt set_completion nichts und meldet die
- * Betroffenenzahl - genau diese Meldung erscheint in der Antwort dieses
- * Endpunkts (statt einer eigenen, schwaecheren Warnung). Ohne
- * Datenverlustrisiko (keine vorhandenen Abschlussdaten, oder nur
- * "completionexpected" weicht ab) laeuft die Rueckkehr wie jeder andere
- * set_completion()-Aufruf sofort durch - "completionunlocked wird nie
- * automatisch angewandt" ist set_completion's eigene Regel, die dieser
- * Endpunkt unveraendert erbt, statt sie zu verschaerfen oder zu umgehen.
+ * Completion guard rail (Spec 0015 §8): the completion fields go through
+ * exactly the same two-step flow as any other set_completion() call
+ * (ticket #392) - "confirmed" is passed through unchanged instead of being
+ * hard-set to true here. If the write would delete existing completion
+ * data of learners and "confirmed" is not set, set_completion writes
+ * nothing and reports the number of affected learners - exactly that
+ * message appears in this endpoint's response (instead of a weaker one of
+ * its own). Without data-loss risk (no existing completion data, or only
+ * "completionexpected" differs) the restore runs through immediately like
+ * any other set_completion() call - "completionunlocked is never applied
+ * automatically" is set_completion's own rule, which this endpoint
+ * inherits unchanged instead of tightening or bypassing it.
  *
- * Eigene Faehigkeit local/coursepilot:restoreversion statt local/coursepilot:use
- * (Spec 0015 §10.7: die Rueckkehr ist ein eigenstaendiger, folgenreicher
- * Schreibvorgang) - das eigentliche Zurueckschreiben verlangt zusaetzlich
- * moodle/course:manageactivities ueber die aufgerufenen Endpunkte.
+ * Own capability local/coursepilot:restoreversion instead of local/coursepilot:use
+ * (Spec 0015 §10.7: the restore is a separate, consequential write) - the
+ * actual write-back additionally requires moodle/course:manageactivities
+ * via the endpoints it calls.
+ *
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -73,14 +73,14 @@ defined('MOODLE_INTERNAL') || die();
 final class restore_activity_version extends external_api {
 
     /**
-     * Die Vervollstaendigungsfelder (identisch zu
-     * {@see set_completion}::ALLOWED_FIELDS plus dessen modulspezifischen
-     * Feldern, Ticket #461) - hier separat gefuehrt, weil set_completion sie
-     * als private Konstanten haelt und dieser Endpunkt sie nur braucht, um sie
-     * aus dem generischen Patch herauszuhalten und getrennt zu behandeln.
-     * "completionsubmit" steht bei jeder anderen Aktivitaetsart gar nicht erst
-     * im Versionsstand, faellt dort also schon ueber die
-     * array_key_exists()-Pruefung heraus.
+     * The completion fields (identical to
+     * {@see set_completion}::ALLOWED_FIELDS plus its module-specific
+     * fields, ticket #461) - kept separately here because set_completion
+     * holds them as private constants and this endpoint only needs them to
+     * keep them out of the generic patch and handle them separately.
+     * "completionsubmit" is not in the version state at all for any other
+     * activity type, so it drops out there already via the
+     * array_key_exists() check.
      *
      * @var string[]
      */
@@ -128,21 +128,20 @@ final class restore_activity_version extends external_api {
         $context = context_module::instance($cm->id);
         self::validate_context($context);
         require_capability('local/coursepilot:restoreversion', $context);
-        // Native Berechtigungspruefung vorgezogen, wie bei jedem anderen
-        // Schreibwerkzeug (Spec 0015 §3.3) - die eigentlichen Schreibaufrufe
-        // (update_module_settings/set_completion) pruefen sie ohnehin erneut.
+        // Native permission check moved forward, like every other write tool
+        // (Spec 0015 §3.3) - the actual write calls
+        // (update_module_settings/set_completion) check it again anyway.
         require_capability('moodle/course:manageactivities', $context);
 
         $modname = (string) $cm->modname;
 
-        // quiz hat laut ADR 0016 einen eigenen Schreibweg fuer Einstellungen
-        // (update_quiz_settings) - genau wie jeder andere Aufruf mit einem
-        // Katalog-Schreibweg (siehe self::catalog_for()) ist der Feld-Patch
-        // dieses Endpunkts fuer quiz deshalb blockiert, unveraendert seit
-        // Ticket #395/#385 (Abnahmekriterium 7). Was #396 NEU hinzufuegt, ist
-        // unabhaengig davon: die Anordnung (Slots/Fragereferenzen/Abschnitte/
-        // Feedback) - dafuer braucht es weder den Feldkatalog noch
-        // update_module_settings.
+        // Per ADR 0016, quiz has its own write path for settings
+        // (update_quiz_settings) - just like any call with a catalog write
+        // route (see self::catalog_for()), this endpoint's field patch is
+        // therefore blocked for quiz, unchanged since ticket #395/#385
+        // (acceptance criterion 7). What #396 ADDS is independent of that:
+        // the arrangement (slots/question references/sections/feedback) -
+        // that needs neither the field catalog nor update_module_settings.
         $catalogclass = registry::for($modname);
         if ($catalogclass !== null && ($catalogclass::write_options()['restores_arrangement'] ?? false)) {
             return self::execute_quiz_arrangement_only($cm, $params['target_version']);
@@ -174,12 +173,12 @@ final class restore_activity_version extends external_api {
                 );
                 $changes = array_merge($changes, $result['changes']);
             } catch (moodle_exception $e) {
-                // set_completion's eigener Zweitakt greift (Ticket #392): ohne
-                // Bestaetigung UND echtem Datenverlustrisiko schreibt es nichts
-                // und meldet die Betroffenenzahl - genau die "Datenverlust-
-                // Warnung", die dieser Endpunkt wiederverwenden soll statt
-                // selbst eine zu erfinden. Alles andere (z.B. Vervollstaendigung
-                // im Kurs deaktiviert) ist ein echter Fehler dieses Aufrufs.
+                // set_completion's own two-step flow applies (ticket #392): without
+                // confirmation AND a real data-loss risk it writes nothing and
+                // reports the number of affected learners - exactly the "data-loss
+                // warning" this endpoint is meant to reuse instead of inventing
+                // its own. Anything else (e.g. completion disabled in the
+                // course) is a real error of this call.
                 if ($e->errorcode !== 'completiondatalossconfirmationrequired') {
                     throw $e;
                 }
@@ -196,22 +195,21 @@ final class restore_activity_version extends external_api {
     }
 
     /**
-     * Holt Dateien zurueck, die der Zielstand in einem freigeschalteten
-     * Materialreferenz-Feld hatte (Spec 0018 §9.1, Issue #432): fuer jedes
-     * {@see update_module_settings::material_reference_specs()}-Feld dieser
-     * Aktivitaetsart wird verglichen, welche Zieldateien (aus
-     * {@see version_history::files_at()}, nur gap=0-Zeilen - die anderen
-     * sind eine dokumentierte Luecke) aktuell fehlen. Fehlt eine und liegt
-     * sie im Papierkorb ({@see activity_file_trash::find_for_restore()}),
-     * wird sie zurueckgeschrieben - alle unveraendert gebliebenen Dateien
-     * bleiben unangetastet. Fehlt eine Zieldatei UND ist sie nicht im
-     * Papierkorb auffindbar, bleibt es bei der bestehenden Luecke (kein
-     * Fehler, keine Regression).
+     * Brings back files the target state had in an unlocked material
+     * reference field (Spec 0018 §9.1, issue #432): for each
+     * {@see update_module_settings::material_reference_specs()} field of this
+     * activity type, it compares which target files (from
+     * {@see version_history::files_at()}, only gap=0 rows - the others
+     * are a documented gap) are currently missing. If one is missing and
+     * sits in the recycle bin ({@see activity_file_trash::find_for_restore()}),
+     * it is written back - all files that stayed unchanged are left
+     * untouched. If a target file is missing AND cannot be found in the
+     * recycle bin, the existing gap stays (no error, no regression).
      *
      * @param \stdClass $cm
      * @param \context_module $context
      * @param int $targetversion
-     * @return string[] Dateinamen, die tatsaechlich wiederhergestellt wurden.
+     * @return string[] File names that were actually restored.
      */
     private static function restore_files(\stdClass $cm, context_module $context, int $targetversion): array {
         $modname = (string) $cm->modname;
@@ -236,7 +234,7 @@ final class restore_activity_version extends external_api {
             foreach ($wanted as $target) {
                 $current = $fs->get_file($context->id, $spec['component'], $spec['filearea'], 0, '/', $target->filename);
                 if ($current && $current->get_contenthash() === $target->contenthash) {
-                    // Schon der Zielstand - unangetastet mitnehmen.
+                    // Already the target state - carry over untouched.
                     $tobuild[] = $current;
                     continue;
                 }
@@ -251,16 +249,16 @@ final class restore_activity_version extends external_api {
                     $tobuild[] = $fromtrash;
                     $changedfilenames[] = $target->filename;
                 } else if ($current) {
-                    // Nicht im Papierkorb auffindbar (z. B. nie ersetzt,
-                    // Inhalt weicht aber trotzdem ab) - lieber den
-                    // vorhandenen Ist-Stand behalten als die Datei ganz zu
-                    // verlieren.
+                    // Not found in the recycle bin (e.g. never replaced,
+                    // but the content differs anyway) - better to keep the
+                    // existing current state than to lose the file
+                    // entirely.
                     $tobuild[] = $current;
                 }
             }
 
             if (!$changedfilenames) {
-                // Nichts weicht tatsaechlich ab - kein unnoetiger Schreibvorgang.
+                // Nothing actually differs - no unnecessary write.
                 continue;
             }
 
@@ -278,20 +276,20 @@ final class restore_activity_version extends external_api {
     }
 
     /**
-     * Der komplette Rueckschreibvorgang fuer quiz (#396): NUR die Anordnung,
-     * kein Feld-Patch (siehe Klassendoku dieser Methode-Aufrufstelle in
-     * {@see self::execute()} - ADR 0016, Abnahmekriterium 7 "Einstellungen
-     * bleiben unveraendert wie in Ticket 07"). Gibt es keine abweichende
-     * Anordnung zum Zielstand, bleibt die Meldung dieselbe wie fuer jeden
-     * anderen Aufruf dieses Endpunkts fuer quiz: "schreibvehicleblocked" -
-     * dieser Endpunkt kann fuer quiz grundsaetzlich nichts anderes als die
-     * Anordnung zurueckschreiben.
+     * The complete write-back for quiz (#396): ONLY the arrangement, no
+     * field patch (see the class doc of this method's call site in
+     * {@see self::execute()} - ADR 0016, acceptance criterion 7 "settings
+     * stay unchanged as in ticket 07"). If there is no arrangement that
+     * differs from the target state, the message stays the same as for any
+     * other call of this endpoint for quiz: "writevehicleblocked" -
+     * this endpoint fundamentally cannot write back anything but the
+     * arrangement for quiz.
      *
      * @param \stdClass $cm
      * @param int $targetversion
      * @return array
-     * @throws moodle_exception arrangementrestoreblocked, wenn der Test bereits Versuche hat und
-     *         die Anordnung abweicht; writevehicleblocked, wenn die Anordnung nicht abweicht.
+     * @throws moodle_exception arrangementrestoreblocked if the quiz already has attempts and
+     *         the arrangement differs; writevehicleblocked if the arrangement does not differ.
      */
     private static function execute_quiz_arrangement_only(\stdClass $cm, int $targetversion): array {
         $arrangementmessage = self::restore_quiz_arrangement($cm, $targetversion);
@@ -311,17 +309,17 @@ final class restore_activity_version extends external_api {
     }
 
     /**
-     * Schreibt den Anordnungs-Stand (Ticket #396) zurueck, falls der
-     * Zielstand eine abweichende Anordnung hat. Fehlt einem aelteren Stand
-     * die arrangement_json (vor #396 angelegt) oder stimmt die Anordnung
-     * bereits mit dem Ist-Stand ueberein, wird nichts unternommen - das
-     * gehoert zu den dokumentierten Verlaufsluecken
+     * Writes the arrangement state (ticket #396) back if the target state
+     * has a differing arrangement. If an older state lacks the
+     * arrangement_json (created before #396) or the arrangement already
+     * matches the current state, nothing is done - that belongs to the
+     * documented history gaps
      * ({@see version_history} gap notice).
      *
      * @param \stdClass $cm
      * @param int $targetversion
-     * @return string|null Lehrkraft-deutscher Zusatzsatz fuer die Antwort, oder null ohne Anordnungsaenderung.
-     * @throws moodle_exception arrangementrestoreblocked, wenn der Test bereits Versuche hat.
+     * @return string|null Additional sentence for the response, or null without an arrangement change.
+     * @throws moodle_exception arrangementrestoreblocked if the quiz already has attempts.
      */
     private static function restore_quiz_arrangement(\stdClass $cm, int $targetversion): ?string {
         $target = version_history::arrangement_at((int) $cm->id, $targetversion);
@@ -334,9 +332,9 @@ final class restore_activity_version extends external_api {
             return null;
         }
 
-        // Wirft arrangementrestoreblocked VOR jedem Schreibversuch, wenn der
-        // Test bereits Versuche hat (Schutzschiene Versuche, #396) - keine
-        // abgefangene Exception der Core-API.
+        // Throws arrangementrestoreblocked BEFORE any write attempt if the
+        // quiz already has attempts (attempts guard rail, #396) - no
+        // caught core API exception.
         arrangement::restore($quizid, $target);
 
         return 'The question arrangement was also restored to version ' . $targetversion . '. '
@@ -344,9 +342,9 @@ final class restore_activity_version extends external_api {
     }
 
     /**
-     * Identisch zu {@see update_module_settings::catalog_for()} - dupliziert
-     * statt geteilt (beide Klassen bleiben eigenstaendig lesbar, siehe
-     * Klassendoku dieser Datei "kein eigener Schreibmechanismus").
+     * Identical to {@see update_module_settings::catalog_for()} - duplicated
+     * instead of shared (both classes stay readable on their own, see the
+     * class doc of this file "no write mechanism of its own").
      *
      * @param string $modname
      * @return class-string<\local_coursepilot\catalog\module_catalog>
@@ -367,9 +365,9 @@ final class restore_activity_version extends external_api {
     }
 
     /**
-     * Ist-Stand als assoziatives Array, dieselbe Form wie
-     * {@see version_history::state_at()} liefert - fuer den Vorher-/
-     * Nachher-Vergleich beim Patch-Bau.
+     * Current state as an associative array, the same shape as returned by
+     * {@see version_history::state_at()} - for the before/after
+     * comparison when building the patch.
      *
      * @param int $cmid
      * @return array
@@ -380,13 +378,12 @@ final class restore_activity_version extends external_api {
     }
 
     /**
-     * Alle Nicht-Vervollstaendigungsfelder, die sich zwischen $before und
-     * $target tatsaechlich unterscheiden - genau die Feldmenge, die
-     * update_module_settings als Patch akzeptiert (gemeinsamer Block plus
-     * Katalogfelder/-pseudofelder, ohne Sperrliste). Ein Katalogfeld, das im
-     * Zielstand unter einem anderen Schluessel liegt (z.B. "sectionnum" -
-     * der Zielstand kennt nur "section"), bleibt automatisch aussen vor statt
-     * fehlzuschreiben.
+     * All non-completion fields that actually differ between $before and
+     * $target - exactly the set of fields update_module_settings accepts as
+     * a patch (shared block plus catalog fields/pseudofields, without the
+     * blocklist). A catalog field that sits under a different key in the
+     * target state (e.g. "sectionnum" - the target state only knows
+     * "section") is automatically left out instead of being written wrongly.
      *
      * @param class-string<\local_coursepilot\catalog\module_catalog> $catalogclass
      * @param array $before
@@ -413,9 +410,9 @@ final class restore_activity_version extends external_api {
     }
 
     /**
-     * Die Vervollstaendigungsfelder, die sich zwischen $before und $target
-     * tatsaechlich unterscheiden - unabhaengig von "confirmed": ob sie
-     * tatsaechlich geschrieben werden, entscheidet {@see self::execute()}.
+     * The completion fields that actually differ between $before and $target -
+     * independent of "confirmed": whether they are actually written is decided
+     * by {@see self::execute()}.
      *
      * @param array $before
      * @param array $target
@@ -436,18 +433,18 @@ final class restore_activity_version extends external_api {
     }
 
     /**
-     * Die Lehrkraft-deutsche Aenderungsmeldung (Spec 0015: "die Antwort ist
-     * die Aenderungsmeldung") - haengt set_completion's echte
-     * Datenverlust-Warnung (mit Betroffenenzahl) an, statt eine eigene,
-     * schwaechere Meldung zu erfinden.
+     * The teacher-facing change message (Spec 0015: "the response is the
+     * change message") - appends set_completion's real data-loss warning
+     * (with the number of affected learners) instead of inventing a weaker
+     * message of its own.
      *
      * @param int $targetversion
      * @param array $changes
-     * @param string|null $completionwarning set_completion's Meldung, wenn dessen
-     *        eigener Zweitakt das Schreiben der Abschlussfelder verhindert hat.
-     * @param string|null $arrangementmessage Zusatzsatz von {@see self::restore_quiz_arrangement()}.
-     * @param string[] $restoredfiles Dateinamen, die {@see self::restore_files()} aus dem
-     *        Papierkorb zurueckgeholt hat (Spec 0018 §9.1, Issue #432).
+     * @param string|null $completionwarning set_completion's message if its own
+     *        two-step flow prevented writing the completion fields.
+     * @param string|null $arrangementmessage Additional sentence from {@see self::restore_quiz_arrangement()}.
+     * @param string[] $restoredfiles File names that {@see self::restore_files()} brought back from the
+     *        recycle bin (Spec 0018 §9.1, issue #432).
      * @return string
      */
     private static function build_message(
@@ -496,7 +493,7 @@ final class restore_activity_version extends external_api {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
             'modname' => new external_value(PARAM_TEXT, 'Activity type'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
             'changes' => new external_multiple_structure(
                 new external_single_structure([
                     'field' => new external_value(PARAM_TEXT, 'Field name'),

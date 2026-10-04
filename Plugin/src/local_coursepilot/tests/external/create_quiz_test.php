@@ -119,7 +119,7 @@ final class create_quiz_test extends \advanced_testcase {
             foreach ($expected as $field => $value) {
                 $this->assertEquals($value, $quiz->{$field}, "mode={$mode} field={$field}");
             }
-            $this->assertStringContainsString('angelegt', $result['message']);
+            $this->assertStringContainsString('created', $result['message']);
         }
     }
 

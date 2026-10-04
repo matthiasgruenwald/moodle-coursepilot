@@ -27,9 +27,9 @@ use local_coursepilot\history\version_history;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Volles Diff zweier frei gewaehlter Staende einer Aktivitaet (Spec 0015
- * §10.6, Ticket #394) - nicht nur benachbarter Versionen. Das Diff wird beim
- * Ansehen berechnet, nicht gespeichert (Spec 0015 §10.1). Rein lesend,
+ * Full diff of two freely chosen states of an activity (Spec 0015
+ * §10.6, ticket #394) - not only adjacent versions. The diff is computed on
+ * viewing, not stored (Spec 0015 §10.1). Read-only,
  * eigene Faehigkeit 'local/coursepilot:viewhistory'.
  *
  * @package    local_coursepilot

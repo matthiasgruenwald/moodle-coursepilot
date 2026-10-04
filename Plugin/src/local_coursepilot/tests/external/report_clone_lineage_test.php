@@ -25,19 +25,19 @@ global $CFG;
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 /**
- * Abstammungs-Meldung nach dem Klon (Spec 0017 §7.5, Ticket #422): meldet je
- * Frage eines Tests, ob eine eigene Kopie entstand oder die Referenz
- * weiterhin auf den Quellkurs zeigt - reines Lesen, nichts wird geschrieben.
+ * Lineage report after cloning (Spec 0017 §7.5, ticket #422): reports for each
+ * question of a quiz whether an own copy was made or the reference
+ * still points to the source course - read only, nothing is written.
  *
- * Ein gemischter Bestand wird hier nicht ueber einen echten
- * kursuebergreifenden Klon (clone_activity, #421) hergestellt, sondern
- * direkt: eine Fragenkategorie im Zielkurs (= "eigene Kopie" nach einem
- * Klon) und eine Fragenkategorie in einem zweiten, fremden Kurs (= "geteilte
- * Referenz", genau der Zustand, den Moodles Backup/Restore fuer eine
- * Kategorie ausserhalb des Backup-Umfangs hinterlaesst). Der zu pruefende
- * Endpunkt vergleicht ausschliesslich den Kurs der Fragenkategorie mit dem
- * Kurs des Tests - dieser Zustand deckt genau das ab, unabhaengig davon, ob
- * er durch einen echten Klon oder direkt hergestellt wurde.
+ * A mixed state is not produced here via a real
+ * cross-course clone (clone_activity, #421) but
+ * directly: a question category in the target course (= "own copy" after a
+ * clone) and a question category in a second, foreign course (= "shared
+ * reference", exactly the state Moodle's backup/restore leaves behind for a
+ * category outside the backup scope). The endpoint under test compares only
+ * the course of the question category with the course of the quiz - this
+ * state covers exactly that, regardless of whether it was produced by a
+ * real clone or directly.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -48,7 +48,7 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 final class report_clone_lineage_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs, Test.
+     * @return array{0: \stdClass, 1: \stdClass} Course, quiz.
      */
     private function course_with_quiz_and_teacher(): array {
         $course = $this->getDataGenerator()->create_course();
@@ -60,8 +60,8 @@ final class report_clone_lineage_test extends \advanced_testcase {
     }
 
     /**
-     * @param \stdClass $course Kurs, dessen Modulkontext die Kategorie traegt.
-     * @return \stdClass question_categories-Zeile
+     * @param \stdClass $course Course whose module context carries the category.
+     * @return \stdClass question_categories row
      */
     private function category_in_own_qbank(\stdClass $course): \stdClass {
         $qbank = $this->getDataGenerator()->create_module('qbank', ['course' => $course->id]);
@@ -77,8 +77,8 @@ final class report_clone_lineage_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: gemischter Bestand meldet Kopie und geteilte
-     * Referenz korrekt, je Frage.
+     * Acceptance criterion: a mixed state reports own copy and shared
+     * reference correctly, per question.
      */
     public function test_reports_own_copy_and_shared_reference_for_mixed_bank(): void {
         $this->resetAfterTest();
@@ -107,14 +107,14 @@ final class report_clone_lineage_test extends \advanced_testcase {
         $this->assertSame((int) $foreigncourse->id, $bystatus['Geteilte Referenz']['source_course_id']);
 
         $this->assertStringContainsString('created as their own copy', $result['message']);
-        $this->assertStringContainsString('geteilte Referenz', $result['message']);
+        $this->assertStringContainsString('shared reference', $result['message']);
     }
 
     /**
-     * Das Verdachtsfall-Envelope (T3) wird NICHT mitgefuehrt: dieses
-     * Werkzeug schreibt nichts und kann folglich kein Gate ausloesen -
-     * fuenf konstant leere Felder in jeder Antwort waeren nur Rauschen
-     * (#424 Nachlauf 4).
+     * The suspect-case envelope (T3) is NOT carried along: this
+     * tool writes nothing and therefore cannot trigger a gate -
+     * five constantly empty fields in every response would be mere noise
+     * (#424 follow-up 4).
      */
     public function test_does_not_carry_the_suspect_gate_envelope(): void {
         $this->resetAfterTest();
@@ -132,9 +132,9 @@ final class report_clone_lineage_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: die Pruefung ist ein reiner Lesevorgang - nach dem
-     * Aufruf ist der Fragenbestand unveraendert (keine neue idnumber, keine
-     * neue/geaenderte question_references-Zeile).
+     * Acceptance criterion: the check is a pure read - after the call the
+     * question inventory is unchanged (no new idnumber, no
+     * new/changed question_references row).
      */
     public function test_writes_nothing(): void {
         global $DB;
@@ -158,8 +158,8 @@ final class report_clone_lineage_test extends \advanced_testcase {
     }
 
     /**
-     * Ein leerer Test meldet das statt eine leere Liste stillschweigend
-     * zurueckzugeben.
+     * An empty quiz reports that instead of silently returning an
+     * empty list.
      */
     public function test_empty_quiz_reports_no_questions(): void {
         $this->resetAfterTest();
@@ -173,8 +173,8 @@ final class report_clone_lineage_test extends \advanced_testcase {
     }
 
     /**
-     * Ein cmid, das kein Test ist, wird klar abgelehnt statt mit einem
-     * internen Fehler zu scheitern.
+     * A cmid that is not a quiz is rejected clearly instead of failing with
+     * an internal error.
      */
     public function test_rejects_non_quiz_cmid(): void {
         $this->resetAfterTest();

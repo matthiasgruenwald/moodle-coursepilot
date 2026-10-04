@@ -33,25 +33,25 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Der erste Schreibvorgang (Spec 0015 §3.3, Ticket #388, Phase 3): patcht
- * einzelne Einstellungen einer bestehenden Aktivitaet ueber den nativen
- * Formularweg (get_moduleinfo_data() lesen, ueberlagern, update_moduleinfo()
- * schreiben) - kein Konfliktschutz, kein expected_version, eine parallele
- * Handaenderung an einem ANDEREN Feld ueberlebt (Spec 0015 §3.3).
+ * The first write operation (Spec 0015 §3.3, ticket #388, phase 3): patches
+ * individual settings of an existing activity via the native form path
+ * (read with get_moduleinfo_data(), overlay, write with update_moduleinfo())
+ * - no conflict protection, no expected_version, a parallel manual change
+ * to a DIFFERENT field survives (Spec 0015 §3.3).
  *
- * Alles oder nichts: jede Validierung (unbekanntes Feld, gesperrtes Feld,
- * unerlaubter Wert, Kombinationsregel) laeuft VOR dem einzigen Schreibaufruf
- * - kein Teilergebnis moeglich.
+ * All or nothing: every validation (unknown field, locked field,
+ * disallowed value, combination rule) runs BEFORE the single write call
+ * - no partial result is possible.
  *
- * Keine eigene Coursepilot-Schreib-Capability: get_moduleinfo_data() ruft
- * intern can_update_moduleinfo(), das 'moodle/course:manageactivities' im
- * Modulkontext verlangt - das ist die native Pruefung, die Spec 0015 §3.3
- * verlangt. 'local/coursepilot:use' bleibt die Basis-Zugriffspruefung wie bei
- * jedem anderen Werkzeug.
+ * No Coursepilot write capability of its own: get_moduleinfo_data() internally
+ * calls can_update_moduleinfo(), which requires 'moodle/course:manageactivities'
+ * in the module context - that is the native check Spec 0015 §3.3
+ * demands. 'local/coursepilot:use' remains the base access check, as with
+ * every other tool.
  *
- * Direkte DB-Schreibung wird bewusst nicht genutzt (ADR 0016): sie loest
- * kein course_module_updated aus, der Aenderungsverlauf (#385-387) bliebe
- * dafuer blind.
+ * Direct DB writes are deliberately not used (ADR 0016): they do not
+ * trigger course_module_updated, so the change history (#385-387) would be
+ * blind to them.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -90,21 +90,21 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Roher Schreibweg fuer genau EIN Materialreferenz-Pseudofeld
-     * ({@see self::material_reference_specs()}), mit einem bereits
-     * fertigen Dateimanager-Entwurf statt Materialordner-Pfaden - fuer
-     * {@see \local_coursepilot\external\restore_activity_version}, das Dateien
-     * aus dem Papierkorb ({@see \local_coursepilot\activity_file_trash}) statt
-     * aus dem Materialordner zurueckschreibt (Spec 0018 §9.1, Issue #432).
+     * Raw write path for exactly ONE material reference pseudofield
+     * ({@see self::material_reference_specs()}), with an already
+     * finished file manager draft instead of material folder paths - for
+     * {@see \local_coursepilot\external\restore_activity_version}, which writes files
+     * back from the trash ({@see \local_coursepilot\activity_file_trash}) instead of
+     * from the material folder (Spec 0018 §9.1, issue #432).
      *
-     * Kein eigener Feld-Patch-Validierungsdurchlauf: der Aufrufer hat
-     * moodle/course:manageactivities und local/coursepilot:restoreversion
-     * bereits geprueft, und der Entwurfsinhalt stammt ausschliesslich aus
-     * dem eigenen Aenderungsverlauf/Papierkorb, nicht aus Client-Eingaben.
+     * No field-patch validation pass of its own: the caller has already
+     * checked moodle/course:manageactivities and local/coursepilot:restoreversion,
+     * and the draft content comes exclusively from the own change
+     * history/trash, not from client input.
      *
      * @param int $cmid
      * @param string $fieldname One of this activity type's material_reference_specs() fields.
-     * @param int $draftitemid Fertiger Dateimanager-Entwurf, z.B. aus
+     * @param int $draftitemid Finished file manager draft, e.g. from
      *        {@see \local_coursepilot\activity_file_trash::resolve_restore_into_draft()}.
      * @return void
      */
@@ -144,10 +144,10 @@ class update_module_settings extends external_api {
 
         $modname = (string) $cm->modname;
         $catalogclass = self::catalog_for($modname);
-        // Billigteil der Selbstfreigabe (Spec 0015 §11, ADR 0017, Ticket #399):
-        // sperrt nur DIESE Aktivitaetsart, wenn ein erkannter Moodle-Versionswechsel
-        // eine Katalogabweichung ergeben hat. Lesen bleibt unberuehrt (kein
-        // Lese-Werkzeug ruft assert_writable() auf).
+        // Cheap part of the self-release (Spec 0015 §11, ADR 0017, ticket #399):
+        // blocks only THIS activity type when a detected Moodle version change
+        // has produced a catalog deviation. Reading stays untouched (no
+        // read tool calls assert_writable()).
         write_gate::assert_writable($modname);
 
         $patch = json_decode($params['fields_json'], true);
@@ -179,8 +179,8 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Prueft Kontext und Capabilities (Issue #523: aus execute() ausgelagert,
-     * um die Funktion unter der 50-Zeilen-Grenze zu halten).
+     * Checks context and capabilities (issue #523: extracted from execute()
+     * to keep the function under the 50-line limit).
      *
      * @param \stdClass $cm
      * @return \context_module
@@ -189,22 +189,22 @@ class update_module_settings extends external_api {
         $context = context_module::instance($cm->id);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // Native Berechtigungspruefung vorgezogen (Spec 0015 §3.3: "im Kurs
-        // einer Kollegin: lesen ja, schreiben nein - mit klarer Meldung").
-        // get_moduleinfo_data() prueft dieselbe Capability spaeter ohnehin
-        // erneut ueber can_update_moduleinfo() - der Aufruf hier ist billig
-        // (nur require_capability(), kein DB-Zugriff) und stellt sicher, dass
-        // eine fehlende Bearbeiten-Berechtigung nicht hinter einer
-        // Feldvalidierungsmeldung versteckt bleibt.
+        // Native permission check moved forward (Spec 0015 §3.3: "in a
+        // colleague's course: read yes, write no - with a clear message").
+        // get_moduleinfo_data() checks the same capability again later anyway
+        // via can_update_moduleinfo() - the call here is cheap
+        // (only require_capability(), no DB access) and ensures that
+        // a missing edit permission is not hidden behind a
+        // field validation message.
         require_capability('moodle/course:manageactivities', $context);
 
         return $context;
     }
 
     /**
-     * Die Katalogklasse fuer $modname, sofern der Schreibweg dieser Endpunkt
-     * ist (Spec 0015 §3.1: manche Aktivitaetsarten haben ein eigenes
-     * Einzelwerkzeug, z.B. quiz -> update_quiz_settings).
+     * The catalog class for $modname, provided the write path is this endpoint
+     * (Spec 0015 §3.1: some activity types have a single-purpose tool of
+     * their own, e.g. quiz -> update_quiz_settings).
      *
      * @param string $modname
      * @return class-string<module_catalog>
@@ -225,10 +225,10 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Ist-Stand als assoziatives Array - dieselbe Zusammenstellung wie
-     * {@see get_module_settings}, ueber deren settings_json wiederverwendet
-     * statt dupliziert (Ticket #384: "gleiche Bauform fuer Read-Teil
-     * wiederverwendbar").
+     * Current state as an associative array - the same composition as
+     * {@see get_module_settings}, reused via its settings_json
+     * instead of duplicated (ticket #384: "same shape reusable for the
+     * read part").
      *
      * @param int $cmid
      * @return array
@@ -239,12 +239,12 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Vorher-/Nachher-Werte je tatsaechlich geaendertem Feld, plus
-     * ausgeloeste Nebenwirkungen - aus einem echten Vorher-/Nachher-Vergleich
-     * (nicht aus dem Patch selbst uebernommen), damit eine parallele
-     * Handaenderung an einem anderen Feld korrekt unerwaehnt bleibt und ein
-     * Patch, der den bestehenden Wert nur wiederholt, nicht als Aenderung
-     * gemeldet wird.
+     * Before/after values per field that actually changed, plus
+     * triggered side effects - from a real before/after comparison
+     * (not taken from the patch itself), so that a parallel manual
+     * change to another field correctly stays unmentioned and a
+     * patch that merely repeats the existing value is not reported as a
+     * change.
      *
      * @param string $modname
      * @param array $patch
@@ -278,20 +278,20 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Die Pseudofelder aus dem Patch - die, die der Vorher/Nachher-Vergleich
-     * grundsaetzlich nicht sehen kann (#403).
+     * The pseudofields from the patch - those the before/after comparison
+     * fundamentally cannot see (#403).
      *
-     * Pseudofelder haben per Definition keine Spalte in der Instanztabelle
-     * ("assignsubmission_file_enabled" steht in assign_plugin_config, die
-     * choice-Optionen in choice_options). read_settings() liest den Ist-Stand
-     * der Datenbankfelder, dort stehen sie vorher wie nachher als null - der
-     * Diff bleibt leer, obwohl geschrieben wurde. Ein echter Vergleich
-     * braeuchte eine Leseschicht je Aktivitaetsart; stattdessen sagt die
-     * Meldung ausdruecklich, was sie nicht vergleichen kann.
+     * Pseudofields by definition have no column in the instance table
+     * ("assignsubmission_file_enabled" lives in assign_plugin_config, the
+     * choice options in choice_options). read_settings() reads the current state
+     * of the database fields, where they are null both before and after - the
+     * diff stays empty although something was written. A real comparison
+     * would need a read layer per activity type; instead the
+     * message states explicitly what it cannot compare.
      *
      * @param class-string<module_catalog> $catalogclass
      * @param array $patch
-     * @return array<string, mixed> Feldname => gesetzter Wert.
+     * @return array<string, mixed> Field name => value set.
      */
     private static function written_pseudofields(string $catalogclass, array $patch): array {
         $names = array_column($catalogclass::pseudofields(), 'name');
@@ -299,25 +299,25 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Die Lehrkraft-deutsche Aenderungsmeldung (Spec 0015 §3.3: "die Antwort
-     * ist die Aenderungsmeldung").
+     * The teacher-facing change message (Spec 0015 §3.3: "the response
+     * is the change message").
      *
      * @param array $changes
      * @param string[] $sideeffects
-     * @param array<string, mixed> $pseudofields Geschriebene Pseudofelder, siehe
-     *        {@see self::written_pseudofields()} - nicht vergleichbar, aber gesetzt.
+     * @param array<string, mixed> $pseudofields Pseudofields written, see
+     *        {@see self::written_pseudofields()} - not comparable, but set.
      * @return string
      */
     private static function build_message(array $changes, array $sideeffects, array $pseudofields = []): string {
         if (!$changes && !$pseudofields) {
-            return 'Keine Aenderung: der Patch stimmte bereits mit dem aktuellen Stand ueberein.';
+            return 'No change: the patch already matched the current state.';
         }
 
         $parts = [];
         foreach ($changes as $change) {
-            $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
+            $parts[] = '"' . $change['field'] . '" from ' . $change['before_json'] . ' to ' . $change['after_json'];
         }
-        $message = $parts ? ('Geaendert: ' . implode(', ', $parts) . '.') : '';
+        $message = $parts ? ('Changed: ' . implode(', ', $parts) . '.') : '';
 
         if ($pseudofields) {
             $set = [];
@@ -326,7 +326,7 @@ class update_module_settings extends external_api {
                     . json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
             $message .= ($message ? ' ' : '')
-                . 'Gesetzt, aber ohne Datenbankfeld und deshalb nicht mit dem Vorher-Stand vergleichbar: '
+                . 'Set, but without a database field and therefore not comparable with the previous state: '
                 . implode(', ', $set) . '.';
         }
 
@@ -344,7 +344,7 @@ class update_module_settings extends external_api {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
             'modname' => new external_value(PARAM_TEXT, 'Activity type'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
             'changes' => new external_multiple_structure(
                 new external_single_structure([
                     'field' => new external_value(PARAM_TEXT, 'Field name'),
@@ -354,7 +354,7 @@ class update_module_settings extends external_api {
                 'One entry per field that actually changed'
             ),
             'side_effects' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                new external_value(PARAM_TEXT, 'Teacher-facing side-effect note'),
                 'Triggered side effects from catalog category 5, empty when none were triggered'
             ),
         ]);

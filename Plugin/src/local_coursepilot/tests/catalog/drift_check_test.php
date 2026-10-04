@@ -76,7 +76,7 @@ final class drift_check_test extends \advanced_testcase {
         $violations = drift_check::check_catalog('label', drift_check_test_fake_catalog_with_bad_column::class);
 
         $this->assertNotEmpty($violations);
-        $this->assertStringContainsString('Spalten', $violations[0]);
+        $this->assertStringContainsString('Columns', $violations[0]);
     }
 
     /**

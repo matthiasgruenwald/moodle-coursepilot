@@ -17,25 +17,14 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Die maschinell pruefbare Tiefenpruefung eines Katalogs gegen die laufende
- * Moodle-Instanz (Spec 0015 §11, ADR 0017, Ticket #399): Spalten (dazu/weg/
- * umbenannt), Existenz der aufrufbaren Quellen, Konstanten-Existenz.
+ * Machine-checkable catalog validation against the running Moodle instance
+ * (Spec 0015 §11, ADR 0017, Ticket #399): table columns, callable sources
+ * and required constants. Shared by repository tests and runtime write_gate
+ * checks, as in privacy_surface.
  *
- * Dieselbe Logik wie die Repo-/Test-Vertragstests
- * (tests/catalog/*_contract_test.php, Vorbild privacy_surface_test.php) -
- * hier als wiederverwendbare Klasse, damit {@see \local_coursepilot\write_gate}
- * sie zur LAUFZEIT einsetzen kann (bei jedem Schreibvorgang bzw. bei
- * erkanntem Versionswechsel), statt die Pruefung ein zweites Mal zu
- * duplizieren.
- *
- * Was hier bewusst NICHT geprueft wird: abgeschriebene Wertelisten,
- * Kombinationsregeln, Nebenwirkungsvermerke - das ist der nicht maschinell
- * pruefbare Teil, der laut ADR 0017 ein manuelles Review je Major-Release
- * braucht ({@see module_catalog::reviewed_up_to_major()}).
- *
- * Rein: bekommt die Katalogklasse herein, greift nur lesend auf $DB-Metadaten
- * und PHP-Introspektion zu, schreibt nichts - Test und Laufzeit rufen
- * dieselbe Funktion (Bauform wie {@see \local_coursepilot\privacy_surface}).
+ * Copied enumerations, combination rules and side effects still require
+ * manual review per major release (module_catalog::reviewed_up_to_major()).
+ * Read-only database metadata and PHP introspection; no writes.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -44,17 +33,12 @@ namespace local_coursepilot\catalog;
 final class drift_check {
 
     /**
-     * Die von Moodle-Kern nicht ohnehin bei jedem Request geladenen
-     * Bibliotheken je Aktivitaetsart, die eine oder mehrere der von ihr
-     * referenzierten aufrufbaren Quellen definieren (weblib.php/moodlelib.php
-     * fehlen bewusst - lib/setup.php laedt sie bei jedem Request, siehe
-     * Klassendoku). Dieselben Dateien wie in den jeweiligen
-     * tests/catalog/*_contract_test.php - ohne sie waere function_exists()
-     * hier ein falsches "existiert nicht mehr", weil die Datei schlicht noch
-     * nicht eingebunden ist, nicht weil Moodle die Funktion entfernt hat.
+     * Libraries defining catalog callable sources that core does not load
+     * for every request. weblib.php and moodlelib.php are already loaded by
+     * lib/setup.php. Use the same libraries as catalog contract tests to
+     * avoid mistaking an unloaded function for a removed function.
      *
-     * @var array<string, string[]> modname => Pfade mit Platzhaltern
-     *      "{dirroot}"/"{libdir}".
+     * @var array<string, string[]> Module name to paths with {dirroot}/{libdir} placeholders.
      */
     private const REQUIRE_FILES = [
         'page' => ['{libdir}/resourcelib.php'],
@@ -74,11 +58,11 @@ final class drift_check {
     ];
 
     /**
-     * Alle Verstoesse einer Aktivitaetsart gegen ihren Katalog - leer, wenn
-     * die Art gruen ist ("automatisch geprueft"/"geprueft").
+     * All violations for an activity type, empty if the catalog passes
+     * (automatically checked or reviewed).
      *
      * @param string $modname
-     * @return string[] Deutsche Verstoss-Beschreibungen, leer wenn kein Drift.
+     * @return string[] English violation descriptions, empty without drift.
      */
     public static function check(string $modname): array {
         $catalogclass = registry::for($modname);
@@ -90,11 +74,11 @@ final class drift_check {
     }
 
     /**
-     * Wie {@see check()}, aber mit der Katalogklasse direkt statt ueber
-     * {@see registry::for()} aufgeloest - testbar mit einer absichtlich
-     * abweichenden Katalogklasse, ohne die Registry zu veraendern.
+     * Like check(), taking the catalog class directly instead of resolving
+     * through registry::for(). Tests can inject a divergent catalog without
+     * changing the registry.
      *
-     * @param string $modname Tabellen-/Modulname, gegen den geprueft wird.
+     * @param string $modname Table/module name to check.
      * @param class-string<module_catalog> $catalogclass
      * @return string[]
      */
@@ -125,13 +109,10 @@ final class drift_check {
     }
 
     /**
-     * Spaltenabgleich: fields()+blocklist()+shared_block-Sperrliste (soweit in
-     * dieser Tabelle vorhanden) plus "id" muss die reale Spaltenmenge der
-     * gleichnamigen Tabelle exakt ergeben. Sperrlisten-Eintraege, die
-     * zugleich Pseudofeld sind (z.B. folder::pseudofields() "files", bis
-     * Spec 0018 gesperrt), sind keine echten Spalten und zaehlen hier nicht
-     * mit - derselbe Ausschluss wie in
-     * folder_catalog_contract_test/resource_catalog_contract_test.
+     * Column parity: fields(), real-column blocklist entries, applicable
+     * shared_block entries and id must exactly match the table columns.
+     * Exclude pseudofields from blocked columns, as in folder/resource
+     * contract tests (e.g. files, blocked until Spec 0018).
      *
      * @param string $modname
      * @param class-string<module_catalog> $catalogclass
@@ -163,17 +144,17 @@ final class drift_check {
         $removed = array_values(array_diff($known, $realcolumns));
         $detail = [];
         if ($added) {
-            $detail[] = 'neu in der Tabelle, im Katalog unbekannt: ' . implode(', ', $added);
+            $detail[] = 'new in the table, unknown to the catalog: ' . implode(', ', $added);
         }
         if ($removed) {
-            $detail[] = 'im Katalog gefuehrt, in der Tabelle nicht mehr vorhanden: ' . implode(', ', $removed);
+            $detail[] = 'listed in the catalog, no longer present in the table: ' . implode(', ', $removed);
         }
-        return ['Spalten der Tabelle "' . $modname . '" weichen vom Katalog ab (' . implode('; ', $detail) . ').'];
+        return ['Columns of table "' . $modname . '" differ from the catalog (' . implode('; ', $detail) . ').'];
     }
 
     /**
-     * Existenz der von Feldern und Pseudofeldern referenzierten aufrufbaren
-     * Quellen - Funktionen wie statische Klassenmethoden.
+     * Check callable sources referenced by fields and pseudofields,
+     * including functions and static methods.
      *
      * @param class-string<module_catalog> $catalogclass
      * @return string[]
@@ -198,16 +179,15 @@ final class drift_check {
                 ? method_exists(...explode('::', $bare, 2))
                 : function_exists($bare);
             if (!$exists) {
-                $violations[] = "Aufrufbare Quelle \"$callable\" existiert auf dieser Instanz nicht mehr.";
+                $violations[] = "Callable source \"$callable\" no longer exists on this instance.";
             }
         }
         return $violations;
     }
 
     /**
-     * Existenz der von Katalog und gemeinsamem Block referenzierten
-     * Konstanten ({@see module_catalog::checked_constants()},
-     * {@see shared_block::checked_constants()}).
+     * Check constants referenced by module_catalog::checked_constants()
+     * and shared_block::checked_constants().
      *
      * @param class-string<module_catalog> $catalogclass
      * @return string[]
@@ -221,16 +201,15 @@ final class drift_check {
         $violations = [];
         foreach ($constants as $constname) {
             if (!defined($constname)) {
-                $violations[] = "Konstante \"$constname\" existiert auf dieser Instanz nicht mehr.";
+                $violations[] = "Constant \"$constname\" no longer exists on this instance.";
             }
         }
         return $violations;
     }
 
     /**
-     * Jede feldbezogene Schreiboption muss ein Katalogfeld benennen. Damit
-     * faellt auch ein neu gelesener oder geschriebener Feldname auf, der am
-     * Katalog vorbei in einen Werkzeug-Sonderfall geriete.
+     * Each field-related write option must name a catalog field. This also
+     * catches newly read or written fields that would bypass the catalog.
      *
      * @param class-string<module_catalog> $catalogclass
      * @return string[]
@@ -266,7 +245,7 @@ final class drift_check {
         }
         $unknown = array_values(array_diff(array_unique($referenced), $known));
         return array_map(
-            static fn(string $field): string => 'Feld "' . $field . '" wird ausserhalb des Katalogs referenziert.',
+            static fn(string $field): string => 'Field "' . $field . '" is referenced outside the catalog.',
             $unknown
         );
     }

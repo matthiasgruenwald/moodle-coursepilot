@@ -19,30 +19,19 @@ namespace local_coursepilot\quiz;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Anordnungs-Stand eines Tests (#396, Spec 0015 §10, ADR 0016): Slots +
- * Fragereferenzen, Abschnitte und Feedback - der Teil eines Test-Standes, der
- * NICHT ueber den Feldkatalog (Ticket #383) laeuft, weil er nicht in der
- * quiz-Tabelle steht (siehe {@see \local_coursepilot\catalog\quiz} Klassendoku
- * "Anordnung ist nicht Teil dieses Katalogs").
+ * Quiz arrangement state (#396, Spec 0015 §10, ADR 0016): slots and question
+ * references, sections and feedback. These are outside the quiz-table field
+ * catalog (Ticket #383; catalog\quiz class documentation).
  *
- * Zurueckgeschrieben wird ausschliesslich ueber die Kern-Struktur-API
- * (mod_quiz\structure::move_slot/update_slot_version/update_question_dependency/
- * update_slot_maxmark/update_slot_display_number, set_section_heading/
- * set_section_shuffle) - keine rohen quiz_slots-UPDATEs. quiz_feedback hat
- * keine solche API: Moodle selbst (mod/quiz/lib.php: quiz_after_add_or_update())
- * schreibt diese Tabelle per delete+insert, {@see self::restore_feedback()}
- * repliziert genau das.
+ * Restore only through mod_quiz\structure APIs: move_slot, update_slot_version,
+ * update_question_dependency, update_slot_maxmark, update_slot_display_number,
+ * set_section_heading and set_section_shuffle. quiz_feedback has no structure
+ * API; reproduce Moodle's delete/insert pattern from quiz_after_add_or_update().
  *
- * ponytail: eine reine Umsortierung bestehender Slots ist der getragene
- * Regelfall - ein Slot, der im Zielstand vorkommt, im aktuellen Stand aber
- * nicht mehr existiert (Frage seither entfernt) oder umgekehrt, ist ein
- * Inhaltswechsel, keine Anordnungsfrage (siehe
- * {@see \local_coursepilot\history\version_history} gap notice: "quiz content
- * beyond the arrangement ... not recorded"). Solche Slots werden beim
- * Rueckschreiben stillschweigend uebersprungen statt per remove_slot/
- * add_question nachgebildet zu werden - Erweiterung erst, wenn Spec 0017
- * (Fragenanordnung als eigenes Werkzeug) das Zusammenspiel mit Inhaltsaenderungen
- * tatsaechlich braucht.
+ * ponytail: support rearranging existing slots. Added/removed questions are
+ * content changes outside recorded arrangement history (version_history gap
+ * notice). Skip mismatched slots rather than recreating content; extend only
+ * when Spec 0017 requires interaction with content changes.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -51,10 +40,9 @@ defined('MOODLE_INTERNAL') || die();
 final class arrangement {
 
     /**
-     * Schnappt Slots (mit Fragereferenz), Abschnitte und Feedback eines Tests.
-     * Das ist die Form, die {@see \local_coursepilot\history\version_writer}
-     * unveraendert als "arrangement_json" ablegt und {@see self::restore()}
-     * unveraendert zurueckbekommt.
+     * Capture quiz slots with question references, sections and feedback.
+     * version_writer stores this shape unchanged as arrangement_json and
+     * restore() receives the same shape.
      *
      * @param int $quizid
      * @return array{slots: array, sections: array, feedback: array}
@@ -93,8 +81,7 @@ final class arrangement {
                 'requireprevious' => (int) $slot->requireprevious,
                 'maxmark' => (float) $slot->maxmark,
                 'questionbankentryid' => $slot->questionbankentryid === null ? null : (int) $slot->questionbankentryid,
-                // NULL heisst "immer aktuellste Fassung" - bewusst nicht auf einen
-                // Wert gepinnt (Spec 0015 §Schutzschiene Fragereferenzen).
+                // NULL means always latest; preserve it unpinned (Spec 0015, question-reference guardrail).
                 'version' => $slot->version === null ? null : (int) $slot->version,
             ], $slots)),
             'sections' => array_values(array_map(static fn (\stdClass $section): array => [
@@ -121,14 +108,13 @@ final class arrangement {
     }
 
     /**
-     * Schreibt einen gespeicherten Anordnungs-Stand zurueck. Schutzschiene
-     * Versuche (Spec 0015): quiz_has_attempts() wird VOR jedem Schreibversuch
-     * geprueft und bricht mit einer eigenen, klaren Meldung ab - nicht als
-     * abgefangene coding_exception aus structure::check_can_be_edited().
+     * Restore a saved arrangement. Check quiz_has_attempts() before any write
+     * (Spec 0015), returning a clear error rather than catching a later
+     * coding_exception from structure::check_can_be_edited().
      *
      * @param int $quizid
-     * @param array $target Anordnungs-Stand wie von {@see self::capture()} geliefert.
-     * @throws \moodle_exception arrangementrestoreblocked, wenn der Test bereits Versuche hat.
+     * @param array $target Arrangement state returned by capture().
+     * @throws \moodle_exception arrangementrestoreblocked if the quiz already has attempts.
      */
     public static function restore(int $quizid, array $target): void {
         global $CFG, $DB;
@@ -153,23 +139,16 @@ final class arrangement {
     }
 
     /**
-     * Bringt die Slots in Zielreihenfolge, ueber structure::move_slot() fuer
-     * jeden Slot einmal, in Zielreihenfolge nach dem jeweils zuvor
-     * platzierten Slot einsortiert. move_slot() erklaert die
-     * Struktur-Instanz nach jedem Aufruf fuer ungueltig (siehe deren
-     * Klassendoku), deshalb wird sie danach frisch geholt.
+     * Move each slot once into target order after the previously placed slot.
+     * move_slot() invalidates the structure, so recreate it after every call.
      *
-     * Der Seitenwert dieses Aufrufs uebernimmt bewusst nur die Seite des
-     * bereits platzierten Vorgaengers (nicht die Zielseite): move_slot()
-     * prueft die Zielseite gegen die aktuellen nicht immer schon fertigen
-     * Nachbarn und lehnt einen "Sprung" auf eine hoehere Seite fuer den
-     * letzten Slot ab, selbst wenn genau das der Zielstand ist. Die
-     * tatsaechliche Seitenaufteilung setzt danach {@see self::restore_page_breaks()}
-     * ueber update_page_break() - das ist ohnehin der von Moodle selbst
-     * verwendete Mechanismus fuer Seitenumbrueche, keine Abkuerzung.
+     * Use the predecessor's current page rather than the target page: move_slot()
+     * validates against neighbors that may not yet be final and rejects jumps
+     * to a higher page for the last slot. Then restore actual page boundaries
+     * through restore_page_breaks(), using Moodle's update_page_break() API.
      *
      * @param \mod_quiz\quiz_settings $quizobj
-     * @param array $targetslots Nur Slots, die auch aktuell existieren.
+     * @param array $targetslots Only slots that currently exist.
      * @return void
      */
     private static function restore_slot_order(\mod_quiz\quiz_settings $quizobj, array $targetslots): void {
@@ -183,14 +162,12 @@ final class arrangement {
     }
 
     /**
-     * Seitenumbrueche zwischen benachbarten Zielslots - ueber
-     * update_page_break() je Slotgrenze (LINK entfernt den Umbruch VOR dem
-     * uebergebenen Slot, UNLINK fuegt ihn ein - siehe dessen Klassendoku "id
-     * of slot which we will add/remove the page break before"), nicht ueber
-     * eine absolute Seitenzahl.
+     * Restore boundaries between adjacent target slots with update_page_break():
+     * LINK removes the break before the slot, UNLINK inserts it. Use slot
+     * boundaries rather than absolute page numbers.
      *
      * @param \mod_quiz\quiz_settings $quizobj
-     * @param array $targetslots In Zielreihenfolge, bereits umsortiert (siehe {@see self::restore_slot_order()}).
+     * @param array $targetslots In target order, already reordered by restore_slot_order().
      * @return void
      */
     private static function restore_page_breaks(\mod_quiz\quiz_settings $quizobj, array $targetslots): void {
@@ -203,10 +180,9 @@ final class arrangement {
     }
 
     /**
-     * Requireprevious/Notenmaximum/Anzeigenummer/Fragereferenz-Version je
-     * Slot - exakt wie gespeichert, inklusive version=null ("immer
-     * aktuellste"), das bleibt unveraendert null statt auf die zum
-     * Erfassungszeitpunkt aktuelle Fassung gepinnt zu werden.
+     * Restore requireprevious, maximum mark, display number and question version
+     * exactly as captured. Preserve version=null (always latest) rather than
+     * pinning the version current at capture time.
      *
      * @param \mod_quiz\quiz_settings $quizobj
      * @param array $targetslots
@@ -226,21 +202,17 @@ final class arrangement {
             if ((string) ($slot->displaynumber ?? '') !== $targetslot['displaynumber']) {
                 $structure->update_slot_display_number($slot->id, $targetslot['displaynumber']);
             }
-            // Immer aufrufen (nicht nur bei Abweichung): update_slot_version()
-            // ist selbst ein No-Op ohne Aenderung und ist die einzige Stelle,
-            // die version=null exakt erhaelt statt sie ueber einen eigenen
-            // Vergleich zu interpretieren.
+            // Always call: update_slot_version() is a no-op for unchanged values
+            // and preserves version=null without a separate interpretation.
             $structure->update_slot_version($slot->id, $targetslot['version']);
         }
     }
 
     /**
-     * Ueberschrift/Mischen je Abschnitt, positionsweise zugeordnet (nach dem
-     * Slot-Rueckschreiben liegen die firstslot-Werte der Abschnitte bereits
-     * richtig - move_slot() verschiebt Abschnittsgrenzen automatisch mit,
-     * siehe quiz_update_section_firstslots() in structure::move_slot()).
-     * Eine abweichende Abschnittsanzahl ist wie ein fehlender Slot ein
-     * Inhaltswechsel und wird uebersprungen.
+     * Restore section heading/shuffle settings by position. After slot moves,
+     * firstslot values are already correct because move_slot() updates section
+     * boundaries through quiz_update_section_firstslots(). Skip differing
+     * section counts, which represent content changes like missing slots.
      *
      * @param \mod_quiz\quiz_settings $quizobj
      * @param array $targetsections
@@ -266,10 +238,8 @@ final class arrangement {
     }
 
     /**
-     * quiz_feedback hat keine Struktur-API (auch Moodle-Kern schreibt sie in
-     * mod/quiz/lib.php: quiz_after_add_or_update() per delete+insert) - dieser
-     * Restore repliziert exakt dasselbe Muster statt eine eigene
-     * Schreibweise zu erfinden.
+     * quiz_feedback has no structure API. Reproduce Moodle's delete/insert
+     * pattern from mod/quiz/lib.php: quiz_after_add_or_update().
      *
      * @param int $quizid
      * @param array $targetfeedback

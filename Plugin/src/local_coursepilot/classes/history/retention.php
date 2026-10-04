@@ -34,10 +34,10 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class retention {
 
-    /** @var int Voreinstellung in Tagen (Spec 0015 §10.7). */
+    /** @var int Default in days (Spec 0015 §10.7). */
     public const DEFAULT_DAYS = 365;
 
-    /** @var int Untergrenze: "keine Frist" ist ausgeschlossen (Spec 0015 §10.7). */
+    /** @var int Lower bound: "no retention period" is excluded (Spec 0015 §10.7). */
     public const MIN_DAYS = 1;
 
     /** @var int Rows per batch of the scheduled task. */
@@ -50,10 +50,10 @@ final class retention {
     private const CURSOR = 'historyfilecleanupcursor';
 
     /**
-     * Die konfigurierte Loeschfrist in Tagen, gegen einen rohen/manipulierten
-     * Config-Wert (0, negativ, leer) auf mindestens einen Tag geklemmt - so
-     * bleibt "keine Frist" auch dann ausgeschlossen, wenn der gespeicherte
-     * Wert selbst ungueltig waere.
+     * The configured deletion period in days, clamped to at least one day
+     * against a raw/tampered config value (0, negative, empty) - so
+     * "no retention period" stays excluded even if the stored value itself
+     * were invalid.
      *
      * @return int
      */
@@ -83,8 +83,8 @@ final class retention {
     }
 
     /**
-     * Loescht den gesamten Verlauf einer Aktivitaet - Aktivitaets-Kaskade
-     * (course_module_deleted, #387). Unbedingt, unabhaengig von der Frist.
+     * Deletes the entire history of an activity - activity cascade
+     * (course_module_deleted, #387). Unconditional, independent of the retention period.
      *
      * @param int $cmid
      * @return void
@@ -115,13 +115,13 @@ final class retention {
     }
 
     /**
-     * Loescht den gesamten Verlauf eines Kurses - Kurs-Kaskade (course_deleted,
-     * #387). Unbedingt, unabhaengig von der Frist.
+     * Deletes the entire history of a course - course cascade (course_deleted,
+     * #387). Unconditional, independent of the retention period.
      *
-     * course_modules ist zu diesem Zeitpunkt bereits geloescht (Moodle-Core
-     * loescht die Kursinhalte vor dem Ereignis) - die Zuordnung muss deshalb
-     * ueber die in {@see version_writer::capture()} mitgeschriebene courseid
-     * laufen, nicht ueber einen Join gegen course_modules.
+     * course_modules is already deleted at this point (Moodle core deletes
+     * the course contents before the event) - the mapping must therefore go
+     * through the courseid recorded by {@see version_writer::capture()},
+     * not through a join against course_modules.
      *
      * @param int $courseid
      * @return void

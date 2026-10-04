@@ -15,7 +15,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {loadLocationSelectionModule, baseConfig, flushPromises} = require('./helpers/location-selection-amd-test-utils');
 
-test('Ordner anlegen setzt state.lastResult sofort auf ein leeres Ergebnis (Kriterium 1)', async function() {
+test('Creating a folder immediately resets state.lastResult to an empty result (criterion 1)', async function() {
   var parentBrowseResult = {ok: true, path: '', folders: [{name: 'material'}], selectable: true, reason: '', entrycount: 1, entrynames: ['material']};
   var ctx = loadLocationSelectionModule(baseConfig(), [parentBrowseResult]);
   await ctx.ready;
@@ -39,7 +39,7 @@ test('Ordner anlegen setzt state.lastResult sofort auf ein leeres Ergebnis (Krit
   assert.strictEqual(ctx.elements['coursepilot-location-selection-context_area_confirmed'].value, '');
 });
 
-test('Ordner auswaehlen mit echtem Elternebenen-Inhalt zeigt weiterhin die Uebergabe-Warnung (Regression, Kriterium 3)', async function() {
+test('Selecting a folder with real parent content still shows the handover warning (regression, criterion 3)', async function() {
   var parentBrowseResult = {ok: true, path: '', folders: [{name: 'material'}], selectable: true, reason: '', entrycount: 1, entrynames: ['material']};
   var ctx = loadLocationSelectionModule(baseConfig(), [parentBrowseResult]);
   await ctx.ready;
