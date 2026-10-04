@@ -5,7 +5,7 @@ description: Lies diese Datei, wenn eine Bestandsänderung gerade nicht ausführ
 
 # Referenz: Merkzettel
 
-Der **Merkzettel** (`merkzettel.md`) hält Aenderungen am Materialbestand
+Der **Merkzettel** (`notepad.md`) hält Aenderungen am Materialbestand
 fest, die die KI gerade nicht ausführen kann, und wird am Laptop
 abgearbeitet. Er ist eine gewöhnliche Kontextdatei — gelesen und geschrieben
 ausschliesslich über die Werkzeuge aus `coursepilot_get_skill("context-area")`,
@@ -28,7 +28,7 @@ ohne Klarnamen — ein Merkzettelpunkt trägt kein
 Dateien", `coursepilot_get_skill("context-area")`).
 
 Hat der aktuelle Client lokale Dateiwerkzeuge (Codex am Laptop, ein Client
-mit Dateisystem-Server)? Ja: `merkzettel.md` zu Sitzungsbeginn lesen, bevor
+mit Dateisystem-Server)? Ja: `notepad.md` zu Sitzungsbeginn lesen, bevor
 der dreistufige Test unten läuft. Nein: entfällt — der Merkzettel bleibt
 serverseitig unverändert erreichbar.
 

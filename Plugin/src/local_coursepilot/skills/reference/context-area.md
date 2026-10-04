@@ -87,10 +87,26 @@ An der Wurzel liegen:
 | Eintrag | Was |
 |---|---|
 | `index.md` | globale Uebersicht über die Vorhaben (Spec 0010) |
-| `vorlagen.md` | gemerkte Aktivitätsvorlagen (Spec 0013/0012 §5) |
+| `templates.md` | gemerkte Aktivitätsvorlagen (Spec 0013/0012 §5) |
 | `question-types/` | ein `<fragetyp>.md` je erschlossenem Fragetyp (`coursepilot_get_skill("question-types")`) |
 | `activity-types/` | ein `<modname>.md` je erschlossener Aktivitätsart (`coursepilot_get_skill("activity-types")`) |
 | `<schuljahr>/<klasse-oder-lerngruppe>/<fach>/<vorhaben>/` | die eigentliche Arbeitsablage: Profile, `plan.md`, `status.md`, Journal, Material |
+
+### Bestehende deutsche Dateinamen (#605)
+
+Neue Dateien heißen `templates.md`, `notepad.md` und `CONTEXT-people.md`.
+Beim Lesen dieser Namen sucht `coursepilot_read_context_file` nur dann nach
+`vorlagen.md`, `merkzettel.md` bzw. `CONTEXT.personen.md` im selben Ordner,
+wenn die englische Datei fehlt. Bestehen beide, gilt die englische Datei.
+Ein Speicher- oder Verbindungsfehler bleibt ein Fehler; er löst keinen
+Namenswechsel aus. `previous_location` bleibt dabei am gewählten alten Ort.
+
+Die Antwort liefert den tatsächlich gelesenen `path` und dessen `contenthash`.
+Beim Fortschreiben einer gelesenen Datei genau diesen Pfad mit
+`expected_contenthash` verwenden. Alte Dateien werden weiter gelesen, auch
+bei direkter Angabe ihres deutschen Namens. Externe WebDAV-Dateien werden
+nicht automatisch umbenannt oder migriert. Die Personenbezug-Sperre gilt
+für den tatsächlich gelesenen Inhalt unabhängig vom Dateinamen.
 
 Neue Ablageorte kommen an die Wurzel oder in einen Vorhabenordner — kein
 zweiter, thematisch sortierter Ordnerbaum.
@@ -155,7 +171,7 @@ Archiv, neu `journal-2026-07.md`). Stimmt die Lehrkraft zu:
 ## Lerndatei: ersetzen statt anhängen (Spec 0020 §7)
 
 Eine Lerndatei (`question-types/<typ>.md`, `activity-types/<modname>.md` — feste Gliederung, Schreibregel siehe
-`coursepilot_get_skill("question-types")` — sowie `vorlagen.md`) darf sonst zu
+`coursepilot_get_skill("question-types")` — sowie `templates.md`) darf sonst zu
 Schicht auf Schicht wachsen: Anhängen fühlt sich sicher an, Löschen
 riskant, und der Kontext wird mit jeder Sitzung teurer und widersprüchlicher.
 
@@ -165,7 +181,7 @@ zu werden. Geschrieben wird technisch ohnehin immer per
 `coursepilot_write_context_file` (Vollersatz, siehe Schreibregel in
 `coursepilot_get_skill("question-types")`) — "Anhängen" meint hier den Inhalt, nicht
 das Werkzeug. Inhaltlich blindes Anhängen ist der Ausnahmefall (z. B.
-`vorlagen.md`, das als freie Liste ohne feste Gliederung geführt wird und wo
+`templates.md`, das als freie Liste ohne feste Gliederung geführt wird und wo
 ein neuer Eintrag deshalb regulär dazukommt statt einen Abschnitt zu
 ersetzen) und wird als solcher benannt, wenn er eintritt.
 

@@ -152,7 +152,7 @@ Vorhabens selbst wird dadurch nicht blockiert.
 
 Personenbezogene Beobachtungen (z.B. zu einzelnen Schuelerinnen und Schuelern)
 gehoeren nicht in die teilbare Sachdatei, sondern in ein eigenes Sidecar
-(`CONTEXT.personen.md`), per `coursepilot_write_context_file` angelegt. Ein
+(`CONTEXT-people.md`), per `coursepilot_write_context_file` angelegt. Ein
 Sidecar traegt immer `coursepilot.personenbezug: true` (siehe Klarnamen-Regel in
 `coursepilot_get_skill("context-area")`) und wird von der Sachdatei aus
 sichtbar verlinkt.
@@ -161,7 +161,7 @@ sichtbar verlinkt.
 
 Häufig genutzte Klon-Quellen für `coursepilot_clone_activity` (Issue #328,
 Spezifikation 0013) können Lehrkräfte in einer einfachen Textdatei
-`vorlagen.md` an der Kontextwurzel festhalten (Geschwisterebene zu den
+`templates.md` an der Kontextwurzel festhalten (Geschwisterebene zu den
 Schuljahresordnern). Keine Registry im Plugin, keine Datenbank — eine
 „Vorlage" ist eine normale Aktivität im Kurs, adressiert per `cmid`.
 
@@ -197,7 +197,7 @@ Nur bei einem der drei Trigger, nicht präventiv bei jeder Sitzung:
 ### Schreiben nur nach Bestätigung
 
 Anlegen und Pflegen der Datei obliegt der Lehrkraft. Coursepilot kann nach
-einem erfolgreichen Klon einen Eintrag vorschlagen, schreibt `vorlagen.md`
+einem erfolgreichen Klon einen Eintrag vorschlagen, schreibt `templates.md`
 aber nie still — nur nach ausdrücklicher Bestätigung durch die Lehrkraft
 (`coursepilot_write_context_file`), analog zur Vorschau/Bestätigung-Regel bei
 Kontextprofilen (Schritt 5 oben).

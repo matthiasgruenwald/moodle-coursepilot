@@ -70,3 +70,21 @@ Entscheidung der Lehrkraft (#585, #602):
   deutsch (siehe oben); die Übersetzung des Korpus ist eine eigene Aufgabe.
 - Bestehende deutsche Ordner im Kontextbereich werden einmalig umbenannt (bisher nur
   Testkonten).
+
+## Nachtrag 2026-10-04: Codeprosa und Kontextdateien (#605)
+
+Die englische Basis gilt auch für Kommentare, Docblocks, Testtitel,
+Werkzeugschema-Beschreibungen und Handshake-Anweisungen. Lehrkraftsichtbare
+Meldungen werden über `get_string()` übersetzt; interne Fehler und
+OAuth-`error_description` sind englisch. `lang/de/` bleibt die deutsche
+Entwicklungsübersetzung.
+
+Entscheidung der Lehrkraft: Neue Kontextdateien heißen `templates.md`,
+`notepad.md` und `CONTEXT-people.md`. Bestehende `vorlagen.md`, `merkzettel.md`
+und `CONTEXT.personen.md` bleiben direkt lesbar und dienen nur bei fehlender
+englischer Datei als Lese-Fallback im selben Ordner und am selben gewählten
+Ort. Die englische Datei hat Vorrang. Speicher-, Verbindungs- und
+Berechtigungsfehler werden unverändert gemeldet. Rückgaben nennen den
+wirklich gelesenen Pfad und dessen Hash; die Personenbezug-Sperre prüft den
+wirklich gelesenen Inhalt. Externe WebDAV-Dateien werden nicht automatisch
+umbenannt oder migriert.

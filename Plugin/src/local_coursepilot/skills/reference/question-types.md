@@ -138,7 +138,7 @@ Kopf. Kein stilles Weiterarbeiten gegen eine Datei, die nicht mehr gilt.
 
 ## Was hier nicht gilt
 
-`vorlagen.md` (Spec 0013, Aktivitaetsvorlagen) ist etwas anderes und bleibt
+`templates.md` (Spec 0013, Aktivitaetsvorlagen) ist etwas anderes und bleibt
 von dieser Datei unberuehrt. Fuer den uebrigen Kontextbereich (Werkzeuge,
 Schreibangebot fuer plan/status, Handaenderungs-Routine, Journal-Rotation,
 Klarnamen-Regel) gilt weiterhin `coursepilot_get_skill("context-area")`.
