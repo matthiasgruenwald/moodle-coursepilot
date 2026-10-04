@@ -54,7 +54,7 @@ final class field_test extends \advanced_testcase {
     }
 
     /**
-     * Der Fehlertext ist ein englischer Moodle-Sprachstring, kein Literal.
+     * Error text comes from an English Moodle language string.
      */
     public function test_invalid_field_name_uses_the_english_language_string(): void {
         $this->assertSame(
@@ -64,14 +64,14 @@ final class field_test extends \advanced_testcase {
     }
 
     /**
-     * Jede nicht-string Feldangabe liefert dieselbe katalogisierte Meldung.
+     * Every non-string field specification returns the same cataloged error.
      */
     public function test_invalid_field_names_always_get_the_same_message(): void {
         $messages = [];
         foreach ([0, true, null, []] as $fieldname) {
             try {
                 field::assert_name($fieldname);
-                $this->fail('Die nicht-string Feldangabe haette abgelehnt werden muessen.');
+                $this->fail('The non-string field specification should have been rejected.');
             } catch (\moodle_exception $e) {
                 $this->assertSame('invalidfieldname', $e->errorcode);
                 $messages[] = $e->getMessage();

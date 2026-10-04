@@ -15,18 +15,15 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Echte Umlaute statt ae/oe/ue-Ersatzschreibweisen in Texten, die Lehrkraft
- * oder KI sehen (Issue #521, Review-Nacharbeit zu #486): Sprachpaket sowie
- * Werkzeug-/Parameterbeschreibungen aus der Kette #487-#520. Und: die
- * Plugin-Beschreibung beschreibt die externe Isolierung korrekt
- * (Schreibsperre, keine Lesesperre - Spec #486 §12) und verweist auf #481.
+ * Use real German umlauts instead of ae/oe/ue substitutions in
+ * teacher-facing German language text and descriptions (#521).
+ * The plugin description accurately explains external isolation: a
+ * write lock rather than a read lock (Spec #486 §12).
  *
- * Issue #522 (weitere Review-Nacharbeit zu #486): die Referenzteile
- * `context-area` und `notepad` bleiben ortsneutral - echte Umlaute,
- * kein Verbindungsaufbau-Satz fuer die Ortswahl, keine Festlegung auf
- * "Meine Dateien", Altbestand (nur Kontextbereich) und Wechsel des
- * Materialbestands getrennt beschrieben, "keinen anderen Ort nehmen" beim
- * Ausstand benannt.
+ * Context-area and notepad references stay location-neutral (#522):
+ * selection is separate from AI connection setup, not fixed to My files;
+ * old context content and inventory changes have distinct semantics,
+ * and pending writes must never choose another storage location.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -35,108 +32,81 @@
 final class local_coursepilot_umlaut_test extends advanced_testcase {
 
     /**
-     * Vollstaendige Liste der ae/oe/ue-Ersatzschreibweisen, die in der Kette
-     * #487-#520 neu eingefuehrt und mit #521 korrigiert wurden - je Datei
-     * jedes einzelne betroffene Wort (per `git show HEAD:<datei>` gegen den
-     * Stand vor #521 ermittelt), nicht nur eine Stichprobe.
+     * German language-pack substitutions fixed by #521. The English
+     * corpus and tool descriptions are covered by their language contracts.
      *
      * @return array<string, string[]>
      */
     private function forbidden_by_file(): array {
         $root = __DIR__ . '/../';
         return [
-            $root . 'classes/tool_registry.php' => ['Aktivitaet', 'Aktivitaetstyp', 'Eintraege', 'Feldbuendel', 'Geprueft', 'Haengt', 'Loeschen', 'Verhaltensaenderung', 'Werkzeugeintraege', 'auffaellt', 'ausdruecklich', 'dafuer', 'fuegt', 'fuehrt', 'fuer', 'haengt', 'hoechstens', 'laeuft', 'loeschen', 'loescht', 'tatsaechlich', 'ueber', 'ueberschreibt', 'unveraendert', 'vollstaendig', 'vollstaendige', 'zurueck', 'zusaetzlich', 'zusammengefuegt'],
-            $root . 'classes/tool_registry_context_tools.php' => ['Aktivitaet', 'Aktivitaets', 'Aktivitaetsart', 'Aktivitaetsarten', 'Aktivitaetstyp', 'Anhaengen', 'Anhaengversuch', 'Anzuhaengender', 'Aufloesung', 'Bestaetigung', 'Erklaerung', 'Feldbuendel', 'Fragenidentitaet', 'Geprueft', 'Gespraech', 'Groesse', 'Haelfte', 'Haengt', 'Handaenderung', 'Loeschen', 'Loescht', 'Loeschweg', 'Pruefwert', 'Ruehrt', 'Sekundenaufloesung', 'Vollstaendiger', 'aenderung', 'angehaengt', 'anzuhaengen', 'auffaellt', 'ausdruecklich', 'ausdrueckliche', 'ausstaende', 'benoetigten', 'dafuer', 'erklaerender', 'fuegt', 'fuenf', 'fuer', 'gefuehrten', 'gehoert', 'checked', 'groesser', 'gueltigen', 'gueltiger', 'haeufig', 'hoechstens', 'kursuebergreifend', 'kursuebergreifenden', 'laengste', 'loeschende', 'loescht', 'moeglich', 'moeglicherweise', 'noetig', 'tatsaechlich', 'traegt', 'ueber', 'uebergebene', 'ueberschreibt', 'ueberschrieben', 'ueberschriebene', 'uebersetzen', 'veraendert', 'vollstaendig', 'waehlen', 'waehlt', 'waere', 'zusaetzlich', 'zusammenfuehren'],
             $root . 'lang/de/local_coursepilot.php' => ['Aktivitaet', 'Dateigroesse', 'Groesse', 'Inhaltspruefsumme', 'Loeschen', 'Markierungsgedaechtnis', 'Schluessel', 'fuer', 'gehoert', 'laeuft', 'noetig', 'rueckschreibbar', 'vollstaendig'],
-            $root . 'skills/adapter/coursepilot-plan.md' => ['Bestandsaenderung', 'ausfuehrbaren', 'fuer', 'checked', 'zusaetzlich'],
-            $root . 'skills/adapter/coursepilot-implement.md' => ['Aktivitaet', 'Anhaengen', 'Einzelbestaetigung', 'fuer', 'zusaetzlich'],
-            $root . 'skills/adapter/coursepilot.md' => ['Bestandsaenderung', 'ausfuehrbar', 'ausstaende', 'fuer', 'ueber', 'zusaetzlich'],
-            $root . 'skills/reference/journal.md' => ['Aktivitaetstyp', 'Bestaetigung', 'Eintraege', 'Eintraegen', 'angehaengt', 'ausstaende', 'fuer', 'haelt', 'laeuft', 'spaeter', 'ueber', 'ueberschrieben', 'zusaetzlich'],
-            $root . 'skills/reference/context-area.md' => ['Aktivitaet', 'Anhaenge', 'Anhaengen', 'Ausstaende', 'Bestaetigung', 'Dateigroesse', 'Eintraege', 'Einzelbestaetigung', 'Gespraech', 'Groesse', 'Kuerzel', 'Kuerzeln', 'Loeschen', 'Luecke', 'Rueckfall', 'Zaehlung', 'angehaengt', 'ausdruecklich', 'ausdrueckliche', 'ausdrueckliches', 'ausstaende', 'bestaetigten', 'fuehrt', 'fuer', 'gebuendelt', 'gewaehlt', 'gewoehnliche', 'gueltiger', 'haengt', 'laeuft', 'loeschen', 'loescht', 'moeglich', 'noetig', 'prueft', 'schlaegt', 'schwaecher', 'sinngemaess', 'spaeter', 'traegt', 'ueber', 'ueberschreiben', 'ueberschreibt', 'ueberschrieben', 'uebersprungenen', 'unveraendert', 'vollstaendig', 'vollstaendige', 'zurueck', 'zusaetzlich', 'zusammenfuehren',
-                // Issue #522: weitere Ersatzschreibweisen, von #521 nicht erfasst.
-                'enthaelt', 'Aktivitaetsvorlagen', 'Aufraeumfrage', 'Ergaenzung', 'Geloescht', 'Gesamtgroesse', 'Handaenderungs', 'Kuenftige', 'Loeschgrund', 'Pruefung', 'Rueckgaben', 'Schueler', 'Schuelernamen', 'Statuspruefung', 'Waechst', 'Zusammenfuehren', 'anhaengen', 'aufloesen', 'ausfuehrt', 'auszufuehrenden', 'auszufuehrender', 'ergaenzen', 'fuehlt', 'geaendert', 'gefuehrt', 'gehoeren', 'koennte', 'koennten', 'loest', 'muesste', 'naechsten', 'natuerlichen', 'pruefen', 'regulaer', 'schwaechere', 'spuerbar', 'ueberholte', 'ueberschreitet', 'widerspruechlicher', 'ausschliesslich', 'heisst', 'gleichermassen', 'fruheren'],
-            $root . 'skills/reference/mcp-tools.md' => ['Aktivitaet', 'Aktivitaetsart', 'Aktivitaetstyp', 'Anhaenge', 'Anhaengen', 'Bestaetigung', 'Groesse', 'ausdruecklich', 'ausdruecklicher', 'fuer', 'gueltigen', 'loeschen', 'loescht', 'traegt', 'ueberschreiben', 'vollstaendig', 'waehlt', 'zusaetzlich'],
-            $root . 'skills/reference/notepad.md' => ['Anhaenge', 'Ausfuehrung', 'Bestaetigung', 'Bestandsaenderung', 'Faellen', 'Fuer', 'Gespraech', 'Loesung', 'Originalqualitaet', 'Pruefsumme', 'Rueckfrage', 'ankuendigen', 'ausdruecklich', 'ausfuehrbar', 'ausfuehren', 'bestaetigten', 'entfaellt', 'fuer', 'gewoehnliche', 'haelt', 'laedt', 'laengst', 'laeuft', 'loeschen', 'mituebertragen', 'moeglich', 'prueft', 'schlaegt', 'schreibgeschuetzt', 'traegt', 'ueber', 'ueberein', 'unveraendert'],
         ];
     }
 
     /**
-     * Issue #522: der Ablageort wird nicht mehr "beim Verbindungsaufbau"
-     * gewaehlt (das war die MCP-Anbindung), sondern auf der Ortswahlseite -
-     * unabhaengig davon, wie die KI-Anbindung eingerichtet ist.
+     * Select storage on the location-selection page, independently of
+     * AI connection setup (#522).
      */
     public function test_kontextbereich_replaces_verbindungsaufbau_sentence(): void {
-        $content = file_get_contents(__DIR__ . '/../skills/reference/context-area.md');
-        $this->assertStringNotContainsString('beim Verbindungsaufbau gewählt', $content);
-        $this->assertStringContainsString('Ortswahlseite', $content);
+        $content = preg_replace('/\s+/u', ' ', file_get_contents(__DIR__ . '/../skills/reference/context-area.md'));
+        $this->assertStringNotContainsString('selected during connection setup', $content);
+        $this->assertStringContainsString('location-selection page', $content);
     }
 
     /**
-     * Issue #522: die Handaenderungs-Routine legt den Ablageort nicht auf
-     * Moodles "Meine Dateien" fest - der Kontextbereich bleibt ortsneutral
-     * (Spec #486 §14).
+     * Manual-edit guidance must not fix context storage to Moodle
+     * My files; it stays location-neutral (#522, Spec #486 §14).
      */
     public function test_kontextbereich_does_not_fix_handaenderung_to_meine_dateien(): void {
-        $content = file_get_contents(__DIR__ . '/../skills/reference/context-area.md');
+        $content = preg_replace('/\s+/u', ' ', file_get_contents(__DIR__ . '/../skills/reference/context-area.md'));
         $this->assertStringNotContainsString(
-            'kann jede Datei jederzeit in "Meine Dateien" selbst bearbeiten',
+            'can edit every file in "My files" at any time',
             $content
         );
     }
 
     /**
-     * Issue #522: der Ausstand-Ablauf nennt ausdruecklich, keinen anderen
-     * Ort fuer den nicht gespeicherten Inhalt zu nehmen (Spec #486 §14/§8).
+     * Pending-write guidance explicitly prohibits choosing another
+     * storage location for unsaved content (#522, Spec #486 §14/§8).
      */
     public function test_kontextbereich_ausstand_forbids_taking_another_location(): void {
-        $content = file_get_contents(__DIR__ . '/../skills/reference/context-area.md');
-        $this->assertStringContainsString('keinen anderen Ort', $content);
+        $content = preg_replace('/\s+/u', ' ', file_get_contents(__DIR__ . '/../skills/reference/context-area.md'));
+        $this->assertStringContainsString('Do not choose another storage location', $content);
     }
 
     /**
-     * Issue #522: der Materialbestand kennt keinen Altbestand (siehe
-     * `\local_coursepilot\previous_location`) - der Merkzettel-Text darf den Wechsel
-     * des Materialbestands nicht als Altbestand-Vorgang beschreiben.
+     * Inventory has no pending old-content mechanism; notepad guidance
+     * must distinguish inventory changes from context-location changes (#522).
      */
     public function test_merkzettel_separates_previouslocation_from_materialbestand_wechsel(): void {
-        $content = file_get_contents(__DIR__ . '/../skills/reference/notepad.md');
-        $this->assertStringNotContainsString('Wechsel des Bestands (Altbestand', $content);
-        $this->assertStringContainsString('kein Altbestand', $content);
+        $content = preg_replace('/\s+/u', ' ', file_get_contents(__DIR__ . '/../skills/reference/notepad.md'));
+        $this->assertStringNotContainsString('Inventory change (old content', $content);
+        $this->assertStringContainsString('has no old-content state', $content);
     }
 
     public function test_no_ascii_umlaut_substitutes_in_chain_texts(): void {
         foreach ($this->forbidden_by_file() as $path => $needles) {
-            if ($path === __DIR__ . '/../classes/tool_registry_context_tools.php') {
-                continue;
-            }
             $this->assertFileExists($path);
             $content = file_get_contents($path);
             foreach ($needles as $needle) {
                 $this->assertDoesNotMatchRegularExpression(
                     '/\b' . preg_quote($needle, '/') . '\b/',
                     $content,
-                    basename($path) . ' enthaelt noch die Ersatzschreibweise "' . $needle . '" statt eines echten Umlauts.'
+                    basename($path) . ' still contains the ASCII substitute "' . $needle . '" instead of a real umlaut.'
                 );
             }
         }
     }
 
     /**
-     * Die Plugin-Beschreibung (Einstellungsseite) nennt die richtige
-     * Isolierung - Schreibsperre, keine Lesesperre - und verweist auf die
-     * Admin-Anleitung fuer die Einzelheiten.
-     *
-     * #568 (Review vom 25.09.2026): der Text verwies frueher wortwoertlich
-     * auf "Issue #481" - seit dessen Umsetzung (#481, Admin-Erstanleitung)
-     * steht dort stattdessen der Verweis auf `docs/admin-erstanleitung.md`.
-     * Ein Test, der noch den erledigten Issue-Verweis verlangt, ist rein
-     * implementierungsgebunden an einen ueberholten Textstand - die
-     * fachliche Datenschutzaussage (Schreibsperre, keine Lesesperre) bleibt
-     * unveraendert verhaltensbasiert geprueft.
+     * The settings description explains a write lock, not a read lock,
+     * and links to admin setup documentation. After #481 was implemented,
+     * #568 replaced the obsolete issue reference with
+     * docs/admin-erstanleitung.md; retain behavior-based privacy assertions.
      */
     public function test_plugin_description_states_write_lock_not_read_lock(): void {
-        // Direkt aus der Quelle gelesen statt ueber get_string(): die
-        // Testumgebung hat kein deutsches Sprachpaket installiert.
+        // Read the source directly because the test environment has no German language pack.
         $string = [];
         require(__DIR__ . '/../lang/de/local_coursepilot.php');
         $desc = $string['settingintroheading_desc'];

@@ -17,22 +17,18 @@
 namespace local_coursepilot\event;
 
 /**
- * Ein Zugriff ueber den Coursepilot-MCP-Endpunkt ist fehlgeschlagen (#339):
- * Authentifizierung, Berechtigung, unbekanntes Werkzeug/Verfahren oder ein
- * Fehler waehrend der Werkzeugausfuehrung.
+ * Failed Coursepilot MCP access (#339): authentication, permission,
+ * unknown tool/method, or failure during tool execution.
  *
- * Der Grund landet als kurzer, fester Code/Text im Ereignis - nie das
- * Zugriffstoken selbst (das steht an keiner Stelle des Aufrufpfads in einer
- * Fehlermeldung, siehe dispatcher::error()/handle_tools_call()). Wird bereits
- * ab Protokollstufe "Nur Fehler" ausgeloest.
+ * Store a short fixed reason code/text, never the access token
+ * (dispatcher::error()/handle_tools_call()). Emitted from errors-only
+ * logging onward.
  *
  * @property-read array $other {
- *      - string reason: kurze Fehlerbeschreibung (kein Geheimnis).
- *      - string|null toolname: Name des betroffenen Werkzeugs, falls bekannt.
- *      - string|null path: Dateipfad, wenn der gescheiterte Zugriff einen
- *        berührt hat und er noch bekannt war (#501), sonst null.
- *      - string|null detail: Interner Diagnosehinweis, nur bei Protokollstufe
- *        "Alles" gesetzt (#457).
+ *      - string reason: Short error description, without secrets.
+ *      - string|null toolname: Affected tool name, if known.
+ *      - string|null path: Path touched by the failed access, if known (#501).
+ *      - string|null detail: Internal diagnostic, only with full logging (#457).
  * }
  *
  * @package    local_coursepilot

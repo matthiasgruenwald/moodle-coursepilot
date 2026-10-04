@@ -18,16 +18,16 @@ namespace local_coursepilot\admin;
 
 use local_coursepilot\remote_access;
 
-// admin_setting_configmultiselect ist eine legacy-globale Klasse aus
-// lib/adminlib.php - siehe personaldatahosts_setting.
+// admin_setting_configmultiselect is a legacy global class from
+// lib/adminlib.php - see personaldatahosts_setting.
 global $CFG;
 require_once($CFG->libdir . '/adminlib.php');
 
 /**
- * `local_coursepilot | remoteaccesscohorts` (#579, ADR 0026): Mehrfachauswahl
- * bestehender Systemkohorten fuer die Fernzugriffsfreigabe. Die Auswahl wird
- * erst beim Anzeigen geladen; unter dem Feld stehen die Mitgliederzahl je
- * gewaehlter Kohorte und gewaehlte, inzwischen geloeschte Kohorten.
+ * `local_coursepilot | remoteaccesscohorts` (#579, ADR 0026): multiple selection of
+ * existing system cohorts for the remote access grant. The selection is
+ * loaded only on display; below the field are the member count per
+ * selected cohort and selected cohorts that have since been deleted.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

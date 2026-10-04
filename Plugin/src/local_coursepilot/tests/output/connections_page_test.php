@@ -19,7 +19,7 @@ namespace local_coursepilot\output;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Template-Datenaufbereitung fuer connections.php (#552, Spec 0023 Teil 5).
+ * Template data preparation for connections.php (#552, Spec 0023 part 5).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

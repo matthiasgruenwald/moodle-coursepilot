@@ -27,14 +27,11 @@ use local_coursepilot\material_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Listet den Materialordner der aufrufenden Lehrkraft (Spec 0018 §2, Issue
- * #428): Groesse, `contenthash`, Aenderungszeit je Datei, und der
- * verbleibende Speicherplatz nach Nutzerquote - kein Parameter adressiert
- * einen anderen Bereich oder eine andere Person.
+ * Lists the calling teacher's material store (Spec 0018 §2, #428): file
+ * size, contenthash, modification time and remaining user quota. No
+ * parameter addresses another area or person.
  *
- * Unmittelbar englisch deklariert (#572, Spec 0025 §A): "location" statt
- * "ort" - {@see \local_coursepilot\material_files::location_parameter()} bleibt
- * intern deutsch benannt, der Parametername an dieser Grenze ist englisch.
+ * Direct English contract (#572, Spec 0025 §A): location replaces ort.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -47,7 +44,7 @@ class list_material_files extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'path' => new external_value(PARAM_PATH, 'Relativer Unterordner, leer fuer die Wurzel', VALUE_DEFAULT, ''),
+            'path' => new external_value(PARAM_PATH, 'Relative subfolder; empty for the root', VALUE_DEFAULT, ''),
             'location' => material_files::location_parameter(),
         ]);
     }
@@ -56,10 +53,10 @@ class list_material_files extends external_api {
      * @param string $path
      * @param string $location
      * @return array
-     * @throws \moodle_exception invalidmaterialpath, wenn $path ein "."/".."-
-     *         Segment enthaelt, invalidmateriallocation bei einem unbekannten
-     *         "location"-Wert, materialpathiscontext, wenn der Kontextbereich im
-     *         Bestand liegt und $path darunter fuehrt.
+     * @throws \moodle_exception invalidmaterialpath if $path contains a "."/".."
+     *         segment; invalidmateriallocation for an unknown
+     *         location value; materialpathiscontext if the context area is inside
+     *         the material store and $path enters it.
      */
     public static function execute(string $path = '', string $location = material_files::LOCATION_STORE): array {
         $params = self::validate_parameters(self::execute_parameters(), ['path' => $path, 'location' => $location]);
@@ -67,11 +64,9 @@ class list_material_files extends external_api {
         $context = material_files::own_context();
         self::validate_context($context);
 
-        // Der Kontextpointer (Issue #445) liegt physisch im
-        // Kontextbereich-Anker, nicht hier - list_entries_for_location() schliesst
-        // ihn aus Konsistenzgruenden trotzdem aus, falls Anker und
-        // Materialordner je zusammenfallen. material_area::list() entfernt
-        // das nur intern gebrauchte "etag"-Feld bereits ortsneutral (Issue #539).
+        // The pointer (#445) lives in the context anchor, not here, but listings
+        // also exclude it if anchor and material root coincide. material_area::list()
+        // removes the internal etag field independently of location (#539).
         $result = material_area::list($params['location'], $params['path']);
 
         $remaining = material_files::remaining_quota();
@@ -90,29 +85,29 @@ class list_material_files extends external_api {
         return new external_single_structure([
             'path' => new external_value(
                 PARAM_TEXT,
-                'Aufgeloester Unterordner, relativ zur Materialwurzel (leer = Wurzel) - dieselbe Schreibweise, '
-                    . 'die die Werkzeuge entgegennehmen'
+                'Resolved subfolder relative to the material root (empty = root), using the same notation '
+                    . 'accepted by the tools'
             ),
             'entries' => new external_multiple_structure(
                 new external_single_structure([
-                    'name' => new external_value(PARAM_TEXT, 'Datei- oder Ordnername'),
+                    'name' => new external_value(PARAM_TEXT, 'File or folder name'),
                     'type' => new external_value(
                         PARAM_ALPHA,
                         '"file", "folder" or "context_area" (context area - it physically lives here inside the '
                             . 'material store, but is not enterable via the material paths, see list_context_files)'
                     ),
-                    'size' => new external_value(PARAM_INT, 'Dateigroesse in Byte, 0 bei Ordnern'),
-                    'mimetype' => new external_value(PARAM_RAW, 'MIME-Typ, leer bei Ordnern'),
+                    'size' => new external_value(PARAM_INT, 'File size in bytes, 0 for folders'),
+                    'mimetype' => new external_value(PARAM_RAW, 'MIME type, empty for folders'),
                     'contenthash' => new external_value(
                         PARAM_ALPHANUMEXT,
-                        'Inhaltspruefsumme, leer bei Ordnern und beim externen Materialbestand (WebDAV kennt keinen contenthash)'
+                        'Content checksum; empty for folders and external material storage (WebDAV has no contenthash)'
                     ),
-                    'timemodified' => new external_value(PARAM_INT, 'Zeitpunkt der letzten Aenderung, 0 bei Ordnern'),
+                    'timemodified' => new external_value(PARAM_INT, 'Last modification time, 0 for folders'),
                 ])
             ),
             'remaining_quota_mb' => new external_value(
                 PARAM_RAW,
-                'Verbleibender Speicherplatz in MB (als Zeichenkette formatiert), null wenn keine Quote gilt',
+                'Remaining quota in MB (formatted string), null without a quota limit',
                 VALUE_DEFAULT,
                 null,
                 NULL_ALLOWED

@@ -20,7 +20,7 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Vollstaendiger Ist-Stand einer Aktivitaet (Spec 0015 §3.2, Ticket #384).
+ * Complete current activity state (Spec 0015 §3.2, issue #384).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,8 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class get_module_settings_test extends \advanced_testcase {
 
     /**
-     * Der Ist-Stand enthaelt die Instanzfelder (z.B. "intro") roh, ohne
-     * Coursepilot-eigenes Schema.
+     * Return raw instance fields, such as intro, without a custom Coursepilot schema.
      */
     public function test_returns_full_instance_state_as_json(): void {
         $this->resetAfterTest();
@@ -61,10 +60,9 @@ final class get_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: coursepagevisibility, visibleoncoursepage und
-     * availability_status stehen unter denselben Namen wie in den Lesetools
-     * get_modules und get_course_catalog - fuer denselben cmid identische
-     * Werte, nicht nur denselben Feldnamen (Spec 0015 §3.5 "ein Vokabular").
+     * coursepagevisibility, visibleoncoursepage and availability_status
+     * match get_modules and get_course_catalog in names and values for
+     * the same cmid (Spec 0015 §3.5, one vocabulary).
      */
     public function test_visibility_vocabulary_matches_read_tools(): void {
         $this->resetAfterTest();
@@ -75,7 +73,7 @@ final class get_module_settings_test extends \advanced_testcase {
         $this->setUser($teacher);
 
         $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
-        set_coursemodule_visible($page->cmid, 1, 0); // Stealth: sichtbar, aber nicht auf der Kursseite.
+        set_coursemodule_visible($page->cmid, 1, 0); // Stealth: visible, but absent from the course page.
 
         $modules = external_api::clean_returnvalue(
             get_modules::execute_returns(),
@@ -102,12 +100,12 @@ final class get_module_settings_test extends \advanced_testcase {
             $this->assertSame(
                 (string) $modulesrow[$field],
                 (string) $catalogrow[$field],
-                "$field weicht zwischen get_modules und get_course_catalog ab."
+                "$field differs between get_modules and get_course_catalog."
             );
             $this->assertSame(
                 (string) $modulesrow[$field],
                 (string) $settings[$field],
-                "$field weicht zwischen get_modules und get_module_settings ab."
+                "$field differs between get_modules and get_module_settings."
             );
         }
         $this->assertSame('stealth', $settings['coursepagevisibility']);
@@ -115,11 +113,9 @@ final class get_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Dritte Quelle des Vokabulars (Spec 0015 §3.5): der Feldkatalog
-     * (describe_module_fields) fuehrt coursepagevisibility UND
-     * availability_status als Pseudofelder - identische Namen zu
-     * get_modules/get_course_catalog/get_module_settings, nicht nur zwei von
-     * drei Quellen.
+     * The describe_module_fields catalog also exposes coursepagevisibility
+     * and availability_status under the same names as all three read tools
+     * (Spec 0015 §3.5).
      */
     public function test_field_catalog_lists_same_vocabulary(): void {
         $this->resetAfterTest();
@@ -136,8 +132,8 @@ final class get_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * profile-Bedingungen bleiben maskiert (ADR 0011) - Typ, Feld und
-     * Operator bleiben sichtbar, nur der Wert wird ersetzt.
+     * Mask profile condition values while preserving type, field and
+     * operator (ADR 0011).
      */
     public function test_profile_restriction_value_is_masked(): void {
         global $DB;
@@ -177,9 +173,7 @@ final class get_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: auch ohne Bearbeitungsrecht nutzbar - nur
-     * 'local/coursepilot:use' wird geprueft, nicht
-     * 'moodle/course:manageactivities'.
+     * Reading requires local/coursepilot:use, not moodle/course:manageactivities.
      */
     public function test_usable_without_edit_capability(): void {
         $this->resetAfterTest();
@@ -201,7 +195,7 @@ final class get_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne local/coursepilot:use: abgewiesen.
+     * Reject users without local/coursepilot:use.
      */
     public function test_rejects_user_without_capability(): void {
         $this->resetAfterTest();
@@ -266,8 +260,8 @@ final class get_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Bestehende Riegel (#583) stehen neben dem Ist-Stand - ein Kurs laesst
-     * sich pruefen, ohne in die Datenbank zu schauen.
+     * Report existing learner restrictions alongside current state so
+     * courses can be checked without database access (#583).
      */
     public function test_reports_existing_learner_locks(): void {
         $this->resetAfterTest();

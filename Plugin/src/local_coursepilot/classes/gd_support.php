@@ -17,12 +17,11 @@
 namespace local_coursepilot;
 
 /**
- * Die eine GD-Pruefung (Spec 0018 §3.3): Moodles admin/environment.xml
- * fuehrt GD fuer jede Version als "required", ein Moodle ohne GD installiert
- * nicht - trotzdem eine defensive Pruefung mit klarer Meldung statt eines
- * kryptischen Fatal Errors aus imagecreatefromstring(), falls es doch einmal
- * fehlt. Kein Fallback-Design, kein zweiter Bildpfad (§3.3): fehlt GD, sind
- * Vorschau und Zuschnitt gesperrt, Hochladen und Einbetten laufen weiter.
+ * Single GD check (Spec 0018 §3.3). Moodle's admin/environment.xml requires
+ * GD for every version; installation fails without it. Still checks defensively
+ * with a useful message instead of an imagecreatefromstring() fatal error.
+ * No fallback or second image path (§3.3): missing GD blocks preview and crop,
+ * while upload and embedding remain available.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,11 +30,9 @@ namespace local_coursepilot;
 final class gd_support {
 
     /**
-     * Endungen, die GD als Rasterbild lesen und schreiben kann - SVG bewusst
-     * ausgeschlossen (raster-only, §3.3/§5). Gemeinsam fuer
-     * preview_material_file und crop_material_file statt je Klasse
-     * dupliziert, damit ein spaeteres GD-Format (z.B. AVIF) an einer Stelle
-     * ergaenzt wird.
+     * Raster extensions GD can read/write; SVG excluded (§3.3/§5).
+     * Shared by preview_material_file and crop_material_file so a future
+     * format (e.g. AVIF) needs to be added only once.
      *
      * @var string[]
      */
@@ -52,12 +49,10 @@ final class gd_support {
     }
 
     /**
-     * Erzwingt einen festen Rueckgabewert fuer {@see self::available()} -
-     * einzig fuer PHPUnit, um den sonst untestbaren "GD fehlt"-Zweig zu
-     * pruefen (echtes Moodle hat GD als "required", #430-Codereview). Nach
-     * dem Test mit null zuruecksetzen.
+     * Overrides {@see self::available()} only for PHPUnit to test missing GD
+     * (Moodle requires GD; #430 code review). Reset to null after the test.
      *
-     * @param bool|null $value null = keine Ueberschreibung (echte Pruefung).
+     * @param bool|null $value null = no override (real check).
      */
     public static function override_for_testing(?bool $value): void {
         self::$overridefortests = $value;

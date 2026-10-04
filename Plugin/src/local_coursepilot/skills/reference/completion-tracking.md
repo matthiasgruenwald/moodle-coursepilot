@@ -1,119 +1,94 @@
 ---
 name: completion-tracking
-description: Lies diese Datei, wenn die Lehrkraft Abschlussverfolgung (Completion/Restriction-Ketten zwischen Aktivitaeten) wuenscht.
+description: Read this when the teacher requests completion tracking or restriction chains between activities.
 ---
 
-# Referenz: Abschlussverfolgung (optionales Feature)
+# Reference: optional completion tracking
 
-Lies diese Datei, wenn die Lehrkraft Abschlussverfolgung (Completion/
-Restriction-Ketten zwischen Aktivitaeten) wuenscht.
+When requested, first ask in the teacher's language:
+"Shall I enable completion tracking? Learners will need to submit each
+assignment before the next one becomes available."
 
-Wenn der Benutzer Abschlussverfolgung wuenscht, den Benutzer zuerst fragen:
+If yes, run the workflow after creating all activities.
 
-> "Soll ich die Abschlussverfolgung aktivieren? Dann muessen SuS jede Aufgabe
-> einreichen bevor die naechste freigeschaltet wird."
+## Activities with completion
 
-Falls ja: Den folgenden Workflow NACH dem Erstellen aller Aktivitaeten ausfuehren.
-
-## Welche Aktivitaeten bekommen Abschlussverfolgung?
-
-| Aktivitaetstyp (`modname`) | Completion-Typ | Erlaeuterung |
+| modname | Configuration | Meaning |
 |---|---|---|
-| `assign` | completion=2, completionsubmit=1 | Automatisch bei Einreichung |
-| `choice` | completion=2, completionsubmit=1 | Automatisch bei abgegebener Abstimmung |
-| `page` | completion=1 | Manuell (SuS klickt "Abgeschlossen") |
-| `url` | – | Keine Verfolgung (Links ueberspringen) |
-| `label` | – | Keine Verfolgung (Header ueberspringen) |
+| assign | completion=2, completionsubmit=1 | Automatic on submission |
+| choice | completion=2, completionsubmit=1 | Automatic on voting |
+| page | completion=1 | Learners manually mark complete |
+| url | None | Skip links |
+| label | None | Skip headers |
 
-`completionsubmit` gibt es nur bei `assign` und `choice` – bei jeder anderen
-Aktivitaetsart weist `coursepilot_set_completion` das Feld ab.
+completionsubmit exists only for assign/choice; other types are rejected.
+All completion* fields use coursepilot_set_completion exclusively.
+Generic create/update tools block them because Moodle silently discards
+them without completionunlocked, while setting it deletes learner
+completion records.
 
-`completion`/`completionsubmit` (und die anderen `completion*`-Felder) laufen
-ausschliesslich ueber `coursepilot_set_completion` – `coursepilot_create_module` und
-`coursepilot_update_module_settings` sperren diese Felder bewusst, weil Moodle sie ohne
-`completionunlocked` still verwirft und mit `completionunlocked` die
-Abschlussdaten der Lernenden loeschen wuerde.
+## Required setup order
 
-## Pflicht-Reihenfolge beim Einrichten
+1. Create all activities with coursepilot_create_module and record cmids.
+2. Configure all tracked activities with coursepilot_set_completion.
+3. Only after every completion call succeeds, set restrictions pointing
+   to preceding activities through coursepilot_set_restriction.
 
-IMMER in dieser Reihenfolge vorgehen – niemals umgekehrt:
+Never reverse this order.
 
-```
-1. Alle Aktivitaeten per coursepilot_create_module erstellen
-   → cmids aus den Antworten notieren
-
-2. Fuer jede zu verfolgende Aktivitaet coursepilot_set_completion aufrufen
-   → Erst wenn ALLE set_completion-Calls erfolgreich sind:
-
-3. Fuer jede abhaengige Aktivitaet coursepilot_set_restriction aufrufen
-   → Bedingung "abschluss" auf die VORHERIGE Aktivitaet zeigen lassen
-```
-
-## Beispiel-Workflow fuer 3 aufeinanderfolgende Aufgaben
+## Example: three consecutive assignments
 
 ```
-// Schritt 1: Aktivitaeten anlegen, cmids merken
+// Create activities and record their cmids.
 cmid_A = coursepilot_create_module(courseid, sectionnum, modname="assign",
-   fields_json='{"name": "Phase 1 Arbeitsblatt", ...}')    → z.B. 1001
+   fields_json='{"name": "Phase 1 worksheet", ...}')       // e.g. 1001
 cmid_B = coursepilot_create_module(courseid, sectionnum, modname="assign",
-   fields_json='{"name": "Phase 2 Aufgabe", ...}')          → z.B. 1002
+   fields_json='{"name": "Phase 2 task", ...}')            // e.g. 1002
 cmid_C = coursepilot_create_module(courseid, sectionnum, modname="assign",
-   fields_json='{"name": "Phase 3 Implementierung", ...}')  → z.B. 1003
+   fields_json='{"name": "Phase 3 implementation", ...}')  // e.g. 1003
 
-// Schritt 2: Abschluss aktivieren (alle drei)
+// Enable completion for all three.
 coursepilot_set_completion(cmid=1001, fields_json='{"completion": 2, "completionsubmit": 1}')
 coursepilot_set_completion(cmid=1002, fields_json='{"completion": 2, "completionsubmit": 1}')
 coursepilot_set_completion(cmid=1003, fields_json='{"completion": 2, "completionsubmit": 1}')
 
-// Schritt 3: Voraussetzungen setzen (Kette)
-// B erst sichtbar wenn A abgeschlossen
+// B requires completion of A; C requires completion of B.
 coursepilot_set_restriction(cmid=1002,
   conditions_json='[{"type": "completion", "activity_cmid": 1001, "status": "complete"}]')
-// C erst sichtbar wenn B abgeschlossen
 coursepilot_set_restriction(cmid=1003,
   conditions_json='[{"type": "completion", "activity_cmid": 1002, "status": "complete"}]')
 ```
 
-Meldet `coursepilot_set_completion` beim ersten Aufruf ein Datenverlustrisiko
-(vorhandene Abschlussdaten von Lernenden), NICHT einfach erneut ohne Ruecksprache
-mit `confirmed: true` wiederholen – siehe `coursepilot_get_skill("mcp-tools")`.
+If the first completion call warns of deleting existing learner records,
+do not blindly retry with confirmed:true. Ask first; see mcp-tools.
 
-## Textseiten in die Kette einbeziehen
-
-Wenn auch Textseiten (Informationsblaetter) abgeschlossen sein muessen:
+## Include required-reading pages
 
 ```
 cmid_info = coursepilot_create_module(courseid, sectionnum, modname="page",
-   fields_json='{"name": "Informationsblatt", ...}')   → z.B. 1000
+   fields_json='{"name": "Information sheet", ...}')  // e.g. 1000
 cmid_task = coursepilot_create_module(courseid, sectionnum, modname="assign",
-   fields_json='{"name": "Aufgabe", ...}')              → z.B. 1001
+   fields_json='{"name": "Task", ...}')               // e.g. 1001
 
-// Informationsblatt: manueller Abschluss
+// Manual completion for reading; automatic completion for submission.
 coursepilot_set_completion(cmid=1000, fields_json='{"completion": 1}')
-
-// Aufgabe: automatisch bei Einreichung
 coursepilot_set_completion(cmid=1001, fields_json='{"completion": 2, "completionsubmit": 1}')
 
-// Aufgabe erst freischalten wenn Informationsblatt gelesen (manuell abgeschlossen)
+// Unlock the task after reading is manually marked complete.
 coursepilot_set_restriction(cmid=1001,
   conditions_json='[{"type": "completion", "activity_cmid": 1000, "status": "complete"}]')
 ```
 
-## Labels und URLs NICHT in die Kette einbeziehen
+## Keep labels and URLs outside the chain
 
-Phasen-Header (Labels) und externe Links (URLs) bekommen KEINE Abschlussverfolgung
-und KEINE Voraussetzungen. Sie bleiben immer sichtbar.
+Phase headers and external links receive neither completion nor
+restrictions and stay visible. The chain uses assignments and, when
+planned, pages.
 
-Die Kette bezieht sich nur auf Aufgaben (assign) und ggf. Textseiten (page).
+## Avoid errors
 
-## Fehlervermeidung
-
-- NIEMALS `coursepilot_set_restriction` aufrufen bevor `coursepilot_set_completion` auf
-  der Voraussetzungs-Aktivitaet gesetzt wurde – sonst funktioniert die
-  Freischaltung nicht korrekt
-- NIEMALS eine Aktivitaet als Voraussetzung eintragen die selbst
-  keine Abschlussverfolgung hat (completion=0)
-- Bei mehreren Voraussetzungen (mehrere Eintraege in `conditions_json`) muessen
-  ALLE genannten `activity_cmid`-Werte zuvor mit `coursepilot_set_completion`
-  konfiguriert worden sein
-- `name` ist fuer `label` gesperrt – siehe `coursepilot_get_skill("technical-notes")`
+- Configure prerequisite completion before restrictions.
+- Never require an activity with completion=0.
+- For multiple conditions, every activity_cmid must already have completion
+  configured through coursepilot_set_completion.
+- label blocks name; see `coursepilot_get_skill("technical-notes")`.

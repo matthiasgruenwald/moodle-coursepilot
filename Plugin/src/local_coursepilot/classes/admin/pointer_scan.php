@@ -21,11 +21,10 @@ use local_coursepilot\pointer_location;
 use local_coursepilot\storage_anchor;
 
 /**
- * Liest Kontextpointer und Ausstandsnotiz beliebiger Personen - ohne Netz und
- * ohne den Umweg ueber $USER, den {@see storage_anchor} voraussetzt (Issue
- * #499, Spec #486 §12): Grundlage der vier Statusprüfungen (Anzahl externer
- * Pointer, Schritt 3 je verbundener Person) und der Spalte Ablageort der
- * Verbindungsübersicht.
+ * Read arbitrary users' context pointers and pending notes without network
+ * access or the current-$USER dependency of storage_anchor (Issue #499,
+ * Spec #486 §12). Supports the four status checks and the storage-location
+ * column in the connections overview.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -33,36 +32,36 @@ use local_coursepilot\storage_anchor;
  */
 final class pointer_scan {
 
-    /** @var string[] Die beiden Pointer-Ziele, wie {@see \local_coursepilot\location_selection::TARGETS}. */
+    /** @var string[] The two pointer targets, as in location_selection::TARGETS. */
     public const TARGETS = context_pointer::TARGETS;
 
-    /** @var string Zustand: kein Kontextpointer vorhanden. */
+    /** @var string State: no context pointer exists. */
     public const STATE_OPEN = 'open';
 
-    /** @var string Zustand: Ziel liegt in Moodles Private Files. */
+    /** @var string State: target is in Moodle Private Files. */
     public const STATE_MOODLE = pointer_location::MOODLE;
 
-    /** @var string Zustand: Ziel liegt in einer WebDAV-Nutzerinstanz. */
+    /** @var string State: target is in a WebDAV user instance. */
     public const STATE_EXTERNAL = pointer_location::EXTERNAL;
 
-    /** @var string Zustand: Pointer strukturell defekt (nicht aufloesbar). */
+    /** @var string State: structurally broken pointer that cannot be resolved. */
     public const STATE_BROKEN = 'broken';
 
-    /** @var string Defekt: die referenzierte Instanz existiert nicht mehr. */
+    /** @var string Defect: referenced instance no longer exists. */
     public const DEFECT_INSTANCE_MISSING = 'instance_missing';
 
-    /** @var string Defekt: die Instanz gehoert einer anderen Person. */
+    /** @var string Defect: instance belongs to another user. */
     public const DEFECT_FOREIGN_INSTANCE = 'foreign_instance';
 
-    /** @var string Defekt: die Instanz nutzt HTTP statt HTTPS+Basic. */
+    /** @var string Defect: instance uses HTTP instead of HTTPS+Basic. */
     public const DEFECT_HTTP = 'http';
 
-    /** @var string Defekt: die Pointer-Struktur selbst ist ungueltig. */
+    /** @var string Defect: invalid pointer structure. */
     public const DEFECT_INVALID = 'invalid';
 
     /**
-     * Alle Personen mit einer nicht-leeren Kontextpointer-Datei - eine reine
-     * DB-Abfrage ueber die Dateitabelle, ohne jede Datei zu lesen.
+     * Users with a nonempty context pointer file, obtained from the files
+     * table without reading each file.
      *
      * @return int[]
      */
@@ -86,10 +85,9 @@ final class pointer_scan {
     }
 
     /**
-     * Der rohe Kontextpointer einer beliebigen Person - `null`, wenn keine
-     * Datei existiert oder sie kein gueltiges JSON-Objekt enthaelt (dieselbe
-     * Toleranz wie {@see storage_anchor::read_raw_pointer()} fuer die eigene
-     * Person, hier ohne $USER-Bezug).
+     * Raw context pointer for any user, or null if the file is missing or
+     * contains no valid JSON object. Same tolerance as storage_anchor::read_raw_pointer(),
+     * without depending on the current user.
      *
      * @param int $userid
      * @return array|null
@@ -111,8 +109,8 @@ final class pointer_scan {
     }
 
     /**
-     * Ob eine beliebige Person eine offene Ausstandsnotiz hat - dieselbe
-     * Toleranz wie {@see \local_coursepilot\pending_write_notice}, ohne $USER-Bezug.
+     * Whether any user has an open pending note. Same tolerance as
+     * pending_write_notice, without depending on the current user.
      *
      * @param int $userid
      * @return bool
@@ -134,8 +132,8 @@ final class pointer_scan {
     }
 
     /**
-     * Ob ein bereits gelesener Kontextpointer offenen Altbestand traegt
-     * (Feld "vorheriger_ort", {@see \local_coursepilot\previous_location::current()}).
+     * Whether the decoded context pointer has a previous location
+     * (previous_location::current()).
      *
      * @param array|null $decoded
      * @return bool
@@ -145,12 +143,10 @@ final class pointer_scan {
     }
 
     /**
-     * Ob mindestens eines der beiden Ziele eines bereits gelesenen
-     * Kontextpointers extern liegt - roh am Feld "ort" geprueft, ohne die
-     * volle Aufloesungspruefung von {@see context_pointer::resolve_target()}:
-     * fuer die Zaehlung in Statusprüfung 1 (Spec §12) reicht das rohe Feld,
-     * ein strukturell kaputter Pointer zaehlt hier bewusst nicht mit (er
-     * erscheint stattdessen als defekter Pointer in der Verbindungsübersicht).
+     * Whether either target is external, checked directly in "location"
+     * without full resolution. The raw field is sufficient for setup check 1
+     * (Spec §12). Structurally broken pointers appear as defects in the
+     * connections overview instead of counting as external targets.
      *
      * @param array|null $decoded
      * @return bool
@@ -169,9 +165,8 @@ final class pointer_scan {
     }
 
     /**
-     * Alle Personen, deren Kontextpointer mindestens ein externes Ziel nennt
-     * - die Anzahl aus Statusprüfung 1 (Spec §12, Schritt 1: "sonst WARNING
-     * mit Anzahl").
+     * Users whose context pointer names at least one external target: the
+     * affected-user count for setup check 1 (Spec §12).
      *
      * @return int[]
      */
@@ -186,14 +181,13 @@ final class pointer_scan {
     }
 
     /**
-     * Der aufgeloeste Zustand eines Ziels fuer die Verbindungsübersicht
-     * (Spec #486 §12): nie ein geworfener Fehler, ein struktureller Defekt
-     * wird selbst zum Zustand. Liest ausschliesslich Pointer und Datenbank,
-     * nie das Netz, nie einen Pfad (Akzeptanzkriterium).
+     * Resolved target state for the connections overview (Spec #486 §12).
+     * Structural defects become states rather than thrown errors. Read only
+     * the pointer and database, without network or target-path access.
      *
      * @param int $userid
-     * @param array|null $decoded Ergebnis von {@see raw_pointer_for()}.
-     * @param string $target "context_area" oder "material_store".
+     * @param array|null $decoded Result of {@see raw_pointer_for()}.
+     * @param string $target "context_area" or "material_store".
      * @return array{state: string, host: ?string, defect: ?string}
      *         state: "open"|"moodle"|"external"|"broken".
      */
@@ -217,17 +211,14 @@ final class pointer_scan {
     }
 
     /**
-     * Die drei benannten Pointer-Defekte einer externen Instanz (Spec §12:
-     * "Instanz fehlt, gehört jemand anderem, http") - dieselben Pruefungen
-     * 2/3 wie {@see \local_coursepilot\webdav\webdav_instance::resolve_owned()},
-     * hier aber fuer eine beliebige Person statt $USER, und ohne dessen
-     * Freischaltungs-/Sitzungspruefungen (die gelten nur fuer die eigene,
-     * gerade angemeldete Person). Kein Netzzugriff: nur `repository_instances`
-     * und `repository_instance_config`.
+     * Three external-instance defects (Spec §12): missing instance, foreign
+     * owner, or HTTP. Same checks 2/3 as webdav_instance::resolve_owned(),
+     * but for any user and without current-user enablement/session checks.
+     * Read only repository_instances and repository_instance_config.
      *
      * @param int $userid
      * @param pointer_location $location
-     * @return string|null "instanzfehlt"|"fremdeinstanz"|"http"|null (kein Defekt).
+     * @return string|null "instance_missing"|"foreign_instance"|"http"|null (no defect).
      */
     private static function external_defect(int $userid, pointer_location $location): ?string {
         global $DB;

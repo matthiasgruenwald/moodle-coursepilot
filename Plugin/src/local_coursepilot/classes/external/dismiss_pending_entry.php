@@ -26,16 +26,14 @@ use local_coursepilot\context_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Verwirft einen Eintrag der Ausstandsnotiz ausdruecklich (Issue #492, ADR
- * 0023 Punkt 3, Spec #486 §10) - der zweite der beiden Wege, auf denen ein
- * Eintrag verschwindet, neben dem Nachtragen ueber
- * `write_context_file`/`append_context_file` mit `pending_entry=<Kennung>`
- * (#571: Parametername seither englisch deklariert).
+ * Explicitly dismisses a pending-note entry (#492, ADR 0023 item 3,
+ * Spec #486 §10), the second removal path besides replaying the write
+ * through write_context_file/append_context_file with pending_entry=<ID>
+ * (parameter declared in English since #571).
  *
- * Erster vollstaendiger englischer Durchstich der Migration aus #568
- * (Spec 0025 §A): Parametername, Rueckgabeschluessel und Beschreibungen sind
- * hier unmittelbar englisch deklariert - seit #573 der einzige Weg an der
- * MCP-Grenze, ein Uebersetzungsschritt existiert dort nicht mehr.
+ * First complete English migration slice from #568 (Spec 0025 §A):
+ * input, return keys and descriptions are directly English. Since #573
+ * this is the sole MCP contract, without a translation layer.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -55,8 +53,8 @@ class dismiss_pending_entry extends external_api {
     /**
      * @param string $identifier
      * @return array
-     * @throws \moodle_exception pendingunknown, wenn keine Kennung existiert
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     * @throws \moodle_exception pendingunknown if the identifier does not exist
+     * @throws \required_capability_exception without moodle/user:manageownfiles
      */
     public static function execute(string $identifier): array {
         $params = self::validate_parameters(self::execute_parameters(), ['identifier' => $identifier]);
@@ -81,7 +79,7 @@ class dismiss_pending_entry extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'identifier' => new external_value(PARAM_ALPHANUMEXT, 'Dismissed identifier'),
-            'message' => new external_value(PARAM_RAW, 'Bestaetigung in Lehrkraft-Deutsch'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing confirmation'),
         ]);
     }
 }

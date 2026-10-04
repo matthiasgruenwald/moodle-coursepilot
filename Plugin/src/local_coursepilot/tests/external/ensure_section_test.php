@@ -20,7 +20,7 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Schreibkern 13 (Spec 0015 Phase 3, Ticket #391).
+ * Write core 13 (Spec 0015 Phase 3, Ticket #391).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class ensure_section_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs, Lehrkraft (editingteacher).
+     * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
         $course = $this->getDataGenerator()->create_course(['numsections' => 2]);
@@ -54,8 +54,7 @@ final class ensure_section_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: legt einen fehlenden Abschnitt an und erzeugt bei
-     * erneutem Aufruf KEINEN zweiten.
+     * Acceptance: create a missing section and reuse it without duplication.
      */
     public function test_creates_missing_section_and_is_idempotent(): void {
         $this->resetAfterTest();
@@ -72,12 +71,12 @@ final class ensure_section_test extends \advanced_testcase {
         $this->assertSame($first['id'], $second['id']);
 
         $countafter = count(get_fast_modinfo($course)->get_section_info_all());
-        $this->assertSame($countbefore, $countafter, 'Ein erneuter Aufruf darf keinen zweiten Abschnitt erzeugen.');
+        $this->assertSame($countbefore, $countafter, 'A repeated call must not create a second section.');
     }
 
     /**
-     * Abnahmekriterium: gleicht bei vorhandenem Abschnitt nur den Namen ab -
-     * Zusammenfassung/Sichtbarkeit bleiben unangetastet.
+     * For existing sections, update only the name and preserve summary
+     * and visibility.
      */
     public function test_reconciles_only_name_on_existing_section(): void {
         global $DB;

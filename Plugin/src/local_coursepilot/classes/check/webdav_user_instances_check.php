@@ -24,11 +24,10 @@ use local_coursepilot\webdav\webdav_setup_steps;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Statusprüfung Schritt 2 des WebDAV-Schrittkatalogs (Issue #499, Spec #486
- * §12): "Nutzerinstanzen erlaubt". `NA`, solange Schritt 1 (Repository aktiv)
- * aus ist - ohne aktives Repository ist diese Option ohne Wirkung. Sonst
- * `WARNING`, wenn sie fehlt, mit dem Hinweis aufs App-Passwort (Teil des
- * Schrittkatalog-Wortlauts).
+ * WebDAV setup check 2 (Issue #499, Spec #486 §12): user instances allowed.
+ * Return NA when the repository is disabled because the option has no
+ * effect then; otherwise WARNING if missing, including app-password advice
+ * from the shared setup-step wording.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

@@ -17,18 +17,16 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Der modulübergreifende Block (Spec 0015 §2.3): Sichtbarkeit, Stealth,
- * Gruppenmodus, Gruppierung, idnumber und Abschnittszuordnung liegen in
- * {course_modules}, nicht in der Instanztabelle, laufen aber durch denselben
- * update_moduleinfo()-Formularweg. Er steht hier EINMAL und wird von
- * describe_module_fields jeder Aktivitätsart angehängt - keine
- * Modultyp-Klasse dupliziert ihn (Abnahmekriterium #379).
+ * Cross-module block (Spec 0015 §2.3): visibility, stealth, group mode,
+ * grouping, idnumber and section assignment live in {course_modules}, not
+ * in the instance table, but use the same update_moduleinfo() form path.
+ * Defined ONCE and appended by describe_module_fields for every activity
+ * kind; no module class duplicates it (acceptance criterion #379).
  *
- * "coursepagevisibility" ist kein DB-Feld, sondern die von den Lese-Werkzeugen
- * (get_course_catalog) verwendete Vokabel fuer den aus
- * visible/visibleoncoursepage abgeleiteten Zustand - hier als Pseudofeld
- * gefuehrt, damit Katalog und Lese-Tools dasselbe Wort benutzen (Spec 0015
- * §3.5 "ein Vokabular").
+ * coursepagevisibility is not a DB field. It is the read-tool vocabulary
+ * (get_course_catalog) for state derived from visible/visibleoncoursepage.
+ * Listed as a pseudofield so catalogs and read tools share that vocabulary
+ * (Spec 0015 §3.5 "ein Vokabular").
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -37,44 +35,38 @@ namespace local_coursepilot\catalog;
 final class shared_block {
 
     /**
-     * Durchgängig gesperrte Felder (Spec 0015 §2.2, Kategorie 3): jedes
-     * Modul rechnet sie selbst nach, ein Patch darf sie nicht setzen.
+     * Always blocked fields (Spec 0015 §2.2, category 3): every module
+     * recomputes these; a patch must not set them.
      *
-     * Die sieben "completion*"-Spalten (Spec 0015 §8, Ticket #382/#392) sind
-     * course_modules-Spalten wie visible/groupmode - modulübergreifend, aber
-     * gesperrt statt im gemeinsamen Block als Feld geführt: ohne
-     * "completionunlocked" verwirft Moodle sie still, mit ihm löscht es die
-     * Vervollständigungsdaten der Lernenden. "completionunlocked" selbst ist
-     * ebenfalls gesperrt - es darf nur der dedizierte `set_completion`-Endpunkt
-     * (Ticket #392) im benannten Zweitakt setzen, niemals ein beiläufiger
-     * Patch über update_module_settings/create_module.
+     * The seven completion* columns (Spec 0015 §8, tickets #382/#392) belong
+     * to course_modules like visible/groupmode, but are blocked. Without
+     * completionunlocked, Moodle silently discards them; with it, Moodle deletes
+     * learner completion data. completionunlocked is itself blocked: only the
+     * dedicated set_completion endpoint (ticket #392) may set it in the named
+     * two-step operation, never a patch through update_module_settings/create_module.
      *
      * @var string[]
      */
     /**
-     * Lese-Vokabular: Namen, die die Lese-Werkzeuge ausgeben, die aber kein
-     * Schreibfeld sind - je mit dem Feld, das die Lehrkraft stattdessen setzt
-     * (#404).
+     * Read vocabulary: names returned by read tools that are not writable,
+     * with the field the teacher should set instead (#404).
      *
-     * Sie stehen in {@see self::pseudofields()} und damit auch in der Antwort
-     * von describe_module_fields, gleichrangig neben echten Pseudofeldern wie
-     * "page". Ein Modell, das gerade "coursepagevisibility": "stealth" gelesen
-     * hat, versucht folgerichtig, genau das zu schreiben - und bekam dafuer
-     * "Unbekanntes Feld", was schlicht nicht stimmt: das Feld ist bekannt,
-     * nur nicht schreibbar. Die Schreibwege (create_module,
-     * update_module_settings, quiz_write_bridge) antworten deshalb mit dem
-     * Wegweiser statt mit einer Sackgasse.
+     * Listed in {@see self::pseudofields()} and in describe_module_fields alongside
+     * real pseudofields such as page. A model reading coursepagevisibility=stealth
+     * naturally tries to write it; "Unknown field" was misleading because the
+     * field is known but read-only. create_module, update_module_settings and
+     * quiz_write_bridge return a routing hint instead.
      *
-     * @var array<string, string> Feldname => Hinweis auf den Schreibweg.
+     * @var array<string, string> Field name => write-path hint.
      */
     public const READ_ONLY_VOCABULARY = [
-        'coursepagevisibility' => '"visibleoncoursepage": 1 (auf der Kursseite gelistet) oder 0 (Stealth)',
-        'availability_status' => '"visible": 0/1 (verborgen/verfuegbar) und "visibleoncoursepage": 0/1 (Stealth)',
+        'coursepagevisibility' => '"visibleoncoursepage": 1 (listed on the course page) or 0 (stealth)',
+        'availability_status' => '"visible": 0/1 (hidden/available) and "visibleoncoursepage": 0/1 (stealth)',
     ];
 
     /**
-     * Wirft, wenn $fieldname Lese-Vokabular ist - eine eigene Meldung mit
-     * Wegweiser statt "Unbekanntes Feld".
+     * Throws when $fieldname is read vocabulary, with a routing hint
+     * instead of "Unknown field".
      *
      * @param string $fieldname
      * @param string $modname
@@ -93,13 +85,12 @@ final class shared_block {
     }
 
     /**
-     * Die Vervollstaendigungsfelder, die ausschliesslich {@see
-     * \local_coursepilot\external\set_completion} schreibt - die sieben
-     * generischen course_modules-Spalten samt "completionunlocked" und die
-     * modulspezifischen aus set_completion::MODULE_SPECIFIC_FIELDS. Sie stehen
-     * ohnehin auf einer Sperrliste; die eigene Meldung nennt zusaetzlich den
-     * Weg, der funktioniert (Ticket #461: im Abnahmelauf scheiterte ein Modell
-     * fuenfmal, weil "gesperrt" nicht sagte, wohin stattdessen).
+     * Completion fields writable exclusively through
+     * {@see \local_coursepilot\external\set_completion}: the seven generic
+     * course_modules columns, completionunlocked and the module-specific fields
+     * from set_completion::MODULE_SPECIFIC_FIELDS. Already blocked; the dedicated
+     * message names the supported path (ticket #461: during acceptance a model
+     * failed five times because "blocked" gave no direction).
      *
      * @var string[]
      */
@@ -115,8 +106,8 @@ final class shared_block {
     ];
 
     /**
-     * Wirft, wenn $fieldname ein Vervollstaendigungsfeld ist - mit dem
-     * Wegweiser auf set_completion statt der blossen Sperrmeldung.
+     * Throws for a completion field, pointing to set_completion
+     * instead of returning only a blocked-field message.
      *
      * @param string $fieldname
      * @return void
@@ -145,7 +136,7 @@ final class shared_block {
     ];
 
     /**
-     * Kategorie 1 des gemeinsamen Blocks: echte course_modules-Spalten.
+     * Category 1 of the shared block: real course_modules columns.
      *
      * @return field[]
      */
@@ -154,7 +145,7 @@ final class shared_block {
             new field(
                 'visible',
                 'PARAM_BOOL',
-                'Im Kurs sichtbar (1) oder fuer Lernende verborgen (0).',
+                'Visible in the course (1) or hidden from learners (0).',
                 false,
                 1,
                 [0, 1],
@@ -164,8 +155,8 @@ final class shared_block {
             new field(
                 'visibleoncoursepage',
                 'PARAM_BOOL',
-                'Stealth: bei 0 ist die Aktivitaet erreichbar (falls verlinkt oder als Voraussetzung '
-                    . 'genutzt), erscheint aber nicht in der Kursseitenliste.',
+                'Stealth: at 0 the activity is accessible (when linked or used as a prerequisite '
+                    . '), but is absent from the course page list.',
                 false,
                 1,
                 [0, 1],
@@ -175,17 +166,17 @@ final class shared_block {
             new field(
                 'groupmode',
                 'PARAM_INT',
-                'Gruppenmodus: keine Gruppen, getrennte Gruppen oder sichtbare Gruppen.',
+                'Group mode: no groups, separate groups or visible groups.',
                 false,
                 0,
                 [0, 1, 2],
                 null,
-                'lib/grouplib.php:29,34,39 (NOGROUPS/SEPARATEGROUPS/VISIBLEGROUPS); Spalte lib/db/install.xml:336'
+                'lib/grouplib.php:29,34,39 (NOGROUPS/SEPARATEGROUPS/VISIBLEGROUPS); column lib/db/install.xml:336'
             ),
             new field(
                 'groupingid',
                 'PARAM_INT',
-                'Gruppierung, der die Aktivitaet zugeordnet ist (0 = keine). Nur IDs, keine Namen.',
+                'Grouping assigned to the activity (0 = none). IDs only, not names.',
                 false,
                 0,
                 null,
@@ -195,7 +186,7 @@ final class shared_block {
             new field(
                 'idnumber',
                 'PARAM_RAW',
-                'Frei vergebene Kennung der Aktivitaet, u.a. fuer Bewertungsberechnungen.',
+                'Freely assigned activity identifier, e.g. for grade calculations.',
                 false,
                 '',
                 null,
@@ -205,18 +196,18 @@ final class shared_block {
             new field(
                 'sectionnum',
                 'PARAM_INT',
-                'Abschnittsnummer (0-basiert), der die Aktivitaet zugeordnet ist.',
+                'Section number (0-based) assigned to the activity.',
                 false,
                 null,
                 null,
                 null,
-                'course/modlib.php:799 (Formularfeld "section", relative Abschnittsnummer, nicht die course_sections-ID)'
+                'course/modlib.php:799 (Form field "section", relative section number, not the course_sections ID)'
             ),
         ];
     }
 
     /**
-     * Kategorie 2 des gemeinsamen Blocks.
+     * Category 2 of the shared block.
      *
      * @return field[]
      */
@@ -225,37 +216,37 @@ final class shared_block {
             new field(
                 'coursepagevisibility',
                 'string',
-                'NUR LESEN. Von den Lese-Werkzeugen verwendeter, aus visible/visibleoncoursepage abgeleiteter '
-                    . 'Zustand: "shown" (normal auf der Kursseite) oder "stealth" (verfuegbar, aber nicht '
-                    . 'gelistet). Zum Setzen stattdessen "visibleoncoursepage" 1 oder 0.',
+                'READ ONLY. State derived from visible/visibleoncoursepage and used by read tools. '
+                    . 'Values: "shown" (normally listed on the course page) or "stealth" (available but not '
+                    . 'listed). To write, use "visibleoncoursepage" 1 or 0 instead.',
                 false,
                 'shown',
                 ['shown', 'stealth'],
                 null,
-                'Plugin/src/local_coursepilot/classes/catalog/shared_block.php::derive_visibility() (Coursepilot-Vokabular, '
-                    . 'keine eigene Moodle-Spalte; wirkt auf visibleoncoursepage)'
+                'Plugin/src/local_coursepilot/classes/catalog/shared_block.php::derive_visibility() (Coursepilot vocabulary, '
+                    . 'no separate Moodle column; affects visibleoncoursepage)'
             ),
             new field(
                 'availability_status',
                 'string',
-                'NUR LESEN. Von den Lese-Werkzeugen verwendeter, aus visible/visibleoncoursepage abgeleiteter '
-                    . 'Zustand mit drittem Wert: "hidden" (visible=0), sonst wie coursepagevisibility "stealth" '
-                    . 'oder "shown". Zum Setzen stattdessen "visible" und "visibleoncoursepage".',
+                'READ ONLY. State derived from visible/visibleoncoursepage and used by read tools. '
+                    . 'Includes a third value: "hidden" (visible=0), otherwise "stealth" as in coursepagevisibility '
+                    . 'or "shown". To write, use "visible" and "visibleoncoursepage" instead.',
                 false,
                 'shown',
                 ['shown', 'stealth', 'hidden'],
                 null,
-                'Plugin/src/local_coursepilot/classes/catalog/shared_block.php::derive_visibility() (Coursepilot-Vokabular, '
-                    . 'keine eigene Moodle-Spalte; kombiniert visible und visibleoncoursepage)'
+                'Plugin/src/local_coursepilot/classes/catalog/shared_block.php::derive_visibility() (Coursepilot vocabulary, '
+                    . 'no separate Moodle column; combines visible and visibleoncoursepage)'
             ),
         ];
     }
 
     /**
-     * Ein Vokabular (Spec 0015 §3.5): die einzige Ableitung von
-     * "coursepagevisibility" und "availability_status" aus visible/
-     * visibleoncoursepage - genutzt von get_modules, get_course_catalog UND
-     * get_module_settings, damit keine der drei Stellen abweichend rechnet.
+     * One vocabulary (Spec 0015 §3.5): the single derivation of
+     * coursepagevisibility and availability_status from visible/visibleoncoursepage.
+     * Used by get_modules, get_course_catalog AND get_module_settings to keep
+     * all three consistent.
      *
      * @param int $visible course_modules.visible
      * @param int $visibleoncoursepage course_modules.visibleoncoursepage
@@ -269,23 +260,22 @@ final class shared_block {
     }
 
     /**
-     * Kategorie 5 des gemeinsamen Blocks.
+     * Category 5 of the shared block.
      *
      * @return string[]
      */
     public static function side_effects(): array {
         return [
-            'Stealth setzt voraus, dass die Instanz allowstealth erlaubt; ist es aus, scheitert der '
-                . 'Schreibvorgang mit einer klaren Meldung statt still zu wirken (Spec 0015 §7).',
-            'Ein unsichtbarer Abschnitt macht seine Aktivitaeten unsichtbar, unabhaengig von deren '
-                . 'eigenem visible-Wert (Spec 0015 §6).',
+            'Stealth requires allowstealth on the instance; when disabled, the '
+                . 'write fails with a clear message instead of silently doing nothing (Spec 0015 §7).',
+            'A hidden section hides its activities regardless of their '
+                . 'own visible value (Spec 0015 §6).',
         ];
     }
 
     /**
-     * Die Gruppenmodus-Konstanten (Ticket #399, ADR 0017) - gelten fuer jede
-     * Aktivitaetsart gleichermassen, weil groupmode Teil des gemeinsamen
-     * Blocks ist, nicht eines einzelnen Katalogs.
+     * Group mode constants (ticket #399, ADR 0017) apply equally to every
+     * activity kind because groupmode belongs to the shared block, not one catalog.
      *
      * @return string[]
      */

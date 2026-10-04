@@ -1,38 +1,39 @@
 ---
 name: coursepilot-implement
-description: Coursepilot-Umsetzung. Nutze diesen Skill bei der Freigabeformulierung "ja, so umsetzen", um einen freigegebenen Coursepilot-Plan in einem bestehenden Moodle-Kurs zu schreiben.
+description: Coursepilot implementation. Use this skill after approval such as "Yes, implement it this way" to write an approved Coursepilot plan into an existing Moodle course.
 ---
 
 # coursepilot-implement
 
-Lies zuerst `coursepilot_get_skill("coursepilot-core")` und
-`coursepilot_get_skill("context-area")` für Werkzeuge, Schreibangebot,
-Journal-Append unter der Sitzungs-Kontextfreigabe, Handaenderungs-Routine und
-Rotation. Halte die Statuspruefung vor Schreibzugriff aus dem Kern ein —
-`status.md` wird per `coursepilot_read_context_file` gelesen (mit
-Handaenderungs-Pruefung). Vor jedem Schreibzugriff gilt zusätzlich
-`coursepilot_get_skill("implementation-plan-workflow")`; nutze je nach
-Aktivität den passenden Korpusteil aus der Uebersicht in `coursepilot-core`.
+First read `coursepilot_get_skill("coursepilot-core")` and
+`coursepilot_get_skill("context-area")` for tools, the write offer,
+journal append under session context authorization, manual-edit handling
+and rotation. Respond in the teacher's language.
 
-Nach Moodle-Schreibzugriffen: `status.md` per `coursepilot_write_context_file`
-aktualisieren (Schreibangebot), Umsetzungsbericht per
-`coursepilot_append_context_file` ins Journal anhaengen (automatisch unter der
-Sitzungs-Kontextfreigabe, keine Einzelbestätigung). Scheitert dieses
-Anhängen (Ausstand oder Kontext-Lücke, siehe
-`coursepilot_get_skill("context-area")`), gilt die Moodle-Umsetzung trotzdem
-als abgeschlossen — nur der Bericht wird nachgetragen, nie erneut umgesetzt.
+Follow the core's status check before writing: read `status.md` through
+`coursepilot_read_context_file`, including the manual-edit check. Before
+every Moodle write, also read
+`coursepilot_get_skill("implementation-plan-workflow")`. Select further
+activity references from the overview in `coursepilot-core`.
 
-Beim Anlegen oder Aendern einer Frage, deren Fragetyp Coursepilot nicht kennt,
-gilt `coursepilot_get_skill("question-types")` (Fragetyp-Ablage, Lernschleife,
-Widerspruchspruefung).
+After Moodle writes, update `status.md` through
+`coursepilot_write_context_file` after the write offer. Append the
+implementation report to the journal through
+`coursepilot_append_context_file`, automatically under session context
+authorization without individual confirmation. If appending fails due to
+a pending write or context gap, Moodle implementation still counts as
+complete. Replay only the report, never the implementation;
+see `coursepilot_get_skill("context-area")`.
 
-Soll eine Aktivität einer Art ohne Feldkatalog (z. B. Buch, Checkliste,
-Glossar) angelegt oder abgelöst werden, gilt
-`coursepilot_get_skill("activity-types")` (Aktivitätsart-Ablage,
-Lernschleife, Ablösen).
+For creating or changing an unfamiliar question type, read
+`coursepilot_get_skill("question-types")` (type learning files, learning
+loop and contradiction checks).
 
-Am Ende eines abgeschlossenen Aufbaus gilt die Aufraeumfrage aus
-`coursepilot_get_skill("context-area")` (Abschnitt "Aufraeumfrage nach
-Aufbau").
+For creating or superseding an activity without a field catalog, such as
+book, checklist or glossary, read `coursepilot_get_skill("activity-types")`
+(activity-type learning files, learning loop and superseding).
 
-Halte die Planstrenge aus dem Kern ein.
+At the end of a completed build, apply the cleanup question from
+`coursepilot_get_skill("context-area")`, under "Cleanup question after a build".
+
+Follow the core's plan discipline.

@@ -17,20 +17,20 @@
 namespace local_coursepilot;
 
 /**
- * Die Ausfallbehandlung des Moodle-Zweigs von {@see context_area} (Issue
- * #540, ADR 0023 "an beiden Orten"): ein Ausfall beim Persistieren selbst -
- * nicht: Pfad-/Endungs-/Quotenpruefung, nicht: Konflikt - vermerkt einen
- * Ausstand, bevor der Fehler zurueckgeht.
+ * Failure handling of the Moodle branch of {@see context_area} (issue
+ * #540, ADR 0023 "at both locations"): a failure while persisting itself -
+ * not path/extension/quota validation, not a conflict - records a
+ * pending write before the error is returned.
  *
- * Ein echter Ausfall der Moodle-Dateiablage (Datenbank/Dateisystem) laesst
- * sich in einer Testumgebung nicht gefahrlos herbeifuehren - anders als beim
- * externen Ort gibt es dafuer keinen injizierbaren Fake-Transport. Dieser
- * Test greift deshalb ueber Reflection direkt auf die private, statische
- * Kernmethode zu ({@see context_area::persist_moodle_write()}/{@see context_area::persist_moodle_append()})
- * und uebergibt ihr einen Test-Doppelgaenger des {@see storage_port}-Vertrags
- * (dessen Typ die Methode ohnehin annimmt, nicht die konkrete
- * {@see private_files_storage_port}) - derselbe Vertrag, den auch
- * {@see private_files_storage_port_test} gegen den echten Adapter prueft.
+ * A real failure of the Moodle file storage (database/file system) cannot
+ * be provoked safely in a test environment - unlike for the external
+ * location, there is no injectable fake transport for it. This test
+ * therefore uses reflection to access the private static core method
+ * ({@see context_area::persist_moodle_write()}/{@see context_area::persist_moodle_append()})
+ * directly and passes it a test double of the {@see storage_port} contract
+ * (the type the method accepts anyway, not the concrete
+ * {@see private_files_storage_port}) - the same contract that
+ * {@see private_files_storage_port_test} also checks against the real adapter.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -46,16 +46,16 @@ final class context_area_pending_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Ausfall beim Persistieren (hier simuliert: ein beliebiger Fehler
-     * des Adapters) vermerkt einen Ausstand, bevor der Fehler zurueckgeht -
-     * nie roh durchgereicht (Issue #540 Abnahmekriterium 1+5).
+     * A failure while persisting (simulated here: an arbitrary adapter
+     * error) records a pending write before the error is returned -
+     * never passed through raw (issue #540 acceptance criteria 1+5).
      */
     public function test_write_records_ausstand_when_the_port_fails_to_persist(): void {
-        $port = $this->failing_port(new \RuntimeException('Platte voll (Simuliert)'));
+        $port = $this->failing_port(new \RuntimeException('Disk full (simulated)'));
 
         try {
             $this->invoke_persist_write($port, 'plan.md', '# Plan', pending_write_translation::OP_CREATE, 7);
-            $this->fail('Der Ausfall haette abgewiesen werden muessen.');
+            $this->fail('The failure should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
             $this->assertStringContainsString('plan.md', $e->getMessage());
@@ -70,14 +70,14 @@ final class context_area_pending_test extends \advanced_testcase {
     }
 
     /**
-     * Dieselbe Ausfallbehandlung greift beim Anhaengen.
+     * The same failure handling applies when appending.
      */
     public function test_append_records_ausstand_when_the_port_fails_to_persist(): void {
-        $port = $this->failing_port(new \RuntimeException('Platte voll (Simuliert)'));
+        $port = $this->failing_port(new \RuntimeException('Disk full (simulated)'));
 
         try {
-            $this->invoke_persist_append($port, 'journal.md', 'Zeile', pending_write_translation::OP_APPEND, 0);
-            $this->fail('Der Ausfall haette abgewiesen werden muessen.');
+            $this->invoke_persist_append($port, 'journal.md', 'line', pending_write_translation::OP_APPEND, 0);
+            $this->fail('The failure should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
         }
@@ -87,9 +87,9 @@ final class context_area_pending_test extends \advanced_testcase {
     }
 
     /**
-     * Die Quotenpruefung des Bereichs bleibt ein Aufruffehler, kein
-     * Ausstand (Issue #540 Abnahmekriterium 2, ADR 0023 Punkt 2) - auch wenn
-     * sie erst beim Persistieren selbst durchschlaegt.
+     * The area's quota check remains a caller error, not a pending
+     * write (issue #540 acceptance criterion 2, ADR 0023 point 2) - even if
+     * it only takes effect during persisting itself.
      */
     public function test_write_quota_exceeded_from_the_port_is_not_recorded_as_an_ausstand(): void {
         $port = $this->failing_port(new \moodle_exception('contextquotaexceeded', 'local_coursepilot', '', (object) [
@@ -99,7 +99,7 @@ final class context_area_pending_test extends \advanced_testcase {
 
         try {
             $this->invoke_persist_write($port, 'plan.md', '# Plan', pending_write_translation::OP_CREATE, 0);
-            $this->fail('Die Quotenpruefung haette abgewiesen werden muessen.');
+            $this->fail('The quota check should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextquotaexceeded', $e->errorcode);
         }
@@ -108,17 +108,17 @@ final class context_area_pending_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Pruefwert-Konflikt ({@see storage_conflict_exception}) zaehlt
-     * weiterhin nicht als Ausstand (Issue #540 Abnahmekriterium 2).
+     * A checksum conflict ({@see storage_conflict_exception}) still does
+     * not count as a pending write (issue #540 acceptance criterion 2).
      */
     public function test_write_conflict_from_the_port_is_not_recorded_as_an_ausstand(): void {
         $port = $this->failing_port(new storage_conflict_exception('plan.md'));
 
         try {
             $this->invoke_persist_write($port, 'plan.md', '# Plan', pending_write_translation::OP_OVERWRITE, 0);
-            $this->fail('Der Konflikt haette abgewiesen werden muessen.');
+            $this->fail('The conflict should have been rejected.');
         } catch (storage_conflict_exception $e) {
-            // Erwartet.
+            // Expected.
         }
 
         $this->assertSame([], pending_write_notice::list_grouped());
@@ -136,7 +136,7 @@ final class context_area_pending_test extends \advanced_testcase {
     }
 
     /**
-     * @param \Throwable $failure Wird von write()/append() des Doppelgaengers geworfen.
+     * @param \Throwable $failure Thrown by write()/append() of the test double.
      * @return storage_port
      */
     private function failing_port(\Throwable $failure): storage_port {

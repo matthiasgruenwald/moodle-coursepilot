@@ -24,10 +24,9 @@ use local_coursepilot\personal_data_hosts;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Statusprüfung Schritt 4 des WebDAV-Schrittkatalogs (Issue #499, Spec #486
- * §12): "Zugelassene Speicher". Eine leere Liste (`local_coursepilot |
- * personaldatahosts`) heisst `INFO` ("markierte Dateien nur in Moodle") -
- * kein Mangel, nur der datensparsame Standardzustand.
+ * WebDAV setup check 4 (Issue #499, Spec #486 §12): approved storage hosts.
+ * An empty personaldatahosts list returns INFO (marked files only in Moodle),
+ * the privacy-preserving default rather than a missing configuration.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

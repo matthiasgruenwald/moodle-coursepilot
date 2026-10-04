@@ -24,10 +24,10 @@ global $CFG;
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 /**
- * Bereinigungsplan fuer Tests serverseitig (#342): eigenstaendige
- * Portierung von local_coursepilot\external\get_quiz_cleanup_plan, Vertrag
- * (Feldnamen, nicht-destruktive Handlungsanweisung) identisch zum lokalen
- * Werkzeug - loescht nichts, nennt nur Fundstelle und Link.
+ * Server-side quiz cleanup plan (#342), ported independently from
+ * local_coursepilot\external\get_quiz_cleanup_plan. Preserve the local
+ * tool’s field names and non-destructive instructions: report locations
+ * and links without deleting anything.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -37,10 +37,9 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 final class get_quiz_cleanup_plan_test extends \advanced_testcase {
 
     /**
-     * Regelfall: ein Slot, dessen Frage nicht in keep_questionbankentryids
-     * steht, erscheint als manuelle, nicht-destruktive Handlungsanweisung
-     * mit Fundstelle (Slot, Frage, Kategorie) und Moodle-Link - Coursepilot
-     * loescht selbst nichts.
+     * A slot outside keep_questionbankentryids receives a manual,
+     * non-destructive instruction with slot, question, category and Moodle
+     * link. Coursepilot deletes nothing.
      */
     public function test_lists_removable_slot_as_manual_non_destructive_instruction(): void {
         global $DB;
@@ -64,15 +63,15 @@ final class get_quiz_cleanup_plan_test extends \advanced_testcase {
         $removal = $result['removals'][0];
         $this->assertSame($entryid, $removal['questionbankentryid']);
         $this->assertSame($question->name, $removal['questionname']);
-        $this->assertStringContainsString('nicht aus der Fragensammlung gelöscht', $removal['reason']);
+        $this->assertStringContainsString('not deleted from the question bank', $removal['reason']);
         $this->assertStringContainsString('/mod/quiz/edit.php?cmid=' . $quiz->cmid, $result['editurl']);
 
-        // Immer noch vorhanden: Coursepilot hat den Slot nicht geloescht.
+        // The slot still exists; Coursepilot did not delete it.
         $this->assertTrue($DB->record_exists('quiz_slots', ['quizid' => $quiz->id]));
     }
 
     /**
-     * keep_questionbankentryids nimmt einen Slot aus dem Plan heraus.
+     * keep_questionbankentryids excludes a slot from the plan.
      */
     public function test_kept_entry_is_not_listed_for_removal(): void {
         global $DB;
@@ -96,7 +95,7 @@ final class get_quiz_cleanup_plan_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne Berechtigung: local/coursepilot:use fehlt trotz Einschreibung.
+     * Reject users without local/coursepilot:use despite enrollment.
      */
     public function test_rejects_user_without_capability(): void {
         $this->resetAfterTest();
@@ -120,8 +119,7 @@ final class get_quiz_cleanup_plan_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne Einschreibung: eine nicht eingeschriebene Person bekommt
-     * keine Daten.
+     * Return no data to users without course enrollment.
      */
     public function test_rejects_user_without_enrolment(): void {
         $this->resetAfterTest();

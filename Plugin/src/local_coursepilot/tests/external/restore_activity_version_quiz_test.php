@@ -28,9 +28,9 @@ global $CFG;
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 /**
- * Quiz-Anordnungs-Stand im Aenderungsverlauf (#396, Spec 0015 §10): wie
- * {@see restore_activity_version_test} fuer den Feldkatalog, hier fuer die
- * Fragenanordnung - Slots, Fragereferenzen, Abschnitte, Feedback.
+ * Quiz arrangement state in the change history (#396, Spec 0015 §10): like
+ * {@see restore_activity_version_test} for the field catalog, here for the
+ * question arrangement - slots, question references, sections, feedback.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -41,15 +41,15 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 final class restore_activity_version_quiz_test extends \advanced_testcase {
 
     /**
-     * Legt Kurs, Test und zwei Fragen an und schnappt danach einen sauberen
-     * Ausgangsstand (die beiden slot_created-Ereignisse beim Hinzufuegen der
-     * Fragen zaehlen bewusst nicht zu den 16 beobachteten Struktur-Ereignissen,
-     * siehe db/events.php - Version 1 aus dem Anlegen selbst enthaelt deshalb
-     * noch keine Slots). Tests restaurieren gegen diesen Ausgangsstand, nicht
-     * gegen Version 1.
+     * Creates course, quiz and two questions and then captures a clean
+     * baseline (the two slot_created events when adding the
+     * questions deliberately do not count among the 16 observed structure events,
+     * see db/events.php - version 1 from the creation itself therefore
+     * contains no slots yet). Tests restore against this baseline, not
+     * against version 1.
      *
-     * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass, 3: \stdClass, 4: int} Kurs, Test, Frage 1,
-     *         Frage 2, Versionsnummer des Ausgangsstandes.
+     * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass, 3: \stdClass, 4: int} Course, quiz, question 1,
+     *         question 2, version number of the baseline.
      */
     private function create_quiz_with_two_questions(): array {
         global $DB, $USER;
@@ -79,7 +79,7 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
 
     /**
      * @param int $quizid
-     * @return \stdClass[] Slot-Zeilen, aufsteigend nach "slot".
+     * @return \stdClass[] Slot rows, ascending by "slot".
      */
     private function slots(int $quizid): array {
         global $DB;
@@ -110,9 +110,9 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: eine Rueckkehr auf einen Stand mit abweichender
-     * Anordnung schreibt die Fragenanordnung ueber restore_activity_version
-     * zurueck - ohne eigenen MCP-Endpunkt, mitgenutzt von diesem.
+     * Acceptance criterion: a restore to a state with a differing
+     * arrangement writes the question arrangement back via restore_activity_version
+     * - without an MCP endpoint of its own, shared with this one.
      */
     public function test_restore_writes_back_reordered_slots(): void {
         global $DB;
@@ -132,15 +132,15 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
         );
 
         $this->assertSame($originalorder, array_column($this->slots((int) $quiz->id), 'id'));
-        $this->assertStringContainsString('Fragenanordnung', $result['message']);
-        $this->assertStringContainsString('neuesten Fassung', $result['message']);
+        $this->assertStringContainsString('question arrangement', $result['message']);
+        $this->assertStringContainsString('latest version', $result['message']);
     }
 
     /**
-     * Abnahmekriterium: hat der Test bereits Versuche, verweigert die
-     * Rueckkehr die Anordnung vorher - als eigene moodle_exception, nicht als
-     * abgefangene Ausnahme der Core-API -, und die Meldung sagt, dass die
-     * Anordnung nur noch Chronik ist.
+     * Acceptance criterion: if the quiz already has attempts, the
+     * restore refuses the arrangement beforehand - as its own moodle_exception, not as a
+     * caught exception of the core API - and the message says that the
+     * arrangement is only history now.
      */
     public function test_restore_refuses_arrangement_when_quiz_has_attempts(): void {
         global $DB;
@@ -158,13 +158,13 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
 
         try {
             restore_activity_version::execute($cm->id, $baselineversion);
-            $this->fail('Erwartete moodle_exception blieb aus.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('arrangementrestoreblocked', $e->errorcode);
             $this->assertStringContainsString('history only', $e->getMessage());
         }
 
-        // Die veraenderte Anordnung blieb stehen - nichts wurde geschrieben.
+        // The changed arrangement stayed in place - nothing was written.
         $this->assertSame(
             $slots[1]->id,
             $this->slots((int) $quiz->id)[0]->id
@@ -172,10 +172,10 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: Fragereferenzen werden exakt wie gespeichert
-     * wiederhergestellt - version=null bleibt null, und eine inzwischen
-     * bearbeitete Frage erscheint in ihrer aktuellen Fassung statt auf die
-     * alte Fassung gepinnt zu werden.
+     * Acceptance criterion: question references are restored exactly as
+     * stored - version=null stays null, and a question edited in the
+     * meantime appears in its current version instead of being pinned to the
+     * old version.
      */
     public function test_restore_keeps_question_references_exact_and_unpinned(): void {
         global $DB;
@@ -203,7 +203,7 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
         $referenceafter = $DB->get_record('question_references', [
             'component' => 'mod_quiz', 'questionarea' => 'slot', 'itemid' => $firstslotid,
         ], '*', MUST_EXIST);
-        $this->assertNull($referenceafter->version, 'version=null darf nicht nachtraeglich gepinnt werden.');
+        $this->assertNull($referenceafter->version, 'version=null must not be pinned retroactively.');
 
         $currentname = $DB->get_field_sql(
             'SELECT q.name
@@ -214,18 +214,18 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
             [$reference->questionbankentryid],
             IGNORE_MULTIPLE
         );
-        $this->assertSame('Neue Fassung', $currentname, 'Ohne Pinnen zeigt version=null die aktuelle Fassung.');
+        $this->assertSame('Neue Fassung', $currentname, 'Without pinning, version=null shows the current version.');
     }
 
     /**
-     * Abnahmekriterium: die Slot-Manipulation ist nicht als MCP-Werkzeug
-     * registriert - die Fragenanordnung als eigenstaendiges Werkzeug ist
+     * Acceptance criterion: slot manipulation is not registered as an MCP
+     * tool - the question arrangement as a standalone tool is
      * Spec 0017.
      */
     public function test_arrangement_is_not_registered_as_mcp_tool(): void {
         $this->assertFalse(
             is_subclass_of(arrangement::class, \core_external\external_api::class),
-            'arrangement darf kein Webservice-Endpunkt sein.'
+            'arrangement must not be a web service endpoint.'
         );
 
         foreach (tool_registry::service_functions() as $function) {
@@ -234,13 +234,13 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 7: die uebrigen Bestandteile eines Test-Standes
-     * (Einstellungen) bleiben unveraendert wie in Ticket 07 - quiz hat laut
-     * ADR 0016 fuer Einstellungen weiterhin keinen Schreibweg ueber
-     * restore_activity_version (nur update_quiz_settings, das nicht Teil
-     * dieses Tickets ist). Eine Rueckkehr ruehrt deshalb ausschliesslich die
-     * Anordnung an, nichts sonst - eine unabhaengig geaenderte Einstellung
-     * bleibt unangetastet stehen.
+     * Acceptance criterion 7: the remaining parts of a quiz state
+     * (settings) stay unchanged as in ticket 07 - per
+     * ADR 0016 quiz still has no write path for settings via
+     * restore_activity_version (only update_quiz_settings, which is not part of
+     * this ticket). A restore therefore touches only the
+     * arrangement, nothing else - an independently changed setting
+     * stays untouched.
      */
     public function test_restore_touches_only_arrangement_not_settings(): void {
         global $DB;
@@ -250,8 +250,8 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
         $cm = get_coursemodule_from_instance('quiz', $quiz->id, $quiz->course, false, MUST_EXIST);
         $originalorder = array_column($this->slots((int) $quiz->id), 'id');
 
-        // Unabhaengig geaenderte Einstellung (nicht ueber Coursepilot - dafuer
-        // gibt es fuer quiz noch keinen Schreibweg, siehe ADR 0016).
+        // Independently changed setting (not via Coursepilot - there
+        // is no write path for quiz yet, see ADR 0016).
         $DB->set_field('quiz', 'name', 'Extern geaendert', ['id' => $quiz->id]);
         \mod_quiz\structure::create_for_quiz(\mod_quiz\quiz_settings::create($quiz->id))
             ->move_slot($originalorder[1], 0, 1);

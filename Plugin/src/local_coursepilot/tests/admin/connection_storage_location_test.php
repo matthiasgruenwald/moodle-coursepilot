@@ -20,10 +20,9 @@ use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Die Spalte Ablageort der Verbindungsübersicht (Issue #499, Spec #486 §12):
- * Zustand je Ziel und Marker fuer nicht zugelassenen Speicher, offene
- * Ausstaende, offenen Altbestand und einen defekten Pointer - gelesen ohne
- * Netz und ohne Pfad.
+ * Connections overview storage column (Issue #499, Spec #486 §12):
+ * per-target state and markers for unapproved hosts, pending writes,
+ * previous locations and broken pointers, without network/path access.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -50,7 +49,7 @@ final class connection_storage_location_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $instanceid = $this->create_webdav_instance($user);
         $this->write_v2_pointer($user, 'context_area', $instanceid, 'Kontext');
-        // personaldatahosts bleibt leer - der Instanzserver ist damit nicht zugelassen.
+        // Empty personaldatahosts leaves the instance host unapproved.
 
         $description = connection_storage_location::describe((int) $user->id);
 

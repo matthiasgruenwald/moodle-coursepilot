@@ -13,7 +13,7 @@ use local_coursepilot\availability_privacy;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Gemeinsame Implementierung des Katalog-Lesevertrags.
+ * Shared implementation of the catalog read contract.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -22,8 +22,8 @@ defined('MOODLE_INTERNAL') || die();
 final class module_state {
 
     /**
-     * Vollstand im Katalogvokabular fuer Read-modify-write. Die externen
-     * Werkzeuge kennen dabei weder Modultabellen noch Pseudofeld-Leser.
+     * Full state in catalog vocabulary for read-modify-write. External tools
+     * need no knowledge of module tables or pseudofield readers.
      *
      * @param \stdClass $cm
      * @return array
@@ -70,12 +70,11 @@ final class module_state {
     }
 
     /**
-     * Minimalprojektion für katalogisierte Arten ohne eigene Katalog-Settings
-     * (folder, resource, choice, forum: Spec 0015 §4.1, nur der Name ist
-     * lehrkraftrelevant) UND für nicht katalogisierte Moodle-Module - diese
-     * bleiben lesbar, sind aber nicht schreibbar über Coursepilot. Eine
-     * Quelle statt fünf gleichlautender Kopien, aufgerufen aus der jeweils
-     * eigenen Katalogklasse statt aus einem zentralen Modultyp-Switch.
+     * Minimal projection for cataloged types without catalog-specific settings
+     * (folder, resource, choice, forum: Spec 0015 §4.1; only the name matters to
+     * the teacher), and uncataloged modules, which remain readable but cannot
+     * be written through Coursepilot. Shared by individual catalog classes
+     * instead of a central module-type switch.
      *
      * @param string $modname
      * @param int $instanceid
@@ -92,9 +91,8 @@ final class module_state {
     }
 
     /**
-     * Leerer Katalogzustand als Startpunkt einer Katalogklasse, deren
-     * Instanz nicht (mehr) existiert oder deren gelesene Felder erst
-     * schrittweise befüllt werden.
+     * Empty initial catalog state for missing instances or fields populated
+     * in later steps.
      *
      * @param bool $fullcontent
      * @return array{name: string, content: array, settings: array, quizslots: array}
@@ -104,9 +102,8 @@ final class module_state {
     }
 
     /**
-     * Gemeinsame Normalisierung eines HTML-Inhaltsfelds (Intro/Content) auf
-     * das Katalogvokabular - modultypunabhängig, deshalb hier statt in jeder
-     * Katalogklasse dupliziert.
+     * Shared normalization of HTML intro/content fields to catalog vocabulary
+     * across module types.
      *
      * @param string $html
      * @param bool $fullcontent
@@ -127,9 +124,8 @@ final class module_state {
     }
 
     /**
-     * Wandelt ein assoziatives Feld=>Wert-Array in die Name/Wert-Paarliste
-     * des Katalogvertrags - modultypunabhängige Normalisierung, die jede
-     * Katalogklasse für ihre eigenen Settings aufruft.
+     * Convert associative field/value settings to catalog name/value pairs.
+     * Each catalog class uses this shared normalization for its own settings.
      *
      * @param array<string, mixed> $settings
      * @return array<int, array{name: string, value: string}>
@@ -143,18 +139,15 @@ final class module_state {
     }
 
     /**
-     * Liest Pseudofeld-Gruppen zurueck, die in einer eigenen Tabelle statt in
-     * der Instanzzeile leben (Spec 0015 §2.2 Kategorie 2, "repeated group",
-     * Issue #564) - katalogweiter Gegenpart zum Schreibweg in
-     * {@see \local_coursepilot\catalog\pseudofield_carry_forward::carry_forward_choice_options()}.
-     * Deklariert je Aktivitaetsart ueber
-     * {@see \local_coursepilot\catalog\module_catalog::write_options()}
-     * (Schluessel "repeated_group"), damit {@see \local_coursepilot\external\get_module_settings}
-     * keinen modultypspezifischen Sonderfall braucht.
+     * Read pseudofield groups stored in a separate table (Spec 0015 §2.2
+     * category 2, repeated groups, Issue #564). Read counterpart to
+     * pseudofield_carry_forward::carry_forward_choice_options(). Activity types
+     * declare groups in module_catalog::write_options()["repeated_group"], so
+     * get_module_settings needs no module-specific branch.
      *
      * @param class-string<module_catalog> $catalogclass
      * @param int $instanceid
-     * @return array<string, mixed> Feldname => Werteliste, leer wenn die Art keine Gruppe deklariert.
+     * @return array<string, mixed> Field name to value list; empty if the type declares no group.
      */
     public static function read_repeated_groups(string $catalogclass, int $instanceid): array {
         global $DB;

@@ -29,36 +29,35 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/questionlib.php');
 
 /**
- * Read-modify-write fuer eine Multiple-Choice-Frage (Spec 0017 §7.1, Ticket
- * #419): "fields_json" ist ein PATCH, kein Vollstand (gleiches Vokabular wie
- * {@see update_module_settings}/{@see update_quiz_settings}) - nicht
- * mitgeschickte Felder duerfen NICHT verloren gehen.
+ * Read-modify-write for a multiple-choice question (Spec 0017 §7.1, ticket
+ * #419): "fields_json" is a PATCH, not a full record (same vocabulary as
+ * {@see update_module_settings}/{@see update_quiz_settings}) - fields that
+ * are not sent must NOT get lost.
  *
- * Anders als eine simple Text-basierte XML-Vorlage (wie
- * {@see create_mc_question::build_xml()}, die fuer eine NEUE Frage bewusst
- * feste Werte fuer penalty/shuffleanswers/answernumbering/Kombi-Feedback
- * setzt) liest dieser Endpunkt die Frage ueber
- * {@see export_questions_xml::resolve_native_question()} als NATIVES
- * Objekt ein - exakt die Form, die {@see \qformat_xml::writequestion()}
- * auch fuer den echten Export nutzt. Nur die im Patch genannten Properties
- * werden ueberschrieben (name, questiontext, generalfeedback, defaultmark,
- * options->single, options->answers); alles andere (penalty, hidden,
- * shuffleanswers, answernumbering, Kombi-Feedback, Tags, Hints, ...) bleibt
- * unangetastet, weil es nie angefasst wird - kein Rekonstruktions- oder
- * Rate-Risiko. Der VOLLSTAND wird anschliessend ueber denselben XML-Kern wie
- * {@see import_questions_xml} zurueckgeschrieben (inkl. Round-Trip-Pruefung
- * und Rollback).
+ * Unlike a simple text-based XML template (like
+ * {@see create_mc_question::build_xml()}, which deliberately sets fixed
+ * values for penalty/shuffleanswers/answernumbering/combined feedback for a
+ * NEW question), this endpoint reads the question via
+ * {@see export_questions_xml::resolve_native_question()} as a NATIVE
+ * object - exactly the form {@see \qformat_xml::writequestion()} also uses
+ * for the real export. Only the properties named in the patch are
+ * overwritten (name, questiontext, generalfeedback, defaultmark,
+ * options->single, options->answers); everything else (penalty, hidden,
+ * shuffleanswers, answernumbering, combined feedback, tags, hints, ...) stays
+ * untouched because it is never touched - no reconstruction or guessing
+ * risk. The FULL record is then written back through the same XML core as
+ * {@see import_questions_xml} (including round-trip check and rollback).
  *
- * idnumber-Backfill (genau EINE Frage, kein Massenlauf): traegt die
- * vorgefundene Frage noch keine idnumber - z.B. aus einem Fremdbestand -,
- * wird beim ersten Schreibzugriff genau fuer DIESEN Bank-Eintrag eine
- * generiert und direkt in question_bank_entries geschrieben, BEVOR die XML
- * gebaut wird. Nur so erkennt import_questions_xml die geschriebene XML als
- * neue Version DESSELBEN Eintrags (Match ueber idnumber in der Kategorie,
- * ADR 0015) statt als neuen Eintrag. Backfill + Schreibvorgang laufen in
- * einer gemeinsamen Transaktion (gleiches Muster wie import_questions_xml
- * selbst) - schlaegt der Rundlauf fehl, wird auch die frisch vergebene
- * idnumber zurueckgerollt (siehe Kommentar bei $transaction unten).
+ * idnumber backfill (exactly ONE question, no bulk run): if the question
+ * found carries no idnumber yet - e.g. from foreign content -, one is
+ * generated exactly for THIS bank entry on the first write and written
+ * directly to question_bank_entries BEFORE the XML is built. Only this way
+ * does import_questions_xml recognise the written XML as a new version of
+ * the SAME entry (match via idnumber in the category, ADR 0015) instead of
+ * as a new entry. Backfill + write run in a shared transaction (same
+ * pattern as import_questions_xml itself) - if the round trip fails, the
+ * freshly assigned idnumber is rolled back as well (see the comment at
+ * $transaction below).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -66,13 +65,13 @@ require_once($CFG->libdir . '/questionlib.php');
  */
 final class update_mc_question extends external_api {
 
-    /** @var string[] Erlaubte Patch-Felder - alles andere ist ein Fehler (Trust-Boundary). */
+    /** @var string[] Allowed patch fields - everything else is an error (trust boundary). */
     private const PATCHABLE_FIELDS = [
         'name', 'questiontext', 'selectionmode', 'answers', 'defaultmark', 'generalfeedback',
-        // Spec 0018 §4/§7, Issue #435: Materialordner-Pfade fuer Bilder, die im
-        // "questiontext"-Patch per @@PLUGINFILE@@ referenziert werden - siehe
-        // {@see self::embed_material_images()}. Kein moduleinfo-Aequivalent,
-        // dieses Feld landet nie auf dem nativen Fragenobjekt.
+        // Spec 0018 §4/§7, issue #435: material folder paths for images that are
+        // referenced in the "questiontext" patch via @@PLUGINFILE@@ - see
+        // {@see self::embed_material_images()}. No moduleinfo equivalent,
+        // this field never lands on the native question object.
         'questiontext_images',
     ];
 
@@ -147,10 +146,10 @@ final class update_mc_question extends external_api {
     }
 
     /**
-     * Antwort fuer den Verdachtsfall-Zweig (Issue #523: aus execute()
-     * ausgelagert) - kann nur bei einem gleichzeitigen fremden Eingriff auf
-     * denselben Bank-Eintrag auftreten (die soeben zugewiesene idnumber
-     * passt per Konstruktion) - dasselbe Antwortformat wie create_mc_question.
+     * Response for the suspect-case branch (issue #523: extracted from
+     * execute()) - can only occur with a concurrent foreign change to the
+     * same bank entry (the idnumber just assigned matches by construction) -
+     * same response format as create_mc_question.
      *
      * @param array $result
      * @return array
@@ -173,9 +172,9 @@ final class update_mc_question extends external_api {
     }
 
     /**
-     * Loest die native Frage auf und prueft Kontext/Capabilities/qtype
-     * (Issue #523: aus execute() ausgelagert, um die Funktion unter der
-     * 50-Zeilen-Grenze zu halten).
+     * Resolves the native question and checks context/capabilities/qtype
+     * (issue #523: extracted from execute() to keep the function under the
+     * 50-line limit).
      *
      * @param int $questionid
      * @return array{0: \stdClass, 1: \stdClass, 2: \context}
@@ -184,25 +183,28 @@ final class update_mc_question extends external_api {
         [$question, $category, $context] = export_questions_xml::resolve_native_question($questionid);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // Dieselbe Capability wie fuer eine neue Version in import_questions_xml/
-        // create_mc_question - eine neue Version zu schreiben ist derselbe
-        // Schreibvorgang, keine eigene "edit"-Coursepilot-Berechtigung.
+        // Same capability as for a new version in import_questions_xml/
+        // create_mc_question - writing a new version is the same write
+        // operation, not a separate Coursepilot "edit" permission.
         require_capability('moodle/question:add', $context);
 
         if ($question->qtype !== 'multichoice') {
             throw new \invalid_parameter_exception(
-                'update_mc_question funktioniert nur fuer Multiple-Choice-Fragen (qtype "multichoice"); '
-                    . 'diese Frage ist "' . $question->qtype . '".');
+                'update_mc_question only works for multiple-choice questions (qtype "multichoice"); '
+                    . 'this question is "' . $question->qtype . '".');
         }
 
         return [$question, $category, $context];
     }
 
     /**
-     * Dekodiert den Patch, loest eingebettete Bilder in Entwuerfe auf und
-     * wendet den Patch auf das native Fragenobjekt an (Issue #523: aus
-     * execute() ausgelagert).
+     * Decodes the patch, resolves embedded images into drafts and applies the
+     * patch to the native question object (issue #523: extracted from
+     * execute()).
      *
+     * @param \stdClass $question
+     * @param \context $context
+     * @param array $params Validated parameters of execute().
      * @param \stdClass $question
      * @param \context $context
      * @param array $params Validierte Parameter von execute().
@@ -210,22 +212,21 @@ final class update_mc_question extends external_api {
      */
     private static function apply_field_patch(\stdClass $question, \context $context, array $params): array {
         $patch = self::decode_patch($params['fields_json']);
-        // Vor apply_patch() abgezweigt (Issue #435): questiontext_images ist
-        // kein Feld des nativen Fragenobjekts, und feedback_images je
-        // Antwort wuerde build_answer_objects() ohnehin verwerfen (dort
-        // werden nur answer/fraction/feedback gelesen). Beide Listen werden
-        // erst NACH dem Schreiben angewandt (siehe unten), weil sie die
-        // question-/answerid der NEUEN Version brauchen - die entsteht erst
-        // im import_questions_xml-Aufruf weiter unten.
+        // Split off before apply_patch() (issue #435): questiontext_images is
+        // not a field of the native question object, and a per-answer
+        // feedback_images would be discarded by build_answer_objects() anyway
+        // (it only reads answer/fraction/feedback). Both lists are applied
+        // only AFTER writing (see below) because they need the question/
+        // answer id of the NEW version - which only comes into existence in
+        // the import_questions_xml call further down.
         $questiontextimages = is_array($patch['questiontext_images'] ?? null) ? $patch['questiontext_images'] : [];
         $answerfeedbackimages = self::extract_answer_feedback_images($patch);
-        // Alles-oder-nichts (gleiche Regel wie update_module_settings::validate_patch()):
-        // Berechtigung, Endungs-Whitelist UND Materialdatei-Existenz werden
-        // VOR der Schreib-Transaktion geprueft/aufgeloest - eine neue Version
-        // wird nicht angelegt, nur um dann an einer trivialen
-        // Einbett-Validierung zu scheitern. resolve_into_draft() wirft
-        // materialfilenotfound bereits hier, wenn eine referenzierte Datei
-        // fehlt.
+        // All-or-nothing (same rule as update_module_settings::validate_patch()):
+        // permission, extension whitelist AND material file existence are
+        // checked/resolved BEFORE the write transaction - a new version is
+        // not created only to then fail on a trivial embed validation.
+        // resolve_into_draft() already throws materialfilenotfound here if a
+        // referenced file is missing.
         [$questiontextdraftitemid, $answerfeedbackdraftitemids] =
             self::prepare_image_drafts($context, $questiontextimages, $answerfeedbackimages, $params['location']);
         self::apply_patch($question, $patch);
@@ -234,9 +235,8 @@ final class update_mc_question extends external_api {
     }
 
     /**
-     * Schreibt die neue Fragenversion in einer Transaktion, mit optionalem
-     * idnumber-Backfill (Issue #523: aus execute() ausgelagert).
-     *
+     * Writes the new question version in a transaction, with optional
+     * idnumber backfill (issue #523: extracted from execute()).
      * @param \stdClass $question
      * @param \stdClass $category
      * @param \context $context
@@ -255,22 +255,21 @@ final class update_mc_question extends external_api {
     ): array {
         global $DB;
 
-        // Kein eigenes try/catch+rollback hier: import_questions_xml::execute()
-        // rollt seine EIGENE (verschachtelte) Transaktion bei einem
-        // Rundlauf-Fehler bereits selbst zurueck und wirft die Exception
-        // weiter - ein zweiter rollback()-Aufruf auf dieser (dann bereits
-        // beendeten) Transaktion wuerde selbst eine dml_transaction_exception
-        // werfen. Bleibt DIESE Transaktion ohne allow_commit() verlassen
-        // (weil die Exception unbehandelt durchgereicht wird), rollt Moodle
-        // sie automatisch zurueck (Muster wie import_questions_xml
-        // dokumentiert) - inklusive des eben vergebenen Backfills.
+        // No try/catch+rollback of our own here: import_questions_xml::execute()
+        // already rolls back its OWN (nested) transaction itself on a
+        // round-trip failure and rethrows the exception - a second rollback()
+        // call on this (by then already ended) transaction would itself throw
+        // a dml_transaction_exception. If THIS transaction is left without
+        // allow_commit() (because the exception is passed through unhandled),
+        // Moodle rolls it back automatically (pattern documented in
+        // import_questions_xml) - including the backfill just assigned.
         $transaction = $DB->start_delegated_transaction();
         $backfilled = false;
 
         $idnumber = trim((string) ($entry->idnumber ?? ''));
         if ($idnumber === '') {
-            // Backfill NUR fuer diesen einen Bank-Eintrag (Ticket #419) -
-            // kein Massenlauf ueber Kategorie/Fragenbank.
+            // Backfill ONLY for this one bank entry (ticket #419) -
+            // no bulk run over the category/question bank.
             $idnumber = self::generate_idnumber();
             $DB->set_field('question_bank_entries', 'idnumber', $idnumber, ['id' => $entry->id]);
             $backfilled = true;
@@ -294,9 +293,8 @@ final class update_mc_question extends external_api {
     }
 
     /**
-     * Bettet die (bereits aufgeloesten) Bild-Entwuerfe in die neue Version
-     * ein und baut die Erfolgsantwort (Issue #523: aus execute() ausgelagert).
-     *
+     * Embeds the (already resolved) image drafts into the new version and
+     * builds the success response (issue #523: extracted from execute()).
      * @param \stdClass $entry
      * @param \context $context
      * @param array{result: array, backfilled: bool, idnumber: string, missingfiles: string[]} $write
@@ -320,16 +318,16 @@ final class update_mc_question extends external_api {
             self::embed_images($context, (int) $latest->id, $questiontextdraftitemid, $answerfeedbackdraftitemids);
         }
 
-        $message = 'MC-Frage "' . $question->name . '" aktualisiert (Bank-Eintrag ' . $result['questionbankentryid']
-            . ', neue Version ' . $result['version'] . ').';
+        $message = 'MC question "' . $question->name . '" updated (bank entry ' . $result['questionbankentryid']
+            . ', new version ' . $result['version'] . ').';
         if ($write['backfilled']) {
-            $message .= ' idnumber "' . $write['idnumber'] . '" wurde nachtraeglich vergeben (Frage hatte zuvor keine).';
+            $message .= ' idnumber "' . $write['idnumber'] . '" was assigned retroactively (the question had none before).';
         }
         if (!empty($write['missingfiles'])) {
-            // Gleiche Transparenzpflicht wie export_questions_xml: eingebettete
-            // Dateien werden NICHT stillschweigend verloren, sondern die
-            // Meldung nennt sie ausdruecklich.
-            $message .= ' ACHTUNG: Die Frage enthielt eingebettete Dateien, die dabei entfernt wurden: '
+            // Same transparency duty as export_questions_xml: embedded
+            // files are NOT silently lost, the message names them
+            // explicitly.
+            $message .= ' WARNING: The question contained embedded files that were removed in the process: '
                 . implode(', ', $write['missingfiles']) . '.';
         }
 
@@ -348,11 +346,9 @@ final class update_mc_question extends external_api {
     }
 
     /**
-     * Dekodiert und validiert felder_json: muss ein JSON-Objekt sein, dessen
-     * Schluessel eine Teilmenge von {@see self::PATCHABLE_FIELDS} sind -
-     * unbekannte Felder brechen den Aufruf ab (Trust-Boundary), statt still
-     * ignoriert zu werden.
-     *
+     * Decodes and validates fields_json: must be a JSON object whose keys
+     * are a subset of {@see self::PATCHABLE_FIELDS} - unknown fields abort
+     * the call (trust boundary) instead of being silently ignored.
      * @param string $fieldsjson
      * @return array<string, mixed>
      */
@@ -365,7 +361,7 @@ final class update_mc_question extends external_api {
         foreach (array_keys($patch) as $fieldname) {
             if (!in_array($fieldname, self::PATCHABLE_FIELDS, true)) {
                 throw new \invalid_parameter_exception(
-                    'Unbekanntes Feld "' . $fieldname . '" in fields_json. Erlaubt: '
+                    'Unknown field "' . $fieldname . '" in fields_json. Allowed: '
                         . implode(', ', self::PATCHABLE_FIELDS) . '.');
             }
         }
@@ -374,15 +370,13 @@ final class update_mc_question extends external_api {
     }
 
     /**
-     * Ueberschreibt auf dem NATIVEN Fragenobjekt (siehe
-     * {@see export_questions_xml::resolve_native_question()}) nur die im
-     * Patch genannten Properties - alles andere bleibt exakt erhalten
-     * (Kerntest dieses Tickets), weil es nie angefasst wird. Validiert
-     * anschliessend den (gepatchten oder unveraenderten) Antworten-/
-     * Auswahlmodus-Stand mit denselben Regeln wie eine Neuanlage
-     * ({@see create_mc_question::validate_answers()}).
-     *
-     * @param \stdClass $question Wird in-place veraendert.
+     * Overwrites only the properties named in the patch on the NATIVE
+     * question object (see {@see export_questions_xml::resolve_native_question()})
+     * - everything else stays exactly preserved (core test of this ticket)
+     * because it is never touched. Afterwards validates the (patched or
+     * unchanged) answers/selection mode state with the same rules as a new
+     * creation ({@see create_mc_question::validate_answers()}).
+     * @param \stdClass $question Is modified in place.
      * @param array<string, mixed> $patch
      * @return void
      */
@@ -402,7 +396,7 @@ final class update_mc_question extends external_api {
         if (array_key_exists('selectionmode', $patch)) {
             $mode = (string) $patch['selectionmode'];
             if (!in_array($mode, ['single', 'multiple'], true)) {
-                throw new \invalid_parameter_exception('selectionmode muss single oder multiple sein.');
+                throw new \invalid_parameter_exception('selectionmode must be single or multiple.');
             }
             $question->options->single = $mode === 'single' ? 1 : 0;
         }
@@ -410,12 +404,12 @@ final class update_mc_question extends external_api {
             $question->options->answers = self::build_answer_objects($patch['answers']);
         }
 
-        // Nur validieren, wenn answers/selectionmode TATSAECHLICH im Patch
-        // stehen: eine vorgefundene Fremdbestand-Frage, deren Antworten
-        // Coursepilots striktere Anlage-Regeln (validate_answers) nicht
-        // erfuellen, darf trotzdem in anderen Feldern gepatcht werden - sonst
-        // wuerde ein reiner questiontext-Patch an genau der unangetasteten
-        // Antwortstruktur scheitern, die dieses Ticket erhalten soll.
+        // Validate only if answers/selectionmode ACTUALLY appear in the patch:
+        // a foreign question found whose answers do not meet Coursepilot's
+        // stricter creation rules (validate_answers) may still be patched in
+        // other fields - otherwise a pure questiontext patch would fail on
+        // exactly the untouched answer structure this ticket is meant to
+        // preserve.
         if (array_key_exists('answers', $patch) || array_key_exists('selectionmode', $patch)) {
             $answersforvalidation = array_map(static fn(\stdClass $a): array => [
                 'answer' => $a->answer,
@@ -428,23 +422,23 @@ final class update_mc_question extends external_api {
     }
 
     /**
-     * Baut die von {@see \qformat_xml::write_answer()} erwartete Objektform
-     * je Antwort (answer/answerformat/fraction/feedback/feedbackformat/id -
-     * id nur fuer Datei-Lookups verwendet, negative Platzhalter-IDs kommen
-     * nie mit echten DB-IDs in Konflikt) aus den rohen Patch-Daten.
+     * Builds the object form per answer expected by {@see \qformat_xml::write_answer()}
+     * (answer/answerformat/fraction/feedback/feedbackformat/id -
+     * id only used for file lookups, negative placeholder ids never
+     * collide with real DB ids) from the raw patch data.
      *
      * @param mixed $answers
      * @return \stdClass[]
      */
     private static function build_answer_objects($answers): array {
         if (!is_array($answers) || $answers === []) {
-            throw new \invalid_parameter_exception('"answers" muss eine nicht-leere Liste von Antwortoptionen sein.');
+            throw new \invalid_parameter_exception('"answers" must be a non-empty list of answer options.');
         }
         $objects = [];
         foreach (array_values($answers) as $i => $answer) {
             if (!is_array($answer) || !array_key_exists('answer', $answer) || !array_key_exists('fraction', $answer)) {
                 throw new \invalid_parameter_exception(
-                    'Jede Antwortoption in "answers" braucht "answer" und "fraction".');
+                    'Every answer option in "answers" needs "answer" and "fraction".');
             }
             $object = new \stdClass();
             $object->id = -($i + 1);
@@ -459,23 +453,23 @@ final class update_mc_question extends external_api {
     }
 
     /**
-     * Liest "feedback_images" je Antwortoption aus dem rohen (noch nicht in
-     * native Objekte gewandelten) "answers"-Patch (Issue #435) - Index im
-     * Rueckgabe-Array entspricht der Position in der answers-Liste, die
-     * {@see self::build_answer_objects()} in derselben Reihenfolge auf das
-     * native Fragenobjekt schreibt und die deshalb auch die neu geschriebenen
-     * question_answers-Zeilen in dieser Reihenfolge ergibt (siehe
+     * Reads "feedback_images" per answer option from the raw (not yet
+     * converted to native objects) "answers" patch (issue #435) - the index
+     * in the returned array corresponds to the position in the answers list,
+     * which {@see self::build_answer_objects()} writes onto the native
+     * question object in the same order and which therefore also yields the
+     * newly written question_answers rows in this order (see
      * {@see self::embed_images()}).
      *
      * @param array<string, mixed> $patch
-     * @return array<int, string[]> Index => Liste von Materialordner-Pfaden
+     * @return array<int, string[]> Index => list of material folder paths
      */
     private static function extract_answer_feedback_images(array $patch): array {
         $result = [];
         foreach (array_values($patch['answers'] ?? []) as $i => $answer) {
             if (is_array($answer) && !empty($answer['feedback_images'])) {
                 if (!is_array($answer['feedback_images'])) {
-                    throw new \invalid_parameter_exception('"feedback_images" muss eine Liste von Materialordner-Pfaden sein.');
+                    throw new \invalid_parameter_exception('"feedback_images" must be a list of material folder paths.');
                 }
                 $result[$i] = $answer['feedback_images'];
             }
@@ -484,29 +478,29 @@ final class update_mc_question extends external_api {
     }
 
     /**
-     * Prueft Berechtigung + Einbett-Whitelist und loest jede angeforderte
-     * Bildliste bereits VOR der Schreib-Transaktion in einen Dateimanager-
-     * Entwurf auf (Issue #435) - Alles-oder-nichts wie bei jedem anderen
-     * Patch dieses Plugins (vgl. update_module_settings::validate_patch()):
-     * eine falsche Endung oder ein fehlendes Materialbild darf keine neue
-     * Fragen-Version anlegen, die dann nur teilweise eingebettet ist.
-     * material_files::resolve_into_draft() wirft materialfilenotfound schon
-     * hier, wenn eine referenzierte Datei nicht existiert - der 4. Parameter
-     * (Ziel-itemid) ist zu diesem Zeitpunkt irrelevant, weil die Zielzeile
-     * (question/answer) noch gar nicht existiert; er dient nur dazu,
-     * BEREITS an dieser itemid haengende Dateien vorzubelegen, was fuer eine
-     * kuenftige question-/answerid ohnehin leer ist.
+     * Checks permission + embed whitelist and resolves each requested image
+     * list into a file manager draft BEFORE the write transaction (issue
+     * #435) - all-or-nothing like every other patch of this plugin (cf.
+     * update_module_settings::validate_patch()): a wrong extension or a
+     * missing material image must not create a new question version that is
+     * then only partially embedded.
+     * material_files::resolve_into_draft() throws materialfilenotfound right
+     * here if a referenced file does not exist - the 4th parameter (target
+     * itemid) is irrelevant at this point because the target row
+     * (question/answer) does not exist yet; it only serves to pre-populate
+     * files ALREADY attached to this itemid, which is empty anyway for a
+     * future question/answer id.
      *
-     * @param \context $context Kategoriekontext (Ziel der Dateiablage).
-     * @param string[] $questiontextimages Materialordner-Pfade fuer questiontext.
-     * @param array<int, string[]> $answerfeedbackimages Antwortindex => Materialordner-Pfade.
+     * @param \context $context Category context (target of the file storage).
+     * @param string[] $questiontextimages Material folder paths for questiontext.
+     * @param array<int, string[]> $answerfeedbackimages Answer index => material folder paths.
      * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
-     *        Quelle der Pfade (Issue #496).
-     * @return array{0: int|null, 1: array<int, int>} [Entwurfs-Itemid fuer questiontext (null ohne Anfrage),
-     *         Antwortindex => Entwurfs-Itemid fuer answerfeedback]
+     *        source of the paths (issue #496).
+     * @return array{0: int|null, 1: array<int, int>} [draft itemid for questiontext (null without request),
+     *         answer index => draft itemid for answerfeedback]
      * @throws moodle_exception materialfiledisallowedtype / materialfilenotfound / invalidmaterialpath /
      *         invalidmateriallocation / materialpathiscontext / materialembedtoolarge
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     * @throws \required_capability_exception without moodle/user:manageownfiles
      */
     private static function prepare_image_drafts(
         \context $context,
@@ -554,23 +548,22 @@ final class update_mc_question extends external_api {
     }
 
     /**
-     * Schreibt die in {@see self::prepare_image_drafts()} bereits validierten
-     * und aufgeloesten Dateientwuerfe in die Ziel-Fileareas der SOEBEN
-     * geschriebenen neuen Version (Issue #435, Spec 0018 §4/§7) - erst NACH
-     * dem Schreiben moeglich, weil question/questiontext bzw.
-     * question/answerfeedback per Moodle-Konvention ueber die question-/
-     * answerid adressiert werden, die es vor import_questions_xml::execute()
-     * noch nicht gibt. Der Text (mit "@@PLUGINFILE@@/<dateiname>" plus
-     * Alt-Text) hat der Aufrufer bereits im questiontext-/feedback-Patch
-     * mitgeschickt - file_save_draft_area_files() loest darin nur den
-     * Platzhalter gegen die echte pluginfile-URL auf, exakt der Mechanismus,
-     * den question_type::save_question() fuer $form->questiontext['itemid']
-     * nutzt (question/type/questiontypebase.php).
-     *
+     * Writes the file drafts already validated and resolved in
+     * {@see self::prepare_image_drafts()} into the target file areas of the
+     * new version JUST written (issue #435, Spec 0018 §4/§7) - only possible
+     * AFTER writing, because question/questiontext and
+     * question/answerfeedback are addressed by Moodle convention via the
+     * question/answer id, which does not exist before
+     * import_questions_xml::execute(). The caller has already sent the text
+     * (with "@@PLUGINFILE@@/<filename>" plus alt text) in the
+     * questiontext/feedback patch - file_save_draft_area_files() only
+     * resolves the placeholder against the real pluginfile URL, exactly the
+     * mechanism question_type::save_question() uses for
+     * $form->questiontext['itemid'] (question/type/questiontypebase.php).
      * @param \context $context
-     * @param int $questionid Neue question.id der geschriebenen Version.
+     * @param int $questionid New question.id of the written version.
      * @param int|null $questiontextdraftitemid
-     * @param array<int, int> $answerfeedbackdraftitemids Antwortindex => Entwurfs-Itemid.
+     * @param array<int, int> $answerfeedbackdraftitemids Answer index => draft itemid.
      * @return void
      */
     private static function embed_images(
@@ -596,8 +589,8 @@ final class update_mc_question extends external_api {
             foreach ($answerfeedbackdraftitemids as $index => $draftitemid) {
                 if (!isset($answers[$index])) {
                     throw new \invalid_parameter_exception(
-                        'feedback_images verweist auf Antwortoption ' . $index . ', aber "answers" hat nur '
-                            . count($answers) . ' Eintraege.');
+                        'feedback_images refers to answer option ' . $index . ', but "answers" has only '
+                            . count($answers) . ' entries.');
                 }
                 $answer = $answers[$index];
                 $new = file_save_draft_area_files(
@@ -609,7 +602,7 @@ final class update_mc_question extends external_api {
         }
     }
 
-    /** Generiert eine neue, eindeutige idnumber (gleiches Schema wie import_questions_xml). */
+    /** Generates a new, unique idnumber (same scheme as import_questions_xml). */
     private static function generate_idnumber(): string {
         return 'kp-' . bin2hex(random_bytes(8));
     }
@@ -632,7 +625,7 @@ final class update_mc_question extends external_api {
                     PARAM_BOOL,
                     'true if this question previously had no idnumber and was assigned exactly one on write'
                 ),
-                'message' => new external_value(PARAM_RAW, 'Teacher-facing German message with bank entry and version'),
+                'message' => new external_value(PARAM_RAW, 'Teacher-facing message with bank entry and version'),
             ],
             question_suspect_gate::response_fields()
         ));

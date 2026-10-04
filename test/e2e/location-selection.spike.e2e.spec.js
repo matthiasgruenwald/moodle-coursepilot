@@ -5,7 +5,7 @@ const { config, hasBrowserCredentials, isSpikeProfile } = require('./helpers/env
 const { MoodlePage } = require('./helpers/moodle-page');
 const { setupLocationFixture, cleanupLocationFixture } = require('./helpers/spike-location-fixture');
 
-test.skip(!isSpikeProfile || !hasBrowserCredentials || config.courseId !== 6, 'Spike-Profil mit teacher_edit-Browserzugang fuer Kurs 6 erforderlich');
+test.skip(!isSpikeProfile || !hasBrowserCredentials || config.courseId !== 6, 'Spike profile with teacher_edit browser access for course 6 required');
 
 let fixture;
 
@@ -22,7 +22,7 @@ test.afterAll(async () => {
   if (fixture) await cleanupLocationFixture(fixture);
 });
 
-test('Ortswahl: Moodle, WebDAV-Browsing, gefuellte Ordneruebergabe und Speicherausfall', async ({ page }) => {
+test('Location selection: Moodle, WebDAV browsing, populated folder handover and storage failure', async ({ page }) => {
   const moodle = new MoodlePage(page, config.moodleUrl, config);
   await moodle.login();
   await page.goto(`${config.moodleUrl.replace(/\/+$/, '')}/local/coursepilot/location_selection.php`, { waitUntil: 'networkidle' });

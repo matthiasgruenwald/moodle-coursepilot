@@ -27,13 +27,13 @@ use local_coursepilot\catalog\shared_block;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Aktivitaeten eines Kurses oder Abschnitts (#342): Kennungen (cmid, Typ,
- * Name) fuer gezielte Zugriffe, ohne Kursinhalt mitzuliefern.
+ * Activities of a course or section (#342): identifiers (cmid, type,
+ * name) for targeted access, without delivering course content.
  *
- * Eigenstaendige Portierung von local_coursepilot\external\get_modules -
- * local_coursepilot hat laut Spec 0012 keine Laufzeitabhaengigkeit auf das
- * andere Plugin (siehe get_course_catalog.php aus #341, derselbe Fund).
- * Vertrag (Feldnamen) bleibt identisch zum lokalen Werkzeug.
+ * Standalone port of local_coursepilot\external\get_modules -
+ * local_coursepilot has no runtime dependency on the other plugin per Spec 0012
+ * (see get_course_catalog.php from #341, same finding).
+ * Contract (field names) stays identical to the local tool.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

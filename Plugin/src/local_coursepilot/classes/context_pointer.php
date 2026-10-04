@@ -17,28 +17,23 @@
 namespace local_coursepilot;
 
 /**
- * Deutet den bereits als JSON-Objekt gelesenen Kontextpointer (Issue #490,
- * Spec #486 §2) - reine Werteumformung, ohne Datei- oder Netzzugriff. Kennt
- * beide Fassungen:
+ * Interpret the context pointer decoded from JSON (Issue #490, Spec #486 §2)
+ * using pure value transformations without file or network access.
  *
- * - **Erste Fassung** (Issue #445): zwei flache Pfade unter den Schluesseln
- *   "kontextbereich"/"materialordner". Gilt vollstaendig als *in Moodle* an
- *   diesen Pfaden (Spec §2).
- * - **Zweite Fassung** (Issue #490): je Ziel ein Objekt mit `location` =
- *   "moodle" (Feld `path`) oder "external" (Felder `instanceid`, `path`,
- *   `fingerprint`). Die Ziele heissen "context_area" und "material_store",
- *   zugleich die Pointer-Schluessel der Bereiche ({@see TARGETS}).
+ * - **First format** (Issue #445): two flat paths under legacy keys
+ *   "kontextbereich"/"materialordner", both interpreted as Moodle locations.
+ * - **Second format** (Issue #490): one object per target, with `location`
+ *   "moodle" (`path`) or "external" (`instanceid`, `path`, `fingerprint`).
+ *   Target keys are "context_area" and "material_store" ({@see TARGETS}).
  *
- * Seit #602 (ADR 0024) sind Schluessel und Werte englisch; aeltere Pointer mit
- * deutschen Schluesseln uebersetzt {@see normalise()} beim Lesen.
+ * Keys and values are English since #602 (ADR 0024); {@see normalise()}
+ * translates legacy German keys when reading.
  *
- * "Ortsverlauf" (Spec §2) wird von dieser Klasse weiterhin nicht gedeutet -
- * die Ortswahlseite ({@see \local_coursepilot\location_selection}) haengt Zeilen an
- * und liest sie roh zurueck, keine Aufloesung noetig. "Vorheriger Ort" (Feld
- * `previous_location`, Issue #498, Spec #486 §9) wird dagegen hier gedeutet -
- * {@see resolve_previous()} - denn der Altbestand-Nur-Lese-Zweig
- * ({@see \local_coursepilot\previous_location}) braucht dieselbe Struktur- und
- * IServ-Pruefung wie die beiden regulaeren Ziele.
+ * Location history is appended and read raw by location_selection (Spec §2),
+ * without resolution here. `previous_location` is resolved by
+ * {@see resolve_previous()} (Issue #498, Spec #486 §9): the read-only
+ * previous_location branch needs the same structure and IServ checks as
+ * the two current targets.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -46,13 +41,12 @@ namespace local_coursepilot;
  */
 final class context_pointer {
 
-    /** @var string[] Die beiden Ziele, zugleich Pflichtfelder beider Fassungen. */
+    /** @var string[] The two targets, required fields in both formats. */
     public const TARGETS = ['context_area', 'material_store'];
 
     /**
-     * @var array<string, string> Deutsche Schluessel aelterer Pointer (#602,
-     *      ADR 0024) => englischer Schluessel. "materialordner" ist der
-     *      Materialschluessel der ersten Fassung (Issue #445).
+     * @var array<string, string> Legacy German pointer keys to English keys (#602, ADR 0024).
+     *      "materialordner" is the material key from the first format (Issue #445).
      */
     private const LEGACY_KEY_MAP = [
         'kontextbereich' => 'context_area',
@@ -72,7 +66,7 @@ final class context_pointer {
         'nach' => 'to_text',
     ];
 
-    /** @var array<string, string> Deutsche Werte aelterer Pointer (#602) => englischer Wert. */
+    /** @var array<string, string> Legacy German pointer values to English values (#602). */
     private const LEGACY_VALUE_MAP = [
         'extern' => pointer_location::EXTERNAL,
         'kontextbereich' => 'context_area',
@@ -80,10 +74,9 @@ final class context_pointer {
     ];
 
     /**
-     * Uebersetzt einen Pointer mit deutschen Schluesseln und Werten (Fassung
-     * vor #602) in die englische Form - rekursiv, idempotent, ohne
-     * Pruefung. Werte werden nur unter "location" und "target" uebersetzt;
-     * Pfade bleiben unangetastet.
+     * Translate legacy German keys and values (before #602) to English:
+     * recursive, idempotent, without validation. Translate values only under
+     * "location" and "target"; preserve paths.
      *
      * @param array $decoded
      * @return array
@@ -103,8 +96,8 @@ final class context_pointer {
     }
 
     /**
-     * @param array $decoded Bereits als JSON-Objekt dekodierter Pointerinhalt.
-     * @param string $pointerkey {@see storage_area::$pointerkey} des aufloesenden Bereichs.
+     * @param array $decoded Pointer content already decoded from JSON.
+     * @param string $pointerkey The resolving area's {@see storage_area::$pointerkey}.
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
@@ -112,23 +105,17 @@ final class context_pointer {
         $decoded = self::normalise($decoded);
         $pair = self::is_legacy($decoded) ? self::resolve_pair_legacy($decoded) : self::resolve_pair_v2($decoded);
 
-        // Aufloesungspruefung 7 (Issue #495, Spec #486 §2): der Materialbestand
-        // darf nie im Kontextbereich oder im selben Ordner liegen - egal,
-        // welches der beiden Ziele hier gerade angefragt wird, denn beide
-        // muessen ohnehin zusammen aufgeloest werden (Pruefung 1). Ein
-        // Vergleichsschluessel aus Server+Konto+Pfad (ortsunabhaengig, siehe
-        // {@see pointer_location::comparison_key()}) haelt das fest: liegt der
-        // Materialbestand-Schluessel unter (oder gleich) dem Kontextbereich-
-        // Schluessel, ist der Bestand nicht erreichbar, ohne versehentlich in
-        // den Kontextbereich hineinzulesen.
+        // Resolution check 7 (Issue #495, Spec #486 §2): the material store must not
+        // equal or be nested within the context area. Both targets are resolved
+        // together (check 1). Location-neutral server/account/path comparison
+        // keys prevent material reads from entering the context area.
         if (str_starts_with($pair['material_store']->comparison_key(), $pair['context_area']->comparison_key())) {
             throw new \moodle_exception('materialstoreincontext', 'local_coursepilot');
         }
 
-        // Aufloesungspruefung 8 (Issue #497, Spec #486 §2/§5): bei einer als
-        // IServ erkannten Instanz (Pruefmerkmal, ohne Netz) ist nur unterhalb
-        // von "Files/" erreichbar - fuer beide Ziele, unabhaengig davon,
-        // welches hier gerade angefragt wird (derselbe Grund wie bei Pruefung 7).
+        // Resolution check 8 (Issue #497, Spec #486 §2/§5): instances identified as
+        // IServ by their fingerprint are reachable only under "Files/".
+        // Check both targets, as for check 7, without network access.
         foreach ($pair as $location) {
             if ($location->kind === pointer_location::EXTERNAL && ($location->fingerprint['iserv'] ?? false) === true) {
                 $first = strtok((string) $location->relativepath, '/');
@@ -164,9 +151,8 @@ final class context_pointer {
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
     private static function resolve_pair_v2(array $decoded): array {
-        // Vollstaendigkeit (Pruefung 1, Spec §2): beide Ziele muessen als
-        // gueltige Struktur vorliegen, unabhaengig davon, welches gerade
-        // aufgeloest wird - dieselbe Regel wie bei der ersten Fassung.
+        // Completeness (check 1, Spec §2): both targets must have valid structures,
+        // regardless of which is requested; the same rule as the first format.
         foreach (self::TARGETS as $targetfield) {
             if (!is_array($decoded[$targetfield] ?? null)) {
                 self::incomplete();
@@ -203,15 +189,12 @@ final class context_pointer {
     }
 
     /**
-     * Deutet den vorherigen Ort des Altbestands (Issue #498, Spec #486 §9) -
-     * dieselbe Struktur wie ein regulaeres Ziel der zweiten Fassung, deshalb
-     * ueber {@see resolve_single_v2()} statt einer eigenen Deutung. Traegt
-     * die IServ-Pruefung (Pruefung 8) mit, die auch fuer den vorherigen Ort
-     * gilt ("alle Aufloesungspruefungen gelten auch fuer den vorherigen
-     * Ort") - die Verschachtelungspruefung (Pruefung 7) dagegen nicht: der
-     * vorherige Ort wird nie gegen den aktuellen Materialbestand verglichen.
+     * Resolve the previous context location (Issue #498, Spec #486 §9), using
+     * the same second-format structure through {@see resolve_single_v2()}.
+     * Apply the IServ check (8), but not the nesting check (7): the previous
+     * location is never compared with the current material store.
      *
-     * @param array $value Der Wert des Feldes "vorheriger_ort" im Pointer-Dokument.
+     * @param array $value Value of "previous_location" in the pointer document.
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable/webdaviservfilesonly
      */
@@ -227,14 +210,12 @@ final class context_pointer {
     }
 
     /**
-     * Baut die `webdaviservfilesonly`-Ausnahme (Pruefung 8) mit Host und
-     * Instanz-ID im $a-Objekt (Issue #516, Spec #486 §8) - so kann
-     * {@see \local_coursepilot\pointer_writer} "Instanzname und Host" (Teil 5
-     * der Ausfallantwort) auch dann noch nennen, wenn der Pointer selbst nie
-     * bis zu einem fertigen {@see pointer_location} kam (Pruefung 8 scheitert
-     * *waehrend* der Aufloesung).
+     * Build `webdaviservfilesonly` (check 8) with host and instance ID in $a
+     * (Issue #516, Spec #486 §8). This lets pointer_writer name the instance
+     * and host in failure-response part 5 even when resolution failed before
+     * producing a {@see pointer_location}.
      *
-     * @param pointer_location $location Bereits als EXTERNAL/iserv erkannt.
+     * @param pointer_location $location Already identified as EXTERNAL/iserv.
      * @return \moodle_exception
      */
     private static function iserv_files_only_exception(pointer_location $location): \moodle_exception {
@@ -246,9 +227,8 @@ final class context_pointer {
     }
 
     /**
-     * Erste Fassung erkennen: "context_area" ist ein flacher String, keine
-     * Struktur (Spec §2: "Ein Pointer der ersten Fassung mit zwei Pfaden
-     * gilt als in Moodle an diesen Pfaden").
+     * Recognize the first format: "context_area" is a flat string rather than
+     * an object. Both paths represent Moodle locations (Spec §2).
      *
      * @param array $decoded
      * @return bool
@@ -281,18 +261,18 @@ final class context_pointer {
             'server' => $fingerprint['server'],
             'basepath' => $fingerprint['basepath'],
             'account' => $fingerprint['account'],
-            // IServ-Erkennung (Issue #497, Spec #486 §2 Pruefung 8) - optional,
-            // ein Pointer vor #497 kennt das Feld noch nicht und gilt dann als "nein".
+            // Optional IServ detection (Issue #497, Spec #486 §2 check 8).
+            // Pointers predating #497 omit this field and default to false.
             'iserv' => (bool) ($fingerprint['iserv'] ?? false),
         ]);
     }
 
     /**
-     * Dieselbe Segmentpruefung wie die erste Fassung (Issue #445): nicht
-     * leer, keine `.`/`..`-Segmente, Backslash zaehlt als Pfadtrenner.
+     * Same segment validation as the first format (Issue #445): nonempty,
+     * no `.`/`..` segments; backslashes count as path separators.
      *
      * @param string $value
-     * @return string Getrimmter Pfad, ohne fuehrenden/abschliessenden Schraegstrich.
+     * @return string Trimmed path without leading or trailing slashes.
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
     public static function validate_path(string $value): string {

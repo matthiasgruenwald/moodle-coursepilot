@@ -17,22 +17,19 @@
 namespace local_coursepilot;
 
 /**
- * Der Ablage-Vertrag (Issue #536, Spec 0021): lesen, schreiben, anhaengen,
- * auflisten, loeschen - je Bereich ({@see storage_area}, unveraendert ein
- * reiner Wertesatz, ADR 0020) und relativem Pfad, mit einem Pruefwert fuer
- * bedingtes Schreiben.
+ * Storage contract (issue #536, Spec 0021): read, write, append, list and
+ * delete per {@see storage_area} (a plain value set, ADR 0020) and relative
+ * path, with a checksum for conditional writes.
  *
- * Genau eine Schnittstelle fuer beide Adapter ({@see private_files_storage_port},
- * {@see webdav_storage_port}). Welcher greift, entscheidet ausschliesslich
- * {@see storage_anchor::port()} aus dem Kontextpointer; Kontextbereich,
- * Materialbestand, Werkbank und der Nur-Lese-Zugriff auf den vorherigen Ort
- * laufen ueber diesen Vertrag (Issue #645).
+ * One interface for {@see private_files_storage_port} and {@see webdav_storage_port}.
+ * {@see storage_anchor::port()} alone selects the adapter from the context
+ * pointer. Context, material store, workbench and previous-location read-only
+ * access use this contract (issue #645).
  *
- * Ein Pruefwert ist ein ortsneutraler Bezeichner fuer den Inhaltsstand einer
- * Datei (bei Private Files der Moodle-`contenthash`, beim WebDAV-Adapter ein
- * schwaecherer ETag/Aenderungszeit-Ersatz ohne atomare Garantie) - fuer den Aufrufer eine
- * blanke Zeichenkette zum Vergleichen, kein Erkennungsmerkmal des Ortes
- * (Spec 0021 Implementation Decisions).
+ * A checksum identifies file content independently of location: Moodle
+ * contenthash in Private Files, a weaker ETag/modification-time substitute
+ * without atomic guarantees in WebDAV. Callers compare plain strings;
+ * the value does not identify a storage location (Spec 0021 Implementation Decisions).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -44,76 +41,70 @@ interface storage_port {
     public const MISSING_CHECKSUM = "\0coursepilot-missing";
 
     /**
-     * Liest den Inhalt einer Datei, oder null, wenn sie fehlt oder ein
-     * Ordner ist.
+     * Reads file content, or null when missing or a directory.
      *
      * @param storage_area $area
-     * @param string $path Client-Pfad, z.B. "plan.md" oder "faecher/mathe/profil.md".
+     * @param string $path Client path, e.g. "plan.md" or "subjects/maths/profile.md".
      * @return array{content: string, checksum: string, size: int, mimetype: string,
      *         timemodified: int}|null
-     * @throws \moodle_exception invalidpathkey des Bereichs bei einem unzulaessigen Pfad.
+     * @throws \moodle_exception Area invalidpathkey for an invalid path.
      */
     public function read(storage_area $area, string $path): ?array;
 
     /**
-     * Listet eine Ebene eines Bereichs - fuer beide kuenftigen Orte derselbe
-     * Feldsatz (Spec 0021 Implementation Decisions: "Ein ortsspezifischer
-     * Pruefwert wird entweder fuer beide Orte geliefert oder fuer keinen").
+     * Lists one area level with the same fields for both locations
+     * (Spec 0021 Implementation Decisions: checksums are provided for both or neither).
      *
      * @param storage_area $area
-     * @param string $path Client-Unterordner, z.B. "" oder "faecher/mathe".
+     * @param string $path Client subfolder, e.g. "" or "subjects/maths".
      * @return array<int, array{name: string, type: string, size: int, mimetype: string,
      *         checksum: string, timemodified: int}>
-     * @throws \moodle_exception invalidpathkey des Bereichs bei einem unzulaessigen Pfad.
+     * @throws \moodle_exception Area invalidpathkey for an invalid path.
      */
     public function list(storage_area $area, string $path): array;
 
     /**
-     * Legt eine Datei an oder ersetzt ihren Inhalt vollstaendig. Pfadpruefung,
-     * Quotenpruefung und die Schreibchoreografie mit Zwischendatei liegen im
-     * Adapter, nicht beim Aufrufer (Spec 0021 Abnahmekriterium).
+     * Creates a file or fully replaces its content. Path validation, quota
+     * and temporary-file write sequencing belong to the adapter, not the caller
+     * (Spec 0021 acceptance criterion).
      *
      * @param storage_area $area
      * @param string $path
-     * @param string $content Vollstaendiger neuer Inhalt.
-     * @param string|null $expectedchecksum Pruefwert aus einem frueheren Lesen fuer
-     *        bedingtes Schreiben. `null` (Standard) heisst: ungeprueft ueberschreiben/
-     *        anlegen, wie bisher. Ein angegebener Pruefwert, der nicht (mehr) zum
-     *        aktuellen Stand passt - auch wenn die Datei inzwischen fehlt - loest
-     *        {@see storage_conflict_exception} aus.
+     * @param string $content Complete new content.
+     * @param string|null $expectedchecksum Checksum from an earlier read for a
+     *        conditional write. Null (default) keeps unconditional overwrite/create.
+     *        A supplied checksum differing from current content, including a missing
+     *        file, throws {@see storage_conflict_exception}.
      * @return array{path: string, created: bool, size: int, checksum: string}
-     * @throws \moodle_exception invalidpathkey/eigener Namensfehler des Bereichs,
-     *         quotaerrorkey des Bereichs
-     * @throws storage_conflict_exception bei nicht passendem Pruefwert.
+     * @throws \moodle_exception Area invalidpathkey/name error,
+     *         area quotaerrorkey
+     * @throws storage_conflict_exception On checksum mismatch.
      */
     public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array;
 
     /**
-     * Haengt Inhalt an eine Datei an, legt sie an, falls sie noch nicht
-     * existiert.
+     * Appends content to a file, creating it when absent.
      *
      * @param storage_area $area
      * @param string $path
-     * @param string $content Anzuhaengender Inhalt.
+     * @param string $content Content to append.
      * @param string|null $expectedchecksum Preflight condition, as for write().
      * @return array{path: string, created: bool, size: int, checksum: string}
-     * @throws \moodle_exception invalidpathkey/eigener Namensfehler des Bereichs,
-     *         quotaerrorkey des Bereichs
-     * @throws storage_conflict_exception bei einem Adapter, dessen Anhaengen als
-     *         Lesen-Aendern-Schreiben implementiert ist (z.B. WebDAV), falls der
-     *         Inhalt zwischen dem eigenen Lesen und dem bedingten Zurueckschreiben
-     *         von aussen geaendert wurde - ein echter, wenn auch seltener Konflikt,
-     *         kein Aufruffehler des Bereichs.
+     * @throws \moodle_exception Area invalidpathkey/name error,
+     *         area quotaerrorkey
+     * @throws storage_conflict_exception For read-modify-write adapters (e.g.
+     *         WebDAV) when an external change occurs between reading and conditional
+     *         writing back. A real, if rare, conflict rather than an area call error.
      */
     public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array;
 
     /**
-     * Loescht eine Datei, falls sie existiert.
+     * Deletes a file if present.
      *
      * @param storage_area $area
      * @param string $path
-     * @return bool true, wenn eine Datei geloescht wurde; false, wenn keine existierte.
-     * @throws \moodle_exception invalidpathkey des Bereichs bei einem unzulaessigen Pfad.
+     * @return bool true if a file was deleted; false if none existed.
+     * @throws \moodle_exception Area invalidpathkey for an invalid path.
      */
     public function delete(storage_area $area, string $path): bool;
 }

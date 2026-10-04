@@ -23,15 +23,15 @@ use local_coursepilot\write_gate;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Eine Moodle-Admin-Statusprüfung (Standard-Callback
- * "<component>_status_checks()", siehe local_coursepilot/lib.php) je
- * katalogisierter Aktivitätsart (Ticket #399: "Admin-Statusprüfung zeigt je
- * Aktivitätsart einen der drei Zustände").
+ * One Moodle admin status check (standard callback
+ * "<component>_status_checks()", see local_coursepilot/lib.php) per
+ * catalogued activity type (ticket #399: "Admin status check shows one of
+ * the three states per activity type").
  *
- * Rechnet bei jedem Seitenaufruf frisch (ueber {@see write_gate::status_for()},
- * dessen eigene Versions-Zwischenspeicherung bereits dafuer sorgt, dass kein
- * unnoetiger DB-/Reflection-Aufwand entsteht) - kein Cron, "jederzeit
- * abrufbar" ist einfach: die Statusseite neu laden.
+ * Computes afresh on every page view (via {@see write_gate::status_for()},
+ * whose own version caching already ensures that no
+ * unnecessary DB/reflection effort arises) - no cron, "retrievable at
+ * any time" simply means: reload the status page.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -40,13 +40,13 @@ defined('MOODLE_INTERNAL') || die();
 final class activity_drift extends check {
 
     /**
-     * @param string $modname Moodle-Modulname (mod_XXX ohne Praefix).
+     * @param string $modname Moodle module name (mod_XXX without prefix).
      */
     public function __construct(private readonly string $modname) {
     }
 
     /**
-     * Eindeutig je Instanz (Ticket #399: eine Pruefung je Aktivitätsart).
+     * Unique per instance (ticket #399: one check per activity type).
      *
      * @return string
      */

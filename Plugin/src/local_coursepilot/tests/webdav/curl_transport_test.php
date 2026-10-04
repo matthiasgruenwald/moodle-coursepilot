@@ -19,12 +19,12 @@ namespace local_coursepilot\webdav;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * {@see curl_transport} gegen Moodles echte `\curl`-Klasse (Issue #489,
- * Spec #486 §4, ADR 0022): Moodles Hostsperre wird zur Fehlerklasse
- * `gesperrt`, ohne `ignoresecurity`, und eine gewoehnliche Antwort wird
- * unveraendert durchgereicht. Alles jenseits dieser curl-spezifischen
- * Uebersetzung ist bereits ueber den In-Memory-Fake in
- * {@see webdav_client_test} abgedeckt.
+ * {@see curl_transport} against Moodle's real `\curl` class (Issue #489,
+ * Spec #486 §4, ADR 0022): Moodle's host block becomes the error class
+ * `BLOCKED`, without `ignoresecurity`, and an ordinary response is passed
+ * through unchanged. Everything beyond this curl-specific
+ * translation is already covered by the in-memory fake in
+ * {@see webdav_client_test}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -34,10 +34,10 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class curl_transport_test extends \advanced_testcase {
 
     /**
-     * Ein Security-Helper, der jede Adresse sperrt - simuliert Moodles
-     * Hostsperre, ohne von echten Netz- oder Admin-Einstellungen abzuhaengen.
-     * Erbt bewusst von der konkreten `curl_security_helper`, nicht nur der
-     * Basisklasse: `\curl::set_security()` akzeptiert nur diese (filelib.php).
+     * A security helper that blocks every address - simulates Moodle's
+     * host block without depending on real network or admin settings.
+     * Deliberately extends the concrete `curl_security_helper`, not just the
+     * base class: `\curl::set_security()` only accepts that one (filelib.php).
      *
      * @return \core\files\curl_security_helper
      */
@@ -47,7 +47,7 @@ final class curl_transport_test extends \advanced_testcase {
                 return true;
             }
             public function get_blocked_url_string() {
-                return 'Von Moodles Hostsperre blockiert.';
+                return 'Blocked by Moodle host block.';
             }
         };
     }
@@ -60,25 +60,25 @@ final class curl_transport_test extends \advanced_testcase {
 
         try {
             $transport->request('PROPFIND', 'https://gesperrt.example/dav/', ['Depth' => '1']);
-            $this->fail('BLOCKED erwartet.');
+            $this->fail('BLOCKED expected.');
         } catch (webdav_error $e) {
             $this->assertSame(webdav_error::BLOCKED, $e->errorclass);
             $this->assertStringNotContainsString($secret, $e->getMessage());
         }
-        // Moodle protokolliert eine blockierte Adresse selbst schon als debugging() (core\event\url_blocked).
+        // Moodle itself already logs a blocked address as debugging() (core\event\url_blocked).
         $this->assertDebuggingCalled();
     }
 
     public function test_blocking_is_never_bypassed_with_ignoresecurity(): void {
         $this->resetAfterTest();
-        // Kein ignoresecurity in den Einstellungen dieses \curl - die reale
-        // Hostsperre greift unveraendert (ADR 0022).
+        // No ignoresecurity in the settings of this \curl - the real
+        // host block applies unchanged (ADR 0022).
         $curl = new \curl(['securityhelper' => $this->always_blocking_helper()]);
         $transport = new curl_transport($curl, 'lehrkraft', 'pw');
 
         try {
             $transport->request('GET', 'https://gesperrt.example/dav/x.md');
-            $this->fail('BLOCKED erwartet.');
+            $this->fail('BLOCKED expected.');
         } catch (webdav_error $e) {
             $this->assertSame(webdav_error::BLOCKED, $e->errorclass);
         }
@@ -86,13 +86,13 @@ final class curl_transport_test extends \advanced_testcase {
     }
 
     /**
-     * Sicherheitsbefund HIGH (Issue #510): Moodles `\curl` schaltet die
-     * Zertifikatspruefung standardmaessig ab und folgt Weiterleitungen - ohne
-     * Gegeneinstellung koennte das Basic-Passwort ueber eine unverschluesselte
-     * oder fremde Adresse mitgelesen werden. Da `\curl::mock_response()` den
-     * echten Optionsaufbau umgeht (Moodle liefert die gemockte Antwort vor
-     * `apply_opt()`), belegt dieser Test die von {@see curl_transport}
-     * gebauten Optionen direkt per Reflection auf die private Methode.
+     * Security finding HIGH (Issue #510): Moodle's `\curl` disables
+     * certificate verification by default and follows redirects - without a
+     * counter-setting the Basic password could be read over an unencrypted
+     * or foreign address. Since `\curl::mock_response()` bypasses the
+     * real option setup (Moodle returns the mocked response before
+     * `apply_opt()`), this test verifies the options built by {@see curl_transport}
+     * directly via reflection on the private method.
      */
     public function test_transport_options_verify_certificate_forbid_redirects_and_limit_time_and_size(): void {
         $curl = new \curl();
@@ -106,9 +106,9 @@ final class curl_transport_test extends \advanced_testcase {
         $this->assertSame(0, $options['CURLOPT_FOLLOWLOCATION']);
         $this->assertGreaterThan(0, $options['CURLOPT_TIMEOUT']);
         $this->assertGreaterThan(0, $options['CURLOPT_MAXFILESIZE']);
-        // Fortschritts-Abbruch als Ergaenzung zu CURLOPT_MAXFILESIZE (das nur
-        // bei vorab bekannter Content-Length greift) - begrenzt auch einen
-        // Server ohne Content-Length (Issue #510).
+        // Progress abort as a supplement to CURLOPT_MAXFILESIZE (which only
+        // applies with a Content-Length known up front) - also limits a
+        // server without Content-Length (Issue #510).
         $this->assertFalse($options['CURLOPT_NOPROGRESS']);
         $this->assertIsCallable($options['CURLOPT_XFERINFOFUNCTION']);
     }
@@ -139,9 +139,9 @@ final class curl_transport_test extends \advanced_testcase {
     }
 
     /**
-     * Alle sechs Verben (GET schon oben) muessen ueber `\curl` denselben Weg
-     * nehmen, ohne eine PHP-Ausnahme durch eine falsche Methodensignatur -
-     * `CURLOPT_CUSTOMREQUEST` per `post()`/`get()`/`delete()` (filelib.php
+     * All six verbs (GET already above) must take the same path through `\curl`
+     * without a PHP exception caused by a wrong method signature -
+     * `CURLOPT_CUSTOMREQUEST` via `post()`/`get()`/`delete()` (filelib.php
      * 4107-4256).
      *
      * @dataProvider verbs

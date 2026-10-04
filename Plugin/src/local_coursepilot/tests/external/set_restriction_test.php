@@ -20,8 +20,8 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Der einzige Schreibweg fuer Voraussetzungen, aus lehrkraftverstaendlichen
- * Argumenten statt rohem JSON (Spec 0015, Ticket #393).
+ * The only write path for restrictions, from teacher-friendly
+ * arguments instead of raw JSON (Spec 0015, Ticket #393).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,7 +31,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class set_restriction_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs, Lehrkraft (editingteacher).
+     * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
         set_config('enableavailability', 1);
@@ -44,7 +44,7 @@ final class set_restriction_test extends \advanced_testcase {
 
     /**
      * @param int $cmid
-     * @return array Ist-Stand, dieselbe Form wie get_module_settings.
+     * @return array Current state, same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -55,9 +55,9 @@ final class set_restriction_test extends \advanced_testcase {
     }
 
     /**
-     * Kernkriterium: eine Voraussetzung ("nach Abschluss von Aktivitaet X")
-     * laesst sich ohne rohes JSON setzen und landet als natives
-     * Verfuegbarkeits-JSON auf der Aktivitaet.
+     * Core criterion: a restriction ("after completion of activity X")
+     * can be set without raw JSON and ends up as native availability JSON
+     * on the activity.
      */
     public function test_completion_restriction_is_built_without_raw_json(): void {
         $this->resetAfterTest();
@@ -73,18 +73,18 @@ final class set_restriction_test extends \advanced_testcase {
         );
 
         $this->assertSame($ziel->cmid, $result['cmid']);
-        $this->assertStringContainsString('Voraussetzung', $result['message']);
+        $this->assertStringContainsString('Restriction', $result['message']);
 
         $availability = json_decode($this->read($ziel->cmid)['availabilityconditionsjson'], true);
         $this->assertSame('&', $availability['op']);
         $this->assertSame('completion', $availability['c'][0]['type']);
         $this->assertSame($lerncheck->cmid, $availability['c'][0]['cm']);
-        $this->assertSame(2, $availability['c'][0]['e']); // COMPLETION_COMPLETE_PASS = bestanden.
+        $this->assertSame(2, $availability['c'][0]['e']); // COMPLETION_COMPLETE_PASS = passed.
     }
 
     /**
-     * Datums- und Gruppenbedingung, kombiniert (UND) - beide praktisch
-     * relevanten weiteren Bedingungstypen in einem Aufruf.
+     * Date and group condition, combined (AND) - both remaining practically
+     * relevant condition types in one call.
      */
     public function test_date_and_group_restriction_combine_with_and(): void {
         $this->resetAfterTest();
@@ -108,9 +108,9 @@ final class set_restriction_test extends \advanced_testcase {
     }
 
     /**
-     * "gruppen_id": 0 UND "0" (String) bedeuten beide "beliebige Gruppe" -
-     * ein zahlenwertiges Feld darf fuer eine KI nicht davon abhaengen, ob sie
-     * die Null als JSON-Zahl oder als JSON-String formuliert.
+     * "group_id": 0 AND "0" (string) both mean "any group" - a numeric
+     * field must not depend, for an AI, on whether it writes the zero as a
+     * JSON number or as a JSON string.
      */
     public function test_group_id_zero_as_string_means_any_group(): void {
         $this->resetAfterTest();
@@ -127,7 +127,7 @@ final class set_restriction_test extends \advanced_testcase {
     }
 
     /**
-     * Leeres Array entfernt alle Voraussetzungen.
+     * An empty array removes all restrictions.
      */
     public function test_empty_array_removes_all_restrictions(): void {
         $this->resetAfterTest();
@@ -144,14 +144,14 @@ final class set_restriction_test extends \advanced_testcase {
             set_restriction::execute($ziel->cmid, json_encode([]))
         );
 
-        $this->assertStringContainsString('entfernt', $result['message']);
+        $this->assertStringContainsString('removed', $result['message']);
         $this->assertSame('', $this->read($ziel->cmid)['availabilityconditionsjson']);
     }
 
     /**
-     * Kriterium 2: rohes availability-JSON ist ueber update_module_settings
-     * nicht setzbar - der Feldkatalog fuehrt es gar nicht (#388, bereits
-     * erledigt), hier verifiziert statt wiederholt.
+     * Criterion 2: raw availability JSON cannot be set via
+     * update_module_settings - the field catalog does not list it at all
+     * (#388, already done), verified here rather than repeated.
      */
     public function test_raw_availability_json_is_not_settable_via_update_module_settings(): void {
         $this->resetAfterTest();
@@ -160,16 +160,16 @@ final class set_restriction_test extends \advanced_testcase {
 
         try {
             update_module_settings::execute($page->cmid, json_encode(['availabilityconditionsjson' => '{"op":"&","c":[]}']));
-            $this->fail('Erwartete moodle_exception blieb aus.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString('availabilityconditionsjson', $e->getMessage());
         }
     }
 
     /**
-     * Kriterium 3: eine ungueltige Bedingung (unbekannter Typ) scheitert mit
-     * einer Meldung, die das Feld nennt - nichts wird geschrieben, die
-     * Kursseite bleibt aufrufbar (kein kaputtes JSON landet in der DB).
+     * Criterion 3: an invalid condition (unknown type) fails with a message
+     * naming the field - nothing is written, the course page stays
+     * reachable (no broken JSON ends up in the DB).
      */
     public function test_invalid_condition_type_fails_with_field_name_and_writes_nothing(): void {
         global $DB;
@@ -179,23 +179,23 @@ final class set_restriction_test extends \advanced_testcase {
 
         try {
             set_restriction::execute($page->cmid, json_encode([
-                ['type' => 'unbekannt'],
+                ['type' => 'unknown'],
             ]));
-            $this->fail('Erwartete moodle_exception blieb aus.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString('type', $e->getMessage());
         }
 
         $raw = $DB->get_field('course_modules', 'availability', ['id' => $page->cmid]);
         $this->assertNull($raw);
-        // Kursseite bleibt aufrufbar: kein core_availability\tree-Fehler beim Aufbau.
+        // Course page stays reachable: no core_availability\tree error on construction.
         $info = new \core_availability\info_module(get_fast_modinfo($course)->get_cm($page->cmid));
         $this->assertTrue($info->is_available($ignored));
     }
 
     /**
-     * Ein Verweis auf eine nicht existierende Aktivitaet scheitert ebenso
-     * vor dem Schreiben, mit dem Feldnamen in der Meldung.
+     * A reference to a non-existent activity fails likewise before
+     * writing, with the field name in the message.
      */
     public function test_completion_condition_with_unknown_activity_fails_with_field_name(): void {
         $this->resetAfterTest();
@@ -206,7 +206,7 @@ final class set_restriction_test extends \advanced_testcase {
             set_restriction::execute($page->cmid, json_encode([
                 ['type' => 'completion', 'activity_cmid' => 999999, 'status' => 'complete'],
             ]));
-            $this->fail('Erwartete moodle_exception blieb aus.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString('activity_cmid', $e->getMessage());
         }
@@ -214,30 +214,30 @@ final class set_restriction_test extends \advanced_testcase {
     }
 
     /**
-     * Kriterium 4: geschrieben wird ueber update_moduleinfo(), nicht direkt
-     * in die DB - eine parallele, unabhaengige Aenderung an einem anderen
-     * Feld ueberlebt.
+     * Criterion 4: writing goes through update_moduleinfo(), not directly
+     * into the DB - a parallel, independent change to another field
+     * survives.
      */
     public function test_writes_via_update_moduleinfo_not_direct_db(): void {
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
         $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance([
             'course' => $course->id,
-            'name' => 'Unveraendert',
+            'name' => 'Unchanged',
         ]);
 
         set_restriction::execute($page->cmid, json_encode([
             ['type' => 'group'],
         ]));
 
-        $this->assertSame('Unveraendert', $this->read($page->cmid)['name']);
+        $this->assertSame('Unchanged', $this->read($page->cmid)['name']);
     }
 
     /**
-     * Kriterium 5: "profile"-Bedingungen bleiben beim Lesen maskiert (ADR
-     * 0011) - unveraendert durch dieses Werkzeug, ueber die bestehende
-     * get_module_settings-Maskierung geprueft. set_restriction bietet
-     * "profile" selbst nicht an (bewusste Ponytail-Beschraenkung).
+     * Criterion 5: "profile" conditions stay masked on read (ADR 0011) -
+     * unchanged by this tool, checked via the existing get_module_settings
+     * masking. set_restriction does not offer "profile" itself (deliberate
+     * ponytail restriction).
      */
     public function test_profile_condition_from_elsewhere_stays_masked_on_read(): void {
         global $DB;
@@ -245,8 +245,8 @@ final class set_restriction_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
         $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
 
-        // Simuliert eine ueber den nativen Formularweg gesetzte
-        // profile-Bedingung (ausserhalb von Coursepilot).
+        // Simulates a profile condition set via the native form route
+        // (outside of Coursepilot).
         $DB->set_field('course_modules', 'availability', json_encode([
             'op' => '&',
             'c' => [['type' => 'profile', 'sf' => 'department', 'op' => 'isequalto', 'v' => 'Physik']],
@@ -260,8 +260,8 @@ final class set_restriction_test extends \advanced_testcase {
     }
 
     /**
-     * Kriterium 6: der Vorgang erzeugt einen Stand im Aenderungsverlauf
-     * (course_module_updated wird automatisch beobachtet, #385-387).
+     * Criterion 6: the operation creates a version in the change history
+     * (course_module_updated is observed automatically, #385-387).
      */
     public function test_write_creates_a_history_version(): void {
         global $DB;
@@ -279,8 +279,8 @@ final class set_restriction_test extends \advanced_testcase {
     }
 
     /**
-     * Kriterium 7: native Capability-Pruefung im Kurskontext - ohne
-     * Bearbeiten-Berechtigung scheitert der Schreibversuch.
+     * Criterion 7: native capability check in the course context - without
+     * edit permission the write attempt fails.
      */
     public function test_requires_manageactivities_capability(): void {
         $this->resetAfterTest();
@@ -298,9 +298,9 @@ final class set_restriction_test extends \advanced_testcase {
     }
 
     /**
-     * Riegel (#583): eine Bewertungsbedingung auf eine lehrerbewertete Aufgabe
-     * laesst Lernende auf die Lehrkraft warten - ohne Bestaetigung abgelehnt,
-     * nichts geschrieben; mit Bestaetigung gesetzt.
+     * Lock (#583): a grade condition on a teacher-graded assignment makes
+     * learners wait for the teacher - rejected without confirmation,
+     * nothing written; set with confirmation.
      */
     public function test_grade_condition_on_teacher_graded_assign_needs_confirmation(): void {
         $this->resetAfterTest();
@@ -311,7 +311,7 @@ final class set_restriction_test extends \advanced_testcase {
 
         try {
             set_restriction::execute($ziel->cmid, $conditions);
-            $this->fail('Bewertungsbedingung auf eine Aufgabe haette bestaetigt werden muessen.');
+            $this->fail('A grade condition on an assignment should have required confirmation.');
         } catch (\moodle_exception $e) {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
             $this->assertStringContainsString('teacher_grade:' . $aufgabe->cmid, $e->getMessage());
@@ -321,7 +321,7 @@ final class set_restriction_test extends \advanced_testcase {
         set_restriction::execute($ziel->cmid, $conditions, ['teacher_grade:' . $aufgabe->cmid]);
         $this->assertStringContainsString('"completion"', $this->read($ziel->cmid)['availabilityconditionsjson']);
 
-        // Unveraendert bestehende Bedingung plus neue Datumsbedingung: keine erneute Bestaetigung.
+        // Unchanged existing condition plus new date condition: no renewed confirmation.
         set_restriction::execute($ziel->cmid, json_encode([
             ['type' => 'completion', 'activity_cmid' => (int) $aufgabe->cmid, 'status' => 'pass'],
             ['type' => 'date', 'direction' => 'from', 'timestamp' => 1767225600],
@@ -330,7 +330,7 @@ final class set_restriction_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Test bewertet sich selbst - keine Bestaetigung noetig.
+     * A quiz grades itself - no confirmation needed.
      */
     public function test_grade_condition_on_automatic_quiz_needs_no_confirmation(): void {
         $this->resetAfterTest();
@@ -346,7 +346,7 @@ final class set_restriction_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Aufgabe ohne Bewertung (grade = 0) wartet auf keine Lehrkraftnote.
+     * An assignment without grading (grade = 0) waits for no teacher grade.
      */
     public function test_condition_on_ungraded_assign_needs_no_confirmation(): void {
         $this->resetAfterTest();

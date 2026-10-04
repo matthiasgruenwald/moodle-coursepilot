@@ -17,13 +17,13 @@
 namespace local_coursepilot\webdav;
 
 /**
- * Verbindungsfehler eines {@see webdav_transport} (Zeitueberschreitung,
- * DNS-Fehler) - unterschieden von einer gedeuteten HTTP-Antwort, weil hier
- * gar keine Antwort zustande kam. {@see webdav_client} faengt sie und macht
- * daraus die Fehlerklasse `nicht erreichbar` (Issue #489, Spec #486 §4).
+ * Connection error of a {@see webdav_transport} (timeout,
+ * DNS error) - distinguished from an interpreted HTTP response because here
+ * no response came about at all. {@see webdav_client} catches it and turns
+ * it into the error class `unreachable` (Issue #489, Spec #486 §4).
  *
- * Traegt bewusst keine Server- oder Zugangsdaten in der Meldung (Spec §3:
- * "Das Geheimnis verlaesst keinen neuen Weg").
+ * Deliberately carries no server or credential data in the message (Spec §3:
+ * "The secret takes no new path").
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

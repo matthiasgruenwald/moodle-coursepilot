@@ -23,29 +23,30 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Selbstfreigabe des Feldkatalogs in zwei Stufen (Spec 0015 §11, ADR 0017,
- * Ticket #399): weil der Katalog überwiegend abgeschrieben ist, veraltet er
- * still - nach einem Moodle-Update soll die Administration sehen, ob
- * Coursepilot noch passt, ohne es auszuprobieren, und wenn nicht, soll nur die
- * betroffene Aktivitätsart gesperrt werden.
+ * Self-approval of the field catalog in two stages (spec 0015 §11, ADR 0017,
+ * ticket #399): because the catalog is largely transcribed, it silently
+ * goes stale - after a Moodle update the administration should see whether
+ * Coursepilot still fits, without trying it out, and if not, only the
+ * affected activity type should be locked.
  *
- * 1. Billigteil (jeder Schreibvorgang, {@see assert_writable()}): vergleicht
- *    die zwischengespeicherte Moodle-Version mit der aktuellen. Gleich? Ein
- *    einzelner get_config()-Aufruf, kein DB-Introspektions- oder
- *    Reflection-Aufwand - "kostet keinen erkennbaren Aufwand".
- * 2. Tiefenprüfung (automatisch bei erkanntem Versionswechsel, auch
- *    Point-Release, UND jederzeit abrufbar über {@see all_statuses()} bzw.
- *    die Admin-Statusprüfung): {@see drift_check::check()} pro
- *    Aktivitätsart, Ergebnis wird zwischengespeichert, bis sich die Version
- *    erneut ändert.
+ * 1. Cheap part (every write, {@see assert_writable()}): compares the
+ *    cached Moodle version with the current one. Equal? A single
+ *    get_config() call, no DB introspection or reflection effort -
+ *    "costs no noticeable effort".
+ * 2. Deep check (automatically on a detected version change, including
+ *    point releases, AND retrievable at any time via {@see all_statuses()} or
+ *    the admin status check): {@see drift_check::check()} per
+ *    activity type, result is cached until the version changes
+ *    again.
  *
- * Kein Cron: die Tiefenprüfung läuft ausschliesslich ausgelöst durch eine
- * erkannte Versionsänderung (Schreibvorgang oder Statusseite) - nichts prüft
- * periodisch etwas, das sich nur beim Upgrade ändert.
+ * No cron: the deep check runs exclusively triggered by a detected
+ * version change (write or status page) - nothing periodically checks
+ * something that only changes on upgrade.
  *
- * Drift sperrt nur die betroffene Aktivitätsart fürs Schreiben - Lesen und
- * Nachschlagen sind hiervon nie betroffen, kein Lese-Werkzeug ruft
+ * Drift locks only the affected activity type for writing - reading and
+ * lookup are never affected by this, no read tool calls
  * {@see assert_writable()}.
+ *
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -53,21 +54,20 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class write_gate {
 
-    /** @var string Konfigurationskomponente fuer get_config()/set_config(). */
+    /** @var string Configuration component for get_config()/set_config(). */
     private const CONFIG_COMPONENT = 'local_coursepilot';
 
-    /** @var string Config-Key: zuletzt geprueftes Versions-Tupel. */
+    /** @var string Config key: last checked version tuple. */
     private const CONFIG_CHECKED_VERSION = 'driftcheckversion';
 
-    /** @var string Config-Key-Praefix je Aktivitaetsart: JSON-Verstossliste. */
+    /** @var string Config key prefix per activity type: JSON violation list. */
     private const CONFIG_VIOLATIONS_PREFIX = 'driftviolations_';
 
     /**
-     * Wirft, wenn diese Aktivitätsart gerade schreibgesperrt ist - sonst
-     * kehrt sie folgenlos zurueck. Von jedem Schreibendpunkt (Ticket #399:
+     * Throws if this activity type is currently write-locked - otherwise
+     * returns without consequence. To be called by every write endpoint (ticket #399:
      * update_module_settings, create_module, create_quiz,
-     * update_quiz_settings) vor der eigentlichen Schreiblogik aufzurufen.
-     *
+     * update_quiz_settings) before the actual write logic.
      * @param string $modname
      * @return void
      * @throws moodle_exception modnamedriftlocked
@@ -78,11 +78,11 @@ final class write_gate {
             return;
         }
 
-        // ADR 0017: "Die Lehrkraft sieht nie die Pflege, nur die Folge" - die
-        // rohen technischen Verstoesse (Spalten/Konstanten/Quellen) gehoeren
-        // in die Admin-Statusprüfung ({@see \local_coursepilot\check\activity_drift}),
-        // nicht in die Lehrkraft-Meldung. Hier nur als $debuginfo (nur mit
-        // aktiviertem Debugging sichtbar), nicht als Platzhalter im lang-String.
+        // ADR 0017: "The teacher never sees the maintenance, only the consequence" - the
+        // raw technical violations (columns/constants/sources) belong
+        // in the admin status check ({@see \local_coursepilot\check\activity_drift}),
+        // not in the teacher message. Here only as $debuginfo (visible only with
+        // debugging enabled), not as a placeholder in the lang string.
         throw new moodle_exception(
             'modnamedriftlocked',
             'local_coursepilot',
@@ -93,12 +93,12 @@ final class write_gate {
     }
 
     /**
-     * Status einer einzelnen Aktivitätsart - einer von "geprueft",
-     * "automatisch_geprueft", "braucht_arbeit" (Ticket #399: "je
-     * Aktivitätsart einer von drei Zuständen").
+     * Status of a single activity type - one of "checked",
+     * "auto_checked", "needs_work" (ticket #399: "one of three states
+     * per activity type").
      *
      * @param string $modname
-     * @return array{modname: string, zustand: string, verstoesse: string[]}
+     * @return array{modname: string, state: string, violations: string[]}
      */
     public static function status_for(string $modname): array {
         global $CFG;
@@ -107,16 +107,16 @@ final class write_gate {
 
         $catalogclass = registry::for($modname);
         if ($catalogclass === null) {
-            return ['modname' => $modname, 'state' => 'needs_work', 'violations' => ['Unbekannte Aktivitätsart.']];
+            return ['modname' => $modname, 'state' => 'needs_work', 'violations' => ['Unknown activity type.']];
         }
 
         $violations = self::cached_violations($modname);
         if ($violations) {
             $state = 'needs_work';
         } elseif ((int) $CFG->branch > $catalogclass::reviewed_up_to_major()) {
-            // Neuere Hauptversion als das letzte manuelle Review - maschinell
-            // gruen, aber das nicht pruefbare Restrisiko (Wertelisten,
-            // Kombinationsregeln, Nebenwirkungen) ist noch nicht durchgesehen.
+            // Newer major version than the last manual review - machine-green,
+            // but the residual risk that cannot be checked (value lists,
+            // combination rules, side effects) has not yet been reviewed.
             $state = 'auto_checked';
         } else {
             $state = 'checked';
@@ -126,23 +126,21 @@ final class write_gate {
     }
 
     /**
-     * Status aller katalogisierten Aktivitätsarten - Grundlage der
-     * Admin-Statusprüfung ({@see \local_coursepilot\check\activity_drift}) und
-     * jederzeit auf Abruf nutzbar, unabhaengig von einem Schreibvorgang.
+     * Status of all cataloged activity types - basis of the
+     * admin status check ({@see \local_coursepilot\check\activity_drift}) and
+     * usable on demand at any time, independent of a write.
      *
-     * @return array<int, array{modname: string, zustand: string, verstoesse: string[]}>
+     * @return array<int, array{modname: string, state: string, violations: string[]}>
      */
     public static function all_statuses(): array {
         return array_map([self::class, 'status_for'], registry::known_modnames());
     }
 
     /**
-     * Fuehrt die Tiefenprüfung fuer alle Aktivitätsarten neu aus, wenn sich
-     * die Moodle-Version (inkl. Point-Release) oder die installierte
-     * Coursepilot-Version seit dem letzten Aufruf geaendert hat - der
-     * "erkannte Versionswechsel" aus Ticket #399. Sonst kein DB-/
-     * Reflection-Zugriff (Billigteil).
-     *
+     * Re-runs the deep check for all activity types if the Moodle
+     * version (incl. point release) or the installed Coursepilot version
+     * has changed since the last call - the "detected version change"
+     * from ticket #399. Otherwise no DB/reflection access (cheap part).
      * @return void
      */
     private static function ensure_fresh(): void {
@@ -162,10 +160,9 @@ final class write_gate {
     }
 
     /**
-     * Moodle-Kernversion plus installierte Coursepilot-Version als ein Tupel -
-     * ein Coursepilot-Deploy (neue Katalogklasse ohne Moodle-Upgrade) loest die
-     * Tiefenprüfung damit ebenso aus wie ein Moodle-Upgrade.
-     *
+     * Moodle core version plus installed Coursepilot version as one tuple -
+     * a Coursepilot deploy (new catalog class without a Moodle upgrade) thus
+     * triggers the deep check just like a Moodle upgrade.
      * @return string
      */
     private static function version_tuple(): string {

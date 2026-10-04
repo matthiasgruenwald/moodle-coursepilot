@@ -44,7 +44,7 @@ function buildRelease(t) {
   return outDir;
 }
 
-test('Release-Kandidat enthaelt Quellstand und installierbares ZIP aus der nativen Linie', { timeout: 60000 }, t => {
+test('Release candidate contains native source and an installable ZIP', { timeout: 60000 }, t => {
   if (!ZIP_AVAILABLE) {
     t.skip('zip/unzip nicht verfuegbar - Archiv-Pruefung wird uebersprungen');
     return;
@@ -72,7 +72,7 @@ test('Release-Kandidat enthaelt Quellstand und installierbares ZIP aus der nativ
   }
 });
 
-test('Release-Kandidat liefert nur englische Moodle-Sprachstrings aus', { timeout: 60000 }, t => {
+test('Release candidate ships only English Moodle language strings', { timeout: 60000 }, t => {
   const outDir = buildRelease(t);
   const staged = path.join(outDir, 'local_coursepilot');
   assert.ok(fs.existsSync(path.join(staged, 'lang', 'en', 'local_coursepilot.php')), 'englische Lang-Datei ist enthalten');
@@ -82,7 +82,7 @@ test('Release-Kandidat liefert nur englische Moodle-Sprachstrings aus', { timeou
   assert.ok(fs.existsSync(path.join(staged, 'skills')), 'Skill-Korpus bleibt im Paket enthalten');
 });
 
-test('Release-Kandidat ist AGPL-3.0-or-later mit Herkunftshinweis', { timeout: 60000 }, t => {
+test('Release candidate is AGPL-3.0-or-later with attribution', { timeout: 60000 }, t => {
   const outDir = buildRelease(t);
   const staged = path.join(outDir, 'local_coursepilot');
 
@@ -94,7 +94,7 @@ test('Release-Kandidat ist AGPL-3.0-or-later mit Herkunftshinweis', { timeout: 6
   assert.match(notice, /jtuttas/, 'Herkunftshinweis auf den Upstream bleibt erhalten');
 });
 
-test('Plugin-Version und MCP-Serverversion stammen aus einer kanonischen Quelle (kein 0.1.0)', () => {
+test('Plugin and MCP server versions share a canonical source (not 0.1.0)', () => {
   const version = fs.readFileSync(path.join(SRC_DIR, 'version.php'), 'utf8');
   const release = version.match(/\$plugin->release\s*=\s*'([^']+)';/)[1];
   assert.notStrictEqual(release, '0.1.0', 'version.php meldet keinen Prototypwert mehr');
@@ -104,7 +104,7 @@ test('Plugin-Version und MCP-Serverversion stammen aus einer kanonischen Quelle 
   assert.match(dispatcher, /plugin_release\(\)/, 'Dispatcher liest die Serverversion aus derselben kanonischen Quelle wie version.php');
 });
 
-test('Release-Build validiert Lizenz und Komponente statt sie stillschweigend zu uebernehmen', { timeout: 60000 }, t => {
+test('Release build validates the license and component', { timeout: 60000 }, t => {
   const outDir = buildRelease(t);
   const staged = path.join(outDir, 'local_coursepilot');
   const version = fs.readFileSync(path.join(staged, 'version.php'), 'utf8');

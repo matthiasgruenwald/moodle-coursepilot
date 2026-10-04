@@ -17,9 +17,8 @@
 namespace local_coursepilot;
 
 /**
- * Pfadaufloesung, Konstantensatz, Whitelists und Quotengrenzen des
- * Materialordners (Spec 0018 §2, §6, §8.1, Issue #428) - Geschwister zu
- * tests/context_files_test.php.
+ * Material-storage paths, constants, whitelists and quotas (Spec 0018
+ * §2/§6/§8.1, #428), complementing tests/context_files_test.php.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -74,9 +73,8 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der Ablageort ist derselbe wie der Kontextbereich (Moodles Private
-     * Files, Spec 0018 §2.1) - aber ein eigener Konstantensatz, kein
-     * Endpunkt bezieht sich auf COMPONENT/FILEAREA/ITEMID direkt.
+     * Use Moodle Private Files like context storage (Spec 0018 §2.1), but
+     * with dedicated constants. Endpoints never address COMPONENT/FILEAREA/ITEMID directly.
      */
     public function test_storage_anchor_is_private_files(): void {
         $this->assertSame('user', material_files::COMPONENT);
@@ -85,12 +83,9 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der Ortswechsel-/Zweitort-Beweis (Issue #444: "ein
-     * zweiter, im Test definierter Ablageort landet bei denselben Aufrufen")
-     * steht seit der Zusammenfuehrung auf den gemeinsamen storage_anchor in
-     * tests/storage_anchor_test.php - dort mit einem dritten, nur im Test
-     * erfundenen Bereich statt eines reinen Konstantenvergleichs zwischen
-     * context_files und material_files.
+     * The alternate-location proof (#444) now lives in storage_anchor_test
+     * after unifying both areas through storage_anchor. It exercises a third
+     * test-only area rather than merely comparing constants.
      */
     public function test_root_defaults_to_coursepilot_material(): void {
         $this->resetAfterTest();
@@ -98,15 +93,15 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Beide Bestandslisten aus Spec 0018 §6 - SVG bleibt in beiden.
+     * Both whitelists from Spec 0018 §6 include SVG.
      */
     public function test_allowed_extensions_cover_both_whitelists(): void {
         $extensions = material_files::allowed_extensions();
         foreach (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'html', 'png', 'jpg'] as $general) {
-            $this->assertContains($general, $extensions, $general . ' fehlt aus der allgemeinen Whitelist.');
+            $this->assertContains($general, $extensions, $general . ' is missing from the general whitelist.');
         }
         foreach (['png', 'jpg', 'gif', 'svg', 'webp'] as $embeddable) {
-            $this->assertContains($embeddable, $extensions, $embeddable . ' fehlt aus der Bild-Whitelist.');
+            $this->assertContains($embeddable, $extensions, $embeddable . ' is missing from the image whitelist.');
         }
     }
 
@@ -138,7 +133,7 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Restplatz nach Nutzerquote - dieselbe, root-unabhaengige Rechnung wie
+     * Calculate remaining user quota independently of the root, as in
      * context_files::remaining_quota().
      */
     public function test_remaining_quota_reports_free_space(): void {
@@ -174,7 +169,7 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Harter Fehler bei voller/gesprengter Quote (Spec 0018 §8.1).
+     * A full or exceeded quota is a hard error (Spec 0018 §8.1).
      */
     public function test_require_quota_throws_when_exceeded(): void {
         global $CFG;
@@ -199,8 +194,7 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Volle Quote (Restplatz 0) ist der Sonderfall von "ueberschritten" -
-     * jeder positive Zuwachs scheitert (Spec 0018 §8.1).
+     * Zero remaining quota rejects any positive growth (Spec 0018 §8.1).
      */
     public function test_require_quota_throws_when_quota_is_full(): void {
         global $CFG;
@@ -222,8 +216,8 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Warnung unter 10% Restplatz, mit Restplatz in MB (Spec 0018 §8.1, Form
-     * wie Spec 0016 §5.4).
+     * Warn below 10% remaining quota and report MB (Spec 0018 §8.1,
+     * matching Spec 0016 §5.4).
      */
     public function test_quota_warning_below_ten_percent(): void {
         global $CFG;
@@ -232,7 +226,7 @@ final class material_files_test extends \advanced_testcase {
         $this->setUser($this->getDataGenerator()->create_user());
         $CFG->userquota = 1000;
 
-        // 950 von 1000 Byte belegt nach dem Schreiben (5% Restplatz).
+        // After writing, 950 of 1000 bytes are used (5% remaining).
         $warning = material_files::quota_warning(950);
         $this->assertNotNull($warning);
         $this->assertStringContainsString('0.0', $warning);
@@ -297,9 +291,8 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * replace() ist bei context_files bereits vollstaendig geprueft
-     * (Rettungsreihenfolge, Zwischendatei) - hier nur der glueckliche Weg,
-     * damit die Delegation belegt ist.
+     * context_files already tests replacement ordering and temporary files;
+     * verify normal delegation here.
      */
     public function test_replace_creates_new_file(): void {
         $this->resetAfterTest();
@@ -325,9 +318,8 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der Verweisweg (Spec 0018 §4.2, Issue #429): eine liegende
-     * Materialdatei landet im Dateimanager-Entwurf, der 1:1 als
-     * *_update_instance()-Feldwert weiterverwendet wird.
+     * Referencing material (Spec 0018 §4.2, #429) copies it into a file-manager
+     * draft used directly as an *_update_instance() field value.
      */
     public function test_resolve_into_draft_copies_material_file(): void {
         $this->resetAfterTest();
@@ -360,8 +352,8 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Bereits vorhandene Anhaenge am Ziel bleiben erhalten - ein Aufruf
-     * haengt an, ersetzt nicht (Spec 0018 §4.2).
+     * Preserve existing target attachments; references append rather than
+     * replace (Spec 0018 §4.2).
      */
     public function test_resolve_into_draft_preserves_existing_target_files(): void {
         $this->resetAfterTest();
@@ -396,8 +388,8 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Verweis auf eine nicht existierende Materialdatei scheitert mit
-     * einer Meldung, die den erwarteten Pfad nennt (Abnahmekriterium #429).
+     * Reject missing material files with a message naming the expected path
+     * (#429).
      */
     public function test_resolve_into_draft_throws_when_material_file_missing(): void {
         $this->resetAfterTest();
@@ -418,8 +410,8 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der Verweisweg liest nur - die Materialdatei bleibt nach dem Aufruf
-     * unveraendert liegen (Spec 0018 §4.2: "kein Verlust im Fehlerfall").
+     * References are read-only; preserve the original material file
+     * (Spec 0018 §4.2).
      */
     public function test_resolve_into_draft_leaves_material_file_untouched(): void {
         $this->resetAfterTest();
@@ -445,9 +437,8 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Objekt-Eintrag mit "zielordner" legt die Datei im Draft in einen
-     * Unterordner statt der Wurzel - "Zielverzeichnis innerhalb des Ordners
-     * waehlbar" (Issue #434).
+     * An object entry with a target folder places the draft file in that
+     * subfolder rather than the root (#434).
      */
     public function test_resolve_into_draft_places_file_in_target_subfolder(): void {
         $this->resetAfterTest();
@@ -479,8 +470,7 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ein String-Eintrag bleibt unveraendert im Wurzelverzeichnis - reine
-     * Pfadlisten (bestehende Aufrufer) muessen sich nicht aendern.
+     * String entries still use the root, preserving existing path-list callers.
      */
     public function test_resolve_into_draft_defaults_string_entries_to_root(): void {
         $this->resetAfterTest();
@@ -511,9 +501,8 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Traversal-Versuch ueber "zielordner" (z.B. "..") scheitert wie ein
-     * gewoehnlicher Materialordner-Pfad (Issue #434: "gleiche Zeichenregeln
-     * wie beim Materialordner selbst").
+     * Reject target-folder traversal under the same path rules as material
+     * storage (#434).
      */
     public function test_resolve_into_draft_rejects_target_folder_traversal(): void {
         $this->resetAfterTest();
@@ -535,8 +524,7 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Objekt-Eintrag ohne "pfad" scheitert mit einer klaren Meldung
-     * statt eines PHP-Fehlers.
+     * Reject object entries missing a path with a clear message, not a PHP error.
      */
     public function test_resolve_into_draft_rejects_entry_without_pfad(): void {
         $this->resetAfterTest();
@@ -553,10 +541,8 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der Entwurf belastet die Nutzerquote nicht, stattdessen gilt
-     * $CFG->maxbytes je Datei (Spec #486 §7, Issue #496) - eine zu grosse
-     * Quelldatei scheitert VOR dem Kopieren, egal wie viel Quote noch frei
-     * waere.
+     * Drafts do not consume user quota. Enforce $CFG->maxbytes per file
+     * before copying inventory sources (Spec #486 §7, #496).
      */
     public function test_resolve_into_draft_rejects_file_larger_than_cfg_maxbytes(): void {
         global $CFG;
@@ -585,13 +571,9 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Die $CFG->maxbytes-Grenze gilt nur fuer "bestand" (Spec #486 §7 spricht
-     * nur vom "Entwurf" der Bestand-Einbettung) - eine Werkbank-Datei blieb
-     * schon vor Issue #496 nur an der Servergrenze beim Hochladen
-     * (upload_material_file, get_max_upload_file_size()) begrenzt. Eine
-     * zusaetzliche $CFG->maxbytes-Pruefung hier wuerde eine bereits liegende,
-     * groessere Werkbank-Datei nachtraeglich am Einbetten hindern - kein
-     * Ziel dieses Tickets (Review-Fund).
+     * Apply $CFG->maxbytes only to inventory embedding drafts (Spec #486 §7).
+     * Workbench files already passed the upload server limit; imposing another
+     * limit would prevent embedding existing files, beyond #496’s scope.
      */
     public function test_resolve_into_draft_ignores_cfg_maxbytes_for_werkbank_source(): void {
         global $CFG;
@@ -619,7 +601,7 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * $CFG->maxbytes <= 0 bedeutet "keine eigene Grenze" (Moodle-Konvention).
+     * $CFG->maxbytes <= 0 means no additional limit, following Moodle convention.
      */
     public function test_resolve_into_draft_allows_any_size_when_cfg_maxbytes_is_zero(): void {
         global $CFG;
@@ -646,9 +628,8 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Issue #508: eine Quelle fuer den Webservice-Parameter "ort" - Typ,
-     * Default und Beschreibung kommen aus derselben Konstante wie das
-     * tools/list-Schema.
+     * One source defines the webservice location parameter’s type, default
+     * and description, matching tools/list (#508).
      */
     public function test_location_parameter_uses_shared_default_and_description(): void {
         $param = material_files::location_parameter();
@@ -660,8 +641,8 @@ final class material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Issue #508: dieselbe Beschreibung, derselbe Wertebereich - fuer die
-     * KI-Werkzeugliste (tool_registry-Schemas) wie fuer den Webservice.
+     * Tool-registry schemas and the webservice share the same location
+     * description and allowed values (#508).
      */
     public function test_location_schema_matches_shared_description_and_values(): void {
         $schema = material_files::location_schema();

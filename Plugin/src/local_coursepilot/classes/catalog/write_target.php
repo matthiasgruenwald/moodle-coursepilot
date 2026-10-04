@@ -231,7 +231,7 @@ final class write_target {
             $reference = $this->state[$rule['reference']] ?? null;
             $field = $this->state[$rule['field']] ?? null;
             if (is_array($reference) && is_array($field) && count($reference) !== count($field)) {
-                self::violation($catalogclass, '"' . $rule['field'] . '" muss genauso viele Eintraege haben wie "'
+                self::violation($catalogclass, '"' . $rule['field'] . '" must have as many entries as "'
                     . $rule['reference'] . '".');
             }
         }
@@ -246,8 +246,8 @@ final class write_target {
             }
             if ($rule['mode'] === 'must_be_after' ? $value <= $reference : $value < $reference) {
                 self::violation($catalogclass, $rule['mode'] === 'must_be_after'
-                    ? '"' . $rule['field'] . '" muss nach "' . $rule['reference'] . '" liegen.'
-                    : '"' . $rule['field'] . '" darf nicht vor "' . $rule['reference'] . '" liegen.');
+                    ? '"' . $rule['field'] . '" must be after "' . $rule['reference'] . '".'
+                    : '"' . $rule['field'] . '" must not precede "' . $rule['reference'] . '".');
             }
         }
         // Moodle's form path silently falls back to visible without

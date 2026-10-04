@@ -1,158 +1,114 @@
 ---
 name: quiz-and-question-bank
-description: Lies diese Datei, wenn ein Quiz geplant oder umgesetzt wird, oder wenn Fragenbank-Kategorien angelegt bzw. bereinigt werden.
+description: Read this when planning or implementing quizzes or creating and reorganizing question-bank categories.
 ---
 
-# Referenz: Quiz-Modi und Fragenbank-Kategorien
+# Reference: quiz modes and question-bank categories
 
-Lies diese Datei, wenn ein Quiz (`coursepilot_create_quiz`/`coursepilot_update_quiz_settings`)
-geplant oder umgesetzt wird, oder wenn Fragenbank-Kategorien angelegt bzw.
-bereinigt werden.
+Use for `coursepilot_create_quiz`, `coursepilot_update_quiz_settings`
+and category creation/cleanup.
 
-## Quiz-Modi (`coursepilot_create_quiz`, `coursepilot_update_quiz_settings`)
+## Quiz modes
 
-Quizze werden über den Parameter `mode` in einer von drei dokumentierten
-Settings-Kombinationen angelegt oder nachträglich aktualisiert. Bei der Planung
-gilt `progress-check` als Standard und wird beim Anlegen explizit als `mode`
-übergeben; beim Patch bleibt `mode` leer, wenn nur einzelne
-Einstellungen geändert werden sollen. `timelimit` kann explizit gesetzt werden
-und überschreibt dann den Modus-Default (Layered Defaults). Die geplante
-Bestehensgrenze wird explizit gesetzt (siehe unten). Den Wert `test`
-nicht als Modusnamen verwenden, weil er mit der Moodle-Testaktivität
-verwechselt wird.
+mode selects one of three documented presets. Planning defaults to
+progress-check; pass it explicitly on creation. Leave mode empty for
+patches changing individual settings only. Explicit timelimit overrides
+its preset (layered defaults). Set the planned passing threshold
+explicitly below. Never use test as a mode name, which is ambiguous with
+the quiz activity itself.
 
-| Modus | Frageverhalten | Versuche | Bewertungsmethode | Layout | Wartezeit | Review-Sichtbarkeit | geplante Bestehensgrenze (explizit) |
+| Mode | Behavior | Attempts | Grade method | Layout | Delay | Review | Planned passing threshold, explicit |
 |---|---|---|---|---|---|---|---|
-| `mini-check` | `immediatefeedback` (direkte Auswertung ohne Selbsteinschätzung) | unbegrenzt (0) | beste Bewertung (`QUIZ_GRADEHIGHEST`) | eine Frage pro Seite, freie Navigation | keine | richtige Antwort nicht anzeigen, Gesamtfeedback sichtbar | 80 % |
-| `progress-check` (Default) | `deferredcbm` (spätere Auswertung mit Selbsteinschätzung) | unbegrenzt (0) | beste Bewertung (`QUIZ_GRADEHIGHEST`) | alle Fragen auf einer Seite, freie Navigation | mindestens 5 Minuten | richtige Antwort nicht anzeigen, Gesamtfeedback für Lernplanung sichtbar | 80 % |
-| `final-test` | `deferredfeedback` (spätere Auswertung ohne Selbsteinschätzung) | maximal 2 | Mittelwert (`QUIZ_GRADEAVERAGE`) | alle Fragen auf einer Seite, freie Navigation | mindestens 15 Minuten | richtige Antwort nicht anzeigen, Gesamtfeedback sichtbar | 80 % |
+| mini-check | immediatefeedback, immediate results without self-assessment | Unlimited (0) | Highest (QUIZ_GRADEHIGHEST) | One question/page, free navigation | None | Hide correct answers; show overall feedback | 80% |
+| progress-check, default | deferredcbm, later results with self-assessment | Unlimited (0) | Highest (QUIZ_GRADEHIGHEST) | All questions on one page, free navigation | At least 5 minutes | Hide correct answers; overall feedback for learning plans | 80% |
+| final-test | deferredfeedback, later results without self-assessment | At most 2 | Average (QUIZ_GRADEAVERAGE) | All questions on one page, free navigation | At least 15 minutes | Hide correct answers; show overall feedback | 80% |
 
-### Bestehensgrenze eines bestehenden Tests
+### Existing quiz passing threshold
 
-1. `coursepilot_get_module_settings(cmid)` lesen: `grade` ist die maximale
-   Testnote, `gradepass` die gespeicherte Bestehensgrenze im Gradebook.
-2. Prozentvorgabe in **Notenpunkte** umrechnen: 80 % von `grade: 10` ergibt
-   `8`, von `grade: 25` ergibt `20`.
-3. `coursepilot_update_quiz_settings(cmid, fields_json: '{"gradepass":8}')`
-   aufrufen; `mode` weglassen. Fragen, Anordnung und andere Einstellungen bleiben
-   erhalten. `gradepass` ist eine JSON-Zahl zwischen `0` und `grade`
-   einschließlich; `0` deaktiviert die Grenze. Prozenttexte und Zahlenstrings
-   sind ungültig. Bei gleichzeitiger Änderung von `grade` gilt die neue Maximalnote.
-4. Erneut `coursepilot_get_module_settings(cmid)` lesen und `gradepass`
-   abgleichen; der Quiz-Katalog zeigt denselben gespeicherten Punktewert.
+1. Read `coursepilot_get_module_settings(cmid)`: grade is the maximum,
+   gradepass is the gradebook's stored passing threshold.
+2. Convert percentages to grade points: 80% of grade 10 is 8; of 25 is 20.
+3. Call `coursepilot_update_quiz_settings(cmid, fields_json: '{"gradepass":8}')`
+   without mode, preserving questions, arrangement and other settings.
+   gradepass is a JSON number in [0, grade]; 0 disables it. Percentage
+   text and numeric strings are invalid. When grade changes simultaneously,
+   use the new maximum.
+4. Read settings again and compare gradepass; the quiz catalog reports
+   the same persisted points.
 
-### Schueler-Erfahrung und Monitoring-Tradeoffs
+### Learner experience and monitoring tradeoffs
 
-- **Mini-Check (`mini-check`):** Kurzer Kompetenzcheck mit direkter Auswertung,
-  unbegrenzten Versuchen und ohne Wartezeit. Gut für schnelle Orientierung und
-  unmittelbares Üben.
-- **Lernstandscheck (`progress-check`, Default):** Spätere Auswertung mit
-  Selbsteinschätzung und Gesamtfeedback für Lernplanung. Gut, wenn die Lehrkraft
-  und die Schüler:innen den nächsten Lernschritt aus dem Ergebnis ableiten
-  sollen.
-- **Abschlusstest (`final-test`):** Abschlusstest mit Verbesserungsmöglichkeit,
-  keine Klassenarbeit. Zwei Versuche mit Wartezeit und Mittelwertbildung halten
-  den Fokus auf Abschluss und Verbesserung statt auf einmalige Bewertung.
-  Die Versuchsbegrenzung ist ein Riegel, den die Wahl des Modus bereits
-  bestätigt. Im Plan der Lehrkraft die Einstellungen des Abschlusstests
-  nennen (zwei Versuche, Wartezeit, Mittelwert); eine Extra-Rückfrage zu den
-  Versuchen entfällt.
+- mini-check: quick orientation/practice with immediate results, unlimited
+  attempts and no delay.
+- progress-check: later results, self-assessment and overall feedback for
+  teachers and learners to decide the next learning step.
+- final-test: concluding assessment with opportunities to improve, not a
+  one-shot formal examination. Two attempts, delay and averaging focus
+  on completion and improvement. Mode selection confirms its learner lock.
+  Name the two attempts, delay and averaging in the plan; no extra attempt
+  confirmation is needed.
 
-### Wann welcher Modus?
+### Mode selection
 
-- Schnelle Orientierung oder kurze Übungsphase → `mini-check`.
-- Lernstand am Unterthema-Ende mit Lernplanung → `progress-check`.
-- Abschluss eines Lernabschnitts mit Verbesserungsmöglichkeit → `final-test`.
+- Quick orientation or short practice: mini-check.
+- Subtopic assessment with learning planning: progress-check.
+- End-of-section assessment allowing improvement: final-test.
 
-## Fragenbank-Kategorien benennen (Kurs-Fragensammlung)
+## Named course question banks
 
-Vor dem ersten Kategorien- oder Fragenzugriff wird immer zuerst eine
-**benannte Kurs-Fragensammlung** per `coursepilot_ensure_question_bank`
-festgelegt. Der vorgeschlagene Name muss fuer Lehrkraefte lesbar sein und
-sich am Kurs, Thema oder fachlichen Inhalt orientieren, zum Beispiel
-`Biologie 9a - Immunsystem` oder `Chemie EF - Saeuren und Basen`. Kein
-technisches Praefix wie `Coursepilot`.
+Before accessing categories or questions, establish a named course bank
+through `coursepilot_ensure_question_bank`. Propose a teacher-readable name
+based on course, topic or subject, e.g. Biology 9a — Immune system or
+Chemistry — Acids and bases. No technical Coursepilot prefix.
 
-Diese Fragensammlung ist selbst schon eine **Planungsentscheidung**: In der
-Vorschau wird Name + Struktur gezeigt, die Lehrkraft kann den Namen vor dem
-Moodle-Schreibzugriff bestaetigen oder aendern. Standard-Struktur:
+This is a planning decision: preview name and structure and allow changes
+before Moodle writes. Default structure:
 
-- Fragensammlung = Kurs oder fachliches Coursepilot-Projekt
-- darunter Kategorien je **Unterthema**
-- darunter bei Bedarf **nummerierte Inhaltsabschnitte**
+- Bank for the course or subject project.
+- Categories per subtopic.
+- Numbered content sections beneath them where needed.
 
-Erst danach werden Fragenbank-Kategorien **wie der zugehoerige nummerierte
-Inhaltsabschnitt** benannt: `<Nummer> <Titel>`, z.B.
-`7.2 Stoffe und ihre Eigenschaften` fuer den gleichnamigen Kursabschnitt. So
-bleiben Fragen spaeter nach Unterthema/Abschnitt sortier- und wiederfindbar
-(siehe **Kurs-Fragensammlung** und **Nummerierter Inhaltsabschnitt** in
-`CONTEXT.md`).
+Name categories after the numbered course content section, e.g.
+7.2 Materials and their properties. This makes questions discoverable by
+subtopic/section; see CONTEXT.md course bank and numbered content section.
 
-`coursepilot_ensure_question_category` ist idempotent: existiert unter demselben
-`parent` bereits eine Kategorie mit identischem Namen, wird KEINE Dublette
-angelegt - stattdessen liefert das Tool die bestehende `id` mit
-`created=false` zurueck. `parent` ist Pflicht, z.B. die `topcategoryid` aus
-`coursepilot_ensure_question_bank` fuer eine Kategorie direkt unter der
-Fragensammlung.
+`coursepilot_ensure_question_category` reuses an identical name under the
+same parent, returning its id with created=false rather than duplicating.
+parent is required, e.g. the bank's topcategoryid for direct children.
 
-### Fragensammlungs-Bereinigung (nicht-destruktiv)
+### Nondestructive cleanup
 
-Wenn Fragenkategorien an der falschen Stelle gelandet sind, wird fuer die
-Bereinigung kein Delete-Tool verwendet. Stattdessen verschiebt
-`coursepilot_update_question_category` eine bestehende Kategorie nicht-destruktiv in
-die richtige benannte Kurs-/Projekt-Fragensammlung oder unter eine andere
-Zielkategorie und kann sie dabei bei Bedarf umbenennen. Fragen und
-Unterkategorien bleiben erhalten.
+Move misplaced categories through `coursepilot_update_question_category`
+into the correct named bank or target category; optionally rename them.
+Preserve questions and descendants. Never use deletion for this cleanup.
 
-Vor dem Aufruf ist eine Vorschau/Freigabe Pflicht: Zeige der Lehrkraft immer
-die Quelle, das Ziel und die betroffenen Kategorien (mindestens die zu
-verschiebende Hauptkategorie und bekannte Unterkategorien), plus den geplanten
-neuen Namen oder Ziel-Parent. Erst nach ausdruecklicher Freigabe wird
-verschoben oder umbenannt. Loeschen von Fragen oder Kategorien gehoert weiter
-nicht zu V1.
+Preview source, target, affected main category/known descendants and new
+name or parent before explicit approval. V1 includes no deletion of
+questions or categories.
 
-## Quiz/Fragen im Implementierungsplan planen (Issue #20)
+## Plan quizzes and questions (#20)
 
-Testaktivitaeten und ihre Fragen werden genauso geplant wie andere
-Aktivitaeten, mit denselben Schritten wie in
-`coursepilot_get_skill("implementation-plan-workflow")` beschrieben (Plan
-aufbauen, Kurzuebersicht zeigen, Freigabe abwarten).
+Use the same implementation-plan workflow as other activities: build,
+show overview and wait for approval.
 
-1. **Fragensammlung festlegen**: vor dem ersten Quiz die benannte
-   Kurs-/Projekt-Fragensammlung als Planungsentscheidung festlegen und in der
-   Kurzuebersicht sichtbar mit Name + Struktur zeigen; die Lehrkraft kann sie
-   vor der Freigabe bestaetigen oder aendern. Vor dem Moodle-Schreibzugriff
-   wird die gewaehlte Fragensammlung mit `coursepilot_ensure_question_bank`
-   aufgeloest; die Rueckgabe `questionbankid` wird fuer Kategorien und
-   spaetere Fragen genutzt.
-2. **Quiz hinzufuegen**: Ohne ausdruecklich anderslautende Planung gilt
-   **QUIZ_LERNCHECK_MODE_DEFAULT** (`mode: 'progress-check'`, siehe
-   "Quiz-Modi" oben) und **QUIZ_PASS_COMPLETION_DEFAULT**
-   (`completion=2, completionpassgrade=1` – **Bestehensabschluss**,
-   CONTEXT.md). Ein anderer Modus (`mini-check`, `final-test`) oder eine
-   abweichende Completion-Konfiguration ist eine **Planabweichung** und
-   braucht eine kurze Begruendung (siehe
-   `coursepilot_get_skill("implementation-plan-workflow")`).
-3. **Fragen hinzufuegen**: Jede geplante Frage hat dieselbe Form wie
-   `coursepilot_create_mc_question` (`questiontext`, `selectionmode`, `answers`
-   mit `answer`/`fraction`/`feedback` je Option, `generalfeedback`) plus eine
-   **Bezugsaktivitaet** (CONTEXT.md) – die bereits im Plan vorhandene
-   Aktivitaet, aus der die Frage beantwortbar ist. Eine lesbare Fragenvorschau
-   wird in `plan.md` festgehalten.
-4. **Materialluecken erkennen**: Hat eine Frage keine aufloesbare
-   Bezugsaktivitaet (fehlt oder zeigt auf keine Plan-Aktivitaet), wird sie als
-   **Materialluecke** (CONTEXT.md) markiert und erscheint in `plan.md` sowie
-   in der Kurzuebersicht. Materialluecken-Fragen werden bei der Freigabe
-   NICHT angelegt – keine `coursepilot_create_mc_question`- oder
-   `coursepilot_add_questions_to_quiz`-Aufrufe. Der Lehrkraft werden
-   Materialluecken VOR der Freigabe gezeigt; sie entscheidet, ob Material
-   ergaenzt (**Freigegebene Materialergaenzung**, siehe #19) oder die Frage
-   angepasst wird.
-5. **Freigabe & Anwendung**: legt das Quiz an (`coursepilot_create_quiz` mit
-   `mode`/`grade`), setzt Completion/Restriction, legt dann jede
-   nicht-Materialluecken-Frage per `coursepilot_create_mc_question` an und
-   haengt alle erzeugten Fragen in einem Aufruf per
-   `coursepilot_add_questions_to_quiz` (#13) ein. `activity.categoryid`
-   (Fragenbank-Kategorie, siehe oben "Fragenbank-Kategorien benennen") muss
-   gesetzt sein, wenn das Quiz Fragen enthaelt; diese Kategorie liegt in der
-   zuvor bestaetigten benannten Fragensammlung.
+1. Establish the named bank as a planning decision before the first quiz.
+   Show name/structure for confirmation or revision. After approval,
+   resolve it through coursepilot_ensure_question_bank and use returned
+   questionbankid for categories/questions.
+2. Unless planned otherwise, use QUIZ_LERNCHECK_MODE_DEFAULT
+   (mode:progress-check) and QUIZ_PASS_COMPLETION_DEFAULT
+   (completion=2, completionpassgrade=1, pass-grade completion). Another
+   mode or completion configuration is a justified plan deviation.
+3. Plan each question using coursepilot_create_mc_question's shape:
+   questiontext, selectionmode, answers with answer/fraction/feedback,
+   generalfeedback, plus a source activity already in the plan from which
+   learners can answer it. Store a readable question preview in plan.md.
+4. Mark missing/unresolvable source activities as material gaps in both
+   plan.md and the overview. Create no gap questions and make no
+   coursepilot_create_mc_question/coursepilot_add_questions_to_quiz calls
+   for them. Show gaps before approval; the teacher chooses approved
+   material additions (#19) or revised questions.
+5. After approval, create the quiz with mode/grade, set completion and
+   restrictions, create nongap questions, then attach all in one
+   `coursepilot_add_questions_to_quiz` call (#13). Set activity.categoryid
+   when the quiz has questions; it belongs to the previously approved bank.

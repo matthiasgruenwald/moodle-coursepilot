@@ -33,39 +33,25 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Der zweite Schreibvorgang (Spec 0015 §3.4, Ticket #389, Phase 3): legt eine
- * neue Aktivitaet ueber den nativen Formularweg an (can_add_moduleinfo() fuer
- * die native Berechtigungspruefung plus Modul-/Abschnittsermittlung,
- * add_moduleinfo() zum Schreiben) - keine Handaenderung, die ueberleben
- * muesste, deshalb kein Vorher/Nachher-Diff wie bei {@see update_module_settings}.
+ * Create a new activity through the native form route (Spec 0015 §3.4,
+ * Ticket #389, phase 3): can_add_moduleinfo() checks permissions and
+ * resolves module/section; add_moduleinfo() writes. No prior manual edits
+ * need preservation, so no before/after diff like update_module_settings.
  *
- * Anders als beim Patch (Ticket #388, "Vollersatz verworfen") gilt hier die
- * entgegengesetzte Regel: fehlende Felder werden mit dem katalogisierten
- * FORMULAR-Default aufgefuellt (nicht dem DB-Spalten-Default, die weichen bei
- * mehreren Feldern ab, siehe {@see \local_coursepilot\catalog\choice} Feld
- * "includeinactive") - beim Anlegen gibt es keine Handaenderung, die ein
- * stiller Reset zerstoeren koennte. Ein Pflichtfeld ganz ohne Formular-Default
- * (Kategorie "required" ohne "default" im Katalog) scheitert stattdessen mit
- * einer Meldung, die das Feld nennt (Spec 0015 §3.4).
+ * Unlike patches (Ticket #388), fill missing fields from cataloged form
+ * defaults, not DB defaults, which may differ (choice.includeinactive).
+ * Required fields without a form default fail with a named-field message.
  *
- * "resource" verlangt seit Spec 0018 (§4/§7, Issue #434) das Pflichtfeld
- * "files" (Liste von Materialordner-Pfaden) im selben Aufruf - ohne
- * Hauptdatei entsteht eine kaputte Aktivitaetsseite
- * (mod/resource/view.php: resource_print_filenotfound()), die Pruefung
- * laeuft deshalb VOR add_moduleinfo() ueber den normalen
- * Pflichtfeld-Mechanismus ({@see \local_coursepilot\catalog\write_target::create()}).
- * "folder" bleibt anlegbar - ein leerer Ordner ist gueltig, "files" ist dort
- * optional und akzeptiert mehrere Pfade samt Zielunterordner (Spec 0018 §4.2).
- * Normalisation, checks, file resolution and add_moduleinfo() run as one
- * sequence in {@see \local_coursepilot\catalog\write_target::create_activity()}
- * (#647); this endpoint is only the external adapter.
+ * resource requires files in the same call (Spec 0018 §4/§7, Issue #434):
+ * without a main file its activity page is broken. Validate before writing
+ * through write_target::create(). An empty folder is valid; its files are
+ * optional and can include multiple paths with target subfolders (§4.2).
  *
- * Feldbuendel (Spec 0015 §2.4) sind bewusst KEIN eigener Endpunkt-Parameter:
- * "Sie überleben als benannte Feldbündel im Katalog, nicht als
- * Endpunkt-Parameter" - describe_module_fields liefert das Buendel, die KI
- * mischt es selbst in fields_json (ein Buendelwert gilt nur fuer Felder, die
- * fields_json nicht schon selbst nennt). Dieser Endpunkt sieht deshalb nur
- * das bereits gemischte Ergebnis.
+ * Normalization, checks, file resolution and add_moduleinfo() are one
+ * sequence in write_target::create_activity() (#647); this is the external
+ * adapter. Bundles remain catalog presets (Spec 0015 §2.4): the AI merges
+ * them into fields_json while preserving explicitly named values. This
+ * endpoint sees the merged result.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -123,9 +109,9 @@ final class create_module extends external_api {
 
         $modname = $params['modname'];
         $catalogclass = self::catalog_for($modname);
-        // Billigteil der Selbstfreigabe (Spec 0015 §11, ADR 0017, Ticket #399):
-        // sperrt nur DIESE Aktivitaetsart, wenn ein erkannter Moodle-Versionswechsel
-        // eine Katalogabweichung ergeben hat. Lesen bleibt unberuehrt.
+        // Cheap catalog approval check (Spec 0015 §11, ADR 0017, Ticket #399):
+        // lock only this activity type if a detected version change revealed drift.
+        // Reading remains available.
         write_gate::assert_writable($modname);
 
         $merged = json_decode($params['fields_json'], true);
@@ -155,9 +141,8 @@ final class create_module extends external_api {
     }
 
     /**
-     * Prueft Kontext und Capabilities fuer den Kurs (Issue #523: aus
-     * execute() ausgelagert, um die Funktion unter der 50-Zeilen-Grenze zu
-     * halten).
+     * Authorize course context and capabilities (Issue #523, extracted from
+     * execute() to keep it within 50 lines).
      *
      * @param int $courseid
      * @return \context_course
@@ -166,21 +151,18 @@ final class create_module extends external_api {
         $coursecontext = context_course::instance($courseid);
         self::validate_context($coursecontext);
         require_capability('local/coursepilot:use', $coursecontext);
-        // Native Berechtigungspruefung vorgezogen (Spec 0015 §3.4, wie
-        // {@see update_module_settings}): can_add_moduleinfo() prueft dieselbe
-        // Capability spaeter ohnehin erneut - der Aufruf hier ist billig und
-        // stellt sicher, dass eine fehlende Bearbeiten-Berechtigung nicht
-        // hinter einer Feldvalidierungsmeldung versteckt bleibt.
+        // Check native editing permissions early (Spec 0015 §3.4), as in
+        // update_module_settings. can_add_moduleinfo checks again later;
+        // this prevents field validation from masking missing permissions.
         require_capability('moodle/course:manageactivities', $coursecontext);
 
         return $coursecontext;
     }
 
     /**
-     * Die Katalogklasse fuer $modname, sofern der Schreibweg dieser Endpunkt
-     * ist (Spec 0015 §3.1: manche Aktivitaetsarten haben ein eigenes
-     * Einzelwerkzeug, z.B. quiz -> update_quiz_settings) - identische Pruefung
-     * wie {@see update_module_settings::catalog_for()}.
+     * Catalog class for $modname, provided this endpoint is its write route
+     * (Spec 0015 §3.1). Some types use dedicated tools, e.g. quiz. Same check
+     * as update_module_settings::catalog_for().
      *
      * @param string $modname
      * @return class-string<module_catalog>
@@ -201,9 +183,9 @@ final class create_module extends external_api {
     }
 
     /**
-     * Ist-Stand nach dem Anlegen als assoziatives Array - dieselbe
-     * Zusammenstellung wie {@see get_module_settings}, wiederverwendet statt
-     * dupliziert (wie {@see update_module_settings::read_settings()}).
+     * Return current state after creation as an associative array, reusing
+     * get_module_settings rather than duplicating it, like
+     * {@see update_module_settings::read_settings()}.
      *
      * @param int $cmid
      * @return array
@@ -222,12 +204,10 @@ final class create_module extends external_api {
     }
 
     /**
-     * Die tatsaechlich vom Patch/Buendel gesetzten Felder mit ihrem
-     * persistierten Wert (nicht dem rohen Eingabewert - Moodle normalisiert
-     * manche Felder beim Schreiben, z.B. url_fix_submitted_url()), plus
-     * ausgeloeste Nebenwirkungen. Katalog-Defaults, die die Lehrkraft nicht
-     * genannt hat, tauchen hier bewusst nicht auf - sie sind stille
-     * Voreinstellung, keine "Aenderung".
+     * Report fields explicitly set by the call or bundle using persisted
+     * values, including Moodle normalization (e.g. url_fix_submitted_url()),
+     * and triggered side effects. Omit catalog defaults not named by the
+     * teacher: they are implicit settings, not requested changes.
      *
      * @param string $modname
      * @param array $merged
@@ -255,8 +235,8 @@ final class create_module extends external_api {
     }
 
     /**
-     * Die Lehrkraft-deutsche Anlegemeldung (Spec 0015 §3.4: "die Antwort ist
-     * die Aenderungsmeldung").
+     * Localized creation message (Spec 0015 §3.4: the response is the
+     * change report).
      *
      * @param string $modname
      * @param array $createdfields
@@ -268,7 +248,7 @@ final class create_module extends external_api {
         foreach ($createdfields as $field) {
             $parts[] = '"' . $field['field'] . '" = ' . $field['value_json'];
         }
-        $message = 'Aktivität "' . $modname . '" angelegt';
+        $message = 'Activity "' . $modname . '" created';
         $message .= $parts ? (': ' . implode(', ', $parts) . '.') : '.';
 
         if ($sideeffects) {
@@ -285,7 +265,7 @@ final class create_module extends external_api {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID of the newly created activity'),
             'modname' => new external_value(PARAM_TEXT, 'Activity type'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German creation message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing creation message'),
             'created_fields' => new external_multiple_structure(
                 new external_single_structure([
                     'field' => new external_value(PARAM_TEXT, 'Field name'),
@@ -294,7 +274,7 @@ final class create_module extends external_api {
                 'One entry per field set by the patch/bundle - silent catalog defaults are deliberately absent here'
             ),
             'side_effects' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                new external_value(PARAM_TEXT, 'Teacher-facing side-effect note'),
                 'Triggered side effects from catalog category 5, empty when none were triggered'
             ),
         ]);

@@ -24,21 +24,20 @@ use local_coursepilot\previous_location;
 use local_coursepilot\context_area;
 use local_coursepilot\context_files;
 use local_coursepilot\personal_data;
+use local_coursepilot\storage_anchor;
 
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Liest eine Datei aus dem Kontextbereich der aufrufenden Lehrkraft (Issue
- * #343). V1-Vertrag: nur lesen. Schreiben ist ueber diese Oberflaeche
- * technisch nicht moeglich - es gibt keine entsprechende Funktion.
+ * Reads a file from the calling teacher's context area (Issue #343).
+ * The original read-only contract exposes no write operation.
  *
- * Ortsneutral seit Issue #538 (Spec 0021): dieses Werkzeug kennt kein
- * "etag"-Sonderfeld mehr - {@see context_area::read()}/{@see context_area::read_previous_location()}
- * liefern den Pruefwert bereits als "contenthash", gleich ob Moodle- oder
- * externer Ort.
+ * Location-independent since #538 (Spec 0021): {@see context_area::read()}
+ * and {@see context_area::read_previous_location()} return "contenthash"
+ * for Moodle and external storage, with no separate "etag" field.
  *
- * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "previous_location"
- * statt "vorheriger_ort", derselbe Durchstich wie bei {@see list_context_files}.
+ * Declared directly in English (#571, Spec 0025 §A): "previous_location"
+ * replaces "vorheriger_ort", as in {@see list_context_files}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -51,11 +50,11 @@ class read_context_file extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'path' => new external_value(PARAM_PATH, 'File path relative to the context area, e.g. "vorlagen.md"'),
+            'path' => new external_value(PARAM_PATH, 'File path relative to the context area, e.g. "templates.md"'),
             'previous_location' => new external_value(
                 PARAM_BOOL,
                 'Optional: true reads from the previous location instead of the current one (read-only switch for '
-                    . 'the Altbestand/legacy stock, Issue #498) - only takes effect while a legacy stock is open',
+                    . 'the legacy stock, Issue #498) - only takes effect while a legacy stock is open',
                 VALUE_DEFAULT,
                 false
             ),
@@ -66,10 +65,10 @@ class read_context_file extends external_api {
      * @param string $path
      * @param bool $previouslocation
      * @return array
-     * @throws \moodle_exception invalidcontextpath fuer einen leeren Pfad oder
-     *         ein "."/".."-Segment; contextfilenotfound, wenn die Datei fehlt;
-     *         previouslocationclosed, wenn "previous_location" ohne offenen Altbestand
-     *         gesetzt ist.
+     * @throws \moodle_exception invalidcontextpath for an empty path or
+     *         a "."/".." segment; contextfilenotfound for missing files;
+     *         previouslocationclosed if "previous_location" is requested without
+     *         open legacy storage.
      */
     public static function execute(string $path, bool $previouslocation = false): array {
         $params = self::validate_parameters(
@@ -77,26 +76,35 @@ class read_context_file extends external_api {
             ['path' => $path, 'previous_location' => $previouslocation]
         );
 
-        // Kein zusaetzliches 'local/coursepilot:use' o.ae. (anders als
-        // list_courses/get_course_catalog): der Kontextbereich ist an die
-        // Person gebunden, nicht an einen Kurs - das Standard-Nutzerrecht
-        // genuegt laut Issue #343. validate_context() erzwingt require_login()
-        // fuer den eigenen Nutzerkontext; die globale Fernzugriffs-Capability
-        // 'local/coursepilot:useremote' prueft bereits
-        // dispatcher::handle_authorized() vor jedem Tool-Aufruf.
+        // No additional local/coursepilot:use capability is needed (unlike course
+        // tools): the context area belongs to the person, so standard user rights
+        // suffice (#343). validate_context() requires login for their own context;
+        // dispatcher::handle_authorized() checks global remote access for every call.
         $context = context_files::own_context();
         self::validate_context($context);
 
-        $file = $params['previous_location']
-            ? context_area::read_previous_location($params['path'], previous_location::require_open_location())
-            : context_area::read($params['path']);
+        $path = storage_anchor::normalise_client_path(context_files::area(), $params['path']);
+        $previous = $params['previous_location'] ? previous_location::require_open_location() : null;
+        $file = $previous ? context_area::read_previous_location($path, $previous) : context_area::read($path);
+        // Read old names only when the canonical file is absent. Do not catch
+        // access/storage errors or cross the selected current/previous location.
+        $legacyname = [
+            'templates.md' => 'vorlagen.md',
+            'notepad.md' => 'merkzettel.md',
+            'CONTEXT-people.md' => 'CONTEXT.personen.md',
+        ][basename($path)] ?? null;
+        if ($file === null && $legacyname !== null) {
+            $legacypath = (dirname($path) === '.' ? '' : dirname($path) . '/') . $legacyname;
+            $file = $previous
+                ? context_area::read_previous_location($legacypath, $previous)
+                : context_area::read($legacypath);
+        }
         if ($file === null) {
             throw new \moodle_exception('contextfilenotfound', 'local_coursepilot', '', $params['path']);
         }
 
-        // Schalter fuer personenbezogene Kontextdaten (#344, ADR 0011):
-        // wirkt auf der Frontmatter-Markierung, nicht auf dem Inhalt -
-        // siehe local_coursepilot\personal_data.
+        // Personal-data switch (#344, ADR 0011): checks the frontmatter marker,
+        // not a content-based guess; see local_coursepilot\personal_data.
         if (personal_data::is_marked($file['content']) && !personal_data::allowed()) {
             throw new \moodle_exception('contextfilelocked', 'local_coursepilot', '', $params['path']);
         }
@@ -122,8 +130,7 @@ class read_context_file extends external_api {
             'mimetype' => new external_value(PARAM_RAW, 'MIME type'),
             'size' => new external_value(PARAM_INT, 'File size in bytes'),
             'content' => new external_value(PARAM_RAW, 'File content'),
-            // Additiv ergaenzt (Spec 0016 Paragraph 2): Grundlage fuer
-            // Gleichzeitigkeitsschutz und Handaenderungs-Erkennung.
+            // Added in Spec 0016 §2 for concurrency protection and manual-change detection.
             'contenthash' => new external_value(PARAM_ALPHANUMEXT, 'Content checksum of the file'),
             'timemodified' => new external_value(PARAM_INT, 'Time of last change'),
         ]);

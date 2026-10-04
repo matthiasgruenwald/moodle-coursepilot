@@ -22,10 +22,9 @@ use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Statusprüfung Schritt 3 des WebDAV-Schrittkatalogs (Issue #499, Spec #486
- * §12): geprüft an der Wirkung (`has_capability`) je Person mit aktiver
- * Coursepilot-Verbindung. `NA` ohne Verbindungen oder solange Schritt 1 aus
- * ist, `OK`/`WARNING` je nach Wirkung.
+ * WebDAV setup check 3 (Issue #499, Spec #486 §12): effective capability
+ * per connected user. Return NA without connections or an active repository,
+ * otherwise OK/WARNING according to has_capability().
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

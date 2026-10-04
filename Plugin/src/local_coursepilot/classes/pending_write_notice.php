@@ -17,18 +17,18 @@
 namespace local_coursepilot;
 
 /**
- * Die Ausstandsnotiz (Issue #492, ADR 0023, Spec #486 §8/§10): die
- * Aufzeichnung gescheiterter Schreibvorgaenge am festen Anker, neben dem
- * Kontextpointer ({@see storage_anchor::PENDING_FILENAME}) - dort, wo
- * Coursepilot auch dann schreiben kann, wenn der externe Speicher schweigt
+ * The pending-write note (Issue #492, ADR 0023, Spec #486 §8/§10): the
+ * record of failed write operations at the fixed anchor, next to the
+ * context pointer ({@see storage_anchor::PENDING_FILENAME}) - where
+ * Coursepilot can write even when the external storage is silent
  * (CONTEXT.md "Ausstandsnotiz").
  *
- * Ein Eintrag je gescheitertem Vorgang, nie den Inhalt: Kennung, Kurs-ID,
- * Zeitpunkt, relativer Pfad, Vorgang (anlegen/ueberschreiben/anhaengen/unbekannt) und
- * Fehlerklasse (Issue #516, Spec #486 §8). Verschwindet nur ausdruecklich - durch Nachtragen
- * ({@see pointer_writer}, ueber `pending_entry=<Kennung>`, #571: seither englisch
- * deklariert) oder durch ausdrueckliches Verwerfen
- * ({@see \local_coursepilot\external\dismiss_pending_entry}) - nie durch Zeitablauf.
+ * One entry per failed operation, never the content: identifier, course ID,
+ * timestamp, relative path, operation (create/overwrite/append/unknown) and
+ * error class (Issue #516, Spec #486 §8). Disappears only explicitly - by making it up
+ * ({@see pointer_writer}, via `pending_entry=<identifier>`, #571: declared in
+ * English since then) or by explicit dismissal
+ * ({@see \local_coursepilot\external\dismiss_pending_entry}) - never by the passage of time.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -37,18 +37,18 @@ namespace local_coursepilot;
 final class pending_write_notice {
 
     /**
-     * Vermerkt einen gescheiterten Schreibvorgang und liefert die neu
-     * vergebene Kennung.
+     * Records a failed write operation and returns the newly
+     * assigned identifier.
      *
-     * @param string $path Relativer Client-Pfad der Zieldatei, nie der Inhalt.
-     * @param string $operation Eine der {@see pending_write_translation}::OP_*-Konstanten.
-     * @param string $errorclass Fehlerklasse (z.B. {@see \local_coursepilot\webdav\webdav_error}-Konstante
-     *        oder ein webdavinstance*-Fehlerschluessel), nie ein Freitext.
-     * @param int $courseid Kurs-ID (Issue #516, Spec #486 §8) - 0, wenn der
-     *        gescheiterte Aufruf keinem Kurs zugeordnet war.
-     * @return string Neu vergebene Kennung.
-     * @throws \moodle_exception pendingnotequotaexceeded, wenn die Notiz selbst
-     *         nicht mehr geschrieben werden kann (Private-Files-Quote voll).
+     * @param string $path Relative client path of the target file, never the content.
+     * @param string $operation One of the {@see pending_write_translation}::OP_* constants.
+     * @param string $errorclass Error class (e.g. a {@see \local_coursepilot\webdav\webdav_error} constant
+     *        or a webdavinstance* error key), never free text.
+     * @param int $courseid Course ID (Issue #516, Spec #486 §8) - 0 if the
+     *        failed call was not assigned to a course.
+     * @return string Newly assigned identifier.
+     * @throws \moodle_exception pendingnotequotaexceeded if the note itself
+     *         can no longer be written (Private Files quota full).
      */
     public static function record(string $path, string $operation, string $errorclass, int $courseid): string {
         $entries = self::all();
@@ -65,19 +65,19 @@ final class pending_write_notice {
     }
 
     /**
-     * Verwirft einen Eintrag - genutzt sowohl beim Nachtragen (erfolgreiches
-     * Schreiben mit `pending_entry=<Kennung>`, #571: seither englisch
-     * deklariert) als auch beim ausdruecklichen Verwerfen durch die Lehrkraft
-     * ({@see \local_coursepilot\external\dismiss_pending_entry}): dieselbe
-     * Operation, zwei Anlaesse (ADR 0023 Punkt 3).
+     * Dismisses an entry - used both when making it up (successful
+     * write with `pending_entry=<identifier>`, #571: declared in English
+     * since then) and when the teacher explicitly dismisses it
+     * ({@see \local_coursepilot\external\dismiss_pending_entry}): the same
+     * operation, two occasions (ADR 0023 point 3).
      *
-     * Eine leere oder unbekannte Kennung ist ein folgenloser No-Op (Issue
-     * #506) - `write_context_file`/`append_context_file` rufen deshalb direkt
-     * durch, ohne den optionalen "pending_entry"-Parameter selbst erst auf ""
-     * zu pruefen.
+     * An empty or unknown identifier is a harmless no-op (Issue
+     * #506) - `write_context_file`/`append_context_file` therefore call
+     * straight through, without first checking the optional "pending_entry" parameter
+     * for "" themselves.
      *
      * @param string $identifier
-     * @return bool true, wenn ein Eintrag mit dieser Kennung existierte und entfernt wurde.
+     * @return bool true if an entry with this identifier existed and was removed.
      */
     public static function dismiss(string $identifier): bool {
         $entries = self::all();
@@ -90,9 +90,9 @@ final class pending_write_notice {
     }
 
     /**
-     * Alle offenen Eintraege, gebuendelt je Zieldatei, die aeltesten zuerst -
-     * fuer den Handshake ({@see \local_coursepilot\external\list_skills}). Rein
-     * lokal, ohne Netzzugriff: liest ausschliesslich die Notizdatei selbst.
+     * All open entries, bundled per target file, oldest first -
+     * for the handshake ({@see \local_coursepilot\external\list_skills}). Purely
+     * local, without network access: reads only the note file itself.
      *
      * @return array<int, array{path: string, entries: array<int, array{
      *         identifier: string, timestamp: int, operation: string, error_class: string, course_id: int}>}>
@@ -105,8 +105,8 @@ final class pending_write_notice {
                 'timestamp' => $entry['timestamp'],
                 'operation' => $entry['operation'],
                 'error_class' => $entry['error_class'],
-                // Rueckwaertskompatibel (Issue #516): ein vor diesem Issue
-                // geschriebener Eintrag kennt das Feld noch nicht.
+                // Backward compatible (Issue #516): an entry written before this
+                // issue does not know the field yet.
                 'course_id' => $entry['course_id'] ?? 0,
             ];
         }
@@ -121,12 +121,12 @@ final class pending_write_notice {
     }
 
     /**
-     * Rohe Eintraege, Kennung => {timestamp, path, operation, error_class, course_id}.
-     * Leer, wenn keine Notizdatei existiert, keine Person angemeldet ist,
-     * oder die Datei kein gueltiges JSON-Objekt enthaelt (ponytail: kein
-     * eigener Reparaturpfad fuer eine von Hand kaputtgemachte Notizdatei -
-     * sie wird plugin-intern geschrieben, ein defekter Bestand ist der
-     * seltene Rand-fall, nicht der Normalfall).
+     * Raw entries, identifier => {timestamp, path, operation, error_class, course_id}.
+     * Empty if no note file exists, no person is logged in,
+     * or the file does not contain a valid JSON object (ponytail: no
+     * dedicated repair path for a note file broken by hand -
+     * it is written plugin-internally, a defective state is the
+     * rare edge case, not the normal case).
      *
      * @return array<string, array{timestamp: int, path: string, operation: string, error_class: string, course_id: int}>
      */
@@ -185,7 +185,7 @@ final class pending_write_notice {
     }
 
     /**
-     * @param array<string, mixed> $existing Bereits vergebene Kennungen (Schluessel).
+     * @param array<string, mixed> $existing Already assigned identifiers (keys).
      * @return string
      */
     private static function generate_identifier(array $existing): string {

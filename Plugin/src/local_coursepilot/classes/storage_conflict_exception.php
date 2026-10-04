@@ -17,13 +17,12 @@
 namespace local_coursepilot;
 
 /**
- * Konflikt beim bedingten Schreiben ueber den Ablage-Vertrag (Issue #536,
- * Spec 0021): der beim Aufruf mitgegebene Pruefwert passt nicht (mehr) zum
- * aktuellen Stand der Datei - jemand hat sie zwischendurch geaendert, oder
- * sie ist inzwischen verschwunden. Eine einzige Meldung fuer beide
- * kuenftigen Orte (Spec 0021: "bei Konflikt ... dieselbe klare Meldung",
- * unabhaengig vom Bereich).
- *
+ * Conflict on a conditional write via the storage contract (issue #536,
+ * spec 0021): the check value passed with the call no longer matches the
+ * current state of the file - someone changed it in the meantime, or
+ * it has since disappeared. A single message for both
+ * future locations (spec 0021: "on conflict ... the same clear message",
+ * independent of the area).
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -31,7 +30,7 @@ namespace local_coursepilot;
 final class storage_conflict_exception extends \moodle_exception {
 
     /**
-     * @param string $path Client-Pfad der betroffenen Datei, fuer die Meldung.
+     * @param string $path Client path of the affected file, for the message.
      */
     public function __construct(string $path) {
         parent::__construct('storageconflict', 'local_coursepilot', '', $path);

@@ -1,131 +1,104 @@
 ---
 name: journal
-description: Lies diese Datei, wenn eine dokumentationswuerdige Entscheidung festgehalten werden soll oder eine Sitzung mit "Setze meine Planung für ... fort" weiterarbeitet.
+description: Read this when recording a reusable decision or resuming a session with a request such as "Continue my planning for ...".
 ---
 
-# Referenz: Journal und Weiterarbeiten
+# Reference: journal and resuming work
 
-Lies diese Datei, wenn eine dokumentationswuerdige Entscheidung festgehalten
-werden soll oder eine Sitzung mit "Setze meine Planung für ... fort"
-weiterarbeitet.
+Read this for decisions worth documenting or requests to resume planning.
+The journal (`CONTEXT.md`) records planning, approvals, Moodle changes and
+context changes in dated Markdown files that are never overwritten:
+memory without Git. Use only the context-area tools.
 
-Das **Journal** (siehe CONTEXT.md) hält Planungen, Freigaben,
-Moodle-Aenderungen und Kontextaenderungen in datierten, nie ueberschriebenen
-Markdown-Dateien im Kontextbereich fest – als Gedaechtnis ohne Git. Gelesen
-und geschrieben wird ausschliesslich über die Werkzeuge aus
-`coursepilot_get_skill("context-area")`.
+## Record decisions during work
 
-## Dokumentationsroutine waehrend der Arbeit
+As in grill-with-docs, record clarified concepts and decisions immediately
+when reusable for later teaching plans, not only at session end. Chat
+history is not reliable memory.
 
-Wie beim `grill-with-docs`-Skill werden geklaerte Begriffe und Entscheidungen
-nicht erst am Sitzungsende gesammelt, sondern sofort dokumentiert, sobald sie
-für spaetere Unterrichtsplanung wiederverwendbar sind. Der Chatverlauf ist
-kein verlaessliches Gedaechtnis.
+Decisions worth recording include:
 
-Als dokumentationswuerdig gelten insbesondere:
+- Learning groups: attainment, group dynamics, differentiation, language
+  level, technical conditions and observations about a class or subgroup.
+- Subject/teaching: competency, focus, material selection/renaming,
+  OCR/image choices, quiz mode, passing thresholds, learning-path gates
+  and deferred material gaps.
+- Moodle plans: sections, phase models, plan deviations, restrictions,
+  digital submissions and deliberately rejected alternatives.
+- Context: applicable class, subgroup, subject profile or teaching folder.
 
-- Lerngruppenentscheidungen: Leistungsstand, Gruppendynamik,
-  Differenzierungsbedarf, Sprachstand, technische Rahmenbedingungen,
-  besondere Beobachtungen zur Klasse oder Teilgruppe.
-- Fach- und Unterrichtsentscheidungen: Kompetenzstand, fachliche
-  Schwerpunkte, Materialauswahl, Materialumbenennungen, OCR-/Bildentscheidungen,
-  Testmodus, Bestehensgrenzen, Lernpfad-Gates, vertagte Materialluecken.
-- Moodle-Planungsentscheidungen: Abschnittsentscheidung, Phasenmodell,
-  Planabweichungen, Freigabe-Voraussetzungen, digitale Abgaben,
-  bewusst verworfene Alternativen.
-- Kontextentscheidungen: welche Klasse, Teilgruppe, Fachprofil oder welcher
-  Unterrichtsordner für eine Planung gilt.
+Procedure:
 
-Vorgehen:
+1. Once a decision is settled, select its journal location below.
+2. If necessary context is missing, clarify required context and offer a
+   low-friction explanatory setup with preview;
+   see `coursepilot_get_skill("context-onboarding")`. After confirmation,
+   create appropriate CONTEXT.md files and record the note immediately.
+3. Append a separate entry through `coursepilot_append_context_file`.
+   Group decisions go to the class journal; teaching/material/quiz/Moodle
+   plans to the teaching-folder journal; context follows existing subject
+   assignment. Never directly overwrite existing journals or context files.
+4. If the decision clarifies a canonical Coursepilot product/domain term,
+   update repository CONTEXT.md instead or additionally. Use ADRs sparingly
+   for decisions hard to reverse, surprising without context and involving
+   a real tradeoff.
 
-1. Sobald eine solche Entscheidung geklaert ist, den passenden Speicherort
-   bestimmen (siehe Journal-Ablage unten).
-2. Fehlt der noetige Kontext, nicht still ohne Gedaechtnis weiterarbeiten:
-   kurz den **Pflichtkontext** klaeren und ein niedrigschwelliges
-   **Erklaerendes Setup** mit Vorschau anbieten (siehe
-   `coursepilot_get_skill("context-onboarding")`). Nach Bestätigung werden die
-   passenden `CONTEXT.md`-Dateien angelegt und die Notiz direkt ins Journal
-   geschrieben.
-3. Die Notiz als eigenen Journal-Eintrag per `coursepilot_append_context_file`
-   an die passende Journal-Datei anhaengen (siehe Journal-Ablage unten für
-   den Scope: Lerngruppe -> Klassenjournal; Unterricht, Material, Test,
-   Moodle-Planung -> Unterrichtsordner-Journal; Kontext je nach vorhandener
-   Fachzuordnung). Bestehende Journal- oder Kontextdateien werden nie direkt
-   überschrieben.
-4. Wenn die Entscheidung einen kanonischen Produkt-/Domainbegriff für
-   Coursepilot selbst klaert, stattdessen oder zusätzlich `CONTEXT.md` im Repo
-   aktualisieren. ADRs nur sparsam nutzen, wenn die Entscheidung schwer
-   rueckgaengig, ohne Kontext ueberraschend und das Ergebnis eines echten
-   Trade-offs ist.
+Keep entries concise but reusable: what, why, which group/subtopic and
+what remains open.
 
-Einträge knapp, aber später nutzbar formulieren: Was wurde entschieden,
-warum, für welche Lerngruppe oder welches Unterthema, und was bleibt offen?
+## Journal location
 
-## Journal-Ablage
+Daily `journal-YYYY-MM-DD.md` files are relative to the context root;
+see context-area storage layout.
 
-Die Journal-Datei des Tages (`journal-YYYY-MM-DD.md`) liegt relativ zur
-Kontextwurzel (siehe "Ablageordnung" in `coursepilot_get_skill("context-area")`):
-
-| scope | Ablage (relativ zur Kontextwurzel) |
+| Scope | Relative location |
 |---|---|
-| `'klasse'` | `<schuljahr>/<klasse>/journal-<datum>.md` – allgemeine Lerngruppenentwicklung (faecheruebergreifend) |
-| `'unterrichtsordner'` | `<schuljahr>/<klasse>/<unterrichtsordner>/journal-<datum>.md` – fachliche Planung, Moodle-Umsetzung, Material, Testfragen |
+| Class | `<school-year>/<class>/journal-<date>.md` for cross-subject group development |
+| Teaching folder | `<school-year>/<class>/<teaching-folder>/journal-<date>.md` for subject plans, Moodle implementation, materials and questions |
 
-Die **Journal-Ablage** folgt automatisch dem Kontextort der Aenderung. Nur bei
-echter Mehrdeutigkeit (z.B. unklar, ob eine Notiz die ganze Klasse oder nur
-ein Fach betrifft) kurz nachfragen – sonst automatisch entscheiden. Ein
-Schuljahresjournal ist kein Standard.
+Follow the changed context's location automatically. Ask only for real
+ambiguity, such as whether a note concerns the whole class or one subject.
+A school-year journal is not the default.
 
-## Wann entstehen Journal-Einträge?
+## When to create entries
 
-Journal-Einträge entstehen waehrend des gesamten Workflows, nicht nur nach
-Moodle-Schreibzugriff:
+Throughout the workflow, not only after Moodle writes:
 
-- direkt nach jeder dokumentationswuerdigen Lerngruppen-, Fach-, Material-,
-  Test- oder Moodle-Planungsentscheidung (siehe Dokumentationsroutine oben),
-- nach Kontext-Onboarding oder bewusster Ergaenzung eines Profils,
-- nach Material-Ingestion, Umbenennung, OCR-Kontrolle oder Bildausschnitt,
-- nach jedem freigegebenen und ausgefuehrten Implementierungsplan.
+- Immediately after reusable group, subject, material, quiz or planning decisions.
+- After context onboarding or deliberate profile additions.
+- After material ingestion, renaming, OCR checks or cropping.
+- After each approved and executed implementation plan.
 
-Nach jedem freigegebenen und ausgefuehrten Implementierungsplan (siehe
-`coursepilot_get_skill("implementation-plan-workflow")`) wird automatisch ein
-**Umsetzungsbericht** als neuer Journal-Eintrag angehängt:
+After each such plan (`implementation-plan-workflow`), automatically append
+an implementation report:
 
-1. Der Bericht wird als Markdown mit den Abschnitten "Erfolge", "Fehler" und
-   "Offene Nacharbeit" formatiert. Erfolge nennen Aktivitätstyp und
-   Aktivitaetsname zuerst; Moodle-IDs/Links stehen nur als technische
-   Referenz dahinter. Interne Tool- oder MCP-Korrekturen gehoeren nicht in
-   den Bericht, solange sie keine Auswirkung auf Ergebnis, Unsicherheit oder
-   offene Nacharbeit haben. Ruecklesechecks werden als fachliche Wirkung
-   formuliert, nicht als technische Rohdatenliste: zum Beispiel "Neue
-   Textseite ist sichtbar, alter Merkkasten ist verborgen" statt "847
-   sichtbar, 362 verborgen".
-2. Der Bericht wird per `coursepilot_append_context_file` an die Journal-Datei
-   des Tages angehängt. Existiert die Datei noch nicht, wird sie neu
-   angelegt. Bestehende Einträge werden **nie** überschrieben, auch nicht
-   bei mehreren Einträgen am selben Tag.
+1. Use Markdown sections Successes, Errors and Remaining work, translated
+   into the teacher's language. Name activity type and title first, then
+   IDs/links as technical references. Omit internal tool/MCP corrections
+   unless they affect results, uncertainty or remaining work. Summarize
+   readback by subject effect: "New page visible, old note box hidden",
+   rather than raw IDs and flags.
+2. Append to the day's journal through `coursepilot_append_context_file`.
+   Create it if missing. Never overwrite entries, including multiple
+   entries on the same day.
 
-Auch ausserhalb von Umsetzungsberichten gilt: jede Journal-Notiz läuft über
-`coursepilot_append_context_file`, nie durch direktes Ueberschreiben der Datei.
+Every journal note uses append, not direct file replacement.
 
-## Weiterarbeiten-Routine (Sitzungsstart)
+## Resuming work at session start
 
-Bei natuerlichen Startformulierungen wie "Setze meine Planung für 7a Nawi
-fort" oder "Wo standen wir bei 7a?":
+For requests such as "Continue planning for 7a science" or "Where were we
+with 7a?":
 
-1. Offene `ausstände` aus `coursepilot_list_skills` melden (siehe
-   `coursepilot_get_skill("context-area")`) — vor und getrennt von der
-   Offenen Nacharbeit unten, kein gemeinsamer Absatz.
-2. Passenden Kontext laden (Lerngruppenprofil/Fachprofil, siehe
-   `coursepilot_get_skill("context-onboarding")`).
-3. Relevante Journal-Dateien sammeln (Klassen- und/oder
-   Unterrichtsordner-Journal der letzten Einträge, per
-   `coursepilot_read_context_file`).
-4. Diese Dateien nach Einträgen im Abschnitt "Offene Nacharbeit" durchsuchen.
-5. Gefundene Punkte werden der Lehrkraft als **Nacharbeitsvorschlag**
-   zusammengefasst angeboten – z.B. "Aus dem letzten Eintrag (2026-06-10) ist
-   noch offen: ... Soll das jetzt angegangen werden?"
+1. Report `pending_entries` from `coursepilot_list_skills` first and in a
+   separate paragraph from remaining work; see `context-area`.
+2. Load the applicable learning-group/subject profiles; see
+   `coursepilot_get_skill("context-onboarding")`.
+3. Read recent class and/or teaching-folder journals through
+   `coursepilot_read_context_file`.
+4. Find entries in Remaining work, including existing headings in the
+   teacher's language.
+5. Offer a follow-up proposal, e.g. "The last entry on 2026-06-10 left ...
+   open. Shall we tackle that now?" Use the teacher's language.
 
-**Wichtig:** Die Weiterarbeiten-Routine arbeitet offene Punkte NICHT automatisch
-ab. Sie macht nur einen Vorschlag; die Lehrkraft entscheidet, ob und womit
-weitergearbeitet wird.
+Do not automatically execute unfinished work. The teacher chooses whether
+and what to resume.

@@ -22,10 +22,9 @@ use local_coursepilot\history\version_writer;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Beobachter fuer den Aenderungsverlauf (#385, Spec 0015 §10.8): serialisiert
- * nur den Ist-Stand in die Schnappschuss-Tabellen, ruft weder MCP-Werkzeuge
- * noch Webservices auf. Loescht ausserdem den Verlauf mit, wenn eine
- * Aktivitaet oder ein Kurs geloescht wird (#387, Spec 0015 §10.7).
+ * Change history observer (#385, Spec 0015 §10.8): serializes current state
+ * to snapshot tables without calling MCP tools or web services. Also deletes
+ * history when an activity or course is deleted (#387, Spec 0015 §10.7).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -34,9 +33,9 @@ defined('MOODLE_INTERNAL') || die();
 final class observer {
 
     /**
-     * Version 1 entsteht beim Anlegen (#386, Spec 0015 §10.3): fuer Aktivitaeten,
-     * die es erst seit Einfuehrung des Verlaufs gibt, greift beim ersten
-     * course_module_updated deshalb nicht mehr die Vorgefunden-Logik.
+     * Version 1 is captured on creation (#386, Spec 0015 §10.3). Activities
+     * created since history was introduced therefore bypass discovered-state
+     * backfill on their first course_module_updated event.
      *
      * @param \core\event\course_module_created $event
      * @return void
@@ -46,6 +45,8 @@ final class observer {
     }
 
     /**
+     * Capture the activity state after a native Moodle update (#385).
+     *
      * @param \core\event\course_module_updated $event
      * @return void
      */
@@ -54,9 +55,9 @@ final class observer {
     }
 
     /**
-     * Aktivitaets-Kaskade (#387): eine geloeschte Aktivitaet nimmt ihren
-     * Verlauf mit. Der Papierkorb haelt den Inhalt ohnehin sieben Tage als
-     * .mbz - der Aenderungsverlauf ist kein zweiter Papierkorb.
+     * Activity cascade (#387): deleting an activity deletes its history.
+     * The recycle bin already retains content as .mbz for seven days;
+     * change history is not a second recycle bin.
      *
      * @param \core\event\course_module_deleted $event
      * @return void
@@ -66,10 +67,9 @@ final class observer {
     }
 
     /**
-     * Kurs-Kaskade (#387): ein geloeschter Kurs nimmt seinen Verlauf mit.
-     * course_modules ist zu diesem Zeitpunkt bereits geloescht - die
-     * Zuordnung laeuft ueber die mitgeschriebene courseid, siehe
-     * {@see \local_coursepilot\history\version_writer::capture()}.
+     * Course cascade (#387): deleting a course deletes its history.
+     * course_modules has already been deleted, so association uses the stored
+     * courseid; see {@see \local_coursepilot\history\version_writer::capture()}.
      *
      * @param \core\event\course_deleted $event
      * @return void
@@ -79,16 +79,13 @@ final class observer {
     }
 
     /**
-     * Der Anordnungs-Stand eines Tests (#396, Spec 0015 §10): ein Beobachter
-     * fuer alle 16 mod_quiz-Struktur-Ereignisse (siehe db/events.php), die
-     * quiz_slots/question_references/quiz_sections/quiz_feedback aendern
-     * koennen. Alle 16 werden mit derselben Ereignis-Kontextklasse
-     * (Modulkontext, siehe structure.php: durchgaengig
-     * $this->quizobj->get_context()) ausgeloest - die cmid steckt deshalb
-     * immer im Kontext, nicht in einem modulspezifisch unterschiedlichen
-     * Event-Feld. Nutzt denselben capture_on_update()-Weg wie
-     * course_module_updated (#385): eine Bestandsaktivitaet ohne bisherigen
-     * Verlauf bekommt dabei zuerst rueckwirkend eine Vorgefunden-Version 1.
+     * Quiz arrangement state (#396, Spec 0015 §10): one observer for all
+     * 16 mod_quiz structure events (see db/events.php) that can change
+     * quiz_slots/question_references/quiz_sections/quiz_feedback. All use module
+     * context (structure.php: $this->quizobj->get_context()), so cmid always
+     * comes from context rather than varying event fields. Shares
+     * capture_on_update() with course_module_updated (#385); existing activities
+     * without history first receive a backfilled discovered version 1.
      *
      * @param \core\event\base $event
      * @return void

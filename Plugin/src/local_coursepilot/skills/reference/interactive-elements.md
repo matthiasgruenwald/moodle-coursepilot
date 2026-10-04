@@ -1,85 +1,83 @@
 ---
 name: interactive-elements
-description: Lies diese Datei, wenn eine Aufgabe Eingabefelder, Checkboxen, Bewertungsskalen oder Tabellen mit Eingabefeldern enthalten soll.
+description: Read this for assignment input fields, checkboxes, rating scales or tables with inputs.
 ---
 
-# Referenz: Interaktive Elemente in Aufgaben
+# Reference: interactive assignment elements
 
-Lies diese Datei, wenn eine Aufgabe (`coursepilot_create_module` mit
-`modname="assign"`) Eingabefelder, Checkboxen, Bewertungsskalen oder Tabellen
-mit Eingabefeldern enthalten soll.
+Use for assign activities containing inputs, checkboxes, rating scales
+or tables with inputs. Translate prompts into the course language.
 
-## Texteingabe
+## Text input
 
 ```html
-<!-- Kurze Antwort -->
+<!-- Short answer -->
 <input type="text" style="width:90%;padding:6px;border:1px solid #bbb;border-radius:4px;"
-  placeholder="[OFFENER HINWEIS WAS EINZUTRAGEN IST – KEINE LOESUNG!]"/>
+  placeholder="[OPEN PROMPT FOR WHAT TO ENTER, NOT THE ANSWER]"/>
 
-<!-- Lange Antwort -->
+<!-- Long answer -->
 <textarea style="width:100%;border:1px solid #bbb;border-radius:4px;padding:8px;font-family:Arial;font-size:14px;" rows="3"
-  placeholder="[OFFENER HINWEIS – z.B. 'Beschreibe in eigenen Worten...' – KEINE LOESUNG!]"></textarea>
+  placeholder="[OPEN PROMPT, e.g. 'Describe in your own words...', NOT THE ANSWER]"></textarea>
 ```
 
-## Checkbox und Radio
+## Checkbox and radio
 
 ```html
-<!-- Abhakbare Checkbox (NIEMALS &#9744; verwenden – das ist statisch!) -->
+<!-- Interactive checkbox; never use the static &#9744; symbol -->
 <input type="checkbox" style="width:20px;height:20px;cursor:pointer;accent-color:#2E7D32;"/>
 
-<!-- Bewertungsskala (pro Zeile eigenen name-Wert!) -->
-<input type="radio" name="bewertung_zeile1" value="1"/> 1 &nbsp;
-<input type="radio" name="bewertung_zeile1" value="2"/> 2 &nbsp;
-<input type="radio" name="bewertung_zeile1" value="3"/> 3
+<!-- Rating scale: a distinct name for each row -->
+<input type="radio" name="rating_row1" value="1"/> 1 &nbsp;
+<input type="radio" name="rating_row1" value="2"/> 2 &nbsp;
+<input type="radio" name="rating_row1" value="3"/> 3
 ```
 
-## PFLICHTREGELN fuer Placeholder-Texte
+## Mandatory placeholder rules
 
-**FALSCH – verrät die Lösung:**
+**Incorrect: reveals the answer:**
 ```html
-placeholder="T = 0,2 Sekunden"
+placeholder="T = 0.2 seconds"
 placeholder="delay = 100ms"
 placeholder="board = esp32dev"
-placeholder="z.B. GET"
-placeholder="z.B. arduino"
+placeholder="e.g. GET"
+placeholder="e.g. arduino"
 ```
 
-**RICHTIG – gibt nur Hinweis auf Format/Denkrichtung:**
+**Correct: hints only at format or thinking direction:**
 ```html
-placeholder="Berechne T aus der Frequenz..."
-placeholder="T/2 ergibt den delay-Wert"
-placeholder="Welches Board wird verwendet?"
-placeholder="Welche HTTP-Methode liest Daten?"
-placeholder="Welches Framework nutzt PlatformIO?"
+placeholder="Calculate T from the frequency..."
+placeholder="T/2 gives the delay value"
+placeholder="Which board is used?"
+placeholder="Which HTTP method reads data?"
+placeholder="Which framework does PlatformIO use?"
 ```
 
-**GOLDENE REGEL fuer Placeholders:**
-Ein Placeholder darf NIEMALS die gesuchte Antwort enthalten oder direkt darauf hinweisen.
-Er darf nur sagen WAS einzutragen ist, nicht WAS die Antwort ist.
-Bei Zweifeln: lieber generisch ("Deine Antwort...") als zu konkret.
+**Golden rule:** placeholders describe what to enter without containing
+or directly pointing to the answer. When unsure, use a generic prompt
+such as "Your answer..." rather than a revealing one.
 
-## Tabellen mit Eingabefeldern
+## Tables with input fields
 
 ```html
-<!-- RICHTIG: Nur Anker vorgeben, Inhalte durch SuS erarbeiten -->
+<!-- Provide anchors only; learners work out the content -->
 <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-  <thead style="background:[PHASENFARBE];color:white;">
+  <thead style="background:[PHASE_COLOR];color:white;">
     <tr>
-      <th style="padding:10px;">[BEKANNTE SPALTE]</th>
-      <th style="padding:10px;">[ZU ERARBEITENDE SPALTE 1]</th>
-      <th style="padding:10px;">[ZU ERARBEITENDE SPALTE 2]</th>
+      <th style="padding:10px;">[KNOWN_COLUMN]</th>
+      <th style="padding:10px;">[COLUMN_TO_COMPLETE_1]</th>
+      <th style="padding:10px;">[COLUMN_TO_COMPLETE_2]</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td style="padding:10px;border:1px solid #ddd;">[VORGEGEBENER WERT]</td>
+      <td style="padding:10px;border:1px solid #ddd;">[GIVEN_VALUE]</td>
       <td style="padding:10px;border:1px solid #ddd;">
         <input type="text" style="width:90%;padding:4px;border:1px solid #bbb;border-radius:4px;"
-          placeholder="[HINWEIS WAS ZU BERECHNEN/RECHERCHIEREN IST]"/>
+          placeholder="[PROMPT_FOR_CALCULATION_OR_RESEARCH]"/>
       </td>
       <td style="padding:10px;border:1px solid #ddd;">
         <input type="text" style="width:90%;padding:4px;border:1px solid #bbb;border-radius:4px;"
-          placeholder="[HINWEIS WAS ZU BERECHNEN/RECHERCHIEREN IST]"/>
+          placeholder="[PROMPT_FOR_CALCULATION_OR_RESEARCH]"/>
       </td>
     </tr>
   </tbody>

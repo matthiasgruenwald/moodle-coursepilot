@@ -17,11 +17,10 @@
 namespace local_coursepilot;
 
 /**
- * Der ortsneutrale Ausfall-Uebersetzer (Issue #540, ADR 0023): beide Orte -
- * {@see webdav_storage_port} und {@see context_area}'s Moodle-Zweig - sowie
- * unveraendert {@see pointer_writer} bauen ihre Ausstandsantwort ueber
- * {@see pending_write_translation::record_and_translate()}. Dieser Test deckt den
- * Uebersetzer isoliert ab, ohne WebDAV oder Private Files anzufassen.
+ * Location-neutral failure translation (Issue #540, ADR 0023).
+ * webdav_storage_port, context_area's Moodle branch and pointer_writer
+ * share record_and_translate(). Test this translator independently
+ * of WebDAV and Private Files.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -37,9 +36,9 @@ final class pending_write_translation_test extends \advanced_testcase {
     }
 
     /**
-     * Vermerkt einen Ausstand mit Kennung, Zeitpunkt, Pfad, Vorgang und
-     * Fehlerart, nie mit Inhalt (Issue #540 Abnahmekriterium 1), und baut die
-     * fuenfteilige Ausfallantwort.
+     * Record a pending entry with identifier, timestamp, path, operation
+     * and error kind, never content (#540, criterion 1), then build the
+     * five-part outage response.
      */
     public function test_records_an_entry_and_builds_the_five_part_message(): void {
         $exception = pending_write_translation::record_and_translate(
@@ -72,9 +71,8 @@ final class pending_write_translation_test extends \advanced_testcase {
     }
 
     /**
-     * Kann die Notiz selbst nicht mehr geschrieben werden (Private-Files-
-     * Quote voll), sagt die Antwort das ausdruecklich, statt die
-     * urspruengliche Ursache zu verschweigen (ADR 0023 Consequences).
+     * If Private Files is full and the note cannot be saved, explicitly
+     * report that rather than hiding the original failure (ADR 0023 consequences).
      */
     public function test_reports_when_the_note_itself_cannot_be_written(): void {
         global $CFG;

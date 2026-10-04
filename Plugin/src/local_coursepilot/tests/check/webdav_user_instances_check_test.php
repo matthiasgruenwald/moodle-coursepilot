@@ -21,9 +21,8 @@ use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Statusprüfung Schritt 2 des WebDAV-Schrittkatalogs (Issue #499, Spec #486
- * §12): `NA` solange Schritt 1 aus ist, sonst `WARNING`, wenn Nutzerinstanzen
- * nicht erlaubt sind, sonst `OK`.
+ * WebDAV setup check 2 (Issue #499, Spec #486 §12): NA if the repository
+ * is disabled, WARNING if user instances are disallowed, otherwise OK.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

@@ -28,18 +28,18 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->dirroot . '/course/lib.php');
 
 /**
- * Bereinigungsplan fuer Tests (#342): baut einen manuellen,
- * nicht-destruktiven Plan fuer Quiz-Slots, die in einer neuen Quizversion
- * entfallen. Coursepilot loescht selbst weder Quiz-Slots noch Fragen - die
- * Antwort nennt Fundstelle (Slot, Frage, Kategorie) und einen direkten
- * Moodle-Link zur manuellen Bearbeitung.
+ * Cleanup plan for quizzes (#342): builds a manual,
+ * non-destructive plan for quiz slots that drop out in a new quiz version.
+ * Coursepilot itself deletes neither quiz slots nor questions - the
+ * response names the location (slot, question, category) and a direct
+ * Moodle link for manual editing.
  *
- * Eigenstaendige Portierung von
- * local_coursepilot\external\get_quiz_cleanup_plan - local_coursepilot hat
- * laut Spec 0012 keine Laufzeitabhaengigkeit auf das andere Plugin (siehe
- * get_course_catalog.php aus #341, derselbe Fund). Vertrag (Feldnamen,
- * nicht-destruktive Handlungsanweisung) bleibt identisch zum lokalen
- * Werkzeug.
+ * Standalone port of
+ * local_coursepilot\external\get_quiz_cleanup_plan - local_coursepilot has
+ * no runtime dependency on the other plugin per Spec 0012 (see
+ * get_course_catalog.php from #341, same finding). Contract (field names,
+ * non-destructive instruction) stays identical to the local
+ * tool.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -110,7 +110,7 @@ class get_quiz_cleanup_plan extends external_api {
                 'questionname' => (string) $row->questionname,
                 'categoryid' => (int) $row->questioncategoryid,
                 'categoryname' => (string) $row->categoryname,
-                'reason' => 'Nicht in der neuen Quizversion vorgesehen. Nur aus diesem Quiz entfernen; die Frage wird nicht aus der Fragensammlung gelöscht und bleibt wiederverwendbar.',
+                'reason' => 'Not part of the new quiz version. Remove it from this quiz only; the question is not deleted from the question bank and stays reusable.',
             ];
         }
 

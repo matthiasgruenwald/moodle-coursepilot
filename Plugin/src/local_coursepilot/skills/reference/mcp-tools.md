@@ -1,145 +1,134 @@
 ---
 name: mcp-tools
-description: Lies diese Datei, wenn du nachschlagen willst, welches Moodle-MCP-Tool für einen Schreib- oder Lesezugriff zustaendig ist.
+description: Read this to identify the Moodle MCP tool responsible for a read or write operation.
 ---
 
-# Referenz: Verfuegbare MCP-Tools
+# Reference: available MCP tools
 
-Lies diese Datei, wenn du nachschlagen willst, welches Moodle-MCP-Tool für
-einen Schreib- oder Lesezugriff zustaendig ist.
+Read this to select the responsible read or write tool.
 
-## Kurs, Abschnitte und Aktivitaeten
+## Courses, sections and activities
 
-| Tool | Verwendung |
+| Tool | Use |
 |---|---|
-| `coursepilot_get_sections` | Abschnitte eines Kurses lesen |
-| `coursepilot_get_modules` | Aktivitaeten + cmids eines Abschnitts lesen |
-| `coursepilot_get_course_catalog` | Kompakte, filterbare read-only Moodle-Katalogansicht für Planung lesen |
-| `coursepilot_update_section` | Abschnittsname und bei Planbezug Abschnittseinstieg setzen |
-| `coursepilot_move_section` | Bestehenden Abschnitt ohne Inhaltsaenderung an eine neue Position verschieben |
-| `coursepilot_move_module` | Bestehende Aktivität per cmid in einen (anderen) Abschnitt oder an eine Position darin verschieben |
-| `coursepilot_create_module` | Aktivität jeden Typs anlegen (`modname` wählt den Typ, z.B. `label`, `page`, `assign`, `url`, `resource`, `folder`, `choice`, `forum`) |
-| `coursepilot_update_module_settings` | Einzelne Einstellungen einer bestehenden Aktivität jeden Typs patchen (Feldname/-wert je nach `modname`) |
-| `coursepilot_set_completion` | Abschlussverfolgung einer Aktivität setzen — einziger Weg für `completion*`-Felder, `create_module`/`update_module_settings` sperren sie |
-| `coursepilot_set_restriction` | Voraussetzungen einer Aktivität setzen (Abschluss einer anderen Aktivität, Datum, Gruppe) |
-| `coursepilot_ensure_question_bank` | Benannte Kurs-/Projekt-Fragensammlung anlegen oder wiederverwenden (idempotent) |
-| `coursepilot_ensure_question_category` | Fragenbank-Kategorie je Unterthema/Inhaltsabschnitt in ausgewählter Fragensammlung finden oder anlegen (idempotent) |
-| `coursepilot_update_question_category` | Fragenbank-Kategorie nicht-destruktiv umbenennen und/oder in die richtige Fragensammlung/Zielkategorie verschieben |
-| `coursepilot_get_question_categories` | Vorhandene Fragenbank-Kategorien einer ausgewählten Fragensammlung lesen |
-| `coursepilot_plan_question_category_cleanup` | Leere, blattlose Kategorien einer Fragensammlung zur manuellen Prüfung auflisten (`courseid`, `questionbankid` als CMID) – rein lesend; liefert Bankname, Kategorie-ID/Name/Eltern-ID, Moodle-Link und Handlungsanweisung; Kategorien mit Fragen oder Unterkategorien und die oberste Kategorie bleiben ausgenommen |
-| `coursepilot_move_question` | Frage mit allen Versionen nicht-destruktiv in eine Zielkategorie verschieben |
-| `coursepilot_create_quiz` | Quiz (mod_quiz) anlegen – Modus wählt komplette Settings-Kombination (siehe `coursepilot_get_skill("quiz-and-question-bank")`) |
-| `coursepilot_update_quiz_settings` | Bestehendes Quiz nachträglich auf eine Coursepilot-Settings-Kombination umstellen |
-| `coursepilot_list_courses` | Kurse lesen, in denen die angemeldete Lehrkraft Coursepilot nutzen darf – Einstieg, wenn keine Kurs-ID bekannt ist |
-| `coursepilot_ensure_section` | Abschnitt anlegen, falls die `sectionnum` noch nicht existiert (idempotent; bestehender Abschnitt: nur Namensabgleich) |
-| `coursepilot_get_module_settings` | Vollstaendigen Ist-Stand einer Aktivität lesen (`cmid`) – vor jedem Patch, statt eine bestehende Einstellung anzunehmen; meldet bestehende Riegel (`learner_locks`) |
-| `coursepilot_describe_module_fields` | Feldkatalog einer Aktivitätsart lesen (`modname`, optional `full`) – welche Felder es gibt, was sie bedeuten, was gesperrt ist, welche Werte ein Riegel sind (`learner_lock`) |
-| `coursepilot_clone_activity` | Aktivität duplizieren (`cmid`, `title`, optional `targetcourseid`) – im selben Kurs oder in einen anderen |
+| `coursepilot_get_sections` | Read course sections |
+| `coursepilot_get_modules` | Read section activities and cmids |
+| `coursepilot_get_course_catalog` | Read a compact, filterable, read-only Moodle catalog for planning |
+| `coursepilot_update_section` | Set section name and an introduction only when planned |
+| `coursepilot_move_section` | Move an existing section without content changes |
+| `coursepilot_move_module` | Move an existing activity by cmid to a section or position within it |
+| `coursepilot_create_module` | Create cataloged activities; modname selects label, page, assign, url, resource, folder, choice or forum |
+| `coursepilot_update_module_settings` | Patch individual settings, with field names/values determined by modname |
+| `coursepilot_set_completion` | Set completion tracking: the only path for completion* fields, blocked by generic create/update tools |
+| `coursepilot_set_restriction` | Set prerequisites: another activity's completion, date or group |
+| `coursepilot_ensure_question_bank` | Idempotently create/reuse a named course/project question bank |
+| `coursepilot_ensure_question_category` | Idempotently find/create a subtopic/content category in a selected bank |
+| `coursepilot_update_question_category` | Nondestructively rename/move categories into the correct bank/parent |
+| `coursepilot_get_question_categories` | Read categories in a selected bank |
+| `coursepilot_plan_question_category_cleanup` | Read-only manual review plan for empty leaf categories; courseid and questionbankid (CMID). Return bank name, category ID/name/parent, Moodle link and instructions; exclude categories with questions/children and the top category |
+| `coursepilot_move_question` | Move a question and all versions nondestructively into a target category |
+| `coursepilot_create_quiz` | Create mod_quiz with a mode selecting a complete settings preset; see quiz-and-question-bank |
+| `coursepilot_update_quiz_settings` | Apply Coursepilot settings presets to existing quizzes |
+| `coursepilot_list_courses` | List courses authorized for the current teacher; entry when course ID is unknown |
+| `coursepilot_ensure_section` | Idempotently create a missing sectionnum; existing sections receive only name reconciliation |
+| `coursepilot_get_module_settings` | Read complete current state by cmid before every patch; report existing learner_locks |
+| `coursepilot_describe_module_fields` | Read fields, meanings, blocked fields and learner_lock values; modname and optional full |
+| `coursepilot_clone_activity` | Duplicate by cmid/title within a course or into optional targetcourseid |
 
-Die Schreibwerkzeuge für Einstellungen (`create_module`,
-`update_module_settings`, `set_completion`, `set_restriction`, `create_quiz`,
-`update_quiz_settings`) lehnen einen Aufruf mit Riegel ab, solange
-`confirm_learner_locks` ihn nicht nennt. Wann bestätigt wird, regelt
-`coursepilot_get_skill("implementation-plan-workflow")`, Planungsgrundsätze.
+Settings writers (create/update module, completion, restrictions and quiz
+create/update) reject learner locks unless confirmed through
+confirm_learner_locks, or through mode selection where applicable. See
+implementation-plan-workflow planning principles for when to confirm.
 
-## Fragen und Tests
+## Questions and quizzes
 
-| Tool | Verwendung |
+| Tool | Use |
 |---|---|
-| `coursepilot_create_mc_question` | Multiple-Choice-Frage anlegen (`categoryid`, `name`, `questiontext`, `selectionmode`, `answers`) |
-| `coursepilot_update_mc_question` | Bestehende MC-Frage aendern (`questionid`, `fields_json`) – erzeugt eine neue Fragenversion |
-| `coursepilot_get_question` | Aktuelle Version einer Frage lesen (`categoryid` plus `name` **oder** `questionid`) – vor jeder Bearbeitung |
-| `coursepilot_import_questions_xml` | Fragen aus Moodle-XML in eine Kategorie einspielen (`categoryid`) – Weg für Fragetypen jenseits MC |
-| `coursepilot_export_questions_xml` | Bestehende Fragen als Moodle-XML ausgeben (`questionids`) – Vorlage für einen Import |
-| `coursepilot_plan_quiz_cleanup` | Manuellen Bereinigungsplan für ueberzaehlige Quiz-Slots erstellen (`cmid`, `keep_questionbankentryids`) – löscht nichts, nennt Links |
-| `coursepilot_create_activity_from_xml` | Erschlossene Art aus Aktivitäts-XML anlegen (`courseid`, `modname`, `section`, `activity_xml`, `hidden?`, `replaces_cmid?`, `dry_run?`) – legt intern versteckt an, prüft per Round-Trip, bei Abweichung wird im selben Aufruf entfernt; mit `replaces_cmid` (gleiche Art, gleicher Kurs) kommt die neue direkt hinter die alte, die alte wird nur versteckt (Titel bleibt, nichts gelöscht), `section` entfällt dann; mit `dry_run` (nur mit `replaces_cmid`) schreibt der Aufruf nichts und liefert nur die Hinweise als Planvorschau; Antwort: `cmid`, Moodle-Vorbelegungen, `references` (Stellen, die noch auf die alte zeigen, nicht aufgelöst – der Lehrkraft nennen), `successor_cmid` (neueste Nachfolgerin, wenn die Vorlage schon abgelöst ist – fragen, ob stattdessen sie abgelöst wird; blockiert nicht), `hidden_predecessors` (versteckte Altfassungen in der Kette, mit Aufräum-Hinweis nennen); nur anlegen, nie bearbeiten; katalogisierte Arten über `create_module` |
-| `coursepilot_export_activity_backup` | Aktivitäts-XML (Backup-Datei `<modul>.xml`, ohne Nutzerdaten) einer bestehenden Aktivität ausgeben (`cmid`) – lesend, zeigt, wie die Aktivitätsart gebaut ist |
-| `coursepilot_export_default_activity` | Muster-Aktivitäts-XML einer erschlossenen Art mit Moodle-Standardwerten ausgeben (`courseid`, `modname`) – Schreibzugriff nach bestehender Planfreigabe (`implementation-plan-workflow`), legt versteckt an und entfernt wieder, im Kurs bleibt nichts; katalogisierte Arten über `create_module` |
-| `coursepilot_report_clone_lineage` | Je Frage eines geklonten Tests melden, ob eigene Kopie oder geteilte Referenz auf den Quellkurs (`cmid`) – rein lesend |
+| `coursepilot_create_mc_question` | Create multiple-choice questions with categoryid, name, questiontext, selectionmode and answers |
+| `coursepilot_update_mc_question` | Patch questionid through fields_json; creates a new version |
+| `coursepilot_get_question` | Read the current version before editing, by categoryid plus name or by questionid |
+| `coursepilot_import_questions_xml` | Import Moodle XML into categoryid; supports types beyond multiple choice |
+| `coursepilot_export_questions_xml` | Export questionids as Moodle XML for import templates |
+| `coursepilot_plan_quiz_cleanup` | Return a manual cleanup plan for excess slots by cmid/keep_questionbankentryids; links only, no deletion |
+| `coursepilot_create_activity_from_xml` | Create learned activity types from activity_xml, with courseid/modname/section and optional hidden/replaces_cmid/dry_run. Create hidden internally, check round trip and remove in the same call on mismatch. A same-course/type replaces_cmid places the new activity directly after the old and hides the old without renaming/deleting it; omit section. dry_run requires replaces_cmid and returns preview notices without writes. Return cmid, Moodle defaults, references still pointing to the old activity (report them), successor_cmid if already superseded (ask whether to supersede that successor; does not block), and hidden_predecessors with cleanup guidance. Creation only, no editing; use create_module for cataloged types |
+| `coursepilot_export_activity_backup` | Read an existing activity's backup <module>.xml without user data, by cmid |
+| `coursepilot_export_default_activity` | Export default XML for a learned modname/courseid. Requires prior plan approval because it creates hidden then removes the activity, leaving nothing in the course. Cataloged types use create_module |
+| `coursepilot_report_clone_lineage` | Read-only report of whether each cloned quiz question is an independent copy or shared source-course reference, by cmid |
 
-## Versionsverlauf einer Aktivität
+## Activity version history
 
-| Tool | Verwendung |
+| Tool | Use |
 |---|---|
-| `coursepilot_list_activity_versions` | Alle erfassten Staende einer Aktivität auflisten (`cmid`) – je Version eine Zeile, was sich gegenueber dem Vorgaenger geaendert hat |
-| `coursepilot_compare_activity_versions` | Zwei frei gewaehlte Staende vergleichen (`cmid`, `from_version`, `to_version`) – Feld- und Dateiunterschiede |
-| `coursepilot_restore_activity_version` | Einen frueheren Stand als neue juengste Version fortschreiben (`cmid`, `target_version`) – kein Rueckspulen, cmid bleibt stabil. Wuerden dabei Abschlussdaten von Lernenden geloescht, meldet der erste Aufruf das; erst ein zweiter mit `confirmed: true` schreibt die Abschlussfelder mit |
+| `coursepilot_list_activity_versions` | List captured versions by cmid, one summary line per change from its predecessor |
+| `coursepilot_compare_activity_versions` | Compare arbitrary from_version/to_version for cmid, including field/file changes |
+| `coursepilot_restore_activity_version` | Apply target_version as a new latest version, keeping cmid stable rather than rewinding. If learner completion data would be deleted, the first call warns; a second confirmed:true call writes completion fields |
 
-## Materialbestand und Werkbank
+## Material inventory and workbench
 
-Der eigene Materialordner der Lehrkraft – Bilder und Dokumente, die in
-Aktivitaeten eingebettet werden. Alle Pfade sind relativ zur Wurzel des
-Materialordners; das Werkzeug heisst den Pfad ueberall `path`, nie `course_id`.
+Teacher images/documents for activity embedding. Paths are relative to
+the material root and named path, never course_id.
 
-Die lesenden Werkzeuge (`coursepilot_list_material_files`,
-`coursepilot_preview_material_file`, Quelle von `coursepilot_crop_material_file`)
-nehmen zusätzlich `location`: `store` (Standard, gewachsener Materialordner der
-Lehrkraft, nur lesend) oder `workbench` (Chat-Anhänge, Zuschnitte). Details
-zum Eintragstyp `context_area` und zur Sperre am Kontextbereich stehen in
-`coursepilot_get_skill("context-area")`.
+Readers (list/preview and crop sources) accept location: store by default
+for read-only inventory, or workbench for chat attachments/crops. See
+`coursepilot_get_skill("context-area")` for context_area exclusion.
 
-| Tool | Verwendung |
+| Tool | Use |
 |---|---|
-| `coursepilot_list_material_files` | Materialordner auflisten (optional `path` für einen Unterordner, leer = Wurzel, optional `location`) – Größe, `contenthash`, Restspeicher |
-| `coursepilot_upload_material_file` | Datei anlegen oder ersetzen (`path`, `content_base64`) – immer auf der Werkbank, kein `location` |
-| `coursepilot_preview_material_file` | Verkleinerte Vorschau eines Bildes ansehen (`path`, optional `location`) – damit ein Ausschnitt oder ein Alt-Text nicht geraten wird |
-| `coursepilot_crop_material_file` | Bild auf einen Ausschnitt zuschneiden (`sourcepath`, `targetpath`, `x0`/`y0`/`x1`/`y1` relativ 0–1 auf die Vorschau) – Ziel immer Werkbank |
-| `coursepilot_compose_material_file` | Geordnete `parts` mit optionalem Ausschnitt und Quellenkopf als eine PNG zusammensetzen (`arrangement`: `vertical` oder `horizontal`, `targetpath`) – Ziel immer Werkbank, Originalauflösung, fester Hausstil |
-| `coursepilot_report_loose_material_files` | Dateien melden, die in keiner Aktivität verwendet werden – liest nur, nur Werkbank |
-| `coursepilot_delete_material_files` | Genau die genannten Pfade löschen (`paths`) – nur nach ausdrücklicher Bestätigung der Lehrkraft, nur Werkbank |
-| `coursepilot_create_workbench_download_links` | Je Werkbankdatei einen 15 Minuten gültigen Einmal-Downloadlink ausstellen (`paths`) – für einen Client mit Shell (curl), ohne OAuth-Bearer-Header; liefert URL, Name, Größe, SHA-1, keine fertige Abrufzeile |
+| `coursepilot_list_material_files` | List optional path, empty for root, and optional location; sizes, contenthash and remaining quota |
+| `coursepilot_upload_material_file` | Create/replace path with content_base64, always on workbench; no location |
+| `coursepilot_preview_material_file` | View a reduced image preview by path/location to choose crops or alt text accurately |
+| `coursepilot_crop_material_file` | Crop sourcepath into targetpath using relative x0/y0/x1/y1 (0–1) on the preview; target is always workbench |
+| `coursepilot_compose_material_file` | Compose ordered parts with optional crops/source headers into a PNG; arrangement vertical/horizontal, targetpath; original resolution, fixed house style and workbench target |
+| `coursepilot_report_loose_material_files` | Read-only report of workbench files unused in activities |
+| `coursepilot_delete_material_files` | Delete exact paths only after explicit teacher confirmation; workbench only |
+| `coursepilot_create_workbench_download_links` | Issue 15-minute single-use links for paths to shell-capable clients, without OAuth Bearer headers; return URL/name/size/SHA-1, not ready-made shell commands |
 
-Aktivitätstyp-Auswahl (welcher `modname` für welche Situation) steht in
-`coursepilot_get_skill("implementation-plan-workflow")`.
+Choose modname according to implementation-plan-workflow.
 
-### Quellenkopf und Zusammensetzen
+### Source headers and composition
 
-`coursepilot_compose_material_file` nimmt je Teil `sourcepath`, eigenes
-`location` (`store` als Standard oder `workbench`, gemischt erlaubt), optional
-`crop` mit `x0`/`y0`/`x1`/`y1` relativ 0–1 wie beim Gezielten Bildausschnitt,
-`source_header_text` und `expected_contenthash`. Der Prüfwert ist hier der
-SHA-1 der **jeweiligen Quelle**; beim Zuschnitt-Werkzeug schützt er dagegen
-das Ziel. Bei externem Bestand ohne bekannten SHA-1 den optionalen Wert
-weglassen. Fehlender Ausschnitt bedeutet das ganze Original; fehlender oder
-leerer Kopftext bedeutet keinen Kopfstreifen. Zielpfade werden wie beim
-Zuschnitt aufgelöst und müssen `.png` enden; vorhandene Ziele werden ersetzt.
+Each compose part has sourcepath and its own location, default store or
+workbench; mixed sources are allowed. Optional crop has relative
+x0/y0/x1/y1 as with crop. Optional source_header_text adds a header.
+expected_contenthash protects the SHA-1 of each source; crop's corresponding
+check value instead protects its target. Omit unknown optional SHA-1 for
+external inventory. Missing crop uses the whole original; missing/empty
+header text creates no strip. Target resolution follows crop rules;
+paths must end in .png and existing targets are replaced.
 
-Ein Teil mit Kopf und Ausschnitt braucht keine Zwischendatei:
+One part with a header and crop needs no intermediate file:
 
 ```json
 {
   "parts": [{
-    "sourcepath": "ml-s36.png",
+    "sourcepath": "ml-p36.png",
     "location": "store",
     "crop": {"x0": 0.1, "y0": 0.2, "x1": 0.9, "y1": 0.5},
-    "source_header_text": "ML S. 36"
+    "source_header_text": "ML p. 36"
   }],
   "arrangement": "vertical",
-  "targetpath": "ml-s36-aufgabe-kopf.png"
+  "targetpath": "ml-p36-task-header.png"
 }
 ```
 
-Die Rückgabe nennt `path`, `width`, `height`, `size`, `contenthash`, `created`,
-`message` und geordnete `sources` (Ort, aufgelöster Pfad, Größe, Änderungszeit),
-keine Bildbytes. Quellenkopf-Standard, Kürzelklärung, Planfreigabe und Alt-Text
-stehen in `coursepilot_get_skill("graphics")`.
+Return path, width, height, size, contenthash, created, message and ordered
+sources containing location, resolved path, size and modification time;
+no image bytes. See `coursepilot_get_skill("graphics")` for source-header
+defaults, abbreviation clarification, approval and alt text.
 
-## Kontextbereich
+## Context area
 
-Arbeitsdateien (`plan.md`, `status.md`, Journal, Materialnotizen,
-Kontextprofile). Zwei Parameter: `pending_entry=<Kennung>` an
-`coursepilot_write_context_file`/`coursepilot_append_context_file` trägt einen
-offenen Eintrag der Ausstandsnotiz nach; `previous_location: true` an
-`coursepilot_list_context_files`/`coursepilot_read_context_file` ist der
-**Nur-Lese-Schalter** für den Altbestand (wirkt nur, solange einer offen
-ist). Alle Ausfall-/Konflikt-/Ortswahl-Regeln stehen vollständig in
-`coursepilot_get_skill("context-area")`, hier nur die Namen zum Nachschlagen:
+Working plans, status, journals, material notes and profiles.
+`pending_entry=<identifier>` replays an unsaved entry through write/append.
+`previous_location:true` on list/read is a read-only switch for old content,
+available only while that state is open. All outage/conflict/selection
+rules are defined in context-area; tools here are an index:
 
-| Tool | Verwendung |
+| Tool | Use |
 |---|---|
-| `coursepilot_list_context_files` | Ordnerinhalt auflisten, optional `previous_location` (Nur-Lese-Schalter für den Altbestand) |
-| `coursepilot_read_context_file` | Datei lesen, optional `previous_location` |
-| `coursepilot_write_context_file` | Anlegen/vollständig überschreiben, optional `pending_entry` (Nachtragen einer Kennung), optional `create_only` (Kopieren aus dem Altbestand) |
-| `coursepilot_append_context_file` | Anhängen, optional `pending_entry` |
-| `coursepilot_dismiss_pending_entry` | Einen Eintrag der Ausstandsnotiz ausdrücklich verwerfen |
-| `coursepilot_dismiss_previous_location` | Den Altbestand (vorheriger Ort) ausdrücklich beenden |
+| `coursepilot_list_context_files` | List folders, optionally at previous_location |
+| `coursepilot_read_context_file` | Read files, optionally at previous_location |
+| `coursepilot_write_context_file` | Create/full replacement; optional pending_entry or create_only for old-content copying |
+| `coursepilot_append_context_file` | Append; optional pending_entry |
+| `coursepilot_dismiss_pending_entry` | Explicitly dismiss a pending-note entry |
+| `coursepilot_dismiss_previous_location` | Explicitly end old-content state |

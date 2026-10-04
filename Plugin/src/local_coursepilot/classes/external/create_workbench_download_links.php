@@ -27,15 +27,14 @@ use local_coursepilot\workbench_ticket;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Rein lesendes Werkzeug (Issue #501, Spec #486 §13): stellt fuer eine Liste
- * von Werkbankdateien je ein Einmal-Downloadticket aus, ueber das ein Client
- * mit Shell (curl) die Originalbytes ohne OAuth-Bearer-Header abrufen kann -
- * z.B. fuer den Merkzettelpunkt "Werkbank -> Bestand".
+ * Read-only tool (#501, Spec #486 §13): issues one-time download tickets
+ * for workbench files. Shell clients can retrieve original bytes through
+ * curl without an OAuth Bearer header, e.g. to transfer workbench material
+ * to the collection.
  *
- * Keine fertige Abrufzeile - nur URL, Name, Groesse und SHA-1 je Datei
- * (SHA-1 ist Moodles `contenthash`, siehe {@see \local_coursepilot\material_files::read_content()}).
- * Die eigentliche Ticket-Choreografie (Bindung, Gueltigkeit, Pruefungen beim
- * Abruf) liegt in {@see \local_coursepilot\workbench_ticket}.
+ * Returns URL, name, size and SHA-1, not a ready-made command. SHA-1 is
+ * Moodle contenthash; see material_files::read_content().
+ * {@see \local_coursepilot\workbench_ticket} owns binding, lifetime and redemption guards.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -49,7 +48,7 @@ class create_workbench_download_links extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'paths' => new external_multiple_structure(
-                new external_value(PARAM_PATH, 'Dateipfad relativ zur Werkbankwurzel, z.B. "blatt.pdf"')
+                new external_value(PARAM_PATH, 'File path relative to the workbench root, e.g. "worksheet.pdf"')
             ),
         ]);
     }
@@ -58,7 +57,7 @@ class create_workbench_download_links extends external_api {
      * @param string[] $paths
      * @return array
      * @throws \moodle_exception invalidmaterialpath, materialfilenotfound
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     * @throws \required_capability_exception without moodle/user:manageownfiles
      */
     public static function execute(array $paths): array {
         $params = self::validate_parameters(self::execute_parameters(), ['paths' => $paths]);
@@ -74,8 +73,8 @@ class create_workbench_download_links extends external_api {
 
         return [
             'links' => $links,
-            // Fuer den access_log-Eintrag (Spec 0018 §9.2), wie delete_material_files:
-            // alle betroffenen Pfade in einem Eintrag statt eines Sonderfalls je Datei.
+            // Access logging (Spec 0018 §9.2), as in delete_material_files:
+            // all affected paths in one entry instead of a per-file special case.
             'path' => implode(', ', array_column($links, 'path')),
         ];
     }
@@ -87,14 +86,14 @@ class create_workbench_download_links extends external_api {
         return new external_single_structure([
             'links' => new external_multiple_structure(
                 new external_single_structure([
-                    'path' => new external_value(PARAM_TEXT, 'Dateipfad relativ zur Werkbankwurzel'),
-                    'name' => new external_value(PARAM_TEXT, 'Dateiname'),
-                    'size' => new external_value(PARAM_INT, 'Dateigroesse in Byte'),
-                    'sha1' => new external_value(PARAM_ALPHANUMEXT, 'SHA-1-Pruefsumme der Datei (Moodle-contenthash)'),
-                    'url' => new external_value(PARAM_URL, 'Einmal-Downloadlink, 15 Minuten gueltig'),
+                    'path' => new external_value(PARAM_TEXT, 'File path relative to the workbench root'),
+                    'name' => new external_value(PARAM_TEXT, 'Filename'),
+                    'size' => new external_value(PARAM_INT, 'File size in bytes'),
+                    'sha1' => new external_value(PARAM_ALPHANUMEXT, 'File SHA-1 checksum (Moodle contenthash)'),
+                    'url' => new external_value(PARAM_URL, 'One-time download link, valid for 15 minutes'),
                 ])
             ),
-            'path' => new external_value(PARAM_TEXT, 'Alle betroffenen Pfade, kommagetrennt (fuer den access_log)'),
+            'path' => new external_value(PARAM_TEXT, 'All affected paths, comma-separated for access logging'),
         ]);
     }
 }

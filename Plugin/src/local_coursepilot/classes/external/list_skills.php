@@ -31,23 +31,14 @@ use local_coursepilot\webdav\webdav_setup_steps;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Der Katalog des Skill-Korpus (Spec 0020 §4, Issue #450): Name, Auslöser,
- * Art (adapter/reference) und Umfang je Eintrag - kein Inhalt, das liefert
- * {@see get_skill}. Nicht kursgebunden: geprüft wird lediglich die
- * Fernzugriffsfreigabe, keine Kursfähigkeit (Issue #630).
+ * Skill catalog (Spec 0020 §4, Issue #450): name, trigger, kind and length
+ * per entry. get_skill supplies content. Course-independent; requires
+ * remote access, rather than a course capability (Issue #630).
  *
- * Meldet zusaetzlich die offenen Eintraege der Ausstandsnotiz (`pending_entries`,
- * Issue #492, ADR 0023 Punkt 4: "Der Server meldet, nicht die KI") -
- * gebuendelt je Zieldatei, aeltester Eintrag zuerst, ohne Netzzugriff.
- *
- * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "trigger"/"kind"/
- * "length" je Skill-Eintrag, "pending_entries" statt "ausstaende" (darin
- * "path"/"entries"/"identifier"/"timestamp"/"operation"/"error_class"/
- * "course_id") und "notices" statt "hinweise" - der zugrundeliegende
- * Skill-Korpus ({@see \local_coursepilot\skill_corpus}) und die
- * Ausstandsnotiz ({@see \local_coursepilot\pending_write_notice}) bleiben
- * als interne Speicherformate unveraendert deutsch, die Uebersetzung
- * geschieht hier an der Werkzeuggrenze.
+ * Also reports open pending entries grouped by target file, oldest first,
+ * without network access (Issue #492, ADR 0023 point 4). The server reports
+ * them rather than relying on the AI. Contract keys are English (#571,
+ * Spec 0025 §A), matching internal formats migrated under #602.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -85,32 +76,23 @@ final class list_skills extends external_api {
         try {
             $document = \local_coursepilot\storage_anchor::read_raw_pointer();
             if ($document !== null) {
-                // Vollstaendigkeitspruefung ueber die bestehende Aufloesung
-                // (Issue #519, Spec #486 §10: "unlesbar oder unvollstaendig") -
-                // wirft pointerincomplete/pointerunreachable/
-                // materialstoreincontext bei einem unvollstaendigen Pointer,
-                // denselben Fall wie "unlesbar", ohne die Pruefung hier zu
-                // duplizieren. Das aufgeloeste Ziel selbst wird nicht
-                // gebraucht.
+                // Reuse resolution for completeness checks (Issue #519, Spec #486 §10).
+                // Broken/incomplete pointers raise pointerincomplete,
+                // pointerunreachable or materialstoreincontext. The target itself is unused.
                 \local_coursepilot\context_pointer::resolve_target($document, 'context_area');
             }
             if (location_selection::open_with_access((int) $USER->id)) {
-                // Ortswahl offen und Freischaltung vorhanden (Issue #494
-                // Akzeptanzkriterium) - ohne Netzzugriff, kein Fakt ohne
-                // Freischaltung.
+                // Open location selection with enablement (Issue #494), without network access.
                 $notices[] = self::notice('listskillslocationselectionhint', $locationselectionlink);
             }
             if (\local_coursepilot\previous_location::open()) {
-                // Altbestand offen (Issue #498, Spec #486 §9/§10): ohne
-                // Netzzugriff, ohne Zaehlung - nur der Fakt "es gibt einen
-                // vorherigen Ort".
+                // Previous location exists (Issue #498, Spec #486 §9/§10), without network or counts.
                 $notices[] = self::notice('listskillspreviouslocationhint', $locationselectionlink);
             }
         } catch (\moodle_exception $e) {
-            // Kaputter Kontextpointer (unlesbar oder unvollstaendig, Issue
-            // #519, Spec #486 §10) darf den Handshake nicht scheitern lassen -
-            // der Skillkatalog kommt trotzdem, dazu ein benannter Hinweis statt
-            // der beiden obigen Fakten, weiterhin ohne Netzzugriff.
+            // A broken pointer must not fail the handshake (Issue #519, Spec #486 §10).
+            // Return the catalog with a notice instead of the two facts above,
+            // still without network access.
             $notices = [self::notice('listskillspointerbrokenhint', $locationselectionlink)];
         }
 
@@ -118,12 +100,11 @@ final class list_skills extends external_api {
     }
 
     /**
-     * Baut einen Eintrag fuer 'notices' (Code-Review Issue #519): Text aus
-     * dem Sprachpaket, Link stets die Ortswahlseite - gemeinsam fuer alle
-     * drei Fakten dieser Methode.
+     * Build a notices entry with localized text and a location-selection link
+     * (code review, Issue #519). Shared by the three notice cases.
      *
-     * @param string $stringkey Schluessel im Sprachpaket local_coursepilot.
-     * @param string $link Bereits aufgeloester Link zur Ortswahlseite.
+     * @param string $stringkey Language key in local_coursepilot.
+     * @param string $link Resolved link to the location selection page.
      * @return array{text: string, link: string}
      */
     private static function notice(string $stringkey, string $link): array {
@@ -141,7 +122,7 @@ final class list_skills extends external_api {
             'skills' => new external_multiple_structure(
                 new external_single_structure([
                     'name' => new external_value(PARAM_TEXT, 'Skill identifier, for get_skill(name)'),
-                    'trigger' => new external_value(PARAM_TEXT, 'Trigger/description, German'),
+                    'trigger' => new external_value(PARAM_TEXT, 'Trigger/description, English'),
                     'kind' => new external_value(PARAM_TEXT, '"adapter" or "reference"'),
                     'length' => new external_value(PARAM_INT, 'Length of the content in characters'),
                 ])
@@ -168,7 +149,7 @@ final class list_skills extends external_api {
             ),
             'notices' => new external_multiple_structure(
                 new external_single_structure([
-                    'text' => new external_value(PARAM_TEXT, 'Notice text, German'),
+                    'text' => new external_value(PARAM_TEXT, 'Localized notice text'),
                     'link' => new external_value(PARAM_URL, 'Target page of the notice'),
                 ]),
                 'Notices determined without network access, e.g. open location selection with existing enablement (Issue #494)',

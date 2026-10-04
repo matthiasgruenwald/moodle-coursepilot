@@ -15,17 +15,16 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Die Ortswahlseite (Issue #494, Spec #486 §5/§10): eigene Profilseite neben
- * "Meine Verbindungen" - wo Kontextbereich und Materialbestand liegen. Nur
- * fuer die angemeldete Lehrkraft und ihre eigenen WebDAV-Nutzerinstanzen.
+ * Location-selection page (#494, Spec #486 §5/§10), beside connection
+ * self-service in the profile: chooses context and material locations
+ * for the logged-in teacher and their owned WebDAV instances only.
  *
- * Duenne Schale (#334-Muster): die gesamte Logik lebt testbar in
- * {@see \local_coursepilot\location_selection}, diese Datei tut nur noch Ein-/Ausgabe
- * (Formular entgegennehmen, Markup rendern) - siehe Issue #494
- * Akzeptanzkriterium "ueber ihre Klasse getestet, nicht ueber die Seite".
+ * Thin shell (#334): {@see \local_coursepilot\location_selection} owns all
+ * testable logic; this file only accepts form input and renders markup
+ * (#494: test the class rather than the page).
  *
- * Issue #507 (Spec #486, Review von #486): Seitenaufbau und Uebernahme der
- * Formulareingabe sind in Funktionen unter 50 Zeilen zerlegt.
+ * #507 (Spec #486 review): page setup and form handling use functions
+ * below 50 lines.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -56,9 +55,8 @@ $oauthreturn = local_coursepilot_read_oauth_passthrough();
 $finishresult = local_coursepilot_handle_location_selection_finish($oauthreturn);
 
 if (location_selection::setup_state((int) $USER->id)['state'] === location_selection::STATE_READY) {
-    // AMD-Modul statt freiem Skript (Issue #551, Spec 0023): die Konfiguration
-    // erreicht das Modul ueber js_call_amd(), nie ueber eingebettete Daten im
-    // Seitenquelltext.
+    // AMD module instead of inline script (#551, Spec 0023): configure through
+    // js_call_amd(), never through embedded page-source data.
     $PAGE->requires->js_call_amd('local_coursepilot/location_selection', 'init', [
         location_selection_output::amd_configuration($USER),
     ]);
@@ -72,12 +70,10 @@ echo $OUTPUT->render_from_template(
 echo $OUTPUT->footer();
 
 /**
- * Liest die OAuth-Anfrageparameter, mit denen die Ortswahlseite von der
- * Zustimmungsseite aus aufgerufen werden kann (Issue #563, loest die mit
- * Issue #558 dokumentierte Sackgasse auf: ohne diese Parameter fuehrte ein
- * Ortswechsel waehrend des Verbindungsaufbaus nicht mehr zurueck). Fehlen
- * die Parameter oder sind sie ungueltig, verhaelt sich die Seite wie zuvor
- * (kein Banner, kein Ruecksprung) - eigenstaendiger Aufruf bleibt moeglich.
+ * Reads OAuth parameters passed from consent to location selection
+ * (#563, resolves #558): otherwise changing location during connection
+ * setup would not return to consent. Missing/invalid parameters keep
+ * the standalone page behavior, without banner or return navigation.
  *
  * @return array{client: \stdClass, params: array<string, string>}|null
  */
@@ -101,9 +97,8 @@ function local_coursepilot_read_oauth_passthrough(): ?array {
 }
 
 /**
- * Nimmt eine abgeschickte Ortswahl entgegen (Issue #494, Spec §5) - nur wenn
- * ueberhaupt "finish" mitgeschickt wurde, sonst wird die Seite ohne
- * Formularverarbeitung nur angezeigt.
+ * Handles submitted location selection (#494, Spec §5) only when finish
+ * is present; otherwise displays the page without processing the form.
  *
  * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn
  * @return array{type: string, text: string}|null
@@ -116,9 +111,8 @@ function local_coursepilot_handle_location_selection_finish(?array $oauthreturn)
     try {
         $changed = location_selection::apply(local_coursepilot_read_location_selection());
         if ($oauthreturn !== null) {
-            // Zurueck zur Zustimmungsseite (Issue #563) statt hier stehen zu
-            // bleiben - egal ob sich etwas geaendert hat, die Lehrkraft war
-            // mitten im Verbindungsaufbau.
+            // Return to consent (#563) whether or not locations changed: the teacher
+            // is in the middle of establishing a connection.
             redirect(new moodle_url('/local/coursepilot/oauth/authorize.php', $oauthreturn['params']));
         }
         return empty($changed)
@@ -128,18 +122,18 @@ function local_coursepilot_handle_location_selection_finish(?array $oauthreturn)
                 $changed
             )))];
     } catch (moodle_exception $e) {
-        // Bei einem Fehler auf der Ortswahlseite bleiben (auch im OAuth-Fluss)
-        // - ein Ruecksprung wuerde die Fehlermeldung verschlucken.
+        // Stay on location selection on failure, including OAuth flow, so
+        // redirecting cannot hide the error message.
         return ['type' => \core\output\notification::NOTIFY_ERROR, 'text' => $e->getMessage()];
     }
 }
 
 /**
- * Liest die Formulareingabe je Ziel - roh, {@see \local_coursepilot\location_selection::apply()}
- * validiert Instanz, Pfad und Sperren.
+ * Reads raw form input per target. {@see \local_coursepilot\location_selection::apply()}
+ * validates instance, path and selection guards.
  *
  * @return array<string, array{type: string, instanceid: int, path: string, confirmed: bool}>
- * @throws moodle_exception locationselectionselectioninvalid bei einem unbekannten Typ.
+ * @throws moodle_exception locationselectionselectioninvalid for an unknown type.
  */
 function local_coursepilot_read_location_selection(): array {
     $selection = [];

@@ -25,11 +25,10 @@ use local_coursepilot\webdav\webdav_instance;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Auflisten des Materialordners (Spec 0018 §2, Issue #428): Pfad, Groesse,
- * `contenthash`, Aenderungszeit je Datei, plus verbleibender Speicherplatz.
- * Seit Issue #495 zusaetzlich der Parameter "ort" (Bestand/Werkbank), der
- * externe Zweig ueber den WebDAV-Transport-Fake, und die
- * Kontextbereich-Ausnahme (Spec #486 §2/§7).
+ * List material storage (Spec 0018 §2, #428): file paths, sizes,
+ * contenthashes, modification times and remaining quota. #495 adds
+ * inventory/workbench selection, fake external WebDAV and the context-area
+ * exclusion (Spec #486 §2/§7).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -83,8 +82,7 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Verbleibender Speicherplatz ist Teil der Antwort (Issue #428 - "mit
-     * ... verbleibendem Speicherplatz").
+     * Include remaining storage space in the response (#428).
      */
     public function test_reports_remaining_quota(): void {
         global $CFG;
@@ -137,9 +135,8 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der Kontextpointer (Issue #445) liegt physisch im Kontextbereich-
-     * Anker, nicht im Materialordner - dieselbe Ausschluss-Regel gilt hier
-     * trotzdem defensiv, falls Anker und Materialordner je zusammenfallen.
+     * The context pointer (#445) lives in the context anchor, not material
+     * storage. Still exclude it defensively if both roots ever coincide.
      */
     public function test_pointer_file_is_excluded_from_listing(): void {
         $this->resetAfterTest();
@@ -159,8 +156,8 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne Kontextpointer zeigen "bestand" und "werkbank" auf denselben Ort
-     * (Issue #495, Abnahmekriterium 1).
+     * Without a context pointer, inventory and workbench share a location
+     * (#495, criterion 1).
      */
     public function test_ort_bestand_and_ort_werkbank_show_the_same_place_in_moodle(): void {
         $this->resetAfterTest();
@@ -182,10 +179,9 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Bei einem Pointer der ersten Fassung mit eigenem Materialpfad zeigen
-     * "bestand" und "werkbank" weiterhin auf denselben Ordner (Issue #520,
-     * Spec #486 §1) - der Kontextpointer verschiebt beide Orte gemeinsam,
-     * statt die Werkbank an der Standardwurzel zurueckzulassen.
+     * A v1 pointer with a custom material path moves inventory and workbench
+     * together instead of leaving the workbench at its default root
+     * (#520, Spec #486 §1).
      */
     public function test_ort_bestand_and_ort_werkbank_follow_legacy_pointer_together(): void {
         $this->resetAfterTest();
@@ -220,16 +216,15 @@ final class list_material_files_test extends \advanced_testcase {
 
         try {
             list_material_files::execute('', 'woanders');
-            $this->fail('Ein unbekannter Ort-Wert haette werfen muessen.');
+            $this->fail('An unknown location value should have thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('invalidmateriallocation', $e->errorcode);
         }
     }
 
     /**
-     * Der externe Materialbestand (Issue #495, Spec #486 §2/§7) listet ueber
-     * den WebDAV-Client, statt ueber Moodles Dateispeicher - dieselbe
-     * Werkzeugantwort wie im Moodle-Zweig, `contenthash` bleibt leer.
+     * External material storage (#495, Spec #486 §2/§7) lists through WebDAV
+     * with the same response contract; contenthash stays empty.
      */
     public function test_lists_external_material_via_webdav(): void {
         $this->resetAfterTest();
@@ -247,7 +242,7 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Eine noch nicht angelegte externe Ebene ist leer, nie ein Fehler.
+     * Missing external folders produce an empty listing.
      */
     public function test_listing_missing_external_material_directory_is_empty(): void {
         $this->resetAfterTest();
@@ -259,9 +254,9 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * "werkbank" bleibt beim externen Materialbestand unveraendert in Moodle
-     * erreichbar (Abnahmekriterium 2: schreibende Werkzeuge zielen immer auf
-     * die Werkbank, die den Materialbestand-Pointer nicht kennt).
+     * The workbench stays in Moodle when inventory is external. Writing
+     * tools always target the workbench, which does not use the inventory
+     * pointer (#495, criterion 2).
      */
     public function test_ort_werkbank_stays_in_moodle_when_material_is_external(): void {
         $this->resetAfterTest();
@@ -281,15 +276,14 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Liegt der Kontextbereich im Bestand, erscheint er als eigener
-     * Eintragstyp "context_area" (Issue #495, Abnahmekriterium 4) - nicht
-     * als gewoehnlicher Ordner.
+     * A context area in inventory appears as context_area, not as a
+     * regular folder (#495, criterion 4).
      */
     public function test_kontextbereich_inside_bestand_appears_as_own_entry_type(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
-        // Kontextbereich liegt bewusst als Unterordner des Materialbestands -
-        // erlaubte Richtung (CONTEXT.md "Materialbestand").
+        // Context is deliberately nested within inventory, an allowed
+        // direction (CONTEXT.md, Material inventory).
         storage_anchor::write_pointer_document([
             'context_area' => ['location' => 'moodle', 'path' => 'coursepilot-material/kontext'],
             'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
@@ -321,9 +315,8 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Materialweg lehnt jeden Pfad am oder unter dem Kontextbereich ab
-     * (Issue #495, Abnahmekriterium 4) - benannter Fehler statt stiller
-     * Auflistung des Kontextbereichs ueber den Materialweg.
+     * Reject paths at or below the context area with a named error,
+     * preventing access through material tools (#495, criterion 4).
      */
     public function test_listing_path_under_kontextbereich_is_rejected(): void {
         $this->resetAfterTest();
@@ -335,7 +328,7 @@ final class list_material_files_test extends \advanced_testcase {
 
         try {
             list_material_files::execute('kontext');
-            $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
+            $this->fail('A path under the context area should have thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialpathiscontext', $e->errorcode);
         }

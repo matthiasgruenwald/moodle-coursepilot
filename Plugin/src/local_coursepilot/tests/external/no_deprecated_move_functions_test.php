@@ -19,14 +19,14 @@ namespace local_coursepilot\external;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Repo-Pruefung (Ticket #391, Abnahmekriterium): keine der sechs in
- * Moodle 5.2 deprecated Funktionen (MDL-86854/MDL-86862 und Nachbarschaft)
- * wird durch die neuen Struktur-/Positions-Endpunkte NEU eingefuehrt.
- * move_section_to()/moveto_module() werden weiterhin intern von Moodle-Core
- * selbst genutzt (z.B. hinter stateactions::cm_move()/section_move_after())
- * - das ist Moodles eigene Implementierung hinter der Abstraktion, kein
- * Aufruf aus diesem Plugin heraus, und deshalb hier NICHT geprueft. Geprueft
- * wird ausschliesslich der eigene Plugin-Code.
+ * Repo check (ticket #391, acceptance criterion): none of the six functions
+ * deprecated in Moodle 5.2 (MDL-86854/MDL-86862 and neighbours) is
+ * NEWLY introduced by the new structure/position endpoints.
+ * move_section_to()/moveto_module() are still used internally by Moodle core
+ * itself (e.g. behind stateactions::cm_move()/section_move_after())
+ * - that is Moodle's own implementation behind the abstraction, not a
+ * call from this plugin, and is therefore NOT checked here. Only the plugin's
+ * own code is checked.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -35,7 +35,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 #[CoversNothing]
 final class no_deprecated_move_functions_test extends \advanced_testcase {
 
-    /** @var string[] Funktionsnamen, die Ticket #391 als in 5.2 deprecated benennt. */
+    /** @var string[] Function names that ticket #391 names as deprecated in 5.2. */
     private const FORBIDDEN_FUNCTIONS = [
         'move_section_to',
         'moveto_module',
@@ -47,10 +47,10 @@ final class no_deprecated_move_functions_test extends \advanced_testcase {
     ];
 
     public function test_plugin_source_never_calls_forbidden_functions_directly(): void {
-        // Nur classes/ (Produktivcode), nicht tests/: tests/retention_test.php
-        // ruft course_delete_module() bewusst auf, um eine Loeschung zu
-        // simulieren (Aufbewahrungsfrist-Test, #387) - eine legitime,
-        // bereits bestehende Nutzung, kein Verstoss durch Ticket #391.
+        // Only classes/ (production code), not tests/: tests/retention_test.php
+        // deliberately calls course_delete_module() to simulate a
+        // deletion (retention period test, #387) - a legitimate,
+        // pre-existing use, not a violation by ticket #391.
         $root = dirname(__DIR__, 2) . '/classes';
         $violations = [];
 
@@ -67,15 +67,15 @@ final class no_deprecated_move_functions_test extends \advanced_testcase {
             }
         }
 
-        $this->assertSame([], $violations, "Verbotene Funktionsaufrufe gefunden:\n" . implode("\n", $violations));
+        $this->assertSame([], $violations, "Forbidden function calls found:\n" . implode("\n", $violations));
     }
 
     /**
-     * Entfernt Kommentare und String-Literale (tokenbasiert), damit ein
-     * dokumentierender Prosa-Verweis auf eine verbotene Funktion (wie in
-     * dieser Klasse selbst, oder in move_section.php/move_module.php)
-     * keinen falschen Treffer erzeugt - geprueft wird nur tatsaechlicher
-     * PHP-Code.
+     * Removes comments and string literals (token based) so that a
+     * documenting prose reference to a forbidden function (as in
+     * this class itself, or in move_section.php/move_module.php)
+     * does not produce a false hit - only actual
+     * PHP code is checked.
      *
      * @param string $source
      * @return string

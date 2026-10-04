@@ -17,8 +17,8 @@
 {{!
     @template local_coursepilot/location_selection_instances
 
-    Instanzliste im Dateifenster der Ortswahl (Issue #551), gefuellt vom
-    AMD-Modul amd/src/location_selection.js statt aus Zeichenketten zusammengebaut.
+    Instance list in the file window of the location selection (Issue #551), filled by the
+    AMD module amd/src/location_selection.js instead of being assembled from strings.
 
     Context variables required for this template:
     * instances - array - list of {id, name, active, disabled, reason}
@@ -31,8 +31,8 @@
     Example context (json):
     {
         "instances": [
-            {"id": 1, "name": "Meine Nextcloud", "active": true, "disabled": false, "reason": ""},
-            {"id": 2, "name": "IServ", "active": false, "disabled": true, "reason": "Nur Dateien, keine Ordnerwahl."}
+            {"id": 1, "name": "My Nextcloud", "active": true, "disabled": false, "reason": ""},
+            {"id": 2, "name": "IServ", "active": false, "disabled": true, "reason": "Files only, no folder selection."}
         ]
     }
 }}

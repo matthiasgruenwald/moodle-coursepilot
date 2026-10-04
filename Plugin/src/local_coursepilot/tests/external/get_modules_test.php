@@ -19,9 +19,8 @@ namespace local_coursepilot\external;
 use core_external\external_api;
 
 /**
- * Aktivitaeten eines Kurses/Abschnitts serverseitig (#342): eigenstaendige
- * Portierung von local_coursepilot\external\get_modules, Vertrag
- * (Feldnamen) identisch zum lokalen Werkzeug.
+ * Server-side course/section activities (#342), matching the local
+ * tool field contract.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,7 +30,7 @@ use core_external\external_api;
 final class get_modules_test extends \advanced_testcase {
 
     /**
-     * Regelfall: cmid, Typ und Name werden fuer jede Aktivitaet geliefert.
+     * Return cmid, type and name for every activity.
      */
     public function test_returns_cmid_type_and_name_for_each_activity(): void {
         $this->resetAfterTest();
@@ -50,7 +49,7 @@ final class get_modules_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(get_modules::execute_returns(), $result);
 
         $module = self::find_module($result, (int) $page->cmid);
-        $this->assertNotNull($module, 'Die angelegte Seite muss in der Modulliste auftauchen.');
+        $this->assertNotNull($module, 'The created page must appear in the module list.');
         $this->assertSame('page', $module['modname']);
         $this->assertSame('Testseite', $module['name']);
         $this->assertArrayHasKey('visible', $module);
@@ -58,7 +57,7 @@ final class get_modules_test extends \advanced_testcase {
     }
 
     /**
-     * sectionnum filtert auf einen einzelnen Abschnitt.
+     * sectionnum filters to a single section.
      */
     public function test_sectionnum_filters_to_one_section(): void {
         $this->resetAfterTest();
@@ -82,7 +81,7 @@ final class get_modules_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne Berechtigung: local/coursepilot:use fehlt trotz Einschreibung.
+     * Reject enrolled users lacking local/coursepilot:use.
      */
     public function test_rejects_user_without_capability(): void {
         $this->resetAfterTest();
@@ -106,8 +105,7 @@ final class get_modules_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne Einschreibung: eine nicht eingeschriebene Person bekommt
-     * keine Daten.
+     * Unenrolled users receive no data.
      */
     public function test_rejects_user_without_enrolment(): void {
         $this->resetAfterTest();

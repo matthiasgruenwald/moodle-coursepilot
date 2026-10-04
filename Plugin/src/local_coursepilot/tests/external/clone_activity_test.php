@@ -23,9 +23,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Klonen (Spec 0017 §7.5, Ticket #421): ein Endpunkt fuer beide Pfade,
- * kaputte Voraussetzungen werden erkannt und entfernt, der Aenderungsverlauf
- * bekommt genau einen Stand mit Herkunft "geklont".
+ * Cloning (Spec 0017 §7.5, #421): one endpoint handles both paths,
+ * removes broken prerequisites and records exactly one history entry
+ * with source cloned.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -35,7 +35,7 @@ defined('MOODLE_INTERNAL') || die();
 final class clone_activity_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs, Lehrkraft (editingteacher).
+     * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
         $course = $this->getDataGenerator()->create_course();
@@ -46,8 +46,8 @@ final class clone_activity_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: Intra-Kurs-Klon behaelt Plugin-Einstellungen (hier:
-     * page-Inhalt) und bekommt den uebergebenen Titel, kein "(Kopie)"-Suffix.
+     * Same-course clones preserve plugin settings (page content here) and
+     * use the supplied title without a copy suffix.
      */
     public function test_intra_course_clone_preserves_settings_and_sets_title(): void {
         global $DB;
@@ -76,7 +76,7 @@ final class clone_activity_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: kursuebergreifender Klon landet im Zielkurs.
+     * Cross-course clones appear in the target course.
      */
     public function test_cross_course_clone(): void {
         global $DB;
@@ -103,9 +103,8 @@ final class clone_activity_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: eine kaputte Abschlussbedingung (Verweis auf ein
-     * Modul, das beim kursuebergreifenden Klon nicht mitkopiert wurde) wird
-     * erkannt, entfernt und in der Meldung im Klartext genannt.
+     * Detect and remove broken completion references to modules not copied
+     * into the target course, describing the removal clearly.
      */
     public function test_removes_and_names_broken_prerequisite_on_cross_course_clone(): void {
         global $DB;
@@ -138,12 +137,10 @@ final class clone_activity_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: fehlende Berechtigung im Zielkurs scheitert klar -
-     * die Lehrkraft ist im Zielkurs nur als Student eingeschrieben, ohne
-     * Bearbeiten-Berechtigung (bloss "nicht eingeschrieben" wuerde bereits
-     * beim Zugriffs-Check in validate_context() als require_login_exception
-     * scheitern, nicht als Capability-Fehler - dasselbe Muster wie
-     * set_restriction_test::test_requires_manageactivities_capability()).
+     * Reject missing target-course editing capability. Enroll the teacher
+     * as a student so validation reaches the capability check instead of
+     * failing earlier with require_login_exception, following
+     * set_restriction_test::test_requires_manageactivities_capability().
      */
     public function test_capability_error_in_target_course(): void {
         $this->resetAfterTest();
@@ -158,9 +155,7 @@ final class clone_activity_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: fehlende Berechtigung im QUELLkurs scheitert ebenso
-     * klar - die Lehrkraft hat im Quellkurs nur eine Rolle ohne
-     * Bearbeiten-Berechtigung.
+     * Clearly reject missing editing capability in the source course too.
      */
     public function test_capability_error_in_source_course(): void {
         $this->resetAfterTest();
@@ -176,9 +171,8 @@ final class clone_activity_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: der Klon erzeugt genau einen Aenderungsverlauf-Stand
-     * als Version 1 mit quelle="geklont" und der Quell-Modul-ID - unabhaengig
-     * davon, was der Beobachter waehrend des Klonens selbst mitschreibt.
+     * Cloning records exactly one version 1 with source cloned and source
+     * module ID, regardless of observer writes during cloning.
      */
     public function test_history_stand_has_correct_origin(): void {
         global $DB;

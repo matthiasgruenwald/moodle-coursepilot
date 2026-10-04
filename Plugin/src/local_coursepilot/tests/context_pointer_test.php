@@ -19,10 +19,9 @@ namespace local_coursepilot;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Kontextpointer, zweite Fassung (Issue #490, Spec #486 §2) - reine
- * Werteumformung ohne Datei-/Netzzugriff: erste Fassung weiterhin als
- * *in Moodle*, zweite Fassung je Ziel *in Moodle* oder *extern*,
- * Vollstaendigkeits- und Segmentpruefung.
+ * Context-pointer v2 value transformations without file or network I/O
+ * (#490, Spec #486 §2). v1 remains in Moodle; v2 selects Moodle or
+ * external storage per target, with completeness and segment checks.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -45,8 +44,7 @@ final class context_pointer_test extends \advanced_testcase {
     }
 
     /**
-     * #602: ein Pointer mit deutschen Schluesseln und Werten (Fassung vor
-     * ADR 0024) bleibt lesbar.
+     * Legacy German pointer keys and values remain readable (#602, ADR 0024).
      */
     public function test_german_v2_pointer_is_normalised_and_resolves(): void {
         $decoded = [
@@ -73,10 +71,8 @@ final class context_pointer_test extends \advanced_testcase {
     }
 
     /**
-     * validate_path() weist einen leeren Ordnernamen ab (Issue #509 -
-     * dieselbe Absicherung, die {@see storage_anchor::write_pointer()}
-     * vor seiner Entfernung indirekt mitpruefte, hier direkt am
-     * eigentlichen Pruefungsort).
+     * validate_path() directly rejects empty folder names (#509), formerly
+     * checked indirectly by storage_anchor::write_pointer() before its removal.
      */
     public function test_validate_path_rejects_empty_value(): void {
         $this->expectException(\moodle_exception::class);
@@ -117,9 +113,8 @@ final class context_pointer_test extends \advanced_testcase {
     }
 
     /**
-     * Materialbestand loest den frueheren Begriff "materialordner" ab (Spec
-     * §2) - der Bereich reicht seinen historischen Pointer-Schluessel
-     * unveraendert durch, die Zuordnung auf das neue Feld passiert hier.
+     * Inventory replaces the old material-folder term (Spec §2). The area
+     * passes through its historical pointer key; map it to the new field here.
      */
     public function test_v2_pointer_resolves_material_store_target(): void {
         $decoded = [
@@ -182,9 +177,8 @@ final class context_pointer_test extends \advanced_testcase {
     }
 
     /**
-     * Aufloesungspruefung 7 (Issue #495, Spec #486 §2): der Materialbestand
-     * darf nie im Kontextbereich liegen - hier ein Moodle-Unterordner des
-     * Kontextbereichs.
+     * Resolution check 7: inventory must not lie below the context area
+     * (#495, Spec #486 §2); test a Moodle subfolder.
      */
     public function test_material_inside_context_is_rejected(): void {
         $decoded = [
@@ -194,14 +188,14 @@ final class context_pointer_test extends \advanced_testcase {
 
         try {
             context_pointer::resolve_target($decoded, 'material_store');
-            $this->fail('materialstoreincontext haette geworfen werden muessen.');
+            $this->fail('materialstoreincontext should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialstoreincontext', $e->errorcode);
         }
     }
 
     /**
-     * Auflosungspruefung 7 gilt auch fuer denselben Ordner.
+     * Resolution check 7 also rejects the same folder.
      */
     public function test_material_in_the_same_folder_as_context_is_rejected(): void {
         $decoded = [
@@ -214,8 +208,8 @@ final class context_pointer_test extends \advanced_testcase {
     }
 
     /**
-     * Die umgekehrte Richtung ist erlaubt: der Kontextbereich darf im
-     * Materialbestand liegen (CONTEXT.md "Materialbestand").
+     * The reverse nesting is allowed: context may lie within inventory
+     * (CONTEXT.md, Material inventory).
      */
     public function test_context_inside_material_is_allowed(): void {
         $decoded = [
@@ -229,9 +223,8 @@ final class context_pointer_test extends \advanced_testcase {
     }
 
     /**
-     * Auflosungspruefung 7 ist ortsunabhaengig: ein Moodle-Kontextbereich und
-     * ein extern liegender Materialbestand ueberschneiden sich nie - anderer
-     * Ort, anderer Vergleichsschluessel.
+     * Resolution check 7 cannot find overlap between Moodle context and
+     * external inventory: their location comparison keys differ.
      */
     public function test_external_material_never_overlaps_a_moodle_context(): void {
         $decoded = [
@@ -250,11 +243,9 @@ final class context_pointer_test extends \advanced_testcase {
     }
 
     /**
-     * Issue #518, Spec #486 §2 Pruefung 7: zwei Instanzen mit gleichem
-     * Server/Konto, aber unterschiedlichem Basispfad, sind unterschiedliche
-     * Orte - der Vergleich muss den Basispfad einbeziehen, sonst wuerden
-     * zufaellig gleiche relative Pfade faelschlich als Ueberschneidung
-     * gelten.
+     * Two instances with the same server/account but different base paths
+     * are different locations. Include base paths in overlap checks to avoid
+     * false positives for identical relative paths (#518, Spec #486 §2).
      */
     public function test_extern_targets_with_different_base_paths_are_not_falsely_flagged_as_overlapping(): void {
         $decoded = [
@@ -278,11 +269,8 @@ final class context_pointer_test extends \advanced_testcase {
     }
 
     /**
-     * Gegenstueck (Issue #518): derselbe physische Ort, einmal ueber eine
-     * Instanz mit Basispfad "Team" plus Unterordner "A/B" erreicht, einmal
-     * ueber eine zweite Instanz, deren Basispfad direkt "Team/A" ist, mit
-     * Unterordner "B" - der effektive Pfad ist identisch, die Verschachtelung
-     * muss trotz unterschiedlicher Instanz-ID erkannt werden.
+     * Instances rooted at Team + A/B and Team/A + B resolve to the same
+     * physical path. Detect nesting despite different instance IDs (#518).
      */
     public function test_extern_targets_nested_via_different_base_paths_are_rejected(): void {
         $decoded = [
@@ -302,16 +290,15 @@ final class context_pointer_test extends \advanced_testcase {
 
         try {
             context_pointer::resolve_target($decoded, 'material_store');
-            $this->fail('materialstoreincontext haette geworfen werden muessen.');
+            $this->fail('materialstoreincontext should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialstoreincontext', $e->errorcode);
         }
     }
 
     /**
-     * Aufloesungspruefung 8 (Issue #497, Spec #486 §2/§5): bei einer als
-     * IServ erkannten Instanz (Pruefmerkmal "iserv", ohne Netz) ist nur
-     * unterhalb von "Files/" erreichbar.
+     * Resolution check 8: recognized IServ instances are accessible only
+     * below Files/ (#497, Spec #486 §2/§5), using the iserv marker without I/O.
      */
     public function test_iserv_path_outside_files_is_rejected_without_network(): void {
         $decoded = [
@@ -326,14 +313,14 @@ final class context_pointer_test extends \advanced_testcase {
 
         try {
             context_pointer::resolve_target($decoded, 'context_area');
-            $this->fail('webdaviservfilesonly haette geworfen werden muessen.');
+            $this->fail('webdaviservfilesonly should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdaviservfilesonly', $e->errorcode);
         }
     }
 
     /**
-     * Unterhalb von "Files/" bleibt eine als IServ erkannte Instanz erreichbar.
+     * Recognized IServ instances remain accessible below Files/.
      */
     public function test_iserv_path_under_files_is_allowed(): void {
         $decoded = [
@@ -352,8 +339,8 @@ final class context_pointer_test extends \advanced_testcase {
     }
 
     /**
-     * Fehlt das Feld "iserv" im Pruefmerkmal (Pointer vor Issue #497), gilt
-     * das als "nein" - kein stiller Fehlschlag fuer Altbestand.
+     * Pointers predating #497 have no iserv marker; treat them as false
+     * without breaking existing content.
      */
     public function test_missing_iserv_field_defaults_to_no_restriction(): void {
         $decoded = [
@@ -409,8 +396,8 @@ final class context_pointer_test extends \advanced_testcase {
     }
 
     /**
-     * "Alle Aufloesungspruefungen gelten auch fuer den vorherigen Ort"
-     * (Issue #498 Akzeptanzkriterium) - hier Pruefung 8 (IServ).
+     * All resolution checks also apply to the previous location (#498);
+     * test IServ check 8.
      */
     public function test_resolve_previous_enforces_iserv_files_only(): void {
         try {
@@ -420,7 +407,7 @@ final class context_pointer_test extends \advanced_testcase {
                 'path' => 'Groups/Alt',
                 'fingerprint' => ['server' => 's', 'basepath' => 'b', 'account' => 'k', 'iserv' => true],
             ]);
-            $this->fail('webdaviservfilesonly haette geworfen werden muessen.');
+            $this->fail('webdaviservfilesonly should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdaviservfilesonly', $e->errorcode);
         }

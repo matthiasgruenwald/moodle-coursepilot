@@ -17,25 +17,25 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Antwort des Art-Tors (registry::kind): katalogisiert, erschlossen oder
- * ausgeschlossen (mit Grund als Sprachschluessel).
+ * Answer of the kind gate (registry::kind): catalogued, developed or
+ * excluded (with the reason as a language string key).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class activity_kind {
-    /** Katalogisiert: gepruefter Feldkatalog. */
+    /** Catalogued: verified field catalog. */
     public const CATALOGUED = 'catalogued';
-    /** Erschlossen: installiert, ohne Feldkatalog. */
+    /** Developed: installed, without a field catalog. */
     public const DEVELOPED = 'developed';
-    /** Ausgeschlossen: weder katalogisiert noch per XML anlegbar. */
+    /** Excluded: neither catalogued nor creatable via XML. */
     public const EXCLUDED = 'excluded';
 
     /**
-     * @param string $kind Eine der Konstanten.
-     * @param string|null $catalog Katalogklasse, nur bei CATALOGUED.
-     * @param string|null $reasonkey Sprachschluessel (local_coursepilot), nur bei EXCLUDED.
+     * @param string $kind One of the constants.
+     * @param string|null $catalog Catalog class, only for CATALOGUED.
+     * @param string|null $reasonkey Language string key (local_coursepilot), only for EXCLUDED.
      */
     public function __construct(
         public readonly string $kind,

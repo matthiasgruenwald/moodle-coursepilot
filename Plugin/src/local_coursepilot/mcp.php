@@ -15,25 +15,24 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * MCP-Endpunkt: POST-only, JSON, zustandslos, dual-era (Legacy 2025-* mit
- * initialize-Handshake, modern 2026-07-28 mit server/discover).
+ * MCP endpoint: POST-only, JSON, stateless, supporting legacy 2025-*
+ * initialize handshake and modern 2026-07-28 server/discover.
  *
- * Reine Schale (#334): liest Request-Rumpf, Bearer-Token und Header ein,
- * uebergibt an {@see \local_coursepilot\dispatcher::handle()} - die eigentliche
- * Entscheidungslogik (Auth-Gate, Datenschutz-Vertragspruefung aus ADR 0011)
- * lebt dort und ist ohne diese Datei per PHPUnit testbar. Diese Datei bleibt
- * bewusst ungetestet: sie tut nichts als Ein-/Ausgabe.
+ * I/O shell (#334): reads body, Bearer token and headers, then delegates
+ * to {@see \local_coursepilot\dispatcher::handle()}. Authentication
+ * and the ADR 0011 privacy contract are tested there with PHPUnit.
+ * This pure I/O file deliberately has no separate tests.
  *
- * Belegt durch Recherche #290 und Prototyp #294.
+ * Established by research #290 and prototype #294.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 
-// WS_SERVER ist Pflicht, nicht NO_MOODLE_COOKIES: ohne WS_SERVER scheitert
-// external_api::call_external_function() an 'servicerequireslogin'
-// (external_api.php:216) - Fund aus dem Prototypen #294.
+// WS_SERVER is required, not NO_MOODLE_COOKIES: otherwise
+// external_api::call_external_function() fails with servicerequireslogin
+// (external_api.php:216; prototype #294 finding).
 define('WS_SERVER', true);
 define('NO_DEBUG_DISPLAY', true);
 
@@ -45,8 +44,8 @@ raise_memory_limit(MEMORY_EXTRA);
 \core_external\external_api::set_timeout();
 
 /**
- * Liest das Bearer-Token. Unter CGI/FastCGI kommt der Authorization-Header
- * teils nur als REDIRECT_HTTP_AUTHORIZATION an (Recherche #290, 6.1).
+ * Reads the Bearer token. Under CGI/FastCGI the Authorization header
+ * may arrive only as REDIRECT_HTTP_AUTHORIZATION (research #290, §6.1).
  *
  * @return string|null
  */
@@ -75,9 +74,8 @@ $response = dispatcher::handle($request, coursepilot_mcp_bearer_token(), [
     'origin' => $_SERVER['HTTP_ORIGIN'] ?? null,
     'pathinfo' => $_SERVER['PATH_INFO'] ?? '',
     'method' => $_SERVER['REQUEST_METHOD'] ?? 'POST',
-    // Die nach dem Handshake ausgehandelte Protokoll-Revision (#400): sie
-    // entscheidet, ob die Antwort die Ergebnis-Metadaten der Revision
-    // 2026-07-28 traegt, siehe dispatcher::resultmeta().
+    // Negotiated protocol revision after handshake (#400): controls
+    // 2026-07-28 result metadata; see dispatcher::resultmeta().
     'protocolversion' => $_SERVER['HTTP_MCP_PROTOCOL_VERSION'] ?? null,
 ]);
 
@@ -87,13 +85,11 @@ foreach ($response['headers'] as $name => $value) {
 }
 if ($response['body'] !== null) {
     header('Content-Type: application/json');
-    // JSON_INVALID_UTF8_SUBSTITUTE statt Absturz auf ungueltigen Bytes:
-    // json_encode() liefert sonst kommentarlos false (leerer Rumpf trotz
-    // Status 200 und Content-Type application/json) sobald irgendein
-    // Textfeld im Ergebnis ungueltiges UTF-8 enthaelt - z.B. Kurs-/
-    // Abschnittsnamen aus einem restaurierten Datenbestand mit alten
-    // Latin-1-Resten. Der Client sieht dann keine JSON-RPC-Fehlermeldung,
-    // nur einen nicht auswertbaren leeren Rumpf.
+    // JSON_INVALID_UTF8_SUBSTITUTE handles invalid bytes instead of silently
+    // returning false: otherwise even a 200 application/json reply has an
+    // empty body when any result text has invalid UTF-8, such as restored
+    // course/section names with old Latin-1 bytes. The client receives
+    // no JSON-RPC error, just an unparseable empty body.
     echo json_encode($response['body'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
 }
 exit;

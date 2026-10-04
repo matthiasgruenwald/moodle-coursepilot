@@ -17,13 +17,12 @@
 namespace local_coursepilot;
 
 /**
- * Die zugelassenen Speicher fuer personenbezogene Kontextdaten (Issue #493,
- * ADR 0021 §3, Spec #486 §6/§11): die Schule nennt sie in
- * `local_coursepilot | personaldatahosts`, ein Eintrag je Zeile. Ein Eintrag
- * gilt fuer eine Domain samt Unterdomains, getrennt wird nur an Punkten,
- * ohne `*`. Eine leere Liste bedeutet: nur Private Files - die als einziger
- * Ort immer zugelassen sind (siehe Aufrufer in den Kontextwerkzeugen, nicht
- * hier: diese Klasse kennt nur die externe Speicherliste).
+ * Approved external hosts for personal context data (Issue #493,
+ * ADR 0021 §3, Spec #486 §6/§11). The school lists one domain per line in
+ * `local_coursepilot | personaldatahosts`. Each domain includes subdomains,
+ * matched at dot boundaries without wildcards. An empty list allows only
+ * Private Files, which context-tool callers always approve; this class
+ * manages only the external host list.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -32,10 +31,8 @@ namespace local_coursepilot;
 final class personal_data_hosts {
 
     /**
-     * Ob ein WebDAV-Server (das Pruefmerkmal einer aufgeloesten Instanz,
-     * {@see \local_coursepilot\webdav\webdav_instance::resolve()}) in der
-     * konfigurierten Liste zugelassen ist - genau dann, wenn er einem
-     * Eintrag entspricht oder eine seiner Unterdomains ist.
+     * Whether a resolved WebDAV host is approved: an exact configured domain
+     * or one of its subdomains ({@see \local_coursepilot\webdav\webdav_instance::resolve()}).
      *
      * @param string $host
      * @return bool
@@ -54,16 +51,13 @@ final class personal_data_hosts {
     }
 
     /**
-     * Wirft den Aufruffehler "Speicher nicht zugelassen" (Issue #493, ADR
-     * 0021 §3), wenn ein Ziel extern und sein Server nicht zugelassen ist -
-     * Private Files (jede Position ausser EXTERNAL) sind immer zugelassen.
-     * Geteilt von {@see \local_coursepilot\external\write_context_file} und
-     * {@see \local_coursepilot\external\append_context_file}, die beide
-     * "die ganze entstehende Datei" pruefen muessen (Spec #486 §6:
-     * "auch beim Anhaengen und beim Kopieren").
+     * Reject an external location whose host is not approved (Issue #493,
+     * ADR 0021 §3). Private Files (any non-EXTERNAL location) are always approved.
+     * Shared by write_context_file and append_context_file, which must check
+     * the entire resulting file, including append and copy (Spec #486 §6).
      *
      * @param pointer_location|null $location
-     * @param string $path Client-Pfad, fuer die Fehlermeldung.
+     * @param string $path Client path for the error message.
      * @throws \moodle_exception contextfilehostnotallowed
      */
     public static function require_allowed_location(?pointer_location $location, string $path): void {
@@ -74,18 +68,18 @@ final class personal_data_hosts {
     }
 
     /**
-     * @return string[] Konfigurierte Domains, klein geschrieben, leere Zeilen entfernt.
+     * @return string[] Configured domains, lowercased, with empty lines removed.
      */
     public static function configured(): array {
         return self::parse((string) (get_config('local_coursepilot', 'personaldatahosts') ?: ''));
     }
 
     /**
-     * Prueft eine noch nicht gespeicherte Einstellung auf Eintraege mit nur
-     * einem Namensteil oder mit `*` - beides beim Speichern abgelehnt.
+     * Check an unsaved setting for single-part names or wildcard entries,
+     * both of which are rejected when saving.
      *
-     * @param string $raw Roher Einstellungswert, ein Eintrag je Zeile.
-     * @return string|null Der erste ungueltige Eintrag, oder null, wenn alle gueltig sind.
+     * @param string $raw Raw setting value, one entry per line.
+     * @return string|null First invalid entry, or null if all are valid.
      */
     public static function first_invalid_entry(string $raw): ?string {
         foreach (self::parse($raw) as $domain) {

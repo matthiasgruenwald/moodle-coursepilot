@@ -28,52 +28,29 @@ use local_coursepilot\history\retention;
 use local_coursepilot\history\version_history;
 
 /**
- * Voller Privacy-Provider (#336, erweitert in #345 um Kontextdateien aus
- * #343): die Autorisierungscode- und Token-Tabellen binden `userid` an die
- * Lehrkraft, die den Client autorisiert hat - `null_provider` traegt hier
- * nicht (anders als beim Moodle-Webservice-Token, siehe
- * core_webservice\privacy\provider), weil lokale, plugin-eigene Tabellen
- * betroffen sind, kein Core-Loeschmechanismus existiert. Voller Provider wie
- * im Resolutionskommentar zu #298 (Punkt 7) vereinbart: metadata\provider +
- * request\plugin\provider + core_userlist_provider.
+ * Full privacy provider (#336, extended for context files in #345/#343).
+ * OAuth codes and tokens link userid to the authorizing teacher. Local
+ * plugin tables need metadata, request and userlist providers because
+ * core has no deletion mechanism for them (#298 resolution, point 7).
  *
- * Zwei Kontextebenen: Autorisierungscodes/Token haengen am Systemkontext
- * (kein Kurs-/Modulbezug), Kontextdateien (#343) am privaten Nutzerkontext
- * der jeweiligen Lehrkraft ({@see \local_coursepilot\context_files}).
+ * OAuth records belong to the system context; context data belongs to
+ * the teacher's user context. After migration to Private Files (#407,
+ * Spec 0016 §3.2), this provider handles only the legacy
+ * local_coursepilot/coursepilot_context file area. Core user privacy
+ * exports and deletes current user/private context and material files
+ * (Spec 0018 §2, #428). A second path here would duplicate exports or
+ * delete unrelated Private Files. Once teachers clear migrated legacy
+ * files, the legacy handling can be removed.
  *
- * Der Datei-Teil dieses Providers deckt seit dem Umzug auf Moodles Private
- * Files (#407, Spec 0016 Abschnitt 3.2) nur noch den **Altbestand** in der
- * alten Filearea `local_coursepilot/coursepilot_context` ab - deshalb stehen hier
- * ueberall LEGACY_COMPONENT/LEGACY_FILEAREA statt der aktuellen Konstanten.
- * Die neuen Kontextdateien liegen in `user/private` und werden vom
- * Core-Provider (core_user, `user/classes/privacy/provider.php`) exportiert
- * und geloescht; Coursepilot fasst sie bewusst NICHT an - ein zweiter Export
- * waere Doppelarbeit, ein zweiter Loeschpfad wuerde fremde Dateien aus
- * "Meine Dateien" mitreissen. Ist der Altbestand vollstaendig umgezogen und
- * von der Lehrkraft geraeumt, kann der Datei-Teil in einem spaeteren Release
- * ersatzlos entfallen.
+ * Log events (#339) are handled by logstore_standard's privacy provider,
+ * which exports/deletes a user's logs regardless of source plugin. Events
+ * already supply userid, contextid and component.
  *
- * Derselbe Grund gilt fuer den Materialordner (Spec 0018 §2, #428,
- * {@see \local_coursepilot\material_files}): auch er liegt in `user/private`
- * (eigener Unterordner, gleicher Anker) und wird bereits vom Core-Provider
- * exportiert/geloescht - kein zusaetzlicher Export-/Loeschpfad hier noetig.
- *
- * Protokollereignisse (#339) sind bewusst NICHT hier abgedeckt: das Ablegen,
- * Exportieren und Loeschen der eigentlichen Log-Eintraege besorgt Moodle-Core
- * zentral ueber logstore_standard's eigenen Privacy-Provider (der exportiert/
- * loescht alle Log-Eintraege eines Nutzers unabhaengig vom ausloesenden
- * Plugin) - ein eigener Export-/Loeschpfad hier waere doppelte, mit Core
- * kollidierende Arbeit. Die Ereignisse selbst tragen bereits die dafuer
- * noetigen Merkmale (userid, contextid, component), siehe
- * classes/event/tool_access_*.php.
- *
- * The change history (local_coursepilot_cm_version/_version_file/_cm_file,
- * #385/#641) belongs to the activity's module context: discovery by the
- * states' userid (existing module contexts only; states of vanished modules
- * are left to retention), export of the requester's own states as metadata
- * without snapshot content and only with files allowed by
- * {@see \local_coursepilot\history\file_policy}, deletion through the shared
- * contract {@see \local_coursepilot\history\retention::delete_versions()}.
+ * Change history (#385/#641) belongs to module contexts. Discover it by
+ * state userid for existing modules; retention handles vanished modules.
+ * Export only the requester's metadata, without snapshot content, and
+ * files allowed by history\file_policy. Delete through the shared
+ * history\retention::delete_versions() contract.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -101,9 +78,8 @@ final class provider implements
     }
 
     /**
-     * Registriert die OAuth- und Aktivitaetsstand-Tabellen (Issue #523: aus
-     * get_metadata() ausgelagert, um die Funktion unter der
-     * 50-Zeilen-Grenze zu halten).
+     * Describe OAuth and activity-version tables (Issue #523, extracted from
+     * get_metadata() to keep it within 50 lines).
      *
      * @param collection $collection
      * @return collection
@@ -149,10 +125,8 @@ final class provider implements
             'arrangement_json' => 'privacy:metadata:cm_version:arrangement_json',
             'timecreated' => 'privacy:metadata:cm_version:timecreated',
         ], 'privacy:metadata:cm_version');
-        // Beide Tabellen tragen keine userid, nur die Dateibeschreibung eines
-        // Standes (siehe Klassenkommentar oben) - trotzdem mit Feldern statt
-        // [] deklariert, sonst warnt Moodle-Core bei jedem get_metadata()-
-        // Aufruf ("Table '...' was supplied without any fields").
+        // Both tables store file descriptions without userid. Still declare fields
+        // rather than [] to avoid Moodle's missing-fields metadata warning.
         $collection->add_database_table('local_coursepilot_cm_version_file', [
             'versionid' => 'privacy:metadata:cm_version_file:versionid',
             'fileid' => 'privacy:metadata:cm_version_file:fileid',
@@ -171,33 +145,27 @@ final class provider implements
     }
 
     /**
-     * Registriert das Markierungsgedaechtnis und das Werkbank-Downloadticket
-     * (Issue #523: aus get_metadata() ausgelagert).
+     * Describe marking memory and workbench download tickets (Issue #523,
+     * extracted from get_metadata()).
      *
      * @param collection $collection
      * @return collection
      */
     private static function describe_context_and_workbench_tables(collection $collection): collection {
-        // Markierungsgedaechtnis (#493, Spec #486 §6): traegt userid und den
-        // Client-Pfad einer Kontextdatei, siehe local_coursepilot\mark_memory.
+        // Marking memory (#493, Spec #486 §6): user ID and context-file client path.
+        // See local_coursepilot\mark_memory.
         $collection->add_database_table('local_coursepilot_context_mark', [
             'userid' => 'privacy:metadata:context_mark:userid',
             'path' => 'privacy:metadata:context_mark:path',
             'ismarked' => 'privacy:metadata:context_mark:ismarked',
         ], 'privacy:metadata:context_mark');
 
-        // Externer Ablageort (#500, ADR 0021, Spec #486 §11): Kontextbereich
-        // und Materialbestand koennen am WebDAV-Speicher der Lehrkraft
-        // liegen, ausserhalb jedes Moodle-Loesch-/Exportmechanismus. Pointer
-        // (Kontextpointer-Datei), Ausstandsnotiz und Werkbank bleiben davon
-        // unberuehrt - sie liegen weiter in `user/private` und sind ueber
-        // Moodle-Cores eigenen Provider (user/classes/privacy/provider.php)
-        // gedeckt, wie im Klassenkommentar oben begruendet. Hier wird nur der
-        // externe Ort selbst benannt, den eine Auskunft sonst verschweigen
-        // wuerde.
-        // Werkbank-Downloadticket (#501, Spec #486 §13): system-kontextgebunden
-        // wie die OAuth-Tabellen (kein Kurs-/Modulbezug), nur der Hash des
-        // Ticketgeheimnisses wird gefuehrt, siehe local_coursepilot\workbench_ticket.
+        // External storage (#500, ADR 0021, Spec #486 §11) is outside Moodle's
+        // export/deletion mechanisms. Pointer, pending note and workbench remain
+        // in user/private and are covered by core user privacy. Declare the
+        // external location here so the privacy report does not omit it.
+        // Workbench tickets (#501, Spec #486 §13) belong to the system context,
+        // like OAuth records. Store only a hash of the ticket secret.
         $collection->add_database_table('local_coursepilot_workbench_ticket', [
             'userid' => 'privacy:metadata:workbench_ticket:userid',
             'path' => 'privacy:metadata:workbench_ticket:path',
@@ -268,11 +236,9 @@ final class provider implements
     }
 
     /**
-     * Ob im Nutzerkontext tatsaechlich Kontextdateien oder Eintraege im
-     * Markierungsgedaechtnis liegen - anders als core_user::get_users_in_context()
-     * (die den Kontexteigentuemer blind hinzufuegt) prueft dieser Provider den
-     * echten Bestand, damit ein beliebiger Nutzerkontext ohne Daten nicht
-     * faelschlich auftaucht.
+     * Whether a user context has actual context files or marking-memory rows.
+     * Unlike core_user::get_users_in_context(), check data rather than blindly
+     * adding the context owner, avoiding empty contexts in discovery.
      *
      * @param \context_user $context
      * @return bool
@@ -357,9 +323,8 @@ final class provider implements
     }
 
     /**
-     * Exportiert Kontextdateien und Markierungsgedaechtnis fuer den eigenen
-     * Nutzerkontext (Issue #523: aus export_user_data() ausgelagert, um die
-     * Funktion unter der 50-Zeilen-Grenze zu halten).
+     * Export legacy context files and marking memory for the user context.
+     * Extracted from export_user_data() to keep it within 50 lines (Issue #523).
      *
      * @param \context_user $context
      * @param int $userid
@@ -388,8 +353,8 @@ final class provider implements
     }
 
     /**
-     * Exportiert OAuth-Codes/-Tokens und Werkbank-Downloadtickets fuer den
-     * Systemkontext (Issue #523: aus export_user_data() ausgelagert).
+     * Export OAuth codes/tokens and workbench download tickets for the system
+     * context (Issue #523, extracted from export_user_data()).
      *
      * @param \context_system $context
      * @param int $userid
@@ -465,8 +430,8 @@ final class provider implements
     }
 
     /**
-     * Loescht alle Kontextdateien (#343) und das Markierungsgedaechtnis
-     * (#493) im gegebenen Nutzerkontext.
+     * Delete legacy context files (#343) and marking memory (#493) in the
+     * given user context.
      *
      * @param \context $context
      */
@@ -500,13 +465,9 @@ final class provider implements
             }
         }
 
-        // Beide Seiten sind hier Zeichenketten, nicht Zahlen: Die Kontext-IDs
-        // stammen aus einer Datenbankabfrage (contextlist::add_from_sql()),
-        // und SYSCONTEXTID wird beim Aufbau der Moodle-Umgebung aus einem
-        // Datenbankfeld gesetzt - gemessen als string '1'. Ein strenger
-        // Vergleich ohne Umwandlung traf deshalb nie zu, und eine
-        // Loeschanfrage ueber den Nutzerkontext liess Verbindungen, Codes und
-        // Werkbank-Tickets stehen.
+        // Database context IDs and SYSCONTEXTID may be strings. Normalize both
+        // to integers before strict comparison; otherwise user-context deletion
+        // could leave connections, codes and workbench tickets behind.
         $contextids = array_map('intval', $contextlist->get_contextids());
         if (!in_array((int) SYSCONTEXTID, $contextids, true)) {
             return;

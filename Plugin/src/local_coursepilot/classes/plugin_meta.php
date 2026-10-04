@@ -17,12 +17,10 @@
 namespace local_coursepilot;
 
 /**
- * Die eine kanonische Quelle fuer $plugin->version/->release (#577): vorher
- * las sowohl dispatcher::handle() (MCP-Handshake-serverInfo) als auch
- * get_version_info::execute() unabhaengig voneinander dieselbe version.php -
- * zwei Kopien derselben Logik, die im Code-Review als Duplicated Code
- * benannt wurden. Jetzt liest genau eine Stelle die Datei ein, beide Aufrufer
- * fragen hier nach.
+ * Canonical source for $plugin->version/->release (#577). Previously,
+ * dispatcher::handle() (MCP handshake serverInfo) and get_version_info::execute()
+ * read version.php independently, duplicating the same logic. Now one place
+ * reads the file and both callers query it.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,9 +29,8 @@ namespace local_coursepilot;
 final class plugin_meta {
 
     /**
-     * $plugin aus version.php der laufenden Dateien - nicht aus
-     * config_plugins, damit ein Deploy ohne upgrade.php-Lauf sichtbar bleibt
-     * (siehe get_version_info::execute()).
+     * $plugin from the running version.php, not config_plugins, so deployment
+     * without upgrade.php remains visible (see get_version_info::execute()).
      *
      * @return \stdClass
      */

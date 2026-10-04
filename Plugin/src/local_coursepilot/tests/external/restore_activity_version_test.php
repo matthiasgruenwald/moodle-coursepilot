@@ -20,8 +20,8 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * "Vor drei Versionen war das besser" als Schreibvorgang (Spec 0015 §10.7,
- * Ticket #395): Fortschreiben statt Rueckspulen.
+ * "Three versions ago it was better" as a write (Spec 0015 §10.7,
+ * ticket #395): carry forward instead of rewinding.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,7 +31,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class restore_activity_version_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs, Lehrkraft (editingteacher).
+     * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
         set_config('enablecompletion', COMPLETION_ENABLED);
@@ -44,7 +44,7 @@ final class restore_activity_version_test extends \advanced_testcase {
 
     /**
      * @param int $cmid
-     * @return array Ist-Stand, dieselbe Form wie get_module_settings.
+     * @return array Current state, same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -70,9 +70,9 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 1: eine Rueckkehr erzeugt eine neue juengste Version
-     * statt eines Rueckspulens - die cmid bleibt unveraendert, der alte
-     * Feldwert erscheint als neuer Ist-Stand.
+     * Acceptance criterion 1: a restore creates a new latest version
+     * instead of a rewind - the cmid stays unchanged, the old field value
+     * appears as the new current state.
      */
     public function test_restore_writes_target_state_forward_keeping_cmid(): void {
         global $DB;
@@ -96,15 +96,15 @@ final class restore_activity_version_test extends \advanced_testcase {
         $this->assertSame('page', $result['modname']);
         $this->assertSame('Alt', $this->read($cmid)['name']);
 
-        // Fortgeschrieben, nicht zurueckgespult: drei Staende (Anlage, Aenderung,
-        // Rueckkehr), keiner geloescht/ueberschrieben.
+        // Carried forward, not rewound: three states (creation, change,
+        // restore), none deleted/overwritten.
         $this->assertSame(3, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $cmid]));
     }
 
     /**
-     * Der Seiteninhalt liegt im Versionsstand als "content", wird von Moodle
-     * beim Schreiben aber ausschliesslich aus dem Editor-Pseudofeld "page"
-     * gelesen. Eine Rueckkehr darf daher nicht den aktuellen Inhalt weitertragen.
+     * The page content sits in the version state as "content", but when writing
+     * Moodle reads it exclusively from the editor pseudofield "page".
+     * A restore must therefore not carry the current content forward.
      */
     public function test_restore_writes_back_page_content(): void {
         $this->resetAfterTest();
@@ -128,8 +128,8 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Auch der Aktivitaetstext einer Aufgabe wird von Moodle aus dem
-     * activityeditor-Pseudofeld uebernommen.
+     * The activity text of an assignment is also taken over by Moodle from the
+     * activityeditor pseudofield.
      */
     public function test_restore_writes_back_assign_activity_content(): void {
         $this->resetAfterTest();
@@ -155,8 +155,8 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 2: nach einer Rueckkehr entsteht keine zusaetzliche
-     * Aktivitaet im Kurs.
+     * Acceptance criterion 2: after a restore no additional activity
+     * appears in the course.
      */
     public function test_restore_creates_no_additional_activity(): void {
         global $DB;
@@ -177,8 +177,8 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 3 (Proxy): die cmid - und damit jeder Link/jede
-     * Voraussetzung, die sie referenziert - bleibt unveraendert erreichbar.
+     * Acceptance criterion 3 (proxy): the cmid - and with it every link/every
+     * prerequisite that references it - stays reachable unchanged.
      */
     public function test_restore_keeps_cmid_reachable(): void {
         $this->resetAfterTest();
@@ -197,10 +197,10 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 4+5: ohne "bestaetigt" bleiben Abschlussfelder
-     * unangetastet, wenn das Zurueckschreiben bestehende Abschlussdaten
-     * loeschen wuerde - die Meldung ist set_completion's echte
-     * Datenverlust-Warnung mit Betroffenenzahl, nicht eine eigene Erfindung.
+     * Acceptance criterion 4+5: without "confirmed" the completion fields
+     * stay untouched if writing back would delete existing completion
+     * data - the message is set_completion's real data-loss warning
+     * with the number of affected learners, not an invention of its own.
      */
     public function test_restore_without_confirmation_leaves_completion_fields_untouched_on_data_loss_risk(): void {
         global $DB;
@@ -212,8 +212,8 @@ final class restore_activity_version_test extends \advanced_testcase {
         ]);
         $cmid = $page->cmid;
 
-        // Version 2: Vervollstaendigung auf automatisch (noch keine Lernendendaten,
-        // laeuft ohne Zweitakt durch).
+        // Version 2: completion set to automatic (no learner data yet,
+        // runs through without the two-step flow).
         set_completion::execute($cmid, json_encode(['completion' => COMPLETION_TRACKING_AUTOMATIC]));
         $student = $this->getDataGenerator()->create_user();
         $this->seed_completion_data($cmid, $student->id);
@@ -229,15 +229,15 @@ final class restore_activity_version_test extends \advanced_testcase {
             $this->assertNotSame('completion', $change['field']);
         }
         $this->assertStringContainsString('confirmed', $result['message']);
-        // Die echte Betroffenenzahl aus set_completion's Zweitakt, nicht nur
-        // eine generische Warnung (Testumgebung laeuft in Englisch).
+        // The real number of affected learners from set_completion's two-step flow, not just
+        // a generic warning (the test environment runs in English).
         $this->assertStringContainsString('1 learner', $result['message']);
     }
 
     /**
-     * Abnahmekriterium 5+6: nur der Zweitakt mit "bestaetigt": true schreibt
-     * Abschlussfelder zurueck, die bestehende Abschlussdaten loeschen wuerden -
-     * ueber set_completion, nicht ueber einen eigenen Mechanismus.
+     * Acceptance criterion 5+6: only the two-step flow with "confirmed": true writes back
+     * completion fields that would delete existing completion data -
+     * via set_completion, not via a mechanism of its own.
      */
     public function test_restore_with_confirmation_writes_back_completion_fields(): void {
         $this->resetAfterTest();
@@ -263,10 +263,10 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne Datenverlustrisiko (keine vorhandenen Abschlussdaten) laeuft die
-     * Rueckkehr der Abschlussfelder sofort mit durch, wie bei jedem anderen
-     * set_completion()-Aufruf ohne Risiko - "bestaetigt" ist hier nicht
-     * noetig, restore erfindet keine zusaetzliche eigene Huerde.
+     * Without data-loss risk (no existing completion data) the restore of
+     * the completion fields runs through immediately, like any other
+     * set_completion() call without risk - "confirmed" is not needed
+     * here, restore does not invent an additional hurdle of its own.
      */
     public function test_restore_writes_back_completion_fields_without_confirmation_when_no_data_at_risk(): void {
         $this->resetAfterTest();
@@ -277,7 +277,7 @@ final class restore_activity_version_test extends \advanced_testcase {
         ]);
         $cmid = $page->cmid;
 
-        // Version 2, keine Lernendendaten vorhanden.
+        // Version 2, no learner data present.
         set_completion::execute($cmid, json_encode(['completion' => COMPLETION_TRACKING_AUTOMATIC]));
 
         $result = external_api::clean_returnvalue(
@@ -291,8 +291,8 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne tatsaechlichen Unterschied (Ziel = aktueller Stand) wird nichts
-     * geschrieben - kein neuer Verlaufsstand, klare "keine Aenderung"-Meldung.
+     * Without an actual difference (target = current state) nothing is
+     * written - no new history version, clear "no change" message.
      */
     public function test_restore_to_current_version_is_a_noop(): void {
         global $DB;
@@ -310,12 +310,12 @@ final class restore_activity_version_test extends \advanced_testcase {
         );
 
         $this->assertEmpty($result['changes']);
-        $this->assertStringContainsString('Keine Änderung', $result['message']);
+        $this->assertStringContainsString('No change', $result['message']);
         $this->assertSame(1, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $cmid]));
     }
 
     /**
-     * Abnahmekriterium: eine unbekannte Zielversion scheitert klar.
+     * Acceptance criterion: an unknown target version fails clearly.
      */
     public function test_unknown_target_version_is_rejected(): void {
         $this->resetAfterTest();
@@ -324,14 +324,14 @@ final class restore_activity_version_test extends \advanced_testcase {
 
         try {
             restore_activity_version::execute($page->cmid, 99);
-            $this->fail('Erwartete moodle_exception blieb aus.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('versionnotfound', $e->errorcode);
         }
     }
 
     /**
-     * Abnahmekriterium 7: local/coursepilot:restoreversion wird geprueft.
+     * Acceptance criterion 7: local/coursepilot:restoreversion is checked.
      */
     public function test_rejects_user_without_own_capability(): void {
         $this->resetAfterTest();
@@ -353,9 +353,9 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 7: moodle/course:manageactivities wird zusaetzlich
-     * geprueft - eine nicht-editierende Lehrkraft (hat lt. Vorbelegung
-     * local/coursepilot:restoreversion, aber nicht manageactivities) scheitert.
+     * Acceptance criterion 7: moodle/course:manageactivities is additionally
+     * checked - a non-editing teacher (has local/coursepilot:restoreversion by
+     * default, but not manageactivities) fails.
      */
     public function test_rejects_user_without_native_manageactivities_capability(): void {
         $this->resetAfterTest();
@@ -372,9 +372,9 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: der Rueckschreibvorgang selbst erzeugt einen Stand im
-     * Aenderungsverlauf - ueber denselben course_module_updated-Beobachter
-     * wie jeder andere update_moduleinfo()-Aufruf.
+     * Acceptance criterion: the write-back itself creates a version in the
+     * change history - via the same course_module_updated observer
+     * as any other update_moduleinfo() call.
      */
     public function test_restore_creates_history_version(): void {
         global $DB;
@@ -394,8 +394,7 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: die Antwort ist die Aenderungsmeldung in
-     * Lehrkraft-Deutsch.
+     * Acceptance criterion: the response is the change message.
      */
     public function test_response_message_names_changed_field(): void {
         $this->resetAfterTest();
@@ -413,13 +412,13 @@ final class restore_activity_version_test extends \advanced_testcase {
         );
 
         $this->assertStringContainsString('name', $result['message']);
-        $this->assertStringContainsString('Version 1', $result['message']);
+        $this->assertStringContainsString('version 1', $result['message']);
     }
 
     /**
-     * Erstellt eine Materialdatei fuer den aktuell angemeldeten Nutzer,
-     * ersetzt sie falls sie schon existiert - derselbe Ablageort, den
-     * upload_material_file bespielt (Issue #428).
+     * Creates a material file for the currently logged-in user,
+     * replacing it if it already exists - the same storage location
+     * upload_material_file writes to (issue #428).
      *
      * @param string $path
      * @param string $content
@@ -443,11 +442,11 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Rollback holt eine ersetzte Aktivitaetsdatei zurueck (Spec 0018 §9.1,
-     * Issue #432): Version 1 haengt Datei A an, Version 2 ersetzt sie durch
-     * Datei B (gleicher Dateiname, anderer Inhalt) - die Rueckkehr zu
-     * Version 1 muss Datei A wieder an der Aktivitaet haengen haben, nicht
-     * die Luecke aus Spec 0015 §10.4.
+     * Rollback brings back a replaced activity file (Spec 0018 §9.1,
+     * issue #432): version 1 attaches file A, version 2 replaces it with
+     * file B (same file name, different content) - the restore to
+     * version 1 must have file A attached to the activity again, not
+     * the gap from Spec 0015 §10.4.
      */
     public function test_restore_brings_back_a_replaced_activity_file(): void {
         $this->resetAfterTest();
@@ -487,7 +486,7 @@ final class restore_activity_version_test extends \advanced_testcase {
         $this->assertContains('design.png', array_column($files, 'filename'));
         $this->assertContains('blatt.pdf', array_column($files, 'filename'));
         $this->assertStringContainsString('blatt.pdf', $result['message']);
-        $this->assertStringContainsString('Papierkorb', $result['message']);
+        $this->assertStringContainsString('recycle bin', $result['message']);
     }
 
     /**
@@ -500,9 +499,9 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Auch das modulspezifische Vervollstaendigungsfeld kehrt zurueck - ueber
-     * set_completion, nicht ueber den generischen Patch (dort steht es auf der
-     * Sperrliste von assign/choice, Ticket #461).
+     * The module-specific completion field also comes back - via
+     * set_completion, not via the generic patch (there it is on the
+     * blocklist of assign/choice, ticket #461).
      */
     public function test_restore_writes_back_completionsubmit(): void {
         global $DB;

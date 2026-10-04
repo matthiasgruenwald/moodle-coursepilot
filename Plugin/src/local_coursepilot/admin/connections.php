@@ -15,15 +15,11 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Administrationsuebersicht (#338): alle aktiven Fernzugriffsverbindungen
- * ueber alle Personen, mit Einzelwiderruf und Sammelwiderruf. Ohne
- * 'moodle/site:config' nicht erreichbar - require_capability() unten greift
- * unabhaengig davon, ob die Seite ueber den Administrationsbaum
- * (settings.php, ebenfalls capability-geschuetzt) oder direkt per URL
- * aufgerufen wird.
+ * Admin overview (#338) of active remote connections across users,
+ * with individual and bulk revocation. moodle/site:config is required
+ * for both direct URLs and admin-tree navigation.
  *
- * Duenne Schale (#334-Muster): die eigentliche Logik lebt testbar in
- * {@see \local_coursepilot\oauth_lib}, diese Datei tut nur noch Ein-/Ausgabe.
+ * Thin I/O wrapper (#334): testable logic lives in oauth_lib.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

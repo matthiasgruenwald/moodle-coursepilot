@@ -17,27 +17,21 @@
 namespace local_coursepilot;
 
 /**
- * Anker des Kontextbereichs (Karte #297, Issue #343, Umzug #407): Moodles
- * Private Files der aufrufenden Lehrkraft - `component=user`,
- * `filearea=private`, `itemid=0`, `contextid=context_user::instance($USER->id)`,
- * eingegrenzt auf den Unterordner aus {@see area()} (Default `coursepilot`).
+ * Context-area anchor (#297, #343, migration #407): the calling teacher's
+ * Moodle Private Files, component=user, filearea=private, itemid=0 and
+ * contextid=context_user::instance($USER->id), limited to {@see area()}
+ * (default coursepilot).
  *
- * Die Isolation kommt nicht aus einer Pfadpruefung, sondern daraus, dass
- * component/filearea/itemid/contextid **nie** aus Client-Eingaben stammen -
- * es gibt schlicht keinen Parameter, ueber den sich ein anderer Bereich
- * adressieren liesse ("harte Grenze im Plugincode"). Seit dem Umzug auf
- * `user/private` (Spec 0016 §1) traegt zusaetzlich der fixierte Wurzelordner:
- * kein anderer Unterordner der Private Files ist erreichbar. Die Pfadpruefung
- * in {@see resolve_directory()}/{@see resolve_file()} ist die Verteidigung
- * gegen `../`-Segmente, die aus diesem Ordner herausfuehren wuerden.
+ * Isolation comes from component/filearea/itemid/contextid never being
+ * client inputs: no parameter can address another area. Since migration
+ * to user/private (Spec 0016 §1), a fixed root also excludes other Private
+ * Files subfolders. {@see resolve_directory()}/{@see resolve_file()}
+ * reject ../ traversal outside it.
  *
- * Diese Klasse ist seit Issue #444 eine duenne Bereichsdefinition ueber dem
- * gemeinsamen {@see storage_anchor}: sie erklaert nur noch, was den
- * Kontextbereich von {@see material_files} unterscheidet (Wurzel-
- * Einstellungsname, Standardwurzel, Namensregel beim Schreiben,
- * Fehlerschluessel), und reicht den Rest unveraendert durch. Ihre
- * oeffentliche Schnittstelle - Konstanten, Methodennamen, Signaturen,
- * geworfene Fehlerschluessel - bleibt fuer ihre rund 20 Aufrufer identisch.
+ * Since #444 this class defines the area over shared {@see storage_anchor}:
+ * root setting, default root, write-name rule and error keys distinguish
+ * it from {@see material_files}. All other operations delegate unchanged;
+ * constants, signatures and error keys remain compatible with existing callers.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -45,38 +39,34 @@ namespace local_coursepilot;
  */
 final class context_files {
 
-    /** @var string Moodle-Dateikomponente - Moodles Private Files (Spec 0016 §1.2). */
+    /** @var string Moodle file component: Private Files (Spec 0016 §1.2). */
     public const COMPONENT = storage_anchor::COMPONENT;
 
-    /** @var string Alleiniger, fuer die KI erreichbarer Dateibereich. */
+    /** @var string The only file area accessible to the model. */
     public const FILEAREA = storage_anchor::FILEAREA;
 
-    /** @var int Fester Item-Bezug - der Bereich kennt keine weiteren Items. */
+    /** @var int Fixed item ID; this area has no other items. */
     public const ITEMID = storage_anchor::ITEMID;
 
-    /** @var int Harte Groessengrenze je Schreibvorgang (Spec 0016 §5.2). */
+    /** @var int Hard size limit per write operation (Spec 0016 §5.2). */
     public const MAX_WRITE_BYTES = 1024 * 1024;
 
-    /** @var string Namensvorsatz der Zwischendatei in {@see replace()}. */
+    /** @var string Temporary-file prefix used by {@see replace()}. */
     public const TEMP_PREFIX = storage_anchor::TEMP_PREFIX;
 
-    /** @var string Komponente des Altbestands vor dem Umzug (#407). */
+    /** @var string Legacy component before migration (#407). */
     public const LEGACY_COMPONENT = 'local_coursepilot';
 
-    /** @var string Dateibereich des Altbestands vor dem Umzug (#407). */
+    /** @var string Legacy file area before migration (#407). */
     public const LEGACY_FILEAREA = 'coursepilot_context';
 
     /**
-     * Die Bereichsdefinition des Kontextbereichs (Issue #444): Wurzel-
-     * Einstellungsname, Standardwurzel, Fehlerschluessel und die eine echte
-     * Policy-Methode dieses Bereichs - die `.md`-Namensregel beim Schreiben
-     * (Spec 0016 §5.1).
+     * Context-area definition (#444): root setting, default root, error keys
+     * and the area's .md write-name policy (Spec 0016 §5.1).
      *
-     * Wurzel-Einstellungsname und Standardwurzel sind seit Issue #445
-     * identisch mit {@see storage_anchor::ANCHOR_ROOTSETTING}/
-     * {@see storage_anchor::ANCHOR_DEFAULT_ROOT}: der Kontextbereich-Ordner
-     * *ist* der feste Anker, in dem ein Kontextpointer gesucht wird, nicht
-     * bloss zufaellig gleich benannt.
+     * Since #445 the root setting/default match {@see storage_anchor::ANCHOR_ROOTSETTING}
+     * and {@see storage_anchor::ANCHOR_DEFAULT_ROOT}: the context directory
+     * is the fixed pointer anchor, not merely coincidentally named alike.
      *
      * @return storage_area
      */
@@ -96,8 +86,7 @@ final class context_files {
     }
 
     /**
-     * Der eigene Nutzerkontext der angemeldeten Person - niemals aus
-     * Client-Eingaben ableitbar.
+     * The logged-in person's own user context, never derived from client inputs.
      *
      * @return \context_user
      */
@@ -106,35 +95,34 @@ final class context_files {
     }
 
     /**
-     * Loest einen optionalen Client-Unterordner zu einem vollstaendigen
-     * Moodle-Dateipfad innerhalb des Kontextbereichs auf.
+     * Resolves an optional client subfolder to a full Moodle file path
+     * inside the context area.
      *
-     * @param string $path Relativer Unterordner, z.B. "" oder "faecher/mathe".
-     * @return string Immer mit fuehrendem und abschliessendem "/".
+     * @param string $path Relative subfolder, e.g. "" or "subjects/math".
+     * @return string Always with leading and trailing "/".
      */
     public static function resolve_directory(string $path): string {
         return storage_anchor::resolve_directory(self::area(), $path);
     }
 
     /**
-     * Loest einen Client-Dateipfad (Ordner + Dateiname) auf.
+     * Resolves a client file path (directory and filename).
      *
-     * @param string $path z.B. "vorlagen.md" oder "faecher/mathe/notiz.md".
-     * @return array{0: string, 1: string} [Ordnerpfad, Dateiname]
+     * @param string $path For example "templates.md" or "subjects/math/note.md".
+     * @return array{0: string, 1: string} [Directory path, filename]
      */
     public static function resolve_file(string $path): array {
         return storage_anchor::resolve_file(self::area(), $path);
     }
 
     /**
-     * Wie {@see resolve_file()}, aber mit den engeren Schreibregeln aus
-     * Spec 0016 §5.1: Ordnersegmente nur aus `[A-Za-z0-9_-]`, Dateiname
-     * derselbe Zeichenvorrat mit der Endung `.md`. Lesen bleibt bewusst
-     * grosszuegiger - der Altbestand und von Hand angelegte Dateien sollen
-     * lesbar bleiben, auch wenn Coursepilot sie so nie geschrieben haette.
+     * Like {@see resolve_file()} with the stricter write rules of Spec 0016 §5.1:
+     * folder segments use [A-Za-z0-9_-], filenames add the .md suffix.
+     * Reads remain permissive so legacy/manual files stay readable even
+     * when Coursepilot would not create those names.
      *
-     * @param string $path z.B. "plan.md" oder "faecher/mathe/profil.md".
-     * @return array{0: string, 1: string} [Ordnerpfad, Dateiname]
+     * @param string $path For example "plan.md" or "subjects/math/profile.md".
+     * @return array{0: string, 1: string} [Directory path, filename]
      * @throws \moodle_exception invalidcontextpath / contextfilenotmarkdown
      */
     public static function resolve_writable_file(string $path): array {
@@ -142,11 +130,9 @@ final class context_files {
     }
 
     /**
-     * Der aufgeloeste Pointer-Zustand des Kontextbereichs (Issue #491) - fuer
-     * die Schreibendpunkte, die vor jedem Schreibvorgang wissen muessen, ob
-     * der Moodle- oder der externe Zweig gilt (unterschiedliche Policy:
-     * Nutzerrecht, Quote). `null` heisst *offen* - dieselbe Bedeutung wie bei
-     * {@see \local_coursepilot\storage_anchor::resolve_pointer_location()}.
+     * Resolved context pointer (#491) for write endpoints selecting Moodle
+     * or external policy (capability and quota). null means unresolved/open,
+     * as in {@see \local_coursepilot\storage_anchor::resolve_pointer_location()}.
      *
      * @return pointer_location|null
      * @throws \moodle_exception pointerunreadable/pointerincomplete/pointerunreachable
@@ -156,10 +142,9 @@ final class context_files {
     }
 
     /**
-     * Harte Groessengrenze je Schreibvorgang (Spec 0016 §5.2) - gilt fuer das
-     * jeweils uebertragene Stueck (voller Inhalt bei write, nur das
-     * Anhaengsel bei append), nicht fuer die Zieldatei. Bis Issue #506 in
-     * `write_context_file`/`append_context_file` wortgleich dupliziert.
+     * Hard limit per write operation (Spec 0016 §5.2): full content for write,
+     * only appended bytes for append, not the target's final size. Previously
+     * duplicated in write_context_file/append_context_file until #506.
      *
      * @param string $content
      * @throws \moodle_exception contextfiletoolarge
@@ -175,10 +160,9 @@ final class context_files {
     }
 
     /**
-     * Standard-Nutzerrecht auf die eigenen Dateien (Spec 0016 §1.1) - fuer
-     * die Schreibendpunkte aus Phase 2. Seit dem Umzug auf `user/private`
-     * schreibt Coursepilot in denselben Bereich wie "Meine Dateien", also gilt
-     * dieselbe Freigabe.
+     * Standard capability for managing one's own files (Spec 0016 §1.1),
+     * used by phase-2 writes. After migration to user/private, Coursepilot
+     * uses the same area and permissions as Moodle Private Files.
      *
      * @throws \required_capability_exception
      */
@@ -187,19 +171,19 @@ final class context_files {
     }
 
     /**
-     * Restplatz in Byte nach Nutzerquote (Spec 0016 §1.3) - `file_storage`
-     * setzt `$CFG->userquota` nicht selbst durch, nur die Core-UI tut das.
-     * Coursepilot schriebe sonst als einziger an der Schulgrenze vorbei.
+     * Remaining user-quota bytes (Spec 0016 §1.3). file_storage does not
+     * enforce $CFG->userquota itself, only core UI does; Coursepilot must
+     * respect the same school limit.
      *
-     * @return int|null Restplatz in Byte, oder null wenn keine Grenze gilt
-     *         (Quote aus, unbegrenzt, oder `moodle/user:ignoreuserquota`).
+     * @return int|null Remaining bytes, or null if no limit applies
+     *         (quota disabled, unlimited, or moodle/user:ignoreuserquota).
      */
     public static function remaining_quota(): ?int {
         return storage_anchor::remaining_quota();
     }
 
     /**
-     * Moodle-Dateisatz fuer eine Datei im Kontextbereich.
+     * Moodle file record for a context-area file.
      *
      * @param int $contextid
      * @param string $directory
@@ -211,39 +195,33 @@ final class context_files {
     }
 
     /**
-     * Setzt den Inhalt einer Kontextdatei neu - der eine Schreibvorgang, den
-     * sich alle Schreibendpunkte teilen. Siehe {@see storage_anchor::replace()}
-     * fuer die vollstaendige Begruendung der Zwischendatei-Choreografie.
+     * Replaces a context file's content, shared by all write endpoints.
+     * See {@see storage_anchor::replace()} for temporary-file sequencing rationale.
      *
-     * @param \stored_file|null $existing Bisherige Datei, falls vorhanden.
-     * @param array $filerecord Ziel aus {@see filerecord()}.
-     * @param string $content Vollstaendiger neuer Inhalt.
+     * @param \stored_file|null $existing Existing file, if present.
+     * @param array $filerecord Target from {@see filerecord()}.
+     * @param string $content Complete new content.
      */
     public static function replace(?\stored_file $existing, array $filerecord, string $content): void {
         storage_anchor::replace($existing, $filerecord, $content);
     }
 
     /**
-     * Kopiert den Altbestand aus der alten Filearea in die Private Files
-     * (Spec 0016 §3.1, Einmal-Fall beim Plugin-Upgrade). Der relative Pfad
-     * bleibt gleich - die Dateien lagen schon in der alten Filearea unter
-     * dem Wurzelordner und sind danach unter demselben Coursepilot-Pfad
-     * erreichbar. Kollision = ueberspringen und ins Upgrade-Log schreiben;
-     * der Altbestand wird **nicht** geloescht (Rueckweg).
+     * Copies legacy files into Private Files during upgrade (Spec 0016 §3.1).
+     * Relative paths remain unchanged because both areas use the same root.
+     * Skip collisions and log them; retain the legacy files for rollback.
      *
-     * Dateien ausserhalb des Wurzelordners bleiben liegen: sie wuerden sonst
-     * lose in der Wurzel von "Meine Dateien" landen, wo Coursepilot sie ohnehin
-     * nicht mehr sieht. Sie sind im Upgrade-Log genannt, damit die Lehrkraft
-     * sie bei Bedarf selbst holen kann.
+     * Files outside the root remain untouched, rather than landing loose in
+     * Private Files where Coursepilot cannot see them. The upgrade log names
+     * them so teachers can retrieve them manually.
      *
-     * Die Nutzerquote wird hier bewusst nicht geprueft: der Umzug ist ein
-     * einmaliger Systemvorgang und darf nicht am Kontostand einer einzelnen
-     * Person scheitern - er kopiert nur, was die Person ohnehin schon belegt.
+     * Deliberately ignores quota for this one-time system copy: migration
+     * must not fail on an individual balance and copies only existing data.
      *
-     * Ortswissen (Whitelist, Pruefsummen, Umzug) bleibt bewusst oberhalb des
-     * gemeinsamen Ankers - {@see storage_anchor} kennt keinen Altbestand.
+     * Location-specific migration knowledge remains above the common anchor;
+     * {@see storage_anchor} has no legacy-area policy.
      *
-     * @return int Zahl der kopierten Dateien.
+     * @return int Number of copied files.
      */
     public static function migrate_legacy_files(): int {
         global $DB;
@@ -257,13 +235,13 @@ final class context_files {
         ]);
         foreach ($legacy as $record) {
             if ($record->filename === '.') {
-                // Ordner-Platzhalter - create_file_from_storedfile() legt die
-                // Ordner der kopierten Dateien ohnehin selbst an.
+                // Folder placeholder: create_file_from_storedfile() creates the
+                // required directories for copied files automatically.
                 continue;
             }
             if (!str_starts_with($record->filepath, $root)) {
-                mtrace('local_coursepilot: Kontextdatei uebersprungen (liegt ausserhalb von "' . $root . '"): '
-                    . $record->filepath . $record->filename . ' (Kontext ' . $record->contextid . ')');
+                mtrace('local_coursepilot: Context file skipped (outside "' . $root . '"): '
+                    . $record->filepath . $record->filename . ' (context ' . $record->contextid . ')');
                 continue;
             }
             $target = [
@@ -275,8 +253,8 @@ final class context_files {
                 'filename' => $record->filename,
             ];
             if ($fs->file_exists(...array_values($target))) {
-                mtrace('local_coursepilot: Kontextdatei uebersprungen (existiert bereits in "Meine Dateien"): '
-                    . $record->filepath . $record->filename . ' (Kontext ' . $record->contextid . ')');
+                mtrace('local_coursepilot: Context file skipped (already exists in Private Files): '
+                    . $record->filepath . $record->filename . ' (context ' . $record->contextid . ')');
                 continue;
             }
             $fs->create_file_from_storedfile($target, (int) $record->id);

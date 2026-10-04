@@ -30,17 +30,17 @@ require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->dirroot . '/question/classes/local/bank/question_bank_helper.php');
 
 /**
- * Idempotentes Anlegen einer benannten Fragenbank-Aktivitaet (Spec 0017 §1,
- * Ticket #412): legt eine Fragenbank mit dem genannten Namen an, oder
- * verwendet eine gleichnamige bestehende wieder - ein zweiter Lauf mit
- * demselben Namen erzeugt keine zweite Bank.
+ * Idempotent creation of a named question bank activity (Spec 0017 §1,
+ * ticket #412): creates a question bank with the given name, or
+ * reuses an existing one of the same name - a second run with the
+ * same name does not create a second bank.
  *
- * Eigenstaendige Portierung von
- * local_coursepilot\external\ensure_question_bank - local_coursepilot hat laut
- * Spec 0012 keine Laufzeitabhaengigkeit auf das andere Plugin (siehe
- * get_question_categories.php aus #342, derselbe Fund). Anders als das
- * lokale Vorbild: Lehrkraft-deutsche Meldung statt Englisch (CLAUDE.md), und
- * nur die native Moodle-Berechtigungspruefung - keine Zusatz-Capability.
+ * Standalone port of
+ * local_coursepilot\external\ensure_question_bank - per
+ * Spec 0012 local_coursepilot has no runtime dependency on the other plugin (see
+ * get_question_categories.php from #342, same finding). Unlike the
+ * local original: teacher-facing message instead of English-only (CLAUDE.md), and
+ * only the native Moodle permission check - no additional capability.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -75,7 +75,7 @@ final class ensure_question_bank extends external_api {
         $coursecontext = context_course::instance($course->id);
         self::validate_context($coursecontext);
         require_capability('local/coursepilot:use', $coursecontext);
-        // Native Berechtigungspruefung: eine Fragenbank ist eine Aktivitaet.
+        // Native permission check: a question bank is an activity.
         require_capability('moodle/course:manageactivities', $coursecontext);
 
         $modulename = question_bank_helper::get_default_question_bank_activity_name();
@@ -108,7 +108,7 @@ final class ensure_question_bank extends external_api {
                 'contextid' => (int) $bankcontext->id,
                 'topcategoryid' => (int) $topcategory->id,
                 'created' => false,
-                'message' => 'Fragensammlung "' . $params['name'] . '" existierte bereits, wird wiederverwendet.',
+                'message' => get_string('questionbankreused', 'local_coursepilot', $params['name']),
             ];
         }
 
@@ -128,7 +128,7 @@ final class ensure_question_bank extends external_api {
             'contextid' => (int) $bankcontext->id,
             'topcategoryid' => (int) $topcategory->id,
             'created' => true,
-            'message' => 'Fragensammlung "' . $params['name'] . '" angelegt.',
+            'message' => get_string('questionbankcreated', 'local_coursepilot', $params['name']),
         ];
     }
 
@@ -142,7 +142,7 @@ final class ensure_question_bank extends external_api {
             'contextid' => new external_value(PARAM_INT, 'Context ID of the question bank'),
             'topcategoryid' => new external_value(PARAM_INT, 'ID of the question bank\'s top category'),
             'created' => new external_value(PARAM_BOOL, 'true if newly created; false if a same-named one was reused'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing message'),
         ]);
     }
 }

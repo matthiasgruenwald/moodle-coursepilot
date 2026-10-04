@@ -15,13 +15,12 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Protected-Resource-Metadaten nach RFC 9728 (#302, Punkt 2).
+ * Protected-resource metadata under RFC 9728 (#302, item 2).
  *
- * Verlinkt aus dem WWW-Authenticate-Header von mcp.php (Adresse 1 von 2,
- * #335); die zweite Adresse ist PATH_INFO auf mcp.php selbst
- * (.well-known/oauth-protected-resource), fuer Clients, die den Header nie
- * lesen und den Pfad aus der Ressourcen-URL ableiten. Beide Adressen rufen
- * dieselbe Quelle auf ({@see \local_coursepilot\oauth_lib::protected_resource_metadata()}).
+ * Linked by mcp.php's WWW-Authenticate header (first of two addresses,
+ * #335). The second is mcp.php PATH_INFO at .well-known/oauth-protected-resource,
+ * for clients deriving it from the resource URL without reading the header.
+ * Both share {@see \local_coursepilot\oauth_lib::protected_resource_metadata()}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

@@ -19,9 +19,9 @@ namespace local_coursepilot\catalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Vertragstest der Riegel aus dem Feldkatalog (Issue #583): jede registrierte
- * Katalogklasse beantwortet learner_locks() und grade_origin(), jede
- * Bedingung ist auswertbar und passt zu Typ und Wertebereich ihres Felds.
+ * Catalog learner-lock contract (Issue #583): every catalog answers
+ * learner_locks() and grade_origin(); each condition is evaluable and
+ * consistent with its field's type and value range.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -89,8 +89,8 @@ final class learner_locks_test extends \advanced_testcase {
     }
 
     /**
-     * Grenzfall aus #583: ein Test mit Freitextfrage wird von der Lehrkraft
-     * bewertet - die Instanz-Aussage schaerft die der Aktivitaetsart.
+     * Edge case #583: a quiz with an essay question needs teacher grading;
+     * the instance-level answer refines the activity-type answer.
      */
     public function test_quiz_with_manually_graded_question_counts_as_teacher_graded(): void {
         global $CFG;
@@ -163,10 +163,9 @@ final class learner_locks_test extends \advanced_testcase {
     }
 
     /**
-     * Feldbuendel sind Voreinstellungen fuer den Normalfall - sie setzen
-     * keinen Riegel. Ausnahme: der Quiz-Modus "final-test" (begrenzte
-     * Versuche sind sein Zweck); seine Wahl bestaetigt den Riegel selbst
-     * ({@see learner_locks::confirmed_with_mode()}).
+     * Normal presets avoid learner locks. Exception: quiz final-test, where
+     * limited attempts are intentional and mode selection confirms the lock
+     * (learner_locks::confirmed_with_mode()).
      */
     public function test_bundles_set_no_lock_except_the_final_test_mode(): void {
         foreach (registry::known_modnames() as $modname) {
@@ -184,7 +183,7 @@ final class learner_locks_test extends \advanced_testcase {
 
         try {
             learner_locks::assert_confirmed('assign', $found, ['cutoffdate']);
-            $this->fail('Unbestaetigter Riegel haette abgelehnt werden muessen.');
+            $this->fail('An unconfirmed learner lock must be rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
             $this->assertStringContainsString('attemptreopenmethod', $e->getMessage());

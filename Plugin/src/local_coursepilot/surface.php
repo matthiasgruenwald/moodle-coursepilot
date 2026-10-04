@@ -15,15 +15,13 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Prueffaehigkeit von aussen: zeigt Allowlist, verbotene Namensbestandteile
- * und den Abgleich mit der real registrierten Oberflaeche (#300, Punkt 6),
- * sowie die Instanzpruefung per Selbstabruf der Discovery-Adresse (#340) -
- * bewusst keine eigene Diagnoseseite, sondern Erweiterung dieser Seite.
+ * External inspectability: shows allowlist, forbidden name fragments and
+ * comparison to actual registered functions (#300, item 6). Also includes
+ * discovery-URL self-check (#340) instead of creating a separate diagnostics page.
  *
- * Dritter Aufrufer derselben Prueffunktion neben Test und mcp.php.
- * Nur mit 'moodle/site:config' erreichbar - require_capability() unten
- * greift unabhaengig davon, ob die Seite verlinkt oder direkt per URL
- * aufgerufen wird (Muster aus admin/connections.php).
+ * Third caller of the shared validation besides tests and mcp.php.
+ * Requires moodle/site:config for linked and direct URL access, following
+ * admin/connections.php.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

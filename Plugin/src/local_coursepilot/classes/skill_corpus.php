@@ -21,21 +21,14 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Der Skill-Korpus (Spec 0020 §3.1, Issue #450): Markdown-Dateien im Plugin,
- * zwei Unterordner (`skills/adapter`, `skills/reference`), das Verzeichnis
- * selbst ist die Quelle - kein zweiter Index, keine Registrierungsliste je
- * Datei. Eine neue Referenzdatei ist damit eine Datei, kein Code-Aenderungs-
- * vorgang.
+ * Skill corpus (Spec 0020 §3.1, Issue #450): Markdown files under
+ * skills/adapter and skills/reference. The directory is the source;
+ * adding a reference file needs no index or code registration.
  *
- * Der Name ist ein Bezeichner, kein Pfad (Spec 0020 §4): {@see get()} prueft
- * ausschliesslich gegen die aus dem Verzeichnis gescannten Namen - kein
- * Zeichenfilter, keine Pfadnormalisierung. Ein Name mit Pfadanteilen
- * (`../`, fuehrender `/`, Backslash, kodierte Variante) matcht schlicht
- * keinen Dateinamen aus {@see list()} und faellt damit auf denselben Weg wie
- * ein Tippfehler.
+ * Names are identifiers rather than paths (Spec 0020 §4). get() checks
+ * only names scanned by list(); path-like inputs simply match no entry.
  *
- * Kein Cache (Spec 0020 §4): zwei Dateilesevorgaenge je Sitzung rechtfertigen
- * keine MUC-Schicht.
+ * No cache (Spec 0020 §4): two file reads per session need no MUC layer.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -43,14 +36,14 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class skill_corpus {
 
-    /** @var string[] Die beiden Korpus-Unterordner = die beiden Arten. */
+    /** @var string[] The two corpus subdirectories and kinds. */
     private const KINDS = ['adapter', 'reference'];
 
     /**
-     * Der Katalog: je Korpus-Datei Name, Art, Auslöser und Umfang - kein
-     * Inhalt (Spec 0020 §4).
+     * Catalog entries expose name, kind, trigger and length, without content
+     * (Spec 0020 §4).
      *
-     * @return array<int, array{name: string, art: string, ausloeser: string, umfang: int, path: string}>
+     * @return array<int, array{name: string, kind: string, trigger: string, length: int, path: string}>
      */
     public static function list(): array {
         $entries = [];
@@ -72,11 +65,11 @@ final class skill_corpus {
     }
 
     /**
-     * Inhalt, referenzierte Teile und Korpus-Stand eines einzelnen Eintrags.
+     * Content, referenced parts and corpus version for one entry.
      *
-     * @param string $name Bezeichner aus {@see list()}, kein Pfad.
+     * @param string $name Identifier from list(), not a path.
      * @return array{content: string, referenced_parts: string[], corpus_version: string}
-     * @throws moodle_exception unknownskillname, nennt die gueltigen Namen.
+     * @throws moodle_exception unknownskillname, listing valid names.
      */
     public static function get(string $name): array {
         foreach (self::list() as $entry) {
@@ -105,10 +98,9 @@ final class skill_corpus {
     }
 
     /**
-     * Auslöser einer Korpus-Datei: die Frontmatter-Beschreibung (Spec 0020
-     * §4, seit Issue #453 fuer Adapter und Referenzteile gleichermassen),
-     * ersatzweise (kein Frontmatter) die erste nichtleere Zeile ohne
-     * Ueberschriftenzeichen.
+     * Trigger text: frontmatter description for adapters and references
+     * (Spec 0020 §4, Issue #453). Without frontmatter, use the first nonempty
+     * line with heading markers removed.
      *
      * @param string $content
      * @return string
@@ -148,12 +140,8 @@ final class skill_corpus {
     }
 
     /**
-     * Namen der im Inhalt referenzierten Korpus-Teile. Erkannt an zwei
-     * Mustern: `coursepilot_get_skill("name")` (Spec 0020 §3.3, der
-     * Namensverweis ohne Pfad, den die umgebauten Adapter nutzen) und, fuer
-     * noch unveraendert uebernommene Referenzteile, das ältere
-     * `skills/<name>.md` (Spec 0012 §5.1: der Pfadbegriff faellt erst mit
-     * deren Umbau).
+     * Referenced corpus names, recognized from coursepilot_get_skill("name")
+     * (Spec 0020 §3.3) and legacy skills/<name>.md paths (Spec 0012 §5.1).
      *
      * @param string $content
      * @return string[]
@@ -165,8 +153,8 @@ final class skill_corpus {
     }
 
     /**
-     * Der Korpus-Stand: Plugin-Release und -Version der laufenden Dateien
-     * (derselbe Griff wie {@see \local_coursepilot\external\get_version_info}).
+     * Corpus version: release and version of the running plugin files,
+     * as in external/get_version_info.
      *
      * @return string
      */

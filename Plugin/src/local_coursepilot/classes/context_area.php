@@ -19,28 +19,21 @@ namespace local_coursepilot;
 use local_coursepilot\webdav\webdav_error;
 
 /**
- * Die vier Kontextbereich-Werkzeugoperationen (lesen, schreiben, anhaengen,
- * auflisten), ortsneutral fuer den Aufrufer (Issue #538, Spec 0021): kein
- * Werkzeug in {@see \local_coursepilot\external\write_context_file} und
- * seinen drei Geschwistern verzweigt mehr selbst auf Ortsart, Ortsfehler-
- * schluessel oder ein "etag"-Sonderfeld - diese Entscheidungen wandern hier
- * herein.
+ * Four context operations (read, write, append, list), independent of
+ * storage location for callers (#538, Spec 0021). The external tools no
+ * longer branch on location, location-error keys or separate etag fields.
  *
- * Von {@see context_files} getrennt gehalten (die Klasse naeherte sich sonst
- * der 800-Zeilen-Grenze aus den Coding-Standards) - dasselbe Muster, mit dem
- * {@see pointer_reader}/{@see pointer_writer} bereits von {@see storage_anchor}
- * getrennt wurden. Anders als jene beiden bleibt diese Klasse bewusst auf den
- * Kontextbereich fixiert (`context_files::area()`), statt einen Bereich als
- * Parameter zu nehmen - noch kein zweiter Aufrufer braucht das (YAGNI, ADR
- * 0020).
+ * Separate from {@see context_files} to stay below the 800-line guideline,
+ * following the split of {@see pointer_reader}/{@see pointer_writer} from
+ * {@see storage_anchor}. Unlike those helpers, this class intentionally
+ * fixes context_files::area(): no second area needs it (YAGNI, ADR 0020).
  *
- * All four operations run through {@see storage_anchor::port()}, i.e. the
- * {@see storage_port} adapters {@see private_files_storage_port} and
- * {@see webdav_storage_port} (Issue #645). Failure handling (ADR 0023,
- * pending note without fallback) applies to both locations: the WebDAV
- * adapter records the note itself, Private Files persistence failures are
- * recorded here ({@see persist_moodle_write()}/{@see persist_moodle_append()},
- * via {@see pending_write_translation}).
+ * All operations use {@see storage_anchor::port()} with the
+ * {@see private_files_storage_port} and {@see webdav_storage_port} adapters
+ * (#645). Failure handling (ADR 0023, pending note without fallback)
+ * applies to both locations. WebDAV records its own note; Private Files
+ * persistence failures are recorded here through {@see persist_moodle_write()},
+ * {@see persist_moodle_append()} and {@see pending_write_translation}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -140,8 +133,7 @@ final class context_area {
         }
         $entry['contenthash'] = $checksum;
 
-        // Nur .md-Dateien tragen ueberhaupt eine Personenbezugs-Markierung
-        // (Frontmatter, Issue #506/#493).
+        // Only .md files carry a personal-data frontmatter marker (#506/#493).
         $ismarkdown = strtolower(pathinfo($entry['name'], PATHINFO_EXTENSION)) === 'md';
         if (!$ismarkdown || personal_data::allowed()) {
             return $entry + ['locked' => false];
@@ -179,10 +171,10 @@ final class context_area {
      *
      * @param string $path
      * @param string $content
-     * @param string $expectedcontenthash Siehe {@see context_files::write_pointer_aware()}.
-     * @param string $pendingentry Siehe {@see context_files::write_pointer_aware()}.
-     * @param bool $createonly Siehe {@see context_files::write_pointer_aware()}.
-     * @param int $courseid Siehe {@see context_files::write_pointer_aware()}.
+     * @param string $expectedcontenthash See {@see context_files::write_pointer_aware()}.
+     * @param string $pendingentry See {@see context_files::write_pointer_aware()}.
+     * @param bool $createonly See {@see context_files::write_pointer_aware()}.
+     * @param int $courseid See {@see context_files::write_pointer_aware()}.
      * @return array{path: string, created: bool, size: int, oldsize: int}
      */
     public static function write(
@@ -246,17 +238,15 @@ final class context_area {
     }
 
     /**
-     * Der eigentliche Schreibvorgang, umschlossen von der Ausfallbehandlung
-     * (Issue #540, ADR 0023 "an beiden Orten"): Pfad-, Endungs- und
-     * Quotenpruefung sowie ein Pruefwert-Konflikt
-     * ({@see storage_conflict_exception}) bleiben Aufruffehler; jeder andere Ausfall, der beim Persistieren selbst entsteht
-     * (z.B. Private-Files-Speicher/Datenbank), vermerkt einen Ausstand, bevor
-     * der Fehler zurueckgeht - nie roh durchgereicht.
+     * Persists a write with failure handling (#540, ADR 0023 at both locations).
+     * Path, extension, quota errors and {@see storage_conflict_exception}
+     * remain caller errors. Other persistence failures (Private Files/database)
+     * record a pending note before returning a translated error, never a raw one.
      *
      * @param storage_port $port
      * @param string $path
      * @param string $content
-     * @param string $operation Eine der {@see pending_write_translation}-OP_*-Konstanten.
+     * @param string $operation One of the {@see pending_write_translation} OP_* constants.
      * @param int $courseid
      * @return array{path: string, created: bool, size: int, checksum: string}
      * @throws \moodle_exception contextquotaexceeded, pendingwritefailed, pendingnotewritefailed
@@ -284,12 +274,11 @@ final class context_area {
     }
 
     /**
-     * Aufruffehler, die {@see private_files_storage_port::write()}/{@see private_files_storage_port::append()}
-     * selbst noch werfen koennen (Pfad-/Endungs-/Quotenpruefung liegt dort) -
-     * zaehlen weiterhin nicht als Ausstand (Issue #540 Abnahmekriterium 2,
-     * ADR 0023 Punkt 2). Ohne diese Ausnahme wuerde z.B. eine falsche
-     * Dateiendung faelschlich als Speicherausfall vermerkt, nur weil sie erst
-     * beim tatsaechlichen Schreibversuch durchschlaegt statt vorher.
+     * Caller errors still thrown by {@see private_files_storage_port::write()}
+     * or {@see private_files_storage_port::append()} (path, extension, quota)
+     * do not count as pending writes (#540 criterion 2, ADR 0023 item 2).
+     * Otherwise an invalid extension discovered during persistence would
+     * incorrectly be reported as a storage outage.
      *
      * @param \moodle_exception $e
      * @return bool
@@ -300,11 +289,10 @@ final class context_area {
     }
 
     /**
-     * Vermerkt einen Ausstand fuer einen Ausfall beim Persistieren in Private
-     * Files (Issue #540, ADR 0023 "an beiden Orten") - dieselbe fuenfteilige
-     * Ausfallantwort wie extern ({@see pointer_writer}), nur ohne
-     * Instanzname/Host: es gibt keine Verbindung, die ausfallen koennte, nur
-     * die eigene Moodle-Ablage selbst.
+     * Records a pending write for Private Files persistence failures (#540,
+     * ADR 0023 at both locations), with the same five-part failure reply as
+     * external storage ({@see pointer_writer}). No instance name or host:
+     * only the teacher's Moodle storage can fail, not an external connection.
      *
      * @param string $errorclass
      * @param string $rawmessage
@@ -325,18 +313,17 @@ final class context_area {
             'Private Files ' . $errorclass . ': ' . $rawmessage,
             $path,
             $operation,
-            'Ihre privaten Dateien in Moodle sind gerade nicht beschreibbar – an Ihrem Speicher ist etwas zu tun',
-            'Ihre privaten Dateien in Moodle',
+            'Your private files in Moodle are currently not writable - something needs to be done about your storage',
+            'Your private files in Moodle',
             $courseid
         );
     }
 
     /**
-     * Sperrt eine bereits vorhandene, personenbezogen markierte Zieldatei bei
-     * ausgeschaltetem #344-Schalter - gemeinsame Absage von {@see write()}
-     * und {@see append()} an beiden Orten.
+     * Rejects an existing personal-data-marked target when the #344 switch
+     * is off. Shared by {@see write()} and {@see append()} at both locations.
      *
-     * @param array{content: string}|null $existing Ergebnis von {@see private_files_storage_port::read()}.
+     * @param array{content: string}|null $existing Result of {@see private_files_storage_port::read()}.
      * @param string $path
      * @throws \moodle_exception contextfilelocked
      */
@@ -347,14 +334,13 @@ final class context_area {
     }
 
     /**
-     * Haengt an eine Kontextdatei ortsneutral an - siehe
-     * {@see write()}.
+     * Appends to a context file independently of its location; see {@see write()}.
      *
      * @param string $path
      * @param string $content
-     * @param string $expectedcontenthash Siehe {@see context_files::append_pointer_aware()}.
-     * @param string $pendingentry Siehe {@see context_files::append_pointer_aware()}.
-     * @param int $courseid Siehe {@see context_files::append_pointer_aware()}.
+     * @param string $expectedcontenthash See {@see context_files::append_pointer_aware()}.
+     * @param string $pendingentry See {@see context_files::append_pointer_aware()}.
+     * @param int $courseid See {@see context_files::append_pointer_aware()}.
      * @return array{path: string, created: bool, size: int}
      */
     public static function append(
@@ -409,8 +395,7 @@ final class context_area {
     }
 
     /**
-     * Der eigentliche Anhaengevorgang, umschlossen von der Ausfallbehandlung
-     * - siehe {@see persist_moodle_write()}.
+     * Persists an append with failure handling; see {@see persist_moodle_write()}.
      *
      * @param storage_port $port
      * @param string $path

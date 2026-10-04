@@ -19,7 +19,7 @@ namespace local_coursepilot\external;
 use core_external\external_api;
 
 /**
- * Die MC-Fassage ueber dem XML-Kern (Spec 0017 §7.1, Ticket #418).
+ * Multiple-choice facade over the XML core (Spec 0017 §7.1, issue #418).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -29,8 +29,8 @@ use core_external\external_api;
 final class create_mc_question_test extends \advanced_testcase {
 
     /**
-     * Anlegen aus schlichten Feldern: generierte idnumber, Version 1,
-     * Read-back ueber get_question liefert dieselben Kernfelder.
+     * Creating from plain fields generates an idnumber and version 1.
+     * Reading through get_question returns the same core fields.
      */
     public function test_creates_question_with_generated_idnumber_and_version_one(): void {
         $this->resetAfterTest();
@@ -61,7 +61,7 @@ final class create_mc_question_test extends \advanced_testcase {
 
         global $DB;
         $entry = $DB->get_record('question_bank_entries', ['id' => $result['questionbankentryid']], '*', MUST_EXIST);
-        $this->assertNotEmpty($entry->idnumber, 'Eine idnumber wurde generiert.');
+        $this->assertNotEmpty($entry->idnumber, 'An idnumber was generated.');
 
         $readback = get_question::execute($categoryid, 'Additionsfrage');
         $readback = external_api::clean_returnvalue(get_question::execute_returns(), $readback);
@@ -76,10 +76,9 @@ final class create_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Verdachtsfall: ein gleichnamiger Eintrag existiert bereits in der
-     * Zielkategorie - eine Neuanlage bringt nie eine idnumber mit, gegen die
-     * gematcht werden koennte, deshalb zaehlt hier schon der Name. Ohne
-     * Bestaetigung wird nichts angelegt.
+     * A question with the same name in the target category is a suspected
+     * duplicate. New questions have no idnumber to match, so the name alone
+     * is sufficient. Nothing is created without confirmation.
      */
     public function test_suspect_case_for_existing_name_writes_nothing_without_confirmation(): void {
         $this->resetAfterTest();
@@ -109,10 +108,9 @@ final class create_mc_question_test extends \advanced_testcase {
         $this->assertSame('Dopplung', $second['candidates'][0]['name']);
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-        $this->assertSame($countbefore, $countafter, 'Nichts wurde angelegt.');
+        $this->assertSame($countbefore, $countafter, 'Nothing was created.');
 
-        // Bestaetigter Zweitaufruf legt trotzdem einen neuen, eigenen
-        // Bank-Eintrag an (eigene idnumber, kein Zusammenfuehren).
+        // Confirmed creation still makes a separate bank entry with its own idnumber, without merging.
         $confirmed = create_mc_question::execute(
             $categoryid, 'Dopplung', 'Zweite Fassung', 'single', $answers, 1.0, '', true);
         $confirmed = external_api::clean_returnvalue(create_mc_question::execute_returns(), $confirmed);
@@ -126,13 +124,12 @@ final class create_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Ein "]]>" im Text schliesst den CDATA-Abschnitt der gebauten XML nicht
-     * vorzeitig.
+     * A "]]>" sequence in text must not close the generated XML CDATA early.
      *
-     * Fragetext, Allgemein-Feedback, Antworttext und Antwort-Feedback gehen
-     * als PARAM_RAW in eine CDATA-Vorlage. Ohne Maskierung zerbricht jede
-     * Frage, die die Zeichenfolge enthaelt - im Informatikunterricht (XML,
-     * HTML, CDATA selbst) kein Randfall, sondern Unterrichtsstoff.
+     * Question text, general feedback, answer text and answer feedback enter
+     * a CDATA template as PARAM_RAW. Without escaping, any question containing
+     * this sequence breaks. XML, HTML and CDATA are normal computer science
+     * lesson content, so this is not an edge case.
      */
     public function test_cdata_terminator_in_text_does_not_break_the_xml(): void {
         $this->resetAfterTest();
@@ -166,7 +163,7 @@ final class create_mc_question_test extends \advanced_testcase {
     }
 
     /**
-     * Baut Kurs + Lehrkraft + Fragensammlung + Kategorie auf und liefert
+     * Create a course, teacher, question bank and category; return
      * [$course, $categoryid].
      *
      * @return array{0: \stdClass, 1: int}

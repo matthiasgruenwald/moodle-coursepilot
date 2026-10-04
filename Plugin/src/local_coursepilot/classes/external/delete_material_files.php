@@ -27,13 +27,10 @@ use local_coursepilot\material_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Loeschweg fuer den Aufraeumbericht (Spec 0018 §8.3, Issue #438): entfernt
- * genau die uebergebenen Materialordner-Pfade, nichts darueber hinaus.
- *
- * Kein automatisches Loeschen, keine Altersregel als Loeschgrund - die
- * Liste kommt immer explizit vom Aufrufer (der Skill fragt vorher nach,
- * Spec 0018 §8.3). Ob eine Datei "lose" ist, entscheidet dieser Endpunkt
- * nicht selbst noch einmal - das war {@see report_loose_material_files}.
+ * Deletion endpoint for material cleanup (Spec 0018 §8.3, #438): removes
+ * exactly the caller-provided material paths. No automatic or age-based
+ * deletion: the skill asks first. {@see report_loose_material_files}
+ * already assessed usage; this endpoint does not reassess it.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -47,7 +44,7 @@ class delete_material_files extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'paths' => new external_multiple_structure(
-                new external_value(PARAM_PATH, 'Dateipfad relativ zum Materialordner, z.B. "screenshot.png"')
+                new external_value(PARAM_PATH, 'File path relative to the material store, e.g. "screenshot.png"')
             ),
         ]);
     }
@@ -56,7 +53,7 @@ class delete_material_files extends external_api {
      * @param string[] $paths
      * @return array
      * @throws \moodle_exception invalidmaterialpath, materialdeletefilenotfound
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     * @throws \required_capability_exception without moodle/user:manageownfiles
      */
     public static function execute(array $paths): array {
         $params = self::validate_parameters(self::execute_parameters(), ['paths' => $paths]);
@@ -65,11 +62,9 @@ class delete_material_files extends external_api {
         self::validate_context($context);
         material_files::require_manage_own_files();
 
-        // Erst alle Dateien aufloesen (jeder fehlende Pfad bricht komplett
-        // ab), dann erst loeschen - kein Teilerfolg bei einem Tippfehler in
-        // der Liste. Beides ueber den Anker (Issue #539, material_area::read()/
-        // delete() ueber den storage_port-Adapter), statt direkt ueber
-        // material_files/storage_anchor.
+        // Resolve all files first, failing on any missing path before deleting
+        // anything, so typos cannot cause partial deletion. Use material_area::read()/
+        // delete() through storage_port (#539) instead of direct storage facades.
         $targets = [];
         foreach ($params['paths'] as $path) {
             $info = material_area::read($path);
@@ -95,9 +90,8 @@ class delete_material_files extends external_api {
         return [
             'deleted' => $deleted,
             'freed_bytes' => $freedbytes,
-            // Fuer den access_log-Eintrag (Spec 0018 §9.2): der Dispatcher
-            // protokolliert genau diesen Schluessel, hier alle geloeschten
-            // Pfade in einem Eintrag statt eines Sonderfalls je Datei.
+            // Dispatcher logs this path key (Spec 0018 §9.2): all deleted paths
+            // in one entry, without a separate per-file case.
             'path' => implode(', ', $deleted),
             'message' => get_string('materialfilesdeleted', 'local_coursepilot', (object) [
                 'count' => count($deleted),
@@ -112,11 +106,11 @@ class delete_material_files extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'deleted' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Geloeschter Dateipfad, relativ zum Materialordner')
+                new external_value(PARAM_TEXT, 'Deleted file path relative to the material store')
             ),
-            'freed_bytes' => new external_value(PARAM_INT, 'Freigewordener Speicherplatz in Byte'),
-            'path' => new external_value(PARAM_TEXT, 'Alle geloeschten Pfade, kommagetrennt (fuer den access_log)'),
-            'message' => new external_value(PARAM_RAW, 'Erfolgsmeldung in Lehrkraft-Deutsch'),
+            'freed_bytes' => new external_value(PARAM_INT, 'Freed storage in bytes'),
+            'path' => new external_value(PARAM_TEXT, 'All deleted paths, comma-separated for access logging'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing success message'),
         ]);
     }
 }

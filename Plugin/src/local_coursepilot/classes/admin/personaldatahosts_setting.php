@@ -18,20 +18,17 @@ namespace local_coursepilot\admin;
 
 use local_coursepilot\personal_data_hosts;
 
-// admin_setting_configtextarea ist eine legacy-globale Klasse aus
-// lib/adminlib.php, nicht per PSR-4 autoloadbar - normalerweise laengst
-// geladen, wenn settings.php innerhalb des Administrationsbaums laeuft, aber
-// nicht zuverlaessig in PHPUnit oder anderem Fruehkontext. global $CFG, weil
-// dieser Code beim Autoloaden innerhalb einer Funktion ausgefuehrt wird, wo
-// $CFG sonst nicht sichtbar waere.
+// admin_setting_configtextarea is a legacy global class from adminlib.php,
+// without PSR-4 autoloading. Admin settings usually load it first, but PHPUnit
+// and early callers may not. Import $CFG because autoloading can run inside
+// a function where it would otherwise be out of scope.
 global $CFG;
 require_once($CFG->libdir . '/adminlib.php');
 
 /**
- * Die Einstellungsseite fuer `local_coursepilot | personaldatahosts` (Issue
- * #493): eine gewoehnliche Textarea, aber mit Ablehnung beim Speichern, wenn
- * ein Eintrag nur aus einem Namensteil besteht oder `*` enthaelt - siehe
- * {@see personal_data_hosts::first_invalid_entry()} fuer die geteilte Regel.
+ * Setting for `local_coursepilot | personaldatahosts` (Issue #493):
+ * a textarea that rejects single-part names or wildcard entries on save.
+ * Shared rule: {@see personal_data_hosts::first_invalid_entry()}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -41,7 +38,7 @@ final class personaldatahosts_setting extends \admin_setting_configtextarea {
 
     /**
      * @param mixed $data
-     * @return mixed true, wenn gueltig, sonst eine Fehlermeldung.
+     * @return mixed true if valid, otherwise an error message.
      */
     public function validate($data) {
         $parentvalidation = parent::validate($data);

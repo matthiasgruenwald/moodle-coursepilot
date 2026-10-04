@@ -38,7 +38,7 @@ foreach (\local_coursepilot\location_selection::own_instances() as $candidate) {
 }
 if ($instance === null) { throw new \moodle_exception('webdavinstancemissing', 'local_coursepilot'); }
 $resolved = \local_coursepilot\webdav\webdav_instance::resolve_owned($instance);
-$filled = 'E2E-Ortswahl-' . $stamp;
+$filled = 'E2E-Location-' . $stamp;
 $resolved->client()->mkcol_chain($resolved->directory_url(''), [$filled]);
 $resolved->client()->put_new($resolved->file_url($filled . '/vorhanden.md'), 'E2E');
 $typeid = $DB->get_field('repository', 'id', ['type' => 'webdav'], MUST_EXIST);

@@ -21,18 +21,11 @@ use local_coursepilot\storage_conflict_exception;
 use local_coursepilot\storage_port;
 
 /**
- * Der Ablage-Vertrag als eine Suite (Issue #536, Spec 0021 Testing
- * Decisions: "Eine einzige Vertragssuite beschreibt, was ein Adapter leisten
- * muss, und laeuft gegen beide"). Ein Testfixture unter `tests/classes/`
- * (Moodle-Konvention, Namensraum `local_coursepilot\tests`, siehe
- * `tests/classes/webdav/`), nicht direkt in `tests/`, damit es fuer eine
- * konkrete Unterklasse in einer anderen Datei autoladbar ist. PHPUnit
- * ignoriert diese abstrakte Klasse selbst; sie beschreibt nur das
- * gemeinsame Verhalten, das jeder {@see storage_port}-Adapter erfuellen
- * muss - unabhaengig vom Ort. Eine konkrete Unterklasse liefert nur den
- * Adapter und einen Testbereich ({@see area()}), z.B.
- * {@see \local_coursepilot\private_files_storage_port_test}. Der kuenftige
- * WebDAV-Adapter (Anker 3) tritt gegen dieselbe Suite an.
+ * Shared storage contract suite (Issue #536, Spec 0021 Testing Decisions)
+ * for all adapters, independent of location. Place the abstract fixture in
+ * tests/classes under local_coursepilot\tests for Moodle autoloading.
+ * PHPUnit runs concrete subclasses, which provide only an adapter and
+ * test area, e.g. private_files_storage_port_test and the WebDAV adapter.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -41,16 +34,15 @@ use local_coursepilot\storage_port;
 abstract class storage_port_contract_test extends \advanced_testcase {
 
     /**
-     * Der zu pruefende Adapter.
+     * Adapter under test.
      *
      * @return storage_port
      */
     abstract protected function port(): storage_port;
 
     /**
-     * Ein fuer diese Suite frei erfundener Bereich - kein eigener Typ, nur
-     * ein Wertesatz (ADR 0020), damit der Vertragstest keinen der beiden
-     * echten Bereiche (Kontextbereich/Materialbestand) anfasst.
+     * Invented test area expressed as storage_area values (ADR 0020),
+     * keeping the suite away from real context and material areas.
      *
      * @return storage_area
      */
@@ -62,9 +54,8 @@ abstract class storage_port_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Bringt eine angemeldete Person mit Schreibrecht in Stellung -
-     * gemeinsam fuer alle Testmethoden, weil jeder Adapter (auch ein
-     * kuenftiger WebDAV-Adapter) einen eigenen Nutzerkontext braucht.
+     * Create an authenticated user with write permission for all tests;
+     * every adapter needs its own user context.
      */
     protected function setUp(): void {
         parent::setUp();
@@ -119,7 +110,7 @@ abstract class storage_port_contract_test extends \advanced_testcase {
         $port->write($area, 'plan.md', 'inzwischen geaendert');
 
         $this->expectException(storage_conflict_exception::class);
-        $port->write($area, 'plan.md', 'wuerde ueberschreiben', $written['checksum']);
+        $port->write($area, 'plan.md', 'would overwrite', $written['checksum']);
     }
 
     public function test_write_with_a_checksum_against_a_missing_file_raises_conflict(): void {
@@ -131,7 +122,7 @@ abstract class storage_port_contract_test extends \advanced_testcase {
         $area = $this->area();
         try {
             $this->port()->write($area, '../../../etc/plan.md', 'inhalt');
-            $this->fail('Ein Pfad mit ".."-Segment haette abgewiesen werden muessen.');
+            $this->fail('A path containing a .. segment must be rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame($area->invalidpathkey, $e->errorcode);
         }
@@ -141,7 +132,7 @@ abstract class storage_port_contract_test extends \advanced_testcase {
         $area = $this->area();
         try {
             $this->port()->write($area, 'unerlaubt.exe', 'inhalt');
-            $this->fail('Die Namensregel des Bereichs haette diese Endung abweisen muessen.');
+            $this->fail('The area naming rule must reject this extension.');
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString('unerlaubt.exe', $e->getMessage());
         }
@@ -149,7 +140,7 @@ abstract class storage_port_contract_test extends \advanced_testcase {
 
     public function test_write_rejects_when_quota_is_exceeded(): void {
         if (!$this->applies_user_quota()) {
-            $this->markTestSkipped('Dieser Ablageort unterliegt nicht der Moodle-Nutzerquote.');
+            $this->markTestSkipped('This location is outside the Moodle user quota.');
         }
         global $CFG;
 
@@ -158,7 +149,7 @@ abstract class storage_port_contract_test extends \advanced_testcase {
 
         try {
             $this->port()->write($area, 'zu-gross.md', str_repeat('x', 1000));
-            $this->fail('Ein Schreibvorgang ueber die Quote hinaus haette abgewiesen werden muessen.');
+            $this->fail('A write exceeding quota must be rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame($area->quotaerrorkey, $e->errorcode);
         }
@@ -206,21 +197,15 @@ abstract class storage_port_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Ortsneutralitaets-Pruefung (Issue #560): derselbe Markdown-Inhalt
-     * liefert beim Lesen ueber jeden Adapter denselben `mimetype`-Wert -
-     * nicht nur den Schluessel (das prueft schon
-     * {@see test_list_reflects_written_files_with_the_same_field_set()}).
-     * `.md` hat keinen Eintrag in Moodles Endungstabelle; ohne Inhalts-
-     * Sniffing waere das Ergebnis vom Ort abhaengig (`text/plain` bei Moodle
-     * Private Files, `document/unknown` bei WebDAV).
+     * Location neutrality (Issue #560): reading the same Markdown through
+     * any adapter returns the same mimetype value, beyond field-set parity.
+     * Moodle's extension table has no .md entry; content sniffing avoids
+     * location-specific text/plain versus document/unknown results.
      *
-     * Bewusst nur fuer `read()`, nicht `list()`: Moodle Private Files
-     * sniffft beim Auflisten kostenlos aus dem bereits beim Anlegen
-     * ermittelten `stored_file`-Mimetyp, WebDAV muesste dafuer pro Datei mit
-     * unbekannter Endung extra einen GET machen - das wuerde den
-     * bestehenden Zero-GET-Vertrag des Auflistens verletzen (siehe
-     * Kommentar an {@see \local_coursepilot\webdav\webdav_client::parse_multistatus()}).
-     * `list()` bleibt fuer WebDAV daher bei `document/unknown`.
+     * Check read(), not list(): Private Files listing uses stored mimetypes
+     * without extra reads, while WebDAV sniffing would require a GET per
+     * unknown extension, violating its zero-GET listing contract
+     * (webdav_client::parse_multistatus()). WebDAV lists document/unknown.
      */
     public function test_mimetype_is_location_independent_for_the_same_content_when_read(): void {
         $port = $this->port();

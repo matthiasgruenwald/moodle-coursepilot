@@ -26,13 +26,10 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Vertragstest ueber alle neun katalogisierten Modultypen (Issue #556,
- * Abnahmekriterium 4): jede Art durchlaeuft denselben Rundlauf - anlegen,
- * lesen, ein Feld aendern, erneut lesen -, unabhaengig davon, ob sie ueber
- * die generischen Werkzeuge (create_module/update_module_settings) oder ihr
- * eigenes Werkzeugpaar (create_quiz/update_quiz_settings, {@see registry::for()})
- * geschrieben wird. Ein zehnter Modultyp braucht hier nur einen weiteren
- * {@see self::scenario()}-Zweig, keinen neuen Testkoerper.
+ * Round-trip contract for all nine cataloged module types (#556,
+ * criterion 4): create, read, patch one field and read again, through
+ * generic writers or dedicated quiz tools ({@see registry::for()}).
+ * A tenth type needs only another {@see self::scenario()} branch.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -42,7 +39,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 final class module_roundtrip_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs, Lehrkraft (editingteacher).
+     * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
         $course = $this->getDataGenerator()->create_course();
@@ -53,9 +50,8 @@ final class module_roundtrip_test extends \advanced_testcase {
     }
 
     /**
-     * Legt eine Materialdatei fuer den aktuell angemeldeten Nutzer an, wie
-     * upload_material_file sie hinterliesse (Vorbild
-     * {@see \local_coursepilot\external\create_module_test::create_material_file()}).
+     * Create a material file like upload_material_file. See
+     * {@see \local_coursepilot\external\create_module_test::create_material_file()}.
      *
      * @param string $path
      * @param string $content
@@ -93,7 +89,7 @@ final class module_roundtrip_test extends \advanced_testcase {
 
     /**
      * @param int $cmid
-     * @return array Ist-Stand, dieselbe Form wie get_module_settings.
+     * @return array Current state, with the same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -118,9 +114,8 @@ final class module_roundtrip_test extends \advanced_testcase {
     }
 
     /**
-     * Legt eine Aktivitaet des genannten Typs an und nennt ein Feld, das sich
-     * gefahrlos patchen laesst (Vorbild: die jeweiligen create_*_test-Dateien
-     * - Rueckgriff auf ihre Mindestfelder).
+     * Create the requested activity type and identify a safe patch field,
+     * using minimum fields from the corresponding create_* tests.
      *
      * @param string $modname
      * @param int $courseid
@@ -128,9 +123,8 @@ final class module_roundtrip_test extends \advanced_testcase {
      */
     private function scenario(string $modname, int $courseid): array {
         return match ($modname) {
-            // "name" wird bei label aus dem Intro abgeleitet und beim
-            // Anlegen sofort ueberschrieben (siehe label::fields()) -
-            // "intro" ist hier das einzige patchbare Feld.
+            // label derives name from intro during creation (see label::fields()),
+            // so intro is the only patchable field here.
             'label' => [
                 'cmid' => $this->create_via_module_tool($courseid, 'label', [
                     'intro' => 'Ausgangstext',
@@ -203,7 +197,7 @@ final class module_roundtrip_test extends \advanced_testcase {
                 'field' => 'name',
                 'value' => 'Neuer Testtitel',
             ],
-            default => throw new \coding_exception("Kein Szenario fuer Modultyp {$modname}."),
+            default => throw new \coding_exception("No scenario for module type {$modname}."),
         };
     }
 
@@ -218,10 +212,8 @@ final class module_roundtrip_test extends \advanced_testcase {
     }
 
     /**
-     * Jeder katalogisierte Modultyp durchlaeuft denselben Rundlauf: anlegen,
-     * lesen, ein Feld aendern, erneut lesen - das geaenderte Feld traegt den
-     * neuen Wert, sonst nichts weiter vorausgesetzt (Issue #556, Abnahme-
-     * kriterium 4).
+     * Every cataloged type completes create/read/patch/read and returns
+     * the changed field’s new value (#556, criterion 4).
      */
     #[DataProvider('modname_provider')]
     public function test_round_trip_create_read_patch_read(string $modname): void {
@@ -229,24 +221,22 @@ final class module_roundtrip_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
 
         $case = $this->scenario($modname, $course->id);
-        $this->assertGreaterThan(0, $case['cmid'], "{$modname}: Anlegen muss eine cmid liefern.");
+        $this->assertGreaterThan(0, $case['cmid'], "{$modname}: creating must return a cmid.");
 
         $before = $this->read($case['cmid']);
-        $this->assertArrayHasKey($case['field'], $before, "{$modname}: gepatchtes Feld muss lesbar sein.");
-        $this->assertNotSame($case['value'], $before[$case['field']], "{$modname}: Ausgangswert darf nicht bereits der Zielwert sein.");
+        $this->assertArrayHasKey($case['field'], $before, "{$modname}: patched field must be readable.");
+        $this->assertNotSame($case['value'], $before[$case['field']], "{$modname}: initial value must not already be the target value.");
 
         $this->patch($modname, $case['cmid'], [$case['field'] => $case['value']]);
 
         $after = $this->read($case['cmid']);
-        $this->assertSame($case['value'], $after[$case['field']], "{$modname}: Patch muss beim erneuten Lesen sichtbar sein.");
+        $this->assertSame($case['value'], $after[$case['field']], "{$modname}: patch must be visible when read again.");
     }
 
     /**
-     * Issue #564: "option" liegt (anders als "name") nicht in der
-     * choice-Instanzzeile, sondern in choice_options - eine eigene
-     * "repeated group" (Spec 0015 §2.2 Kategorie 2), die der generische
-     * Rundlauf oben (Feld "name") nicht abdeckt. Rundlauf wie bei den
-     * uebrigen acht Modultypen: anlegen, lesen, Option aendern, erneut lesen.
+     * choice option resides in choice_options rather than the instance
+     * row. Exercise this repeated group (Spec 0015 §2.2 category 2) through
+     * create/read/patch/read; the name-only round trip does not cover it (#564).
      */
     public function test_choice_option_round_trip(): void {
         $this->resetAfterTest();
@@ -261,14 +251,13 @@ final class module_roundtrip_test extends \advanced_testcase {
         ])['cmid'];
 
         $before = $this->read($cmid);
-        $this->assertSame(['Ja', 'Nein'], $before['option'], 'Angelegte Optionen muessen beim Lesen sichtbar sein.');
-        $this->assertSame([2, 3], array_map('intval', $before['limit']), 'Gesetzte Limits muessen beim Lesen sichtbar sein.');
-        $this->assertCount(2, $before['optionid'], 'Bestehende choice_options-IDs muessen beim Lesen sichtbar sein.');
+        $this->assertSame(['Ja', 'Nein'], $before['option'], 'Created options must be visible when read.');
+        $this->assertSame([2, 3], array_map('intval', $before['limit']), 'Configured limits must be visible when read.');
+        $this->assertCount(2, $before['optionid'], 'Existing choice_options IDs must be visible when read.');
 
-        // "optionid" muss mitgeschickt werden, sonst legt choice_update_instance()
-        // zusaetzliche Optionen an statt bestehende zu ueberschreiben (siehe
-        // choice::pseudofields(), Feld "optionid") - derselbe Rundlauf, den
-        // mod_choice_mod_form::data_preprocessing() im echten Formularweg vorbereitet.
+        // Supply optionid; otherwise choice_update_instance() adds options
+        // instead of replacing them. See choice::pseudofields(), matching
+        // mod_choice_mod_form::data_preprocessing() in the native form lifecycle.
         $this->patch('choice', $cmid, [
             'option' => ['Vielleicht', 'Auf jeden Fall'],
             'limit' => [4, 5],
@@ -279,15 +268,14 @@ final class module_roundtrip_test extends \advanced_testcase {
         $this->assertSame(
             ['Vielleicht', 'Auf jeden Fall'],
             $after['option'],
-            'Geaenderte Optionen muessen beim erneuten Lesen sichtbar sein.'
+            'Changed options must be visible when read again.'
         );
-        $this->assertSame([4, 5], array_map('intval', $after['limit']), 'Geaenderte Limits muessen beim erneuten Lesen sichtbar sein.');
+        $this->assertSame([4, 5], array_map('intval', $after['limit']), 'Changed limits must be visible when read again.');
     }
 
     /**
-     * Die Registry ist die vollstaendige Liste - dieser Test scheitert, wenn
-     * eine neue Katalogklasse eingetragen wird, ohne hier ein Szenario zu
-     * bekommen (haelt Abnahmekriterium 4 "alle neun" dauerhaft wahr).
+     * The registry is the complete type list. Fail when a new catalog lacks
+     * a scenario, preserving coverage of all types.
      */
     public function test_every_registered_modname_has_a_scenario(): void {
         foreach (registry::known_modnames() as $modname) {

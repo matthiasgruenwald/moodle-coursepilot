@@ -19,12 +19,11 @@ namespace local_coursepilot\admin;
 use local_coursepilot\personal_data_hosts;
 
 /**
- * Die Spalte Ablageort der Verbindungsübersicht (Issue #499, Spec #486 §12):
- * Zustand je Ziel (*offen*, *in Moodle*, *extern: Host*) und Marker fuer
- * nicht zugelassenen Speicher, offene Ausstaende, offenen Altbestand und
- * einen defekten Pointer. Liest ausschliesslich Pointer und Datenbank -
- * ohne Netz, ohne Pfad (Akzeptanzkriterium). Ein Zuruecksetzen gibt es
- * nicht, diese Klasse liest nur.
+ * Storage-location column for the connections overview (Issue #499,
+ * Spec #486 §12): per-target state (open, in Moodle, external host) plus
+ * markers for unapproved hosts, pending writes, previous locations and
+ * broken pointers. Reads only the pointer and database, without network
+ * or target-path access. Read-only, without a reset action.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -35,8 +34,8 @@ final class connection_storage_location {
     /**
      * @param int $userid
      * @return array{targets: array<string, string>, markers: string[]}
-     *         targets: je Ziel die fertige Anzeigezeile (z.B. "Kontextbereich: extern: cloud.example.test").
-     *         markers: fertige Marker-Zeilen, leer wenn keine zutreffen.
+     *         targets: completed display line per target (e.g. "Context area: external: cloud.example.test").
+     *         markers: completed marker lines, empty if none apply.
      */
     public static function describe(int $userid): array {
         $decoded = pointer_scan::raw_pointer_for($userid);
@@ -88,7 +87,7 @@ final class connection_storage_location {
     }
 
     /**
-     * @param string $defect Einer der {@see pointer_scan}-`DEFECT_*`-Werte.
+     * @param string $defect One of the pointer_scan DEFECT_* values.
      * @return string
      */
     private static function defect_label(string $defect): string {

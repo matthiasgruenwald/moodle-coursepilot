@@ -26,8 +26,8 @@ global $CFG;
 require_once($CFG->dirroot . '/cohort/lib.php');
 
 /**
- * Die Lieferung eines Skill-Korpus-Eintrags (Spec 0020 §4, Issue #450): ohne
- * Kursbindung, die Fernzugriffsfreigabe genuegt (Issue #630).
+ * Deliver a skill-corpus entry (Spec 0020 §4, #450): remote-access
+ * authorization suffices without course binding (#630).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -37,7 +37,7 @@ require_once($CFG->dirroot . '/cohort/lib.php');
 final class get_skill_test extends \advanced_testcase {
 
     /**
-     * Liefert Inhalt, referenzierte Teile und Korpus-Stand.
+     * Return content, referenced parts and corpus version.
      */
     public function test_returns_content_referenced_parts_and_corpus_stand(): void {
         $this->resetAfterTest();
@@ -54,8 +54,8 @@ final class get_skill_test extends \advanced_testcase {
     }
 
     /**
-     * Unbekannter Name: die Meldung nennt die gueltigen Namen statt eines
-     * leeren Ergebnisses.
+     * Unknown names produce a message listing valid names rather than
+     * an empty result.
      */
     public function test_unknown_name_names_valid_names(): void {
         $this->resetAfterTest();
@@ -72,8 +72,8 @@ final class get_skill_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Name mit Pfadanteilen wird abgewiesen - geprueft gegen die
-     * Verzeichnisliste, nicht per Zeichenfilter.
+     * Reject names containing path components by matching the directory
+     * listing rather than filtering characters.
      *
      * @param string $name
      */
@@ -102,8 +102,8 @@ final class get_skill_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne Fernzugriffsfreigabe wird abgewiesen - auch eine Lehrkraft im
-     * Kurs (Issue #630).
+     * Reject users without remote-access authorization, including enrolled
+     * teachers (#630).
      */
     public function test_without_remote_access_is_rejected(): void {
         $this->resetAfterTest();

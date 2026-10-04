@@ -15,15 +15,13 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Autorisierungsendpunkt (#336): Moodle-Login (require_login() - LDAP/SSO
- * der Instanz greift), Zustimmungsdialog mit den Textbausteinen aus #298,
- * PKCE/S256 Pflicht.
+ * Authorization endpoint (#336): Moodle login (instance LDAP/SSO via
+ * require_login()), consent text from #298 and mandatory PKCE/S256.
  *
- * Duenne Schale (#334-Muster): die eigentliche Entscheidungslogik
- * (response_type/PKCE/Client/Umleitungsziel pruefen, Code ausstellen, das
- * Ablehnungs-Umleitungsziel bauen) lebt als reine, per PHPUnit pruefbare
- * Methoden in {@see \local_coursepilot\oauth_lib}. Diese Datei tut nur noch
- * Moodle-Ein-/Ausgabe: Login erzwingen, Formular rendern, redirect().
+ * Thin I/O shell (#334): pure PHPUnit-testable methods in
+ * {@see \local_coursepilot\oauth_lib} validate response_type, PKCE, client
+ * and redirect, issue the code and construct denial redirects. This file
+ * only requires login, renders the form and redirects.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -43,10 +41,9 @@ $context = context_system::instance();
 $PAGE->set_url('/local/coursepilot/oauth/authorize.php');
 $PAGE->set_context($context);
 $PAGE->set_pagelayout('standard');
-// Generischer Titel, solange der Client noch nicht validiert ist (Fehlerfall
-// unten kennt noch keinen Client-Namen) - nach erfolgreicher Validierung
-// wird er unten durch den client-spezifischen Titel ersetzt (#336-Review:
-// Zustimmungsdialog nennt laut #298 den Client-Namen in der Ueberschrift).
+// Use a generic title before client validation: the error path has no
+// client name yet. Replace it below with the client-specific title after
+// validation (#336 review: #298 requires the client name in the heading).
 $PAGE->set_title(get_string('authorizetitle', 'local_coursepilot'));
 
 $params = [
@@ -61,10 +58,9 @@ $action = optional_param('action', '', PARAM_ALPHA);
 
 $validation = oauth_lib::validate_authorize_request($params);
 if (isset($validation['error'])) {
-    // Fehlerhafte Anfragen (unbekannter Client, kein PKCE, nicht
-    // registriertes Umleitungsziel) haben keinen verifizierten redirect_uri,
-    // auf den ein Fehler-Redirect sicher waere - Moodle-Fehlerseite statt
-    // Redirect (RFC 6749, 4.1.2.1 gilt erst ab verifiziertem Ziel).
+    // Invalid requests (unknown client, missing PKCE, unregistered redirect)
+    // have no verified redirect_uri. Show a Moodle error instead of an unsafe
+    // redirect; RFC 6749 §4.1.2.1 applies only after verifying the target.
     throw new moodle_exception('authorizeerror', 'local_coursepilot', '', $validation['error_description']);
 }
 $client = $validation['client'];
@@ -93,11 +89,9 @@ if ($action === 'allow') {
     ]));
 }
 
-// Ortswahl-Link mit Ruecksprung (Issue #563, loest die mit #558 dokumentierte
-// Sackgasse auf): die OAuth-Anfrageparameter reisen als Querystring zur
-// Ortswahlseite mit; die Ortswahlseite validiert sie erneut selbst und
-// fuehrt nach dem Abschliessen genau hierher zurueck, statt zu Claude
-// weiterzuleiten.
+// Location-selection link with return (#563, resolves the #558 dead end):
+// OAuth parameters travel in the query string. Location selection validates
+// them again and returns here on completion, instead of redirecting to Claude.
 $locationselectionurl = new moodle_url('/local/coursepilot/location_selection.php', array_merge($params, [
     'state' => $state,
     'oauthflow' => 1,

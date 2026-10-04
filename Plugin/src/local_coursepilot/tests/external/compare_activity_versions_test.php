@@ -20,7 +20,7 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Volles Diff zweier frei gewaehlter Staende (Spec 0015 §10.6, #394).
+ * Full diff of two freely chosen states (Spec 0015 §10.6, #394).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -66,8 +66,7 @@ final class compare_activity_versions_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 3: vergleicht zwei beliebige Staende, hier direkt
-     * benachbarte, mit den vollstaendigen Vorher-/Nachher-Werten.
+     * Acceptance criterion 6: check local/coursepilot:viewhistory.
      */
     public function test_compares_two_versions(): void {
         $this->resetAfterTest();
@@ -93,7 +92,7 @@ final class compare_activity_versions_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 6: local/coursepilot:viewhistory wird geprueft.
+     * Require local/coursepilot:viewhistory (criterion 6).
      */
     public function test_rejects_user_without_capability(): void {
         $this->resetAfterTest();

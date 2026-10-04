@@ -15,16 +15,15 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Einmal-Downloadendpunkt fuer Werkbankdateien (#501, Spec #486 §13): eigener
- * Endpunkt, weder `webservice/pluginfile.php` (ignoriert den OAuth-Bearer)
- * noch `tokenpluginfile.php` (zu breit) - das Ticket in der URL ist der
- * einzige Berechtigungsnachweis, kein Moodle-Login.
+ * Single-use workbench download endpoint (#501, Spec #486 §13). The URL
+ * ticket is the sole authorization, without Moodle login. A dedicated route
+ * avoids webservice/pluginfile.php (ignores OAuth Bearer) and
+ * tokenpluginfile.php (overly broad access).
  *
- * Duenne Schale (#334-Muster wie oauth/token.php): liest den Ticketparameter
- * ein, uebergibt an {@see \local_coursepilot\workbench_ticket::redeem()}. Die
- * eigentliche Pruef-/Verbrauchslogik lebt dort, per PHPUnit ohne laufenden
- * Webserver pruefbar. Ohne Range-Unterstuetzung: ein etwaiger Range-Header
- * des Clients wird schlicht nie gelesen, jede Auslieferung ist vollstaendig.
+ * Thin wrapper like oauth/token.php (#334): pass the ticket to
+ * workbench_ticket::redeem(), whose validation and consumption logic is
+ * unit-testable without a webserver. Ignore Range headers and always
+ * deliver the complete file.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -41,9 +40,8 @@ use local_coursepilot\workbench_ticket;
 
 $toolname = 'coursepilot_workbench_download';
 
-// PARAM_ALPHANUM passt zum Geheimnisformat aus oauth_lib::random_token()
-// (bin2hex() - reine Hex-Zeichen); bei einem kuenftig anderen Tokenformat
-// (z.B. base64url) muss diese Zeile mitziehen.
+// PARAM_ALPHANUM matches oauth_lib::random_token() hexadecimal secrets.
+// Update this validation if the format changes, for example to base64url.
 $ticket = optional_param('ticket', '', PARAM_ALPHANUM);
 
 if ($ticket === '') {
@@ -58,10 +56,8 @@ try {
     $delivery = workbench_ticket::redeem($ticket);
 } catch (\local_coursepilot\workbench_ticket_redemption_failed $e) {
     http_response_code(403);
-    // Der Grund geht ins Zugriffsprotokoll, das Ticket selbst nie (Spec
-    // #486 §13) - $e->errorcode ist der feste Sprachschluessel, kein
-    // Freitext mit Geheimnisbezug. $e->path ist bekannt, sobald das Ticket
-    // selbst gefunden wurde (nur beim unbekannten Ticket bleibt er null).
+    // Log the fixed reason key, never the ticket secret (Spec #486 §13).
+    // The path is known once the ticket is found; only unknown tickets have null.
     access_log::log_failure($e->errorcode, $toolname, $e->path);
     header('Content-Type: application/json');
     echo json_encode(['error' => $e->getMessage()]);

@@ -22,9 +22,8 @@ use local_coursepilot\webdav\webdav_instance;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Die Logik der Ortswahlseite (Issue #494, Spec #486 §5/§10) - getestet ueber
- * ihre Klasse mit dem WebDAV-Transport-Fake, nie ueber die Seite selbst
- * (Issue #494 Akzeptanzkriterium).
+ * Location-selection logic (#494, Spec #486 §5/§10), tested through
+ * the class with fake WebDAV rather than through the page.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -36,10 +35,8 @@ final class location_selection_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     /**
-     * Issue #507 (Spec #486, Review von #486): die Seitenzustaende und die
-     * Zeitgrenze des Dateifenster-Abrufs sind benannte Konstanten statt
-     * roher Werte - {@see location_selection::setup_state()} und
-     * die Vorlagen nutzen sie.
+     * Page states and file-picker timeout are named constants used by
+     * {@see location_selection::setup_state()} and templates (#507).
      */
     public function test_state_and_timeout_constants_have_the_expected_values(): void {
         $this->assertSame('not_enabled', location_selection::STATE_NOT_ENABLED);
@@ -86,8 +83,7 @@ final class location_selection_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
-        // Weder Freischaltung noch Instanz - "nicht freigeschaltet" gilt,
-        // nicht "keine Instanz".
+        // Neither authorization nor an instance exists: report unauthorized, not missing instance.
         $this->enable_webdav_repository_type();
 
         $state = location_selection::setup_state((int) $user->id);
@@ -119,7 +115,7 @@ final class location_selection_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
         $this->enable_webdav_repository_type();
-        // Schritt 1+2 erfuellt, Schritt 3 (Capability) fehlt.
+        // Steps 1+2 fulfilled, step 3 (capability) missing.
 
         $text = location_selection::missing_steps_text((int) $user->id);
 
@@ -128,10 +124,9 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Issue #528 (Spec #486 §5, Befund #11 aus der Live-Abnahme #505): ein
-     * ausgeschaltetes Repository (Schritt 1) darf nicht auch Schritt 2 und 3
-     * als fehlend melden, wenn deren Konfiguration/Recht bereits gesetzt
-     * sind - der Text an die Administration nennt sonst erledigte Schritte.
+     * Disabling the repository (step 1) must not report already configured
+     * steps 2 and 3 as missing, misleading administrators (#528, Spec #486
+     * §5, live acceptance #505 finding 11).
      */
     public function test_missing_steps_text_omits_already_satisfied_steps_when_step_one_is_off(): void {
         $this->resetAfterTest();
@@ -182,10 +177,9 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * "chosen" (Issue #525, Spec §5): ohne Pointer ("erste Einrichtung")
-     * gilt kein Ziel als ausdruecklich gewaehlt, obwohl current() bereits
-     * die Standardwurzel als Anzeigewert liefert - das Dateifenster-JS soll
-     * hier weiterhin eine ausdrueckliche Wahl verlangen.
+     * Without a pointer, no target is explicitly chosen even though current()
+     * displays the default root. The file-picker JS must still require a
+     * choice during first setup (#525, Spec §5).
      */
     public function test_current_marks_target_as_not_chosen_without_pointer(): void {
         $this->resetAfterTest();
@@ -199,8 +193,8 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Gegenstueck: ein Ziel, das der Pointer bereits ausdruecklich aufloest
-     * (in Moodle oder extern), gilt als gewaehlt (Issue #525).
+     * A target explicitly resolved by a pointer is chosen, whether in
+     * Moodle or externally (#525).
      */
     public function test_current_marks_target_as_chosen_with_pointer(): void {
         $this->resetAfterTest();
@@ -217,9 +211,8 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * "Zugelassen" fuer die Anzeige (Issue #500, ADR 0021 §3): Private
-     * Files sind immer zugelassen, ohne dass `personaldatahosts` etwas
-     * dazu sagen muss.
+     * Private Files are always approved in the display, independently of
+     * personaldatahosts (#500, ADR 0021 §3).
      */
     public function test_current_marks_moodle_location_as_allowed(): void {
         $this->resetAfterTest();
@@ -235,10 +228,10 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Ein externer Ort ist nur zugelassen, wenn sein Server in
-     * `personaldatahosts` steht (Issue #500, ADR 0021 §3) - dieselbe
-     * Pruefung wie {@see \local_coursepilot\admin\connection_storage_location}, hier
-     * je Ziel fuer Zustimmungsdialog/"Meine Verbindungen"/Ortswahlseite.
+     * Approve external locations only when their server is in
+     * personaldatahosts (#500, ADR 0021 §3). Use the same check as
+     * {@see \local_coursepilot\admin\connection_storage_location} for consent,
+     * My connections and location selection.
      */
     public function test_current_marks_extern_location_as_not_allowed_without_configured_host(): void {
         $this->resetAfterTest();
@@ -246,7 +239,7 @@ final class location_selection_test extends \advanced_testcase {
         $this->setUser($user);
         $instanceid = $this->create_webdav_instance($user);
         $this->write_v2_pointer($user, 'context_area', $instanceid, 'Kontext');
-        // personaldatahosts bleibt leer - der Instanzserver ist damit nicht zugelassen.
+        // Empty personaldatahosts leaves the instance server unapproved.
 
         $kontext = location_selection::current('context_area');
 
@@ -258,8 +251,7 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Gegenstueck: ein externer Ort mit zugelassenem Server gilt als
-     * zugelassen (Issue #500).
+     * An external location on an approved server is approved (#500).
      */
     public function test_current_marks_extern_location_as_allowed_with_configured_host(): void {
         $this->resetAfterTest();
@@ -275,17 +267,13 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Der geteilte Datenschutz-Informationstext (Issue #500, Spec #486 §11),
-     * der im Zustimmungsdialog, auf "Meine Verbindungen" und in der
-     * Beschreibung von `personaldatahosts` erscheint, nennt alle vier
-     * geforderten Fakten - ein Aenderungsrisiko an einer zentralen Stelle
-     * statt eines stillen Auseinanderdriftens der drei Anzeigen.
+     * The shared privacy information contains all four required facts
+     * (#500, Spec #486 §11). Consent, My connections and personaldatahosts
+     * use one source to prevent wording from drifting.
      */
     public function test_external_location_privacy_info_names_all_four_facts(): void {
-        // Die Testinstanz laeuft mit der Standardsprache "en" (kein
-        // installiertes deutsches Sprachpaket) - get_string() liefert daher
-        // den englischen Text von lang/en/local_coursepilot.php, dessen vier
-        // Fakten wortgleich zu lang/de/ formuliert sind.
+        // The test instance resolves English strings only. The four facts in
+        // lang/en/local_coursepilot.php match the German development language pack.
         $text = get_string('externallocationprivacyinfo', 'local_coursepilot');
 
         $this->assertStringContainsString('AI', $text);
@@ -375,7 +363,7 @@ final class location_selection_test extends \advanced_testcase {
             $this->assertSame(['context_area'], $changed);
 
             $mkcols = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'MKCOL'));
-            $this->assertCount(2, $mkcols, 'Ebene fuer Ebene: "Unterricht", dann "Unterricht/Kontext".');
+            $this->assertCount(2, $mkcols, 'Level by level: "Unterricht", then "Unterricht/Kontext".');
 
             $state = location_selection::page_state((int) $user->id);
             $this->assertSame('selected', $state['locations']['context_area']['state']);
@@ -391,9 +379,8 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Issue #518, Spec §5: die ausdrueckliche Uebergabe eines gefuellten
-     * Kontextbereich-Ordners wird serverseitig geprueft, nicht nur im
-     * Seitenskript - ein Aufruf ohne die Bestaetigung scheitert benannt.
+     * Require explicit confirmation of a populated context folder on the
+     * server, not just in page JS (#518, Spec §5).
      */
     public function test_apply_rejects_filled_context_folder_without_explicit_confirmation(): void {
         $this->resetAfterTest();
@@ -407,7 +394,7 @@ final class location_selection_test extends \advanced_testcase {
                 'context_area' => ['type' => 'external', 'instanceid' => $instanceid, 'path' => 'Unterricht'],
                 'material_store' => ['type' => 'moodle'],
             ]);
-            $this->fail('locationselectionfolderconfirmrequired haette geworfen werden muessen.');
+            $this->fail('locationselectionfolderconfirmrequired should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('locationselectionfolderconfirmrequired', $e->errorcode);
         } finally {
@@ -418,8 +405,7 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Gegenstueck: mit der ausdruecklichen Bestaetigung schliesst dieselbe
-     * Auswahl erfolgreich ab.
+     * Explicit confirmation permits the same selection.
      */
     public function test_apply_accepts_filled_context_folder_with_explicit_confirmation(): void {
         $this->resetAfterTest();
@@ -441,8 +427,7 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Ein leerer Ordner braucht keine Bestaetigung (Spec §5: "ein leerer ...
-     * Ordner braucht keine Rueckfrage").
+     * Empty folders require no confirmation (Spec §5).
      */
     public function test_apply_accepts_empty_context_folder_without_confirmation(): void {
         $this->resetAfterTest();
@@ -463,8 +448,8 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Ein erneutes Abschliessen ohne Ortswechsel braucht keine erneute
-     * Bestaetigung (Spec §5 gilt nur fuer "der neu gewaehlte Ordner").
+     * Reapplying without a location change requires no new confirmation;
+     * Spec §5 applies only to newly selected folders.
      */
     public function test_apply_repeat_of_unchanged_filled_context_folder_needs_no_confirmation(): void {
         $this->resetAfterTest();
@@ -542,9 +527,8 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     public function test_apply_rejects_root_of_instance_as_selection(): void {
-        // Issue #497, Spec #486 §5: "Die Wurzel jeder Instanz ist nicht
-        // waehlbar" - revidiert das fruehere Verhalten (Issue #494 liess die
-        // Wurzel noch zu, die Sperre kam erst in diesem Ticket).
+        // Instance roots are not selectable (#497, Spec #486 §5), superseding
+        // the earlier root selection allowed by #494.
         $this->resetAfterTest();
         [$user, $fake] = $this->prepare_instance();
         $instanceid = $this->lastinstanceid;
@@ -561,7 +545,7 @@ final class location_selection_test extends \advanced_testcase {
         }
     }
 
-    // --- Issue #497: Sperren, IServ-Erkennung, Uebergabe eines gefuellten Ordners ---
+    // --- Issue #497: locks, IServ detection, handover of a filled folder ---
 
     public function test_browse_root_is_not_selectable(): void {
         $this->resetAfterTest();
@@ -598,9 +582,8 @@ final class location_selection_test extends \advanced_testcase {
         $this->resetAfterTest();
         [$user, $fake] = $this->prepare_instance();
         $fake->seed_folder('/' . $this->fixturebasispfad . '/Unterricht');
-        // Nur die zusaetzliche IServ-Erkennung auf der Wurzel scheitert - die
-        // Hauptauflistung von "Unterricht" gelingt normal (Issue #506: ein
-        // Netzfehler hier gilt als "nein", muss aber protokolliert werden).
+        // Only additional IServ root detection fails; listing Unterricht succeeds.
+        // Treat this network error as false and log it (#506).
         $fake->fail_once('/' . $this->fixturebasispfad, 401);
         $sink = $this->redirectEvents();
 
@@ -615,7 +598,7 @@ final class location_selection_test extends \advanced_testcase {
         $sink->close();
         $this->assertNotEmpty(
             $failures,
-            'Ein gescheiterter IServ-Check muss protokolliert werden, nicht schweigend als "nein" gelten.'
+            'A failed IServ check must be logged, not silently treated as "no".'
         );
     }
 
@@ -630,7 +613,7 @@ final class location_selection_test extends \advanced_testcase {
         try {
             $root = location_selection::browse($this->lastinstanceid, '');
             $this->assertTrue($root['iserv']);
-            $this->assertFalse($root['selectable'], 'Die Wurzel bleibt zusaetzlich immer gesperrt.');
+            $this->assertFalse($root['selectable'], 'The root additionally always stays locked.');
             $this->assertSame(
                 ['Files', 'Groups', 'Print', 'Temp', 'Windows'],
                 array_map(static fn (array $f): string => $f['name'], $root['folders'])
@@ -638,12 +621,12 @@ final class location_selection_test extends \advanced_testcase {
 
             $groups = location_selection::browse($this->lastinstanceid, 'Groups');
             $this->assertTrue($groups['iserv']);
-            $this->assertFalse($groups['selectable'], 'Ausserhalb von Files/ ist bei IServ nichts waehlbar.');
+            $this->assertFalse($groups['selectable'], 'Outside Files/ nothing is selectable on IServ.');
             $this->assertSame('locationselectioniservfilesonly', $groups['reasonkey']);
 
             $files = location_selection::browse($this->lastinstanceid, 'Files');
             $this->assertTrue($files['iserv']);
-            $this->assertTrue($files['selectable'], 'Unterhalb von Files/ bleibt bei IServ waehlbar.');
+            $this->assertTrue($files['selectable'], 'Below Files/ stays selectable on IServ.');
 
             $nested = location_selection::browse($this->lastinstanceid, 'Files/Unterricht');
             $this->assertTrue($nested['selectable']);
@@ -768,7 +751,7 @@ final class location_selection_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
 
-        $this->assertFalse(location_selection::open_with_access((int) $user->id), 'Ohne Freischaltung kein Fakt.');
+        $this->assertFalse(location_selection::open_with_access((int) $user->id), 'No fact without enablement.');
 
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
@@ -780,19 +763,17 @@ final class location_selection_test extends \advanced_testcase {
                 'context_area' => ['type' => 'external', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
                 'material_store' => ['type' => 'moodle'],
             ]);
-            $this->assertFalse(location_selection::open_with_access((int) $user->id), 'Ortswahl nicht mehr offen, sobald ein Ort gewaehlt ist.');
+            $this->assertFalse(location_selection::open_with_access((int) $user->id), 'Location selection is no longer open once a location is chosen.');
         } finally {
             \core\di::reset_container();
         }
     }
 
-    // --- Issue #498: Altbestand (vorheriger Ort) ---
+    // --- Issue #498: legacy items (previous location) ---
 
     /**
-     * Liegen am alten Moodle-Ort des Kontextbereichs Dateien, merkt sich der
-     * Pointer den vorherigen Ort (Spec §5: "prueft die Seite, ob am alten
-     * Ort Kontextdateien liegen. Nur dann merkt sich der Pointer den
-     * vorherigen Ort.").
+     * Record the previous Moodle location only when it contains context
+     * files (Spec §5).
      */
     public function test_apply_records_previous_location_when_old_moodle_location_has_files(): void {
         $this->resetAfterTest();
@@ -821,7 +802,7 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Ein leerer alter Ort erzeugt keinen Altbestand.
+     * An empty old location creates no pending old content.
      */
     public function test_apply_records_no_previous_location_when_old_location_is_empty(): void {
         $this->resetAfterTest();
@@ -840,9 +821,8 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Wechsel nur des Materialbestands erzeugt keinen Altbestand (Spec
-     * §9: "Ein Wechsel nur des Materialbestands erzeugt nichts.") - selbst
-     * wenn am alten Moodle-Materialordner Dateien liegen.
+     * Changing only material inventory creates no pending old content,
+     * even when the old Moodle material folder contains files (Spec §9).
      */
     public function test_apply_records_no_previous_location_for_materialbestand_only_change(): void {
         $this->resetAfterTest();
@@ -869,8 +849,8 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Ein neuer Wechsel verdraengt einen bereits offenen Altbestand - es
-     * gibt immer nur einen (Spec §9).
+     * A new location change replaces previous pending old content;
+     * only one previous location exists (Spec §9).
      */
     public function test_apply_replaces_an_already_open_previous_location(): void {
         $this->resetAfterTest();
@@ -887,16 +867,16 @@ final class location_selection_test extends \advanced_testcase {
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
 
         try {
-            // Moodle -> Erst: kein alter Moodle-Ort mit Dateien -> kein Altbestand.
-            // "Erst" enthaelt bereits eine Datei -> Uebergabe-Bestaetigung noetig (Issue #518).
+            // Moodle -> Erst: the old Moodle location has no files, so no old content.
+            // Erst already contains a file and needs handover confirmation (#518).
             location_selection::apply([
                 'context_area' => ['type' => 'external', 'instanceid' => $instanceid, 'path' => 'Erst', 'confirmed' => true],
                 'material_store' => ['type' => 'moodle'],
             ]);
             $this->assertNull(previous_location::current());
 
-            // Erst -> Zweit: "Erst" enthaelt eine Datei -> wird zum Altbestand.
-            // "Zweit" enthaelt ebenfalls bereits eine Datei -> Bestaetigung noetig.
+            // Erst -> Zweit: Erst contains a file and becomes the previous location.
+            // Zweit also contains a file and needs confirmation.
             location_selection::apply([
                 'context_area' => ['type' => 'external', 'instanceid' => $instanceid, 'path' => 'Zweit', 'confirmed' => true],
                 'material_store' => ['type' => 'moodle'],
@@ -909,9 +889,8 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Ein nicht mehr erreichbarer alter Ort (z.B. geloeschte Instanz) gilt
-     * als "kein nachweisbarer Altbestand" - der Abschluss scheitert daran
-     * nicht.
+     * An unreachable old location, such as a deleted instance, has no
+     * provable old content and does not prevent applying the selection.
      */
     public function test_apply_treats_unreachable_old_location_as_no_previous_location(): void {
         global $DB;
@@ -947,10 +926,8 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * A -> B -> A: nach der Rueckkehr darf kein Altbestand mehr auf den
-     * jetzt aktuellen Ort zeigen, auch wenn B leer war (Issue #517, Spec §9:
-     * "Wer erneut wechselt, verdraengt ihn - auch wenn am verlassenen Ort
-     * nichts lag").
+     * Returning A -> B -> A must never leave pending old content pointing
+     * to the current location, even if B was empty (#517, Spec §9).
      */
     public function test_apply_clears_previous_location_that_would_point_at_the_current_place(): void {
         $this->resetAfterTest();
@@ -971,7 +948,7 @@ final class location_selection_test extends \advanced_testcase {
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
 
         try {
-            // A (Moodle, mit Datei) -> B (extern, leer): A wird zum Altbestand.
+            // A (Moodle with a file) -> B (external, empty): A becomes the previous location.
             location_selection::apply([
                 'context_area' => ['type' => 'external', 'instanceid' => $instanceid, 'path' => 'B'],
                 'material_store' => ['type' => 'moodle'],
@@ -980,9 +957,8 @@ final class location_selection_test extends \advanced_testcase {
             $this->assertSame('moodle', $vorheriger['location']);
             $this->assertSame('coursepilot', $vorheriger['path']);
 
-            // B (extern, leer) -> A (Moodle): B ist leer, verdraengt den
-            // Altbestand trotzdem - sonst zeigte er wieder auf A, den jetzt
-            // aktuellen Ort.
+            // B (external, empty) -> A (Moodle): empty B still replaces previous
+            // content, otherwise the previous location would point to current A.
             location_selection::apply([
                 'context_area' => ['type' => 'moodle'],
                 'material_store' => ['type' => 'moodle'],
@@ -994,10 +970,9 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Eine andere Datei (kein `.md`, kein Unterordner) am alten Ort erzeugt
-     * fuer sich allein keinen Altbestand (Issue #517, Spec §9) - das bleibt
-     * unveraendert (Issue #505 Befund #7 aendert nur den Unterordner-Fall,
-     * siehe {@see test_apply_records_previous_location_when_old_location_has_only_a_subfolder()}).
+     * A non-Markdown file without subfolders alone creates no pending old
+     * content (#517, Spec §9). #505 finding 7 changes only subfolder handling;
+     * see {@see test_apply_records_previous_location_when_old_location_has_only_a_subfolder()}.
      */
     public function test_apply_records_no_previous_location_when_old_location_has_only_non_context_entries(): void {
         $this->resetAfterTest();
@@ -1024,8 +999,8 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Dasselbe wie oben, nur am alten *externen* Ort: eine andere Datei ohne
-     * Unterordner erzeugt ebenfalls keinen Altbestand (Issue #517).
+     * A non-Markdown file without subfolders at the old external location
+     * also creates no pending old content (#517).
      */
     public function test_apply_records_no_previous_location_when_old_external_location_has_only_non_context_entries(): void {
         $this->resetAfterTest();
@@ -1041,8 +1016,8 @@ final class location_selection_test extends \advanced_testcase {
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
 
         try {
-            // "Alt" enthaelt nur eine Nicht-Kontextdatei, keinen Unterordner
-            // -> Uebergabe-Bestaetigung noetig (Issue #518); "Neu" ist leer.
+            // Alt has only a non-context file and no subfolder, requiring handover
+            // confirmation (#518); Neu is empty.
             location_selection::apply([
                 'context_area' => ['type' => 'external', 'instanceid' => $instanceid, 'path' => 'Alt', 'confirmed' => true],
                 'material_store' => ['type' => 'moodle'],
@@ -1059,12 +1034,9 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Unterordner am alten *Moodle*-Ort begruendet allein schon
-     * Altbestand (Issue #505 Befund #7): vorher wurde nur die oberste Ebene
-     * geprueft und ein Ordner dort zaehlte nicht - Kontextdateien, die
-     * ausschliesslich in Unterordnern lagen (z.B.
-     * `2026-27/9a/biologie/immunsystem/journal.md`), blieben beim
-     * Ortswechsel unbemerkt.
+     * A subfolder at the old Moodle location alone counts as old content
+     * (#505 finding 7). Previously checking only top-level files missed
+     * context files stored exclusively in subfolders during location changes.
      */
     public function test_apply_records_previous_location_when_old_location_has_only_a_subfolder(): void {
         $this->resetAfterTest();
@@ -1093,10 +1065,9 @@ final class location_selection_test extends \advanced_testcase {
     }
 
     /**
-     * Dasselbe am alten *externen* Ort (Issue #505 Befund #7): ein blosser
-     * Unterordner in der obersten Ebene begruendet Altbestand, ohne dass die
-     * oberste Ebene selbst hineingeschaut wird (Lehrkraft-Entscheidung: kein
-     * rekursives PROPFIND).
+     * A top-level subfolder at the old external location counts as old
+     * content without recursively inspecting it (#505 finding 7). The teacher
+     * chose to avoid recursive PROPFIND.
      */
     public function test_apply_records_previous_location_when_old_external_location_has_only_a_subfolder(): void {
         $this->resetAfterTest();
@@ -1112,8 +1083,7 @@ final class location_selection_test extends \advanced_testcase {
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
 
         try {
-            // "Alt" enthaelt nur einen Unterordner -> Uebergabe-Bestaetigung
-            // noetig (Issue #518); "Neu" ist leer.
+            // Alt has only a subfolder, requiring handover confirmation (#518); Neu is empty.
             location_selection::apply([
                 'context_area' => ['type' => 'external', 'instanceid' => $instanceid, 'path' => 'Alt', 'confirmed' => true],
                 'material_store' => ['type' => 'moodle'],
@@ -1131,7 +1101,7 @@ final class location_selection_test extends \advanced_testcase {
         }
     }
 
-    /** @var int Instanz-ID der zuletzt von {@see prepare_instance()} angelegten Instanz. */
+    /** @var int ID of the last instance created by {@see prepare_instance()}. */
     private int $lastinstanceid = 0;
 
     /**
@@ -1144,9 +1114,8 @@ final class location_selection_test extends \advanced_testcase {
         $this->lastinstanceid = $this->create_webdav_instance($user);
 
         $fake = new fake_webdav_transport();
-        // Der Basispfad der Instanz existiert auf dem echten Speicher
-        // bereits (von der Lehrkraft/Administration angelegt) - der Fake
-        // startet leer und braucht ihn deshalb als Testvorbereitung.
+        // The teacher or administrator creates the instance base path on real
+        // storage. Seed it explicitly because fake storage starts empty.
         $fake->seed_folder('/' . $this->fixturebasispfad);
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
 

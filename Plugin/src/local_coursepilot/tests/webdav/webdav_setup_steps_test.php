@@ -22,11 +22,10 @@ use PHPUnit\Framework\Attributes\CoversClass;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Der Schrittkatalog ohne angemeldete Person (Issue #505 Befund #1): die
- * CLI ruft `admin/cli/checks.php` mit `$USER->id = 0` auf. `context_user::
- * instance(0)` wirft dort `dml_missing_record`, was den ganzen CLI-Lauf
- * abbricht. Der Katalog darf fuer die Person ohne ID nur "nein" melden,
- * nicht werfen - die Systemschritte 1 und 2 sind ohnehin personenunabhaengig.
+ * Setup steps without an authenticated user (Issue #505 finding #1).
+ * CLI checks use USER id 0; context_user::instance(0) would fail the entire
+ * run. Return false rather than throwing, while system steps 1/2 are
+ * user-independent.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -56,19 +55,17 @@ final class webdav_setup_steps_test extends \advanced_testcase {
     }
 
     /**
-     * Issue #528: Schritt 2 (Nutzerinstanzen erlaubt) und Schritt 3 (Recht)
-     * werten unabhaengig von Schritt 1 (Repository aktiv) aus - ein
-     * ausgeschaltetes Repository darf die bereits gesetzte Konfiguration von
-     * Schritt 2 nicht als "fehlend" melden.
+     * Evaluate user instances (step 2) and capability (step 3) independently
+     * of repository activation (step 1), so disabled repositories do not
+     * make existing configuration appear missing (Issue #528).
      */
     public function test_step_two_and_three_stay_ok_when_step_one_is_off(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->create_webdav_instance($user);
         $this->grant_webdav_capability($user);
-        // has_capability() im Katalog prueft ohne dritten Parameter $USER,
-        // nicht $userid (dieselbe Konvention wie die drei WebDAV-Checks) -
-        // die angemeldete Testperson muss deshalb die geprüfte sein.
+        // Without a third argument, catalog has_capability() checks USER rather
+        // than userid, as in the WebDAV checks. Log in as the user under test.
         $this->setUser($user);
 
         global $DB;
@@ -82,8 +79,8 @@ final class webdav_setup_steps_test extends \advanced_testcase {
     }
 
     /**
-     * enabled_for_user() bleibt trotz der Entkopplung in {@see catalog()}
-     * die UND-Verknuepfung aller drei Schritte (Issue #528).
+     * enabled_for_user() still requires all three steps despite catalog()
+     * decoupling (Issue #528).
      */
     public function test_enabled_for_user_still_requires_all_three_steps(): void {
         $this->resetAfterTest();

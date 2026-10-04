@@ -19,11 +19,10 @@ namespace local_coursepilot;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Fernzugriffsfreigabe fuer Kurslehrkraefte ohne globale Lehrkraftrolle
- * (#579, ADR 0026): freigegeben ist, wer Mitglied einer von der
- * Administration gewaehlten Systemkohorte ist oder
- * `local/coursepilot:useremote` ueber eine vorhandene Systemrolle hat.
- * Coursepilot legt weder Kohorte noch Rolle an.
+ * Remote access for course teachers without a global teacher role
+ * (#579, ADR 0026). Authorize members of administrator-selected system
+ * cohorts or users with local/coursepilot:useremote in an existing system
+ * role. Coursepilot creates neither cohorts nor roles.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -41,10 +40,10 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Systemkohorte, von der Administration fuer den Fernzugriff gewaehlt.
+     * Create a system cohort selected by administration for remote access.
      *
-     * @param int ...$userids Mitglieder.
-     * @return \stdClass Die Kohorte.
+     * @param int ...$userids Members.
+     * @return \stdClass The cohort.
      */
     private function create_selected_cohort(int ...$userids): \stdClass {
         $cohort = $this->getDataGenerator()->create_cohort(['contextid' => \context_system::instance()->id]);
@@ -58,7 +57,7 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurslehrkraft ohne jede globale Rolle und ihr Kurs.
+     * @return array{0: \stdClass, 1: \stdClass} Course teacher without a global role, and their course.
      */
     private function create_course_teacher(): array {
         $course = $this->getDataGenerator()->create_course();
@@ -69,7 +68,7 @@ final class remote_access_test extends \advanced_testcase {
 
     /**
      * @param int $userid
-     * @return string Das Access-Token.
+     * @return string The access token.
      */
     private function issue_access_token(int $userid): string {
         global $DB;
@@ -114,8 +113,8 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne Freigabe: eine Lehrkraft, nur im eigenen Kurs `editingteacher`,
-     * wird abgewiesen; die Meldung nennt beide Freigabewege.
+     * Reject editingteachers without authorization and name both
+     * authorization paths.
      */
     public function test_course_only_teacher_without_grant_is_rejected(): void {
         $this->resetAfterTest();
@@ -131,8 +130,8 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Mitglied einer gewaehlten Kohorte: verbunden und im eigenen Kurs
-     * handlungsfaehig, ohne dass irgendwo eine Rolle verliehen wurde.
+     * Selected-cohort members connect and act within their course without
+     * receiving an additional role.
      */
     public function test_selected_cohort_member_connects_and_uses_own_course(): void {
         $this->resetAfterTest();
@@ -148,7 +147,7 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Die Freigabe gibt keine Kursrechte: ein fremder Kurs bleibt gesperrt.
+     * Remote authorization grants no course rights; unrelated courses stay blocked.
      */
     public function test_cohort_grant_does_not_unlock_foreign_courses(): void {
         $this->resetAfterTest();
@@ -163,8 +162,8 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Entzug wirkt auf eine bestehende Verbindung: nach dem Entfernen aus der
-     * Kohorte wird dasselbe Token abgewiesen; die Kursrechte bleiben.
+     * Removing cohort membership rejects the existing connection’s token
+     * while preserving course permissions.
      */
     public function test_removal_from_cohort_blocks_existing_connection(): void {
         $this->resetAfterTest();
@@ -180,8 +179,7 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Umgekehrt: Entzug der Einschreibung sperrt nur das Kurswerkzeug, die
-     * Fernzugriffsfreigabe bleibt.
+     * Removing enrollment blocks course tools while preserving remote authorization.
      */
     public function test_revoking_course_enrolment_blocks_course_tool_but_keeps_remote_access(): void {
         $this->resetAfterTest();
@@ -198,7 +196,7 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Eine nicht gewaehlte Kohorte gibt keinen Fernzugriff.
+     * Unselected cohorts grant no remote access.
      */
     public function test_member_of_unselected_cohort_is_rejected(): void {
         $this->resetAfterTest();
@@ -211,8 +209,8 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Kategorie-Kohorten pflegen Kategorie-Manager selbst - auch wenn ihre ID
-     * in der Einstellung steht, geben sie keinen Fernzugriff (ADR 0026).
+     * Category cohorts grant no remote access even if their IDs appear in
+     * settings, because category managers control them (ADR 0026).
      */
     public function test_category_cohort_never_grants(): void {
         $this->resetAfterTest();
@@ -226,8 +224,7 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Eine geloeschte Kohorte bleibt in der Einstellung stehen, wird aber
-     * still ignoriert; die uebrigen gewaehlten Kohorten wirken weiter.
+     * Ignore deleted cohorts still in settings; other selected cohorts remain active.
      */
     public function test_deleted_cohort_is_ignored_and_reported(): void {
         $this->resetAfterTest();
@@ -242,7 +239,7 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Die Einstellungsseite zeigt je gewaehlter Kohorte die Mitgliederzahl.
+     * Show member counts for selected cohorts on the settings page.
      */
     public function test_member_counts_for_selected_cohorts(): void {
         $this->resetAfterTest();
@@ -257,8 +254,7 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Die Einstellung bietet nur Systemkohorten an und zeigt unter dem Feld
-     * Mitgliederzahl und geloeschte Kohorten.
+     * Offer only system cohorts; display counts and deleted cohorts below the field.
      */
     public function test_setting_offers_system_cohorts_and_shows_counts(): void {
         $this->resetAfterTest();
@@ -282,8 +278,7 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Zweiter Weg: `useremote` in einer Rolle, die die Schule systemweit
-     * ohnehin vergibt - ohne gewaehlte Kohorte.
+     * Existing school-wide roles with useremote authorize without a selected cohort.
      */
     public function test_capability_in_existing_system_role_grants(): void {
         $this->resetAfterTest();
@@ -297,8 +292,8 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Keine Archetyp-Vorbelegung mehr (ADR 0026): eine systemweit
-     * zugewiesene Lehrkraftrolle bringt den Fernzugriff nicht nebenbei mit.
+     * No archetype defaults (ADR 0026): globally assigning a teacher role
+     * does not implicitly grant remote access.
      */
     public function test_teacher_archetypes_do_not_default_to_remote_access(): void {
         $this->resetAfterTest();
@@ -308,8 +303,7 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
-     * Entzieht die manuelle Einschreibung wieder - der Generator selbst
-     * bietet dafür keine Kurzform.
+     * Remove manual enrollment; the generator has no shorthand for this.
      *
      * @param int $userid
      * @param int $courseid

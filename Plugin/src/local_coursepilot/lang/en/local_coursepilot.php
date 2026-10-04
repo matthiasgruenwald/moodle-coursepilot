@@ -117,6 +117,18 @@ $string['historysourcediscovered'] = 'starting state found before Coursepilot';
 $string['historysourcecloned'] = 'clone of activity {$a}';
 $string['historysourcefromxml'] = 'created from activity XML';
 $string['historysourcesuperseded'] = 'superseded by activity {$a}';
+$string['historygapnotice'] = 'The history is incomplete: quiz content beyond the arrangement, the gradebook, restoring a whole course from the recycle bin (Restore), and direct database writes are not recorded. Replaced activity files in supported fields (e.g. attachments) are an exception and are retrieved when returning to an earlier state. For activity types created from XML (e.g. book, glossary, lesson), the history records only the instance row, not the child tables (chapters, entries, pages, points). The gap is visible but cannot be closed.';
+$string['historysummarymarker'] = 'Version {$a->version} ({$a->source}) - {$a->user}, {$a->time}.';
+$string['historysummarychange'] = 'Version {$a->version} - {$a->user}, {$a->time}: {$a->change}.';
+$string['historymorefields'] = ' and {$a} more fields';
+$string['historyfieldschanged'] = '{$a} changed';
+$string['historyfileadded'] = '{$a} file added';
+$string['historyfilesadded'] = '{$a} files added';
+$string['historyfileremoved'] = '{$a} file removed';
+$string['historyfilesremoved'] = '{$a} files removed';
+$string['historynochange'] = 'no content change detected';
+$string['historyunknownuser'] = 'User #{$a}';
+
 
 // Plugin description on the settings page (Issue #500, Spec #486 §11).
 $string['settingintroheading'] = 'About Coursepilot';
@@ -188,7 +200,7 @@ $string['webdavstep1instruction'] = 'The administration must enable the "WebDAV"
 $string['webdavstep2instruction'] = 'The administration must turn on "Allow user instances" for the "WebDAV" repository type.';
 $string['webdavstep3instruction'] = 'The administration must grant the teacher the "repository/webdav:view" capability in their own user context (recommended via a dedicated system role).';
 
-// Location page "Ortswahl" (issue #494, spec #486 §5/§10).
+// Location selection page (issue #494, spec #486 §5/§10).
 $string['locationselection'] = 'Coursepilot: locations for context area and material collection';
 $string['coursepilotsettingsheading'] = 'Coursepilot';
 $string['locationselectiontitle'] = 'Where the context area and material stock live';
@@ -632,3 +644,29 @@ $string['privacy:metadata:oauth_grant:revoked'] = 'Whether the entire connection
 $string['privacy:metadata:oauth_grant:timecreated'] = 'Connection creation time.';
 $string['privacy:metadata:oauth_token:connectionid'] = 'The stable connection owning this token generation.';
 $string['privacy:metadata:workbench_ticket:oauthconnectionid'] = 'The stable connection that issued this download ticket.';
+
+// Localized question and section tool messages (#605).
+$string['questionbankreused'] = 'Question bank "{$a}" already existed, reusing it.';
+$string['questionbankcreated'] = 'Question bank "{$a}" created.';
+$string['questioncategoryreused'] = 'Category "{$a}" already existed, reusing it.';
+$string['questioncategorycreated'] = 'Category "{$a}" created.';
+$string['sectioncreatednamed'] = 'Section {$a->sectionnum} created, name set to "{$a->name}".';
+$string['sectioncreated'] = 'Section {$a->sectionnum} created.';
+$string['sectionreusedrenamed'] = 'Section {$a->sectionnum} already existed, name changed from "{$a->oldname}" to "{$a->name}".';
+$string['sectionreused'] = 'Section {$a->sectionnum} already existed, name unchanged.';
+$string['mcquestionsuspect'] = 'Suspect case: The target category already contains an entry named "{$a}". Nothing was created. To create a new entry anyway, call again with confirmed=true.';
+$string['mcquestioncreated'] = 'MC question "{$a->name}" created (bank entry {$a->entryid}, version {$a->version}).';
+$string['questionexportpath'] = 'File: {$a}.';
+$string['questionexportone'] = '1 question exported.';
+$string['questionexportmany'] = '{$a} questions exported.';
+$string['questionexportplaceholder'] = 'PLACEHOLDER MODE: This output is incomplete (embedded files have been replaced by comment placeholders) and NOT suitable for sharing - only for templates (learning question structure). For complete, shareable XML, use placeholder=false (default).';
+$string['questionexportmissingdetail'] = 'Question "{$a->name}": {$a->files}';
+$string['questionexportmissing'] = 'WARNING: Embedded files are missing from the export and have been replaced by placeholders ({$a}).';
+
+$string['questionimportsuspect'] = 'Suspect case: The supplied idnumber "{$a}" has no match in the target category. Nothing was imported. To create a new entry anyway, call again with confirmed=true.';
+$string['questionimportcreated'] = 'Question "{$a->name}" created (version {$a->version}).';
+$string['questionimportversion'] = 'Question "{$a->name}" imported as a new version (version {$a->version}) of the same bank entry.';
+
+$string['versioninfosummary'] = 'Moodle {$a->moodlerelease} (branch {$a->branch}), Coursepilot plugin {$a->pluginrelease} (version {$a->pluginversion}).';
+$string['versioninfoupgradewarning'] = 'Warning: The database records version {$a} - upgrade.php was not run after the last deployment.';
+$string['quizcreatedfields'] = 'Quiz created: {$a}.';

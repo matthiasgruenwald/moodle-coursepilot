@@ -21,8 +21,8 @@ use core_external\external_api;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Versionsauskunft (#425 F3): Moodle- und Plugin-Version fuer den Kopf der
- * Fragetyp-Ablage, die Instanzpruefung (#340) und Support-Faelle.
+ * Version information (#425 F3): Moodle and plugin versions for question-type
+ * reference headers, instance checking (#340) and support.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -32,9 +32,8 @@ defined('MOODLE_INTERNAL') || die();
 final class get_version_info_test extends \advanced_testcase {
 
     /**
-     * Die Auskunft nennt Moodle-Release/-Version/-Branch sowie
-     * $plugin->version und $plugin->release aus version.php - keine
-     * Platzhalter, keine leeren Felder.
+     * Return nonempty Moodle release/version/branch and plugin version/release
+     * from version.php, without placeholders.
      */
     public function test_reports_moodle_and_plugin_versions(): void {
         global $CFG;
@@ -56,8 +55,8 @@ final class get_version_info_test extends \advanced_testcase {
     }
 
     /**
-     * "date" fuellt das Feld "zuletzt verifiziert am" der Fragetyp-Ablage -
-     * Serverdatum als YYYY-MM-DD, kein Zeitstempel zum Nachformatieren.
+     * date supplies the question-type reference verification date as YYYY-MM-DD,
+     * without timestamp reformatting.
      */
     public function test_date_is_iso_date(): void {
         $this->resetAfterTest();
@@ -70,8 +69,7 @@ final class get_version_info_test extends \advanced_testcase {
     }
 
     /**
-     * Die Meldung ist die Lehrkraft-lesbare Fassung derselben Angaben - sie
-     * muss die Versionen im Klartext enthalten, sonst waere sie wertlos.
+     * The teacher-facing summary contains the same versions in plain text.
      */
     public function test_message_names_both_versions(): void {
         global $CFG;

@@ -17,15 +17,15 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Feldkatalog fuer mod_label (Spec 0015 §4.1: gruen, keine Sonderbehandlung
- * ausser der gesperrten "name"-Spalte). Erste katalogisierte Aktivitaetsart -
- * beweist die Bauform (#379).
+ * Field catalog for mod_label (Spec 0015 §4.1: green, no special handling
+ * except the blocked "name" column). First catalogued activity kind -
+ * proves the design (#379).
  *
- * mod_label/db/install.xml kennt nur id, course, name, intro, introformat,
- * timemodified. course/timemodified stehen bereits in
- * {@see shared_block::BLOCKLIST}; "name" kommt hier dazu, weil Moodle es
- * selbst aus dem Intro ableitet (mod/label/lib.php: get_label_name()) - ein
- * Patch wuerde sofort ueberschrieben.
+ * mod_label/db/install.xml only knows id, course, name, intro, introformat,
+ * timemodified. course/timemodified are already in
+ * {@see shared_block::BLOCKLIST}; "name" is added here because Moodle derives it
+ * itself from the intro (mod/label/lib.php: get_label_name()) - a
+ * patch would be overwritten immediately.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -42,7 +42,7 @@ final class label implements module_catalog {
             new field(
                 'intro',
                 'PARAM_RAW',
-                'Der Textinhalt der Textkarte (HTML). Aus ihm leitet Moodle den Anzeigenamen ab.',
+                'The text content of the text card (HTML). Moodle derives the display name from it.',
                 true,
                 null,
                 null,
@@ -52,7 +52,7 @@ final class label implements module_catalog {
             new field(
                 'introformat',
                 'PARAM_INT',
-                'Textformat des Intros (HTML/Moodle-Auto-Format/Reintext/Markdown).',
+                'Text format of the intro (HTML/Moodle auto-format/plain text/Markdown).',
                 false,
                 FORMAT_HTML,
                 null,
@@ -107,8 +107,8 @@ final class label implements module_catalog {
     }
 
     public static function checked_constants(): array {
-        // Die Gruppenmodus-Konstanten (NOGROUPS/SEPARATEGROUPS/VISIBLEGROUPS)
-        // gehoeren zum gemeinsamen Block, nicht zu label selbst - siehe
+        // The group mode constants (NOGROUPS/SEPARATEGROUPS/VISIBLEGROUPS)
+        // belong to the shared block, not to label itself - see
         // shared_block::checked_constants().
         return [];
     }

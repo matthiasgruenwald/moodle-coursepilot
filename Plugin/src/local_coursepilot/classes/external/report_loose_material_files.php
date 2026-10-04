@@ -26,19 +26,15 @@ use local_coursepilot\material_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Bericht ueber "lose" Materialdateien (Spec 0018 §8.2/§8.3, Issue #438):
- * jede Datei im Materialordner, deren `contenthash` in keiner
- * Aktivitaets-Filearea eines eigenen Kurses auftaucht.
+ * Reports loose material files (Spec 0018 §8.2/§8.3, #438): material-store
+ * files whose contenthash appears in no activity file area of an owned course.
  *
- * "Verwendet" wird nie geraten: Moodles Dateipool ist contenthash-basiert
- * und das Feld indiziert, deshalb ein Abgleich je Aufruf statt einer neuen
- * Tabelle, die driften koennte (Spec 0018 §8.2). Ein Zuschnitt hat einen
- * anderen contenthash als sein Original - das Original erscheint danach
- * bewusst als lose, das ist die richtige Auskunft, nicht ein Fehler dieses
- * Berichts.
+ * Usage is never guessed: Moodle's file pool indexes contenthash, so compare
+ * on each call without a new table that could drift (Spec §8.2). A crop
+ * has a different checksum from its original; the original correctly
+ * becomes loose when only the crop is used.
  *
- * Gefragt (ob geloescht werden soll) wird nicht hier - das ist Sache des
- * Skills (Spec 0018 §8.3), dieser Bericht liefert nur die Fakten.
+ * The skill asks about deletion (Spec §8.3); this report only returns facts.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -55,7 +51,7 @@ class report_loose_material_files extends external_api {
 
     /**
      * @return array
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     * @throws \required_capability_exception without moodle/user:manageownfiles
      */
     public static function execute(): array {
         self::validate_parameters(self::execute_parameters(), []);
@@ -99,16 +95,16 @@ class report_loose_material_files extends external_api {
         return new external_single_structure([
             'files' => new external_multiple_structure(
                 new external_single_structure([
-                    'path' => new external_value(PARAM_TEXT, 'Dateipfad relativ zum Materialordner'),
-                    'size' => new external_value(PARAM_INT, 'Dateigroesse in Byte'),
-                    'age_days' => new external_value(PARAM_INT, 'Alter in Tagen seit Anlage'),
-                    'contenthash' => new external_value(PARAM_ALPHANUMEXT, 'Inhaltspruefsumme'),
+                    'path' => new external_value(PARAM_TEXT, 'File path relative to the material store'),
+                    'size' => new external_value(PARAM_INT, 'File size in bytes'),
+                    'age_days' => new external_value(PARAM_INT, 'Age in days since creation'),
+                    'contenthash' => new external_value(PARAM_ALPHANUMEXT, 'Content checksum'),
                 ])
             ),
-            'total_size' => new external_value(PARAM_INT, 'Summe der Groesse aller losen Dateien in Byte'),
+            'total_size' => new external_value(PARAM_INT, 'Total size of all loose files in bytes'),
             'remaining_quota_mb' => new external_value(
                 PARAM_RAW,
-                'Verbleibender Speicherplatz in MB (als Zeichenkette formatiert), null wenn keine Quote gilt',
+                'Remaining quota in MB (formatted string), null without a quota limit',
                 VALUE_DEFAULT,
                 null,
                 NULL_ALLOWED

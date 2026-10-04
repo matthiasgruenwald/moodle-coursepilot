@@ -27,19 +27,19 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/questionlib.php');
 
 /**
- * Umbenennen und/oder Verschieben einer Fragenbank-Kategorie (Spec 0017 §1,
- * Ticket #413) - bewusst auf echte Aenderungen verengt: Anlegen-oder-Finden
- * ist {@see ensure_question_category}, dieser Endpunkt legt nie an.
+ * Rename and/or move a question bank category (Spec 0017 §1,
+ * ticket #413) - deliberately narrowed to real changes: create-or-find
+ * is {@see ensure_question_category}, this endpoint never creates.
  *
- * Kontextauflösung wie ensure_question_category direkt ueber die
- * (Ziel-)Kategorie, kein courseid/questionbankid-Parameter noetig - anders
- * als das aeltere lokale Pendant
- * local_coursepilot\external\update_question_category, dessen Muster als
- * Vorbild fuer Zyklus-/Top-Kategorie-/Namenskollisionsschutz diente.
+ * Context resolution like ensure_question_category directly via the
+ * (target) category, no courseid/questionbankid parameter needed - unlike
+ * the older local counterpart
+ * local_coursepilot\external\update_question_category, whose pattern served
+ * as the model for cycle/top-category/name-collision protection.
  *
- * Fragen und ihre Versionen werden nie angefasst - nur die
- * question_categories-Zeile(n) selbst (Name, Parent, ggf. contextid des
- * gesamten Unterbaums bei Umzug in eine andere Fragensammlung).
+ * Questions and their versions are never touched - only the
+ * question_categories row(s) themselves (name, parent, if applicable the
+ * contextid of the whole subtree when moving to another question set).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -81,12 +81,12 @@ final class update_question_category extends external_api {
 
         $sourcetopcategory = question_get_top_category($sourcecontext->id, true);
         if ((int) $category->id === (int) $sourcetopcategory->id) {
-            throw new \invalid_parameter_exception('Die oberste Kategorie einer Fragensammlung kann nicht umbenannt oder verschoben werden.');
+            throw new \invalid_parameter_exception('The top category of a question set cannot be renamed or moved.');
         }
 
         $targetparentid = $params['parent'] > 0 ? $params['parent'] : (int) $category->parent;
         if ($targetparentid === (int) $category->id) {
-            throw new \invalid_parameter_exception('Eine Kategorie kann nicht ihre eigene Elternkategorie sein.');
+            throw new \invalid_parameter_exception('A category cannot be its own parent category.');
         }
 
         $targetparent = $params['parent'] > 0
@@ -102,7 +102,7 @@ final class update_question_category extends external_api {
 
         $subtreeids = self::collect_subtree_ids((int) $category->id);
         if (in_array($targetparentid, $subtreeids, true)) {
-            throw new \invalid_parameter_exception('Eine Kategorie kann nicht in eine ihrer eigenen Unterkategorien verschoben werden.');
+            throw new \invalid_parameter_exception('A category cannot be moved into one of its own subcategories.');
         }
 
         $targetname = trim($params['name']) !== '' ? $params['name'] : $category->name;
@@ -114,7 +114,7 @@ final class update_question_category extends external_api {
         ]);
         if ($conflict && (int) $conflict->id !== (int) $category->id) {
             throw new \invalid_parameter_exception(
-                'Unter der Zielkategorie gibt es bereits eine Kategorie mit diesem Namen.'
+                'The target category already has a category with this name.'
             );
         }
 
@@ -130,22 +130,21 @@ final class update_question_category extends external_api {
         $update->parent = $targetparentid;
 
         if ($moved && (int) $category->contextid !== (int) $targetcontext->id) {
-            // Ein Kontextwechsel ist mehr als die contextid-Spalte: an den
-            // Fragen haengen Dateien (Fragebilder liegen im Kontext der
-            // Fragensammlung), Schlagwoerter und Slot-Referenzen aus Tests.
-            // question_move_category_to_context() zieht all das nach und
-            // schreibt die contextid des Unterbaums um - eine eigene
-            // Schleife ueber die Kategoriezeilen laesst die Bilder im alten
-            // Kontext zurueck, sichtbar erst, wenn jemand die Frage
-            // aufschlaegt.
+            // A context change is more than the contextid column: files are
+            // attached to the questions (question images live in the context
+            // of the question set), plus tags and slot references from quizzes.
+            // question_move_category_to_context() carries all of that over and
+            // rewrites the contextid of the subtree - a custom loop over the
+            // category rows leaves the images behind in the old context,
+            // visible only once someone opens the question.
             question_move_category_to_context(
                 (int) $category->id,
                 (int) $category->contextid,
                 (int) $targetcontext->id
             );
-            // Die Kernfunktion setzt die contextid nur fuer die
-            // Unterkategorien, nicht fuer die uebergebene Kategorie selbst -
-            // und deren Slot-Referenzen fasst sie ebenfalls nicht an.
+            // The core function sets the contextid only for the
+            // subcategories, not for the passed category itself -
+            // and it does not touch its slot references either.
             move_question_set_references(
                 (int) $category->id,
                 (int) $category->id,
@@ -180,15 +179,15 @@ final class update_question_category extends external_api {
      */
     private static function build_message(bool $renamed, bool $moved, string $name): string {
         if ($renamed && $moved) {
-            return 'Kategorie in "' . $name . '" umbenannt und verschoben.';
+            return 'Category renamed to "' . $name . '" and moved.';
         }
         if ($renamed) {
-            return 'Kategorie in "' . $name . '" umbenannt.';
+            return 'Category renamed to "' . $name . '".';
         }
         if ($moved) {
-            return 'Kategorie "' . $name . '" verschoben.';
+            return 'Category "' . $name . '" moved.';
         }
-        return 'Keine Änderung: Name und Elternkategorie sind unverändert.';
+        return 'No change: name and parent category are unchanged.';
     }
 
     /**
@@ -225,7 +224,7 @@ final class update_question_category extends external_api {
             'contextid' => new external_value(PARAM_INT, 'Context ID of the category after the change'),
             'moved' => new external_value(PARAM_BOOL, 'true if the parent category and/or context changed'),
             'renamed' => new external_value(PARAM_BOOL, 'true if the name changed'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing message'),
         ]);
     }
 }

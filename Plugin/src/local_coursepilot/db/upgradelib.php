@@ -15,8 +15,8 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Hilfsfunktionen fuer db/upgrade.php - ausgelagert, damit sie ohne die
- * Savepoint-Maschinerie eines echten Upgrade-Laufs testbar sind.
+ * Helper functions for db/upgrade.php - extracted so they are testable without the
+ * savepoint machinery of a real upgrade run.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -26,17 +26,17 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Zieht den Bestand der OAuth-Tabellen auf db/install.xml (#424 Nachlauf 3).
+ * Brings the existing OAuth tables in line with db/install.xml (#424 follow-up 3).
  *
- * Waehrend der OAuth-Arbeit (#335/#336) wurde install.xml mehrfach
- * nachgezogen, ohne dass ein Upgrade-Schritt den Bestand mitgenommen haette.
- * Ergebnis: `admin/cli/check_database_schema.php` meldet fuenf Abweichungen,
- * und eine Neuinstallation verhaelt sich anders als eine hochgezogene
- * Instanz - der unangenehmste Zustand, weil kein Test ihn sieht (PHPUnit
- * installiert immer frisch aus install.xml).
+ * During the OAuth work (#335/#336) install.xml was adjusted several times
+ * without an upgrade step carrying the existing data along.
+ * Result: `admin/cli/check_database_schema.php` reports five deviations,
+ * and a fresh installation behaves differently from an upgraded
+ * instance - the most unpleasant state, because no test sees it (PHPUnit
+ * always installs fresh from install.xml).
  *
- * Idempotent: auf einer Neuinstallation ist bereits alles so, wie es sein
- * soll, und die Funktion aendert nichts Sichtbares.
+ * Idempotent: on a fresh installation everything is already as it
+ * should be, and the function changes nothing visible.
  *
  * @param database_manager $dbman
  * @return void
@@ -44,12 +44,13 @@ defined('MOODLE_INTERNAL') || die();
 function local_coursepilot_repair_oauth_schema_drift(database_manager $dbman): void {
     global $DB;
 
-    // clientid: 64 Zeichen reichten fuer per DCR vergebene client_ids, nicht
-    // fuer CIMD, wo die client_id die URL selbst ist (install.xml: 255).
+    // clientid: 64 characters were enough for client_ids issued via DCR, not
+    // for CIMD, where the client_id is the URL itself (install.xml: 255).
     //
-    // local_coursepilot_oauth_client traegt einen eindeutigen Index auf der
-    // Spalte; Moodles database_manager weigert sich, eine indizierte Spalte
-    // zu aendern (ddl_dependency_exception), deshalb Index ab, Spalte
+    // local_coursepilot_oauth_client carries a unique index on the
+    // column; Moodle's database_manager refuses to change an indexed column
+    // (ddl_dependency_exception), hence drop the index, change the column,
+    // restore the index.
     // aendern, Index zurueck.
     foreach ([
         'local_coursepilot_oauth_client' => new xmldb_index('clientid', XMLDB_INDEX_UNIQUE, ['clientid']),
@@ -71,20 +72,20 @@ function local_coursepilot_repair_oauth_schema_drift(database_manager $dbman): v
         }
     }
 
-    // codechallengemethod: PKCE ist auf S256 festgelegt (oauth_lib weist
-    // jede andere Methode ab), der gespeicherte Wert wurde nie gelesen.
-    // Die Spalte ist deshalb aus install.xml verschwunden - hier faellt sie
-    // im Bestand nach.
+    // codechallengemethod: PKCE is fixed to S256 (oauth_lib rejects
+    // every other method), the stored value was never read.
+    // The column has therefore disappeared from install.xml - here it is dropped
+    // from the existing data.
     $codetable = new xmldb_table('local_coursepilot_oauth_code');
     $challengemethod = new xmldb_field('codechallengemethod');
     if ($dbman->field_exists($codetable, $challengemethod)) {
         $dbman->drop_field($codetable, $challengemethod);
     }
 
-    // refreshtokenhash: NOT NULL laut install.xml. Eine Zeile ohne
-    // Refresh-Token-Hash ist unbrauchbar (die Rotation aus #336 kann sie
-    // nicht erneuern) - sie wird entfernt statt mit einem Platzhalter
-    // gefuellt, der als gueltiger Hash aussaehe.
+    // refreshtokenhash: NOT NULL according to install.xml. A row without a
+    // refresh token hash is unusable (the rotation from #336 cannot
+    // renew it) - it is removed instead of being filled with a placeholder
+    // that would look like a valid hash.
     $tokentable = new xmldb_table('local_coursepilot_oauth_token');
     $refreshtokenhash = new xmldb_field('refreshtokenhash', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
     if ($dbman->field_exists($tokentable, $refreshtokenhash)) {
@@ -103,12 +104,12 @@ function local_coursepilot_repair_oauth_schema_drift(database_manager $dbman): v
 }
 
 /**
- * Ersetzt Klartext-OAuth-Tokens durch SHA-256-Hashes (#534).
+ * Replaces plaintext OAuth tokens with SHA-256 hashes (#534).
  *
- * Die Werte werden erst gehasht, bevor Klartextfelder und ihre Indexe entfernt
- * werden. Bereits ausgestellte Verbindungen bleiben dadurch bis zu Ablauf,
- * Rotation oder Widerruf nutzbar; nach erfolgreichem Upgrade bleibt kein
- * Geheimnis in der Datenbank zurueck.
+ * The values are hashed first, before plaintext fields and their indexes are removed.
+ * Connections already issued thereby remain usable until expiry,
+ * rotation or revocation; after a successful upgrade no
+ * secret remains in the database.
  *
  * @param database_manager $dbman
  * @return void
@@ -163,10 +164,9 @@ function local_coursepilot_hash_oauth_tokens(database_manager $dbman): void {
 }
 
 /**
- * Schreibt die deutschen Quellschluessel des Aenderungsverlaufs auf die
- * englischen um (#602, ADR 0024): "vorgefunden" -> "discovered",
+ * Rewrites the German source keys of the change history to the
+ * English ones (#602, ADR 0024): "vorgefunden" -> "discovered",
  * "geklont" -> "cloned". Idempotent.
- *
  * @return void
  */
 function local_coursepilot_migrate_history_sources(): void {
@@ -178,14 +178,13 @@ function local_coursepilot_migrate_history_sources(): void {
 }
 
 /**
- * Benennt die Ablagedateien am Anker englisch um und uebersetzt ihren Inhalt
- * (#602, ADR 0024): Kontextpointer ".coursepilot-ort.json" ->
- * ".coursepilot-location.json" (Schluessel ueber
- * {@see \local_coursepilot\context_pointer::normalise()}), Ausstandsnotiz
- * ".coursepilot-ausstand.json" -> ".coursepilot-pending.json" (Schluessel,
- * Vorgaenge und WebDAV-Fehlerklassen englisch). Liegt die neue Datei schon
- * vor, gewinnt sie und die alte entfaellt. Idempotent.
- *
+ * Renames the storage files at the anchor to English and translates their content
+ * (#602, ADR 0024): context pointer ".coursepilot-ort.json" ->
+ * ".coursepilot-location.json" (keys via
+ * {@see \local_coursepilot\context_pointer::normalise()}), pending note
+ * ".coursepilot-ausstand.json" -> ".coursepilot-pending.json" (keys,
+ * operations and WebDAV error classes in English). If the new file already
+ * exists, it wins and the old one is dropped. Idempotent.
  * @return void
  */
 function local_coursepilot_migrate_anchor_files(): void {
@@ -204,7 +203,7 @@ function local_coursepilot_migrate_anchor_files(): void {
             $old = $fs->get_file_instance($record);
             $decoded = json_decode($old->get_content(), true);
             if (!is_array($decoded) || array_is_list($decoded)) {
-                // Unlesbar: liegen lassen statt die Ortswahl still zu verlieren.
+                // Unreadable: leave in place instead of silently losing the location selection.
                 continue;
             }
             if (!$fs->file_exists($record->contextid, 'user', 'private', 0, $record->filepath, $newname)) {
@@ -223,10 +222,10 @@ function local_coursepilot_migrate_anchor_files(): void {
 }
 
 /**
- * Uebersetzt Eintraege einer Ausstandsnotiz vor #602 (deutsche Schluessel,
- * Vorgaenge und WebDAV-Fehlerklassen) in die englische Form.
+ * Translates entries of a pending note from before #602 (German keys,
+ * operations and WebDAV error classes) into the English form.
  *
- * @param array $entries Kennung => Eintrag.
+ * @param array $entries Identifier => entry.
  * @return array
  */
 function local_coursepilot_translate_pending_entries(array $entries): array {

@@ -17,8 +17,8 @@
 require_once(__DIR__ . '/../lib.php');
 
 /**
- * local_coursepilot_extend_navigation_course() (#397): der Verlaufslink
- * erscheint in der Kursnavigation nur mit local/coursepilot:viewhistory.
+ * Course navigation shows the history link only with
+ * local/coursepilot:viewhistory (#397).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -27,7 +27,7 @@ require_once(__DIR__ . '/../lib.php');
 final class local_coursepilot_lib_test extends advanced_testcase {
 
     /**
-     * @return array{0: stdClass, 1: context_course} Kurs, Kurskontext.
+     * @return array{0: stdClass, 1: context_course} Course, course context.
      */
     private function course(): array {
         $course = $this->getDataGenerator()->create_course();
@@ -35,8 +35,7 @@ final class local_coursepilot_lib_test extends advanced_testcase {
     }
 
     /**
-     * Mit der Faehigkeit erscheint genau ein Navigationsknoten, der auf
-     * history.php mit der Kurs-ID verlinkt.
+     * With permission, exactly one history.php link includes the course ID.
      */
     public function test_adds_node_with_viewhistory_capability(): void {
         $this->resetAfterTest();
@@ -55,9 +54,8 @@ final class local_coursepilot_lib_test extends advanced_testcase {
     }
 
     /**
-     * Ohne die Faehigkeit (z.B. ein normaler Kursteilnehmer) bleibt die
-     * Kursnavigation unveraendert - kein Link zu einer Seite, die
-     * require_capability() ohnehin verweigern wuerde.
+     * Without permission, course navigation stays unchanged rather than
+     * linking to a page that would reject access.
      */
     public function test_adds_no_node_without_viewhistory_capability(): void {
         $this->resetAfterTest();
@@ -73,9 +71,8 @@ final class local_coursepilot_lib_test extends advanced_testcase {
     }
 
     /**
-     * local_coursepilot_status_checks() (#399, Standard-Moodle-Callback fuer
-     * die Admin-Statusprüfung): eine Pruefung je katalogisierter
-     * Aktivitätsart, keine doppelten IDs.
+     * Admin status callback (#399): one check per cataloged activity type,
+     * with unique IDs.
      */
     public function test_status_checks_return_one_check_per_catalogued_activity_type(): void {
         $checks = local_coursepilot_status_checks();
@@ -84,12 +81,12 @@ final class local_coursepilot_lib_test extends advanced_testcase {
         $this->assertCount(count(\local_coursepilot\catalog\registry::known_modnames()), $driftchecks);
 
         $ids = array_map(static fn (\core\check\check $check): string => $check->get_id(), $checks);
-        $this->assertSame($ids, array_unique($ids), 'Check-IDs muessen eindeutig sein.');
+        $this->assertSame($ids, array_unique($ids), 'Check IDs must be unique.');
     }
 
     /**
-     * Die vier WebDAV-Statusprüfungen des Schrittkatalogs (Issue #499, Spec
-     * #486 §12) sind neben den Aktivitätsart-Prüfungen registriert.
+     * Register the four WebDAV setup checks alongside activity checks
+     * (Issue #499, Spec #486 §12).
      */
     public function test_status_checks_include_the_four_webdav_checks(): void {
         $checks = local_coursepilot_status_checks();
@@ -102,11 +99,9 @@ final class local_coursepilot_lib_test extends advanced_testcase {
     }
 
     /**
-     * local_coursepilot_extend_navigation_user_settings() (Issue #524, Spec
-     * #486 §5, Befund #12 aus der Live-Abnahme #505): auf der eigenen
-     * Einstellungsseite erscheint mit Fernzugriffsfreigabe (hier ueber eine
-     * gewaehlte Kohorte, #579) ein eigener Coursepilot-Block mit Links zur
-     * Ortswahl und zu den Verbindungen.
+     * On the current user's settings page, remote access granted through
+     * a selected cohort (#579) adds Coursepilot links to location selection
+     * and connections (Issue #524, Spec #486 §5, live acceptance #505 finding #12).
      */
     public function test_settings_navigation_adds_coursepilot_block_for_own_page(): void {
         global $CFG;
@@ -135,7 +130,7 @@ final class local_coursepilot_lib_test extends advanced_testcase {
     }
 
     /**
-     * Ohne das Coursepilot-Recht bleibt die Einstellungsseite unveraendert.
+     * Without Coursepilot permission, user settings stay unchanged.
      */
     public function test_settings_navigation_adds_nothing_without_capability(): void {
         $this->resetAfterTest();
@@ -156,9 +151,8 @@ final class local_coursepilot_lib_test extends advanced_testcase {
     }
 
     /**
-     * Auf einer fremden Einstellungsseite (z.B. eine Administrationsperson
-     * betrachtet die Einstellungen einer Lehrkraft) erscheint der Block
-     * nicht - auch nicht fuer die betrachtete Person selbst faelschlich.
+     * When viewing another user's settings, omit the Coursepilot block,
+     * including when an administrator views a teacher's settings.
      */
     public function test_settings_navigation_adds_nothing_for_foreign_profile(): void {
         $this->resetAfterTest();

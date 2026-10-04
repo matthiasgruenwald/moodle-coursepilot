@@ -24,8 +24,8 @@ use local_coursepilot\tests\webdav\webdav_instance_fixture;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Beendet den Altbestand ausdruecklich (Issue #498, Spec #486 §9) - nach dem
- * Muster von {@see dismiss_pending_entry_test}.
+ * Explicitly dismiss the previous context location (Issue #498,
+ * Spec #486 §9), following dismiss_pending_entry_test.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -36,8 +36,8 @@ final class dismiss_previous_location_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     /**
-     * Ein offener Altbestand verschwindet, Kontextbereich/Materialbestand/
-     * Ortsverlauf bleiben unveraendert.
+     * Clear the previous location while preserving current context/material
+     * targets and location history.
      */
     public function test_dismisses_open_previouslocation(): void {
         $this->resetAfterTest();
@@ -56,7 +56,7 @@ final class dismiss_previous_location_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne offenen Altbestand ist es ein benannter Fehler, kein stiller Erfolg.
+     * No previous location produces a named error rather than silent success.
      */
     public function test_rejects_when_nothing_is_open(): void {
         $this->resetAfterTest();
@@ -64,15 +64,14 @@ final class dismiss_previous_location_test extends \advanced_testcase {
 
         try {
             dismiss_previous_location::execute();
-            $this->fail('Ohne offenen Altbestand haette abgewiesen werden muessen.');
+            $this->fail('Without open legacy items this should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('previouslocationclosed', $e->errorcode);
         }
     }
 
     /**
-     * Ohne moodle/user:manageownfiles kein Zugriff - dasselbe Recht wie bei
-     * dismiss_pending_entry.
+     * Require moodle/user:manageownfiles, as in dismiss_pending_entry.
      */
     public function test_rejects_missing_manageownfiles_capability(): void {
         global $DB;
@@ -95,9 +94,8 @@ final class dismiss_previous_location_test extends \advanced_testcase {
     }
 
     /**
-     * Ein externer Altbestand laesst sich auch ohne moodle/user:manageownfiles
-     * beenden (Issue #517, Spec §6: das Recht wirkt extern nicht) - anders
-     * als beim Moodle-Altbestand oben.
+     * External previous locations can be dismissed without manageownfiles
+     * (Issue #517, Spec §6); that permission applies only within Moodle.
      */
     public function test_dismisses_external_previouslocation_without_manageownfiles_capability(): void {
         global $DB;
@@ -125,7 +123,7 @@ final class dismiss_previous_location_test extends \advanced_testcase {
     }
 
     /**
-     * Person A beendet nie den Altbestand von Person B.
+     * Users cannot dismiss another user's previous location.
      */
     public function test_person_a_cannot_dismiss_person_bs_previouslocation(): void {
         $this->resetAfterTest();
@@ -138,18 +136,18 @@ final class dismiss_previous_location_test extends \advanced_testcase {
         $this->setUser($teacherb);
         try {
             dismiss_previous_location::execute();
-            $this->fail('Ohne eigenen Altbestand haette abgewiesen werden muessen.');
+            $this->fail('Without own legacy items this should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('previouslocationclosed', $e->errorcode);
         }
         $this->assertTrue(true);
 
         $this->setUser($teachera);
-        $this->assertTrue(previous_location::open(), 'Der Altbestand von Person A darf unberuehrt bleiben.');
+        $this->assertTrue(previous_location::open(), "Person A's legacy items must stay untouched.");
     }
 
     /**
-     * Der Endpunkt haengt am Coursepilot-Dienst und steht in der Allowlist.
+     * The endpoint belongs to the Coursepilot service and allowlist.
      */
     public function test_registered_in_service_and_allowlist(): void {
         $this->assertArrayHasKey(

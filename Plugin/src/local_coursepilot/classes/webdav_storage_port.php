@@ -23,22 +23,22 @@ use local_coursepilot\webdav\webdav_instance;
 use local_coursepilot\webdav\webdav_transport;
 
 /**
- * Zweiter Adapter des Ablage-Vertrags (Issue #537, Spec 0021): WebDAV.
- * Erfuellt {@see storage_port} vollstaendig ueber eine bereits benannte
- * WebDAV-Nutzerinstanz und einen relativen Basisordner darin - beide werden
- * dem Konstruktor uebergeben, nicht aus dem Kontextpointer gelesen. Welcher
- * Adapter fuer einen Bereich greift, entscheidet {@see storage_anchor::port()}.
+ * Second adapter of the storage contract (Issue #537, Spec 0021): WebDAV.
+ * Fulfils {@see storage_port} completely via an already named
+ * WebDAV user instance and a relative base folder within it - both are
+ * passed to the constructor, not read from the context pointer. Which
+ * adapter applies to an area is decided by {@see storage_anchor::port()}.
  *
- * Die Pruefung "Repository-Instanz gehoert dem Token-Inhaber" (ADR 0021)
- * liegt an genau einer Stelle: {@see webdav_instance::resolve_owned()}, die
- * dieser Adapter fuer jede Operation neu aufruft - Zugangsdaten werden dabei
- * frisch gelesen, nie zwischengespeichert. Die Hostsperre des Kerns
- * ({@see \curl_transport}, im Betrieb hinter {@see webdav_instance}) bleibt
- * unveraendert. Tests uebergeben ihren Fake-Transport dem Konstruktor.
+ * The check "repository instance belongs to the token holder" (ADR 0021)
+ * lives in exactly one place: {@see webdav_instance::resolve_owned()}, which
+ * this adapter calls anew for every operation - credentials are read
+ * fresh each time, never cached. The core host block
+ * ({@see \curl_transport}, in operation behind {@see webdav_instance}) remains
+ * unchanged. Tests pass their fake transport to the constructor.
  *
- * Der Pruefwert dieses Adapters ist ein aus ETag/Aenderungszeit gebildeter
- * Hash ({@see pointer_reader::external_checkvalue()}) - WebDAV kennt keinen
- * Moodle-`contenthash`.
+ * The check value of this adapter is a hash formed from ETag/modification time
+ * ({@see pointer_reader::external_checkvalue()}) - WebDAV has no
+ * Moodle `contenthash`.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -47,11 +47,11 @@ use local_coursepilot\webdav\webdav_transport;
 final class webdav_storage_port implements storage_port {
 
     /**
-     * Liest eine Ebene fuer die Ortswahl. Das bleibt beim WebDAV-Adapter:
-     * die Seite bewertet nur die zurueckgegebenen Eintraege als Auswahl.
+     * Reads one level for the location selection. This stays with the WebDAV adapter:
+     * the page only evaluates the returned entries as a selection.
      *
      * @param int $instanceid
-     * @param string $path Relativ zur Instanzwurzel.
+     * @param string $path Relative to the instance root.
      * @return array{entries: array<int, array{name: string, type: string}>, iserv: bool}
      * @throws webdav_error
      */
@@ -69,18 +69,18 @@ final class webdav_storage_port implements storage_port {
             $root = $instance->client()->propfind($instance->directory_url(''), 1);
             $iserv = webdav_instance::is_iserv_listing($root);
         } catch (webdav_error $e) {
-            access_log::log_failure('WebDAV ' . $e->errorclass . ' bei IServ-Erkennung: ' . $e->getMessage());
+            access_log::log_failure('WebDAV ' . $e->errorclass . ' during IServ detection: ' . $e->getMessage());
             $iserv = false;
         }
         return ['entries' => $entries, 'iserv' => $iserv];
     }
 
     /**
-     * @var string[] moodle_exception-Fehlerschluessel aus
-     *      {@see webdav_instance::resolve_owned()}, die genauso einen
-     *      Ausstand anlegen wie ein {@see webdav_error} (Issue #540, ADR
-     *      0023) - kein Pruefmerkmal-/Wurzel-/IServ-Check hier (dieser
-     *      Adapter kennt keinen Kontextpointer), deshalb kuerzer als
+     * @var string[] moodle_exception error keys from
+     *      {@see webdav_instance::resolve_owned()} that create a pending write
+     *      just like a {@see webdav_error} (Issue #540, ADR
+     *      0023) - no fingerprint/root/IServ check here (this
+     *      adapter knows no context pointer), hence shorter than
      *      {@see pointer_writer}'s LOCATION_FAILURE_CODES.
      */
     private const LOCATION_FAILURE_CODES = [
@@ -92,11 +92,11 @@ final class webdav_storage_port implements storage_port {
     ];
 
     /**
-     * @param int $instanceid Die WebDAV-Nutzerinstanz, ausschliesslich aus
-     *        einer serverseitigen Quelle (nie aus einer Client-Eingabe) -
-     *        Instanzeigentum prueft {@see webdav_instance::resolve_owned()}.
-     * @param string $baserelativepath Basisordner innerhalb der Instanz, in
-     *        dem dieser Adapter arbeitet. Leer heisst: die Instanzwurzel.
+     * @param int $instanceid The WebDAV user instance, exclusively from
+     *        a server-side source (never from client input) -
+     *        instance ownership is checked by {@see webdav_instance::resolve_owned()}.
+     * @param string $baserelativepath Base folder within the instance in
+     *        which this adapter works. Empty means: the instance root.
      */
     public function __construct(
         private readonly int $instanceid,
@@ -124,17 +124,17 @@ final class webdav_storage_port implements storage_port {
 
         $entry = $meta[0] ?? null;
         if ($entry === null || $entry['type'] === 'folder') {
-            // Vertrag (storage_port::read()): null bei einer fehlenden Datei
-            // *oder einem Ordner* - kein GET auf eine Collection.
+            // Contract (storage_port::read()): null for a missing file
+            // *or a folder* - no GET on a collection.
             return null;
         }
 
         $content = $client->get($fileurl);
         $mimetype = $entry['mimetype'];
         if ($mimetype === 'document/unknown') {
-            // Ortsneutralitaet (Issue #560): Moodle-Core sniffft bei
-            // unbekannter Endung ebenfalls den Inhalt. Kein zusaetzlicher
-            // GET hier - der Inhalt liegt bereits vor.
+            // Location neutrality (Issue #560): Moodle core also sniffs the
+            // content for an unknown extension. No additional
+            // GET here - the content is already available.
             $mimetype = webdav_client::sniff_mimetype_from_content($content) ?? $mimetype;
         }
         return [
@@ -246,16 +246,16 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * Uebersetzt einen Ausfall beim Schreiben/Anhaengen (Issue #540, ADR
-     * 0023) genauso wie {@see pointer_writer}: vermerkt einen Ausstand, bevor
-     * der Fehler zurueckgeht - nie roh durchgereicht. `Konflikt` (412) ist
-     * hier bereits als {@see storage_conflict_exception} unterwegs (siehe
-     * {@see put()}), erreicht diese Methode also nie.
+     * Translates a failure on write/append (Issue #540, ADR
+     * 0023) just like {@see pointer_writer}: records a pending write before
+     * the error is returned - never passed through raw. `Conflict` (412) is
+     * already on its way here as {@see storage_conflict_exception} (see
+     * {@see put()}), so it never reaches this method.
      *
      * @param string $errorclass
      * @param string $rawmessage
      * @param string $clientpath
-     * @param string $operation Eine der {@see pending_write_translation}-OP_*-Konstanten.
+     * @param string $operation One of the {@see pending_write_translation} OP_* constants.
      * @return \moodle_exception
      */
     private function fail(string $errorclass, string $rawmessage, string $clientpath, string $operation): \moodle_exception {
@@ -271,11 +271,11 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * Ort-Ausfaelle aus {@see resolved_instance()} legen ebenfalls einen
-     * Ausstand an (Issue #540); jeder andere moodle_exception-Fehlerschluessel
-     * - insbesondere {@see storage_conflict_exception} und die Quotenpruefung
-     * des Bereichs - laeuft unveraendert weiter, er gehoert nicht zu diesem
-     * Zweig.
+     * Location failures from {@see resolved_instance()} also create a
+     * pending write (Issue #540); every other moodle_exception error key
+     * - in particular {@see storage_conflict_exception} and the quota check
+     * of the area - continues unchanged, it does not belong to this
+     * branch.
      *
      * @param \moodle_exception $e
      * @param string $clientpath
@@ -292,20 +292,19 @@ final class webdav_storage_port implements storage_port {
             $clientpath,
             $operation,
             pointer_writer::reason_for($e->errorcode),
-            // Instanz nicht mehr aufloesbar - kein frischer Host verfuegbar,
-            // anders als bei pointer_writer, der den Host aus dem Pointer-
-            // Pruefmerkmal kennt (dieser Adapter kennt keinen Pointer).
+            // Instance no longer resolvable - no fresh host available,
+            // unlike pointer_writer, which knows the host from the pointer
+            // fingerprint (this adapter knows no pointer).
             pointer_writer::describe_target('', $this->instanceid),
             $this->courseid
         );
     }
 
     /**
-     * Der Host der Instanz, best-effort - fuer die Zielbeschreibung der
-     * Ausfallantwort. Leer, wenn die Instanz selbst nicht mehr aufloesbar ist
-     * (dann greift ohnehin {@see translate_location_failure()}, nicht diese
-     * Methode).
-     *
+     * The host of the instance, best effort - for the target description of the
+     * failure response. Empty if the instance itself is no longer resolvable
+     * (then {@see translate_location_failure()} applies anyway, not this
+     * method).
      * @return string
      */
     private function resolve_host(): string {
@@ -333,10 +332,10 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * Loest die Instanz frisch auf - Instanzeigentum (ADR 0021), WebDAV-
-     * Freischaltung und https+Basic prueft ausschliesslich
-     * {@see webdav_instance::resolve_owned()}, hier fuer jede Operation neu
-     * aufgerufen, damit Zugangsdaten nie zwischengespeichert werden.
+     * Resolves the instance fresh - instance ownership (ADR 0021), WebDAV
+     * enablement and https+Basic are checked exclusively by
+     * {@see webdav_instance::resolve_owned()}, called anew here for every
+     * operation so that credentials are never cached.
      *
      * @return resolved_webdav_instance
      * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/
@@ -350,14 +349,14 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * Zerlegt einen Client-Pfad grosszuegig (nur `.`/`..`-Segmente
-     * verboten, keine Namensregel) - fuer Lesen/Loeschen, analog zu
+     * Splits a client path generously (only `.`/`..` segments
+     * forbidden, no naming rule) - for read/delete, analogous to
      * {@see storage_anchor::resolve_file()}.
      *
      * @param storage_area $area
      * @param string $path
      * @return array{0: string[], 1: string}
-     * @throws \moodle_exception invalidpathkey des Bereichs
+     * @throws \moodle_exception invalidpathkey of the area
      */
     private function split_file_path(storage_area $area, string $path): array {
         $clientpath = storage_anchor::normalise_client_path($area, $path);
@@ -370,7 +369,7 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * @return string[] Segmente des Basisordners, ohne leere Anteile.
+     * @return string[] Segments of the base folder, without empty parts.
      */
     private function base_segments(): array {
         return array_values(array_filter(
@@ -381,7 +380,7 @@ final class webdav_storage_port implements storage_port {
 
     /**
      * @param string[] $extra
-     * @return string[] Basisordner-Segmente gefolgt von $extra.
+     * @return string[] Base folder segments followed by $extra.
      */
     private function relative_segments(array $extra): array {
         return [...$this->base_segments(), ...$extra];
@@ -390,16 +389,16 @@ final class webdav_storage_port implements storage_port {
     /**
      * @param string[] $folders
      * @param string $filename
-     * @return string Voller instanzrelativer Pfad einer Datei.
+     * @return string Full instance-relative path of a file.
      */
     private function relative_path(array $folders, string $filename): string {
         return implode('/', [...$this->relative_segments($folders), $filename]);
     }
 
     /**
-     * Baut fehlende Unterordner - Basisordner und vom Aufrufer gewuenschte
-     * Ordner gleichermassen - per MKCOL Ebene fuer Ebene. Ein bereits
-     * vorhandenes Verzeichnis gilt als Erfolg ({@see webdav_client::mkcol()}).
+     * Builds missing subfolders - base folder and folders requested by the
+     * caller alike - via MKCOL level by level. An already
+     * existing directory counts as success ({@see webdav_client::mkcol()}).
      *
      * @param resolved_webdav_instance $resolved
      * @param string[] $folders
@@ -435,12 +434,12 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * Die aktuellen Eigenschaften der Zieldatei, oder null, wenn sie fehlt.
+     * The current properties of the target file, or null if it is missing.
      *
      * @param webdav_client $client
      * @param string $fileurl
      * @return array{etag: ?string, timemodified: int, size: int}|null
-     * @throws webdav_error jeder Fehler ausser "nicht gefunden".
+     * @throws webdav_error every error except "not found".
      */
     private function current_entry(webdav_client $client, string $fileurl): ?array {
         try {
@@ -456,18 +455,18 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * Legt eine Datei an (`existing === null`) oder ueberschreibt sie
-     * bedingt - ein transportnaher Konflikt (412) wird zum ortsneutralen
-     * {@see storage_conflict_exception}, damit der Aufrufer nie einen
-     * webdav_error als Konflikt sieht.
+     * Creates a file (`existing === null`) or overwrites it
+     * conditionally - a transport-level conflict (412) becomes the location-neutral
+     * {@see storage_conflict_exception}, so that the caller never sees a
+     * webdav_error as a conflict.
      *
      * @param webdav_client $client
      * @param string $fileurl
      * @param string $content
      * @param array{etag: ?string, timemodified: int, size: int}|null $existing
-     * @param string $clientpath Fuer die Fehlermeldung.
+     * @param string $clientpath For the error message.
      * @throws storage_conflict_exception
-     * @throws webdav_error jeder andere Fehler.
+     * @throws webdav_error every other error.
      */
     private function put(webdav_client $client, string $fileurl, string $content, ?array $existing, string $clientpath): void {
         try {
@@ -485,13 +484,13 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * Weist ein bedingtes Schreiben ab, dessen Pruefwert nicht (mehr) zum
-     * aktuellen Stand passt - auch wenn die Datei inzwischen ganz fehlt.
-     * Kein Vergleich, wenn kein Pruefwert mitgegeben wurde (`null`).
+     * Rejects a conditional write whose check value no longer matches the
+     * current state - even if the file is now missing entirely.
+     * No comparison if no check value was passed (`null`).
      *
      * @param array{etag: ?string, timemodified: int, size: int}|null $existing
      * @param string|null $expectedchecksum
-     * @param string $clientpath Fuer die Fehlermeldung.
+     * @param string $clientpath For the error message.
      * @throws storage_conflict_exception
      */
     private function require_checksum_match(?array $existing, ?string $expectedchecksum, string $clientpath): void {

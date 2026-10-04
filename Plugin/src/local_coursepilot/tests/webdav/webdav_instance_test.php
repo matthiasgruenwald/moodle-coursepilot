@@ -22,10 +22,9 @@ use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Die Auflösungsprüfungen einer WebDAV-Nutzerinstanz, ohne Netz (Issue #490,
- * Spec #486 §2): Existenz, Instanzeigentum (inkl. "Login as"),
- * WebDAV-Freischaltung, https+Basic, Prüfmerkmal. Jeder Verstoß ein
- * benannter Fehler.
+ * WebDAV instance resolution without network (Issue #490, Spec #486 §2):
+ * existence, ownership including Login as, enablement, HTTPS+Basic and
+ * fingerprint. Every violation produces a named error.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -55,8 +54,8 @@ final class webdav_instance_test extends \advanced_testcase {
     }
 
     /**
-     * Moodles WebDAV-Formular speichert "kein Port" als '0' - das darf nie als
-     * ":0" in der Adresse landen (Live-Abnahme #505: jede Anfrage lief in den Timeout).
+     * Moodle stores no port as string 0; never emit :0 in URLs
+     * (live acceptance #505: all requests timed out).
      */
     public function test_port_zero_means_default_port(): void {
         $this->resetAfterTest();
@@ -91,7 +90,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location(999999));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavinstancemissing', $e->errorcode);
         }
@@ -110,16 +109,16 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavinstanceforeign', $e->errorcode);
         }
     }
 
     /**
-     * "Login as" darf eine fremde Person nicht ueber deren eigenen
-     * Nutzerkontext hinweg an die WebDAV-Instanz heranfuehren, selbst wenn
-     * `$USER` waehrenddessen formal die Zielperson ist (Spec §2 Pruefung 3).
+     * Login as cannot cross user-context ownership to access another
+     * user's WebDAV instance, even when USER temporarily represents that
+     * user (Spec §2 check 3).
      */
     public function test_loginas_session_is_rejected_even_for_the_owning_context(): void {
         $this->resetAfterTest();
@@ -134,7 +133,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavinstanceforeign', $e->errorcode);
         }
@@ -144,13 +143,13 @@ final class webdav_instance_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
-        // Keine Capability zugewiesen - Schritt 3 fehlt.
+        // No capability assigned; step 3 is missing.
         $this->enable_webdav_repository_type();
         $instanceid = $this->create_webdav_instance($user);
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavnotenabled', $e->errorcode);
         }
@@ -166,11 +165,11 @@ final class webdav_instance_test extends \advanced_testcase {
         // Bisher gueltig ...
         webdav_instance::resolve($this->location($instanceid));
 
-        // ... ein Entzug wirkt sofort, ohne Zwischenspeicher.
+        // Revocation takes effect immediately without caching.
         set_config('enableuserinstances', 0, 'webdav');
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavnotenabled', $e->errorcode);
         }
@@ -185,7 +184,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavauthunsupported', $e->errorcode);
         }
@@ -200,7 +199,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavauthunsupported', $e->errorcode);
         }
@@ -215,7 +214,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavauthunsupported', $e->errorcode);
         }
@@ -230,7 +229,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavfingerprintchanged', $e->errorcode);
         }
@@ -245,7 +244,7 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavfingerprintchanged', $e->errorcode);
         }
@@ -260,16 +259,15 @@ final class webdav_instance_test extends \advanced_testcase {
 
         try {
             webdav_instance::resolve($this->location($instanceid));
-            $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+            $this->fail('Expected moodle_exception was not thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavfingerprintchanged', $e->errorcode);
         }
     }
 
     /**
-     * Der Geheimnis-Test (Spec Testing Decisions): das Passwort der Instanz
-     * taucht in keiner der Fehlermeldungen auf, ueber alle Fehlerklassen
-     * hinweg.
+     * Secret-protection test (Spec Testing Decisions): instance passwords
+     * appear in no error message across all error classes.
      */
     public function test_password_never_leaks_into_any_exception_message(): void {
         $this->resetAfterTest();
@@ -286,7 +284,7 @@ final class webdav_instance_test extends \advanced_testcase {
         foreach ($attempts as $attempt) {
             try {
                 $attempt();
-                $this->fail('Erwartete moodle_exception ist ausgeblieben.');
+                $this->fail('Expected moodle_exception was not thrown.');
             } catch (\moodle_exception $e) {
                 $this->assertStringNotContainsString($password, $e->getMessage());
             }

@@ -17,16 +17,14 @@
 namespace local_coursepilot;
 
 /**
- * Ein Bereich ist ein Wertesatz, kein Typ (Issue #444): das, was
- * {@see context_files} von {@see material_files} unterscheidet, und sonst
- * nichts. Component/Filearea/Itembezug/Nutzerkontext sind fuer beide
- * Bereiche gleich und bleiben deshalb in {@see storage_anchor} - nicht hier.
+ * An area is a value set, not a type (issue #444): only the differences
+ * between {@see context_files} and {@see material_files}. Both share
+ * component/filearea/item/user context in {@see storage_anchor}.
  *
- * Die Namensregel beim Schreiben ({@see $checkwritablename}) ist die eine
- * echte, bereichsspezifische Policy-Methode (`.md`-Whitelist bei
- * context_files, Endungs-Whitelist bei material_files): der Bereich liefert
- * sie als Closure, die bei Verstoss selbst die passende moodle_exception mit
- * ihrem eigenen Fehlerschluessel wirft.
+ * The write-name policy ({@see $checkwritablename}) is the one area-specific
+ * method: the .md allowlist for context_files, the extension allowlist for
+ * material_files. A Closure throws the appropriate moodle_exception and
+ * area error key on violation.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -35,23 +33,20 @@ namespace local_coursepilot;
 final class storage_area {
 
     /**
-     * @param string $rootsetting Name der Plugin-Einstellung fuer den Wurzelordner.
-     * @param string $defaultroot Standardwurzel, falls die Einstellung leer ist.
-     * @param string $invalidpathkey Sprachstring-Schluessel fuer einen abgewiesenen Pfad
-     *        (`.`/`..`-Segmente, ungueltige Ordnersegmente).
-     * @param string $quotaerrorkey Sprachstring-Schluessel, wenn ein Schreibvorgang die
-     *        Nutzerquote sprengen wuerde.
-     * @param \Closure(string): void $checkwritablename Wirft bei einem nicht zulaessigen
-     *        Dateinamen eine eigene moodle_exception; gibt sonst einfach zurueck.
-     * @param string|null $pointerkey Feldname dieses Bereichs im Kontextpointer
-     *        (Issue #445), z.B. "context_area"/"material_store". `null`, wenn
-     *        der Bereich den Pointer nicht kennt (z.B. ein reiner Testbereich) -
-     *        dann gilt immer die per Einstellung konfigurierte Standardwurzel.
-     * @param bool $externalfallback Bei einem Pointer-Ziel *extern* auf die
-     *        konfigurierte Standardwurzel zurueckfallen, statt zu werfen
-     *        (Issue #520, Spec #486 §1: die Werkbank kennt noch keine externen
-     *        Ziele und bleibt am Anker, waehrend der Materialbestand selbst
-     *        weiterhin benannt scheitert, siehe {@see storage_anchor::root()}).
+     * @param string $rootsetting Plugin setting naming the root folder.
+     * @param string $defaultroot Default root if the setting is empty.
+     * @param string $invalidpathkey Language key for rejected paths
+     *        (`.`/`..` segments or invalid folder segments).
+     * @param string $quotaerrorkey Language key for writes exceeding the user quota.
+     * @param \Closure(string): void $checkwritablename Throws an area-specific
+     *        moodle_exception for an invalid filename; otherwise returns.
+     * @param string|null $pointerkey Area field in the context pointer (issue #445),
+     *        e.g. context_area/material_store. Null for areas without pointers
+     *        (e.g. pure test areas), which always use the configured default root.
+     * @param bool $externalfallback For external pointers, fall back to the
+     *        configured default root instead of throwing (issue #520, Spec #486 §1):
+     *        workbench stays at the anchor while material store failures remain
+     *        explicit; see {@see storage_anchor::root()}.
      */
     public function __construct(
         public readonly string $rootsetting,

@@ -32,7 +32,7 @@ use local_coursepilot\history\version_history;
 final class history_page {
 
     /**
-     * Versionsliste einer Aktivitaet (?cmid=).
+     * Activity version list (?cmid=).
      *
      * @param int $cmid
      * @param string $activityname
@@ -46,7 +46,7 @@ final class history_page {
         bool $canrestore,
         \moodle_url $listurl
     ): array {
-        $data = version_history::list_versions($cmid);
+        $data = version_history::list_versions($cmid, current_language());
         $newest = $data['versions'] ? end($data['versions'])['version'] : null;
 
         $rows = [];

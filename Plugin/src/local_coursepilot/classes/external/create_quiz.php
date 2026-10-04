@@ -32,20 +32,17 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Das Quiz-Gegenstueck zu {@see create_module} (Spec 0015 §5, Ticket #398):
- * quiz ist eine begruendete Ausnahme vom generischen Vehikel, der Katalog
- * (#383) fuehrt es trotzdem mit `schreibweg(): 'update_quiz_settings'`.
+ * Quiz counterpart to {@see create_module} (Spec 0015 §5, #398): quiz is
+ * a justified exception to the generic tool, but its catalog (#383)
+ * still declares write_path: update_quiz_settings.
  *
- * Wie beim generischen Anlegen (Spec 0015 §3.4): fehlende Felder kommen aus
- * dem katalogisierten FORMULAR-Default, ein Pflichtfeld ganz ohne Default
- * (name, intro, preferredbehaviour, subnet, browsersecurity) muss die
- * Lehrkraft nennen. "grade" ist kein Katalogfeld (Sperrliste) - es kommt aus
- * dem eigenen Parameter "grade" bzw. dem Moodle-Formular-Default
- * (Admin-Einstellung quiz/maximumgrade), niemals aus fields_json.
+ * Like generic creation (Spec 0015 §3.4), missing fields use cataloged form
+ * defaults. Required fields without defaults (name, intro, preferredbehaviour,
+ * subnet, browsersecurity) must be provided. grade is blocked in fields_json:
+ * it comes from its own parameter or quiz/maximumgrade form default.
  *
- * Die drei Modus-Buendel kommen aus dem Katalog ({@see quiz::bundles()}) -
- * ein Buendelwert gilt nur fuer Felder, die fields_json nicht bereits selbst
- * nennt (Spec 0015 §2.4).
+ * The three mode bundles come from {@see quiz::bundles()}. Bundle values
+ * apply only to fields not explicitly supplied in fields_json (Spec §2.4).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -69,15 +66,15 @@ final class create_quiz extends external_api {
             ),
             'mode' => new external_value(
                 PARAM_ALPHANUMEXT,
-                'Modus-Buendel: "mini-check", "progress-check" oder "final-test". Buendelwerte gelten nur '
-                    . 'fuer Felder, die fields_json nicht bereits selbst nennt. Leer = kein Buendel.',
+                'Mode bundle: "mini-check", "progress-check" or "final-test". Bundle values apply only '
+                    . 'to fields not explicitly supplied in fields_json. Empty = no bundle.',
                 VALUE_DEFAULT,
                 ''
             ),
             'grade' => new external_value(
                 PARAM_FLOAT,
-                'Maximale Bewertung des Tests. -1 = Moodle-Formular-Default (Admin-Einstellung quiz/maximumgrade) '
-                    . 'verwenden.',
+                'Maximum quiz grade. -1 = use the Moodle form default (admin setting quiz/maximumgrade)'
+                    . '.',
                 VALUE_DEFAULT,
                 -1.0
             ),
@@ -116,12 +113,11 @@ final class create_quiz extends external_api {
         $coursecontext = context_course::instance($params['courseid']);
         self::validate_context($coursecontext);
         require_capability('local/coursepilot:use', $coursecontext);
-        // Native Berechtigungspruefung vorgezogen, wie {@see create_module::execute()}.
+        // Check native editing permission early, as in {@see create_module::execute()}.
         require_capability('moodle/course:manageactivities', $coursecontext);
 
-        // Billigteil der Selbstfreigabe (Spec 0015 §11, ADR 0017, Ticket #399):
-        // dasselbe Regime wie fuer das generische Vehikel gilt unveraendert
-        // fuer das Quiz-Einzelwerkzeug. Lesen bleibt unberuehrt.
+        // Cheap write self-check (Spec 0015 §11, ADR 0017, #399): same policy
+        // as generic creation applies to the quiz-specific tool. Reads are unaffected.
         write_gate::assert_writable('quiz');
 
         $patch = json_decode($params['fields_json'], true);
@@ -182,7 +178,7 @@ final class create_quiz extends external_api {
     }
 
     /**
-     * Modus-Buendel aus dem Katalog, oder leer ohne Buendel.
+     * Returns the catalog mode bundle, or an empty array without a mode.
      *
      * @param string $mode
      * @return array<string, mixed>
@@ -203,10 +199,9 @@ final class create_quiz extends external_api {
     }
 
     /**
-     * Die tatsaechlich vom Patch/Buendel gesetzten Felder mit ihrem Wert,
-     * plus "grade" (immer gesetzt, kommt nie aus fields_json) und
-     * ausgeloeste Nebenwirkungen - identisches Prinzip wie
-     * {@see create_module::report_and_side_effects()}.
+     * Reports fields actually set by patch/bundle with their values, plus
+     * grade (always set, never from fields_json), and side effects. Same
+     * principle as {@see create_module::report_and_side_effects()}.
      *
      * @param array $merged
      * @param float $grade
@@ -221,14 +216,14 @@ final class create_quiz extends external_api {
 
         $sideeffects = [];
         if ((int) ($merged['timeopen'] ?? 0) > 0 || (int) ($merged['timeclose'] ?? 0) > 0) {
-            $sideeffects[] = 'Der Kalendereintrag fuer den Test wurde angelegt.';
+            $sideeffects[] = 'The calendar entry for the quiz was created.';
         }
 
         return [$createdfields, $sideeffects];
     }
 
     /**
-     * Die Lehrkraft-deutsche Anlegemeldung (Spec 0015 §3.4/§5).
+     * Teacher-facing creation message (Spec 0015 §3.4/§5).
      *
      * @param array $createdfields
      * @param string[] $sideeffects
@@ -239,7 +234,7 @@ final class create_quiz extends external_api {
         foreach ($createdfields as $field) {
             $parts[] = '"' . $field['field'] . '" = ' . $field['value_json'];
         }
-        $message = 'Test angelegt: ' . implode(', ', $parts) . '.';
+        $message = get_string('quizcreatedfields', 'local_coursepilot', implode(', ', $parts));
 
         if ($sideeffects) {
             $message .= ' ' . implode(' ', $sideeffects);
@@ -254,7 +249,7 @@ final class create_quiz extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID of the newly created quiz'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German creation message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing creation message'),
             'created_fields' => new external_multiple_structure(
                 new external_single_structure([
                     'field' => new external_value(PARAM_TEXT, 'Field name'),
@@ -263,7 +258,7 @@ final class create_quiz extends external_api {
                 'One entry per field set by the patch/bundle, plus "grade"'
             ),
             'side_effects' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                new external_value(PARAM_TEXT, 'Teacher-facing side-effect note'),
                 'Triggered side effects, empty when none were triggered'
             ),
         ]);

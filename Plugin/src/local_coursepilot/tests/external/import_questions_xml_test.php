@@ -22,7 +22,7 @@ use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use local_coursepilot\webdav\webdav_instance;
 
 /**
- * Der XML-Kern (Spec 0017 §7.1, Ticket #415).
+ * XML import core (Spec 0017 §7.1, issue #415).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -38,8 +38,8 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Erstimport ohne idnumber: legt einen neuen Bank-Eintrag mit
-     * generierter idnumber an (Version 1).
+     * Importing without an idnumber creates a new bank entry with
+     * a generated idnumber and version 1.
      */
     public function test_first_import_creates_new_entry_with_generated_idnumber(): void {
         $this->resetAfterTest();
@@ -59,19 +59,18 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         global $DB;
         $entry = $DB->get_record('question_bank_entries', ['id' => $question['questionbankentryid']], '*', MUST_EXIST);
-        $this->assertNotEmpty($entry->idnumber, 'Eine idnumber wurde generiert.');
+        $this->assertNotEmpty($entry->idnumber, 'An idnumber was generated.');
     }
 
     /**
-     * Reimport mit passender idnumber: neue Version desselben Bank-Eintrags,
-     * kein zweiter Eintrag.
+     * Reimporting a matching idnumber creates a new version of the same
+     * bank entry, not another entry.
      */
     public function test_reimport_with_matching_idnumber_creates_new_version(): void {
         $this->resetAfterTest();
 
         [, $categoryid] = $this->setup_course_and_category();
-        // Erstimport ohne idnumber im XML - genau wie ein echter Erstimport,
-        // eine idnumber wird generiert (siehe erster Test).
+        // First import has no idnumber; generate one as in the first test.
         $xml1 = self::multichoice_xml('Reimport-Frage', 'Alte Fassung', 'Feedback');
 
         $first = import_questions_xml::execute($categoryid, $xml1);
@@ -82,8 +81,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         global $DB;
         $generatedidnumber = $DB->get_field('question_bank_entries', 'idnumber', ['id' => $entryid], MUST_EXIST);
 
-        // Reimport traegt dieselbe (generierte) idnumber mit - genau wie ein
-        // Export/Korrektur-Zyklus derselben Frage.
+        // Reimport carries the generated idnumber, as in an export/edit cycle.
         $xml2 = self::multichoice_xml('Reimport-Frage', 'Korrigierte Fassung', 'Feedback', $generatedidnumber);
         $second = import_questions_xml::execute($categoryid, $xml2);
         $second = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $second);
@@ -94,12 +92,11 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         global $DB;
         $versions = $DB->get_records('question_versions', ['questionbankentryid' => $entryid]);
-        $this->assertCount(2, $versions, 'Genau eine neue Version, kein neuer Bank-Eintrag.');
+        $this->assertCount(2, $versions, 'Exactly one new version, no new bank entry.');
     }
 
     /**
-     * Ein Parse-Fehler bricht den gesamten Aufruf ab - kein Teilergebnis,
-     * nichts geschrieben.
+     * A parse error aborts the entire request without writes or partial results.
      */
     public function test_parse_error_aborts_whole_call(): void {
         $this->resetAfterTest();
@@ -114,13 +111,13 @@ final class import_questions_xml_test extends \advanced_testcase {
             import_questions_xml::execute($categoryid, 'das ist kein XML');
         } finally {
             $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-            $this->assertSame($countbefore, $countafter, 'Nichts wurde geschrieben.');
+            $this->assertSame($countbefore, $countafter, 'Nothing was written.');
         }
     }
 
     /**
-     * Verdachtsfall: mitgebrachte idnumber ohne Treffer in der Zielkategorie
-     * schreibt ohne Bestaetigung nichts.
+     * An idnumber with no target-category match is a suspected duplicate;
+     * write nothing without confirmation.
      */
     public function test_suspect_case_without_confirmation_writes_nothing(): void {
         $this->resetAfterTest();
@@ -141,11 +138,11 @@ final class import_questions_xml_test extends \advanced_testcase {
         $this->assertSame($categoryid, $question['categoryid']);
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-        $this->assertSame($countbefore, $countafter, 'Nichts wurde geschrieben.');
+        $this->assertSame($countbefore, $countafter, 'Nothing was written.');
     }
 
     /**
-     * Bestaetigter Zweitaufruf legt den Verdachtsfall als neuen Eintrag an.
+     * A confirmed second request creates the suspected duplicate as a new entry.
      */
     public function test_confirmed_call_creates_entry_despite_suspect_case(): void {
         $this->resetAfterTest();
@@ -174,11 +171,10 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Eine fehlgeschlagene Round-Trip-Pruefung rollt alles zurueck - weder
-     * Bank-Eintrag noch Version bleiben zurueck. Ausgeloest durch ein XML
-     * ohne Fragenamen: question_type::save_question() generiert in diesem
-     * Fall selbst einen Namen aus dem Fragetext - genau die Art stiller
-     * Abweichung, die die Round-Trip-Pruefung fangen soll.
+     * A failed round-trip check rolls back both the bank entry and version.
+     * XML without a question name triggers question_type::save_question() to
+     * generate a name from question text: exactly the silent deviation that
+     * the round-trip check must catch.
      */
     public function test_failed_roundtrip_check_leaves_nothing_behind(): void {
         $this->resetAfterTest();
@@ -195,14 +191,14 @@ final class import_questions_xml_test extends \advanced_testcase {
             import_questions_xml::execute($categoryid, $xml);
         } finally {
             $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-            $this->assertSame($countbefore, $countafter, 'Nichts wurde geschrieben.');
+            $this->assertSame($countbefore, $countafter, 'Nothing was written.');
         }
     }
 
     /**
-     * Textuer (Spec 0018 §7.1): ein <file>-Block mit material="..."-Attribut
-     * wird serverseitig zu echtem Base64 aufgeloest und importiert - die
-     * Abweisung eingebetteter Dateien aus Spec 0017 §6 ist entfallen.
+     * Text input (Spec 0018 §7.1): resolve a file element’s material attribute
+     * to real Base64 on the server and import it. Spec 0017 §6’s prohibition
+     * on embedded files no longer applies.
      */
     public function test_text_door_resolves_material_reference_and_imports(): void {
         $this->resetAfterTest();
@@ -216,15 +212,14 @@ final class import_questions_xml_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
 
         $this->assertSame('first_import', $result['questions'][0]['status']);
-        // Die Antwort enthaelt kein Bildbyte - das aufgeloeste Base64 bleibt
-        // serverseitig, unabhaengig davon, wie viele Bilder das XML traegt.
+        // Keep resolved Base64 on the server; the response contains no image
+        // bytes regardless of image count in the XML.
         $this->assertStringNotContainsString(base64_encode(self::PNG_BYTES), json_encode($result));
     }
 
     /**
-     * Textuer: material="..." mit einfachen Anfuehrungszeichen wird genauso
-     * aufgeloest wie mit doppelten - kein stiller Fehlparse, der den
-     * Pfadstring als Base64-Inhalt in die Frage schreiben wuerde.
+     * Text input: resolve material attributes with single quotes just like
+     * double quotes, avoiding a parse error that writes the path as Base64.
      */
     public function test_text_door_resolves_material_reference_with_single_quotes(): void {
         $this->resetAfterTest();
@@ -242,8 +237,8 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Textuer: ein material-Verweis ins Leere bricht VOR jedem Schreiben mit
-     * klarer Meldung ab - kein Teilimport (Spec 0018 §7.1).
+     * Text input: reject missing material references before any writes
+     * (Spec 0018 §7.1); no partial imports.
      */
     public function test_text_door_missing_material_reference_aborts_with_nothing_written(): void {
         $this->resetAfterTest();
@@ -263,13 +258,12 @@ final class import_questions_xml_test extends \advanced_testcase {
         }
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-        $this->assertSame($countbefore, $countafter, 'Nichts wurde geschrieben.');
+        $this->assertSame($countbefore, $countafter, 'Nothing was written.');
     }
 
     /**
-     * Verweistuer (Spec 0018 §7.1): eine im Materialordner liegende
-     * XML-Datei mit echtem Base64 in ihren <file>-Bloecken wird
-     * serverseitig gelesen und importiert.
+     * File input (Spec 0018 §7.1): read a stored XML file containing real
+     * Base64 in file elements on the server and import it.
      */
     public function test_xmlpath_door_imports_from_material_file(): void {
         $this->resetAfterTest();
@@ -287,10 +281,9 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Einbettung direkt aus dem externen Materialbestand (Issue #496, Spec
-     * #486 §7, Default "ort" = "bestand") - Textuer: ein material="..."-
-     * Attribut liest ueber den WebDAV-Transport-Fake, ohne Umweg ueber die
-     * Werkbank.
+     * Embed from external material storage (#496, Spec #486 §7, default
+     * location = inventory). Text input resolves material attributes through
+     * the fake WebDAV transport without using the workbench.
      */
     public function test_text_door_resolves_material_reference_from_external_bestand(): void {
         $this->resetAfterTest();
@@ -308,8 +301,8 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Einbettung direkt aus dem externen Materialbestand (Issue #496) -
-     * Verweistuer: xmlpath liest ueber den WebDAV-Transport-Fake.
+     * Embed from external material storage (#496). File input reads xmlpath
+     * through the fake WebDAV transport.
      */
     public function test_xmlpath_door_imports_from_external_bestand(): void {
         $this->resetAfterTest();
@@ -328,8 +321,8 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Explizit "ort" = "werkbank" greift weiterhin auf die Werkbank zu, auch
-     * wenn der Materialbestand extern liegt (Issue #496).
+     * Explicit location = workbench uses the workbench even when material
+     * storage is external (#496).
      */
     public function test_xmlpath_door_with_ort_werkbank_ignores_external_bestand(): void {
         $this->resetAfterTest();
@@ -350,9 +343,8 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Die Sperre unterhalb eines Eintrags vom Typ "context_area" (Issue
-     * #495, Spec #486 §2/§7) greift auch an der Verweistuer der Einbettung
-     * (Issue #496) - kein zweiter Zugang zu Kontextdateien.
+     * The context_area guard (#495, Spec #486 §2/§7) also applies to embedding
+     * file input (#496); context files have no alternate access path.
      */
     public function test_xmlpath_door_under_kontextbereich_is_rejected(): void {
         $this->resetAfterTest();
@@ -373,15 +365,14 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         try {
             import_questions_xml::execute($categoryid, '', false, 'kontext/export.xml');
-            $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
+            $this->fail('A path under the context area should have thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialpathiscontext', $e->errorcode);
         }
     }
 
     /**
-     * Verweistuer: ein Verweis auf eine fehlende Materialdatei bricht mit
-     * klarer Meldung ab, kein Teilimport.
+     * File input: reject missing material files clearly without partial imports.
      */
     public function test_xmlpath_door_missing_file_aborts_with_clear_message(): void {
         $this->resetAfterTest();
@@ -399,12 +390,12 @@ final class import_questions_xml_test extends \advanced_testcase {
         }
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-        $this->assertSame($countbefore, $countafter, 'Nichts wurde geschrieben.');
+        $this->assertSame($countbefore, $countafter, 'Nothing was written.');
     }
 
     /**
-     * Beide Tueren im selben Aufruf ⇒ Fehler, keine stille Bevorzugung
-     * (Spec 0018 §7.1).
+     * Reject simultaneous text and file input instead of silently choosing
+     * one (Spec 0018 §7.1).
      */
     public function test_both_doors_at_once_is_rejected(): void {
         $this->resetAfterTest();
@@ -417,7 +408,7 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Weder Text noch Verweis angegeben ⇒ Fehler.
+     * Reject requests supplying neither text nor a file reference.
      */
     public function test_neither_door_given_is_rejected(): void {
         $this->resetAfterTest();
@@ -429,11 +420,10 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Legt eine Datei direkt im Materialordner der angemeldeten Person an -
-     * wie {@see \local_coursepilot\material_files::filerecord()}, ohne den
-     * Umweg ueber upload_material_file (dessen Endungs-Whitelist z.B. .xml
-     * nicht fuehrt, siehe material_files::resolve_file() "lesend, ohne
-     * Endungspruefung").
+     * Create a file directly in the current user’s material storage, like
+     * {@see \local_coursepilot\material_files::filerecord()}. Bypass
+     * upload_material_file because its whitelist excludes .xml;
+     * material_files::resolve_file() reads without checking extensions.
      *
      * @param string $filename
      * @param string $content
@@ -448,12 +438,9 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Eine zu grosse XML wird mit Ist-Groesse und Grenze abgewiesen und
-     * nennt einen Ausweg (Ticket #416).
-     *
-     * Die Schwelle wird ueber den testbaren internen Kern
-     * (guard_size_against_limit) per Reflection injiziert, statt eine
-     * Mehr-MB-Zeichenkette aufzubauen.
+     * Reject oversized XML with its actual size, limit and suggested remedy
+     * (#416). Inject the threshold through guard_size_against_limit using
+     * Reflection instead of constructing a multi-megabyte string.
      */
     public function test_oversized_xml_reports_size_and_limit(): void {
         $method = new \ReflectionMethod(import_questions_xml::class, 'guard_size_against_limit');
@@ -461,23 +448,22 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         try {
             $method->invoke(null, 2048, 1024);
-            $this->fail('Erwartete invalid_parameter_exception wegen Ueberschreitung der Groessengrenze.');
+            $this->fail('Expected invalid_parameter_exception because the size limit was exceeded.');
         } catch (\invalid_parameter_exception $e) {
             $this->assertStringContainsString(display_size(2048), $e->getMessage());
             $this->assertStringContainsString(display_size(1024), $e->getMessage());
-            $this->assertStringContainsString('aufteilen', $e->getMessage());
+            $this->assertStringContainsString('Split', $e->getMessage());
         }
 
-        // Unterhalb der Grenze wirft die Methode nicht.
+        // The method does not throw below the limit.
         $method->invoke(null, 100, 1024);
         $this->addToAssertionCount(1);
     }
 
     /**
-     * Die wirksame Grenze ist die Fachgrenze MAX_XML_BYTES, nicht
-     * get_max_upload_file_size() - gegen die Uploadgrenze (200 MB neben
-     * post_max_size 206 MB) feuerte die Schranke praktisch nie (#424
-     * Nachlauf 2).
+     * Use the domain limit MAX_XML_BYTES, not get_max_upload_file_size().
+     * The upload limit (200 MB alongside post_max_size 206 MB) practically
+     * never triggered this guard (#424 follow-up 2).
      */
     public function test_effective_limit_is_the_plugin_constant(): void {
         $method = new \ReflectionMethod(import_questions_xml::class, 'guard_server_size_limit');
@@ -486,7 +472,7 @@ final class import_questions_xml_test extends \advanced_testcase {
         $this->assertGreaterThan(
             import_questions_xml::MAX_XML_BYTES,
             get_max_upload_file_size(),
-            'Testannahme: die Serveruploadgrenze liegt ueber der Fachgrenze.'
+            'Test assumption: the server upload limit is above the domain limit.'
         );
 
         try {
@@ -498,10 +484,9 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Ein nacktes <question> ohne <quiz>-Rahmen (der haeufigste Fall: ein
-     * von Hand gekuerztes Beispiel, #425 F2) wird mit genau dieser Ursache
-     * abgewiesen - nicht mit dem PHP-Innenleben von qformat_xml
-     * ("Undefined array key \"quiz\"", #424 Nachlauf 1).
+     * Reject a bare question element without a quiz wrapper with that exact
+     * cause (#425 F2), rather than leaking qformat_xml’s undefined quiz-key
+     * error (#424 follow-up 1).
      */
     public function test_missing_quiz_root_names_the_actual_cause(): void {
         $this->resetAfterTest();
@@ -520,11 +505,9 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Ein PHP-Innenleben-Fehler aus dem XML-Kern wird nicht durchgereicht,
-     * sondern durch einen fuer die Lehrkraft handlungsleitenden Text ersetzt
-     * (#424 Nachlauf 1). Eine echte moodle_exception (z.B. der
-     * Formatfehler von xmlize) behaelt dagegen ihren Text - sie ist bereits
-     * eine Aussage ueber die Datei, kein Interna-Leck.
+     * Replace internal XML-core PHP errors with actionable teacher-facing
+     * text (#424 follow-up 1). Preserve actual moodle_exception messages,
+     * such as xmlize format errors, because they describe the file.
      */
     public function test_php_internal_parse_errors_are_replaced(): void {
         $method = new \ReflectionMethod(import_questions_xml::class, 'parse_failure_message');
@@ -532,19 +515,17 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         $internal = $method->invoke(null, new \Error('Cannot access offset of type string on string'));
         $this->assertStringNotContainsString('offset', $internal);
-        $this->assertStringContainsString('Moodle-XML', $internal);
+        $this->assertStringContainsString('Moodle XML', $internal);
 
         $formaterror = new \moodle_exception('errorreadingfile', 'error', '', 'fragen.xml');
         $this->assertSame($formaterror->getMessage(), $method->invoke(null, $formaterror));
     }
 
     /**
-     * "calculated" mit Dataset-Definitionen (#440): question_type::save_question()
-     * erwartet fuer diesen Fragetyp nicht die von readquestions() gelieferte
-     * Rohform, sondern eine typspezifisch aufbereitete Struktur (dataset als
-     * Array zusammengesetzter String-Schluessel). Der generische save()-Pfad
-     * bereitet das nicht auf - vor dem Fix ein blanker TypeError, nach dem
-     * Fix eine sprechende moodle_exception, nichts wird geschrieben.
+     * Calculated questions with datasets (#440) need a type-specific dataset
+     * structure with compound string keys for question_type::save_question().
+     * The generic save path does not prepare readquestions() output. Replace
+     * the former TypeError with a clear moodle_exception and no writes.
      */
     public function test_calculated_with_dataset_definitions_reports_speaking_message(): void {
         $this->resetAfterTest();
@@ -558,20 +539,20 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         try {
             import_questions_xml::execute($categoryid, $xml);
-            $this->fail('Erwartete moodle_exception statt eines stillen Erfolgs.');
+            $this->fail('Expected moodle_exception instead of a silent success.');
         } catch (\TypeError $e) {
-            $this->fail('TypeError durchgesickert statt sprechender moodle_exception: ' . $e->getMessage());
+            $this->fail('TypeError leaked instead of a descriptive moodle_exception: ' . $e->getMessage());
         } catch (\moodle_exception $e) {
             $this->assertStringNotContainsString('stdClass', $e->getMessage());
             $this->assertStringContainsString('calculated', $e->getMessage());
         }
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
-        $this->assertSame($countbefore, $countafter, 'Nichts wurde geschrieben.');
+        $this->assertSame($countbefore, $countafter, 'Nothing was written.');
     }
 
     /**
-     * Baut Kurs + Lehrkraft + Fragensammlung + Kategorie auf und liefert
+     * Create a course, teacher, question bank and category; return
      * [$course, $categoryid, $teacher].
      *
      * @return array{0: \stdClass, 1: int, 2: \stdClass}
@@ -592,8 +573,8 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Richtet den externen Materialbestand (WebDAV-Fake) fuer eine bereits
-     * angemeldete Lehrkraft ein (Issue #496) - siehe
+     * Set up external material storage (fake WebDAV) for a logged-in teacher
+     * (#496). See
      * {@see \local_coursepilot\external\update_module_settings_test::set_up_external_material_for()}.
      *
      * @param \stdClass $teacher
@@ -610,7 +591,7 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Baut ein minimales Moodle-XML mit einer einzelnen multichoice-Frage.
+     * Build minimal Moodle XML containing one multichoice question.
      *
      * @param string $name
      * @param string $questiontext
@@ -654,13 +635,13 @@ final class import_questions_xml_test extends \advanced_testcase {
 XML;
     }
 
-    /** @var string Minimaler PNG-Bytestrom (Signatur reicht, Inhalt wird nie dekodiert). */
+    /** @var string Minimal PNG bytes (signature only; the content is never decoded). */
     private const PNG_BYTES = "\x89PNG\r\n\x1a\n";
 
     /**
-     * Wie {@see self::multichoice_xml()}, aber mit einem <file>-Block, der
-     * per material="..."-Attribut auf eine Materialordner-Datei verweist
-     * (Textuer, Spec 0018 §7.1) statt echtem Base64 zu tragen.
+     * Like {@see self::multichoice_xml()}, but with a file element referencing
+     * a material file through its material attribute instead of real Base64
+     * (text input, Spec 0018 §7.1).
      *
      * @param string $name
      * @param string $questiontext
@@ -706,8 +687,7 @@ XML;
     }
 
     /**
-     * "calculated"-Frage mit zwei Dataset-Definitionen - Reproduktion aus
-     * Issue #440.
+     * Calculated question with two dataset definitions, reproducing #440.
      *
      * @return string
      */
@@ -753,9 +733,8 @@ XML;
     }
 
     /**
-     * Wie {@see self::multichoice_xml()}, aber mit einem <file>-Block, der
-     * bereits echtes Base64 traegt - wie ein fremder Moodle-Export
-     * (Verweistuer, Spec 0018 §7.1).
+     * Like {@see self::multichoice_xml()}, but with a file element containing
+     * real Base64, as in an external Moodle export (file input, Spec 0018 §7.1).
      *
      * @param string $name
      * @param string $questiontext

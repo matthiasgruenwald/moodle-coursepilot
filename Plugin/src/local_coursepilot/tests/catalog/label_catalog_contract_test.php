@@ -19,15 +19,10 @@ namespace local_coursepilot\catalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Katalog-gegen-Moodle-Vertragstest (Spec 0015, Pruefschnitt 2 aus #377):
- * prueft den label-Katalog gegen die auf der laufenden Instanz tatsaechlich
- * vorhandene Wirklichkeit - Spalten von {label}/{course_modules} und die
- * referenzierten aufrufbaren Quellen -, nicht gegen die Repo-Quelle.
- *
- * Vorbild: tests/privacy_surface_test.php (derselbe Gedanke: registrierte
- * Wirklichkeit statt Repo-Annahme). Muss fehlschlagen, sobald ein
- * Moodle-Update eine gefuehrte Spalte hinzufuegt, entfernt oder umbenennt,
- * oder eine referenzierte Funktion/Konstante verschwindet.
+ * Catalog/Moodle contract (Spec 0015, validation seam 2 from #377). Check
+ * label and course_modules columns and callable sources on the running
+ * instance, following privacy_surface_test. Fail when an upgrade adds,
+ * removes or renames a column or removes a referenced function/constant.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -38,10 +33,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class label_catalog_contract_test extends \advanced_testcase {
 
     /**
-     * Jede von label gefuehrte Datenbankspalte (Felder + modulspezifische
-     * Sperrliste + die durchgaengig gesperrten, sofern in dieser Tabelle
-     * vorhanden) plus "id" muss die reale Spaltenmenge von {label} exakt
-     * ergeben - keine ungefuehrte, keine fehlende.
+     * Catalog fields, module and shared blocklist columns, and id exactly
+     * match the label table, without missing or extra columns.
      */
     public function test_label_table_columns_match_the_catalog(): void {
         global $DB;
@@ -62,13 +55,13 @@ final class label_catalog_contract_test extends \advanced_testcase {
         $this->assertSame(
             $realcolumns,
             array_values(array_unique($known)),
-            "Die Spalten der Tabelle 'label' und der Feldkatalog (label::fields()/blocklist()) sind "
-                . 'auseinandergelaufen - Moodle hat vermutlich eine Spalte hinzugefuegt, entfernt oder umbenannt.'
+            "The columns of table 'label' and the field catalog (label::fields()/blocklist()) have "
+                . 'diverged - Moodle probably added, removed or renamed a column.'
         );
     }
 
     /**
-     * Der modulübergreifende Block referenziert reale course_modules-Spalten.
+     * The shared block references actual course_modules columns.
      */
     public function test_shared_block_columns_exist_on_course_modules(): void {
         global $DB;
@@ -78,25 +71,23 @@ final class label_catalog_contract_test extends \advanced_testcase {
         $realcolumns = array_keys($DB->get_columns('course_modules'));
         $blockfields = array_map(static fn (field $f): string => $f->name, shared_block::fields());
 
-        // "sectionnum" ist Coursepilot-Vokabular fuer die Spalte "section"
-        // (course/modlib.php:799) - kein 1:1-Spaltenname, deshalb gesondert
-        // erwartet statt in der Spaltenmenge gesucht.
+        // sectionnum maps to the section column (course/modlib.php:799).
+        // Check it separately rather than as a matching column name.
         $expecteddbcolumns = array_diff($blockfields, ['sectionnum']);
 
         foreach ($expecteddbcolumns as $name) {
             $this->assertContains(
                 $name,
                 $realcolumns,
-                "Spalte course_modules.$name aus dem modulübergreifenden Block existiert nicht mehr."
+                "Shared-block column course_modules.$name no longer exists."
             );
         }
         $this->assertContains('section', $realcolumns, 'Spalte course_modules.section (Abschnittszuordnung) fehlt.');
     }
 
     /**
-     * Jede referenzierte aufrufbare Quelle (Kategorie 1 "Felder") existiert
-     * wirklich - nicht nur der Feldname wird geprueft, sondern die
-     * Aufrufbarkeit selbst (Abnahmekriterium #379).
+     * Every callable field source exists, checking callability rather than
+     * just field names (acceptance #379).
      */
     public function test_referenced_callable_sources_exist(): void {
         $fields = array_merge(shared_block::fields(), shared_block::pseudofields(), label::fields(), label::pseudofields());
@@ -106,27 +97,25 @@ final class label_catalog_contract_test extends \advanced_testcase {
             $fields
         ));
 
-        $this->assertNotEmpty($callables, 'Kein Feld referenziert eine aufrufbare Quelle - Testannahme verletzt.');
+        $this->assertNotEmpty($callables, 'No field references a callable source; test assumption violated.');
 
         foreach ($callables as $callable) {
             $functionname = rtrim($callable, '()');
             $this->assertTrue(
                 function_exists($functionname),
-                "Referenzierte aufrufbare Quelle $callable existiert auf dieser Instanz nicht mehr."
+                "Referenced callable source $callable no longer exists on this instance."
             );
         }
     }
 
     /**
-     * Die Gruppenmodus-Konstanten des gemeinsamen Blocks existieren noch -
-     * aus shared_block::checked_constants() statt einer zweiten, separat
-     * gepflegten Liste (Ticket #399, wiederverwendet von der
-     * Laufzeit-Tiefenpruefung).
+     * Group-mode constants from shared_block::checked_constants() still
+     * exist, using the same source as runtime drift validation (Ticket #399).
      */
     public function test_shared_block_group_mode_constants_exist(): void {
         $this->assertSame(['NOGROUPS', 'SEPARATEGROUPS', 'VISIBLEGROUPS'], shared_block::checked_constants());
         foreach (shared_block::checked_constants() as $constname) {
-            $this->assertTrue(defined($constname), "Konstante $constname existiert auf dieser Instanz nicht mehr.");
+            $this->assertTrue(defined($constname), "Constant $constname no longer exists on this instance.");
         }
         $this->assertSame([0, 1, 2], [NOGROUPS, SEPARATEGROUPS, VISIBLEGROUPS]);
     }

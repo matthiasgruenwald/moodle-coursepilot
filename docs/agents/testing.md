@@ -60,6 +60,25 @@ until grep -qE "OK \(|FAILURES|ERRORS" phpunit.log; do sleep 15; done; tail -12 
 
 Einzelne Tests (`--filter <name>`) laufen in Sekunden und brauchen das nicht.
 
+### Diagnostik synthetischer Kindprozesse
+
+Die Prozess-Fixtures booten über `tests/fixtures/phpunit_process_bootstrap.php`.
+Moodle kann dabei `display_errors` wieder einschalten. Der gemeinsame Bootstrap
+leitet seine Ausgabe deshalb nach stderr weiter; stdout bleibt für JSON und
+Statuswerte reserviert. Meldungen und Fehlercodes bleiben erhalten.
+
+Validiert beim englischen Basisnachzug (#605): fünf OAuth-Races und die vier
+betroffenen Klassen für Standardexport, Verlaufsbereinigung, CIMD und
+Registrierungsbudget bestehen (38 Tests, 254 Assertions). Ein isolierter
+Bootstrap liefert parsebares JSON; künstliche Exception und Fatalfehler enden
+jeweils mit Code 255 und Diagnose auf stderr.
+
+Auf Spike melden die Fremdplugins `block_exacomp` und `block_exaport` unter PHP
+8.4 veraltete nullable Signaturen. Nur wenn **alle** gemeldeten Deprecations
+nachweislich aus diesen Fremdplugins stammen, ist für den lokalen Lauf
+`--do-not-fail-on-deprecation` zulässig. Die Meldungen bleiben sichtbar; die
+verbindliche CI läuft unverändert ohne diese Ausnahme.
+
 ### Was die Suite abdeckt
 
 | Datei | Zweck |

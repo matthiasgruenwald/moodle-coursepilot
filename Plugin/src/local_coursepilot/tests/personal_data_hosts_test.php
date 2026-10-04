@@ -19,9 +19,8 @@ namespace local_coursepilot;
 use local_coursepilot\admin\personaldatahosts_setting;
 
 /**
- * Zugelassene Speicher fuer personenbezogene Kontextdaten (Issue #493, ADR
- * 0021 §3): Domain samt Unterdomains, Ablehnung einstelliger Eintraege und
- * von "*" beim Speichern.
+ * Approved personal-data hosts (Issue #493, ADR 0021 §3): domains and
+ * subdomains, rejecting single-part names and wildcards on save.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,7 +30,7 @@ use local_coursepilot\admin\personaldatahosts_setting;
 final class personal_data_hosts_test extends \advanced_testcase {
 
     /**
-     * Eine leere Liste heisst: kein externer Speicher zugelassen.
+     * An empty list approves no external hosts.
      */
     public function test_empty_list_allows_nothing(): void {
         $this->resetAfterTest();
@@ -41,7 +40,7 @@ final class personal_data_hosts_test extends \advanced_testcase {
     }
 
     /**
-     * Ein exakt genannter Host ist zugelassen.
+     * An exact configured host is approved.
      */
     public function test_exact_match_is_allowed(): void {
         $this->resetAfterTest();
@@ -51,7 +50,7 @@ final class personal_data_hosts_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Eintrag gilt fuer eine Domain samt Unterdomains.
+     * An entry covers the domain and its subdomains.
      */
     public function test_entry_covers_subdomains(): void {
         $this->resetAfterTest();
@@ -62,8 +61,7 @@ final class personal_data_hosts_test extends \advanced_testcase {
     }
 
     /**
-     * Getrennt wird nur an Punkten - "anders-example.test" ist keine
-     * Unterdomain von "example.test".
+     * Match dot boundaries: anders-example.test is not a subdomain of example.test.
      */
     public function test_only_dot_separated_suffix_matches(): void {
         $this->resetAfterTest();
@@ -73,7 +71,7 @@ final class personal_data_hosts_test extends \advanced_testcase {
     }
 
     /**
-     * Ein nicht genannter Host bleibt abgelehnt.
+     * An unlisted host is rejected.
      */
     public function test_unrelated_host_is_not_allowed(): void {
         $this->resetAfterTest();
@@ -83,7 +81,7 @@ final class personal_data_hosts_test extends \advanced_testcase {
     }
 
     /**
-     * Mehrere Zeilen sind alle wirksam.
+     * For multiple lines, report the first invalid entry.
      */
     public function test_multiple_lines_all_apply(): void {
         $this->resetAfterTest();
@@ -94,28 +92,28 @@ final class personal_data_hosts_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Eintrag mit nur einem Namensteil wird abgelehnt.
+     * Reject single-part names.
      */
     public function test_rejects_single_label_entry(): void {
         $this->assertSame('localhost', personal_data_hosts::first_invalid_entry('localhost'));
     }
 
     /**
-     * "*" ist nicht Teil der Syntax und wird abgelehnt.
+     * Wildcards are outside the syntax and are rejected.
      */
     public function test_rejects_wildcard_entry(): void {
         $this->assertSame('*.example.test', personal_data_hosts::first_invalid_entry('*.example.test'));
     }
 
     /**
-     * Ein gueltiger Eintrag mit mindestens zwei Namensteilen wird akzeptiert.
+     * Accept valid entries with at least two name parts.
      */
     public function test_accepts_valid_entry(): void {
         $this->assertNull(personal_data_hosts::first_invalid_entry('cloud.example.test'));
     }
 
     /**
-     * Mehrere Zeilen: der erste ungueltige Eintrag wird genannt.
+     * For multiline input, identify the first invalid entry.
      */
     public function test_reports_first_invalid_entry_among_several_lines(): void {
         $this->assertSame(
@@ -125,7 +123,7 @@ final class personal_data_hosts_test extends \advanced_testcase {
     }
 
     /**
-     * Eine leere Eingabe ist gueltig (leere Liste).
+     * Empty input is valid, representing an empty list.
      */
     public function test_empty_input_is_valid(): void {
         $this->assertNull(personal_data_hosts::first_invalid_entry(''));
@@ -133,8 +131,8 @@ final class personal_data_hosts_test extends \advanced_testcase {
     }
 
     /**
-     * Die Einstellungsseite (Issue #493) lehnt einen einstelligen Eintrag
-     * beim Speichern ab - dieselbe Regel, ueber den Admin-Setting-Vertrag.
+     * The admin setting rejects single-part names on save, using the shared
+     * validation rule (Issue #493).
      */
     public function test_admin_setting_rejects_single_label_entry_on_save(): void {
         $this->resetAfterTest();
@@ -144,7 +142,7 @@ final class personal_data_hosts_test extends \advanced_testcase {
     }
 
     /**
-     * Ein gueltiger Eintrag wird von der Einstellungsseite akzeptiert.
+     * The admin setting accepts a valid entry.
      */
     public function test_admin_setting_accepts_valid_entry(): void {
         $this->resetAfterTest();

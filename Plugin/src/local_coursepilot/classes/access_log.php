@@ -20,14 +20,14 @@ use local_coursepilot\event\tool_access_failed;
 use local_coursepilot\event\tool_access_succeeded;
 
 /**
- * Protokollierung von Coursepilot-Zugriffen ueber die Moodle-Ereignis-API,
- * mit vier einstellbaren Stufen (#339), damit die nativen Protokollberichte
- * bei vielen Nutzenden nicht ueberlaufen.
+ * Logging of Coursepilot accesses via the Moodle event API,
+ * with four configurable levels (#339), so the native log reports
+ * do not overflow with many users.
  *
- * Einziger Aufrufer: dispatcher.php, an den beiden vorhandenen Antwort-
- * Funnelpunkten (error() fuer alle Fehlerantworten, handle_tools_call() fuer
- * Werkzeugerfolg/-fehler) - ponytail: kein Observer/Hook-Mechanismus, es
- * gibt genau eine Aufrufstelle je Ergebnisart.
+ * Only caller: dispatcher.php, at the two existing response
+ * funnel points (error() for all error responses, handle_tools_call() for
+ * tool success/failure) - ponytail: no observer/hook mechanism, there
+ * is exactly one call site per result type.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -35,21 +35,21 @@ use local_coursepilot\event\tool_access_succeeded;
  */
 final class access_log {
 
-    /** @var int Kein Protokoll. */
+    /** @var int No logging. */
     public const LEVEL_NONE = 0;
 
-    /** @var int Schreibzugriffe und Fehler (#388: Konstantenname bleibt, Bedeutung rueckt). */
+    /** @var int Writes and errors (#388: constant name stays, meaning shifts). */
     public const LEVEL_ERRORS = 1;
 
-    /** @var int Zusaetzlich Lesezugriffe (Voreinstellung). */
+    /** @var int Additionally reads (default). */
     public const LEVEL_READS = 2;
 
-    /** @var int Alles. */
+    /** @var int Everything. */
     public const LEVEL_ALL = 3;
 
     /**
-     * Die konfigurierte Protokollstufe, mit "Lesezugriffe und Fehler" als
-     * Voreinstellung fuer eine frische Installation (Konfigwert nie gesetzt).
+     * The configured log level, with "reads and errors" as the
+     * default for a fresh installation (config value never set).
      *
      * @return int
      */
@@ -62,27 +62,26 @@ final class access_log {
     }
 
     /**
-     * Protokolliert einen erfolgreichen Werkzeugaufruf, sofern die Stufe es
-     * verlangt.
+     * Logs a successful tool call, if the level requires it.
      *
-     * Ticket #388 (erstes schreibendes Werkzeug) rueckt die Bedeutung der
-     * Stufen: 1 protokolliert jetzt Schreibzugriffe (zusaetzlich zu Fehlern),
-     * erst 2 auch Lesezugriffe - sonst waeren Schreibvorgaenge in der
-     * Voreinstellung "nur Fehler" unprotokolliert, obwohl gerade sie es am
-     * meisten sein sollten.
+     * Ticket #388 (first writing tool) shifts the meaning of the
+     * levels: 1 now logs writes (in addition to errors),
+     * only 2 also logs reads - otherwise writes would be unlogged in the
+     * default "errors only", although they are precisely the ones that
+     * should be logged most.
      *
      * @param string $toolname
-     * @param bool $iswrite true fuer ein schreibendes Werkzeug (tool_registry::is_write()).
-     * @param string|null $path Dateipfad, wenn das Werkzeug einen berührt hat
-     *        (Spec 0018 §9.2) - z.B. Kontext- oder Materialordner-Pfad aus der
-     *        Werkzeugantwort. Null, wenn das Werkzeug keinen Dateipfad kennt.
-     * @param int|null $userid Ueberschreibt den protokollierten Nutzer (#501):
-     *        der Werkbank-Downloadendpunkt laeuft ohne Moodle-Login/$USER
-     *        (das Ticket ist der Berechtigungsnachweis) und muss den
-     *        Ticket-Eigentuemer explizit angeben, statt sich auf das
-     *        Event-Default $USER->id zu verlassen. Null (Standard) laesst
-     *        core\event\base sein Default anwenden - unveraendertes
-     *        Verhalten fuer jeden bisherigen Aufrufer (dispatcher.php).
+     * @param bool $iswrite true for a writing tool (tool_registry::is_write()).
+     * @param string|null $path File path, if the tool touched one
+     *        (spec 0018 §9.2) - e.g. context or material folder path from the
+     *        tool response. Null if the tool knows no file path.
+     * @param int|null $userid Overrides the logged user (#501):
+     *        the workbench download endpoint runs without Moodle login/$USER
+     *        (the ticket is the proof of authorization) and must state the
+     *        ticket owner explicitly, instead of relying on the
+     *        event default $USER->id. Null (default) lets
+     *        core\event\base apply its default - unchanged
+     *        behavior for every previous caller (dispatcher.php).
      * @return void
      */
     public static function log_success(string $toolname, bool $iswrite = false, ?string $path = null, ?int $userid = null): void {
@@ -98,20 +97,21 @@ final class access_log {
     }
 
     /**
-     * Protokolliert einen fehlgeschlagenen Zugriff, sofern die Stufe es
-     * verlangt (>= LEVEL_ERRORS).
+     * Logs a failed access, if the level requires it
+     * (>= LEVEL_ERRORS).
      *
-     * @param string $reason Kurze, geheimnisfreie Fehlerbeschreibung.
+     * @param string $reason Short, secret-free error description.
      * @param string|null $toolname
-     * @param string|null $path Dateipfad, wenn der gescheiterte Zugriff einen
-     *        berührt hat und er noch bekannt war (#501: ein Werkbank-
-     *        Downloadticket kann den Pfad schon verloren haben, wenn erst
-     *        eine spätere Prüfung scheitert - siehe
+     * @param string|null $path File path, if the failed access touched one
+     *        and it was still known (#501: a workbench
+     *        download ticket may already have lost the path if only
+     *        a later check fails - see
      *        {@see \local_coursepilot\workbench_ticket_redemption_failed}).
-     *        Null, wenn kein Pfad bekannt ist.
-     * @param int|null $userid Siehe {@see log_success()}.
-     * @param string|null $detail Interner Diagnosehinweis, nur bei Stufe
-     *        "Alles" im Ereignis gespeichert.
+     *        Null if no path is known.
+     * @param int|null $userid See {@see log_success()}.
+     * @param string|null $detail Internal diagnostic hint, stored in the event
+     *        only at level "Everything".
+     *
      * @return void
      */
     public static function log_failure(

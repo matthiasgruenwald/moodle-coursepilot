@@ -17,15 +17,15 @@
 {{!
     @template local_coursepilot/location_selection_loading
 
-    Ladeanzeige im Dateifenster der Ortswahl (Issue #551), gefuellt vom
-    AMD-Modul amd/src/location_selection.js statt per innerHTML-Zeichenkette.
+    Loading indicator in the location-selection file picker (Issue #551), filled by the
+    amd/src/location_selection.js instead of an innerHTML string.
 
     Context variables required for this template:
     * text - string - the loading message
 
     Example context (json):
     {
-        "text": "Wird geladen..."
+        "text": "Loading..."
     }
 }}
 <div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>{{text}}</div>

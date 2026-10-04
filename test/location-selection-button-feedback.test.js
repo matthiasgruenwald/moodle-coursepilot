@@ -16,7 +16,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {loadLocationSelectionModule, baseConfig, flushPromises} = require('./helpers/location-selection-amd-test-utils');
 
-test('"In Moodle lassen" markiert den eigenen Knopf sofort als ausgewaehlt', async function() {
+test('"Keep in Moodle" immediately marks its own button as selected', async function() {
   var ctx = loadLocationSelectionModule(baseConfig(), []);
   await ctx.ready;
   var btn = ctx.keepMoodleButtons[0];
@@ -29,7 +29,7 @@ test('"In Moodle lassen" markiert den eigenen Knopf sofort als ausgewaehlt', asy
   assert.strictEqual(badge.textContent, 'Ausgewaehlt');
 });
 
-test('"In Moodle lassen" laesst den Verbindungs-Knopf unmarkiert', async function() {
+test('"Keep in Moodle" leaves the connection button unselected', async function() {
   var ctx = loadLocationSelectionModule(baseConfig(), []);
   await ctx.ready;
   ctx.keepMoodleButtons[0].dispatch('click');
@@ -39,7 +39,7 @@ test('"In Moodle lassen" laesst den Verbindungs-Knopf unmarkiert', async functio
   assert.strictEqual(pickerBtn.querySelector('.coursepilot-location-selection-selected-badge'), null);
 });
 
-test('Ein externer Ordner markiert den Verbindungs-Knopf und entfernt die Markierung von "In Moodle lassen"', async function() {
+test('An external folder selects the connection button and clears "Keep in Moodle"', async function() {
   var browseResult = {ok: true, path: '', folders: [], selectable: true, reason: '', entrycount: 0, entrynames: []};
   var ctx = loadLocationSelectionModule(baseConfig(), [browseResult]);
   await ctx.ready;

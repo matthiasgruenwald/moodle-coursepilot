@@ -17,7 +17,7 @@
 {{!
     @template local_coursepilot/history_versions
 
-    Versionsliste einer Aktivitaet auf history.php (?cmid=).
+    Activity version list on history.php (?cmid=).
 
     Context variables required for this template:
     * activityname - string - name of the activity (already format_string()'d)
@@ -28,12 +28,12 @@
 
     Example context (json):
     {
-        "activityname": "Erste Fassung",
+        "activityname": "First version",
         "isquiz": false,
         "rows": [
-            {"version": 1, "user": "Lea Lehrer", "time": "21.09.2026, 10:00", "summary_line": "Version 1 (erster erfasster Stand)", "canrestore": false, "restoreurl": null}
+            {"version": 1, "user": "Lea Teacher", "time": "21.09.2026, 10:00", "summary_line": "Version 1 (first recorded state)", "canrestore": false, "restoreurl": null}
         ],
-        "gap_notice": "Der Verlauf ist nicht lückenlos.",
+        "gap_notice": "The history is incomplete.",
         "listurl": "https://example.test/local/coursepilot/history.php?id=2"
     }
 }}

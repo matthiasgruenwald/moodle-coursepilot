@@ -32,48 +32,49 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Der einzige Schreibweg fuer Vervollstaendigungsfelder (Spec 0015 §8,
- * Ticket #392): die fuenf "completion*"-Felder sind auf der Sperrliste von
- * update_module_settings/create_module (shared_block::BLOCKLIST) - ein
- * beilaeufiger Patch darf keine Lernendendaten loeschen koennen.
+ * The only write path for completion fields (Spec 0015 §8,
+ * ticket #392): the five "completion*" fields are on the blocklist of
+ * update_module_settings/create_module (shared_block::BLOCKLIST) - an
+ * incidental patch must not be able to delete learner data.
  *
- * Der Grund liegt in course/modlib.php::update_moduleinfo(): ohne
- * "completionunlocked" verwirft Moodle die Felder still (Zeile ~625: nur
- * innerhalb `if (!empty($moduleinfo->completionunlocked))` werden completion/
+ * The reason lies in course/modlib.php::update_moduleinfo(): without
+ * "completionunlocked" Moodle silently discards the fields (line ~625: only
+ * inside `if (!empty($moduleinfo->completionunlocked))` are completion/
  * completionview/completionusegrade/completionpassgrade/
- * completiongradeitemnumber tatsaechlich geschrieben); mit "completionunlocked"
- * ruft dieselbe Funktion anschliessend IMMER
- * `completion_info::reset_all_state()` auf (Zeile ~745, unabhaengig davon, ob
- * sich ein Feld tatsaechlich geaendert hat) - das loescht bei manueller
- * Vervollstaendigung (COMPLETION_TRACKING_MANUAL) endgueltig jede
- * course_modules_completion-Zeile dieser Aktivitaet, bei automatischer
- * Vervollstaendigung werden sie geloescht und aus dem aktuellen Zustand neu
- * berechnet (lib/completionlib.php::reset_all_state()/delete_all_state()).
+ * completiongradeitemnumber actually written); with "completionunlocked"
+ * the same function then ALWAYS calls
+ * `completion_info::reset_all_state()` (line ~745, regardless of whether
+ * a field actually changed) - with manual completion
+ * (COMPLETION_TRACKING_MANUAL) that permanently deletes every
+ * course_modules_completion row of this activity; with automatic
+ * completion they are deleted and recalculated from the current state
+ * (lib/completionlib.php::reset_all_state()/delete_all_state()).
  *
- * "completionexpected" ist die einzige Ausnahme: Moodle schreibt es
- * unabhaengig vom Sperrzustand (modlib.php Zeile ~637, "does not affect users
- * who have completed the activity") - deshalb nie Teil des Datenverlust-
- * Zweitakts.
+ * "completionexpected" is the only exception: Moodle writes it
+ * regardless of the lock state (modlib.php line ~637, "does not affect users
+ * who have completed the activity") - so it is never part of the data-loss
+ * two-step flow.
  *
- * Benannter Zweitakt (Spec 0015 §8): scheitert die Datenverlust-Pruefung
- * (bereits vorhandene Vervollstaendigungsdaten fuer diese cmid UND eine der
- * vier Sperrfeld-Werte aendert sich tatsaechlich) und ist `confirmed` nicht
- * ausdruecklich true, wird NICHTS geschrieben - die Meldung nennt die Anzahl
- * betroffener Lernender. Erst der zweite Aufruf mit `confirmed: true` fuehrt
- * aus. Ohne Datenverlustrisiko (keine vorhandenen Daten, oder nur
- * "completionexpected" geaendert) laeuft der Aufruf ohne Zweitakt durch.
+ * Named two-step flow (Spec 0015 §8): if the data-loss check fails
+ * (completion data already exists for this cmid AND one of the
+ * four lock-field values actually changes) and `confirmed` is not
+ * explicitly true, NOTHING is written - the message names the number of
+ * affected learners. Only the second call with `confirmed: true`
+ * executes. Without data-loss risk (no existing data, or only
+ * "completionexpected" changed) the call runs through without the two-step flow.
  *
- * Modulspezifische Vervollstaendigungsfelder (Ticket #461) laufen durch
- * denselben Weg: "completionsubmit" ("Abgabe erforderlich" bei assign,
- * "Abstimmung abgegeben" bei choice) ist eine Spalte der Instanztabelle, aber
- * fachlich ein Vervollstaendigungsfeld - und ein Sperrfeld, weil
- * mod_assign::update_instance() es nur mit "completionunlocked" schreibt. Bei
- * jeder anderen Aktivitaetsart scheitert der Patch mit einem Wegweiser statt
- * mit "Unbekanntes Feld" (s. {@see self::MODULE_SPECIFIC_FIELDS}).
+ * Module-specific completion fields (ticket #461) go through
+ * the same path: "completionsubmit" ("submission required" for assign,
+ * "vote cast" for choice) is a column of the instance table, but
+ * functionally a completion field - and a lock field, because
+ * mod_assign::update_instance() only writes it with "completionunlocked". For
+ * any other activity type the patch fails with a signpost instead of
+ * "Unknown field" (see {@see self::MODULE_SPECIFIC_FIELDS}).
  *
- * "completionunlocked" wird ausschliesslich hier und nur unmittelbar vor dem
- * bestaetigten (confirmed) Schreiben gesetzt - nie automatisch, nie in
- * update_module_settings/create_module (dort steht es auf der Sperrliste).
+ * "completionunlocked" is set exclusively here and only immediately before the
+ * confirmed write - never automatically, never in
+ * update_module_settings/create_module (it is on the blocklist there).
+ *
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -82,13 +83,12 @@ defined('MOODLE_INTERNAL') || die();
 final class set_completion extends external_api {
 
     /**
-     * Von der Lehrkraft/KI ueber fields_json setzbare Vervollstaendigungsfelder
-     * mit ihrem erlaubten Wertebereich (null = kein fester Wertebereich, z.B.
-     * ein Zeitstempel). "completiongradeitemnumber" ist bewusst nicht dabei
-     * (wie "cmidnumber" bei update_module_settings): es wird aus dem
-     * Endzustand von "completionusegrade" abgeleitet (0 wenn
-     * completionusegrade=1, sonst null - genau die Regel aus
-     * course/modlib.php Zeile ~628-631).
+     * Completion fields the teacher/AI can set via fields_json, with their
+     * allowed value range (null = no fixed range, e.g. a timestamp).
+     * "completiongradeitemnumber" is deliberately not included (like
+     * "cmidnumber" in update_module_settings): it is derived from the final
+     * state of "completionusegrade" (0 if completionusegrade=1, otherwise
+     * null - exactly the rule from course/modlib.php line ~628-631).
      *
      * @var array<string, ?int[]>
      */
@@ -101,29 +101,29 @@ final class set_completion extends external_api {
     ];
 
     /**
-     * Die vier Felder, deren tatsaechliche Aenderung "completionunlocked"
-     * braucht (Sperrfelder) - und damit dem Datenverlust-Zweitakt unterliegen.
-     * "completionexpected" ist ausgenommen (s. Klassendoku).
+     * The four fields whose actual change needs "completionunlocked"
+     * (lock fields) - and which are therefore subject to the data-loss two-step flow.
+     * "completionexpected" is excluded (see class doc).
      *
      * @var string[]
      */
     private const LOCKED_FIELDS = ['completion', 'completionview', 'completionusegrade', 'completionpassgrade'];
 
     /**
-     * Modulspezifische Vervollstaendigungsfelder (Ticket #461): sie stehen
-     * nicht in {course_modules}, sondern als echte Spalte in der
-     * Instanztabelle - "Abgabe erforderlich" bei einer Aufgabe, "Abstimmung
-     * abgegeben" bei einer Abstimmung. Fachlich sind sie dennoch
-     * Vervollstaendigungsfelder und laufen deshalb durch denselben Schreibweg:
-     * mod_assign schreibt "completionsubmit" nur innerhalb von
+     * Module-specific completion fields (ticket #461): they are not in
+     * {course_modules} but a real column in the instance table -
+     * "submission required" for an assignment, "vote cast"
+     * for a choice. Functionally they are still completion fields and
+     * therefore go through the same write path: mod_assign writes
+     * "completionsubmit" only inside
      * `if (!empty($formdata->completionunlocked))` (mod/assign/locallib.php:
-     * update_instance(), Zeile ~1569) - ueber update_module_settings waere es
-     * still verworfen, und mit "completionunlocked" gilt derselbe
-     * Datenverlust-Zweitakt wie fuer die vier generischen Sperrfelder.
-     * Deshalb stehen sie auf der Sperrliste von
-     * assign::blocklist()/choice::blocklist() und sind hier je Aktivitaetsart
-     * freigeschaltet: ein Patch bei einer anderen Aktivitaetsart scheitert mit
-     * Wegweiser statt mit "Unbekanntes Feld".
+     * update_instance(), line ~1569) - via update_module_settings it would be
+     * silently discarded, and with "completionunlocked" the same
+     * data-loss two-step flow applies as for the four generic lock fields.
+     * That is why they are on the blocklist of
+     * assign::blocklist()/choice::blocklist() and are enabled here per
+     * activity type: a patch for any other activity type fails with a
+     * signpost instead of "Unknown field".
      *
      * @var array<string, array{modnames: string[], values: ?int[]}>
      */
@@ -132,8 +132,8 @@ final class set_completion extends external_api {
     ];
 
     /**
-     * Die fuer $modname setzbaren Felder mit ihrem Wertebereich: die fuenf
-     * generischen plus die modulspezifischen dieser Aktivitaetsart.
+     * The fields settable for $modname with their value range: the five
+     * generic ones plus the module-specific ones of this activity type.
      *
      * @param string $modname
      * @return array<string, ?int[]>
@@ -149,8 +149,8 @@ final class set_completion extends external_api {
     }
 
     /**
-     * Die Sperrfelder dieser Aktivitaetsart - die vier generischen plus die
-     * modulspezifischen (auch sie brauchen "completionunlocked").
+     * The lock fields of this activity type - the four generic ones plus the
+     * module-specific ones (they also need "completionunlocked").
      *
      * @param string $modname
      * @return string[]
@@ -211,9 +211,9 @@ final class set_completion extends external_api {
         $context = context_module::instance($cm->id);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // Native Berechtigungspruefung im Kurskontext (Spec 0015 §3.3/§9.2),
-        // identisch zu update_module_settings/create_module - keine eigene
-        // Coursepilot-Schreib-Capability.
+        // Native permission check in the course context (Spec 0015 §3.3/§9.2),
+        // identical to update_module_settings/create_module - no separate
+        // Coursepilot write capability.
         require_capability('moodle/course:manageactivities', $context);
 
         $modname = (string) $cm->modname;
@@ -228,9 +228,9 @@ final class set_completion extends external_api {
         $course = get_course((int) $cm->course);
         $completion = new completion_info($course);
         if (!$completion->is_enabled()) {
-            // Ohne kurs-/instanzweit aktivierte Abschlussverfolgung wuerde
-            // Moodle jedes dieser Felder ohnehin verwerfen (completionlib.php:
-            // is_enabled()) - klare Meldung statt stillem No-op.
+            // Without completion tracking enabled course-wide/site-wide, Moodle would
+            // discard each of these fields anyway (completionlib.php:
+            // is_enabled()) - clear message instead of a silent no-op.
             throw new moodle_exception('completionnotenabled', 'local_coursepilot');
         }
 
@@ -242,7 +242,7 @@ final class set_completion extends external_api {
             return [
                 'cmid' => (int) $cmid,
                 'modname' => (string) $cm->modname,
-                'message' => 'Keine Aenderung: der Patch stimmte bereits mit dem aktuellen Stand ueberein.',
+                'message' => 'No change: the patch already matched the current state.',
                 'changes' => [],
             ];
         }
@@ -256,7 +256,7 @@ final class set_completion extends external_api {
         if ($changedlocked) {
             $affectedlearners = (int) $DB->count_records('course_modules_completion', ['coursemoduleid' => $cmid]);
             if ($affectedlearners > 0 && !$params['confirmed']) {
-                // Erster Takt: melden, nicht ausfuehren (Spec 0015 §8).
+                // First step: report, do not execute (Spec 0015 §8).
                 throw new moodle_exception(
                     'completiondatalossconfirmationrequired',
                     'local_coursepilot',
@@ -285,11 +285,11 @@ final class set_completion extends external_api {
     }
 
     /**
-     * Riegel (#583): ein automatischer Abschluss ueber die Note wartet auf
-     * die Lehrkraft, wenn die Note von ihr kommt
-     * ({@see learner_locks::GRADE_TEACHER}). Zaehlt, sobald der Aufruf das
-     * Notenfeld oder den automatischen Abschluss selbst erst einschaltet -
-     * ein unveraendert bestehender Zustand braucht keine erneute Bestaetigung.
+     * Guard (#583): automatic completion via the grade waits for
+     * the teacher if the grade comes from them
+     * ({@see learner_locks::GRADE_TEACHER}). Counts as soon as the call itself
+     * first enables the grade field or automatic completion - an
+     * unchanged existing state needs no renewed confirmation.
      *
      * @param class-string<\local_coursepilot\catalog\module_catalog> $catalogclass
      * @param int $instanceid
@@ -325,8 +325,8 @@ final class set_completion extends external_api {
     }
 
     /**
-     * Unbekanntes Feld oder Wert ausserhalb des erlaubten Bereichs scheitert
-     * VOR jedem Schreibzugriff (alles-oder-nichts, wie update_module_settings).
+     * An unknown field or a value outside the allowed range fails
+     * BEFORE any write access (all-or-nothing, like update_module_settings).
      *
      * @param array $patch
      * @return void
@@ -366,9 +366,10 @@ final class set_completion extends external_api {
     }
 
     /**
-     * Ein modulspezifisches Vervollstaendigungsfeld, das es gibt - nur nicht
-     * bei dieser Aktivitaetsart: eigene Meldung mit den Aktivitaetsarten, die
-     * es tragen, statt "Unbekanntes Feld" (dieselbe Haltung wie
+     * A module-specific completion field that exists - just not
+     * for this activity type: own message listing the activity types that
+     * carry it, instead of "Unknown field" (same stance as
+     * shared_block::assert_not_read_only_vocabulary()).
      * shared_block::assert_not_read_only_vocabulary()).
      *
      * @param string $fieldname
@@ -389,8 +390,8 @@ final class set_completion extends external_api {
 
     /**
      * @param int $cmid
-     * @return array Ist-Stand, dieselbe Form wie get_module_settings (enthaelt
-     *         bereits alle fuenf completion*-Felder).
+     * @return array Current state, same shape as get_module_settings (already contains
+     *         all five completion* fields).
      */
     private static function read_settings(int $cmid): array {
         $result = get_module_settings::execute($cmid);
@@ -398,9 +399,9 @@ final class set_completion extends external_api {
     }
 
     /**
-     * Welche der genannten Felder patcht $patch UND aendert dabei tatsaechlich
-     * den Wert gegenueber $before? Ein Patch, der den bestehenden Wert nur
-     * wiederholt, loest weder den Zweitakt noch "completionunlocked" aus.
+     * Which of the named fields does $patch patch AND thereby actually change
+     * the value compared to $before? A patch that merely repeats the existing
+     * value triggers neither the two-step flow nor "completionunlocked".
      *
      * @param array $before
      * @param array $patch
@@ -421,15 +422,15 @@ final class set_completion extends external_api {
     }
 
     /**
-     * Ueberlagert $moduleinfo mit dem Endzustand (before + patch) fuer alle
-     * fuenf Felder - "completiongradeitemnumber" wird aus dem Endzustand von
-     * "completionusegrade" abgeleitet (course/modlib.php Zeile ~628-631).
-     * "completionunlocked" wird NUR gesetzt, wenn sich mindestens ein
-     * Sperrfeld tatsaechlich aendert - sonst bliebe "completionexpected" der
-     * einzige Aenderungsgrund und Moodle riefe trotzdem
-     * `reset_all_state()` auf, obwohl gar keine Sperrfeld-Aenderung vorliegt.
+     * Overlays $moduleinfo with the final state (before + patch) for all
+     * five fields - "completiongradeitemnumber" is derived from the final
+     * state of "completionusegrade" (course/modlib.php line ~628-631).
+     * "completionunlocked" is set ONLY if at least one lock field actually
+     * changes - otherwise "completionexpected" would be the only reason for
+     * the change and Moodle would call `reset_all_state()` anyway, even though
+     * no lock-field change exists.
      *
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt.
+     * @param \stdClass $moduleinfo Is extended in place.
      * @param array $before
      * @param array $patch
      * @param bool $lockedchanged
@@ -455,9 +456,9 @@ final class set_completion extends external_api {
         $moduleinfo->completionpassgrade = $final['completionpassgrade'];
         $moduleinfo->completiongradeitemnumber = $final['completionusegrade'] ? 0 : null;
 
-        // Die modulspezifischen Felder dieser Aktivitaetsart (Ticket #461) -
-        // je eine echte Spalte der Instanztabelle, die update_moduleinfo()
-        // ueber den Formularweg an add_instance()/update_instance() reicht.
+        // The module-specific fields of this activity type (ticket #461) -
+        // each a real column of the instance table, which update_moduleinfo()
+        // passes to add_instance()/update_instance() via the form path.
         foreach (array_keys(self::MODULE_SPECIFIC_FIELDS) as $field) {
             if (array_key_exists($field, $allowedfields)) {
                 $moduleinfo->$field = $final[$field];
@@ -470,8 +471,8 @@ final class set_completion extends external_api {
     }
 
     /**
-     * Vorher-/Nachher-Werte je tatsaechlich geaendertem Feld - echter
-     * Vorher-/Nachher-Vergleich wie update_module_settings::diff_and_side_effects().
+     * Before/after values per actually changed field - a real
+     * before/after comparison like update_module_settings::diff_and_side_effects().
      *
      * @param string[] $fields
      * @param array $before
@@ -500,13 +501,13 @@ final class set_completion extends external_api {
      */
     private static function build_message(array $changes): string {
         if (!$changes) {
-            return 'Keine Aenderung: der Patch stimmte bereits mit dem aktuellen Stand ueberein.';
+            return 'No change: the patch already matched the current state.';
         }
         $parts = [];
         foreach ($changes as $change) {
-            $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
+            $parts[] = '"' . $change['field'] . '" from ' . $change['before_json'] . ' to ' . $change['after_json'];
         }
-        return 'Vervollstaendigung geaendert: ' . implode(', ', $parts) . '.';
+        return 'Completion changed: ' . implode(', ', $parts) . '.';
     }
 
     /**
@@ -516,7 +517,7 @@ final class set_completion extends external_api {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
             'modname' => new external_value(PARAM_TEXT, 'Activity type'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
             'changes' => new external_multiple_structure(
                 new external_single_structure([
                     'field' => new external_value(PARAM_TEXT, 'Field name'),

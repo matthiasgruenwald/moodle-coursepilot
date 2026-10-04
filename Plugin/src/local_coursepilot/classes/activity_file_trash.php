@@ -17,23 +17,15 @@
 namespace local_coursepilot;
 
 /**
- * Papierkorb fuer ersetzte Aktivitaetsdateien (Spec 0018 §9.1, Issue #432).
+ * Trash for replaced activity files (Spec 0018 §9.1, Issue #432).
  *
- * Moodle-Core loescht beim Ersetzen einer Aktivitaetsdatei (z.B. ueber
- * {@see \local_coursepilot\catalog\write_target::update_activity()}) den alten `files`-Datensatz tief in
- * lib/filelib.php::file_save_draft_area_files() - eine Stelle, die dieses
- * Plugin nicht abfangen kann. Der einzig verlaessliche Hebel ist deshalb,
- * VOR dem eigentlichen Schreibaufruf eine zweite Kopie des Datensatzes
- * anzulegen: derselbe `contenthash`, ein eigener Dateibereich. Moodles
- * Dateipool ist contenthash-basiert - die Kopie kostet 0 Byte zusaetzlichen
- * Speicher, haelt aber den physischen Inhalt am Leben, selbst wenn der
- * Original-Datensatz geloescht wird (Spec 0018 §9.1).
+ * Moodle deletes old files rows deep in file_save_draft_area_files(), which
+ * the plugin cannot intercept. Copy the row before writing, with the same
+ * contenthash in a dedicated file area. The content-addressed pool uses
+ * no additional storage and keeps the content alive after original deletion.
  *
- * Kein eigenes DB-Schema: der Papierkorb IST ein gewoehnlicher `files`-
- * Datensatz unter einer eigenen Komponente/Filearea, geordnet nach der
- * cmid der Aktivitaet, aus der die Datei stammt. Keine Aufbewahrungsfrist -
- * anders als der Materialordner-Papierkorb (§9.2) gibt es hier keine Quote,
- * die drueckt.
+ * Uses ordinary files rows grouped by source cmid, without a custom schema.
+ * Unlike material trash (§9.2), no quota pressure requires an expiry period.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -41,21 +33,19 @@ namespace local_coursepilot;
  */
 final class activity_file_trash {
 
-    /** @var string Eigene Komponente - kein Herunterladeweg, nur interne Ablage. */
+    /** @var string Dedicated component for internal storage, without a download route. */
     public const COMPONENT = 'local_coursepilot';
 
-    /** @var string Alleiniger Papierkorb-Dateibereich. */
+    /** @var string Dedicated trash file area. */
     public const FILEAREA = 'activityfiletrash';
 
     /**
-     * Verdraengt eine Aktivitaetsdatei in den Papierkorb, statt sie beim
-     * bevorstehenden Ersetzen verloren gehen zu lassen - aufzurufen VOR dem
-     * eigentlichen Schreibvorgang (update_moduleinfo()), solange die Datei
-     * noch existiert. Still, wenn genau diese Kopie (Pfad ist an
-     * pathnamehash+contenthash gebunden) schon im Papierkorb liegt.
+     * Preserve an activity file in trash before update_moduleinfo() replaces
+     * it. Call while the original still exists. Do nothing if this copy, keyed
+     * by pathnamehash and contenthash, already exists.
      *
-     * @param \stored_file $file Die noch vorhandene Original-Aktivitaetsdatei.
-     * @param int $cmid Course-Module-ID der Aktivitaet, aus der die Datei stammt.
+     * @param \stored_file $file Existing original activity file.
+     * @param int $cmid Course module ID of the source activity.
      * @return void
      */
     public static function trash(\stored_file $file, int $cmid): void {
@@ -70,8 +60,7 @@ final class activity_file_trash {
             $filepath,
             $file->get_filename()
         )) {
-            // Dieselbe Verdraengung schon einmal ausgefuehrt (z.B. zweiter
-            // Schreibversuch nach einem Fehlschlag) - nichts weiter zu tun.
+            // Already preserved, e.g. a second write attempt after a failure.
             return;
         }
 
@@ -86,12 +75,10 @@ final class activity_file_trash {
     }
 
     /**
-     * Sucht die juengste Papierkorb-Kopie einer Aktivitaetsdatei fuer den
-     * Rollback ueber den Aenderungsverlauf (ADR 0018) - Treffer nur bei
-     * identischem Dateinamen UND `contenthash` (derselbe Inhalt, nicht nur
-     * derselbe Name).
+     * Find the latest trash copy for history rollback (ADR 0018), matching
+     * both filename and contenthash: the same content, not just the same name.
      *
-     * @param int $contextid Modulkontext der Aktivitaet.
+     * @param int $contextid Activity module context.
      * @param int $cmid
      * @param string $filename
      * @param string $contenthash
@@ -117,19 +104,16 @@ final class activity_file_trash {
     }
 
     /**
-     * Baut einen Dateimanager-Entwurf aus bereits vorhandenen {@see \stored_file}s
-     * (statt Materialordner-Pfaden wie {@see material_files::resolve_into_draft()}) -
-     * fuer den Rollback-Pfad, der Dateien aus dem Papierkorb statt aus dem
-     * Materialordner zurueckschreibt. Vorbelegt mit den derzeit an der
-     * Aktivitaet haengenden Dateien (file_prepare_draft_area), damit ein
-     * Rollback nur die betroffenen Dateien ersetzt, alle anderen
-     * unangetastet laesst.
+     * Build a file-manager draft from stored_file objects for rollback from
+     * trash, rather than material paths (material_files::resolve_into_draft()).
+     * Preload current activity files through file_prepare_draft_area so
+     * rollback replaces only affected files and preserves the others.
      *
-     * @param int $targetcontextid Modulkontext der Aktivitaet.
+     * @param int $targetcontextid Activity module context.
      * @param string $component
      * @param string $filearea
-     * @param \stored_file[] $files Zu setzende Dateien, je Dateiname eine.
-     * @return int Entwurfs-Itemid, direkt als *_update_instance()-Feldwert nutzbar.
+     * @param \stored_file[] $files Files to set, one per filename.
+     * @return int Draft item ID usable directly as a *_update_instance() field value.
      */
     public static function resolve_restore_into_draft(
         int $targetcontextid,

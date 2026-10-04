@@ -33,27 +33,25 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Der Quiz-Patch (Spec 0015 §5, Ticket #398): quiz ist eine begruendete
- * Ausnahme vom generischen Vehikel {@see update_module_settings} - der
- * Katalog (#383) fuehrt quiz trotzdem, mit `schreibweg(): 'update_quiz_settings'`.
+ * Quiz patch (Spec 0015 §5, #398): quiz is a justified exception to the
+ * generic write vehicle {@see update_module_settings}. The catalog (#383)
+ * still lists quiz, with `write_route(): 'update_quiz_settings'`.
  *
- * Read-modify-write wie beim generischen Patch (Spec 0015 §3.3): der
- * Formularweg (update_moduleinfo()) traegt fuer die meisten Felder, "grade"
- * laeuft stattdessen ueber {@see quiz_write_bridge::apply_grade_change()}
- * (Moodles eigener Grade-Calculator statt einer direkten DB-Schreibung,
- * ADR 0016). Ohne "feedbacktext" im Patch loescht Moodle das Gesamtfeedback
- * still (quiz_after_add_or_update() loescht immer zuerst) - dieser Endpunkt
- * liest den Ist-Stand und schreibt ihn deshalb unveraendert mit zurueck,
- * genauso fuer die 32 Review-Checkboxen und das Passwort (siehe
- * {@see quiz_write_bridge}-Klassendoku).
+ * Read-modify-write follows the generic patch (Spec 0015 §3.3). Most fields
+ * use update_moduleinfo(); grade instead uses
+ * {@see quiz_write_bridge::apply_grade_change()}, Moodle's grade calculator
+ * rather than a direct database write (ADR 0016). Without feedbacktext in
+ * the patch, Moodle silently deletes overall feedback: quiz_after_add_or_update()
+ * always deletes it first. This endpoint carries the current feedback
+ * forward unchanged, as it does the 32 review checkboxes and password
+ * (see the quiz_write_bridge class documentation).
  *
- * Die drei Modus-Buendel kommen aus dem Katalog ({@see quiz::bundles()}),
- * nicht aus dieser Werkzeugbeschreibung - ein Buendelwert gilt nur fuer
- * Felder, die "fields_json" nicht bereits selbst nennt (Spec 0015 §2.4).
+ * The three mode bundles come from {@see quiz::bundles()}, not this tool
+ * description. A bundle value applies only to fields not explicitly named
+ * in fields_json (Spec 0015 §2.4).
  *
- * Die Anordnung (Fragen/Seiten/Abschnitte) ist nicht Teil dieses Endpunkts
- * (Spec 0015 §5, ADR 0016) - sie wird ausschliesslich ueber die 16
- * mod_quiz-Struktur-Ereignisse versioniert (#396).
+ * Question/page/section ordering is outside this endpoint (Spec 0015 §5,
+ * ADR 0016). Only the 16 mod_quiz structure events version it (#396).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -73,8 +71,8 @@ final class update_quiz_settings extends external_api {
             ),
             'mode' => new external_value(
                 PARAM_ALPHANUMEXT,
-                'Modus-Buendel: "mini-check", "progress-check" oder "final-test". Buendelwerte gelten nur '
-                    . 'fuer Felder, die fields_json nicht bereits selbst nennt. Leer = kein Moduswechsel.',
+                'Mode bundle: "mini-check", "progress-check" or "final-test". Bundle values apply only '
+                    . 'to fields not explicitly named in fields_json. Empty = keep the mode.',
                 VALUE_DEFAULT,
                 ''
             ),
@@ -119,14 +117,12 @@ final class update_quiz_settings extends external_api {
         $context = context_module::instance($cm->id);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // Native Berechtigungspruefung vorgezogen, wie
-        // {@see update_module_settings::execute()} - get_moduleinfo_data()
-        // prueft dieselbe Capability spaeter ohnehin erneut.
+        // Check native permissions early, like update_module_settings::execute().
+        // get_moduleinfo_data() checks the same capability again later.
         require_capability('moodle/course:manageactivities', $context);
 
-        // Billigteil der Selbstfreigabe (Spec 0015 §11, ADR 0017, Ticket #399):
-        // dasselbe Regime wie fuer das generische Vehikel gilt unveraendert
-        // fuer das Quiz-Einzelwerkzeug. Lesen bleibt unberuehrt.
+        // Cheap part of self-release (Spec 0015 §11, ADR 0017, #399): the generic
+        // write vehicle's regime also applies to the quiz-specific tool. Reads stay unaffected.
         write_gate::assert_writable('quiz');
 
         $patch = json_decode($params['fields_json'], true);
@@ -152,13 +148,11 @@ final class update_quiz_settings extends external_api {
         $newgrade = $params['grade'] >= 0 ? $params['grade'] : (float) $quiz->grade;
         quiz_write_bridge::validate_combination_rules($target->state, $merged, $newgrade);
 
-        // Eine Grade-Aenderung laeuft ZUERST (Moodles eigener Grade-Calculator,
-        // siehe quiz_write_bridge-Klassendoku): er skaliert bestehende
-        // Gesamtfeedback-Grenzen anteilig auf die neue Bewertung um. Erst
-        // DANACH liest get_moduleinfo_data() den (jetzt aktuellen) Ist-Stand -
-        // sonst wuerden explizit im selben Aufruf mitgegebene, bereits gegen
-        // die neue Bewertung gueltige "feedbackboundaries" durch die
-        // anschliessende Skalierung ein zweites Mal verzerrt.
+        // Apply a grade change FIRST through Moodle's grade calculator (see
+        // quiz_write_bridge): it scales existing overall feedback boundaries
+        // proportionally. Only THEN does get_moduleinfo_data() read the current
+        // state. Otherwise feedbackboundaries explicitly supplied in the same call
+        // and already valid for the new grade would be distorted by a second scaling.
         $gradechanged = $params['grade'] >= 0 && abs($params['grade'] - (float) $quiz->grade) > 0.00001;
         if ($gradechanged) {
             quiz_write_bridge::apply_grade_change((int) $quiz->id, $params['grade']);
@@ -166,9 +160,8 @@ final class update_quiz_settings extends external_api {
 
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
-        // get_moduleinfo_data() liefert die rohe quiz-Zeile plus den
-        // gemeinsamen Block (visible, groupmode, cmidnumber, ...) - dieselbe
-        // Grundlage wie beim generischen Patch (update_module_settings).
+        // get_moduleinfo_data() returns the raw quiz row plus the shared block
+        // (visible, groupmode, cmidnumber, ...), as for update_module_settings.
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
         // The form state rounds gradepass to display decimals. Preserve the
         // persisted points exactly unless the patch explicitly replaces them.
@@ -185,26 +178,25 @@ final class update_quiz_settings extends external_api {
             $moduleinfo->{quiz_write_bridge::moduleinfo_property($fieldname)} = $value;
         }
 
-        // Ein reiner ->intro-Patch wuerde sonst stillschweigend verpuffen
-        // (Abnahmekriterium 2: Beschreibung aendern) - siehe
+        // A patch setting only ->intro would otherwise silently disappear
+        // (acceptance criterion 2: change the description). See
         // pseudofield_carry_forward::sync_intro_editor_from_patch().
         pseudofield_carry_forward::sync_intro_editor_from_patch($moduleinfo, $fieldstowrite);
 
-        // Carry-forward der 32 Review-Checkboxen (quiz_process_options()
-        // berechnet die acht Bitmasken IMMER aus diesen 32 Feldern neu, siehe
-        // quiz_write_bridge-Klassendoku).
+        // Carry forward the 32 review checkboxes: quiz_process_options() ALWAYS
+        // recomputes the eight bitmasks from them (see quiz_write_bridge).
         foreach (quiz_write_bridge::decompose_review_bitmasks($quiz) as $name => $value) {
             if (!array_key_exists($name, $merged)) {
                 $moduleinfo->{$name} = $value;
             }
         }
 
-        // Passwort-Carry-forward (Formularname "quizpassword", siehe Katalog-Klassendoku).
+        // Carry forward the password (form name quizpassword; see the catalog class documentation).
         if (!array_key_exists('quizpassword', $merged)) {
             $moduleinfo->quizpassword = (string) $quiz->password;
         }
 
-        // Gesamtfeedback-Carry-forward (Klassendoku quiz_write_bridge).
+        // Carry forward overall feedback (see quiz_write_bridge).
         if ($feedbacktextpatch !== null) {
             quiz_write_bridge::apply_feedback_pseudofields($moduleinfo, $feedbacktextpatch, $feedbackboundariespatch);
         } else {
@@ -214,9 +206,9 @@ final class update_quiz_settings extends external_api {
             }
         }
 
-        // #400: get_moduleinfo_data() liefert "gradepass" im Anzeigeformat
-        // ("0,00"); ungeprueft zurueckgeschrieben endet der Aufruf im
-        // DB-Schreibfehler, nachdem die Aenderung schon persistiert ist.
+        // #400: get_moduleinfo_data() returns gradepass in display format
+        // ("0,00"). Writing it back unchecked fails at the database after the
+        // change has already persisted.
         pseudofield_carry_forward::unformat_localised_gradepass($moduleinfo);
 
         \update_moduleinfo($cm, $moduleinfo, $course);
@@ -233,7 +225,7 @@ final class update_quiz_settings extends external_api {
     }
 
     /**
-     * Modus-Buendel aus dem Katalog, oder leer ohne Moduswechsel.
+     * Mode bundle from the catalog, or an empty patch when the mode is unchanged.
      *
      * @param string $mode
      * @return array<string, mixed>
@@ -254,11 +246,10 @@ final class update_quiz_settings extends external_api {
     }
 
     /**
-     * Vorher-/Nachher-Diff je tatsaechlich geaendertem Feld (echter Vergleich,
-     * nicht der Patch selbst - identisches Prinzip wie
-     * {@see update_module_settings::diff_and_side_effects()}), plus
-     * Nebenwirkungsvermerke fuer Kalendereintraege bei timeopen/timeclose
-     * (Katalog-Klassendoku quiz::side_effects()) und fuer eine Grade-Aenderung.
+     * Diff each field that actually changed, comparing before and after rather
+     * than echoing the patch (as in update_module_settings::diff_and_side_effects()).
+     * Also report calendar changes for timeopen/timeclose (quiz::side_effects())
+     * and effects of a grade change.
      *
      * @param array $merged
      * @param array $before
@@ -299,17 +290,17 @@ final class update_quiz_settings extends external_api {
 
         if ((array_key_exists('timeopen', $merged) && (int) $after['timeopen'] > 0)
                 || (array_key_exists('timeclose', $merged) && (int) $after['timeclose'] > 0)) {
-            $sideeffects[] = 'Der Kalendereintrag fuer den Test wurde aktualisiert.';
+            $sideeffects[] = 'The calendar event for the quiz was updated.';
         }
         if ($gradechanged) {
-            $sideeffects[] = 'Bestehende Versuchsnoten und Gesamtfeedback-Grenzen wurden anteilig auf die neue Bewertung umgerechnet.';
+            $sideeffects[] = 'Existing attempt grades and overall feedback boundaries were rescaled proportionally to the new grade.';
         }
 
         return [$changes, $sideeffects];
     }
 
     /**
-     * Die Lehrkraft-deutsche Aenderungsmeldung (Spec 0015 §3.3/§5).
+     * Teacher-facing change message (Spec 0015 §3.3/§5).
      *
      * @param array $changes
      * @param string[] $sideeffects
@@ -317,14 +308,14 @@ final class update_quiz_settings extends external_api {
      */
     private static function build_message(array $changes, array $sideeffects): string {
         if (!$changes) {
-            return 'Keine Aenderung: der Patch stimmte bereits mit dem aktuellen Stand ueberein.';
+            return 'No change: the patch already matched the current state.';
         }
 
         $parts = [];
         foreach ($changes as $change) {
-            $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
+            $parts[] = '"' . $change['field'] . '" from ' . $change['before_json'] . ' to ' . $change['after_json'];
         }
-        $message = 'Geaendert: ' . implode(', ', $parts) . '.';
+        $message = 'Changed: ' . implode(', ', $parts) . '.';
 
         if ($sideeffects) {
             $message .= ' ' . implode(' ', $sideeffects);
@@ -339,7 +330,7 @@ final class update_quiz_settings extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
             'changes' => new external_multiple_structure(
                 new external_single_structure([
                     'field' => new external_value(PARAM_TEXT, 'Field name'),
@@ -349,7 +340,7 @@ final class update_quiz_settings extends external_api {
                 'One entry per field that actually changed'
             ),
             'side_effects' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                new external_value(PARAM_TEXT, 'Teacher-facing side-effect note'),
                 'Triggered side effects, empty when none were triggered'
             ),
         ]);
