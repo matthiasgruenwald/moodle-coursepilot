@@ -31,17 +31,20 @@ final class activity_file_supplement {
         return isset(self::TYPES[$modname]);
     }
 
-    /** Only the new, still hidden activity owned by this create call may be passed. */
-    public static function apply(\stdClass $cm, array $entries): void {
-        global $DB;
+    /**
+     * Rejects what can be judged without the new activity, so nothing is restored for refused input.
+     *
+     * The capability is checked at course level here (module capabilities inherit from it); apply()
+     * repeats it on the new module context.
+     */
+    public static function validate(string $modname, \context $context, array $entries): void {
         if (!$entries) {
             return;
         }
-        $type = self::TYPES[$cm->modname] ?? null;
+        $type = self::TYPES[$modname] ?? null;
         if ($type === null) {
             throw new \moodle_exception('activityfilesunsupported', 'local_coursepilot');
         }
-        $context = \context_module::instance($cm->id);
         material_files::require_manage_own_files();
         require_capability($type::CAPABILITY, $context);
         $seen = [];
@@ -56,6 +59,17 @@ final class activity_file_supplement {
             }
             $seen[$key] = true;
         }
+    }
+
+    /** Only the new, still hidden activity owned by this create call may be passed. */
+    public static function apply(\stdClass $cm, array $entries): void {
+        global $DB;
+        if (!$entries) {
+            return;
+        }
+        $type = self::TYPES[$cm->modname];
+        $context = \context_module::instance($cm->id);
+        self::validate($cm->modname, $context, $entries);
         // Backup DDL has finished. This transaction contains only the supplement's writes,
         // including temporary drafts, so a missing later path leaves no partial supplement.
         $transaction = $DB->start_delegated_transaction();

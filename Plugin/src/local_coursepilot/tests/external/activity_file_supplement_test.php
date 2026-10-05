@@ -167,6 +167,34 @@ final class activity_file_supplement_test extends \advanced_testcase {
         $this->assertEquals($before, $this->durable_state());
     }
 
+    public function test_rejected_file_input_is_refused_before_any_restore_happens(): void {
+        global $DB;
+        [$course, $xml] = $this->gallery_fixture();
+        $this->material_image('image.png');
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
+        $cases = [
+            'activityfileinvalidarea' => [[['path' => 'image.png', 'filearea' => 'gallery_thumbs']], false],
+            'activityfileduplicate' => [[
+                ['path' => 'image.png', 'filearea' => 'gallery_images'],
+                ['path' => 'other/image.png', 'filearea' => 'gallery_images'],
+            ], false],
+            'nopermissions' => [[['path' => 'image.png', 'filearea' => 'gallery_images']], true],
+        ];
+        foreach ($cases as $code => [$entries, $prohibit]) {
+            if ($prohibit) {
+                assign_capability('mod/lightboxgallery:addimage', CAP_PROHIBIT, $roleid,
+                    \context_course::instance($course->id));
+            }
+            $sink = $this->redirectEvents();
+            $response = $this->call_response($course->id, $xml, $entries);
+            $events = array_map(static fn($event) => $event::class, $sink->get_events());
+            $sink->close();
+            $this->assertTrue($response['error']);
+            $this->assertSame($code, $response['exception']->errorcode);
+            $this->assertSame([], $events, $code . ' must not restore before validation');
+        }
+    }
+
     public function test_hidden_workbench_image_and_empty_file_list_keep_existing_creation_options(): void {
         global $DB;
         [$course, $xml] = $this->gallery_fixture();

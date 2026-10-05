@@ -82,6 +82,7 @@ final class xml_activity_creator {
         global $USER;
         registry::require_developed($modname, 'createfromxmlcatalogued');
         self::assert_valid($activityxml, $modname);
+        activity_file_supplement::validate($modname, \context_course::instance($courseid), $files);
         if ($replacescmid !== null) {
             self::assert_replaceable($replacescmid, $courseid, $modname);
         }
