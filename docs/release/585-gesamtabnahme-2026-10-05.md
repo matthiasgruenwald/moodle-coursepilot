@@ -4,7 +4,24 @@ Stand: Integrationszweig `integration/release-2.1-issues`, geprüfter Kandidat `
 
 ## Umfang
 
-Review ab `41f6003` (Standards und Spec, read-only) gegen Spec 0026 und die Garantien aus Spec 0028; Integration von #593, #598/#599, #603 (#626 bleibt `requires-user`).
+Review ab `41f6003` (Standards und Spec, read-only) gegen Spec 0026 und die Garantien aus Spec 0028; Integration von #593, #598/#599, #603 und der technisch stabilen #626-Doku (#626 bleibt menschlich `requires-user`).
+
+#626-Featurehistorie mit geprüftem Commit `ea96c24c4cc337e3ace92ebb46f10bbd14b4de01`
+vollständig per `--no-ff` integriert, Merge `cb5b21adb48d32fbf39bddb588895d98839fb47a`.
+DE/EN-Anleitung und Recherche sind übernommen; die
+[#626-Abnahmecheckliste](626-client-abnahme-2026-10-05.md) grenzt den vorhandenen
+Codex/T3-Lauf von weiterhin fehlenden ChatGPT-Plus-/Oberflächenbelegen ab.
+Zwei ChatGPT-Bilder, Bereinigungen von `claude-1.png` und
+`moodle-aenderungsverlauf.png` sowie Maintainerdurchsicht bleiben offen.
+Der Koordinator hat den Quellenabgleich 391/391 zu `75f1308` unabhängig bestätigt.
+Nach Integration bleiben Pluginbaum, Sicherheits-/Privacy-/Coverage-Gates unverändert;
+Node 35/35 ohne Skips, Dokucheck und Diffprüfung sind am endgültigen
+Dokumentationsstand grün. Das ZIP besteht die CRC-Prüfung; alle 390 ausgelieferten
+Quelldateien und der Herkunftshinweis sind bytegleich mit dem Integrationsstand.
+`lang/de` ist entsprechend dem unveränderten Buildvertrag ausgeschlossen.
+Die Quellenprüfung auf Spike umfasst dagegen alle 391 Pluginquellen.
+Testprotokolle: `/tmp/coursepilot-626-integration-node.log` und `.exit` (0),
+`/tmp/coursepilot-626-integration-docs.log` und `.exit` (0).
 
 Zusätzlicher read-only Abschlussreview beider Achsen: vollständige Release-Änderungsübersicht `origin/main...75f1308` (786 Dateien) und Commitfolge `41f6003..75f1308`. Relevante XML-, Datei-, Glossar-, History-, Katalog- und OAuth-Grenzen wurden vertieft geprüft; entfernte 1.x-Dateien und große Übersetzungsänderungen strukturell. Dies ist kein unabhängiges Zeilen-Audit aller 786 Dateien.
 
@@ -72,5 +89,6 @@ Grenzen: Die in dieser Sitzung sichtbare Werkzeugliste enthält weiterhin kein `
 - Release-String ist `2.0.0-beta`; die vereinbarte Nummer 2.1.0 ist nicht gesetzt (separate Release-Arbeit; Maturity bleibt Beta).
 - Supportmatrix/Mindestversion und Upgrade vom veröffentlichten `main` bleiben separate Releasearbeit.
 - Konkreter Live-Deployplan nur mit ausdrücklicher Freigabe.
+- #626: echter ChatGPT-Plus-Schreibtest, zwei ChatGPT-Webbilder, zwei Datenschutzbereinigungen und abschließende Maintainerdurchsicht von DE/EN fehlen weiterhin. Codex/T3 ist kein Nachweis der Desktop-/ChatGPT-Weboberfläche.
 - Review-Restpunkte (Beobachtung, kein Blocker): `glossary_entry_writer`-Docblock „no existing-entry reads“ ungenau (`glossary_concept_exists` ist Moodle-Core-Duplikatprüfung); Dateien über 800 Zeilen (`oauth_lib.php`, `catalog/assign.php`, `import_questions_xml.php`) als eigenes Refactoring.
 - Korrigierte frühere Beobachtungen: Ausstandsnotiz bei fehlgeschlagenem Template-PUT ist durch `activity_type_templates_test::test_external_write_outage_retains_new_selection_and_pending_notes` abgedeckt. `supplement_missing` erhält die normale Fehlerpolitik. `gallery_images` ist gerade nicht durch `history/file_policy.php` freigegeben; Galerie-Dateien werden über diesen Verlauf nicht wiederhergestellt. Materialinhaltsprüfung gehört ausdrücklich nicht zur Ablöse-Vorschau.

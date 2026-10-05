@@ -2,10 +2,21 @@
 
 ## Stand und Grenze der Belege
 
-Geprüfte integrierte Repo-Basis: `7e9f0650b1425f154f4587300a3ccd9609bb7d15`
-auf `docs/626-client-acceptance`. Das ist **kein Nachweis des installierten
-Spike-Plugincommits**. Exakter live getesteter Plugincommit: **noch nicht belegt**.
-Kein Deployment, Live-Upgrade oder schreibender MCP-Aufruf wurde durchgeführt.
+Featurecommit `ea96c24c4cc337e3ace92ebb46f10bbd14b4de01` auf
+`docs/626-client-acceptance` wurde vollständig per `--no-ff` in
+`integration/release-2.1-issues` integriert (Merge
+`cb5b21adb48d32fbf39bddb588895d98839fb47a`). Der Featureworker hatte keine
+Live-Schreibabnahme durchgeführt; die Integration ergänzt die bereits vorliegenden
+#585-Belege. Kein neuer Live-Deploy, Upgrade oder Snapshot.
+
+Live getesteter Kandidat: `75f1308a3816ec626899e800062642d1165de5fa`,
+Pluginversion 2026100402, Moodle 5.1.7+ (Build 20260928). Alle 391 Pluginquellen
+auf Spike sind bytegleich; der Koordinator bestätigt unabhängig denselben Stand
+in `/tmp/coursepilot-coordination-spike-source-comparison.json`
+([versionierter Quellenabgleich](evidence/626-spike-source-comparison-2026-10-05.json)).
+Der autorisierte #585-Testkurs ist **27, Abschnitt 4**. Die Integration von #626
+ändert den Pluginbaum nicht. Die endgültige Integrations-SHA steht in den
+Koordinationsdateien `results/585.json` und `results/626.json`.
 
 Issue #626 einschließlich beider vollständigen Kommentare gelesen. Die Kommentare
 vom 02.10. bestätigen eingebautes Moodle-/Claude-/Codex-Bildmaterial und zwei offene
@@ -16,6 +27,26 @@ T3-Prüfung: `preview_status`, `preview_open`, danach `preview_snapshot`.
 Der erfolgreiche Snapshot am 05.10. zeigt die abgemeldete ChatGPT-Webseite mit
 „Log in“. Kein Plus-Konto, keine Connector-Einrichtung und kein Schreibtest wurden
 so bestätigt. Es wurde kein anderer Browser und kein erfundener Zugang benutzt.
+
+## Ergänzte tatsächliche Belege und Oberflächengrenze
+
+Der echte **Codex/T3**-MCP-Basisschreibtest vom 05.10. liegt vor:
+Standardvorlagen für book/checklist/glossary exportiert, Buch 1854 mit Kapitel,
+Checkliste 1855 mit zwei Punkten und leeres Glossar 1856 angelegt. Ablöse-Vorschau
+für 1855 ließ die Modulliste unverändert; schreibendes Ablösen erzeugte 1857
+sichtbar direkt hinter dem versteckten Vorgänger. Erneute Exporte bestätigen
+Kapitel und Checklistenpunkte. Eingaben, Antworten, Kurs-/Aktivitätskennungen und
+Vorher-/Nachher-Listen sind im [Codex-MCP-Beleg](evidence/585-codex-mcp-2026-10-05.json)
+versioniert; Autorisierung und Freigabe stammen aus dem sichtbaren #585-Auftrag.
+
+Dies ist ein tatsächlicher Codex/T3-Werkzeuglauf, **kein Codex-Desktop-Bild und
+kein ChatGPT-Web-/Plus-Nachweis**. Die schon eingebauten Desktop-Bilder bestätigen
+die Menüoberfläche, aber keinen Schreibtest. Die T3-Moodle-Vorschau verlangte einen
+Login; die Exporte belegen Inhalte, keine visuelle Lehrkraftabnahme. Erweiterte
+Glossar-/Galerieaktionen bleiben offen, da `add_glossary_entries` und der
+`files`-Parameter im sichtbaren Clientvertrag fehlen. Lesen der drei
+`activity-types/*.md` im verbundenen Lehrer-Kontext lieferte `INVALID_ARGUMENT`;
+ihre tatsächliche Bereitstellung ist damit ebenfalls nicht bestätigt.
 
 ## Doku- und Quellenprüfung
 
@@ -55,19 +86,23 @@ unverändert, bis bereinigte echte Aufnahmen vorliegen; keine synthetischen Ersa
 
 ## Für die abschließende Abnahme vorzubereiten
 
-1. Koordinator bestätigt den auf `https://spike.gruenwald.fun` installierten Kandidaten:
-   vollständige Commit-SHA und Abgleich der installierten Pluginquelle, Datum/Uhrzeit,
-   Testkurs-ID sowie ein berechtigtes Testkonto ohne Lernendendaten. Bei fehlendem
-   Kandidaten koordiniertes Deployment anfordern; dieser Worker deployt nicht.
+1. **Belegt:** Kandidat `75f1308a3816ec626899e800062642d1165de5fa` auf
+   `https://spike.gruenwald.fun`, unabhängiger Quellenabgleich 391/391 am 05.10.2026,
+   autorisierter Testkurs 27/Abschnitt 4 und erfolgreiche synthetische Codex/T3-Aktionen.
+   Für die noch ausstehende ChatGPT-Probe diesen Kandidaten erneut read-only
+   bestätigen; kein automatisches Deployment aus dieser Checkliste ableiten.
 2. Zwei ChatGPT-Webbilder aus dem echten Plus-Konto: Plugins/eigener MCP-Server und
    Formular mit Spike-Endpunkt und OAuth. Falls das Konto andere Schritte verlangt,
    auch diesen Ablauf belegen; die Anleitung wird dann angepasst. Keine Namen,
    E-Mails, Zugangswerte oder fremden Gespräche im Bild.
 3. Bereinigte Originalbilder für `claude-1.png` und `moodle-aenderungsverlauf.png`.
-4. Je ein echter Schreibtest aus ChatGPT Plus Web und Codex gegen **denselben**
-   bestätigten Spike-Commit: eine neue Seite im erlaubten Testkurs anlegen, z. B.
-   `CP626 ChatGPT write check` bzw. `CP626 Codex write check`, Inhalt
-   `Client acceptance check.`. Nur diese Testaktivitäten ausdrücklich freigeben.
+4. **Codex/T3-Basis belegt**, mit der oben genannten Oberflächengrenze. **Offen:**
+   echter ChatGPT-Plus-Web-Schreibtest gegen denselben bestätigten Kandidaten,
+   z. B. Seite `CP626 ChatGPT write check`, Inhalt `Client acceptance check.`.
+   Vorher genau diese Aktion freigeben. Falls der Maintainer zusätzlich eine
+   Codex-Desktop-/Web-Schreibprobe verlangt, diese gesondert belegen; der T3-Lauf
+   ersetzt die fehlenden Oberflächenbilder nicht. Erweiterte Glossar-/Galerieaktionen
+   bleiben getrennte offene Clientkriterien.
 5. Je Client Belegpaket: Client/Oberfläche/Version bzw. Datum und Plus-Tarif,
    Endpunkt, Plugincommit, Kurs-ID, Prompt und Freigabe, tatsächlicher Toolname mit
    Argumenten und Ergebnis oder Fehler, neue Aktivitäts-ID/URL sowie sichtbarer
@@ -87,3 +122,13 @@ Bestehende Prüfnähte aus Spec 0027 bleiben unverändert.
 Der erste Sandbox-Lauf scheiterte an `spawnSync /usr/bin/node EPERM`,
 der freigegebene Wiederholungslauf hat Exit 0. `git diff --check` ist sauber. PHPUnit/Coverage/Init sind für diesen Dokuschnitt nicht nötig;
 es wurden keine schweren Läufe oder Testcontainer gestartet.
+
+Finale Integrationsprüfung: Node 35/35 ohne Fehler oder Skips, Dokucheck und
+`git diff --check` grün. Protokolle:
+`/tmp/coursepilot-626-integration-node.log` und `.exit`,
+`/tmp/coursepilot-626-integration-docs.log` und `.exit`.
+Pluginbaum unverändert zu `75f1308`; daher kein schwerer nativer Neuaufbau.
+Native Addon-/Coverage-Belege und ZIP-Prüfsumme stehen im
+[#585-Gesamtabnahmebericht](585-gesamtabnahme-2026-10-05.md).
+Technisch stabile Doku ist integriert; #626 bleibt wegen der offenen tatsächlichen
+Client-/Screenshot-/Datenschutz-/Maintainerkriterien `requires-user` und offen.
