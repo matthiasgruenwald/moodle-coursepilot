@@ -22,9 +22,18 @@ Review ab `41f6003` (Standards und Spec, read-only) gegen Spec 0026 und die Gara
 - Coverage (natives Component-Config, pcov): 82,73 % (11991/14495 Zeilen), alle 187 Produktionsdateien des Scopes enthalten; Gate 80 % unverändert.
 - `npm test` 35/35, `docs-site-check.js` grün, Release-ZIP gebaut (`local_coursepilot-2.0.0-beta.zip`).
 
+## Echter Claude-MCP-Lauf (Spike, 05.10.2026)
+
+Kandidat 2026100402 per `deploy-plugin-spike.sh` (nach DB-Snapshot) auf den Spike gebracht, Lauf über den claude.ai-Connector im Testkurs 27, Abschnitt 4:
+
+- `export_default_activity` für book, checklist, glossary erfolgreich.
+- `create_activity_from_xml` book (cmid 1847, Kapitel), checklist (1848, zwei Punkte), glossary (1849) erfolgreich, Round-Trip bestanden.
+- Ablösen: `dry_run` (hidden_predecessors 1, nichts geschrieben), dann schreibend: 1850 sichtbar hinter 1848, 1848 versteckt.
+- **Nicht prüfbar:** Der Connector kennt noch den alten Werkzeugstand. `add_glossary_entries` (#593) und der `files`-Parameter (#598/#599) sind in seiner Werkzeugliste nicht enthalten. Beides ist nur durch die native Suite belegt, nicht durch echte Clientbedienung.
+
 ## Offen (nicht als erledigt markiert)
 
-- Echte Claude-/Codex-/ChatGPT-MCP-Schreibabnahme (Vorlagen exportieren, book/checklist/glossary anlegen, Ablösen Vorschau/schreibend) – braucht authentifizierten Client; automatische Tests ersetzen das nicht.
+- Claude-Lauf für Export/Anlegen/Ablösen erledigt (siehe oben). Offen: Glossar-Einträge und Lightboxgallery-Dateien über Claude (Connector-Werkzeugliste aktualisieren), Codex- und ChatGPT-Lauf samt Screenshots, Darstellung im Spike durch eine Lehrkraft.
 - Verifizierte Ablage `activity-types/lightboxgallery.md` (#599) hängt an der Spike-Abnahme.
 - Release-String ist `2.0.0-beta`; die vereinbarte Nummer 2.1.0 ist nicht gesetzt (Entscheidung Release-Arbeit; Maturity bleibt Beta).
 - Supportmatrix/Mindestversion und Upgrade vom veröffentlichten `main` bleiben separate Releasearbeit.
