@@ -68,3 +68,31 @@ Hinweis: `developers.openai.com/codex/*` leitet auf `learn.chatgpt.com/docs/*` (
 9. https://geminicli.com/docs/tools/mcp-server/
 10. https://docs.github.com/en/copilot/how-tos/provide-context/use-mcp-in-your-ide/set-up-the-github-mcp-server
 11. https://learn.chatgpt.com/docs/build-skills
+
+## Nachprüfung für #626 (05.10.2026)
+
+Die Recherche vom 02.10. ist eine Quellenaufnahme, keine Live-Abnahme. Der damalige
+Developer-Mode-Link [1] liefert beim erneuten Abruf 404; die aktuellen Primärquellen
+sind [OpenAI Plugin-Quickstart](https://developers.openai.com/plugins/build/app-quickstart)
+und [MCP-Anbindung](https://learn.chatgpt.com/docs/extend/mcp).
+Der vollständige aktuelle Quickstart beschreibt Plugins → Plus → Create custom MCP
+server, Authentifizierung, Risikohinweis und Create as a plugin. Nach Installation
+wird das Plugin im neuen Chat über `@` ausgewählt. Suchtreffer zeigen noch die älteren
+Developer-Mode-/Plus→More-Schritte; maßgeblich ist der vollständig abgerufene Artikel. Die konkrete
+Plus-Kontooberfläche und ihre Schreibfreigabe müssen weiter am echten Konto geprüft
+werden. Die früheren widersprüchlichen Tarifangaben begründen keine Diagnose eines
+konkreten Schreibfehlers: Werkzeugfreigaben, Moodle-Rechte und Pluginfehler sind
+ebenfalls zu prüfen.
+
+Die MCP-Doku bestätigt Streamable HTTP mit OAuth einschließlich CIMD/DCR sowie
+geteilte Konfiguration von Desktop-App, CLI und IDE auf demselben Codex-Host.
+Die vorhandenen Bilder zeigen den Plugin-Dialog der Desktop-App; sie sind keine
+Codex-Web-Abnahme und kein Beleg einer ausgeführten Schreibaktion. Der pauschale
+Tarifsatz wurde aus der Lehrkraft-Anleitung entfernt, weil er zur Einrichtung nicht
+nötig ist und keine Verfügbarkeit im konkreten Konto belegt.
+
+Die [Claude-Primärquelle](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)
+bestätigt Free (ein eigener Connector), Pro/Max/Team/Enterprise, öffentliche
+Erreichbarkeit und die Wahl von OAuth-Client-Identität bzw. DCR. Die Menüschritte der
+Anleitung passen zu den gelieferten Bildern; automatisch erkannte Vorgaben sind
+instanzabhängig.
