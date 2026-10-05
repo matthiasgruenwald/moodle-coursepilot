@@ -1,6 +1,6 @@
 # #585 Gesamtabnahme 2.1-Integration (05.10.2026)
 
-Stand: Integrationszweig `integration/release-2.1-issues`, geprüfter Kandidat `75f1308a3816ec626899e800062642d1165de5fa`. Technische Abnahme und echte Claude-/Codex-Basisläufe; die erweiterten Client- und menschlichen Kriterien bleiben offen. Diese Fortschreibung ändert ausschließlich Dokumentation und synthetische Abnahmebelege.
+Stand: Integrationszweig `integration/release-2.1-issues`, geprüfter Kandidat `75f1308a3816ec626899e800062642d1165de5fa`. Technische Abnahme und echte Claude-/Codex-Basisläufe; die erweiterten Client- und menschlichen Kriterien bleiben offen. Fortschreibungen betreffen Dokumentation, synthetische Abnahmebelege und das unten dokumentierte CI-Runner-Pinning; der Pluginbaum bleibt unverändert.
 
 ## Umfang
 
@@ -46,7 +46,7 @@ Review-Zählung: Standards 0 neue harte Befunde; Spec 0 neue Implementierungsbef
 
 ## Testnachweis (finaler Stand, eigene isolierte Umgebung)
 
-Letzter Produktionscode-Commit: `fb94a5cd3ee413cf1b7dcf372a0c44a609f21346`; der Pluginbaum ist im geprüften Kandidaten `75f1308` identisch. Der abschließende Berichtcommit ergänzt nur Dokumentation; seine vollständige Kennung wird in der Koordinationsdatei `results/585.json` gespeichert.
+Letzter Produktionscode-Commit: `fb94a5cd3ee413cf1b7dcf372a0c44a609f21346`; der Pluginbaum ist im geprüften Kandidaten `75f1308` identisch. Die vollständige Kennung des abschließenden Integrationscommits wird in der Koordinationsdatei `results/585.json` gespeichert.
 
 - Moodle 5.1.7+ (Build 20260928), PHP 8.4.25, MariaDB 11.4.12, reale Addons `mod_checklist` und `mod_lightboxgallery`.
 - Volllauf: 1539 Tests, 130898 Assertions, Exit 0, 1 bestehender Skip (WebDAV-Quota); keine Lightboxgallery-Skips.
@@ -56,6 +56,33 @@ Letzter Produktionscode-Commit: `fb94a5cd3ee413cf1b7dcf372a0c44a609f21346`; der 
 Die ursprünglichen Logs bleiben unter `/tmp/coursepilot-585/full.log` und `full.exit` (0), Clover/JUnit unter `/tmp/coursepilot-585/evidence/`. Am 05.10. erneut geprüft: Coverage-Gate 82,73 %, Scope exakt 187/187 Dateien, keine fehlenden oder fremden Dateien; Node 35/35 ohne Skips; Dokumentationsprüfung und `git diff --check` grün. Seit dem nativen Lauf wurde keine ausführbare Pluginlogik verändert; deshalb keine neue schwere Suite oder Initialisierung. Eigene Container `coursepilot-585-php` und `coursepilot-585-db` sind gestoppt, ihre temporäre Moodle-Kopie ist entfernt. Belege und DB-Daten bleiben erhalten; fremde Ressourcen wurden nicht verändert.
 
 Das erneut gebaute ZIP besteht `unzip -t`. SHA-256: `ca35a1ca6845bf99b4c551f62022478568123066acb18a751b2e6a34d032ec0e`. Pfad: `dist/native-release/local_coursepilot-2.0.0-beta.zip`. Release-Nummer 2.1.0 ist vereinbart; das Setzen des Strings bleibt gemäß Koordinator-Übergabe im separaten Releaseplan, bei unveränderter Beta-Maturity.
+
+## CI-Infrastrukturblocker und Runner-Pinning
+
+Koordinatornachweis zu Run `37365835830` am Commit
+`cdc398f6bf4b0fb4c1dae34c473a730389c17252`: Moodle 5.0 einschließlich
+80%-Coverage-Gate, Moodle 5.1 und frische ZIP-Installation sind `SUCCESS`.
+Native JS/AMD auf `ubuntu-latest` wurde nach 15 Minuten ohne Runner und ohne
+ausgeführte Schritte `CANCELLED`. Checkrun `111950639878` meldet fehlende
+Hosted-Runner-Zuteilung trotz mehrerer Versuche; gezieltes Wiederholen wurde
+mit `cannot be rerun` abgewiesen. `Gate (required)` wartete ebenfalls auf
+`ubuntu-latest`. Der Ursprungslauf ist **kein grüner Gesamt-CI-Nachweis**.
+
+Reversibler Infrastrukturfix: ausschließlich `runs-on` von `js-native` und
+`gate` auf `ubuntu-22.04` gepinnt, das die drei erfolgreichen Pflichtjobs
+dieses Laufs bereits bediente. Das ist keine Garantie einer neuen Runner-Zuteilung.
+Jobs, Schritte, Matrix, `needs`, `if: always()`, Ergebnisprüfung, Testumfang und
+80%-Schwelle bleiben unverändert; kein `continue-on-error` oder abgeschalteter Test.
+CLI-YAML-/Strukturprüfung vergleicht den gesamten Workflow mit `cdc398f` und
+erlaubt exakt diese beiden Wertänderungen; diese Prüfung und AMD-Syntax sind grün.
+Bestehende native Node-Checks (`node scripts/ci/run-js-tests.js`) bestehen mit
+35/35 Tests, ohne Fehler oder Skips, Exit 0; Belege:
+`/tmp/coursepilot-ci-runner-node.log` und `.exit`. Dokucheck und Diffprüfung sind
+ebenfalls grün. Kein nativer LXC-Neuaufbau oder zusätzliche DB.
+
+Gesamt-CI bleibt offen, bis der Koordinator seinen Branch gepusht und den neuen
+Pflichtlauf am neuen Integrationscommit selbst geprüft hat. Dieser Worker
+pusht nicht, erstellt keine PR und wiederholt den alten Lauf nicht.
 
 ## Echter Claude-MCP-Lauf (Spike, 05.10.2026)
 
