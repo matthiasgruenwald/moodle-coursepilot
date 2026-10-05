@@ -1,0 +1,394 @@
+{
+  "client": "T3 Code / Codex GPT-6.1-Sol through connected Coursepilot MCP tools",
+  "date": "2026-10-05",
+  "candidate": {
+    "commit": "75f1308a3816ec626899e800062642d1165de5fa",
+    "plugin_version": 2026100402,
+    "plugin_release": "2.0.0-beta",
+    "moodle_release": "5.1.7+ (Build: 20260928)",
+    "source_match": {
+      "files": 391,
+      "missing": [],
+      "different": []
+    }
+  },
+  "courseid": 27,
+  "section": 4,
+  "templates": {
+    "book": {
+      "courseid": 27,
+      "modname": "book",
+      "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<activity id=\"13\" moduleid=\"1851\" modulename=\"book\" contextid=\"1951\">\n  <book id=\"13\">\n    <name>book</name>\n    <intro></intro>\n    <introformat>1</introformat>\n    <numbering>1</numbering>\n    <navstyle>1</navstyle>\n    <customtitles>0</customtitles>\n    <timecreated>1791229046</timecreated>\n    <timemodified>1791229046</timemodified>\n    <chapters>\n    </chapters>\n    <chaptertags>\n    </chaptertags>\n  </book>\n</activity>"
+    },
+    "checklist": {
+      "courseid": 27,
+      "modname": "checklist",
+      "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<activity id=\"21\" moduleid=\"1852\" modulename=\"checklist\" contextid=\"1952\">\n  <checklist id=\"21\">\n    <name>checklist</name>\n    <intro></intro>\n    <introformat>1</introformat>\n    <timecreated>1791229050</timecreated>\n    <timemodified>0</timemodified>\n    <useritemsallowed>1</useritemsallowed>\n    <studentcomments>0</studentcomments>\n    <teacheredit>0</teacheredit>\n    <theme>default</theme>\n    <duedatesoncalendar>0</duedatesoncalendar>\n    <teachercomments>1</teachercomments>\n    <maxgrade>100</maxgrade>\n    <autopopulate>0</autopopulate>\n    <autoupdate>1</autoupdate>\n    <completionpercent>100</completionpercent>\n    <completionpercenttype>percent</completionpercenttype>\n    <emailoncomplete>0</emailoncomplete>\n    <lockteachermarks>0</lockteachermarks>\n    <items>\n    </items>\n  </checklist>\n</activity>"
+    },
+    "glossary": {
+      "courseid": 27,
+      "modname": "glossary",
+      "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<activity id=\"21\" moduleid=\"1853\" modulename=\"glossary\" contextid=\"1953\">\n  <glossary id=\"21\">\n    <name>glossary</name>\n    <intro></intro>\n    <introformat>1</introformat>\n    <allowduplicatedentries>0</allowduplicatedentries>\n    <displayformat>dictionary</displayformat>\n    <mainglossary>0</mainglossary>\n    <showspecial>1</showspecial>\n    <showalphabet>1</showalphabet>\n    <showall>1</showall>\n    <allowcomments>0</allowcomments>\n    <allowprintview>1</allowprintview>\n    <usedynalink>1</usedynalink>\n    <defaultapproval>1</defaultapproval>\n    <globalglossary>0</globalglossary>\n    <entbypage>10</entbypage>\n    <editalways>0</editalways>\n    <rsstype>0</rsstype>\n    <rssarticles>0</rssarticles>\n    <assessed>0</assessed>\n    <assesstimestart>0</assesstimestart>\n    <assesstimefinish>0</assesstimefinish>\n    <scale>100</scale>\n    <timecreated>1791229053</timecreated>\n    <timemodified>1791229053</timemodified>\n    <completionentries>1</completionentries>\n    <entries>\n    </entries>\n    <entriestags>\n    </entriestags>\n    <categories>\n    </categories>\n  </glossary>\n</activity>"
+    }
+  },
+  "creates": [
+    {
+      "tool": "create_activity_from_xml",
+      "input": {
+        "courseid": 27,
+        "section": 4,
+        "modname": "book",
+        "activity_xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<activity id=\"13\" moduleid=\"1851\" modulename=\"book\" contextid=\"1951\">\n  <book id=\"13\">\n    <name>585 Codex book 2026-10-05</name>\n    <intro></intro>\n    <introformat>1</introformat>\n    <numbering>1</numbering>\n    <navstyle>1</navstyle>\n    <customtitles>0</customtitles>\n    <timecreated>1791229046</timecreated>\n    <timemodified>1791229046</timemodified>\n    <chapters><chapter id=\"1\"><pagenum>1</pagenum><subchapter>0</subchapter><title>Codex acceptance chapter</title><content>&lt;p&gt;Synthetic Coursepilot 2.1 acceptance content.&lt;/p&gt;</content><contentformat>1</contentformat><hidden>0</hidden></chapter></chapters>\n    <chaptertags>\n    </chaptertags>\n  </book>\n</activity>",
+        "hidden": true
+      },
+      "result": {
+        "cmid": 1854,
+        "presets": [
+          "activity/book/chapters/chapter/importsrc"
+        ],
+        "references": [],
+        "successor_cmid": 0,
+        "hidden_predecessors": 0,
+        "message": "Moodle filled in fields that were not in your XML: activity/book/chapters/chapter/importsrc."
+      }
+    },
+    {
+      "tool": "create_activity_from_xml",
+      "input": {
+        "courseid": 27,
+        "section": 4,
+        "modname": "checklist",
+        "activity_xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<activity id=\"21\" moduleid=\"1852\" modulename=\"checklist\" contextid=\"1952\">\n  <checklist id=\"21\">\n    <name>585 Codex checklist 2026-10-05</name>\n    <intro></intro>\n    <introformat>1</introformat>\n    <timecreated>1791229050</timecreated>\n    <timemodified>0</timemodified>\n    <useritemsallowed>1</useritemsallowed>\n    <studentcomments>0</studentcomments>\n    <teacheredit>0</teacheredit>\n    <theme>default</theme>\n    <duedatesoncalendar>0</duedatesoncalendar>\n    <teachercomments>1</teachercomments>\n    <maxgrade>100</maxgrade>\n    <autopopulate>0</autopopulate>\n    <autoupdate>1</autoupdate>\n    <completionpercent>100</completionpercent>\n    <completionpercenttype>percent</completionpercenttype>\n    <emailoncomplete>0</emailoncomplete>\n    <lockteachermarks>0</lockteachermarks>\n    <items><item id=\"1\"><userid>0</userid><displaytext>Verify the Codex template</displaytext><position>1</position><indent>0</indent><itemoptional>0</itemoptional><hidden>0</hidden><duetime>0</duetime></item><item id=\"2\"><userid>0</userid><displaytext>Verify the Moodle result</displaytext><position>2</position><indent>0</indent><itemoptional>0</itemoptional><hidden>0</hidden><duetime>0</duetime></item></items>\n  </checklist>\n</activity>",
+        "hidden": true
+      },
+      "result": {
+        "cmid": 1855,
+        "presets": [
+          "activity/checklist/items/item/colour",
+          "activity/checklist/items/item/linkcourseid",
+          "activity/checklist/items/item/linkurl",
+          "activity/checklist/items/item/openlinkinnewwindow",
+          "activity/checklist/items/item/checks",
+          "activity/checklist/items/item/comments",
+          "activity/checklist/items/item/studentcomments"
+        ],
+        "references": [],
+        "successor_cmid": 0,
+        "hidden_predecessors": 0,
+        "message": "Moodle filled in fields that were not in your XML: activity/checklist/items/item/colour, activity/checklist/items/item/linkcourseid, activity/checklist/items/item/linkurl, activity/checklist/items/item/openlinkinnewwindow, activity/checklist/items/item/checks, activity/checklist/items/item/comments, activity/checklist/items/item/studentcomments."
+      }
+    },
+    {
+      "tool": "create_activity_from_xml",
+      "input": {
+        "courseid": 27,
+        "section": 4,
+        "modname": "glossary",
+        "activity_xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<activity id=\"21\" moduleid=\"1853\" modulename=\"glossary\" contextid=\"1953\">\n  <glossary id=\"21\">\n    <name>585 Codex glossary 2026-10-05</name>\n    <intro></intro>\n    <introformat>1</introformat>\n    <allowduplicatedentries>0</allowduplicatedentries>\n    <displayformat>dictionary</displayformat>\n    <mainglossary>0</mainglossary>\n    <showspecial>1</showspecial>\n    <showalphabet>1</showalphabet>\n    <showall>1</showall>\n    <allowcomments>0</allowcomments>\n    <allowprintview>1</allowprintview>\n    <usedynalink>1</usedynalink>\n    <defaultapproval>1</defaultapproval>\n    <globalglossary>0</globalglossary>\n    <entbypage>10</entbypage>\n    <editalways>0</editalways>\n    <rsstype>0</rsstype>\n    <rssarticles>0</rssarticles>\n    <assessed>0</assessed>\n    <assesstimestart>0</assesstimestart>\n    <assesstimefinish>0</assesstimefinish>\n    <scale>100</scale>\n    <timecreated>1791229053</timecreated>\n    <timemodified>1791229053</timemodified>\n    <completionentries>1</completionentries>\n    <entries>\n    </entries>\n    <entriestags>\n    </entriestags>\n    <categories>\n    </categories>\n  </glossary>\n</activity>",
+        "hidden": true
+      },
+      "result": {
+        "cmid": 1856,
+        "presets": [],
+        "references": [],
+        "successor_cmid": 0,
+        "hidden_predecessors": 0,
+        "message": ""
+      }
+    }
+  ],
+  "preview": {
+    "input": {
+      "courseid": 27,
+      "section": 4,
+      "modname": "checklist",
+      "activity_xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<activity id=\"21\" moduleid=\"1852\" modulename=\"checklist\" contextid=\"1952\">\n  <checklist id=\"21\">\n    <name>585 Codex checklist v2 2026-10-05</name>\n    <intro></intro>\n    <introformat>1</introformat>\n    <timecreated>1791229050</timecreated>\n    <timemodified>0</timemodified>\n    <useritemsallowed>1</useritemsallowed>\n    <studentcomments>0</studentcomments>\n    <teacheredit>0</teacheredit>\n    <theme>default</theme>\n    <duedatesoncalendar>0</duedatesoncalendar>\n    <teachercomments>1</teachercomments>\n    <maxgrade>100</maxgrade>\n    <autopopulate>0</autopopulate>\n    <autoupdate>1</autoupdate>\n    <completionpercent>100</completionpercent>\n    <completionpercenttype>percent</completionpercenttype>\n    <emailoncomplete>0</emailoncomplete>\n    <lockteachermarks>0</lockteachermarks>\n    <items><item id=\"1\"><userid>0</userid><displaytext>Verify the Codex template</displaytext><position>1</position><indent>0</indent><itemoptional>0</itemoptional><hidden>0</hidden><duetime>0</duetime></item><item id=\"2\"><userid>0</userid><displaytext>Verify the Moodle result</displaytext><position>2</position><indent>0</indent><itemoptional>0</itemoptional><hidden>0</hidden><duetime>0</duetime></item></items>\n  </checklist>\n</activity>",
+      "hidden": false,
+      "replaces_cmid": 1855,
+      "dry_run": true
+    },
+    "result": {
+      "cmid": 0,
+      "presets": [],
+      "references": [],
+      "successor_cmid": 0,
+      "hidden_predecessors": 1,
+      "message": "After superseding, the chain holds 1 hidden earlier version(s) of this activity. Suggest to the teacher to clean up old versions that are no longer needed."
+    },
+    "before": [
+      {
+        "cmid": 1847,
+        "sectionnum": 4,
+        "modname": "book",
+        "name": "585 Abnahme Buch",
+        "visible": 0,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "hidden"
+      },
+      {
+        "cmid": 1848,
+        "sectionnum": 4,
+        "modname": "checklist",
+        "name": "585 Abnahme Checkliste",
+        "visible": 0,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "hidden"
+      },
+      {
+        "cmid": 1850,
+        "sectionnum": 4,
+        "modname": "checklist",
+        "name": "585 Abnahme Checkliste v2",
+        "visible": 1,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "shown"
+      },
+      {
+        "cmid": 1849,
+        "sectionnum": 4,
+        "modname": "glossary",
+        "name": "585 Abnahme Glossar",
+        "visible": 0,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "hidden"
+      },
+      {
+        "cmid": 1854,
+        "sectionnum": 4,
+        "modname": "book",
+        "name": "585 Codex book 2026-10-05",
+        "visible": 0,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "hidden"
+      },
+      {
+        "cmid": 1855,
+        "sectionnum": 4,
+        "modname": "checklist",
+        "name": "585 Codex checklist 2026-10-05",
+        "visible": 0,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "hidden"
+      },
+      {
+        "cmid": 1856,
+        "sectionnum": 4,
+        "modname": "glossary",
+        "name": "585 Codex glossary 2026-10-05",
+        "visible": 0,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "hidden"
+      }
+    ],
+    "after": [
+      {
+        "cmid": 1847,
+        "sectionnum": 4,
+        "modname": "book",
+        "name": "585 Abnahme Buch",
+        "visible": 0,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "hidden"
+      },
+      {
+        "cmid": 1848,
+        "sectionnum": 4,
+        "modname": "checklist",
+        "name": "585 Abnahme Checkliste",
+        "visible": 0,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "hidden"
+      },
+      {
+        "cmid": 1850,
+        "sectionnum": 4,
+        "modname": "checklist",
+        "name": "585 Abnahme Checkliste v2",
+        "visible": 1,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "shown"
+      },
+      {
+        "cmid": 1849,
+        "sectionnum": 4,
+        "modname": "glossary",
+        "name": "585 Abnahme Glossar",
+        "visible": 0,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "hidden"
+      },
+      {
+        "cmid": 1854,
+        "sectionnum": 4,
+        "modname": "book",
+        "name": "585 Codex book 2026-10-05",
+        "visible": 0,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "hidden"
+      },
+      {
+        "cmid": 1855,
+        "sectionnum": 4,
+        "modname": "checklist",
+        "name": "585 Codex checklist 2026-10-05",
+        "visible": 0,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "hidden"
+      },
+      {
+        "cmid": 1856,
+        "sectionnum": 4,
+        "modname": "glossary",
+        "name": "585 Codex glossary 2026-10-05",
+        "visible": 0,
+        "visibleoncoursepage": 1,
+        "coursepagevisibility": "shown",
+        "availability_status": "hidden"
+      }
+    ]
+  },
+  "supersede": {
+    "input": {
+      "courseid": 27,
+      "section": 4,
+      "modname": "checklist",
+      "activity_xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<activity id=\"21\" moduleid=\"1852\" modulename=\"checklist\" contextid=\"1952\">\n  <checklist id=\"21\">\n    <name>585 Codex checklist v2 2026-10-05</name>\n    <intro></intro>\n    <introformat>1</introformat>\n    <timecreated>1791229050</timecreated>\n    <timemodified>0</timemodified>\n    <useritemsallowed>1</useritemsallowed>\n    <studentcomments>0</studentcomments>\n    <teacheredit>0</teacheredit>\n    <theme>default</theme>\n    <duedatesoncalendar>0</duedatesoncalendar>\n    <teachercomments>1</teachercomments>\n    <maxgrade>100</maxgrade>\n    <autopopulate>0</autopopulate>\n    <autoupdate>1</autoupdate>\n    <completionpercent>100</completionpercent>\n    <completionpercenttype>percent</completionpercenttype>\n    <emailoncomplete>0</emailoncomplete>\n    <lockteachermarks>0</lockteachermarks>\n    <items><item id=\"1\"><userid>0</userid><displaytext>Verify the Codex template</displaytext><position>1</position><indent>0</indent><itemoptional>0</itemoptional><hidden>0</hidden><duetime>0</duetime></item><item id=\"2\"><userid>0</userid><displaytext>Verify the Moodle result</displaytext><position>2</position><indent>0</indent><itemoptional>0</itemoptional><hidden>0</hidden><duetime>0</duetime></item></items>\n  </checklist>\n</activity>",
+      "hidden": false,
+      "replaces_cmid": 1855
+    },
+    "result": {
+      "cmid": 1857,
+      "presets": [
+        "activity/checklist/items/item/colour",
+        "activity/checklist/items/item/linkcourseid",
+        "activity/checklist/items/item/linkurl",
+        "activity/checklist/items/item/openlinkinnewwindow",
+        "activity/checklist/items/item/checks",
+        "activity/checklist/items/item/comments",
+        "activity/checklist/items/item/studentcomments"
+      ],
+      "references": [],
+      "successor_cmid": 0,
+      "hidden_predecessors": 1,
+      "message": "Moodle filled in fields that were not in your XML: activity/checklist/items/item/colour, activity/checklist/items/item/linkcourseid, activity/checklist/items/item/linkurl, activity/checklist/items/item/openlinkinnewwindow, activity/checklist/items/item/checks, activity/checklist/items/item/comments, activity/checklist/items/item/studentcomments. After superseding, the chain holds 1 hidden earlier version(s) of this activity. Suggest to the teacher to clean up old versions that are no longer needed."
+    }
+  },
+  "exports": {
+    "book": {
+      "cmid": 1854,
+      "modname": "book",
+      "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<activity id=\"14\" moduleid=\"1854\" modulename=\"book\" contextid=\"1954\">\n  <book id=\"14\">\n    <name>585 Codex book 2026-10-05</name>\n    <intro></intro>\n    <introformat>1</introformat>\n    <numbering>1</numbering>\n    <navstyle>1</navstyle>\n    <customtitles>0</customtitles>\n    <timecreated>1791229046</timecreated>\n    <timemodified>1791229046</timemodified>\n    <chapters>\n      <chapter id=\"18\">\n        <pagenum>1</pagenum>\n        <subchapter>0</subchapter>\n        <title>Codex acceptance chapter</title>\n        <content>&lt;p&gt;Synthetic Coursepilot 2.1 acceptance content.&lt;/p&gt;</content>\n        <contentformat>1</contentformat>\n        <hidden>0</hidden>\n        <timemodified>0</timemodified>\n        <importsrc></importsrc>\n      </chapter>\n    </chapters>\n    <chaptertags>\n    </chaptertags>\n  </book>\n</activity>"
+    },
+    "checklist": {
+      "cmid": 1855,
+      "modname": "checklist",
+      "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<activity id=\"22\" moduleid=\"1855\" modulename=\"checklist\" contextid=\"1955\">\n  <checklist id=\"22\">\n    <name>585 Codex checklist 2026-10-05</name>\n    <intro></intro>\n    <introformat>1</introformat>\n    <timecreated>1791229050</timecreated>\n    <timemodified>0</timemodified>\n    <useritemsallowed>1</useritemsallowed>\n    <studentcomments>0</studentcomments>\n    <teacheredit>0</teacheredit>\n    <theme>default</theme>\n    <duedatesoncalendar>0</duedatesoncalendar>\n    <teachercomments>1</teachercomments>\n    <maxgrade>100</maxgrade>\n    <autopopulate>0</autopopulate>\n    <autoupdate>1</autoupdate>\n    <completionpercent>100</completionpercent>\n    <completionpercenttype>percent</completionpercenttype>\n    <emailoncomplete>0</emailoncomplete>\n    <lockteachermarks>0</lockteachermarks>\n    <items>\n      <item id=\"297\">\n        <userid>0</userid>\n        <displaytext>Verify the Codex template</displaytext>\n        <position>1</position>\n        <indent>0</indent>\n        <itemoptional>0</itemoptional>\n        <duetime>0</duetime>\n        <colour>black</colour>\n        <moduleid>0</moduleid>\n        <hidden>0</hidden>\n        <linkcourseid>$@NULL@$</linkcourseid>\n        <linkurl>$@NULL@$</linkurl>\n        <openlinkinnewwindow>0</openlinkinnewwindow>\n        <checks>\n        </checks>\n        <comments>\n        </comments>\n        <studentcomments>\n        </studentcomments>\n      </item>\n      <item id=\"298\">\n        <userid>0</userid>\n        <displaytext>Verify the Moodle result</displaytext>\n        <position>2</position>\n        <indent>0</indent>\n        <itemoptional>0</itemoptional>\n        <duetime>0</duetime>\n        <colour>black</colour>\n        <moduleid>0</moduleid>\n        <hidden>0</hidden>\n        <linkcourseid>$@NULL@$</linkcourseid>\n        <linkurl>$@NULL@$</linkurl>\n        <openlinkinnewwindow>0</openlinkinnewwindow>\n        <checks>\n        </checks>\n        <comments>\n        </comments>\n        <studentcomments>\n        </studentcomments>\n      </item>\n    </items>\n  </checklist>\n</activity>"
+    },
+    "glossary": {
+      "cmid": 1856,
+      "modname": "glossary",
+      "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<activity id=\"22\" moduleid=\"1856\" modulename=\"glossary\" contextid=\"1956\">\n  <glossary id=\"22\">\n    <name>585 Codex glossary 2026-10-05</name>\n    <intro></intro>\n    <introformat>1</introformat>\n    <allowduplicatedentries>0</allowduplicatedentries>\n    <displayformat>dictionary</displayformat>\n    <mainglossary>0</mainglossary>\n    <showspecial>1</showspecial>\n    <showalphabet>1</showalphabet>\n    <showall>1</showall>\n    <allowcomments>0</allowcomments>\n    <allowprintview>1</allowprintview>\n    <usedynalink>1</usedynalink>\n    <defaultapproval>1</defaultapproval>\n    <globalglossary>0</globalglossary>\n    <entbypage>10</entbypage>\n    <editalways>0</editalways>\n    <rsstype>0</rsstype>\n    <rssarticles>0</rssarticles>\n    <assessed>0</assessed>\n    <assesstimestart>0</assesstimestart>\n    <assesstimefinish>0</assesstimefinish>\n    <scale>100</scale>\n    <timecreated>1791229053</timecreated>\n    <timemodified>1791229053</timemodified>\n    <completionentries>1</completionentries>\n    <entries>\n    </entries>\n    <entriestags>\n    </entriestags>\n    <categories>\n    </categories>\n  </glossary>\n</activity>"
+    }
+  },
+  "final_modules": [
+    {
+      "cmid": 1847,
+      "sectionnum": 4,
+      "modname": "book",
+      "name": "585 Abnahme Buch",
+      "visible": 0,
+      "visibleoncoursepage": 1,
+      "coursepagevisibility": "shown",
+      "availability_status": "hidden"
+    },
+    {
+      "cmid": 1848,
+      "sectionnum": 4,
+      "modname": "checklist",
+      "name": "585 Abnahme Checkliste",
+      "visible": 0,
+      "visibleoncoursepage": 1,
+      "coursepagevisibility": "shown",
+      "availability_status": "hidden"
+    },
+    {
+      "cmid": 1850,
+      "sectionnum": 4,
+      "modname": "checklist",
+      "name": "585 Abnahme Checkliste v2",
+      "visible": 1,
+      "visibleoncoursepage": 1,
+      "coursepagevisibility": "shown",
+      "availability_status": "shown"
+    },
+    {
+      "cmid": 1849,
+      "sectionnum": 4,
+      "modname": "glossary",
+      "name": "585 Abnahme Glossar",
+      "visible": 0,
+      "visibleoncoursepage": 1,
+      "coursepagevisibility": "shown",
+      "availability_status": "hidden"
+    },
+    {
+      "cmid": 1854,
+      "sectionnum": 4,
+      "modname": "book",
+      "name": "585 Codex book 2026-10-05",
+      "visible": 0,
+      "visibleoncoursepage": 1,
+      "coursepagevisibility": "shown",
+      "availability_status": "hidden"
+    },
+    {
+      "cmid": 1855,
+      "sectionnum": 4,
+      "modname": "checklist",
+      "name": "585 Codex checklist 2026-10-05",
+      "visible": 0,
+      "visibleoncoursepage": 1,
+      "coursepagevisibility": "shown",
+      "availability_status": "hidden"
+    },
+    {
+      "cmid": 1857,
+      "sectionnum": 4,
+      "modname": "checklist",
+      "name": "585 Codex checklist v2 2026-10-05",
+      "visible": 1,
+      "visibleoncoursepage": 1,
+      "coursepagevisibility": "shown",
+      "availability_status": "shown"
+    },
+    {
+      "cmid": 1856,
+      "sectionnum": 4,
+      "modname": "glossary",
+      "name": "585 Codex glossary 2026-10-05",
+      "visible": 0,
+      "visibleoncoursepage": 1,
+      "coursepagevisibility": "shown",
+      "availability_status": "hidden"
+    }
+  ],
+  "limits": [
+    "Current client tool schema has no add_glossary_entries and no files parameter on create_activity_from_xml.",
+    "read_context_file for activity-types/book.md, checklist.md and glossary.md returned INVALID_ARGUMENT.",
+    "T3 browser redirected book view to Moodle login; rendering and teacher acceptance not verified.",
+    "No ChatGPT or new Claude-client run performed by this Codex session."
+  ]
+}

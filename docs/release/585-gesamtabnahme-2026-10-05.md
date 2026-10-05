@@ -1,10 +1,22 @@
 # #585 Gesamtabnahme 2.1-Integration (05.10.2026)
 
-Stand: Integrationszweig `integration/release-2.1-issues`, Commit dieses Berichts darüber. Technische Abnahme, **keine** Client-Abnahme.
+Stand: Integrationszweig `integration/release-2.1-issues`, geprüfter Kandidat `75f1308a3816ec626899e800062642d1165de5fa`. Technische Abnahme und echte Claude-/Codex-Basisläufe; die erweiterten Client- und menschlichen Kriterien bleiben offen. Diese Fortschreibung ändert ausschließlich Dokumentation und synthetische Abnahmebelege.
 
 ## Umfang
 
 Review ab `41f6003` (Standards und Spec, read-only) gegen Spec 0026 und die Garantien aus Spec 0028; Integration von #593, #598/#599, #603 (#626 bleibt `requires-user`).
+
+Zusätzlicher read-only Abschlussreview beider Achsen: vollständige Release-Änderungsübersicht `origin/main...75f1308` (786 Dateien) und Commitfolge `41f6003..75f1308`. Relevante XML-, Datei-, Glossar-, History-, Katalog- und OAuth-Grenzen wurden vertieft geprüft; entfernte 1.x-Dateien und große Übersetzungsänderungen strukturell. Dies ist kein unabhängiges Zeilen-Audit aller 786 Dateien.
+
+### Standards
+
+Keine neuen harten Verstöße und keine zusätzlichen belastbaren Smell-Befunde. Der ungenaue Glossar-Docblock bleibt ein dokumentierter Kommentarrestpunkt. Die gemeinsame Katalog-Schreibprüfung entspricht dem genehmigten Modulschnitt.
+
+### Spec
+
+Keine zusätzlich belegte Implementierungsverletzung. Zwei offene Abnahmebereiche: erweiterte echte Client-/Darstellungsabnahme und separate Release-Metadaten-/Kompatibilitätsarbeit. `dry_run` prüft gemäß Spec 0026 keine Materialinhalte; das ist keine fehlende Implementierung. Die Vorabprüfung vor Restore erhält Spec 0028 F11.
+
+Review-Zählung: Standards 0 neue harte Befunde; Spec 0 neue Implementierungsbefunde, 2 offene Abnahmebereiche.
 
 ## Behoben im Review
 
@@ -17,12 +29,20 @@ Review ab `41f6003` (Standards und Spec, read-only) gegen Spec 0026 und die Gara
 
 ## Testnachweis (finaler Stand, eigene isolierte Umgebung)
 
+Letzter Produktionscode-Commit: `fb94a5cd3ee413cf1b7dcf372a0c44a609f21346`; der Pluginbaum ist im geprüften Kandidaten `75f1308` identisch. Der abschließende Berichtcommit ergänzt nur Dokumentation; seine vollständige Kennung wird in der Koordinationsdatei `results/585.json` gespeichert.
+
 - Moodle 5.1.7+ (Build 20260928), PHP 8.4.25, MariaDB 11.4.12, reale Addons `mod_checklist` und `mod_lightboxgallery`.
 - Volllauf: 1539 Tests, 130898 Assertions, Exit 0, 1 bestehender Skip (WebDAV-Quota); keine Lightboxgallery-Skips.
 - Coverage (natives Component-Config, pcov): 82,73 % (11991/14495 Zeilen), alle 187 Produktionsdateien des Scopes enthalten; Gate 80 % unverändert.
 - `npm test` 35/35, `docs-site-check.js` grün, Release-ZIP gebaut (`local_coursepilot-2.0.0-beta.zip`).
 
+Die ursprünglichen Logs bleiben unter `/tmp/coursepilot-585/full.log` und `full.exit` (0), Clover/JUnit unter `/tmp/coursepilot-585/evidence/`. Am 05.10. erneut geprüft: Coverage-Gate 82,73 %, Scope exakt 187/187 Dateien, keine fehlenden oder fremden Dateien; Node 35/35 ohne Skips; Dokumentationsprüfung und `git diff --check` grün. Seit dem nativen Lauf wurde keine ausführbare Pluginlogik verändert; deshalb keine neue schwere Suite oder Initialisierung. Eigene Container `coursepilot-585-php` und `coursepilot-585-db` sind gestoppt, ihre temporäre Moodle-Kopie ist entfernt. Belege und DB-Daten bleiben erhalten; fremde Ressourcen wurden nicht verändert.
+
+Das erneut gebaute ZIP besteht `unzip -t`. SHA-256: `ca35a1ca6845bf99b4c551f62022478568123066acb18a751b2e6a34d032ec0e`. Pfad: `dist/native-release/local_coursepilot-2.0.0-beta.zip`. Release-Nummer 2.1.0 ist vereinbart; das Setzen des Strings bleibt gemäß Koordinator-Übergabe im separaten Releaseplan, bei unveränderter Beta-Maturity.
+
 ## Echter Claude-MCP-Lauf (Spike, 05.10.2026)
+
+Übernommener Nachfolger-Nachweis aus `75f1308`, in dieser Codex-Sitzung nicht wiederholt. Die genannten Aktivitäten und der sichtbare Nachfolger 1850 wurden über die echte MCP-Modulliste erneut vorgefunden.
 
 Kandidat 2026100402 per `deploy-plugin-spike.sh` (nach DB-Snapshot) auf den Spike gebracht, Lauf über den claude.ai-Connector im Testkurs 27, Abschnitt 4:
 
@@ -31,11 +51,26 @@ Kandidat 2026100402 per `deploy-plugin-spike.sh` (nach DB-Snapshot) auf den Spik
 - Ablösen: `dry_run` (hidden_predecessors 1, nichts geschrieben), dann schreibend: 1850 sichtbar hinter 1848, 1848 versteckt.
 - **Nicht prüfbar:** Der Connector kennt noch den alten Werkzeugstand. `add_glossary_entries` (#593) und der `files`-Parameter (#598/#599) sind in seiner Werkzeugliste nicht enthalten. Beides ist nur durch die native Suite belegt, nicht durch echte Clientbedienung.
 
+## Echter Codex-MCP-Lauf (T3, Spike, 05.10.2026)
+
+Nach erneuter Anmeldung funktionierte der echte Coursepilot-Connector in dieser Codex-Sitzung. Keine HTTP-Testautomation als Ersatz. `get_version_info` meldet Moodle 5.1.7+ und Plugin 2026100402. Read-only Hashvergleich aller 391 Plugin-Dateien zwischen Kandidat und `/opt/plugins/local_coursepilot` auf Spike: keine fehlenden oder abweichenden Dateien. Kein erneutes Deployment oder Upgrade.
+
+- Standardvorlagen für book, checklist und glossary exportiert; temporäre Standardaktivitäten 1851–1853 fehlen anschließend in der Modulliste.
+- Testkurs 27, Abschnitt 4: Buch 1854 mit synthetischem Kapitel, Checkliste 1855 mit zwei synthetischen Punkten und leeres Glossar 1856 erstellt, zunächst versteckt. Alle Round-Trips bestanden; Moodle-Presets wurden als solche zurückgegeben.
+- Ablöse-Vorschau für 1855: cmid 0, keine Verweise, kein vorhandener Nachfolger, ein versteckter Vorgänger. Modullisten unmittelbar davor/danach sind identisch.
+- Schreibendes Ablösen: 1857 sichtbar direkt hinter 1855; Vorgänger versteckt, ursprünglicher Titel unverändert. Die übrigen Claude-Testaktivitäten blieben erhalten.
+- Erneute echte Aktivitätsexporte von 1854–1856 bestätigen Kapiteltext, beide Checklistenpunkte und das leere Glossar. Das belegt den Moodle-Inhalt, keine visuelle Lehrkraftabnahme.
+
+Nachvollziehbare synthetische Werkzeug-Eingaben und Antworten: [Codex-MCP-Beleg](evidence/585-codex-mcp-2026-10-05.json). Keine Tokens oder Zugangsdaten enthalten.
+
+Grenzen: Die in dieser Sitzung sichtbare Werkzeugliste enthält weiterhin kein `add_glossary_entries` und keinen `files`-Parameter. Das erneute Anmelden aktualisierte die Autorisierung, nicht diesen Vertrag. Lesen der drei `activity-types/*.md` im Lehrer-Kontext lieferte `INVALID_ARGUMENT`; ihre tatsächliche Bereitstellung für diesen verbundenen Nutzer ist damit nicht bestätigt. Die T3-Vorschau des Buchs wurde zum Moodle-Login umgeleitet; visuelle Darstellung und Lehrkraftkontext bleiben offen. Kein neuer Claude- oder ChatGPT-Lauf in dieser Codex-Sitzung.
+
 ## Offen (nicht als erledigt markiert)
 
-- Claude-Lauf für Export/Anlegen/Ablösen erledigt (siehe oben). Offen: Glossar-Einträge und Lightboxgallery-Dateien über Claude (Connector-Werkzeugliste aktualisieren), Codex- und ChatGPT-Lauf samt Screenshots, Darstellung im Spike durch eine Lehrkraft.
+- Claude- und Codex-Basisläufe für Export/Anlegen/Ablösen erledigt (Beleggrenzen siehe oben). Offen: Glossar-Einträge und Lightboxgallery-Dateien über echte Clients mit aktualisiertem Werkzeugvertrag; ChatGPT-Lauf samt Screenshots, Darstellung im Spike durch eine Lehrkraft und Vorlagen im tatsächlichen Lehrer-Kontext.
 - Verifizierte Ablage `activity-types/lightboxgallery.md` (#599) hängt an der Spike-Abnahme.
-- Release-String ist `2.0.0-beta`; die vereinbarte Nummer 2.1.0 ist nicht gesetzt (Entscheidung Release-Arbeit; Maturity bleibt Beta).
+- Release-String ist `2.0.0-beta`; die vereinbarte Nummer 2.1.0 ist nicht gesetzt (separate Release-Arbeit; Maturity bleibt Beta).
 - Supportmatrix/Mindestversion und Upgrade vom veröffentlichten `main` bleiben separate Releasearbeit.
 - Konkreter Live-Deployplan nur mit ausdrücklicher Freigabe.
-- Review-Restpunkte (Beobachtung, kein Blocker): `supplement_missing` fängt jede `\Throwable` (Ausstandsnotiz bei fehlgeschlagenem Template-PUT ungetestet); `preview_supersede` ignoriert `files` (kein Test); `glossary_entry_writer`-Docblock „no existing-entry reads“ ungenau (`glossary_concept_exists` ist Moodle-Core-Duplikatprüfung); `gallery_images` in der Verlaufs-Freigabeliste ungeprüft; Dateien über 800 Zeilen (`oauth_lib.php`, `catalog/assign.php`, `import_questions_xml.php`) als eigenes Refactoring.
+- Review-Restpunkte (Beobachtung, kein Blocker): `glossary_entry_writer`-Docblock „no existing-entry reads“ ungenau (`glossary_concept_exists` ist Moodle-Core-Duplikatprüfung); Dateien über 800 Zeilen (`oauth_lib.php`, `catalog/assign.php`, `import_questions_xml.php`) als eigenes Refactoring.
+- Korrigierte frühere Beobachtungen: Ausstandsnotiz bei fehlgeschlagenem Template-PUT ist durch `activity_type_templates_test::test_external_write_outage_retains_new_selection_and_pending_notes` abgedeckt. `supplement_missing` erhält die normale Fehlerpolitik. `gallery_images` ist gerade nicht durch `history/file_policy.php` freigegeben; Galerie-Dateien werden über diesen Verlauf nicht wiederhergestellt. Materialinhaltsprüfung gehört ausdrücklich nicht zur Ablöse-Vorschau.
