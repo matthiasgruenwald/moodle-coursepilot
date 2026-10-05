@@ -315,8 +315,9 @@ Line-Coverage allein beweisen die Sicherheitsgarantien nicht.
 - Deployment/Upgrade/Lasttests gegen laufende Instanzen, Releasefreigabe,
   Merge nach dev/main, Tags und produktive Datenbereinigung.
 - Umbau des eingefrorenen Node-/Legacy-Wegs oder Erzeugung seines ZIPs.
-- Neue Aktivitätsarten, XML-Bearbeitung, Glossar-Inhaltsimport, Datei-Nachtrag
-  für erschlossene Arten und zusätzliche Ablageadapter.
+- Neue Aktivitätsarten, XML-Bearbeitung und zusätzliche Ablageadapter. Glossar-Inhaltsimport
+  (#593) und Datei-Nachtrag für erschlossene Arten (#598/#599) kamen danach und halten diese
+  Garantien ein (Prüfung vor jeder Mutation, F11).
 - Neuer serverseitiger Genehmigungsmechanismus, automatische Entsorgung
   versteckter Vorgänger und Auflösung bestehender Aktivitätsverweise.
 - Spekulative Policy-Engine/Factory, Dateiaufteilung allein wegen Zeilenzahl

@@ -17,7 +17,7 @@ Moodle-Import gehen. Für jede dieser Arten einen Feldkatalog zu pflegen, lohnt 
 Coursepilot erschließt sich solche Arten selbst, wie bei der Fragetyp-Ablage: Die KI baut
 eine **Aktivitäts-XML** (`<mod>.xml`), das Plugin ergänzt das Backup-Gerüst, legt an und
 prüft per Round-Trip. Was dabei gelernt wird, steht in der **Aktivitätsart-Ablage**
-(`aktivitaetsarten/<modname>.md`) im Kontextbereich der Lehrkraft.
+(`activity-types/<modname>.md`) im Kontextbereich der Lehrkraft.
 
 Begriffe: `CONTEXT.md` — Katalogisierte/Erschlossene Aktivitätsart, Aktivitätsart-Ablage,
 Anlegen aus XML, Aktivitäts-XML, Ablösen.
@@ -146,10 +146,10 @@ Bau-Reihenfolge.
 - **Nutzerdaten-Inhalte** gehen nicht mit, weil `MODE_IMPORT` `users=0` erzwingt. Ein
   Glossar wird leer angelegt; das steht als Stolperstein in der Ablage.
 - **Rechte:** Restore- bzw. Backup-Capabilities im Kurs, praktisch `editingteacher`. Je
-  Werkzeug eine Deklaration (Spec 0022) plus Erwähnung in `skills/referenz/mcp-tools.md`
+  Werkzeug eine Deklaration (Spec 0022) plus Erwähnung in `skills/reference/mcp-tools.md`
   (Korpus-Test), danach `version.php` anheben und `upgrade.php` ausführen.
-- **Skill:** `Plugin/src/local_coursepilot/skills/referenz/aktivitaetsarten.md` nach dem
-  Vorbild `referenz/fragetypen.md`. Inhalt:
+- **Skill:** `Plugin/src/local_coursepilot/skills/reference/activity-types.md` nach dem
+  Vorbild `reference/question-types.md`. Inhalt:
   - die Gliederung der Ablage,
   - die Lernschleife: Ablage lesen → Bestand oder `export_default_activity` → bauen →
     Round-Trip → höchstens dreimal korrigieren,
@@ -210,7 +210,7 @@ abgestimmt freizugebender Schritt.
 
 - Bearbeiten über XML (ADR 0016, 0028).
 - „Ersetzen“ (Überschreiben mit Sicherung und Verweisauflösung).
-- Nutzerdaten-Inhalte, etwa Glossar-Einträge — eigenes Ticket (#593), kein Seam auf Vorrat.
+- Nutzerdaten-Inhalte, etwa Glossar-Einträge — eigenes Ticket, seither umgesetzt in #593 (`add_glossary_entries`).
 - Textlinks (`view.php?id=`) im Verweis-Finder — erst bei Bedarf.
 - lesson und quiz.
 - Die Paketarten `scorm`, `imscp`, `h5pactivity` bleiben für Folge-Issues gesperrt.
