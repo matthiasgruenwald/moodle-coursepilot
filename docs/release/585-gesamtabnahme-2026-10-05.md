@@ -120,9 +120,10 @@ Grenzen: Die in dieser Sitzung sichtbare Werkzeugliste enthält weiterhin kein `
 ## Offen (nicht als erledigt markiert)
 
 - Claude- und Codex-Basisläufe für Export/Anlegen/Ablösen erledigt (Beleggrenzen siehe oben). Offen: Glossar-Einträge und Lightboxgallery-Dateien über echte Clients mit aktualisiertem Werkzeugvertrag; ChatGPT-Lauf samt Screenshots, Darstellung im Spike durch eine Lehrkraft und Vorlagen im tatsächlichen Lehrer-Kontext.
-- Verifizierte Ablage `activity-types/lightboxgallery.md` (#599) hängt an der Spike-Abnahme.
-- Release-String ist `2.0.0-beta`; die vereinbarte Nummer 2.1.0 ist nicht gesetzt (separate Release-Arbeit; Maturity bleibt Beta).
-- Supportmatrix/Mindestversion und Upgrade vom veröffentlichten `main` bleiben separate Releasearbeit.
+- Verifizierte Ablage `activity-types/lightboxgallery.md` (#599): am 06.10. im Kontextbereich der Lehrkraft angelegt (nicht im Repo, Fremd-Plugin).
+- ~~Release-String~~ erledigt 06.10.: `2.1.0-beta`, Maturity Beta; Mindestversion Moodle 5.1 (`requires` 2025100600), CI-Matrix 5.1/5.2 (ADR 0027), Doku und README angepasst. Vor dem Merge muss die 5.2-Zeile der CI grün sein.
+- (historisch) Release-String war `2.0.0-beta`; die vereinbarte Nummer 2.1.0 war nicht gesetzt (separate Release-Arbeit; Maturity bleibt Beta).
+- Supportmatrix/Mindestversion: umgestellt (siehe oben). Upgrade vom veröffentlichten `main` bleibt separate Releasearbeit.
 - Konkreter Live-Deployplan nur mit ausdrücklicher Freigabe.
 - #626: echter ChatGPT-Plus-Schreibtest, zwei ChatGPT-Webbilder, zwei Datenschutzbereinigungen und abschließende Maintainerdurchsicht von DE/EN fehlen weiterhin. Codex/T3 ist kein Nachweis der Desktop-/ChatGPT-Weboberfläche.
 - Review-Restpunkte (Beobachtung, kein Blocker): `glossary_entry_writer`-Docblock „no existing-entry reads“ ungenau (`glossary_concept_exists` ist Moodle-Core-Duplikatprüfung); Dateien über 800 Zeilen (`oauth_lib.php`, `catalog/assign.php`, `import_questions_xml.php`) als eigenes Refactoring.
