@@ -24,13 +24,13 @@ Why: agents treat prose as guidance and checks as law; two homes for one rule dr
 Source: ADR 0029 (Context); Spec 0029, user stories 40–41.
 
 **C2. Name things with the domain's words.** Identifiers, test titles and messages use the
-term the project glossary defines for that concept, one term per concept.
+term the project glossary defines for that concept, one term per concept. New or changed
+terms go into `CONTEXT.md` first (via the `/domain-modeling` skill or equivalent); when a
+term changes, the classes, methods and keys that carry it are renamed with it.
 Why: a shared language lets readers, reviewers and agents find a concept by its name.
-Source: Evans, *Domain-Driven Design* (2003), ch. 2 "Ubiquitous Language"; Evans, *DDD
-Reference* (2015).
-Open: Evans also says a change in the language is a change to the model: when a glossary
-term changes, rename the classes, methods and keys that carry it (ch. 2, "Ubiquitous
-Language"). Add that to C2?
+Source: Evans, *Domain-Driven Design* (2003), ch. 2 "Ubiquitous Language" ("a change in the
+UBIQUITOUS LANGUAGE is a change to the model"); Evans, *DDD Reference* (2015);
+`docs/agents/domain.md`.
 
 **C3. Test behaviour through the public interface.** A test calls the highest available
 seam and asserts an outcome a user of that seam would notice. Test doubles replace only
