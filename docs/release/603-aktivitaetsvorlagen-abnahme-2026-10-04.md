@@ -141,3 +141,20 @@ im ausgewählten externen Ordner. Der Operator dokumentiert Pfad, Prüfsummen un
 Hinweise. Technische Schreibausfall-/Konkurrenzprüfungen liegen bereits vor; für die
 zusätzlich verlangte Live-Ausfall-/OAuth-Abnahme und Integrationsmatrix fehlen
 weiterhin Belege. Bis dahin bleibt das Issue offen. KEIN Ponytail.
+
+## Live-Abnahme Spike, 06.10.2026
+
+Die zwei Routen wurden mit ausdrücklicher Freigabe auf Spike aktualisiert (bytegleich
+zu `029bd1e`). Ergebnis durch die Lehrkraft (`grw`, Browser/iPad):
+
+1. Ortswahl und externer Ordnerbrowser öffnen ohne Zugriffsfehler. Bestanden.
+2. Erstes Bestätigen eines leeren Ordners: Hinweis „Activity-type templates supplied:
+   book, checklist, glossary“. Bestanden.
+3. Zweites Bestätigen derselben Wahl: kein neuer Vorlagenhinweis. Bestanden.
+4. Schutz einer bearbeiteten Vorlage: live übersprungen; durch PHPUnit abgedeckt
+   (bytegleicher Lehrerbestand, atomarer Konkurrenzschutz).
+
+Gefunden und ausgegliedert: #680 („Ordner anlegen“ auf der Grundebene ausgegraut).
+Der Hinweis zum früheren Ablageort gehört zur bestehenden Ortswechsel-Funktion, nicht
+zu #603. Offen bleiben OAuth-/Ausfall-Abnahme, CI-Matrix und kombinierte
+Lightboxgallery-Regression.
