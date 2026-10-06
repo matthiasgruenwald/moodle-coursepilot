@@ -39,7 +39,7 @@ Der Server-MCP liegt unter `Plugin/src/local_coursepilot/` und wird für Entwick
 
 ## Aufgabenhandling
 
-- Vor jedem Edit: Datei lesen. Vor Funktionsänderung: alle Aufrufer grep-en.
+- Vor Funktionsänderung: alle Aufrufer grep-en.
 - **Coding Standards:** vor dem Schreiben oder Reviewen von Code, Tests oder Skill-Korpus [`CODING_STANDARDS.md`](CODING_STANDARDS.md) lesen.
 - Pläne gehören nach `docs/plans/` (versioniert).
 - Single-context Repo: `CONTEXT.md` im Root, `docs/adr/` für Architekturentscheidungen, `docs/specs/` für Produktspezifikationen.
