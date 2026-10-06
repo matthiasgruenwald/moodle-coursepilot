@@ -85,3 +85,59 @@ unverändert. Die Sicherheits-, Privacy- und Coverage-Gates wurden nicht gelocke
 Automatische External-/PHPUnit-Aufrufe belegen keine tatsächliche Claude-, Codex- oder
 ChatGPT-Bedienung. Die gebündelte menschliche Praxisabnahme bleibt offen. #603 wird
 vom Worker nicht geschlossen; es gibt keine PR, Veröffentlichung, Tags oder main-Merges.
+
+## Konkrete Praxisabnahme am 06.10.2026
+
+Die [Abnahmeübersicht im Spike-Testkurs](https://spike.gruenwald.fun/mod/page/view.php?id=1864)
+enthält direkt verlinkte Beispiele aus der unveränderten ausgelieferten XML:
+
+- [Buch](https://spike.gruenwald.fun/mod/book/view.php?id=1861): ein Kapitel
+  „Chapter 1“ mit dem Inhalt „Text.“.
+- [Checkliste](https://spike.gruenwald.fun/mod/checklist/view.php?id=1862):
+  „Read task 1“, „Optional task“, „Finish“.
+- [Glossar](https://spike.gruenwald.fun/mod/glossary/view.php?id=1863): leer,
+  ohne erfundene Beispieldaten.
+
+Anlage und XML-Rückvergleich liefen erfolgreich über den verbundenen Coursepilot.
+Alle drei Aktivitäten und die Übersichtsseite wurden anschließend im tatsächlichen
+Moodle-Browser mit dem angemeldeten Konto `grw` geöffnet und inhaltlich geprüft.
+Das ist ein Browser-/MCP-Nachweis, keine Behauptung einer vollständigen Abnahme in
+Claude oder ChatGPT. Die persönliche Zustimmung der Lehrkraft bleibt offen.
+
+Die sieben für #603 entscheidenden Live-Dateien wurden lesend mit Commit `a666ea9`
+verglichen: beide Ablageklassen, Ortswahlklasse und -seite sowie die drei Vorlagen
+sind bytegleich. Der Worker hat kein Deployment ausgeführt.
+
+Dabei wurde ein Abnahmeblocker aus der Fernzugriffsfreigabe gefunden: `grw` ist
+über die ausgewählte Systemkohorte berechtigt (`remote_access::is_granted()` liefert
+true), besitzt aber keine rollenbasierte `useremote`-Capability. Ortswahlseite und
+Ordnerbrowser prüften ausschließlich diese Capability. Die Seite verweigerte den
+Zugriff bereits vor dem Rendern. Der Nachtrag verwendet in beiden Routen dieselbe
+Rollen-oder-Kohortenprüfung wie OAuth und Verbindungsverwaltung. Login, Sesskey und
+Eigentumsprüfung bleiben erhalten; keine Rolle oder Kohortenmitgliedschaft geändert.
+
+Der Quellvertrag für beide Routen wurde zuerst rot und nach der Korrektur grün;
+`npm test` besteht mit 37/37 Tests, PHP-Syntax beider Routen und `git diff --check`
+sind grün. Ein lesender Security-/Spec-Review meldet keine Blocker. Die Vollsuite
+und Coverage oben beziehen sich weiterhin auf `a666ea9`; sie wurden für diesen
+zweizeiligen Nachtrag nicht erneut ausgeführt. Der Quellvertrag allein beweist
+kein korrigiertes Live-Browserverhalten. Logs: `access-contract-red.log`,
+`access-contract-green.log`, `npm-access-final.log` in `/tmp/coursepilot-603`.
+
+Nach ausdrücklich freigegebener Aktualisierung der beiden Routen ist noch zu prüfen:
+
+1. `grw` öffnet die [Ortswahl](https://spike.gruenwald.fun/local/coursepilot/location_selection.php)
+   ohne Zugriffsfehler; auch der externe Ordnerbrowser funktioniert.
+2. Ein eigens vorbereiteter leerer Testkontext erhält beim Bestätigen exakt
+   `activity-types/book.md`, `checklist.md`, `glossary.md` und den passenden Hinweis.
+   Kein vorhandener Arbeitskontext wird für diesen Test geleert.
+3. Dieselbe Wahl erneut bestätigen: kein neuer Vorlagenhinweis, Inhalte und
+   Änderungszeiten unverändert. Eine im Testkontext bewusst bearbeitete Vorlage
+   bleibt beim nächsten Bestätigen unverändert.
+
+Die Dateien liegen im gewählten persönlichen Kontextbereich, nicht als Kursaktivität.
+Bei Moodle-Ablage sind sie unter den eigenen Dateien zu prüfen; bei externer Ablage
+im ausgewählten externen Ordner. Der Operator dokumentiert Pfad, Prüfsummen und
+Hinweise. Technische Schreibausfall-/Konkurrenzprüfungen liegen bereits vor; für die
+zusätzlich verlangte Live-Ausfall-/OAuth-Abnahme und Integrationsmatrix fehlen
+weiterhin Belege. Bis dahin bleibt das Issue offen. KEIN Ponytail.
