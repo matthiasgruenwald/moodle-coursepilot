@@ -28,6 +28,9 @@ term the project glossary defines for that concept, one term per concept.
 Why: a shared language lets readers, reviewers and agents find a concept by its name.
 Source: Evans, *Domain-Driven Design* (2003), ch. 2 "Ubiquitous Language"; Evans, *DDD
 Reference* (2015).
+Open: Evans also says a change in the language is a change to the model: when a glossary
+term changes, rename the classes, methods and keys that carry it (ch. 2, "Ubiquitous
+Language"). Add that to C2?
 
 **C3. Test behaviour through the public interface.** A test calls the highest available
 seam and asserts an outcome a user of that seam would notice. Test doubles replace only
