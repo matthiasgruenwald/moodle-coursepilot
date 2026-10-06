@@ -39,7 +39,7 @@ Why: tests that follow implementation details break on every refactor and protec
 Source: Khorikov, *Unit Testing Principles, Practices, and Patterns* (2020), ch. 4, §4.1.2
 "Resistance to refactoring"; Google eng-practices (Tests). The port rule is a project
 decision (Spec 0029, Testing Decisions), not Khorikov.
-Open: Khorikov's own rule is "mock unmanaged dependencies, use real managed ones". Adopt
+Open: Khorikov's own rule (ch. 8, §8.2) is "mock unmanaged dependencies, use real managed ones". Adopt
 that wording instead of the port rule? And: allow a seam added only for testing when no
 port exists (today: no), or require an ADR for each?
 
@@ -89,8 +89,8 @@ Why: event triggers spend cleanup effort where change actually happens; separate
 changes keep feature diffs reviewable.
 Source: Martin, *Clean Code* (2008), ch. 1, p. 14 "The Boy Scout Rule"; Fowler,
 *Refactoring*, 2nd ed. (2018), ch. 2 "When Should We Refactor?" (Rule of Three; Don Roberts
-attribution); Tornhill, *Your Code as a Crime Scene*, 2nd ed. (2024), ch. 4 (hotspots),
-ch. 10 (architectural reviews); Google
+attribution); Tornhill, *Your Code as a Crime Scene*, 2nd ed. (2024), ch. "Discover Hotspots" (§ "Intersect
+Complexity and Effort"), ch. "Architectural Reviews: Support Redesigns with Data"; Google
 eng-practices (Small CLs: refactorings in a separate CL); ADR 0029 (Consequences).
 Open: does "top of the failure report" mean rank 1 only, or the top N, and over which time
 window?
