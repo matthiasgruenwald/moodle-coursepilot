@@ -223,6 +223,12 @@ final class xml_activity_creator {
         if (!$ok || $dom->documentElement->nodeName !== 'activity' || $dom->documentElement->getAttribute('modulename') !== $modname) {
             throw new invalid_parameter_exception("activity_xml is not a valid activity XML of type \"$modname\".");
         }
+        // The Lightboxgallery restore step reads this field before inserting the activity.
+        if ($modname === 'lightboxgallery' &&
+                (new \DOMXPath($dom))->query('/activity/lightboxgallery/timemodified')->length === 0) {
+            throw new invalid_parameter_exception('activity_xml requires <timemodified> in <lightboxgallery>. '
+                . 'Use the complete XML from coursepilot_export_default_activity.');
+        }
     }
 
     /**
