@@ -92,7 +92,7 @@ for everyone, including teachers whose storage is configured correctly.
 
 ## Status
 
-Beta (`2.0.0-beta`). The plugin is in real teaching use by its author; it has not yet been
+Beta (`2.1.0-beta`). The plugin is in real teaching use by its author; it has not yet been
 through a production deployment at another school.
 
 ## Development

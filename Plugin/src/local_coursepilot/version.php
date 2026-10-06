@@ -32,4 +32,4 @@ $plugin->requires  = 2025041400;
 // Beta after practical testing (ADR 0027). Continues Coursepilot 1.x:
 // the rebuild is version 2, not a separate product line.
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '2.0.0-beta';
+$plugin->release   = '2.1.0-beta';
