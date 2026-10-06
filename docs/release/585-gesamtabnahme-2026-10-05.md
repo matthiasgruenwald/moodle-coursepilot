@@ -98,6 +98,8 @@ Kandidat 2026100402 per `deploy-plugin-spike.sh` (nach DB-Snapshot) auf den Spik
   - Lightboxgallery 1866 mit `files` aus dem Workbench-Bereich (drei Bilder, Unterschriften Rot/Gruen/Blau): Bilder (3), Thumbnails (3, 162x132) und Unterschriften serverseitig bestätigt, Aktivität versteckt wie verlangt, keine Reste im Kurs.
   - Auffälligkeit: Fehlt `<timemodified>` in der Galerie-XML, kommt die rohe PHP-Meldung `Undefined property: stdClass::$timemodified` zurück statt einer klaren Fehlermeldung; mit vollständiger Vorlage läuft der Aufruf. Kein Datenverlust, Folge-Ticket sinnvoll.
   - Werkzeugschemas im Claude-Connector zeigen `files` nicht an; der Server liefert es (55 Werkzeuge, `files` in `tools/list`). Der Aufruf mit `files` wurde dennoch angenommen.
+- Lightboxgallery 1867 (Formen, Claude): fünf Bilder mit bekanntem Seitenverhältnis (2:1, 1:1, 1:2, 3:1, 4:3) und Unterschriften, `perrow` 3. Alle Thumbnails 162x132; Sichtprüfung der Thumbnail-Dateien: mittiger Zuschnitt ohne Verzerrung (hochformatige Bilder verlieren oben/unten, Panorama links/rechts), wie in `activity-backup-experience` beschrieben. Bildquelle: serverseitig erzeugte PNGs im Workbench-Bereich (`585-abnahme/gallery/`), nicht per Upload-Werkzeug.
+- ChatGPT-Web: Werkzeugliste einer laufenden Sitzung enthält `add_glossary_entries` nicht (Server liefert es, `tools/list` 55 Werkzeuge); neuer Chat nötig.
 - Codex-Basisschreibtest 05.10. (1854–1857) und Codex-Desktop 06.10. (1858), ChatGPT iOS (1859) sind aus #626 belegt (`docs/release/626-*`).
 
 ## Echter Codex-MCP-Lauf (T3, Spike, 05.10.2026)
