@@ -10,7 +10,7 @@ gate is red, fix the code until it is green. A rule that a tool can check belong
 tool, and leaves this file the day the tool checks it.
 
 Each rule reads: **rule** → why → source. A reviewer cites the rule by its number (`C3`,
-`P5`).
+`M4`, `P5`).
 
 ---
 
@@ -63,7 +63,7 @@ tightening (ADR 0023).
 express, in its own words. An interface comment (docblock) states what a method or class
 provides, so callers need not read the body. Tracker references (`#494`, `MDL-…`) belong in
 commits and PRs; in code they appear only in a `TODO` comment, which names the full issue
-URL (`TODO https://github.com/matthiasgruenwald/moodle-coursepilot/issues/123`). Existing
+URL (`TODO https://github.com/<owner>/<repo>/issues/123`). Existing
 references are removed when the code around them is touched (C8).
 Why: what-comments in a body go stale silently; interface comments are what makes an
 abstraction usable; a bare issue number sends the reader elsewhere for the reason the
@@ -167,94 +167,40 @@ the smell baseline of the `/code-review` skill.
 
 ---
 
-## Part 2 — Coursepilot (`local_coursepilot`)
+## Part 2 — Moodle plugins (any Moodle plugin)
 
-**P1. Place a class by what it does, not by what it uses.** The four layers are Entry
-(page scripts, MCP endpoint, dispatcher, tool registry), Tools (`external`), Domain modules
-(catalog, history, quiz, context area, material store, storage anchor, OAuth) and Adapters
-(WebDAV, storage ports). Logic a second tool needs moves down into a domain module; a domain
-module that needs a tool's behaviour gets that behaviour moved into the module. When a new
-root class fits two layers, the author picks one in the deptrac class list with a one-line
-reason beside the entry; review may overrule it.
-Why: the dependency checker forbids the back-edges, but only judgement picks the right home;
-the three measured back-edges (catalog, history, WebDAV → external) came from placing logic
-where it was first needed.
-Source: ADR 0030.
+Adopt together with Part 1. Written for any Moodle plugin; `<component>` is the plugin's
+Frankenstyle name (for example `local_coursepilot`).
 
-**P2. Entry scripts only wire.** A page script loads config, checks access, reads
+**M1. Code prose is English.** Identifiers, comments, docblocks and test titles are English;
+the plugin ships only `lang/en/`.
+Why: Moodle is international; reviewers and contributors read the code, and translations
+come through AMOS after approval.
+Source: Moodle plugin contribution checklist (English, Strings).
+
+**M2. User-visible text and errors use language strings.** Every text a user sees comes
+from `get_string()` (or `{{#str}}` in templates) with a key in `lang/en/<component>.php`.
+Strings are written in sentence case, carry no meaningful leading or trailing whitespace,
+and the string file stays pure data (`$string['key'] = 'value';`, no concatenation or
+heredoc). User-visible failures throw `moodle_exception` (or a subclass) with a string key;
+parameter errors use `invalid_parameter_exception`; programming errors use
+`coding_exception` with English text. Internal errors and protocol error descriptions (for
+example OAuth `error_description`) stay English and untranslated. Either reference form
+(`\moodle_exception` or a `use` import) is fine.
+Why: language strings let AMOS translate what the user sees; AMOS only parses pure-data
+string files.
+Source: Moodle coding style (Exceptions, Namespaces, Language strings); Moodle plugin
+contribution checklist (Strings); ADR 0024.
+
+**M3. Page scripts only wire.** A page script loads config, checks access, reads
 parameters, calls one class and renders. Every branch with a domain decision lives in a
 tested class.
-Why: entry scripts are excluded from the coverage denominator; that exclusion is honest only
-while they hold no logic.
-Source: Spec 0029, user stories 17–18. Project rule: Moodle itself only requires logic-free
-renderers and templates (Output API docs).
+Why: logic in a page script can only be tested through the browser; in a class it is a
+unit test away.
+Source: Moodle Output API docs (logic before the renderable, logic-free renderers and
+templates); extended to page scripts as a project rule (Spec 0029, user stories 17–18).
 
-**P3. Module instances change through the form path.** Create and update modules via
-`add_moduleinfo()`/`update_moduleinfo()`. Direct table writes are reserved for what Moodle
-has no form field for (positions, quiz slot structure). Backup XML is a creation path for
-supported activity types only.
-Why: the form path raises `course_module_updated`, which the change history depends on, and
-cannot write broken `availability` JSON.
-Source: ADR 0016, ADR 0028, ADR 0018.
-
-**P4. Test tools through the external function.** A tool test calls the external function
-(`execute()`, then `clean_returnvalue()` on the result); a domain test calls the module's
-public interface.
-Why: this is the path a client takes, including parameter and return validation.
-Source: Spec 0029, Testing Decisions; Moodle dev docs, "Testing external functions".
-Coverage metadata (`#[CoversClass]`) is enforced by moodle-cs `moodle.PHPUnit.TestCaseCovers`
-in the gate, not here.
-
-**P5. Contract tests stay as they are.** Privacy-surface, install-smoke and similar invariant
-tests change only together with the contract they guard, and never count as prune
-candidates.
-Why: they protect invariants and need not kill mutants.
-Source: Spec 0029, user story 33.
-
-**P6. User-visible text and errors use language strings.** Every text a user sees comes
-from `get_string()` (or `{{#str}}` in templates) with a key in
-`lang/en/local_coursepilot.php`. Strings are written in sentence case, carry no meaningful
-leading or trailing whitespace, and the string file stays pure data (`$string['key'] =
-'value';`, no concatenation or heredoc). Teacher-visible failures throw `moodle_exception`
-(or a subclass) with a string key; parameter errors use `invalid_parameter_exception`;
-programming errors use `coding_exception` with English text. Internal errors and OAuth
-`error_description` stay English and untranslated. Either reference form
-(`\moodle_exception` or a `use` import) is fine.
-Why: language strings let AMOS translate what the teacher sees, and the AI relays it in the
-teacher's language; AMOS only parses pure-data string files.
-Source: ADR 0024 (incl. addendum 2026-10-04); Moodle coding style (Exceptions, Namespaces,
-Language strings); Moodle plugin contribution checklist (Strings).
-
-**P7. Use glossary terms in English form.** Each `CONTEXT.md` entry used in code carries a
-`Code:` line with its fixed English rendering; classes, tool parameters and return keys use
-exactly that rendering. The line is added when a term first reaches code or its entry is
-next touched.
-Why: the tool contract is English (ADR 0024) while the glossary is German; one fixed
-rendering per entry keeps the translation single instead of letting one concept collect
-several English names.
-Source: CONTEXT.md; ADR 0024; C2; Evans, *Domain-Driven Design*, ch. 2 ("Translation
-blunts communication").
-
-**P8. English base for all code prose.** Identifiers, comments, docblocks, test titles, tool
-descriptions and the skill corpus are English; only `lang/de/` carries German.
-Why: Marketplace requirement and international usability of the tool contract.
-Source: ADR 0024. Leaves this file once the gate checks comments and docblocks (C1, #685).
-
-**P9. Teacher-facing text reads well in Codex.** A change to tool descriptions, handshake
-instructions or the skill corpus is checked against how Codex presents it, not only Claude.
-Why: Codex is the product's primary client for teachers (Codex-First).
-Source: CONTEXT.md (Codex-First); CLAUDE.md.
-
-**P10. Every tool checks context and capability first.** Each external function calls
-`validate_context()` and checks its capability, directly or through a shared resolver such
-as `question_bank_context::resolve()`, before reading or writing data in that context.
-Why: tools are the only door teachers' AI clients use; a tool that skips the check exposes
-data of every course on the site.
-Source: Moodle dev docs, "Writing a new service" (`validate_context()` required in all
-external functions). moodle-cs does not check this for external functions. Leaves this file
-once the gate checks it (C1, #686).
-
-**P11. Pages and forms follow Moodle's security guidelines.** A page script, after
+**M4. Pages and forms follow Moodle's security guidelines.** A page script, after
 `require_login()`:
 - checks the capability before showing a widget and again before acting on it;
 - reads input through a moodleform with `setType()` per field, or through
@@ -271,35 +217,116 @@ Why: Moodle's approval review treats any breach as a blocker; moodle-cs checks o
 Source: Moodle security guidelines (summary); Moodle plugin contribution checklist
 (Security).
 
-**P12. Database access goes through the DML API and works on every supported database.**
+**M5. Every external function checks context and capability first.** Each external
+function calls `validate_context()` and checks its capability, directly or through a shared
+resolver, before reading or writing data in that context.
+Why: web service clients reach data only through external functions; one that skips the
+check exposes data of every course on the site.
+Source: Moodle dev docs, "Writing a new service" (`validate_context()` required in all
+external functions). moodle-cs does not check this.
+
+**M6. Test external functions as a client calls them.** A test calls `execute()`, then
+`clean_returnvalue()` on the result, and covers the missing-capability case.
+Why: this is the path a client takes, including parameter and return validation.
+Source: Moodle dev docs, "Testing external functions"; Spec 0029, Testing Decisions.
+Coverage metadata (`#[CoversClass]`) is enforced by moodle-cs `moodle.PHPUnit.TestCaseCovers`
+in the gate, not here.
+
+**M7. Database access goes through the DML API and works on every supported database.**
 Custom SQL uses `$DB` with placeholders (`?` or `:name`), never concatenated values, and
 avoids engine-specific syntax; where SQL differs, use the `$DB->sql_*()` helpers.
-Why: SQL that fails on PostgreSQL blocks Marketplace approval even when it works on
-MariaDB.
+Why: SQL that fails on PostgreSQL blocks approval even when it works on MySQL or MariaDB.
 Source: Moodle plugin contribution checklist (Cross-DB compatibility, approval blockers);
-Moodle security guidelines (SQL injection). Leaves this file once CI runs PostgreSQL (C1,
-#687).
+Moodle security guidelines (SQL injection).
 
-**P13. Settings live in the plugin's config.** Admin settings are named
-`local_coursepilot/<name>` in `settings.php` and read with `get_config('local_coursepilot',
-'<name>')`; code writes them with `set_config(..., 'local_coursepilot')`.
+**M8. Settings live in the plugin's config.** Admin settings are named `<component>/<name>`
+in `settings.php` and read with `get_config('<component>', '<name>')`; code writes them with
+`set_config(..., '<component>')`.
 Why: `config_plugins` avoids `$CFG` bloat and name collisions with other plugins.
 Source: Moodle plugin contribution checklist (Settings storage).
 
-**P14. Write actions raise Moodle events.** Every action that changes data triggers a
-Moodle event, through the core API that raises it (form path, P3) or a plugin event under
-`classes/event/`. Read-only tools and page views raise none.
-Why: events feed the logs, the change history and other plugins' observers; a write without
-an event is invisible to all three.
-Source: Moodle security guidelines ("Log every request"); ADR 0018; maintainer decision
-(#656: writes only).
+**M9. Write actions raise Moodle events.** Every action that changes data triggers a Moodle
+event, through the core API that raises it (for example `update_moduleinfo()`) or a plugin
+event under `classes/event/`. Read-only functions and page views raise none.
+Why: events feed the logs and other plugins' observers; a write without an event is
+invisible to both.
+Source: Moodle security guidelines ("Log every request"); maintainer decision (#656: writes
+only).
 
-**P15. Internal functions take explicit, typed parameters.** A PHP function lists each
+**M10. Internal functions take explicit, typed parameters.** A PHP function lists each
 option as its own typed parameter with a default, or takes a small options class, instead
 of a generic `$options` array. Magic methods (`__get`, `__call`, …) need a written reason
 (C9). External function parameters follow the external API definitions and are exempt.
-Why: typed parameters document themselves and let PHPStan check every call.
+Why: typed parameters document themselves and let static analysis check every call.
 Source: Moodle coding style (Using arrays for options as arguments; Magic methods).
+
+**M11. Styles are scoped to the plugin.** Every selector in the plugin's `styles.css` starts
+with a plugin-scoped class: the page body class Moodle adds (`.path-mod-<name>`, …) or a
+class prefixed with the plugin's name.
+Why: Moodle concatenates every plugin's `styles.css` and serves it on every page; an
+unscoped selector restyles pages far outside the plugin.
+Source: Moodle plugin contribution checklist (CSS styles).
+
+---
+
+## Part 3 — Coursepilot (`local_coursepilot`)
+
+**P1. Place a class by what it does, not by what it uses.** The four layers are Entry
+(page scripts, MCP endpoint, dispatcher, tool registry), Tools (`external`), Domain modules
+(catalog, history, quiz, context area, material store, storage anchor, OAuth) and Adapters
+(WebDAV, storage ports). Logic a second tool needs moves down into a domain module; a domain
+module that needs a tool's behaviour gets that behaviour moved into the module. When a new
+root class fits two layers, the author picks one in the deptrac class list with a one-line
+reason beside the entry; review may overrule it.
+Why: the dependency checker forbids the back-edges, but only judgement picks the right home;
+the three measured back-edges (catalog, history, WebDAV → external) came from placing logic
+where it was first needed.
+Source: ADR 0030.
+
+**P2. Module instances change through the form path.** Create and update modules via
+`add_moduleinfo()`/`update_moduleinfo()`. Direct table writes are reserved for what Moodle
+has no form field for (positions, quiz slot structure). Backup XML is a creation path for
+supported activity types only.
+Why: the form path raises `course_module_updated` (M9), which the change history depends on,
+and cannot write broken `availability` JSON.
+Source: ADR 0016, ADR 0028, ADR 0018.
+
+**P3. Contract tests stay as they are.** Privacy-surface, install-smoke and similar invariant
+tests change only together with the contract they guard, and never count as prune
+candidates.
+Why: they protect invariants and need not kill mutants.
+Source: Spec 0029, user story 33.
+
+**P4. The tool contract and skill corpus are English.** M1 extends to tool parameters,
+return keys, tool descriptions, handshake instructions and the skill corpus. `lang/de/` is a
+development translation; the release build leaves it out.
+Why: the tool contract is final once published, and the AI relays it in the teacher's
+language.
+Source: ADR 0024 (incl. addenda 2026-10-04); `scripts/build-native-release.js`.
+
+**P5. Use glossary terms in English form.** Each `CONTEXT.md` entry used in code carries a
+`Code:` line with its fixed English rendering; classes, tool parameters and return keys use
+exactly that rendering. The line is added when a term first reaches code or its entry is
+next touched.
+Why: the tool contract is English (ADR 0024) while the glossary is German; one fixed
+rendering per entry keeps the translation single instead of letting one concept collect
+several English names.
+Source: CONTEXT.md; ADR 0024; C2; Evans, *Domain-Driven Design*, ch. 2 ("Translation
+blunts communication").
+
+**P6. Teacher-facing text reads well in Codex.** A change to tool descriptions, handshake
+instructions or the skill corpus is checked against how Codex presents it, not only Claude.
+Why: Codex is the product's primary client for teachers (Codex-First).
+Source: CONTEXT.md (Codex-First); CLAUDE.md.
+
+**P7. Entry scripts stay out of the coverage denominator only under M3.** Page scripts and
+admin settings are excluded from coverage; a script that gains a domain branch moves it into
+a class in the same change.
+Why: the exclusion is honest only while the scripts hold no logic.
+Source: Spec 0029, user stories 17–18.
+
+Planned gate checks that will retire rules here (C1): M1 and P4 comments → #685, M5 → #686,
+M7 on PostgreSQL → #687.
 
 ---
 
