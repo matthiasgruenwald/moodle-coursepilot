@@ -215,8 +215,8 @@ Why: Codex is the product's primary client for teachers (Codex-First).
 Source: CONTEXT.md (Codex-First); CLAUDE.md.
 
 **P10. Every tool checks context and capability first.** Each external function calls
-`validate_context()` and checks its capability before reading or writing data in that
-context.
+`validate_context()` and checks its capability, directly or through a shared resolver such
+as `question_bank_context::resolve()`, before reading or writing data in that context.
 Why: tools are the only door teachers' AI clients use; a tool that skips the check exposes
 data of every course on the site.
 Source: Moodle dev docs, "Writing a new service" (`validate_context()` required in all
