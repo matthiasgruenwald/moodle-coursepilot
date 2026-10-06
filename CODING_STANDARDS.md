@@ -137,10 +137,11 @@ Open: new rule from the source check. Adopt?
 > Open: adopt the smell baseline explicitly here, or leave it as the skill's default?
 
 **C14. Separate commands from queries.** A function either changes state or returns
-information, not both.
-Why: combining an action and a query makes the call harder to understand.
+information, not both. Read-only functions and tools (`get_*`, `list_*`) never write.
+Exception: an atomic create may return the new record's id.
+Why: combining an action and a query makes the call harder to understand, and a read that
+writes surprises every caller that only meant to look.
 Source: Martin, *Clean Code* (2008), ch. 3, "Command Query Separation", p. 45.
-Open: new rule from the full-text check. Adopt?
 
 ---
 
