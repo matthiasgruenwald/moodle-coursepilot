@@ -93,7 +93,12 @@ Kandidat 2026100402 per `deploy-plugin-spike.sh` (nach DB-Snapshot) auf den Spik
 - `export_default_activity` für book, checklist, glossary erfolgreich.
 - `create_activity_from_xml` book (cmid 1847, Kapitel), checklist (1848, zwei Punkte), glossary (1849) erfolgreich, Round-Trip bestanden.
 - Ablösen: `dry_run` (hidden_predecessors 1, nichts geschrieben), dann schreibend: 1850 sichtbar hinter 1848, 1848 versteckt.
-- **Nicht prüfbar:** Der Connector kennt noch den alten Werkzeugstand. `add_glossary_entries` (#593) und der `files`-Parameter (#598/#599) sind in seiner Werkzeugliste nicht enthalten. Beides ist nur durch die native Suite belegt, nicht durch echte Clientbedienung.
+- **06.10. nach Aktualisierung der Connector-Werkzeugliste (Claude):**
+  - `add_glossary_entries` auf Glossar 1849: zwei Einträge angelegt (eine Kategorie neu), das Duplikat desselben Begriffs sauber abgelehnt (`errconceptalreadyexists`), `gap_notice` geliefert.
+  - Lightboxgallery 1866 mit `files` aus dem Workbench-Bereich (drei Bilder, Unterschriften Rot/Gruen/Blau): Bilder (3), Thumbnails (3, 162x132) und Unterschriften serverseitig bestätigt, Aktivität versteckt wie verlangt, keine Reste im Kurs.
+  - Auffälligkeit: Fehlt `<timemodified>` in der Galerie-XML, kommt die rohe PHP-Meldung `Undefined property: stdClass::$timemodified` zurück statt einer klaren Fehlermeldung; mit vollständiger Vorlage läuft der Aufruf. Kein Datenverlust, Folge-Ticket sinnvoll.
+  - Werkzeugschemas im Claude-Connector zeigen `files` nicht an; der Server liefert es (55 Werkzeuge, `files` in `tools/list`). Der Aufruf mit `files` wurde dennoch angenommen.
+- Codex-Basisschreibtest 05.10. (1854–1857) und Codex-Desktop 06.10. (1858), ChatGPT iOS (1859) sind aus #626 belegt (`docs/release/626-*`).
 
 ## Echter Codex-MCP-Lauf (T3, Spike, 05.10.2026)
 
