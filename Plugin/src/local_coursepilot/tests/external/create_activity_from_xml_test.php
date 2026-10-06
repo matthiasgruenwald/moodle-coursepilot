@@ -32,6 +32,29 @@ defined('MOODLE_INTERNAL') || die();
 #[CoversClass(create_activity_from_xml::class)]
 final class create_activity_from_xml_test extends \advanced_testcase {
 
+    public function test_lightboxgallery_missing_timemodified_is_rejected_without_mutation(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $xml = file_get_contents(__DIR__ . '/../fixtures/lightboxgallery.xml');
+        $xml = preg_replace('#<timemodified>.*?</timemodified>#s', '', $xml);
+        $cms = get_fast_modinfo($course->id)->get_cms();
+        $versions = $DB->count_records('local_coursepilot_cm_version');
+        $galleries = $DB->count_records('lightboxgallery');
+        try {
+            create_activity_from_xml::execute($course->id, 'lightboxgallery', 1, $xml);
+            $this->fail('Missing timemodified must be rejected before restore.');
+        } catch (\invalid_parameter_exception $e) {
+            $this->assertStringContainsString('activity_xml requires <timemodified> in <lightboxgallery>', $e->getMessage());
+        }
+        $this->assertEquals($cms, get_fast_modinfo($course->id)->get_cms());
+        $this->assertSame($versions, $DB->count_records('local_coursepilot_cm_version'));
+        $this->assertSame($galleries, $DB->count_records('lightboxgallery'));
+    }
+
     public function test_creates_and_returns_cmid_with_presets_hint(): void {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();

@@ -553,8 +553,11 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
                                 applyBrowseResult({
                                     path: state.path,
                                     folders: [],
-                                    selectable: true,
-                                    reasonkey: null,
+                                    iserv: state.lastResult && state.lastResult.iserv,
+                                    selectable: !(state.lastResult && state.lastResult.iserv) ||
+                                        state.path.split('/')[0] === 'Files',
+                                    reasonkey: state.lastResult && state.lastResult.iserv &&
+                                        state.path.split('/')[0] !== 'Files' ? 'locationselectioniservfilesonly' : null,
                                     entrycount: 0,
                                     entrynames: []
                                 });
@@ -634,7 +637,8 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
             reasonEl.hidden = !locked;
             reasonEl.textContent = locked && result.reasonkey ? (config.strings[result.reasonkey] || '') : '';
             el('coursepilot-location-selection-confirmfolder').disabled = locked;
-            el('coursepilot-location-selection-createfolder').disabled = locked;
+            el('coursepilot-location-selection-createfolder').disabled = locked &&
+                result.reasonkey !== 'locationselectionrootnotselectable';
         }
 
         /**
@@ -730,6 +734,7 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
                 return;
             }
             var path = joinPath(state.path, name);
+            var iserv = state.lastResult && state.lastResult.iserv;
             addPending(state.instanceid, path);
             input.value = '';
             state.path = path;
@@ -740,7 +745,9 @@ define(['core/templates', 'core/notification', 'core/str'], function(Templates, 
             // (Issue #559).
             renderFolders([])
                 .then(function() {
-                    state.lastResult = {path: path, folders: [], selectable: true, reasonkey: null, entrycount: 0, entrynames: []};
+                    var selectable = !iserv || path.split('/')[0] === 'Files';
+                    applyBrowseResult({path: path, folders: [], iserv: iserv, selectable: selectable,
+                        reasonkey: selectable ? null : 'locationselectioniservfilesonly', entrycount: 0, entrynames: []});
                     return undefined;
                 })
                 .catch(Notification.exception);

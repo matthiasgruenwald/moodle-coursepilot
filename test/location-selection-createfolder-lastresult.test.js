@@ -15,6 +15,41 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {loadLocationSelectionModule, baseConfig, flushPromises} = require('./helpers/location-selection-amd-test-utils');
 
+test('Repository root allows creating a folder while remaining unavailable as a storage location', async function() {
+  var ctx = loadLocationSelectionModule(baseConfig(), [{
+    ok: true, path: '', folders: [], selectable: false,
+    reasonkey: 'locationselectionrootnotselectable', entrycount: 0, entrynames: []
+  }]);
+  await ctx.ready;
+  ctx.pickerButtons[0].dispatch('click');
+  await flushPromises();
+  assert.strictEqual(ctx.elements['coursepilot-location-selection-confirmfolder'].disabled, true);
+  assert.strictEqual(ctx.elements['coursepilot-location-selection-createfolder'].disabled, false);
+
+  ctx.elements['coursepilot-location-selection-newfolder'].value = 'Context';
+  ctx.elements['coursepilot-location-selection-createfolder'].dispatch('click');
+  await flushPromises();
+  assert.strictEqual(ctx.elements['coursepilot-location-selection-confirmfolder'].disabled, false);
+  ctx.elements['coursepilot-location-selection-confirmfolder'].dispatch('click');
+  assert.strictEqual(ctx.elements['coursepilot-location-selection-context_area_path'].value, 'Context');
+});
+
+test('IServ folders outside Files remain unavailable after creation at the root', async function() {
+  var ctx = loadLocationSelectionModule(baseConfig(), [{
+    ok: true, path: '', folders: [], iserv: true, selectable: false,
+    reasonkey: 'locationselectionrootnotselectable', entrycount: 0, entrynames: []
+  }]);
+  await ctx.ready;
+  ctx.pickerButtons[0].dispatch('click');
+  await flushPromises();
+  assert.strictEqual(ctx.elements['coursepilot-location-selection-createfolder'].disabled, false);
+  ctx.elements['coursepilot-location-selection-newfolder'].value = 'Context';
+  ctx.elements['coursepilot-location-selection-createfolder'].dispatch('click');
+  await flushPromises();
+  assert.strictEqual(ctx.elements['coursepilot-location-selection-confirmfolder'].disabled, true);
+  assert.strictEqual(ctx.elements['coursepilot-location-selection-createfolder'].disabled, true);
+});
+
 test('Creating a folder immediately resets state.lastResult to an empty result (criterion 1)', async function() {
   var parentBrowseResult = {ok: true, path: '', folders: [{name: 'material'}], selectable: true, reason: '', entrycount: 1, entrynames: ['material']};
   var ctx = loadLocationSelectionModule(baseConfig(), [parentBrowseResult]);
