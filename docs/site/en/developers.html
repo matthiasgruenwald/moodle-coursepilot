@@ -123,8 +123,8 @@
 
     <h2 id="tests">Tests and CI</h2>
     <ul>
-      <li><strong>PHPUnit:</strong> full native suite in <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/.github/workflows/native-ci.yml"><code>native-ci.yml</code></a>, matrix Moodle 5.0 and 5.1 with PHP 8.4 and MariaDB, plus a job that freshly installs the release artifact and runs one authorized tool call.</li>
-      <li><strong>Coverage gate:</strong> 80&nbsp;% line coverage (PCOV, Moodle 5.0 run), source scope in <code>tests/coverage.php</code>.</li>
+      <li><strong>PHPUnit:</strong> full native suite in <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/.github/workflows/native-ci.yml"><code>native-ci.yml</code></a>, matrix Moodle 5.1 and 5.2 with PHP 8.4 and MariaDB, plus a job that freshly installs the release artifact and runs one authorized tool call.</li>
+      <li><strong>Coverage gate:</strong> 80&nbsp;% line coverage (PCOV, Moodle 5.1 run), source scope in <code>tests/coverage.php</code>.</li>
       <li><strong>Merge condition:</strong> only the aggregate check <code>Gate (required)</code>; a skipped required job counts as a failure.</li>
       <li><strong>Node suite:</strong> <code>npm run test:ci</code> for helper scripts and this documentation site (links, image paths, language counterparts).</li>
     </ul>
