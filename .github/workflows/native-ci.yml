@@ -32,7 +32,8 @@
 #
 # Supportmatrix (dokumentiert, siehe auch docs/ci-native-server-mcp.md):
 #   Moodle 5.1 (MOODLE_501_STABLE) - Pflicht, Mindestversion ab 2.1 (ADR 0027).
-#   Moodle 5.2 (MOODLE_502_STABLE) - Pflicht. Keine Zusage fuer neuere Versionen.
+#   Keine Zusage fuer neuere Versionen: Moodle 5.2 aendert Tabellenspalten (assign, forum),
+#   der Schreibkatalog sperrt dort bewusst (eigenes Issue).
 #   PHP 8.4, MariaDB.
 
 name: Native Server-MCP CI
@@ -62,8 +63,6 @@ jobs:
         include:
           - moodle-branch: MOODLE_501_STABLE
             measures-coverage: true
-          - moodle-branch: MOODLE_502_STABLE
-            measures-coverage: false
     env:
       PHP_VERSION: '8.4'
       DB: mariadb

@@ -63,8 +63,8 @@ Discovery follows RFC 8414 and RFC 9728. Both work without a web server change, 
 
 ## Supported versions
 
-Tested combinations (full native PHPUnit suite in CI): **Moodle 5.1 and Moodle 5.2**
-(`MOODLE_501_STABLE`, `MOODLE_502_STABLE`), each with **PHP 8.4 and MariaDB 11**.
+Tested combinations (full native PHPUnit suite in CI): **Moodle 5.1**
+(`MOODLE_501_STABLE`), each with **PHP 8.4 and MariaDB 11**.
 `version.php` requires Moodle 5.1 or later as a floor. PHP 8.2 is the minimum
 (Moodle 5.1's own floor); PHP 8.4 is recommended and is what CI verifies. No other Moodle, PHP or database
 combination (for example PostgreSQL) has been verified.

@@ -121,7 +121,7 @@ Grenzen: Die in dieser Sitzung sichtbare Werkzeugliste enthält weiterhin kein `
 
 - Claude- und Codex-Basisläufe für Export/Anlegen/Ablösen erledigt (Beleggrenzen siehe oben). Offen: Glossar-Einträge und Lightboxgallery-Dateien über echte Clients mit aktualisiertem Werkzeugvertrag; ChatGPT-Lauf samt Screenshots, Darstellung im Spike durch eine Lehrkraft und Vorlagen im tatsächlichen Lehrer-Kontext.
 - Verifizierte Ablage `activity-types/lightboxgallery.md` (#599): am 06.10. im Kontextbereich der Lehrkraft angelegt (nicht im Repo, Fremd-Plugin).
-- ~~Release-String~~ erledigt 06.10.: `2.1.0-beta`, Maturity Beta; Mindestversion Moodle 5.1 (`requires` 2025100600), CI-Matrix 5.1/5.2 (ADR 0027), Doku und README angepasst. Vor dem Merge muss die 5.2-Zeile der CI grün sein.
+- ~~Release-String~~ erledigt 06.10.: `2.1.0-beta`, Maturity Beta; Mindestversion Moodle 5.1 (`requires` 2025100600), CI-Matrix 5.1 (ADR 0027), Doku und README angepasst. Der Versuch einer 5.2-Zeile scheiterte (37 Fehler: neue Spalten `assign.markercount/multimarkmethod/multimarkrounding`, `forum.showimmediately`, Konstante `ASSIGN_ATTEMPT_REOPEN_METHOD_NONE` entfernt; Schreibkatalog sperrt bewusst). 5.2-Unterstützung ist ein eigenes Issue und nicht zugesagt.
 - (historisch) Release-String war `2.0.0-beta`; die vereinbarte Nummer 2.1.0 war nicht gesetzt (separate Release-Arbeit; Maturity bleibt Beta).
 - Supportmatrix/Mindestversion: umgestellt (siehe oben). Upgrade vom veröffentlichten `main` bleibt separate Releasearbeit.
 - Konkreter Live-Deployplan nur mit ausdrücklicher Freigabe.

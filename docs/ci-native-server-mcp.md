@@ -22,7 +22,7 @@ werden muss, weil diese ausschließlich auf `Gate (required)` zeigt.
 | Komponente | Version | Status |
 |---|---|---|
 | Moodle | 5.1 (`MOODLE_501_STABLE`) | Pflicht — Mindestversion ab 2.1 (ADR 0027) |
-| Moodle | 5.2 (`MOODLE_502_STABLE`) | Pflicht |
+| Moodle | 5.2 | nicht zugesagt: neue Spalten in `assign`/`forum`, der Schreibkatalog sperrt dort bewusst |
 | PHP | 8.4 | Pflicht |
 | Datenbank | MariaDB | Pflicht |
 
