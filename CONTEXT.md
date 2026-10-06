@@ -1489,15 +1489,15 @@ Eine Aktivitätsart mit geprüftem Feldkatalog. Coursepilot sagt zu, dass sie fu
 _Avoid_: katalogisierte Art per Aktivitäts-XML anlegen, „Coursepilot kann alle Aktivitätsarten"
 
 **Erschlossene Aktivitätsart**:
-Eine installierte Aktivitätsart ohne Feldkatalog, die sich Coursepilot über die Aktivitätsart-Ablage selbst erschließt. Das Wissen gehört der Lehrkraft, es gibt keine Zusage — nur die Round-Trip-Prüfung beim Anlegen.
-_Avoid_: erschlossene Art als „unterstützt" bezeichnen, Ablage-Wissen ins Plugin übernehmen ohne Feldkatalog
+Eine installierte Aktivitätsart ohne Feldkatalog, die sich Coursepilot über die Aktivitätsart-Ablage erschließt. Verifizierte mitgelieferte Beispiele sind eine Plugin-Zusage für den angegebenen Moodle-Versionsstand; jede konkrete Anlage wird weiterhin per Round-Trip geprüft. Zusätzlich gelerntes Wissen gehört der Lehrkraft.
+_Avoid_: erschlossene Art pauschal als „unterstützt" bezeichnen, Verifikation auf andere Moodle-Versionen übertragen
 
 **Ausgeschlossene Aktivitätsart**:
-Eine Aktivitätsart, die weder katalogisiert ist noch über Aktivitäts-XML angelegt werden darf: lesson, quiz, Arten mit Dateien im Inhalt und Arten ohne Moodle-Backup. Coursepilot nennt den Grund. Arten mit Dateien im Inhalt sind nur vorläufig ausgeschlossen, bis der Datei-Nachtrag sie samt Dateien und zugehörigen Texten anlegen kann; vorher gelten sie nicht als erschlossen.
+Eine Aktivitätsart, die weder katalogisiert ist noch über Aktivitäts-XML angelegt werden darf: lesson, quiz, Arten mit Dateien im Inhalt ohne deklarierten Datei-Nachtrag, nicht installierte Arten und Arten ohne Moodle-Backup. Coursepilot nennt den Grund. Arten mit Dateien im Inhalt sind nur vorläufig ausgeschlossen, bis der Datei-Nachtrag sie samt Dateien und zugehörigen Texten anlegen kann. Lightboxgallery ist der erste Pilot; scorm, imscp und h5pactivity bleiben gesperrt.
 _Avoid_: ausgeschlossene Art stillschweigend übergehen, Ausschluss als Positivliste führen
 
 **Aktivitätsart-Ablage**:
-Zweite Form der Lerndatei, analog zur Fragetyp-Ablage: eine Kontextdatei je erschlossener Aktivitätsart (`aktivitaetsarten/<modname>.md`) mit Minimal-Beispiel (wortgleich, verifiziert), Pflichtstruktur, Stolpersteinen und Moodle-Versionsstand. Sie hält nur Wissen fest und ist keine klonbare Quelle — keine Vorlage im Sinn von Aktivitaetsvorlage oder Vorlagen-Datei.
+Zweite Form der Lerndatei, analog zur Fragetyp-Ablage: eine Kontextdatei je erschlossener Aktivitätsart (`activity-types/<modname>.md`) mit Minimal-Beispiel (wortgleich, verifiziert), Pflichtstruktur, Stolpersteinen und Moodle-Versionsstand. Das Plugin liefert verifizierte Vorlagen für Buch, Checkliste und Glossar mit und ergänzt bei jeder Ortswahl nur fehlende Dateien. Vorhandene Lehrerdateien bleiben unverändert; wiederholte Ortswahl schreibt und meldet nichts Neues. Ablagefehler unterbrechen die Ortswahl nicht. Die mitgelieferten Beispiele sind eine Plugin-Zusage für ihren Verifikationsstand (ADR 0028, #603). Die Ablage hält Wissen fest und ist keine klonbare Aktivitätsquelle.
 _Avoid_: „Aktivitätstyp-Ablage" (Ticket-Sprache), Ablage mit Aktivitaetsvorlage oder Vorlagen-Datei verwechseln, Ablage ohne Versionsstand führen
 
 **Anlegen aus XML**:
@@ -1508,6 +1508,10 @@ _Avoid_: „Wiederherstellen"/„Restore" als Begriff, Bestand der Lehrkraft lö
 Die Datei `<mod>.xml` aus einem Moodle-Backup, die die KI baut; das Gerüst drumherum (16 Dateien) erzeugt das Plugin. Nutzerdaten-Inhalte (z. B. Glossar-Einträge) gehen nicht mit — ein Glossar wird leer angelegt, das steht als Stolperstein in der Aktivitätsart-Ablage.
 Eine Muster-XML mit Moodle-Standardwerten liefert `export_default_activity`; die dafür angelegte Aktivität wird zurückgerollt und ist keine Vorlage.
 _Avoid_: ganzes Backup von der KI bauen lassen, Nutzerdaten über die XML einschleusen, Muster-XML „Vorlage“ nennen
+
+**Datei-Nachtrag**:
+Der optionale Parameter `files` von `create_activity_from_xml`: Die KI nennt Materialpfade und deklarierte Dateibereiche, der Server kopiert die Dateien nach bestandenem Roundtrip und vor Sichtbarkeit. Ein Fehler verwirft nur die eigene unsichtbare Anlage; der Bestand bleibt erhalten. Lightboxgallery übernimmt Bilder samt Klartext-Bildunterschriften und erzeugt Thumbnails über das native Modul. Die Zuordnung von Dateibereich und itemid ist je Art deklariert, keine freie Schreibadresse. Dateiinhalte bleiben serverseitig und gelangen im Regelweg nicht in den KI-Kontext (ADR 0028).
+_Avoid_: separates Folgewerkzeug, Bilder als Base64 in Aktivitäts-XML, freie Dateibereiche oder itemids, Bildunterschriften als Moodle-Nutzerkommentare, isolierte Tests als Spike- oder Client-Abnahme ausgeben
 
 **Ablösen**:
 Eine Aktivität mit Nutzerdaten ändern, indem eine neue Aktivität direkt hinter der alten angelegt und die alte nur versteckt wird (Titel bleibt). Der Änderungsverlauf der alten Kursmodul-ID vermerkt „abgelöst durch cmid X"; die Planvorschau nennt Verweise auf die alte cmid. „Ersetzen" (Überschreiben mit Sicherung) ist für später reserviert.

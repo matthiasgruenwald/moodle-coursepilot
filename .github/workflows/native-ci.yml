@@ -11,7 +11,7 @@
 #
 #   phpunit   - volle native PHPUnit-Suite (inkl. Vertragstests aus #567) je
 #               unterstuetzter Moodle-Version; ein benannter Leg
-#               (MOODLE_500_STABLE) erhebt zusaetzlich die 80%-Line-Coverage
+#               (MOODLE_501_STABLE) erhebt zusaetzlich die 80%-Line-Coverage
 #               ueber den gesamten nativen PHP-Produktionscode
 #               (tests/coverage.php), inklusive nie ausgefuehrter Zeilen.
 #   js-native - natives JS/AMD: Syntaxpruefung des AMD-Quellmoduls plus die
@@ -31,9 +31,9 @@
 # unbeabsichtigtes Ausblenden ueber Pfadmuster.
 #
 # Supportmatrix (dokumentiert, siehe auch docs/ci-native-server-mcp.md):
-#   Moodle 5.0 (MOODLE_500_STABLE) - Pflicht, bestehender Nachweis.
-#   Moodle 5.1 (MOODLE_501_STABLE) - Pflicht vor der in ADR 0024 vorgesehenen
-#     Mindestversionsanhebung. Keine Zusage fuer neuere Moodle-Versionen.
+#   Moodle 5.1 (MOODLE_501_STABLE) - Pflicht, Mindestversion ab 2.1 (ADR 0027).
+#   Keine Zusage fuer neuere Versionen: Moodle 5.2 aendert Tabellenspalten (assign, forum),
+#   der Schreibkatalog sperrt dort bewusst (eigenes Issue).
 #   PHP 8.4, MariaDB.
 
 name: Native Server-MCP CI
@@ -61,10 +61,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - moodle-branch: MOODLE_500_STABLE
-            measures-coverage: true
           - moodle-branch: MOODLE_501_STABLE
-            measures-coverage: false
+            measures-coverage: true
     env:
       PHP_VERSION: '8.4'
       DB: mariadb
@@ -156,7 +154,7 @@ jobs:
 
   js-native:
     name: Native JS/AMD
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -178,7 +176,7 @@ jobs:
     env:
       PHP_VERSION: '8.4'
       DB: mariadb
-      MOODLE_BRANCH: MOODLE_500_STABLE
+      MOODLE_BRANCH: MOODLE_501_STABLE
     services:
       mariadb:
         image: mariadb:11
@@ -264,7 +262,7 @@ jobs:
     name: Gate (required)
     if: always()
     needs: [phpunit, js-native, artifact]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Alle Pflichtjobs erfolgreich?
         run: |

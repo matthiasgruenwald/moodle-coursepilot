@@ -104,5 +104,17 @@ Images, packages and other binary content belong in Moodle's file areas, not in 
 context. The regular way is to name paths in the material store and let the server copy
 the files. Loading file contents into the context is an exception that needs the
 teacher's explicit consent after the costs were made transparent (ADR 0028, addendum
-2026-10-02). Until the file supplement (#598) exists, activity types with files in their
-content cannot be created from XML.
+2026-10-02). Lightboxgallery now accepts image paths and captions through the optional
+`files` parameter of `create_activity_from_xml` (#598/#599). The other package types
+(`scorm`, `imscp`, `h5pactivity`) remain excluded.
+
+**Verified isolated pilot, 2026-10-04:** Moodle 5.1.7+ (20260928), PHP 8.4.25,
+MariaDB 11.4.12 and real mod_lightboxgallery 4.5.3 (2026032500). The registered public
+create call with three PNGs (landscape, portrait, square) creates originals in
+`mod_lightboxgallery/gallery_images`, itemid 0, root path; captions are set through
+`lightboxgallery_image::set_caption`. Its constructor creates PNG thumbnails in
+`gallery_thumbs`, itemid 0, at 162×132 pixels, using the module's centred crop.
+The native display HTML includes each caption. A missing second path discards only
+the new hidden activity and preserves existing course content, files and recycle bin.
+This verifies the module behavior on that isolated version, not a Spike deployment
+or real client use. The general experience notes above retain their original status.

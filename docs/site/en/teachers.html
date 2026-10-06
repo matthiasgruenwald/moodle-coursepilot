@@ -84,19 +84,19 @@
     <p><strong>Claude Code</strong> (terminal): <code>claude mcp add --transport http coursepilot https://&lt;moodle-address&gt;/local/coursepilot/mcp.php</code>, then run <code>/mcp</code> in Claude Code and sign in.</p>
 
     <h2 id="chatgpt">Set up the connector in ChatGPT</h2>
-    <p>Custom connectors in ChatGPT run through <strong>developer mode</strong>, only in the web interface (chatgpt.com) and on the Plus, Pro, Business, Enterprise and Edu plans. The menu item is a few clicks deep.</p>
-    <p class="note warning">Whether ChatGPT lets Coursepilot <strong>write</strong> or only read is up to OpenAI, depends on plan and interface, and has changed before. If reading works for you but creating things in the course doesn't, that's why. Claude is the more reliable option then.</p>
+    <p>These steps apply to the web interface (chatgpt.com). Custom MCP connections are created as <strong>plugins</strong>. Account and workspace permissions determine whether you can create and use them.</p>
+    <p class="note warning">Whether ChatGPT lets Coursepilot <strong>write</strong> or only read is up to OpenAI, depends on plan and interface, and has changed before. If reading works but creating things in the course doesn't, also check tool permissions and the error message: Moodle permissions or a plugin error can cause this too. Claude is an alternative.</p>
     <ol class="steps">
-      <li>In ChatGPT, open <em>Settings › Security and login</em> and switch on <em>Developer mode</em>. In Business, Enterprise and Edu accounts, the workspace admins have to allow this first.</li>
-      <li>Under <em>Plugins</em> (<em>Apps</em> in some interfaces), add a custom connector with the plus icon.</li>
-      <li>Enter <code>Coursepilot</code> as the name, your connection address, and <em>OAuth</em> for authentication.</li>
+      <li>Open <em>Plugins</em> in ChatGPT. If the feature is missing from your account, check permission to create custom MCP connections with your workspace admins.</li>
+      <li>Select the plus icon, then <em>Create custom MCP server</em>.</li>
+      <li>Enter <code>Coursepilot</code> as the name, your connection address, and <em>OAuth</em> for authentication. Confirm the risk warning and select <em>Create as a plugin</em>.</li>
       <li>The Moodle page "Connect Coursepilot" opens: sign in and choose <em>Allow connection</em>.</li>
-      <li>In the chat, choose <em>Developer mode</em> from the plus menu and add Coursepilot.</li>
+      <li>Install the resulting plugin. Open a new chat, type <code>@</code> and select Coursepilot. Menu labels can vary by interface.</li>
     </ol>
-    <p>For write actions, ChatGPT asks you every time by default and shows you what will be sent. Your approval lasts at most for the current conversation.</p>
+    <p>For a write action, review the displayed tool arguments and explicitly authorize the action. Whether your Plus account actually lets Coursepilot write must be confirmed with a test in your own course.</p>
     <figure class="screenshot">
       <div class="placeholder">Screenshot to follow</div>
-      <figcaption>ChatGPT: switch on developer mode under "Security and login".</figcaption>
+      <figcaption>ChatGPT: open Plugins and create a custom MCP server.</figcaption>
     </figure>
     <figure class="screenshot">
       <div class="placeholder">Screenshot to follow</div>
@@ -104,7 +104,7 @@
     </figure>
 
     <h2 id="codex">Add Coursepilot to Codex</h2>
-    <p>Codex is included in all ChatGPT plans. The easiest way is the ChatGPT desktop app in Codex mode; the command line and the editor extension share the same configuration (<code>~/.codex/config.toml</code>). The screenshots show the German interface.</p>
+    <p>The pictures show setup in the ChatGPT desktop app in Codex mode; the command line and the editor extension share the same configuration (<code>~/.codex/config.toml</code>). The screenshots show the German interface.</p>
     <ol class="steps">
       <li>Switch from <em>ChatGPT</em> to <em>Codex</em> in the top left and open <em>Plugins</em>.
         <figure class="screenshot">
@@ -303,7 +303,7 @@ Best wishes
 [Name]</code></pre></div>
   </main>
   <footer class="site-footer">
-    <p>Coursepilot · Beta (2.0.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Source on GitHub</a> · AGPL-3.0-or-later</p>
+    <p>Coursepilot · Beta (2.1.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Source on GitHub</a> · AGPL-3.0-or-later</p>
   </footer>
   <script src="../assets/site.js"></script>
 </body>

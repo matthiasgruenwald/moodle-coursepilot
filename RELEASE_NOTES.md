@@ -15,6 +15,12 @@ keiner Instanz läuft das Altplugin mehr. Damit entfallen `npm run build:plugin`
 `npm run build:native-release`, aus dem auch der Marketplace-Mirror gebaut wird. Der
 Altstand bleibt über den Tag `v1.0.0` und die Git-Historie erreichbar.
 
+## Coursepilot 2.1.0-beta – Mindestversion Moodle 5.1
+
+- Erschlossene Aktivitätsarten (book, checklist, glossary, lightboxgallery) per Aktivitäts-XML, Ablösen mit Vorschau, Glossar-Einträge nachtragen (`add_glossary_entries`), Datei-Nachtrag mit Bildunterschriften für Lightboxgallery, mitgelieferte Vorlagen im Kontextbereich.
+- Mindestversion ist jetzt Moodle 5.1 (`requires` 2025100600), die CI prüft 5.1 (ADR 0027). Moodle 5.0 gehört zur Linie 2.0.x. Moodle 5.2 wird noch nicht unterstützt (neue Spalten in `assign` und `forum`).
+- Reifegrad bleibt Beta (`MATURITY_BETA`).
+
 ## Coursepilot 2.0.0-beta (Server-MCP) – Artefakt, Version, Übergang
 
 Betrifft die native Linie unter `Plugin/src/local_coursepilot/` (Issue #577, Spec 0025

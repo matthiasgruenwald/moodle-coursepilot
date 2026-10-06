@@ -13,7 +13,7 @@ Der einzige als Merge-Bedingung zu verwendende Check heißt **`Gate (required)`*
 (Job `gate`). Er aggregiert `phpunit`, `js-native` und `artifact` über
 `needs.*.result` und schlägt explizit fehl, wenn einer dieser Jobs
 fehlschlägt **oder übersprungen wird** — ein übersprungener Pflichtjob zählt
-nicht als Erfolg. Matrix-Job-Namen (z. B. „PHPUnit (MOODLE_500_STABLE)“)
+nicht als Erfolg. Matrix-Job-Namen (z. B. „PHPUnit (MOODLE_501_STABLE)“)
 dürfen sich ändern, ohne dass die Branch-Protection-Regel neu eingerichtet
 werden muss, weil diese ausschließlich auf `Gate (required)` zeigt.
 
@@ -21,8 +21,8 @@ werden muss, weil diese ausschließlich auf `Gate (required)` zeigt.
 
 | Komponente | Version | Status |
 |---|---|---|
-| Moodle | 5.0 (`MOODLE_500_STABLE`) | Pflicht — bestehender Nachweis (Review vom 25.09.2026) |
-| Moodle | 5.1 (`MOODLE_501_STABLE`) | Pflicht — vor der in ADR 0024 vorgesehenen Mindestversionsanhebung |
+| Moodle | 5.1 (`MOODLE_501_STABLE`) | Pflicht — Mindestversion ab 2.1 (ADR 0027) |
+| Moodle | 5.2 | nicht zugesagt: neue Spalten in `assign`/`forum`, der Schreibkatalog sperrt dort bewusst |
 | PHP | 8.4 | Pflicht |
 | Datenbank | MariaDB | Pflicht |
 
@@ -41,7 +41,7 @@ stillschweigende Erweiterung dieser Matrix.
   auch dann in den Nenner, wenn kein einziger Test sie ausführt
   („includeUncoveredFiles"-Verhalten) — eine nie besuchte Datei senkt die
   Quote, statt aus der Zählung zu verschwinden.
-- Gemessen wird ausschließlich auf dem Matrix-Leg `MOODLE_500_STABLE`
+- Gemessen wird ausschließlich auf dem Matrix-Leg `MOODLE_501_STABLE`
   (`measures-coverage: true` im Workflow) mit dem PCOV-Treiber. Der
   Moodle-5.1-Leg läuft die volle Suite, misst aber keine eigene Quote —
   unterschiedliche Läufe werden nicht zu einer günstigeren Quote

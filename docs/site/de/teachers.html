@@ -84,19 +84,19 @@
     <p><strong>Claude Code</strong> (Terminal): <code>claude mcp add --transport http coursepilot https://&lt;moodle-adresse&gt;/local/coursepilot/mcp.php</code>, danach rufst du in Claude Code <code>/mcp</code> auf und meldest dich an.</p>
 
     <h2 id="chatgpt">Connector in ChatGPT einrichten</h2>
-    <p>Eigene Connectoren laufen in ChatGPT über den <strong>Entwicklermodus</strong>, nur in der Weboberfläche (chatgpt.com) und in den Tarifen Plus, Pro, Business, Enterprise und Edu. Der Menüpunkt liegt einige Klicks tief.</p>
-    <p class="note warning">Ob ChatGPT Coursepilot auch <strong>schreiben</strong> lässt oder nur lesen, legt OpenAI je nach Tarif und Oberfläche fest und hat es schon geändert. Klappt bei dir das Lesen, aber nicht das Anlegen im Kurs, liegt es daran. Claude ist dann der verlässlichere Weg.</p>
+    <p>Die folgenden Schritte gelten für die Weboberfläche (chatgpt.com). Eigene MCP-Verbindungen werden als <strong>Plugins</strong> angelegt. Ob dein Konto sie anlegen und nutzen darf, hängt von den Konto- und Workspace-Freigaben ab.</p>
+    <p class="note warning">Ob ChatGPT Coursepilot auch <strong>schreiben</strong> lässt oder nur lesen, legt OpenAI je nach Tarif und Oberfläche fest und hat es schon geändert. Klappt das Lesen, aber nicht das Anlegen im Kurs, prüf auch die Werkzeugfreigabe und die Fehlermeldung: Moodle-Rechte oder ein Pluginfehler können ebenfalls die Ursache sein. Claude ist eine Alternative.</p>
     <ol class="steps">
-      <li>Öffne in ChatGPT <em>Einstellungen › Security and login</em> und schalte <em>Developer mode</em> ein. In Business-, Enterprise- und Edu-Konten muss die Workspace-Verwaltung das vorher erlauben.</li>
-      <li>Leg unter <em>Plugins</em> (in manchen Oberflächen <em>Apps</em>) über das Plus-Symbol einen eigenen Connector an.</li>
-      <li>Trag als Name <code>Coursepilot</code>, deine Anschlussadresse und als Anmeldung <em>OAuth</em> ein.</li>
+      <li>Öffne in ChatGPT <em>Plugins</em>. Falls die Funktion in deinem Konto fehlt, prüf mit der Workspace-Verwaltung die Freigabe für eigene MCP-Verbindungen.</li>
+      <li>Wähle das Plus-Symbol und <em>Benutzerdefinierten MCP-Server erstellen</em> (<em>Create custom MCP server</em>).</li>
+      <li>Trag als Name <code>Coursepilot</code>, deine Anschlussadresse und als Anmeldung <em>OAuth</em> ein. Bestätige den Risikohinweis und wähle <em>Als Plugin erstellen</em> (<em>Create as a plugin</em>).</li>
       <li>Die Moodle-Seite „Coursepilot verbinden“ öffnet sich: Melde dich an und wähle <em>Verbindung erlauben</em>.</li>
-      <li>Wähle im Chat über das Plus-Menü <em>Developer mode</em> und schalte Coursepilot zu.</li>
+      <li>Installiere das angelegte Plugin. Öffne einen neuen Chat, tippe <code>@</code> und wähle Coursepilot aus. Die Menübezeichnungen können je nach Oberfläche abweichen.</li>
     </ol>
-    <p>Bei schreibenden Aktionen fragt ChatGPT dich standardmäßig jedes Mal und zeigt dir, was gesendet wird. Die Zustimmung gilt höchstens für das laufende Gespräch.</p>
+    <p>Prüf bei einer Schreibaktion die angezeigten Werkzeugargumente und gib die Aktion ausdrücklich frei. Ob dein Plus-Konto Coursepilot tatsächlich schreiben lässt, muss mit einem Test im eigenen Kurs bestätigt werden.</p>
     <figure class="screenshot">
       <div class="placeholder">Screenshot folgt</div>
-      <figcaption>ChatGPT: Entwicklermodus unter „Security and login“ einschalten.</figcaption>
+      <figcaption>ChatGPT: Plugins öffnen und einen eigenen MCP-Server anlegen.</figcaption>
     </figure>
     <figure class="screenshot">
       <div class="placeholder">Screenshot folgt</div>
@@ -104,7 +104,7 @@
     </figure>
 
     <h2 id="codex">Coursepilot in Codex einbinden</h2>
-    <p>Codex ist in allen ChatGPT-Tarifen enthalten. Am einfachsten geht es in der ChatGPT-Desktop-App im Codex-Modus; Kommandozeile und Editor-Erweiterung teilen dieselbe Einstellung (<code>~/.codex/config.toml</code>).</p>
+    <p>Die Bilder zeigen die Einrichtung in der ChatGPT-Desktop-App im Codex-Modus; Kommandozeile und Editor-Erweiterung teilen dieselbe Einstellung (<code>~/.codex/config.toml</code>).</p>
     <ol class="steps">
       <li>Wechsle oben links von <em>ChatGPT</em> zu <em>Codex</em> und öffne <em>Plugins</em>.
         <figure class="screenshot">
@@ -301,7 +301,7 @@ Viele Grüße
 [Name]</code></pre></div>
   </main>
   <footer class="site-footer">
-    <p>Coursepilot · Beta (2.0.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Quellcode auf GitHub</a> · AGPL-3.0-or-later</p>
+    <p>Coursepilot · Beta (2.1.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Quellcode auf GitHub</a> · AGPL-3.0-or-later</p>
   </footer>
   <script src="../assets/site.js"></script>
 </body>

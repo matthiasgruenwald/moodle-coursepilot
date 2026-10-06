@@ -46,7 +46,6 @@ $cmid = optional_param('cmid', 0, PARAM_INT);
 $courseid = optional_param('id', 0, PARAM_INT);
 $restoreversion = optional_param('restore', 0, PARAM_INT);
 $confirmed = optional_param('confirmed', 0, PARAM_BOOL);
-$confirmed = optional_param('confirmed', 0, PARAM_BOOL);
 
 if ($cmid) {
     $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);

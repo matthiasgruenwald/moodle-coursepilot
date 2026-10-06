@@ -49,6 +49,14 @@ final class create_activity_from_xml extends external_api {
             'hidden' => new external_value(PARAM_BOOL, 'Leave the activity hidden after the check', VALUE_DEFAULT, false),
             'replaces_cmid' => new external_value(PARAM_INT, 'Supersede this activity (same type, same course): the new one is placed directly behind it, the old one is only hidden. 0 = create only', VALUE_DEFAULT, 0),
             'dry_run' => new external_value(PARAM_BOOL, 'Only with replaces_cmid: write nothing, return the references to the old activity (plan preview)', VALUE_DEFAULT, false),
+            'files' => new external_multiple_structure(new external_single_structure([
+                'path' => new external_value(PARAM_RAW, 'Path in the material store; binary contents stay on the server'),
+                'filearea' => new external_value(PARAM_ALPHANUMEXT, 'Declared activity file area; lightboxgallery: gallery_images'),
+                'caption' => new external_value(PARAM_NOTAGS, 'Image caption (plain text), empty if omitted', VALUE_DEFAULT, ''),
+                'location' => new external_value(PARAM_ALPHA, \local_coursepilot\material_files::LOCATION_DESCRIPTION,
+                    VALUE_DEFAULT, \local_coursepilot\material_files::LOCATION_STORE),
+            ]), 'Files copied after the XML round trip and before visibility; only declared activity file areas are allowed',
+                VALUE_DEFAULT, []),
         ]);
     }
 
@@ -60,6 +68,7 @@ final class create_activity_from_xml extends external_api {
      * @param bool $hidden
      * @param int $replacescmid
      * @param bool $dryrun
+     * @param array $files Material paths, file areas and optional captions.
      * @return array
      */
     public static function execute(
@@ -69,7 +78,8 @@ final class create_activity_from_xml extends external_api {
         string $activityxml,
         bool $hidden = false,
         int $replacescmid = 0,
-        bool $dryrun = false
+        bool $dryrun = false,
+        array $files = []
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'courseid' => $courseid,
@@ -79,6 +89,7 @@ final class create_activity_from_xml extends external_api {
             'hidden' => $hidden,
             'replaces_cmid' => $replacescmid,
             'dry_run' => $dryrun,
+            'files' => $files,
         ]);
         if ($params['section'] < 0) {
             throw new \invalid_parameter_exception('section must not be negative.');
@@ -110,7 +121,8 @@ final class create_activity_from_xml extends external_api {
             $params['section'],
             $params['activity_xml'],
             $params['hidden'],
-            $params['replaces_cmid'] ?: null
+            $params['replaces_cmid'] ?: null,
+            $params['files']
         );
         return self::shape($result);
     }

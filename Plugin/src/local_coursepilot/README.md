@@ -5,7 +5,7 @@ Coursepilot turns a Moodle site into an MCP server. A teacher connects an AI cli
 revises course content in conversation — without installing anything locally.
 
 - **Plugin type:** local
-- **Requires:** Moodle 5.0 or later
+- **Requires:** Moodle 5.1 or later
 - **Licence:** AGPL-3.0-or-later (see `LICENSE`)
 - **Issue tracker:** https://github.com/matthiasgruenwald/moodle-coursepilot/issues
 
@@ -63,10 +63,10 @@ Discovery follows RFC 8414 and RFC 9728. Both work without a web server change, 
 
 ## Supported versions
 
-Tested combinations (full native PHPUnit suite in CI): **Moodle 5.0 and Moodle 5.1**
-(`MOODLE_500_STABLE`, `MOODLE_501_STABLE`), each with **PHP 8.4 and MariaDB 11**.
-`version.php` requires Moodle 5.0 or later as a floor. PHP 8.2 is the minimum
-(Moodle 5.0's own floor); PHP 8.4 is recommended and is what CI verifies. No other Moodle, PHP or database
+Tested combinations (full native PHPUnit suite in CI): **Moodle 5.1**
+(`MOODLE_501_STABLE`), each with **PHP 8.4 and MariaDB 11**.
+`version.php` requires Moodle 5.1 or later as a floor. PHP 8.2 is the minimum
+(Moodle 5.1's own floor); PHP 8.4 is recommended and is what CI verifies. No other Moodle, PHP or database
 combination (for example PostgreSQL) has been verified.
 
 ## Language
@@ -92,7 +92,7 @@ for everyone, including teachers whose storage is configured correctly.
 
 ## Status
 
-Beta (`2.0.0-beta`). The plugin is in real teaching use by its author; it has not yet been
+Beta (`2.1.0-beta`). The plugin is in real teaching use by its author; it has not yet been
 through a production deployment at another school.
 
 ## Development
