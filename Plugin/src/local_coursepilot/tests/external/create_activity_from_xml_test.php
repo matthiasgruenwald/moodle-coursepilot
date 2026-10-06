@@ -34,6 +34,9 @@ final class create_activity_from_xml_test extends \advanced_testcase {
 
     public function test_lightboxgallery_missing_timemodified_is_rejected_without_mutation(): void {
         global $DB;
+        if (!\core_plugin_manager::instance()->get_plugin_info('mod_lightboxgallery')) {
+            $this->markTestSkipped('Requires real mod_lightboxgallery; run the isolated optional-plugin suite.');
+        }
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
         $teacher = $this->getDataGenerator()->create_user();
@@ -48,7 +51,7 @@ final class create_activity_from_xml_test extends \advanced_testcase {
             create_activity_from_xml::execute($course->id, 'lightboxgallery', 1, $xml);
             $this->fail('Missing timemodified must be rejected before restore.');
         } catch (\invalid_parameter_exception $e) {
-            $this->assertStringContainsString('activity_xml requires <timemodified> in <lightboxgallery>', $e->getMessage());
+            $this->assertStringContainsString('activity_xml requires <timemodified> in <lightboxgallery>', $e->debuginfo);
         }
         $this->assertEquals($cms, get_fast_modinfo($course->id)->get_cms());
         $this->assertSame($versions, $DB->count_records('local_coursepilot_cm_version'));
