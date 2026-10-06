@@ -62,8 +62,9 @@ tightening (ADR 0023).
 **C6. Comments say why.** An inline comment records intent or a constraint the code cannot
 express, in its own words. An interface comment (docblock) states what a method or class
 provides, so callers need not read the body. Tracker references (`#494`, `MDL-…`) belong in
-commits and PRs; in code they appear only in a `TODO` comment, where one is required.
-Existing references are removed when the code around them is touched (C8).
+commits and PRs; in code they appear only in a `TODO` comment, which names the full issue
+URL (`TODO https://github.com/matthiasgruenwald/moodle-coursepilot/issues/123`). Existing
+references are removed when the code around them is touched (C8).
 Why: what-comments in a body go stale silently; interface comments are what makes an
 abstraction usable; a bare issue number sends the reader elsewhere for the reason the
 comment should give.
@@ -210,16 +211,19 @@ candidates.
 Why: they protect invariants and need not kill mutants.
 Source: Spec 0029, user story 33.
 
-**P6. Errors are Moodle exceptions with language strings.** Teacher-visible failures throw
-`moodle_exception` (or a subclass) with a string key in `lang/en/local_coursepilot.php`;
-parameter errors use `invalid_parameter_exception`; programming errors use
-`coding_exception` with English text. Internal errors and OAuth `error_description` stay
-English and untranslated. Either reference form (`\moodle_exception` or a `use` import) is
-fine.
+**P6. User-visible text and errors use language strings.** Every text a user sees comes
+from `get_string()` (or `{{#str}}` in templates) with a key in
+`lang/en/local_coursepilot.php`. Strings are written in sentence case, carry no meaningful
+leading or trailing whitespace, and the string file stays pure data (`$string['key'] =
+'value';`, no concatenation or heredoc). Teacher-visible failures throw `moodle_exception`
+(or a subclass) with a string key; parameter errors use `invalid_parameter_exception`;
+programming errors use `coding_exception` with English text. Internal errors and OAuth
+`error_description` stay English and untranslated. Either reference form
+(`\moodle_exception` or a `use` import) is fine.
 Why: language strings let AMOS translate what the teacher sees, and the AI relays it in the
-teacher's language.
-Source: ADR 0024 (incl. addendum 2026-10-04); Moodle coding style, Exceptions and
-Namespaces.
+teacher's language; AMOS only parses pure-data string files.
+Source: ADR 0024 (incl. addendum 2026-10-04); Moodle coding style (Exceptions, Namespaces,
+Language strings); Moodle plugin contribution checklist (Strings).
 
 **P7. Use glossary terms in English form.** Each `CONTEXT.md` entry used in code carries a
 `Code:` line with its fixed English rendering; classes, tool parameters and return keys use
@@ -250,11 +254,60 @@ Source: Moodle dev docs, "Writing a new service" (`validate_context()` required 
 external functions). moodle-cs does not check this for external functions. Leaves this file
 once the gate checks it (C1, #686).
 
+**P11. Pages and forms follow Moodle's security guidelines.** A page script, after
+`require_login()`:
+- checks the capability before showing a widget and again before acting on it;
+- reads input through a moodleform with `setType()` per field, or through
+  `required_param()`/`optional_param()` with a `PARAM_*` type, grouped at the top, never
+  from `$_GET`, `$_POST` or `$_REQUEST`;
+- acts on submitted data only on POST with a valid sesskey (`data_submitted() &&
+  confirm_sesskey()`, or the moodleform);
+- asks for confirmation before destroying a large amount of data;
+- escapes output: `s()` for plain text, `format_string()` for names, `format_text()` for
+  rich text; in Mustache `{{ }}`, and `{{{ }}}` only for HTML already cleaned by
+  `format_text()`.
+Why: Moodle's approval review treats any breach as a blocker; moodle-cs checks only that
+`require_login()` is present.
+Source: Moodle security guidelines (summary); Moodle plugin contribution checklist
+(Security).
+
+**P12. Database access goes through the DML API and works on every supported database.**
+Custom SQL uses `$DB` with placeholders (`?` or `:name`), never concatenated values, and
+avoids engine-specific syntax; where SQL differs, use the `$DB->sql_*()` helpers.
+Why: SQL that fails on PostgreSQL blocks Marketplace approval even when it works on
+MariaDB.
+Source: Moodle plugin contribution checklist (Cross-DB compatibility, approval blockers);
+Moodle security guidelines (SQL injection). Leaves this file once CI runs PostgreSQL (C1,
+#687).
+
+**P13. Settings live in the plugin's config.** Admin settings are named
+`local_coursepilot/<name>` in `settings.php` and read with `get_config('local_coursepilot',
+'<name>')`; code writes them with `set_config(..., 'local_coursepilot')`.
+Why: `config_plugins` avoids `$CFG` bloat and name collisions with other plugins.
+Source: Moodle plugin contribution checklist (Settings storage).
+
+**P14. Write actions raise Moodle events.** Every action that changes data triggers a
+Moodle event, through the core API that raises it (form path, P3) or a plugin event under
+`classes/event/`. Read-only tools and page views raise none.
+Why: events feed the logs, the change history and other plugins' observers; a write without
+an event is invisible to all three.
+Source: Moodle security guidelines ("Log every request"); ADR 0018; maintainer decision
+(#656: writes only).
+
+**P15. Internal functions take explicit, typed parameters.** A PHP function lists each
+option as its own typed parameter with a default, or takes a small options class, instead
+of a generic `$options` array. Magic methods (`__get`, `__call`, …) need a written reason
+(C9). External function parameters follow the external API definitions and are exempt.
+Why: typed parameters document themselves and let PHPStan check every call.
+Source: Moodle coding style (Using arrays for options as arguments; Magic methods).
+
 ---
 
 ## Not in this file (enforced by the gate)
 
 Coverage ratchet and per-file 90 %, CRAP ≤ 8 per changed method, surviving mutants on changed
-lines, moodle-cs (including coverage metadata on every test), phpdoc, savepoints, Mustache,
+lines, moodle-cs (including coverage metadata on every test, boilerplate and
+`@copyright`, naming, `require_login()` in page scripts, forbidden functions such as `eval`
+and `unserialize`, and the TODO issue format), phpdoc, savepoints, Mustache,
 ESLint, PHPStan level and baseline, layer dependencies and the class list. See ADR 0029, ADR
 0030 and Spec 0029.

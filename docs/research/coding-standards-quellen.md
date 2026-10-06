@@ -161,3 +161,30 @@ Stand: 06.10.2026. Geprüft wurden die lokalen PDFs durch Suche im extrahierten 
 Die übrigen vorhandenen Werke (*The Clean Coder*, *Pro Git*, *The Agile Samurai* und *More Praise for Scrum*) ergaben bei der Sichtung keine zusätzliche, für diesen Entwurf passende, nicht werkzeugerzwungene Regel. In *Clean Code* (1. Aufl., 2008) steht eine mögliche Lücke: Command Query Separation. Das Projekt-Gate erzwingt diese Trennung nicht. Der Kandidat steht als C14 mit `Open: new rule from the full-text check. Adopt?` in `CODING_STANDARDS.md`.
 
 Kurzbeleg: „Functions should either do something or answer something, but not both.“ Kap. 3 „Functions“, Abschnitt „Command Query Separation“, S. 45.
+
+---
+
+## Teil D – Abgleich mit den Moodle-Vorgaben (06.10.2026)
+
+Geprüft: Moodle coding style <https://moodledev.io/general/development/policies/codingstyle>, Security guidelines <https://moodledev.io/general/development/policies/security>, Plugin contribution checklist <https://moodledev.io/general/community/plugincontribution/checklist> (als „legacy“ markiert, verweist auf die Marketplace Submission Guidelines; deren Lizenzteil behandelt ADR 0025). Werkzeugabdeckung gegen den moodle-cs-Quelltext (`moodle/Sniffs/`, Stand main).
+
+**Kein Widerspruch** zwischen Entwurf und Moodle-Vorgaben. Eine Reibung:
+
+- **C6 / TODO:** `moodle.Commenting.TodoComment` verlangt standardmäßig `MDL-[0-9]+`. Beschluss: volle GitHub-Issue-URL; Gate setzt `moodleTodoCommentRegex` (Kommentar auf #655).
+
+**Von moodle-cs erzwungen** (deshalb nicht im Text): Boilerplate und `@copyright` (`Files/BoilerplateComment`, `Commenting/FileExpectedTags`), Namensregeln, `require_login()` in Seitenskripten (`Files/RequireLogin`), `eval`/`goto`/Backticks (`PHP/ForbiddenTokens`), `unserialize`/`extract`/`print_r` u. a. (`PHP/ForbiddenFunctions`), Covers-Angabe (`PHPUnit/TestCaseCovers`), Sortierung der Sprachdatei (`Files/LangFilesOrdering`). **Nicht** geprüft: Zugriff auf `$_GET`/`$_POST`/`$_REQUEST` (`PHP/ForbiddenGlobalUse` betrifft nur `$PAGE`/`$OUTPUT` in Renderern und Blöcken).
+
+**Nicht werkzeuggeprüft, neu aufgenommen:**
+
+| Regel | Moodle-Quelle |
+|---|---|
+| P6 erweitert: alle sichtbaren Texte über `get_string()`, Sentence case, Sprachdatei als reine Daten | Checklist „Strings“; Coding style „Language strings / Capitals“ |
+| P11 Seiten: Capability, `PARAM_*`, POST + sesskey, Bestätigung vor Massenlöschung, Ausgabe-Escaping | Security guidelines, Summary; Checklist „Security“ |
+| P12 DML-API, Platzhalter, Cross-DB (CI nur MariaDB → #687) | Checklist „Cross-DB compatibility“, „Approval blockers“ |
+| P13 Einstellungen `local_coursepilot/<name>`, `get_config()` | Checklist „Settings storage“ |
+| P14 Schreibende Aktionen lösen Events aus (Beschluss: nur schreibende) | Security guidelines „Log every request“ |
+| P15 Typisierte Parameter statt `$options`-Array; Magic Methods nur begründet | Coding style „Using arrays for options as arguments“, „Magic methods“ |
+
+**Schon abgedeckt:** englische Kommentare und Namen (P8; `lang/de/` wird vom Release-Build ausgeschlossen, `scripts/build-native-release.js:77–99`), Privacy API (Vertragstests, P5), Formatierungs-Only-Änderungen getrennt committen (C8 ≈ MDL-43233), Webservice-Namen `{component}_{verb}_{noun}` (erzeugt über `tool_registry::function_name()`).
+
+**Nicht übernommen:** Moodle-Commit-Format `MDL-xxxx AREA:` (gilt für Core; Projekt nutzt Conventional Commits). CSS-Namensraum (Plugin hat kein `styles.css`; fällig, sobald eines entsteht).
