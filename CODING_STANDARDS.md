@@ -63,8 +63,9 @@ need not read the body.
 Why: what-comments in a body go stale silently; interface comments are what makes an
 abstraction usable.
 Source: Google eng-practices (Comments); GitLab development guidelines (Code comments);
-Moodle coding style (Inline comments); Ousterhout, *A Philosophy of Software Design*, ch.
-12–13 (interface comments).
+Moodle coding style (Inline comments); Ousterhout, *A Philosophy of Software Design* (1st
+ed., 2018), ch. 12 §12.1 and ch. 13 §§13.5–13.6 (comments as abstractions; interface and
+implementation comments).
 Open: Moodle's style forbids tracker references in inline comments except in TODOs. Adopt
 that for `#nnn` issue numbers (many existing lines, cleaned up on touch per C8), or keep
 issue numbers as a project exception?
@@ -84,8 +85,9 @@ next feature in it, and the cleanup goes in its own commit or PR.
 Why: event triggers spend cleanup effort where change actually happens; separate cleanup
 changes keep feature diffs reviewable.
 Source: Martin, *Clean Code* (2008), ch. 1, p. 14 "The Boy Scout Rule"; Fowler,
-*Refactoring*, ch. 2 "When Should We Refactor?" (Rule of Three); Tornhill, *Your Code as a
-Crime Scene*, 2nd ed. (2024), ch. 4 (hotspots), ch. 10 (architectural reviews); Google
+*Refactoring*, 2nd ed. (2018), ch. 2 "When Should We Refactor?" (Rule of Three; Don Roberts
+attribution); Tornhill, *Your Code as a Crime Scene*, 2nd ed. (2024), ch. 4 (hotspots),
+ch. 10 (architectural reviews); Google
 eng-practices (Small CLs: refactorings in a separate CL); ADR 0029 (Consequences).
 Open: does "top of the failure report" mean rank 1 only, or the top N, and over which time
 window?
@@ -130,6 +132,12 @@ Open: new rule from the source check. Adopt?
 > The `/code-review` skill already applies a fixed Fowler smell baseline (Mysterious Name,
 > Duplicated Code, Feature Envy, …). This part does not restate it.
 > Open: adopt the smell baseline explicitly here, or leave it as the skill's default?
+
+**C14. Separate commands from queries.** A function either changes state or returns
+information, not both.
+Why: combining an action and a query makes the call harder to understand.
+Source: Martin, *Clean Code* (2008), ch. 3, "Command Query Separation", p. 45.
+Open: new rule from the full-text check. Adopt?
 
 ---
 

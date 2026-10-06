@@ -1,9 +1,9 @@
 # Coding Standards – Quellenprüfung und Abgleich (#656)
 
 Stand: 06.10.2026, Branch `docs/656-coding-standards-draft` (Entwurf `CODING_STANDARDS.md`, PR #678).
-Zweck: Buchzitate des Entwurfs gegen Primärquellen prüfen (Teil A) und die Kernregeln C1–C10 mit veröffentlichten Standards abgleichen (Teil B).
+Zweck: Buchzitate des Entwurfs gegen Primärquellen prüfen (Teil A), die Kernregeln C1–C10 mit veröffentlichten Standards abgleichen (Teil B) und verfügbare Buch-Volltexte prüfen (Teil C).
 Belege: URL der Primärquelle (Verlags- bzw. Autorenseite, offizieller Styleguide, Moodle-/PHPUnit-Doku, moodle-cs-Quelltext). Sekundärquellen sind ausdrücklich als solche markiert und zählen nicht als Beleg.
-Vorbehalt: Die Bücher selbst (lokale PDFs) lagen nicht vor. Geprüft wurde gegen Verlagsinhaltsverzeichnisse, Leseproben, Autorentexte und offizielle Doku. Eine Nachprüfung gegen die Volltexte steht aus; Seitenzahlen und wörtliche Buchzitate ohne Primärbeleg sind entsprechend gekennzeichnet.
+Vorbehalt: Bei der ursprünglichen Prüfung lagen die Buch-Volltexte nicht vor. Die Nachprüfung in Teil C verwendet die im E-Book-Ordner vorhandenen Volltexte; fehlende Bücher sind dort als nicht prüfbar markiert. Die bisherigen Teile A und B beruhen weiterhin auf Verlagsinhaltsverzeichnissen, Leseproben, Autorentexten und offizieller Doku, soweit nicht ausdrücklich anders angegeben.
 
 ---
 
@@ -141,3 +141,23 @@ Hinweis: Eine WebFetch-Zusammenfassung schrieb GitLab einen Abschnitt „Avoid t
 - **P6:** Open korrigieren: moodle-cs entscheidet `\moodle_exception` vs. `use` nicht, der Moodle-Stil erlaubt beides. Entweder eine Form als Projektregel festlegen oder offen lassen; „leave it to moodle-cs" streichen. Quelle ergänzen: Moodle coding style, Exceptions.
 - **P2:** Quelle bleibt Spec 0029; ausdrücklich als Projektregel kennzeichnen (Moodle verlangt nur logikfreie Renderer/Templates).
 - **Neu (Kandidaten):** Doku mit dem Code ändern (Lücke 3); Testtitel = Szenario (Lücke 4); Testcode ohne unnötige Komplexität (Lücke 5); P10 „Each external function calls `validate_context()` and checks its capability before touching data" (Lücke 6).
+
+## Teil C – Volltextprüfung
+
+Stand: 06.10.2026. Geprüft wurden die lokalen PDFs durch Suche im extrahierten Volltext. Seitenzahlen beziehen sich auf die gedruckte Seitennummer, soweit sie im Volltext eindeutig war; andernfalls ist die PDF-Seite angegeben. Zitate bleiben kurz.
+
+| Punkt | Urteil | Auflage / Fundstelle | Kurzbeleg |
+|---|---|---|---|
+| Fowler, *Refactoring* — Rule of Three | bestätigt | 2. Aufl. (2018), Kap. 2 „Principles in Refactoring“, Abschnitt „When Should We Refactor?“, Unterabschnitt „The Rule of Three“, PDF-S. 62. Beide vorhandenen Fowler-PDFs tragen „Second Edition“; die 1. Aufl. liegt nicht vor. | „Here’s a guideline Don Roberts gave me“; „The third time you do something similar, you refactor.“ |
+| Ousterhout — Kap. 4, 7, 12, 13; C6/C7 | bestätigt | 1. Aufl. (2018): Kap. 4 „Modules Should Be Deep“; Kap. 7 „Different Layer, Different Abstraction“ (§7.1 „Pass-through methods“); Kap. 12 „Why Write Comments? The Four Excuses“; Kap. 13 „Comments Should Describe Things that Aren’t Obvious from the Code“ (§§13.5–13.6). Für C6 besonders S. 104–107; Pass-through S. 45. | „Interface comments provide information that someone needs to know in order to use a class or method“; Pass-through methods „make classes shallower“. |
+| Khorikov, *Unit Testing* — §4.1.2 und managed/unmanaged | nicht prüfbar | Kein Buch dieses Autors im Ordner. Kapitelwortlaut und managed/unmanaged-Regel konnten nicht gegen Volltext geprüft werden. | – |
+| Martin, *Clean Code* — Boy Scout Rule | bestätigt | 1. Aufl. (2008), Kap. 1 „Clean Code“, Abschnitt „The Boy Scout Rule“, S. 14. | „If we all checked-in our code a little cleaner than when we checked it out, the code simply could not rot.“ |
+| Tornhill, *Your Code as a Crime Scene* — Hotspots und Architekturreviews | nicht prüfbar | Keine Ausgabe im Ordner. Hotspot-Definition (Überlappung statt Produkt) und Kapitel zu Architekturreviews bleiben anhand des Volltexts ungeprüft. | – |
+| Hunt/Thomas, *The Pragmatic Programmer* — Crash Early | bestätigt | 20th Anniversary Ed. (2. Aufl., 2019), Kap. 4 „Pragmatic Paranoia“, Topic 24 „Dead Programs Tell No Lies“, Tip 38 „Crash Early“, S. 113. Keine 1. Aufl. (1999) im Ordner; deren Tip-Nummer ist nicht prüfbar. | „A dead program normally does a lot less damage than a crippled one.“ |
+| Evans, *Domain-Driven Design* — Ubiquitous Language / P7 | nicht prüfbar | Kein Buch im Ordner. Kap. 2, die Übersetzung zwischen Fach- und Codesprache sowie die Tragfähigkeit für P7 konnten nicht am Buchvolltext geprüft werden. | – |
+
+### Übrige Bücher im Ordner und Regelkandidat
+
+Die übrigen vorhandenen Werke (*The Clean Coder*, *Pro Git*, *The Agile Samurai* und *More Praise for Scrum*) ergaben bei der Sichtung keine zusätzliche, für diesen Entwurf passende, nicht werkzeugerzwungene Regel. In *Clean Code* (1. Aufl., 2008) steht eine mögliche Lücke: Command Query Separation. Das Projekt-Gate erzwingt diese Trennung nicht. Der Kandidat steht als C14 mit `Open: new rule from the full-text check. Adopt?` in `CODING_STANDARDS.md`.
+
+Kurzbeleg: „Functions should either do something or answer something, but not both.“ Kap. 3 „Functions“, Abschnitt „Command Query Separation“, S. 45.
