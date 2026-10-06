@@ -41,7 +41,7 @@ use local_coursepilot\webdav\webdav_setup_steps;
 
 require_login(null, false);
 $context = context_system::instance();
-require_capability('local/coursepilot:useremote', $context);
+\local_coursepilot\remote_access::require_granted();
 
 global $USER, $OUTPUT, $PAGE;
 

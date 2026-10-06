@@ -34,7 +34,7 @@ use local_coursepilot\location_selection;
 
 require_login(null, false);
 require_sesskey();
-require_capability('local/coursepilot:useremote', context_system::instance());
+\local_coursepilot\remote_access::require_granted();
 
 global $USER;
 
