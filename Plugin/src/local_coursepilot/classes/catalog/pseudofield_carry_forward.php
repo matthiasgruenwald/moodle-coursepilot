@@ -127,6 +127,12 @@ final class pseudofield_carry_forward {
         if ($modname !== 'assign') {
             return;
         }
+        // Moodle 5.2+ compares the grading method strictly with ''. The form
+        // supplies that string for simple grading; get_moduleinfo_data() supplies
+        // null. Without normalization an unrelated patch resets all marker settings.
+        if (property_exists($moduleinfo, 'markercount') && ($moduleinfo->advancedgradingmethod_submissions ?? null) === null) {
+            $moduleinfo->advancedgradingmethod_submissions = '';
+        }
         $rows = $DB->get_records('assign_plugin_config', ['assignment' => $cm->instance]);
         foreach ($rows as $row) {
             $fieldname = $row->subtype . '_' . $row->plugin . '_' . $row->name;

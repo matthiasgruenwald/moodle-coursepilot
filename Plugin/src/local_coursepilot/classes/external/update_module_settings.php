@@ -115,6 +115,8 @@ class update_module_settings extends external_api {
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
+        pseudofield_carry_forward::apply($cm->modname, registry::for($cm->modname), $moduleinfo,
+            self::read_settings($cmid), $cm, [$fieldname => $draftitemid]);
         $moduleinfo->{$fieldname} = $draftitemid;
         \update_moduleinfo($cm, $moduleinfo, $course);
     }

@@ -775,11 +775,18 @@ final class assign implements module_catalog {
     }
 
     public static function blocklist(): array {
-        return [
-            'nosubmissions',
-            'revealidentities',
-            'completionsubmit',
-        ];
+        global $CFG;
+
+        $fields = ['nosubmissions', 'revealidentities', 'completionsubmit'];
+        // Marker changes require allocation checks and an explicit grade-recalculation
+        // action from Moodle's form. Keep these settings in that native UI.
+        if ((int) $CFG->branch >= 502) {
+            $fields = array_merge($fields, ['markercount', 'multimarkmethod', 'multimarkrounding']);
+        }
+        if ((int) $CFG->branch >= 503) {
+            $fields[] = 'optionalmarkercount';
+        }
+        return $fields;
     }
 
     public static function combination_rules(): array {
@@ -857,7 +864,6 @@ final class assign implements module_catalog {
             'ASSIGN_FILTER_GRADED',
             'ASSIGN_FILTER_GRANTED_EXTENSION',
             'ASSIGN_FILTER_DRAFT',
-            'ASSIGN_ATTEMPT_REOPEN_METHOD_NONE',
             'ASSIGN_ATTEMPT_REOPEN_METHOD_MANUAL',
             'ASSIGN_ATTEMPT_REOPEN_METHOD_AUTOMATIC',
             'ASSIGN_ATTEMPT_REOPEN_METHOD_UNTILPASS',

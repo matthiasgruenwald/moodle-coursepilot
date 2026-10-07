@@ -31,6 +31,31 @@ use PHPUnit\Framework\Attributes\DataProvider;
 final class update_quiz_settings_test extends \advanced_testcase {
 
     /**
+     * Moodle 5.3's informational due date survives a later unrelated patch.
+     */
+    public function test_due_date_can_be_changed_without_resetting_other_settings(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        if ((int) $CFG->branch < 503) {
+            $this->markTestSkipped('Quiz due dates require Moodle 5.3.');
+        }
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->get_plugin_generator('mod_quiz')->create_instance([
+            'course' => $course->id, 'timelimit' => 600,
+        ]);
+        $duedate = time() + DAYSECS;
+        $result = external_api::clean_returnvalue(update_quiz_settings::execute_returns(),
+            update_quiz_settings::execute($quiz->cmid, json_encode(['duedate' => $duedate])));
+        $this->assertSame('duedate', $result['changes'][0]['field']);
+        external_api::clean_returnvalue(update_quiz_settings::execute_returns(),
+            update_quiz_settings::execute($quiz->cmid, json_encode(['name' => 'Neuer Titel'])));
+        $after = $DB->get_record('quiz', ['id' => $quiz->id], '*', MUST_EXIST);
+        $this->assertEquals($duedate, $after->duedate);
+        $this->assertEquals(600, $after->timelimit);
+        $this->assertSame('Neuer Titel', $after->name);
+    }
+
+    /**
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
