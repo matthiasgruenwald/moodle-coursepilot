@@ -8,7 +8,7 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Gemeinsame Feldpruefung des Modulkatalogs.
+ * Shared field validation of the module catalog.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -17,11 +17,11 @@ defined('MOODLE_INTERNAL') || die();
 final class catalog_fields {
 
     /**
-     * Prueft eine Feldangabe ausschliesslich gegen den angegebenen Katalog.
+     * Validates a field specification exclusively against the given catalog.
      *
      * @param class-string<module_catalog> $catalogclass
      * @param array $values
-     * @param bool $patch True, wenn der Formular-Patchweg genutzt wird.
+     * @param bool $patch True if the form patch path is used.
      * @return void
      */
     public static function validate(string $catalogclass, array $values, bool $patch = false): void {

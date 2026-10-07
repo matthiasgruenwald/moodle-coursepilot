@@ -22,9 +22,12 @@ use PHPUnit\Framework\Attributes\DataProvider;
 
 defined('MOODLE_INTERNAL') || die();
 
+global $CFG;
+require_once($CFG->dirroot . '/cohort/lib.php');
+
 /**
- * Die Lieferung eines Skill-Korpus-Eintrags (Spec 0020 §4, Issue #450): ohne
- * Kursbindung, 'local/coursepilot:use' im Systemkontext genuegt.
+ * Deliver a skill-corpus entry (Spec 0020 §4, #450): remote-access
+ * authorization suffices without course binding (#630).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -34,12 +37,12 @@ defined('MOODLE_INTERNAL') || die();
 final class get_skill_test extends \advanced_testcase {
 
     /**
-     * Liefert Inhalt, referenzierte Teile und Korpus-Stand.
+     * Return content, referenced parts and corpus version.
      */
     public function test_returns_content_referenced_parts_and_corpus_stand(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         $result = get_skill::execute('coursepilot');
@@ -51,13 +54,13 @@ final class get_skill_test extends \advanced_testcase {
     }
 
     /**
-     * Unbekannter Name: die Meldung nennt die gueltigen Namen statt eines
-     * leeren Ergebnisses.
+     * Unknown names produce a message listing valid names rather than
+     * an empty result.
      */
     public function test_unknown_name_names_valid_names(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         try {
@@ -69,8 +72,8 @@ final class get_skill_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Name mit Pfadanteilen wird abgewiesen - geprueft gegen die
-     * Verzeichnisliste, nicht per Zeichenfilter.
+     * Reject names containing path components by matching the directory
+     * listing rather than filtering characters.
      *
      * @param string $name
      */
@@ -78,7 +81,7 @@ final class get_skill_test extends \advanced_testcase {
     public function test_path_like_name_is_rejected(string $name): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         $this->expectException(\moodle_exception::class);
@@ -99,13 +102,33 @@ final class get_skill_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne 'local/coursepilot:use' im Systemkontext wird abgewiesen.
+     * Reject users without remote-access authorization, including enrolled
+     * teachers (#630).
      */
-    public function test_without_capability_is_rejected(): void {
+    public function test_without_remote_access_is_rejected(): void {
         $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
+        $generator = $this->getDataGenerator();
+        $user = $generator->create_user();
+        $generator->enrol_user($user->id, $generator->create_course()->id, 'editingteacher');
+        $this->setUser($user);
 
-        $this->expectException(\required_capability_exception::class);
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage(get_string('remoteaccessnotgranted', 'local_coursepilot'));
         get_skill::execute('coursepilot');
+    }
+
+    /**
+     * Grants remote access the way a school does after #579: a selected
+     * system cohort, and the teacher role only inside a course - no
+     * system-level role (Issue #630).
+     *
+     * @param \stdClass $user
+     */
+    private function grant_remote_access(\stdClass $user): void {
+        $generator = $this->getDataGenerator();
+        $cohort = $generator->create_cohort(['contextid' => \context_system::instance()->id]);
+        cohort_add_member($cohort->id, $user->id);
+        set_config('remoteaccesscohorts', (string) $cohort->id, 'local_coursepilot');
+        $generator->enrol_user($user->id, $generator->create_course()->id, 'editingteacher');
     }
 }

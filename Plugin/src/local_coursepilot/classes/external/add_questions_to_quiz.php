@@ -32,24 +32,24 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 
 /**
- * Quiz-Anschluss (Spec 0017 §7.4, Ticket #420): haengt Fragen in der
- * genannten Reihenfolge ueber Moodles eigenes {@see quiz_add_quiz_question()}
- * an - dieselbe Funktion, die auch die Quiz-Bearbeitungsseite nutzt, inkl.
- * Dublettenpruefung ueber questionbankentryid (false = schon drin, dann kein
- * zweiter Slot). Kein Entfernen, kein Umsortieren, kein Seitenumbruch -
- * reine Anhaenge-Operation, Layout bleibt Moodle-UI (#365).
+ * Quiz attachment (Spec 0017 §7.4, ticket #420): appends questions in the
+ * given order via Moodle's own {@see quiz_add_quiz_question()}
+ * - the same function the quiz editing page uses, including the duplicate
+ * check via questionbankentryid (false = already present, so no second
+ * slot). No removing, no reordering, no page breaks -
+ * a pure append operation, layout stays in the Moodle UI (#365).
  *
- * Versuchs-Gate VOR jedem Schreiben (quiz_has_attempts()): gibt es bereits
- * Versuche, bricht der gesamte Aufruf ab, kein Teilerfolg - dasselbe Prinzip
- * wie {@see \local_coursepilot\quiz\arrangement::restore()}.
+ * Attempt gate BEFORE any write (quiz_has_attempts()): if attempts already
+ * exist, the whole call aborts, no partial success - the same principle
+ * as {@see \local_coursepilot\quiz\arrangement::restore()}.
  *
- * Aenderungsverlauf: quiz_add_quiz_question() loest das native
- * slot_created-Ereignis aus, das NICHT zu den 16 beobachteten
- * mod_quiz-Struktur-Ereignissen zaehlt (db/events.php: neue Frage = Inhalt,
- * keine Anordnungsaenderung). Dieser Endpunkt schnappt deshalb explizit
- * denselben Anordnungs-Stand wie der Beobachter
- * ({@see version_writer::capture_on_update()}) - genau einmal, nur wenn
- * mindestens eine Frage tatsaechlich neu angehaengt wurde.
+ * Change history: quiz_add_quiz_question() triggers the native
+ * slot_created event, which does NOT count among the 16 observed
+ * mod_quiz structure events (db/events.php: new question = content,
+ * not an arrangement change). This endpoint therefore explicitly captures
+ * the same arrangement state as the observer
+ * ({@see version_writer::capture_on_update()}) - exactly once, only if
+ * at least one question was actually newly appended.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -90,13 +90,13 @@ final class add_questions_to_quiz extends external_api {
         require_capability('mod/quiz:manage', $context);
 
         if (empty($params['questionids'])) {
-            throw new \invalid_parameter_exception('Mindestens eine Frage angeben.');
+            throw new \invalid_parameter_exception('Specify at least one question.');
         }
 
         $quiz = $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST);
 
-        // Versuchs-Gate VOR jedem Schreiben - kein Teilerfolg, keine halb
-        // gefuellte Slot-Liste.
+        // Attempt gate BEFORE any write - no partial success, no half
+        // filled slot list.
         if (quiz_has_attempts((int) $quiz->id)) {
             throw new moodle_exception('addquestionstoquizblocked', 'local_coursepilot', '', ['quizid' => $quiz->id]);
         }
@@ -109,10 +109,10 @@ final class add_questions_to_quiz extends external_api {
             $question = $DB->get_record('question', ['id' => (int) $questionid], '*', MUST_EXIST);
             question_require_capability_on($question, 'use');
 
-            // quiz_add_quiz_question() gibt NUR im Dublettenfall explizit
-            // false zurueck - im Erfolgsfall faellt die Funktion ohne
-            // "return" durch (PHP liefert dann null, kein true). "!== false"
-            // ist deshalb die korrekte Erfolgspruefung, nicht Wahrheitswert.
+            // quiz_add_quiz_question() returns an explicit false ONLY in the
+            // duplicate case - on success the function falls through without
+            // "return" (PHP then yields null, not true). "!== false"
+            // is therefore the correct success check, not truthiness.
             $result = quiz_add_quiz_question((int) $questionid, $quiz);
             $added = $result !== false;
             $anyadded = $anyadded || $added;
@@ -139,7 +139,7 @@ final class add_questions_to_quiz extends external_api {
     }
 
     /**
-     * Die Lehrkraft-deutsche Meldung: was wurde angehaengt, was uebersprungen.
+     * The teacher-facing message: what was appended, what was skipped.
      *
      * @param array $appended
      * @return string
@@ -149,27 +149,27 @@ final class add_questions_to_quiz extends external_api {
         $skipped = array_filter($appended, static fn(array $item): bool => !$item['added']);
 
         if (!$added && !$skipped) {
-            return 'Keine Frage angehängt.';
+            return 'No question appended.';
         }
 
         $parts = [];
         if ($added) {
             $names = array_map(static fn(array $item): string => '"' . $item['name'] . '"', $added);
-            $parts[] = count($added) . ' Frage(n) angehängt: ' . implode(', ', $names) . '.';
+            $parts[] = count($added) . ' question(s) appended: ' . implode(', ', $names) . '.';
         }
         if ($skipped) {
             $names = array_map(static fn(array $item): string => '"' . $item['name'] . '"', $skipped);
-            $parts[] = count($skipped) . ' bereits vorhanden, übersprungen: ' . implode(', ', $names) . '.';
+            $parts[] = count($skipped) . ' already present, skipped: ' . implode(', ', $names) . '.';
         }
 
         return implode(' ', $parts);
     }
 
     /**
-     * Slot-Stand des Tests nach dem Anhaengen - Bank-Eintrag, Frage-ID und
-     * Versionsnummer je Slot (aktuellste Version, dasselbe Join-Muster wie
+     * Slot state of the quiz after appending - bank entry, question ID and
+     * version number per slot (latest version, same join pattern as
      * {@see \local_coursepilot\external\get_quiz_cleanup_plan::execute()}),
-     * damit sich das Quiz pruefen laesst, ohne es zu oeffnen.
+     * so the quiz can be checked without opening it.
      *
      * @param int $quizid
      * @return array
@@ -211,7 +211,7 @@ final class add_questions_to_quiz extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID of the quiz'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German message: appended vs. skipped'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing message: appended vs. skipped'),
             'appended' => new external_multiple_structure(new external_single_structure([
                 'questionid' => new external_value(PARAM_INT, 'Requested questionid'),
                 'questionbankentryid' => new external_value(PARAM_INT, 'Question identity (bank entry)'),

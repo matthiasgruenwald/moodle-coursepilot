@@ -26,14 +26,10 @@ use local_coursepilot\oauth_lib;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Voller Privacy-Provider (#345): Verbindungen/Tokens (#338), Kontextdateien
- * (#343) und der Nachweis, dass Protokollereignisse (#339) durch Moodle-Cores
- * eigenen logstore_standard-Provider abgedeckt sind statt hier verdoppelt zu
- * werden.
- *
- * Basisklasse `\core_privacy\tests\provider_testcase` ist Moodles eigener
- * Testhelper fuer Privacy-Provider - das erfuellt das Akzeptanzkriterium
- * "Moodle-eigene Datenschutz-Tests laufen fuer das Plugin durch".
+ * Complete privacy provider (#345): connections/tokens (#338), context
+ * files (#343) and proof that core logstore_standard handles audit events
+ * (#339) without duplicate exports. Moodle’s
+ * core_privacy\tests\provider_testcase supplies the native privacy tests.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -43,10 +39,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class provider_test extends \core_privacy\tests\provider_testcase {
 
     /**
-     * Der Datenschutz-Provider benennt den externen Ablageort per
-     * `add_external_location_link` (Issue #500, ADR 0021, Spec #486 §11) -
-     * eine Auskunft darf ihn nicht verschweigen, auch wenn Coursepilot dort
-     * selbst nichts exportiert (das WebDAV-Ziel liegt ausserhalb Moodles).
+     * Declare external storage using add_external_location_link (#500,
+     * ADR 0021, Spec #486 §11), even though Coursepilot cannot export
+     * WebDAV data outside Moodle.
      */
     public function test_metadata_declares_the_external_webdav_location(): void {
         $collection = provider::get_metadata(new collection('local_coursepilot'));
@@ -64,7 +59,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Legt einen OAuth-Token-Datensatz an (analog zu oauth_lib_test).
+     * Create an OAuth token record, as in oauth_lib_test.
      *
      * @param int $userid
      * @param string $clientid
@@ -84,6 +79,10 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
         $record->revoked = 0;
         $record->timecreated = time();
+        $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
+            'userid' => $record->userid, 'clientid' => $record->clientid, 'revoked' => $record->revoked,
+            'statehash' => bin2hex(random_bytes(32)), 'timecreated' => $record->timecreated,
+        ]);
         $record->id = $DB->insert_record('local_coursepilot_oauth_token', $record);
         $record->accesstoken = $accesstoken;
         $record->refreshtoken = $refreshtoken;
@@ -91,8 +90,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Legt eine Kontextdatei im privaten Nutzerkontext an, wie es
-     * classes/context_files.php tut.
+     * Create context files in the private user context, as context_files does.
      *
      * @param int $userid
      * @param string $filename
@@ -114,8 +112,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Auskunft enthaelt die Verbindungen und Tokens der Person (#338, weiter
-     * gruen zu halten - keine Regression durch diese Erweiterung).
+     * Exports preserve user connections and tokens without regressions (#338).
      */
     public function test_export_contains_oauth_connections_and_tokens(): void {
         global $DB;
@@ -141,15 +138,14 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $this->assertNotEmpty($data->oauth_tokens);
         $this->assertSame('test-client', $data->oauth_tokens[0]->clientid);
 
-        // Kein Zugangsgeheimnis im Klartext in der Auskunft.
+        // Exports contain no plaintext access secrets.
         $encoded = json_encode($data);
         $this->assertStringNotContainsString($token->accesstoken, $encoded);
         $this->assertStringNotContainsString($token->refreshtoken, $encoded);
     }
 
     /**
-     * Legt einen Eintrag im Markierungsgedaechtnis an (Issue #493), wie es
-     * classes/mark_memory.php tut.
+     * Create a mark-cache entry as mark_memory does (#493).
      *
      * @param int $userid
      * @param string $path
@@ -173,8 +169,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Auskunft enthaelt die Kontextdateien der Person - die eigentliche
-     * Luecke, die dieses Issue schliesst.
+     * Exports include the user’s context files, closing this issue’s gap.
      */
     public function test_export_contains_context_files(): void {
         $this->resetAfterTest();
@@ -193,9 +188,8 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * get_users_in_context findet die Eigentuemerin eines Nutzerkontexts nur,
-     * wenn dort tatsaechlich Kontextdateien liegen - kein blinder Treffer auf
-     * jeden beliebigen Nutzerkontext.
+     * Find context owners only when actual context files exist, rather
+     * than matching every user context.
      */
     public function test_get_users_in_context_requires_actual_files(): void {
         $this->resetAfterTest();
@@ -213,9 +207,8 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Der Nutzerkontext taucht auch dann auf, wenn dort nur Eintraege im
-     * Markierungsgedaechtnis liegen, keine Kontextdateien (Issue #493) - das
-     * Gedaechtnis fuehrt der Datenschutz-Provider mit.
+     * Report contexts containing only mark-cache entries even without
+     * context files (#493).
      */
     public function test_get_contexts_for_userid_finds_mark_memory_only_context(): void {
         $this->resetAfterTest();
@@ -229,8 +222,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * get_users_in_context findet dieselbe Person ueber das
-     * Markierungsgedaechtnis, auch ohne Kontextdateien.
+     * Find the same user through mark-cache entries without context files.
      */
     public function test_get_users_in_context_finds_mark_memory_only_user(): void {
         $this->resetAfterTest();
@@ -244,8 +236,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Die Auskunft enthaelt die Eintraege des Markierungsgedaechtnisses -
-     * nie den Dateiinhalt, nur Pfad und Bit.
+     * Export mark-cache paths and flags, never file content.
      */
     public function test_export_contains_mark_memory_entries(): void {
         $this->resetAfterTest();
@@ -263,8 +254,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Loeschung entfernt auch das Markierungsgedaechtnis der betroffenen
-     * Person, laesst eine zweite Person unberuehrt.
+     * Delete the target user’s mark cache while preserving another user’s data.
      */
     public function test_delete_data_for_user_removes_mark_memory_and_spares_others(): void {
         global $DB;
@@ -287,8 +277,8 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Loeschung entfernt Verbindungen/Tokens UND Kontextdateien der
-     * betroffenen Person, laesst eine zweite Person unberuehrt.
+     * Delete target connections, tokens and context files while preserving
+     * another user’s data.
      */
     public function test_delete_data_for_user_removes_all_bestaende_and_spares_others(): void {
         global $DB;
@@ -333,8 +323,8 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Bulk-Loeschung (approved_userlist, core_userlist_provider) entfernt die
-     * Kontextdateien fuer den Nutzerkontext.
+     * Bulk deletion via approved_userlist/core_userlist_provider removes
+     * context files in the user context.
      */
     public function test_delete_data_for_users_removes_context_files(): void {
         $this->resetAfterTest();
@@ -357,8 +347,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * delete_data_for_all_users_in_context loescht auf Nutzerkontextebene
-     * ebenfalls die Kontextdateien.
+     * delete_data_for_all_users_in_context removes user-context files too.
      */
     public function test_delete_data_for_all_users_in_context_removes_context_files(): void {
         $this->resetAfterTest();
@@ -380,10 +369,9 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Nachweis fuer das Protokollereignis-Kriterium: die Ereignisse tragen
-     * die Merkmale (userid, contextid, component), die Moodle-Cores eigener
-     * logstore_standard-Provider fuer Export/Loeschung braucht - kein
-     * eigener, mit Core kollidierender Export-/Loeschcode in local_coursepilot.
+     * Audit events expose userid, contextid and component for core
+     * logstore_standard export/deletion. Coursepilot adds no conflicting
+     * export or deletion code.
      */
     public function test_access_log_events_carry_attribution_for_core_logstore_handling(): void {
         $this->resetAfterTest();

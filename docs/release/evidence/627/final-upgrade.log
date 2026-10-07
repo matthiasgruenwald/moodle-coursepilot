@@ -1,0 +1,11 @@
+-->local_coursepilot
+++ Success (0.18 seconds) ++
+== Setting new default values ==
+New setting: factor_cohort/cohorts
+New setting: local_coursepilot/oauthregistersitelimit
+New setting: local_coursepilot/oauthregistersourcelimit
+New setting: local_coursepilot/oauthregisterwindow
+New setting: local_coursepilot/oauthcimdsitelimit
+New setting: local_coursepilot/oauthcimdsourcelimit
+New setting: local_coursepilot/oauthcimdwindow
+Command line upgrade from 5.1.7+ (Build: 20260928) (2025100607.03) to 5.1.7+ (Build: 20260928) (2025100607.03) completed successfully.

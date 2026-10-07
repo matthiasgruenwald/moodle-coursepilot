@@ -17,13 +17,11 @@
 namespace local_coursepilot;
 
 /**
- * Der aufgeloeste Zustand eines Pointer-Ziels (Kontextbereich oder
- * Materialbestand) - Kontextpointer, zweite Fassung (Issue #490, Spec #486
- * §2): entweder *in Moodle* mit einem fertig aufgeloesten Private-Files-Pfad,
- * oder *extern* mit Instanz-ID, relativem Pfad und dem beim Waehlen erfassten
- * Pruefmerkmal (Server, Basispfad, Konto). Reines Werteobjekt, keine Logik -
- * {@see context_pointer} baut es, {@see storage_anchor} und
- * {@see \local_coursepilot\webdav\webdav_instance} lesen es.
+ * Resolved context or material pointer target in the second format
+ * (Issue #490, Spec #486 §2). Either Moodle with a resolved Private Files
+ * path, or external with instance ID, relative path and selection-time
+ * fingerprint (server, base path, account). Value object built by
+ * context_pointer and read by storage_anchor and webdav_instance.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,11 +29,11 @@ namespace local_coursepilot;
  */
 final class pointer_location {
 
-    /** @var string Ziel liegt in Moodles Private Files. */
+    /** @var string Target is in Moodle Private Files. */
     public const MOODLE = 'moodle';
 
-    /** @var string Ziel liegt in einer WebDAV-Nutzerinstanz. */
-    public const EXTERN = 'extern';
+    /** @var string Target is in a WebDAV user instance. */
+    public const EXTERNAL = 'external';
 
     private function __construct(
         public readonly string $kind,
@@ -47,7 +45,7 @@ final class pointer_location {
     }
 
     /**
-     * @param string $path Immer mit fuehrendem und abschliessendem "/".
+     * @param string $path Always with leading and trailing slashes.
      * @return self
      */
     public static function moodle(string $path): self {
@@ -55,34 +53,28 @@ final class pointer_location {
     }
 
     /**
-     * @param int $instanceid `repository_instances.id` der WebDAV-Nutzerinstanz.
-     * @param string $relativepath Gewaehlter Ordner, relativ zum Basispfad der Instanz.
-     * @param array{server: string, basispfad: string, konto: string} $fingerprint
-     *        Stand von Server/Basispfad/Konto zum Zeitpunkt der Wahl (Spec §2).
+     * @param int $instanceid WebDAV user instance repository_instances.id.
+     * @param string $relativepath Selected folder relative to the instance base path.
+     * @param array{server: string, basepath: string, account: string} $fingerprint
+     *        Server/base path/account at selection time (Spec §2).
      * @return self
      */
-    public static function extern(int $instanceid, string $relativepath, array $fingerprint): self {
-        return new self(self::EXTERN, instanceid: $instanceid, relativepath: $relativepath, fingerprint: $fingerprint);
+    public static function external(int $instanceid, string $relativepath, array $fingerprint): self {
+        return new self(self::EXTERNAL, instanceid: $instanceid, relativepath: $relativepath, fingerprint: $fingerprint);
     }
 
     /**
-     * Vergleichsschluessel fuer die Ueberschneidungspruefung zwischen
-     * Kontextbereich und Materialbestand (Issue #495, Spec #486 §2 Pruefung
-     * 7): Server + Konto + effektiver Pfad, normalisiert mit abschliessendem
-     * "/" - ortsunabhaengig, ein Moodle-Ziel und ein externes Ziel ueberschneiden
-     * sich nie (unterschiedliches Praefix). Zwei Moodle-Ziele teilen sich
-     * dieselbe Person/denselben Server per Definition (beide Bereiche liegen
-     * immer in den Private Files derselben Lehrkraft).
+     * Comparison key for context/material overlap checks (Issue #495,
+     * Spec #486 §2 check 7): server, account and effective path, normalized
+     * with a trailing slash. Moodle and external prefixes cannot overlap.
+     * Both Moodle targets share the teacher's Private Files by definition.
      *
-     * Der effektive Pfad einer externen Instanz ist ihr Basispfad plus der
-     * gewaehlte relative Pfad (Issue #518, Spec §2 Pruefung 7) - ohne den
-     * Basispfad wuerden zwei Instanzen mit gleichem Server/Konto, aber
-     * unterschiedlichem Basispfad, faelschlich als derselbe Ort verglichen
-     * (oder eine echte Verschachtelung uebersehen), sobald sich ihre
-     * relativen Pfade zufaellig gleichen bzw. unterscheiden.
+     * External effective paths include the instance base path and relative
+     * selected path (Issue #518). Omitting the base path could falsely equate
+     * different locations or miss actual nesting when relative paths coincide.
      *
-     * @param string $subpath Zusaetzlicher Unterpfad ab diesem Ort, bereits
-     *        segmentgeprueft (z.B. ueber {@see storage_anchor::normalise_client_path()}).
+     * @param string $subpath Additional subpath from this location, already segment-validated
+     *        (e.g. through storage_anchor::normalise_client_path()).
      * @return string
      */
     public function comparison_key(string $subpath = ''): string {
@@ -90,16 +82,16 @@ final class pointer_location {
             return 'moodle|' . self::normalised_path((string) $this->path, $subpath);
         }
         $server = strtolower((string) ($this->fingerprint['server'] ?? ''));
-        $account = (string) ($this->fingerprint['konto'] ?? '');
-        $basepath = (string) ($this->fingerprint['basispfad'] ?? '');
+        $account = (string) ($this->fingerprint['account'] ?? '');
+        $basepath = (string) ($this->fingerprint['basepath'] ?? '');
         $effectivepath = trim($basepath, '/') . '/' . trim((string) $this->relativepath, '/');
-        return 'extern|' . $server . '|' . $account . '|' . self::normalised_path($effectivepath, $subpath);
+        return 'external|' . $server . '|' . $account . '|' . self::normalised_path($effectivepath, $subpath);
     }
 
     /**
      * @param string $base
      * @param string $subpath
-     * @return string Immer mit fuehrendem und abschliessendem "/", Wurzel als "/".
+     * @return string Always with leading and trailing slashes; root is "/".
      */
     private static function normalised_path(string $base, string $subpath): string {
         $combined = trim($base, '/') . ($subpath !== '' ? '/' . trim($subpath, '/') : '');

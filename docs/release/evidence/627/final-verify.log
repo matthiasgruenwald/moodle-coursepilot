@@ -1,0 +1,32 @@
+PASS Known verification mode
+PASS Final native upgrade savepoint
+PASS Legacy pointer filename and keys migrated to English
+PASS Old pointer replaced after successful translation
+PASS Selected context location and teacher contents retained
+PASS Selected material location and bytes retained
+PASS Legacy pending note retains path and translates operation/error
+PASS Legacy history sources migrated without losing versions
+PASS Published location and ticket URLs retained
+PASS Token migrated without extending deadlines
+PASS Token migrated without extending deadlines
+PASS Independent same-user/client baseline connections
+PASS Ticket migrated without extending its deadline
+PASS Ticket migrated without extending its deadline
+PASS Migrated access token works
+PASS Migrated refresh token rotates
+PASS Migrated ticket survives normal rotation
+PASS Remote grant withdrawal after migration
+PASS Token remains active while remote grant is withdrawn
+PASS Migrated ticket denies bytes after withdrawal
+PASS Cleanup preserves migrated consumed-refresh replay evidence
+PASS Replay blocks migrated successor
+PASS Replay leaves other migrated connection active
+PASS Explicit revocation works for the other migrated connection
+PASS Protected history comparison after real upgrade
+PASS Native history retains raw restoration conditions
+PASS Privacy discovers upgraded history author
+PASS Privacy removes upgraded history, retains activity
+PASS Upgraded plugin schema matches fresh installation
+PASS Registered task purge_history
+PASS Registered task oauth_cleanup
+PASS integrated real baseline upgrade acceptance

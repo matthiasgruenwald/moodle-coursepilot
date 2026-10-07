@@ -26,9 +26,12 @@ use PHPUnit\Framework\Attributes\CoversClass;
 
 defined('MOODLE_INTERNAL') || die();
 
+global $CFG;
+require_once($CFG->dirroot . '/cohort/lib.php');
+
 /**
- * Der Skill-Korpus-Katalog (Spec 0020 §4, Issue #450): ohne Kursbindung,
- * 'local/coursepilot:use' im Systemkontext genuegt.
+ * Skill catalog (Spec 0020 §4, #450): no course binding; remote-access
+ * authorization suffices (#630).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -39,13 +42,13 @@ final class list_skills_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     /**
-     * Nennt je Eintrag Name, Auslöser, Art und Umfang - keinen Inhalt, ohne
-     * dass ein Kurs existiert oder die Lehrkraft in einem eingeschrieben ist.
+     * Return name, trigger, kind and size without content. No existing course
+     * or teacher enrollment is needed.
      */
     public function test_lists_catalog_without_course_binding(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         $result = list_skills::execute();
@@ -58,30 +61,35 @@ final class list_skills_test extends \advanced_testcase {
 
         foreach ($result['skills'] as $skill) {
             $this->assertArrayNotHasKey('content', $skill);
-            $this->assertContains($skill['kind'], ['adapter', 'referenz']);
+            $this->assertContains($skill['kind'], ['adapter', 'reference']);
             $this->assertGreaterThan(0, $skill['length']);
         }
     }
 
     /**
-     * Ohne 'local/coursepilot:use' im Systemkontext wird abgewiesen.
+     * Reject users without remote-access authorization, including enrolled
+     * teachers (#630).
      */
-    public function test_without_capability_is_rejected(): void {
+    public function test_without_remote_access_is_rejected(): void {
         $this->resetAfterTest();
-        $this->setUser($this->getDataGenerator()->create_user());
+        $generator = $this->getDataGenerator();
+        $user = $generator->create_user();
+        $generator->enrol_user($user->id, $generator->create_course()->id, 'editingteacher');
+        $this->setUser($user);
 
-        $this->expectException(\required_capability_exception::class);
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage(get_string('remoteaccessnotgranted', 'local_coursepilot'));
         list_skills::execute();
     }
 
     /**
-     * Ohne offene Ausstaende liefert das Feld ein leeres Array, nie null
-     * (Issue #492, ADR 0023 Punkt 4).
+     * Return an empty array rather than null when no pending entries exist
+     * (#492, ADR 0023 §4).
      */
     public function test_ausstaende_field_is_empty_by_default(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         $result = list_skills::execute();
@@ -91,27 +99,26 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Offene Ausstaende sind je Zieldatei gebuendelt, die aeltesten zuerst
-     * (Issue #492, ADR 0023 Punkt 4) - und der Handshake sieht dabei keinen
-     * Netzzugriff: der WebDAV-Fake protokolliert keine Anfrage.
+     * Group pending entries by target file, oldest first (#492, ADR 0023 §4).
+     * The handshake performs no network requests through fake WebDAV.
      */
     public function test_ausstaende_bundled_by_path_oldest_first_without_network_access(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         $fake = new fake_webdav_transport();
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
         try {
-            $aelter = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
-            $neuer = pending_write_notice::record('plan.md', 'überschreiben', 'nicht erreichbar', 0);
-            pending_write_notice::record('journal.md', 'anhängen', 'Anmeldung abgelehnt', 0);
+            $aelter = pending_write_notice::record('plan.md', 'create', 'storage_full', 0);
+            $neuer = pending_write_notice::record('plan.md', 'overwrite', 'unreachable', 0);
+            pending_write_notice::record('journal.md', 'append', 'auth_rejected', 0);
 
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
+            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills must not reach the external storage.');
             $this->assertCount(2, $result['pending_entries']);
             $this->assertSame('plan.md', $result['pending_entries'][0]['path']);
             $this->assertSame([$aelter, $neuer], array_column($result['pending_entries'][0]['entries'], 'identifier'));
@@ -122,13 +129,13 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne WebDAV-Freischaltung fehlt der Ortswahl-Hinweisfakt (Issue #494
-     * Akzeptanzkriterium) - 'hinweise' bleibt ein leeres Array, nie null.
+     * Without WebDAV authorization, omit the location-selection notice and
+     * return an empty notices array (#494).
      */
     public function test_hinweise_field_is_empty_without_webdav_freischaltung(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         $result = list_skills::execute();
@@ -138,14 +145,13 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Mit Freischaltung und noch offener Ortswahl (kein Kontextpointer)
-     * nennt 'hinweise' den Fakt samt Link zur Ortswahlseite - ohne
-     * Netzzugriff (Issue #494 Akzeptanzkriterium).
+     * With authorization but no context pointer, include the pending
+     * location-selection fact and link without network requests (#494).
      */
-    public function test_hinweise_field_names_open_ortswahl_when_enabled_and_no_pointer(): void {
+    public function test_hinweise_field_names_open_location_selection_when_enabled_and_no_pointer(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
@@ -156,27 +162,27 @@ final class list_skills_test extends \advanced_testcase {
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
+            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills must not reach the external storage.');
             $this->assertCount(1, $result['notices']);
-            $this->assertStringContainsString('/local/coursepilot/ortswahl.php', $result['notices'][0]['link']);
+            $this->assertStringContainsString('/local/coursepilot/location_selection.php', $result['notices'][0]['link']);
         } finally {
             \core\di::reset_container();
         }
     }
 
     /**
-     * Sobald ein Kontextpointer existiert, gilt die Ortswahl nicht mehr als
-     * offen - der Fakt verschwindet, obwohl die Freischaltung weiterbesteht.
+     * An existing context pointer removes the pending-location fact even
+     * while authorization remains enabled.
      */
     public function test_hinweise_field_is_empty_once_a_pointer_exists(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
         storage_anchor::write_pointer_document([
-            'kontextbereich' => 'mein-kontext',
+            'context_area' => 'mein-kontext',
             'materialordner' => 'mein-material',
         ]);
 
@@ -187,12 +193,12 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne offenen Altbestand fehlt der Hinweisfakt.
+     * Without pending old content, omit its notice.
      */
-    public function test_hinweise_field_has_no_altbestand_hint_by_default(): void {
+    public function test_hinweise_field_has_no_previouslocation_hint_by_default(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
 
         $result = list_skills::execute();
@@ -202,15 +208,15 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Ein offener Altbestand (Issue #498, Spec #486 §9/§10) erscheint als
-     * Fakt in 'hinweise', ohne Zaehlung - der Hinweistext nennt keine Anzahl.
+     * Pending old content appears as a notice without counts
+     * (#498, Spec #486 §9/§10).
      */
-    public function test_hinweise_field_names_open_altbestand_without_counting(): void {
+    public function test_hinweise_field_names_open_previouslocation_without_counting(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
-        $this->write_pointer_with_vorheriger_ort($user);
+        $this->write_pointer_with_previous_location($user);
 
         $result = list_skills::execute();
         $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
@@ -218,29 +224,28 @@ final class list_skills_test extends \advanced_testcase {
         $this->assertCount(1, $result['notices']);
         $this->assertSame(
             get_string(
-                'listskillsaltbestandhint',
+                'listskillspreviouslocationhint',
                 'local_coursepilot',
-                \local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE
+                \local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE
             ),
             $result['notices'][0]['text']
         );
-        // Kein Zaehlwert (Issue #498 Akzeptanzkriterium: "ohne Zaehlung") -
-        // am deutschen Sprachpaket geprueft, echte Umlaute, keine Ziffern.
+        // Old-content notices contain no count (#498). Check the German pack
+        // for real umlauts and absence of digits.
         $string = [];
         require(__DIR__ . '/../../lang/de/local_coursepilot.php');
-        $this->assertDoesNotMatchRegularExpression('/\d/', $string['listskillsaltbestandhint']);
+        $this->assertDoesNotMatchRegularExpression('/\d/', $string['listskillspreviouslocationhint']);
     }
 
     /**
-     * Ein kaputter Kontextpointer (kein gueltiges JSON-Objekt) darf den
-     * Handshake nicht scheitern lassen (Issue #519, Spec #486 §10): der
-     * Skillkatalog kommt trotzdem, dazu ein benannter Hinweis auf die
-     * Ortswahlseite - ohne Netzzugriff.
+     * Invalid context-pointer JSON must not break the handshake. Return
+     * the skill catalog plus a named notice linking to location selection,
+     * without network requests (#519, Spec #486 §10).
      */
     public function test_broken_pointer_still_returns_skills_with_named_hint_and_no_network(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
@@ -250,7 +255,7 @@ final class list_skills_test extends \advanced_testcase {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/coursepilot/',
-            'filename' => '.coursepilot-ort.json',
+            'filename' => '.coursepilot-location.json',
         ], 'kein json');
 
         $fake = new fake_webdav_transport();
@@ -259,33 +264,31 @@ final class list_skills_test extends \advanced_testcase {
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
+            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills must not reach the external storage.');
             $this->assertNotEmpty($result['skills']);
             $this->assertCount(1, $result['notices']);
             $this->assertSame(
                 get_string(
                     'listskillspointerbrokenhint',
                     'local_coursepilot',
-                    \local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE
+                    \local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE
                 ),
                 $result['notices'][0]['text']
             );
-            $this->assertStringContainsString('/local/coursepilot/ortswahl.php', $result['notices'][0]['link']);
+            $this->assertStringContainsString('/local/coursepilot/location_selection.php', $result['notices'][0]['link']);
         } finally {
             \core\di::reset_container();
         }
     }
 
     /**
-     * Ein unvollstaendiger Kontextpointer (gueltiges JSON-Objekt, aber ohne
-     * die Pflichtfelder) faellt unter denselben Fakt wie ein unlesbarer
-     * Pointer (Issue #519, Spec #486 §10: "unlesbar oder unvollstaendig") -
-     * derselbe benannte Hinweis, weiterhin ohne Netzzugriff.
+     * Valid JSON missing required pointer fields produces the same notice
+     * as an unreadable pointer, without network requests (#519, Spec #486 §10).
      */
     public function test_incomplete_pointer_still_returns_skills_with_named_hint_and_no_network(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->role_assign('editingteacher', $user->id, \context_system::instance()->id);
+        $this->grant_remote_access($user);
         $this->setUser($user);
         $this->enable_webdav_repository_type();
         $this->grant_webdav_capability($user);
@@ -295,7 +298,7 @@ final class list_skills_test extends \advanced_testcase {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/coursepilot/',
-            'filename' => '.coursepilot-ort.json',
+            'filename' => '.coursepilot-location.json',
         ], json_encode(['irgendwas' => 'ohne die Pflichtfelder']));
 
         $fake = new fake_webdav_transport();
@@ -304,19 +307,34 @@ final class list_skills_test extends \advanced_testcase {
             $result = list_skills::execute();
             $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
 
-            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills darf den externen Speicher nicht erreichen.');
+            $this->assertSame([], $fake->requests(), 'coursepilot_list_skills must not reach the external storage.');
             $this->assertNotEmpty($result['skills']);
             $this->assertCount(1, $result['notices']);
             $this->assertSame(
                 get_string(
                     'listskillspointerbrokenhint',
                     'local_coursepilot',
-                    \local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE
+                    \local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE
                 ),
                 $result['notices'][0]['text']
             );
         } finally {
             \core\di::reset_container();
         }
+    }
+
+    /**
+     * Grants remote access the way a school does after #579: a selected
+     * system cohort, and the teacher role only inside a course - no
+     * system-level role (Issue #630).
+     *
+     * @param \stdClass $user
+     */
+    private function grant_remote_access(\stdClass $user): void {
+        $generator = $this->getDataGenerator();
+        $cohort = $generator->create_cohort(['contextid' => \context_system::instance()->id]);
+        cohort_add_member($cohort->id, $user->id);
+        set_config('remoteaccesscohorts', (string) $cohort->id, 'local_coursepilot');
+        $generator->enrol_user($user->id, $generator->create_course()->id, 'editingteacher');
     }
 }

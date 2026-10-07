@@ -17,42 +17,42 @@
 namespace local_coursepilot;
 
 /**
- * Das Markierungsgedaechtnis (Issue #493, Spec #486 §6 "Markierungsgedaechtnis
- * (Latenz)"): eine Auflistung braeuchte ohne dieses Gedaechtnis 1 + N Zugriffe,
- * um die Personenbezugs-Markierung jeder `.md`-Datei zu kennen - extern
- * zusaetzlich gedrosselt. Gemerkt wird deshalb nur das eine Bit "markiert
- * ja/nein" je Datei, in Moodle, ohne Netz.
+ * The mark memory (issue #493, spec #486 §6 "mark memory
+ * (latency)"): without this memory a listing would need 1 + N accesses
+ * to know the personal-data mark of every `.md` file - externally
+ * additionally throttled. Therefore only the one bit "marked
+ * yes/no" per file is remembered, in Moodle, without network.
  *
- * Der Schluessel ist Pfad, Groesse, Aenderungszeit und ETag (wo vorhanden) -
- * alles bereits aus dem einen PROPFIND/Verzeichniseintrag der Auflistung
- * bekannt, kein zusaetzlicher Zugriff noetig, um den Schluessel zu bilden.
- * Passt der gespeicherte Schluessel nicht mehr zum aktuellen Eintrag, gilt
- * das Gedaechtnis als leer fuer diese Datei - {@see lookup()} liefert dann
- * `null`, der Aufrufer liest die Datei neu und traegt das Ergebnis ueber
- * {@see remember()} nach. Es wird **nie** Inhalt gespeichert, nur das Bit -
- * ein verlorenes Gedaechtnis kostet also nur Zeit, nie Richtigkeit
- * ({@see \local_coursepilot\external\read_context_file} prueft den Inhalt
- * ohnehin bei jedem Lesen selbst noch einmal).
+ * The key is path, size, modification time and the check value of the
+ * storage adapter (column `etag`, since issue #645 the {@see storage_port} check value) -
+ * all already known from the single PROPFIND/directory entry of the listing,
+ * no additional access needed to form the key.
+ * If the stored key no longer matches the current entry, the
+ * memory counts as empty for this file - {@see lookup()} then returns
+ * `null`, the caller reads the file anew and records the result via
+ * {@see remember()}. Content is **never** stored, only the bit -
+ * a lost memory therefore costs only time, never correctness
+ * ({@see \local_coursepilot\external\read_context_file} checks the content
+ * itself again on every read anyway).
  *
- * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class mark_memory {
 
-    /** @var string Tabellenname, siehe db/install.xml. */
+    /** @var string Table name, see db/install.xml. */
     private const TABLE = 'local_coursepilot_context_mark';
 
     /**
-     * Das gemerkte Bit fuer eine Datei, wenn der Schluessel noch passt.
+     * The remembered bit for a file, if the key still matches.
      *
-     * @param string $path Client-Pfad der Datei, relativ zum Kontextbereich.
+     * @param string $path Client path of the file, relative to the context area.
      * @param int $size
      * @param int $timemodified
      * @param string|null $etag
-     * @return bool|null null, wenn nichts gemerkt ist oder der Schluessel
-     *         nicht mehr passt (Datei hat sich geaendert) - der Aufrufer
-     *         liest dann selbst nach.
+     * @return bool|null null if nothing is remembered or the key
+     *         no longer matches (file has changed) - the caller
+     *         then reads it again itself.
      */
     public static function lookup(string $path, int $size, int $timemodified, ?string $etag): ?bool {
         global $DB, $USER;
@@ -74,12 +74,8 @@ final class mark_memory {
     }
 
     /**
-     * Merkt sich das Bit fuer eine Datei - legt den Eintrag an oder ersetzt
-     * ihn, je nachdem, ob schon einer existiert.
-     *
-     * @param string $path
-     * @param int $size
-     * @param int $timemodified
+     * Remembers the bit for a file - creates the entry or replaces
+     * it, depending on whether one already exists.
      * @param string|null $etag
      * @param bool $marked
      */

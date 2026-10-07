@@ -27,9 +27,9 @@ use local_coursepilot\history\version_history;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Volles Diff zweier frei gewaehlter Staende einer Aktivitaet (Spec 0015
- * §10.6, Ticket #394) - nicht nur benachbarter Versionen. Das Diff wird beim
- * Ansehen berechnet, nicht gespeichert (Spec 0015 §10.1). Rein lesend,
+ * Full diff of two freely chosen states of an activity (Spec 0015
+ * §10.6, ticket #394) - not only adjacent versions. The diff is computed on
+ * viewing, not stored (Spec 0015 §10.1). Read-only,
  * eigene Faehigkeit 'local/coursepilot:viewhistory'.
  *
  * @package    local_coursepilot
@@ -74,13 +74,14 @@ class compare_activity_versions extends external_api {
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
-        $standblock = new external_single_structure([
+        $stateblock = new external_single_structure([
             'version' => new external_value(PARAM_INT, 'Version number'),
-            'source' => new external_value(PARAM_TEXT, '"moodle", "vorgefunden" or "geklont"'),
+            'source' => new external_value(PARAM_TEXT, '"moodle", "discovered", "cloned", "from_xml" or "superseded"'),
             'discovered' => new external_value(PARAM_BOOL, 'true if retroactively recorded as a starting state'),
             'source_cmid' => new external_value(
                 PARAM_INT,
-                'Source course module ID of a clone - only set when source = "geklont", null otherwise',
+                'Reference course module ID: clone origin (source = "cloned") or replacing activity '
+                    . '(source = "superseded"), null otherwise',
                 VALUE_DEFAULT,
                 null,
                 NULL_ALLOWED
@@ -93,8 +94,8 @@ class compare_activity_versions extends external_api {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
             'modname' => new external_value(PARAM_TEXT, 'Activity type'),
-            'before' => $standblock,
-            'after' => $standblock,
+            'before' => $stateblock,
+            'after' => $stateblock,
             'changes' => new external_multiple_structure(
                 new external_single_structure([
                     'field' => new external_value(PARAM_TEXT, 'Field name'),
@@ -105,7 +106,7 @@ class compare_activity_versions extends external_api {
             ),
             'files' => new external_multiple_structure(
                 new external_single_structure([
-                    'change_type' => new external_value(PARAM_TEXT, '"hinzugefuegt" (added) or "entfernt" (removed)'),
+                    'change_type' => new external_value(PARAM_TEXT, '"added" (added) or "removed" (removed)'),
                     'filename' => new external_value(PARAM_TEXT, 'File name'),
                 ]),
                 'Files that were added or removed between the two states'

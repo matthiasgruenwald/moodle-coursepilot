@@ -26,13 +26,12 @@ use local_coursepilot\material_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Legt eine Datei im Materialordner der aufrufenden Lehrkraft an oder
- * ueberschreibt sie vollstaendig (Spec 0018 §2/§4.2/§8.1, Issue #428) - die
- * eine Eintrittstuer, ueber die jede Herkunft (Chat-Anhang, spaeterer
- * Zuschnitt) den Materialordner erreicht.
+ * Creates or fully overwrites a material file for the calling teacher
+ * (Spec 0018 §2/§4.2/§8.1, #428). Single entry point for all sources,
+ * including chat attachments and later crops.
  *
- * Reihenfolge ist Absicht: erst alle Absagen (Pfad, Endung, Servergroesse,
- * Gleichzeitigkeit, Quote), dann genau ein Schreibvorgang.
+ * Validate path, extension, server size, concurrency and quota before
+ * performing exactly one write.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -45,11 +44,11 @@ class upload_material_file extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'path' => new external_value(PARAM_PATH, 'Dateipfad relativ zum Materialordner, z.B. "screenshot.png"'),
-            'content_base64' => new external_value(PARAM_RAW, 'Dateiinhalt, base64-kodiert'),
+            'path' => new external_value(PARAM_PATH, 'File path relative to the material store, e.g. "screenshot.png"'),
+            'content_base64' => new external_value(PARAM_RAW, 'Base64-encoded file content'),
             'expected_contenthash' => new external_value(
                 PARAM_ALPHANUMEXT,
-                'Optional: contenthash aus dem letzten Auflisten - passt er nicht, bricht der Vorgang ab',
+                'Optional: contenthash from the last listing; mismatch aborts the operation',
                 VALUE_DEFAULT,
                 ''
             ),
@@ -63,8 +62,8 @@ class upload_material_file extends external_api {
      * @return array
      * @throws \moodle_exception invalidmaterialpath, materialfiledisallowedtype,
      *         materialfiletoolarge, materialfilechanged, materialquotaexceeded
-     * @throws \invalid_parameter_exception ungueltiges base64
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     * @throws \invalid_parameter_exception invalid base64
+     * @throws \required_capability_exception without moodle/user:manageownfiles
      */
     public static function execute(string $path, string $contentbase64, string $expectedcontenthash = ''): array {
         $params = self::validate_parameters(self::execute_parameters(), [
@@ -79,20 +78,19 @@ class upload_material_file extends external_api {
 
         $content = base64_decode($params['content_base64'], true);
         if ($content === false) {
-            throw new \invalid_parameter_exception('content_base64 ist kein gueltiges base64.');
+            throw new \invalid_parameter_exception('content_base64 is not valid base64.');
         }
         self::guard_server_size_limit(strlen($content));
 
-        // Pfad-, Endungs-, Gleichzeitigkeits- und Quotenpruefung sowie die
-        // Schreibchoreografie liegen im Anker (Issue #539, material_area::write()
-        // ueber den storage_port-Adapter), nicht mehr hier im Werkzeug.
+        // Path, extension, concurrency, quota and persistence sequencing belong
+        // to the anchor (#539, material_area::write() through storage_port),
+        // not this tool.
         return self::build_response(material_area::write($params['path'], $content, $params['expected_contenthash']));
     }
 
     /**
-     * Baut die Antwort aus dem Ergebnis von {@see material_area::write()}
-     * (Issue #539, vormals #523: aus execute() ausgelagert, um die Funktion
-     * unter der 50-Zeilen-Grenze zu halten).
+     * Builds the response from {@see material_area::write()} (#539, formerly
+     * #523), extracted from execute() to keep functions below 50 lines.
      *
      * @param array{path: string, created: bool, size: int, oldsize: int, warning: ?string} $written
      * @return array
@@ -122,18 +120,17 @@ class upload_material_file extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'path' => new external_value(PARAM_TEXT, 'Aufgeloester Dateipfad, relativ zum Materialordner'),
-            'created' => new external_value(PARAM_BOOL, 'true, wenn die Datei neu angelegt wurde'),
-            'size' => new external_value(PARAM_INT, 'Neue Dateigroesse in Byte'),
-            'message' => new external_value(PARAM_RAW, 'Aenderungsmeldung in Lehrkraft-Deutsch, inkl. Quotenwarnung falls zutreffend'),
+            'path' => new external_value(PARAM_TEXT, 'Resolved file path relative to the material store'),
+            'created' => new external_value(PARAM_BOOL, 'true if the file was newly created'),
+            'size' => new external_value(PARAM_INT, 'New file size in bytes'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message, including any quota warning'),
         ]);
     }
 
     /**
-     * Weist einen Upload ab, der die Servergrenze fuer Uploads ueberschreitet
-     * (Spec 0018 §8.1: keine eigene Groessengrenze, Praezedenz Spec 0017 §9 -
-     * dieselbe Aufteilung testbarer Kern/Servergrenze wie
-     * import_questions_xml::guard_server_size_limit()).
+     * Rejects uploads above the server limit (Spec 0018 §8.1), without a
+     * separate plugin size limit. Follows Spec 0017 §9 and the testable-core/
+     * server-setting split of import_questions_xml::guard_server_size_limit().
      *
      * @param int $bytes
      * @return void
@@ -143,9 +140,8 @@ class upload_material_file extends external_api {
     }
 
     /**
-     * Testbarer Kern von {@see self::guard_server_size_limit()}: $maxbytes
-     * kommt vom Aufrufer, damit Tests die Schwelle setzen koennen, ohne die
-     * PHP-Ini-Werte des Testcontainers zu aendern.
+     * Testable core of {@see self::guard_server_size_limit()}. Caller supplies
+     * maxbytes so tests need not change the container's PHP ini settings.
      *
      * @param int $bytes
      * @param int $maxbytes

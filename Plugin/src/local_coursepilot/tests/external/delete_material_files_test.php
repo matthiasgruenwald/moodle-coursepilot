@@ -21,9 +21,8 @@ use local_coursepilot\material_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Loeschweg fuer den Aufraeumbericht (Spec 0018 §8.3, Issue #438): entfernt
- * genau die uebergebenen Pfade, nichts ohne ausdrueckliche Liste, kein
- * Teilerfolg bei einem fehlenden Pfad.
+ * Cleanup deletion (Spec 0018 §8.3, Issue #438): delete exactly the
+ * explicitly listed paths, with no partial success if a path is missing.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -61,8 +60,8 @@ final class delete_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ein nicht existierender Pfad in der Liste bricht den gesamten Vorgang
-     * ab - kein Teilerfolg bei einem Tippfehler.
+     * A nonexistent path aborts the entire operation; a typo cannot
+     * produce partial success.
      */
     public function test_missing_path_aborts_without_partial_delete(): void {
         $this->resetAfterTest();
@@ -73,7 +72,7 @@ final class delete_material_files_test extends \advanced_testcase {
         try {
             delete_material_files::execute(['vorhanden.pdf', 'nichtda.pdf']);
         } finally {
-            $this->assertTrue($this->exists('vorhanden.pdf'), 'Kein Teilerfolg: die gueltige Datei bleibt erhalten.');
+            $this->assertTrue($this->exists('vorhanden.pdf'), 'No partial success: the valid file is kept.');
         }
     }
 

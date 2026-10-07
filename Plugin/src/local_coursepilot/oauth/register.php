@@ -17,17 +17,14 @@
 /**
  * Dynamic Client Registration (RFC 7591, #335).
  *
- * Unauthentifiziert erreichbar wie bei jedem DCR-Endpunkt - der Schutz liegt
- * bei authorize.php (Moodle-Login, #336), nicht hier.
+ * Public like every DCR endpoint; authorize.php enforces Moodle login
+ * (#336), not this registration endpoint.
  *
- * Reine Schale (#334-Muster): liest Methode und JSON-Rumpf ein, uebergibt an
- * {@see \local_coursepilot\oauth_lib::handle_registration()}.
+ * Thin I/O shell (#334): reads method and JSON body, then delegates
+ * to {@see \local_coursepilot\oauth_lib::handle_registration()}.
  *
- * ponytail: kein Rate-Limiting auf diesem Endpunkt - jede unauthentifizierte
- * POST-Anfrage legt bei gueltigen redirect_uris einen neuen Client-Datensatz
- * an. Fuer die Spike-Instanz (kleiner, bekannter Nutzerkreis) kein akutes
- * Risiko; natuerlicher Ort fuer eine Drossel ist #338 (Fernzugriffs-
- * Steuerung), sobald die Instanz oeffentlich erreichbar ist.
+ * Hard body-size cap plus site/source budgets (#642) using Moodle's
+ * trusted remote address; see oauth_budget.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -39,12 +36,13 @@ define('NO_DEBUG_DISPLAY', true);
 
 require(__DIR__ . '/../../../config.php');
 
+use local_coursepilot\oauth_budget;
 use local_coursepilot\oauth_lib;
 
-$decoded = json_decode(file_get_contents('php://input'), true);
-$body = is_array($decoded) ? $decoded : null;
+$rawbody = file_get_contents('php://input', false, null, 0, oauth_lib::REGISTRATION_MAX_BODY_BYTES + 1);
 
-$response = oauth_lib::handle_registration($_SERVER['REQUEST_METHOD'] ?? 'POST', $body);
+$response = oauth_lib::handle_registration($_SERVER['REQUEST_METHOD'] ?? 'POST',
+    $rawbody === false ? '' : $rawbody, oauth_budget::request_source());
 
 http_response_code($response['status']);
 foreach ($response['headers'] as $name => $value) {

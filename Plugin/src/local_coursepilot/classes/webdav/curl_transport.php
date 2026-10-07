@@ -17,32 +17,32 @@
 namespace local_coursepilot\webdav;
 
 /**
- * Der einzige Transport im Betrieb: Moodles \curl (`lib/filelib.php`), nicht
- * `\webdav_client` (ADR 0022, Issue #489). Sechs Verben ueber
- * `CURLOPT_CUSTOMREQUEST`, feste `CURLAUTH_BASIC`-Anmeldung, keine
- * `ignoresecurity`-Umgehung - Moodles Hostsperre gilt unveraendert, weil der
- * `\curl`-Aufrufer sie nur mit einer ausdruecklichen Einstellung abschalten
- * kann, die dieser Client nie setzt.
+ * The only transport in operation: Moodle's \curl (`lib/filelib.php`), not
+ * `\webdav_client` (ADR 0022, Issue #489). Six verbs via
+ * `CURLOPT_CUSTOMREQUEST`, fixed `CURLAUTH_BASIC` authentication, no
+ * `ignoresecurity` bypass - Moodle's host block applies unchanged, because the
+ * `\curl` caller can only disable it with an explicit setting that this client
+ * never sets.
  *
- * Moodles `\curl::request()` wirft bei einer gesperrten Adresse nicht,
- * sondern liefert die Blockmeldung als Rueckgabewert und laesst
- * `get_info()` leer - das einzige Unterscheidungsmerkmal zu einer
- * Verbindungsstoerung (dort traegt `get_info()` einen `http_code`, nur
- * `get_errno()` ist ungleich null). Beide Faelle werden hier uebersetzt,
- * bevor irgendeine Fehlermeldung diese Klasse verlaesst.
+ * Moodle's `\curl::request()` does not throw for a blocked address,
+ * but returns the block message as the return value and leaves
+ * `get_info()` empty - the only distinguishing feature from a
+ * connection failure (there `get_info()` carries an `http_code`, only
+ * `get_errno()` is non-zero). Both cases are translated here,
+ * before any error message leaves this class.
  *
- * Moodles `\curl` schaltet die Zertifikatspruefung standardmaessig ab
- * (`CURLOPT_SSL_VERIFYPEER = 0`, `filelib.php::resetopt()`) und folgt
- * Weiterleitungen (`CURLOPT_FOLLOWLOCATION = 1`, bis zu zehn Ebenen tief,
- * PHP-seitig emuliert). Ohne ausdrueckliche Gegeneinstellung koennte das
- * Basic-Anmeldekopf ueber eine unverschluesselte oder fremde Adresse
- * mitgelesen werden (Sicherheitsbefund HIGH, Issue #510). {@see
- * transport_options()} setzt deshalb bei jeder Anfrage Zertifikatspruefung,
- * Weiterleitungssperre, Gesamt-Zeitgrenze und Groessengrenze der Antwort -
- * eine 3xx-Antwort deutet {@see webdav_client::classify()} als benannten
- * Fehler `REDIRECTED`, eine ueberschrittene Zeit-/Groessengrenze meldet
- * `\curl` als von null verschiedenen `get_errno()` und wird hier zur
- * Fehlerklasse `UNREACHABLE`.
+ * Moodle's `\curl` disables certificate verification by default
+ * (`CURLOPT_SSL_VERIFYPEER = 0`, `filelib.php::resetopt()`) and follows
+ * redirects (`CURLOPT_FOLLOWLOCATION = 1`, up to ten levels deep,
+ * emulated on the PHP side). Without an explicit counter-setting, the
+ * Basic authentication header could be read over an unencrypted or foreign address
+ * (security finding HIGH, Issue #510). {@see
+ * transport_options()} therefore sets certificate verification,
+ * redirect block, total timeout and response size limit on every request -
+ * a 3xx response is interpreted by {@see webdav_client::classify()} as the named
+ * error `REDIRECTED`, an exceeded time/size limit is reported by
+ * `\curl` as a non-zero `get_errno()` and becomes the
+ * error class `UNREACHABLE` here.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -50,16 +50,16 @@ namespace local_coursepilot\webdav;
  */
 final class curl_transport implements webdav_transport {
 
-    /** @var int Gesamt-Zeitgrenze einer Anfrage in Sekunden (CURLOPT_TIMEOUT). */
+    /** @var int Total timeout of a request in seconds (CURLOPT_TIMEOUT). */
     private const TOTAL_TIMEOUT_SECONDS = 30;
 
-    /** @var int Groessengrenze einer Antwort in Byte (CURLOPT_MAXFILESIZE), 50 MB. */
+    /** @var int Size limit of a response in bytes (CURLOPT_MAXFILESIZE), 50 MB. */
     private const MAX_RESPONSE_BYTES = 50 * 1024 * 1024;
 
     /**
-     * @param \curl $curl Vorkonfigurierte Moodle-curl-Instanz. Tests koennen
-     *        hier einen eigenen `securityhelper` einspeisen (siehe
-     *        `\curl`-Konstruktor), ohne `ignoresecurity` zu setzen.
+     * @param \curl $curl Preconfigured Moodle curl instance. Tests can
+     *        inject their own `securityhelper` here (see the
+     *        `\curl` constructor) without setting `ignoresecurity`.
      * @param string $username
      * @param string $password
      */
@@ -85,23 +85,23 @@ final class curl_transport implements webdav_transport {
 
         $info = $this->curl->get_info();
         if (empty($info)) {
-            // Moodles Hostsperre hat die Anfrage gar nicht erst gestellt.
-            throw new webdav_error(webdav_error::BLOCKED, 'WebDAV-Adresse durch Moodles Hostsperre blockiert.');
+            // Moodle's host block never made the request in the first place.
+            throw new webdav_error(webdav_error::BLOCKED, 'WebDAV address blocked by Moodle host block.');
         }
         if ($this->curl->get_errno() !== 0) {
-            throw new webdav_transport_exception('WebDAV-Verbindung fehlgeschlagen (errno ' . $this->curl->get_errno() . ').');
+            throw new webdav_transport_exception('WebDAV connection failed (errno ' . $this->curl->get_errno() . ').');
         }
 
         return new webdav_response((int) ($info['http_code'] ?? 0), $this->response_headers(), (string) $raw);
     }
 
     /**
-     * Die curl-Optionen jeder Anfrage - Anmeldung sowie die vier Schutzmassnahmen
-     * aus dem Sicherheitsbefund (Issue #510): Zertifikatspruefung ausdruecklich
-     * eingeschaltet (Moodles `\curl` schaltet sie sonst standardmaessig ab),
-     * keine Weiterleitung, Gesamt-Zeitgrenze, Groessengrenze der Antwort.
-     * Als eigene Methode, damit ein Transport-Test die gesetzten Optionen ohne
-     * echten Netzzugriff belegen kann.
+     * The curl options of every request - authentication plus the four protective measures
+     * from the security finding (Issue #510): certificate verification explicitly
+     * enabled (Moodle's `\curl` disables it by default otherwise),
+     * no redirect, total timeout, response size limit.
+     * As its own method so that a transport test can verify the set options without
+     * real network access.
      *
      * @param array<string, string> $headers
      * @return array<string, mixed>
@@ -113,17 +113,17 @@ final class curl_transport implements webdav_transport {
             'CURLOPT_HTTPHEADER' => $this->format_headers($headers),
             'CURLOPT_SSL_VERIFYPEER' => true,
             'CURLOPT_SSL_VERIFYHOST' => 2,
-            // Keine Weiterleitung: eine 3xx-Antwort wird von webdav_client als
-            // benannter Fehler REDIRECTED gedeutet, nie automatisch verfolgt -
-            // sonst koennten Anmeldedaten an eine vom Server bestimmte,
-            // moeglicherweise unverschluesselte Adresse gelangen.
+            // No redirect: a 3xx response is interpreted by webdav_client as the
+            // named error REDIRECTED, never followed automatically -
+            // otherwise credentials could end up at a server-determined,
+            // possibly unencrypted address.
             'CURLOPT_FOLLOWLOCATION' => 0,
             'CURLOPT_TIMEOUT' => self::TOTAL_TIMEOUT_SECONDS,
-            // CURLOPT_MAXFILESIZE allein greift nur, wenn der Server die
-            // Groesse vorab per Content-Length nennt - ein Server ohne
-            // Content-Length (z.B. chunked) koennte sonst unbegrenzt streamen.
-            // Der Fortschritts-Abbruch unten begrenzt deshalb zusaetzlich den
-            // tatsaechlich uebertragenen Bytestrom (Issue #510).
+            // CURLOPT_MAXFILESIZE alone only applies if the server announces the
+            // size up front via Content-Length - a server without
+            // Content-Length (e.g. chunked) could otherwise stream without limit.
+            // The progress abort below therefore additionally limits the
+            // byte stream actually transferred (Issue #510).
             'CURLOPT_MAXFILESIZE' => self::MAX_RESPONSE_BYTES,
             'CURLOPT_NOPROGRESS' => false,
             'CURLOPT_XFERINFOFUNCTION' => \Closure::fromCallable([$this, 'abort_when_oversized']),
@@ -131,18 +131,18 @@ final class curl_transport implements webdav_transport {
     }
 
     /**
-     * curl-Fortschritts-Rueckruf: bricht die Uebertragung ab, sobald mehr als
-     * {@see MAX_RESPONSE_BYTES} hoch- oder heruntergeladen wurden - schuetzt
-     * auch ohne vorab bekannte Content-Length (Issue #510). Ein Abbruch
-     * fuehrt zu einem von null verschiedenen `get_errno()` und wird von
-     * {@see request()} zur Fehlerklasse `UNREACHABLE`.
+     * curl progress callback: aborts the transfer as soon as more than
+     * {@see MAX_RESPONSE_BYTES} have been uploaded or downloaded - protects
+     * even without a Content-Length known up front (Issue #510). An abort
+     * leads to a non-zero `get_errno()` and is turned by
+     * {@see request()} into the error class `UNREACHABLE`.
      *
      * @param resource|\CurlHandle $resource
      * @param int $downloadsize
      * @param int $downloaded
      * @param int $uploadsize
      * @param int $uploaded
-     * @return int 0 weitermachen, ungleich 0 abbrechen.
+     * @return int 0 continue, non-zero abort.
      */
     private function abort_when_oversized($resource, int $downloadsize, int $downloaded, int $uploadsize, int $uploaded): int {
         return ($downloaded > self::MAX_RESPONSE_BYTES || $uploaded > self::MAX_RESPONSE_BYTES) ? 1 : 0;
@@ -150,7 +150,7 @@ final class curl_transport implements webdav_transport {
 
     /**
      * @param array<string, string> $headers
-     * @return string[] "Name: Wert"-Zeilen fuer CURLOPT_HTTPHEADER.
+     * @return string[] "Name: value" lines for CURLOPT_HTTPHEADER.
      */
     private function format_headers(array $headers): array {
         $lines = [];
@@ -161,7 +161,7 @@ final class curl_transport implements webdav_transport {
     }
 
     /**
-     * @return array<string, string> Antwortkoepfe der letzten Anfrage, Schluessel kleingeschrieben.
+     * @return array<string, string> Response headers of the last request, keys lowercased.
      */
     private function response_headers(): array {
         $headers = [];

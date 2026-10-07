@@ -15,17 +15,14 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Token-Endpunkt (#336): Authorization Code + Refresh mit Rotation, 1h
- * Zugriffs- / 30 Tage Erneuerungstoken.
+ * Token endpoint (#336): authorization code and rotated refresh tokens,
+ * with one-hour access and 30-day refresh lifetimes.
  *
- * Duenne Schale (#334-Muster): liest Methode, Content-Type und Rumpf ein
- * (Formular- oder JSON-Body - das Unterscheiden ist Ein-/Ausgabe), uebergibt
- * an {@see \local_coursepilot\oauth_lib::handle_token()}. Die eigentliche
- * Entscheidungslogik (Grant-Type-Dispatch, client_secret_post-Pruefung,
- * Pflichtfeld-Validierung) lebt dort als reine, per PHPUnit ohne laufenden
- * Webserver pruefbare Methode - kein exit() in der Entscheidungslogik, nur
- * hier in der Schale. Fehlerantworten sind immer JSON (Moodles HTML-404
- * killt opencodes Parser, Fund aus #312).
+ * Thin I/O shell (#334): reads method, Content-Type and form/JSON body
+ * and delegates to {@see \local_coursepilot\oauth_lib::handle_token()}.
+ * Grant dispatch, client_secret_post checks and required-field validation
+ * are PHPUnit-testable without a web server. Only this shell exits.
+ * Errors always use JSON: Moodle HTML 404 breaks opencode parsing (#312).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -39,8 +36,8 @@ require(__DIR__ . '/../../../config.php');
 
 use local_coursepilot\oauth_lib;
 
-// Sowohl Formular- als auch JSON-Bodies zulassen - RFC 6749 verlangt
-// application/x-www-form-urlencoded, manche MCP-Clients senden trotzdem JSON.
+// Accept both form and JSON bodies. RFC 6749 requires
+// application/x-www-form-urlencoded, but some MCP clients send JSON.
 $contenttype = $_SERVER['CONTENT_TYPE'] ?? '';
 if (str_contains($contenttype, 'application/json')) {
     $decoded = json_decode(file_get_contents('php://input'), true);

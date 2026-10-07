@@ -15,11 +15,10 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Schluesselendpunkt (#336). Duenne Schale um
- * {@see \local_coursepilot\oauth_lib::jwks_document()}: leer, aber valide.
- * jwks_uri ist nur deklariert, weil der OIDC-Namensraum es erzwingt (#302,
- * Punkt 2) - local_coursepilot ist kein OIDC-Provider und stellt keine
- * signierten ID-Token aus; Access-Token sind opake DB-Werte.
+ * Key endpoint (#336). Thin shell around oauth_lib::jwks_document(): valid
+ * but empty. jwks_uri is declared because the OIDC namespace requires it
+ * (#302, item 2). Coursepilot is not an OIDC provider and issues no signed
+ * ID tokens; access tokens are opaque database values.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

@@ -22,10 +22,9 @@ use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Statusprüfung Schritt 3 des WebDAV-Schrittkatalogs (Issue #499, Spec #486
- * §12): geprüft an der Wirkung (`has_capability`) je Person mit aktiver
- * Coursepilot-Verbindung. `NA` ohne Verbindungen oder solange Schritt 1 aus
- * ist, `OK`/`WARNING` je nach Wirkung.
+ * WebDAV setup check 3 (Issue #499, Spec #486 §12): effective capability
+ * per connected user. Return NA without connections or an active repository,
+ * otherwise OK/WARNING according to has_capability().
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -38,7 +37,12 @@ final class webdav_capability_check_test extends \advanced_testcase {
     private function issue_token(int $userid): void {
         global $DB;
 
+        $connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
+            'userid' => $userid, 'clientid' => 'test-client', 'revoked' => 0,
+            'statehash' => bin2hex(random_bytes(32)), 'timecreated' => time(),
+        ]);
         $DB->insert_record('local_coursepilot_oauth_token', (object) [
+            'connectionid' => $connectionid,
             'accesstokenhash' => hash('sha256', oauth_lib::random_token(32)),
             'refreshtokenhash' => hash('sha256', oauth_lib::random_token(32)),
             'clientid' => 'test-client',

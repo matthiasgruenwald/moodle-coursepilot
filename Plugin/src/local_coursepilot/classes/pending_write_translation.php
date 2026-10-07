@@ -17,18 +17,16 @@
 namespace local_coursepilot;
 
 /**
- * Der ortsneutrale Teil der Ausfallantwort (Issue #540, ADR 0023, Spec 0021):
- * Ausstandsnotiz vermerken, dann die fuenfteilige Antwort bauen - der Teil
- * von {@see pointer_writer}'s bisheriger `fail()`, der keine WebDAV-Kenntnis
- * braucht (Fehlerklasse, Pfad, Vorgang, Kennung, Kurs-ID sind ortsneutral;
- * Ursachentext und Zielbeschreibung liefert der Aufrufer bereits fertig).
+ * Location-neutral failure response (Issue #540, ADR 0023, Spec 0021):
+ * record a pending write, then build the five-part response. Extracted from
+ * {@see pointer_writer}'s `fail()` without changing its behavior. Error class,
+ * path, operation, identifier and course ID are location-neutral; callers
+ * supply the completed reason and target description.
  *
- * Zwei Aufrufer (Issue #540): {@see pointer_writer} fuer den externen Ort
- * (unveraendertes Verhalten, nur hierher ausgelagert) und
- * {@see webdav_storage_port} sowie {@see context_area} fuer die neu
- * hinzukommende Ausfallbehandlung des externen Ablage-Vertrag-Adapters bzw.
- * des Moodle-Schreibwegs - "an beiden Orten", ohne die webdav-spezifische
- * Ursachensprache zweimal zu pflegen (die bleibt bei {@see pointer_writer::reason_for()}).
+ * Used by {@see pointer_writer}, {@see webdav_storage_port} and
+ * {@see context_area} for failures at external storage and Moodle Private
+ * Files. WebDAV-specific reason wording remains in
+ * {@see pointer_writer::reason_for()}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -36,45 +34,40 @@ namespace local_coursepilot;
  */
 final class pending_write_translation {
 
-    /** @var string Vorgang "anlegen". */
-    public const OP_CREATE = 'anlegen';
+    /** @var string Create operation. */
+    public const OP_CREATE = 'create';
 
-    /** @var string Vorgang "ueberschreiben". */
-    public const OP_OVERWRITE = 'überschreiben';
+    /** @var string Overwrite operation. */
+    public const OP_OVERWRITE = 'overwrite';
 
-    /** @var string Vorgang "anhaengen". */
-    public const OP_APPEND = 'anhängen';
+    /** @var string Append operation. */
+    public const OP_APPEND = 'append';
 
     /**
-     * @var string Vorgang "unbekannt" (Issue #561): der Vorab-Lese-Check vor
-     *      einem Schreibvorgang ist selbst mit einem Ausfall gescheitert -
-     *      ob am Ort schon etwas lag, ist damit unbekannt, nicht binaer
-     *      "anlegen" oder "ueberschreiben".
+     * @var string Unknown operation (Issue #561): the preflight read failed, so whether
+     *      the target already existed is unknown, rather than create or overwrite.
      */
-    public const OP_UNKNOWN = 'unbekannt';
+    public const OP_UNKNOWN = 'unknown';
 
     /**
-     * Vermerkt einen Ausstand und baut die fuenfteilige Ausfallantwort (Issue
-     * #492/#516/#540): (1) Pfad und Vorgang; (2) die vom Aufrufer bereits
-     * fertige Ursache in Lehrkraftsprache; (3) "noch nicht gespeichert,
-     * vermerkt (Kennung ...)"; (4) die Anweisung an die KI, den Inhalt zu
-     * behalten und mit `pending_entry=` nachzutragen; (5) das vom Aufrufer bereits
-     * fertige Ziel (Instanzname+Host extern, eine ortsbeschreibende
-     * Kurzformel bei Private Files). Nie ein absoluter Serverpfad,
-     * Benutzername, Passwort, HTTP-Code oder Antwortrumpf (Geheimnis-Test) -
-     * der Rohcode geht stattdessen ins Zugriffsprotokoll.
+     * Record a pending write and build the five-part failure response (Issues
+     * #492/#516/#540): (1) path and operation; (2) teacher-facing reason supplied
+     * by the caller; (3) saved pending identifier; (4) instruction to retain the
+     * content and retry with `pending_entry=`; (5) target description supplied
+     * by the caller (external instance and host, or Private Files).
      *
-     * Kann die Notiz selbst nicht geschrieben werden (Private-Files-Quote
-     * voll), sagt die Antwort das ausdruecklich statt die urspruengliche
-     * Ursache zu verschweigen.
+     * Absolute server paths, account names, passwords, HTTP status and response
+     * bodies stay out of the response; raw diagnostics go to the access log.
+     * If the pending note cannot be saved because Private Files is full, report
+     * that explicitly instead of hiding the original failure.
      *
-     * @param string $errorclass Fehlerklasse, nie ein Freitext (Issue #516).
-     * @param string $logmessage Interne, entwicklerorientierte Meldung - nur fuers Zugriffsprotokoll.
+     * @param string $errorclass Error class, never free text (Issue #516).
+     * @param string $logmessage Internal diagnostic for the access log only.
      * @param string $clientpath
-     * @param string $operation Eine der OP_*-Konstanten.
-     * @param string $reason Ursache in Lehrkraftsprache, inkl. "spaeter nachtragen"/"an Ihrem Speicher ist etwas zu tun".
-     * @param string $target Instanzname+Host (extern) bzw. eine ortsbeschreibende Kurzformel (Private Files).
-     * @param int $courseid Kurs-ID des Eintrags in der Ausstandsnotiz (Issue #516) - 0, wenn keinem Kurs zugeordnet.
+     * @param string $operation One of the OP_* constants.
+     * @param string $reason Teacher-facing reason including retry or storage intervention advice.
+     * @param string $target Instance name and host (external), or a short Private Files description.
+     * @param int $courseid Course ID for the pending note (Issue #516), or 0 without a course.
      * @return \moodle_exception
      */
     public static function record_and_translate(
@@ -91,21 +84,32 @@ final class pending_write_translation {
         try {
             $identifier = pending_write_notice::record($clientpath, $operation, $errorclass, $courseid);
         } catch (\moodle_exception $quotaerror) {
-            if ($quotaerror->errorcode !== 'ausstandnotequotaexceeded') {
+            if ($quotaerror->errorcode !== 'pendingnotequotaexceeded') {
                 throw $quotaerror;
             }
-            return new \moodle_exception('ausstandnotewritefailed', 'local_coursepilot', '', (object) [
+            return new \moodle_exception('pendingnotewritefailed', 'local_coursepilot', '', (object) [
                 'path' => $clientpath,
-                'operation' => $operation,
+                'operation' => self::operation_label($operation),
             ]);
         }
 
-        return new \moodle_exception('ausstandwritefailed', 'local_coursepilot', '', (object) [
+        return new \moodle_exception('pendingwritefailed', 'local_coursepilot', '', (object) [
             'path' => $clientpath,
-            'operation' => $operation,
+            'operation' => self::operation_label($operation),
             'reason' => $reason,
-            'kennung' => $identifier,
+            'identifier' => $identifier,
             'target' => $target,
         ]);
+    }
+
+    /**
+     * Display label for an operation (#602): stored values are English keys;
+     * teachers read the label in their language.
+     *
+     * @param string $operation One of the OP_* constants.
+     * @return string
+     */
+    public static function operation_label(string $operation): string {
+        return get_string('pendingoperation' . $operation, 'local_coursepilot');
     }
 }

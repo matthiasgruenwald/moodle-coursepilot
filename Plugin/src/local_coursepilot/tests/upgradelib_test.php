@@ -22,13 +22,11 @@ global $CFG;
 require_once($CFG->dirroot . '/local/coursepilot/db/upgradelib.php');
 
 /**
- * Schema-Drift-Reparatur (#424 Nachlauf 3).
+ * Schema-drift repair (#424 follow-up 3).
  *
- * PHPUnit installiert immer frisch aus install.xml und sieht die Drift
- * hochgezogener Instanzen deshalb nie. Der Test stellt sie darum selbst her
- * (genau die fuenf Abweichungen aus admin/cli/check_database_schema.php),
- * laesst die Reparatur laufen und prueft gegen Moodles eigene
- * Schema-Pruefung.
+ * Fresh PHPUnit installs never encounter upgraded-instance drift.
+ * Reproduce all five check_database_schema.php discrepancies, repair them
+ * and verify with Moodle’s own schema checker.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -37,7 +35,7 @@ require_once($CFG->dirroot . '/local/coursepilot/db/upgradelib.php');
 #[\PHPUnit\Framework\Attributes\CoversNothing]
 final class upgradelib_test extends \advanced_testcase {
 
-    /** @var string[] Die von der Drift betroffenen Tabellen. */
+    /** @var string[] Tables affected by schema drift. */
     private const TABLES = [
         'local_coursepilot_oauth_client',
         'local_coursepilot_oauth_code',
@@ -45,9 +43,8 @@ final class upgradelib_test extends \advanced_testcase {
     ];
 
     /**
-     * Nach der Reparatur meldet Moodles Schema-Pruefung fuer die
-     * OAuth-Tabellen keine Abweichung mehr - und vorher meldet sie welche
-     * (sonst pruefte der Test nichts).
+     * Moodle’s checker reports OAuth schema discrepancies before repair
+     * and none afterward, ensuring this test actually detects drift.
      */
     public function test_repair_removes_oauth_schema_drift(): void {
         global $DB;
@@ -59,11 +56,10 @@ final class upgradelib_test extends \advanced_testcase {
             $this->introduce_drift($dbman);
 
             $before = $this->schema_errors();
-            $this->assertNotEmpty($before, 'Die kuenstliche Drift wurde von der Schema-Pruefung nicht gesehen.');
+            $this->assertNotEmpty($before, 'The artificial drift was not detected by the schema check.');
         } finally {
-            // Die Reparatur laeuft auch bei fehlgeschlagener Zusicherung -
-            // ein DDL-Eingriff wird von resetAfterTest() nicht zurueckgenommen
-            // und wuerde sonst alle folgenden Tests des Laufs vergiften.
+            // Repair even if assertions fail: resetAfterTest() does not undo DDL
+            // and unrepaired schema changes would break later tests.
             local_coursepilot_repair_oauth_schema_drift($dbman);
         }
 
@@ -71,9 +67,8 @@ final class upgradelib_test extends \advanced_testcase {
     }
 
     /**
-     * Ein zweiter Lauf auf bereits sauberem Schema aendert nichts und wirft
-     * nicht - der Upgrade-Schritt muss auf einer Neuinstallation genauso
-     * laufen wie auf einer hochgezogenen Instanz.
+     * A second repair on a clean schema changes nothing and does not throw.
+     * The upgrade works on fresh as well as upgraded installations.
      */
     public function test_repair_is_idempotent(): void {
         global $DB;
@@ -87,9 +82,8 @@ final class upgradelib_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Zeile ohne Refresh-Token-Hash laesst sich nicht auf NOT NULL ziehen -
-     * sie wird entfernt statt mit einem Platzhalter gefuellt, der wie ein
-     * gueltiges Token aussaehe.
+     * Remove rows lacking refresh-token hashes rather than filling NOT NULL
+     * with a placeholder resembling a valid token.
      */
     public function test_repair_drops_token_rows_without_refresh_token(): void {
         global $DB;
@@ -119,9 +113,8 @@ final class upgradelib_test extends \advanced_testcase {
     }
 
     /**
-     * Der Sicherheitsupgrade hasht bestehende Geheimnisse vor dem Entfernen
-     * der Klartextfelder. Damit bleiben Verbindungen samt Refresh-Rotation
-     * nutzbar, obwohl ein Datenbank-Dump danach keine Tokens mehr enthaelt.
+     * Hash existing secrets before removing plaintext fields. Connections
+     * and refresh rotation remain usable without tokens in database dumps.
      */
     public function test_hash_upgrade_preserves_existing_connection_without_retaining_cleartext(): void {
         global $DB;
@@ -159,6 +152,7 @@ final class upgradelib_test extends \advanced_testcase {
         ]);
 
         local_coursepilot_hash_oauth_tokens($dbman);
+        local_coursepilot_migrate_oauth_connections($dbman);
 
         $this->assertFalse($dbman->field_exists($tokentable, $accessfield));
         $this->assertFalse($dbman->field_exists($tokentable, $refreshfield));
@@ -168,16 +162,82 @@ final class upgradelib_test extends \advanced_testcase {
     }
 
     /**
-     * Stellt genau die Abweichungen her, die auf der Spike-Instanz gemessen
-     * wurden: clientid auf 64 verkuerzt, codechallengemethod vorhanden,
-     * refreshtokenhash nullable.
+     * Translate German history sources to English; preserve other values (#602).
+     */
+    public function test_history_sources_are_migrated_to_english(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        foreach (['vorgefunden', 'geklont', 'moodle'] as $index => $source) {
+            $DB->insert_record('local_coursepilot_cm_version', (object) [
+                'cmid' => 100 + $index, 'courseid' => 1, 'version' => 1, 'source' => $source, 'userid' => 2,
+                'moduleinfo_json' => '{}', 'coursemodule_json' => '{}', 'timecreated' => time(),
+            ]);
+        }
+
+        local_coursepilot_migrate_history_sources();
+        local_coursepilot_migrate_history_sources();
+
+        $sources = $DB->get_fieldset_sql('SELECT source FROM {local_coursepilot_cm_version} ORDER BY cmid');
+        $this->assertSame(['discovered', 'cloned', 'moodle'], $sources);
+    }
+
+    /**
+     * Rename and translate old context pointers and pending notes;
+     * remove the old files (#602).
+     */
+    public function test_anchor_files_are_renamed_and_translated(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $context = \context_user::instance($user->id);
+        $fs = get_file_storage();
+        $record = ['contextid' => $context->id, 'component' => 'user', 'filearea' => 'private', 'itemid' => 0,
+            'filepath' => '/coursepilot/'];
+        $fs->create_file_from_string($record + ['filename' => '.coursepilot-ort.json'], json_encode([
+            'kontextbereich' => ['ort' => 'extern', 'instanzid' => 3, 'pfad' => 'Kontext',
+                'pruefmerkmal' => ['server' => 'cloud.example', 'basispfad' => 'dav', 'konto' => 'lea']],
+            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'ortsverlauf' => [['datum' => 5, 'ziel' => 'kontextbereich', 'von' => 'a', 'nach' => 'b']],
+        ]));
+        $fs->create_file_from_string($record + ['filename' => '.coursepilot-ausstand.json'], json_encode([
+            'ABC' => ['zeitpunkt' => 7, 'pfad' => 'plan.md', 'vorgang' => 'überschreiben',
+                'fehlerklasse' => 'Speicher voll', 'kursid' => 4],
+        ]));
+
+        $broken = $this->getDataGenerator()->create_user();
+        $brokencontext = \context_user::instance($broken->id);
+        $fs->create_file_from_string(['contextid' => $brokencontext->id] + $record + ['filename' => '.coursepilot-ort.json'], '{kaputt');
+
+        local_coursepilot_migrate_anchor_files();
+        local_coursepilot_migrate_anchor_files();
+
+        $this->assertTrue($fs->file_exists($brokencontext->id, 'user', 'private', 0, '/coursepilot/', '.coursepilot-ort.json'));
+
+        $this->assertFalse($fs->file_exists($context->id, 'user', 'private', 0, '/coursepilot/', '.coursepilot-ort.json'));
+        $this->assertFalse($fs->file_exists($context->id, 'user', 'private', 0, '/coursepilot/', '.coursepilot-ausstand.json'));
+        $pointer = json_decode($fs->get_file($context->id, 'user', 'private', 0, '/coursepilot/', '.coursepilot-location.json')
+            ->get_content(), true);
+        $this->assertSame([
+            'context_area' => ['location' => 'external', 'instanceid' => 3, 'path' => 'Kontext',
+                'fingerprint' => ['server' => 'cloud.example', 'basepath' => 'dav', 'account' => 'lea']],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
+            'location_history' => [['date' => 5, 'target' => 'context_area', 'from_text' => 'a', 'to_text' => 'b']],
+        ], $pointer);
+        $pending = json_decode($fs->get_file($context->id, 'user', 'private', 0, '/coursepilot/', '.coursepilot-pending.json')
+            ->get_content(), true);
+        $this->assertSame(['ABC' => ['timestamp' => 7, 'path' => 'plan.md', 'operation' => 'overwrite',
+            'error_class' => 'storage_full', 'course_id' => 4]], $pending);
+    }
+
+    /**
+     * Reproduce Spike drift: clientid shortened to 64, codechallengemethod
+     * present and refreshtokenhash nullable.
      *
      * @param \database_manager $dbman
      * @return void
      */
     private function introduce_drift(\database_manager $dbman): void {
-        // Wie in der Reparatur: eine indizierte Spalte laesst Moodle nicht
-        // aendern, der eindeutige Index auf clientid muss also weichen.
+        // As in repair, remove the unique clientid index before changing its column.
         $clientindex = new \xmldb_index('clientid', XMLDB_INDEX_UNIQUE, ['clientid']);
         foreach (self::TABLES as $tablename) {
             $table = new \xmldb_table($tablename);
@@ -214,7 +274,7 @@ final class upgradelib_test extends \advanced_testcase {
     }
 
     /**
-     * Moodles eigene Schema-Pruefung, eingegrenzt auf die OAuth-Tabellen.
+     * Run Moodle’s schema checker on OAuth tables only.
      *
      * @return array<string, string[]>
      */

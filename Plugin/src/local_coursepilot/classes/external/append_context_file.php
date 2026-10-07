@@ -27,18 +27,17 @@ use local_coursepilot\context_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Haengt Inhalt an eine Datei im Kontextbereich der aufrufenden Lehrkraft an
- * (Issue #409, Spec 0016 §4.2).
+ * Appends content to a file in the context area of the calling teacher
+ * (issue #409, Spec 0016 §4.2).
+ * Location-neutral since issue #538 (Spec 0021): this tool knows neither
+ * location kind nor location error keys - the decision whether Private Files or
+ * the external location applies is made by {@see context_area::append()}.
  *
- * Ortsneutral seit Issue #538 (Spec 0021): dieses Werkzeug kennt weder
- * Ortsart noch Ortsfehlerschluessel - die Entscheidung, ob Private Files oder
- * der externe Ort greift, trifft {@see context_area::append()}.
+ * What that does *not* mean: Spec 0016 §5.3 forbids locks, so two truly
+ * simultaneous appends can still lose each other.
  *
- * Was das *nicht* heisst: Spec 0016 §5.3 verbietet Locks, zwei wirklich
- * gleichzeitige Appends koennen einander daher weiterhin verlieren.
- *
- * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "pending_entry" statt
- * "ausstand", derselbe Durchstich wie bei {@see write_context_file}.
+ * Declared in English directly (#571, Spec 0025 §A): "pending_entry" instead of
+ * "ausstand", same cut-through as {@see write_context_file}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -87,8 +86,8 @@ class append_context_file extends external_api {
      * @return array
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
      *         contextfiletoolarge, contextfilelocked, contextquotaexceeded,
-     *         contextfileexternalconflict (extern, Issue #513)
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
+     *         contextfileexternalconflict (external, issue #513)
+     * @throws \required_capability_exception without moodle/user:manageownfiles
      */
     public static function execute(
         string $path,
@@ -123,9 +122,9 @@ class append_context_file extends external_api {
     }
 
     /**
-     * Baut die Lehrkraft-Deutsch-Aenderungsmeldung samt weichem
-     * Rotationshinweis (Spec 0016 §5.2/§8.4) aus dem ortsneutralen Ergebnis
-     * von {@see context_area::append()}.
+     * Builds the teacher-facing change message including the soft
+     * rotation hint (Spec 0016 §5.2/§8.4) from the location-neutral result
+     * of {@see context_area::append()}.
      *
      * @param array{path: string, created: bool, size: int} $result
      * @return array
@@ -157,7 +156,7 @@ class append_context_file extends external_api {
             'path' => new external_value(PARAM_TEXT, 'Resolved file path, relative to the context area'),
             'created' => new external_value(PARAM_BOOL, 'true if the file was newly created'),
             'size' => new external_value(PARAM_INT, 'Total file size after appending, in bytes'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
         ]);
     }
 }

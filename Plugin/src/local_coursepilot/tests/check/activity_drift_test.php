@@ -20,9 +20,9 @@ use core\check\result;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Die Admin-Statusprüfung je Aktivitätsart (Ticket #399): "geprueft" und
- * "automatisch_geprueft" sind beide result::OK (schreibbar), "braucht_arbeit"
- * ist result::ERROR (gesperrt) mit den Verstoessen als Detail.
+ * Admin status per activity type (Ticket #399): reviewed and automatically
+ * checked are both OK/writable; needs_work is ERROR/locked with violation
+ * details.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -32,7 +32,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class activity_drift_test extends \advanced_testcase {
 
     /**
-     * Gruen auf der aktuellen Testinstanz -> result::OK.
+     * Passing catalog on the current test instance yields result::OK.
      */
     public function test_result_is_ok_when_green(): void {
         $this->resetAfterTest();
@@ -44,7 +44,7 @@ final class activity_drift_test extends \advanced_testcase {
     }
 
     /**
-     * Simulierter Drift -> result::ERROR, Detail nennt den Verstoss.
+     * Simulated drift -> result::ERROR, detail names the violation.
      */
     public function test_result_is_error_when_drifted(): void {
         $this->resetAfterTest();
@@ -60,7 +60,7 @@ final class activity_drift_test extends \advanced_testcase {
     }
 
     /**
-     * Die Check-ID ist je Aktivitätsart eindeutig.
+     * Check IDs are unique per activity type.
      */
     public function test_id_is_unique_per_modname(): void {
         $this->assertNotSame((new activity_drift('label'))->get_id(), (new activity_drift('page'))->get_id());

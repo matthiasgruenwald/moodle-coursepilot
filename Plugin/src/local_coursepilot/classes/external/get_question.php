@@ -27,17 +27,17 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/questionlib.php');
 
 /**
- * Einzelne Frage in ihrer aktuellen Fassung (#342): liefert die latest
- * version einer Frage in einer Kategorie, eindeutig identifiziert per Name
- * ODER per questionid (ID einer beliebigen Version derselben Frage) - vor
- * einer Bearbeitung ueber den lokalen Weg genutzt, um die aktuelle
- * questionid zu kennen.
+ * Single question in its current version (#342): returns the latest
+ * version of a question in a category, uniquely identified by name
+ * OR by questionid (ID of any version of the same question) - used before
+ * an edit via the local route to learn the current
+ * questionid.
  *
- * Eigenstaendige Portierung von local_coursepilot\external\get_question -
- * local_coursepilot hat laut Spec 0012 keine Laufzeitabhaengigkeit auf das
- * andere Plugin (siehe get_course_catalog.php aus #341, derselbe Fund).
- * Vertrag (Feldnamen, Antwort-Optionen inkl. richtiger Antwort) bleibt
- * identisch zum lokalen Werkzeug.
+ * Standalone port of local_coursepilot\external\get_question -
+ * local_coursepilot has no runtime dependency on the other plugin per Spec 0012
+ * (see get_course_catalog.php from #341, same finding).
+ * Contract (field names, answer options including the correct answer) stays
+ * identical to the local tool.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -73,7 +73,7 @@ class get_question extends external_api {
 
         if ($params['name'] === '' && $params['questionid'] === 0) {
             throw new \invalid_parameter_exception(
-                'Es muss entweder name oder questionid angegeben werden.');
+                'Either name or questionid must be specified.');
         }
 
         $category = $DB->get_record('question_categories',
@@ -81,8 +81,8 @@ class get_question extends external_api {
         $context = \context::instance_by_id($category->contextid);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // moodle/question:view existiert nicht (mehr); Moodle kennt nur
-        // viewmine/viewall. viewall passt zur Lese-Capability hier.
+        // moodle/question:view does not exist (any more); Moodle only knows
+        // viewmine/viewall. viewall fits the read capability here.
         require_capability('moodle/question:viewall', $context);
 
         $entryid = $params['questionid'] > 0
@@ -91,7 +91,7 @@ class get_question extends external_api {
 
         if ($entryid === 0) {
             throw new \moodle_exception('notfound', 'error', '',
-                null, 'Keine Frage gefunden fuer die uebergebenen Kriterien.');
+                null, 'No question found for the given criteria.');
         }
 
         $latest = $DB->get_record_sql(
@@ -103,7 +103,7 @@ class get_question extends external_api {
         );
         if (!$latest) {
             throw new \moodle_exception('notfound', 'error', '',
-                null, 'Keine Version fuer questionbankentryid ' . $entryid . ' gefunden.');
+                null, 'No version found for questionbankentryid ' . $entryid . '.');
         }
 
         $question = $DB->get_record('question',
@@ -148,7 +148,7 @@ class get_question extends external_api {
     }
 
     /**
-     * Entry-ID ueber eine bekannte questionid (irgendeine Version) ermitteln.
+     * Determine the entry ID via a known questionid (any version).
      *
      * @param int $questionid
      * @return int
@@ -160,9 +160,9 @@ class get_question extends external_api {
     }
 
     /**
-     * Entry-ID ueber Kategorie + Frage-Name ermitteln (eindeutig anhand der
-     * latest version, da der Name historisch in question.name liegt). Bei
-     * mehreren Treffern wird der mit der hoechsten Version genommen.
+     * Determine the entry ID via category + question name (unambiguous based on the
+     * latest version, since the name historically lives in question.name). On
+     * multiple matches the one with the highest version is taken.
      *
      * @param int $categoryid
      * @param string $name

@@ -15,49 +15,11 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * JSON-Endpunkt fuer das Dateifenster der Ortswahlseite (Issue #494, Spec
- * #486 §5): listet eine Ebene einer eigenen WebDAV-Nutzerinstanz, ueber
- * {@see \local_coursepilot\location_selection::browse()} - nie serverseitig
- * gespeichert oder protokolliert, nie an die KI gereicht (diese Seite ist
- * kein MCP-Endpunkt, nur die Ortswahlseite selbst ruft sie per fetch() auf).
- *
- * Duenne Schale (#334-Muster): keine Logik hier, nur Ein-/Ausgabe.
+ * Compatibility entry for the published location-browse URL.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 
-require(__DIR__ . '/../../config.php');
-
-use local_coursepilot\location_selection;
-
-require_login(null, false);
-require_sesskey();
-require_capability('local/coursepilot:useremote', context_system::instance());
-
-global $USER;
-
-header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store');
-
-$instanceid = required_param('instanceid', PARAM_INT);
-$path = optional_param('path', '', PARAM_RAW_TRIMMED);
-
-try {
-    $result = location_selection::browse($instanceid, $path);
-    echo json_encode(['ok' => true, 'state' => location_selection::page_state((int) $USER->id, $result)]);
-} catch (moodle_exception $e) {
-    http_response_code(400);
-    // Issue #565: der Client uebersetzt errorkey erst beim Anzeigen (core/str,
-    // nie als fertiger Satz im Seitenzustand) - braucht dafuer dieselben
-    // Platzhalter, mit denen der Server den String selbst befuellt haette
-    // (nur die benannte Fehlerklasse und der Verweis auf die Ortswahlseite,
-    // siehe pointer_reader::webdav_exception()).
-    echo json_encode([
-        'ok' => false,
-        'errorkey' => $e->errorcode,
-        'errorclass' => $e->a->errorclass ?? '',
-        'page' => $e->a->page ?? '',
-    ]);
-}
+require_once(__DIR__ . '/location_selection_browse.php');

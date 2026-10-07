@@ -19,11 +19,9 @@ namespace local_coursepilot\catalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Katalog-gegen-Moodle-Vertragstest fuer mod_resource (Ticket #380, Vorbild
- * label_catalog_contract_test.php aus #379).
- *
- * Prueft ausdruecklich nur die Tabelle "resource" (nicht "resource_old",
- * dem 1.9-Migrationsarchiv aus mod/resource/db/install.xml).
+ * Catalog/Moodle contract for mod_resource (Ticket #380), following
+ * label_catalog_contract_test from #379.
+ * Check only resource, excluding the resource_old Moodle 1.9 migration archive.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -34,10 +32,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class resource_catalog_contract_test extends \advanced_testcase {
 
     /**
-     * Jede von resource gefuehrte Datenbankspalte muss die reale
-     * Spaltenmenge von {resource} exakt ergeben. "files" ist kein DB-Feld
-     * (Pseudofeld, Spec 0018 §4.2) und steht auch nicht mehr auf der
-     * Sperrliste - es taucht deshalb weder hier noch dort auf.
+     * Catalog fields, real blocklisted columns and id exactly match the
+     * resource table columns. Pseudofields do not count as database columns.
      */
     public function test_resource_table_columns_match_the_catalog(): void {
         global $DB;
@@ -58,30 +54,30 @@ final class resource_catalog_contract_test extends \advanced_testcase {
         $this->assertSame(
             $realcolumns,
             array_values(array_unique($known)),
-            "Die Spalten der Tabelle 'resource' und der Feldkatalog (resource::fields()/blocklist()) sind "
-                . 'auseinandergelaufen - Moodle hat vermutlich eine Spalte hinzugefuegt, entfernt oder umbenannt.'
+            "The columns of table 'resource' and the field catalog (resource::fields()/blocklist()) have "
+                . 'diverged - Moodle probably added, removed or renamed a column.'
         );
     }
 
     /**
-     * "files" ist vollstaendig katalogisiert (Pseudofeld), Pflichtfeld ohne
-     * Default und nicht mehr gesperrt (Issue #434).
+     * files is a required cataloged pseudofield without a default, no longer
+     * blocked (Issue #434).
      */
     public function test_files_is_catalogued_required_and_unlocked(): void {
         $pseudofields = resource::pseudofields();
         $pseudonames = array_map(static fn (field $f): string => $f->name, $pseudofields);
-        $this->assertContains('files', $pseudonames, '"files" muss vollstaendig katalogisiert sein.');
+        $this->assertContains('files', $pseudonames, '"files" must be fully cataloged.');
 
         $filesfield = current(array_filter($pseudofields, static fn (field $f): bool => $f->name === 'files'));
-        $this->assertTrue($filesfield->required, '"files" muss beim Anlegen Pflicht sein.');
-        $this->assertNull($filesfield->default, '"files" darf keinen Formular-Default haben.');
+        $this->assertTrue($filesfield->required, '"files" must be required on creation.');
+        $this->assertNull($filesfield->default, '"files" must not have a form default.');
 
-        $this->assertNotContains('files', resource::blocklist(), '"files" darf nicht mehr gesperrt sein.');
+        $this->assertNotContains('files', resource::blocklist(), '"files" must no longer be blocked.');
     }
 
     /**
-     * resource verlangt "files" als Pflichtfeld beim Anlegen (Spec 0018
-     * §4.2/§7) - der Katalog vermerkt das ausdruecklich.
+     * The catalog explicitly requires files when creating resource
+     * (Spec 0018 §4.2/§7).
      */
     public function test_side_effects_note_files_is_required(): void {
         $notes = implode(' ', resource::side_effects());
@@ -89,7 +85,7 @@ final class resource_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * "revision" und "displayoptions" stehen auf der Sperrliste (Ticket #380).
+     * revision and displayoptions are blocklisted (Ticket #380).
      */
     public function test_revision_and_displayoptions_are_blocked(): void {
         $this->assertContains('revision', resource::blocklist());
@@ -97,7 +93,7 @@ final class resource_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Jede referenzierte aufrufbare Quelle existiert wirklich.
+     * Every referenced callable source exists.
      */
     public function test_referenced_callable_sources_exist(): void {
         global $CFG;
@@ -115,13 +111,13 @@ final class resource_catalog_contract_test extends \advanced_testcase {
             $fields
         ));
 
-        $this->assertNotEmpty($callables, 'Kein Feld referenziert eine aufrufbare Quelle - Testannahme verletzt.');
+        $this->assertNotEmpty($callables, 'No field references a callable source; test assumption violated.');
 
         foreach ($callables as $callable) {
             $functionname = rtrim($callable, '()');
             $this->assertTrue(
                 function_exists($functionname),
-                "Referenzierte aufrufbare Quelle $callable existiert auf dieser Instanz nicht mehr."
+                "Referenced callable source $callable no longer exists on this instance."
             );
         }
     }

@@ -25,7 +25,7 @@
     * sesskey - string - Moodle session key
     * revokeallonsubmit - string - JS "return confirm(...)" expression for the bulk-revoke form
     * empty - bool - true when there are no active connections at all
-    * rows - array - list of {person: string, clientname: string, since: string, expires: string, ablageortlines: array of {text: string}, revokeurl: string}, present when not empty
+    * rows - array - list of {person: string, clientname: string, since: string, expires: string, storagelocationlines: array of {text: string}, revokeurl: string}, present when not empty
 
     Example context (json):
     {
@@ -39,7 +39,7 @@
                 "clientname": "Claude Desktop",
                 "since": "01.09.2026, 08:00",
                 "expires": "01.10.2026, 08:00",
-                "ablageortlines": [{"text": "Kontextbereich: extern: cloud.example.test"}],
+                "storagelocationlines": [{"text": "Context area: external: cloud.example.test"}],
                 "revokeurl": "https://example.test/local/coursepilot/admin/connections.php?revoke=1&sesskey=abc123"
             }
         ]
@@ -60,7 +60,7 @@
             <th>{{#str}} connectionclient, local_coursepilot {{/str}}</th>
             <th>{{#str}} connectionsince, local_coursepilot {{/str}}</th>
             <th>{{#str}} connectionexpires, local_coursepilot {{/str}}</th>
-            <th>{{#str}} connectionablageort, local_coursepilot {{/str}}</th>
+            <th>{{#str}} connectionstoragelocation, local_coursepilot {{/str}}</th>
             <th></th>
         </tr>
     </thead>
@@ -73,7 +73,7 @@
             <td>{{expires}}</td>
             <td>
                 <ul class="unlist m-0">
-                    {{#ablageortlines}}<li>{{text}}</li>{{/ablageortlines}}
+                    {{#storagelocationlines}}<li>{{text}}</li>{{/storagelocationlines}}
                 </ul>
             </td>
             <td><a href="{{revokeurl}}">{{#str}} connectionrevoke, local_coursepilot {{/str}}</a></td>

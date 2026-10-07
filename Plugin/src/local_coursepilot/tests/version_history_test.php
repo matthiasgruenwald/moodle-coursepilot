@@ -17,12 +17,13 @@
 namespace local_coursepilot;
 
 use local_coursepilot\history\version_history;
+use local_coursepilot\history\version_source;
+use local_coursepilot\history\version_writer;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Lesende Oberflaeche des Aenderungsverlaufs (#394, Spec 0015 §10.6):
- * list_versions (Einzeiler serverseitig berechnet) und compare (volles
- * Diff zweier frei gewaehlter Staende).
+ * Read-only history surface (#394, Spec 0015 §10.6): list_versions
+ * computes summary lines server-side; compare diffs any two versions.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -32,9 +33,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class version_history_test extends \advanced_testcase {
 
     /**
-     * Legt einen Kurs samt Seiten-Aktivitaet und editierender Lehrkraft an.
-     * Die Erstanlage feuert bereits course_module_created (Version 1, Quelle
-     * "moodle" - #386, Spec 0015 §10.3).
+     * Create a course, page and editing teacher. Creation already fires
+     * course_module_created (version 1, source moodle, #386, Spec 0015 §10.3).
      *
      * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass}
      */
@@ -54,9 +54,8 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Aendert Name und Sichtbarkeit der Seite ueber den Formularweg -
-     * loest course_module_updated aus, damit version_writer eine weitere
-     * Version anlegt.
+     * Update page name and visibility through the form path, triggering
+     * course_module_updated and a new version from version_writer.
      *
      * @param \stdClass $course
      * @param \stdClass $cm
@@ -76,9 +75,8 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Simuliert eine Bestandsaktivitaet, die es schon vor Coursepilot gab:
-     * loescht die bereits vorhandene Version 1 (aus dem Anlegen), sodass der
-     * naechste Schreibvorgang die Vorgefunden-Backfill-Logik ausloest
+     * Simulate a preexisting activity by deleting its creation version,
+     * so the next write triggers the observed-version backfill
      * (#386, Spec 0015 §10.3).
      *
      * @param int $cmid
@@ -94,10 +92,9 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: Version 1 ist als vorgefunden erkennbar, sowohl im
-     * "quelle"-Feld als auch im Einzeiler.
+     * Version 1 is identifiable as observed in its source and summary.
      */
-    public function test_legacy_version_one_is_marked_as_vorgefunden(): void {
+    public function test_legacy_version_one_is_marked_as_discovered(): void {
         $this->resetAfterTest();
         [$course, $cm] = $this->create_page();
         $this->simulate_legacy_activity($cm->id);
@@ -109,9 +106,9 @@ final class version_history_test extends \advanced_testcase {
 
         $v1 = $result['versions'][0];
         $this->assertSame(1, $v1['version']);
-        $this->assertSame('vorgefunden', $v1['source']);
+        $this->assertSame('discovered', $v1['source']);
         $this->assertTrue($v1['discovered']);
-        $this->assertStringContainsString('vorgefunden', $v1['summary_line']);
+        $this->assertStringContainsString('starting state found before Coursepilot', $v1['summary_line']);
 
         $v2 = $result['versions'][1];
         $this->assertSame(2, $v2['version']);
@@ -119,10 +116,10 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Aktivitaet, die erst nach Coursepilot angelegt wurde, hat eine
-     * "moodle"-Version 1 - keine falsch positive Vorgefunden-Markierung.
+     * Activities created after Coursepilot have a moodle first version,
+     * without a false observed marker.
      */
-    public function test_freshly_created_activity_version_one_is_not_vorgefunden(): void {
+    public function test_freshly_created_activity_version_one_is_not_discovered(): void {
         $this->resetAfterTest();
         [, $cm] = $this->create_page();
 
@@ -132,10 +129,32 @@ final class version_history_test extends \advanced_testcase {
         $this->assertSame('moodle', $result['versions'][0]['source']);
     }
 
+    public function test_tool_history_stays_english_for_a_german_user(): void {
+        global $DB, $CFG;
+        $this->resetAfterTest();
+        $CFG->langotherroot = $CFG->libdir . '/tests/fixtures/langtest';
+        get_string_manager(true);
+        [$course, $cm] = $this->create_page();
+        force_current_language('de');
+        $this->assertSame('de', current_language());
+        $this->update_page($course, $cm, 'Second version');
+        $DB->set_field('local_coursepilot_cm_version', 'userid', 0, ['cmid' => $cm->id]);
+
+        $result = version_history::list_versions($cm->id);
+        $this->assertStringContainsString('first recorded state', $result['versions'][0]['summary_line']);
+        $this->assertSame('User #0', $result['versions'][0]['user']);
+        $this->assertMatchesRegularExpression('/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/', $result['versions'][0]['summary_line']);
+        $this->assertStringContainsString('changed', $result['versions'][1]['summary_line']);
+        $this->assertStringContainsString('The history is incomplete', $result['gap_notice']);
+        $comparison = version_history::compare($cm->id, 1, 2);
+        $this->assertSame($result['gap_notice'], $comparison['gap_notice']);
+        $this->assertSame('User #0', $comparison['before']['user']);
+    }
+
     /**
-     * Abnahmekriterium 1+2: der Einzeiler nennt wer/wann/wodurch und wird
-     * serverseitig aus den Vollstaenden berechnet (das geaenderte Feld
-     * "name" taucht im Einzeiler auf, ohne dass der Aufrufer es mitgibt).
+     * Summary lines include who, when and source, computed from full versions
+     * server-side. They mention changed fields without caller-supplied hints
+     * (criteria 1+2).
      */
     public function test_einzeiler_names_who_when_and_changed_field(): void {
         $this->resetAfterTest();
@@ -151,23 +170,22 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium 5: die Antwort weist die bekannten Luecken des
-     * Verlaufs aus - fest, nicht pro Version berechnet.
+     * Report fixed known history gaps rather than deriving them per version
+     * (criterion 5).
      */
     public function test_list_includes_fixed_gaps_hint(): void {
         $this->resetAfterTest();
         [, $cm] = $this->create_page();
 
         $result = version_history::list_versions($cm->id);
-        $this->assertStringContainsString('Notenbuch', $result['gap_notice']);
+        $this->assertStringContainsString('gradebook', $result['gap_notice']);
         $this->assertStringContainsString('Restore', $result['gap_notice']);
-        $this->assertStringContainsString('Quiz', $result['gap_notice']);
-        $this->assertStringContainsString('Datenbankschreibungen', $result['gap_notice']);
+        $this->assertStringContainsString('quiz', $result['gap_notice']);
+        $this->assertStringContainsString('database writes', $result['gap_notice']);
     }
 
     /**
-     * Abnahmekriterium 3: compare vergleicht zwei beliebige, nicht nur
-     * benachbarte Staende.
+     * Compare any two versions, including nonadjacent ones (criterion 3).
      */
     public function test_compare_diffs_non_adjacent_versions(): void {
         $this->resetAfterTest();
@@ -188,15 +206,14 @@ final class version_history_test extends \advanced_testcase {
                 $namefield = $change;
             }
         }
-        $this->assertNotNull($namefield, 'Feld "name" muss im Diff auftauchen.');
+        $this->assertNotNull($namefield, 'Field "name" must appear in the diff.');
         $this->assertSame(json_encode('Erste Fassung'), $namefield['before_json']);
         $this->assertSame(json_encode('Dritte Fassung'), $namefield['after_json']);
-        $this->assertStringContainsString('Notenbuch', $result['gap_notice']);
+        $this->assertStringContainsString('gradebook', $result['gap_notice']);
     }
 
     /**
-     * Ein Vergleich mit einer nicht existierenden Version scheitert mit
-     * einer Meldung statt einem stillen leeren Ergebnis.
+     * Reject missing versions with a message instead of an empty result.
      */
     public function test_compare_with_unknown_version_throws(): void {
         $this->resetAfterTest();
@@ -207,14 +224,15 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Dateiaenderungen zwischen zwei Staenden werden ausgewiesen - direkte
-     * Manipulation der Datei-Verknuepfungstabellen, um den Diff-Pfad ohne
-     * echten Draft-Datei-Upload zu pruefen.
+     * Report file changes between versions. Manipulate file-reference tables
+     * directly to exercise diffing without a real draft upload.
      */
     public function test_compare_reports_added_and_removed_files(): void {
-        global $DB;
+        global $DB, $CFG;
 
         $this->resetAfterTest();
+        $CFG->langotherroot = $CFG->libdir . '/tests/fixtures/langtest';
+        get_string_manager(true);
         [$course, $cm] = $this->create_page();
         $this->update_page($course, $cm, 'Zweite Fassung');
 
@@ -230,7 +248,7 @@ final class version_history_test extends \advanced_testcase {
             'pathnamehash' => sha1('old'),
             'contenthash' => sha1('old-content'),
             'component' => 'mod_page',
-            'filearea' => 'content',
+            'filearea' => 'intro',
             'itemid' => 0,
             'filepath' => '/',
             'filename' => 'alt.pdf',
@@ -242,7 +260,7 @@ final class version_history_test extends \advanced_testcase {
             'pathnamehash' => sha1('new'),
             'contenthash' => sha1('new-content'),
             'component' => 'mod_page',
-            'filearea' => 'content',
+            'filearea' => 'intro',
             'itemid' => 0,
             'filepath' => '/',
             'filename' => 'neu.pdf',
@@ -265,15 +283,34 @@ final class version_history_test extends \advanced_testcase {
         $aenderungen = $result['files'];
 
         $this->assertCount(2, $aenderungen);
-        $entfernt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['change_type'] === 'entfernt'));
-        $hinzugefuegt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['change_type'] === 'hinzugefuegt'));
+        $entfernt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['change_type'] === 'removed'));
+        $hinzugefuegt = array_values(array_filter($aenderungen, static fn(array $c): bool => $c['change_type'] === 'added'));
         $this->assertSame('alt.pdf', $entfernt[0]['filename']);
         $this->assertSame('neu.pdf', $hinzugefuegt[0]['filename']);
+
+        $summary = version_history::list_versions($cm->id)['versions'][1]['summary_line'];
+        $this->assertStringContainsString('1 file added', $summary);
+        $this->assertStringContainsString('1 file removed', $summary);
+
+        $secondfile = $DB->get_record('local_coursepilot_cm_file', ['id' => $newfileid], '*', MUST_EXIST);
+        unset($secondfile->id);
+        $secondfile->pathnamehash = sha1('second');
+        $secondfile->contenthash = sha1('second-content');
+        $secondfile->filename = 'second.pdf';
+        $secondfileid = $DB->insert_record('local_coursepilot_cm_file', $secondfile);
+        $DB->insert_record('local_coursepilot_cm_version_file', (object) [
+            'versionid' => $version2id,
+            'fileid' => $secondfileid,
+            'gap' => 1,
+        ]);
+        $rows = version_history::list_versions($cm->id)['versions'];
+        $this->assertStringContainsString('2 files added', $rows[1]['summary_line']);
+        $reverse = version_history::list_versions($cm->id, 'de')['versions'];
+        $this->assertStringContainsString('2 Dateien hinzugefügt', $reverse[1]['summary_line']);
     }
 
     /**
-     * Grundlage der Aktivitaetenliste auf history.php (#397): eine
-     * Aktivitaet mit erfasstem Verlauf erscheint, mit Name und Aktivitaetstyp.
+     * history.php lists activities with captured history, names and types (#397).
      */
     public function test_course_activities_lists_activity_with_history(): void {
         $this->resetAfterTest();
@@ -288,8 +325,7 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Kurs ohne jeden Schreibvorgang hat eine leere Aktivitaetenliste -
-     * kein Fehler, keine Platzhalterzeile.
+     * Courses without writes have an empty activity list.
      */
     public function test_course_activities_empty_without_history(): void {
         $this->resetAfterTest();
@@ -299,23 +335,68 @@ final class version_history_test extends \advanced_testcase {
     }
 
     /**
-     * Verlaufszeilen einer zwischenzeitlich geloeschten Aktivitaet duerfen
-     * die Aktivitaetenliste eines anderen Kurses nicht crashen lassen -
-     * sie werden stillschweigend uebersprungen (#387: die Kurs-Kaskade
-     * greift nur beim ganzen Kurs).
+     * Skip history rows for deleted activities instead of crashing another
+     * course’s list. Course cascading applies only to whole-course deletion (#387).
      */
     public function test_course_activities_skips_deleted_activity(): void {
         global $DB;
 
         $this->resetAfterTest();
         [$course, $cm] = $this->create_page();
-        // Direkter DB-Eingriff statt course_delete_module(): dessen
-        // eigentliche Loeschung laeuft asynchron ueber eine Ad-hoc-Aufgabe,
-        // im Test soll nur der Zustand "Verlaufszeile ohne Aktivitaet mehr"
-        // simuliert werden.
+        // Delete directly in the database to simulate a history row without an
+        // activity. course_delete_module() deletes asynchronously via an ad hoc task.
         $DB->delete_records('course_modules', ['id' => $cm->id]);
         rebuild_course_cache($course->id, true);
 
         $this->assertSame([], version_history::course_activities($course->id));
+    }
+
+    /**
+     * Record superseded at the old cmid, referencing the new cmid through
+     * sourcecmid without schema changes; the summary names the reference (#596).
+     */
+    public function test_superseded_marker_references_new_cmid(): void {
+        $this->resetAfterTest();
+        [$course, $cm, $teacher] = $this->create_page();
+        $new = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $this->setUser($teacher);
+
+        version_writer::capture_superseded((int) $cm->id, (int) $new->cmid, (int) $teacher->id);
+
+        $rows = version_history::list_versions($cm->id)['versions'];
+        $marker = end($rows);
+        $this->assertSame('superseded', $marker['source']);
+        $this->assertSame((int) $new->cmid, $marker['source_cmid']);
+        $this->assertFalse($marker['discovered']);
+        $this->assertStringContainsString('superseded by activity ' . $new->cmid, $marker['summary_line']);
+    }
+
+    /**
+     * Provide the from_xml source key and label (#596).
+     */
+    public function test_from_xml_source_is_described(): void {
+        $this->resetAfterTest();
+        [, $cm, $teacher] = $this->create_page();
+        $this->setUser($teacher);
+
+        version_writer::capture((int) $cm->id, (int) $teacher->id, version_writer::SOURCE_FROM_XML);
+
+        $rows = version_history::list_versions($cm->id)['versions'];
+        $this->assertSame('from_xml', end($rows)['source']);
+        $this->assertSame('created from activity XML', (new version_source('from_xml'))->label());
+        $this->assertSame('clone of activity 7', (new version_source('cloned', 7))->label());
+        $this->assertSame('unknown_source', (new version_source('unknown_source'))->label());
+    }
+
+    /**
+     * The notice accurately reports gaps for inferred activity types (#596).
+     */
+    public function test_gap_notice_names_instance_row_only_gap_for_catalogued_kinds(): void {
+        $this->resetAfterTest();
+        [, $cm] = $this->create_page();
+
+        $notice = version_history::list_versions($cm->id)['gap_notice'];
+        $this->assertStringContainsString('activity types created from XML', $notice);
+        $this->assertStringContainsString('only the instance row', $notice);
     }
 }

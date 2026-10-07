@@ -27,19 +27,16 @@ use local_coursepilot\context_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Listet den Kontextbereich der aufrufenden Lehrkraft (Issue #343): ein
- * einziger, fest verdrahteter Dateibereich im eigenen privaten
- * Nutzerkontext - kein Parameter adressiert einen anderen Bereich, eine
- * andere Person oder einen anderen Ort ausserhalb dieses Bereichs.
+ * Lists the calling teacher's context area (#343): one fixed file area
+ * in their own private user context. No parameter selects another area,
+ * person or location outside that area.
  *
- * Ortsneutral seit Issue #538 (Spec 0021): {@see context_area::list()}
- * liefert bereits denselben Feldsatz fuer beide Orte - dieses Werkzeug
- * unterscheidet selbst nicht mehr zwischen Moodle und extern.
+ * Location-independent since #538 (Spec 0021): {@see context_area::list()}
+ * returns identical fields for Moodle and external storage.
  *
- * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "previous_location"
- * statt "vorheriger_ort" - derselbe Durchstich wie bei den Kurs-/Aktivitaets-
- * und Fragenbankwerkzeugen aus #569/#570. Seit #573 gibt es an der MCP-Grenze
- * ueberhaupt keinen Uebersetzungsschritt mehr.
+ * Declared directly in English (#571, Spec 0025 §A): previous_location
+ * replaces vorheriger_ort, matching the course/activity/question-bank
+ * migration (#569/#570). Since #573 no MCP translation layer remains.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -56,7 +53,7 @@ class list_context_files extends external_api {
             'previous_location' => new external_value(
                 PARAM_BOOL,
                 'Optional: true lists the previous location instead of the current one (read-only switch for the '
-                    . 'Altbestand/legacy stock, Issue #498) - only takes effect while a legacy stock is open',
+                    . 'legacy stock, Issue #498) - only takes effect while a legacy stock is open',
                 VALUE_DEFAULT,
                 false
             ),
@@ -67,9 +64,9 @@ class list_context_files extends external_api {
      * @param string $path
      * @param bool $previouslocation
      * @return array
-     * @throws \moodle_exception invalidcontextpath, wenn $path ein "."/".."-
-     *         Segment enthaelt; altbestandclosed, wenn "previous_location" ohne
-     *         offenen Altbestand gesetzt ist.
+     * @throws \moodle_exception invalidcontextpath if $path contains a "."/".."
+     *         segment; previouslocationclosed if previous_location is requested
+     *         without open legacy context.
      */
     public static function execute(string $path = '', bool $previouslocation = false): array {
         $params = self::validate_parameters(
@@ -77,13 +74,10 @@ class list_context_files extends external_api {
             ['path' => $path, 'previous_location' => $previouslocation]
         );
 
-        // Kein zusaetzliches 'local/coursepilot:use' o.ae. (anders als
-        // list_courses/get_course_catalog): der Kontextbereich ist an die
-        // Person gebunden, nicht an einen Kurs - das Standard-Nutzerrecht
-        // genuegt laut Issue #343. validate_context() erzwingt require_login()
-        // fuer den eigenen Nutzerkontext; die globale Fernzugriffs-Capability
-        // 'local/coursepilot:useremote' prueft bereits
-        // dispatcher::handle_authorized() vor jedem Tool-Aufruf.
+        // No additional local/coursepilot:use permission: context belongs to the
+        // person, not a course. Standard user rights suffice (#343).
+        // validate_context() requires login for the own context; dispatcher
+        // checks global remote access before every tool call.
         $context = context_files::own_context();
         self::validate_context($context);
 
@@ -115,8 +109,7 @@ class list_context_files extends external_api {
                         PARAM_BOOL,
                         'Marked as personal data with the switch off - content unreadable, but still listed'
                     ),
-                    // Additiv ergaenzt (Spec 0016 Paragraph 2): Grundlage fuer
-                    // Gleichzeitigkeitsschutz und Handaenderungs-Erkennung.
+                    // Added in Spec 0016 §2 for concurrency and manual-change detection.
                     'contenthash' => new external_value(PARAM_ALPHANUMEXT, 'Content checksum, empty for folders'),
                     'timemodified' => new external_value(PARAM_INT, 'Time of last change, 0 for folders'),
                 ])

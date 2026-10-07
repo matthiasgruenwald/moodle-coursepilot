@@ -15,7 +15,7 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Capabilities (Kartenentscheidung #296).
+ * Capabilities (decision #296).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $capabilities = [
-    // Kursbezogene Tool-Calls.
+    // Course-related tool calls.
     'local/coursepilot:use' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_COURSE,
@@ -34,20 +34,18 @@ $capabilities = [
             'teacher' => CAP_ALLOW,
         ],
     ],
-    // Fernzugriff ueber den MCP-Endpunkt (#296, #579): einer von zwei Wegen
-    // der Fernzugriffsfreigabe, neben den gewaehlten Systemkohorten (siehe
-    // local_coursepilot\remote_access, ADR 0026). Bewusst ohne
-    // Archetyp-Vorbelegung - eine systemweit zugewiesene Lehrkraftrolle soll
-    // den Fernzugriff nicht nebenbei mitbringen; die Schule erlaubt ihn
-    // ausdruecklich in einer vorhandenen Systemrolle oder waehlt eine Kohorte.
+    // Remote MCP access (#296, #579): one of two grant methods alongside
+    // selected system cohorts (local_coursepilot\remote_access, ADR 0026).
+    // No archetype default: a globally assigned teacher role must not
+    // automatically grant remote access. Schools explicitly enable it
+    // in an existing system role or select a cohort.
     'local/coursepilot:useremote' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [],
     ],
-    // Einsicht in den Aenderungsverlauf einer Aktivitaet (#394, Spec 0015
-    // §10.6) - eigene Faehigkeit statt local/coursepilot:use, weil Spec 0015
-    // §10.6 fuer den Verlauf ausdruecklich eigene Faehigkeiten vorsieht.
+    // Activity-history access (#394, Spec 0015 §10.6): a separate capability
+    // from local/coursepilot:use, as required by the history specification.
     'local/coursepilot:viewhistory' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_COURSE,
@@ -56,11 +54,10 @@ $capabilities = [
             'teacher' => CAP_ALLOW,
         ],
     ],
-    // Rueckkehr zu einer frueheren Version einer Aktivitaet (#395, Spec 0015
-    // §10.7) - eigene Faehigkeit wie local/coursepilot:use bei allen anderen
-    // Schreibwerkzeugen: prueft nur "darf dieses Werkzeug ueberhaupt nutzen",
-    // die eigentliche Schreibberechtigung liefert zusaetzlich
-    // moodle/course:manageactivities.
+    // Restore an earlier activity version (#395, Spec 0015 §10.7). Like
+    // local/coursepilot:use for other write tools, this capability grants
+    // access to the operation itself; moodle/course:manageactivities
+    // additionally controls actual editing.
     'local/coursepilot:restoreversion' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_COURSE,

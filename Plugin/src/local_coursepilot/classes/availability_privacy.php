@@ -19,26 +19,26 @@ namespace local_coursepilot;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Maskiert den Personenbezug in Moodle-Verfuegbarkeitsbedingungen vor der
- * Ausgabe an eine KI (#341).
+ * Masks the personal data in Moodle availability conditions before
+ * output to an AI (#341).
  *
- * Eigenstaendige Portierung von local_coursepilot\availability_privacy:
- * local_coursepilot hat laut Spec 0012 ("keine Abhaengigkeit zu
- * local_coursepilot") keine Laufzeitabhaengigkeit auf das andere Plugin -
- * die Spike-Testinstanz traegt ausschliesslich local_coursepilot, ein
- * Klassenverweis auf local_coursepilot waere dort ein Fatal Error (Fund aus
- * dem PHPUnit-Lauf zu #341). Geteilte reine Funktion INNERHALB von
- * local_coursepilot, keine Sonderbehandlung im Katalogcode.
+ * Standalone port of local_coursepilot\availability_privacy:
+ * according to spec 0012 ("no dependency on
+ * local_coursepilot") local_coursepilot has no runtime dependency on the other plugin -
+ * the spike test instance carries only local_coursepilot, a
+ * class reference to local_coursepilot would be a fatal error there (finding from
+ * the PHPUnit run for #341). Shared pure function INSIDE
+ * local_coursepilot, no special handling in the catalog code.
  *
- * Regeln:
- * - Leerer String -> leerer String.
- * - Nicht parsebares JSON -> leerer String (nicht sicher beurteilbar).
- * - Verschachtelte "c"-Bedingungslisten werden rekursiv verarbeitet.
- * - Fuer type==="profile"-Bedingungen: "v" wird durch "***" ersetzt.
- *   "sf"/"cf" und "op" bleiben erhalten, damit die KI weiss, dass eine
- *   personenbezogene Beschraenkung existiert (weglassen waere schlimmer als
- *   maskieren).
- * - Alle anderen Typen/Felder bleiben unveraendert.
+ * Rules:
+ * - Empty string -> empty string.
+ * - Unparseable JSON -> empty string (cannot be judged safely).
+ * - Nested "c" condition lists are processed recursively.
+ * - For type==="profile" conditions: "v" is replaced by "***".
+ *   "sf"/"cf" and "op" are kept so the AI knows that a
+ *   personal-data restriction exists (omitting would be worse than
+ *   masking).
+ * - All other types/fields remain unchanged.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -47,8 +47,8 @@ defined('MOODLE_INTERNAL') || die();
 class availability_privacy {
 
     /**
-     * @param string $availability Rohes Moodle-Verfuegbarkeits-JSON.
-     * @return string Maskiertes JSON, oder leerer String.
+     * @param string $availability Raw Moodle availability JSON.
+     * @return string Masked JSON, or empty string.
      */
     public static function sanitize(string $availability): string {
         if ($availability === '') {

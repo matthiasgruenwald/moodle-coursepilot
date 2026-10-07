@@ -15,7 +15,7 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Coursepilot: MCP-Endpunkt auf dem Moodle-Server.
+ * Coursepilot: MCP endpoint on the Moodle server.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -25,11 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_coursepilot';
-$plugin->version   = 2026100102;
-// 2.0.x sagt Moodle 5.0 zu (geprueft). Ab 2.1 gilt Moodle 5.1 als
-// Mindestversion (ADR 0027).
-$plugin->requires  = 2025041400;
-// Beta nach dem Praxistest (ADR 0027). Die Linie setzt Coursepilot 1.x fort:
-// der Neubau ist Version 2, keine zweite Produktlinie.
+$plugin->version   = 2026100700;
+// 2.0.x supported Moodle 5.0. Moodle 5.1 is the minimum starting with 2.1 (ADR 0027).
+$plugin->requires  = 2025100600;
+// Beta after practical testing (ADR 0027). Continues Coursepilot 1.x:
+// the rebuild is version 2, not a separate product line.
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '2.0.0-beta';
+$plugin->release   = '2.1.0-beta';

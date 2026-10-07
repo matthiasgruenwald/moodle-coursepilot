@@ -27,24 +27,34 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class field_test extends \advanced_testcase {
 
     /**
-     * Die vier Aktivitaets-Schreibpfade pruefen Feldnamen ausschliesslich im
-     * Katalog statt mit eigenen Literalen.
+     * Field release, date, stealth and learner-lock rules are decided once in
+     * the catalog write target (#646); the external adapters keep no second
+     * interpretation of them.
      */
     public function test_all_activity_field_validators_delegate_to_the_catalog(): void {
-        $callers = [
-            __DIR__ . '/../../classes/external/create_module.php',
-            __DIR__ . '/../../classes/external/update_module_settings.php',
-            __DIR__ . '/../../classes/catalog/quiz_write_bridge.php',
-        ];
+        $core = file_get_contents(__DIR__ . '/../../classes/catalog/write_target.php');
+        $this->assertStringContainsString('catalog_fields::validate(', $core);
 
-        foreach ($callers as $caller) {
-            $source = file_get_contents($caller);
-            $this->assertStringContainsString('catalog_fields::validate(', $source, $caller);
+        $adapters = [
+            'classes/external/create_module.php' => 'write_target::create_activity(',
+            'classes/external/update_module_settings.php' => 'write_target::update_activity(',
+            'classes/external/create_quiz.php' => 'write_target::create(',
+            'classes/external/update_quiz_settings.php' => 'write_target::update(',
+            'classes/catalog/quiz_write_bridge.php' => null,
+        ];
+        foreach ($adapters as $file => $entry) {
+            $source = file_get_contents(__DIR__ . '/../../' . $file);
+            if ($entry !== null) {
+                $this->assertStringContainsString($entry, $source, $file);
+            }
+            foreach (['catalog_fields::validate(', 'date_order_rules', 'allowstealth', 'learner_locks::find'] as $rule) {
+                $this->assertStringNotContainsString($rule, $source, $file . ' interprets ' . $rule . ' itself.');
+            }
         }
     }
 
     /**
-     * Der Fehlertext ist ein englischer Moodle-Sprachstring, kein Literal.
+     * Error text comes from an English Moodle language string.
      */
     public function test_invalid_field_name_uses_the_english_language_string(): void {
         $this->assertSame(
@@ -54,14 +64,14 @@ final class field_test extends \advanced_testcase {
     }
 
     /**
-     * Jede nicht-string Feldangabe liefert dieselbe katalogisierte Meldung.
+     * Every non-string field specification returns the same cataloged error.
      */
     public function test_invalid_field_names_always_get_the_same_message(): void {
         $messages = [];
         foreach ([0, true, null, []] as $fieldname) {
             try {
                 field::assert_name($fieldname);
-                $this->fail('Die nicht-string Feldangabe haette abgelehnt werden muessen.');
+                $this->fail('The non-string field specification should have been rejected.');
             } catch (\moodle_exception $e) {
                 $this->assertSame('invalidfieldname', $e->errorcode);
                 $messages[] = $e->getMessage();

@@ -25,10 +25,9 @@ use local_coursepilot\webdav\webdav_instance;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Gezielter Bildausschnitt (Spec 0018 §5, Issue #431): schneidet eine
- * liegende Materialdatei zu und legt das Ergebnis wieder im Materialordner
- * ab. Relative Koordinaten (0-1) auf die Vorschau, geschnitten wird aus dem
- * Original in voller Aufloesung.
+ * Crop a stored material image (Spec 0018 §5, #431) and save the result
+ * to material storage. Coordinates (0–1) refer to the preview; cropping
+ * uses the full-resolution original.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -69,10 +68,9 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
-     * Beleg fuer "geschnitten wird aus dem Original, nicht aus der
-     * Vorschau" (Spec 0018 §3.1): das Original ist deutlich groesser als
-     * die 768px-Vorschaukante, der Zuschnitt muss trotzdem in
-     * Originalaufloesung herauskommen.
+     * Verify that cropping uses the original rather than the preview
+     * (Spec 0018 §3.1). The original exceeds the 768px preview edge, but
+     * the crop must retain original resolution.
      */
     public function test_crops_from_full_resolution_original_not_preview(): void {
         $this->resetAfterTest();
@@ -81,8 +79,8 @@ final class crop_material_file_test extends \advanced_testcase {
 
         $result = crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.5, 0.5, 0.75, 0.75);
 
-        // 0.25 * 3000 = 750, 0.25 * 2000 = 500 - weit ueber 768px, waere
-        // aus der Vorschau geschnitten worden, kaeme ein Bruchteil davon heraus.
+        // 0.25 * 3000 = 750 and 0.25 * 2000 = 500. Cropping the 768px preview
+        // would produce only a fraction of this resolution.
         $this->assertSame(750, $result['width']);
         $this->assertSame(500, $result['height']);
         $this->assertSame('ausschnitt.png', $result['path']);
@@ -103,8 +101,7 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
-     * Herkunft steht in Moodles vorhandenem source-Feld (Spec 0018 §5) -
-     * kein neues Feld, keine Tabelle.
+     * Record provenance in Moodle’s existing source field (Spec 0018 §5).
      */
     public function test_origin_is_recorded_in_source_field(): void {
         $this->resetAfterTest();
@@ -126,9 +123,8 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
-     * Der Ausschnitt ist erneut zuschneidbar, ohne dass die Quelldatei neu
-     * hochgeladen wird - zweiter Aufruf auf denselben sourcepath, anderer
-     * Zielausschnitt.
+     * Crop the same sourcepath again with different coordinates, without
+     * re-uploading the source.
      */
     public function test_source_file_can_be_cropped_again_without_reupload(): void {
         $this->resetAfterTest();
@@ -144,8 +140,7 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
-     * Erneutes Zuschneiden auf denselben Zielpfad ueberschreibt, statt
-     * einen Fehler zu werfen.
+     * Cropping to the same target path again overwrites the previous result.
      */
     public function test_recropping_into_same_target_overwrites(): void {
         $this->resetAfterTest();
@@ -183,15 +178,15 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('buchseite.png', 'ausschnitt.png', $x0, $y0, $x1, $y1);
-            $this->fail('materialcropinvalidcoordinates haette geworfen werden muessen.');
+            $this->fail('materialcropinvalidcoordinates should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialcropinvalidcoordinates', $e->errorcode);
         }
     }
 
     /**
-     * SVG ist raster-only nicht zuschneidbar - klare Meldung statt stiller
-     * Ersatzhandlung (Spec 0018 §5).
+     * Reject SVG clearly because cropping supports raster images only
+     * (Spec 0018 §5).
      */
     public function test_rejects_svg_source_with_clear_message(): void {
         $this->resetAfterTest();
@@ -207,16 +202,15 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('diagramm.svg', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
-            $this->fail('materialcropsourceunsupported haette geworfen werden muessen.');
+            $this->fail('materialcropsourceunsupported should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialcropsourceunsupported', $e->errorcode);
         }
     }
 
     /**
-     * Gleichzeitigkeitsschutz auf der Zieldatei (Spec 0016 §5.3, hier
-     * uebernommen wie bei upload_material_file) - ein falscher
-     * expected_contenthash bricht ab, bevor der teure Zuschnitt laeuft.
+     * Target-file concurrency protection (Spec 0016 §5.3): an incorrect
+     * expected_contenthash aborts before the expensive crop, as with uploads.
      */
     public function test_rejects_when_target_contenthash_does_not_match(): void {
         $this->resetAfterTest();
@@ -226,15 +220,14 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.1, 0.1, 0.6, 0.6, 'falscherhash');
-            $this->fail('materialfilechanged haette geworfen werden muessen.');
+            $this->fail('materialfilechanged should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialfilechanged', $e->errorcode);
         }
     }
 
     /**
-     * Volle Quote ist ein harter Fehler (Spec 0018 §8.1), wie bei
-     * upload_material_file.
+     * A full quota is a hard error (Spec 0018 §8.1), as with uploads.
      */
     public function test_rejects_when_quota_is_full(): void {
         global $CFG;
@@ -249,8 +242,8 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Zielendung, die GD nicht als Zuschnitt schreiben kann (z.B. pdf,
-     * svg), wird abgewiesen - der Zuschnitt bleibt ausschliesslich raster.
+     * Reject target extensions GD cannot write, such as pdf and svg.
+     * Cropping supports raster formats only.
      */
     public function test_rejects_unsupported_output_extension(): void {
         $this->resetAfterTest();
@@ -259,7 +252,7 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('buchseite.png', 'ausschnitt.svg', 0.0, 0.0, 0.5, 0.5);
-            $this->fail('materialcropoutputunsupported haette geworfen werden muessen.');
+            $this->fail('materialcropoutputunsupported should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialcropoutputunsupported', $e->errorcode);
         }
@@ -281,7 +274,7 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
-            $this->fail('materialgdmissing haette geworfen werden muessen.');
+            $this->fail('materialgdmissing should have been thrown.');
         } catch (\moodle_exception $e) {
             $this->assertSame('materialgdmissing', $e->errorcode);
         } finally {
@@ -290,7 +283,7 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
-     * @return string PNG-Bytes eines 1000x1000-Bilds.
+     * @return string PNG bytes of a 1000x1000 image.
      */
     private function build_png(int $width = 1000, int $height = 1000): string {
         $image = imagecreatetruecolor($width, $height);
@@ -303,8 +296,8 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
-     * Die Quelle (Issue #495) kommt aus dem externen Materialbestand, das
-     * Ergebnis landet trotzdem auf der Werkbank (Abnahmekriterium 2/6).
+     * Read the source from external material storage (#495) and write the
+     * result to the workbench (acceptance criteria 2/6).
      */
     public function test_reads_source_from_external_material_and_writes_result_to_workbench(): void {
         $this->resetAfterTest();
@@ -315,7 +308,7 @@ final class crop_material_file_test extends \advanced_testcase {
         $result = crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
 
         $this->assertSame(500, $result['width']);
-        $this->assertStringStartsWith('bestand:buchseite.png', $result['source']);
+        $this->assertStringStartsWith('store:buchseite.png', $result['source']);
 
         $stored = get_file_storage()->get_file(
             material_files::own_context()->id,
@@ -325,12 +318,12 @@ final class crop_material_file_test extends \advanced_testcase {
             '/coursepilot-material/',
             'ausschnitt.png'
         );
-        $this->assertNotFalse($stored, 'Das Ergebnis muss auf der Werkbank (Moodle) liegen.');
+        $this->assertNotFalse($stored, 'The result must be on the workbench (Moodle).');
     }
 
     /**
-     * "source" nennt Ort und Pruefmerkmal (Groesse, Aenderungszeit) - kein
-     * contenthash, den der Materialbestand nicht traegt.
+     * source records the location, size and modification time rather than
+     * a contenthash unavailable in external storage.
      */
     public function test_source_field_names_ort_and_fingerprint(): void {
         $this->resetAfterTest();
@@ -340,7 +333,7 @@ final class crop_material_file_test extends \advanced_testcase {
         $result = crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
 
         $this->assertMatchesRegularExpression(
-            '/^bestand:buchseite\.png \(\d+ Byte, geändert \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\)$/u',
+            '/^store:buchseite\.png \(\d+ bytes, modified \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\)$/u',
             $result['source']
         );
     }
@@ -352,29 +345,28 @@ final class crop_material_file_test extends \advanced_testcase {
 
         try {
             crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5, '', 'woanders');
-            $this->fail('Ein unbekannter Ort-Wert haette werfen muessen.');
+            $this->fail('An unknown location value should have thrown.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('invalidmaterialort', $e->errorcode);
+            $this->assertSame('invalidmateriallocation', $e->errorcode);
         }
     }
 
     /**
-     * Liegt der Kontextbereich im Bestand, weist der Zuschnitt eine Quelle
-     * darunter ab (Issue #495, Abnahmekriterium 4).
+     * Reject sources below the context area in inventory (#495, criterion 4).
      */
     public function test_rejects_source_path_under_kontextbereich(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
         storage_anchor::write_pointer_document([
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material/kontext'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot-material/kontext'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ]);
 
         try {
             crop_material_file::execute('kontext/buchseite.png', 'ausschnitt.png', 0.0, 0.0, 0.5, 0.5);
-            $this->fail('Eine Quelle unter dem Kontextbereich haette werfen muessen.');
+            $this->fail('A source under the context area should have thrown.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('materialpathiskontext', $e->errorcode);
+            $this->assertSame('materialpathiscontext', $e->errorcode);
         }
     }
 }

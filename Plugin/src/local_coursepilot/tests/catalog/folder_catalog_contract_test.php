@@ -19,8 +19,8 @@ namespace local_coursepilot\catalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Katalog-gegen-Moodle-Vertragstest fuer mod_folder (Ticket #380, Vorbild
- * label_catalog_contract_test.php aus #379).
+ * Catalog/Moodle contract for mod_folder (Ticket #380), following
+ * label_catalog_contract_test from #379.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,9 +31,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class folder_catalog_contract_test extends \advanced_testcase {
 
     /**
-     * Jede von folder gefuehrte Datenbankspalte muss die reale Spaltenmenge
-     * von {folder} exakt ergeben. "files" ist kein DB-Feld (Pseudofeld, Spec
-     * 0018 §4.2) und steht auch nicht mehr auf der Sperrliste.
+     * Catalog fields, real blocklisted columns and id exactly match the
+     * folder table columns. Pseudofields do not count as database columns.
      */
     public function test_folder_table_columns_match_the_catalog(): void {
         global $DB;
@@ -54,44 +53,43 @@ final class folder_catalog_contract_test extends \advanced_testcase {
         $this->assertSame(
             $realcolumns,
             array_values(array_unique($known)),
-            "Die Spalten der Tabelle 'folder' und der Feldkatalog (folder::fields()/blocklist()) sind "
-                . 'auseinandergelaufen - Moodle hat vermutlich eine Spalte hinzugefuegt, entfernt oder umbenannt.'
+            "The columns of table 'folder' and the field catalog (folder::fields()/blocklist()) have "
+                . 'diverged - Moodle probably added, removed or renamed a column.'
         );
     }
 
     /**
-     * "files" ist vollstaendig katalogisiert (Pseudofeld), optional und
-     * nicht mehr gesperrt (Issue #434).
+     * files is a fully cataloged optional pseudofield, no longer blocked
+     * (Issue #434).
      */
     public function test_files_is_catalogued_optional_and_unlocked(): void {
         $pseudofields = folder::pseudofields();
         $pseudonames = array_map(static fn (field $f): string => $f->name, $pseudofields);
-        $this->assertContains('files', $pseudonames, '"files" muss vollstaendig katalogisiert sein.');
+        $this->assertContains('files', $pseudonames, '"files" must be fully cataloged.');
 
         $filesfield = current(array_filter($pseudofields, static fn (field $f): bool => $f->name === 'files'));
-        $this->assertFalse($filesfield->required, '"files" muss beim Anlegen optional bleiben (leerer Ordner gueltig).');
+        $this->assertFalse($filesfield->required, '"files" must stay optional on creation (empty folder valid).');
 
-        $this->assertNotContains('files', folder::blocklist(), '"files" darf nicht mehr gesperrt sein.');
+        $this->assertNotContains('files', folder::blocklist(), '"files" must no longer be blocked.');
     }
 
     /**
-     * folder bleibt anders als resource anlegbar (Spec 0015 §4.3) - der
-     * Katalog vermerkt das ausdruecklich.
+     * The catalog explicitly notes that an empty folder can be created,
+     * unlike resource without a file (Spec 0015 §4.3).
      */
     public function test_side_effects_note_folder_stays_creatable(): void {
         $notes = implode(' ', folder::side_effects());
-        $this->assertStringContainsString('anlegbar', $notes);
+        $this->assertStringContainsString('created', $notes);
     }
 
     /**
-     * Die FOLDER_DISPLAY_*-Konstanten existieren noch - aus
-     * folder::checked_constants() statt einer zweiten, separat gepflegten
-     * Liste (Ticket #399, wiederverwendet von der Laufzeit-Tiefenpruefung).
+     * Constants from folder::checked_constants() still exist, using the
+     * same source as runtime drift validation (Ticket #399).
      */
     public function test_folder_display_constants_exist(): void {
         $this->assertSame(['FOLDER_DISPLAY_PAGE', 'FOLDER_DISPLAY_INLINE'], folder::checked_constants());
         foreach (folder::checked_constants() as $constname) {
-            $this->assertTrue(defined($constname), "Konstante $constname existiert auf dieser Instanz nicht mehr.");
+            $this->assertTrue(defined($constname), "Constant $constname no longer exists on this instance.");
         }
         $this->assertSame([0, 1], [FOLDER_DISPLAY_PAGE, FOLDER_DISPLAY_INLINE]);
     }

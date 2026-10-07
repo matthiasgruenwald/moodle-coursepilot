@@ -17,14 +17,14 @@
 namespace local_coursepilot;
 
 /**
- * Der Schalter fuer personenbezogene Kontextdaten (Issue #344, ADR 0011).
- * Wirkt auf der Markierung im YAML-Frontmatter einer Kontextdatei
- * (`coursepilot.personenbezug: true`), nicht auf ihrem Inhalt - siehe
- * Spezifikation 0010, Abschnitt "Frontmatter"/"Personenbezug und Varianten".
+ * The switch for personal context data (issue #344, ADR 0011).
+ * Acts on the mark in the YAML front matter of a context file
+ * (`coursepilot.personenbezug: true`), not on its content - see
+ * specification 0010, section "Frontmatter"/the personal-data variants section.
  *
- * ponytail: kein YAML-Parser im Projekt (kein symfony/yaml, kein
- * ext-yaml) und fuer eine einzelne, eindeutig benannte Flag-Pruefung auch
- * nicht noetig - eine Regex auf den Frontmatter-Block reicht.
+ * ponytail: no YAML parser in the project (no symfony/yaml, no
+ * ext-yaml) and not needed for a single, clearly named flag check
+ * either - a regex on the front matter block is enough.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -33,8 +33,8 @@ namespace local_coursepilot;
 final class personal_data {
 
     /**
-     * Ob die Instanz personenbezogen markierte Kontextdateien an die KI
-     * ausliefert. Standard: aus (siehe `settings.php`).
+     * Whether the instance delivers context files marked as personal data
+     * to the AI. Default: off (see `settings.php`).
      *
      * @return bool
      */
@@ -43,8 +43,8 @@ final class personal_data {
     }
 
     /**
-     * Ob der Dateiinhalt im YAML-Frontmatter als personenbezogen markiert
-     * ist (`coursepilot.personenbezug: true`).
+     * Whether the file content is marked as personal data in the YAML front matter
+     * (`coursepilot.personenbezug: true`).
      *
      * @param string $content
      * @return bool

@@ -19,7 +19,7 @@ namespace local_coursepilot\output;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Template-Datenaufbereitung fuer connections.php (#552, Spec 0023 Teil 5).
+ * Template data preparation for connections.php (#552, Spec 0023 part 5).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,7 +30,7 @@ final class connections_page_test extends \advanced_testcase {
 
     public function test_empty_flag_is_true_without_tokens(): void {
         $this->resetAfterTest();
-        $data = connections_page::page_data([], ['kontextbereich' => [], 'materialbestand' => []], new \moodle_url('/'));
+        $data = connections_page::page_data([], ['context_area' => [], 'material_store' => []], new \moodle_url('/'));
         $this->assertTrue($data['empty']);
         $this->assertSame([], $data['rows']);
     }
@@ -45,7 +45,7 @@ final class connections_page_test extends \advanced_testcase {
             'expires' => time() + 3600,
         ];
 
-        $data = connections_page::page_data([$token], ['kontextbereich' => [], 'materialbestand' => []], new \moodle_url('/'));
+        $data = connections_page::page_data([$token], ['context_area' => [], 'material_store' => []], new \moodle_url('/'));
 
         $this->assertFalse($data['empty']);
         $this->assertSame('client-abc', $data['rows'][0]['clientname']);

@@ -20,7 +20,7 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Schreibkern 13 (Spec 0015 Phase 3, Ticket #391).
+ * Write core 13 (Spec 0015 Phase 3, Ticket #391).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class move_section_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs (4 Abschnitte), Lehrkraft.
+     * @return array{0: \stdClass, 1: \stdClass} Course (4 sections), teacher.
      */
     private function course_with_editing_teacher(): array {
         global $DB;

@@ -21,9 +21,8 @@ use local_coursepilot\material_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Ablegen einer Datei im Materialordner (Spec 0018 §2/§4.2/§8.1, Issue #428).
- * Happy-Path plus die Absagen, die das Werkzeug eng halten: Endung,
- * Servergroesse, Gleichzeitigkeit, Quote.
+ * Store a material file (Spec 0018 §2/§4.2/§8.1, Issue #428). Cover
+ * success and rejection for extension, server size limit, concurrency and quota.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -86,8 +85,8 @@ final class upload_material_file_test extends \advanced_testcase {
     }
 
     /**
-     * Gleichzeitigkeitsschutz (Spec 0016 §5.3, hier uebernommen): ein
-     * falscher expected_contenthash bricht ab.
+     * Concurrency protection: reject mismatched expected_contenthash
+     * (Spec 0016 §5.3).
      */
     public function test_rejects_when_contenthash_does_not_match(): void {
         $this->resetAfterTest();
@@ -110,11 +109,10 @@ final class upload_material_file_test extends \advanced_testcase {
     }
 
     /**
-     * Keine eigene Groessengrenze - gegen die Serverkonfiguration melden
-     * (Spec 0018 §8.1, Praezedenz Spec 0017 §9). Getestet ueber den
-     * testbaren Kern (Reflection), da sich die PHP-Ini-Werte des
-     * Testcontainers nicht aus dem Test heraus setzen lassen - derselbe
-     * Kniff wie import_questions_xml_test.php.
+     * Use server-configured size limits rather than a separate cap
+     * (Spec 0018 §8.1, precedent Spec 0017 §9). Test the core via reflection
+     * because container PHP ini values cannot be changed within the test,
+     * as in import_questions_xml_test.
      */
     public function test_guard_size_against_limit_rejects_when_over_server_limit(): void {
         $this->resetAfterTest();
@@ -134,7 +132,7 @@ final class upload_material_file_test extends \advanced_testcase {
     }
 
     /**
-     * Volle Quote ist ein harter Fehler (Spec 0018 §8.1).
+     * Full quota is a hard error (Spec 0018 §8.1).
      */
     public function test_rejects_when_quota_is_full(): void {
         global $CFG;
@@ -148,8 +146,8 @@ final class upload_material_file_test extends \advanced_testcase {
     }
 
     /**
-     * Warnung unter 10% Restplatz landet in der Antwortmeldung (Spec 0018
-     * §8.1, Form wie Spec 0016 §5.4).
+     * Include a warning in the message below 10% remaining space
+     * (Spec 0018 §8.1, following Spec 0016 §5.4).
      */
     public function test_warns_below_ten_percent_remaining_quota(): void {
         global $CFG;

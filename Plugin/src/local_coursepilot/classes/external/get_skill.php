@@ -22,26 +22,26 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_coursepilot\remote_access;
 use local_coursepilot\skill_corpus;
 
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Die Lieferung eines einzelnen Skill-Korpus-Eintrags (Spec 0020 §4, Issue
- * #450): Inhalt, Namen der referenzierten Teile, Korpus-Stand.
+ * Delivery of a single skill corpus entry (Spec 0020 §4, issue
+ * #450): content, names of the referenced parts, corpus version.
  *
- * $name ist ein Bezeichner, kein Pfad: {@see skill_corpus::get()} prueft
- * ausschliesslich gegen die aus dem Verzeichnis gescannten Namen - ein
- * unbekannter oder pfadartiger Name (`../`, fuehrender `/`, Backslash,
- * kodierte Variante) wird gleichermassen abgewiesen, die Meldung nennt die
- * gueltigen Namen. Absichtlich PARAM_TEXT statt eines alphanumerischen
- * Filters: der Name kommt unveraendert bei der Pruefung an, die Ablehnung
- * ist eine Frage der Verzeichnisliste, nicht der Zeichenbereinigung.
+ * $name is an identifier, not a path: {@see skill_corpus::get()} checks
+ * exclusively against the names scanned from the directory - an
+ * unknown or path-like name (`../`, leading `/`, backslash,
+ * encoded variant) is rejected alike, the message lists the
+ * valid names. Deliberately PARAM_TEXT instead of an alphanumeric
+ * filter: the name arrives at the check unchanged, the rejection
+ * is a matter of the directory list, not of character cleaning.
  *
- * Unmittelbar englisch deklariert (#571, Spec 0025 §A): "referenced_parts"
- * statt "referenzierte_teile", "corpus_version" statt "korpus_stand" - der
- * zugrundeliegende Skill-Korpus ({@see \local_coursepilot\skill_corpus})
- * bleibt intern deutsch, die Uebersetzung geschieht hier.
+ * Response keys are English end to end (#571, #602). The corpus content
+ * is also English (#604); its adapters instruct the AI to respond in
+ * the teacher's language. Delivery returns the stored Markdown unchanged.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -61,19 +61,16 @@ final class get_skill extends external_api {
     /**
      * @param string $name
      * @return array
-     * @throws \moodle_exception unknownskillname, wenn $name nicht im Korpus-Verzeichnis steht.
+     * @throws \moodle_exception unknownskillname, if $name is not in the corpus directory.
      */
     public static function execute(string $name): array {
         $params = self::validate_parameters(self::execute_parameters(), ['name' => $name]);
         self::validate_context(context_system::instance());
-        require_capability('local/coursepilot:use', context_system::instance());
+        // Course-independent product content: the remote access grant is the
+        // gate, not the course capability 'use' (Issue #630).
+        remote_access::require_granted();
 
-        $entry = skill_corpus::get($params['name']);
-        return [
-            'content' => $entry['content'],
-            'referenced_parts' => $entry['referenzierte_teile'],
-            'corpus_version' => $entry['korpus_stand'],
-        ];
+        return skill_corpus::get($params['name']);
     }
 
     /**

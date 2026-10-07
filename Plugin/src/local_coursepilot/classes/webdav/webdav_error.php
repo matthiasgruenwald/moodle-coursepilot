@@ -17,12 +17,12 @@
 namespace local_coursepilot\webdav;
 
 /**
- * Eine benannte Fehlerklasse statt eines nackten Statuscodes (Issue #489,
- * Spec #486 §4, ADR 0022). Jeder Aufrufer von {@see webdav_client}
- * unterscheidet nur diese acht Klassen, nie einen HTTP-Code.
+ * A named error class instead of a bare status code (Issue #489,
+ * Spec #486 §4, ADR 0022). Every caller of {@see webdav_client}
+ * distinguishes only these eight classes, never an HTTP code.
  *
- * Traegt bewusst nie Benutzername, Passwort, Anmeldekopf, Serverpfad oder
- * Antwortrumpf in der Meldung (Spec §3/§8, Geheimnis-Test).
+ * Deliberately never carries username, password, auth header, server path or
+ * response body in the message (Spec §3/§8, secret test).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,34 +30,34 @@ namespace local_coursepilot\webdav;
  */
 final class webdav_error extends \RuntimeException {
 
-    /** @var string Kein DAV-XML-Rumpf zu 404, oder ein anderer unklarer Status - stumm wiederholt. */
-    public const UNCLEAR = 'unklar/gedrosselt';
+    /** @var string No DAV XML body on a 404, or another unclear status - silently retried. */
+    public const UNCLEAR = 'unclear';
 
-    /** @var string 404 mit DAV-XML-Rumpf. */
-    public const NOT_FOUND = 'nicht gefunden';
+    /** @var string 404 with a DAV XML body. */
+    public const NOT_FOUND = 'not_found';
 
     /** @var string 401/403. */
-    public const AUTH_REJECTED = 'Anmeldung abgelehnt';
+    public const AUTH_REJECTED = 'auth_rejected';
 
-    /** @var string Zeitueberschreitung, DNS-Fehler. */
-    public const UNREACHABLE = 'nicht erreichbar';
+    /** @var string Timeout, DNS error. */
+    public const UNREACHABLE = 'unreachable';
 
     /** @var string 507. */
-    public const STORAGE_FULL = 'Speicher voll';
+    public const STORAGE_FULL = 'storage_full';
 
     /** @var string 409/412. */
-    public const CONFLICT = 'Konflikt';
+    public const CONFLICT = 'conflict';
 
-    /** @var string Moodles Hostsperre. */
-    public const BLOCKED = 'gesperrt';
+    /** @var string Moodle's host block. */
+    public const BLOCKED = 'blocked';
 
-    /** @var string 3xx-Antwort - der Client folgt keiner Weiterleitung (Issue #510). */
-    public const REDIRECTED = 'Weiterleitung abgelehnt';
+    /** @var string 3xx response - the client follows no redirect (Issue #510). */
+    public const REDIRECTED = 'redirected';
 
     /**
-     * @param string $errorclass Eine der Konstanten dieser Klasse.
-     * @param string $message Interne, entwicklerorientierte Meldung - nie
-     *        an eine Lehrkraft gereicht, nie ein Geheimnis.
+     * @param string $errorclass One of the constants of this class.
+     * @param string $message Internal, developer-oriented message - never
+     *        passed on to a teacher, never a secret.
      */
     public function __construct(
         public readonly string $errorclass,
@@ -67,18 +67,18 @@ final class webdav_error extends \RuntimeException {
     }
 
     /**
-     * Uebersetztes Label fuer eine Fehlerklasse (Issue #565): die Konstanten
-     * oben sind fest-deutsche interne Bezeichner fuer Vergleiche im Code
-     * (`$errorclass === webdav_error::UNCLEAR`), nie fuer die Anzeige
-     * gedacht. Jede Stelle, die eine Fehlerklasse einer Lehrkraft zeigt
-     * (z. B. ueber {$a->errorclass} in ortswahlexternalerror/
-     * webdavexternalerror/materialexternalerror), muss durch dieses Label
-     * gehen statt die Konstante direkt zu interpolieren - sonst bleibt der
-     * Text auf Englisch (oder jeder anderen Sprache) deutsch.
+     * Translated label for an error class (Issue #565): the constants
+     * above are fixed internal identifiers for comparisons in code
+     * (`$errorclass === webdav_error::UNCLEAR`), never meant for display.
+     * Every place that shows an error class to a teacher
+     * (e.g. via {$a->errorclass} in locationselectionexternalerror/
+     * webdavexternalerror/materialexternalerror) must go through this label
+     * instead of interpolating the constant directly - otherwise the
+     * text stays in the internal identifier language instead of the user's.
      *
-     * @param string $errorclass Eine der Konstanten dieser Klasse.
-     * @return string uebersetztes Label, oder die Konstante selbst als
-     *         Rueckfallwert, falls sie keiner bekannten Klasse entspricht.
+     * @param string $errorclass One of the constants of this class.
+     * @return string translated label, or the constant itself as a
+     *         fallback if it matches no known class.
      */
     public static function label(string $errorclass): string {
         static $map = [
@@ -95,26 +95,23 @@ final class webdav_error extends \RuntimeException {
     }
 
     /**
-     * Das eine Fehlerbild des WebDAV-Speichers (Issue #506): "nicht
-     * gefunden" heisst leer, jeder andere Fehler bleibt ein benannter Fehler.
-     * Vorher an vier fast identischen Stellen dupliziert
-     * ({@see \local_coursepilot\pointer_reader::list_entries()}/read_content(),
-     * {@see \local_coursepilot\pointer_writer}, {@see \local_coursepilot\location_selection}) -
-     * jetzt die eine Stelle, die alle vier benutzen. Was "jeder andere
-     * Fehler" konkret bedeutet, bleibt Sache des Aufrufers: `pointer_reader`
-     * uebersetzt sofort in eine Lehrkraft-Meldung, `pointer_writer` reicht den
-     * rohen Fehler unveraendert weiter (sein eigener Ausstand-Fang muss ihn
-     * noch als {@see webdav_error} erkennen).
+     * The single error picture of the WebDAV storage (Issue #506): "not
+     * found" means empty, every other error stays a named error.
+     * Shared by {@see \local_coursepilot\webdav_storage_port} and
+     * {@see \local_coursepilot\location_selection}. What "every other
+     * error" concretely means remains up to the caller: the adapter
+     * passes the raw error on unchanged (the pending-write handling
+     * still has to recognise it as a {@see webdav_error}), the location
+     * selection immediately translates it into a teacher message.
      *
      * @template T
      * @param self $e
-     * @param T $whenmissing Rueckgabewert, wenn $e "nicht gefunden" ist.
-     * @param callable(self): \Throwable $onfailure Baut die Ausnahme fuer
-     *        jeden anderen Fehler - oder reicht $e unveraendert durch
-     *        ({@see \local_coursepilot\pointer_writer}, dessen eigener
-     *        Ausstand-Fang die rohe {@see webdav_error} noch erkennen muss).
+     * @param T $whenmissing Return value when $e is "not found".
+     * @param callable(self): \Throwable $onfailure Builds the exception for
+     *        every other error - or passes $e through unchanged
+     *        ({@see \local_coursepilot\webdav_storage_port}).
      * @return T
-     * @throws \Throwable Das Ergebnis von $onfailure($e).
+     * @throws \Throwable The result of $onfailure($e).
      */
     public static function empty_when_missing(self $e, mixed $whenmissing, callable $onfailure): mixed {
         if ($e->errorclass === self::NOT_FOUND) {

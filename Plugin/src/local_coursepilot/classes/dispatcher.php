@@ -19,20 +19,16 @@ namespace local_coursepilot;
 use core_external\external_api;
 
 /**
- * Die Dispatcher-Seam (#334): dieselbe Entscheidungslogik, die vorher
- * prozedural in mcp.php lag - Origin-Pruefung, Discovery-Sonderfall,
- * Methodenpruefung, Parse-Fehler, Auth-Gate, Protokoll-Switch - jetzt als
- * reine(re) Funktion: Werte rein, Antwortwert (Status, Kopfzeilen, Rumpf)
- * raus. Kein exit, kein Zugriff auf HTTP-Superglobals ($_SERVER, php://input),
- * kein HTTP-Wissen - damit per PHPUnit ohne laufenden Webserver aufrufbar.
+ * Dispatcher seam (#334): decisions formerly embedded in mcp.php
+ * (origin, discovery, HTTP method, parse error, authentication, protocol)
+ * now accept values and return status, headers and body. No exit or HTTP
+ * superglobals ($_SERVER, php://input), so PHPUnit needs no web server.
  *
- * Reste an Moodle-Bindung ($DB/$CFG, external_api::call_external_function())
- * bleiben bewusst hier statt injiziert - advanced_testcase bringt DB und
- * $USER bereits mit, eine Callback-Abstraktion waere unbenutzte Flexibilitaet
- * (YAGNI). Das sind Moodle-Framework-Globals, keine HTTP-Superglobals - die
- * Trennung, um die es in #334 geht. Die HTTP-Header-Extraktion selbst
- * (Authorization-Header lesen, REDIRECT_HTTP_AUTHORIZATION-Fallback,
- * getallheaders()) bleibt in mcp.php - das ist Ein-/Ausgabe, keine Entscheidung.
+ * Moodle bindings ($DB/$CFG and external_api::call_external_function())
+ * stay here: advanced_testcase already provides DB and $USER, so callbacks
+ * would add unused flexibility (YAGNI). These are framework globals, not
+ * HTTP globals. Header extraction (Authorization, REDIRECT_HTTP_AUTHORIZATION
+ * fallback and getallheaders()) remains I/O in mcp.php.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -40,70 +36,61 @@ use core_external\external_api;
  */
 final class dispatcher {
 
-    /** @var string Protokoll-Revision der Legacy-Aera (initialize-Handshake). */
+    /** @var string Legacy protocol revision (initialize handshake). */
     public const LEGACY_VERSION = '2025-06-18';
 
-    /** @var string Protokoll-Revision der modernen Aera (server/discover). */
+    /** @var string Modern protocol revision (server/discover). */
     public const MODERN_VERSION = '2026-07-28';
 
     /**
-     * Der Wegweiser (#451, Spec 0020 §2): ohne lokale Skill-Datei gibt es
-     * keine description, an der ein frisch verbundener Client anspringt -
-     * der Server setzt sie stattdessen selbst, identisch in initialize und
-     * server/discover sowie als Hinweis in der coursepilot_list_skills-
-     * Werkzeugbeschreibung (fuer Clients, die instructions nicht anzeigen).
-     * Bewusst nur der Weg, nichts Fachliches - Auslöser und Verzweigung,
-     * keine Planstrenge/Datenschutzregel/Werkzeugkunde, die gehoert hinter
-     * get_skill.
+     * Entry guidance (#451, Spec 0020 §2): without a local skill file, newly
+     * connected clients need the server to provide their starting point.
+     * initialize and server/discover expose the same instructions; the
+     * coursepilot_list_skills description repeats them for clients that hide
+     * instructions. Only routing belongs here: planning discipline, privacy
+     * and tool knowledge are supplied through get_skill.
      */
-    public const HANDSHAKE_INSTRUCTIONS = 'Vor Planung oder Schreibzugriff zuerst coursepilot_list_skills aufrufen.';
+    public const HANDSHAKE_INSTRUCTIONS = 'Before planning or writing, call coursepilot_list_skills first.';
 
-    /** @var string[] Zusaetzlich erlaubte Origins neben $CFG->wwwroot. */
+    /** @var string[] Allowed origins in addition to $CFG->wwwroot. */
     private const EXTRA_ALLOWED_ORIGINS = ['https://claude.ai', 'https://chatgpt.com'];
 
     /**
-     * Frischehinweis fuer Listenantworten in Millisekunden (fuenf Minuten).
-     *
-     * Gilt fuer alle vier Listen gleich - die Werkzeugliste dieses Plugins
-     * aendert sich nur bei einem Plugin-Upgrade, die drei leeren Listen nie.
+     * List freshness in milliseconds (five minutes). All four lists share
+     * this TTL: the tool list changes only on upgrades; the other lists are empty.
      */
     private const LIST_TTL_MS = 300000;
 
     /**
-     * Die Seam: bearbeitet eine MCP-Anfrage vollstaendig und liefert das
-     * Ergebnis als Wert zurueck statt es auszugeben.
+     * Handles a complete MCP request, returning a value instead of emitting output.
      *
-     * @param array|null $request Der bereits dekodierte JSON-Rumpf, oder
-     *        null, wenn das Dekodieren fehlgeschlagen ist (Parse-Fehler-Fall).
-     * @param string|null $token Das bereits aus dem Authorization-Header
-     *        extrahierte Bearer-Token.
+     * @param array|null $request The already decoded JSON body, or
+     *        null if decoding failed (parse-error case).
+     * @param string|null $token The Bearer token already extracted from
+     *        the Authorization header.
      * @param array{origin: ?string, pathinfo: ?string, method: ?string, protocolversion?: ?string} $headers
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     public static function handle(?array $request, ?string $token, array $headers): array {
         global $CFG;
 
-        // Origin-Pruefung: greift nur bei vorhandenem Header (offener Punkt
-        // aus #294 fuer die Pflege der Allowlist).
+        // Check origins only when a header is present (#294: allowlist maintenance).
         $origin = $headers['origin'] ?? null;
         if ($origin !== null) {
             $allowed = array_merge([rtrim($CFG->wwwroot, '/')], self::EXTRA_ALLOWED_ORIGINS);
             if (!in_array(rtrim($origin, '/'), $allowed, true)) {
-                // #339: eigener Aufruf, nicht ueber error() - dieser Zweig
-                // liegt vor handle_authorized() und antwortet nicht im
-                // JSON-RPC-Fehlerformat.
+                // #339: log separately, before handle_authorized(); this response
+                // does not use the JSON-RPC error format.
                 access_log::log_failure('Origin not allowed');
                 return self::result(403, [], ['error' => 'Origin not allowed']);
             }
         }
         $corsheaders = $origin !== null ? ['Access-Control-Allow-Origin' => $origin, 'Vary' => 'Origin'] : [];
 
-        // CORS-Preflight (#337-Nachtrag): der Custom Connector von Claude.ai
-        // ruft mcp.php per Browser-fetch() mit Authorization-Header auf -
-        // ohne Antwort auf den OPTIONS-Preflight blockt der Browser den
-        // eigentlichen POST clientseitig, bevor er je hier ankommt (per
-        // curl/Server-Log nicht sichtbar, nur am Verbindungsfehler auf
-        // Claude-Seite erkennbar).
+        // CORS preflight (#337 addendum): Claude.ai uses browser fetch() with
+        // Authorization. Without an OPTIONS response, the browser blocks the
+        // POST before it reaches this server. curl and server logs cannot show
+        // that client-side connection failure.
         if (($headers['method'] ?? 'POST') === 'OPTIONS') {
             return self::result(204, $corsheaders + [
                 'Access-Control-Allow-Methods' => 'POST, OPTIONS',
@@ -118,10 +105,8 @@ final class dispatcher {
     }
 
     /**
-     * Der eigentliche Anfrage-Ablauf nach Origin-Pruefung und CORS-Preflight
-     * (#337-Nachtrag: aus handle() ausgelagert, damit CORS-Kopfzeilen an
-     * genau einer Stelle auf jede Antwort angewendet werden, statt an jedem
-     * einzelnen return).
+     * Request flow after origin validation and CORS preflight (#337 addendum).
+     * Extracted from handle() so one place adds CORS headers to every response.
      *
      * @param array|null $request
      * @param string|null $token
@@ -131,20 +116,15 @@ final class dispatcher {
     private static function handle_authorized(?array $request, ?string $token, array $headers): array {
         global $CFG;
 
-        // Globale Notbremse (#338): sperrt jeden weiteren MCP-Zugriff sofort,
-        // unabhaengig von Token-Gueltigkeit oder Capability - deshalb vor
-        // allem anderen geprueft. Ausgegebene Token bleiben dabei bestehen
-        // (Unterschied zum Sammelwiderruf in oauth_lib::revoke_all_tokens()).
-        // Rein eine Einstellung dieses einen Endpunkts - der normale
-        // Moodle-Login (require_login() auf den uebrigen Seiten) ist davon
-        // nicht betroffen. Standard (kein Konfigwert gesetzt) ist
-        // eingeschaltet, deshalb der Vergleich auf explizit '0'.
+        // Global emergency switch (#338): deny all MCP access immediately, before
+        // token or capability checks. Issued tokens survive, unlike bulk revocation
+        // in oauth_lib::revoke_all_tokens(). This endpoint setting does not affect
+        // normal Moodle login. Enabled by default, hence comparison to explicit 0.
         if ((string) get_config('local_coursepilot', 'remoteaccessenabled') === '0') {
             return self::error(403, $request['id'] ?? null, -32003, get_string('remoteaccessdisabled', 'local_coursepilot'));
         }
 
-        // Protected-Resource-Metadaten am Ressourcenpfad selbst (RFC 9728,
-        // Abschnitt 3) - Fund aus #312.
+        // Protected-resource metadata on the resource path itself (RFC 9728 §3, #312).
         $pathinfo = trim($headers['pathinfo'] ?? '', '/');
         if ($pathinfo === '.well-known/oauth-protected-resource') {
             return self::result(
@@ -156,9 +136,8 @@ final class dispatcher {
 
         $method = $headers['method'] ?? 'POST';
         if ($method !== 'POST') {
-            // #339: bewusst ungeloggt - kein JSON-RPC-Zugriffsversuch (kein
-            // geparster Rumpf, kein Werkzeugbezug), sondern ein falsch
-            // konfigurierter HTTP-Client.
+            // #339: deliberately unlogged; this is a misconfigured HTTP client,
+            // without a parsed JSON-RPC request or tool reference.
             return self::result(405, ['Allow' => 'POST'], ['error' => 'Method Not Allowed - MCP over HTTP is POST only']);
         }
 
@@ -170,9 +149,8 @@ final class dispatcher {
         $rpcmethod = $request['method'] ?? '';
         $params = $request['params'] ?? [];
 
-        // Auth-Gate vor dem Handshake: erst ein 401 mit resource_metadata
-        // bringt die Clients dazu, die Discovery-Kette ueberhaupt zu starten
-        // (RFC 9728, #302).
+        // Authenticate before handshake: 401 with resource_metadata prompts
+        // clients to start the discovery chain (RFC 9728, #302).
         if (!self::authenticate($token)) {
             return self::error(401, $id, -32001, 'AUTHENTICATION_FAILED', [
                 'WWW-Authenticate' => 'Bearer resource_metadata="'
@@ -180,12 +158,10 @@ final class dispatcher {
             ]);
         }
 
-        // Fernzugriffsfreigabe (#296, #337, #579): getrennt von
-        // local/coursepilot:use, damit ein Admin den Fernzugriff pro Person
-        // entziehen kann, ohne einzelne Kurse anzufassen. Pro Aufruf geprueft,
-        // daher wirkt ein Entzug auch auf bestehende Verbindungen. Anders als
-        // der vage Auth-Fehler oben ist dieser Fehler konkret und nennt beide
-        // Freigabewege (Kohorte oder Capability).
+        // Remote access (#296, #337, #579) is separate from local/coursepilot:use,
+        // so admins can revoke it per person without changing courses. Checked
+        // on every call, including existing connections. The specific error names
+        // both grant methods (cohort or capability), unlike the generic auth error.
         if (!remote_access::is_granted()) {
             return self::error(403, $id, -32002, get_string('remoteaccessnotgranted', 'local_coursepilot'));
         }
@@ -193,7 +169,7 @@ final class dispatcher {
         $serverinfo = ['name' => 'local_coursepilot', 'version' => self::plugin_release()];
 
         switch ($rpcmethod) {
-            // Legacy-Aera: Handshake.
+            // Legacy protocol: handshake.
             case 'initialize':
                 return self::result(200, [], [
                     'jsonrpc' => '2.0',
@@ -211,9 +187,8 @@ final class dispatcher {
                 return self::result(202, [], null);
 
             case 'ping':
-                // Leeres Ergebnisobjekt - in der Legacy-Aera bleibt es leer.
-                // Dann muss es ein Objekt sein, kein leeres Array: json_encode
-                // schriebe daraus "[]" statt "{}".
+                // The legacy ping result is an empty object. json_encode() would encode
+                // an empty PHP array as [] instead of the required {}.
                 $pingresult = self::resultmeta($headers, 'complete');
                 return self::result(200, [], [
                     'jsonrpc' => '2.0',
@@ -221,7 +196,7 @@ final class dispatcher {
                     'result' => $pingresult === [] ? new \stdClass() : $pingresult,
                 ]);
 
-            // Moderne Aera: Discovery statt Handshake.
+            // Modern protocol: discovery replaces handshake.
             case 'server/discover':
                 return self::result(200, [], [
                     'jsonrpc' => '2.0',
@@ -240,20 +215,17 @@ final class dispatcher {
                     'id' => $id,
                     'result' => [
                         'tools' => self::tools(),
-                        // 'data' (wie bei tools/call) ist fuer tools/list kein
-                        // gueltiger Wert ("Unsupported result type 'data' for
-                        // tools/list") - die Liste ist vollstaendig, nicht
-                        // paginiert, also 'complete'.
+                        // data is invalid for tools/list ("Unsupported result type data for
+                        // tools/list"). The full list is not paginated, so use complete.
                     ] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
                 ]);
 
             case 'tools/call':
                 return self::handle_tools_call($id, $params, $headers);
 
-            // #401: leere Hoeflichkeitsantworten statt 404 - wir bieten weder
-            // Resources noch Prompts an (deshalb keine capabilities.resources/
-            // .prompts in initialize/server/discover), aber Codex fragt diese
-            // drei Discovery-Methoden nach jedem Handshake unaufgefordert ab.
+            // #401: empty responses instead of 404. We expose no resources or
+            // prompts and advertise neither capability, but Codex requests these
+            // three discovery methods after every handshake.
             case 'resources/list':
                 return self::result(200, [], [
                     'jsonrpc' => '2.0',
@@ -281,8 +253,8 @@ final class dispatcher {
     }
 
     /**
-     * tools/call: Laufzeitpruefung des Vertrags, dann der eigentliche
-     * Aufruf ueber Moodles Webservice-Schicht (#295, Punkt 1).
+     * tools/call: validate the runtime contract and invoke Moodle
+     * webservices (#295, item 1).
      *
      * @param mixed $id
      * @param array $params
@@ -296,10 +268,9 @@ final class dispatcher {
             return self::error(404, $id, -32601, 'Unknown tool: ' . $toolname);
         }
 
-        // #573 (Spec 0025 §A, Contract-Schritt): jedes registrierte Werkzeug
-        // ist unmittelbar englisch deklariert, die frueher hier noetige
-        // Eingabeuebersetzung aus #568 entfaellt ersatzlos - Moodles eigene
-        // Parameterdeklaration ist der einzige Vertrag.
+        // #573 (Spec 0025 §A): every tool declares English inputs directly.
+        // The #568 input translation is removed; Moodle parameter declarations
+        // are the single contract.
         $response = external_api::call_external_function($function, $params['arguments'] ?? []);
         if ($response['error']) {
             $message = self::error_message($response['exception'] ?? null);
@@ -313,12 +284,9 @@ final class dispatcher {
             return self::result(200, [], [
                 'jsonrpc' => '2.0',
                 'id' => $id,
-                // Auch der Fehlerzweig braucht die Ergebnis-Metadaten (#466):
-                // ohne 'resultType' verwirft ein 2026-07-28-Client die
-                // Antwort als ungueltig und zeigt der Lehrkraft einen
-                // Protokollfehler statt der Meldung des Werkzeugs. Ein
-                // 'isError'-Ergebnis ist vollstaendig geliefert, also
-                // 'complete' wie im Erfolgsfall.
+                // Error results also require metadata (#466). A 2026-07-28 client
+                // rejects replies without resultType and shows a protocol error instead
+                // of the tool message. isError results are fully delivered, so complete.
                 'result' => [
                     'isError' => true,
                     'content' => [['type' => 'text', 'text' => $message]],
@@ -327,21 +295,16 @@ final class dispatcher {
         }
 
         $data = $response['data'];
-        // Materialvorgaenge nachvollziehbar machen (Spec 0018 §9.2): Werkzeuge,
-        // die einen Kontext- oder Materialordner-Pfad zurueckgeben, liefern
-        // ihn unter demselben Schluessel 'path' - kein Sonderfall je Werkzeug.
+        // Trace material operations (Spec 0018 §9.2): all context and material
+        // tools return their relative path under the same path key.
         $path = is_string($data['path'] ?? null) ? $data['path'] : null;
         access_log::log_success($toolname, tool_registry::is_write($toolname), $path);
 
-        // Zweiter Inhaltstyp (Spec 0018 §3.2, Issue #430): ein Werkzeug wie
-        // preview_material_file liefert 'image_base64'+'mimetype', der
-        // Dispatcher haengt daraus einen MCP-Bildblock an - sonst bekaeme
-        // das Modell nur eine Zeichenkette, keine Aufnahme, die es
-        // tatsaechlich "sieht" (Scheinlösung, siehe Spec). Alle uebrigen
-        // Werkzeuge setzen diese Schluessel nie, ihre Antwort bleibt damit
-        // unveraendert Text plus structuredContent. Der Bildinhalt wird aus
-        // der Text-/structuredContent-Kopie entfernt, um ihn nicht doppelt
-        // durch den Kontext zu schicken.
+        // Second content type (Spec 0018 §3.2, #430): preview_material_file
+        // returns image_base64 and mimetype, converted here to an MCP image
+        // block so the model can see the image instead of only its encoded text.
+        // Other tools retain text plus structuredContent. Remove image bytes
+        // from those copies to avoid sending them through context twice.
         $content = [];
         $textdata = $data;
         $imagebase64 = $data['image_base64'] ?? null;
@@ -352,9 +315,8 @@ final class dispatcher {
         }
         array_unshift($content, [
             'type' => 'text',
-            // JSON_INVALID_UTF8_SUBSTITUTE: siehe mcp.php, derselbe
-            // Fund - ohne das Flag liefert diese innere Kodierung
-            // ebenfalls kommentarlos false bei ungueltigem UTF-8.
+            // JSON_INVALID_UTF8_SUBSTITUTE: as in mcp.php, invalid UTF-8 would
+            // otherwise make this inner encoding silently return false.
             'text' => json_encode($textdata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE),
         ]);
 
@@ -369,22 +331,17 @@ final class dispatcher {
     }
 
     /**
-     * Der Fehlertext eines gescheiterten Werkzeugaufrufs.
+     * Error text for a failed tool call.
      *
-     * Bei invalid_parameter_exception ist ->message nur die generische
-     * Moodle-Zeichenkette ("Ungueltiger Parameterwert") - die eigentliche,
-     * fuer die Lehrkraft formulierte Meldung steht in debuginfo. Ohne
-     * diesen Griff verwirft der Dispatcher jede Meldung, die die Werkzeuge
-     * formulieren: "XML zu gross fuer den Server" und "Ungueltiges
-     * Moodle-XML" kommen beim Client als derselbe nichtssagende Satz an,
-     * und weder Lehrkraft noch KI koennen den Fehler beheben.
+     * invalid_parameter_exception has a generic Moodle message; the useful
+     * teacher-facing detail is in debuginfo. Without it, oversized XML and
+     * invalid Moodle XML become the same unhelpful error and cannot be fixed.
      *
-     * Nur fuer genau diesen Fehlercode: debuginfo dieser Ausnahmeart ist
-     * immer vom Aufrufer gesetzter Text (unsere eigene Meldung oder die
-     * Parameterbeschreibung von validate_parameters()). Andere Ausnahmen -
-     * allen voran dml_* mit SQL im debuginfo - bleiben bei ->message.
+     * Only this error code exposes debuginfo: it contains caller-written
+     * text or validate_parameters() descriptions. Other exceptions,
+     * especially dml_* with SQL in debuginfo, retain their normal message.
      *
-     * @param \stdClass|null $exception Die Ausnahmeinfo aus
+     * @param \stdClass|null $exception Exception information from
      *        external_api::call_external_function() (get_exception_info()).
      * @return string
      */
@@ -392,9 +349,8 @@ final class dispatcher {
         if ($exception === null) {
             return 'error';
         }
-        // get_exception_info() haengt bei eingeschaltetem Entwickler-Debugging
-        // eine Zeile "Error code: ..." an das debuginfo an - Rauschen fuer die
-        // Lehrkraft, und es haengt an der Serverkonfiguration, ob sie da ist.
+        // Developer debugging appends "Error code: ..." to debuginfo. Strip
+        // this configuration-dependent noise from the teacher-facing message.
         $debuginfo = trim(preg_replace('/\n+Error code: \S+\s*$/', '', (string) ($exception->debuginfo ?? '')));
         if (($exception->errorcode ?? '') === 'invalidparameter' && $debuginfo !== '') {
             return $debuginfo;
@@ -403,13 +359,12 @@ final class dispatcher {
     }
 
     /**
-     * Detail eines Rueckgabevertragsfehlers fuer die Protokollstufe "Alles".
+     * Return-contract error detail for the full diagnostic logging level.
      *
-     * Die Detailbeschreibung kann interne Feldpfade oder Kursinhalte nennen.
-     * Sie bleibt deshalb aus der MCP-Antwort heraus und geht ausschliesslich
-     * in den bewusst aktivierten Diagnosemodus (#457).
+     * It may include internal field paths or course content, so never send
+     * it in the MCP response. Only explicit diagnostic mode records it (#457).
      *
-     * @param \stdClass|null $exception Die Ausnahmeinfo aus
+     * @param \stdClass|null $exception Exception information from
      *        external_api::call_external_function() (get_exception_info()).
      * @return string|null
      */
@@ -422,46 +377,32 @@ final class dispatcher {
     }
 
     /**
-     * Ergebnis-Metadaten der Revision 2026-07-28 - und nur fuer diese.
+     * Result metadata for revision 2026-07-28 only.
      *
-     * Beide Aeren verlangen das Gegenteil voneinander (#400): ein
-     * 2026-07-28-Client (Claude Code, Claude.ai) verwirft eine Antwort ohne
-     * diese Felder als ungueltig ("missing required resultType", danach
-     * "expected number, received undefined" fuer ttlMs; cacheScope kennt nur
-     * "public"/"private", "session" war ungueltig - #337-Nachtrag). Ein
-     * 2025-06-18-Client (Codex ab 0.151, rmcp) verwirft umgekehrt jede
-     * tools/call-Antwort, die 'resultType' enthaelt, mit "Unexpected response
-     * type" - in seiner Revision gibt es das Feld nicht. Entschieden wird
-     * an der ausgehandelten Revision aus dem MCP-Protocol-Version-Header,
-     * den Clients laut Spezifikation nach dem Handshake bei jeder Anfrage
-     * mitschicken; fehlt er, gilt die Legacy-Aera (kein Zusatzfeld) - das ist
-     * die Variante, die kein Client aktiv ablehnt.
+     * The revisions have opposing requirements (#400): modern clients
+     * (Claude Code, Claude.ai) reject missing resultType or ttlMs; cacheScope
+     * accepts public/private, not session (#337 addendum). Legacy clients
+     * (Codex 0.151+, rmcp) reject tools/call resultType as "Unexpected response
+     * type". Choose via the negotiated MCP-Protocol-Version request header.
+     * Without it, use legacy fields, which neither client actively rejects.
      *
-     * "private" als cacheScope, weil personenbezogene Kursdaten der
-     * aufrufenden Lehrkraft.
+     * cacheScope is private because course data belongs to the calling teacher.
      *
-     * #458 (Fund aus dem Abnahmelauf zu #456): 'data' war nie ein gueltiger
-     * resultType - die Revision kennt fuer einen erfolgreichen Aufruf nur
-     * 'complete', daneben 'input_required' fuer das MRTR-Muster, das wir nicht
-     * anbieten. Und die Caching-Felder gehoeren laut Spezifikation an
-     * tools/list, prompts/list, resources/list, resources/templates/list und
-     * resources/read - also an die Listen, die wir bedienen -, nicht an
-     * tools/call: ein ttlMs auf einem Schreibvorgang legt einem Client nahe,
-     * ihn zu cachen. Deshalb ist $ttlms fuer tools/call null.
+     * #458 (acceptance of #456): data was never a valid resultType; success
+     * is complete, while input_required belongs to the unsupported MRTR
+     * pattern. Cache metadata belongs to list/resource reads, not tools/call:
+     * a TTL on a write suggests caching it, so tools/call leaves $ttlms null.
      *
-     * #466: die Revision macht 'resultType' fuer JEDES Ergebnis zur Pflicht,
-     * nicht nur fuer tools/call - jeder Zweig mit einem 'result' ruft das hier
-     * auf. Der Ausloeser war ein einzelner vergessener Zweig (der Fehlerpfad
-     * von tools/call), der jede Meldung dieses Servers unlesbar machte.
-     * initialize und server/discover liegen vor der Aushandlung: fehlt der
-     * Header dort, greift ohnehin die Legacy-Zeile oben.
+     * #466: EVERY result requires resultType in the modern revision. A
+     * forgotten tools/call error branch made all tool messages unreadable.
+     * initialize/server/discover precede negotiation; absent headers select legacy.
      *
      * @param array{protocolversion?: ?string} $headers
-     * @param string $resulttype 'complete' - der einzige Erfolgswert, den die
-     *        Revision kennt, fuer jedes Ergebnis.
-     * @param int|null $ttlms Freshness-Hinweis in Millisekunden - nur fuer
-     *        Listenantworten. Null laesst die Caching-Felder ganz weg.
-     * @return array<string, mixed> Leer ausserhalb der modernen Aera.
+     * @param string $resulttype 'complete', the revision's only success value
+     *        for every result.
+     * @param int|null $ttlms Freshness in milliseconds for list results only.
+     *        Null omits all caching fields.
+     * @return array<string, mixed> Empty outside the modern revision.
      */
     private static function resultmeta(array $headers, string $resulttype, ?int $ttlms = null): array {
         if (($headers['protocolversion'] ?? null) !== self::MODERN_VERSION) {
@@ -476,14 +417,11 @@ final class dispatcher {
     }
 
     /**
-     * Bildet ein Bearer-Token auf einen Moodle-Nutzer ab und richtet $USER
-     * ein (#337).
+     * Maps a Bearer token to a Moodle user and sets $USER (#337).
      *
-     * Akzeptiert ausschliesslich OAuth-Access-Token aus
-     * {@see oauth_lib::authenticate_access_token()} - die fruehere
-     * Webservice-Token-Kruecke (external_tokens) aus dem Prototypen entfaellt
-     * vollstaendig, der OAuth-2.1-Autorisierungsserver (#335/#336) ist ihr
-     * einziger Ersatz.
+     * Only OAuth access tokens from {@see oauth_lib::authenticate_access_token()}
+     * are accepted. The prototype external_tokens workaround is removed;
+     * the OAuth 2.1 authorization server (#335/#336) is its sole replacement.
      *
      * @param string|null $token
      * @return bool
@@ -504,26 +442,22 @@ final class dispatcher {
         }
 
         \core\session\manager::set_user($usr);
-        // Bearer-Token-Auth ist zustandslos (kein Cookie/Session-Vertrauen,
-        // jeder POST validiert das Token neu, #337/Spec 0012 Abschnitt 3) -
-        // die CSRF-Abwehr per sesskey adressiert ein Cookie-Session-Risiko
-        // (Ambient Authority ueber Browser-Cookies), das hier nicht existiert:
-        // ein Angreifer kann den Authorization-Header nicht faelschen lassen.
-        // Noetig, weil external_api::call_external_function() sesskey nur
-        // dann uebergeht, wenn WS_SERVER=true ist (mcp.php setzt das vor dem
-        // Moodle-Bootstrap) - in PHPUnit ist die Konstante zu diesem
-        // Zeitpunkt bereits unveraenderlich auf false gesetzt, siehe
-        // dispatcher_test.php.
+        // Bearer authentication is stateless: each POST validates its token
+        // without trusting cookies/sessions (#337, Spec 0012 §3). sesskey guards
+        // ambient browser-cookie authority, which is absent here: attackers cannot
+        // forge the Authorization header through a cross-site request.
+        // external_api::call_external_function() skips sesskey only with WS_SERVER=true
+        // (set by mcp.php before bootstrap); PHPUnit has already fixed the
+        // constant to false, requiring this override. See dispatcher_test.php.
         $USER->ignoresesskey = true;
         external_api::set_context_restriction(\context_system::instance());
         return true;
     }
 
     /**
-     * $plugin->release aus derselben kanonischen Quelle wie
-     * get_version_info::execute() (#577, plugin_meta::current()). Der
-     * MCP-Handshake und die Versionsauskunft dürfen keine zweite,
-     * unabhängig gepflegte Versionszahl melden.
+     * Reads $plugin->release from the same canonical source as
+     * get_version_info::execute() (#577, plugin_meta::current()). Handshake
+     * and version info must not maintain independent release numbers.
      *
      * @return string
      */
@@ -532,8 +466,7 @@ final class dispatcher {
     }
 
     /**
-     * Die Werkzeugliste - direkt aus der Allowlist abgeleitet, damit
-     * gelistet und aufrufbar dieselbe Menge sind.
+     * Derives the tool list from the allowlist, keeping listed and callable tools identical.
      *
      * @return array
      */
@@ -566,15 +499,11 @@ final class dispatcher {
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     private static function error(int $status, $id, int $code, string $message, array $extraheaders = []): array {
-        // Zentraler Funnelpunkt fuer jede JSON-RPC-Fehlerantwort (#339): Auth-
-        // Gate, Capability-Gate, Notbremse, Parse-Fehler, unbekannte
-        // Methode/Werkzeug laufen alle hier durch (Origin-Ablehnung und
-        // Method-Not-Allowed antworten NICHT im JSON-RPC-Format und damit
-        // nicht ueber error() - Origin-Ablehnung hat einen eigenen
-        // access_log::log_failure()-Aufruf in handle(), 405 bleibt bewusst
-        // ungeloggt, siehe Kommentar dort). $message ist stets ein fester
-        // Text/Code, nie das Zugriffstoken (das taucht an keiner Stelle des
-        // Aufrufpfads in einer Fehlermeldung auf).
+        // Single funnel for JSON-RPC errors (#339): authentication, capability,
+        // emergency switch, parse failures and unknown methods/tools. Origin
+        // rejection uses its own log in handle(); 405 is deliberately unlogged,
+        // as neither returns JSON-RPC errors. $message is fixed text/code, never
+        // the access token; no error in this call path includes the token.
         access_log::log_failure($message);
         return self::result($status, $extraheaders, [
             'jsonrpc' => '2.0',

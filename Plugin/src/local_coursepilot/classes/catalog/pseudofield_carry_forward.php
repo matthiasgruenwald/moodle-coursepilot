@@ -19,20 +19,13 @@ namespace local_coursepilot\catalog;
 use context_module;
 
 /**
- * Gemeinsame Vorbereitung des $moduleinfo-Feldobjekts fuer JEDEN Aufrufer von
- * update_moduleinfo() ausserhalb des echten Formularwegs (Ticket #388: erst
- * update_module_settings, Ticket #392: auch set_completion) - ohne diese
- * Ergaenzungen lesen etliche *_update_instance()-Funktionen eine undefinierte
- * Eigenschaft (PHP-Warning bis -Error, siehe {@see \local_coursepilot\catalog\page}-
- * Kommentar "unbedingtes Lesemuster"), weil get_moduleinfo_data() sie NICHT
- * liefert - das tut sonst ausschliesslich moodleform_mod::data_preprocessing(),
- * das hier nie laeuft.
+ * Shared moduleinfo preparation for every update_moduleinfo() caller
+ * outside the native form route (Tickets #388/#392). Without these additions,
+ * *_update_instance() functions read undefined properties because
+ * get_moduleinfo_data() omits values normally filled by form preprocessing.
  *
- * Extrahiert aus update_module_settings (#388), damit set_completion (#392)
- * dieselbe Vorbereitung nutzt, statt sie fuer jeden Modultyp zu wiederholen -
- * set_completion setzt selbst nur Vervollstaendigungsfelder, ruft aber
- * denselben update_moduleinfo()-Weg auf und braucht deshalb exakt dieselbe
- * Vorbereitung wie ein Patch, der gar kein Pseudofeld nennt.
+ * Shared by update_module_settings and set_completion: even a patch naming
+ * only completion fields needs the same preparation as any other write.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -41,14 +34,14 @@ use context_module;
 final class pseudofield_carry_forward {
 
     /**
-     * Fuehrt alle sechs Ergaenzungen fuer $modname aus.
+     * Apply all six preparation steps for $modname.
      *
      * @param string $modname
      * @param class-string<module_catalog> $catalogclass
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt.
-     * @param array $before Ist-Stand vor dem Schreiben (fuer Editor-Pseudofelder).
+     * @param \stdClass $moduleinfo Updated in place.
+     * @param array $before Current state before writing, for editor pseudofields.
      * @param \stdClass $cm
-     * @param array $patch Vom Aufrufer selbst gesetzte Felder - hier nicht ueberschrieben.
+     * @param array $patch Explicit caller fields, preserved here.
      * @return void
      */
     public static function apply(
@@ -68,21 +61,13 @@ final class pseudofield_carry_forward {
     }
 
     /**
-     * Bringt Editor-Array-Pseudofelder im Patch in die Form, die Moodle
-     * erwartet - oder weist sie ab (#405).
+     * Normalize editor-content pseudofields to the arrays Moodle expects,
+     * or reject invalid values (#405).
      *
-     * Der Katalogtyp dieser Felder ist "array{text: string, format: int,
-     * itemid: int}", weil page_update_instance() genau das liest:
-     * `$data->content = $data->page['text'];`. Ein Aufrufer schreibt aber
-     * naheliegend den Inhalt direkt, also "page": "<p>Text</p>". Auf einem
-     * String liefert $data->page['text'] null - und die Seite entsteht leer,
-     * ohne Fehlermeldung. Genau so passiert in der Claude-Gegenprobe zu #400:
-     * Aktivitaet angelegt, Erfolgsmeldung, Inhalt weg.
-     *
-     * Deshalb: ein String ist eine gueltige Kurzform und wird zum Editor-Array
-     * ergaenzt. Alles andere, was kein "text" traegt, scheitert mit einer
-     * Meldung, die das Feld nennt - lieber ein klarer Fehler als eine leere
-     * Seite.
+     * page_update_instance() reads page["text"]. Passing a bare string previously
+     * produced a successful but empty page (Claude cross-check for #400).
+     * Accept strings as shorthand and wrap them in editor arrays. Reject
+     * other values without text, naming the field instead of losing content.
      *
      * @param string $modname
      * @param class-string<module_catalog> $catalogclass
@@ -115,26 +100,18 @@ final class pseudofield_carry_forward {
     }
 
     /**
-     * Traegt die aktuell gespeicherten Abgabe-/Feedback-Einstellungen einer
-     * Aufgabe weiter (#400).
+     * Carry forward assignment submission/feedback settings (#400).
      *
-     * mod_assign leitet "nosubmissions" bei JEDEM Schreibvorgang neu aus den
-     * aktivierten Abgabearten ab (mod/assign/locallib.php:1629), und aktiviert
-     * ist eine Abgabeart nur, wenn $formdata das Feld
-     * "{subtype}_{plugin}_enabled" traegt (ebd. :1359-1373). Diese Felder
-     * kommen sonst ausschliesslich aus dem Formular - get_moduleinfo_data()
-     * liefert sie nicht, sie stehen in assign_plugin_config. Ein Schreibvorgang,
-     * der sie nicht mitbringt (z.B. set_completion, das nur
-     * Vervollstaendigungsfelder setzt), schaltet deshalb still saemtliche
-     * Abgabearten ab und setzt "nosubmissions"=1 - die Aufgabe nimmt danach
-     * gar keine Abgaben mehr an.
+     * mod_assign recomputes nosubmissions on every write from
+     * {subtype}_{plugin}_enabled fields (locallib.php:1629, :1359-1373). These
+     * live in assign_plugin_config and are absent from get_moduleinfo_data().
+     * Omitting them would disable all submission types and set nosubmissions=1.
      *
-     * Der Formular-Default taugt hier nicht als Ersatz (die katalogisierten
-     * Pseudofelder haben bewusst keinen, er ist admin-konfigurierbar): weiter
-     * gilt der Ist-Stand, wie bei den choice-Optionen.
+     * Form defaults are admin-configurable and cannot replace current state;
+     * preserve existing values, as for choice options.
      *
      * @param string $modname
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt.
+     * @param \stdClass $moduleinfo Updated in place.
      * @param \stdClass $cm
      * @param array $patch
      * @return void
@@ -161,28 +138,17 @@ final class pseudofield_carry_forward {
     }
 
     /**
-     * Macht die Anzeigeformatierung der Bestehensgrenze rueckgaengig (#400).
+     * Undo localized passing-grade formatting (#400). get_moduleinfo_data()
+     * uses format_float(), e.g. "0,00" in German, but writes need decimals.
+     * Otherwise MariaDB truncates gradepass after the activity change has
+     * already been persisted. Native forms remove formatting on submission;
+     * non-form callers must do it here.
      *
-     * course/modlib.php::get_moduleinfo_data() gibt "gradepass" durch
-     * format_float() (ebd. :863) - in einer deutschsprachigen Instanz also als
-     * "0,00". Zurueckgeschrieben wird der Wert unveraendert in die
-     * Bewertungsspalte (ebd. :294), wo er als Dezimalzahl ankommen muss:
-     * MariaDB bricht mit "Data truncated for column 'gradepass'" ab, der
-     * Aufruf endet in "Fehler beim Schreiben der Datenbank" - nachdem die
-     * eigentliche Aenderung bereits geschrieben ist. Auf dem echten
-     * Formularweg nimmt das float-Element die Formatierung beim Absenden
-     * zurueck; ausserhalb muss das hier passieren.
+     * Match the gradepass suffix because names vary by type (workshop uses
+     * submissiongradepass/assessmentgradepass). Public for the separate quiz
+     * write route, which has the same source and issue (Spec 0015 §5).
      *
-     * Feldname je nach Aktivitaetsart verschieden (workshop:
-     * "submissiongradepass"/"assessmentgradepass", siehe
-     * component_gradeitems::get_field_name_for_itemnumber()), deshalb ueber
-     * die Endung statt ueber eine feste Liste.
-     *
-     * Oeffentlich, weil update_quiz_settings einen eigenen Carry-forward-Weg
-     * geht (quiz hat eigenes Schreibvehikel, Spec 0015 §5), aber dieselbe
-     * get_moduleinfo_data()-Grundlage und damit dasselbe Problem hat.
-     *
-     * @param \stdClass $moduleinfo Wird in-place korrigiert.
+     * @param \stdClass $moduleinfo Corrected in place.
      * @return void
      */
     public static function unformat_localised_gradepass(\stdClass $moduleinfo): void {
@@ -194,21 +160,13 @@ final class pseudofield_carry_forward {
     }
 
     /**
-     * update_moduleinfo() (course/modlib.php:675-680) ueberschreibt
-     * $moduleinfo->intro IMMER aus $moduleinfo->introeditor['text'], egal was
-     * ein Aufrufer direkt auf ->intro gesetzt hat - ein reiner "intro"-Patch
-     * wuerde sonst stillschweigend verpuffen. get_moduleinfo_data() hat
-     * ->introeditor bereits mit dem Ist-Stand vorbelegt (Draftitemid
-     * eingeschlossen); hier wird nur der Patch-Wert nachgezogen, ohne das
-     * Itemid anzufassen - das bleibt Sache des Aufrufers (z.B.
-     * {@see \local_coursepilot\external\update_module_settings::resolve_intro_image_pseudofield()}
-     * fuer eingebettete Fachabbildungen, Issue #433).
+     * update_moduleinfo() overwrites intro from introeditor["text"]
+     * (course/modlib.php:675-680), so a bare intro patch would disappear.
+     * Synchronize patch text/format into the preloaded editor, preserving its
+     * draft item ID for caller-managed embedded images (Issue #433).
+     * Shared by update_module_settings and the dedicated quiz write route.
      *
-     * Gemeinsam fuer update_module_settings (alle Aktivitaetsarten mit
-     * FEATURE_MOD_INTRO) und update_quiz_settings (eigenes Schreibvehikel,
-     * derselbe Fallstrick) - vorher an beiden Stellen einzeln nachgebaut.
-     *
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt.
+     * @param \stdClass $moduleinfo Updated in place.
      * @param array $patch
      * @return void
      */
@@ -225,19 +183,14 @@ final class pseudofield_carry_forward {
     }
 
     /**
-     * Fuellt Pseudofelder, die $moduleinfo (aus get_moduleinfo_data(), ohne
-     * den Formularweg) unbekannt sind, mit ihrem katalogisierten
-     * Formular-Default auf - genau das, was moodleform_mod beim Laden des
-     * Formulars ohnehin taete. Ohne das entstehen fuer jedes optionale
-     * Pseudofeld, das der Patch nicht erwaehnt (z.B. mod_page:
-     * "printintro"), "Undefined property"-Warnungen und ein stiller
-     * Reset auf null statt auf den dokumentierten Default.
+     * Fill pseudofields absent from moduleinfo with cataloged form defaults,
+     * as moodleform_mod would. Otherwise omitted optional fields (e.g. page
+     * printintro) cause undefined-property warnings and reset to null.
      *
-     * Pseudofelder mit Default null (durchweg die Editor-Arrays) bleiben hier aussen vor -
-     * ein Nullwert waere kein sinnvoller Ersatz.
+     * Skip null defaults, used for editor arrays, since null is no useful substitute.
      *
      * @param class-string<module_catalog> $catalogclass
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt.
+     * @param \stdClass $moduleinfo Updated in place.
      * @param array $patch
      * @return void
      */
@@ -253,11 +206,11 @@ final class pseudofield_carry_forward {
     }
 
     /**
-     * Rekonstruiert die Editor-Arrays aus dem flachen Katalogvertrag. Moodle
-     * schreibt deren Inhalt aus dem Editor-Array, nicht aus den Instanzspalten.
+     * Reconstruct editor arrays from the flat catalog contract. Moodle writes
+     * content from the editor array rather than the instance columns.
      *
      * @param class-string<module_catalog> $catalogclass
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt.
+     * @param \stdClass $moduleinfo Updated in place.
      * @param array $before
      * @param array $patch
      * @return void
@@ -305,18 +258,14 @@ final class pseudofield_carry_forward {
     }
 
     /**
-     * "files" (folder, resource) hat keinen Katalog-Default (null), bleibt
-     * also nach {@see self::fill_pseudofield_defaults()} auf dem Feldobjekt
-     * unbelegt, wenn ein Patch das Feld nicht selbst nennt (Issue #434: nicht
-     * mehr Blocklist-bedingt, sondern schlicht "nicht im Patch genannt").
-     * Ohne diese Ergaenzung liest folder_update_instance()/resource_set_mainfile()
-     * eine undefinierte Eigenschaft (PHP-Warning) - der abgelesene Wert wird
-     * danach ohnehin ignoriert oder durch file_get_submitted_draft_itemid()
-     * ueberschrieben (kein Formularkontext hier), ein neutraler Platzhalter
-     * aendert also nichts an bestehenden Dateien, silenced nur die Warnung.
+     * files (folder/resource) has no catalog default, so it remains absent
+     * when the patch omits it (Issue #434). Moodle still reads the property,
+     * causing a warning before ignoring it or replacing it with a submitted
+     * draft ID. A neutral placeholder suppresses the warning while preserving
+     * existing files outside form context.
      *
      * @param string $modname
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt.
+     * @param \stdClass $moduleinfo Updated in place.
      * @param array $patch
      * @return void
      */
@@ -330,18 +279,13 @@ final class pseudofield_carry_forward {
     }
 
     /**
-     * "option"/"limit"/"optionid" (choice) leben in choice_options, nicht in
-     * der choice-Instanzzeile - get_moduleinfo_data() liefert sie deshalb
-     * nicht (anders als bei "page", das ueber $before rekonstruierbar waere).
-     * Ohne diese Ergaenzung liest choice_update_instance() eine undefinierte
-     * Eigenschaft "option" (PHP-Warning) und die foreach-Schleife laeuft ins
-     * Leere - bestehende Optionen bleiben zwar unangetastet (die Schleife tut
-     * nichts), aber ein Schreibvorgang, der "option" gar nicht nennt, soll
-     * sauber durchlaufen, nicht mit Warnings. Rekonstruktion identisch zu
-     * mod_choice_mod_form::data_preprocessing() (mod/choice/mod_form.php).
+     * choice option/limit/optionid live in choice_options rather than the
+     * instance row, so get_moduleinfo_data() omits them. Reconstruct them as
+     * mod_choice_mod_form::data_preprocessing() does, avoiding undefined
+     * option warnings while preserving options when the patch omits them.
      *
      * @param string $modname
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt.
+     * @param \stdClass $moduleinfo Updated in place.
      * @param \stdClass $cm
      * @param array $patch
      * @return void

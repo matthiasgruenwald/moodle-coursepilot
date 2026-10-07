@@ -25,27 +25,24 @@ use core_external\external_value;
 use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\quiz;
 use local_coursepilot\catalog\quiz_write_bridge;
-use local_coursepilot\catalog\shared_block;
+use local_coursepilot\catalog\write_target;
 use local_coursepilot\write_gate;
 use moodle_exception;
 
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Das Quiz-Gegenstueck zu {@see create_module} (Spec 0015 §5, Ticket #398):
- * quiz ist eine begruendete Ausnahme vom generischen Vehikel, der Katalog
- * (#383) fuehrt es trotzdem mit `schreibweg(): 'update_quiz_settings'`.
+ * Quiz counterpart to {@see create_module} (Spec 0015 §5, #398): quiz is
+ * a justified exception to the generic tool, but its catalog (#383)
+ * still declares write_path: update_quiz_settings.
  *
- * Wie beim generischen Anlegen (Spec 0015 §3.4): fehlende Felder kommen aus
- * dem katalogisierten FORMULAR-Default, ein Pflichtfeld ganz ohne Default
- * (name, intro, preferredbehaviour, subnet, browsersecurity) muss die
- * Lehrkraft nennen. "grade" ist kein Katalogfeld (Sperrliste) - es kommt aus
- * dem eigenen Parameter "grade" bzw. dem Moodle-Formular-Default
- * (Admin-Einstellung quiz/maximumgrade), niemals aus fields_json.
+ * Like generic creation (Spec 0015 §3.4), missing fields use cataloged form
+ * defaults. Required fields without defaults (name, intro, preferredbehaviour,
+ * subnet, browsersecurity) must be provided. grade is blocked in fields_json:
+ * it comes from its own parameter or quiz/maximumgrade form default.
  *
- * Die drei Modus-Buendel kommen aus dem Katalog ({@see quiz::bundles()}) -
- * ein Buendelwert gilt nur fuer Felder, die fields_json nicht bereits selbst
- * nennt (Spec 0015 §2.4).
+ * The three mode bundles come from {@see quiz::bundles()}. Bundle values
+ * apply only to fields not explicitly supplied in fields_json (Spec §2.4).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -69,15 +66,15 @@ final class create_quiz extends external_api {
             ),
             'mode' => new external_value(
                 PARAM_ALPHANUMEXT,
-                'Modus-Buendel: "mini-check", "lernstandscheck" oder "abschlusstest". Buendelwerte gelten nur '
-                    . 'fuer Felder, die fields_json nicht bereits selbst nennt. Leer = kein Buendel.',
+                'Mode bundle: "mini-check", "progress-check" or "final-test". Bundle values apply only '
+                    . 'to fields not explicitly supplied in fields_json. Empty = no bundle.',
                 VALUE_DEFAULT,
                 ''
             ),
             'grade' => new external_value(
                 PARAM_FLOAT,
-                'Maximale Bewertung des Tests. -1 = Moodle-Formular-Default (Admin-Einstellung quiz/maximumgrade) '
-                    . 'verwenden.',
+                'Maximum quiz grade. -1 = use the Moodle form default (admin setting quiz/maximumgrade)'
+                    . '.',
                 VALUE_DEFAULT,
                 -1.0
             ),
@@ -116,12 +113,11 @@ final class create_quiz extends external_api {
         $coursecontext = context_course::instance($params['courseid']);
         self::validate_context($coursecontext);
         require_capability('local/coursepilot:use', $coursecontext);
-        // Native Berechtigungspruefung vorgezogen, wie {@see create_module::execute()}.
+        // Check native editing permission early, as in {@see create_module::execute()}.
         require_capability('moodle/course:manageactivities', $coursecontext);
 
-        // Billigteil der Selbstfreigabe (Spec 0015 §11, ADR 0017, Ticket #399):
-        // dasselbe Regime wie fuer das generische Vehikel gilt unveraendert
-        // fuer das Quiz-Einzelwerkzeug. Lesen bleibt unberuehrt.
+        // Cheap write self-check (Spec 0015 §11, ADR 0017, #399): same policy
+        // as generic creation applies to the quiz-specific tool. Reads are unaffected.
         write_gate::assert_writable('quiz');
 
         $patch = json_decode($params['fields_json'], true);
@@ -132,19 +128,16 @@ final class create_quiz extends external_api {
         $bundle = self::bundle_fields($params['mode']);
         $merged = array_merge($bundle, $patch);
 
-        quiz_write_bridge::validate_fields($merged);
-        $newgrade = $params['grade'] >= 0 ? $params['grade'] : quiz_write_bridge::default_grade();
-        $effective = array_merge(self::catalog_defaults(), $merged);
-        quiz_write_bridge::validate_combination_rules($effective, $merged, $newgrade);
-        self::assert_no_required_field_missing($merged);
-        quiz_write_bridge::assert_stealth_allowed($merged);
-        // Riegel (#583): Formular-Defaults zaehlen mit; die Riegel des
-        // gewaehlten Modus bestaetigt die Moduswahl selbst.
-        learner_locks::assert_confirmed(
-            'quiz',
-            learner_locks::find(quiz::class, $merged, self::catalog_defaults()),
+        // Catalog rules (fields, dates, stealth, required fields, learner
+        // locks) are decided once in the write target (#646); the locks of the
+        // chosen mode are confirmed by choosing it.
+        $target = write_target::create(
+            quiz::class,
+            $merged,
             learner_locks::confirmed_with_mode($params[learner_locks::PARAMETER], $bundle, $patch)
         );
+        $newgrade = $params['grade'] >= 0 ? $params['grade'] : quiz_write_bridge::default_grade();
+        quiz_write_bridge::validate_combination_rules($target->state, $merged, $newgrade);
 
         $course = get_course($params['courseid']);
         require_once($CFG->dirroot . '/course/modlib.php');
@@ -161,7 +154,9 @@ final class create_quiz extends external_api {
         $fieldstowrite = $merged;
         unset($fieldstowrite['feedbacktext'], $fieldstowrite['feedbackboundaries']);
 
-        self::fill_form_defaults($moduleinfo, $fieldstowrite);
+        foreach ($target->defaults() as $fieldname => $value) {
+            $moduleinfo->{quiz_write_bridge::moduleinfo_property($fieldname)} = $value;
+        }
         foreach ($fieldstowrite as $fieldname => $value) {
             $moduleinfo->{quiz_write_bridge::moduleinfo_property($fieldname)} = $value;
         }
@@ -183,7 +178,7 @@ final class create_quiz extends external_api {
     }
 
     /**
-     * Modus-Buendel aus dem Katalog, oder leer ohne Buendel.
+     * Returns the catalog mode bundle, or an empty array without a mode.
      *
      * @param string $mode
      * @return array<string, mixed>
@@ -197,80 +192,16 @@ final class create_quiz extends external_api {
         if (!array_key_exists($mode, $bundles)) {
             throw new moodle_exception('unknownmode', 'local_coursepilot', '', [
                 'mode' => $mode,
-                'modi' => implode(', ', array_keys($bundles)),
+                'modes' => implode(', ', array_keys($bundles)),
             ]);
         }
         return $bundles[$mode];
     }
 
     /**
-     * Katalog-Defaults (Kategorie 1) als Feldname => Wert - fuer die
-     * Kombinationsregeln beim Anlegen (z.B. timeopen/timeclose sind ohne
-     * Angabe beide 0 und verletzen dadurch keine Regel).
-     *
-     * @return array<string, mixed>
-     */
-    private static function catalog_defaults(): array {
-        $defaults = [];
-        foreach (array_merge(shared_block::fields(), quiz::fields()) as $field) {
-            if ($field->default !== null) {
-                $defaults[$field->name] = $field->default;
-            }
-        }
-        return $defaults;
-    }
-
-    /**
-     * Ein Pflichtfeld ganz ohne Formular-Default muss die Lehrkraft nennen -
-     * identische Regel wie {@see create_module::assert_no_required_field_missing()}.
-     *
-     * @param array $merged
-     * @return void
-     * @throws moodle_exception requiredfieldwithoutdefault
-     */
-    private static function assert_no_required_field_missing(array $merged): void {
-        $allfields = array_merge(shared_block::fields(), quiz::fields(), quiz::pseudofields());
-        foreach ($allfields as $field) {
-            if (!$field->required || $field->default !== null) {
-                continue;
-            }
-            if (array_key_exists($field->name, $merged)) {
-                continue;
-            }
-            throw new moodle_exception('requiredfieldwithoutdefault', 'local_coursepilot', '', [
-                'field' => $field->name,
-                'modname' => 'quiz',
-            ]);
-        }
-    }
-
-    /**
-     * Fuellt jedes vom Patch/Buendel nicht genannte Feld mit seinem
-     * katalogisierten FORMULAR-Default - identisches Prinzip wie
-     * {@see create_module::fill_form_defaults()}. Die 32 Review-Checkboxen
-     * sind ganz normale Pseudofelder mit Default 0 (keine Sonderbehandlung
-     * noetig, anders als beim Patch: es gibt beim Anlegen keinen Ist-Stand
-     * zum Carry-forward).
-     *
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt.
-     * @param array $merged
-     * @return void
-     */
-    private static function fill_form_defaults(\stdClass $moduleinfo, array $merged): void {
-        $allfields = array_merge(shared_block::fields(), quiz::fields(), quiz::pseudofields());
-        foreach ($allfields as $field) {
-            if (array_key_exists($field->name, $merged) || $field->default === null) {
-                continue;
-            }
-            $moduleinfo->{quiz_write_bridge::moduleinfo_property($field->name)} = $field->default;
-        }
-    }
-
-    /**
-     * Die tatsaechlich vom Patch/Buendel gesetzten Felder mit ihrem Wert,
-     * plus "grade" (immer gesetzt, kommt nie aus fields_json) und
-     * ausgeloeste Nebenwirkungen - identisches Prinzip wie
-     * {@see create_module::report_and_side_effects()}.
+     * Reports fields actually set by patch/bundle with their values, plus
+     * grade (always set, never from fields_json), and side effects. Same
+     * principle as {@see create_module::report_and_side_effects()}.
      *
      * @param array $merged
      * @param float $grade
@@ -285,14 +216,14 @@ final class create_quiz extends external_api {
 
         $sideeffects = [];
         if ((int) ($merged['timeopen'] ?? 0) > 0 || (int) ($merged['timeclose'] ?? 0) > 0) {
-            $sideeffects[] = 'Der Kalendereintrag fuer den Test wurde angelegt.';
+            $sideeffects[] = 'The calendar entry for the quiz was created.';
         }
 
         return [$createdfields, $sideeffects];
     }
 
     /**
-     * Die Lehrkraft-deutsche Anlegemeldung (Spec 0015 §3.4/§5).
+     * Teacher-facing creation message (Spec 0015 §3.4/§5).
      *
      * @param array $createdfields
      * @param string[] $sideeffects
@@ -303,7 +234,7 @@ final class create_quiz extends external_api {
         foreach ($createdfields as $field) {
             $parts[] = '"' . $field['field'] . '" = ' . $field['value_json'];
         }
-        $message = 'Test angelegt: ' . implode(', ', $parts) . '.';
+        $message = get_string('quizcreatedfields', 'local_coursepilot', implode(', ', $parts));
 
         if ($sideeffects) {
             $message .= ' ' . implode(' ', $sideeffects);
@@ -318,7 +249,7 @@ final class create_quiz extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID of the newly created quiz'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German creation message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing creation message'),
             'created_fields' => new external_multiple_structure(
                 new external_single_structure([
                     'field' => new external_value(PARAM_TEXT, 'Field name'),
@@ -327,7 +258,7 @@ final class create_quiz extends external_api {
                 'One entry per field set by the patch/bundle, plus "grade"'
             ),
             'side_effects' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                new external_value(PARAM_TEXT, 'Teacher-facing side-effect note'),
                 'Triggered side effects, empty when none were triggered'
             ),
         ]);

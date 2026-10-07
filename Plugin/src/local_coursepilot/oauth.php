@@ -15,18 +15,16 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Autorisierungsserver-Metadaten unter dem PATH_INFO-Pfad (#302, Punkt 1+2).
+ * Authorization server metadata under PATH_INFO (#302, items 1+2).
  *
- * Issuer ist diese Datei selbst:
- *   https://<wwwroot>/local/coursepilot/oauth.php
- * Die OIDC-Pfadanhaengung landet damit als PATH_INFO hier:
- *   .../oauth.php/.well-known/openid-configuration
- *   .../oauth.php/.well-known/oauth-authorization-server
+ * This file is the issuer: https://<wwwroot>/local/coursepilot/oauth.php.
+ * The OIDC/OAuth discovery suffixes arrive here as PATH_INFO:
+ * .../oauth.php/.well-known/openid-configuration
+ * .../oauth.php/.well-known/oauth-authorization-server
  *
- * Reine Schale (#334-Muster): liest PATH_INFO ein, uebergibt an
- * {@see \local_coursepilot\oauth_lib::handle_discovery()}. registration_endpoint
- * ist seit #335 ein echter Endpunkt (oauth/register.php), authorize_endpoint
- * und token_endpoint seit #336 (oauth/authorize.php, oauth/token.php).
+ * Thin shell (#334): read PATH_INFO and call oauth_lib::handle_discovery().
+ * registration_endpoint is real since #335 (oauth/register.php); authorize
+ * and token endpoints followed in #336 (oauth/authorize.php, oauth/token.php).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

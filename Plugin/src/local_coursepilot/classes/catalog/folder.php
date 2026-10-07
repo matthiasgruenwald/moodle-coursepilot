@@ -17,22 +17,22 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Feldkatalog fuer mod_folder (Spec 0015 §4.1, Spec 0018 §4/§7: Pseudofeld
- * "files" beim Anlegen als Liste von Materialordner-Pfaden, optional mit
- * Zielunterordner).
+ * Field catalog for mod_folder (Spec 0015 §4.1, Spec 0018 §4/§7: pseudofield
+ * "files" on create as a list of material folder paths, optionally with
+ * a target subfolder).
  *
- * Fallstricke aus dem Bestand (Ticket #380, Issue #434):
- * - "files" (Dateimanager-Draft-Itemid) ist ein Pseudofeld, vollstaendig
- *   katalogisiert: der Wert ist eine Liste von Materialordner-Pfaden (Spec
- *   0018 §4.2), je Eintrag entweder ein reiner Pfad-String (landet im
- *   Wurzelverzeichnis des Ordners) oder ein Objekt
- *   `{"pfad": "...", "zielordner": "..."}` fuer einen Zielunterordner
+ * Pitfalls from the existing code (ticket #380, issue #434):
+ * - "files" (file manager draft itemid) is a pseudofield, fully
+ *   catalogued: the value is a list of material folder paths (Spec
+ *   0018 §4.2), each entry either a plain path string (lands in the
+ *   root directory of the folder) or an object
+ *   `{"path": "...", "target_folder": "..."}` for a target subfolder
  *   ({@see \local_coursepilot\material_files::resolve_into_draft()}).
- * - Anders als bei resource ist ein LEERER Ordner gueltig
- *   (mod/folder/lib.php: `$draftitemid = $data->files;` wird nur bei
- *   Wahrheitswert verarbeitet) - "files" bleibt deshalb optional.
- * - display=1 (Inline) vertraegt sich nicht mit automatischer
- *   Abschluss-Verfolgung bei Ansicht - Moodle lehnt das im Formular ab.
+ * - Unlike resource, an EMPTY folder is valid
+ *   (mod/folder/lib.php: `$draftitemid = $data->files;` is only processed
+ *   when truthy) - "files" therefore stays optional.
+ * - display=1 (inline) is incompatible with automatic completion
+ *   tracking on view - Moodle rejects this in the form.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -49,17 +49,17 @@ final class folder implements module_catalog {
             new field(
                 'name',
                 'PARAM_TEXT',
-                'Anzeigename des Verzeichnisses.',
+                'Display name of the folder.',
                 true,
                 null,
                 null,
                 null,
-                'mod/folder/mod_form.php:38-41 (PARAM_TEXT bzw. PARAM_CLEANHTML je nach $CFG->formatstringstriptags)'
+                'mod/folder/mod_form.php:38-41 (PARAM_TEXT or PARAM_CLEANHTML depending on $CFG->formatstringstriptags)'
             ),
             new field(
                 'intro',
                 'PARAM_RAW',
-                'Beschreibungstext (Intro).',
+                'Description text (intro).',
                 false,
                 null,
                 null,
@@ -69,17 +69,17 @@ final class folder implements module_catalog {
             new field(
                 'introformat',
                 'PARAM_INT',
-                'Textformat des Intros.',
+                'Text format of the intro.',
                 false,
                 FORMAT_HTML,
                 null,
                 'format_text_menu()',
-                'lib/weblib.php:464 (format_text_menu()); Spalte mod/folder/db/install.xml (folder.introformat)'
+                'lib/weblib.php:464 (format_text_menu()); column mod/folder/db/install.xml (folder.introformat)'
             ),
             new field(
                 'display',
                 'PARAM_INT',
-                'Darstellung: eigene Seite (0) oder eingebettet auf der Kursseite (1, "Inline").',
+                'Display: own page (0) or embedded on the course page (1, "inline").',
                 false,
                 0,
                 [0, 1],
@@ -90,7 +90,7 @@ final class folder implements module_catalog {
             new field(
                 'showexpanded',
                 'PARAM_BOOL',
-                'Unterordner beim Oeffnen ein- (1) oder zusammengeklappt (0) anzeigen.',
+                'Show subfolders expanded (1) or collapsed (0) when opening.',
                 false,
                 1,
                 [0, 1],
@@ -100,7 +100,7 @@ final class folder implements module_catalog {
             new field(
                 'showdownloadfolder',
                 'PARAM_BOOL',
-                'Schaltflaeche "Alles als ZIP herunterladen" anzeigen.',
+                'Show the "Download everything as ZIP" button.',
                 false,
                 1,
                 [0, 1],
@@ -110,7 +110,7 @@ final class folder implements module_catalog {
             new field(
                 'forcedownload',
                 'PARAM_BOOL',
-                'Einzelne Dateien beim Anklicken herunterladen statt im Browser oeffnen.',
+                'Download individual files on click instead of opening them in the browser.',
                 false,
                 1,
                 [0, 1],
@@ -140,20 +140,20 @@ final class folder implements module_catalog {
         return [
             new field(
                 'files',
-                'Liste von Materialordner-Pfaden (JSON-Array)',
-                'Die im Ordner abzulegenden Dateien - je Eintrag ein Pfad in den Materialordner (Spec 0018 §4.2, '
-                    . 'z.B. ["arbeitsblatt.pdf"]) oder ein Objekt {"pfad": "...", "zielordner": "unterordner"} fuer '
-                    . 'ein Zielverzeichnis innerhalb des Ordners. Mehrere Eintraege in einem Aufruf moeglich. Ein '
-                    . 'LEERER Ordner ist gueltig - anders als bei resource blockiert das Fehlen einer Datei das '
-                    . 'Anlegen nicht. NUR beim Anlegen (create_module) nutzbar - ein spaeterer Patch ueber '
-                    . 'update_module_settings scheitert bewusst (folderfilespatchunsupported), statt still '
-                    . 'wirkungslos zu bleiben: fuer weitere Dateien einen weiteren folder anlegen.',
+                'List of material folder paths (JSON array)',
+                'The files to place in the folder - each entry a path in the material folder (Spec 0018 §4.2, '
+                    . 'e.g. ["worksheet.pdf"]) or an object {"path": "...", "target_folder": "subfolder"} for '
+                    . 'a target directory inside the folder. Multiple entries per call possible. An '
+                    . 'EMPTY folder is valid - unlike resource, a missing file does not block '
+                    . 'creation. Usable ONLY on create (create_module) - a later patch via '
+                    . 'update_module_settings deliberately fails (folderfilespatchunsupported) instead of silently '
+                    . 'having no effect: to add more files, create another folder.',
                 false,
                 null,
                 null,
                 null,
-                'mod/folder/lib.php (folder_add_instance(): $data->files als Draft-Itemid; folder_update_instance() '
-                    . 'liest stattdessen file_get_submitted_draft_itemid() aus $_REQUEST); '
+                'mod/folder/lib.php (folder_add_instance(): $data->files as draft itemid; folder_update_instance() '
+                    . 'instead reads file_get_submitted_draft_itemid() from $_REQUEST); '
                     . 'local_coursepilot\material_files::resolve_into_draft()'
             ),
         ];
@@ -167,16 +167,16 @@ final class folder implements module_catalog {
 
     public static function combination_rules(): array {
         return [
-            'display=1 (Inline) vertraegt sich nicht mit automatischer Abschluss-Verfolgung bei Ansicht '
-                . '(completion=automatic + completionview) - Moodle lehnt das im Formular ab '
+            'display=1 (inline) is incompatible with automatic completion tracking on view '
+                . '(completion=automatic + completionview) - Moodle rejects this in the form '
                 . '(mod/folder/mod_form.php: validation()).',
         ];
     }
 
     public static function side_effects(): array {
         return [
-            'folder ist auch ohne "files" anlegbar - ein leerer Ordner ist gueltig, anders als resource ohne '
-                . 'Hauptdatei (Spec 0015 §4.3).',
+            'folder can also be created without "files" - an empty folder is valid, unlike resource without '
+                . 'a main file (Spec 0015 §4.3).',
         ];
     }
 
@@ -184,7 +184,7 @@ final class folder implements module_catalog {
         return [];
     }
 
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
 

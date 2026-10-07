@@ -27,12 +27,11 @@ use local_coursepilot\history\version_history;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Mehrversionen-Ueberblick des Aenderungsverlaufs (Spec 0015 §10.6, Ticket
- * #394): alle Versionen einer Aktivitaet mit je einem serverseitig
- * berechneten Einzeiler gegenueber dem Vorgaenger. Rein lesend, eigene
- * Faehigkeit 'local/coursepilot:viewhistory' statt 'local/coursepilot:use'
- * (Spec 0015 §10.6 sieht fuer den Verlauf ausdruecklich eigene Faehigkeiten
- * vor).
+ * Multi-version overview of the change history (Spec 0015 §10.6, ticket
+ * #394): all versions of an activity, each with a server-side
+ * computed one-liner relative to its predecessor. Read-only, own
+ * capability 'local/coursepilot:viewhistory' instead of 'local/coursepilot:use'
+ * (Spec 0015 §10.6 explicitly provides its own capabilities for the history).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -76,15 +75,18 @@ class list_activity_versions extends external_api {
                     'version' => new external_value(PARAM_INT, 'Consecutive version number per cmid, starting at 1'),
                     'source' => new external_value(
                         PARAM_TEXT,
-                        '"moodle" (normal write) or "vorgefunden" (retroactively recorded starting state before Coursepilot)'
+                        '"moodle" (normal write), "discovered" (retroactively recorded starting state before Coursepilot), '
+                            . '"cloned" (clone), "from_xml" (created from activity XML) or "superseded" '
+                            . '(marker on the old activity after replacement)'
                     ),
                     'discovered' => new external_value(
                         PARAM_BOOL,
-                        'true if this state was retroactively recorded as a starting state (source = "vorgefunden")'
+                        'true if this state was retroactively recorded as a starting state (source = "discovered")'
                     ),
                     'source_cmid' => new external_value(
                         PARAM_INT,
-                        'Source course module ID of a clone - only set when source = "geklont", null otherwise',
+                        'Reference course module ID: clone origin (source = "cloned") or replacing activity '
+                            . '(source = "superseded"), null otherwise',
                         VALUE_DEFAULT,
                         null,
                         NULL_ALLOWED
@@ -94,7 +96,7 @@ class list_activity_versions extends external_api {
                     'timestamp' => new external_value(PARAM_INT, 'Unix timestamp of the write'),
                     'summary_line' => new external_value(
                         PARAM_TEXT,
-                        'Server-computed teacher-facing German change line against the direct predecessor '
+                        'Server-computed teacher-facing change line against the direct predecessor '
                             . '(who, when, what)'
                     ),
                 ]),

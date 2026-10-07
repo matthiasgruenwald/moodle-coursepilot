@@ -5,9 +5,10 @@ Coursepilot turns a Moodle site into an MCP server. A teacher connects an AI cli
 revises course content in conversation — without installing anything locally.
 
 - **Plugin type:** local
-- **Requires:** Moodle 5.0 or later
+- **Requires:** Moodle 5.1 or later
 - **Licence:** AGPL-3.0-or-later (see `LICENSE`)
 - **Issue tracker:** https://github.com/matthiasgruenwald/moodle-coursepilot/issues
+- **Documentation:** https://matthiasgruenwald.github.io/moodle-coursepilot/en/
 
 ## What it does
 
@@ -63,19 +64,25 @@ Discovery follows RFC 8414 and RFC 9728. Both work without a web server change, 
 
 ## Supported versions
 
-Tested combinations (full native PHPUnit suite in CI): **Moodle 5.0 and Moodle 5.1**
-(`MOODLE_500_STABLE`, `MOODLE_501_STABLE`), each with **PHP 8.4 and MariaDB 11**.
-`version.php` requires Moodle 5.0 or later as a floor. No other Moodle, PHP or database
+For upgrades from 2.0.0-beta, upgrade Moodle 5.0 to Moodle 5.1 first and back up
+the database and Moodle data directory before replacing the plugin. Existing
+teacher files, selected storage locations, OAuth connections and history are migrated.
+Published location-selection and download URLs remain available as compatibility entries.
+Moodle 5.2 is not supported yet (issue #679).
+
+Tested combinations (full native PHPUnit suite in CI): **Moodle 5.1**
+(`MOODLE_501_STABLE`), each with **PHP 8.4 and MariaDB 11**.
+`version.php` requires Moodle 5.1 or later as a floor. PHP 8.2 is the minimum
+(Moodle 5.1's own floor); PHP 8.4 is recommended and is what CI verifies. No other Moodle, PHP or database
 combination (for example PostgreSQL) has been verified.
 
 ## Language
 
-Moodle-facing strings ship in English only (`lang/en/`); this is the base language, and
-translations (including German) are expected to follow through
-[AMOS](https://lang.moodle.org/) after release rather than being bundled in the package. The
-teacher-facing skill corpus (`skills/`) is German prose, not a Moodle string, and is not
-covered by AMOS — it stays German for now (see
-`docs/adr/0024-englische-basis-und-komponente-coursepilot.md`).
+Release ZIPs ship only the English base language (`lang/en/`). The source tree's
+`lang/de/` is a development translation; published translations will use
+[AMOS](https://lang.moodle.org/). The skill corpus is also English, while clients
+reply in the teacher's language and create teaching content in the requested language
+(see `docs/adr/0024-englische-basis-und-komponente-coursepilot.md`).
 
 ### WebDAV storage behind a reverse proxy
 
@@ -92,8 +99,8 @@ for everyone, including teachers whose storage is configured correctly.
 
 ## Status
 
-Alpha. The plugin is in real teaching use by its author; it has not yet been through a
-production deployment at another school.
+Beta (`2.1.0-beta`). The plugin is in real teaching use by its author; it has not yet been
+through a production deployment at another school.
 
 ## Development
 

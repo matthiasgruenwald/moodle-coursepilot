@@ -20,7 +20,7 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Quiz als Einzelwerkzeug, Anlegen (Spec 0015 §5, Ticket #398).
+ * Dedicated quiz creation tool (Spec 0015 §5, issue #398).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class create_quiz_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs, Lehrkraft (editingteacher).
+     * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
         $course = $this->getDataGenerator()->create_course();
@@ -41,8 +41,8 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Minimal noetige Pflichtfelder ohne Formular-Default (Klassendoku
-     * create_quiz), damit ein Test ueberhaupt anlegbar ist.
+     * Minimum required fields without form defaults (see create_quiz class
+     * documentation) needed to create a quiz.
      *
      * @return array<string, mixed>
      */
@@ -56,9 +56,8 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Wie {@see self::minimal_fields()}, plus "preferredbehaviour" - fuer
-     * Tests, die ohne Modus-Buendel anlegen (das Buendel liefert
-     * "preferredbehaviour" sonst selbst).
+     * Like {@see self::minimal_fields()}, with preferredbehaviour for tests
+     * without a mode preset, which otherwise supplies that field.
      *
      * @return array<string, mixed>
      */
@@ -72,7 +71,7 @@ final class create_quiz_test extends \advanced_testcase {
      * @param array $felder
      * @param string $mode
      * @param float $grade
-     * @param string[] $confirmlearnerlocks Bewusst gesetzte Riegel (#583).
+     * @param string[] $confirmlearnerlocks Explicitly confirmed learner restrictions (#583).
      * @return array
      */
     private function create(
@@ -91,7 +90,7 @@ final class create_quiz_test extends \advanced_testcase {
 
     /**
      * @param int $cmid
-     * @return \stdClass Rohe quiz-Tabellenzeile.
+     * @return \stdClass Raw quiz table row.
      */
     private function raw_quiz(int $cmid): \stdClass {
         global $DB;
@@ -100,8 +99,8 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Test laesst sich mit jedem der drei Modi anlegen; die Buendel
-     * erzeugen die dokumentierten Einstellungen (Abnahmekriterium 1).
+     * All three modes create quizzes with their documented presets
+     * (acceptance criterion 1).
      */
     public function test_quiz_can_be_created_with_each_mode(): void {
         $this->resetAfterTest();
@@ -109,8 +108,8 @@ final class create_quiz_test extends \advanced_testcase {
 
         $expectations = [
             'mini-check' => ['preferredbehaviour' => 'immediatefeedback', 'grademethod' => 1, 'attempts' => 0],
-            'lernstandscheck' => ['preferredbehaviour' => 'deferredcbm', 'grademethod' => 1, 'delay1' => 300],
-            'abschlusstest' => ['preferredbehaviour' => 'deferredfeedback', 'grademethod' => 2, 'attempts' => 2],
+            'progress-check' => ['preferredbehaviour' => 'deferredcbm', 'grademethod' => 1, 'delay1' => 300],
+            'final-test' => ['preferredbehaviour' => 'deferredfeedback', 'grademethod' => 2, 'attempts' => 2],
         ];
 
         foreach ($expectations as $mode => $expected) {
@@ -119,13 +118,12 @@ final class create_quiz_test extends \advanced_testcase {
             foreach ($expected as $field => $value) {
                 $this->assertEquals($value, $quiz->{$field}, "mode={$mode} field={$field}");
             }
-            $this->assertStringContainsString('angelegt', $result['message']);
+            $this->assertStringContainsString('created', $result['message']);
         }
     }
 
     /**
-     * Ein Modus-Buendel ueberstimmt keine ausdruecklich genannten Felder
-     * (Abnahmekriterium 3).
+     * Mode presets preserve explicitly supplied fields (criterion 3).
      */
     public function test_bundle_does_not_override_explicitly_named_fields(): void {
         $this->resetAfterTest();
@@ -140,8 +138,8 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * "grade" laeuft ueber den eigenen Parameter, nicht ueber felder_json -
-     * ein Versuch, es per felder_json zu setzen, scheitert (Abnahmekriterium 4).
+     * grade uses its dedicated parameter; reject attempts to set it through
+     * fields_json (criterion 4).
      */
     public function test_grade_via_felder_json_is_blocked(): void {
         $this->resetAfterTest();
@@ -159,7 +157,7 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * "grade" laesst sich stattdessen ueber den eigenen Parameter setzen.
+     * Set grade through its dedicated parameter.
      */
     public function test_grade_parameter_sets_the_maximum_grade(): void {
         $this->resetAfterTest();
@@ -171,8 +169,8 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Pflichtfeld ganz ohne Formular-Default (hier "name" weggelassen)
-     * scheitert mit einer Meldung, die das Feld nennt - nichts wird angelegt.
+     * Reject missing mandatory fields without form defaults (name here),
+     * identify the field and create nothing.
      */
     public function test_required_field_without_default_fails(): void {
         $this->resetAfterTest();
@@ -190,7 +188,7 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Unbekannter Feldname scheitert, nichts wird angelegt.
+     * Reject unknown field names without creating a quiz.
      */
     public function test_unknown_field_fails_and_creates_nothing(): void {
         global $DB;
@@ -213,7 +211,7 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Unerlaubter Wert scheitert, nichts wird angelegt.
+     * Reject invalid values without creating a quiz.
      */
     public function test_invalid_value_fails_and_creates_nothing(): void {
         global $DB;
@@ -235,7 +233,7 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Gesamtfeedback laesst sich beim Anlegen mitgeben.
+     * Supply overall feedback during creation.
      */
     public function test_overall_feedback_can_be_set_on_create(): void {
         global $DB;
@@ -256,8 +254,7 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Native Capability-Pruefung im Kurskontext: ohne
-     * moodle/course:manageactivities scheitert das Anlegen.
+     * Require moodle/course:manageactivities in the course context.
      */
     public function test_create_without_native_capability_fails(): void {
         $this->resetAfterTest();
@@ -271,8 +268,7 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Das Anlegen erzeugt einen Stand im Aenderungsverlauf (course_module_created,
-     * #385).
+     * Creation records a history entry through course_module_created (#385).
      */
     public function test_create_creates_a_history_version(): void {
         global $DB;
@@ -284,8 +280,8 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Keine direkte DB-Schreibung auf der quiz-Tabelle (ADR 0016) - der
-     * einzige Schreibweg ist add_moduleinfo() bzw. Moodles Grade-Calculator.
+     * Do not write directly to the quiz table (ADR 0016). Only add_moduleinfo()
+     * and Moodle’s grade calculator may write.
      */
     public function test_source_never_writes_the_quiz_table_directly(): void {
         $source = file_get_contents(__DIR__ . '/../../classes/external/create_quiz.php');
@@ -295,8 +291,8 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #399: dasselbe Regime gilt fuer create_quiz - Drift
-     * sperrt das Anlegen, mit der Meldung "bitte der Administration melden".
+     * Drift blocks create_quiz and asks the teacher to notify administration
+     * under the same write-gate policy (#399).
      */
     public function test_drift_blocks_create_quiz(): void {
         $this->resetAfterTest();
@@ -307,29 +303,27 @@ final class create_quiz_test extends \advanced_testcase {
 
         try {
             $this->create($course->id, 0, $this->minimal_fields(), 'mini-check');
-            $this->fail('execute() haette wegen Drift werfen muessen.');
+            $this->fail('execute() should have thrown because of drift.');
         } catch (\moodle_exception $e) {
-            // Die genaue deutsche Formulierung wird in write_gate_test.php
-            // gegen das Sprachpaket geprueft.
+            // write_gate_test.php checks exact wording against the language pack.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
         }
     }
 
     /**
-     * Riegel (#583): der Modus "abschlusstest" bringt zwei Versuche mit - die
-     * Moduswahl bestaetigt diesen Riegel selbst. Ein ohne Modus gesetztes
-     * Versuchslimit bleibt bestaetigungspflichtig.
+     * final-test allows two attempts; selecting it confirms this learner
+     * restriction. Attempt limits without a mode still need confirmation (#583).
      */
     public function test_chosen_mode_confirms_its_own_locks(): void {
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
 
-        $result = $this->create($course->id, 0, $this->minimal_fields(), 'abschlusstest');
+        $result = $this->create($course->id, 0, $this->minimal_fields(), 'final-test');
         $this->assertEquals(2, $this->raw_quiz($result['cmid'])->attempts);
 
         try {
             $this->create($course->id, 0, $this->minimal_fields_without_mode() + ['attempts' => 2]);
-            $this->fail('Versuchslimit ohne Modus haette bestaetigt werden muessen.');
+            $this->fail('Attempt limit without a mode should have required confirmation.');
         } catch (\moodle_exception $e) {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
             $this->assertStringContainsString('attempts', $e->getMessage());

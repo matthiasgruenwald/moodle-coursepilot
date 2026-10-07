@@ -20,7 +20,7 @@ use local_coursepilot\oauth_lib;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Template-Datenaufbereitung fuer admin/connections.php (#552, Spec 0023 Teil 5).
+ * Template data preparation for admin/connections.php (#552, Spec 0023 part 5).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -36,14 +36,13 @@ final class admin_connections_page_test extends \advanced_testcase {
         $this->assertSame([], $data['rows']);
     }
 
-    public function test_row_includes_person_and_ablageort_lines(): void {
+    public function test_row_includes_person_and_storagelocation_lines(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user(['firstname' => 'Ada', 'lastname' => 'Lovelace']);
         $tokenid = $this->issue_token((int) $user->id);
 
-        // Echte Zeilen aus oauth_lib::active_tokens() statt eines
-        // handgebauten Objekts - nur so faellt auf, wenn die Abfrage
-        // Namensfelder fehlen, die fullname() braucht (Notice aus #578).
+        // Use actual oauth_lib::active_tokens() rows to catch missing name fields
+        // required by fullname(), which caused the notice in #578.
         $data = admin_connections_page::page_data(oauth_lib::active_tokens());
 
         $this->assertDebuggingNotCalled();
@@ -52,20 +51,20 @@ final class admin_connections_page_test extends \advanced_testcase {
         $this->assertStringContainsString(fullname($user), $row['person']);
         $this->assertStringContainsString($user->email, $row['person']);
         $this->assertStringContainsString('revoke=' . $tokenid, $row['revokeurl']);
-        $this->assertNotEmpty($row['ablageortlines']);
+        $this->assertNotEmpty($row['storagelocationlines']);
     }
 
     /**
-     * Stellt ueber den regulaeren OAuth-Weg ein aktives Token fuer $userid aus.
+     * Issue an active token for $userid through the regular OAuth flow.
      *
      * @param int $userid
-     * @return int Die ID der Tokenzeile.
+     * @return int Token row ID.
      */
     private function issue_token(int $userid): int {
-        $registration = oauth_lib::handle_registration('POST', [
+        $registration = oauth_lib::handle_registration('POST', json_encode([
             'client_name' => 'Claude Desktop',
             'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
-        ]);
+        ]), '192.0.2.1');
         $clientid = $registration['body']['client_id'];
         $verifier = bin2hex(random_bytes(32));
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');

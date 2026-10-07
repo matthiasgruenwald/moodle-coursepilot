@@ -26,13 +26,13 @@ use core_external\external_value;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Abschnittsliste eines Kurses (#342): Kennungen (id, Nummer, Name) fuer
- * gezielte Zugriffe.
+ * Section list of a course (#342): identifiers (id, number, name) for
+ * targeted access.
  *
- * Eigenstaendige Portierung von local_coursepilot\external\get_sections -
- * local_coursepilot hat laut Spec 0012 keine Laufzeitabhaengigkeit auf das
- * andere Plugin (siehe get_course_catalog.php aus #341, derselbe Fund).
- * Vertrag (Feldnamen) bleibt identisch zum lokalen Werkzeug.
+ * Standalone port of local_coursepilot\external\get_sections -
+ * local_coursepilot has no runtime dependency on the other plugin per Spec 0012
+ * (see get_course_catalog.php from #341, same finding).
+ * Contract (field names) stays identical to the local tool.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

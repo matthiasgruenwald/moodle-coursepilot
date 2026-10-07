@@ -15,7 +15,7 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Moodle-Callback-Bibliothek.
+ * Moodle callback library.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -25,9 +25,9 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Verlinkt die Selbstverwaltungsseite (#338) im eigenen Profil - nur in der
- * eigenen Ansicht, nie im fremden Profil (Moodle ruft diesen Callback pro
- * betrachtetem Profil auf; $iscurrentuser unterscheidet).
+ * Links connection self-service (#338) only in the current user's profile.
+ * Moodle invokes this callback for each viewed profile; $iscurrentuser
+ * prevents links appearing in another person's profile.
  *
  * @param \core_user\output\myprofile\tree $tree
  * @param stdClass $user
@@ -54,32 +54,30 @@ function local_coursepilot_myprofile_navigation(
     );
     $tree->add_node($node);
 
-    // Ortswahlseite (#494), neben "Meine Verbindungen" - nur in der eigenen
-    // Profilansicht, aus demselben Grund wie oben.
-    $ortswahlnode = new \core_user\output\myprofile\node(
+    // Location selection (#494) beside the connections link, only in the
+    // current user's own profile for the same reason as above.
+    $locationselectionnode = new \core_user\output\myprofile\node(
         'miscellaneous',
-        'local_coursepilot_ortswahl',
-        get_string('ortswahl', 'local_coursepilot'),
+        'local_coursepilot_location_selection',
+        get_string('locationselection', 'local_coursepilot'),
         null,
-        new moodle_url(\local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE)
+        new moodle_url(\local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE)
     );
-    $tree->add_node($ortswahlnode);
+    $tree->add_node($locationselectionnode);
 
     return true;
 }
 
 /**
- * Verlinkt die Ortswahl- und die Verbindungsseite zusaetzlich auf der
- * Einstellungsseite der eigenen Person (Issue #524, Spec #486 §5, gefunden
- * in der Live-Abnahme #505 Befund #12): bislang standen beide Links nur im
- * eigenen Profil unter "Verschiedenes" - dort, wo eine Lehrkraft nach
- * Konfiguration sucht (`/user/preferences.php`), fehlte jeder Eintrag.
+ * Adds location-selection and connection links to the current user's
+ * preferences (#524, Spec #486 §5, live acceptance #505 finding 12).
+ * Previously both appeared only under Miscellaneous in the profile, not
+ * on /user/preferences.php where teachers look for configuration.
  *
- * Nur in der eigenen Ansicht und nur mit dem Recht, das auch die
- * Ortswahlseite selbst verlangt (Fernzugriffsfreigabe, #579) - Moodle ruft
- * diesen Callback auch beim Betrachten fremder Einstellungsseiten
- * (Administration) auf, $user/$usercontext beziehen sich dann auf die
- * betrachtete, nicht die angemeldete Person.
+ * Only the current user with remote access (#579) sees these links,
+ * matching the location-selection page. Moodle also invokes this callback
+ * on other users' settings pages in administration; $user/$usercontext
+ * then identify the viewed person, not the logged-in person.
  *
  * @param \navigation_node $navigation
  * @param \stdClass $user
@@ -112,11 +110,11 @@ function local_coursepilot_extend_navigation_user_settings(
         'local_coursepilot_settings'
     );
     $coursepilot->add(
-        get_string('ortswahl', 'local_coursepilot'),
-        new moodle_url(\local_coursepilot\webdav\webdav_setup_steps::ORTSWAHL_PAGE),
+        get_string('locationselection', 'local_coursepilot'),
+        new moodle_url(\local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE),
         \navigation_node::TYPE_SETTING,
         null,
-        'local_coursepilot_settings_ortswahl'
+        'local_coursepilot_settings_location_selection'
     );
     $coursepilot->add(
         get_string('myconnections', 'local_coursepilot'),
@@ -128,11 +126,9 @@ function local_coursepilot_extend_navigation_user_settings(
 }
 
 /**
- * Verlinkt die Verlaufsseite (#397, Spec 0015 §10.6/§10.7) in der
- * Kursnavigation - nur sichtbar mit local/coursepilot:viewhistory, damit die
- * Seite fuer Nutzer ohne diese Faehigkeit gar nicht erst als Link auftaucht
- * (require_capability() auf history.php selbst greift zusaetzlich, auch bei
- * direktem URL-Aufruf).
+ * Links history (#397, Spec 0015 §10.6/§10.7) in course navigation only
+ * with local/coursepilot:viewhistory. history.php additionally requires
+ * that capability for direct URL visits.
  *
  * @param \navigation_node $navigation
  * @param \stdClass $course
@@ -158,11 +154,10 @@ function local_coursepilot_extend_navigation_course(
 }
 
 /**
- * Standard-Moodle-Callback fuer die Admin-Statusprüfung
- * ("<component>_status_checks()", siehe lib/classes/check/manager.php:
- * get_status_checks() ruft get_plugins_with_function('status_checks',
- * 'lib.php') auf) - eine Prüfung je katalogisierter Aktivitätsart (Ticket
- * #399, Spec 0015 §11, ADR 0017).
+ * Standard Moodle admin status-check callback (<component>_status_checks()).
+ * lib/classes/check/manager.php::get_status_checks() discovers it through
+ * get_plugins_with_function(status_checks, lib.php). One check per cataloged
+ * activity type (#399, Spec 0015 §11, ADR 0017).
  *
  * @return \core\check\check[]
  */
@@ -173,8 +168,8 @@ function local_coursepilot_status_checks(): array {
             \local_coursepilot\catalog\registry::known_modnames()
         ),
         [
-            // Die vier WebDAV-Statusprüfungen (Issue #499, Spec #486 §12) -
-            // eine je Schritt des Schrittkatalogs plus die zugelassenen Speicher.
+            // Four WebDAV checks (#499, Spec #486 §12): one per setup step
+            // and the allowed personal-data storage hosts.
             new \local_coursepilot\check\webdav_repository_check(),
             new \local_coursepilot\check\webdav_user_instances_check(),
             new \local_coursepilot\check\webdav_capability_check(),

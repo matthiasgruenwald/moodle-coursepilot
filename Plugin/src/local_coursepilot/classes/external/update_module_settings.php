@@ -22,13 +22,10 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
-use local_coursepilot\activity_file_trash;
 use local_coursepilot\catalog\module_catalog;
-use local_coursepilot\catalog\catalog_fields;
 use local_coursepilot\catalog\learner_locks;
-use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\registry;
-use local_coursepilot\catalog\shared_block;
+use local_coursepilot\catalog\write_target;
 use local_coursepilot\material_files;
 use local_coursepilot\write_gate;
 use moodle_exception;
@@ -36,25 +33,25 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Der erste Schreibvorgang (Spec 0015 §3.3, Ticket #388, Phase 3): patcht
- * einzelne Einstellungen einer bestehenden Aktivitaet ueber den nativen
- * Formularweg (get_moduleinfo_data() lesen, ueberlagern, update_moduleinfo()
- * schreiben) - kein Konfliktschutz, kein expected_version, eine parallele
- * Handaenderung an einem ANDEREN Feld ueberlebt (Spec 0015 §3.3).
+ * The first write operation (Spec 0015 §3.3, ticket #388, phase 3): patches
+ * individual settings of an existing activity via the native form path
+ * (read with get_moduleinfo_data(), overlay, write with update_moduleinfo())
+ * - no conflict protection, no expected_version, a parallel manual change
+ * to a DIFFERENT field survives (Spec 0015 §3.3).
  *
- * Alles oder nichts: jede Validierung (unbekanntes Feld, gesperrtes Feld,
- * unerlaubter Wert, Kombinationsregel) laeuft VOR dem einzigen Schreibaufruf
- * - kein Teilergebnis moeglich.
+ * All or nothing: every validation (unknown field, locked field,
+ * disallowed value, combination rule) runs BEFORE the single write call
+ * - no partial result is possible.
  *
- * Keine eigene Coursepilot-Schreib-Capability: get_moduleinfo_data() ruft
- * intern can_update_moduleinfo(), das 'moodle/course:manageactivities' im
- * Modulkontext verlangt - das ist die native Pruefung, die Spec 0015 §3.3
- * verlangt. 'local/coursepilot:use' bleibt die Basis-Zugriffspruefung wie bei
- * jedem anderen Werkzeug.
+ * No Coursepilot write capability of its own: get_moduleinfo_data() internally
+ * calls can_update_moduleinfo(), which requires 'moodle/course:manageactivities'
+ * in the module context - that is the native check Spec 0015 §3.3
+ * demands. 'local/coursepilot:use' remains the base access check, as with
+ * every other tool.
  *
- * Direkte DB-Schreibung wird bewusst nicht genutzt (ADR 0016): sie loest
- * kein course_module_updated aus, der Aenderungsverlauf (#385-387) bliebe
- * dafuer blind.
+ * Direct DB writes are deliberately not used (ADR 0016): they do not
+ * trigger course_module_updated, so the change history (#385-387) would be
+ * blind to them.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -63,24 +60,11 @@ defined('MOODLE_INTERNAL') || die();
 class update_module_settings extends external_api {
 
     /**
-     * Pseudofelder, deren Patch-Wert kein Skalar ist, sondern eine Liste von
-     * Materialordner-Pfaden (Spec 0018 §4.2, Ticket #429) - der Verweisweg,
-     * der die Dateisperre aus Spec 0015 §4.3 fuer assign aufhebt. Vor dem
-     * eigentlichen update_moduleinfo()-Aufruf wird jeder Pfad zu einer
-     * bestehenden Materialdatei aufgeloest und in einen Dateimanager-Entwurf
-     * kopiert ({@see material_files::resolve_into_draft()}) - derselbe
-     * Freigabeweg wie jeder andere Patch (validate_patch laeuft vorher,
-     * unveraendert), kein Sonderweg fuer Binaerdaten.
-     *
-     * @var array<string, array<string, array{component: string, filearea: string}>>
-     */
-    /**
-     * Oeffentlicher Blick auf {@see self::MATERIAL_REFERENCE_PSEUDOFIELDS} fuer
-     * eine Aktivitaetsart - wiederverwendet statt dupliziert von
-     * {@see \local_coursepilot\external\restore_activity_version}, das denselben
-     * component/filearea-Satz braucht, um ersetzte Dateien aus dem Papierkorb
-     * ({@see \local_coursepilot\activity_file_trash}) zurueckzuholen (Spec 0018
-     * §9.1, Issue #432).
+     * The material reference pseudofields (write_options() "material_reference_fields")
+     * of an activity type, for {@see \local_coursepilot\external\restore_activity_version},
+     * which needs the same component/filearea set to bring replaced files back
+     * from the trash ({@see \local_coursepilot\activity_file_trash}, Spec 0018
+     * §9.1, issue #432).
      *
      * @param string $modname
      * @return array<string, array{component: string, filearea: string}>
@@ -91,27 +75,6 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Pseudofeld je Aktivitaetsart, dessen Pfadliste NICHT an eine eigene
-     * Datei-Filearea angehaengt wird, sondern in den Draft-Dateibereich der
-     * Intro selbst (Spec 0018 §4.2/§5, Issue #433: "Fachabbildung in die
-     * Aufgabenbeschreibung einbetten") - anders als
-     * {@see self::MATERIAL_REFERENCE_PSEUDOFIELDS} deshalb kein eigener
-     * moduleinfo-Eintrag, sondern {@see self::resolve_intro_image_pseudofield()}
-     * setzt direkt $moduleinfo->introeditor['itemid'].
-     *
-     * @var array<string, string>
-     */
-    /**
-     * Pseudofelder, die zwar {@see \local_coursepilot\catalog\module_catalog::blocklist()}
-     * nicht mehr sperrt (fuer create_module frei, Issue #434), auf DIESEM
-     * Patch-Weg aber scheitern muessen statt still wirkungslos zu bleiben -
-     * siehe {@see self::MATERIAL_REFERENCE_PSEUDOFIELDS} fuer die Begruendung
-     * (folder_update_instance() liest den Draft-Itemid aus $_REQUEST, nicht
-     * aus $data->files).
-     *
-     * @var array<string, string[]>
-     */
-    /**
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -121,27 +84,27 @@ class update_module_settings extends external_api {
                 PARAM_RAW,
                 'JSON object field name => new value - only the fields to change (patch, not a full state)'
             ),
-            'location' => material_files::ort_parameter(),
+            'location' => material_files::location_parameter(),
             learner_locks::PARAMETER => learner_locks::confirm_parameter(),
         ]);
     }
 
     /**
-     * Roher Schreibweg fuer genau EIN Materialreferenz-Pseudofeld
-     * ({@see self::MATERIAL_REFERENCE_PSEUDOFIELDS}), mit einem bereits
-     * fertigen Dateimanager-Entwurf statt Materialordner-Pfaden - fuer
-     * {@see \local_coursepilot\external\restore_activity_version}, das Dateien
-     * aus dem Papierkorb ({@see \local_coursepilot\activity_file_trash}) statt
-     * aus dem Materialordner zurueckschreibt (Spec 0018 §9.1, Issue #432).
+     * Raw write path for exactly ONE material reference pseudofield
+     * ({@see self::material_reference_specs()}), with an already
+     * finished file manager draft instead of material folder paths - for
+     * {@see \local_coursepilot\external\restore_activity_version}, which writes files
+     * back from the trash ({@see \local_coursepilot\activity_file_trash}) instead of
+     * from the material folder (Spec 0018 §9.1, issue #432).
      *
-     * Kein eigener Feld-Patch-Validierungsdurchlauf: der Aufrufer hat
-     * moodle/course:manageactivities und local/coursepilot:restoreversion
-     * bereits geprueft, und der Entwurfsinhalt stammt ausschliesslich aus
-     * dem eigenen Aenderungsverlauf/Papierkorb, nicht aus Client-Eingaben.
+     * No field-patch validation pass of its own: the caller has already
+     * checked moodle/course:manageactivities and local/coursepilot:restoreversion,
+     * and the draft content comes exclusively from the own change
+     * history/trash, not from client input.
      *
      * @param int $cmid
-     * @param string $fieldname Eines der MATERIAL_REFERENCE_PSEUDOFIELDS-Felder dieser Aktivitaetsart.
-     * @param int $draftitemid Fertiger Dateimanager-Entwurf, z.B. aus
+     * @param string $fieldname One of this activity type's material_reference_specs() fields.
+     * @param int $draftitemid Finished file manager draft, e.g. from
      *        {@see \local_coursepilot\activity_file_trash::resolve_restore_into_draft()}.
      * @return void
      */
@@ -152,7 +115,7 @@ class update_module_settings extends external_api {
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
-        $moduleinfo->{self::moduleinfo_property($fieldname)} = $draftitemid;
+        $moduleinfo->{$fieldname} = $draftitemid;
         \update_moduleinfo($cm, $moduleinfo, $course);
     }
 
@@ -166,11 +129,9 @@ class update_module_settings extends external_api {
     public static function execute(
         int $cmid,
         string $fieldsjson,
-        string $location = material_files::ORT_BESTAND,
+        string $location = material_files::LOCATION_STORE,
         array $confirmlearnerlocks = []
     ): array {
-        global $CFG;
-
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
             'fields_json' => $fieldsjson,
@@ -179,28 +140,31 @@ class update_module_settings extends external_api {
         ]);
 
         $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
-        $context = self::authorise($cm);
+        self::authorise($cm);
 
         $modname = (string) $cm->modname;
         $catalogclass = self::catalog_for($modname);
-        // Billigteil der Selbstfreigabe (Spec 0015 §11, ADR 0017, Ticket #399):
-        // sperrt nur DIESE Aktivitaetsart, wenn ein erkannter Moodle-Versionswechsel
-        // eine Katalogabweichung ergeben hat. Lesen bleibt unberuehrt (kein
-        // Lese-Werkzeug ruft assert_writable() auf).
+        // Cheap part of the self-release (Spec 0015 §11, ADR 0017, ticket #399):
+        // blocks only THIS activity type when a detected Moodle version change
+        // has produced a catalog deviation. Reading stays untouched (no
+        // read tool calls assert_writable()).
         write_gate::assert_writable($modname);
 
-        [$patch, $before] = self::decode_and_validate_patch($modname, $catalogclass, $cmid, $params['fields_json']);
-        // Riegel (#583): ein Patch, der einen bestehenden Riegel nur
-        // wiederholt, braucht keine erneute Bestaetigung.
-        learner_locks::assert_confirmed(
-            $modname,
-            learner_locks::find_changed($catalogclass, $patch, $before),
+        $patch = json_decode($params['fields_json'], true);
+        if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
+            throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
+        }
+        $before = self::read_settings($cmid);
+        // Rules, file checks and the native sequence live in the catalog core (#646, #647).
+        $patch = write_target::update_activity(
+            $catalogclass,
+            $cm,
+            get_course((int) $cm->course),
+            $patch,
+            $before,
+            $params['location'],
             $params[learner_locks::PARAMETER]
         );
-
-        $course = get_course((int) $cm->course);
-        require_once($CFG->dirroot . '/course/modlib.php');
-        self::apply_patch_to_module($cm, $course, $modname, $catalogclass, $context, $before, $patch, $params['location']);
 
         $after = self::read_settings($cmid);
         [$changes, $sideeffects] = self::diff_and_side_effects($modname, $patch, $before, $after);
@@ -215,8 +179,8 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Prueft Kontext und Capabilities (Issue #523: aus execute() ausgelagert,
-     * um die Funktion unter der 50-Zeilen-Grenze zu halten).
+     * Checks context and capabilities (issue #523: extracted from execute()
+     * to keep the function under the 50-line limit).
      *
      * @param \stdClass $cm
      * @return \context_module
@@ -225,302 +189,46 @@ class update_module_settings extends external_api {
         $context = context_module::instance($cm->id);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // Native Berechtigungspruefung vorgezogen (Spec 0015 §3.3: "im Kurs
-        // einer Kollegin: lesen ja, schreiben nein - mit klarer Meldung").
-        // get_moduleinfo_data() prueft dieselbe Capability spaeter ohnehin
-        // erneut ueber can_update_moduleinfo() - der Aufruf hier ist billig
-        // (nur require_capability(), kein DB-Zugriff) und stellt sicher, dass
-        // eine fehlende Bearbeiten-Berechtigung nicht hinter einer
-        // Feldvalidierungsmeldung versteckt bleibt.
+        // Native permission check moved forward (Spec 0015 §3.3: "in a
+        // colleague's course: read yes, write no - with a clear message").
+        // get_moduleinfo_data() checks the same capability again later anyway
+        // via can_update_moduleinfo() - the call here is cheap
+        // (only require_capability(), no DB access) and ensures that
+        // a missing edit permission is not hidden behind a
+        // field validation message.
         require_capability('moodle/course:manageactivities', $context);
 
         return $context;
     }
 
     /**
-     * Dekodiert fields_json und validiert den Patch (Issue #523: aus
-     * execute() ausgelagert).
-     *
-     * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
-     * @param int $cmid
-     * @param string $fieldsjson
-     * @return array{0: array, 1: array} [Patch, aktuelle Einstellungen vor dem Patch]
-     */
-    private static function decode_and_validate_patch(
-        string $modname,
-        string $catalogclass,
-        int $cmid,
-        string $fieldsjson
-    ): array {
-        $patch = json_decode($fieldsjson, true);
-        if (!is_array($patch) || json_last_error() !== JSON_ERROR_NONE) {
-            throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
-        }
-
-        pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $patch);
-        // Issue #523: einmal gelesen und an execute() zurueckgegeben, statt
-        // dort ein zweites Mal denselben Stand zu lesen (Review-Fund am
-        // Extraktions-Schnitt: reiner Performance-/DRY-Fund, keine
-        // Verhaltensaenderung).
-        $before = self::read_settings($cmid);
-        catalog_fields::validate($catalogclass, $patch, true);
-        self::validate_patch($modname, $before, $patch);
-
-        return [$patch, $before];
-    }
-
-    /**
-     * Wendet den Patch auf das native Formularweg-Objekt an und schreibt es
-     * (Issue #523: aus execute() ausgelagert).
-     *
-     * @param \stdClass $cm
-     * @param \stdClass $course
-     * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
-     * @param \context_module $context
-     * @param array $before
-     * @param array $patch
-     * @param string $ort
-     */
-    private static function apply_patch_to_module(
-        \stdClass $cm,
-        \stdClass $course,
-        string $modname,
-        string $catalogclass,
-        \context_module $context,
-        array $before,
-        array $patch,
-        string $ort
-    ): void {
-        // get_moduleinfo_data() gibt das Tupel [cm, context, module, data, cw]
-        // zurueck (course/modlib.php) - "data" (Positon 3) ist das
-        // Formularweg-Feldobjekt, das ueberlagert und zurueckgeschrieben wird.
-        [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
-        pseudofield_carry_forward::apply($modname, $catalogclass, $moduleinfo, $before, $cm, $patch);
-        self::resolve_material_reference_pseudofields($modname, $context, $patch, $ort);
-        self::resolve_intro_image_pseudofield($modname, $context, $moduleinfo, $patch, $ort);
-        foreach ($patch as $fieldname => $value) {
-            $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
-        }
-
-        // Ein reiner "intro"-Patch wuerde sonst stillschweigend verpuffen -
-        // siehe pseudofield_carry_forward::sync_intro_editor_from_patch().
-        pseudofield_carry_forward::sync_intro_editor_from_patch($moduleinfo, $patch);
-
-        \update_moduleinfo($cm, $moduleinfo, $course);
-    }
-
-    /**
-     * Katalogfeldname => tatsaechlicher $moduleinfo-Eigenschaftsname -
-     * identische Abbildung wie {@see create_module::moduleinfo_property()}.
-     * Einzige Ausnahme "idnumber": get_moduleinfo_data() liefert das
-     * Feldobjekt bereits mit der realen Formularweg-Eigenschaft
-     * "cmidnumber" (course/modlib.php: `$data->cmidnumber = $cm->idnumber`),
-     * update_moduleinfo() liest ebenso nur `$moduleinfo->cmidnumber`
-     * (course/modlib.php:70) - ein Patch, der stattdessen "idnumber" auf das
-     * Objekt schreibt, würde folgenlos verpuffen (das ungenutzte
-     * "cmidnumber" bliebe unveraendert). "idnumber" bleibt trotzdem der
-     * lehrkraftverstaendliche Katalogname (Spec 0015 §2.3, Ticket #390).
-     *
-     * @param string $fieldname
-     * @return string
-     */
-    private static function moduleinfo_property(string $fieldname): string {
-        return $fieldname === 'idnumber' ? 'cmidnumber' : $fieldname;
-    }
-
-    /**
-     * Loest Materialordner-Verweis-Pseudofelder ({@see self::MATERIAL_REFERENCE_PSEUDOFIELDS})
-     * im Patch zu Dateimanager-Entwurfs-Itemids auf, bevor sie auf
-     * $moduleinfo landen - Spec 0018 §4.2: "Ab hier ist der Weg fuer alle
-     * Herkuenfte derselbe: die Datei landet immer erst im Materialordner,
-     * die Aktivitaet verweist darauf." Ohne Treffer keine Wirkung, kein
-     * zusaetzlicher Dateizugriff.
-     *
-     * @param string $modname
-     * @param \context_module $context Modulkontext - Ziel der Dateiablage.
-     * @param array $patch Wird in-place ersetzt: Pfadliste -> Entwurfs-Itemid.
-     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
-     *        Quelle der Pfade (Issue #496).
-     * @return void
-     * @throws moodle_exception materialfilenotfound / invalidmaterialpath / invalidmaterialort /
-     *         materialpathiskontext / materialembedtoolarge
-     * @throws \required_capability_exception ohne moodle/user:manageownfiles
-     */
-    private static function resolve_material_reference_pseudofields(
-        string $modname,
-        \context_module $context,
-        array &$patch,
-        string $ort
-    ): void {
-        $catalogclass = registry::for($modname);
-        $specs = $catalogclass::write_options()['material_reference_fields'] ?? [];
-        $relevant = array_intersect_key($specs, $patch);
-        if (!$relevant) {
-            return;
-        }
-
-        material_files::require_manage_own_files();
-        foreach ($relevant as $fieldname => $spec) {
-            if (!is_array($patch[$fieldname])) {
-                throw new moodle_exception('invalidmaterialreferencelist', 'local_coursepilot', '', $fieldname);
-            }
-            self::trash_files_about_to_be_replaced($context, $spec, $patch[$fieldname]);
-            $patch[$fieldname] = material_files::resolve_into_draft(
-                $context->id,
-                $spec['component'],
-                $spec['filearea'],
-                0,
-                $patch[$fieldname],
-                $ort
-            );
-        }
-    }
-
-    /**
-     * Loest ein {@see self::INTRO_IMAGE_PSEUDOFIELDS}-Pseudofeld auf (Spec
-     * 0018 §4.2/§5, Issue #433): jeder Materialordner-Pfad muss zur engeren
-     * Einbett-Whitelist gehoeren (§6) - eine andere Endung (z.B. ein PDF)
-     * scheitert mit klarer Meldung statt still zu verpuffen. Ein bereits
-     * unter demselben Dateinamen eingebettetes Bild wird wie bei
-     * introattachments zuerst in den Papierkorb verdraengt (Spec 0018 §9.1,
-     * {@see self::trash_files_about_to_be_replaced()}). Anders als
-     * {@see self::resolve_material_reference_pseudofields()} landet das
-     * Ergebnis nicht in $patch (introimages ist keine echte moduleinfo-
-     * Eigenschaft), sondern direkt in $moduleinfo->introeditor['itemid'] -
-     * update_moduleinfo() loest @@PLUGINFILE@@-Verweise im "intro"-Patch
-     * (s.o.) gegen genau diesen Draft-Dateibereich auf.
-     *
-     * @param string $modname
-     * @param \context_module $context
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt (introeditor-Itemid).
-     * @param array $patch Wird in-place bereinigt: introimages entfernt.
-     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
-     *        Quelle der Pfade (Issue #496).
-     * @return void
-     * @throws moodle_exception invalidmaterialreferencelist / materialfiledisallowedtype /
-     *         materialfilenotfound / invalidmaterialpath / invalidmaterialort / materialpathiskontext /
-     *         materialembedtoolarge
-     */
-    private static function resolve_intro_image_pseudofield(
-        string $modname,
-        \context_module $context,
-        \stdClass $moduleinfo,
-        array &$patch,
-        string $ort
-    ): void {
-        $catalogclass = registry::for($modname);
-        $fieldname = $catalogclass::write_options()['intro_image_field'] ?? null;
-        if ($fieldname === null || !array_key_exists($fieldname, $patch)) {
-            return;
-        }
-
-        $paths = $patch[$fieldname];
-        if (!is_array($paths)) {
-            throw new moodle_exception('invalidmaterialreferencelist', 'local_coursepilot', '', $fieldname);
-        }
-
-        // Capability zuerst pruefen, wie resolve_material_reference_pseudofields()
-        // es fuer introattachments schon tut - sonst saehe ein Aufrufer ohne
-        // moodle/user:manageownfiles die Dateityp-Meldung, bevor die
-        // Berechtigung ueberhaupt geprueft wurde.
-        material_files::require_manage_own_files();
-
-        foreach ($paths as $path) {
-            if (!is_string($path) || !material_files::is_allowed_embed_image_extension($path)) {
-                // Dieselbe Meldung wie beim Upload (materialfiledisallowedtype) -
-                // nur die Whitelist ist enger (Einbett- statt Upload-Whitelist, §6).
-                throw new moodle_exception('materialfiledisallowedtype', 'local_coursepilot', '', (object) [
-                    'filename' => (string) $path,
-                    'allowed' => implode(', ', material_files::allowed_embed_image_extensions()),
-                ]);
-            }
-        }
-
-        $introspec = ['component' => 'mod_' . $modname, 'filearea' => 'intro'];
-        self::trash_files_about_to_be_replaced($context, $introspec, $paths);
-        $draftitemid = material_files::resolve_into_draft(
-            $context->id, $introspec['component'], $introspec['filearea'], 0, $paths, $ort);
-        if (!isset($moduleinfo->introeditor) || !is_array($moduleinfo->introeditor)) {
-            $moduleinfo->introeditor = ['text' => $moduleinfo->intro ?? '', 'format' => $moduleinfo->introformat ?? FORMAT_HTML];
-        }
-        $moduleinfo->introeditor['itemid'] = $draftitemid;
-
-        unset($patch[$fieldname]);
-    }
-
-    /**
-     * Verdraengt jede derzeit angehaengte Datei, deren Dateiname unter den
-     * neu referenzierten Materialordner-Pfaden erneut vorkommt, in den
-     * Papierkorb ({@see activity_file_trash}) - BEVOR update_moduleinfo()
-     * lauft und Moodle-Core den alten `files`-Datensatz tief in
-     * file_save_draft_area_files() loescht (Spec 0018 §9.1, Issue #432).
-     * Ohne Namenskollision keine Wirkung: reines Hinzufuegen bleibt
-     * kostenlos.
-     *
-     * @param \context_module $context
-     * @param array{component: string, filearea: string} $spec
-     * @param array $paths Materialordner-Pfade aus dem Patch - Strings oder
-     *        `['pfad' => ..., 'zielordner' => ...]`-Objekte (Issue #434).
-     * @return void
-     */
-    private static function trash_files_about_to_be_replaced(\context_module $context, array $spec, array $paths): void {
-        $newfilenames = array_map(
-            static fn($entry): string => basename(material_files::entry_path($entry)),
-            $paths
-        );
-        $existing = get_file_storage()->get_area_files(
-            $context->id,
-            $spec['component'],
-            $spec['filearea'],
-            0,
-            'filename',
-            false
-        );
-        foreach ($existing as $file) {
-            if (in_array($file->get_filename(), $newfilenames, true)) {
-                activity_file_trash::trash($file, $context->instanceid);
-            }
-        }
-    }
-
-    /**
-     * Die Katalogklasse fuer $modname, sofern der Schreibweg dieser Endpunkt
-     * ist (Spec 0015 §3.1: manche Aktivitaetsarten haben ein eigenes
-     * Einzelwerkzeug, z.B. quiz -> update_quiz_settings).
+     * The catalog class for $modname, provided the write path is this endpoint
+     * (Spec 0015 §3.1: some activity types have a single-purpose tool of
+     * their own, e.g. quiz -> update_quiz_settings).
      *
      * @param string $modname
      * @return class-string<module_catalog>
      * @throws moodle_exception unknownmodname|writevehicleblocked
      */
     private static function catalog_for(string $modname): string {
-        $catalogclass = registry::for($modname);
-        if ($catalogclass === null) {
-            throw new moodle_exception(
-                'unknownmodname',
-                'local_coursepilot',
-                '',
-                ['modname' => $modname, 'aktivitaetsarten' => implode(', ', registry::known_modnames())]
-            );
-        }
-        $schreibweg = $catalogclass::schreibweg();
-        if ($schreibweg !== null) {
+        $catalogclass = registry::require_catalogued($modname);
+        $writeroute = $catalogclass::write_route();
+        if ($writeroute !== null) {
             throw new moodle_exception(
                 'writevehicleblocked',
                 'local_coursepilot',
                 '',
-                ['modname' => $modname, 'schreibweg' => $schreibweg]
+                ['modname' => $modname, 'write_route' => $writeroute]
             );
         }
         return $catalogclass;
     }
 
     /**
-     * Ist-Stand als assoziatives Array - dieselbe Zusammenstellung wie
-     * {@see get_module_settings}, ueber deren settings_json wiederverwendet
-     * statt dupliziert (Ticket #384: "gleiche Bauform fuer Read-Teil
-     * wiederverwendbar").
+     * Current state as an associative array - the same composition as
+     * {@see get_module_settings}, reused via its settings_json
+     * instead of duplicated (ticket #384: "same shape reusable for the
+     * read part").
      *
      * @param int $cmid
      * @return array
@@ -531,106 +239,12 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Alles-oder-nichts-Pruefung VOR dem Schreiben: unbekanntes Feld,
-     * gesperrtes Feld, unerlaubter Wert, verletzte Kombinationsregel.
-     *
-     * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
-     * @param array $before Ist-Stand vor dem Patch (fuer Kombinationsregeln).
-     * @param array $patch
-     * @return void
-     * @throws moodle_exception blockedfield|unknownfield|invalidfieldvalue|combinationruleviolation|stealthnotallowed
-     */
-    private static function validate_patch(string $modname, array $before, array $patch): void {
-        self::validate_combination_rules($modname, $before, $patch);
-        self::assert_stealth_allowed($patch);
-    }
-
-    /**
-     * Stealth (Spec 0015 §7, Ticket #390) setzt voraus, dass die Instanz
-     * "allowstealth" erlaubt - sonst ignoriert Moodles eigener Formularweg
-     * visibleoncoursepage=0 kommentarlos (course/modlib.php:
-     * set_moduleinfo_defaults() faellt auf 1 zurueck), der Schreibvorgang
-     * wuerde also still wirkungslos bleiben statt zu scheitern. Nur der
-     * Zielwert 0 ist betroffen - visibleoncoursepage=1 (zurueck auf normal)
-     * bleibt immer erlaubt.
-     *
-     * @param array $patch
-     * @return void
-     * @throws moodle_exception stealthnotallowed
-     */
-    private static function assert_stealth_allowed(array $patch): void {
-        if (($patch['visibleoncoursepage'] ?? null) !== 0) {
-            return;
-        }
-        if (get_config(null, 'allowstealth')) {
-            return;
-        }
-        throw new moodle_exception('stealthnotallowed', 'local_coursepilot');
-    }
-
-    /**
-     * @param string $modname
-     * @param array $before
-     * @param array $patch
-     * @return void
-     * @throws moodle_exception combinationruleviolation
-     */
-    private static function validate_combination_rules(string $modname, array $before, array $patch): void {
-        $catalogclass = registry::for($modname);
-        $rules = $catalogclass::write_options()['date_order_rules'] ?? [];
-        if (!$rules) {
-            return;
-        }
-
-        $merged = array_merge($before, $patch);
-        foreach ($rules as $rule) {
-            // Nur pruefen, wenn der Patch tatsaechlich eines der beiden
-            // Felder beruehrt - unveraendert bleibende, bereits vorhandene
-            // Altdaten werden durch einen unabhaengigen Patch nicht neu
-            // bewertet.
-            if (!array_key_exists($rule['reference'], $patch) && !array_key_exists($rule['field'], $patch)) {
-                continue;
-            }
-            $reference = (int) ($merged[$rule['reference']] ?? 0);
-            $value = (int) ($merged[$rule['field']] ?? 0);
-            if ($reference === 0 || $value === 0) {
-                continue;
-            }
-
-            $violated = $rule['mode'] === 'must_be_after' ? ($value <= $reference) : ($value < $reference);
-            if ($violated) {
-                throw new moodle_exception(
-                    'combinationruleviolation',
-                    'local_coursepilot',
-                    '',
-                    ['modname' => $modname, 'message' => self::rule_violation_message($rule)]
-                );
-            }
-        }
-    }
-
-    /**
-     * Generischer Verstoss-Text aus reference/field/mode statt eines
-     * separat gepflegten Zitats der Katalogtexte (DRY, siehe
-     * {@see self::DATE_ORDER_RULES}).
-     *
-     * @param array{reference: string, field: string, mode: string} $rule
-     * @return string
-     */
-    private static function rule_violation_message(array $rule): string {
-        return $rule['mode'] === 'must_be_after'
-            ? '"' . $rule['field'] . '" muss nach "' . $rule['reference'] . '" liegen.'
-            : '"' . $rule['field'] . '" darf nicht vor "' . $rule['reference'] . '" liegen.';
-    }
-
-    /**
-     * Vorher-/Nachher-Werte je tatsaechlich geaendertem Feld, plus
-     * ausgeloeste Nebenwirkungen - aus einem echten Vorher-/Nachher-Vergleich
-     * (nicht aus dem Patch selbst uebernommen), damit eine parallele
-     * Handaenderung an einem anderen Feld korrekt unerwaehnt bleibt und ein
-     * Patch, der den bestehenden Wert nur wiederholt, nicht als Aenderung
-     * gemeldet wird.
+     * Before/after values per field that actually changed, plus
+     * triggered side effects - from a real before/after comparison
+     * (not taken from the patch itself), so that a parallel manual
+     * change to another field correctly stays unmentioned and a
+     * patch that merely repeats the existing value is not reported as a
+     * change.
      *
      * @param string $modname
      * @param array $patch
@@ -664,20 +278,20 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Die Pseudofelder aus dem Patch - die, die der Vorher/Nachher-Vergleich
-     * grundsaetzlich nicht sehen kann (#403).
+     * The pseudofields from the patch - those the before/after comparison
+     * fundamentally cannot see (#403).
      *
-     * Pseudofelder haben per Definition keine Spalte in der Instanztabelle
-     * ("assignsubmission_file_enabled" steht in assign_plugin_config, die
-     * choice-Optionen in choice_options). read_settings() liest den Ist-Stand
-     * der Datenbankfelder, dort stehen sie vorher wie nachher als null - der
-     * Diff bleibt leer, obwohl geschrieben wurde. Ein echter Vergleich
-     * braeuchte eine Leseschicht je Aktivitaetsart; stattdessen sagt die
-     * Meldung ausdruecklich, was sie nicht vergleichen kann.
+     * Pseudofields by definition have no column in the instance table
+     * ("assignsubmission_file_enabled" lives in assign_plugin_config, the
+     * choice options in choice_options). read_settings() reads the current state
+     * of the database fields, where they are null both before and after - the
+     * diff stays empty although something was written. A real comparison
+     * would need a read layer per activity type; instead the
+     * message states explicitly what it cannot compare.
      *
      * @param class-string<module_catalog> $catalogclass
      * @param array $patch
-     * @return array<string, mixed> Feldname => gesetzter Wert.
+     * @return array<string, mixed> Field name => value set.
      */
     private static function written_pseudofields(string $catalogclass, array $patch): array {
         $names = array_column($catalogclass::pseudofields(), 'name');
@@ -685,25 +299,25 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Die Lehrkraft-deutsche Aenderungsmeldung (Spec 0015 §3.3: "die Antwort
-     * ist die Aenderungsmeldung").
+     * The teacher-facing change message (Spec 0015 §3.3: "the response
+     * is the change message").
      *
      * @param array $changes
      * @param string[] $sideeffects
-     * @param array<string, mixed> $pseudofields Geschriebene Pseudofelder, siehe
-     *        {@see self::written_pseudofields()} - nicht vergleichbar, aber gesetzt.
+     * @param array<string, mixed> $pseudofields Pseudofields written, see
+     *        {@see self::written_pseudofields()} - not comparable, but set.
      * @return string
      */
     private static function build_message(array $changes, array $sideeffects, array $pseudofields = []): string {
         if (!$changes && !$pseudofields) {
-            return 'Keine Aenderung: der Patch stimmte bereits mit dem aktuellen Stand ueberein.';
+            return 'No change: the patch already matched the current state.';
         }
 
         $parts = [];
         foreach ($changes as $change) {
-            $parts[] = '"' . $change['field'] . '" von ' . $change['before_json'] . ' auf ' . $change['after_json'];
+            $parts[] = '"' . $change['field'] . '" from ' . $change['before_json'] . ' to ' . $change['after_json'];
         }
-        $message = $parts ? ('Geaendert: ' . implode(', ', $parts) . '.') : '';
+        $message = $parts ? ('Changed: ' . implode(', ', $parts) . '.') : '';
 
         if ($pseudofields) {
             $set = [];
@@ -712,7 +326,7 @@ class update_module_settings extends external_api {
                     . json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
             $message .= ($message ? ' ' : '')
-                . 'Gesetzt, aber ohne Datenbankfeld und deshalb nicht mit dem Vorher-Stand vergleichbar: '
+                . 'Set, but without a database field and therefore not comparable with the previous state: '
                 . implode(', ', $set) . '.';
         }
 
@@ -730,7 +344,7 @@ class update_module_settings extends external_api {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Course module ID'),
             'modname' => new external_value(PARAM_TEXT, 'Activity type'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
             'changes' => new external_multiple_structure(
                 new external_single_structure([
                     'field' => new external_value(PARAM_TEXT, 'Field name'),
@@ -740,7 +354,7 @@ class update_module_settings extends external_api {
                 'One entry per field that actually changed'
             ),
             'side_effects' => new external_multiple_structure(
-                new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                new external_value(PARAM_TEXT, 'Teacher-facing side-effect note'),
                 'Triggered side effects from catalog category 5, empty when none were triggered'
             ),
         ]);

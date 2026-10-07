@@ -19,8 +19,8 @@ namespace local_coursepilot\catalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Katalog-gegen-Moodle-Vertragstest fuer mod_page (Ticket #380, Vorbild
- * label_catalog_contract_test.php aus #379).
+ * Catalog/Moodle contract for mod_page (Ticket #380), following
+ * label_catalog_contract_test from #379.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,10 +31,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class page_catalog_contract_test extends \advanced_testcase {
 
     /**
-     * Jede von page gefuehrte Datenbankspalte (Felder + modulspezifische
-     * Sperrliste + die durchgaengig gesperrten, sofern in dieser Tabelle
-     * vorhanden) plus "id" muss die reale Spaltenmenge von {page} exakt
-     * ergeben.
+     * Catalog fields, real blocklisted columns and id exactly match the
+     * page table columns. Pseudofields do not count as database columns.
      */
     public function test_page_table_columns_match_the_catalog(): void {
         global $DB;
@@ -55,14 +53,14 @@ final class page_catalog_contract_test extends \advanced_testcase {
         $this->assertSame(
             $realcolumns,
             array_values(array_unique($known)),
-            "Die Spalten der Tabelle 'page' und der Feldkatalog (page::fields()/blocklist()) sind "
-                . 'auseinandergelaufen - Moodle hat vermutlich eine Spalte hinzugefuegt, entfernt oder umbenannt.'
+            "The columns of table 'page' and the field catalog (page::fields()/blocklist()) have "
+                . 'diverged - Moodle probably added, removed or renamed a column.'
         );
     }
 
     /**
-     * "printheading" existiert in Moodle 5.0 nicht mehr und darf im Katalog
-     * nicht auftauchen (Ticket #380).
+     * printheading was removed in Moodle 5.0 and must remain absent from
+     * the catalog (Ticket #380).
      */
     public function test_printheading_is_absent(): void {
         $names = array_column(
@@ -73,8 +71,8 @@ final class page_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * "display" ist eine echte Spalte - nicht das in Spec 0015 §2.2 genannte
-     * Pseudofeld. Ein Regressionswaechter gegen den irrtuemlichen Rueckbau.
+     * display is an actual column rather than a pseudofield (Spec 0015 §2.2).
+     * Guard against incorrectly reclassifying it.
      */
     public function test_display_is_a_real_field_not_a_pseudofield(): void {
         $fieldnames = array_map(static fn (field $f): string => $f->name, page::fields());
@@ -85,7 +83,7 @@ final class page_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Jede referenzierte aufrufbare Quelle existiert wirklich.
+     * Every referenced callable source exists.
      */
     public function test_referenced_callable_sources_exist(): void {
         global $CFG;
@@ -98,21 +96,20 @@ final class page_catalog_contract_test extends \advanced_testcase {
             $fields
         ));
 
-        $this->assertNotEmpty($callables, 'Kein Feld referenziert eine aufrufbare Quelle - Testannahme verletzt.');
+        $this->assertNotEmpty($callables, 'No field references a callable source; test assumption violated.');
 
         foreach ($callables as $callable) {
             $functionname = rtrim($callable, '()');
             $this->assertTrue(
                 function_exists($functionname),
-                "Referenzierte aufrufbare Quelle $callable existiert auf dieser Instanz nicht mehr."
+                "Referenced callable source $callable no longer exists on this instance."
             );
         }
     }
 
     /**
-     * Die referenzierten RESOURCELIB_DISPLAY_*-Konstanten existieren noch -
-     * aus page::checked_constants() statt einer zweiten, separat gepflegten
-     * Liste (Ticket #399, wiederverwendet von der Laufzeit-Tiefenpruefung).
+     * Constants from page::checked_constants() still exist, using the
+     * same source as runtime drift validation (Ticket #399).
      */
     public function test_resourcelib_display_constants_exist(): void {
         global $CFG;
@@ -120,7 +117,7 @@ final class page_catalog_contract_test extends \advanced_testcase {
 
         $this->assertSame(['RESOURCELIB_DISPLAY_POPUP'], page::checked_constants());
         foreach (page::checked_constants() as $constname) {
-            $this->assertTrue(defined($constname), "Konstante $constname existiert auf dieser Instanz nicht mehr.");
+            $this->assertTrue(defined($constname), "Constant $constname no longer exists on this instance.");
         }
         $this->assertSame(6, RESOURCELIB_DISPLAY_POPUP);
     }

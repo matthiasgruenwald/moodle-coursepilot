@@ -17,30 +17,26 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Feldkatalog fuer mod_resource (Spec 0015 §4.1/§4.3, Spec 0018 §4/§7:
- * Hauptdatei ist Pflicht, kommt als Materialordner-Verweis im selben
- * `create_module`-Aufruf mit).
+ * Field catalog for mod_resource (Spec 0015 §4.1/§4.3, Spec 0018 §4/§7):
+ * the main file is required, supplied as a material store reference in the
+ * same create_module call.
  *
- * Fallstricke aus dem Bestand (Ticket #380, Issue #434):
- * - "files" (Dateimanager-Draft-Itemid) ist ein Pseudofeld, vollstaendig
- *   katalogisiert und PFLICHT: der Wert ist eine Liste von
- *   Materialordner-Pfaden (Spec 0018 §4.2, z.B. `["arbeitsblatt.pdf"]`),
- *   die {@see \local_coursepilot\external\create_module} bzw.
- *   {@see \local_coursepilot\external\update_module_settings} vor dem
- *   eigentlichen Schreiben zu einem Dateimanager-Entwurf aufloesen
- *   ({@see \local_coursepilot\material_files::resolve_into_draft()}).
- * - Anders als bei folder erzeugt resource OHNE Hauptdatei eine kaputte
- *   Aktivitaetsseite (mod/resource/view.php:69-71: `resource_print_filenotfound()`
- *   wenn keine Datei vorhanden ist) - deshalb `required=true` ohne Default:
- *   `create_module` scheitert ohne "files" mit einer Pflichtfeld-Meldung,
- *   BEVOR die Aktivitaet angelegt wird (kein leerer Zwischenstand).
- * - "displayoptions" wird von resource_set_display_options() unmittelbar aus
- *   display/popupwidth/popupheight/printintro/showsize/showtype/showdate
- *   nachgerechnet und steht auf der Sperrliste.
- * - "revision" wird beim Update selbst hochgezaehlt (resource_update_instance():
- *   `$data->revision++;`) und steht auf der Sperrliste.
- * - "tobemigrated"/"legacyfiles"/"legacyfileslast" sind Migrations-Buchhaltung
- *   aus Moodle 1.9-Restores, kein Lehrkraft-Feld - gesperrt.
+ * Existing pitfalls (ticket #380, issue #434):
+ * - files (file-manager draft item ID) is a fully cataloged REQUIRED pseudofield.
+ *   Its value is a list of material store paths (Spec 0018 §4.2, e.g.
+ *   ["worksheet.pdf"]). {@see \local_coursepilot\external\create_module} and
+ *   {@see \local_coursepilot\external\update_module_settings} resolve it to a
+ *   file-manager draft before writing through
+ *   {@see \local_coursepilot\material_files::resolve_into_draft()}.
+ * - Unlike folder, resource without a main file creates a broken activity page
+ *   (mod/resource/view.php:69-71 calls resource_print_filenotfound()). Hence
+ *   required=true with no default: create_module fails before creating the
+ *   activity, leaving no empty intermediate state.
+ * - resource_set_display_options() recomputes displayoptions from
+ *   display/popupwidth/popupheight/printintro/showsize/showtype/showdate; blocked.
+ * - resource_update_instance() increments revision (`$data->revision++;`); blocked.
+ * - tobemigrated/legacyfiles/legacyfileslast are Moodle 1.9 restore bookkeeping,
+ *   not teacher fields; blocked.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -57,18 +53,18 @@ final class resource implements module_catalog {
             new field(
                 'name',
                 'PARAM_TEXT',
-                'Anzeigename der Datei-Aktivitaet.',
+                'Display name of the file activity.',
                 true,
                 null,
                 null,
                 null,
-                'mod/resource/mod_form.php:51-54 (PARAM_TEXT bzw. PARAM_CLEANHTML je nach $CFG->formatstringstriptags)'
+                'mod/resource/mod_form.php:51-54 (PARAM_TEXT or PARAM_CLEANHTML depending on $CFG->formatstringstriptags)'
             ),
             new field(
                 'intro',
                 'PARAM_RAW',
-                'Beschreibungstext (Intro), optional oberhalb der Datei eingeblendet (Pseudofeld "printintro" '
-                    . 'steuert ob, nur bei bestimmten display-Werten wirksam).',
+                'Description (intro), optionally shown above the file (pseudofield "printintro" '
+                    . 'controls whether it is shown; only effective for certain display values).',
                 false,
                 null,
                 null,
@@ -78,37 +74,37 @@ final class resource implements module_catalog {
             new field(
                 'introformat',
                 'PARAM_INT',
-                'Textformat des Intros.',
+                'Text format of the intro.',
                 false,
                 FORMAT_HTML,
                 null,
                 'format_text_menu()',
-                'lib/weblib.php:464 (format_text_menu()); Spalte mod/resource/db/install.xml (resource.introformat)'
+                'lib/weblib.php:464 (format_text_menu()); column mod/resource/db/install.xml (resource.introformat)'
             ),
             new field(
                 'display',
                 'PARAM_INT',
-                'Darstellung der Datei (z.B. automatisch, eingebettet, neues Fenster, Popup, direkt '
-                    . 'oeffnen/herunterladen). Die tatsaechlich waehlbaren Optionen sind eine von der '
-                    . 'Moodle-Administration konfigurierte Teilmenge, keine feste Liste.',
+                'File display (e.g. automatic, embedded, new window, popup, direct '
+                    . 'open/download). Available options are a subset '
+                    . 'configured by Moodle administration, not a fixed list.',
                 false,
                 0,
                 null,
                 'resourcelib_get_displayoptions()',
-                'lib/resourcelib.php:30-42 (RESOURCELIB_DISPLAY_*-Konstanten), :111 (resourcelib_get_displayoptions()); '
-                    . 'Teilmenge aus admin_setting_configmultiselect(\'resource/displayoptions\', ...) in '
-                    . 'mod/resource/settings.php:28-42; Spalte mod/resource/db/install.xml (resource.display)'
+                'lib/resourcelib.php:30-42 (RESOURCELIB_DISPLAY_*-constants), :111 (resourcelib_get_displayoptions()); '
+                    . 'Subset from admin_setting_configmultiselect(\'resource/displayoptions\', ...) in '
+                    . 'mod/resource/settings.php:28-42; column mod/resource/db/install.xml (resource.display)'
             ),
             new field(
                 'filterfiles',
                 'PARAM_INT',
-                'Textfilter auf den Dateiinhalt anwenden: kein Filter (0), alle Dateien (1) oder nur HTML-Dateien '
+                'Apply text filters to file content: no filter (0), all files (1), or HTML files only '
                     . '(2).',
                 false,
                 0,
                 [0, 1, 2],
                 null,
-                'mod/resource/mod_form.php:132-134 (Optionsliste none/allfiles/htmlfilesonly); Spalte '
+                'mod/resource/mod_form.php:132-134 (option list none/allfiles/htmlfilesonly); column '
                     . 'mod/resource/db/install.xml (resource.filterfiles)'
             ),
         ];
@@ -130,58 +126,58 @@ final class resource implements module_catalog {
         return [
             new field(
                 'files',
-                'Liste von Materialordner-Pfaden (JSON-Array)',
-                'Die anzuhaengende(n) Datei(en), darunter die Hauptdatei - je Eintrag ein Pfad in den Materialordner '
-                    . '(Spec 0018 §4.2, z.B. ["arbeitsblatt.pdf"]), die zuerst per upload_material_file dorthin '
-                    . 'gelegt werden muss. PFLICHTFELD: OHNE Hauptdatei erzeugt resource eine kaputte '
-                    . 'Aktivitaetsseite - anders als bei folder ist ein leerer Zustand hier ungueltig.',
+                'List of material store paths (JSON array)',
+                'Files to attach, including the main file - each entry is a path in the material store '
+                    . '(Spec 0018 §4.2, e.g. ["worksheet.pdf"]), uploaded there first '
+                    . 'using upload_material_file. REQUIRED FIELD: WITHOUT a main file, resource creates a broken '
+                    . 'activity page - unlike folder, an empty state is invalid here.',
                 true,
                 null,
                 null,
                 null,
                 'mod/resource/locallib.php: resource_set_mainfile(); mod/resource/view.php:69-71 '
-                    . '(resource_print_filenotfound() ohne Datei); local_coursepilot\material_files::resolve_into_draft()'
+                    . '(resource_print_filenotfound() without a file); local_coursepilot\material_files::resolve_into_draft()'
             ),
             new field(
                 'printintro',
                 'PARAM_BOOL',
-                'Intro zusaetzlich anzeigen - nur wirksam bei display=0 (Auto), 1 (Embed) oder 2 (Frame). Kein '
-                    . 'DB-Feld - fliesst in die serialisierte "displayoptions"-Spalte ein.',
+                'Show intro as well - only effective for display=0 (auto), 1 (embed) or 2 (frame). Not a '
+                    . 'DB field - stored in the serialized "displayoptions" column.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/resource/lib.php (resource_set_display_options(): nur gesetzt, wenn display in '
+                'mod/resource/lib.php (resource_set_display_options(): only set when display in '
                     . '[AUTO, EMBED, FRAME])'
             ),
             new field(
                 'popupwidth',
                 'PARAM_INT',
-                'Fensterbreite in Pixeln, nur wirksam bei display=6 (Popup). Kein DB-Feld - fliesst in '
-                    . '"displayoptions" ein.',
+                'Window width in pixels, only effective for display=6 (popup). Not a DB field - stored in '
+                    . '"displayoptions".',
                 false,
                 620,
                 null,
                 null,
-                'mod/resource/lib.php (resource_set_display_options(): nur gesetzt, wenn '
+                'mod/resource/lib.php (resource_set_display_options(): only set when '
                     . 'display==RESOURCELIB_DISPLAY_POPUP)'
             ),
             new field(
                 'popupheight',
                 'PARAM_INT',
-                'Fensterhoehe in Pixeln, nur wirksam bei display=6 (Popup). Kein DB-Feld - fliesst in '
-                    . '"displayoptions" ein.',
+                'Window height in pixels, only effective for display=6 (popup). Not a DB field - stored in '
+                    . '"displayoptions".',
                 false,
                 450,
                 null,
                 null,
-                'mod/resource/lib.php (resource_set_display_options(): nur gesetzt, wenn '
+                'mod/resource/lib.php (resource_set_display_options(): only set when '
                     . 'display==RESOURCELIB_DISPLAY_POPUP)'
             ),
             new field(
                 'showsize',
                 'PARAM_BOOL',
-                'Dateigroesse anzeigen. Kein DB-Feld - fliesst in "displayoptions" ein.',
+                'Dateigroesse anzeigen. Kein DB-Feld - fliesst in "displayoptions".',
                 false,
                 0,
                 [0, 1],
@@ -191,7 +187,7 @@ final class resource implements module_catalog {
             new field(
                 'showtype',
                 'PARAM_BOOL',
-                'Dateityp anzeigen. Kein DB-Feld - fliesst in "displayoptions" ein.',
+                'Dateityp anzeigen. Kein DB-Feld - fliesst in "displayoptions".',
                 false,
                 0,
                 [0, 1],
@@ -201,7 +197,7 @@ final class resource implements module_catalog {
             new field(
                 'showdate',
                 'PARAM_BOOL',
-                'Erstellungs-/Aenderungsdatum der Datei anzeigen. Kein DB-Feld - fliesst in "displayoptions" ein.',
+                'Show file creation/modification date. Not a DB field - stored in "displayoptions".',
                 false,
                 0,
                 [0, 1],
@@ -227,9 +223,9 @@ final class resource implements module_catalog {
 
     public static function side_effects(): array {
         return [
-            'resource verlangt beim Anlegen das Pflichtfeld "files" (Liste von Materialordner-Pfaden, Spec 0018 '
-                . '§4.2): ohne Hauptdatei entsteht eine kaputte Aktivitaetsseite (Spec 0015 §4.3), create_module '
-                . 'scheitert deshalb ohne "files" bevor irgendetwas angelegt wird.',
+            'resource requires "files" on creation (list of material store paths, Spec 0018 '
+                . '§4.2): without a main file, the activity page is broken (Spec 0015 §4.3), so create_module '
+                . 'fails without "files" before anything is created.',
         ];
     }
 
@@ -237,7 +233,7 @@ final class resource implements module_catalog {
         return [];
     }
 
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
 

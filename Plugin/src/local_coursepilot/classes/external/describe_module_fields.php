@@ -31,19 +31,18 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Feldkatalog als Daten (Spec 0015 §3.1, Ticket #379). Rein lesend: liefert,
- * was eine Aktivitaetsart einstellen kann, in Lehrkraft-verstaendlichem
- * Deutsch statt englischer Feldnamen ohne Erklaerung.
+ * Field catalog as data (Spec 0015 §3.1, #379). Read-only: describes an
+ * activity type's settings in language teachers understand, instead of
+ * unexplained field names.
  *
- * Ohne $modname: welche Aktivitaetsarten Coursepilot ueberhaupt fuehrt (User
- * Story 13). Mit $modname, ohne $full: die haeufig gesetzten Felder
- * plus Feldbuendel plus Vermerk, dass es mehr gibt (User Story 15). Mit
- * $full=true: alle fuenf Kategorien aus Spec 0015 §2.2.
+ * Without modname, list the activity types Coursepilot knows (user story 13).
+ * With modname and without full, return common fields, field bundles and a
+ * notice that more are available (user story 15). full=true returns all five
+ * categories from Spec 0015 §2.2.
  *
- * Nicht course-gebunden: der Katalog ist statische Serverkonfiguration, kein
- * Kursinhalt - deshalb keine 'local/coursepilot:use'-Pruefung im Kurskontext
- * (die gibt es hier nicht), sondern nur das Standard-Login/die globale
- * Fernzugriffs-Notbremse aus dispatcher::handle_authorized().
+ * The catalog is static server configuration, not course content. There is
+ * no course context for local/coursepilot:use; dispatcher::handle_authorized()
+ * applies the standard login and global remote-access emergency stop.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -52,14 +51,13 @@ defined('MOODLE_INTERNAL') || die();
 class describe_module_fields extends external_api {
 
     /**
-     * Vehikel-Hinweis fuer Aktivitaetsarten ohne eigenes schreibweg() (Spec
-     * 0015 §1/§3.1: der Formularweg update_moduleinfo()). Bewusst OHNE
-     * konkrete MCP-Werkzeugnamen ("update_module_settings"/"create_module") -
-     * dieses Ticket (#379) liefert nur den Lesekatalog, der Schreibkern selbst
-     * kommt erst in Phase 3.
+     * Write vehicle hint for types without their own write_route() (Spec 0015
+     * §1/§3.1: update_moduleinfo()). Deliberately avoids specific MCP tool names
+     * (update_module_settings/create_module): #379 provides the read catalog,
+     * while the write core follows in phase 3.
      */
-    private const VEHICLE_SCHREIBWEG = 'Formularweg (update_moduleinfo() bzw. add_moduleinfo()); eigener '
-        . 'Schreib-Endpunkt folgt in einer spaeteren Ausbaustufe.';
+    private const VEHICLE_WRITE_ROUTE = 'Form route (update_moduleinfo() or add_moduleinfo()); own '
+        . 'write endpoint follows in a later development stage.';
 
     /**
      * @return external_function_parameters
@@ -86,7 +84,7 @@ class describe_module_fields extends external_api {
      * @param string $modname
      * @param bool $full
      * @return array
-     * @throws moodle_exception unknownmodname, wenn $modname nicht gefuehrt wird.
+     * @throws moodle_exception unknownmodname if $modname is not supported.
      */
     public static function execute(string $modname = '', bool $full = false): array {
         $params = self::validate_parameters(self::execute_parameters(), [
@@ -102,8 +100,8 @@ class describe_module_fields extends external_api {
         if ($modname === '') {
             return [
                 'known_modnames' => $knownmodnames,
-                'notice' => 'Coursepilot kann die Aktivitaetsarten, die er kennt: '
-                    . implode(', ', $knownmodnames) . '. describe_module_fields(modname) fragt eine davon ab.',
+                'notice' => 'Coursepilot knows these activity types: '
+                    . implode(', ', $knownmodnames) . '. describe_module_fields(modname) queries one of them.',
                 'module' => null,
             ];
         }
@@ -114,16 +112,16 @@ class describe_module_fields extends external_api {
                 'unknownmodname',
                 'local_coursepilot',
                 '',
-                ['modname' => $modname, 'aktivitaetsarten' => implode(', ', $knownmodnames)]
+                ['modname' => $modname, 'modnames' => implode(', ', $knownmodnames)]
             );
         }
 
         $full = (bool) $params['full'];
         $modulefields = $catalogclass::fields();
         if (!$full) {
-            // Ausduennung fuer die Kurzform (Spec 0015 §3.1, Ticket #382): nur Aktivitaetsarten mit sehr
-            // vielen Feldern (assign: ~30) grenzen common_field_names() echt ein - bei wenigen Feldern
-            // (label, choice, forum, ...) liefert die Methode ohnehin alle Namen (siehe module_catalog).
+            // Trim the short form (Spec 0015 §3.1, #382). Only types with many fields
+            // (assign: about 30) restrict common_field_names(); types with few fields
+            // (label, choice, forum, ...) already return all names (see module_catalog).
             $commonnames = $catalogclass::common_field_names();
             $modulefields = array_values(array_filter(
                 $modulefields,
@@ -136,7 +134,7 @@ class describe_module_fields extends external_api {
             + ['learner_lock' => learner_locks::condition_json($catalogclass, $f->name)];
         $module = [
             'modname' => $modname,
-            'write_route' => $catalogclass::schreibweg() ?? self::VEHICLE_SCHREIBWEG,
+            'write_route' => $catalogclass::write_route() ?? self::VEHICLE_WRITE_ROUTE,
             'grade_origin' => $catalogclass::grade_origin(),
             'fields' => array_map($withlock, $fields),
             'field_bundles' => self::bundles($catalogclass::bundles()),
@@ -159,17 +157,17 @@ class describe_module_fields extends external_api {
         return [
             'known_modnames' => $knownmodnames,
             'notice' => $full
-                ? 'Vollstaendige Form: alle fuenf Katalogkategorien.'
-                : 'Kurzform: nur die haeufig gesetzten Felder und Feldbuendel. Pseudofelder, Sperrliste, '
-                    . 'Kombinationsregeln und Nebenwirkungen fehlen - mit full:true abrufen.',
+                ? 'Full form: all five catalog categories.'
+                : 'Short form: only the frequently set fields and field bundles. Pseudo fields, blocklist, '
+                    . 'combination rules and side effects are missing - retrieve with full:true.',
             'module' => $module,
         ];
     }
 
     /**
-     * Feldbuendel fuer die Rueckgabestruktur: Werte sind je Feld gemischten
-     * Typs, deshalb als JSON-Zeile statt als dynamische Struktur (gleiches
-     * Vorgehen wie get_course_catalog::plugin_config_field()-Zusatzdateien).
+     * Serialize field bundles for the return structure. Per-field values have
+     * mixed types, so use a JSON row rather than a dynamic structure, as with
+     * get_course_catalog::plugin_config_field() supplemental files.
      *
      * @param array<string, array<string, mixed>> $bundles
      * @return array<int, array{name: string, fields_json: string}>
@@ -189,7 +187,7 @@ class describe_module_fields extends external_api {
         $fieldstructure = new external_single_structure([
             'name' => new external_value(PARAM_TEXT, 'Moodle field name (form-path contract)'),
             'type' => new external_value(PARAM_TEXT, 'PARAM_* constant or short type description'),
-            'meaning' => new external_value(PARAM_TEXT, 'Teacher-facing German meaning of the field'),
+            'meaning' => new external_value(PARAM_TEXT, 'Teacher-facing meaning of the field'),
             'required' => new external_value(PARAM_BOOL, 'Required field without a default?'),
             'default_json' => new external_value(PARAM_RAW, 'JSON-encoded form default, "null" if none'),
             'value_range' => new external_single_structure([
@@ -216,7 +214,7 @@ class describe_module_fields extends external_api {
                 new external_value(PARAM_TEXT, 'Modname'),
                 'Activity types Coursepilot knows'
             ),
-            'notice' => new external_value(PARAM_TEXT, 'Teacher-facing German notice text'),
+            'notice' => new external_value(PARAM_TEXT, 'Teacher-facing notice text'),
             'module' => new external_single_structure([
                 'modname' => new external_value(PARAM_TEXT, 'Activity type'),
                 'write_route' => new external_value(
@@ -242,11 +240,11 @@ class describe_module_fields extends external_api {
                     'Category 3: only with full:true'
                 ),
                 'combination_rules' => new external_multiple_structure(
-                    new external_value(PARAM_TEXT, 'Regel in Lehrkraft-Deutsch'),
+                    new external_value(PARAM_TEXT, 'Teacher-facing combination rule'),
                     'Category 4: only with full:true'
                 ),
                 'side_effects' => new external_multiple_structure(
-                    new external_value(PARAM_TEXT, 'Teacher-facing German side-effect note'),
+                    new external_value(PARAM_TEXT, 'Teacher-facing side-effect note'),
                     'Category 5: only with full:true'
                 ),
             ], 'The requested module catalog, null when modname was empty', VALUE_DEFAULT, null, NULL_ALLOWED),

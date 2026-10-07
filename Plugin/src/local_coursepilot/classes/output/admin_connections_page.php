@@ -24,7 +24,7 @@
 
 namespace local_coursepilot\output;
 
-use local_coursepilot\admin\connection_ablageort;
+use local_coursepilot\admin\connection_storage_location;
 
 /**
  * Prepares display-neutral state for the admin connections template.
@@ -38,7 +38,7 @@ final class admin_connections_page {
     public static function page_data(array $tokens): array {
         $rows = [];
         foreach ($tokens as $token) {
-            $storagelocation = connection_ablageort::describe((int) $token->userid);
+            $storagelocation = connection_storage_location::describe((int) $token->userid);
             $lines = array_merge(array_values($storagelocation['targets']), $storagelocation['markers']);
 
             $rows[] = [
@@ -46,7 +46,7 @@ final class admin_connections_page {
                 'clientname' => $token->clientname ?: $token->clientid,
                 'since' => userdate($token->timecreated),
                 'expires' => userdate($token->expires),
-                'ablageortlines' => array_map(static fn(string $line): array => ['text' => $line], $lines),
+                'storagelocationlines' => array_map(static fn(string $line): array => ['text' => $line], $lines),
                 'revokeurl' => (new \moodle_url('/local/coursepilot/admin/connections.php', [
                     'revoke' => $token->id,
                     'sesskey' => sesskey(),

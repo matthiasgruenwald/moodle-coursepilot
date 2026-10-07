@@ -17,10 +17,9 @@
 namespace local_coursepilot\webdav;
 
 /**
- * Eine bereits geprueft-gueltige WebDAV-Nutzerinstanz samt frisch gelesenen
- * Zugangsdaten (Issue #490, Spec #486 §2/§3) - lebt nur fuer die Dauer eines
- * einzelnen Aufrufs, wird nirgendwo gespeichert. Baut Ressourcen-Adressen
- * innerhalb der Instanz und den passenden {@see webdav_client}.
+ * Validated WebDAV user instance with freshly read credentials (Issue #490,
+ * Spec #486 §2/§3). Exists only for one call and is never persisted. Builds
+ * resource URLs within the instance and the corresponding webdav_client.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -29,11 +28,10 @@ namespace local_coursepilot\webdav;
 final class resolved_webdav_instance {
 
     /**
-     * @param string $baseurl https-Adresse der Instanz inkl. Basispfad, mit abschliessendem "/".
-     * @param webdav_transport $transport Im Betrieb {@see curl_transport} mit den frisch
-     *        gelesenen Zugangsdaten, im Test der dem Adapter injizierte
-     *        Transport-Fake - dieselbe Austauschbarkeit, die
-     *        {@see webdav_client} selbst schon kennt (Spec #486 Testing Decisions).
+     * @param string $baseurl HTTPS instance URL including base path and trailing slash.
+     * @param webdav_transport $transport Production curl_transport with freshly read credentials,
+     *        or the injected test fake; the same seam as webdav_client
+     *        (Spec #486 Testing Decisions).
      */
     public function __construct(
         private readonly string $baseurl,
@@ -42,23 +40,23 @@ final class resolved_webdav_instance {
     }
 
     /**
-     * @return webdav_client Neuer Client auf dem uebergebenen Transport.
+     * @return webdav_client New client using the supplied transport.
      */
     public function client(): webdav_client {
         return new webdav_client($this->transport);
     }
 
     /**
-     * @param string $relativepath Bereits segmentweise geprueft, ohne fuehrenden/abschliessenden Schraegstrich.
-     * @return string Adresse eines Ordners, mit abschliessendem "/".
+     * @param string $relativepath Already segment-validated, without leading or trailing slashes.
+     * @return string Directory URL with a trailing slash.
      */
     public function directory_url(string $relativepath): string {
         return $this->url($relativepath) . '/';
     }
 
     /**
-     * @param string $relativepath Bereits segmentweise geprueft, ohne fuehrenden/abschliessenden Schraegstrich.
-     * @return string Adresse einer Datei, ohne abschliessenden Schraegstrich.
+     * @param string $relativepath Already segment-validated, without leading or trailing slashes.
+     * @return string File URL without a trailing slash.
      */
     public function file_url(string $relativepath): string {
         return $this->url($relativepath);

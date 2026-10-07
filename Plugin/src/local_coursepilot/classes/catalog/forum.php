@@ -17,26 +17,26 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Feldkatalog fuer mod_forum (Spec 0015 §4.1, Ticket #381).
+ * Field catalog for mod_forum (Spec 0015 §4.1, ticket #381).
  *
- * Fallstricke aus dem Bestand:
- * - "type" referenziert forum_get_forum_types() als Wertebereich - "news"
- *   und "social" existieren zwar als Typ (forum_get_forum_types_all()),
- *   sind aber nur bei automatisch angelegten Kurs-/Site-Foren gesetzt und
- *   ueber das Formular nicht waehlbar (mod/forum/mod_form.php:
- *   definition_after_data() blendet sie nur ein, wenn bereits gesetzt).
- * - "assessed" referenziert rating_manager::get_aggregate_types() (Klasse in
- *   rating/lib.php) statt die Werte abzuschreiben.
- * - "forcesubscribe" referenziert forum_get_subscriptionmode_options().
- *   forcesubscribe=2 (FORUM_INITIALSUBSCRIBE) ist ein Nebenwirkungsvermerk:
- *   beim Anlegen bzw. beim Wechsel auf 2 abonniert Moodle sofort ALLE
- *   potenziellen Kursteilnehmenden (mod/forum/lib.php: forum_instance_created(),
- *   forum_update_instance()) - sie bekommen ab dann Mails zu neuen Beitraegen.
- * - "ratingtime" ist ein Pseudofeld (Checkbox, keine DB-Spalte): nur wenn es
- *   gesetzt ist, uebernimmt forum_update_instance() "assesstimestart"/
- *   "assesstimefinish" - sonst werden beide auf 0 zurueckgesetzt. Deshalb
- *   stehen "assesstimestart"/"assesstimefinish" auf der Sperrliste, obwohl
- *   es echte Spalten sind.
+ * Pitfalls from the existing code base:
+ * - "type" references forum_get_forum_types() as its value range - "news"
+ *   and "social" do exist as a type (forum_get_forum_types_all()), but are
+ *   only set on automatically created course/site forums and cannot be
+ *   chosen through the form (mod/forum/mod_form.php:
+ *   definition_after_data() only shows them if already set).
+ * - "assessed" references rating_manager::get_aggregate_types() (class in
+ *   rating/lib.php) instead of copying the values.
+ * - "forcesubscribe" references forum_get_subscriptionmode_options().
+ *   forcesubscribe=2 (FORUM_INITIALSUBSCRIBE) is a side-effect note:
+ *   on creation or when switching to 2, Moodle immediately subscribes ALL
+ *   potential course participants (mod/forum/lib.php: forum_instance_created(),
+ *   forum_update_instance()) - from then on they receive emails about new posts.
+ * - "ratingtime" is a pseudo-field (checkbox, no DB column): only when it is
+ *   set does forum_update_instance() take over "assesstimestart"/
+ *   "assesstimefinish" - otherwise both are reset to 0. That is why
+ *   "assesstimestart"/"assesstimefinish" are on the blocklist although
+ *   they are real columns.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -53,38 +53,38 @@ final class forum implements module_catalog {
             new field(
                 'name',
                 'PARAM_TEXT',
-                'Anzeigename des Forums.',
+                'Display name of the forum.',
                 true,
                 null,
                 null,
                 null,
-                'mod/forum/mod_form.php:42-46 (PARAM_TEXT bzw. PARAM_CLEANHTML je nach $CFG->formatstringstriptags)'
+                'mod/forum/mod_form.php:42-46 (PARAM_TEXT or PARAM_CLEANHTML depending on $CFG->formatstringstriptags)'
             ),
             new field(
                 'intro',
                 'PARAM_RAW',
-                'Beschreibungstext (Intro) des Forums.',
+                'Description text (intro) of the forum.',
                 true,
                 null,
                 null,
                 null,
-                'mod/forum/db/install.xml (forum.intro, NOTNULL ohne DB-Default)'
+                'mod/forum/db/install.xml (forum.intro, NOTNULL without DB default)'
             ),
             new field(
                 'introformat',
                 'PARAM_INT',
-                'Textformat des Intros.',
+                'Text format of the intro.',
                 false,
                 FORMAT_HTML,
                 null,
                 'format_text_menu()',
-                'lib/weblib.php:464 (format_text_menu()); Spalte mod/forum/db/install.xml (forum.introformat)'
+                'lib/weblib.php:464 (format_text_menu()); column mod/forum/db/install.xml (forum.introformat)'
             ),
             new field(
                 'type',
                 'PARAM_ALPHA',
-                'Forumstyp. "news" und "social" sind ueber diesen Katalog nicht waehlbar - sie existieren nur '
-                    . 'bei automatisch angelegten Kurs-/Site-Foren.',
+                'Forum type. "news" and "social" cannot be chosen through this catalog - they only exist '
+                    . 'on automatically created course/site forums.',
                 false,
                 'general',
                 null,
@@ -94,111 +94,111 @@ final class forum implements module_catalog {
             new field(
                 'duedate',
                 'PARAM_INT',
-                'Unix-Zeitstempel: Abgabetermin, nur informativ (kein Sperrzeitpunkt fuer Beitraege). Erzeugt '
-                    . 'einen Kalendereintrag (siehe Nebenwirkungen).',
+                'Unix timestamp: due date, informational only (not a cut-off for posts). Creates '
+                    . 'a calendar entry (see side effects).',
                 false,
                 0,
                 null,
                 null,
-                'mod/forum/mod_form.php:61-63 (date_time_selector, optional); Spalte '
+                'mod/forum/mod_form.php:61-63 (date_time_selector, optional); column '
                     . 'mod/forum/db/install.xml (forum.duedate)'
             ),
             new field(
                 'cutoffdate',
                 'PARAM_INT',
-                'Unix-Zeitstempel: ab hier nimmt Moodle keine Forumsbeitraege mehr an. 0 = kein Cutoff.',
+                'Unix timestamp: from here on Moodle accepts no more forum posts. 0 = no cut-off.',
                 false,
                 0,
                 null,
                 null,
-                'mod/forum/mod_form.php:65-67 (date_time_selector, optional); Spalte '
+                'mod/forum/mod_form.php:65-67 (date_time_selector, optional); column '
                     . 'mod/forum/db/install.xml (forum.cutoffdate)'
             ),
             new field(
                 'assessed',
                 'PARAM_INT',
-                'Aggregationstyp fuer Bewertungen (z.B. Durchschnitt, Summe, keine Bewertung).',
+                'Aggregation type for ratings (e.g. average, sum, no rating).',
                 false,
                 0,
                 null,
                 'rating_manager::get_aggregate_types()',
-                'rating/lib.php (Klasse rating_manager, Methode get_aggregate_types()); '
-                    . 'course/moodleform_mod.php:686,719 (add_rating_settings()); Spalte '
+                'rating/lib.php (class rating_manager, method get_aggregate_types()); '
+                    . 'course/moodleform_mod.php:686,719 (add_rating_settings()); column '
                     . 'mod/forum/db/install.xml (forum.assessed)'
             ),
             new field(
                 'scale',
                 'PARAM_INT',
-                'Bewertungsskala: positiv = Punkte-Maximum, negativ = ID einer benutzerdefinierten Skala. Nur '
-                    . 'wirksam bei assessed != 0.',
+                'Rating scale: positive = maximum points, negative = ID of a custom scale. Only '
+                    . 'effective when assessed != 0.',
                 false,
                 0,
                 null,
                 null,
-                'course/moodleform_mod.php:743-746 (add_rating_settings(), modgrade-Element; scale-Wert = grademax/scaleid); Spalte '
+                'course/moodleform_mod.php:743-746 (add_rating_settings(), modgrade element; scale value = grademax/scaleid); column '
                     . 'mod/forum/db/install.xml (forum.scale)'
             ),
             new field(
                 'grade_forum',
                 'PARAM_INT',
-                'Gesamtbewertung des Forums (unabhaengig von der Beitragsbewertung ueber "assessed"): positiv = '
-                    . 'Punkte-Maximum, negativ = ID einer benutzerdefinierten Skala, 0 = keine Bewertung.',
+                'Overall grade of the forum (independent of the post rating via "assessed"): positive = '
+                    . 'maximum points, negative = ID of a custom scale, 0 = no grading.',
                 false,
                 0,
                 null,
                 null,
-                'mod/forum/mod_form.php:211,225-274 (add_forum_grade_settings(), modgrade-Element); Spalte '
+                'mod/forum/mod_form.php:211,225-274 (add_forum_grade_settings(), modgrade element); column '
                     . 'mod/forum/db/install.xml (forum.grade_forum)'
             ),
             new field(
                 'grade_forum_notify',
                 'PARAM_BOOL',
-                'Lernende standardmaessig ueber neue Bewertungen benachrichtigen.',
+                'Notify learners about new grades by default.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/forum/mod_form.php:305-307 (selectyesno); Spalte '
+                'mod/forum/mod_form.php:305-307 (selectyesno); column '
                     . 'mod/forum/db/install.xml (forum.grade_forum_notify)'
             ),
             new field(
                 'maxbytes',
                 'PARAM_INT',
-                'Maximale Dateigroesse je Anhang in Byte. Die waehlbaren Werte sind eine von Kurs- und '
-                    . 'Serverlimit abhaengige Teilmenge, keine feste Liste.',
+                'Maximum file size per attachment in bytes. The selectable values are a subset depending on '
+                    . 'course and server limits, not a fixed list.',
                 false,
                 0,
                 null,
                 'get_max_upload_sizes()',
-                'lib/moodlelib.php:6453 (get_max_upload_sizes()); mod/forum/mod_form.php:72-76; Spalte '
+                'lib/moodlelib.php:6453 (get_max_upload_sizes()); mod/forum/mod_form.php:72-76; column '
                     . 'mod/forum/db/install.xml (forum.maxbytes)'
             ),
             new field(
                 'maxattachments',
                 'PARAM_INT',
-                'Maximale Anzahl Anhaenge je Beitrag.',
+                'Maximum number of attachments per post.',
                 false,
                 1,
                 null,
                 null,
-                'mod/forum/mod_form.php:94-96; Spalte mod/forum/db/install.xml (forum.maxattachments)'
+                'mod/forum/mod_form.php:94-96; column mod/forum/db/install.xml (forum.maxattachments)'
             ),
             new field(
                 'displaywordcount',
                 'PARAM_BOOL',
-                'Wortanzahl je Beitrag anzeigen.',
+                'Show word count per post.',
                 false,
                 0,
                 [0, 1],
                 null,
-                'mod/forum/mod_form.php:98-100 (selectyesno); Spalte '
+                'mod/forum/mod_form.php:98-100 (selectyesno); column '
                     . 'mod/forum/db/install.xml (forum.displaywordcount)'
             ),
             new field(
                 'forcesubscribe',
                 'PARAM_INT',
-                'Abonnementmodus. Wert 2 (Auto-Abonnement) abonniert beim Anlegen bzw. Umschalten sofort alle '
-                    . 'potenziellen Kursteilnehmenden - siehe Nebenwirkungen.',
+                'Subscription mode. Value 2 (auto-subscription) immediately subscribes all potential course '
+                    . 'participants on creation or switching - see side effects.',
                 false,
                 0,
                 null,
@@ -209,7 +209,7 @@ final class forum implements module_catalog {
             new field(
                 'trackingtype',
                 'PARAM_INT',
-                'Lesestatus-Verfolgung: aus, optional (Lernende entscheiden) oder erzwungen.',
+                'Read tracking: off, optional (learners decide) or forced.',
                 false,
                 1,
                 [0, 1, 2],
@@ -219,7 +219,7 @@ final class forum implements module_catalog {
             new field(
                 'rsstype',
                 'PARAM_INT',
-                'RSS-Feedinhalt: aus, Diskussionen oder Beitraege. Nur waehlbar, wenn RSS serverweit aktiv ist.',
+                'RSS feed content: off, discussions or posts. Only selectable if RSS is enabled server-wide.',
                 false,
                 0,
                 null,
@@ -229,7 +229,7 @@ final class forum implements module_catalog {
             new field(
                 'rssarticles',
                 'PARAM_INT',
-                'Anzahl Eintraege im RSS-Feed. Nur wirksam bei rsstype != 0.',
+                'Number of entries in the RSS feed. Only effective when rsstype != 0.',
                 false,
                 0,
                 null,
@@ -239,31 +239,31 @@ final class forum implements module_catalog {
             new field(
                 'warnafter',
                 'PARAM_INT',
-                'Ab dieser Beitragszahl im Blockzeitraum eine Warnung anzeigen. 0 = aus. Nur wirksam bei '
+                'Show a warning from this number of posts within the block period. 0 = off. Only effective when '
                     . 'blockperiod != 0.',
                 false,
                 0,
                 null,
                 null,
-                'mod/forum/mod_form.php:201-206 (hideIf blockperiod eq 0); Spalte '
+                'mod/forum/mod_form.php:201-206 (hideIf blockperiod eq 0); column '
                     . 'mod/forum/db/install.xml (forum.warnafter)'
             ),
             new field(
                 'blockafter',
                 'PARAM_INT',
-                'Ab dieser Beitragszahl im Blockzeitraum weitere Beitraege sperren. 0 = aus. Nur wirksam bei '
+                'Block further posts from this number of posts within the block period. 0 = off. Only effective when '
                     . 'blockperiod != 0.',
                 false,
                 0,
                 null,
                 null,
-                'mod/forum/mod_form.php:194-199 (hideIf blockperiod eq 0); Spalte '
+                'mod/forum/mod_form.php:194-199 (hideIf blockperiod eq 0); column '
                     . 'mod/forum/db/install.xml (forum.blockafter)'
             ),
             new field(
                 'blockperiod',
                 'PARAM_INT',
-                'Zeitraum in Sekunden, ueber den warnafter/blockafter gezaehlt werden. 0 = Sperre deaktiviert.',
+                'Period in seconds over which warnafter/blockafter are counted. 0 = blocking disabled.',
                 false,
                 0,
                 null,
@@ -273,45 +273,45 @@ final class forum implements module_catalog {
             new field(
                 'completiondiscussions',
                 'PARAM_INT',
-                'Anzahl eroeffneter Diskussionen, ab der die Aktivitaet als abgeschlossen gilt. 0 = keine '
-                    . 'Bedingung.',
+                'Number of started discussions from which the activity counts as completed. 0 = no '
+                    . 'condition.',
                 false,
                 0,
                 null,
                 null,
-                'mod/forum/mod_form.php:405-420; Spalte mod/forum/db/install.xml (forum.completiondiscussions)'
+                'mod/forum/mod_form.php:405-420; column mod/forum/db/install.xml (forum.completiondiscussions)'
             ),
             new field(
                 'completionreplies',
                 'PARAM_INT',
-                'Anzahl Antworten, ab der die Aktivitaet als abgeschlossen gilt. 0 = keine Bedingung.',
+                'Number of replies from which the activity counts as completed. 0 = no condition.',
                 false,
                 0,
                 null,
                 null,
-                'mod/forum/mod_form.php:405-425; Spalte mod/forum/db/install.xml (forum.completionreplies)'
+                'mod/forum/mod_form.php:405-425; column mod/forum/db/install.xml (forum.completionreplies)'
             ),
             new field(
                 'completionposts',
                 'PARAM_INT',
-                'Anzahl Beitraege (Diskussionen + Antworten zusammen), ab der die Aktivitaet als abgeschlossen '
-                    . 'gilt. 0 = keine Bedingung.',
+                'Number of posts (discussions + replies combined) from which the activity counts as completed. '
+                    . '0 = no condition.',
                 false,
                 0,
                 null,
                 null,
-                'mod/forum/mod_form.php:405-435; Spalte mod/forum/db/install.xml (forum.completionposts)'
+                'mod/forum/mod_form.php:405-435; column mod/forum/db/install.xml (forum.completionposts)'
             ),
             new field(
                 'lockdiscussionafter',
                 'PARAM_INT',
-                'Zeitraum in Sekunden, nach dem eine Diskussion ohne neue Antwort automatisch gesperrt wird. '
-                    . '0 = aus. Nicht wirksam bei type=single.',
+                'Period in seconds after which a discussion without a new reply is locked automatically. '
+                    . '0 = off. Not effective for type=single.',
                 false,
                 0,
                 null,
                 null,
-                'mod/forum/mod_form.php:164-178 (disabledIf type eq single); Spalte '
+                'mod/forum/mod_form.php:164-178 (disabledIf type eq single); column '
                     . 'mod/forum/db/install.xml (forum.lockdiscussionafter)'
             ),
         ];
@@ -324,7 +324,7 @@ final class forum implements module_catalog {
     public static function write_options(): array {
         return [
             'date_order_rules' => [['reference' => 'duedate', 'field' => 'cutoffdate', 'mode' => 'not_before']],
-            'side_effect_triggers' => ['forcesubscribe' => [2 => 'Alle Kursteilnehmenden wurden für dieses Forum abonniert.']],
+            'side_effect_triggers' => ['forcesubscribe' => [2 => 'All course participants have been subscribed to this forum.']],
         ];
     }
 
@@ -337,9 +337,9 @@ final class forum implements module_catalog {
             new field(
                 'ratingtime',
                 'PARAM_BOOL',
-                'Checkbox: Bewertungszeitraum einschraenken. Nur wenn gesetzt, uebernimmt Moodle '
-                    . '"assesstimestart"/"assesstimefinish" - sonst setzt forum_update_instance() beide auf 0 '
-                    . 'zurueck. Kein DB-Feld.',
+                'Checkbox: restrict the rating period. Only when set does Moodle take over '
+                    . '"assesstimestart"/"assesstimefinish" - otherwise forum_update_instance() resets both to 0. '
+                    . 'Not a DB field.',
                 false,
                 0,
                 [0, 1],
@@ -359,19 +359,19 @@ final class forum implements module_catalog {
 
     public static function combination_rules(): array {
         return [
-            '"cutoffdate" darf nicht vor "duedate" liegen (mod/forum/mod_form.php: validation()).',
-            '"type"="single" ist nicht mit "groupmode"=SEPARATEGROUPS kombinierbar (mod/forum/mod_form.php: '
-                . 'validation()); "groupmode" steht im gemeinsamen Block.',
+            '"cutoffdate" must not be before "duedate" (mod/forum/mod_form.php: validation()).',
+            '"type"="single" cannot be combined with "groupmode"=SEPARATEGROUPS (mod/forum/mod_form.php: '
+                . 'validation()); "groupmode" is in the shared block.',
         ];
     }
 
     public static function side_effects(): array {
         return [
-            '"forcesubscribe"=2 (Auto-Abonnement) abonniert beim Anlegen bzw. beim Umschalten auf diesen Wert '
-                . 'sofort alle potenziellen Kursteilnehmenden - sie bekommen ab dann Mails zu jedem neuen Beitrag '
+            '"forcesubscribe"=2 (auto-subscription) immediately subscribes all potential course participants '
+                . 'on creation or when switching to this value - from then on they receive emails about every new post '
                 . '(mod/forum/lib.php: forum_instance_created(), forum_update_instance()).',
-            '"duedate" erzeugt bzw. aktualisiert einen Kalendereintrag (mod/forum/locallib.php: '
-                . 'forum_update_calendar()); "cutoffdate" tut das nicht.',
+            '"duedate" creates or updates a calendar entry (mod/forum/locallib.php: '
+                . 'forum_update_calendar()); "cutoffdate" does not.',
         ];
     }
 
@@ -379,7 +379,7 @@ final class forum implements module_catalog {
         return [];
     }
 
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
 
@@ -399,8 +399,8 @@ final class forum implements module_catalog {
     }
 
     /**
-     * Die Lehrkraft bewertet - ausser eine Instanz hat weder Beitrags- noch
-     * Gesamtbewertung.
+     * The teacher grades - unless an instance has neither post rating nor
+     * overall grade.
      */
     public static function grade_origin(int $instanceid = 0): string {
         global $DB;

@@ -38,7 +38,7 @@ foreach (\local_coursepilot\location_selection::own_instances() as $candidate) {
 }
 if ($instance === null) { throw new \moodle_exception('webdavinstancemissing', 'local_coursepilot'); }
 $resolved = \local_coursepilot\webdav\webdav_instance::resolve_owned($instance);
-$filled = 'E2E-Ortswahl-' . $stamp;
+$filled = 'E2E-Location-' . $stamp;
 $resolved->client()->mkcol_chain($resolved->directory_url(''), [$filled]);
 $resolved->client()->put_new($resolved->file_url($filled . '/vorhanden.md'), 'E2E');
 $typeid = $DB->get_field('repository', 'id', ['type' => 'webdav'], MUST_EXIST);
@@ -46,7 +46,7 @@ $badid = $DB->insert_record('repository_instances', (object) ['name' => 'E2E-Spe
 foreach (['webdav_type' => '1', 'webdav_server' => 'spike.gruenwald.fun', 'webdav_port' => '', 'webdav_path' => 'login/index.php', 'webdav_user' => '', 'webdav_password' => '', 'webdav_auth' => 'basic'] as $name => $value) {
     $DB->insert_record('repository_instance_config', (object) ['instanceid' => $badid, 'name' => $name, 'value' => $value]);
 }
-\local_coursepilot\storage_anchor::write_pointer_document(['kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot'], 'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'], 'ortsverlauf' => []]);
+\local_coursepilot\storage_anchor::write_pointer_document(['context_area' => ['ort' => 'moodle', 'pfad' => 'coursepilot'], 'material_store' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'], 'ortsverlauf' => []]);
 echo json_encode(['instanceid' => $instance, 'filled' => $filled, 'badid' => $badid, 'original' => $original === null ? null : base64_encode(json_encode($original))]);`;
 
 const CLEANUP = String.raw`<?php

@@ -21,9 +21,8 @@ use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Statusprüfung Schritt 1 des WebDAV-Schrittkatalogs (Issue #499, Spec #486
- * §12): aus heisst `INFO` ("optional"), solange kein Pointer extern zeigt,
- * sonst `WARNING` mit Anzahl.
+ * WebDAV setup check 1 (Issue #499, Spec #486 §12): disabled returns INFO
+ * while no pointer targets external storage, otherwise WARNING with a count.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -45,10 +44,9 @@ final class webdav_repository_check_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Kontext');
-        // create_webdav_instance() aktiviert den Repository-Typ als
-        // Nebenwirkung (enable_webdav_repository_type()) - hier wieder
-        // ausgeschaltet, um den Fall "aus, aber Pointer zeigt extern" zu bauen.
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Kontext');
+        // create_webdav_instance() enables the repository as a side effect.
+        // Disable it again to test an external pointer with the repository off.
         global $DB;
         $DB->set_field('repository', 'visible', 0, ['type' => 'webdav']);
 

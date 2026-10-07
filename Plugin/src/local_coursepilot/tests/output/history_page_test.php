@@ -19,7 +19,7 @@ namespace local_coursepilot\output;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Template-Datenaufbereitung fuer history.php (#552, Spec 0023 Teil 5).
+ * Template data preparation for history.php (#552, Spec 0023 part 5).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -44,6 +44,31 @@ final class history_page_test extends \advanced_testcase {
         $cm = get_coursemodule_from_instance('page', $page->id, $course->id, false, MUST_EXIST);
 
         return [$course, $cm];
+    }
+
+    public function test_history_uses_the_viewers_language(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        // Moodle's built-in language fixture makes German available without a downloaded language pack.
+        $CFG->langotherroot = $CFG->libdir . '/tests/fixtures/langtest';
+        get_string_manager(true);
+        [$course, $cm] = $this->create_page();
+        $listurl = new \moodle_url('/local/coursepilot/history.php', ['id' => $course->id]);
+        \local_coursepilot\history\version_writer::capture((int) $cm->id, 0);
+
+        force_current_language('en');
+        $english = history_page::versions_data($cm->id, $cm->name, false, $listurl);
+        $this->assertStringContainsString('first recorded state', $english['rows'][0]['summary_line']);
+        $this->assertStringContainsString('no content change detected', $english['rows'][1]['summary_line']);
+        $this->assertSame('User #0', $english['rows'][1]['user']);
+        $this->assertStringContainsString('The history is incomplete', $english['gap_notice']);
+
+        force_current_language('de');
+        $german = history_page::versions_data($cm->id, $cm->name, false, $listurl);
+        $this->assertStringContainsString('erster erfasster Stand', $german['rows'][0]['summary_line']);
+        $this->assertStringContainsString('keine inhaltliche Änderung erkennbar', $german['rows'][1]['summary_line']);
+        $this->assertSame('Nutzer #0', $german['rows'][1]['user']);
+        $this->assertStringContainsString('Der Verlauf ist nicht lückenlos', $german['gap_notice']);
     }
 
     public function test_newest_version_never_offers_restore(): void {

@@ -25,11 +25,10 @@ use local_coursepilot\webdav\webdav_instance;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Auflisten des Materialordners (Spec 0018 §2, Issue #428): Pfad, Groesse,
- * `contenthash`, Aenderungszeit je Datei, plus verbleibender Speicherplatz.
- * Seit Issue #495 zusaetzlich der Parameter "ort" (Bestand/Werkbank), der
- * externe Zweig ueber den WebDAV-Transport-Fake, und die
- * Kontextbereich-Ausnahme (Spec #486 §2/§7).
+ * List material storage (Spec 0018 §2, #428): file paths, sizes,
+ * contenthashes, modification times and remaining quota. #495 adds
+ * inventory/workbench selection, fake external WebDAV and the context-area
+ * exclusion (Spec #486 §2/§7).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -83,8 +82,7 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Verbleibender Speicherplatz ist Teil der Antwort (Issue #428 - "mit
-     * ... verbleibendem Speicherplatz").
+     * Include remaining storage space in the response (#428).
      */
     public function test_reports_remaining_quota(): void {
         global $CFG;
@@ -137,9 +135,8 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der Kontextpointer (Issue #445) liegt physisch im Kontextbereich-
-     * Anker, nicht im Materialordner - dieselbe Ausschluss-Regel gilt hier
-     * trotzdem defensiv, falls Anker und Materialordner je zusammenfallen.
+     * The context pointer (#445) lives in the context anchor, not material
+     * storage. Still exclude it defensively if both roots ever coincide.
      */
     public function test_pointer_file_is_excluded_from_listing(): void {
         $this->resetAfterTest();
@@ -151,7 +148,7 @@ final class list_material_files_test extends \advanced_testcase {
             'itemid' => material_files::ITEMID,
             'filepath' => '/coursepilot-material/',
             'filename' => \local_coursepilot\storage_anchor::POINTER_FILENAME,
-        ], '{"kontextbereich":"coursepilot","materialordner":"coursepilot-material"}');
+        ], '{"context_area":"coursepilot","materialordner":"coursepilot-material"}');
 
         $result = list_material_files::execute();
 
@@ -159,8 +156,8 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne Kontextpointer zeigen "bestand" und "werkbank" auf denselben Ort
-     * (Issue #495, Abnahmekriterium 1).
+     * Without a context pointer, inventory and workbench share a location
+     * (#495, criterion 1).
      */
     public function test_ort_bestand_and_ort_werkbank_show_the_same_place_in_moodle(): void {
         $this->resetAfterTest();
@@ -174,18 +171,17 @@ final class list_material_files_test extends \advanced_testcase {
             'filename' => 'blatt.pdf',
         ], 'Inhalt');
 
-        $bestand = list_material_files::execute('', material_files::ORT_BESTAND);
-        $werkbank = list_material_files::execute('', material_files::ORT_WERKBANK);
+        $bestand = list_material_files::execute('', material_files::LOCATION_STORE);
+        $werkbank = list_material_files::execute('', material_files::LOCATION_WORKBENCH);
 
         $this->assertSame(['blatt.pdf'], array_column($bestand['entries'], 'name'));
         $this->assertSame(array_column($bestand['entries'], 'name'), array_column($werkbank['entries'], 'name'));
     }
 
     /**
-     * Bei einem Pointer der ersten Fassung mit eigenem Materialpfad zeigen
-     * "bestand" und "werkbank" weiterhin auf denselben Ordner (Issue #520,
-     * Spec #486 §1) - der Kontextpointer verschiebt beide Orte gemeinsam,
-     * statt die Werkbank an der Standardwurzel zurueckzulassen.
+     * A v1 pointer with a custom material path moves inventory and workbench
+     * together instead of leaving the workbench at its default root
+     * (#520, Spec #486 §1).
      */
     public function test_ort_bestand_and_ort_werkbank_follow_legacy_pointer_together(): void {
         $this->resetAfterTest();
@@ -197,7 +193,7 @@ final class list_material_files_test extends \advanced_testcase {
             'itemid' => storage_anchor::ITEMID,
             'filepath' => '/' . storage_anchor::ANCHOR_DEFAULT_ROOT . '/',
             'filename' => storage_anchor::POINTER_FILENAME,
-        ], json_encode(['kontextbereich' => 'coursepilot', 'materialordner' => 'eigener-materialpfad']));
+        ], json_encode(['context_area' => 'coursepilot', 'materialordner' => 'eigener-materialpfad']));
         get_file_storage()->create_file_from_string([
             'contextid' => material_files::own_context()->id,
             'component' => material_files::COMPONENT,
@@ -207,8 +203,8 @@ final class list_material_files_test extends \advanced_testcase {
             'filename' => 'blatt.pdf',
         ], 'Inhalt');
 
-        $bestand = list_material_files::execute('', material_files::ORT_BESTAND);
-        $werkbank = list_material_files::execute('', material_files::ORT_WERKBANK);
+        $bestand = list_material_files::execute('', material_files::LOCATION_STORE);
+        $werkbank = list_material_files::execute('', material_files::LOCATION_WORKBENCH);
 
         $this->assertSame(['blatt.pdf'], array_column($bestand['entries'], 'name'));
         $this->assertSame(array_column($bestand['entries'], 'name'), array_column($werkbank['entries'], 'name'));
@@ -220,16 +216,15 @@ final class list_material_files_test extends \advanced_testcase {
 
         try {
             list_material_files::execute('', 'woanders');
-            $this->fail('Ein unbekannter Ort-Wert haette werfen muessen.');
+            $this->fail('An unknown location value should have thrown.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('invalidmaterialort', $e->errorcode);
+            $this->assertSame('invalidmateriallocation', $e->errorcode);
         }
     }
 
     /**
-     * Der externe Materialbestand (Issue #495, Spec #486 §2/§7) listet ueber
-     * den WebDAV-Client, statt ueber Moodles Dateispeicher - dieselbe
-     * Werkzeugantwort wie im Moodle-Zweig, `contenthash` bleibt leer.
+     * External material storage (#495, Spec #486 §2/§7) lists through WebDAV
+     * with the same response contract; contenthash stays empty.
      */
     public function test_lists_external_material_via_webdav(): void {
         $this->resetAfterTest();
@@ -247,7 +242,7 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Eine noch nicht angelegte externe Ebene ist leer, nie ein Fehler.
+     * Missing external folders produce an empty listing.
      */
     public function test_listing_missing_external_material_directory_is_empty(): void {
         $this->resetAfterTest();
@@ -259,9 +254,9 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * "werkbank" bleibt beim externen Materialbestand unveraendert in Moodle
-     * erreichbar (Abnahmekriterium 2: schreibende Werkzeuge zielen immer auf
-     * die Werkbank, die den Materialbestand-Pointer nicht kennt).
+     * The workbench stays in Moodle when inventory is external. Writing
+     * tools always target the workbench, which does not use the inventory
+     * pointer (#495, criterion 2).
      */
     public function test_ort_werkbank_stays_in_moodle_when_material_is_external(): void {
         $this->resetAfterTest();
@@ -275,24 +270,23 @@ final class list_material_files_test extends \advanced_testcase {
             'filename' => 'werkbankdatei.pdf',
         ], 'Inhalt');
 
-        $result = list_material_files::execute('', material_files::ORT_WERKBANK);
+        $result = list_material_files::execute('', material_files::LOCATION_WORKBENCH);
 
         $this->assertSame(['werkbankdatei.pdf'], array_column($result['entries'], 'name'));
     }
 
     /**
-     * Liegt der Kontextbereich im Bestand, erscheint er als eigener
-     * Eintragstyp "kontextbereich" (Issue #495, Abnahmekriterium 4) - nicht
-     * als gewoehnlicher Ordner.
+     * A context area in inventory appears as context_area, not as a
+     * regular folder (#495, criterion 4).
      */
     public function test_kontextbereich_inside_bestand_appears_as_own_entry_type(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
-        // Kontextbereich liegt bewusst als Unterordner des Materialbestands -
-        // erlaubte Richtung (CONTEXT.md "Materialbestand").
+        // Context is deliberately nested within inventory, an allowed
+        // direction (CONTEXT.md, Material inventory).
         storage_anchor::write_pointer_document([
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material/kontext'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot-material/kontext'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ]);
         get_file_storage()->create_file_from_string([
             'contextid' => material_files::own_context()->id,
@@ -315,29 +309,95 @@ final class list_material_files_test extends \advanced_testcase {
 
         $kontexteintrag = $this->find_entry($result['entries'], 'kontext');
         $this->assertNotNull($kontexteintrag);
-        $this->assertSame('kontextbereich', $kontexteintrag['type']);
+        $this->assertSame('context_area', $kontexteintrag['type']);
         $materialeintrag = $this->find_entry($result['entries'], 'blatt.pdf');
         $this->assertSame('file', $materialeintrag['type']);
     }
 
     /**
-     * Ein Materialweg lehnt jeden Pfad am oder unter dem Kontextbereich ab
-     * (Issue #495, Abnahmekriterium 4) - benannter Fehler statt stiller
-     * Auflistung des Kontextbereichs ueber den Materialweg.
+     * Reject paths at or below the context area with a named error,
+     * preventing access through material tools (#495, criterion 4).
      */
     public function test_listing_path_under_kontextbereich_is_rejected(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
         storage_anchor::write_pointer_document([
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material/kontext'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot-material/kontext'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ]);
 
         try {
             list_material_files::execute('kontext');
-            $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
+            $this->fail('A path under the context area should have thrown.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('materialpathiskontext', $e->errorcode);
+            $this->assertSame('materialpathiscontext', $e->errorcode);
+        }
+    }
+
+    /**
+     * Issue #645: the material store returns the same field set at both
+     * locations through the anchor's adapter; the weaker external check
+     * value is not presented as a content hash.
+     */
+    public function test_store_listing_has_the_same_fields_at_both_locations(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        get_file_storage()->create_file_from_string([
+            'contextid' => material_files::own_context()->id,
+            'component' => material_files::COMPONENT,
+            'filearea' => material_files::FILEAREA,
+            'itemid' => material_files::ITEMID,
+            'filepath' => '/coursepilot-material/',
+            'filename' => 'blatt.pdf',
+        ], 'Inhalt');
+        $moodle = external_api::clean_returnvalue(list_material_files::execute_returns(), list_material_files::execute());
+
+        [, $fake] = $this->set_up_external_material();
+        $fake->seed_folder('/Coursepilot/Material');
+        $fake->seed_file('/Coursepilot/Material/blatt.pdf', 'Inhalt');
+        $external = external_api::clean_returnvalue(list_material_files::execute_returns(), list_material_files::execute());
+
+        $moodleentry = $this->find_entry($moodle['entries'], 'blatt.pdf');
+        $externalentry = $this->find_entry($external['entries'], 'blatt.pdf');
+        $this->assertSame(array_keys($moodleentry), array_keys($externalentry));
+        $this->assertSame(sha1('Inhalt'), $moodleentry['contenthash']);
+        $this->assertSame('', $externalentry['contenthash']);
+        $this->assertSame($moodleentry['size'], $externalentry['size']);
+    }
+
+    /**
+     * Issue #645: the workbench lists and reads through the anchor's
+     * Private Files adapter with the unchanged directory, path and error
+     * contract.
+     */
+    public function test_workbench_lists_and_reads_through_the_anchor(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        get_file_storage()->create_file_from_string([
+            'contextid' => material_files::own_context()->id,
+            'component' => material_files::COMPONENT,
+            'filearea' => material_files::FILEAREA,
+            'itemid' => material_files::ITEMID,
+            'filepath' => '/coursepilot-material/faecher/',
+            'filename' => 'blatt.pdf',
+        ], 'Inhalt');
+
+        $listed = list_material_files::execute('faecher/', material_files::LOCATION_WORKBENCH);
+        $this->assertSame('faecher', $listed['path']);
+        $this->assertSame(sha1('Inhalt'), $this->find_entry($listed['entries'], 'blatt.pdf')['contenthash']);
+
+        $read = \local_coursepilot\material_area::read_for_location(material_files::LOCATION_WORKBENCH, 'faecher/blatt.pdf');
+        $this->assertSame('faecher/blatt.pdf', $read['path']);
+        $this->assertSame('Inhalt', $read['content']);
+        $this->assertSame(sha1('Inhalt'), $read['contenthash']);
+
+        foreach (['../blatt.pdf', ''] as $invalid) {
+            try {
+                \local_coursepilot\material_area::read_for_location(material_files::LOCATION_WORKBENCH, $invalid);
+                $this->fail('Invalid path accepted: ' . $invalid);
+            } catch (\moodle_exception $e) {
+                $this->assertSame('invalidmaterialpath', $e->errorcode);
+            }
         }
     }
 

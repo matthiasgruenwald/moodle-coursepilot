@@ -35,56 +35,43 @@ require_once($CFG->dirroot . '/question/format.php');
 require_once($CFG->dirroot . '/question/format/xml/format.php');
 
 /**
- * Der XML-Kern (Spec 0017 §7.1, Ticket #415): importiert Moodle-XML-Fragen
- * beliebigen Typs versionstreu - "die Lehrkraft erfaehrt vom Server, ob es
- * funktioniert, nicht erst vor der Klasse".
+ * XML core (Spec 0017 §7.1, #415): import arbitrary Moodle XML question
+ * types while preserving versions. Teachers learn from the server whether
+ * it works before using the questions in class.
  *
- * Parst ueber die oeffentliche, reine Parse-API qformat_xml::readquestions()
- * (kein DB-Zugriff) - ein Parse-Fehler bricht den GESAMTEN Aufruf ab, kein
- * Teilergebnis. Schreibt gezielt ueber question_type::save_question() mit
- * gesetzter $question->id fuer einen wiedererkannten Bank-Eintrag ⇒ neue
- * Version unter bestehender questionbankentryid (ADR 0001).
- * importprocess() wird NICHT verwendet - legt bei jedem Aufruf einen neuen
- * question_bank_entries-Datensatz an und kennt kein Matching gegen
- * bestehende Eintraege.
+ * Parse through qformat_xml::readquestions(), the public parse-only API.
+ * A parse error aborts the whole call; no partial result. Write through
+ * question_type::save_question() with question->id for a recognized bank
+ * entry, creating a new version under its existing questionbankentryid
+ * (ADR 0001). Do not use importprocess(): it always creates a bank entry
+ * and cannot match existing entries.
  *
- * Round-Trip-Pruefung in derselben Transaktion: die frisch geschriebene
- * Frage wird ueber denselben Formatter wieder als XML exportiert
- * (qformat_xml::writequestion()) und erneut ueber readquestions()
- * zurueckgeparst - dieselbe Importer-Funktion produziert damit auf beiden
- * Seiten dieselbe Objektform, ein generischer Feldvergleich wird moeglich,
- * ohne fuer jeden Fragetyp eigenen Abgleichscode zu schreiben. Verglichen
- * werden die Kernfelder (name, idnumber, Fragetext, Antwortoptionen mit
- * Bruchteilen, Feedback je Option, allgemeines Feedback) - keine
- * Byte-Gleichheit, Moodle normalisiert IDs, Reihenfolgen und Dateipfade.
- * Jede Abweichung oder Ausnahme wirft und rollt damit die gesamte
- * Transaktion zurueck (Moodle rollt eine delegierte Transaktion automatisch
- * zurueck, wenn sie ohne allow_commit() verlassen wird, Muster aus
- * update_question_category.php) - nach dem Aufruf existiert weder
- * Bank-Eintrag noch Version.
+ * Round-trip within the same transaction: export the freshly written
+ * question with qformat_xml::writequestion(), then reparse with readquestions().
+ * The same importer produces the same object shape on both sides, allowing
+ * generic comparison without per-type code. Compare core fields: name,
+ * idnumber, question text, answer options with fractions and feedback, and
+ * general feedback. Do not require byte equality; Moodle normalizes IDs,
+ * ordering and paths. Every mismatch or exception rolls back the whole
+ * transaction, leaving neither bank entry nor version. The transaction is
+ * explicitly rolled back on exceptions; see import_all().
  *
- * Wiedererkennung ausschliesslich innerhalb der Zielkategorie ueber
- * idnumber (ADR 0015). Bringt das XML eine idnumber mit, die in der
- * Zielkategorie keinen Treffer hat, ist das ein Verdachtsfall - das
- * gemeinsame Gate-Antwortformat aus move_question.php/T3
- * ({@see \local_coursepilot\question_suspect_gate}) wird uebernommen, auch
- * wenn die Kollisionsrichtung hier umgekehrt ist (dort: idnumber bereits
- * vergeben; hier: idnumber ohne Treffer). Nichts wird geschrieben, bis ein
- * erneuter Aufruf mit "confirmed": true das bestaetigt. Fehlt die
- * idnumber ganz, ist das ein echter Erstimport - eine neue wird generiert,
- * kein Gate.
+ * Recognize identities only within the target category by idnumber (ADR 0015).
+ * An incoming idnumber without a match is a suspect case, using the common
+ * question_suspect_gate response from move_question/T3. Its collision is
+ * reversed: move_question sees an assigned idnumber, while this tool sees
+ * an unmatched one. Write nothing until a repeat call confirms it with
+ * confirmed:true. An absent idnumber means a genuine first import: generate
+ * a new identity without a gate.
  *
- * Zwei Tueren fuer eingebettete Dateien (Spec 0018 §7.1, Ticket #436) - die
- * Abweisung eingebetteter <file>-Bloecke aus Spec 0017 §6 ist damit
- * entfallen:
- * - Textuer (Parameter xmlcontent): die KI schreibt die XML selbst; ein
- *   <file>-Block traegt statt echtem Base64 ein material="<materialordner-pfad>"-
- *   Attribut, {@see self::resolve_material_file_references()} loest es
- *   serverseitig zu echtem Base64 auf, BEVOR geparst wird.
- * - Verweistuer (Parameter xmlpath): Verweis auf eine XML-Datei im
- *   Materialordner (Massenimport eines fremden Exports mit echtem Base64) -
- *   {@see self::read_material_binary()} liest sie serverseitig, kein Byte
- *   passiert den KI-Kontext. Genau eine der beiden Tueren je Aufruf.
+ * Two doors for embedded files (Spec 0018 §7.1, #436), replacing Spec 0017 §6's
+ * rejection of embedded <file> blocks:
+ * - Text door (xmlcontent): AI-written XML names material="<material-folder-path>"
+ *   rather than real base64 in each <file> block. resolve_material_file_references()
+ *   resolves these references to base64 server-side before parsing.
+ * - Reference door (xmlpath): a material-folder XML file, e.g. a bulk foreign
+ *   export with real base64. read_material_binary() reads it server-side;
+ *   no bytes enter the AI context. Exactly one door is allowed per call.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -93,9 +80,8 @@ require_once($CFG->dirroot . '/question/format/xml/format.php');
 final class import_questions_xml extends external_api {
 
     /**
-     * @var int Groessengrenze je Import (#424 Nachlauf 2) - reines Text-XML,
-     *      eingebettete Dateien sind gesperrt. Siehe
-     *      {@see self::guard_server_size_limit()} fuer die Begruendung.
+     * @var int Size limit per import (#424 follow-up 2), applied to resolved XML.
+     *      See {@see self::guard_server_size_limit()} for the rationale.
      */
     public const MAX_XML_BYTES = 5 * 1024 * 1024;
 
@@ -128,7 +114,7 @@ final class import_questions_xml extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
-            'location' => material_files::ort_parameter(),
+            'location' => material_files::location_parameter(),
         ]);
     }
 
@@ -145,7 +131,7 @@ final class import_questions_xml extends external_api {
         string $xmlcontent = '',
         bool $confirmed = false,
         string $xmlpath = '',
-        string $location = material_files::ORT_BESTAND
+        string $location = material_files::LOCATION_STORE
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'categoryid' => $categoryid,
@@ -161,11 +147,10 @@ final class import_questions_xml extends external_api {
     }
 
     /**
-     * Prueft Kontext/Capabilities, loest das XML auf und parst die Fragen
-     * (Issue #523: aus execute() ausgelagert, um die Funktion unter der
-     * 50-Zeilen-Grenze zu halten).
+     * Check context/capabilities, resolve the XML and parse questions (#523:
+     * extracted from execute() to keep the function below 50 lines).
      *
-     * @param array $params Validierte Parameter von execute().
+     * @param array $params Validated execute() parameters.
      * @return array{0: \stdClass, 1: \context, 2: array}
      */
     private static function resolve_and_parse(array $params): array {
@@ -179,22 +164,20 @@ final class import_questions_xml extends external_api {
 
         $xml = self::resolve_door($params['xmlcontent'], $params['xmlpath'], $params['location']);
 
-        // Groessenschranke (Spec 0017 "Bilder und Groessen", Ticket #416) -
-        // VOR dem Parsen/Schreiben. Eingebettete Dateien sind seit Spec 0018
-        // §7.1 nicht mehr gesperrt (beide Tueren oben aufgeloest).
+        // Size guard (Spec 0017 "Images and sizes", #416) BEFORE parsing/writing.
+        // Embedded files are allowed since Spec 0018 §7.1; both doors are resolved above.
         self::guard_server_size_limit($xml);
         self::guard_quiz_root($xml);
 
-        // Reines Parsen, kein DB-Zugriff: ein ungueltiges XML wirft hier,
-        // BEVOR irgendetwas geschrieben wird - kein Teilergebnis moeglich.
+        // Parse without database writes. Invalid XML throws here BEFORE any
+        // write, so no partial result is possible.
         $questions = self::parse($category, $context, $xml);
 
         return [$category, $context, $questions];
     }
 
     /**
-     * Importiert alle geparsten Fragen in einer Transaktion (Issue #523:
-     * aus execute() ausgelagert).
+     * Import all parsed questions in one transaction (#523: extracted from execute()).
      *
      * @param \stdClass $category
      * @param \context $context
@@ -205,10 +188,9 @@ final class import_questions_xml extends external_api {
     private static function import_all(\stdClass $category, \context $context, array $questions, bool $confirmed): array {
         global $DB;
 
-        // moodle_transaction hat keinen Destruktor - anders als in
-        // manchen anderen Endpunkten muss hier explizit zurueckgerollt
-        // werden, weil Fehler (Round-Trip-Abweichung) bewusst ERST NACH dem
-        // Schreiben auftreten, nicht schon in der Validierung davor.
+        // moodle_transaction has no destructor. Explicitly roll back here because
+        // round-trip mismatches intentionally occur AFTER the write rather than
+        // in its preceding validation.
         $transaction = $DB->start_delegated_transaction();
 
         try {
@@ -226,32 +208,25 @@ final class import_questions_xml extends external_api {
     }
 
     /**
-     * Weist eine XML ab, die die Groessengrenze dieses Endpunkts
-     * ueberschreitet.
+     * Reject XML exceeding this endpoint's size limit.
      *
-     * Die urspruengliche Begruendung (Ticket #416) war die
-     * Serverkonfiguration: PHP scheitert beim Ueberschreiten von
-     * post_max_size nicht sauber, sondern liefert eine Anfrage mit leeren
-     * Feldern. Diese Begruendung traegt hier nicht - waere post_max_size
-     * ueberschritten, laege der Inhalt gar nicht erst vor, und die Pruefung
-     * wuerde nie erreicht. Gegen get_max_upload_file_size() (200 MB neben
-     * post_max_size 206 MB) feuerte sie deshalb praktisch nie (#424
-     * Nachlauf 2).
+     * The original rationale (#416) referred to post_max_size: PHP supplies
+     * empty fields rather than a clean failure when that is exceeded. But then
+     * there is no content to inspect and this guard is never reached. Comparing
+     * against get_max_upload_file_size() (200 MB, post_max_size 206 MB) therefore
+     * practically never fired (#424 follow-up 2).
      *
-     * Die Grenze ist eine bewusst gesetzte Fachgrenze auf das AUFGELOESTE
-     * XML (nach Materialordner-Aufloesung beider Tueren, Spec 0018 §7.1) -
-     * jede Frage darin durchlaeuft einen eigenen Round-Trip, jenseits
-     * weniger MB laeuft der Aufruf in die Ausfuehrungszeit, nicht in die
-     * Uploadgrenze. Die Serverkonfiguration bleibt als zusaetzliche
-     * Obergrenze stehen, falls sie ausnahmsweise kleiner ist.
+     * Use a deliberate domain limit on RESOLVED XML, after resolving material
+     * references for both doors (Spec 0018 §7.1). Each question needs its own
+     * round-trip; beyond a few MB execution time becomes the constraint, not
+     * upload size. Retain the server limit as an additional ceiling if lower.
      *
      * @param string $xmlcontent
      * @return void
      */
     private static function guard_server_size_limit(string $xmlcontent): void {
-        // get_max_upload_file_size() (Moodle-Bordmittel, lib/moodlelib.php)
-        // liest post_max_size und upload_max_filesize aus der PHP-Konfiguration
-        // und liefert das kleinere der beiden in Bytes.
+        // Moodle's get_max_upload_file_size() (lib/moodlelib.php) reads post_max_size
+        // and upload_max_filesize and returns the smaller byte limit.
         $serverlimit = get_max_upload_file_size();
         $limit = $serverlimit > 0 ? min(self::MAX_XML_BYTES, $serverlimit) : self::MAX_XML_BYTES;
 
@@ -259,9 +234,8 @@ final class import_questions_xml extends external_api {
     }
 
     /**
-     * Testbarer Kern von {@see self::guard_server_size_limit()}: $maxbytes
-     * kommt vom Aufrufer, damit Tests die Schwelle setzen koennen, ohne eine
-     * 5-MB-Zeichenkette aufbauen zu muessen.
+     * Testable core of guard_server_size_limit(). The caller supplies maxbytes
+     * so tests can set a threshold without creating a 5 MB string.
      *
      * @param int $bytes
      * @param int $maxbytes
@@ -273,23 +247,22 @@ final class import_questions_xml extends external_api {
         }
 
         throw new \invalid_parameter_exception(
-            'Die XML ist zu gross (' . display_size($bytes) . ', Grenze ' . display_size($maxbytes)
-                . '). Bitte den Import auf mehrere kleinere Dateien aufteilen - z.B. eine Datei je '
-                . 'Fragenkategorie.'
+            'The XML is too large (' . display_size($bytes) . ', limit ' . display_size($maxbytes)
+                . '). Split the import across smaller files - e.g. one file per '
+                . 'question category.'
         );
     }
 
     /**
-     * Waehlt die eine von zwei Tueren (Spec 0018 §7.1) und liefert das
-     * fertig aufgeloeste XML - genau eine der beiden Angaben ist erlaubt,
-     * keine stille Bevorzugung.
+     * Choose one of the two doors (Spec 0018 §7.1) and return fully resolved
+     * XML. Exactly one input is allowed; neither takes silent precedence.
      *
-     * @param string $xmlcontent Textuer-Angabe (leer, wenn nicht genutzt)
-     * @param string $xmlpath Verweistuer-Angabe (leer, wenn nicht genutzt)
-     * @param string $location {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
-     *        Quelle der Materialordner-Pfade in beiden Tueren (Issue #496).
+     * @param string $xmlcontent Text-door input (empty when unused)
+     * @param string $xmlpath Reference-door input (empty when unused)
+     * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
+     *        Source of material paths for both doors (#496).
      * @return string
-     * @throws \invalid_parameter_exception weder oder beide Angaben gesetzt
+     * @throws \invalid_parameter_exception neither or both inputs supplied
      */
     private static function resolve_door(string $xmlcontent, string $xmlpath, string $location): string {
         $xmlcontent = trim($xmlcontent);
@@ -297,41 +270,39 @@ final class import_questions_xml extends external_api {
 
         if ($xmlcontent !== '' && $xmlpath !== '') {
             throw new \invalid_parameter_exception(
-                'xmlcontent und xmlpath duerfen nicht gleichzeitig angegeben werden - genau eine Tuer waehlen: '
-                    . 'XML als Text (xmlcontent) oder Verweis auf eine XML-Datei im Materialordner (xmlpath).'
+                'xmlcontent and xmlpath cannot both be supplied - choose exactly one input: '
+                    . 'XML as text (xmlcontent) or a reference to an XML file in the material store (xmlpath).'
             );
         }
         if ($xmlcontent === '' && $xmlpath === '') {
             throw new \invalid_parameter_exception(
-                'Weder xmlcontent noch xmlpath angegeben - genau eine Tuer waehlen: XML als Text (xmlcontent) oder '
-                    . 'Verweis auf eine XML-Datei im Materialordner (xmlpath).'
+                'Neither xmlcontent nor xmlpath supplied - choose exactly one input: XML as text (xmlcontent) or '
+                    . 'a reference to an XML file in the material store (xmlpath).'
             );
         }
 
         if ($xmlpath !== '') {
-            // Verweistuer: die XML-Datei liegt bereits im Materialordner
-            // (z.B. ein fremder Moodle-Export) und traegt echtes Base64 in
-            // ihren <file>-Bloecken - rein serverseitig gelesen, kein Byte
-            // passiert den KI-Kontext.
+            // Reference door: an XML file already in the material folder, e.g. a
+            // foreign Moodle export with actual base64 in <file> blocks. Read only
+            // server-side; no bytes enter the AI context.
             return self::read_material_binary($xmlpath, $location);
         }
 
-        // Textuer: die KI hat die XML selbst geschrieben. <file>-Bloecke
-        // tragen statt echtem Base64 einen Materialordner-Verweis.
+        // Text door: AI-written XML uses material-folder references in <file>
+        // blocks instead of real base64.
         return self::resolve_material_file_references($xmlcontent, $location);
     }
 
     /**
-     * Loest jeden <file>-Block mit einem material="<materialordner-pfad>"-
-     * Attribut serverseitig zu echtem Base64 auf (Textuer, Spec 0018 §7.1) -
-     * die KI nennt nur den Namen, der Import-Endpunkt baut den Base64-Block.
-     * <file>-Bloecke ohne dieses Attribut bleiben unangetastet.
+     * Resolve each <file> block with material="<material-folder-path>" to real
+     * base64 server-side (text door, Spec 0018 §7.1). The AI supplies the name;
+     * this endpoint builds the base64 block. Leave blocks without that attribute unchanged.
      *
      * @param string $xmlcontent
-     * @param string $location {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} -
-     *        Quelle der referenzierten Pfade (Issue #496).
+     * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
+     *        Source of referenced paths (#496).
      * @return string
-     * @throws \moodle_exception materialfilenotfound, wenn ein Verweis ins Leere zeigt
+     * @throws \moodle_exception materialfilenotfound, if a referenced file is missing
      */
     private static function resolve_material_file_references(string $xmlcontent, string $location): string {
         $resolved = preg_replace_callback(
@@ -339,8 +310,8 @@ final class import_questions_xml extends external_api {
             static function (array $matches) use ($location): string {
                 $attributes = $matches[1];
                 if (!preg_match('/\bmaterial=(["\'])(.*?)\1/', $attributes, $materialmatch)) {
-                    // Kein Materialordner-Verweis - unveraendert lassen
-                    // (z.B. bereits echtes Base64 im Text).
+                    // No material-folder reference: keep the block unchanged, e.g. it already
+                    // contains real base64.
                     return $matches[0];
                 }
 
@@ -362,17 +333,17 @@ final class import_questions_xml extends external_api {
     }
 
     /**
-     * Liest den vollstaendigen Binaerinhalt einer Materialordner-Datei der
-     * angemeldeten Person - fuer beide Tueren genutzt (Verweistuer: die
-     * XML-Datei selbst; Textuer: je referenzierte Einzeldatei).
+     * Read a signed-in user's complete material file bytes. Used by both
+     * doors: the XML itself for the reference door and each referenced file
+     * for the text door.
      *
-     * @param string $path Materialordner-Pfad, z.B. "export.xml" oder "diagramme/skizze.png".
-     * @param string $location {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK} (Issue #496).
+     * @param string $path Material path, e.g. "export.xml" or "diagrams/sketch.png".
+     * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} (Issue #496).
      * @return string
-     * @throws \moodle_exception materialfilenotfound / invalidmaterialort / materialpathiskontext
+     * @throws \moodle_exception materialfilenotfound / invalidmateriallocation / materialpathiscontext
      */
-    private static function read_material_binary(string $path, string $location = material_files::ORT_BESTAND): string {
-        $stored = material_files::read_content_for_ort($location, $path);
+    private static function read_material_binary(string $path, string $location = material_files::LOCATION_STORE): string {
+        $stored = material_files::read_content_for_location($location, $path);
         if ($stored === null) {
             throw new \moodle_exception(
                 'materialfilenotfound',
@@ -386,14 +357,13 @@ final class import_questions_xml extends external_api {
     }
 
     /**
-     * Weist eine XML ohne <quiz>-Wurzelelement mit genau dieser Ursache ab.
+     * Reject XML missing a <quiz> root with an actionable explanation.
      *
-     * qformat_xml::readquestions() greift ungeprueft auf $xml['quiz'] zu und
-     * scheitert dann mit PHP-Innenleben ("Undefined array key \"quiz\"",
-     * "Cannot access offset of type string on string") - fuer eine Lehrkraft
-     * wertlos, und der Fall ist nicht exotisch: ein von Hand gekuerztes
-     * Beispiel besteht typischerweise nur aus dem <question>-Block (#425 F2,
-     * #424 Nachlauf 1).
+     * qformat_xml::readquestions() accesses xml['quiz'] without checking it,
+     * then fails with PHP details ("Undefined array key quiz", "Cannot access
+     * offset of type string on string"). These do not help a teacher. A manually
+     * shortened example often contains only a <question> block (#425 F2,
+     * #424 follow-up 1), so the case is common.
      *
      * @param string $xmlcontent
      * @return void
@@ -404,22 +374,20 @@ final class import_questions_xml extends external_api {
         }
 
         throw new \invalid_parameter_exception(
-            'Dem XML fehlt das umschliessende <quiz>-Element. Moodle-Fragen-XML besteht immer aus <quiz> mit einem '
-                . 'oder mehreren <question>-Bloecken darin - ein einzelner <question>-Block laesst sich nicht '
-                . 'importieren. Bitte den vollstaendigen Moodle-Export senden oder die Fragen in <quiz>...</quiz> '
-                . 'einfassen.'
+            'The XML lacks the enclosing <quiz> element. Moodle question XML always consists of <quiz> with one '
+                . 'or more <question> blocks inside it - a single <question> block cannot be '
+                . 'imported. Send the complete Moodle export or wrap the questions in <quiz>...</quiz> '
+                . 'instead.'
         );
     }
 
     /**
-     * Uebersetzt eine beim Parsen gefangene Ausnahme in einen Text, der der
-     * Lehrkraft etwas sagt (#424 Nachlauf 1).
+     * Translate caught parse exceptions into useful teacher-facing text
+     * (#424 follow-up 1).
      *
-     * Eine moodle_exception ist bereits eine Aussage ueber die Datei (z.B.
-     * der Formatfehler von xmlize) und wird durchgereicht. Alles andere ist
-     * PHP-Innenleben aus dem XML-Kern - kein Leck, aber ohne jeden
-     * Handlungswert; an seiner Stelle steht die haeufigste tatsaechliche
-     * Ursache.
+     * A moodle_exception already describes the file, e.g. xmlize's format
+     * error, and passes through. Other exceptions expose XML-core PHP details
+     * without actionable information; replace them with the most common cause.
      *
      * @param \Throwable $e
      * @return string
@@ -429,15 +397,14 @@ final class import_questions_xml extends external_api {
             return $e->getMessage();
         }
 
-        return 'Ungueltiges Moodle-XML: Die Datei liess sich nicht als Moodle-Fragen-XML lesen. Haeufigste '
-            . 'Ursachen: die Datei ist unvollstaendig oder abgeschnitten, ein Element ist nicht geschlossen, oder '
-            . 'die Struktur weicht vom Moodle-Export ab. Bitte einen vollstaendigen, unveraenderten Export senden.';
+        return 'Invalid Moodle XML: The file could not be read as Moodle question XML. Common '
+            . 'causes: the file is incomplete or truncated, an element is not closed, or '
+            . 'the structure differs from a Moodle export. Send a complete, unmodified export.';
     }
 
     /**
-     * Parst das XML ausschliesslich lesend ueber qformat_xml::readquestions().
-     * Wirft bei jedem Parse-Problem eine Exception - der gesamte Aufruf
-     * bricht damit ab.
+     * Parse XML read-only through qformat_xml::readquestions(). Throw on every
+     * parse problem, aborting the whole call.
      *
      * @param \stdClass $category
      * @param \context $context
@@ -455,10 +422,9 @@ final class import_questions_xml extends external_api {
 
         $lines = explode("\n", str_replace(["\r\n", "\r"], "\n", $xmlcontent));
 
-        // qformat_xml::readquestions() wirft bei einem Parse-Fehler NICHT -
-        // es echot eine Fehlermeldung (qformat_default::error()) und liefert
-        // false zurueck. Die Ausgabe wird abgefangen (kein HTML-Leck in die
-        // Webservice-Antwort) und stattdessen als Exception geworfen.
+        // qformat_xml::readquestions() does NOT throw for parse errors. It echoes
+        // a message via qformat_default::error() and returns false. Capture that
+        // output to avoid HTML in the web service response, then throw instead.
         ob_start();
         try {
             $questions = $qformat->readquestions($lines);
@@ -469,25 +435,24 @@ final class import_questions_xml extends external_api {
         $errortext = trim(strip_tags((string) ob_get_clean()));
 
         if ($questions === false || !is_array($questions) || $qformat->importerrors > 0) {
-            throw new \invalid_parameter_exception('Ungueltiges Moodle-XML' . ($errortext !== '' ? ': ' . $errortext : '.'));
+            throw new \invalid_parameter_exception('Invalid Moodle XML' . ($errortext !== '' ? ': ' . $errortext : '.'));
         }
 
-        // Kategorie-Direktiven ($CATEGORY:) sind keine Fragen; dieser Endpunkt
-        // schreibt ausschliesslich in die uebergebene categoryid.
+        // Category directives ($CATEGORY:) are not questions. This endpoint writes
+        // only to the supplied categoryid.
         $questions = array_values(array_filter((array) $questions, static function ($question) {
             return !isset($question->qtype) || $question->qtype !== 'category';
         }));
 
         if (empty($questions)) {
-            throw new \invalid_parameter_exception('Das XML enthaelt keine importierbaren Fragen.');
+            throw new \invalid_parameter_exception('The XML contains no importable questions.');
         }
 
         return $questions;
     }
 
     /**
-     * Wiedererkennung + Schreiben + Round-Trip-Pruefung einer einzelnen
-     * geparsten Frage.
+     * Recognize, write and round-trip-check one parsed question.
      *
      * @param \stdClass $category
      * @param \context $context
@@ -507,11 +472,11 @@ final class import_questions_xml extends external_api {
         $xmlidnumber = trim((string) ($question->idnumber ?? ''));
 
         if ($xmlidnumber === '') {
-            // Echter Erstimport: keine idnumber im XML, kein Gate.
+            // Genuine first import: no idnumber in the XML and no gate.
             $idnumber = self::generate_idnumber();
             $saved = self::save($category, $context, $question, null, $idnumber);
             self::verify_roundtrip($category, $context, $question, $saved, $idnumber);
-            return self::result($saved, 'erstimport', $name);
+            return self::result($saved, 'first_import', $name);
         }
 
         $entry = $DB->get_record('question_bank_entries', [
@@ -520,7 +485,7 @@ final class import_questions_xml extends external_api {
         ]);
 
         if ($entry) {
-            // Eindeutiger idnumber-Treffer: neue Version desselben Eintrags.
+            // Unique idnumber match: create a new version of the same entry.
             $latest = question_suspect_gate::latest_version_question((int) $entry->id);
             $saved = self::save($category, $context, $question, (int) $latest->id, $xmlidnumber);
             self::verify_roundtrip($category, $context, $question, $saved, $xmlidnumber);
@@ -531,17 +496,16 @@ final class import_questions_xml extends external_api {
             return self::unmatched_idnumber_response($category, $question, $name, $xmlidnumber);
         }
 
-        // Bestaetigter Verdachtsfall: neuer Eintrag mit der mitgebrachten idnumber.
+        // Confirmed suspect case: create a new entry with the supplied idnumber.
         $saved = self::save($category, $context, $question, null, $xmlidnumber);
         self::verify_roundtrip($category, $context, $question, $saved, $xmlidnumber);
-        return self::result($saved, 'erstimport', $name);
+        return self::result($saved, 'first_import', $name);
     }
 
     /**
-     * Verdachtsfall-Antwort: mitgebrachte idnumber ohne Treffer in der
-     * Zielkategorie - nichts wird geschrieben (ADR 0015, Spec 0017 §7.1).
-     * Issue #523: aus import_one() ausgelagert, um die Funktion unter der
-     * 50-Zeilen-Grenze zu halten.
+     * Suspect response for an incoming idnumber without a target-category
+     * match. Write nothing (ADR 0015, Spec 0017 §7.1). Extracted from
+     * import_one() in #523 to keep the function below 50 lines.
      *
      * @param \stdClass $category
      * @param \stdClass $question
@@ -563,10 +527,8 @@ final class import_questions_xml extends external_api {
                 'name' => $name,
                 'questionbankentryid' => 0,
                 'version' => 0,
-                'status' => 'verdachtsfall',
-                'message' => 'Verdachtsfall: Die mitgebrachte idnumber "' . $xmlidnumber . '" hat keinen '
-                    . 'Treffer in der Zielkategorie. Nichts wurde importiert. Zum Anlegen als neuer Eintrag '
-                    . 'trotzdem erneut mit confirmed=true aufrufen.',
+                'status' => 'suspect',
+                'message' => get_string('questionimportsuspect', 'local_coursepilot', $xmlidnumber),
             ],
             [
                 'idnumber' => $xmlidnumber,
@@ -579,8 +541,8 @@ final class import_questions_xml extends external_api {
     }
 
     /**
-     * Ruft question_type::save_question() auf - mit $question->id fuer eine
-     * neue Version eines bestehenden Eintrags, ohne fuer einen neuen Eintrag.
+     * Call question_type::save_question() with question->id for a new version
+     * of an existing entry, or without it for a new entry.
      *
      * @param \stdClass $category
      * @param \context $context
@@ -600,13 +562,12 @@ final class import_questions_xml extends external_api {
         $form->category = $category->id . ',' . $context->id;
         $form->status = question_version_status::QUESTION_STATUS_READY;
         $form->idnumber = $idnumber;
-        // questiontextitemid/generalfeedbackitemid: qformat_xml::readquestions()
-        // legt eingebettete <file>-Bloecke bereits als Draft-Dateien an (siehe
-        // question/format/xml/format.php import_files_as_draft()) und haengt
-        // deren Itemid separat an, statt sie in questiontext/generalfeedback
-        // selbst einzubetten - ohne die Itemid hier durchzureichen wuerden
-        // save_question()->file_save_draft_area_files() nie aufgerufen und
-        // Bilder aus BEIDEN Tueren (Spec 0018 §7.1) stumm verworfen (Ticket #437).
+        // qformat_xml::readquestions() creates draft files for embedded <file>
+        // blocks (question/format/xml/format.php: import_files_as_draft()) and
+        // attaches questiontextitemid/generalfeedbackitemid separately rather than
+        // inside the text fields. Pass these item IDs through; otherwise
+        // save_question()->file_save_draft_area_files() is never called and images
+        // from BOTH doors are silently discarded (Spec 0018 §7.1, #437).
         $form->questiontext = self::as_text_array(
             $question->questiontext ?? '', $question->questiontextformat ?? FORMAT_HTML,
             $question->questiontextitemid ?? 0);
@@ -614,7 +575,7 @@ final class import_questions_xml extends external_api {
             $question->generalfeedback ?? '', $question->generalfeedbackformat ?? FORMAT_HTML,
             $question->generalfeedbackitemid ?? 0);
         if (!isset($form->defaultmark)) {
-            // Moodle-XML-Export nutzt historisch das Feld <defaultgrade>.
+            // Moodle XML exports historically use <defaultgrade>.
             $form->defaultmark = $question->defaultgrade ?? 1.0;
         }
         if (!isset($form->penalty)) {
@@ -636,16 +597,14 @@ final class import_questions_xml extends external_api {
     }
 
     /**
-     * Uebersetzt eine beim Speichern gefangene Ausnahme in einen Text, der
-     * der Lehrkraft etwas sagt (#440).
+     * Translate caught save exceptions into useful teacher-facing text (#440).
      *
-     * question_type::save_question() erwartet bei manchen Fragetypen nicht
-     * die von qformat_xml::readquestions() gelieferte Rohform, sondern eine
-     * typspezifisch aufbereitete Struktur (z.B. "calculated": $form->dataset
-     * muss ein Array zusammengesetzter String-Schluessel sein, nicht die
-     * geparsten dataset_definitions-Objekte). Dieser generische save()-Pfad
-     * bereitet nicht fuer jeden Fragetyp eigens auf - schlaegt das fehl,
-     * liefert PHP intern nur einen TypeError ohne fachlichen Hinweis.
+     * For some types, question_type::save_question() expects a prepared structure,
+     * not qformat_xml::readquestions()' raw result. For calculated questions,
+     * form->dataset must contain composite string keys rather than parsed
+     * dataset_definitions objects. This generic save() path does not prepare
+     * every type separately. On failure PHP otherwise reports only a TypeError
+     * without an explanation of the domain problem.
      *
      * @param string $qtype
      * @param \Throwable $e
@@ -656,24 +615,23 @@ final class import_questions_xml extends external_api {
             return $e->getMessage();
         }
 
-        return 'Fragetyp "' . $qtype . '" liess sich mit dieser XML-Struktur nicht speichern. Haeufigste Ursache: '
-            . 'eine fragetyp-spezifische Struktur (z.B. Dataset-Definitionen bei "calculated") weicht von der '
-            . 'internen Form ab, die dieser Fragetyp beim Speichern erwartet. Bitte die Fragetyp-Ablage pruefen '
-            . 'oder die Struktur vereinfachen.';
+        return 'Question type "' . $qtype . '" could not be saved with this XML structure. Common cause: '
+            . 'a question-type-specific structure (e.g. dataset definitions for "calculated") differs from the '
+            . 'internal form this question type expects when saving. Check the question type reference '
+            . 'or simplify the structure.';
     }
 
     /**
-     * Round-Trip-Pruefung (Spec 0017 §7.1): exportiert die frisch
-     * geschriebene Frage wieder ueber qformat_xml und parst sie erneut -
-     * dieselbe Importer-Funktion liefert damit auf beiden Seiten dieselbe
-     * Objektform. Wirft bei jeder Abweichung eine Exception, die die
-     * umgebende Transaktion zurueckrollt.
+     * Round-trip check (Spec 0017 §7.1): export the newly written question
+     * through qformat_xml and reparse it with the same importer. Both sides
+     * therefore have the same object shape. A mismatch throws and rolls back
+     * the enclosing transaction.
      *
      * @param \stdClass $category
      * @param \context $context
-     * @param \stdClass $original Vom Aufruf geparste Eingabe-Frage
-     * @param \stdClass $saved Rueckgabe von question_type::save_question()
-     * @param string $expectedidnumber Die diesem Schreibvorgang zugewiesene idnumber
+     * @param \stdClass $original Parsed input question
+     * @param \stdClass $saved Result of question_type::save_question()
+     * @param string $expectedidnumber idnumber assigned to this write
      * @return void
      */
     private static function verify_roundtrip(
@@ -693,14 +651,13 @@ final class import_questions_xml extends external_api {
     }
 
     /**
-     * Laedt die gespeicherte Frage neu und schreibt sie ueber qformat_xml
-     * zurueck (Issue #523: aus verify_roundtrip() ausgelagert, um die
-     * Funktion unter der 50-Zeilen-Grenze zu halten).
+     * Reload the saved question and export it with qformat_xml (#523:
+     * extracted from verify_roundtrip() to keep the function below 50 lines).
      *
      * @param \stdClass $category
      * @param \context $context
      * @param \stdClass $saved
-     * @return string Das in ein <quiz>-Wurzelelement gewickelte XML.
+     * @return string XML wrapped in a <quiz> root.
      */
     private static function rewrite_saved_question(\stdClass $category, \context $context, \stdClass $saved): string {
         global $DB;
@@ -722,14 +679,14 @@ final class import_questions_xml extends external_api {
 
         $xml = $qformat->writequestion($reloaded);
 
-        // writequestion() liefert nur den <question>-Block, readquestions()
-        // erwartet aber ein <quiz>-Wurzelelement (xmlize-Struktur $xml['quiz']).
+        // writequestion() returns only a <question> block, but readquestions()
+        // expects a <quiz> root (xmlize's xml["quiz"] structure).
         return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<quiz>\n" . $xml . "\n</quiz>";
     }
 
     /**
-     * Parst das zurueckgeschriebene XML erneut und liefert die eine
-     * enthaltene Frage (Issue #523: aus verify_roundtrip() ausgelagert).
+     * Reparse the exported XML and return its one question (#523: extracted
+     * from verify_roundtrip()).
      *
      * @param \stdClass $category
      * @param \context $context
@@ -755,21 +712,21 @@ final class import_questions_xml extends external_api {
         $errortext = trim(strip_tags((string) ob_get_clean()));
 
         if ($reparsed === false || !is_array($reparsed) || $reparser->importerrors > 0) {
-            throw self::roundtrip_exception('parse', $errortext !== '' ? $errortext : 'Parse-Fehler');
+            throw self::roundtrip_exception('parse', $errortext !== '' ? $errortext : 'Parse error');
         }
         $reparsedquestion = reset($reparsed);
         if (!$reparsedquestion) {
-            throw self::roundtrip_exception('parse', 'keine Frage im zurueckgelesenen XML');
+            throw self::roundtrip_exception('parse', 'no question in the reparsed XML');
         }
 
         return $reparsedquestion;
     }
 
     /**
-     * Baut die moodle_exception fuer eine fehlgeschlagene Round-Trip-Pruefung.
+     * Build a moodle_exception for a failed round-trip check.
      *
-     * @param string $field Name des abweichenden Feldes ("parse" bei einem Reparse-Fehler)
-     * @param string $detail Zusatzinfo, leer wenn keine vorhanden
+     * @param string $field Mismatched field name ("parse" for a reparse error)
+     * @param string $detail Additional detail, empty when absent
      * @return \moodle_exception
      */
     private static function roundtrip_exception(string $field, string $detail = ''): \moodle_exception {
@@ -782,16 +739,15 @@ final class import_questions_xml extends external_api {
     }
 
     /**
-     * Kernfeld-Vergleich zwischen der Eingabe-Frage und der zurueckgelesenen
-     * Frage (Spec 0017 §7.1): name, idnumber, Fragetext, allgemeines
-     * Feedback, Antwortoptionen mit Bruchteilen und Feedbacktexte je Option.
-     * Keine Byte-Gleichheit - IDs, Reihenfolgen und Dateipfade werden von
-     * Moodle normalisiert und sind hier bewusst aussen vor.
+     * Compare core fields of the input and reparsed question (Spec 0017 §7.1):
+     * name, idnumber, question text, general feedback, answer options with
+     * fractions and per-option feedback. Exclude byte equality: Moodle
+     * normalizes IDs, ordering and file paths.
      *
      * @param \stdClass $expected
      * @param \stdClass $actual
      * @param string $expectedidnumber
-     * @return string|null Name des abweichenden Feldes, oder null bei Uebereinstimmung
+     * @return string|null Mismatched field name, or null when equal
      */
     private static function find_mismatch(\stdClass $expected, \stdClass $actual, string $expectedidnumber): ?string {
         if (trim((string) ($expected->name ?? '')) !== trim((string) ($actual->name ?? ''))) {
@@ -826,12 +782,10 @@ final class import_questions_xml extends external_api {
     }
 
     /**
-     * Normalisiert die Antwortoptionen eines qformat_xml-Frageobjekts
-     * (Text, Bruchteil, Feedback) unabhaengig vom konkreten Fragetyp -
-     * deckt sowohl das parallele Array-Format (multichoice, shortanswer,
-     * numerical, ...) als auch das truefalse-Sonderformat ab. Beide Seiten
-     * der Round-Trip-Pruefung durchlaufen dieselbe qformat_xml-Importer-
-     * Funktion, liefern also dieselbe Form.
+     * Normalize answer options (text, fraction, feedback) regardless of
+     * question type. Handles the parallel arrays used by multichoice,
+     * shortanswer, numerical, etc., and the special truefalse shape. Both sides
+     * of the round-trip use the same qformat_xml importer and thus the same shape.
      *
      * @param \stdClass $qo
      * @return array<int, array{text: string, fraction: float, feedback: string}>
@@ -850,8 +804,8 @@ final class import_questions_xml extends external_api {
         }
 
         if (isset($qo->answer) && is_bool($qo->answer)) {
-            // truefalse: ein einzelnes Bool ("true" ist die richtige
-            // Antwort"), Feedback getrennt je Option.
+            // truefalse uses a single boolean (true means the correct answer is true)
+            // with separate feedback for each option.
             return [
                 [
                     'text' => 'true',
@@ -879,9 +833,9 @@ final class import_questions_xml extends external_api {
         global $DB;
 
         $version = $DB->get_record('question_versions', ['questionid' => $saved->id], '*', MUST_EXIST);
-        $message = $status === 'erstimport'
-            ? 'Frage "' . $name . '" neu angelegt (Version ' . $version->version . ').'
-            : 'Frage "' . $name . '" als neue Version (Version ' . $version->version . ') desselben Bank-Eintrags importiert.';
+        $message = $status === 'first_import'
+            ? get_string('questionimportcreated', 'local_coursepilot', (object) ['name' => $name, 'version' => $version->version])
+            : get_string('questionimportversion', 'local_coursepilot', (object) ['name' => $name, 'version' => $version->version]);
 
         return array_merge(
             [
@@ -895,7 +849,7 @@ final class import_questions_xml extends external_api {
         );
     }
 
-    /** Extrahiert reinen Text aus einem qformat-Feld (String oder ['text'=>...]-Array). */
+    /** Extract plain text from a qformat field (string or text-keyed array). */
     private static function text_of($value): string {
         if (is_array($value)) {
             return (string) ($value['text'] ?? '');
@@ -906,7 +860,7 @@ final class import_questions_xml extends external_api {
         return (string) $value;
     }
 
-    /** Baut die von save_question() erwartete ['text','format','itemid']-Struktur. */
+    /** Build the text/format/itemid structure expected by save_question(). */
     private static function as_text_array($value, $format, int $itemid = 0): array {
         if (is_array($value) && array_key_exists('text', $value)) {
             return [
@@ -918,7 +872,7 @@ final class import_questions_xml extends external_api {
         return ['text' => self::text_of($value), 'format' => $format ?? FORMAT_HTML, 'itemid' => $itemid];
     }
 
-    /** Generiert eine neue, eindeutige idnumber (gleiches Schema wie mc_question_version). */
+    /** Generate a unique idnumber, following mc_question_version. */
     private static function generate_idnumber(): string {
         return 'kp-' . bin2hex(random_bytes(8));
     }
@@ -931,21 +885,21 @@ final class import_questions_xml extends external_api {
             'questions' => new external_multiple_structure(
                 new external_single_structure(array_merge(
                     [
-                        'name' => new external_value(PARAM_TEXT, 'Name der importierten Frage'),
+                        'name' => new external_value(PARAM_TEXT, 'Imported question name'),
                         'questionbankentryid' => new external_value(
                             PARAM_INT,
-                            'ID des question_bank_entries (0 bei "verdachtsfall")'
+                            'question_bank_entries ID (0 for "suspect")'
                         ),
                         'version' => new external_value(
                             PARAM_INT,
-                            'Neue Versionsnummer (0 bei "verdachtsfall")'
+                            'New version number (0 for "suspect")'
                         ),
-                        'status' => new external_value(PARAM_ALPHA, '"erstimport" (first import) | "reimport" (new version of the same entry) | "verdachtsfall" (suspect case)'),
-                        'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
+                        'status' => new external_value(PARAM_ALPHAEXT, '"first_import" (first import) | "reimport" (new version of the same entry) | "suspect" (suspect case)'),
+                        'message' => new external_value(PARAM_RAW, 'Teacher-facing message'),
                     ],
                     question_suspect_gate::response_fields()
                 )),
-                'Ein Ergebnis-Eintrag je importierter Frage im XML'
+                'One result entry per imported XML question'
             ),
         ]);
     }

@@ -1,0 +1,94 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_coursepilot/location_selection_editor
+
+    Location selection and file picker. amd/src/location_selection.js renders
+    dynamic lists with Mustache templates instead of strings (Issue #551).
+    Configuration reaches the module through $PAGE->requires->js_call_amd(),
+    rather than data embedded in this template.
+
+    Context variables required for this template:
+    * actionurl - string - form action URL
+    * sesskey - string - session key for the form
+    * oauthflow - bool - whether this editor continues an OAuth flow
+    * oauthpassthrough - array - list of {name, value} hidden fields carried through the OAuth round trip
+    * targets - array - list of {name, first, context_area, fields} per pickable target
+      * name - string - target identifier (context_area or material_store)
+      * first - bool - whether this is the first tab (active by default)
+      * context_area - bool - true for the context-area target, false for the material store
+      * fields - array - list of {name, id} hidden inputs filled by amd/src/location_selection.js
+
+    Example context (json):
+    {
+        "actionurl": "https://example.org/local/coursepilot/location_selection.php",
+        "sesskey": "abc123",
+        "oauthflow": false,
+        "oauthpassthrough": [],
+        "targets": [
+            {"name": "context_area", "first": true, "context_area": true, "fields": [{"name": "context_area_id", "id": "id_context_area_id"}]},
+            {"name": "material_store", "first": false, "context_area": false, "fields": [{"name": "material_store_id", "id": "id_material_store_id"}]}
+        ]
+    }
+}}
+<div class="coursepilot-location-selection" id="coursepilot-location-selection">
+    <form method="post" action="{{actionurl}}" id="coursepilot-location-selection-form">
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <input type="hidden" name="finish" value="1">
+        {{#oauthflow}}
+        <input type="hidden" name="oauthflow" value="1">
+        {{/oauthflow}}
+        {{#oauthpassthrough}}
+        <input type="hidden" name="{{name}}" value="{{value}}">
+        {{/oauthpassthrough}}
+
+        <div class="mb-3 d-flex gap-2 flex-wrap" id="coursepilot-location-selection-progress"></div>
+        <div class="mb-2 small text-danger" id="coursepilot-location-selection-overlaplock" hidden></div>
+        <ul class="nav nav-tabs" role="tablist">
+            {{#targets}}
+            <li class="nav-item" role="presentation">
+                <a href="#coursepilot-location-selection-pane-{{name}}" class="nav-link{{#first}} active{{/first}}" data-bs-toggle="tab" data-target="{{name}}" role="tab">
+                    {{#context_area}}{{#str}} locationselectiontabcontextarea, local_coursepilot {{/str}}{{/context_area}}
+                    {{^context_area}}{{#str}} locationselectiontabmaterialstore, local_coursepilot {{/str}}{{/context_area}}
+                </a>
+            </li>
+            {{/targets}}
+        </ul>
+        <div class="tab-content border border-top-0 p-3">
+            {{#targets}}
+            <div class="tab-pane fade{{#first}} show active{{/first}}" id="coursepilot-location-selection-pane-{{name}}">
+                {{#context_area}}<div class="text-muted small mb-2">{{#str}} locationselectioncontexthint, local_coursepilot {{/str}}</div>{{/context_area}}
+                <button type="button" class="btn btn-outline-secondary me-2" data-action="keep-moodle" data-target="{{name}}">{{#str}} locationselectionkeepmoodle, local_coursepilot {{/str}}</button>
+                <button type="button" class="btn btn-primary" data-action="open-picker" data-target="{{name}}">{{#str}} locationselectionchooseinstance, local_coursepilot {{/str}}</button>
+            </div>
+            {{/targets}}
+        </div>
+        {{#targets}}{{#fields}}
+        <input type="hidden" name="{{name}}" id="{{id}}">
+        {{/fields}}{{/targets}}
+
+        {{> local_coursepilot/location_selection_browser}}
+        <div class="modal" id="coursepilot-location-selection-confirm-modal" tabindex="-1">
+            <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">{{#str}} locationselectionconfirmheading, local_coursepilot {{/str}}</h5><button type="button" class="btn-close" data-coursepilot-dismiss="modal"></button></div>
+                <div class="modal-body"><p id="coursepilot-location-selection-confirm-count"></p><p>{{#str}} locationselectionconfirmtext, local_coursepilot {{/str}}</p></div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-coursepilot-dismiss="modal">{{#str}} locationselectionconfirmcancel, local_coursepilot {{/str}}</button><button type="button" class="btn btn-success" id="coursepilot-location-selection-confirmfolder-ack">{{#str}} locationselectionconfirmbutton, local_coursepilot {{/str}}</button></div>
+            </div></div>
+        </div>
+        <button type="submit" class="btn btn-success mt-3" id="coursepilot-location-selection-finish" disabled>{{#str}} locationselectionfinishbutton, local_coursepilot {{/str}}</button>
+    </form>
+</div>

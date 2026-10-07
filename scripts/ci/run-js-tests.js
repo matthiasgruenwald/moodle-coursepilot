@@ -2,29 +2,11 @@
 /**
  * Node-Testlauf für CI (Issue #268, Akzeptanzkriterium 3/12).
  *
- * Führt dieselbe Suite wie `npm test` aus, schließt aber Testdateien aus, die
- * strukturell nicht auf einem Linux-CI-Runner laufen können - unabhängig vom
- * Zustand des nativen Server-MCP (Plugin/src/local_coursepilot). Kein
- * natives Testversagen wird hier verdeckt, jede Zeile ist einzeln begründet:
- *
- * - moodle-credentials.test.js, moodle-test-client-credentials.test.js,
- *   start-mcp.test.js, uninstall-kurspilot.test.js: pruefen den
- *   plattformgebundenen OS-Credential-Store (macOS Keychain / Windows
- *   Credential Manager) des eingefrorenen Altstands - siehe
- *   scripts/moodle-credentials.js:assertSupportedPlatform.
- * - assign-settings-freeze.test.js: ruft legacy/local_coursepilot/classes/
- *   assign_settings.php ueber die lokale `php`-CLI auf, die in diesem
- *   Job nicht bereitsteht (nativer PHPUnit-Job bringt PHP separat mit) -
- *   testet ausserdem den Altstand, nicht Plugin/src/local_coursepilot.
- * - assign-tools-crop-warning.test.js: die macOS-Faelle (#139) mocken
- *   os.platform(), waehrend lib/kurspilot-workspace-config.js den echten
- *   process.platform liest - auf einem Linux-Runner damit strukturell nicht
- *   simulierbar. Testet zudem lib/ (lokaler stdio-Altstand), nicht den
- *   nativen Server-MCP.
- *
- * Jede neue Datei mit vergleichbarer Einschraenkung muss hier ausdruecklich
- * eingetragen werden, damit sie nicht stillschweigend aus dem Pflichtlauf
- * verschwindet.
+ * Führt dieselbe Suite wie `npm test` aus. Seit dem Entfernen des Altstands
+ * 1.x (#587) gibt es keine plattformgebundenen Ausnahmen mehr. Kommt eine
+ * Testdatei hinzu, die strukturell nicht auf einem Linux-CI-Runner laufen
+ * kann, wird sie hier ausdrücklich und begründet ausgeschlossen, damit sie
+ * nicht stillschweigend aus dem Pflichtlauf verschwindet.
  */
 
 'use strict';
@@ -37,14 +19,7 @@ const REPO_ROOT = path.join(__dirname, '..', '..');
 const TEST_DIR = path.join(REPO_ROOT, 'test');
 
 // Begruendung je Datei: siehe Dateikopf-Kommentar oben.
-const EXCLUDED_FROM_NATIVE_GATE = new Set([
-  'moodle-credentials.test.js',
-  'moodle-test-client-credentials.test.js',
-  'start-mcp.test.js',
-  'uninstall-kurspilot.test.js',
-  'assign-settings-freeze.test.js',
-  'assign-tools-crop-warning.test.js',
-]);
+const EXCLUDED_FROM_NATIVE_GATE = new Set([]);
 
 function listTestFiles(dir) {
   const out = [];
@@ -74,7 +49,7 @@ process.stderr.write(
 
 const result = spawnSync(
   process.execPath,
-  ['--require', path.join(TEST_DIR, 'helpers', 'no-browser.js'), '--test', ...files],
+  ['--test', ...files],
   { stdio: 'inherit', cwd: REPO_ROOT }
 );
 

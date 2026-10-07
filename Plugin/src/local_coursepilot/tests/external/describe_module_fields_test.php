@@ -20,8 +20,8 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Feldkatalog-Abruf (#379): Katalog-Gerüst, gemeinsamer Block, label als
- * erste vollständig katalogisierte Aktivitätsart.
+ * Field catalog retrieval (#379): catalog structure, shared fields and
+ * label as the first fully cataloged activity type.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,7 +31,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class describe_module_fields_test extends \advanced_testcase {
 
     /**
-     * Ohne modname: die von Coursepilot geführten Aktivitätsarten (User Story 13).
+     * Without modname, list supported activity types (user story 13).
      */
     public function test_without_modname_lists_known_activity_types(): void {
         $this->resetAfterTest();
@@ -46,8 +46,8 @@ final class describe_module_fields_test extends \advanced_testcase {
     }
 
     /**
-     * Kurzform: Felder und Feldbündel ja, die restlichen vier Kategorien
-     * nein - dafür ein ausdrücklicher Hinweis, dass es mehr gibt.
+     * Compact output contains fields and bundles, omitting the other four
+     * categories with an explicit notice that more detail is available.
      */
     public function test_short_form_omits_extra_categories_and_says_so(): void {
         $this->resetAfterTest();
@@ -65,7 +65,7 @@ final class describe_module_fields_test extends \advanced_testcase {
     }
 
     /**
-     * Vollständige Form: alle fünf Kategorien, unterscheidbar von der Kurzform.
+     * Full output contains all five categories and differs from compact output.
      */
     public function test_full_form_includes_all_five_categories(): void {
         $this->resetAfterTest();
@@ -80,10 +80,10 @@ final class describe_module_fields_test extends \advanced_testcase {
             describe_module_fields::execute('label', true)
         );
 
-        $this->assertNotEquals($short, $full, 'Kurzform und vollständige Form müssen sich unterscheiden.');
+        $this->assertNotEquals($short, $full, 'Short form and full form must differ.');
 
         $sperrliste = $full['module']['blocked_fields'];
-        $this->assertContains('name', $sperrliste, 'label.name muss gesperrt sein - es wird aus dem Intro abgeleitet.');
+        $this->assertContains('name', $sperrliste, 'label.name must be blocked - it is derived from the intro.');
         $this->assertContains('course', $sperrliste);
         $this->assertContains('timemodified', $sperrliste);
 
@@ -92,10 +92,8 @@ final class describe_module_fields_test extends \advanced_testcase {
     }
 
     /**
-     * Der gemeinsame Block erscheint bei label und ist nicht in der
-     * label-Klasse dupliziert - geprüft über die Ausgabe, nicht die
-     * Implementierung: die Feldliste enthält sowohl label-eigene als auch
-     * course_modules-Felder.
+     * Output includes shared course_modules fields and label-specific fields
+     * without duplicating the shared block in the label class.
      */
     public function test_shared_block_appears_alongside_label_fields(): void {
         $this->resetAfterTest();
@@ -107,18 +105,17 @@ final class describe_module_fields_test extends \advanced_testcase {
         );
 
         $names = array_column($result['module']['fields'], 'name');
-        $this->assertContains('intro', $names, 'label-eigenes Feld fehlt.');
+        $this->assertContains('intro', $names, "label's own field is missing.");
         $this->assertContains('visible', $names, 'Gemeinsamer Block fehlt.');
         $this->assertContains('groupmode', $names, 'Gemeinsamer Block fehlt.');
         $this->assertContains('idnumber', $names, 'Gemeinsamer Block fehlt.');
 
-        // Keine Dopplung: jeder Feldname erscheint genau einmal.
-        $this->assertSame(count($names), count(array_unique($names)), 'Ein Feld ist dupliziert.');
+        // No duplicates: each field name appears exactly once.
+        $this->assertSame(count($names), count(array_unique($names)), 'A field is duplicated.');
     }
 
     /**
-     * Jedes Katalogfeld trägt eine deutsche Bedeutung - kein Feld wird nur
-     * mit englischem Namen ausgeliefert.
+     * Every catalog field has an explanatory meaning, not merely a field name.
      */
     public function test_every_field_carries_a_german_meaning(): void {
         $this->resetAfterTest();
@@ -132,13 +129,12 @@ final class describe_module_fields_test extends \advanced_testcase {
         $allfields = array_merge($result['module']['fields'], $result['module']['pseudo_fields']);
         $this->assertNotEmpty($allfields);
         foreach ($allfields as $field) {
-            $this->assertNotSame('', trim($field['meaning']), $field['name'] . ' hat keine deutsche Bedeutung.');
+            $this->assertNotSame('', trim($field['meaning']), $field['name'] . ' has no meaning text.');
         }
     }
 
     /**
-     * describe_module_fields antwortet für alle vier in Ticket #380
-     * hinzugefügten Aktivitätsarten - Kurzform und vollständige Form.
+     * All four activity types added in #380 support compact and full output.
      */
     public function test_answers_for_page_url_folder_resource_short_and_full(): void {
         $this->resetAfterTest();
@@ -149,20 +145,19 @@ final class describe_module_fields_test extends \advanced_testcase {
                 describe_module_fields::execute_returns(),
                 describe_module_fields::execute($modname, false)
             );
-            $this->assertNotEmpty($short['module']['fields'], "$modname: Kurzform liefert keine Felder.");
+            $this->assertNotEmpty($short['module']['fields'], "$modname: short form returns no fields.");
 
             $full = external_api::clean_returnvalue(
                 describe_module_fields::execute_returns(),
                 describe_module_fields::execute($modname, true)
             );
-            $this->assertNotEmpty($full['module']['pseudo_fields'], "$modname: vollstaendige Form ohne Pseudofelder.");
-            $this->assertNotEmpty($full['module']['blocked_fields'], "$modname: vollstaendige Form ohne Sperrliste.");
+            $this->assertNotEmpty($full['module']['pseudo_fields'], "$modname: full form without pseudo fields.");
+            $this->assertNotEmpty($full['module']['blocked_fields'], "$modname: full form without blocklist.");
         }
     }
 
     /**
-     * printheading existiert in Moodle 5.0 nicht mehr und darf im
-     * page-Katalog nicht auftauchen (Ticket #380).
+     * Moodle 5.0 removed printheading; exclude it from the page catalog (#380).
      */
     public function test_page_catalog_omits_printheading(): void {
         $this->resetAfterTest();
@@ -181,8 +176,8 @@ final class describe_module_fields_test extends \advanced_testcase {
     }
 
     /**
-     * Datei-Pseudofelder (resource, folder) sind vollständig katalogisiert
-     * und stehen zugleich auf der Sperrliste (bis Spec 0018).
+     * Fully catalog resource/folder file pseudofields and keep them on
+     * the denylist until Spec 0018.
      */
     public function test_file_fields_are_catalogued_and_unlocked(): void {
         $this->resetAfterTest();
@@ -195,21 +190,19 @@ final class describe_module_fields_test extends \advanced_testcase {
             );
 
             $pseudonames = array_column($full['module']['pseudo_fields'], 'name');
-            $this->assertContains('files', $pseudonames, "$modname: 'files' fehlt in den Pseudofeldern.");
+            $this->assertContains('files', $pseudonames, "$modname: 'files' is missing from the pseudo fields.");
             $this->assertNotContains(
                 'files',
                 $full['module']['blocked_fields'],
-                "$modname: 'files' darf seit Issue #434 nicht mehr gesperrt sein."
+                "$modname: 'files' must no longer be blocked since issue #434."
             );
         }
     }
 
     /**
-     * Abnahmekriterium #382: die Kurzform von describe_module_fields('assign')
-     * nennt die üblichen Felder plus Feldbündel plus den Vermerk auf mehr,
-     * aber nicht die vollständige Feldliste - der Stresstest der
-     * Zweistufigkeit (Spec 0015 §3.1: ~30 Instanzspalten, die Lehrkraft
-     * braucht im Regelfall zwölf davon).
+     * Compact assign output lists common fields and bundles plus a more-detail
+     * notice, but not all fields (#382). This stresses two-level output
+     * (Spec 0015 §3.1: about 30 instance columns, normally 12 needed).
      */
     public function test_assign_short_form_uses_common_fields_subset(): void {
         $this->resetAfterTest();
@@ -229,21 +222,20 @@ final class describe_module_fields_test extends \advanced_testcase {
 
         $this->assertContains('name', $shortnames);
         $this->assertContains('duedate', $shortnames);
-        $this->assertNotContains('markinganonymous', $shortnames, 'Kurzform darf nicht alle Felder auflisten.');
+        $this->assertNotContains('markinganonymous', $shortnames, 'Short form must not list all fields.');
         $this->assertLessThan(count($fullnames), count($shortnames));
 
         $this->assertNotEmpty($short['module']['field_bundles']);
         $bundlenames = array_column($short['module']['field_bundles'], 'name');
         $this->assertContains('standard', $bundlenames);
-        $this->assertContains('übung', $bundlenames);
+        $this->assertContains('exercise', $bundlenames);
 
-        $this->assertContains('markinganonymous', $fullnames, 'Vollstaendige Form muss alle Felder enthalten.');
+        $this->assertContains('markinganonymous', $fullnames, 'Full form must contain all fields.');
     }
 
     /**
-     * Riegel aus dem Katalog (#583): jedes Feld traegt seine Riegel-Bedingung
-     * als JSON, "null" bei Feldern, die kein Riegel sein koennen. Dazu die
-     * Herkunft der Note.
+     * Each field exposes its learner-restriction condition as JSON, or
+     * null when no restriction is possible, plus note provenance (#583).
      */
     public function test_fields_carry_their_learner_lock_condition(): void {
         $this->resetAfterTest();
@@ -264,8 +256,7 @@ final class describe_module_fields_test extends \advanced_testcase {
     }
 
     /**
-     * Unbekannte Aktivitätsart scheitert mit einer Meldung, die die
-     * geführten Arten nennt.
+     * Unknown types produce a message naming supported types.
      */
     public function test_unknown_modname_throws(): void {
         $this->resetAfterTest();
@@ -276,7 +267,7 @@ final class describe_module_fields_test extends \advanced_testcase {
     }
 
     /**
-     * Rein lesend: der Aufruf führt zu keiner neuen Coursepilot-Capability.
+     * Reading creates no new Coursepilot capability.
      */
     public function test_introduces_no_write_capability(): void {
         global $DB;

@@ -17,14 +17,13 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Vertrag einer Aktivitätsart im Feldkatalog (Spec 0015 §2). Eine
- * implementierende Klasse je Modultyp unter \local_coursepilot\catalog\.
+ * Activity-type catalog contract (Spec 0015 §2), implemented once per
+ * module type under local_coursepilot\catalog.
  *
- * Der modulübergreifende Block (Sichtbarkeit, Stealth, Gruppenmodus,
- * Gruppierung, idnumber, Abschnittszuordnung, {@see shared_block}) ist
- * bewusst NICHT Teil dieses Interface - er steht einmal und wird von
- * describe_module_fields für jede Art zusätzlich eingeblendet (Spec 0015
- * §2.3). Eine Implementierung darf ihn nicht duplizieren.
+ * The cross-module block (visibility, stealth, group mode, grouping,
+ * idnumber and section, {@see shared_block}) lives separately and is added
+ * by describe_module_fields for each type (Spec 0015 §2.3). Catalog
+ * implementations must not duplicate it.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -33,33 +32,29 @@ namespace local_coursepilot\catalog;
 interface module_catalog {
 
     /**
-     * Die Moodle-Hauptversion (Branch-Nummer), bis zu der der Katalogbestand
-     * zuletzt insgesamt manuell durchgesehen wurde (ADR 0017, Ticket #399) -
-     * eine Quelle statt neun einzelner Literale, die sonst bei jedem
-     * gemeinsamen Review-Durchgang einzeln nachgezogen werden muessten.
-     * {@see reviewed_up_to_major()} greift hierauf zurueck; eine einzelne
-     * Katalogklasse kann bei Bedarf einen abweichenden (frueheren) Wert
-     * zurueckgeben, statt diese Konstante zu nutzen.
+     * Latest Moodle major branch reviewed jointly across all catalogs
+     * (ADR 0017, Ticket #399). Shared by reviewed_up_to_major(); an individual
+     * catalog may return an earlier review version where necessary.
      */
     public const LAST_JOINT_REVIEW_MAJOR = 500;
 
     /**
-     * Moodle-Modulname (mod_XXX ohne Praefix), z.B. "label".
+     * Moodle module name without the mod_ prefix, e.g. "label".
      *
      * @return string
      */
     public static function modname(): string;
 
     /**
-     * Kategorie 1: echte Instanz-Datenbankfelder.
+     * Category 1: actual instance database fields.
      *
      * @return field[]
      */
     public static function fields(): array;
 
     /**
-     * Wirksamer, lehrkraftlesbarer Zustand einer Instanz fuer die
-     * Katalogansicht. Die Form bleibt fuer alle Modultypen gleich.
+     * Effective teacher-readable instance state for the catalog view,
+     * with the same shape across module types.
      *
      * @param int $instanceid
      * @param int $cmid
@@ -69,125 +64,111 @@ interface module_catalog {
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array;
 
     /**
-     * Schreibspezifische Ausnahmen des Modultyps. Die generischen Werkzeuge
-     * interpretieren nur diese Deklaration; sie kennen keine Modultypen.
+     * Module-specific write exceptions. Generic tools interpret this
+     * declaration without knowing module types.
      *
      * @return array<string, mixed>
      */
     public static function write_options(): array;
 
     /**
-     * Namen der haeufig gesetzten Felder aus {@see fields()} fuer die Kurzform
-     * von describe_module_fields (Spec 0015 §3.1, Ticket #382). Bei wenigen
-     * Feldern (label, choice, forum, ...) ist "alle" bereits die Kurzform -
-     * dann schlicht alle Feldnamen zurueckgeben. Erst bei sehr vielen Feldern
-     * (assign: ~30) lohnt eine echte Teilmenge.
+     * Common fields from {@see fields()} for the concise describe_module_fields
+     * view (Spec 0015 §3.1, Ticket #382). For types with few fields, return all
+     * names; a subset helps only with large catalogs (assign: about 30).
      *
      * @return string[]
      */
     public static function common_field_names(): array;
 
     /**
-     * Kategorie 2: Nicht-DB-Felder, die die *_instance()-Funktionen
-     * ungeschuetzt lesen (Spec 0015 §2.2).
+     * Category 2: non-DB fields read unconditionally by *_instance() functions
+     * (Spec 0015 §2.2).
      *
      * @return field[]
      */
     public static function pseudofields(): array;
 
     /**
-     * Kategorie 3: modulspezifische Sperrliste - zusaetzlich zur
-     * durchgaengigen Sperrliste aus {@see shared_block::BLOCKLIST}, die
-     * describe_module_fields fuer jede Art anhaengt.
+     * Category 3: module-specific blocklist, in addition to the cross-module
+     * {@see shared_block::BLOCKLIST} added by describe_module_fields.
      *
-     * @return string[] Feldnamen.
+     * @return string[] Field names.
      */
     public static function blocklist(): array;
 
     /**
-     * Kategorie 4: Kombinationsregeln - Beziehungen zwischen Feldern, die nur
-     * in Moodles validation() stehen (Spec 0015 §2.2).
+     * Category 4: field combination rules present only in Moodle validation()
+     * (Spec 0015 §2.2).
      *
-     * @return string[] Je Regel ein deutscher Satz.
+     * @return string[] One English sentence per rule.
      */
     public static function combination_rules(): array;
 
     /**
-     * Kategorie 5: Nebenwirkungsvermerke - Felder mit Wirkung ueber die
-     * Aktivitaet hinaus (Spec 0015 §2.2).
+     * Category 5: side effects beyond the activity (Spec 0015 §2.2).
      *
-     * @return string[] Je Vermerk ein deutscher Satz.
+     * @return string[] One English sentence per side effect.
      */
     public static function side_effects(): array;
 
     /**
-     * Feldbuendel (Presets): Name => Feld=>Wert-Vorbelegung. Ueberstimmt
-     * keine von der Lehrkraft ausdruecklich genannten Felder (Spec 0015
-     * §2.4). Leer, wenn die Aktivitaetsart keine Buendel hat.
+     * Field bundles (presets): bundle name to field/value defaults. Preserve
+     * fields explicitly named by the teacher (Spec 0015 §2.4). Empty when the
+     * activity type has no bundles.
      *
      * @return array<string, array<string, mixed>>
      */
     public static function bundles(): array;
 
     /**
-     * Riegel (Issue #583): Feld => strukturierte Bedingung, unter der das Feld
-     * eine lernende Person auf eine Handlung der Lehrkraft warten laesst
-     * (weiterarbeiten oder nachbessern). Bedingung:
+     * Learner locks (Issue #583): field to structured condition requiring
+     * teacher action before a learner can continue or resubmit. Shape:
      * `['op' => 'equals'|'not_equals'|'greater'|'nonzero', 'value' => ..., 'reason' => '...']`
-     * ("value" entfaellt bei "nonzero", "reason" ist ein englischer Satz fuer
-     * die Werkzeugmeldung). Pflicht: auch eine leere Liste ist eine
-     * ausdrueckliche Antwort. Ausgewertet von {@see learner_locks}.
+     * Omit value for nonzero; reason is an English sentence for the tool message.
+     * An explicit empty list is also required. Evaluated by {@see learner_locks}.
      *
      * @return array<string, array{op: string, value?: mixed, reason: string}>
      */
     public static function learner_locks(): array;
 
     /**
-     * Herkunft der Note (Issue #583): {@see learner_locks::GRADE_TEACHER},
-     * {@see learner_locks::GRADE_AUTOMATIC} oder {@see learner_locks::GRADE_NONE}.
-     * Mit $instanceid darf eine Katalogklasse die Aussage fuer eine konkrete
-     * Instanz schaerfen (quiz: manuell zu bewertende Frage -> teacher).
+     * Grade origin (Issue #583): GRADE_TEACHER, GRADE_AUTOMATIC or GRADE_NONE
+     * from {@see learner_locks}. With $instanceid, a catalog may refine the
+     * answer for a particular instance (quiz with manually graded questions: teacher).
      *
-     * @param int $instanceid 0 = Aussage fuer die Aktivitaetsart.
+     * @param int $instanceid 0 = answer for the activity type.
      * @return string
      */
     public static function grade_origin(int $instanceid = 0): string;
 
     /**
-     * Schreibweg: null, wenn ueber das Vehikel (update_moduleinfo()) - sonst
-     * der Name des Einzelwerkzeugs, das stattdessen schreibt (Spec 0015
-     * §3.1, z.B. "update_quiz_settings").
+     * Write route: null for update_moduleinfo(), otherwise the dedicated
+     * write tool name (Spec 0015 §3.1, e.g. "update_quiz_settings").
      *
      * @return string|null
      */
-    public static function schreibweg(): ?string;
+    public static function write_route(): ?string;
 
     /**
-     * Konstanten ohne aufrufbare Wertemenge, die dieser Katalog voraussetzt
-     * (Spec 0015 §11, Ticket #382/#399, "Konstanten-Existenz" aus dem
-     * maschinell pruefbaren Teil der Tiefenpruefung, ADR 0017). Leer, wenn
-     * der Katalog keine solchen Konstanten referenziert.
+     * Required constants without an enumerable value set (Spec 0015 §11,
+     * Tickets #382/#399, ADR 0017). Empty if the catalog references none.
      *
-     * Dieselbe Liste speist sowohl den Repo-Vertragstest
-     * (tests/catalog/*_contract_test.php) als auch die Laufzeit-Tiefenpruefung
-     * ({@see \local_coursepilot\catalog\drift_check}) - eine Quelle statt zweier
-     * auseinanderlaufender Kopien.
+     * The same list feeds repository contract tests and runtime
+     * {@see drift_check}, avoiding separate sources that could diverge.
      *
      * @return string[]
      */
     public static function checked_constants(): array;
 
     /**
-     * Bis zu welcher Moodle-Hauptversion (Branch-Nummer, z.B. 500 fuer
-     * Moodle 5.0) dieser Katalog manuell durchgesehen wurde - deckt den nicht
-     * maschinell pruefbaren Teil ab: abgeschriebene Wertelisten,
-     * Kombinationsregeln, Nebenwirkungsvermerke (ADR 0017, Ticket #399).
+     * Latest Moodle major branch manually reviewed for this catalog
+     * (e.g. 500 for Moodle 5.0). Covers copied enumerations, combination
+     * rules and side effects that cannot be checked automatically (ADR 0017,
+     * Ticket #399).
      *
-     * Muss bei jedem neuen Major-Release, das der Katalog tatsaechlich
-     * durchgesehen wurde, von Hand erhoeht werden - das ist das "manuelle
-     * Review je Major-Release" aus dem Ticket. Bis dahin bleibt eine neuere,
-     * nur automatisch (maschinell) gepruefte Hauptversion im Status
-     * "automatisch geprueft" statt "geprueft".
+     * Advance manually only after reviewing a new major release. Until then,
+     * a newer branch that passes machine checks remains automatically checked
+     * rather than fully reviewed.
      *
      * @return int
      */

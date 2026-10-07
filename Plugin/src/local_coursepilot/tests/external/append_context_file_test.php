@@ -25,11 +25,10 @@ use local_coursepilot\webdav\webdav_instance;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Anhaengen im Kontextbereich (Issue #409, Spec 0016 Paragraph 4.2).
- * Happy-Path, Neuanlegen, Personenbezug der Zieldatei, das weiche
- * 1-MB-Signal und die Alles-oder-nichts-Zusage. Seit Issue #491 zusaetzlich
- * der externe Zweig: Read-modify-write mit `If-Match`, verpflichtender
- * Rotationshinweis.
+ * Append to context files (#409, Spec 0016 §4.2): normal operation,
+ * creation, personal-data marking, the soft 1 MB warning and atomicity.
+ * External storage (#491) adds read-modify-write with If-Match and
+ * mandatory rotation guidance.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -47,8 +46,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Anhaengen an eine bestehende Datei: der Inhalt waechst, die Antwort
-     * nennt die neue Gesamtgroesse (Spec 0016 §5.4).
+     * Appending grows an existing file and reports its new total size
+     * (Spec 0016 §5.4).
      */
     public function test_appends_to_existing_file(): void {
         $this->resetAfterTest();
@@ -71,8 +70,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Fehlt die Zieldatei, entsteht sie - und die Antwort sagt ausdruecklich
-     * "neu angelegt", damit ein Tippfehler im Pfad im Chat sichtbar wird.
+     * Create a missing target and explicitly report creation so a path typo
+     * is visible in chat.
      */
     public function test_creates_missing_file(): void {
         $this->resetAfterTest();
@@ -90,7 +89,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Auch beim Anhaengen gelten die Pfadregeln (Spec 0016 §5.1).
+     * Path rules also apply to appending (Spec 0016 §5.1).
      */
     public function test_rejects_invalid_path_segment(): void {
         $this->resetAfterTest();
@@ -101,7 +100,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * "../" fuehrt nicht aus dem Bereich heraus.
+     * A ../ segment cannot escape the context area.
      */
     public function test_rejects_traversal(): void {
         $this->resetAfterTest();
@@ -112,20 +111,18 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Nur .md - der Kontextbereich nimmt kein Material auf.
+     * Accept only .md files; context storage does not contain materials.
      */
     public function test_rejects_non_markdown_extension(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        // Genauer Fehlerschluessel, nicht nur "irgendeine moodle_exception"
-        // (Issue #540 Regressionsschutz, siehe das Gegenstueck in
-        // write_context_file_test): ohne die Ausnahme in
-        // context_area::is_moodle_call_error() wuerde die seit #540 neue
-        // Ausfallbehandlung das faelschlich als Ausstand vermerken.
+        // Assert the exact error key, not just any moodle_exception (#540).
+        // Without context_area::is_moodle_call_error(), outage handling would
+        // incorrectly record a pending entry; see write_context_file_test.
         try {
             $this->append('notiz.txt', 'x');
-            $this->fail('Falsche Dateiendung haette abgewiesen werden muessen.');
+            $this->fail('Wrong file extension should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilenotmarkdown', $e->errorcode);
         }
@@ -133,7 +130,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Das Anhaengsel selbst ist hart auf 1 MB begrenzt (Spec 0016 §5.2).
+     * Limit the appended content itself to 1 MB (Spec 0016 §5.2).
      */
     public function test_rejects_oversized_content(): void {
         $this->resetAfterTest();
@@ -144,9 +141,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Die Zieldatei darf ueber 1 MB wachsen - das ist ein weiches Signal,
-     * kein Fehler: der Append geht durch, die Antwort empfiehlt Rotation
-     * (Spec 0016 §5.2/§8.4).
+     * The target may grow beyond 1 MB. Append succeeds with rotation advice
+     * rather than an error (Spec 0016 §5.2/§8.4).
      */
     public function test_oversized_target_file_gets_rotation_hint(): void {
         $this->resetAfterTest();
@@ -164,7 +160,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Unterhalb der Grenze steht kein Rotationshinweis in der Antwort.
+     * Below the threshold, return no rotation warning.
      */
     public function test_small_file_has_no_rotation_hint(): void {
         $this->resetAfterTest();
@@ -181,9 +177,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ist die Zieldatei personenbezogen markiert und der #344-Schalter aus,
-     * wird abgewiesen - sonst liesse sich die Grenze mit einem Append
-     * umgehen (Spec 0016 §4.2).
+     * Reject appends to files marked as personal data when the #344 switch
+     * is off, preventing an append bypass (Spec 0016 §4.2).
      */
     public function test_rejects_marked_target_file_when_switch_off(): void {
         $this->resetAfterTest();
@@ -193,7 +188,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('lerngruppe.md', "\n- Notiz");
-            $this->fail('Personenbezug haette abgewiesen werden muessen.');
+            $this->fail('Personal data should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilelocked', $e->errorcode);
         }
@@ -205,7 +200,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Bei eingeschaltetem Schalter geht derselbe Append durch.
+     * Allow the same append when the switch is enabled.
      */
     public function test_appends_to_marked_target_file_when_switch_on(): void {
         $this->resetAfterTest();
@@ -223,8 +218,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Keine Zieldatei = kein Frontmatter = kein Personenbezug: der Append
-     * legt die Datei an, auch wenn der Schalter aus ist (Spec 0016 §5.5).
+     * A missing target has no frontmatter or personal-data marking.
+     * Create it even when the switch is off (Spec 0016 §5.5).
      */
     public function test_creates_missing_file_without_frontmatter_check(): void {
         $this->resetAfterTest();
@@ -237,9 +232,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Anhaengen an eine bereits markierte externe Zieldatei ist an einem
-     * nicht zugelassenen Speicher abgewiesen (Issue #493, ADR 0021 §3) - auch
-     * wenn der #344-Schalter an ist.
+     * Reject appends to marked external targets on unapproved storage
+     * (#493, ADR 0021 §3), even when the #344 switch is enabled.
      */
     public function test_rejects_append_to_marked_file_at_disallowed_external_host(): void {
         $this->resetAfterTest();
@@ -250,16 +244,15 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('lerngruppe.md', "\n- Notiz");
-            $this->fail('Nicht zugelassener Speicher haette abgewiesen werden muessen.');
+            $this->fail('Disallowed storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilehostnotallowed', $e->errorcode);
         }
     }
 
     /**
-     * Auch eine neu entstehende Datei, deren Anhaengsel selbst schon
-     * markiert ist, geht nicht an einen nicht zugelassenen Speicher -
-     * "geprueft wird die ganze entstehende Datei" (Spec #486 §6).
+     * Reject new marked files on unapproved storage too: inspect the entire
+     * resulting file (Spec #486 §6).
      */
     public function test_rejects_append_creating_marked_file_at_disallowed_external_host(): void {
         $this->resetAfterTest();
@@ -269,14 +262,14 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('lerngruppe.md', $this->marked_content());
-            $this->fail('Nicht zugelassener Speicher haette abgewiesen werden muessen.');
+            $this->fail('Disallowed storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilehostnotallowed', $e->errorcode);
         }
     }
 
     /**
-     * Am zugelassenen Speicher geht dasselbe Anhaengen durch.
+     * Allow the same append on approved storage.
      */
     public function test_accepts_append_to_marked_file_at_allowed_external_host(): void {
         $this->resetAfterTest();
@@ -292,7 +285,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ohne moodle/user:manageownfiles kein Schreibzugriff (Spec 0016 §1.1).
+     * Require moodle/user:manageownfiles to write (Spec 0016 §1.1).
      */
     public function test_rejects_missing_manageownfiles_capability(): void {
         global $DB;
@@ -314,9 +307,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Alles-oder-nichts: scheitert der Vorgang (hier an der Nutzerquote),
-     * bleibt die Zieldatei unveraendert stehen - kein halb angehaengter
-     * Zustand.
+     * If the operation fails, for example due to user quota, preserve the
+     * original target without partially appended content.
      */
     public function test_failed_append_leaves_target_file_untouched(): void {
         global $CFG;
@@ -328,7 +320,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', str_repeat('x', 2048));
-            $this->fail('Quotenueberschreitung haette abgewiesen werden muessen.');
+            $this->fail('Quota overrun should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString('MB', $e->getMessage());
         }
@@ -337,13 +329,11 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Der Moodle-Zweig braucht keinen vorher gelesenen Stand: Lesen,
-     * Zusammenfuegen und Schreiben passieren dort in einem Serveraufruf
-     * (Spec 0016 §4.2/§5.3). "expected_contenthash" existiert trotzdem als
-     * Parameter - er wirkt nur extern (Issue #513, Spec #486 §6: "Anhaengen
-     * nutzt den Pruefwert ebenso"), weil dort tatsaechlich ein fruehes Lesen
-     * vorausgehen kann. Befund aus Issue #513: der urspruengliche Test
-     * (`['path', 'content', 'pending_entry']`) galt vor diesem Parameter.
+     * Moodle storage reads, combines and writes within one server call
+     * (Spec 0016 §4.2/§5.3), so no previously read version is required.
+     * expected_contenthash applies only to external storage (#513, Spec #486
+     * §6), where a prior read may occur. The original parameter-contract test
+     * [path, content, pending_entry] predates this parameter.
      */
     public function test_execute_parameters_expose_expected_contenthash_for_the_external_branch(): void {
         $this->assertSame(
@@ -353,8 +343,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Zwei aufeinanderfolgende Appends verlieren nichts - jeder Aufruf
-     * liest den aktuellen Stand selbst.
+     * Consecutive appends lose no data; each reads the current file itself.
      */
     public function test_consecutive_appends_accumulate(): void {
         $this->resetAfterTest();
@@ -370,7 +359,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Person A haengt nie im Bereich von Person B an.
+     * User A never appends to user B’s context area.
      */
     public function test_appends_only_into_own_area(): void {
         $this->resetAfterTest();
@@ -385,10 +374,9 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Die Lehrkraft liest die Antwort auf Deutsch - "angehängt" mit
-     * Gesamtgroesse und der Rotationshinweis muessen dort stehen
-     * (Spec 0016 §5.4). Geprueft am deutschen Sprachpaket, weil die
-     * PHPUnit-Instanz nur Englisch aufgeloest bekommt.
+     * The German language pack must describe appended content, total size
+     * and rotation guidance (Spec 0016 §5.4). Inspect the pack directly
+     * because the PHPUnit instance resolves only English.
      */
     public function test_german_messages_carry_the_required_wording(): void {
         $string = [];
@@ -400,8 +388,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Extern haengt {@see append_context_file} per Read-modify-write mit
-     * `If-Match` an (Issue #491, Spec #486 §4/§6).
+     * External {@see append_context_file} uses read-modify-write with If-Match
+     * (#491, Spec #486 §4/§6).
      */
     public function test_appends_to_existing_external_file_with_if_match(): void {
         $this->resetAfterTest();
@@ -420,10 +408,9 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Konfliktschutz mit dem gelesenen Pruefwert (Issue #513, Spec #486
-     * §4/§6): Ein zweiter Chat schreibt zwischen dem Lesen und dem Anhaengen
-     * des ersten - die Handaenderung passiert direkt am Fake-Speicher, lange
-     * vor dem eigentlichen Aufruf, kein Decorator noetig.
+     * Concurrency protection (#513, Spec #486 §4/§6): simulate another chat
+     * editing between read and append directly in fake storage before the
+     * request, without a decorator.
      */
     public function test_stale_checkvalue_from_earlier_read_is_rejected_as_conflict(): void {
         $this->resetAfterTest();
@@ -438,7 +425,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', "- Stunde 1\n", $gelesen['contenthash']);
-            $this->fail('Konflikt haette abgewiesen werden muessen.');
+            $this->fail('Conflict should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
@@ -450,8 +437,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Passt der mitgegebene Pruefwert zum aktuellen Stand, geht das
-     * Anhaengen wie gewohnt durch (Issue #513).
+     * A matching check value permits the append (#513).
      */
     public function test_matching_checkvalue_allows_append(): void {
         $this->resetAfterTest();
@@ -470,11 +456,50 @@ final class append_context_file_test extends \advanced_testcase {
         );
     }
 
+    /** A concurrent edit after preflight must not replace the checked/authorised target. */
+    #[\PHPUnit\Framework\Attributes\DataProvider('concurrent_edits')]
+    public function test_append_rejects_change_after_preflight(bool $withchecksum, bool $marked): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/journal.md', "# Journal\n");
+        $checksum = $withchecksum ? read_context_file::execute('journal.md')['contenthash'] : '';
+        $replacement = $marked ? $this->marked_content() : '# Concurrent edit';
+        $transport = new class($fake, $replacement) implements \local_coursepilot\webdav\webdav_transport {
+            private bool $changed = false;
+
+            public function __construct(private readonly fake_webdav_transport $inner, private readonly string $replacement) {
+            }
+
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+                $response = $this->inner->request($method, $url, $headers, $body);
+                if (!$this->changed && $method === 'GET' && str_ends_with($url, '/journal.md')) {
+                    $this->changed = true;
+                    $this->inner->seed_file('/Coursepilot/Kontext/journal.md', $this->replacement);
+                }
+                return $response;
+            }
+        };
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $transport);
+
+        try {
+            $this->append('journal.md', "\nAppend", $checksum);
+            $this->fail('A changed target must be rejected instead of appending to an unchecked state.');
+        } catch (\local_coursepilot\storage_conflict_exception $e) {
+            $this->assertSame('storageconflict', $e->errorcode);
+        }
+        $this->assertSame($replacement, $this->external_content($fake, '/Coursepilot/Kontext/journal.md'));
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
+    }
+
+    public static function concurrent_edits(): array {
+        return [[true, false], [false, true]];
+    }
+
     /**
-     * Nachtragen mit "pending_entry=" ueberschreibt nie ungeprueft (Entscheidung
-     * zu Issue #513): Fehlt der Pruefwert, obwohl die Zieldatei bereits
-     * existiert, geht das Nachtragen als Konflikt zurueck statt gewachsenen
-     * Bestand stillschweigend zu erweitern.
+     * Replaying pending_entry never overwrites unchecked (#513). If a target
+     * exists but its check value is missing, return a conflict instead of
+     * silently extending changed content.
      */
     public function test_ausstand_retry_without_checkvalue_is_rejected_when_file_exists(): void {
         $this->resetAfterTest();
@@ -484,11 +509,11 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', 'x');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
-        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['entries'][0]['identifier'];
 
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
@@ -497,7 +522,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             append_context_file::execute('journal.md', 'x', $kennung);
-            $this->fail('Nachtragen ohne Pruefwert haette abgewiesen werden muessen.');
+            $this->fail('Backfilling without a check value should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
@@ -505,7 +530,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Fehlt die Zieldatei extern, entsteht sie ueber `If-None-Match: *`.
+     * Create missing external targets with If-None-Match: *.
      */
     public function test_creates_missing_external_file(): void {
         $this->resetAfterTest();
@@ -520,24 +545,24 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Fehlt die Kontextbereich-Wurzel am externen Ort, legt auch Anhaengen
-     * nichts an - derselbe Schutz wie beim Schreiben (Issue #514, siehe
-     * {@see \local_coursepilot\external\write_context_file_test::test_rejects_write_when_context_root_is_missing_and_creates_no_folder()}).
+     * A missing external context root prevents all creation, as with writes
+     * (#514). See
+     * {@see \local_coursepilot\external\write_context_file_test::test_rejects_write_when_context_root_is_missing_and_creates_no_folder()}.
      */
     public function test_rejects_append_when_context_root_is_missing_and_creates_no_folder(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->set_up_external_context();
-        // Bewusst kein $fake->seed_folder('/Coursepilot/Kontext') - die Wurzel fehlt.
+        // Do not seed /Coursepilot/Kontext; the root is intentionally missing.
 
         try {
             $this->append('journal.md', '# Journal');
-            $this->fail('Fehlende Kontextbereich-Wurzel haette abgewiesen werden muessen.');
+            $this->fail('Missing context-area root should have been rejected.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame('contextrootmissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame('contextrootmissing', $ausstaende[0]['entries'][0]['error_class']);
         $this->assertSame([], array_values(array_filter(
             $fake->requests(),
             static fn (array $r): bool => in_array($r['method'], ['PUT', 'MKCOL'], true)
@@ -545,11 +570,9 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Fehlende Ordnerebenen werden auch beim Anhaengen per MKCOL angelegt,
-     * die Kontextbereich-Wurzel selbst aber nie mitgebaut (Issue #514,
-     * Akzeptanzkriterium 2+3 - Gegenstueck zu
-     * {@see \local_coursepilot\external\write_context_file_test::test_creates_missing_folder_levels_via_mkcol()}
-     * fuer den Anhaeng-Endpunkt).
+     * Create missing intermediate folders with MKCOL, but never create the
+     * context root (#514, criteria 2+3), matching
+     * {@see \local_coursepilot\external\write_context_file_test::test_creates_missing_folder_levels_via_mkcol()}.
      */
     public function test_creates_missing_folder_levels_via_mkcol_without_touching_the_root(): void {
         $this->resetAfterTest();
@@ -567,9 +590,9 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Der Rotationshinweis folgt extern derselben 1-MB-Grenze wie im
-     * Moodle-Zweig (Issue #505 Befund #9): der Text nennt ausdruecklich "1
-     * MB", eine unbedingte Anzeige waere bei kleinen Dateien irrefuehrend.
+     * External rotation advice uses the same 1 MB threshold as Moodle storage
+     * (#505 finding 9). Explicitly mention 1 MB; showing it for small files
+     * would be misleading.
      */
     public function test_external_append_over_limit_carries_rotation_hint(): void {
         $this->resetAfterTest();
@@ -587,8 +610,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Unterhalb der Grenze steht extern kein Rotationshinweis (Issue #505
-     * Befund #9).
+     * External files below the threshold receive no rotation advice
+     * (#505 finding 9).
      */
     public function test_external_append_under_limit_has_no_rotation_hint(): void {
         $this->resetAfterTest();
@@ -605,9 +628,9 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Ein voller externer Speicher (507) ist ein Ausfall (Issue #492, ADR
-     * 0023): der Vorgang "anhängen" wird vermerkt, nicht "anlegen"/
-     * "überschreiben", und die Antwort ist die fuenfteilige Ausfallmeldung.
+     * External storage full (507) is an outage (#492, ADR 0023). Record
+     * append rather than create or overwrite and return the five-part
+     * outage response.
      */
     public function test_external_append_storage_full_records_ausstand(): void {
         $this->resetAfterTest();
@@ -617,29 +640,27 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', 'x');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
             $this->assertStringContainsString('journal.md', $e->getMessage());
-            $this->assertStringContainsString('Kennung', $e->getMessage());
+            $this->assertStringContainsString('identifier', $e->getMessage());
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('journal.md', $ausstaende[0]['pfad']);
-        $this->assertSame('anhängen', $ausstaende[0]['eintraege'][0]['vorgang']);
+        $this->assertSame('journal.md', $ausstaende[0]['path']);
+        $this->assertSame('append', $ausstaende[0]['entries'][0]['operation']);
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::STORAGE_FULL,
-            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+            $ausstaende[0]['entries'][0]['error_class']
         );
     }
 
     /**
-     * Eine abgelehnte Anmeldung (401) *beim Vorab-Lesen* der Zieldatei
-     * (Personenbezugs-Vorpruefung) darf den Anhaengevorgang nicht ohne
-     * Ausstand abbrechen (Issue #505 Befund #10): derselbe Ausfall trifft
-     * den anschliessenden echten Schreibversuch erneut, der ihn dann
-     * vollstaendig behandelt - genau wie beim Ueberschreiben.
+     * Rejected authentication (401) during the personal-data preflight read
+     * must not abort without a pending entry (#505 finding 10). The actual
+     * write encounters the same outage and handles it completely, as on overwrite.
      */
     public function test_external_append_records_ausstand_on_login_rejected_during_preread(): void {
         $this->resetAfterTest();
@@ -649,26 +670,24 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', 'x');
-            $this->fail('Abgelehnte Anmeldung haette abgewiesen werden muessen.');
+            $this->fail('Rejected login should have been rejected.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('journal.md', $ausstaende[0]['pfad']);
+        $this->assertSame('journal.md', $ausstaende[0]['path']);
         $this->assertSame(
             \local_coursepilot\webdav\webdav_error::AUTH_REJECTED,
-            $ausstaende[0]['eintraege'][0]['fehlerklasse']
+            $ausstaende[0]['entries'][0]['error_class']
         );
     }
 
     /**
-     * Eine geloeschte WebDAV-Instanz beim Vorab-Lesen legt beim Anhaengen
-     * ebenfalls einen Ausstand an (Issue #505 Befund #10) - anders als beim
-     * Ueberschreiben (write_context_file_test::test_deleted_webdav_instance_records_ausstand)
-     * fehlte diese Behandlung bislang: das Vorab-Lesen des Anhaengens nutzte
-     * einen Lesezweig ohne die dortige Ausfall-Toleranz.
+     * A deleted WebDAV instance during preflight also creates a pending entry
+     * (#505 finding 10). Unlike overwriting, the append preflight previously
+     * used a read branch without outage tolerance.
      */
     public function test_external_append_records_ausstand_on_deleted_instance(): void {
         global $DB;
@@ -680,19 +699,18 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', 'x');
-            $this->fail('Geloeschte Instanz haette abgewiesen werden muessen.');
+            $this->fail('Deleted instance should have been rejected.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('webdavinstancemissing', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame('webdavinstancemissing', $ausstaende[0]['entries'][0]['error_class']);
     }
 
     /**
-     * Jeder Eintrag der Ausstandsnotiz nennt die Kurs-ID (Issue #516
-     * Akzeptanzkriterium) - auch beim Anhaengen.
+     * Every pending entry includes the course ID, including appends (#516).
      */
     public function test_ausstand_entry_carries_course_id(): void {
         $this->resetAfterTest();
@@ -702,18 +720,18 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             append_context_file::execute('journal.md', 'x', '', '', 42);
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame(42, $ausstaende[0]['eintraege'][0]['kursid']);
+        $this->assertSame(42, $ausstaende[0]['entries'][0]['course_id']);
     }
 
     /**
-     * Pruefung 8 (IServ-Bereich, Issue #497/#516, Spec #486 §2/§8) erzeugt
-     * beim Anhaengen ebenfalls einen Ausstand.
+     * Check 8 (IServ area, #497/#516, Spec #486 §2/§8) also creates a pending
+     * entry during append.
      */
     public function test_iserv_pruefung_8_records_ausstand_on_append(): void {
         $this->resetAfterTest();
@@ -721,10 +739,10 @@ final class append_context_file_test extends \advanced_testcase {
         $this->setUser($user);
         $this->grant_webdav_capability($user);
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Groups/Klasse7a', [
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Groups/Klasse7a', [
             'server' => $this->fixtureserver,
-            'basispfad' => $this->fixturebasispfad,
-            'konto' => $this->fixturekonto,
+            'basepath' => $this->fixturebasispfad,
+            'account' => $this->fixturekonto,
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
@@ -732,21 +750,20 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', 'x');
-            $this->fail('Pfad ausserhalb von "Files/" haette abgewiesen werden muessen.');
+            $this->fail('Path outside "Files/" should have been rejected.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertCount(1, $ausstaende);
-        $this->assertSame('webdaviservfilesonly', $ausstaende[0]['eintraege'][0]['fehlerklasse']);
+        $this->assertSame('webdaviservfilesonly', $ausstaende[0]['entries'][0]['error_class']);
         $this->assertSame([], $fake->requests());
     }
 
     /**
-     * Ein ungueltiger Pfad bleibt ein Aufruffehler, auch wenn zugleich
-     * Pruefung 8 (IServ) den Ort scheitern liesse - siehe das Gegenstueck in
-     * write_context_file_test.php (Issue #541 Code-Review-Befund).
+     * An invalid path remains a request error even if IServ check 8 would
+     * also reject the location. See write_context_file_test.php (#541 review).
      */
     public function test_iserv_pruefung_8_does_not_shadow_an_invalid_path(): void {
         $this->resetAfterTest();
@@ -754,10 +771,10 @@ final class append_context_file_test extends \advanced_testcase {
         $this->setUser($user);
         $this->grant_webdav_capability($user);
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Groups/Klasse7a', [
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Groups/Klasse7a', [
             'server' => $this->fixtureserver,
-            'basispfad' => $this->fixturebasispfad,
-            'konto' => $this->fixturekonto,
+            'basepath' => $this->fixturebasispfad,
+            'account' => $this->fixturekonto,
             'iserv' => true,
         ]);
         $fake = new fake_webdav_transport();
@@ -765,7 +782,7 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('notiz.txt', 'x');
-            $this->fail('Eine unerlaubte Endung haette abgewiesen werden muessen.');
+            $this->fail('A disallowed extension should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextfilenotmarkdown', $e->errorcode);
         }
@@ -775,8 +792,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * `pending_entry=<Kennung>` hakt den Eintrag beim erfolgreichen Nachtragen
-     * per Anhaengen ab (ADR 0023 Punkt 3).
+     * pending_entry=<id> marks an entry complete after successful append
+     * replay (ADR 0023 §3).
      */
     public function test_ausstand_parameter_dismisses_entry_on_successful_append(): void {
         $this->resetAfterTest();
@@ -786,11 +803,11 @@ final class append_context_file_test extends \advanced_testcase {
 
         try {
             $this->append('journal.md', 'x');
-            $this->fail('Speicher voll haette abgewiesen werden muessen.');
+            $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('ausstandwritefailed', $e->errorcode);
+            $this->assertSame('pendingwritefailed', $e->errorcode);
         }
-        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['eintraege'][0]['kennung'];
+        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['entries'][0]['identifier'];
 
         $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         $fake2->seed_folder('/Coursepilot/Kontext');
@@ -804,8 +821,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * `moodle/user:manageownfiles` und die Nutzerquote wirken extern nicht
-     * (Issue #491, Spec #486 §6).
+     * External storage ignores moodle/user:manageownfiles and user quota
+     * (#491, Spec #486 §6).
      */
     public function test_external_append_ignores_moodle_quota_and_capability(): void {
         global $CFG, $DB;
@@ -828,7 +845,7 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Der Endpunkt haengt am Coursepilot-Dienst und steht in der Allowlist.
+     * The endpoint is registered in the Coursepilot service and allowlist.
      */
     public function test_registered_in_service_and_allowlist(): void {
         $this->assertArrayHasKey(
@@ -845,7 +862,7 @@ final class append_context_file_test extends \advanced_testcase {
     /**
      * @param string $path
      * @param string $content
-     * @return array Bereinigte Antwort des Endpunkts.
+     * @return array Validated endpoint response.
      */
     private function append(string $path, string $content, string $expectedcontenthash = ''): array {
         $result = append_context_file::execute($path, $content, '', $expectedcontenthash);
@@ -858,14 +875,13 @@ final class append_context_file_test extends \advanced_testcase {
      * @return string
      */
     private function external_content(fake_webdav_transport $fake, string $path): string {
-        // Kein oeffentlicher Lesezugriff auf den internen Speicher des Fakes -
-        // ueber den Client selbst nachlesen, exakt wie ein echter Aufrufer.
+        // Read through the client like a real caller; fake internal storage has no public read access.
         $client = new \local_coursepilot\webdav\webdav_client($fake);
         return $client->get('https://fake.example' . $path);
     }
 
     /**
-     * @return string Inhalt mit Frontmatter-Markierung "personenbezug: true".
+     * @return string Content with the legacy frontmatter marking "personenbezug: true".
      */
     private function marked_content(): string {
         return "---\ntype: lerngruppe\ncoursepilot:\n  personenbezug: true\n---\n# S. M., 7a";
@@ -897,7 +913,7 @@ final class append_context_file_test extends \advanced_testcase {
      */
     private function read_stored(\stdClass $user, string $filepath, string $filename): string {
         $file = $this->stored_file($user, $filepath, $filename);
-        $this->assertNotNull($file, 'Erwartete Datei fehlt: ' . $filepath . $filename);
+        $this->assertNotNull($file, 'Expected file missing: ' . $filepath . $filename);
         return $file->get_content();
     }
 

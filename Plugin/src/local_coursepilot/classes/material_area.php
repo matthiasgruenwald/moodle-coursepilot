@@ -17,39 +17,28 @@
 namespace local_coursepilot;
 
 /**
- * Die Materialbestand-Werkzeugoperationen (Auflisten, Hochladen, Vorschau,
- * Loeschen), ortsneutral fuer den Aufrufer (Issue #539, Spec 0021): kein
- * Werkzeug in {@see \local_coursepilot\external\list_material_files} und
- * seinen Geschwistern entfernt mehr selbst ein internes "etag"-Feld oder
- * baut die Schreib-/Loeschchoreografie von Hand nach - diese Entscheidungen
- * wandern hier herein, genau wie {@see context_area} es fuer den
- * Kontextbereich tut (Issue #538).
+ * Location-neutral material operations (list, upload, preview, delete;
+ * issue #539, Spec 0021). {@see \local_coursepilot\external\list_material_files}
+ * and sibling tools no longer strip internal etag fields or reproduce write/delete
+ * sequencing. This facade owns those decisions, as {@see context_area} does
+ * for context (issue #538).
  *
- * Anders als beim Kontextbereich kennt kein schreibendes Materialwerkzeug
- * einen externen Ort: jedes zielt ausschliesslich auf die Werkbank
- * ({@see material_files::werkbank_area()}), die immer in Moodles Private
- * Files liegt (siehe dortige Dokumentation). Schreiben/Loeschen laufen
- * deshalb unbedingt ueber den Ablage-Vertrag {@see storage_port}, adaptiert
- * durch {@see private_files_storage_port} - denselben Adapter, den auch
- * {@see context_area} fuer sein Private-Files-Schreiben nutzt.
+ * Material write tools target the workbench exclusively
+ * ({@see material_files::workbench_area()}), always Moodle Private Files.
+ * Writes/deletes use {@see storage_port} through {@see private_files_storage_port},
+ * the same adapter used by context_area for Private Files.
  *
- * {@see \local_coursepilot\external\crop_material_file} schreibt sein Ziel
- * bewusst *nicht* ueber diese Fassade: der Zuschnitt braucht das Moodle-
- * eigene `source`-Dateisatzfeld (Bildausschnitt-Herkunft), ein rein
- * Moodle-spezifisches Metadatum ausserhalb des ortsneutralen Vertrags
- * (WebDAV kennt kein Aequivalent) - {@see storage_port} bleibt deshalb ohne
- * diesen Durchgriff, und crop_material_file bleibt bei
- * {@see material_files::write()} (unveraendert seit vor Issue #539, ohne
- * eigene Ortsverzweigung: die Werkbank ist ohnehin immer Moodle).
+ * {@see \local_coursepilot\external\crop_material_file} deliberately writes
+ * outside this facade: crop needs Moodle's source metadata for provenance,
+ * which has no WebDAV equivalent in the neutral contract. It therefore keeps
+ * {@see material_files::write()} (unchanged since before #539) without location
+ * branching; the workbench is always Moodle.
  *
- * Auflisten/Lesen des Materialbestands ("bestand") folgen weiterhin dem
- * Kontextpointer ueber {@see material_files::list_entries_for_ort()}/
- * {@see material_files::read_content_for_ort()} - dort liegt die
- * Ort-Entscheidung (Bestand/Werkbank, Moodle/extern) bereits ortsneutral,
- * dieselbe pointer_reader-Maschinerie, die auch der Kontextbereich extern
- * nutzt. {@see list()}/{@see read_for_ort()} sind duenne Fassaden darueber,
- * die nur noch die interne Nachbearbeitung ("etag" entfernen) hier statt im
- * Werkzeug erledigen.
+ * List/read for material store and workbench use
+ * {@see material_files::list_entries_for_location()}/
+ * {@see material_files::read_content_for_location()} through
+ * {@see storage_anchor::port()} (issue #645), selecting the same per-location
+ * adapter as context. {@see list()}/{@see read_for_location()} are thin facades.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -58,51 +47,38 @@ namespace local_coursepilot;
 final class material_area {
 
     /**
-     * Listet eine Ebene des angefragten Materialorts - ortsneutral: kein
-     * Werkzeug sieht das nur intern gebrauchte "etag"-Feld mehr, das
-     * {@see pointer_reader} fuer den externen Bestand durchreicht (Issue
-     * #539, relocated aus {@see \local_coursepilot\external\list_material_files::execute()}).
+     * Lists one level of the requested material location with identical fields for both locations (issues #539/#645).
      *
-     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK}.
+     * @param string $locationkey {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH}.
      * @param string $path
      * @return array{directory: string, entries: array}
-     * @throws \moodle_exception wie {@see material_files::list_entries_for_ort()}.
+     * @throws \moodle_exception As in {@see material_files::list_entries_for_location()}.
      */
-    public static function list(string $ort, string $path): array {
-        $result = material_files::list_entries_for_ort($ort, $path);
-        $result['entries'] = array_map(
-            static function (array $entry): array {
-                unset($entry['etag']);
-                return $entry;
-            },
-            $result['entries']
-        );
-        return $result;
+    public static function list(string $locationkey, string $path): array {
+        return material_files::list_entries_for_location($locationkey, $path);
     }
 
     /**
-     * Liest eine Datei des angefragten Materialorts - ortsneutral, fuer
-     * {@see \local_coursepilot\external\preview_material_file} und den
-     * Quell-Lesepfad von {@see \local_coursepilot\external\crop_material_file}
-     * (Issue #539). Duenne Fassade ueber {@see material_files::read_content_for_ort()}:
-     * die Ort-Entscheidung (Bestand/Werkbank, Moodle/extern) bleibt dort,
-     * ortsneutral ueber {@see pointer_reader}.
+     * Reads a file for {@see \local_coursepilot\external\preview_material_file}
+     * and the source path of {@see \local_coursepilot\external\crop_material_file}
+     * (issue #539). Thin facade over {@see material_files::read_content_for_location()}:
+     * store/workbench and Moodle/external selection remain there through
+     * {@see storage_anchor::port()}.
      *
-     * @param string $ort {@see material_files::ORT_BESTAND}/{@see material_files::ORT_WERKBANK}.
+     * @param string $locationkey {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH}.
      * @param string $path
      * @return array{path: string, content: string, mimetype: string, size: int,
      *         contenthash: string, timemodified: int}|null
-     * @throws \moodle_exception wie {@see material_files::read_content_for_ort()}.
+     * @throws \moodle_exception As in {@see material_files::read_content_for_location()}.
      */
-    public static function read_for_ort(string $ort, string $path): ?array {
-        return material_files::read_content_for_ort($ort, $path);
+    public static function read_for_location(string $locationkey, string $path): ?array {
+        return material_files::read_content_for_location($locationkey, $path);
     }
 
     /**
-     * Liest eine vorhandene Werkbank-Datei ueber den Anker, oder null, wenn
-     * sie fehlt - fuer den Existenz-/Groessencheck vor einem Schreiben oder
-     * Loeschen ({@see write()}, {@see delete()} und
-     * {@see \local_coursepilot\external\delete_material_files}).
+     * Reads an existing workbench file through the anchor, or null if missing.
+     * Used for pre-write/delete existence and size checks ({@see write()},
+     * {@see delete()}, {@see \local_coursepilot\external\delete_material_files}).
      *
      * @param string $path
      * @return array{content: string, checksum: string, size: int, mimetype: string,
@@ -110,28 +86,27 @@ final class material_area {
      * @throws \moodle_exception invalidmaterialpath
      */
     public static function read(string $path): ?array {
-        return self::port()->read(material_files::werkbank_area(), $path);
+        return self::port()->read(material_files::workbench_area(), $path);
     }
 
     /**
-     * Schreibt eine Datei in die Werkbank ueber den Anker (Issue #539): der
-     * Schreibweg fuer {@see \local_coursepilot\external\upload_material_file} -
-     * Pfad-, Endungs- und Quotenpruefung sowie die Schreibchoreografie mit
-     * Zwischendatei liegen im {@see private_files_storage_port}-Adapter, nicht
-     * mehr im Werkzeug selbst. Fuer den Zuschnitt-Zielpfad siehe die
-     * Klassendoc: {@see \local_coursepilot\external\crop_material_file}
-     * braucht das Moodle-eigene `source`-Feld und bleibt deshalb bei
-     * {@see material_files::write()}.
+     * Writes a workbench file through the anchor (issue #539), used by
+     * {@see \local_coursepilot\external\upload_material_file}. Path, extension,
+     * quota and temporary-file sequencing belong to the
+     * {@see private_files_storage_port} adapter. Crop targets still use
+     * {@see material_files::write()} because
+     * {@see \local_coursepilot\external\crop_material_file} needs Moodle's source
+     * metadata; see class documentation.
      *
      * @param string $path
-     * @param string $content Vollstaendiger neuer Inhalt.
-     * @param string $expectedcontenthash '' heisst ungeprueft ueberschreiben/anlegen.
+     * @param string $content Complete new content.
+     * @param string $expectedcontenthash '' means unconditional overwrite/create.
      * @return array{path: string, created: bool, size: int, oldsize: int, warning: ?string}
-     * @throws \moodle_exception materialfilechanged (Pruefwert-Konflikt),
+     * @throws \moodle_exception materialfilechanged (checksum conflict),
      *         materialfiledisallowedtype, invalidmaterialpath, materialquotaexceeded
      */
     public static function write(string $path, string $content, string $expectedcontenthash = ''): array {
-        $area = material_files::werkbank_area();
+        $area = material_files::workbench_area();
         $port = self::port();
 
         $existing = $port->read($area, $path);
@@ -153,24 +128,25 @@ final class material_area {
     }
 
     /**
-     * Loescht eine Werkbank-Datei ueber den Anker, falls sie existiert
-     * (Issue #539, fuer {@see \local_coursepilot\external\delete_material_files}).
+     * Deletes a workbench file through the anchor if present
+     * (issue #539, {@see \local_coursepilot\external\delete_material_files}).
      *
      * @param string $path
-     * @return bool true, wenn eine Datei geloescht wurde; false, wenn keine existierte.
+     * @return bool true if a file was deleted; false if none existed.
      * @throws \moodle_exception invalidmaterialpath
      */
     public static function delete(string $path): bool {
-        return self::port()->delete(material_files::werkbank_area(), $path);
+        return self::port()->delete(material_files::workbench_area(), $path);
     }
 
     /**
-     * Der Ablage-Vertrag-Adapter dieser Fassade - immer Private Files
-     * (Issue #539): die Werkbank kennt keinen externen Ort, siehe Klassendoc.
+     * Workbench storage adapter through the anchor: always Private Files
+     * (issues #539/#645). The workbench has no external location
+     * ({@see storage_area::$externalfallback}); see class documentation.
      *
      * @return storage_port
      */
     private static function port(): storage_port {
-        return new private_files_storage_port();
+        return storage_anchor::port(material_files::workbench_area());
     }
 }

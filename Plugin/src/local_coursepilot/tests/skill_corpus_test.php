@@ -21,8 +21,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Der Skill-Korpus (Spec 0020 §3.1/§4, Issue #450): das Verzeichnis ist die
- * Quelle, der Name ist ein Bezeichner, kein Pfad.
+ * Skill corpus (Spec 0020 §3.1/§4, #450): the directory is authoritative;
+ * names are identifiers rather than paths.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -33,7 +33,7 @@ defined('MOODLE_INTERNAL') || die();
 final class skill_corpus_test extends \advanced_testcase {
 
     /**
-     * list() liefert Name, Art, Auslöser und Umfang - keinen Inhalt.
+     * list() returns names, kinds, triggers and sizes without content.
      */
     public function test_list_reports_catalog_without_content(): void {
         $entries = skill_corpus::list();
@@ -43,45 +43,44 @@ final class skill_corpus_test extends \advanced_testcase {
         foreach ($entries as $entry) {
             $byname[$entry['name']] = $entry;
             $this->assertArrayNotHasKey('content', $entry);
-            $this->assertContains($entry['art'], ['adapter', 'referenz']);
-            $this->assertGreaterThan(0, $entry['umfang']);
+            $this->assertContains($entry['kind'], ['adapter', 'reference']);
+            $this->assertGreaterThan(0, $entry['length']);
         }
 
         $this->assertArrayHasKey('coursepilot', $byname);
-        $this->assertSame('adapter', $byname['coursepilot']['art']);
-        $this->assertStringContainsString('Coursepilot-Einstieg', $byname['coursepilot']['ausloeser']);
+        $this->assertSame('adapter', $byname['coursepilot']['kind']);
+        $this->assertStringContainsString('Coursepilot entry', $byname['coursepilot']['trigger']);
 
         $this->assertArrayHasKey('coursepilot-core', $byname);
-        $this->assertSame('referenz', $byname['coursepilot-core']['art']);
-        $this->assertNotSame('', $byname['coursepilot-core']['ausloeser']);
+        $this->assertSame('reference', $byname['coursepilot-core']['kind']);
+        $this->assertNotSame('', $byname['coursepilot-core']['trigger']);
     }
 
     /**
-     * Die drei V1-Adapter (Spec 0020 §3.2) stehen als `art` = `adapter` im
-     * Korpus; `coursepilot-einrichten` ist serverseitig entkernt und
-     * existiert nicht mehr (die `spike-*`-Adapter fallen erst mit Issue
-     * #453, spike-Praefix, weg).
+     * The three v1 adapters (Spec 0020 §3.2) have kind=adapter.
+     * coursepilot-einrichten was removed after server-side extraction;
+     * #453 later removes the spike prefixes.
      */
     public function test_lists_the_three_v1_adapters_and_not_einrichten(): void {
         $adapters = array_column(
-            array_filter(skill_corpus::list(), static fn (array $entry): bool => $entry['art'] === 'adapter'),
+            array_filter(skill_corpus::list(), static fn (array $entry): bool => $entry['kind'] === 'adapter'),
             'name'
         );
 
-        foreach (['coursepilot', 'coursepilot-planen', 'coursepilot-umsetzen'] as $expected) {
+        foreach (['coursepilot', 'coursepilot-plan', 'coursepilot-implement'] as $expected) {
             $this->assertContains($expected, $adapters);
         }
         $this->assertNotContains('coursepilot-einrichten', $adapters);
     }
 
     /**
-     * Das Verzeichnis ist die Quelle (Spec 0020 §3.1): eine neu abgelegte
-     * Markdown-Datei erscheint in der Liste, ohne dass PHP geaendert wurde.
+     * New Markdown files appear without PHP changes because the directory
+     * is authoritative (Spec 0020 §3.1).
      */
     public function test_new_file_on_disk_appears_without_code_change(): void {
         global $CFG;
 
-        $path = $CFG->dirroot . '/local/coursepilot/skills/referenz/zzz-testneuling.md';
+        $path = $CFG->dirroot . '/local/coursepilot/skills/reference/zzz-testneuling.md';
         file_put_contents($path, "# Testneuling\n\nNur fuer diesen Test.\n");
 
         try {
@@ -93,8 +92,7 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
-     * get() liefert Inhalt, referenzierte Teile (aus den Bestandspfaden
-     * `skills/<name>.md` erkannt) und den Korpus-Stand.
+     * get() returns content, parts referenced via skills/<name>.md and corpus version.
      */
     public function test_get_returns_content_referenced_parts_and_corpus_stand(): void {
         global $CFG;
@@ -102,17 +100,17 @@ final class skill_corpus_test extends \advanced_testcase {
         $result = skill_corpus::get('coursepilot');
 
         $this->assertStringContainsString('coursepilot-core', $result['content']);
-        $this->assertContains('coursepilot-core', $result['referenzierte_teile']);
-        $this->assertContains('kontext-onboarding', $result['referenzierte_teile']);
+        $this->assertContains('coursepilot-core', $result['referenced_parts']);
+        $this->assertContains('context-onboarding', $result['referenced_parts']);
 
         $plugin = new \stdClass();
         require($CFG->dirroot . '/local/coursepilot/version.php');
-        $this->assertStringContainsString($plugin->release, $result['korpus_stand']);
-        $this->assertStringContainsString((string) $plugin->version, $result['korpus_stand']);
+        $this->assertStringContainsString($plugin->release, $result['corpus_version']);
+        $this->assertStringContainsString((string) $plugin->version, $result['corpus_version']);
     }
 
     /**
-     * Unbekannter Name: die Meldung nennt die gueltigen Namen.
+     * Unknown names produce a message listing valid names.
      */
     public function test_unknown_name_names_valid_names(): void {
         $this->expectException(\moodle_exception::class);
@@ -125,8 +123,8 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Name mit Pfadanteilen wird gleichermassen abgewiesen - geprueft
-     * gegen die Verzeichnisliste, nicht per Zeichenfilter.
+     * Reject path components by matching the directory listing, not
+     * filtering characters.
      *
      * @param string $name
      */
@@ -150,9 +148,8 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
-     * Jeder im Korpus genannte Werkzeugname muss in der Live-Werkzeugliste
-     * vorkommen (Issue #459): ein Name aus dem lokalen Weg (`moodle_*`) oder
-     * ein abgebautes Werkzeug faellt hier auf, statt erst im Abnahmelauf.
+     * Every documented tool exists in the live registry (#459). Catch
+     * legacy moodle_* names and removed tools before acceptance.
      */
     public function test_every_mentioned_tool_name_exists_in_tool_registry(): void {
         $validnames = tool_registry::allowed_tools();
@@ -170,17 +167,15 @@ final class skill_corpus_test extends \advanced_testcase {
             $this->assertArrayHasKey(
                 $name,
                 $validnames,
-                "Werkzeugname '$name' (genannt in: " . implode(', ', array_unique($files))
-                    . ") steht nicht in tool_registry::allowed_tools()."
+                "Tool name '$name' (mentioned in: " . implode(', ', array_unique($files))
+                    . ") is absent from tool_registry::allowed_tools()."
             );
         }
     }
 
     /**
-     * Und die Gegenrichtung (Issue #464): jedes Werkzeug aus der
-     * Werkzeugliste muss im Korpus mindestens einmal vorkommen. Ein
-     * Werkzeug, das der Korpus nicht nennt, existiert fuer ein Modell
-     * nicht - es raet Name und Parameter und raet falsch.
+     * Every registered tool appears in the corpus (#464). Undocumented
+     * tools force models to guess incorrect names and parameters.
      */
     public function test_every_registered_tool_is_mentioned_in_the_corpus(): void {
         $corpus = '';
@@ -198,13 +193,13 @@ final class skill_corpus_test extends \advanced_testcase {
         $this->assertSame(
             [],
             $missing,
-            'Diese Werkzeuge kommen im Skill-Korpus nicht vor: ' . implode(', ', $missing)
+            'These tools are absent from the skill corpus: ' . implode(', ', $missing)
         );
     }
 
     /**
-     * Dokumentierte Feldnamen muessen im registrierten MCP-Schema stehen.
-     * Die Gegenrichtung fuer Werkzeugnamen prueft der Test direkt darueber.
+     * Documented field names must exist in registered MCP schemas.
+     * The preceding test checks tool-name coverage.
      */
     public function test_documented_contract_fields_match_registered_schemas(): void {
         $corpus = '';
@@ -224,7 +219,7 @@ final class skill_corpus_test extends \advanced_testcase {
             'coursepilot_read_context_file' => ['previous_location'],
             'coursepilot_write_context_file' => ['pending_entry', 'create_only'],
             'coursepilot_append_context_file' => ['pending_entry'],
-            'coursepilot_dismiss_ausstand' => ['identifier'],
+            'coursepilot_dismiss_pending_entry' => ['identifier'],
         ];
 
         foreach ($documented as $tool => $fields) {
@@ -232,30 +227,64 @@ final class skill_corpus_test extends \advanced_testcase {
             $schema = tool_registry::schemas()[$tool]['properties'];
             foreach ($fields as $field) {
                 $this->assertMatchesRegularExpression('/`[^`]*\\b' . preg_quote($field, '/') . '\\b/', $corpus);
-                $this->assertArrayHasKey($field, $schema, "{$tool}: {$field} fehlt im Schema.");
+                $this->assertArrayHasKey($field, $schema, "{$tool}: {$field} is absent from the schema.");
             }
         }
     }
     public function test_graphics_reference_exposes_source_header_and_composition_rules(): void {
-        $content = preg_replace('/\s+/u', ' ', skill_corpus::get('grafiken')['content']);
+        $content = preg_replace('/\s+/u', ' ', skill_corpus::get('graphics')['content']);
         foreach ([
-            'standardmäßig einen Quellenkopf mit ihrem Lehrwerkverweis',
-            'Lehrkraft kann den Quellenkopf abwählen',
-            'Dateiname oder Kontext eindeutig',
-            'einmal nach dem Kürzel fragen',
-            'Fach- oder Lerngruppenkontext im Kontextbereich',
-            'Seitenzahl aus Vorschau oder Dateiname',
-            'Kopftext steht im Plan',
-            'normalen Planfreigabe',
-            'keine Extra-Rückfrage',
-            'Zusammensetzen anbieten',
-            'einen Alt-Text',
-            'derselben Seite',
-            'Kopf am ersten Teil',
+            'Add a source header by default for textbook illustrations',
+            'The teacher can opt out of the source header',
+            'abbreviation is unambiguous from the filename or context',
+            'ask once for the abbreviation',
+            'subject or learning-group context in the context area',
+            'Take the page number from the preview or filename',
+            'The header text appears in the plan',
+            'Normal plan approval',
+            'no extra question',
+            'Offer composition',
+            'one alt text',
+            'the same page',
+            'a header on the first part',
         ] as $rule) {
             $this->assertStringContainsString($rule, $content);
         }
         $this->assertStringContainsString('coursepilot_compose_material_file', $content);
-        $this->assertStringContainsString('coursepilot_get_skill("grafiken")', skill_corpus::get('coursepilot-planen')['content']);
+        $this->assertStringContainsString('coursepilot_get_skill("graphics")', skill_corpus::get('coursepilot-plan')['content']);
+    }
+
+    /**
+     * English is the corpus base; teacher-facing conversations retain the teacher's language.
+     */
+    public function test_corpus_is_english_and_preserves_teacher_language(): void {
+        foreach (skill_corpus::list() as $entry) {
+            $content = skill_corpus::get($entry['name'])['content'];
+            $this->assertDoesNotMatchRegularExpression(
+                '/\b(?:Lehrkraft|Lehrkräfte|Auslöser|anschließend|Schüler|Werkzeuge|gewählt|ausführen|Unterricht)\b/u',
+                $content,
+                $entry['name'] . ': German prose remains in the English corpus'
+            );
+            $this->assertDoesNotMatchRegularExpression(
+                '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u',
+                $content,
+                $entry['name'] . ': German umlauts or function words in the English corpus'
+            );
+        }
+        foreach (['coursepilot', 'coursepilot-plan', 'coursepilot-implement'] as $name) {
+            $content = strtolower(preg_replace('/\s+/u', ' ', skill_corpus::get($name)['content']));
+            $this->assertStringContainsString("respond in the teacher's language", $content);
+        }
+        $core = preg_replace('/\s+/u', ' ', skill_corpus::get('coursepilot-core')['content']);
+        $this->assertStringContainsString("Respond to the teacher in the teacher's language", $core);
+        $this->assertStringContainsString("Match teaching content to the teacher's requested language", $core);
+    }
+
+    /**
+     * Learned creation attempts must not promise field-catalog support.
+     */
+    public function test_learned_activity_types_distinguish_creation_from_support(): void {
+        $content = preg_replace('/\s+/u', ' ', skill_corpus::get('activity-types')['content']);
+        $this->assertStringContainsString('Call the operation create. Reserve supported for field-catalog guarantees', $content);
     }
 }

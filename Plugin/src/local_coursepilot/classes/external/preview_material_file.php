@@ -28,21 +28,16 @@ use local_coursepilot\material_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Liefert die Bildvorschau einer Materialdatei (Spec 0018 §3, Issue #430):
- * laengste Kante 768px, JPEG. Das Modell soll den Inhalt tatsaechlich sehen
- * koennen (Ausschnitt waehlen, Alt-Text formulieren) - dazu haengt der
- * Dispatcher an eine erfolgreiche Vorschau einen MCP-Bildblock an
- * (image_base64 + mimetype, siehe dispatcher::handle_tools_call()).
+ * Returns a JPEG preview with longest edge 768px (Spec 0018 §3, #430).
+ * The model needs to see content for cropping and alt text. Dispatcher
+ * adds an MCP image block using image_base64 and mimetype; see
+ * dispatcher::handle_tools_call().
  *
- * Eine Nicht-Bilddatei ist kein Fehler (Spec 0018 §3, Abnahmekriterium):
- * "available" => false mit erklaerender Meldung statt Ausnahme. Fehlt GD,
- * ist die Vorschau dagegen ganz gesperrt und wirft (Spec 0018 §3.3) - das
- * betrifft ausschliesslich diesen und den spaeteren Zuschnitt-Endpunkt,
- * Hochladen/Einbetten bleiben unberuehrt.
+ * Non-image files return available=false with an explanation, not an
+ * exception (Spec §3 acceptance criterion). Missing GD disables preview
+ * and cropping entirely with an exception (Spec §3.3); upload/embed still work.
  *
- * Unmittelbar englisch deklariert (#572, Spec 0025 §A): "location" statt
- * "ort" - {@see \local_coursepilot\material_files::ort_parameter()} bleibt
- * intern deutsch benannt, der Parametername an dieser Grenze ist englisch.
+ * Direct English contract (#572, Spec 0025 §A): location replaces ort.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -55,8 +50,8 @@ class preview_material_file extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'path' => new external_value(PARAM_PATH, 'Dateipfad relativ zum Materialordner, z.B. "screenshot.png"'),
-            'location' => material_files::ort_parameter(),
+            'path' => new external_value(PARAM_PATH, 'File path relative to the material store, e.g. "screenshot.png"'),
+            'location' => material_files::location_parameter(),
         ]);
     }
 
@@ -64,25 +59,25 @@ class preview_material_file extends external_api {
      * @param string $path
      * @param string $location
      * @return array
-     * @throws \moodle_exception invalidmaterialpath, invalidmaterialort,
-     *         materialpathiskontext, materialfilenotfound, materialgdmissing,
+     * @throws \moodle_exception invalidmaterialpath, invalidmateriallocation,
+     *         materialpathiscontext, materialfilenotfound, materialgdmissing,
      *         materialpreviewunsupported
      */
-    public static function execute(string $path, string $location = material_files::ORT_BESTAND): array {
+    public static function execute(string $path, string $location = material_files::LOCATION_STORE): array {
         $params = self::validate_parameters(self::execute_parameters(), ['path' => $path, 'location' => $location]);
 
         $context = material_files::own_context();
         self::validate_context($context);
 
-        $stored = material_area::read_for_ort($params['location'], $params['path']);
+        $stored = material_area::read_for_location($params['location'], $params['path']);
         if ($stored === null) {
             throw new \moodle_exception('materialfilenotfound', 'local_coursepilot', '', material_files::normalise_path($params['path']));
         }
         $relativepath = $stored['path'];
         $filename = basename($relativepath);
 
-        // Vor der Nicht-Bild-Absage: fehlt GD ganz, ist die Faehigkeit
-        // gesperrt, unabhaengig vom Dateityp (Spec 0018 §3.3).
+        // Check GD before rejecting non-images: absent GD disables the feature
+        // regardless of file type (Spec 0018 §3.3).
         if (!gd_support::available()) {
             throw new \moodle_exception('materialgdmissing', 'local_coursepilot');
         }
@@ -99,22 +94,18 @@ class preview_material_file extends external_api {
     }
 
     /**
-     * Baut die Antwort fuer eine erfolgreich erzeugte Vorschau, oder die
-     * erklaerte Nichtverfuegbarkeit, wenn GD die Bytes nicht als Rasterbild
-     * lesen kann (Issue #523: aus execute() ausgelagert, um die Funktion
-     * unter der 50-Zeilen-Grenze zu halten).
+     * Returns the successful preview or explained unavailability when GD
+     * cannot read raster bytes (#523), extracted to keep execute() below 50 lines.
      *
      * @param string $relativepath
      * @param string $content
      * @return array
      */
     private static function build_preview_response(string $relativepath, string $content): array {
-        // Wie die Nicht-Bild-Absage oben: eine Datei mit Bildendung, die GD
-        // trotzdem nicht als Rasterbild lesen kann (z.B. defekte Bytes,
-        // getarnte SVG), ist ebenfalls kein Fehler, sondern eine erklaerte
-        // Nichtverfuegbarkeit (Spec 0018 §3, Abnahmekriterium "klare Meldung
-        // statt Fehler") - image_preview::build() wirft dafuer
-        // materialpreviewunsupported, hier abgefangen statt durchgereicht.
+        // Even image extensions can contain unreadable bytes or disguised SVG.
+        // Like non-images, return explained unavailability (Spec §3: clear message
+        // instead of an error). Catch image_preview::build()'s
+        // materialpreviewunsupported exception here.
         try {
             $preview = image_preview::build($content);
         } catch (\moodle_exception $e) {
@@ -133,8 +124,7 @@ class preview_material_file extends external_api {
     }
 
     /**
-     * Die gemeinsame "nicht verfuegbar"-Antwortform (Issue #523: aus
-     * execute() ausgelagert).
+     * Shared unavailable-response shape, extracted from execute() (#523).
      *
      * @param string $relativepath
      * @param string $message
@@ -157,32 +147,32 @@ class preview_material_file extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'path' => new external_value(PARAM_TEXT, 'Aufgeloester Dateipfad, relativ zum Materialordner'),
-            'available' => new external_value(PARAM_BOOL, 'true, wenn eine Bildvorschau erzeugt wurde'),
+            'path' => new external_value(PARAM_TEXT, 'Resolved file path relative to the material store'),
+            'available' => new external_value(PARAM_BOOL, 'true if an image preview was generated'),
             'message' => new external_value(
                 PARAM_RAW,
-                'Erklaerung, wenn keine Vorschau moeglich ist (z.B. Nicht-Bilddatei), sonst null',
+                'Explanation when preview is unavailable (e.g. a non-image file), otherwise null',
                 VALUE_DEFAULT,
                 null,
                 NULL_ALLOWED
             ),
             'mimetype' => new external_value(
                 PARAM_RAW,
-                'MIME-Typ der Vorschau ("image/jpeg"), null wenn nicht verfuegbar',
+                'Preview MIME type ("image/jpeg"), null when unavailable',
                 VALUE_DEFAULT,
                 null,
                 NULL_ALLOWED
             ),
             'image_base64' => new external_value(
                 PARAM_RAW,
-                'Vorschau, base64-kodiertes JPEG - der Dispatcher haengt daraus den MCP-Bildblock an, '
-                    . 'null wenn nicht verfuegbar',
+                'Base64-encoded JPEG preview; the dispatcher adds an MCP image block from it, '
+                    . 'null when unavailable',
                 VALUE_DEFAULT,
                 null,
                 NULL_ALLOWED
             ),
-            'width' => new external_value(PARAM_INT, 'Breite der Vorschau in Pixeln, null wenn nicht verfuegbar', VALUE_DEFAULT, null, NULL_ALLOWED),
-            'height' => new external_value(PARAM_INT, 'Hoehe der Vorschau in Pixeln, null wenn nicht verfuegbar', VALUE_DEFAULT, null, NULL_ALLOWED),
+            'width' => new external_value(PARAM_INT, 'Preview width in pixels, null when unavailable', VALUE_DEFAULT, null, NULL_ALLOWED),
+            'height' => new external_value(PARAM_INT, 'Preview height in pixels, null when unavailable', VALUE_DEFAULT, null, NULL_ALLOWED),
         ]);
     }
 }

@@ -20,9 +20,9 @@ use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Pointer- und Ausstandslesen fuer beliebige Personen, ohne $USER-Bezug und
- * ohne Netz (Issue #499, Spec #486 §12) - Grundlage der Statusprüfungen und
- * der Spalte Ablageort.
+ * Read arbitrary users' pointers and pending notes without $USER or
+ * network access (Issue #499, Spec #486 §12), supporting setup checks
+ * and the storage-location column.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -33,19 +33,18 @@ final class pointer_scan_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     /**
-     * Issue #507 (Spec #486, Review von #486): die Ablageort-Zustaende und
-     * -Defekte sind benannte Konstanten statt roher Zeichenketten - genutzt
-     * von {@see pointer_scan} selbst und von {@see connection_ablageort}.
+     * Storage states and defects use named constants shared by pointer_scan
+     * and connection_storage_location (Issue #507, Spec #486 review).
      */
     public function test_state_and_defect_constants_have_the_expected_values(): void {
-        $this->assertSame('offen', pointer_scan::STATE_OPEN);
+        $this->assertSame('open', pointer_scan::STATE_OPEN);
         $this->assertSame('moodle', pointer_scan::STATE_MOODLE);
-        $this->assertSame('extern', pointer_scan::STATE_EXTERN);
-        $this->assertSame('kaputt', pointer_scan::STATE_BROKEN);
-        $this->assertSame('instanzfehlt', pointer_scan::DEFECT_INSTANCE_MISSING);
-        $this->assertSame('fremdeinstanz', pointer_scan::DEFECT_FOREIGN_INSTANCE);
+        $this->assertSame('external', pointer_scan::STATE_EXTERNAL);
+        $this->assertSame('broken', pointer_scan::STATE_BROKEN);
+        $this->assertSame('instance_missing', pointer_scan::DEFECT_INSTANCE_MISSING);
+        $this->assertSame('foreign_instance', pointer_scan::DEFECT_FOREIGN_INSTANCE);
         $this->assertSame('http', pointer_scan::DEFECT_HTTP);
-        $this->assertSame('ungueltig', pointer_scan::DEFECT_INVALID);
+        $this->assertSame('invalid', pointer_scan::DEFECT_INVALID);
     }
 
     public function test_raw_pointer_for_is_null_without_pointer_file(): void {
@@ -59,18 +58,18 @@ final class pointer_scan_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Kontext');
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Kontext');
 
         $decoded = pointer_scan::raw_pointer_for((int) $user->id);
 
-        $this->assertSame('extern', $decoded['kontextbereich']['ort']);
+        $this->assertSame('external', $decoded['context_area']['location']);
     }
 
     public function test_userids_with_pointer_finds_only_persons_with_a_pointer_file(): void {
         $this->resetAfterTest();
         $withpointer = $this->getDataGenerator()->create_user();
         $instanceid = $this->create_webdav_instance($withpointer);
-        $this->write_v2_pointer($withpointer, 'kontextbereich', $instanceid, 'Kontext');
+        $this->write_v2_pointer($withpointer, 'context_area', $instanceid, 'Kontext');
         $this->getDataGenerator()->create_user();
 
         $userids = pointer_scan::userids_with_pointer();
@@ -82,7 +81,7 @@ final class pointer_scan_test extends \advanced_testcase {
         $this->resetAfterTest();
         $external = $this->getDataGenerator()->create_user();
         $instanceid = $this->create_webdav_instance($external);
-        $this->write_v2_pointer($external, 'kontextbereich', $instanceid, 'Kontext');
+        $this->write_v2_pointer($external, 'context_area', $instanceid, 'Kontext');
         $inmoodle = $this->getDataGenerator()->create_user();
         get_file_storage()->create_file_from_string([
             'contextid' => \context_user::instance($inmoodle->id)->id,
@@ -90,10 +89,10 @@ final class pointer_scan_test extends \advanced_testcase {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/coursepilot/',
-            'filename' => '.coursepilot-ort.json',
+            'filename' => '.coursepilot-location.json',
         ], json_encode([
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ]));
 
         $userids = pointer_scan::userids_with_external_target();
@@ -105,19 +104,19 @@ final class pointer_scan_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
 
-        $state = pointer_scan::target_state((int) $user->id, null, 'kontextbereich');
+        $state = pointer_scan::target_state((int) $user->id, null, 'context_area');
 
-        $this->assertSame('offen', $state['state']);
+        $this->assertSame('open', $state['state']);
     }
 
     public function test_target_state_is_moodle_for_a_moodle_target(): void {
         $this->resetAfterTest();
         $decoded = [
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ];
 
-        $state = pointer_scan::target_state(1, $decoded, 'kontextbereich');
+        $state = pointer_scan::target_state(1, $decoded, 'context_area');
 
         $this->assertSame('moodle', $state['state']);
         $this->assertNull($state['defect']);
@@ -127,21 +126,20 @@ final class pointer_scan_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $instanceid = $this->create_webdav_instance($user);
-        // Von Hand aufgebaut statt write_v2_pointer(), damit hier nur die
-        // Aufloesung getestet wird.
+        // Build directly rather than through write_v2_pointer(), isolating resolution.
         $decoded = [
-            'kontextbereich' => [
-                'ort' => 'extern',
-                'instanzid' => $instanceid,
-                'pfad' => 'Kontext',
-                'pruefmerkmal' => $this->fixture_fingerprint(),
+            'context_area' => [
+                'location' => 'external',
+                'instanceid' => $instanceid,
+                'path' => 'Kontext',
+                'fingerprint' => $this->fixture_fingerprint(),
             ],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ];
 
-        $state = pointer_scan::target_state((int) $user->id, $decoded, 'kontextbereich');
+        $state = pointer_scan::target_state((int) $user->id, $decoded, 'context_area');
 
-        $this->assertSame('extern', $state['state']);
+        $this->assertSame('external', $state['state']);
         $this->assertSame($this->fixtureserver, $state['host']);
         $this->assertNull($state['defect']);
     }
@@ -150,19 +148,19 @@ final class pointer_scan_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $decoded = [
-            'kontextbereich' => [
-                'ort' => 'extern',
-                'instanzid' => 999999,
-                'pfad' => 'Kontext',
-                'pruefmerkmal' => $this->fixture_fingerprint(),
+            'context_area' => [
+                'location' => 'external',
+                'instanceid' => 999999,
+                'path' => 'Kontext',
+                'fingerprint' => $this->fixture_fingerprint(),
             ],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ];
 
-        $state = pointer_scan::target_state((int) $user->id, $decoded, 'kontextbereich');
+        $state = pointer_scan::target_state((int) $user->id, $decoded, 'context_area');
 
-        $this->assertSame('extern', $state['state']);
-        $this->assertSame('instanzfehlt', $state['defect']);
+        $this->assertSame('external', $state['state']);
+        $this->assertSame('instance_missing', $state['defect']);
     }
 
     public function test_target_state_defect_is_fremdeinstanz_for_someone_elses_instance(): void {
@@ -171,18 +169,18 @@ final class pointer_scan_test extends \advanced_testcase {
         $instanceid = $this->create_webdav_instance($owner);
         $stranger = $this->getDataGenerator()->create_user();
         $decoded = [
-            'kontextbereich' => [
-                'ort' => 'extern',
-                'instanzid' => $instanceid,
-                'pfad' => 'Kontext',
-                'pruefmerkmal' => $this->fixture_fingerprint(),
+            'context_area' => [
+                'location' => 'external',
+                'instanceid' => $instanceid,
+                'path' => 'Kontext',
+                'fingerprint' => $this->fixture_fingerprint(),
             ],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ];
 
-        $state = pointer_scan::target_state((int) $stranger->id, $decoded, 'kontextbereich');
+        $state = pointer_scan::target_state((int) $stranger->id, $decoded, 'context_area');
 
-        $this->assertSame('fremdeinstanz', $state['defect']);
+        $this->assertSame('foreign_instance', $state['defect']);
     }
 
     public function test_target_state_defect_is_http_for_a_non_https_instance(): void {
@@ -190,42 +188,42 @@ final class pointer_scan_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $instanceid = $this->create_webdav_instance($user, ['webdav_type' => 0]);
         $decoded = [
-            'kontextbereich' => [
-                'ort' => 'extern',
-                'instanzid' => $instanceid,
-                'pfad' => 'Kontext',
-                'pruefmerkmal' => $this->fixture_fingerprint(),
+            'context_area' => [
+                'location' => 'external',
+                'instanceid' => $instanceid,
+                'path' => 'Kontext',
+                'fingerprint' => $this->fixture_fingerprint(),
             ],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ];
 
-        $state = pointer_scan::target_state((int) $user->id, $decoded, 'kontextbereich');
+        $state = pointer_scan::target_state((int) $user->id, $decoded, 'context_area');
 
         $this->assertSame('http', $state['defect']);
     }
 
     public function test_target_state_is_kaputt_for_a_structurally_invalid_pointer(): void {
         $this->resetAfterTest();
-        $decoded = ['kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot']];
+        $decoded = ['context_area' => ['location' => 'moodle', 'path' => 'coursepilot']];
 
-        $state = pointer_scan::target_state(1, $decoded, 'kontextbereich');
+        $state = pointer_scan::target_state(1, $decoded, 'context_area');
 
-        $this->assertSame('kaputt', $state['state']);
+        $this->assertSame('broken', $state['state']);
     }
 
-    public function test_has_open_altbestand_reads_vorheriger_ort_field(): void {
+    public function test_has_open_previous_location_reads_vorheriger_ort_field(): void {
         $this->resetAfterTest();
 
-        $this->assertTrue(pointer_scan::has_open_altbestand(['vorheriger_ort' => ['ort' => 'moodle', 'pfad' => 'alt']]));
-        $this->assertFalse(pointer_scan::has_open_altbestand(['kontextbereich' => []]));
-        $this->assertFalse(pointer_scan::has_open_altbestand(null));
+        $this->assertTrue(pointer_scan::has_open_previous_location(['previous_location' => ['location' => 'moodle', 'path' => 'alt']]));
+        $this->assertFalse(pointer_scan::has_open_previous_location(['context_area' => []]));
+        $this->assertFalse(pointer_scan::has_open_previous_location(null));
     }
 
-    public function test_has_open_ausstand_reads_a_foreign_users_ausstandsnotiz(): void {
+    public function test_has_open_pending_reads_a_foreign_users_ausstandsnotiz(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
 
-        $this->assertFalse(pointer_scan::has_open_ausstand((int) $user->id));
+        $this->assertFalse(pointer_scan::has_open_pending((int) $user->id));
 
         get_file_storage()->create_file_from_string([
             'contextid' => \context_user::instance($user->id)->id,
@@ -233,9 +231,9 @@ final class pointer_scan_test extends \advanced_testcase {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/coursepilot/',
-            'filename' => '.coursepilot-ausstand.json',
-        ], json_encode(['ABCDEFGH' => ['zeitpunkt' => time(), 'pfad' => 'a.md', 'vorgang' => 'anlegen', 'fehlerklasse' => 'x']]));
+            'filename' => '.coursepilot-pending.json',
+        ], json_encode(['ABCDEFGH' => ['timestamp' => time(), 'path' => 'a.md', 'operation' => 'create', 'error_class' => 'x']]));
 
-        $this->assertTrue(pointer_scan::has_open_ausstand((int) $user->id));
+        $this->assertTrue(pointer_scan::has_open_pending((int) $user->id));
     }
 }

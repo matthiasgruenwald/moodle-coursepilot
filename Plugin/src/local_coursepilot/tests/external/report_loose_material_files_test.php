@@ -21,9 +21,9 @@ use local_coursepilot\material_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Aufraeumbericht ueber "lose" Materialdateien (Spec 0018 §8.2/§8.3, Issue
- * #438): contenthash-Abgleich gegen die Aktivitaets-Fileareas der eigenen
- * Kurse, inklusive des Zuschnitt-Sonderfalls.
+ * Loose material-file cleanup report (Spec 0018 §8.2/§8.3, issue #438):
+ * compare content hashes against activity file areas in the teacher’s own
+ * courses, including cropped images.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -47,9 +47,8 @@ final class report_loose_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Verwendet heisst: der contenthash taucht in einer Aktivitaets-Filearea
-     * eines eigenen Kurses auf (Spec 0018 §8.2) - kein Rateweg, kein
-     * Namensabgleich.
+     * A file is used when its contenthash occurs in an activity file area of
+     * an owned course (Spec 0018 §8.2). No guessing or name matching.
      */
     public function test_used_file_is_not_loose(): void {
         $this->resetAfterTest();
@@ -76,9 +75,8 @@ final class report_loose_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * Der Zuschnitt-Sonderfall (Spec 0018 §8.2): das Original hat einen
-     * anderen contenthash als der eingebettete Ausschnitt, also erscheint
-     * das Original als lose, der Ausschnitt nicht.
+     * For cropped images (Spec 0018 §8.2), the original has a different
+     * contenthash from the embedded crop. The original is loose; the crop is used.
      */
     public function test_original_is_loose_after_crop_embedded(): void {
         $this->resetAfterTest();
@@ -111,8 +109,7 @@ final class report_loose_material_files_test extends \advanced_testcase {
         $this->setUser($this->getDataGenerator()->create_user());
         $this->store_material_file('screenshot.png', 'Fremdinhalt');
 
-        // Datei mit demselben Inhalt in einem Kurs, in dem die aufrufende
-        // Person nicht eingeschrieben ist - zaehlt nicht als "verwendet".
+        // Matching content in a course without caller enrollment does not count as used.
         $course = $this->getDataGenerator()->create_course();
         $other = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->enrol_user($other->id, $course->id, 'editingteacher');

@@ -19,9 +19,8 @@ namespace local_coursepilot\external;
 use core_external\external_api;
 
 /**
- * Abschnittsliste serverseitig (#342): eigenstaendige Portierung von
- * local_coursepilot\external\get_sections, Vertrag (Feldnamen) identisch
- * zum lokalen Werkzeug.
+ * Server-side sections (#342), ported from the local tool with the same
+ * field contract.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,7 +30,7 @@ use core_external\external_api;
 final class get_sections_test extends \advanced_testcase {
 
     /**
-     * Regelfall: id, Nummer, Name, Sichtbarkeit je Abschnitt.
+     * Return section id, number, name and visibility.
      */
     public function test_returns_id_number_name_and_visibility_per_section(): void {
         $this->resetAfterTest();
@@ -55,7 +54,7 @@ final class get_sections_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne Berechtigung: local/coursepilot:use fehlt trotz Einschreibung.
+     * Reject enrolled users lacking local/coursepilot:use.
      */
     public function test_rejects_user_without_capability(): void {
         $this->resetAfterTest();
@@ -79,8 +78,7 @@ final class get_sections_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne Einschreibung: eine nicht eingeschriebene Person bekommt
-     * keine Daten.
+     * Unenrolled users receive no data.
      */
     public function test_rejects_user_without_enrolment(): void {
         $this->resetAfterTest();

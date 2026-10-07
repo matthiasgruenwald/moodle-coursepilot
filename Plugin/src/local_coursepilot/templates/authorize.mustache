@@ -21,9 +21,9 @@
 
     Context variables required for this template:
     * consenttext - string - HTML consent text (source strings already contain markup, rendered unescaped)
-    * kontextbereich - object - {text: string}
-    * materialbestand - object - {text: string}
-    * ortswahlurl - string - link to the location-selection page (with OAuth passthrough)
+    * context_area - object - {text: string}
+    * material_store - object - {text: string}
+    * locationselectionurl - string - link to the location-selection page (with OAuth passthrough)
     * formurl - string - form action URL (this page, POST)
     * hiddenfields - array - list of {name: string, value: string} passed through both forms
     * sesskey - string - Moodle session key
@@ -32,9 +32,9 @@
     Example context (json):
     {
         "consenttext": "<strong>Claude</strong> wants access.<br><br>Shared: ...",
-        "kontextbereich": {"text": "Journals and plans: Moodle — allowed"},
-        "materialbestand": {"text": "Material files: Moodle — allowed"},
-        "ortswahlurl": "https://example.test/local/coursepilot/ortswahl.php",
+        "context_area": {"text": "Journals and plans: Moodle — allowed"},
+        "material_store": {"text": "Material files: Moodle — allowed"},
+        "locationselectionurl": "https://example.test/local/coursepilot/location_selection.php",
         "formurl": "https://example.test/local/coursepilot/oauth/authorize.php",
         "hiddenfields": [{"name": "client_id", "value": "abc"}],
         "sesskey": "abc123",
@@ -49,11 +49,11 @@
 <h3>{{#str}} consentlocationheading, local_coursepilot {{/str}}</h3>
 <div class="coursepilot-consent-location-intro">{{#str}} consentlocationintro, local_coursepilot {{/str}}</div>
 <ul>
-    <li>{{kontextbereich.text}}</li>
-    <li>{{materialbestand.text}}</li>
+    <li>{{context_area.text}}</li>
+    <li>{{material_store.text}}</li>
 </ul>
 <div class="small text-muted mb-2">{{#str}} externallocationprivacyinfo, local_coursepilot {{/str}}</div>
-<div class="mb-2"><a href="{{ortswahlurl}}" class="btn btn-outline-secondary btn-sm">{{#str}} consentlocationsetuplink, local_coursepilot {{/str}}</a></div>
+<div class="mb-2"><a href="{{locationselectionurl}}" class="btn btn-outline-secondary btn-sm">{{#str}} consentlocationsetuplink, local_coursepilot {{/str}}</a></div>
 <br>
 
 {{#actions}}

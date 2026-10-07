@@ -19,8 +19,8 @@ namespace local_coursepilot\catalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Gemeinsame Vorbereitung des $moduleinfo-Feldobjekts ausserhalb des
- * Formularwegs (#388/#392/#400).
+ * Prepare the shared moduleinfo field object outside the form path
+ * (#388/#392/#400).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,17 +30,15 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class pseudofield_carry_forward_test extends \advanced_testcase {
 
     /**
-     * get_moduleinfo_data() liefert "gradepass" im Anzeigeformat der
-     * eingestellten Sprache ("0,00" auf Deutsch). Zurueckgeschrieben muss es
-     * wieder eine Zahl sein, sonst bricht der Schreibvorgang in der
-     * Bewertungstabelle ab - nachdem die eigentliche Aenderung schon
-     * persistiert ist (#400).
+     * get_moduleinfo_data() formats gradepass for the active language ("0,00"
+     * in German). Convert it back to a number before writing; otherwise the
+     * gradebook write fails after the activity change has persisted (#400).
      */
     public function test_localised_gradepass_becomes_a_number(): void {
         $this->resetAfterTest();
         $moduleinfo = (object) [
             'gradepass' => format_float(12.5, 2),
-            // Aktivitaetsarten mit mehreren Bewertungsspalten (workshop).
+            // Activity types with multiple grade columns (workshop).
             'submissiongradepass' => format_float(7.0, 2),
             'name' => 'unberuehrt',
         ];
@@ -53,7 +51,7 @@ final class pseudofield_carry_forward_test extends \advanced_testcase {
     }
 
     /**
-     * Ein leeres Feld bleibt leer - "keine Bestehensgrenze" ist keine 0.
+     * Empty stays empty; no passing threshold is not zero.
      */
     public function test_empty_gradepass_is_left_alone(): void {
         $this->resetAfterTest();

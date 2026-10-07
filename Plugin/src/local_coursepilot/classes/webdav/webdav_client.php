@@ -17,14 +17,14 @@
 namespace local_coursepilot\webdav;
 
 /**
- * Der eigene, schlanke WebDAV-Client (Issue #489, Spec #486 §4, ADR 0022).
- * Sechs Verben, benannte Fehlerklassen statt Statuscodes, stille
- * Wiederholung bei `unklar/gedrosselt`, bedingtes Schreiben. Noch an kein
- * Werkzeug angeschlossen - reines Fundament, vollstaendig ueber den
- * austauschbaren {@see webdav_transport} getestet.
+ * The project's own slim WebDAV client (issue #489, spec #486 §4, ADR 0022).
+ * Six verbs, named error classes instead of status codes, silent retry on
+ * `unclear/throttled`, conditional writes. Not yet connected to any tool -
+ * pure foundation, fully tested through the swappable
+ * {@see webdav_transport}.
  *
- * Die Ortswahl und die Kontextwerkzeuge (spaetere Tickets) benutzen
- * denselben Client, nicht `get_listing()` (Spec §4).
+ * Location selection and the context tools (later tickets) use the same
+ * client, not `get_listing()` (spec §4).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -33,36 +33,36 @@ namespace local_coursepilot\webdav;
 final class webdav_client {
 
     /**
-     * @var float Hoechste Wiederholungsdauer bei `unklar/gedrosselt` (Spec
-     *      §4, Issue #529). Bewusst kurz gehalten: eine Messung gegen eine
-     *      einzelne Nextcloud-Instanz ergab 15-34s Erholungszeit nach einem
-     *      grossen Append (vermutlich Nextclouds eigener Bruteforce-/Rate-
-     *      Schutz, ausgeloest durch fehlendes `trusted_proxies` hinter einem
-     *      Reverse-Proxy, oder knappes `pm.max_children`) - ein Budget, das
-     *      diesen einen gemessenen Wert deckt, deckt keine fremde,
-     *      moeglicherweise schlechter konfigurierte Instanz und blockiert
-     *      dabei jeden Werkzeugaufruf unnoetig lang. Die eigentliche Antwort
-     *      auf eine ueberschrittene Drosselung ist der Ausstand
-     *      ({@see pending_write_translation}), nicht ein laengeres Warten.
+     * @var float Maximum retry duration for `unclear/throttled` (spec
+     *      §4, issue #529). Deliberately kept short: a measurement against a
+     *      single Nextcloud instance showed 15-34s recovery time after a
+     *      large append (presumably Nextcloud's own brute-force/rate
+     *      protection, triggered by a missing `trusted_proxies` behind a
+     *      reverse proxy, or tight `pm.max_children`) - a budget that
+     *      covers this one measured value does not cover a foreign,
+     *      possibly worse-configured instance and needlessly blocks every
+     *      tool call for too long. The real answer to an exceeded
+     *      throttle is the pending write
+     *      ({@see pending_write_translation}), not a longer wait.
      */
     private const RETRY_BUDGET_SECONDS = 10.0;
 
-    /** @var float Wartezeit zwischen zwei Wiederholungsversuchen. */
+    /** @var float Wait time between two retry attempts. */
     private const RETRY_DELAY_SECONDS = 0.2;
 
-    /** @var int[] HTTP-Status, die als Erfolg gelten, sofern nicht abweichend angegeben. */
+    /** @var int[] HTTP statuses that count as success unless specified otherwise. */
     private const DEFAULT_SUCCESS = [200, 201, 204, 207];
 
-    /** @var string Minimaler PROPFIND-Rumpf: alle Eigenschaften. */
+    /** @var string Minimal PROPFIND body: all properties. */
     private const PROPFIND_BODY = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><allprop/></propfind>';
 
     /**
-     * @param webdav_transport $transport Der austauschbare Transport-Seam.
-     *        Im Betrieb {@see curl_transport}, im Test der wiederverwendbare
-     *        In-Memory-Fake.
-     * @param callable $clock () => float, Sekunden seit irgendeinem festen
-     *        Nullpunkt. Nur fuer den Wiederholungs-Takt gebraucht - im Test
-     *        ersetzbar, damit nicht wirklich gewartet wird.
+     * @param webdav_transport $transport The swappable transport seam.
+     *        In production {@see curl_transport}, in tests the reusable
+     *        in-memory fake.
+     * @param callable $clock () => float, seconds since some fixed
+     *        zero point. Only needed for the retry clock - replaceable in
+     *        tests so nothing is actually waited for.
      * @param callable $sleeper (float $seconds) => void.
      */
     public function __construct(
@@ -83,18 +83,18 @@ final class webdav_client {
     private $sleeper;
 
     /**
-     * Listet eine Ebene (Tiefe 1) oder liest die Eigenschaften einer
-     * einzelnen Ressource (Tiefe 0).
+     * Lists one level (depth 1) or reads the properties of a
+     * single resource (depth 0).
      *
      * @param string $url
-     * @param int $depth 0 oder 1.
+     * @param int $depth 0 or 1.
      * @return array<int, array{name: string, type: string, size: int,
      *         timemodified: int, etag: ?string, mimetype: string}>
      * @throws webdav_error
      */
     public function propfind(string $url, int $depth = 1): array {
         if ($depth !== 0 && $depth !== 1) {
-            throw new \InvalidArgumentException('PROPFIND unterstuetzt nur Tiefe 0 oder 1.');
+            throw new \InvalidArgumentException('PROPFIND only supports depth 0 or 1.');
         }
         $response = $this->send('PROPFIND', $url, [
             'Depth' => (string) $depth,
@@ -105,7 +105,7 @@ final class webdav_client {
 
     /**
      * @param string $url
-     * @return string Rumpf der Datei.
+     * @return string File body.
      * @throws webdav_error
      */
     public function get(string $url): string {
@@ -113,31 +113,31 @@ final class webdav_client {
     }
 
     /**
-     * Legt eine neue Datei an - nie ein Ueberschreiben (`If-None-Match: *`).
+     * Creates a new file - never an overwrite (`If-None-Match: *`).
      *
      * @param string $url
      * @param string $content
-     * @throws webdav_error CONFLICT (412), falls dort schon etwas liegt.
+     * @throws webdav_error CONFLICT (412) if something already exists there.
      */
     public function put_new(string $url, string $content): void {
         $this->send('PUT', $url, ['If-None-Match' => '*'], $content);
     }
 
     /**
-     * Ueberschreibt eine vorhandene Datei bedingt (Spec §4).
+     * Conditionally overwrites an existing file (spec §4).
      *
-     * Liegt ein ETag vor, traegt `If-Match: <ETag>` den Vergleich - ein
-     * server-geprueftes 412 wird zu CONFLICT. Fehlt ein ETag (IServ), dient
-     * `getlastmodified` als schwacher, clientseitig gepruefter Ersatz: eine
-     * abweichende Aenderungszeit wird lokal zu CONFLICT, *bevor* ueberhaupt
-     * geschrieben wird. Verlorene Aktualisierungen sind damit nur schwach
-     * erkennbar (Spec §4 nennt das offen).
+     * If an ETag is available, `If-Match: <ETag>` carries the comparison - a
+     * server-checked 412 becomes CONFLICT. If an ETag is missing (IServ),
+     * `getlastmodified` serves as a weak, client-side-checked substitute: a
+     * differing modification time becomes CONFLICT locally, *before* anything
+     * is written at all. Lost updates are thus only weakly
+     * detectable (spec §4 names this as open).
      *
      * @param string $url
      * @param string $content
-     * @param string|null $etag Zuletzt gelesener ETag, falls der Server welche liefert.
-     * @param int|null $expectedlastmodified Zuletzt gelesene Aenderungszeit, falls kein ETag vorliegt.
-     * @throws webdav_error CONFLICT bei einer erkannten Kollision.
+     * @param string|null $etag Last-read ETag, if the server supplies one.
+     * @param int|null $expectedlastmodified Last-read modification time, if no ETag is available.
+     * @throws webdav_error CONFLICT on a detected collision.
      */
     public function put_overwrite(string $url, string $content, ?string $etag, ?int $expectedlastmodified = null): void {
         $headers = [];
@@ -147,16 +147,16 @@ final class webdav_client {
             $current = $this->propfind($url, 0);
             $actual = $current[0]['timemodified'] ?? null;
             if ($actual !== $expectedlastmodified) {
-                throw new webdav_error(webdav_error::CONFLICT, 'Aenderungszeit weicht vom erwarteten Stand ab (kein ETag).');
+                throw new webdav_error(webdav_error::CONFLICT, 'Modification time differs from the expected state (no ETag).');
             }
         }
         $this->send('PUT', $url, $headers, $content);
     }
 
     /**
-     * Ein einzelnes Verzeichnis. Ein bereits vorhandenes Verzeichnis (405)
-     * gilt als Erfolg - {@see mkcol_chain()} baut Ebene fuer Ebene, ohne bei
-     * jedem Lauf an einer schon bestehenden Ebene zu scheitern.
+     * A single directory. An already existing directory (405)
+     * counts as success - {@see mkcol_chain()} builds level by level without
+     * failing on an already existing level on every run.
      *
      * @param string $url
      * @throws webdav_error
@@ -166,10 +166,10 @@ final class webdav_client {
     }
 
     /**
-     * Baut eine Ordnerkette Ebene fuer Ebene per MKCOL (Spec §4).
+     * Builds a folder chain level by level via MKCOL (spec §4).
      *
-     * @param string $baseurl Wurzel, ab der die Kette angelegt wird.
-     * @param string[] $segments Ordnernamen, unkodiert.
+     * @param string $baseurl Root from which the chain is created.
+     * @param string[] $segments Folder names, unencoded.
      * @throws webdav_error
      */
     public function mkcol_chain(string $baseurl, array $segments): void {
@@ -182,7 +182,7 @@ final class webdav_client {
 
     /**
      * @param string $sourceurl
-     * @param string $destinationurl Vollstaendige Zieladresse.
+     * @param string $destinationurl Full destination address.
      * @throws webdav_error
      */
     public function move(string $sourceurl, string $destinationurl): void {
@@ -198,9 +198,9 @@ final class webdav_client {
     }
 
     /**
-     * Der eine Anfrageweg, den sich alle sechs Verben teilen: https-Pflicht,
-     * Fehlerklassifizierung, stille Wiederholung bei `unklar/gedrosselt`
-     * (auch 429/503), hoechstens {@see RETRY_BUDGET_SECONDS} lang.
+     * The one request path shared by all six verbs: https requirement,
+     * error classification, silent retry on `unclear/throttled`
+     * (including 429/503), for at most {@see RETRY_BUDGET_SECONDS}.
      *
      * @param string $method
      * @param string $url
@@ -237,7 +237,7 @@ final class webdav_client {
 
             $elapsed = ($this->clock)() - $start;
             if ($elapsed >= self::RETRY_BUDGET_SECONDS) {
-                throw new webdav_error(webdav_error::UNCLEAR, 'Wiederholung nach ' . self::RETRY_BUDGET_SECONDS . 's aufgegeben.');
+                throw new webdav_error(webdav_error::UNCLEAR, 'Retry given up after ' . self::RETRY_BUDGET_SECONDS . 's.');
             }
             ($this->sleeper)(self::RETRY_DELAY_SECONDS);
         }
@@ -249,14 +249,14 @@ final class webdav_client {
      */
     private function assert_https(string $url): void {
         if (parse_url($url, PHP_URL_SCHEME) !== 'https') {
-            throw new \InvalidArgumentException('WebDAV-Client akzeptiert nur https-Adressen.');
+            throw new \InvalidArgumentException('The WebDAV client only accepts https addresses.');
         }
     }
 
     /**
      * @param webdav_response $response
      * @param int[] $successcodes
-     * @return string|null Eine {@see webdav_error}-Konstante, oder null bei Erfolg.
+     * @return string|null A {@see webdav_error} constant, or null on success.
      */
     private function classify(webdav_response $response, array $successcodes): ?string {
         $code = $response->statuscode;
@@ -276,19 +276,19 @@ final class webdav_client {
             return $this->is_dav_xml_body($response) ? webdav_error::NOT_FOUND : webdav_error::UNCLEAR;
         }
         if ($code >= 300 && $code < 400) {
-            // Der Transport folgt keiner Weiterleitung (curl_transport::transport_options()) -
-            // eine 3xx-Antwort ist deshalb ein benannter Fehler, nie still wiederholbar: sonst
-            // koennten Anmeldedaten an eine vom Server bestimmte, moeglicherweise unverschluesselte
-            // Adresse gelangen (Issue #510).
+            // The transport does not follow redirects (curl_transport::transport_options()) -
+            // a 3xx response is therefore a named error, never silently retryable: otherwise
+            // credentials could reach a server-chosen, possibly unencrypted
+            // address (issue #510).
             return webdav_error::REDIRECTED;
         }
-        // 429, 503 und jeder andere nicht benannte Status: still wiederholbar, nie stillschweigend Erfolg.
+        // 429, 503 and every other unnamed status: silently retryable, never silently success.
         return webdav_error::UNCLEAR;
     }
 
     /**
-     * Unterscheidet ein echtes DAV-404 (XML-Rumpf) von einer gedrosselten
-     * HTML-Gastseite, die ebenfalls mit 404 antwortet (Spec §4).
+     * Distinguishes a real DAV 404 (XML body) from a throttled
+     * HTML guest page that also answers with 404 (spec §4).
      *
      * @param webdav_response $response
      * @return bool
@@ -303,7 +303,7 @@ final class webdav_client {
 
     /**
      * @param string $url
-     * @return string Dekodierter Pfadanteil, ohne abschliessenden Schraegstrich.
+     * @return string Decoded path part, without trailing slash.
      */
     private function normalised_path(string $url): string {
         $path = parse_url($url, PHP_URL_PATH) ?? '/';
@@ -311,32 +311,32 @@ final class webdav_client {
     }
 
     /**
-     * Wertet einen PROPFIND-Multistatus-Rumpf aus (Spec §4): Name
-     * (prozentdekodiert), Typ, Groesse, Aenderungszeit und ETag falls
-     * vorhanden. Der MIME-Typ kommt rein aus der Endung ({@see mimeinfo()}) -
-     * kein Inhalts-Sniffing hier, das wuerde beim Auflisten fuer jede Datei
-     * mit unbekannter Endung einen zusaetzlichen GET erzwingen und damit den
-     * bestehenden Zero-GET-Vertrag von {@see \local_coursepilot\external\list_context_files_test::test_switch_on_never_fetches_marked_file_content()}
-     * verletzen (Issue #560 - Sniffing sitzt stattdessen in {@see webdav_storage_port::read()},
-     * wo der Inhalt ohnehin geholt wird).
+     * Evaluates a PROPFIND multistatus body (spec §4): name
+     * (percent-decoded), type, size, modification time and ETag if
+     * present. The MIME type comes purely from the extension ({@see mimeinfo()}) -
+     * no content sniffing here, that would force an additional GET for every file
+     * with an unknown extension when listing and thereby violate the
+     * existing zero-GET contract of {@see \local_coursepilot\external\list_context_files_test::test_switch_on_never_fetches_marked_file_content()}
+     * (issue #560 - sniffing instead sits in {@see webdav_storage_port::read()},
+     * where the content is fetched anyway).
      *
      * @param string $body
      * @param string $requesturl
      * @param int $depth
      * @return array<int, array{name: string, type: string, size: int,
      *         timemodified: int, etag: ?string, mimetype: string}>
-     * @throws webdav_error UNCLEAR, wenn der Rumpf trotz 2xx-Status nicht als
-     *         XML lesbar ist - nie stillschweigend ein leerer Ordner (Issue #510),
-     *         sonst entfallen Uebergabe-Hinweis und Altbestand-Erkennung.
+     * @throws webdav_error UNCLEAR if the body is not readable as XML despite
+     *         a 2xx status - never silently an empty folder (issue #510),
+     *         otherwise handover hint and legacy-content detection are lost.
      */
     private function parse_multistatus(string $body, string $requesturl, int $depth): array {
         $previous = libxml_use_internal_errors(true);
-        // LIBXML_NONET: kein Netzzugriff beim Parsen, auch nicht fuer eine im
-        // Rumpf verlinkte externe DTD/Entity (Issue #510).
+        // LIBXML_NONET: no network access while parsing, not even for an
+        // external DTD/entity linked in the body (issue #510).
         $sxe = simplexml_load_string($body, \SimpleXMLElement::class, LIBXML_NONET);
         libxml_use_internal_errors($previous);
         if ($sxe === false) {
-            throw new webdav_error(webdav_error::UNCLEAR, 'PROPFIND-Rumpf trotz Erfolgsstatus nicht als XML lesbar.');
+            throw new webdav_error(webdav_error::UNCLEAR, 'PROPFIND body not readable as XML despite success status.');
         }
 
         $requestpath = $this->normalised_path($requesturl);
@@ -345,7 +345,7 @@ final class webdav_client {
             $davresponse = $responsenode->children('DAV:');
             $path = $this->normalised_path((string) $davresponse->href);
             if ($depth === 1 && $path === $requestpath) {
-                // Die aufgeloeste Ebene selbst, nicht ihr Inhalt.
+                // The resolved level itself, not its content.
                 continue;
             }
 
@@ -376,18 +376,18 @@ final class webdav_client {
     }
 
     /**
-     * Inhalts-Sniffing fuer einen bereits vorliegenden Dateiinhalt, genau wie
-     * Moodle-Core es fuer lokale Dateien tut ({@see \file_storage::mimetype_from_file()},
-     * `lib/filestorage/file_storage.php`) - nur auf einen String statt einen
-     * Dateipfad angewandt (Issue #560). Kein eigener GET: der Aufrufer muss
-     * den Inhalt ohnehin schon fuer einen anderen Zweck geholt haben (z.B.
-     * {@see webdav_storage_port::read()}), sonst waere Sniffing beim blossen
-     * Auflisten ein zusaetzlicher, teurer und ungewollter Netzwerkkontakt.
+     * Content sniffing for an already available file content, exactly as
+     * Moodle core does it for local files ({@see \file_storage::mimetype_from_file()},
+     * `lib/filestorage/file_storage.php`) - only applied to a string instead of a
+     * file path (issue #560). No GET of its own: the caller must already have
+     * fetched the content for another purpose (e.g.
+     * {@see webdav_storage_port::read()}), otherwise sniffing on mere
+     * listing would be an additional, expensive and unwanted network contact.
      *
-     * @param string $content Der (Teil-)Inhalt der Datei.
-     * @return string|null Der gesniffte Mimetyp, oder null, wenn nichts
-     *         Brauchbares zu ermitteln war (leerer Inhalt) - der Aufrufer
-     *         bleibt dann bei `document/unknown`.
+     * @param string $content The (partial) content of the file.
+     * @return string|null The sniffed mimetype, or null if nothing
+     *         usable could be determined (empty content) - the caller
+     *         then stays with `document/unknown`.
      */
     public static function sniff_mimetype_from_content(string $content): ?string {
         if ($content === '') {
@@ -406,9 +406,9 @@ final class webdav_client {
     }
 
     /**
-     * Der erste `propstat` mit Status 200 eines `response`-Knotens, oder
-     * null, wenn keiner erfolgreich war (z.B. eine Eigenschaft, die der
-     * Server fuer diesen Eintrag nicht kennt).
+     * The first `propstat` with status 200 of a `response` node, or
+     * null if none was successful (e.g. a property the
+     * server does not know for this entry).
      *
      * @param \SimpleXMLElement $davresponse
      * @return \SimpleXMLElement|null

@@ -25,16 +25,16 @@ use core_external\external_value;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Schreibkern 13 (Spec 0015 Phase 3, Ticket #391): idempotentes Anlegen eines
- * Abschnitts - legt an, wenn "sectionnum" noch nicht existiert, sonst wird
- * nur der Name abgeglichen (kein zweiter Abschnitt, keine sonstige
- * Aenderung an einem bestehenden Abschnitt).
+ * Write core 13 (Spec 0015 phase 3, ticket #391): idempotent creation of a
+ * section - creates it if "sectionnum" does not exist yet, otherwise only
+ * the name is reconciled (no second section, no other
+ * change to an existing section).
  *
- * Anlegen laeuft ueber course_create_sections_if_missing() (course/lib.php),
- * das intern {@see \core_courseformat\local\sectionactions::create_if_missing()}
- * aufruft - dieselbe Existenzpruefung nach Abschnittsnummer, die dieser
- * Endpunkt fuer die Idempotenz ohnehin braucht, hier nicht dupliziert.
- * Namensabgleich laeuft ueber {@see \core_courseformat\local\sectionactions::update()}.
+ * Creation runs via course_create_sections_if_missing() (course/lib.php),
+ * which internally calls {@see \core_courseformat\local\sectionactions::create_if_missing()}
+ * - the same existence check by section number that this
+ * endpoint needs for idempotency anyway, not duplicated here.
+ * Name reconciliation runs via {@see \core_courseformat\local\sectionactions::update()}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -72,8 +72,8 @@ final class ensure_section extends external_api {
         $context = context_course::instance($params['courseid']);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // Native Berechtigungspruefung: Abschnitte anlegen/umbenennen ist
-        // Kursbearbeitung, dieselbe Capability wie course/editsection.php.
+        // Native permission check: creating/renaming sections is
+        // course editing, same capability as course/editsection.php.
         require_capability('moodle/course:update', $context);
 
         if ($params['sectionnum'] < 0) {
@@ -97,9 +97,9 @@ final class ensure_section extends external_api {
 
         $wantedname = $params['name'];
         if ($wantedname !== null && $wantedname !== $oldname) {
-            // course_update_section() (course/lib.php) ist der schmale,
-            // stabile Wrapper um sectionactions::update() - identisch zu dem,
-            // was course/editsection.php beim Speichern des Formulars ruft.
+            // course_update_section() (course/lib.php) is the thin,
+            // stable wrapper around sectionactions::update() - identical to
+            // what course/editsection.php calls when saving the form.
             course_update_section($course, $sectioninfo, ['name' => $wantedname]);
             $namechanged = true;
         }
@@ -124,15 +124,16 @@ final class ensure_section extends external_api {
      * @return string
      */
     private static function build_message(int $sectionnum, bool $existed, bool $namechanged, string $oldname, string $finalname): string {
+        $a = (object) ['sectionnum' => $sectionnum, 'oldname' => $oldname, 'name' => $finalname];
         if (!$existed) {
             return $namechanged
-                ? "Abschnitt {$sectionnum} angelegt, Name auf \"{$finalname}\" gesetzt."
-                : "Abschnitt {$sectionnum} angelegt.";
+                ? get_string('sectioncreatednamed', 'local_coursepilot', $a)
+                : get_string('sectioncreated', 'local_coursepilot', $a);
         }
         if ($namechanged) {
-            return "Abschnitt {$sectionnum} existierte bereits, Name von \"{$oldname}\" auf \"{$finalname}\" geändert.";
+            return get_string('sectionreusedrenamed', 'local_coursepilot', $a);
         }
-        return "Abschnitt {$sectionnum} existierte bereits, Name unverändert.";
+        return get_string('sectionreused', 'local_coursepilot', $a);
     }
 
     /**
@@ -144,7 +145,7 @@ final class ensure_section extends external_api {
             'sectionnum' => new external_value(PARAM_INT, 'Section number (0-based)'),
             'name' => new external_value(PARAM_TEXT, 'Current section name'),
             'created' => new external_value(PARAM_BOOL, 'true if the section was newly created'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing message'),
         ]);
     }
 }

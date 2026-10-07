@@ -19,27 +19,27 @@ namespace local_coursepilot;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Dispatcher-Seam (#334): dieselbe Entscheidungslogik wie bisher in mcp.php,
- * jetzt ohne exit/Superglobals per PHPUnit ohne laufenden Webserver
- * aufrufbar.
+ * Dispatcher seam (#334): the same decision logic as before in mcp.php,
+ * now callable via PHPUnit without exit/superglobals and without a running
+ * web server.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(dispatcher::class)]
+#[CoversClass(\local_coursepilot\history\file_policy::class)]
 final class dispatcher_test extends \advanced_testcase {
 
     /**
-     * Legt einen Nutzer mit gueltigem OAuth-Access-Token an (#337) - ersetzt
-     * die fruehere Webservice-Token-Kruecke. Die systemweite
-     * editingteacher-Rolle bekommt standardmaessig ausdruecklich
-     * local/coursepilot:useremote (seit #579 ohne Archetyp-Vorbelegung, der
-     * Rollenweg der Fernzugriffsfreigabe); $withremote = false simuliert den
-     * entzogenen Fernzugriff.
+     * Creates a user with a valid OAuth access token (#337) - replaces the
+     * former web service token workaround. By default the system-wide
+     * editingteacher role is explicitly granted local/coursepilot:useremote
+     * (since #579 without an archetype default, the role route of the remote
+     * access approval); $withremote = false simulates revoked remote access.
      *
      * @param bool $withremote
-     * @return array{0: \stdClass, 1: string} Nutzer und Access-Token.
+     * @return array{0: \stdClass, 1: string} User and access token.
      */
     private function create_authenticated_user(bool $withremote = true): array {
         $user = $this->getDataGenerator()->create_user();
@@ -56,14 +56,14 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
-     * Legt direkt einen OAuth-Access-Token-Datensatz an - der einfachste Weg
-     * zum echten Authentifizierungspfad, ohne den vollen DCR/PKCE-Roundtrip
-     * (#336) fuer jeden Test nachzustellen.
+     * Creates an OAuth access token record directly - the simplest way to the
+     * real authentication path without replaying the full DCR/PKCE round trip
+     * (#336) for every test.
      *
      * @param int $userid
-     * @param int $expiresoffset Sekunden relativ zu jetzt (negativ = abgelaufen).
+     * @param int $expiresoffset Seconds relative to now (negative = expired).
      * @param bool $revoked
-     * @return string Das Access-Token.
+     * @return string The access token.
      */
     private function issue_access_token(int $userid, int $expiresoffset = 3600, bool $revoked = false): string {
         global $DB;
@@ -78,6 +78,10 @@ final class dispatcher_test extends \advanced_testcase {
         $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
         $record->revoked = $revoked ? 1 : 0;
         $record->timecreated = time();
+        $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
+            'userid' => $record->userid, 'clientid' => $record->clientid, 'revoked' => $record->revoked,
+            'statehash' => bin2hex(random_bytes(32)), 'timecreated' => $record->timecreated,
+        ]);
         $DB->insert_record('local_coursepilot_oauth_token', $record);
 
         return $accesstoken;
@@ -99,9 +103,173 @@ final class dispatcher_test extends \advanced_testcase {
         return array_merge(['origin' => null, 'pathinfo' => '', 'method' => 'POST'], $overrides);
     }
 
+    /** Named MCP inputs must survive Moodle's positional External invocation (#633). */
+    public function test_xml_preview_requires_predecessor_without_mutation(): void {
+        $this->resetAfterTest();
+        [$token, $arguments] = $this->xml_supersede_fixture();
+        unset($arguments['replaces_cmid']);
+        $before = $this->xml_mutation_state();
+        $response = $this->xml_call($token, $arguments + ['dry_run' => true]);
+        $this->assertTrue($response['isError'] ?? false, json_encode($response));
+        $this->assertStringContainsString('dry_run needs replaces_cmid', json_encode($response));
+        $this->assertEquals($before, $this->xml_mutation_state());
+    }
+
+    public function test_xml_preview_with_predecessor_one_changes_no_modules_files_visibility_or_history(): void {
+        $this->resetAfterTest();
+        [$token, $arguments, $other] = $this->xml_supersede_fixture();
+        $this->assertSame(1, $arguments['replaces_cmid']);
+        $before = $this->xml_mutation_state();
+        // Deliberately reverse input order: only declaration order may govern positional invocation.
+        $response = $this->xml_call($token, array_reverse($arguments + ['dry_run' => true, 'hidden' => true], true));
+        $this->assertFalse($response['isError'] ?? false, json_encode($response));
+        $result = $response['structuredContent'];
+        $this->assertSame(0, $result['cmid']);
+        $this->assertSame($other->cmid, $result['references'][0]['location_id']);
+        $this->assertEquals($before, $this->xml_mutation_state());
+    }
+
+    public function test_xml_regular_supersede_keeps_predecessor_and_only_changes_intended_objects(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$token, $arguments, $other] = $this->xml_supersede_fixture();
+        $before = $this->xml_mutation_state();
+        $oldbook = $DB->get_record('book', ['id' => $before['course_modules'][1]->instance], '*', MUST_EXIST);
+        $response = $this->xml_call($token, $arguments + ['hidden' => true, 'dry_run' => false]);
+        $this->assertFalse($response['isError'] ?? false, json_encode($response));
+        $new = $response['structuredContent']['cmid'];
+        $this->assertGreaterThan(1, $new);
+        $this->assertSame(count($before['course_modules']) + 1, $DB->count_records('course_modules'));
+        $this->assertSame(0, (int) $DB->get_field('course_modules', 'visible', ['id' => 1], MUST_EXIST));
+        $this->assertSame(0, (int) $DB->get_field('course_modules', 'visible', ['id' => $new], MUST_EXIST));
+        $afterbook = $DB->get_record('book', ['id' => $oldbook->id], '*', MUST_EXIST);
+        // Moodle updates the modification timestamp when visibility changes.
+        unset($oldbook->timemodified, $afterbook->timemodified);
+        $this->assertEquals($oldbook, $afterbook);
+        $this->assertEquals($before['course_modules'][$other->cmid],
+            $DB->get_record('course_modules', ['id' => $other->cmid], '*', MUST_EXIST));
+        $this->assertEquals($before['files'], $DB->get_records('files', null, 'id'));
+        $oldsection = $before['course_modules'][1]->section;
+        $sequence = explode(',', $DB->get_field('course_sections', 'sequence', ['id' => $oldsection], MUST_EXIST));
+        $this->assertSame((string) $new, $sequence[array_search('1', $sequence, true) + 1]);
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['cmid' => $new]));
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['cmid' => 1]));
+    }
+
+    /** Synthetic first module has the historically dangerous truthy cmid 1. */
+    private function xml_supersede_fixture(): array {
+        global $DB;
+        [$teacher, $token] = $this->create_authenticated_user();
+        $course = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        // PHPUnit deliberately offsets sequences; request a genuine first cmid in this isolated fixture.
+        $DB->get_manager()->reset_sequence('course_modules');
+        $book = $this->getDataGenerator()->create_module('book', ['course' => $course->id]);
+        $this->assertSame(1, (int) $book->cmid);
+        $xml = \local_coursepilot\external\export_default_activity::execute($course->id, 'book')['xml'];
+        $other = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $DB->set_field('course_modules', 'availability',
+            json_encode(['op' => '&', 'c' => [['type' => 'completion', 'cm' => 1, 'e' => 1]], 'showc' => [true]]),
+            ['id' => $other->cmid]);
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_module::instance(1)->id, 'component' => 'mod_book', 'filearea' => 'intro',
+            'itemid' => 0, 'filepath' => '/', 'filename' => 'synthetic.txt',
+        ], 'synthetic content');
+        return [$token, ['courseid' => (int) $course->id, 'modname' => 'book', 'section' => 1,
+            'activity_xml' => $xml, 'replaces_cmid' => 1], $other];
+    }
+
+    private function xml_call(string $token, array $arguments): array {
+        $response = dispatcher::handle(['id' => 1, 'method' => 'tools/call',
+            'params' => ['name' => 'coursepilot_create_activity_from_xml', 'arguments' => $arguments]],
+            $token, $this->headers());
+        $this->assertSame(200, $response['status']);
+        return $response['body']['result'];
+    }
+
+    /** Snapshot durable activity state; ordinary access auditing is allowed. */
+    private function xml_mutation_state(): array {
+        global $DB;
+        $result = [];
+        foreach (['course_modules', 'course_sections', 'book', 'book_chapters', 'files',
+                'local_coursepilot_cm_version', 'local_coursepilot_cm_file', 'local_coursepilot_cm_version_file'] as $table) {
+            $result[$table] = $DB->get_records($table, null, 'id');
+        }
+        return $result;
+    }
+
+    /** History never exposes submission metadata or profile values, including legacy rows. */
+    public function test_history_comparison_protects_current_and_legacy_data(): void {
+        global $DB, $CFG;
+        $this->resetAfterTest();
+        $CFG->enableavailability = true;
+        set_config('allowpersonaldata', 1, 'local_coursepilot');
+        [$teacher, $token] = $this->create_authenticated_user();
+        $course = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $assign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $cmid = (int) $assign->cmid;
+        $context = \context_module::instance($cmid);
+        foreach ([['assignsubmission_file', 'submission_files', 'student-secret.pdf'],
+                ['mod_assign', 'unknown', 'unknown-secret.pdf'],
+                ['mod_assign', 'intro', 'design.png']] as [$component, $area, $name]) {
+            get_file_storage()->create_file_from_string([
+                'contextid' => $context->id, 'component' => $component, 'filearea' => $area,
+                'itemid' => 0, 'filepath' => '/', 'filename' => $name,
+            ], 'synthetic bytes');
+        }
+        $availability = json_encode(['op' => '&', 'c' => [
+            ['op' => '|', 'c' => [['type' => 'profile', 'sf' => 'email', 'op' => 'isequalto',
+                'v' => 'private-profile@example.invalid']]],
+        ]]);
+        $DB->set_field('course_modules', 'availability', $availability, ['id' => $cmid]);
+        \local_coursepilot\history\version_writer::capture($cmid, (int) $teacher->id);
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['filename' => 'student-secret.pdf']));
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['filename' => 'unknown-secret.pdf']));
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_file', ['filename' => 'design.png']));
+
+        // Simulate historical metadata from before the positive allowlist, even with gap=0.
+        $versionid = $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $cmid, 'version' => 2]);
+        foreach ([['assignsubmission_file', 'submission_files', 'legacy-student.pdf'],
+                ['mod_assign', 'unknown', 'legacy-unknown.pdf']] as [$component, $area, $name]) {
+            $fileid = $DB->insert_record('local_coursepilot_cm_file', (object) [
+                'component' => $component, 'filearea' => $area, 'filename' => $name,
+                'pathnamehash' => sha1($name), 'contenthash' => sha1('synthetic'),
+                'itemid' => 0, 'filepath' => '/', 'filesize' => 9, 'mimetype' => 'application/pdf',
+                'timemodified' => time(),
+            ]);
+            $DB->insert_record('local_coursepilot_cm_version_file', (object) [
+                'versionid' => $versionid, 'fileid' => $fileid, 'gap' => 0,
+            ]);
+        }
+        foreach (['coursepilot_compare_activity_versions' => ['cmid' => $cmid, 'from_version' => 1, 'to_version' => 2],
+                'coursepilot_list_activity_versions' => ['cmid' => $cmid]] as $name => $arguments) {
+            $response = dispatcher::handle(['id' => 1, 'method' => 'tools/call',
+                'params' => ['name' => $name, 'arguments' => $arguments]], $token, $this->headers());
+            $this->assertSame(200, $response['status']);
+            $this->assertFalse($response['body']['result']['isError'] ?? false, json_encode($response));
+            $encoded = json_encode($response);
+            foreach (['student-secret.pdf', 'unknown-secret.pdf', 'legacy-student.pdf', 'legacy-unknown.pdf',
+                    'private-profile@example.invalid'] as $secret) {
+                $this->assertStringNotContainsString($secret, $encoded);
+            }
+            if ($name === 'coursepilot_compare_activity_versions') {
+                $this->assertStringContainsString('design.png', $encoded);
+                $this->assertStringContainsString('***', $encoded);
+            }
+        }
+        $files = \local_coursepilot\history\version_history::files_at($cmid, 2);
+        $this->assertSame(['design.png'], array_column($files, 'filename'));
+        // Native restore retains the raw conditions; the AI projection must not mutate them.
+        $state = \local_coursepilot\history\version_history::state_at($cmid, 2);
+        $this->assertSame($availability, $state['availabilityconditionsjson']);
+    }
+
     /**
-     * Auth-Gate greift vor dem Handshake: initialize unauthentifiziert
-     * liefert 401, nicht die Serverinfo.
+     * The auth gate applies before the handshake: an unauthenticated initialize
+     * returns 401, not the server info.
      */
     public function test_initialize_without_token_returns_401(): void {
         $this->resetAfterTest();
@@ -115,7 +283,7 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
-     * Legacy-Aera: initialize liefert die Serverinfo nach gueltiger Auth.
+     * Legacy era: initialize returns the server info after valid auth.
      */
     public function test_initialize_returns_serverinfo_when_authenticated(): void {
         $this->resetAfterTest();
@@ -126,8 +294,8 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertSame(200, $response['status']);
         $this->assertSame('local_coursepilot', $response['body']['result']['serverInfo']['name']);
 
-        // #577: die Handshake-Version stammt aus derselben kanonischen Quelle
-        // wie version.php - kein fest eingebauter Prototypwert mehr.
+        // #577: the handshake version comes from the same canonical source
+        // as version.php - no hard-coded prototype value any more.
         global $CFG;
         $plugin = new \stdClass();
         require($CFG->dirroot . '/local/coursepilot/version.php');
@@ -136,7 +304,7 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
-     * Moderne Aera: server/discover wird ebenfalls bedient.
+     * Modern era: server/discover is served as well.
      */
     public function test_server_discover_returns_supported_versions(): void {
         $this->resetAfterTest();
@@ -156,9 +324,9 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
-     * #451, Akzeptanzkriterium: beide Handshake-Wege liefern denselben
-     * Wegweiser als 'instructions' - ohne lokale Skill-Datei gibt es keine
-     * description, an der ein frisch verbundener Client anspringt.
+     * #451, acceptance criterion: both handshake paths return the same
+     * signpost as 'instructions' - without a local skill file there is no
+     * description that a freshly connected client would pick up on.
      */
     public function test_initialize_and_server_discover_return_identical_instructions(): void {
         $this->resetAfterTest();
@@ -170,7 +338,7 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertStringContainsString(
             'coursepilot_list_skills',
             $initialize['body']['result']['instructions'],
-            'Der Wegweiser muss coursepilot_list_skills namentlich nennen.'
+            'The signpost must name coursepilot_list_skills explicitly.'
         );
         $this->assertSame(
             $initialize['body']['result']['instructions'],
@@ -179,9 +347,9 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
-     * #451, Akzeptanzkriterium: die Werkzeugbeschreibung von
-     * coursepilot_list_skills traegt den englischen Hinweis wie 'instructions' -
-     * fuer Clients, die instructions nicht anzeigen.
+     * #451, acceptance criterion: the tool description of
+     * coursepilot_list_skills carries the English hint like 'instructions' -
+     * for clients that do not display instructions.
      */
     public function test_list_skills_tool_description_carries_the_same_hint(): void {
         $this->resetAfterTest();
@@ -197,7 +365,7 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
-     * tools/list leitet sich aus der Allowlist ab.
+     * tools/list is derived from the allowlist.
      */
     public function test_tools_list_is_derived_from_allowlist(): void {
         $this->resetAfterTest();
@@ -210,8 +378,8 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
-     * Parameterlose Werkzeuge muessen properties als JSON-Objekt liefern;
-     * json_encode([]) wuerde Clients ein ungueltiges JSON-Array senden (#566).
+     * Parameterless tools must return properties as a JSON object;
+     * json_encode([]) would send clients an invalid JSON array (#566).
      */
     public function test_parameterless_tool_properties_are_a_json_object(): void {
         $this->resetAfterTest();
@@ -224,13 +392,13 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertStringContainsString(
             '"properties":{}',
             json_encode($tools['coursepilot_list_skills']),
-            'coursepilot_list_skills: properties muss als JSON-Objekt serialisieren.'
+            'coursepilot_list_skills: properties must serialize as a JSON object.'
         );
     }
 
     /**
-     * #342, Akzeptanzkriterium: jede Werkzeugbeschreibung bleibt unter 2 KB
-     * - generisch ueber alle gelisteten Werkzeuge, nicht nur die neuen fuenf.
+     * #342, acceptance criterion: every tool description stays under 2 KB
+     * - generically across all listed tools, not just the five new ones.
      */
     public function test_tool_descriptions_stay_under_2kb(): void {
         $this->resetAfterTest();
@@ -240,13 +408,13 @@ final class dispatcher_test extends \advanced_testcase {
 
         foreach ($response['body']['result']['tools'] as $tool) {
             $bytes = strlen($tool['description']);
-            $this->assertLessThan(2048, $bytes, $tool['name'] . ': Beschreibung ist ' . $bytes . ' Bytes lang.');
+            $this->assertLessThan(2048, $bytes, $tool['name'] . ': description is ' . $bytes . ' bytes long.');
         }
     }
 
     /**
-     * Jede MCP-Schemadeklaration ist die von Moodle validierte
-     * execute_parameters()-Beschreibung, nicht eine gepflegte Stichprobe.
+     * Every MCP schema declaration is the execute_parameters() description
+     * validated by Moodle, not a hand-maintained sample.
      */
     public function test_tools_list_schemas_match_external_parameters(): void {
         $this->resetAfterTest();
@@ -267,18 +435,18 @@ final class dispatcher_test extends \advanced_testcase {
             if ($expected['properties'] === []) {
                 $expected['properties'] = new \stdClass();
             }
-            $this->assertEquals($expected, $tools[$name], "{$name}: tools/list-Schema weicht ab.");
+            $this->assertEquals($expected, $tools[$name], "{$name}: tools/list schema differs.");
         }
     }
 
     /**
-     * #568, unabhaengiger Vertragstest (Spec 0025 §Testing Decisions,
-     * Abnahmekriterium 23): die Erwartung entsteht hier NICHT ueber
-     * external_schema_converter - ein Fehler im Konverter (wie die elf
-     * widerspruechlichen Pflichtfeldlisten aus dem Review vom 25.09.2026)
-     * darf die eigene Testerwartung nicht miterzeugen. Geprueft
-     * wird die tatsaechlich vom Dispatcher veroeffentlichte Liste gegen rein
-     * strukturelle Invarianten eines geschlossenen JSON-Schemas.
+     * #568, independent contract test (Spec 0025 §Testing Decisions,
+     * acceptance criterion 23): the expectation is NOT derived here via
+     * external_schema_converter - a bug in the converter (like the eleven
+     * contradictory required-field lists from the review of 2026-09-25)
+     * must not co-produce the test's own expectation. What is checked is the
+     * list actually published by the dispatcher, against purely structural
+     * invariants of a closed JSON schema.
      */
     public function test_published_schemas_satisfy_independent_structural_invariants(): void {
         $this->resetAfterTest();
@@ -291,48 +459,48 @@ final class dispatcher_test extends \advanced_testcase {
             $schema = $tool['inputSchema'];
             $name = $tool['name'];
 
-            $this->assertSame('object', $schema['type'], "{$name}: inputSchema.type muss 'object' sein.");
-            $this->assertFalse($schema['additionalProperties'], "{$name}: additionalProperties muss false sein.");
+            $this->assertSame('object', $schema['type'], "{$name}: inputSchema.type must be 'object'.");
+            $this->assertFalse($schema['additionalProperties'], "{$name}: additionalProperties must be false.");
 
             $properties = $schema['properties'] instanceof \stdClass ? [] : $schema['properties'];
             $required = $schema['required'] ?? [];
 
             foreach ($required as $requiredname) {
-                // Invariante 1: jedes Pflichtfeld existiert als Eigenschaft -
-                // sonst ist das geschlossene Objekt (additionalProperties:
-                // false) fuer keinen Aufruf mehr erfuellbar.
+                // Invariant 1: every required field exists as a property -
+                // otherwise the closed object (additionalProperties:
+                // false) can no longer be satisfied by any call.
                 $this->assertArrayHasKey(
                     $requiredname,
                     $properties,
-                    "{$name}: Pflichtfeld '{$requiredname}' ist keine deklarierte Eigenschaft."
+                    "{$name}: required field '{$requiredname}' is not a declared property."
                 );
-                // Invariante 3: ein Pflichtfeld traegt keinen Default - ein
-                // weggelassener, aber verpflichtender Wert waere sonst
-                // widerspruechlich beschrieben.
+                // Invariant 3: a required field carries no default - an
+                // omitted but mandatory value would otherwise be described
+                // contradictorily.
                 $this->assertArrayNotHasKey(
                     'default',
                     $properties[$requiredname],
-                    "{$name}: Pflichtfeld '{$requiredname}' traegt widerspruechlich einen Default."
+                    "{$name}: required field '{$requiredname}' contradictorily carries a default."
                 );
             }
 
             foreach ($properties as $propname => $property) {
-                // Invariante 2: der Typ ist einer, den die JSON-Schema-Eingabe-
-                // pruefung tatsaechlich kennt.
-                $this->assertArrayHasKey('type', $property, "{$name}.{$propname}: kein 'type' angegeben.");
+                // Invariant 2: the type is one that the JSON schema input
+                // validation actually knows.
+                $this->assertArrayHasKey('type', $property, "{$name}.{$propname}: no 'type' given.");
                 $this->assertContains(
                     $property['type'],
                     $validtypes,
-                    "{$name}.{$propname}: unbekannter Typ '{$property['type']}'."
+                    "{$name}.{$propname}: unknown type '{$property['type']}'."
                 );
             }
         }
     }
 
     /**
-     * resultType ist fuer die Revision 2026-07-28 Pflicht (#337-Nachtrag,
-     * Fund aus dem Claude-Code-Livetest: ohne dieses Feld verwirft ein
-     * 2026-07-28-Client die tools/list-Antwort als ungueltig).
+     * resultType is mandatory for revision 2026-07-28 (#337 follow-up,
+     * finding from the Claude Code live test: without this field a
+     * 2026-07-28 client discards the tools/list response as invalid).
      */
     public function test_tools_list_includes_result_type(): void {
         $this->resetAfterTest();
@@ -348,8 +516,8 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
-     * coursepilot_get_course_catalog ist per tools/call tatsaechlich aufrufbar,
-     * nicht nur gelistet (#341).
+     * coursepilot_get_course_catalog is actually callable via tools/call,
+     * not just listed (#341).
      */
     public function test_course_catalog_tool_is_callable(): void {
         $this->resetAfterTest();
@@ -376,17 +544,16 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
-     * #569, Abnahmekriterium: repraesentativer Dispatcher-Rundlauf fuer die
-     * Kurs-/Aktivitaetswerkzeuge - Lese-, Schreib-, Versions- UND
-     * Wiederherstellungswerkzeug -, der beweist, dass veroeffentlichte
-     * Feldnamen (Eingabe UND Rueckgabe) unmittelbar englisch ankommen (der
-     * Vertrag ist bereits englisch deklariert, siehe update_module_settings::
-     * execute_parameters()/execute_returns()) - seit #573 gibt es an dieser
-     * Grenze ohnehin keine Uebersetzung mehr. Moodles eigene Validierung
-     * (validate_parameters()) bleibt dabei voll wirksam - der Zweitest unten
-     * prueft das ueber ein unbekanntes Feld. #573: der Rundlauf ueber
-     * coursepilot_restore_activity_version schliesst genau die Luecke, die
-     * den history.php-Fund (message/meldung) unentdeckt liess.
+     * #569, acceptance criterion: representative dispatcher round trip for the
+     * course/activity tools - read, write, version AND restore tool - proving
+     * that published field names (input AND return) arrive directly in
+     * English (the contract is already declared in English, see
+     * update_module_settings::execute_parameters()/execute_returns()) - since
+     * #573 there is no translation at this boundary any more anyway. Moodle's
+     * own validation (validate_parameters()) remains fully effective - the
+     * second test below checks that via an unknown field. #573: the round trip
+     * through coursepilot_restore_activity_version closes exactly the gap that
+     * left the history.php finding (message/meldung) undiscovered.
      */
     public function test_course_and_activity_tools_are_callable_through_dispatcher_in_english(): void {
         $this->resetAfterTest();
@@ -395,11 +562,11 @@ final class dispatcher_test extends \advanced_testcase {
         $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
         $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance([
             'course' => $course->id,
-            'name' => 'Alte Bezeichnung',
+            'name' => 'Old title',
         ]);
 
-        // Lesewerkzeug: coursepilot_get_modules, Rueckgabe ausschliesslich
-        // englische Schluessel (cmid/sectionnum/modname/name/visible/...).
+        // Read tool: coursepilot_get_modules, return value exclusively
+        // English keys (cmid/sectionnum/modname/name/visible/...).
         $listresponse = dispatcher::handle(
             [
                 'id' => 1,
@@ -417,9 +584,9 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertSame((int) $page->cmid, $listed['cmid']);
         $this->assertSame('page', $listed['modname']);
 
-        // Schreibwerkzeug: coursepilot_update_module_settings - der
-        // veroeffentlichte Parametername ist "fields_json", nicht das
-        // deutsche "felder_json" aus der Vor-#569-Fassung.
+        // Write tool: coursepilot_update_module_settings - the published
+        // parameter name is "fields_json", not the German "felder_json" from
+        // the pre-#569 version.
         $writeresponse = dispatcher::handle(
             [
                 'id' => 2,
@@ -428,7 +595,7 @@ final class dispatcher_test extends \advanced_testcase {
                     'name' => 'coursepilot_update_module_settings',
                     'arguments' => [
                         'cmid' => $page->cmid,
-                        'fields_json' => json_encode(['name' => 'Neue Bezeichnung']),
+                        'fields_json' => json_encode(['name' => 'New title']),
                     ],
                 ],
             ],
@@ -442,10 +609,10 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertArrayHasKey('message', $written);
         $this->assertArrayHasKey('changes', $written);
         $this->assertSame('name', $written['changes'][0]['field']);
-        $this->assertSame(json_encode('Neue Bezeichnung'), $written['changes'][0]['after_json']);
+        $this->assertSame(json_encode('New title'), $written['changes'][0]['after_json']);
 
-        // Versionswerkzeug: coursepilot_list_activity_versions - der Patch
-        // oben hat bereits eine zweite Version erzeugt.
+        // Version tool: coursepilot_list_activity_versions - the patch above
+        // has already produced a second version.
         $versionsresponse = dispatcher::handle(
             [
                 'id' => 3,
@@ -465,12 +632,12 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertCount(2, $versioned['versions']);
         $this->assertArrayHasKey('summary_line', $versioned['versions'][1]);
 
-        // Verlaufswerkzeug: coursepilot_restore_activity_version - der
-        // Rueckgabeschluessel ist "message", nicht das deutsche "meldung",
-        // das history.php bis zu diesem Fund noch gelesen hat (#573: die
-        // Seite ruft restore_activity_version::execute() direkt auf, am
-        // Dispatcher vorbei, und war seit #572 kaputt). Restauriert auf
-        // Version 1, die erste der beiden oben erzeugten Versionen.
+        // History tool: coursepilot_restore_activity_version - the return key
+        // is "message", not the German "meldung" that history.php still read
+        // until this finding (#573: the page calls
+        // restore_activity_version::execute() directly, bypassing the
+        // dispatcher, and had been broken since #572). Restores version 1,
+        // the first of the two versions created above.
         $restoreresponse = dispatcher::handle(
             [
                 'id' => 4,
@@ -489,9 +656,9 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertArrayHasKey('message', $restored);
         $this->assertArrayNotHasKey('meldung', $restored);
 
-        // Moodles eigene Validierung bleibt wirksam: ein unbekanntes Feld im
-        // Patch scheitert weiterhin ueber validate_patch()/catalog_fields,
-        // die Uebersetzungsschicht steht dem nicht im Weg.
+        // Moodle's own validation remains effective: an unknown field in the
+        // patch still fails via validate_patch()/catalog_fields; the
+        // translation layer does not get in the way.
         $invalidresponse = dispatcher::handle(
             [
                 'id' => 5,
@@ -500,7 +667,7 @@ final class dispatcher_test extends \advanced_testcase {
                     'name' => 'coursepilot_update_module_settings',
                     'arguments' => [
                         'cmid' => $page->cmid,
-                        'fields_json' => json_encode(['gibtsnicht' => 'x']),
+                        'fields_json' => json_encode(['doesnotexist' => 'x']),
                     ],
                 ],
             ],
@@ -512,17 +679,17 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
-     * #570, Abnahmekriterium: die Fragenbank-/Fragen-/Import-/Quiz-Fragen-
-     * Werkzeuge sind ueber den oeffentlichen Dispatch-Pfad mit unmittelbar
-     * englisch deklarierten Feldern aufrufbar - Lesen (coursepilot_get_
-     * question_categories), Aenderung (coursepilot_ensure_question_category,
-     * Rueckgabeschluessel "created"/"message" statt "angelegt"/"meldung")
-     * und eine Import-/Quiz-Zuordnung (coursepilot_import_questions_xml mit
-     * "confirmed" statt "bestaetigt", gefolgt von coursepilot_
-     * add_questions_to_quiz). Das Bestaetigungs-Gate von import_questions_xml
-     * (Verdachtsfall bei einer mitgebrachten idnumber ohne Treffer) und das
-     * Rechte-Gate von add_questions_to_quiz (mod/quiz:manage) bleiben dabei
-     * unveraendert wirksam.
+     * #570, acceptance criterion: the question bank / question / import / quiz
+     * question tools are callable via the public dispatch path with fields
+     * declared directly in English - read (coursepilot_get_
+     * question_categories), change (coursepilot_ensure_question_category,
+     * return keys "created"/"message" instead of "angelegt"/"meldung") and an
+     * import/quiz assignment (coursepilot_import_questions_xml with
+     * "confirmed" instead of "bestaetigt", followed by coursepilot_
+     * add_questions_to_quiz). The confirmation gate of import_questions_xml
+     * (suspect case for a supplied idnumber without a match) and the
+     * permission gate of add_questions_to_quiz (mod/quiz:manage) remain
+     * effective and unchanged.
      */
     public function test_question_bank_tools_are_callable_through_dispatcher_in_english(): void {
         $this->resetAfterTest();
@@ -532,15 +699,15 @@ final class dispatcher_test extends \advanced_testcase {
         $this->setUser($teacher);
         $quiz = $this->getDataGenerator()->get_plugin_generator('mod_quiz')->create_instance(['course' => $course->id]);
 
-        // Aenderung (idempotentes Anlegen): coursepilot_ensure_question_bank -
-        // Rueckgabeschluessel "created"/"message", nicht "angelegt"/"meldung".
+        // Change (idempotent creation): coursepilot_ensure_question_bank -
+        // return keys "created"/"message", not "angelegt"/"meldung".
         $bankresponse = dispatcher::handle(
             [
                 'id' => 1,
                 'method' => 'tools/call',
                 'params' => [
                     'name' => 'coursepilot_ensure_question_bank',
-                    'arguments' => ['courseid' => $course->id, 'name' => 'Fragenbank #570'],
+                    'arguments' => ['courseid' => $course->id, 'name' => 'Question bank #570'],
                 ],
             ],
             $token,
@@ -553,15 +720,15 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertArrayNotHasKey('angelegt', $bank);
         $this->assertArrayNotHasKey('meldung', $bank);
 
-        // Aenderung: coursepilot_ensure_question_category, dieselbe
-        // Umbenennung wie oben (created/message statt angelegt/meldung).
+        // Change: coursepilot_ensure_question_category, the same renaming as
+        // above (created/message instead of angelegt/meldung).
         $categoryresponse = dispatcher::handle(
             [
                 'id' => 2,
                 'method' => 'tools/call',
                 'params' => [
                     'name' => 'coursepilot_ensure_question_category',
-                    'arguments' => ['name' => 'Kategorie #570', 'parent' => $bank['topcategoryid']],
+                    'arguments' => ['name' => 'Category #570', 'parent' => $bank['topcategoryid']],
                 ],
             ],
             $token,
@@ -572,8 +739,8 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertTrue($category['created']);
         $categoryid = (int) $category['id'];
 
-        // Lesen: coursepilot_get_question_categories - englische
-        // Rueckgabeschluessel id/name/parent, wie schon vor #570 deklariert.
+        // Read: coursepilot_get_question_categories - English return keys
+        // id/name/parent, as already declared before #570.
         $listresponse = dispatcher::handle(
             [
                 'id' => 3,
@@ -589,11 +756,11 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertSame(200, $listresponse['status']);
         $categories = $listresponse['body']['result']['structuredContent'];
         $names = array_column($categories, 'name');
-        $this->assertContains('Kategorie #570', $names);
+        $this->assertContains('Category #570', $names);
 
-        // Import-Zuordnung mit Bestaetigungs-Gate: eine mitgebrachte idnumber
-        // ohne Treffer in der Zielkategorie ist ein Verdachtsfall - nichts
-        // wird geschrieben, solange "confirmed" nicht gesetzt ist.
+        // Import assignment with confirmation gate: a supplied idnumber
+        // without a match in the target category is a suspect case - nothing
+        // is written as long as "confirmed" is not set.
         $xml = self::multichoice_xml_fixture('Dispatcher-Frage #570', 'Was ist 2+2?', 'kp-570-fremd');
         $unconfirmedresponse = dispatcher::handle(
             [
@@ -609,9 +776,9 @@ final class dispatcher_test extends \advanced_testcase {
         );
         $this->assertSame(200, $unconfirmedresponse['status']);
         $unconfirmed = $unconfirmedresponse['body']['result']['structuredContent']['questions'][0];
-        $this->assertSame('verdachtsfall', $unconfirmed['status']);
+        $this->assertSame('suspect', $unconfirmed['status']);
 
-        // "confirmed": true bestaetigt ausdruecklich - jetzt wird geschrieben.
+        // "confirmed": true confirms explicitly - now it is written.
         $confirmedresponse = dispatcher::handle(
             [
                 'id' => 5,
@@ -626,11 +793,11 @@ final class dispatcher_test extends \advanced_testcase {
         );
         $this->assertSame(200, $confirmedresponse['status']);
         $imported = $confirmedresponse['body']['result']['structuredContent']['questions'][0];
-        $this->assertSame('erstimport', $imported['status']);
+        $this->assertSame('first_import', $imported['status']);
         $this->assertArrayNotHasKey('bestaetigt', $imported);
 
-        // Quiz-Zuordnung: coursepilot_add_questions_to_quiz haengt die
-        // importierte Frage an, Rueckgabeschluessel "message" statt "meldung".
+        // Quiz assignment: coursepilot_add_questions_to_quiz appends the
+        // imported question, return key "message" instead of "meldung".
         $questionid = $this->latest_version_questionid((int) $imported['questionbankentryid']);
         $quizresponse = dispatcher::handle(
             [
@@ -650,8 +817,8 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertArrayNotHasKey('meldung', $appended);
         $this->assertTrue($appended['appended'][0]['added']);
 
-        // Rechte-Gate bleibt wirksam: ohne mod/quiz:manage scheitert derselbe
-        // Aufruf ueber denselben Dispatch-Pfad kontrolliert.
+        // Permission gate remains effective: without mod/quiz:manage the same
+        // call over the same dispatch path fails in a controlled way.
         $roleid = $this->get_role_id('editingteacher');
         assign_capability('mod/quiz:manage', CAP_PROHIBIT, $roleid, \context_module::instance($quiz->cmid)->id, true);
         $forbiddenresponse = dispatcher::handle(
@@ -671,10 +838,10 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
-     * Baut ein minimales Moodle-XML mit einer einzelnen multichoice-Frage
-     * (#570) - schlanke Kopie von
+     * Builds a minimal Moodle XML with a single multichoice question
+     * (#570) - slim copy of
      * {@see \local_coursepilot\external\import_questions_xml_test::multichoice_xml()}
-     * fuer den Dispatcher-Rundlauf-Test, ohne Testklassen-Kopplung.
+     * for the dispatcher round-trip test, without coupling between test classes.
      *
      * @param string $name
      * @param string $questiontext
@@ -714,7 +881,7 @@ XML;
 
     /**
      * @param int $questionbankentryid
-     * @return int questionid der neuesten Version
+     * @return int questionid of the latest version
      */
     private function latest_version_questionid(int $questionbankentryid): int {
         global $DB;
@@ -727,22 +894,22 @@ XML;
     }
 
     /**
-     * #571, Abnahmekriterium: Skill-Liste/-Abruf, Lesen/Schreiben einer
-     * Kontextdatei sowie Nachtragen und Verwerfen eines Ausstands mit
-     * `identifier` sind ueber den oeffentlichen Dispatch-Pfad mit unmittelbar
-     * englisch deklarierten Feldern aufrufbar (Spec 0025 §A, dritter
-     * Durchstich der Expand-Migration nach #569/#570). Rueckgabeschluessel
-     * "trigger"/"kind"/"length" je Skill, "pending_entries"/"notices" statt
-     * "ausstaende"/"hinweise", "referenced_parts"/"corpus_version" statt
-     * "referenzierte_teile"/"korpus_stand" und der Eingabeparameter
-     * "pending_entry" statt "ausstand" fuer das Nachtragen.
+     * #571, acceptance criterion: skill list/retrieval, reading/writing a
+     * context file as well as catching up on and dismissing a pending entry
+     * with `identifier` are callable via the public dispatch path with fields
+     * declared directly in English (Spec 0025 §A, third breakthrough of the
+     * expand migration after #569/#570). Return keys
+     * "trigger"/"kind"/"length" per skill, "pending_entries"/"notices" instead
+     * of "ausstaende"/"hinweise", "referenced_parts"/"corpus_version" instead
+     * of "referenzierte_teile"/"korpus_stand" and the input parameter
+     * "pending_entry" instead of "ausstand" for the catch-up.
      */
     public function test_context_and_skill_tools_are_callable_through_dispatcher_in_english(): void {
         $this->resetAfterTest();
         [$teacher, $token] = $this->create_authenticated_user();
         $this->setUser($teacher);
 
-        // Skill-Liste: Katalog- und Ausstandsfelder englisch benannt.
+        // Skill list: catalog and pending-entry fields named in English.
         $listskillsresponse = dispatcher::handle(
             [
                 'id' => 1,
@@ -763,7 +930,7 @@ XML;
         $this->assertArrayHasKey('kind', $firstskill);
         $this->assertArrayHasKey('length', $firstskill);
 
-        // Skill-Abruf: Inhaltsfelder englisch benannt.
+        // Skill retrieval: content fields named in English.
         $getskillresponse = dispatcher::handle(
             [
                 'id' => 2,
@@ -778,7 +945,7 @@ XML;
         $this->assertArrayHasKey('referenced_parts', $skill);
         $this->assertArrayHasKey('corpus_version', $skill);
 
-        // Schreiben: coursepilot_write_context_file legt eine Kontextdatei an.
+        // Write: coursepilot_write_context_file creates a context file.
         $writeresponse = dispatcher::handle(
             [
                 'id' => 3,
@@ -795,7 +962,7 @@ XML;
         $this->assertArrayNotHasKey('isError', $writeresponse['body']['result']);
         $this->assertTrue($writeresponse['body']['result']['structuredContent']['created']);
 
-        // Lesen: coursepilot_read_context_file liest denselben Inhalt.
+        // Read: coursepilot_read_context_file reads the same content.
         $readresponse = dispatcher::handle(
             [
                 'id' => 4,
@@ -811,9 +978,9 @@ XML;
         $this->assertSame(200, $readresponse['status']);
         $this->assertSame('# Plan #571', $readresponse['body']['result']['structuredContent']['content']);
 
-        // Nachtragen: ein offener Ausstand verschwindet, sobald das erneute
-        // Schreiben mit "pending_entry" gelingt.
-        $pendingidentifier = pending_write_notice::record('journal.md', 'anlegen', 'Speicher voll', 0);
+        // Catch-up: an open pending entry disappears as soon as the repeated
+        // write with "pending_entry" succeeds.
+        $pendingidentifier = pending_write_notice::record('journal.md', 'create', 'storage_full', 0);
         $catchupresponse = dispatcher::handle(
             [
                 'id' => 5,
@@ -834,15 +1001,15 @@ XML;
         $this->assertArrayNotHasKey('isError', $catchupresponse['body']['result']);
         $this->assertSame([], pending_write_notice::list_grouped());
 
-        // Verwerfen: coursepilot_dismiss_ausstand mit "identifier" beendet
-        // einen zweiten, unabhaengigen Ausstand ausdruecklich.
-        $dismissidentifier = pending_write_notice::record('journal.md', 'anlegen', 'Speicher voll', 0);
+        // Dismiss: coursepilot_dismiss_pending_entry with "identifier"
+        // explicitly closes a second, independent pending entry.
+        $dismissidentifier = pending_write_notice::record('journal.md', 'create', 'storage_full', 0);
         $dismissresponse = dispatcher::handle(
             [
                 'id' => 6,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_dismiss_ausstand',
+                    'name' => 'coursepilot_dismiss_pending_entry',
                     'arguments' => ['identifier' => $dismissidentifier],
                 ],
             ],
@@ -856,26 +1023,26 @@ XML;
     }
 
     /**
-     * #568, Abnahmekriterium: coursepilot_dismiss_ausstand ist ueber den
-     * oeffentlichen Dispatch-Pfad mit dem englischen Feldnamen `identifier`
-     * aufrufbar - nicht nur per direktem dismiss_ausstand::execute()-Aufruf
-     * (das bereits ausstand_notice_test.php/dismiss_ausstand_test.php
-     * abdecken). Dieses Werkzeug ist bereits vollstaendig englisch
-     * deklariert, braucht also keine Eingabeuebersetzung durch den
-     * Dispatcher (Spec 0025 §A, erster Durchstich der Expand-Migration).
+     * #568, acceptance criterion: coursepilot_dismiss_pending_entry is callable
+     * via the public dispatch path with the English field name `identifier` -
+     * not just via a direct dismiss_pending_entry::execute() call (which
+     * pending_write_notice_test.php/dismiss_pending_entry_test.php already
+     * cover). This tool is already declared entirely in English, so it needs
+     * no input translation by the dispatcher (Spec 0025 §A, first
+     * breakthrough of the expand migration).
      */
-    public function test_dismiss_ausstand_is_callable_through_dispatcher_with_identifier(): void {
+    public function test_dismiss_pending_entry_is_callable_through_dispatcher_with_identifier(): void {
         $this->resetAfterTest();
         [$teacher, $token] = $this->create_authenticated_user();
         $this->setUser($teacher);
-        $identifier = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
+        $identifier = pending_write_notice::record('plan.md', 'create', 'storage_full', 0);
 
         $response = dispatcher::handle(
             [
                 'id' => 1,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_dismiss_ausstand',
+                    'name' => 'coursepilot_dismiss_pending_entry',
                     'arguments' => ['identifier' => $identifier],
                 ],
             ],
@@ -890,12 +1057,11 @@ XML;
     }
 
     /**
-     * #568: eine unbekannte Kennung wird ueber denselben Dispatch-Pfad
-     * kontrolliert abgewiesen (Fehlerergebnis, kein stiller Erfolg und kein
-     * HTTP-Fehlerstatus - dieselbe Vertragsform wie jeder andere
-     * fehlgeschlagene Werkzeugaufruf).
+     * #568: an unknown identifier is rejected in a controlled way over the
+     * same dispatch path (error result, no silent success and no HTTP error
+     * status - the same contract shape as any other failed tool call).
      */
-    public function test_dismiss_ausstand_rejects_unknown_identifier_through_dispatcher(): void {
+    public function test_dismiss_pending_entry_rejects_unknown_identifier_through_dispatcher(): void {
         $this->resetAfterTest();
         [, $token] = $this->create_authenticated_user();
 
@@ -904,8 +1070,8 @@ XML;
                 'id' => 1,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_dismiss_ausstand',
-                    'arguments' => ['identifier' => 'UNBEKANNT1'],
+                    'name' => 'coursepilot_dismiss_pending_entry',
+                    'arguments' => ['identifier' => 'UNKNOWN1'],
                 ],
             ],
             $token,
@@ -917,12 +1083,12 @@ XML;
     }
 
     /**
-     * #568: ein fehlendes Pflichtfeld wird ebenso kontrolliert abgewiesen -
-     * das geschlossene Objektschema (additionalProperties: false, required:
-     * ["identifier"]) ist dafuer die erste Verteidigungslinie beim Client,
-     * Moodles eigene Parameterpruefung die zweite auf dem Server.
+     * #568: a missing required field is rejected in a controlled way just the
+     * same - the closed object schema (additionalProperties: false, required:
+     * ["identifier"]) is the first line of defense at the client for this,
+     * Moodle's own parameter validation the second on the server.
      */
-    public function test_dismiss_ausstand_rejects_missing_identifier_through_dispatcher(): void {
+    public function test_dismiss_pending_entry_rejects_missing_identifier_through_dispatcher(): void {
         $this->resetAfterTest();
         [, $token] = $this->create_authenticated_user();
 
@@ -931,7 +1097,7 @@ XML;
                 'id' => 1,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_dismiss_ausstand',
+                    'name' => 'coursepilot_dismiss_pending_entry',
                     'arguments' => [],
                 ],
             ],
@@ -944,21 +1110,21 @@ XML;
     }
 
     /**
-     * #568: die Rechtepruefung bleibt auch auf dem englischen Durchstich
-     * wirksam - ohne moodle/user:manageownfiles weist der Dispatcher den
-     * Aufruf ab, genau wie beim direkten execute()-Aufruf
-     * (dismiss_ausstand_test.php::test_rejects_missing_manageownfiles_capability).
+     * #568: the permission check remains effective on the English breakthrough
+     * as well - without moodle/user:manageownfiles the dispatcher rejects the
+     * call, just like with the direct execute() call
+     * (dismiss_pending_entry_test.php::test_rejects_missing_manageownfiles_capability).
      */
-    public function test_dismiss_ausstand_enforces_manageownfiles_through_dispatcher(): void {
+    public function test_dismiss_pending_entry_enforces_manageownfiles_through_dispatcher(): void {
         global $DB;
         $this->resetAfterTest();
         [$teacher, $token] = $this->create_authenticated_user();
         $this->setUser($teacher);
-        $identifier = pending_write_notice::record('plan.md', 'anlegen', 'Speicher voll', 0);
+        $identifier = pending_write_notice::record('plan.md', 'create', 'storage_full', 0);
 
-        // CAP_PROHIBIT auf der Basisrolle "user" ueberstimmt jede zusaetzliche
-        // Rolle (hier editingteacher) - derselbe erprobte Griff wie
-        // dismiss_ausstand_test.php::test_rejects_missing_manageownfiles_capability.
+        // CAP_PROHIBIT on the base role "user" overrides every additional
+        // role (here editingteacher) - the same proven approach as
+        // dismiss_pending_entry_test.php::test_rejects_missing_manageownfiles_capability.
         $roleid = $this->get_role_id('user');
         assign_capability(
             'moodle/user:manageownfiles',
@@ -973,7 +1139,7 @@ XML;
                 'id' => 1,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_dismiss_ausstand',
+                    'name' => 'coursepilot_dismiss_pending_entry',
                     'arguments' => ['identifier' => $identifier],
                 ],
             ],
@@ -986,10 +1152,10 @@ XML;
     }
 
     /**
-     * Legt eine Bilddatei im Materialordner des uebergebenen Nutzers an -
-     * per GD erzeugt statt aus einer Fixture-Datei geladen, damit der Test
-     * keine Binaerdatei mitfuehren muss. Breiter als 768px, damit die
-     * Vorschau tatsaechlich verkleinert.
+     * Creates an image file in the given user's material folder -
+     * generated via GD instead of loaded from a fixture file, so that the test
+     * does not have to ship a binary file. Wider than 768px so that the
+     * preview is actually downscaled.
      *
      * @param \stdClass $user
      * @param string $filename
@@ -1014,9 +1180,9 @@ XML;
     }
 
     /**
-     * Spec 0018 §3.2/Issue #430: der Dispatcher haengt an eine erfolgreiche
-     * Bildvorschau einen zweiten MCP-Inhaltsblock (type "image") an - base64
-     * plus mimeType, kein Umweg ueber eine Zeichenkette im JSON.
+     * Spec 0018 §3.2/Issue #430: the dispatcher appends a second MCP content
+     * block (type "image") to a successful image preview - base64 plus
+     * mimeType, no detour via a string in the JSON.
      */
     public function test_preview_material_file_returns_mcp_image_content_block(): void {
         $this->resetAfterTest();
@@ -1038,29 +1204,29 @@ XML;
 
         $this->assertSame(200, $response['status']);
         $content = $response['body']['result']['content'];
-        $this->assertCount(2, $content, 'Text- plus Bildblock erwartet.');
+        $this->assertCount(2, $content, 'Text plus image block expected.');
         $this->assertSame('text', $content[0]['type']);
         $this->assertSame('image', $content[1]['type']);
         $this->assertSame('image/jpeg', $content[1]['mimeType']);
 
         $decoded = base64_decode($content[1]['data'], true);
-        $this->assertNotFalse($decoded, 'Bilddaten muessen gueltiges base64 sein.');
+        $this->assertNotFalse($decoded, 'Image data must be valid base64.');
         $info = getimagesizefromstring($decoded);
-        $this->assertNotFalse($info, 'Bilddaten muessen ein von PHP lesbares Bild ergeben.');
+        $this->assertNotFalse($info, 'Image data must yield an image readable by PHP.');
         $this->assertSame(IMAGETYPE_JPEG, $info[2]);
         $this->assertLessThanOrEqual(768, max($info[0], $info[1]));
 
-        // Der Bild-Byte-Blob wird nicht doppelt durch den Kontext geschickt -
-        // weder im JSON-Textblock noch in structuredContent.
+        // The image byte blob is not sent through the context twice -
+        // neither in the JSON text block nor in structuredContent.
         $this->assertArrayNotHasKey('image_base64', $response['body']['result']['structuredContent']);
         $decodedtext = json_decode($content[0]['text'], true);
         $this->assertArrayNotHasKey('image_base64', $decodedtext);
     }
 
     /**
-     * Spec 0018 §3: eine Nicht-Bilddatei ist kein Fehler - "available":
-     * false mit erklaerender Meldung, weiterhin genau ein Textblock (kein
-     * Bildblock).
+     * Spec 0018 §3: a non-image file is not an error - "available":
+     * false with an explanatory message, still exactly one text block (no
+     * image block).
      */
     public function test_preview_of_non_image_file_returns_message_not_error(): void {
         $this->resetAfterTest();
@@ -1072,7 +1238,7 @@ XML;
             'itemid' => material_files::ITEMID,
             'filepath' => '/coursepilot-material/',
             'filename' => 'blatt.pdf',
-        ], '%PDF-1.4 kein echtes PDF, reicht fuer den Test');
+        ], '%PDF-1.4 not a real PDF, good enough for the test');
 
         $response = dispatcher::handle(
             [
@@ -1091,13 +1257,13 @@ XML;
         $this->assertArrayNotHasKey('isError', $response['body']['result']);
         $this->assertFalse($response['body']['result']['structuredContent']['available']);
         $this->assertNotEmpty($response['body']['result']['structuredContent']['message']);
-        $this->assertCount(1, $response['body']['result']['content'], 'Kein Bildblock ohne Bildvorschau.');
+        $this->assertCount(1, $response['body']['result']['content'], 'No image block without an image preview.');
     }
 
     /**
-     * Der zweite Inhaltstyp (#430) bleibt die einzige Erweiterung am
-     * Dispatcher (Spec 0018 §3.2) - ein Werkzeug ohne Bildfelder liefert
-     * unveraendert genau einen Textblock mit JSON plus structuredContent.
+     * The second content type (#430) remains the only extension of the
+     * dispatcher (Spec 0018 §3.2) - a tool without image fields still returns
+     * exactly one text block with JSON plus structuredContent.
      */
     public function test_tools_without_image_fields_keep_single_text_content_block(): void {
         $this->resetAfterTest();
@@ -1120,28 +1286,27 @@ XML;
     }
 
     /**
-     * #572, Abnahmekriterium: die Material-/Werkbank-Werkzeuge sind ueber den
-     * oeffentlichen Dispatch-Pfad mit unmittelbar englisch deklarierten
-     * Feldern aufrufbar - Lesen (coursepilot_list_material_files, Parameter
-     * "location" statt "ort"), ein Schreibpfad (coursepilot_upload_material_file)
-     * und der reine Werkbank-Lesepfad (coursepilot_create_werkbank_download_links,
-     * ebenfalls hinter moodle/user:manageownfiles) mit korrekten Rueckgabe-
-     * schluesseln.
+     * #572, acceptance criterion: the material/workbench tools are callable
+     * via the public dispatch path with fields declared directly in English -
+     * read (coursepilot_list_material_files, parameter "location" instead of
+     * "ort"), a write path (coursepilot_upload_material_file) and the pure
+     * workbench read path (coursepilot_create_workbench_download_links, also
+     * behind moodle/user:manageownfiles) with correct return keys.
      */
     public function test_material_and_werkbank_tools_are_callable_through_dispatcher_in_english(): void {
         $this->resetAfterTest();
         [, $token] = $this->create_authenticated_user();
 
-        // Schreibwerkzeug: coursepilot_upload_material_file - bereits vor
-        // #572 englisch deklariert, hier als der geforderte reale
-        // Schreibpfad der Gruppe.
+        // Write tool: coursepilot_upload_material_file - already declared in
+        // English before #572, here as the required real write path of the
+        // group.
         $uploadresponse = dispatcher::handle(
             [
                 'id' => 1,
                 'method' => 'tools/call',
                 'params' => [
                     'name' => 'coursepilot_upload_material_file',
-                    'arguments' => ['path' => 'blatt.pdf', 'content_base64' => base64_encode('Inhalt')],
+                    'arguments' => ['path' => 'blatt.pdf', 'content_base64' => base64_encode('Content')],
                 ],
             ],
             $token,
@@ -1153,17 +1318,17 @@ XML;
         $this->assertTrue($uploaded['created']);
         $this->assertArrayHasKey('message', $uploaded);
 
-        // Lesewerkzeug: coursepilot_list_material_files - der veroeffentlichte
-        // Parametername ist "location", nicht das deutsche "ort" aus der
-        // Vor-#572-Fassung; werkbank und bestand zeigen ohne Kontextpointer
-        // auf denselben Ort (Issue #495).
+        // Read tool: coursepilot_list_material_files - the published
+        // parameter name is "location", not the German "ort" from the
+        // pre-#572 version; werkbank and bestand point to the same location
+        // without a context pointer (Issue #495).
         $listresponse = dispatcher::handle(
             [
                 'id' => 2,
                 'method' => 'tools/call',
                 'params' => [
                     'name' => 'coursepilot_list_material_files',
-                    'arguments' => ['location' => 'werkbank'],
+                    'arguments' => ['location' => 'workbench'],
                 ],
             ],
             $token,
@@ -1173,15 +1338,15 @@ XML;
         $listed = $listresponse['body']['result']['structuredContent'];
         $this->assertSame(['blatt.pdf'], array_column($listed['entries'], 'name'));
 
-        // Werkbank-Lesepfad: coursepilot_create_werkbank_download_links -
-        // rein lesend (Issue #501), aber hinter derselben
-        // moodle/user:manageownfiles-Pruefung wie der Schreibweg oben.
+        // Workbench read path: coursepilot_create_workbench_download_links -
+        // purely reading (Issue #501), but behind the same
+        // moodle/user:manageownfiles check as the write path above.
         $linksresponse = dispatcher::handle(
             [
                 'id' => 3,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_create_werkbank_download_links',
+                    'name' => 'coursepilot_create_workbench_download_links',
                     'arguments' => ['paths' => ['blatt.pdf']],
                 ],
             ],
@@ -1194,12 +1359,12 @@ XML;
         $this->assertArrayHasKey('sha1', $links[0]);
         $this->assertArrayHasKey('url', $links[0]);
 
-        // Ohne moodle/user:manageownfiles ist sowohl der Schreib- als auch
-        // der Werkbank-Lesepfad gesperrt - die Materialgrenze bleibt
-        // Rechte-gesteuert, nicht nur eine Frage der Uebersetzung. CAP_PROHIBIT
-        // auf der Basisrolle "user" ueberstimmt jede zusaetzliche Rolle (hier
-        // editingteacher) - derselbe erprobte Griff wie
-        // test_dismiss_ausstand_enforces_manageownfiles_through_dispatcher.
+        // Without moodle/user:manageownfiles both the write path and the
+        // workbench read path are blocked - the material boundary remains
+        // permission-controlled, not just a matter of translation.
+        // CAP_PROHIBIT on the base role "user" overrides every additional role
+        // (here editingteacher) - the same proven approach as
+        // test_dismiss_pending_entry_enforces_manageownfiles_through_dispatcher.
         [$restricteduser, $restrictedtoken] = $this->create_authenticated_user();
         $roleid = $this->get_role_id('user');
         assign_capability(
@@ -1215,7 +1380,7 @@ XML;
                 'id' => 4,
                 'method' => 'tools/call',
                 'params' => [
-                    'name' => 'coursepilot_create_werkbank_download_links',
+                    'name' => 'coursepilot_create_workbench_download_links',
                     'arguments' => ['paths' => ['blatt.pdf']],
                 ],
             ],
@@ -1227,11 +1392,11 @@ XML;
     }
 
     /**
-     * #572, Abnahmekriterium: das Klon- und das Abstammungswerkzeug sind
-     * ueber den oeffentlichen Dispatch-Pfad mit unmittelbar englisch
-     * deklarierten Feldern aufrufbar - coursepilot_clone_activity liefert
-     * "message" statt "meldung", coursepilot_report_clone_lineage liefert
-     * "source_course_id" statt "quellkurs_id" und ebenfalls "message".
+     * #572, acceptance criterion: the clone tool and the lineage tool are
+     * callable via the public dispatch path with fields declared directly in
+     * English - coursepilot_clone_activity returns "message" instead of
+     * "meldung", coursepilot_report_clone_lineage returns "source_course_id"
+     * instead of "quellkurs_id" and likewise "message".
      */
     public function test_clone_and_lineage_tools_are_callable_through_dispatcher_in_english(): void {
         $this->resetAfterTest();
@@ -1247,7 +1412,7 @@ XML;
                 'method' => 'tools/call',
                 'params' => [
                     'name' => 'coursepilot_clone_activity',
-                    'arguments' => ['cmid' => $page->cmid, 'title' => 'Klon'],
+                    'arguments' => ['cmid' => $page->cmid, 'title' => 'Clone'],
                 ],
             ],
             $token,
@@ -1280,14 +1445,14 @@ XML;
     }
 
     /**
-     * Der Fehlertext eines Werkzeugs erreicht den Aufrufer im Klartext.
+     * The error text of a tool reaches the caller in plain text.
      *
-     * invalid_parameter_exception traegt die eigentliche Meldung in
-     * debuginfo; ->message ist nur die generische Moodle-Zeichenkette
-     * ("Ungueltiger Parameterwert"). Wer nur ->message weitergibt, verwirft
-     * damit jede Meldung, die die Werkzeuge dieses Plugins formulieren -
-     * "Datei zu gross" und "XML kaputt" kommen beim Client als derselbe
-     * nichtssagende Satz an.
+     * invalid_parameter_exception carries the actual message in
+     * debuginfo; ->message is only the generic Moodle string
+     * ("Invalid parameter value detected"). Anyone who passes on only ->message
+     * thereby discards every message that this plugin's tools formulate -
+     * "file too large" and "XML broken" arrive at the client as the same
+     * meaningless sentence.
      */
     public function test_tool_error_detail_reaches_the_caller(): void {
         $this->resetAfterTest();
@@ -1308,15 +1473,14 @@ XML;
 
         $this->assertTrue($response['body']['result']['isError']);
         $this->assertSame(
-            'Es muss mindestens eine questionid angegeben werden.',
+            'Specify at least one questionid.',
             $response['body']['result']['content'][0]['text']
         );
     }
 
     /**
-     * Ein Rueckgabevertragsfehler traegt den einzigen brauchbaren Hinweis in
-     * debuginfo. Er geht als Diagnosehinweis ins Protokoll, nicht an den
-     * MCP-Client (#457).
+     * A return contract error carries the only usable hint in debuginfo. It
+     * goes into the log as a diagnostic hint, not to the MCP client (#457).
      */
     public function test_diagnostic_detail_keeps_invalid_response_debug_detail(): void {
         $exception = (object) [
@@ -1333,21 +1497,19 @@ XML;
     }
 
     /**
-     * Die Regel, nicht der Einzelfall (#466): JEDE Antwort mit einem
-     * 'result' traegt in der Revision 2026-07-28 ein 'resultType' - die
-     * Revision macht das Feld fuer alle Ergebnisse zur Pflicht, nicht nur
-     * fuer tools/call.
+     * The rule, not the individual case (#466): EVERY response with a
+     * 'result' carries a 'resultType' in revision 2026-07-28 - the revision
+     * makes the field mandatory for all results, not only for tools/call.
      *
-     * Die Methodenliste wird aus den case-Labels des Dispatchers abgeleitet,
-     * nicht von Hand gepflegt: der Ausloeser dieser Runde war ein einzelner
-     * vergessener Zweig (der Fehlerpfad von tools/call), und eine handgefuehrte
-     * Liste haette denselben Fehler ein zweites Mal zugelassen. Ein neuer
-     * Zweig ist damit automatisch mitgetestet - wer ihn hinzufuegt, muss ihn
-     * entweder korrekt beantworten oder bewusst unter die result-losen
-     * Methoden eintragen.
+     * The method list is derived from the dispatcher's case labels, not
+     * maintained by hand: the trigger for this round was a single forgotten
+     * branch (the error path of tools/call), and a hand-maintained list would
+     * have allowed the same mistake a second time. A new branch is thus
+     * tested automatically - whoever adds it must either answer it correctly
+     * or deliberately list it under the result-less methods.
      *
-     * Legacy-Aera bleibt spiegelbildlich feldlos: ein 2025-06-18-Client
-     * verwirft eine Antwort MIT diesen Feldern (#400).
+     * The legacy era remains field-free in mirror image: a 2025-06-18 client
+     * discards a response WITH these fields (#400).
      */
     public function test_every_result_carries_resulttype_in_the_modern_era(): void {
         $this->resetAfterTest();
@@ -1369,9 +1531,9 @@ XML;
     }
 
     /**
-     * Auch der Fehlerzweig von tools/call - er war der Ausloeser (#466) und
-     * ist der einzige result-Zweig, den die abgeleitete Liste oben nicht
-     * erreicht: sie ruft jede Methode auf ihrem Erfolgsweg auf.
+     * The error branch of tools/call as well - it was the trigger (#466) and
+     * is the only result branch that the derived list above does not reach:
+     * it calls every method on its success path.
      */
     public function test_tool_error_result_carries_resulttype(): void {
         $this->resetAfterTest();
@@ -1397,15 +1559,15 @@ XML;
         $this->assertTrue($legacy['body']['result']['isError']);
         $this->assertSame('complete', $modern['body']['result']['resultType']);
         $this->assertArrayNotHasKey('resultType', $legacy['body']['result']);
-        // Caching-Felder gehoeren nicht an tools/call (#458) - auch nicht an
-        // die Fehlerantwort.
+        // Caching fields do not belong on tools/call (#458) - not on the
+        // error response either.
         $this->assertArrayNotHasKey('ttlMs', $modern['body']['result']);
         $this->assertArrayNotHasKey('cacheScope', $modern['body']['result']);
     }
 
     /**
-     * Die JSON-RPC-Methoden, die der Dispatcher mit einem 'result'
-     * beantwortet - abgelesen an seinen case-Labels.
+     * The JSON-RPC methods that the dispatcher answers with a 'result' -
+     * read off its case labels.
      *
      * @return string[]
      */
@@ -1414,18 +1576,18 @@ XML;
         preg_match_all("/case '([a-z\/]+)':/", $source, $matches);
         $methods = array_values(array_unique($matches[1]));
 
-        // Benachrichtigungen beantwortet JSON-RPC gar nicht (202, leerer
-        // Rumpf) - sie sind der einzige zulaessige Fall ohne 'result'.
+        // JSON-RPC does not answer notifications at all (202, empty body) -
+        // they are the only permitted case without a 'result'.
         $withoutresult = ['notifications/initialized', 'notifications/cancelled'];
 
-        $this->assertNotEmpty($methods, 'Keine case-Labels im Dispatcher gefunden');
+        $this->assertNotEmpty($methods, 'No case labels found in the dispatcher');
 
         return array_values(array_diff($methods, $withoutresult));
     }
 
     /**
-     * Die Parameter, die eine Methode zum Gelingen braucht - leer fuer alle,
-     * die ohne auskommen.
+     * The parameters a method needs to succeed - empty for all that get by
+     * without.
      *
      * @param string $method
      * @return array
@@ -1438,11 +1600,11 @@ XML;
     }
 
     /**
-     * Eine Antwort ohne Inhalt bleibt ein JSON-Objekt, kein leeres Array.
+     * A response without content remains a JSON object, not an empty array.
      *
-     * ping liefert laut Spezifikation ein leeres Ergebnisobjekt. In der
-     * Legacy-Aera kommen keine Metadaten dazu - wer dafuer ein leeres PHP-
-     * Array nimmt, verschickt "[]" statt "{}" und bricht das Schema.
+     * Per the specification, ping returns an empty result object. In the
+     * legacy era no metadata is added - anyone who uses an empty PHP array
+     * for this sends "[]" instead of "{}" and breaks the schema.
      */
     public function test_ping_result_stays_an_object_in_the_legacy_era(): void {
         $this->resetAfterTest();
@@ -1461,12 +1623,12 @@ XML;
     }
 
     /**
-     * Die Ergebnis-Metadaten der Revision 2026-07-28 (resultType/ttlMs/
-     * cacheScope) gehen nur an Clients, die genau diese Revision aushandeln.
+     * The result metadata of revision 2026-07-28 (resultType/ttlMs/
+     * cacheScope) goes only to clients that negotiate exactly this revision.
      *
-     * Ein 2025-06-18-Client (Codex, rmcp) verwirft eine tools/call-Antwort
-     * mit diesen Feldern vollstaendig ("Unexpected response type", #400) -
-     * sie sind in seiner Revision nicht vorgesehen.
+     * A 2025-06-18 client (Codex, rmcp) discards a tools/call response with
+     * these fields entirely ("Unexpected response type", #400) - they are not
+     * provided for in its revision.
      */
     public function test_result_metadata_only_for_modern_protocol_version(): void {
         $this->resetAfterTest();
@@ -1492,11 +1654,11 @@ XML;
 
         $this->assertArrayNotHasKey('resultType', $legacy['body']['result']);
         $this->assertArrayNotHasKey('resultType', $unknown['body']['result']);
-        // #458: 'complete' ist der einzige Erfolgswert, den die Revision fuer
-        // tools/call kennt ('input_required' bleibt dem MRTR-Muster
-        // vorbehalten, das wir nicht anbieten). Caching-Felder gehoeren
-        // ausschliesslich an Listenantworten - ein ttlMs auf einem
-        // Schreibvorgang legt einem Client nahe, ihn zu cachen.
+        // #458: 'complete' is the only success value that the revision knows
+        // for tools/call ('input_required' remains reserved for the MRTR
+        // pattern, which we do not offer). Caching fields belong exclusively
+        // on list responses - a ttlMs on a write operation suggests to a
+        // client that it cache it.
         $this->assertSame('complete', $modern['body']['result']['resultType']);
         $this->assertArrayNotHasKey('ttlMs', $modern['body']['result']);
         $this->assertArrayNotHasKey('cacheScope', $modern['body']['result']);
@@ -1513,7 +1675,7 @@ XML;
     }
 
     /**
-     * tools/call weist ein nicht gelistetes Werkzeug ab.
+     * tools/call rejects a tool that is not listed.
      */
     public function test_tools_call_rejects_unlisted_tool(): void {
         $this->resetAfterTest();
@@ -1530,9 +1692,9 @@ XML;
     }
 
     /**
-     * #401: die drei Discovery-Methoden, die Codex nach dem Handshake
-     * unaufgefordert abfragt, liefern eine leere Liste im jeweils richtigen
-     * Feld statt eines 404 - Hoeflichkeit, kein angebotenes Feature.
+     * #401: the three discovery methods that Codex queries unprompted after
+     * the handshake return an empty list in the respective correct field
+     * instead of a 404 - courtesy, not an offered feature.
      */
     public function test_resources_list_returns_empty_list(): void {
         $this->resetAfterTest();
@@ -1545,10 +1707,10 @@ XML;
     }
 
     /**
-     * #401: die drei neuen Discovery-Methoden folgen derselben Aeren-Weiche
-     * wie tools/list (siehe test_result_metadata_only_for_modern_protocol_version)
-     * - stellvertretend an resources/list geprueft, dieselbe resultmeta()-
-     * Funnelstelle bedient auch die anderen beiden.
+     * #401: the three new discovery methods follow the same era switch as
+     * tools/list (see test_result_metadata_only_for_modern_protocol_version)
+     * - checked representatively on resources/list; the same resultmeta()
+     * funnel point serves the other two as well.
      */
     public function test_resources_list_result_metadata_only_for_modern_protocol_version(): void {
         $this->resetAfterTest();
@@ -1569,7 +1731,7 @@ XML;
     }
 
     /**
-     * #401: wie test_resources_list_returns_empty_list, fuer
+     * #401: like test_resources_list_returns_empty_list, for
      * resources/templates/list.
      */
     public function test_resources_templates_list_returns_empty_list(): void {
@@ -1583,7 +1745,7 @@ XML;
     }
 
     /**
-     * #401: wie test_resources_list_returns_empty_list, fuer prompts/list.
+     * #401: like test_resources_list_returns_empty_list, for prompts/list.
      */
     public function test_prompts_list_returns_empty_list(): void {
         $this->resetAfterTest();
@@ -1596,9 +1758,9 @@ XML;
     }
 
     /**
-     * #401, Akzeptanzkriterium: die drei neuen Discovery-Methoden sind kein
-     * Auffangbecken fuer Tippfehler - ein wirklich unbekannter Methodenname
-     * liefert weiterhin 404/-32601.
+     * #401, acceptance criterion: the three new discovery methods are not a
+     * catch-all for typos - a truly unknown method name still returns
+     * 404/-32601.
      */
     public function test_truly_unknown_method_still_returns_404(): void {
         $this->resetAfterTest();
@@ -1611,7 +1773,7 @@ XML;
     }
 
     /**
-     * Ohne Origin-Header greift die Origin-Pruefung nicht.
+     * Without an Origin header the origin check does not apply.
      */
     public function test_origin_check_is_skipped_without_header(): void {
         $this->resetAfterTest();
@@ -1622,7 +1784,7 @@ XML;
     }
 
     /**
-     * Mit vorhandenem, nicht erlaubtem Origin-Header greift die Pruefung.
+     * With a present, disallowed Origin header the check applies.
      */
     public function test_origin_check_rejects_disallowed_origin(): void {
         $this->resetAfterTest();
@@ -1637,9 +1799,9 @@ XML;
     }
 
     /**
-     * Eine abgelehnte Origin erzeugt ebenfalls ein Fehler-Ereignis (#339) -
-     * dieser Zweig liegt vor handle_authorized() und laeuft nicht ueber
-     * error(), braucht deshalb einen eigenen Test.
+     * A rejected origin also produces a failure event (#339) - this branch
+     * sits before handle_authorized() and does not go through error(), so it
+     * needs its own test.
      */
     public function test_origin_rejection_triggers_failure_event(): void {
         $this->resetAfterTest();
@@ -1657,12 +1819,12 @@ XML;
     }
 
     /**
-     * CORS-Preflight (#337-Nachtrag): ein Browser-fetch() mit Authorization-
-     * Header von einem erlaubten Origin schickt zuerst OPTIONS. Ohne die
-     * passenden Access-Control-*-Kopfzeilen blockt der Browser den
-     * eigentlichen POST clientseitig - vom Server aus nie sichtbar, nur am
-     * Verbindungsfehler auf Client-Seite erkennbar (Fund aus dem
-     * Claude.ai-Custom-Connector-Livetest).
+     * CORS preflight (#337 follow-up): a browser fetch() with an Authorization
+     * header from an allowed origin sends OPTIONS first. Without the matching
+     * Access-Control-* headers the browser blocks the actual POST on the
+     * client side - never visible from the server, recognizable only by the
+     * connection error on the client side (finding from the Claude.ai custom
+     * connector live test).
      */
     public function test_options_preflight_returns_cors_headers_for_allowed_origin(): void {
         $response = dispatcher::handle(
@@ -1677,9 +1839,9 @@ XML;
     }
 
     /**
-     * Die CORS-Kopfzeile gehoert nicht nur auf den Preflight, sondern auch
-     * auf die eigentliche Antwort - sonst verwirft der Browser sie trotz
-     * erfolgreichem Preflight (#337-Nachtrag).
+     * The CORS header belongs not only on the preflight but also on the
+     * actual response - otherwise the browser discards it despite a
+     * successful preflight (#337 follow-up).
      */
     public function test_actual_response_also_carries_cors_header_for_allowed_origin(): void {
         $this->resetAfterTest();
@@ -1694,7 +1856,7 @@ XML;
     }
 
     /**
-     * Fehlerantworten sind JSON-faehige Arrays, nie HTML.
+     * Error responses are JSON-capable arrays, never HTML.
      */
     public function test_error_responses_are_json_not_html(): void {
         $this->resetAfterTest();
@@ -1708,9 +1870,8 @@ XML;
     }
 
     /**
-     * Ein gueltiges OAuth-Access-Token wird auf die richtige Person
-     * abgebildet - der Toolaufruf laeuft als dieser Nutzer, nicht als
-     * irgendein anderer (#337).
+     * A valid OAuth access token is mapped to the right person - the tool
+     * call runs as this user, not as anyone else (#337).
      */
     public function test_valid_oauth_token_is_mapped_to_correct_person(): void {
         $this->resetAfterTest();
@@ -1726,25 +1887,25 @@ XML;
 
         $this->assertSame(200, $response['status']);
         $this->assertSame((int) $course->id, $response['body']['result']['structuredContent']['courses'][0]['id']);
-        // Ergebnis-Metadaten der Revision 2026-07-28 (#337-Nachtrag, Fund aus
-        // dem Claude-Code-Livetest: cacheScope "session" ist kein gueltiger
-        // Wert, nur "public"/"private" - liess jeden tools/call scheitern).
-        // #458: derselbe Livetest ein zweites Mal - 'data' ist ueberhaupt kein
-        // gueltiger resultType, und Caching-Felder haben an einer
-        // tools/call-Antwort nichts zu suchen.
+        // Result metadata of revision 2026-07-28 (#337 follow-up, finding from
+        // the Claude Code live test: cacheScope "session" is not a valid
+        // value, only "public"/"private" - made every tools/call fail).
+        // #458: the same live test a second time - 'data' is not a valid
+        // resultType at all, and caching fields have no business on a
+        // tools/call response.
         $this->assertSame('complete', $response['body']['result']['resultType']);
         $this->assertArrayNotHasKey('ttlMs', $response['body']['result']);
         $this->assertArrayNotHasKey('cacheScope', $response['body']['result']);
     }
 
     /**
-     * Person A sieht unter keinen Umstaenden Kurse der Person B - der
-     * Toolaufruf laeuft strikt als der im Token hinterlegte Nutzer (#337).
+     * Person A never sees courses of person B under any circumstances - the
+     * tool call runs strictly as the user stored in the token (#337).
      */
     public function test_person_a_never_sees_courses_of_person_b(): void {
         $this->resetAfterTest();
-        $coursea = $this->getDataGenerator()->create_course(['shortname' => 'kurs-a']);
-        $courseb = $this->getDataGenerator()->create_course(['shortname' => 'kurs-b']);
+        $coursea = $this->getDataGenerator()->create_course(['shortname' => 'course-a']);
+        $courseb = $this->getDataGenerator()->create_course(['shortname' => 'course-b']);
         [$persona, $tokena] = $this->create_authenticated_user();
         [$personb, $tokenb] = $this->create_authenticated_user();
         $this->getDataGenerator()->enrol_user($persona->id, $coursea->id, 'editingteacher');
@@ -1762,8 +1923,8 @@ XML;
     }
 
     /**
-     * Ein Moodle-Webservice-Token (external_tokens, die fruehere Kruecke)
-     * wird nicht mehr akzeptiert (#337).
+     * A Moodle web service token (external_tokens, the former workaround) is
+     * no longer accepted (#337).
      */
     public function test_moodle_webservice_token_is_no_longer_accepted(): void {
         global $DB;
@@ -1785,7 +1946,7 @@ XML;
     }
 
     /**
-     * Ein abgelaufenes OAuth-Access-Token wird abgewiesen (#337).
+     * An expired OAuth access token is rejected (#337).
      */
     public function test_expired_oauth_token_is_rejected(): void {
         $this->resetAfterTest();
@@ -1799,8 +1960,8 @@ XML;
     }
 
     /**
-     * Ein widerrufenes OAuth-Access-Token (revoked=1, z. B. durch
-     * Refresh-Rotation) wird abgewiesen (#337).
+     * A revoked OAuth access token (revoked=1, e.g. through refresh rotation)
+     * is rejected (#337).
      */
     public function test_revoked_oauth_token_is_rejected(): void {
         $this->resetAfterTest();
@@ -1814,8 +1975,8 @@ XML;
     }
 
     /**
-     * Ein gueltiges Token ohne local/coursepilot:useremote wird abgewiesen -
-     * konkret, mit Capability-Namen, auch wenn das Token selbst gueltig ist
+     * A valid token without local/coursepilot:useremote is rejected -
+     * concretely, with the capability name, even if the token itself is valid
      * (#337).
      */
     public function test_valid_token_without_useremote_capability_is_rejected(): void {
@@ -1830,11 +1991,11 @@ XML;
     }
 
     /**
-     * Fehlt local/coursepilot:use in jedem Kurs, reicht die Fernzugriffs-
-     * Capability allein nicht - der Dispatcher reicht den konkreten
-     * Kurs-Capability-Fehler aus list_courses::execute() unveraendert durch,
-     * statt ihn zu verdecken (#337, Abnahmekriterium "Berechtigungsmeldung,
-     * keine leere Liste").
+     * If local/coursepilot:use is missing in every course, the remote access
+     * capability alone is not enough - the dispatcher passes the concrete
+     * course capability error from list_courses::execute() through unchanged
+     * instead of hiding it (#337, acceptance criterion "permission message,
+     * not an empty list").
      */
     public function test_useremote_alone_does_not_bypass_course_level_capability(): void {
         $this->resetAfterTest();
@@ -1852,8 +2013,8 @@ XML;
     }
 
     /**
-     * Globale Notbremse (#338): remoteaccessenabled=0 sperrt jeden weiteren
-     * Zugriff sofort - auch mit gueltigem Token und vorhandener Capability.
+     * Global kill switch (#338): remoteaccessenabled=0 blocks every further
+     * access immediately - even with a valid token and an existing capability.
      */
     public function test_kill_switch_blocks_access_even_with_valid_token(): void {
         $this->resetAfterTest();
@@ -1867,8 +2028,8 @@ XML;
     }
 
     /**
-     * Ohne gesetzten Konfigwert (frische Installation, Einstellung nie
-     * besucht) bleibt der Fernzugriff nutzbar - der Standard ist "an".
+     * Without a configured value (fresh installation, setting never visited)
+     * remote access remains usable - the default is "on".
      */
     public function test_kill_switch_defaults_to_enabled(): void {
         $this->resetAfterTest();
@@ -1880,8 +2041,8 @@ XML;
     }
 
     /**
-     * Nach dem Sammelwiderruf (#338) schlaegt ein Zugriff mit dem alten
-     * Token fehl - derselbe Auth-Gate-Pfad wie bei Ablauf/Einzelwiderruf.
+     * After the bulk revocation (#338) an access with the old token fails -
+     * the same auth gate path as for expiry/single revocation.
      */
     public function test_access_with_token_fails_after_bulk_revoke(): void {
         $this->resetAfterTest();
@@ -1895,8 +2056,8 @@ XML;
     }
 
     /**
-     * Erfolgreicher Werkzeugaufruf erzeugt ein Ereignis ueber die
-     * Moodle-Ereignis-API - Voreinstellung "Lesezugriffe und Fehler" (#339).
+     * A successful tool call produces an event via the Moodle events API -
+     * default setting "read accesses and errors" (#339).
      */
     public function test_successful_tool_call_triggers_access_event(): void {
         $this->resetAfterTest();
@@ -1919,8 +2080,7 @@ XML;
     }
 
     /**
-     * Ein fehlgeschlagener Zugriff (ungueltiges Token) erzeugt ein
-     * Fehler-Ereignis (#339).
+     * A failed access (invalid token) produces a failure event (#339).
      */
     public function test_failed_authentication_triggers_failure_event(): void {
         $this->resetAfterTest();
@@ -1934,8 +2094,8 @@ XML;
     }
 
     /**
-     * Auf Stufe "kein Protokoll" entsteht kein Eintrag, auch nicht bei
-     * einem fehlgeschlagenen Zugriff (#339).
+     * At level "no logging" no entry is created, not even for a failed
+     * access (#339).
      */
     public function test_no_events_at_all_when_logging_disabled(): void {
         $this->resetAfterTest();
@@ -1959,8 +2119,8 @@ XML;
     }
 
     /**
-     * Auf Stufe "nur Fehler" entsteht bei erfolgreichem Zugriff kein
-     * Eintrag, bei Fehler schon (#339).
+     * At level "errors only" no entry is created for a successful access, but
+     * one is for an error (#339).
      */
     public function test_errors_only_level_skips_successful_access(): void {
         $this->resetAfterTest();
@@ -1989,9 +2149,8 @@ XML;
     }
 
     /**
-     * Kein Zugangsgeheimnis landet im Protokolltext - auch nicht im
-     * Fehlertext eines echten, per Dispatcher ausgeloesten Auth-Fehlers
-     * (#339).
+     * No access secret ends up in the log text - not even in the error text of
+     * a real auth error triggered via the dispatcher (#339).
      */
     public function test_access_token_never_appears_in_a_logged_event(): void {
         $this->resetAfterTest();

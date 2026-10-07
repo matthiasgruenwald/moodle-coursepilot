@@ -38,7 +38,7 @@ final class location_selection {
      */
     public static function editor_data(array $oauthpassthrough = []): array {
         return [
-            'actionurl' => (new \moodle_url('/local/coursepilot/ortswahl.php'))->out(false),
+            'actionurl' => (new \moodle_url('/local/coursepilot/location_selection.php'))->out(false),
             'sesskey' => sesskey(),
             'oauthflow' => $oauthpassthrough !== [],
             'oauthpassthrough' => self::oauth_fields($oauthpassthrough),
@@ -47,7 +47,7 @@ final class location_selection {
     }
 
     /**
-     * Configuration for amd/src/ortswahl.js (Issue #551, Spec 0023): reaches
+     * Configuration for amd/src/location_selection.js (Issue #551, Spec 0023): reaches
      * the module via $PAGE->requires->js_call_amd(), not via embedded data in
      * the page source.
      *
@@ -55,18 +55,17 @@ final class location_selection {
      * @return array<string, mixed>
      */
     public static function amd_configuration(\stdClass $user): array {
-        // Issue #565: page_state() liefert auch den vollen, unbegrenzt
-        // wachsenden Ortsverlauf mit - das AMD-Modul liest daraus nichts
-        // (der Verlauf ist bereits serverseitig in ortswahl_page.mustache
-        // gerendert), darum hier nur die tatsaechlich gebrauchten Instanzen.
+        // Issue #565: page_state() includes the full unbounded location history.
+        // AMD does not use it; history is already rendered by the server.
+        // Send only the instances actually needed here.
         $state = selection::page_state((int) $user->id);
         return [
             'instances' => $state['instances'],
             'targets' => [
-                'kontextbereich' => selection::current('kontextbereich'),
-                'materialbestand' => selection::current('materialbestand'),
+                'context_area' => selection::current('context_area'),
+                'material_store' => selection::current('material_store'),
             ],
-            'browseurl' => (new \moodle_url('/local/coursepilot/ortswahl_browse.php'))->out(false),
+            'browseurl' => (new \moodle_url('/local/coursepilot/location_selection_browse.php'))->out(false),
             'manageinstancesurl' => (new \moodle_url('/repository/manage_instances.php', [
                 'contextid' => storage_anchor::own_context()->id,
             ]))->out(false),
@@ -84,10 +83,10 @@ final class location_selection {
             $targets[] = [
                 'name' => $target,
                 'first' => $index === 0,
-                'kontextbereich' => $target === 'kontextbereich',
+                'context_area' => $target === 'context_area',
                 'fields' => array_map(static fn(string $suffix): array => [
                     'name' => $target . '_' . $suffix,
-                    'id' => 'coursepilot-ortswahl-' . $target . '_' . $suffix,
+                    'id' => 'coursepilot-location-selection-' . $target . '_' . $suffix,
                 ], ['type', 'instanceid', 'path', 'confirmed']),
             ];
         }
@@ -114,8 +113,8 @@ final class location_selection {
         foreach (selection::TARGETS as $target) {
             $location = selection::current($target);
             $locations[$target] = [
-                'label' => get_string('ortswahlcurrent' . $target, 'local_coursepilot', $location['display']),
-                'allowancelabel' => selection::zugelassen_label($location),
+                'label' => get_string('locationselectioncurrent' . str_replace('_', '', $target), 'local_coursepilot', $location['display']),
+                'allowancelabel' => selection::allowed_label($location),
             ];
         }
         return $locations;
@@ -131,7 +130,7 @@ final class location_selection {
         $data = [
             'finishresult' => self::notification_data($finishresult),
             'oauthreturn' => self::oauth_return_data($oauthreturn),
-            'altbestandopen' => previous_location::open(),
+            'previouslocationopen' => previous_location::open(),
             'notenabled' => $setup['state'] === selection::STATE_NOT_ENABLED,
             'noinstance' => $setup['state'] === selection::STATE_NO_INSTANCE,
             'ready' => $setup['state'] === selection::STATE_READY,
@@ -184,13 +183,13 @@ final class location_selection {
         $entries = [];
         foreach (array_reverse(selection::history()) as $entry) {
             $entries[] = [
-                'date' => userdate((int) ($entry['datum'] ?? 0)),
+                'date' => userdate((int) ($entry['date'] ?? 0)),
                 'target' => get_string(
-                    $entry['ziel'] === 'kontextbereich' ? 'ortswahltabkontextbereich' : 'ortswahltabmaterialbestand',
+                    $entry['target'] === 'context_area' ? 'locationselectiontabcontextarea' : 'locationselectiontabmaterialstore',
                     'local_coursepilot'
                 ),
-                'from' => isset($entry['from']) ? selection::describe_location($entry['from']) : (string) ($entry['von'] ?? ''),
-                'to' => isset($entry['to']) ? selection::describe_location($entry['to']) : (string) ($entry['nach'] ?? ''),
+                'from' => isset($entry['from']) ? selection::describe_location($entry['from']) : (string) ($entry['from_text'] ?? ''),
+                'to' => isset($entry['to']) ? selection::describe_location($entry['to']) : (string) ($entry['to_text'] ?? ''),
             ];
         }
         return ['empty' => $entries === [], 'entries' => $entries];

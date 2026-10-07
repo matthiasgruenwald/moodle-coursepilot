@@ -19,9 +19,8 @@ namespace local_coursepilot;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * OAuth-Discovery und DCR/CIMD-Registrierung (#335), Seam-Muster wie #334:
- * ohne laufenden Webserver per PHPUnit gegen die reinen Handler-Methoden
- * pruefbar.
+ * OAuth discovery and DCR/CIMD registration (#335), following the handler
+ * seam from #334: PHPUnit exercises handlers without a running web server.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -34,9 +33,8 @@ final class oauth_lib_test extends \advanced_testcase {
     private const WWWROOT = 'https://coursepilot.example';
 
     /**
-     * Discovery liefert unter beiden bekannten Namen dieselben, echten
-     * Metadaten - kein Dummy mehr, registration_endpoint ist ein echter
-     * Endpunkt.
+     * Both known discovery names return the same real metadata.
+     * registration_endpoint identifies an implemented endpoint.
      */
     public function test_discovery_serves_both_wellknown_names(): void {
         $oidc = oauth_lib::handle_discovery(self::WWWROOT, '.well-known/openid-configuration');
@@ -52,8 +50,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Unbekannte PATH_INFO-Werte unter oauth.php sind ein Irrlaeufer -
-     * 404 als JSON, kein Rewrite noetig.
+     * Unknown PATH_INFO under oauth.php returns JSON 404 without a rewrite.
      */
     public function test_discovery_rejects_unknown_path(): void {
         $response = oauth_lib::handle_discovery(self::WWWROOT, 'nonsense');
@@ -63,9 +60,9 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Protected-Resource-Metadaten sind unter beiden Adressen identisch -
-     * dieselbe Quelle wird von oauth/protected-resource.php und von
-     * dispatcher::handle() (PATH_INFO auf mcp.php) aufgerufen.
+     * Protected-resource metadata is identical at both addresses.
+     * oauth/protected-resource.php and dispatcher::handle() (PATH_INFO on mcp.php)
+     * call the same source.
      */
     public function test_protected_resource_metadata_is_stable_across_both_addresses(): void {
         global $CFG;
@@ -84,16 +81,15 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Eine gueltige Registrierung legt einen Client an und gibt die Kennung
-     * samt Metadaten zurueck (RFC 7591).
+     * Valid registration persists a client and returns its ID and metadata (RFC 7591).
      */
     public function test_register_client_creates_client_and_returns_metadata(): void {
         $this->resetAfterTest();
 
-        $response = oauth_lib::handle_registration('POST', [
+        $response = oauth_lib::handle_registration('POST', json_encode([
             'client_name' => 'Testclient',
             'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
-        ]);
+        ]), '192.0.2.1');
 
         $this->assertSame(201, $response['status']);
         $this->assertNotEmpty($response['body']['client_id']);
@@ -101,84 +97,80 @@ final class oauth_lib_test extends \advanced_testcase {
         $this->assertSame(['https://claude.ai/api/mcp/auth_callback'], $response['body']['redirect_uris']);
 
         $client = oauth_lib::get_client($response['body']['client_id']);
-        $this->assertNotNull($client, 'Client muss in der DB angelegt sein.');
+        $this->assertNotNull($client, 'Client must be persisted in the database.');
         $this->assertSame('dcr', $client->source);
     }
 
     /**
-     * Ein nicht erlaubtes Umleitungsziel (kein https, kein Loopback) wird
-     * abgewiesen.
+     * Reject redirects using neither HTTPS nor loopback.
      */
     public function test_register_client_rejects_disallowed_redirect_uri(): void {
         $this->resetAfterTest();
 
-        $response = oauth_lib::handle_registration('POST', [
+        $response = oauth_lib::handle_registration('POST', json_encode([
             'redirect_uris' => ['http://evil.example/callback'],
-        ]);
+        ]), '192.0.2.1');
 
         $this->assertSame(400, $response['status']);
         $this->assertSame('invalid_redirect_uri', $response['body']['error']);
     }
 
     /**
-     * Loopback-Redirect-URIs sind erlaubt (RFC 8252, native/CLI-Clients).
+     * Allow loopback redirects for native/CLI clients (RFC 8252).
      */
     public function test_register_client_allows_loopback_redirect_uri(): void {
         $this->resetAfterTest();
 
-        $response = oauth_lib::handle_registration('POST', [
+        $response = oauth_lib::handle_registration('POST', json_encode([
             'redirect_uris' => ['http://127.0.0.1:51000/callback'],
-        ]);
+        ]), '192.0.2.1');
 
         $this->assertSame(201, $response['status']);
     }
 
     /**
-     * Fehlende redirect_uris sind ein Registrierungsfehler, nicht eine
-     * PHP-Warnung.
+     * Missing redirect_uris returns a registration error rather than a PHP warning.
      */
     public function test_register_client_requires_redirect_uris(): void {
         $this->resetAfterTest();
 
-        $response = oauth_lib::handle_registration('POST', []);
+        $response = oauth_lib::handle_registration('POST', json_encode([]), '192.0.2.1');
 
         $this->assertSame(400, $response['status']);
         $this->assertSame('invalid_client_metadata', $response['body']['error']);
     }
 
     /**
-     * Nur POST ist erlaubt - alles andere ist ein Registrierungsfehler,
-     * JSON, kein HTML.
+     * Only POST is allowed. Other methods return registration errors as JSON, not HTML.
      */
     public function test_registration_rejects_non_post_method(): void {
-        $response = oauth_lib::handle_registration('GET', []);
+        $response = oauth_lib::handle_registration('GET', json_encode([]), '192.0.2.1');
 
         $this->assertSame(405, $response['status']);
         $this->assertIsArray($response['body']);
     }
 
     /**
-     * Ungueltiges JSON im Registrierungsrumpf ist ein Fehler, keine
-     * PHP-Exception.
+     * Invalid registration JSON returns an error rather than a PHP exception.
      */
     public function test_registration_rejects_invalid_json(): void {
-        $response = oauth_lib::handle_registration('POST', null);
+        $response = oauth_lib::handle_registration('POST', '{not json', '192.0.2.1');
 
         $this->assertSame(400, $response['status']);
         $this->assertSame('invalid_client_metadata', $response['body']['error']);
     }
 
     /**
-     * Fehlerantworten aller Handler sind JSON-faehige Arrays, nie HTML.
+     * Every handler error is a JSON-serializable array rather than HTML.
      */
     public function test_error_responses_are_json_not_html(): void {
         $this->resetAfterTest();
 
         $responses = [
             oauth_lib::handle_discovery(self::WWWROOT, 'nonsense'),
-            oauth_lib::handle_registration('GET', []),
-            oauth_lib::handle_registration('POST', null),
-            oauth_lib::handle_registration('POST', ['redirect_uris' => ['not a uri']]),
+            oauth_lib::handle_registration('GET', json_encode([]), '192.0.2.1'),
+            oauth_lib::handle_registration('POST', '{not json', '192.0.2.1'),
+            oauth_lib::handle_registration('POST', json_encode(['redirect_uris' => ['not a uri']]), '192.0.2.1'),
         ];
 
         foreach ($responses as $response) {
@@ -189,9 +181,8 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * CIMD: eine https-URL als client_id ohne lokalen DCR-Datensatz wird
-     * als Metadaten-Dokument abgerufen. Eine unbekannte, nicht wie eine URL
-     * aussehende client_id liefert null, keine Exception.
+     * CIMD fetches an HTTPS client_id without a local DCR row as metadata.
+     * An unknown client_id that is not a URL returns null without throwing.
      */
     public function test_get_client_returns_null_for_unknown_non_url_clientid(): void {
         $this->resetAfterTest();
@@ -200,10 +191,9 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * CIMD-Erfolgsfall: ein gueltiges, bereits dekodiertes Dokument legt
-     * einen Client an, dessen clientid die URL selbst ist - netzwerkfrei
-     * pruefbar (#335), die HTTP-Abholung selbst bleibt in
-     * fetch_and_cache_cimd_client() und ist eine duenne Schale darum.
+     * Valid decoded CIMD metadata persists a client whose ID is the URL.
+     * This seam is testable without network access (#335); fetching stays in
+     * fetch_and_cache_cimd_client(), the thin shell around validation.
      */
     public function test_cache_cimd_client_persists_valid_metadata(): void {
         $this->resetAfterTest();
@@ -219,15 +209,14 @@ final class oauth_lib_test extends \advanced_testcase {
         $this->assertSame('cimd', $record->source);
         $this->assertSame(['https://client.example/callback'], json_decode($record->redirecturis, true));
 
-        // get_client() findet den gecachten Datensatz danach direkt in der DB.
+        // get_client() subsequently finds the cached row directly in the database.
         $found = oauth_lib::get_client($url);
         $this->assertNotNull($found);
         $this->assertSame($url, $found->clientid);
     }
 
     /**
-     * CIMD-Dokument mit nicht erlaubtem Umleitungsziel wird abgewiesen,
-     * genau wie bei der DCR-Registrierung.
+     * CIMD rejects disallowed redirects just as DCR does.
      */
     public function test_cache_cimd_client_rejects_disallowed_redirect_uri(): void {
         $this->resetAfterTest();
@@ -240,7 +229,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * CIMD-Dokument ohne redirect_uris ist ungueltig.
+     * CIMD metadata without redirect_uris is invalid.
      */
     public function test_cache_cimd_client_rejects_missing_redirect_uris(): void {
         $this->resetAfterTest();
@@ -249,7 +238,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * is_allowed_redirect_uri: die Grenzfaelle direkt geprueft.
+     * Exercise is_allowed_redirect_uri() boundary cases directly.
      */
     public function test_is_allowed_redirect_uri_boundary_cases(): void {
         $this->assertTrue(oauth_lib::is_allowed_redirect_uri('https://claude.ai/callback'));
@@ -262,17 +251,16 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Registriert einen Testclient und liefert ihn zusammen mit einer
-     * PKCE-Verifier/Challenge-Paarung zurueck - gemeinsamer Aufbau fuer die
-     * Autorisierungs-/Token-Tests unten.
+     * Register a test client and return it with a PKCE verifier/challenge pair.
+     * Shared setup for authorization/token tests below.
      *
      * @return array{clientid: string, redirecturi: string, verifier: string, challenge: string}
      */
     private function registered_client_with_pkce(): array {
-        $response = oauth_lib::handle_registration('POST', [
+        $response = oauth_lib::handle_registration('POST', json_encode([
             'client_name' => 'Testclient',
             'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
-        ]);
+        ]), '192.0.2.1');
         $verifier = bin2hex(random_bytes(32));
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
 
@@ -285,8 +273,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * validate_authorize_request(): der Erfolgsfall liefert den Client, kein
-     * Fehlerfeld.
+     * Valid authorization returns the client without an error field.
      */
     public function test_validate_authorize_request_accepts_valid_request(): void {
         $this->resetAfterTest();
@@ -305,7 +292,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * PKCE ist Pflicht: fehlende code_challenge wird abgewiesen (#336).
+     * PKCE is mandatory: reject a missing code_challenge (#336).
      */
     public function test_validate_authorize_request_rejects_missing_pkce(): void {
         $this->resetAfterTest();
@@ -320,11 +307,11 @@ final class oauth_lib_test extends \advanced_testcase {
         ]);
 
         $this->assertSame('invalid_request', $result['error']);
+        $this->assertSame('response_type=code, client_id, redirect_uri and code_challenge are required.', $result['error_description']);
     }
 
     /**
-     * Nur S256 wird akzeptiert - plain (oder jede andere Methode) ist ein
-     * Fehler, nicht nur eine Warnung (#336).
+     * Accept only S256. plain and other methods cause errors, not warnings (#336).
      */
     public function test_validate_authorize_request_rejects_plain_code_challenge_method(): void {
         $this->resetAfterTest();
@@ -339,11 +326,11 @@ final class oauth_lib_test extends \advanced_testcase {
         ]);
 
         $this->assertSame('invalid_request', $result['error']);
+        $this->assertSame('PKCE is required; only code_challenge_method=S256 is accepted.', $result['error_description']);
     }
 
     /**
-     * Ein nicht registriertes Umleitungsziel wird abgewiesen, auch wenn
-     * Client und PKCE sonst gueltig sind (#336).
+     * Reject unregistered redirects even when the client and PKCE are valid (#336).
      */
     public function test_validate_authorize_request_rejects_unregistered_redirect_uri(): void {
         $this->resetAfterTest();
@@ -358,11 +345,12 @@ final class oauth_lib_test extends \advanced_testcase {
         ]);
 
         $this->assertSame('invalid_request', $result['error']);
+        $this->assertSame('redirect_uri is not registered for this client.', $result['error_description']);
     }
 
     /**
-     * Unbekannter Client ist ein eigener Fehlercode (invalid_client), nicht
-     * dasselbe invalid_request wie bei den anderen Feldpruefungen.
+     * An unknown client uses invalid_client, distinct from invalid_request
+     * used for other parameter validation.
      */
     public function test_validate_authorize_request_rejects_unknown_client(): void {
         $this->resetAfterTest();
@@ -376,12 +364,12 @@ final class oauth_lib_test extends \advanced_testcase {
         ]);
 
         $this->assertSame('invalid_client', $result['error']);
+        $this->assertSame('Unknown client.', $result['error_description']);
     }
 
     /**
-     * Ablehnung im Zustimmungsdialog: das Umleitungsziel traegt
-     * error=access_denied und state - eine saubere Fehlerantwort, kein
-     * Autorisierungscode (#336).
+     * Consent denial redirects with error=access_denied and state, without
+     * an authorization code (#336).
      */
     public function test_denial_redirect_url_carries_access_denied_and_state(): void {
         $url = oauth_lib::denial_redirect_url('https://claude.ai/callback', 'xyz');
@@ -389,12 +377,14 @@ final class oauth_lib_test extends \advanced_testcase {
         $this->assertStringStartsWith('https://claude.ai/callback?', $url);
         $this->assertStringContainsString('error=access_denied', $url);
         $this->assertStringContainsString('state=xyz', $url);
+        parse_str(parse_url(html_entity_decode($url), PHP_URL_QUERY), $query);
+        $this->assertSame('The teacher denied consent.', $query['error_description']);
         $this->assertStringNotContainsString('code=', $url);
     }
 
     /**
-     * Voller Roundtrip: Code ausstellen, mit korrektem Verifier einloesen -
-     * liefert ein Zugriffstoken mit 1h Laufzeit und ein Erneuerungstoken.
+     * Complete round-trip: issue and redeem a code with the correct verifier.
+     * Return a one-hour access token and a refresh token.
      */
     public function test_exchange_code_returns_tokens_with_correct_ttls(): void {
         $this->resetAfterTest();
@@ -421,8 +411,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Autorisierungscode ist genau einmal einloesbar - die zweite
-     * Einloesung schlaegt fehl (#336).
+     * Redeem an authorization code exactly once. A second redemption fails (#336).
      */
     public function test_exchange_code_can_only_be_used_once(): void {
         $this->resetAfterTest();
@@ -440,9 +429,8 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Ein abgelaufener Code scheitert, unabhaengig von used - und bleibt
-     * dabei unangetastet (kein Claim auf eine Zeile, die ohnehin nicht mehr
-     * gueltig ist).
+     * An expired code fails regardless of used and remains untouched.
+     * Do not claim a row that is already invalid.
      */
     public function test_exchange_code_rejects_expired_code(): void {
         global $DB;
@@ -461,22 +449,17 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Beweist die eigentliche Race-Condition-Sicherheit mit echter
-     * Ueberlappung ueber zwei GETRENNTE Datenbankverbindungen (#574,
-     * Abnahmekriterium 1) - nicht nur zwei Aufrufe im selben Prozess
-     * nacheinander. Moodle-Kernmuster fuer eine zweite, unabhaengige
-     * Verbindung zur selben Test-DB: {@see \moodle_database::get_driver_instance()}
-     * + connect(), siehe z. B. lib/dml/tests/dml_test.php in Moodle-Core.
+     * Prove claim safety using two SEPARATE database connections (#574,
+     * acceptance criterion 1), rather than sequential calls in one process.
+     * Moodle's pattern for another connection to the same test database is
+     * moodle_database::get_driver_instance() plus connect(); see core's
+     * lib/dml/tests/dml_test.php.
      *
-     * Beide Verbindungen lesen den unveraenderten Datensatz (used=0), BEVOR
-     * auch nur eine von beiden schreibt - der eigentliche Ueberlappungsfall.
-     * Danach fuehrt jede Verbindung ueber sich selbst genau die
-     * CAS-Anweisung aus, die auch {@see oauth_lib::claim_row()} intern
-     * verwendet. Der bisherige Stand (getrenntes Lesen des used-Flags,
-     * danach ein unbedingtes update_record()) haette hier fuer BEIDE
-     * Verbindungen zum Erfolg gefuehrt - die WHERE-Bedingung `used = 0` der
-     * neuen CAS-Anweisung sorgt dafuer, dass die Datenbank selbst die
-     * zweite, zeitgleiche Anweisung ins Leere laufen laesst.
+     * Both connections read used=0 before either writes, establishing the
+     * contested initial state. Each then runs the same CAS statement used by
+     * oauth_lib::claim_row(). The previous separate-read/unconditional-update
+     * implementation would allow BOTH connections to succeed; the new used=0
+     * WHERE condition makes the database reject the second competing claim.
      */
     public function test_exchange_code_at_most_one_of_two_separate_connections_wins_the_claim(): void {
         global $DB;
@@ -492,7 +475,7 @@ final class oauth_lib_test extends \advanced_testcase {
         $db2->connect($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname, $cfg->prefix, (array) ($cfg->dboptions ?? []));
 
         try {
-            // Beide Verbindungen sehen denselben, noch unbeanspruchten Stand.
+            // Both connections see the same unclaimed state.
             $this->assertSame(0, (int) $DB->get_field('local_coursepilot_oauth_code', 'used', ['code' => $code]));
             $this->assertSame(0, (int) $db2->get_field('local_coursepilot_oauth_code', 'used', ['code' => $code]));
 
@@ -509,15 +492,14 @@ final class oauth_lib_test extends \advanced_testcase {
 
             $wona = $DB->record_exists('local_coursepilot_oauth_code', ['code' => $claima]);
             $wonb = $DB->record_exists('local_coursepilot_oauth_code', ['code' => $claimb]);
-            $this->assertNotEquals($wona, $wonb, 'Genau eine der beiden ueberlappenden Verbindungen darf den Anspruch gewinnen.');
+            $this->assertNotEquals($wona, $wonb, 'Exactly one of the competing connections must win the claim.');
         } finally {
             $db2->dispose();
         }
     }
 
     /**
-     * Ein falscher PKCE-Code-Verifier scheitert - der Code ist damit noch
-     * nicht verbraucht.
+     * A wrong PKCE verifier fails without consuming the code.
      */
     public function test_exchange_code_rejects_wrong_code_verifier(): void {
         $this->resetAfterTest();
@@ -533,7 +515,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * redirect_uri-Mismatch beim Einloesen scheitert (RFC 6749, 4.1.3).
+     * A redirect_uri mismatch during redemption fails (RFC 6749 §4.1.3).
      */
     public function test_exchange_code_rejects_redirect_uri_mismatch(): void {
         $this->resetAfterTest();
@@ -549,9 +531,8 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Refresh-Rotation: ein neues Erneuerungstoken wird ausgestellt, das
-     * alte ist danach entwertet - eine zweite Einloesung des alten Tokens
-     * schlaegt fehl (#336).
+     * Refresh rotation issues a new token and invalidates the old one.
+     * A second redemption of the old token fails (#336).
      */
     public function test_rotate_refresh_token_issues_new_pair_and_revokes_old(): void {
         $this->resetAfterTest();
@@ -568,14 +549,13 @@ final class oauth_lib_test extends \advanced_testcase {
         $this->assertNotSame($original['access_token'], $rotated['access_token']);
         $this->assertSame(oauth_lib::REFRESH_TOKEN_TTL, 30 * 24 * 3600);
 
-        // Das alte Refresh-Token ist tot.
+        // The old refresh token is invalid.
         $reuse = oauth_lib::rotate_refresh_token($original['refresh_token'], $fixture['clientid']);
         $this->assertNull($reuse);
     }
 
     /**
-     * Ein abgelaufenes Refresh-Token scheitert, unabhaengig von revoked - und
-     * bleibt dabei unangetastet.
+     * An expired refresh token fails regardless of revoked and remains untouched.
      */
     public function test_rotate_refresh_token_rejects_expired_token(): void {
         global $DB;
@@ -596,64 +576,12 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Beweist die Race-Condition-Sicherheit der Refresh-Rotation mit echter
-     * Ueberlappung ueber zwei getrennte Datenbankverbindungen (#574,
-     * Abnahmekriterium 1, gleiches Vorbild wie
-     * {@see test_exchange_code_at_most_one_of_two_separate_connections_wins_the_claim()}).
-     * Beide Verbindungen lesen denselben, noch nicht widerrufenen Datensatz,
-     * bevor eine von beiden schreibt; danach fuehrt jede ueber sich selbst
-     * genau die CAS-Anweisung aus, die auch {@see oauth_lib::claim_row()}
-     * intern verwendet.
-     */
-    public function test_rotate_refresh_token_at_most_one_of_two_separate_connections_wins_the_claim(): void {
-        global $DB;
-
-        $this->resetAfterTest();
-        $fixture = $this->registered_client_with_pkce();
-        global $USER;
-        $this->setUser($this->getDataGenerator()->create_user());
-        $code = oauth_lib::issue_code($fixture['clientid'], (int) $USER->id, $fixture['redirecturi'], $fixture['challenge']);
-        $original = oauth_lib::exchange_code($code, $fixture['clientid'], $fixture['redirecturi'], $fixture['verifier']);
-        $hash = hash('sha256', $original['refresh_token']);
-
-        $cfg = $DB->export_dbconfig();
-        $db2 = \moodle_database::get_driver_instance($cfg->dbtype, $cfg->dblibrary);
-        $db2->connect($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname, $cfg->prefix, (array) ($cfg->dboptions ?? []));
-
-        try {
-            $this->assertSame(0, (int) $DB->get_field('local_coursepilot_oauth_token', 'revoked', ['refreshtokenhash' => $hash]));
-            $this->assertSame(0, (int) $db2->get_field('local_coursepilot_oauth_token', 'revoked', ['refreshtokenhash' => $hash]));
-
-            $claima = hash('sha256', $hash . '|a');
-            $claimb = hash('sha256', $hash . '|b');
-            $DB->execute(
-                'UPDATE {local_coursepilot_oauth_token} SET refreshtokenhash = :claim, revoked = 1 '
-                    . 'WHERE refreshtokenhash = :hash AND revoked = 0',
-                ['claim' => $claima, 'hash' => $hash]
-            );
-            $db2->execute(
-                'UPDATE {local_coursepilot_oauth_token} SET refreshtokenhash = :claim, revoked = 1 '
-                    . 'WHERE refreshtokenhash = :hash AND revoked = 0',
-                ['claim' => $claimb, 'hash' => $hash]
-            );
-
-            $wona = $DB->record_exists('local_coursepilot_oauth_token', ['refreshtokenhash' => $claima]);
-            $wonb = $DB->record_exists('local_coursepilot_oauth_token', ['refreshtokenhash' => $claimb]);
-            $this->assertNotEquals($wona, $wonb, 'Genau eine der beiden ueberlappenden Verbindungen darf den Anspruch gewinnen.');
-        } finally {
-            $db2->dispose();
-        }
-    }
-
-    /**
-     * Anspruch und Tokenausstellung bilden eine Datenbankgrenze (#574,
-     * Abnahmekriterium 3): ein provozierter Ausstellungsfehler macht den
-     * Anspruch per Rollback rueckgaengig, statt den Code dauerhaft zu
-     * verbrennen, ohne je ein Tokenpaar geliefert zu haben. Provoziert wird
-     * der Fehler ueber eine temporaere NOT-NULL-Spalte ohne Default auf der
-     * Token-Tabelle - issue_token_pair()s insert_record() setzt sie nicht,
-     * die Datenbank lehnt den Insert deshalb zuverlaessig ab. Die Spalte wird
-     * im finally-Block wieder entfernt, unabhaengig vom Testausgang.
+     * Claim and token issuance share a database transaction (#574, acceptance
+     * criterion 3). A forced issuance error rolls back the claim rather than
+     * permanently consuming the code without delivering a token pair. Add a
+     * temporary NOT NULL token-table column without a default: issue_token_pair()
+     * does not supply it, so the insert reliably fails. finally removes the
+     * column regardless of the test outcome.
      */
     public function test_exchange_code_rolls_back_the_claim_when_token_issuance_fails(): void {
         global $DB;
@@ -677,26 +605,24 @@ final class oauth_lib_test extends \advanced_testcase {
                 $threw = true;
             }
 
-            $this->assertTrue($threw, 'issue_token_pair() haette an der fehlenden Pflichtspalte scheitern muessen.');
+            $this->assertTrue($threw, 'issue_token_pair() must fail because the required column is missing.');
             $stored = $DB->get_record('local_coursepilot_oauth_code', ['code' => $code]);
-            $this->assertNotFalse($stored, 'Das Rollback haette den urspruenglichen Code wiederherstellen muessen.');
-            $this->assertSame(0, (int) $stored->used, 'Ein zurueckgerollter Anspruch darf den Code nicht als verbraucht zeigen.');
-            $this->assertSame(0, $DB->count_records('local_coursepilot_oauth_token'), 'Kein halb ausgestelltes Tokenpaar darf uebrig bleiben.');
+            $this->assertNotFalse($stored, 'Rollback must restore the original code.');
+            $this->assertSame(0, (int) $stored->used, 'A rolled-back claim must not leave the code consumed.');
+            $this->assertSame(0, $DB->count_records('local_coursepilot_oauth_token'), 'No partially issued token pair may remain.');
 
-            // Der Code ist nach dem Rollback ganz normal erneut einloesbar,
-            // sobald die provozierte Stoerung wieder behoben ist (naechster
-            // Schritt: Spalte entfernen, siehe finally).
+            // After rollback, the code can be redeemed normally once the forced
+            // failure is removed (drop the column in finally below).
         } finally {
             $dbman->drop_field($table, $field);
         }
 
         $tokens = oauth_lib::exchange_code($code, $fixture['clientid'], $fixture['redirecturi'], $fixture['verifier']);
-        $this->assertNotNull($tokens, 'Nach Behebung der Stoerung muss der zurueckgerollte Code wieder einloesbar sein.');
+        $this->assertNotNull($tokens, 'After removing the failure, the rolled-back code must be redeemable.');
     }
 
     /**
-     * Ein Client-Mismatch beim Refresh (fremder Client versucht, ein
-     * Refresh-Token eines anderen einzuloesen) scheitert.
+     * A different client cannot redeem another client's refresh token.
      */
     public function test_rotate_refresh_token_rejects_client_mismatch(): void {
         $this->resetAfterTest();
@@ -713,7 +639,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Ein unbekanntes Refresh-Token scheitert, keine Exception.
+     * An unknown refresh token fails without throwing.
      */
     public function test_rotate_refresh_token_rejects_unknown_token(): void {
         $this->resetAfterTest();
@@ -722,8 +648,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Das Schluesselendpunkt-Dokument ist valide (leeres, aber gueltiges
-     * JWKS - #336).
+     * The key endpoint returns a valid, empty JWKS (#336).
      */
     public function test_jwks_document_is_valid_empty_keyset(): void {
         $document = oauth_lib::jwks_document();
@@ -733,10 +658,8 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * handle_token(): Schalenmuster-Handler fuer oauth/token.php - der volle
-     * Authorization-Code-Roundtrip ist ohne laufenden Webserver pruefbar
-     * (#336-Review: Entscheidungslogik gehoert in oauth_lib, nicht in die
-     * Schale).
+     * handle_token() owns oauth/token.php's decision logic. Exercise a complete
+     * authorization-code round-trip without a running web server (#336 review).
      */
     public function test_handle_token_exchanges_authorization_code(): void {
         $this->resetAfterTest();
@@ -759,7 +682,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Nur POST ist erlaubt.
+     * Only POST is allowed.
      */
     public function test_handle_token_rejects_non_post_method(): void {
         $response = oauth_lib::handle_token('GET', []);
@@ -769,8 +692,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Parse-Fehler im Rumpf (null statt Array) ist ein Fehler, keine
-     * PHP-Warnung.
+     * A null body from a parse failure returns an error without a PHP warning.
      */
     public function test_handle_token_rejects_missing_body(): void {
         $response = oauth_lib::handle_token('POST', null);
@@ -780,7 +702,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Unbekannter Client ist invalid_client, nicht invalid_grant.
+     * An unknown client returns invalid_client, not invalid_grant.
      */
     public function test_handle_token_rejects_unknown_client(): void {
         $this->resetAfterTest();
@@ -798,7 +720,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Unbekannter grant_type ist unsupported_grant_type.
+     * An unknown grant_type returns unsupported_grant_type.
      */
     public function test_handle_token_rejects_unsupported_grant_type(): void {
         $this->resetAfterTest();
@@ -814,8 +736,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * handle_token() traegt auch die Refresh-Rotation (RFC 6749
-     * grant_type=refresh_token).
+     * handle_token() also rotates refresh tokens (RFC 6749: grant_type=refresh_token).
      */
     public function test_handle_token_rotates_refresh_token(): void {
         $this->resetAfterTest();
@@ -836,13 +757,12 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Legt direkt einen Token-Datensatz an - der einfachste Weg zu einem
-     * pruefbaren Token, ohne den vollen DCR/PKCE-Roundtrip nachzustellen
-     * (analog zu dispatcher_test::issue_access_token()).
+     * Persist a token row directly: the simplest token fixture without a full
+     * DCR/PKCE round-trip, as in dispatcher_test::issue_access_token().
      *
      * @param int $userid
      * @param string $clientid
-     * @return \stdClass Der vollstaendige Token-Datensatz inkl. id.
+     * @return \stdClass Complete token row including its ID.
      */
     private function issue_token(int $userid, string $clientid = 'test-client'): \stdClass {
         global $DB;
@@ -858,6 +778,10 @@ final class oauth_lib_test extends \advanced_testcase {
         $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
         $record->revoked = 0;
         $record->timecreated = time();
+        $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
+            'userid' => $record->userid, 'clientid' => $record->clientid, 'revoked' => $record->revoked,
+            'statehash' => bin2hex(random_bytes(32)), 'timecreated' => $record->timecreated,
+        ]);
         $record->id = $DB->insert_record('local_coursepilot_oauth_token', $record);
         $record->accesstoken = $accesstoken;
         $record->refreshtoken = $refreshtoken;
@@ -865,8 +789,8 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Sammelwiderruf (#338): entwertet alle noch aktiven Token, ueber
-     * Personen und Clients hinweg, und liefert die Anzahl zurueck.
+     * Mass revocation invalidates all active tokens across users/clients and
+     * returns their count (#338).
      */
     public function test_revoke_all_tokens_invalidates_every_active_token(): void {
         $this->resetAfterTest();
@@ -883,8 +807,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Ein zweiter Sammelwiderruf entwertet nichts mehr - die Anzahl der
-     * (weiteren) widerrufenen Token ist danach 0, keine Fehlermeldung.
+     * A second mass revocation changes nothing and returns zero without error.
      */
     public function test_revoke_all_tokens_is_idempotent(): void {
         $this->resetAfterTest();
@@ -898,8 +821,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Einzelwiderruf ohne Eigentuemerfilter (Administration): widerruft
-     * jedes Token, unabhaengig davon, wem es gehoert.
+     * Admin revocation without an owner filter revokes any user's token.
      */
     public function test_revoke_token_without_owner_filter_revokes_any_token(): void {
         $this->resetAfterTest();
@@ -913,9 +835,8 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Einzelwiderruf mit Eigentuemerfilter (Selbstverwaltung): eine Person
-     * kann das eigene Token widerrufen - der Zugriff schlaegt danach fehl
-     * (#338, Abnahmekriterium: Zugriff mit altem Token scheitert).
+     * Self-management with a matching owner can revoke its token. Subsequent
+     * access fails (#338 acceptance criterion).
      */
     public function test_revoke_token_with_matching_owner_succeeds(): void {
         $this->resetAfterTest();
@@ -929,9 +850,8 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Einzelwiderruf mit Eigentuemerfilter scheitert an einem fremden Token
-     * - die Person kann fremde Verbindungen nicht widerrufen, das Token
-     * bleibt gueltig (#338, Abnahmekriterium: nie fremde Verbindungen).
+     * An owner filter rejects foreign tokens. A user cannot revoke another
+     * user's connection; it stays valid (#338 acceptance criterion).
      */
     public function test_revoke_token_rejects_foreign_token_when_owner_filter_set(): void {
         $this->resetAfterTest();
@@ -946,7 +866,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Eine unbekannte Token-ID liefert false, keine Exception.
+     * An unknown token ID returns false without throwing.
      */
     public function test_revoke_token_returns_false_for_unknown_id(): void {
         $this->resetAfterTest();
@@ -955,8 +875,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Selbstverwaltungsseite: eine Person sieht ausschliesslich die eigenen
-     * aktiven Verbindungen, nie die einer anderen Person (#338).
+     * Self-management returns only the user's own active connections (#338).
      */
     public function test_active_tokens_for_user_never_returns_foreign_tokens(): void {
         $this->resetAfterTest();
@@ -974,7 +893,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Widerrufene Token erscheinen nicht mehr in der Selbstverwaltungsseite.
+     * Revoked tokens disappear from connection self-management.
      */
     public function test_active_tokens_for_user_excludes_revoked_tokens(): void {
         $this->resetAfterTest();
@@ -988,8 +907,7 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Administrationsuebersicht (#338): alle aktiven Verbindungen ueber
-     * alle Personen hinweg, mit Personendaten fuer die Anzeige.
+     * Admin overview returns all users' active connections with display data (#338).
      */
     public function test_active_tokens_returns_connections_across_all_users(): void {
         $this->resetAfterTest();
@@ -1007,13 +925,11 @@ final class oauth_lib_test extends \advanced_testcase {
     }
 
     /**
-     * Der gewaehlte Ablageort haengt an der Pointer-Datei im Anker
-     * (storage_anchor), nicht an einem Token: Tokenrotation, eine zweite
-     * Verbindung eines anderen Clients und der Sammelwiderruf aller
-     * Verbindungen fassen keine der beiden an. Bereits mit #446 belegt,
-     * beim Umbau der Ortswahl auf die eigene Seite (#494) verloren gegangen
-     * (Issue #509) - hier mit dem heutigen Schreibweg
-     * (storage_anchor::write_pointer_document()) wiederhergestellt.
+     * Storage location belongs to the anchor's pointer file (storage_anchor),
+     * not a token. Rotation, a second client's connection and mass revocation
+     * change neither storage location. Proven in #446 but lost when location
+     * selection moved to its own page (#494); restore coverage for #509 using
+     * the current storage_anchor::write_pointer_document() path.
      */
     public function test_storage_location_survives_rotation_second_client_and_mass_revocation(): void {
         $this->resetAfterTest();
@@ -1021,7 +937,7 @@ final class oauth_lib_test extends \advanced_testcase {
         global $USER;
 
         storage_anchor::write_pointer_document([
-            'kontextbereich' => 'mein-ort',
+            'context_area' => 'mein-ort',
             'materialordner' => 'mein-material',
         ]);
         $assertlocationunchanged = function (): void {
@@ -1030,18 +946,18 @@ final class oauth_lib_test extends \advanced_testcase {
         };
         $assertlocationunchanged();
 
-        // Tokenrotation.
+        // Token rotation.
         $fixture = $this->registered_client_with_pkce();
         $code = oauth_lib::issue_code($fixture['clientid'], (int) $USER->id, $fixture['redirecturi'], $fixture['challenge']);
         $tokens = oauth_lib::exchange_code($code, $fixture['clientid'], $fixture['redirecturi'], $fixture['verifier']);
         oauth_lib::rotate_refresh_token($tokens['refresh_token'], $fixture['clientid']);
         $assertlocationunchanged();
 
-        // Zweite Verbindung, anderer Client.
+        // A second connection for another client.
         $this->issue_token((int) $USER->id, 'ein-zweiter-client');
         $assertlocationunchanged();
 
-        // Sammelwiderruf aller Verbindungen.
+        // Mass revocation of all connections.
         oauth_lib::revoke_all_tokens();
         $assertlocationunchanged();
     }

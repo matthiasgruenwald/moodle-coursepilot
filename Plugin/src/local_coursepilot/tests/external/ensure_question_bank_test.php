@@ -19,7 +19,7 @@ namespace local_coursepilot\external;
 use core_external\external_api;
 
 /**
- * Ensure-Anlegen einer Fragensammlung (Spec 0017 §1, Ticket #412).
+ * Find or create a question bank (Spec 0017 §1, issue #412).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -29,7 +29,7 @@ use core_external\external_api;
 final class ensure_question_bank_test extends \advanced_testcase {
 
     /**
-     * Neuanlage: keine gleichnamige Fragensammlung im Kurs vorhanden.
+     * Create when the course has no question bank with this name.
      */
     public function test_creates_new_question_bank(): void {
         $this->resetAfterTest();
@@ -47,12 +47,12 @@ final class ensure_question_bank_test extends \advanced_testcase {
         $this->assertGreaterThan(0, $result['contextid']);
         $this->assertGreaterThan(0, $result['topcategoryid']);
         $this->assertSame('Biologie 9a - Immunsystem', $result['name']);
-        $this->assertStringContainsString('angelegt', $result['message']);
+        $this->assertStringContainsString('created', $result['message']);
     }
 
     /**
-     * Wiederverwendung: ein zweiter Lauf mit demselben Namen legt nichts
-     * doppelt an, sondern liefert dieselbe Bank mit angelegt=false.
+     * Repeating the same name reuses the bank with created=false
+     * instead of creating a duplicate.
      */
     public function test_reuses_existing_question_bank_with_same_name(): void {
         $this->resetAfterTest();
@@ -72,7 +72,7 @@ final class ensure_question_bank_test extends \advanced_testcase {
         $this->assertSame($first['questionbankid'], $second['questionbankid']);
         $this->assertSame($first['contextid'], $second['contextid']);
         $this->assertSame($first['topcategoryid'], $second['topcategoryid']);
-        $this->assertStringContainsString('wiederverwendet', $second['message']);
+        $this->assertStringContainsString('reusing', $second['message']);
 
         global $DB;
         $modulename = \core_question\local\bank\question_bank_helper::get_default_question_bank_activity_name();
@@ -86,7 +86,7 @@ final class ensure_question_bank_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne native Berechtigung: moodle/course:manageactivities fehlt.
+     * Missing native permission: moodle/course:manageactivities.
      */
     public function test_rejects_user_without_manageactivities_capability(): void {
         $this->resetAfterTest();

@@ -17,13 +17,10 @@
 namespace local_coursepilot\tests\webdav;
 
 /**
- * Testvorbereitung fuer eine gueltige WebDAV-Nutzerinstanz (Issue #490, Spec
- * #486 §2/§3/§12) - Core-Tabellen (`repository`, `repository_instances`,
- * `repository_instance_config`), die drei Freischaltungsschritte und ein
- * passender Kontextpointer der zweiten Fassung. Wiederverwendet von
- * {@see \local_coursepilot\webdav\webdav_instance_test} und den externen
- * Endpunkttests, damit keine der beiden Stellen ihre eigene Vorstellung
- * von "eine gueltige Instanz" entwickelt.
+ * Shared valid WebDAV user-instance fixture (#490, Spec #486 §2/§3/§12).
+ * Populate repository, repository_instances and repository_instance_config,
+ * enable all three setup steps and write a matching v2 pointer. Reuse
+ * across webdav_instance_test and external endpoint tests.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,19 +28,18 @@ namespace local_coursepilot\tests\webdav;
  */
 trait webdav_instance_fixture {
 
-    /** @var string Server der Standard-Testinstanz, fuer das Pruefmerkmal. */
+    /** @var string Default test-instance server for the verification marker. */
     protected string $fixtureserver = 'cloud.example.test';
 
-    /** @var string Basispfad der Standard-Testinstanz. */
+    /** @var string Default test-instance base path. */
     protected string $fixturebasispfad = 'Coursepilot';
 
-    /** @var string Konto der Standard-Testinstanz. */
+    /** @var string Default test-instance account. */
     protected string $fixturekonto = 'lehrerin';
 
     /**
-     * Schaltet den Repository-Typ "webdav" aktiv und erlaubt Nutzerinstanzen
-     * (Spec §12, Schritt 1+2) - `enableuserinstances` steht am Config-Plugin
-     * "webdav", wie von der Auflösung gelesen.
+     * Enable the WebDAV repository and user instances (Spec §12, steps 1+2).
+     * Store enableuserinstances in the webdav config plugin as resolution expects.
      */
     protected function enable_webdav_repository_type(): void {
         global $DB;
@@ -57,9 +53,8 @@ trait webdav_instance_fixture {
     }
 
     /**
-     * Weist einer Person `repository/webdav:view` im Systemkontext zu -
-     * wirkt damit in jedem Nutzerkontext (Spec §12, empfohlener Weg: eigene
-     * Systemrolle).
+     * Grant repository/webdav:view in the system context, affecting every
+     * user context (Spec §12, recommended dedicated system role).
      *
      * @param \stdClass $user
      */
@@ -77,13 +72,12 @@ trait webdav_instance_fixture {
     }
 
     /**
-     * Legt eine WebDAV-Nutzerinstanz an, die der uebergebenen Person gehoert
-     * (`contextid` = ihr eigener Nutzerkontext, `repository_webdav` als Typ).
+     * Create a repository_webdav instance owned by the supplied user in
+     * their own user context.
      *
      * @param \stdClass $user
-     * @param array<string, string|int> $overrides Ueberschreibt einzelne Instanzoptionen,
-     *        z.B. ['webdav_auth' => 'digest'] fuer den Auth-Randfall.
-     * @return int Instanz-ID.
+     * @param array<string, string|int> $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case.
+     * @return int Instance ID.
      */
     protected function create_webdav_instance(\stdClass $user, array $overrides = []): int {
         global $DB;
@@ -124,22 +118,20 @@ trait webdav_instance_fixture {
     }
 
     /**
-     * Das Pruefmerkmal der Standard-Testinstanz, wie es ein Pointer der
-     * zweiten Fassung trueg.
+     * Default test-instance verification marker, as carried in a v2 pointer.
      *
      * @return array{server: string, basispfad: string, konto: string}
      */
     protected function fixture_fingerprint(): array {
-        return ['server' => $this->fixtureserver, 'basispfad' => $this->fixturebasispfad, 'konto' => $this->fixturekonto];
+        return ['server' => $this->fixtureserver, 'basepath' => $this->fixturebasispfad, 'account' => $this->fixturekonto];
     }
 
     /**
-     * Schreibt einen Kontextpointer der zweiten Fassung (Spec §2) in den
-     * Anker der Person - ein Ziel extern, das andere per Default *in
-     * Moodle*.
+     * Write a v2 context pointer into the user’s anchor (Spec §2).
+     * One target is external; the other defaults to Moodle.
      *
      * @param \stdClass $user
-     * @param string $externtarget "kontextbereich" oder "materialbestand".
+     * @param string $externtarget "context_area" or "material_store".
      * @param int $instanceid
      * @param string $relativepath
      * @param array|null $fingerprint Default: {@see fixture_fingerprint()}.
@@ -152,16 +144,16 @@ trait webdav_instance_fixture {
         ?array $fingerprint = null
     ): void {
         $external = [
-            'ort' => 'extern',
-            'instanzid' => $instanceid,
-            'pfad' => $relativepath,
-            'pruefmerkmal' => $fingerprint ?? $this->fixture_fingerprint(),
+            'location' => 'external',
+            'instanceid' => $instanceid,
+            'path' => $relativepath,
+            'fingerprint' => $fingerprint ?? $this->fixture_fingerprint(),
         ];
-        $inmoodle = ['ort' => 'moodle', 'pfad' => 'coursepilot'];
+        $inmoodle = ['location' => 'moodle', 'path' => 'coursepilot'];
 
         $pointer = [
-            'kontextbereich' => $externtarget === 'kontextbereich' ? $external : $inmoodle,
-            'materialbestand' => $externtarget === 'materialbestand' ? $external : ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => $externtarget === 'context_area' ? $external : $inmoodle,
+            'material_store' => $externtarget === 'material_store' ? $external : ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ];
 
         get_file_storage()->create_file_from_string([
@@ -170,18 +162,15 @@ trait webdav_instance_fixture {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/coursepilot/',
-            'filename' => '.coursepilot-ort.json',
+            'filename' => '.coursepilot-location.json',
         ], json_encode($pointer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
     /**
-     * Rundum-Vorbereitung fuer den externen Kontextbereich-Zweig der
-     * Kontextwerkzeug-Endpunkttests: legt eine gueltige, freigeschaltete
-     * WebDAV-Nutzerinstanz an, richtet den Kontextbereich per Pointer der
-     * zweiten Fassung auf den Ordner "Kontext" darin aus und injiziert den
-     * Transport-Fake. Gemeinsam genutzt von `list_context_files_test` und
-     * `read_context_file_test`, damit keine der beiden Stellen ihre eigene
-     * Vorstellung von "ein gueltiger externer Kontextbereich" entwickelt.
+     * Shared external-context endpoint fixture: create an authorized
+     * WebDAV user instance, point v2 context at its Kontext folder and inject
+     * fake transport. list_context_files_test and read_context_file_test
+     * use the same valid external-context setup.
      *
      * @return array{0: \stdClass, 1: fake_webdav_transport}
      */
@@ -190,7 +179,7 @@ trait webdav_instance_fixture {
         $this->setUser($user);
         $this->grant_webdav_capability($user);
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'kontextbereich', $instanceid, 'Kontext');
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Kontext');
 
         $fake = new fake_webdav_transport();
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
@@ -199,10 +188,8 @@ trait webdav_instance_fixture {
     }
 
     /**
-     * Gegenstueck zu {@see set_up_external_context()} fuer den externen
-     * Materialbestand (Issue #495): richtet den Materialbestand per Pointer
-     * der zweiten Fassung auf den Ordner "Material" aus, der Kontextbereich
-     * bleibt *in Moodle*.
+     * External inventory counterpart to {@see set_up_external_context()}
+     * (#495). Point v2 inventory at Material while context stays in Moodle.
      *
      * @return array{0: \stdClass, 1: fake_webdav_transport}
      */
@@ -211,7 +198,7 @@ trait webdav_instance_fixture {
         $this->setUser($user);
         $this->grant_webdav_capability($user);
         $instanceid = $this->create_webdav_instance($user);
-        $this->write_v2_pointer($user, 'materialbestand', $instanceid, 'Material');
+        $this->write_v2_pointer($user, 'material_store', $instanceid, 'Material');
 
         $fake = new fake_webdav_transport();
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
@@ -220,21 +207,19 @@ trait webdav_instance_fixture {
     }
 
     /**
-     * Schreibt einen Kontextpointer der zweiten Fassung mit offenem
-     * Altbestand (Issue #498, Spec #486 §9) - beide regulaeren Ziele bleiben
-     * *in Moodle* an ihrer Standardwurzel, der vorherige Ort ist ebenfalls
-     * *in Moodle*. Geteilt von allen Testklassen, die einen offenen
-     * Altbestand voraussetzen, statt vier fast identischer Kopien.
+     * Shared v2 pointer fixture with pending old content (#498, Spec #486 §9).
+     * Both regular targets remain at default Moodle roots; the previous
+     * location is also in Moodle.
      *
      * @param \stdClass $user
-     * @param string $pfad Wurzel des vorherigen Ortes, relativ zu den Private Files.
+     * @param string $path Previous root relative to Private Files.
      */
-    protected function write_pointer_with_vorheriger_ort(\stdClass $user, string $pfad = 'alter-kontext'): void {
+    protected function write_pointer_with_previous_location(\stdClass $user, string $path = 'alter-kontext'): void {
         $document = [
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
-            'ortsverlauf' => [],
-            'vorheriger_ort' => ['ort' => 'moodle', 'pfad' => $pfad],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
+            'location_history' => [],
+            'previous_location' => ['location' => 'moodle', 'path' => $path],
         ];
         get_file_storage()->create_file_from_string([
             'contextid' => \context_user::instance($user->id)->id,
@@ -242,36 +227,36 @@ trait webdav_instance_fixture {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/coursepilot/',
-            'filename' => '.coursepilot-ort.json',
+            'filename' => '.coursepilot-location.json',
         ], json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
     /**
-     * Gegenstueck zu {@see write_pointer_with_vorheriger_ort()} mit einem
-     * *externen* vorherigen Ort (Issue #517, Spec §6: `moodle/user:manageownfiles`
-     * wirkt extern nicht) - beide regulaeren Ziele bleiben *in Moodle*, nur
-     * der Altbestand selbst liegt in der WebDAV-Nutzerinstanz.
+     * External previous-location counterpart to
+     * {@see write_pointer_with_previous_location()} (#517, Spec §6).
+     * Both current targets remain in Moodle; only old content is in WebDAV.
+     * moodle/user:manageownfiles does not apply externally.
      *
      * @param \stdClass $user
      * @param int $instanceid
-     * @param string $relativepath Wurzel des vorherigen Ortes in der Instanz.
+     * @param string $relativepath Previous root within the instance.
      * @param array|null $fingerprint Default: {@see fixture_fingerprint()}.
      */
-    protected function write_pointer_with_external_vorheriger_ort(
+    protected function write_pointer_with_external_previous_location(
         \stdClass $user,
         int $instanceid,
         string $relativepath = 'Alt',
         ?array $fingerprint = null
     ): void {
         $document = [
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
-            'ortsverlauf' => [],
-            'vorheriger_ort' => [
-                'ort' => 'extern',
-                'instanzid' => $instanceid,
-                'pfad' => $relativepath,
-                'pruefmerkmal' => $fingerprint ?? $this->fixture_fingerprint(),
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
+            'location_history' => [],
+            'previous_location' => [
+                'location' => 'external',
+                'instanceid' => $instanceid,
+                'path' => $relativepath,
+                'fingerprint' => $fingerprint ?? $this->fixture_fingerprint(),
             ],
         ];
         get_file_storage()->create_file_from_string([
@@ -280,7 +265,7 @@ trait webdav_instance_fixture {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/coursepilot/',
-            'filename' => '.coursepilot-ort.json',
+            'filename' => '.coursepilot-location.json',
         ], json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 }

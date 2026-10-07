@@ -20,7 +20,7 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Schreibkern 13 (Spec 0015 Phase 3, Ticket #391).
+ * Write core 13 (Spec 0015 Phase 3, ticket #391).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class update_section_test extends \advanced_testcase {
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs, Lehrkraft (editingteacher).
+     * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
         $course = $this->getDataGenerator()->create_course(['numsections' => 2]);
@@ -43,13 +43,13 @@ final class update_section_test extends \advanced_testcase {
     /**
      * @param int $courseid
      * @param int $sectionnum
-     * @param array $felder
+     * @param array $fields
      * @return array
      */
-    private function update(int $courseid, int $sectionnum, array $felder): array {
+    private function update(int $courseid, int $sectionnum, array $fields): array {
         return external_api::clean_returnvalue(
             update_section::execute_returns(),
-            update_section::execute($courseid, $sectionnum, json_encode($felder))
+            update_section::execute($courseid, $sectionnum, json_encode($fields))
         );
     }
 
@@ -64,7 +64,7 @@ final class update_section_test extends \advanced_testcase {
         ]);
 
         $this->assertCount(3, $result['changes']);
-        $this->assertStringContainsString('Geändert', $result['message']);
+        $this->assertStringContainsString('Changed', $result['message']);
 
         $section = get_fast_modinfo($course)->get_section_info(1);
         $this->assertSame('LS 1: Einführung', $section->name);
@@ -73,8 +73,8 @@ final class update_section_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium: die Nebenwirkung auf enthaltene Aktivitaeten wird in
-     * der Antwort ausgesprochen UND tritt nativ tatsaechlich ein.
+     * Acceptance criterion: the side effect on contained activities is stated
+     * in the response AND actually occurs natively.
      */
     public function test_hiding_section_hides_activities_and_says_so(): void {
         $this->resetAfterTest();
@@ -83,10 +83,10 @@ final class update_section_test extends \advanced_testcase {
 
         $result = $this->update($course->id, 1, ['visible' => 0]);
 
-        $this->assertStringContainsString('unsichtbar', $result['message']);
+        $this->assertStringContainsString('hidden', $result['message']);
 
         $cm = get_fast_modinfo($course)->get_cm($page->cmid);
-        $this->assertSame(0, (int) $cm->visible, 'Ein unsichtbarer Abschnitt macht seine Aktivitaeten unsichtbar.');
+        $this->assertSame(0, (int) $cm->visible, 'A hidden section makes its activities hidden.');
     }
 
     public function test_no_side_effect_note_when_visibility_unchanged(): void {
@@ -95,7 +95,7 @@ final class update_section_test extends \advanced_testcase {
 
         $result = $this->update($course->id, 1, ['name' => 'Nur Name']);
 
-        $this->assertStringNotContainsString('unsichtbar', $result['message']);
+        $this->assertStringNotContainsString('hidden', $result['message']);
     }
 
     public function test_unknown_field_throws(): void {

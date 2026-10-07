@@ -23,36 +23,20 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Fachliche Bruecke fuer {@see \local_coursepilot\external\create_quiz} und
- * {@see \local_coursepilot\external\update_quiz_settings} (Spec 0015 §5,
- * Ticket #398) - kein eigener module_catalog, sondern die Uebersetzung
- * zwischen dem Katalog-Vokabular von {@see quiz} und den Formularweg-
- * Eigenschaften, die quiz_process_options() (mod/quiz/lib.php) unbedingt
- * liest. Portiert aus der fachlichen Logik von
- * local_coursepilot\external\create_quiz/quiz_settings (Grade-Handling,
- * Feedback-Handling, Modus-Presets), aber auf die neue Bauform umgestellt:
- * Katalog-Validierung statt Sentinel-Parameter, update_moduleinfo() statt
- * direkter DB-Schreibung.
+ * Bridge for external/create_quiz and external/update_quiz_settings
+ * (Spec 0015 §5, Ticket #398). Translate quiz catalog vocabulary to the
+ * form properties required by quiz_process_options(), using catalog
+ * validation and update_moduleinfo() rather than direct DB writes.
  *
- * Drei Uebersetzungen, die der Formularweg braucht, aber der Katalog bewusst
- * einfacher fuehrt (siehe quiz-Klassendoku):
- * - "password" <-> "quizpassword": identisch zum Formularfeld, quiz_process_options()
- *   spiegelt es selbst - hier nur das Carry-forward, falls der Patch es nicht nennt.
- * - Die acht review*-Bitmasken <-> 32 Einzel-Checkboxen "<art><zeitpunkt>":
- *   quiz_process_options() berechnet die Bitmasken IMMER aus den 32 Checkboxen neu -
- *   ohne Carry-forward wuerde ein Patch, der keine einzige review*-Checkbox nennt,
- *   alle Review-Einstellungen auf 0 zuruecksetzen.
- * - Gesamtfeedback: Katalog fuehrt "feedbacktext" als einfaches String-Array
- *   (kein Feld je Grenzstufe), der Formularweg braucht
- *   [['text'=>..,'format'=>..,'itemid'=>..], ...] plus "feedbackboundaries".
- *   Ohne "feedbacktext" im Patch loescht Moodle bestehendes Feedback still
- *   (quiz_after_add_or_update() loescht immer erst, siehe Klassendoku quiz.php) -
- *   deshalb immer Carry-forward des Ist-Stands, wenn der Patch es nicht nennt.
+ * Carry forward three form-specific representations when absent from a patch:
+ * - password as quizpassword (mirrored by quiz_process_options());
+ * - eight review bitmasks as 32 type/timing checkboxes, since Moodle always
+ *   recomputes masks and missing checkboxes would reset all review options;
+ * - overall feedback strings as editor arrays plus boundaries, since Moodle
+ *   deletes existing feedback before reinserting it.
  *
- * "grade" und "sumgrades" laufen bewusst NICHT durch diese Bruecke: beide
- * sind auf der Katalog-Sperrliste (quiz::blocklist()) und werden von den
- * Endpunkten direkt bzw. ueber {@see self::apply_grade_change()} (Moodles
- * eigener Grade-Calculator) gesetzt - nie ueber ein Katalogfeld.
+ * grade and sumgrades stay blocklisted. Endpoints set them directly or
+ * through apply_grade_change(), using Moodle's grade calculator.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -60,16 +44,15 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class quiz_write_bridge {
 
-    /** @var string[] Die acht Review-Arten, siehe {@see quiz::REVIEW_TYPES}. */
+    /** @var string[] The eight review types; see quiz::REVIEW_TYPES. */
     private const REVIEW_TYPES = [
         'attempt', 'correctness', 'maxmarks', 'marks',
         'specificfeedback', 'generalfeedback', 'rightanswer', 'overallfeedback',
     ];
 
     /**
-     * Zeitpunkt-Suffix => Bitmaske, direkt aus Moodles eigener Konstantenklasse
-     * (kein eigenes Bitmasken-Vokabular, anders als der abgeloeste
-     * local_coursepilot-Weg).
+     * Timing suffix to bitmask, using Moodle's own constants rather than
+     * a plugin-specific bitmask vocabulary.
      *
      * @var array<string, int>
      */
@@ -83,7 +66,7 @@ final class quiz_write_bridge {
     }
 
     /**
-     * Alle 32 Pseudofeld-Namen "<art><zeitpunkt>" (Katalog-Vokabular).
+     * All 32 type/timing pseudofield names in catalog vocabulary.
      *
      * @return string[]
      */
@@ -98,11 +81,10 @@ final class quiz_write_bridge {
     }
 
     /**
-     * Zerlegt die acht review*-Bitmasken-Spalten einer Quiz-Zeile in die 32
-     * Katalog-Pseudofelder - fuer das Carry-forward, wenn ein Patch keine
-     * dieser Checkboxen nennt.
+     * Decompose eight quiz review bitmasks into 32 catalog pseudofields for
+     * carry-forward when the patch omits review checkboxes.
      *
-     * @param \stdClass $quiz Rohe quiz-Tabellenzeile.
+     * @param \stdClass $quiz Raw quiz table row.
      * @return array<string, int>
      */
     public static function decompose_review_bitmasks(\stdClass $quiz): array {
@@ -117,9 +99,8 @@ final class quiz_write_bridge {
     }
 
     /**
-     * Liest das aktuelle Gesamtfeedback als Katalog-Form (einfaches
-     * String-Array plus Grenzen) - Grundlage sowohl fuer das Carry-forward
-     * als auch fuer Vorher-/Nachher-Vergleiche in der Aenderungsmeldung.
+     * Read current overall feedback as catalog strings and boundaries,
+     * for carry-forward and before/after change comparisons.
      *
      * @param int $quizid
      * @return array{feedbacktext: string[], feedbackboundaries: float[]}
@@ -140,13 +121,11 @@ final class quiz_write_bridge {
     }
 
     /**
-     * Uebersetzt das Katalog-Gesamtfeedback (einfaches String-Array) auf die
-     * Formularweg-Eigenschaften, die quiz_process_options() erwartet.
-     * Mindestens ein Text ist Pflicht (siehe {@see self::validate_combination_rules()}) -
-     * ein leeres Array wuerde quiz_after_add_or_update() mit einem
-     * undefinierten Index zum Absturz bringen.
+     * Translate catalog feedback strings to quiz_process_options() form
+     * properties. At least one text is required (validate_combination_rules());
+     * an empty list would crash quiz_after_add_or_update() with an undefined index.
      *
-     * @param \stdClass $moduleinfo Wird in-place ergaenzt.
+     * @param \stdClass $moduleinfo Updated in place.
      * @param string[] $texts
      * @param array<int, int|float|string> $boundaries
      * @return void
@@ -163,10 +142,8 @@ final class quiz_write_bridge {
     }
 
     /**
-     * Formular-Default fuer "grade" beim Anlegen (mod/quiz/mod_form.php:388,
-     * $mform->setDefault('grade', $quizconfig->maximumgrade)) - "grade"
-     * selbst ist auf der Katalog-Sperrliste und hat deshalb keinen
-     * Katalog-Default.
+     * Form default for grade on creation (mod/quiz/mod_form.php:388,
+     * quizconfig->maximumgrade). grade is blocklisted and has no catalog default.
      *
      * @return float
      */
@@ -176,13 +153,10 @@ final class quiz_write_bridge {
     }
 
     /**
-     * Aendert die maximale Bewertung ueber Moodles eigenen Grade-Calculator
-     * (mod/quiz/classes/grade_calculator.php: update_quiz_maximum_grade(),
-     * Ersatz fuer das deprecated quiz_set_grade()) - skaliert bestehende
-     * Versuchsnoten und Gesamtfeedback-Grenzen automatisch um, aktualisiert
-     * den Grade-Item und das Gradebook. Keine direkte DB-Schreibung auf der
-     * quiz-Tabelle (ADR 0016, Spec 0015 §5: "grade laeuft ueber die
-     * Moodle-eigenen Quiz-Wege").
+     * Change maximum grade through Moodle's grade_calculator::update_quiz_maximum_grade(),
+     * replacing deprecated quiz_set_grade(). Rescale attempt grades and feedback
+     * boundaries and update grade items/book through Moodle APIs, without direct
+     * quiz-table writes (ADR 0016, Spec 0015 §5).
      *
      * @param int $quizid
      * @param float $newgrade
@@ -193,8 +167,8 @@ final class quiz_write_bridge {
     }
 
     /**
-     * Katalogfeldname => tatsaechlicher $moduleinfo-Eigenschaftsname -
-     * identische Ausnahme wie {@see \local_coursepilot\external\update_module_settings::moduleinfo_property()}.
+     * Catalog field name to actual moduleinfo property name: same exception
+     * as in write_target.
      *
      * @param string $fieldname
      * @return string
@@ -204,48 +178,16 @@ final class quiz_write_bridge {
     }
 
     /**
-     * Alles-oder-nichts-Feldpruefung (Spec 0015 §3.6): unbekanntes Feld,
-     * gesperrtes Feld ("grade"/"sumgrades" ueber quiz::blocklist()),
-     * unerlaubter Wert.
+     * Quiz-only combination rules (Spec 0015 §2.2 category 4, quiz::combination_rules()),
+     * all BEFORE writing (Spec 0015 §3.6). The date order is a catalog rule
+     * decided by {@see write_target}; like there, a rule only fires when the
+     * patch touches one of its fields, so unchanged legacy values are not re-judged.
      *
-     * @param array $merged
-     * @return void
-     * @throws moodle_exception blockedfield|unknownfield|invalidfieldvalue
-     */
-    public static function validate_fields(array $merged): void {
-        catalog_fields::validate(quiz::class, $merged);
-    }
-
-    /**
-     * Stealth-Regel, identisch zu
-     * {@see \local_coursepilot\external\update_module_settings::assert_stealth_allowed()}.
-     *
-     * @param array $merged
-     * @return void
-     * @throws moodle_exception stealthnotallowed
-     */
-    public static function assert_stealth_allowed(array $merged): void {
-        if (($merged['visibleoncoursepage'] ?? null) !== 0) {
-            return;
-        }
-        if (get_config(null, 'allowstealth')) {
-            return;
-        }
-        throw new moodle_exception('stealthnotallowed', 'local_coursepilot');
-    }
-
-    /**
-     * Kombinationsregeln (Spec 0015 §2.2 Kategorie 4, quiz::combination_rules()):
-     * nur die pruefbaren, alle VOR dem Schreiben (Spec 0015 §3.6).
-     *
-     * @param array $effective Alle wirksamen Werte fuer die Datumsregeln (Vorher-Stand ueberlagert mit
-     *        Patch/Buendel, oder Katalog-Defaults ueberlagert mit Patch/Buendel beim Anlegen) - ein
-     *        unveraendert bleibender Altwert darf eine Regel nicht neu ausloesen (siehe Aufrufer).
-     * @param array $patch Nur die vom Patch/Buendel selbst gesetzten Felder - massgeblich fuer die
-     *        Gesamtfeedback-Regel: ein Patch ohne "feedbacktext" hat nichts zu pruefen, das
-     *        Carry-forward des Ist-Stands ist per Definition bereits gueltig.
-     * @param float $grade Die fuer Gesamtfeedback-Grenzen wirksame maximale Bewertung -
-     *        der NEUE Wert, falls "grade" im selben Aufruf mitgeaendert wird, sonst der aktuelle.
+     * @param array $effective Checked target state ({@see write_target::$state}).
+     * @param array $patch Fields explicitly set by the patch/bundle. Without feedbacktext,
+     *        there is no feedback rule to check; carried-forward current values are valid.
+     * @param float $grade Effective maximum grade for feedback boundaries: the new grade
+     *        if changed in this call, otherwise the current grade.
      * @return void
      * @throws moodle_exception combinationruleviolation
      */
@@ -259,19 +201,14 @@ final class quiz_write_bridge {
                 throw new moodle_exception('invalidquizgradepass', 'local_coursepilot', '', ['maximum' => $grade]);
             }
         }
-        $timeopen = (int) ($effective['timeopen'] ?? 0);
-        $timeclose = (int) ($effective['timeclose'] ?? 0);
-        if ($timeopen > 0 && $timeclose > 0 && $timeclose < $timeopen) {
-            self::throw_combination_violation('"timeclose" darf nicht vor "timeopen" liegen.');
-        }
-
-        if (($effective['overduehandling'] ?? '') === 'graceperiod') {
+        $gracetouched = array_key_exists('overduehandling', $patch) || array_key_exists('graceperiod', $patch);
+        if ($gracetouched && ($effective['overduehandling'] ?? '') === 'graceperiod') {
             $min = (int) get_config('quiz', 'graceperiodmin');
             $grace = (int) ($effective['graceperiod'] ?? 0);
             if ($grace <= $min) {
                 self::throw_combination_violation(
-                    '"graceperiod" muss groesser sein als die serverweite Mindestdauer ('
-                        . $min . ' Sekunden), wenn "overduehandling"="graceperiod" ist.'
+                    '"graceperiod" must exceed the server-wide minimum duration ('
+                        . $min . ' seconds) when "overduehandling"="graceperiod".'
                 );
             }
         }
@@ -281,13 +218,13 @@ final class quiz_write_bridge {
         }
         $texts = $patch['feedbacktext'];
         if (!is_array($texts) || !$texts) {
-            self::throw_combination_violation('"feedbacktext" muss mindestens einen Eintrag haben.');
+            self::throw_combination_violation('"feedbacktext" must contain at least one entry.');
         }
         $boundaries = $patch['feedbackboundaries'] ?? [];
         if (!is_array($boundaries) || count($boundaries) !== count($texts) - 1) {
             self::throw_combination_violation(
-                '"feedbackboundaries" muss genau einen Eintrag weniger haben als "feedbacktext" ('
-                    . count($texts) . ' Text(e), ' . count($boundaries) . ' Grenze(n)).'
+                '"feedbackboundaries" must have exactly one fewer entry than "feedbacktext" ('
+                    . count($texts) . ' text(s), ' . count($boundaries) . ' boundary/boundaries).'
             );
         }
 
@@ -296,11 +233,11 @@ final class quiz_write_bridge {
             $numeric = self::resolve_boundary($boundary, $grade);
             if ($numeric <= 0 || $numeric >= $grade) {
                 self::throw_combination_violation(
-                    '"feedbackboundaries" muessen zwischen 0 und der maximalen Bewertung (' . $grade . ') liegen.'
+                    '"feedbackboundaries" must be between 0 and the maximum grade (' . $grade . ').'
                 );
             }
             if ($previous !== null && $numeric >= $previous) {
-                self::throw_combination_violation('"feedbackboundaries" muessen absteigend sortiert sein.');
+                self::throw_combination_violation('"feedbackboundaries" must be sorted descending.');
             }
             $previous = $numeric;
         }
@@ -319,9 +256,9 @@ final class quiz_write_bridge {
     }
 
     /**
-     * Loest eine Grenze (absolut oder Prozentsatz, z.B. "50%") gegen die
-     * wirksame maximale Bewertung auf - identische Rechnung wie
-     * quiz_process_options() (mod/quiz/lib.php:1005).
+     * Resolve an absolute or percentage boundary (e.g. "50%") against the
+     * effective maximum grade, as quiz_process_options() does
+     * (mod/quiz/lib.php:1005).
      *
      * @param int|float|string $boundary
      * @param float $grade

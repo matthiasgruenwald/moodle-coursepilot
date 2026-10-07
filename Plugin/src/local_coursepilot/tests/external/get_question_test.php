@@ -19,10 +19,8 @@ namespace local_coursepilot\external;
 use core_external\external_api;
 
 /**
- * Einzelne Frage in ihrer aktuellen Fassung serverseitig (#342):
- * eigenstaendige Portierung von local_coursepilot\external\get_question,
- * Vertrag (Feldnamen, Antwort-Optionen inkl. richtiger Antwort) identisch
- * zum lokalen Werkzeug.
+ * Server-side current question (#342), ported from the local tool with
+ * the same fields and answer options, including the correct answer.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -32,8 +30,7 @@ use core_external\external_api;
 final class get_question_test extends \advanced_testcase {
 
     /**
-     * Regelfall: die aktuelle Fassung inkl. Antworten und richtiger Antwort
-     * wird per Name gefunden.
+     * Find the current version by name, including answers and the correct answer.
      */
     public function test_returns_latest_version_with_answers_by_name(): void {
         $this->resetAfterTest();
@@ -56,7 +53,7 @@ final class get_question_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne Berechtigung: local/coursepilot:use fehlt trotz Einschreibung.
+     * Reject enrolled users lacking local/coursepilot:use.
      */
     public function test_rejects_user_without_capability(): void {
         $this->resetAfterTest();
@@ -83,8 +80,7 @@ final class get_question_test extends \advanced_testcase {
     }
 
     /**
-     * Fall ohne Einschreibung: eine nicht eingeschriebene Person bekommt
-     * keine Daten.
+     * Unenrolled users receive no data.
      */
     public function test_rejects_user_without_enrolment(): void {
         $this->resetAfterTest();

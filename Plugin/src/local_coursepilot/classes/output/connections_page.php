@@ -32,10 +32,10 @@ final class connections_page {
     /**
      * @param \stdClass[] $tokens
      * @param array<string, array<string, string>> $currentlocations see location_selection::current_locations_data()
-     * @param \moodle_url $ortswahlurl
+     * @param \moodle_url $locationselectionurl
      * @return array<string, mixed>
      */
-    public static function page_data(array $tokens, array $currentlocations, \moodle_url $ortswahlurl): array {
+    public static function page_data(array $tokens, array $currentlocations, \moodle_url $locationselectionurl): array {
         $rows = [];
         foreach ($tokens as $token) {
             $rows[] = [
@@ -51,7 +51,7 @@ final class connections_page {
 
         return [
             'currentlocations' => $currentlocations,
-            'ortswahlurl' => $ortswahlurl->out(false),
+            'locationselectionurl' => $locationselectionurl->out(false),
             'empty' => $rows === [],
             'rows' => $rows,
         ];

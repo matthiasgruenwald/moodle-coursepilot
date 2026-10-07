@@ -3,9 +3,7 @@
 Reproduzierbare GitHub-Actions-Pflichtprüfung für `Plugin/src/local_coursepilot`
 (nativer Server-MCP, `local_coursepilot`). Läuft auf jedem sauberen
 GitHub-Actions-Runner — kein Zugriff auf die Spike-Instanz, keine
-Produktivdaten, keine persönlichen Verbindungen nötig. Betrifft ausschließlich
-die native Linie; der eingefrorene Altstand (`legacy/local_coursepilot`) wird
-von dieser CI weder gebaut noch getestet noch verändert.
+Produktivdaten, keine persönlichen Verbindungen nötig.
 
 Workflow: [`.github/workflows/native-ci.yml`](../.github/workflows/native-ci.yml).
 
@@ -15,7 +13,7 @@ Der einzige als Merge-Bedingung zu verwendende Check heißt **`Gate (required)`*
 (Job `gate`). Er aggregiert `phpunit`, `js-native` und `artifact` über
 `needs.*.result` und schlägt explizit fehl, wenn einer dieser Jobs
 fehlschlägt **oder übersprungen wird** — ein übersprungener Pflichtjob zählt
-nicht als Erfolg. Matrix-Job-Namen (z. B. „PHPUnit (MOODLE_500_STABLE)“)
+nicht als Erfolg. Matrix-Job-Namen (z. B. „PHPUnit (MOODLE_501_STABLE)“)
 dürfen sich ändern, ohne dass die Branch-Protection-Regel neu eingerichtet
 werden muss, weil diese ausschließlich auf `Gate (required)` zeigt.
 
@@ -23,8 +21,8 @@ werden muss, weil diese ausschließlich auf `Gate (required)` zeigt.
 
 | Komponente | Version | Status |
 |---|---|---|
-| Moodle | 5.0 (`MOODLE_500_STABLE`) | Pflicht — bestehender Nachweis (Review vom 25.09.2026) |
-| Moodle | 5.1 (`MOODLE_501_STABLE`) | Pflicht — vor der in ADR 0024 vorgesehenen Mindestversionsanhebung |
+| Moodle | 5.1 (`MOODLE_501_STABLE`) | Pflicht — Mindestversion ab 2.1 (ADR 0027) |
+| Moodle | 5.2 | nicht zugesagt: neue Spalten in `assign`/`forum`, der Schreibkatalog sperrt dort bewusst |
 | PHP | 8.4 | Pflicht |
 | Datenbank | MariaDB | Pflicht |
 
@@ -43,7 +41,7 @@ stillschweigende Erweiterung dieser Matrix.
   auch dann in den Nenner, wenn kein einziger Test sie ausführt
   („includeUncoveredFiles"-Verhalten) — eine nie besuchte Datei senkt die
   Quote, statt aus der Zählung zu verschwinden.
-- Gemessen wird ausschließlich auf dem Matrix-Leg `MOODLE_500_STABLE`
+- Gemessen wird ausschließlich auf dem Matrix-Leg `MOODLE_501_STABLE`
   (`measures-coverage: true` im Workflow) mit dem PCOV-Treiber. Der
   Moodle-5.1-Leg läuft die volle Suite, misst aber keine eigene Quote —
   unterschiedliche Läufe werden nicht zu einer günstigeren Quote
@@ -64,36 +62,14 @@ knapp erreicht; jede neue ungetestete Produktionszeile kann sie wieder
 unterschreiten. Sie bleibt trotzdem bei 80 % (Issue #268: nicht Tests
 weglassen oder Schwelle senken, um grün zu erzwingen).
 
-## Legacy- und Plattformtestumfang (Node-Suite)
+## Node-Suite
 
 `scripts/ci/run-js-tests.js` (`npm run test:ci`) führt dieselbe Suite wie
-`npm test` aus, schließt aber sechs Dateien aus dem nativen Pflichtlauf aus —
-jede einzeln begründet im Dateikopf des Skripts:
+`npm test` aus. Seit dem Entfernen des Altstands 1.x (#587) gibt es weder
+ausgeschlossene Dateien noch selbst übersprungene Tests. Kommt eine
+plattformgebundene Testdatei hinzu, wird sie im Skript einzeln begründet
+ausgeschlossen.
 
-- `moodle-credentials.test.js`, `moodle-test-client-credentials.test.js`,
-  `start-mcp.test.js`, `uninstall-kurspilot.test.js`: testen den
-  plattformgebundenen OS-Credential-Store (macOS Keychain / Windows
-  Credential Manager) des eingefrorenen Altstands.
-- `assign-settings-freeze.test.js`: ruft `legacy/local_coursepilot` über die
-  lokale `php`-CLI auf (im JS-CI-Job nicht verfügbar) und testet den
-  Altstand, nicht `Plugin/src/local_coursepilot`.
-- `assign-tools-crop-warning.test.js`: der macOS-Fall (#139) mockt
-  `os.platform()`, während die geprüfte Logik den echten `process.platform`
-  liest — auf einem Linux-Runner strukturell nicht simulierbar. Testet
-  zudem `lib/` (lokaler stdio-Altstand).
-
-Zusätzlich überspringen sich im Pflichtlauf 43 Einzeltests selbst, jeweils mit
-sichtbarem Grund in der Ausgabe:
-
-- 39 Integrationstests unter `test/integration/` gegen eine Testmoodle-Instanz
-  über den REST-Weg des lokalen stdio-Altstands — ohne Zugangsdaten im
-  Schlüsselbund, `MOODLE_TEST_COURSEID` bzw. Zusatztokens
-  (`MOODLE_TEST_TOKEN_*`) laufen sie nicht.
-- 4 Bildzuschnitt-Tests (`lib/image-crop.js`, Altstand): ImageMagick bzw.
-  macOS-`sips` fehlt auf dem Runner.
-
-Keine dieser Ausnahmen betrifft natives Verhalten unter
-`Plugin/src/local_coursepilot`; keine native Testdatei wird abgeschaltet.
 Die laufende Spike- oder Produktivinstanz wird durch diese CI nicht
 automatisch verändert.
 

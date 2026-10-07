@@ -27,11 +27,11 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Listet die Kurse, in denen die aufrufende Lehrkraft Coursepilot nutzen darf.
+ * Lists the courses in which the calling teacher may use Coursepilot.
  *
- * Die Liste ist auf Kurse mit 'local/coursepilot:use' beschraenkt
- * (Kartenentscheidung #295, Punkt 3). Ohne einen einzigen solchen Kurs gibt
- * es keine Daten, sondern den konkreten Capability-Fehler (#295, Punkt 4).
+ * The list is restricted to courses with 'local/coursepilot:use'
+ * (card decision #295, point 3). Without a single such course there
+ * is no data, but the concrete capability error (#295, point 4).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -48,7 +48,7 @@ class list_courses extends external_api {
 
     /**
      * @return array
-     * @throws moodle_exception CAPABILITY_MISSING, wenn kein Kurs freigegeben ist.
+     * @throws moodle_exception CAPABILITY_MISSING if no course is authorized.
      */
     public static function execute(): array {
         self::validate_parameters(self::execute_parameters(), []);

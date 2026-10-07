@@ -21,15 +21,13 @@ use core_external\external_value;
 use moodle_exception;
 
 /**
- * Auswertung der Riegel aus dem Feldkatalog (Issue #583). Ein Riegel ist eine
- * Einstellung, nach der eine lernende Person eine Handlung der Lehrkraft
- * braucht, um weiterzuarbeiten oder nachzubessern.
+ * Evaluate catalog learner locks (Issue #583): settings that require
+ * teacher action before a learner can continue or resubmit.
  *
- * Die Katalogklassen deklarieren je Feld eine strukturierte Bedingung
- * ({@see module_catalog::learner_locks()}); die Schreibwerkzeuge werten die
- * effektiv zu schreibenden Werte hier aus und lehnen einen Aufruf mit Riegel
- * ab, solange der Aufruf ihn nicht ausdruecklich in "confirm_learner_locks"
- * bestaetigt. Eine Quelle statt einer Liste im Skill-Korpus.
+ * Catalog classes declare structured conditions per field through
+ * module_catalog::learner_locks(). Write tools evaluate effective values
+ * and reject unconfirmed locks unless listed in "confirm_learner_locks".
+ * The catalog is the single source, rather than a list in the skill corpus.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -37,28 +35,36 @@ use moodle_exception;
  */
 final class learner_locks {
 
-    /** Erlaubte Operatoren einer Riegel-Bedingung. */
+    /**
+     * Allowed operators for a learner-lock condition.
+     */
     public const OPS = ['equals', 'not_equals', 'greater', 'nonzero'];
 
-    /** Die Note entsteht durch eine Handlung der Lehrkraft. */
+    /**
+     * The grade requires teacher action.
+     */
     public const GRADE_TEACHER = 'teacher';
 
-    /** Die Note entsteht automatisch (z.B. Test mit automatisch bewerteten Fragen). */
+    /**
+     * The grade is automatic (e.g. a quiz with automatically graded questions).
+     */
     public const GRADE_AUTOMATIC = 'automatic';
 
-    /** Die Aktivitaet hat keine Note. */
+    /**
+     * The activity has no grade.
+     */
     public const GRADE_NONE = 'none';
 
     /** @var string[] */
     public const GRADE_ORIGINS = [self::GRADE_TEACHER, self::GRADE_AUTOMATIC, self::GRADE_NONE];
 
     /**
-     * Name des Werkzeugparameters, mit dem ein Aufruf Riegel bestaetigt.
+     * Tool parameter used to confirm learner locks.
      */
     public const PARAMETER = 'confirm_learner_locks';
 
     /**
-     * Gemeinsamer Werkzeugparameter der Schreibwerkzeuge.
+     * Shared write-tool parameter.
      *
      * @return external_multiple_structure
      */
@@ -75,8 +81,8 @@ final class learner_locks {
     }
 
     /**
-     * Trifft $value die Bedingung? Ein fehlender Wert (null) ist nie ein
-     * Riegel - ein nicht gesetztes Feld kann niemanden aufhalten.
+     * Whether $value matches the condition. A missing value (null) never
+     * creates a learner lock: an unset field cannot prevent progress.
      *
      * @param array{op: string, value?: mixed} $condition
      * @param mixed $value
@@ -100,8 +106,8 @@ final class learner_locks {
     }
 
     /**
-     * Zahlen numerisch, alles andere als Zeichenkette vergleichen - JSON und
-     * Datenbank liefern dieselbe 1 mal als int, mal als "1", mal als true.
+     * Compare numbers numerically and other values as strings. JSON and the
+     * database may represent the same value as int 1, string "1" or true.
      *
      * @param mixed $a
      * @param mixed $b
@@ -117,12 +123,11 @@ final class learner_locks {
     }
 
     /**
-     * Alle Riegel, die die zu schreibenden Werte ausloesen.
+     * Find all learner locks triggered by the effective values to write.
      *
      * @param class-string<module_catalog> $catalogclass
-     * @param array $named Vom Aufruf (samt Feldbuendel) genannte Felder.
-     * @param array $defaults Aufgefuellte Formular-Defaults - nur fuer Felder,
-     *        die $named nicht nennt.
+     * @param array $named Fields named by the call, including its field bundle.
+     * @param array $defaults Filled form defaults, only for fields not named in $named.
      * @return array<int, array{id: string, detail: string}>
      */
     public static function find(string $catalogclass, array $named, array $defaults = []): array {
@@ -144,9 +149,8 @@ final class learner_locks {
     }
 
     /**
-     * Wie {@see find()}, aber fuer einen Patch auf bestehende Werte: ein Feld,
-     * dessen Wert der Patch nur wiederholt, braucht keine erneute
-     * Bestaetigung - der Riegel besteht schon und wird nicht neu gesetzt.
+     * Like {@see find()}, for a patch of existing values. A patch repeating
+     * the current value needs no new confirmation: the lock already exists.
      *
      * @param class-string<module_catalog> $catalogclass
      * @param array $patch
@@ -166,12 +170,12 @@ final class learner_locks {
     }
 
     /**
-     * Bestehende Riegel einer Instanz, fuer die Lesewerkzeuge.
+     * Existing learner locks for an instance, used by read tools.
      *
      * @param class-string<module_catalog> $catalogclass
-     * @param array $settings Ist-Stand wie get_module_settings (Datenbankspalten);
-     *        write_options()['settings_aliases'] bildet abweichende
-     *        Formularnamen auf die Spalte ab (quiz: quizpassword -> password).
+     * @param array $settings Current state as in get_module_settings (DB columns);
+     *        settings_aliases maps differing form names to columns
+     *        (quiz: quizpassword -> password).
      * @return array<int, array{field: string, value_json: string, reason: string}>
      */
     public static function existing(string $catalogclass, array $settings): array {
@@ -191,8 +195,8 @@ final class learner_locks {
     }
 
     /**
-     * Die Riegel-Bedingung eines Felds als JSON fuer describe_module_fields,
-     * "null", wenn das Feld kein Riegel sein kann.
+     * JSON learner-lock condition for describe_module_fields, or "null" when
+     * the field cannot create a lock.
      *
      * @param class-string<module_catalog> $catalogclass
      * @param string $fieldname
@@ -204,15 +208,13 @@ final class learner_locks {
     }
 
     /**
-     * Ein ausdruecklich gewaehlter Modus (Werkzeugparameter "mode", z.B.
-     * quiz "abschlusstest") bestaetigt die Riegel, die er selbst mitbringt -
-     * die Wahl des Modus ist die Entscheidung der Lehrkraft fuer seine
-     * Einstellungen. Ein Wert, den der Aufruf selbst ueberschreibt, bleibt
-     * bestaetigungspflichtig.
+     * An explicitly selected mode (e.g. quiz "final-test") confirms its own
+     * learner locks: selecting the mode is the teacher's settings decision.
+     * Values explicitly overridden by the call still require confirmation.
      *
-     * @param string[] $confirmed Ausdruecklich bestaetigte Riegel.
-     * @param array $bundle Feldwerte des gewaehlten Modus.
-     * @param array $named Vom Aufruf selbst genannte Felder.
+     * @param string[] $confirmed Explicitly confirmed learner locks.
+     * @param array $bundle Field values of the selected mode.
+     * @param array $named Fields explicitly named in the call.
      * @return string[]
      */
     public static function confirmed_with_mode(array $confirmed, array $bundle, array $named): array {
@@ -220,9 +222,8 @@ final class learner_locks {
     }
 
     /**
-     * Lehnt ab, solange ein gefundener Riegel nicht bestaetigt ist. Die
-     * Meldung nennt jeden offenen Riegel mit Grund, damit der Agent ohne
-     * weiteres Nachschlagen entscheiden kann. Nichts wird geschrieben.
+     * Reject any unconfirmed learner lock. Name each outstanding lock and
+     * its reason so the agent can decide without further lookup. Write nothing.
      *
      * @param string $modname
      * @param array<int, array{id: string, detail: string}> $found

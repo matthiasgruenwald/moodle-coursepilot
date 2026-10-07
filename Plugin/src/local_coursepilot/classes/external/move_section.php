@@ -26,23 +26,22 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Schreibkern 13 (Spec 0015 Phase 3, Ticket #391): verschiebt einen Abschnitt
- * an eine andere Position im Kurs.
+ * Write core 13 (Spec 0015 phase 3, ticket #391): moves a section
+ * to another position in the course.
  *
- * Ticket #391 nennt cmactions/sectionactions::move_after()/move_at() als
- * Zielapi der 5.2-Nachfolge (MDL-86854/MDL-86862). Auf dieser Instanz (echte
- * Moodle-5.0.8-Quelle, siehe /opt/moodle/course/format/classes/local/) ist
- * dieser Ersatz noch nicht gelandet - {@see \core_courseformat\local\sectionactions}
- * fuehrt in 5.0.8 kein "move_after". Der tatsaechlich existierende,
- * NICHT-deprecated Kommando-Bus fuer diese Aktion ist
- * {@see \core_courseformat\stateactions::section_move_after()} - dieselbe
- * Methode, die core_courseformat\external\update_course (die von der
- * JS-Kursbearbeitung genutzte Webservice-Funktion "core_courseformat_update_course")
- * fuer die Aktion "section_move_after" aufruft. Kein direkter Aufruf von
- * move_section_to() - das bleibt Moodles eigene interne Implementierung
- * hinter dieser Abstraktion und wird beim spaeteren Umstieg auf
- * sectionactions::move_after() unsichtbar fuer diesen Aufrufer ausgetauscht.
- *
+ * Ticket #391 names cmactions/sectionactions::move_after()/move_at() as the
+ * target API of the 5.2 successor (MDL-86854/MDL-86862). On this instance (real
+ * Moodle 5.0.8 source, see /opt/moodle/course/format/classes/local/) this
+ * replacement has not landed yet - {@see \core_courseformat\local\sectionactions}
+ * has no "move_after" in 5.0.8. The command bus that actually exists and is
+ * NOT deprecated for this action is
+ * {@see \core_courseformat\stateactions::section_move_after()} - the same
+ * method that core_courseformat\external\update_course (the web service
+ * function "core_courseformat_update_course" used by the JS course editing)
+ * calls for the action "section_move_after". No direct call of
+ * move_section_to() - that remains Moodle's own internal implementation
+ * behind this abstraction and will be swapped out invisibly for this caller
+ * on the later switch to sectionactions::move_after(). *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -77,11 +76,10 @@ final class move_section extends external_api {
         $context = context_course::instance($params['courseid']);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // Native Berechtigungspruefung: stateactions::section_move_after()
-        // prueft 'moodle/course:movesections' ohnehin selbst erneut - der
-        // Aufruf hier ist billig und stellt sicher, dass eine fehlende
-        // Berechtigung nicht hinter einer Positionsvalidierung versteckt
-        // bleibt.
+        // Native permission check: stateactions::section_move_after()
+        // re-checks 'moodle/course:movesections' itself anyway - the
+        // call here is cheap and ensures a missing permission is not
+        // hidden behind a position validation.
         require_capability('moodle/course:movesections', $context);
 
         $course = get_course($params['courseid']);
@@ -89,48 +87,48 @@ final class move_section extends external_api {
         $sections = $modinfo->get_section_info_all();
         $maxsectionnum = max(array_keys($sections));
 
-        $von = $params['sourcesectionnum'];
-        $nach = $params['targetsectionnum'];
+        $from = $params['sourcesectionnum'];
+        $to = $params['targetsectionnum'];
 
-        if ($von <= 0 || !array_key_exists($von, $sections)) {
-            throw new moodle_exception('sectionnotmovable', 'local_coursepilot', '', ['sectionnum' => $von]);
+        if ($from <= 0 || !array_key_exists($from, $sections)) {
+            throw new moodle_exception('sectionnotmovable', 'local_coursepilot', '', ['sectionnum' => $from]);
         }
-        if ($nach < 1 || $nach > $maxsectionnum) {
+        if ($to < 1 || $to > $maxsectionnum) {
             throw new moodle_exception(
                 'sectiontargetoutofrange',
                 'local_coursepilot',
                 '',
-                ['nach' => $nach, 'max' => $maxsectionnum]
+                ['target' => $to, 'max' => $maxsectionnum]
             );
         }
 
         $format = course_get_format($course);
-        $sectionname = $format->get_section_name($sections[$von]);
+        $sectionname = $format->get_section_name($sections[$from]);
 
-        if ($von === $nach) {
+        if ($from === $to) {
             return [
-                'id' => (int) $sections[$von]->id,
-                'sectionnum' => (int) $nach,
-                'message' => "Abschnitt \"{$sectionname}\" liegt bereits an Position {$nach}.",
+                'id' => (int) $sections[$from]->id,
+                'sectionnum' => (int) $to,
+                'message' => "Section \"{$sectionname}\" is already at position {$to}.",
             ];
         }
 
-        // Destinationsnummer: sectionactions::move_after()/move_at() haetten
-        // die Zielposition direkt entgegengenommen; der hier verfuegbare
-        // Kommando-Bus (section_move_after) verlangt stattdessen "nach
-        // welchem Abschnitt einfuegen" - die Umrechnung ist reine
-        // Indexarithmetik (siehe Klassendoku).
-        $destinationnum = $nach > $von ? $nach : $nach - 1;
+        // Destination number: sectionactions::move_after()/move_at() would have
+        // taken the target position directly; the command bus available here
+        // (section_move_after) instead asks "insert after which
+        // section" - the conversion is pure index arithmetic
+        // (see class doc).
+        $destinationnum = $to > $from ? $to : $to - 1;
         $destination = $sections[$destinationnum];
 
         $updates = $format->get_stateupdates_instance();
         $actions = $format->get_stateactions_instance();
-        $actions->section_move_after($updates, $course, [$sections[$von]->id], $destination->id);
+        $actions->section_move_after($updates, $course, [$sections[$from]->id], $destination->id);
 
         return [
-            'id' => (int) $sections[$von]->id,
-            'sectionnum' => (int) $nach,
-            'message' => "Abschnitt \"{$sectionname}\" von Position {$von} nach Position {$nach} verschoben.",
+            'id' => (int) $sections[$from]->id,
+            'sectionnum' => (int) $to,
+            'message' => "Section \"{$sectionname}\" moved from position {$from} to position {$to}.",
         ];
     }
 
@@ -141,7 +139,7 @@ final class move_section extends external_api {
         return new external_single_structure([
             'id' => new external_value(PARAM_INT, 'Section DB ID'),
             'sectionnum' => new external_value(PARAM_INT, 'New section number after the move'),
-            'message' => new external_value(PARAM_RAW, 'Teacher-facing German change message'),
+            'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
         ]);
     }
 }

@@ -32,7 +32,7 @@ use local_coursepilot\history\version_history;
 final class history_page {
 
     /**
-     * Versionsliste einer Aktivitaet (?cmid=).
+     * Activity version list (?cmid=).
      *
      * @param int $cmid
      * @param string $activityname
@@ -46,7 +46,7 @@ final class history_page {
         bool $canrestore,
         \moodle_url $listurl
     ): array {
-        $data = version_history::list_versions($cmid);
+        $data = version_history::list_versions($cmid, current_language());
         $newest = $data['versions'] ? end($data['versions'])['version'] : null;
 
         $rows = [];
@@ -54,9 +54,9 @@ final class history_page {
             $canrestorerow = $canrestore && $row['version'] !== $newest;
             $rows[] = [
                 'version' => $row['version'],
-                'nutzer' => $row['user'],
-                'zeitpunkt' => userdate($row['timestamp']),
-                'einzeiler' => $row['summary_line'],
+                'user' => $row['user'],
+                'time' => userdate($row['timestamp']),
+                'summary_line' => $row['summary_line'],
                 'canrestore' => $canrestorerow,
                 'restoreurl' => $canrestorerow
                     ? (new \moodle_url('/local/coursepilot/history.php', [
@@ -71,7 +71,7 @@ final class history_page {
             'activityname' => format_string($activityname),
             'isquiz' => $data['modname'] === 'quiz',
             'rows' => $rows,
-            'hinweisluecken' => $data['gap_notice'],
+            'gap_notice' => $data['gap_notice'],
             'listurl' => $listurl->out(false),
         ];
     }

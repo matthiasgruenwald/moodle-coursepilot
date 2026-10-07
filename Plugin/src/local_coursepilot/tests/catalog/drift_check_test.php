@@ -20,10 +20,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Die Laufzeit-Tiefenpruefung (Ticket #399, ADR 0017): dieselbe
- * maschinell pruefbare Logik wie die Repo-Vertragstests
- * (tests/catalog/*_contract_test.php), jetzt als wiederverwendbare Klasse,
- * die {@see \local_coursepilot\write_gate} zur Laufzeit einsetzt.
+ * Runtime deep checks (#399, ADR 0017) reuse the catalog contract-test
+ * logic through the class used by {@see \local_coursepilot\write_gate}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -34,10 +32,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 final class drift_check_test extends \advanced_testcase {
 
     /**
-     * Jede real registrierte Aktivitaetsart ist auf dieser Instanz gruen -
-     * derselbe Vertrag, den die einzelnen *_catalog_contract_test.php-Dateien
-     * bereits pruefen, hier fuer alle neun auf einmal ueber den
-     * Laufzeit-Einstiegspunkt.
+     * All nine registered types satisfy the same contracts already tested
+     * individually, here through the runtime entry point.
      */
     #[DataProvider('known_modname_provider')]
     public function test_every_registered_catalog_is_currently_drift_free(string $modname): void {
@@ -57,7 +53,7 @@ final class drift_check_test extends \advanced_testcase {
     }
 
     /**
-     * Unbekannte Aktivitaetsart -> ein Verstoss, kein leeres Ergebnis.
+     * Unknown activity types produce a violation, not an empty result.
      */
     public function test_unknown_modname_is_reported_as_violation(): void {
         $violations = drift_check::check('unbekannteart');
@@ -66,9 +62,8 @@ final class drift_check_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Katalogklasse, die eine nicht existierende Spalte behauptet, faellt
-     * als Spaltendrift auf - der Fall, den ein Moodle-Upgrade ausloesen
-     * wuerde (Spalte entfernt/umbenannt).
+     * Detect catalogs naming nonexistent columns, as after an upgrade
+     * removes or renames columns.
      */
     public function test_column_drift_is_detected(): void {
         $this->resetAfterTest();
@@ -76,12 +71,11 @@ final class drift_check_test extends \advanced_testcase {
         $violations = drift_check::check_catalog('label', drift_check_test_fake_catalog_with_bad_column::class);
 
         $this->assertNotEmpty($violations);
-        $this->assertStringContainsString('Spalten', $violations[0]);
+        $this->assertStringContainsString('Columns', $violations[0]);
     }
 
     /**
-     * Eine Katalogklasse, die eine nicht existierende aufrufbare Quelle
-     * referenziert, faellt auf.
+     * Detect nonexistent callable sources.
      */
     public function test_missing_callable_is_detected(): void {
         $this->resetAfterTest();
@@ -94,8 +88,7 @@ final class drift_check_test extends \advanced_testcase {
     }
 
     /**
-     * Eine Katalogklasse, die eine nicht existierende Konstante referenziert,
-     * faellt auf.
+     * Detect nonexistent constant sources.
      */
     public function test_missing_constant_is_detected(): void {
         $this->resetAfterTest();
@@ -108,9 +101,8 @@ final class drift_check_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Feldzugriff in einer Schreiboption braucht dieselbe Katalogquelle
-     * wie Schreiben und Lesen; ein Sonderfall darf kein eigenes Vokabular
-     * einschmuggeln.
+     * Write options must use catalog sources for field access, not
+     * introduce special-case vocabulary.
      */
     public function test_field_referenced_outside_the_catalog_is_detected(): void {
         $this->resetAfterTest();
@@ -121,7 +113,7 @@ final class drift_check_test extends \advanced_testcase {
     }
 
     /**
-     * Auch ein Leseweg darf kein eigenes Feldvokabular einfuehren.
+     * Read paths must not introduce separate field vocabulary either.
      */
     public function test_field_read_outside_the_catalog_is_detected(): void {
         $this->resetAfterTest();
@@ -132,8 +124,7 @@ final class drift_check_test extends \advanced_testcase {
     }
 
     /**
-     * Jede Katalogklasse erklaert ihren Geltungsbereich pro Major-Version
-     * (Abnahmekriterium #399) - eine positive Ganzzahl.
+     * Every catalog declares its major-version scope as a positive integer (#399).
      */
     #[DataProvider('known_modname_provider')]
     public function test_every_catalog_declares_reviewed_up_to_major(string $modname): void {
@@ -143,7 +134,7 @@ final class drift_check_test extends \advanced_testcase {
 }
 
 /**
- * Test-Doppelgaenger: behauptet eine Spalte, die "label" nicht hat.
+ * Test double claiming a column absent from label.
  */
 final class drift_check_test_fake_catalog_with_bad_column implements module_catalog {
     public static function modname(): string {
@@ -178,7 +169,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     public static function bundles(): array {
         return [];
     }
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
     public static function checked_constants(): array {
@@ -196,7 +187,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
 }
 
 /**
- * Test-Doppelgaenger: referenziert eine nicht existierende aufrufbare Quelle.
+ * Test double referencing a nonexistent callable source.
  */
 final class drift_check_test_fake_catalog_with_bad_callable implements module_catalog {
     public static function modname(): string {
@@ -241,7 +232,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     public static function bundles(): array {
         return [];
     }
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
     public static function checked_constants(): array {
@@ -259,7 +250,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
 }
 
 /**
- * Test-Doppelgaenger: referenziert eine nicht existierende Konstante.
+ * Test double referencing a nonexistent constant.
  */
 class drift_check_test_fake_catalog_with_bad_constant implements module_catalog {
     public static function modname(): string {
@@ -295,7 +286,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     public static function bundles(): array {
         return [];
     }
-    public static function schreibweg(): ?string {
+    public static function write_route(): ?string {
         return null;
     }
     public static function checked_constants(): array {

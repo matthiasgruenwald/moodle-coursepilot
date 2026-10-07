@@ -24,8 +24,7 @@ use core_external\external_value;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Vertrag: MCP-Schema und die von Moodle validierte Parameterbeschreibung
- * stammen aus genau derselben Deklaration.
+ * Contract: MCP schemas and Moodle parameter validation derive from the same declaration.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -43,12 +42,12 @@ final class tool_schema_contract_test extends \advanced_testcase {
             $this->assertSame(
                 ['classname', 'descriptionkey'],
                 array_keys($tool),
-                "{$name}: Registrierung darf nur Klasse und Beschreibungsschluessel enthalten."
+                "{$name}: Registration may only contain the class and description key."
             );
         }
 
         foreach (tool_registry::descriptions() as $name => $description) {
-            $this->assertNotSame('', $description, "{$name}: fehlende Sprachdatei-Beschreibung.");
+            $this->assertNotSame('', $description, "{$name}: Missing language-pack description.");
         }
     }
 
@@ -86,7 +85,7 @@ final class tool_schema_contract_test extends \advanced_testcase {
         $tools = tool_registry::allowed_tools();
         $functions = tool_registry::service_functions();
 
-        $this->assertCount(51, $tools);
+        $this->assertCount(55, $tools);
         $this->assertSame(array_keys($tools), array_keys($schemas));
 
         foreach ($tools as $name => $tool) {
@@ -96,25 +95,39 @@ final class tool_schema_contract_test extends \advanced_testcase {
             $this->assertSame(
                 external_schema_converter::from_parameters($parameters),
                 $schemas[$name],
-                "{$name}: MCP-Schema weicht von execute_parameters() ab."
+                "{$name}: MCP schema differs from execute_parameters()."
             );
         }
     }
 
+    /** Moodle passes validated named inputs positionally, in declaration order. */
+    public function test_registered_external_parameters_match_execute_positions(): void {
+        foreach (tool_registry::service_function_names() as $name) {
+            $function = \core_external\external_api::external_function_info($name);
+            $method = new \ReflectionMethod($function->classname, $function->methodname);
+            $arguments = $method->getParameters();
+            $declarations = $function->parameters_desc->keys;
+            $this->assertCount(count($arguments), $declarations, $name);
+            foreach (array_values($declarations) as $position => $declaration) {
+                $key = array_keys($declarations)[$position];
+                $argument = $arguments[$position];
+                $this->assertSame(str_replace('_', '', $key), str_replace('_', '', strtolower($argument->getName())),
+                    "{$name}: parameter {$key} does not match execute position {$position}");
+                if ($declaration->required === VALUE_DEFAULT && $argument->isDefaultValueAvailable()) {
+                    $this->assertSame($declaration->default, $argument->getDefaultValue(), "{$name}: {$key} default");
+                }
+            }
+        }
+    }
+
     /**
-     * Der oeffentliche MCP-Vertrag ist englisch: dieselbe Begriffsmenge gilt
-     * fuer Eingaben und alle verschachtelten Rueckgabefelder.
+     * The public MCP contract uses English keys for inputs and nested return fields.
      *
-     * #573: seit dem Entfernen der Uebersetzungsschicht (contract_keys) gibt
-     * es keinen produktiven Konverter mehr, der hier mitlaufen koennte - die
-     * Rohschluessel aus execute_returns() SIND bereits der oeffentliche
-     * Vertrag. Vorher lief die erwartete Menge irrtuemlich durch genau die
-     * Uebersetzung, die sie eigentlich pruefen sollte (contract_keys::
-     * externalize() haette einen deutschen Rohschluessel wie "meldung" schon
-     * vor der Pruefung in "message" verwandelt) - dieser Test haette eine
-     * unmigrierte Stelle wie get_version_info::execute_returns() ("datum",
-     * unuebersetzt weil nicht in der EXTERNAL-Map) also gar nicht sicher
-     * gefunden.
+     * #573: after removal of contract_keys, the raw execute_returns() keys ARE
+     * the public contract. The old test mistakenly passed expected keys through
+     * the translation it was testing: externalize() would turn "meldung" into
+     * "message" before checking. Unmigrated keys such as get_version_info()
+     * "datum", absent from EXTERNAL, could therefore escape detection.
      */
     public function test_every_public_contract_key_is_english(): void {
         $forbidden = [
@@ -142,6 +155,75 @@ final class tool_schema_contract_test extends \advanced_testcase {
                 "{$classname}: German public contract key found."
             );
         }
+    }
+
+    /** The published input and output descriptions must use English (#605). */
+    public function test_every_public_contract_description_is_english(): void {
+        $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
+        foreach (tool_registry::descriptions() as $name => $description) {
+            $this->assertDoesNotMatchRegularExpression($forbidden, $description, $name);
+        }
+        foreach (tool_registry::schemas() as $name => $schema) {
+            $this->assert_english_schema_descriptions($schema, $forbidden, $name);
+        }
+        foreach (tool_registry::service_functions() as $name => $tool) {
+            $classname = $tool['classname'];
+            $this->assert_english_return_descriptions($classname::execute_returns(), $forbidden, $name);
+        }
+        $this->assertDoesNotMatchRegularExpression($forbidden, dispatcher::HANDSHAKE_INSTRUCTIONS);
+    }
+
+    /** Field catalog descriptions also reach the model as tool result data (#605). */
+    public function test_every_catalog_description_is_english(): void {
+        $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
+        foreach (\local_coursepilot\catalog\registry::known_modnames() as $modname) {
+            $catalog = \local_coursepilot\catalog\registry::for($modname);
+            $fields = array_merge($catalog::fields(), $catalog::pseudofields(),
+                \local_coursepilot\catalog\shared_block::fields(), \local_coursepilot\catalog\shared_block::pseudofields());
+            foreach ($fields as $field) {
+                foreach ([$field->type, $field->meaning, $field->source] as $text) {
+                    $this->assertDoesNotMatchRegularExpression($forbidden, $text, "{$modname}: {$field->name}");
+                }
+            }
+            foreach (array_merge($catalog::combination_rules(), $catalog::side_effects(),
+                    \local_coursepilot\catalog\shared_block::side_effects()) as $text) {
+                $this->assertDoesNotMatchRegularExpression($forbidden, $text, $modname);
+            }
+        }
+    }
+
+    private function assert_english_schema_descriptions(array $schema, string $forbidden, string $name): void {
+        foreach ($schema as $key => $value) {
+            if ($key === 'description') {
+                $this->assertDoesNotMatchRegularExpression($forbidden, $value, $name);
+            } else if (is_array($value)) {
+                $this->assert_english_schema_descriptions($value, $forbidden, $name);
+            }
+        }
+    }
+
+    private function assert_english_return_descriptions(external_description $description, string $forbidden, string $name): void {
+        $this->assertDoesNotMatchRegularExpression($forbidden, $description->desc, $name);
+        if ($description instanceof external_single_structure) {
+            foreach ($description->keys as $child) {
+                $this->assert_english_return_descriptions($child, $forbidden, $name);
+            }
+        } else if ($description instanceof external_multiple_structure) {
+            $this->assert_english_return_descriptions($description->content, $forbidden, $name);
+        }
+    }
+
+    /**
+     * #602: tool names also use English.
+     */
+    public function test_every_tool_name_is_english(): void {
+        $tools = tool_registry::allowed_tools();
+        foreach ($tools as $mcpname => $functionname) {
+            $this->assertDoesNotMatchRegularExpression('/altbestand|ausstand|werkbank|ortswahl/', $mcpname . ' ' . $functionname);
+        }
+        $this->assertArrayHasKey('coursepilot_dismiss_previous_location', $tools);
+        $this->assertArrayHasKey('coursepilot_dismiss_pending_entry', $tools);
+        $this->assertArrayHasKey('coursepilot_create_workbench_download_links', $tools);
     }
 
     /**

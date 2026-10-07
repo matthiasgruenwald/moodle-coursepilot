@@ -17,12 +17,9 @@
 namespace local_coursepilot;
 
 /**
- * Install-Smoke: das Plugin installiert sauber auf Moodle 5.0
- * (Abnahmekriterium 1 aus #309).
- *
- * Dass diese Tests ueberhaupt laufen, setzt eine erfolgreiche Installation
- * bereits voraus - geprueft wird hier, dass die Installation die Dinge
- * angelegt hat, auf denen alles Weitere aufsetzt.
+ * Installation smoke test on Moodle 5.0 (acceptance #309 criterion 1).
+ * Running tests already requires successful installation; verify the
+ * registered foundations used by the rest of the plugin.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -32,7 +29,7 @@ namespace local_coursepilot;
 final class install_test extends \advanced_testcase {
 
     /**
-     * Die Plugin-Version ist installiert und verlangt mindestens Moodle 5.0.
+     * The installed plugin requires at least Moodle 5.0.
      */
     public function test_plugin_is_installed_and_requires_moodle_50(): void {
         global $CFG;
@@ -40,19 +37,19 @@ final class install_test extends \advanced_testcase {
         $this->resetAfterTest();
 
         $installed = get_config('local_coursepilot', 'version');
-        $this->assertNotFalse($installed, 'local_coursepilot ist nicht installiert.');
+        $this->assertNotFalse($installed, 'local_coursepilot is not installed.');
 
         $plugin = new \stdClass();
         require($CFG->dirroot . '/local/coursepilot/version.php');
 
         $this->assertSame('local_coursepilot', $plugin->component);
         $this->assertEquals($plugin->version, $installed);
-        // 2025041400 ist der Versionsstempel von Moodle 5.0 (#300, Punkt 10).
+        // 2025041400 is Moodle 5.0’s version stamp (#300, item 10).
         $this->assertGreaterThanOrEqual(2025041400, $plugin->requires);
     }
 
     /**
-     * Beide Capabilities aus #296 sind registriert, jeweils im richtigen Kontext.
+     * Both capabilities from #296 are registered in the correct contexts.
      */
     public function test_capabilities_are_registered(): void {
         global $DB;
@@ -69,7 +66,7 @@ final class install_test extends \advanced_testcase {
     }
 
     /**
-     * Der externe Dienst existiert und ist aktiviert.
+     * The external service exists and is enabled.
      */
     public function test_external_service_is_registered(): void {
         global $DB;

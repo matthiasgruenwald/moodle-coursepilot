@@ -17,30 +17,26 @@
 namespace local_coursepilot;
 
 use core_external\external_value;
+use local_coursepilot\webdav\webdav_error;
 
 /**
- * Anker des Materialordners (Spec 0018 §2, Issue #428): Geschwisterordner zu
- * {@see context_files} in denselben Private Files der aufrufenden Lehrkraft -
- * `component=user`, `filearea=private`, `itemid=0`, eingegrenzt auf den
- * Unterordner aus {@see area()} (Default `coursepilot-material`).
+ * Material folder anchor (Spec 0018 §2, #428). A sibling of context_files
+ * in the teacher's Private files: component=user, filearea=private, itemid=0,
+ * restricted to area()'s subfolder (default coursepilot-material).
  *
- * Der Ort steckt bewusst hinter genau diesem Konstantensatz (Spec 0018 §2.3):
- * kein Endpunkt kennt COMPONENT/FILEAREA/ITEMID/Wurzel selbst, sie kommen
- * ausschliesslich von hier. Ein spaeterer Umzug (z.B. an ein angebundenes
- * Repository) aendert nur den gemeinsamen {@see storage_anchor} - siehe
- * tests/storage_anchor_test.php, das genau das mit einem eigenen, im Test
- * definierten zweiten Bereich beweist, ohne einen Endpunkttest anzufassen
- * (Issue #444, Zweitort-Beweis).
+ * These constants hide location knowledge (Spec 0018 §2.3): endpoints obtain
+ * component/filearea/itemid/root only here. A move to e.g. an attached
+ * repository changes the shared storage_anchor. storage_anchor_test.php
+ * proves this with a second test-defined area without endpoint test changes
+ * (#444, second-location proof).
  *
- * Anders als der Kontextbereich (nur `.md`, Spec 0016 §5.1) fuehrt der
- * Materialordner Binaerdateien nach Whitelist (Spec 0018 §6) - deshalb eigene
- * Namensregel statt Wiederverwendung der `.md`-Regel des Kontextbereichs.
+ * Unlike the context area (.md only, Spec 0016 §5.1), material supports
+ * allowlisted binary files (Spec 0018 §6), requiring its own filename policy.
  *
- * Diese Klasse ist seit Issue #444 eine duenne Bereichsdefinition ueber dem
- * gemeinsamen {@see storage_anchor} fuer alles, was Ortswissen ist. Was
- * echte, bereichseigene Substanz ist - Whitelists, Materialpfad-Aufloesung in
- * Dateimanager-Entwuerfe, verwendete Inhalts-Pruefsummen, Quotenwarnung -
- * bleibt hier oben unveraendert.
+ * Since #444 this class is a thin area definition for location knowledge
+ * above storage_anchor. Material-specific policies stay here: allowlists,
+ * path resolution into file-manager drafts, used-content checksums and
+ * quota warnings.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -48,40 +44,37 @@ use core_external\external_value;
  */
 final class material_files {
 
-    /** @var string Ort-Parameterwert "Materialbestand" (Issue #495, Default) - pointerbewusst, nur lesend. */
-    public const ORT_BESTAND = 'bestand';
+    /** @var string Read-only, pointer-aware material store location (default, #495). */
+    public const LOCATION_STORE = 'store';
 
-    /** @var string Ort-Parameterwert "Werkbank" - fest am Anker, ignoriert den Pointer, einziges Schreibziel. */
-    public const ORT_WERKBANK = 'werkbank';
+    /** @var string Workbench location at the anchor: ignores external pointers and is the only write target. */
+    public const LOCATION_WORKBENCH = 'workbench';
 
     /**
-     * Gemeinsame KI-Beschreibung des Parameters "ort" (Issue #508, Spec 0486 §7)
-     * - eine Quelle fuer alle Material- und Einbettungswerkzeuge, damit eine
-     * Aenderung an Wertebereich oder Beschreibung alle zugleich trifft.
+     * Shared location parameter description (#508, Spec #486 §7). One source
+     * for material and embedding tools so range/description changes reach all of them.
      *
      * @var string
      */
-    public const ORT_DESCRIPTION = '"bestand" (Standard, der gewachsene Materialbestand der Lehrkraft, nur lesend) '
-        . 'oder "werkbank" (Coursepilots eigene Zwischenstation)';
+    public const LOCATION_DESCRIPTION = '"store" (default, the teacher\'s grown material store, read-only) '
+        . 'or "workbench" (Coursepilot\'s own staging area)';
 
-    /** @var string Moodle-Dateikomponente - Moodles Private Files (Spec 0018 §2.1). */
+    /** @var string Moodle file component: Private files (Spec 0018 §2.1). */
     public const COMPONENT = storage_anchor::COMPONENT;
 
-    /** @var string Alleiniger, fuer die KI erreichbarer Dateibereich. */
+    /** @var string Only file area accessible to the AI. */
     public const FILEAREA = storage_anchor::FILEAREA;
 
-    /** @var int Fester Item-Bezug - der Bereich kennt keine weiteren Items. */
+    /** @var int Fixed item ID; the area has no other items. */
     public const ITEMID = storage_anchor::ITEMID;
 
-    /** @var string Default-Wurzelordner, ueberschreibbar per Plugin-Einstellung. */
+    /** @var string Default root directory, overridable by plugin configuration. */
     private const DEFAULT_ROOT = 'coursepilot-material';
 
     /**
-     * component/filearea je Aktivitaetsart fuer deren "content"-Dateibereich
-     * (Issue #434) - eine Quelle statt zweier auseinanderlaufender Kopien in
-     * {@see \local_coursepilot\external\create_module::MATERIAL_REFERENCE_PSEUDOFIELDS}
-     * und {@see \local_coursepilot\external\update_module_settings::MATERIAL_REFERENCE_PSEUDOFIELDS}
-     * (beide referenzieren "resource"/"folder" identisch).
+     * Content file-area component/area by activity type (#434). One source
+     * rather than diverging copies in resource/folder write_options()
+     * material_reference_fields.
      *
      * @var array<string, array{component: string, filearea: string}>
      */
@@ -91,8 +84,8 @@ final class material_files {
     ];
 
     /**
-     * Allgemeine Upload-Whitelist (Spec 0018 §6) - unveraendert aus dem
-     * lokalen Weg uebernommen, siehe lib/assign-tools.js UPLOAD_MIME_TYPES.
+     * General upload allowlist (Spec 0018 §6), retained from the local 1.x
+     * UPLOAD_MIME_TYPES policy.
      *
      * @var string[]
      */
@@ -102,49 +95,45 @@ final class material_files {
     ];
 
     /**
-     * Engere Whitelist einbettbarer Bilder (Spec 0018 §6) - unveraendert aus
-     * dem lokalen Weg uebernommen, siehe lib/assign-tools.js EMBED_IMAGE_MIME_TYPES.
-     * SVG bleibt bewusst zulaessig (Spec 0018 §6).
+     * Narrower image embedding allowlist (Spec 0018 §6), retained from the
+     * local 1.x EMBED_IMAGE_MIME_TYPES policy. SVG stays explicitly allowed.
      *
      * @var string[]
      */
     private const ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
 
     /**
-     * Anteil der Nutzerquote, unter dem eine Warnung erscheint (Spec 0018 §8.1).
+     * User quota fraction below which to warn (Spec 0018 §8.1).
      */
     private const QUOTA_WARNING_RATIO = 0.1;
 
     /**
-     * Gemeinsamer "ort"-Webservice-Parameter (Issue #508): Wertebereich,
-     * Default und KI-Beschreibung an einer Stelle statt je Werkzeug einer
-     * eigenen, leicht auseinanderlaufenden Kopie.
+     * Shared location web service parameter (#508): range, default and AI
+     * description in one place rather than independent tool copies.
      *
      * @return external_value
      */
-    public static function ort_parameter(): external_value {
-        return new external_value(PARAM_ALPHA, self::ORT_DESCRIPTION, VALUE_DEFAULT, self::ORT_BESTAND);
+    public static function location_parameter(): external_value {
+        return new external_value(PARAM_ALPHA, self::LOCATION_DESCRIPTION, VALUE_DEFAULT, self::LOCATION_STORE);
     }
 
     /**
-     * Dieselbe Definition als Rohdaten fuer tool_registry-Schemas, die die
-     * KI-Werkzeugliste bilden (Issue #508).
+     * The same definition as raw tool_registry schema data for the AI tool
+     * list (#508).
      *
      * @return array{type: string, enum: string[], description: string}
      */
-    public static function ort_schema(): array {
+    public static function location_schema(): array {
         return [
             'type' => 'string',
-            'enum' => [self::ORT_BESTAND, self::ORT_WERKBANK],
-            'description' => self::ORT_DESCRIPTION,
+            'enum' => [self::LOCATION_STORE, self::LOCATION_WORKBENCH],
+            'description' => self::LOCATION_DESCRIPTION,
         ];
     }
 
     /**
-     * Die Bereichsdefinition des Materialordners (Issue #444): Wurzel-
-     * Einstellungsname, Standardwurzel, Fehlerschluessel und die eine echte
-     * Policy-Methode dieses Bereichs - die Endungs-Whitelist beim Schreiben
-     * (Spec 0018 §2.4/§6).
+     * Material area definition (#444): root setting/default, error keys and
+     * its specific write policy, the extension allowlist (Spec 0018 §2.4/§6).
      *
      * @return storage_area
      */
@@ -162,30 +151,26 @@ final class material_files {
                     ]);
                 }
             },
-            pointerkey: 'materialordner',
+            pointerkey: 'material_store',
         );
     }
 
     /**
-     * Die Bereichsdefinition der Werkbank (Issue #495, angepasst in Issue #520,
-     * Spec #486 §1): derselbe Wertesatz wie {@see area()} - liegt der
-     * Materialbestand in Moodle, auch mit eigenem Pfad aus einem
-     * Kontextpointer, ist die Werkbank derselbe Ordner (Chat-Anhaenge bleiben
-     * so im gewohnten Ordner fuer Aufraeumen/Loeschen erreichbar). Nur bei
-     * *externem* Materialbestand faellt die Werkbank auf die konfigurierte
-     * Standardwurzel im Anker zurueck ({@see storage_area::$externalfallback}) -
-     * ein externes Ziel kennt noch kein schreibendes Materialwerkzeug (Issue
-     * #490 baut nur den Lesepfad). Jedes schreibende Materialwerkzeug loest
-     * ausschliesslich ueber diesen Bereich auf ({@see resolve_directory()}/
-     * {@see resolve_file()}/{@see resolve_writable_file()} und ihre
-     * relative_*()-Gegenstuecke) - der Materialbestand ({@see area()}) ist nur
-     * ueber die eigenen pointerbewussten Lesemethoden erreichbar
-     * ({@see list_entries_for_ort()}/{@see read_content_for_ort()}), nie als
-     * Schreibziel.
+     * Workbench area definition (#495, adjusted in #520, Spec #486 §1).
+     * Uses area()'s values. If the material store is in Moodle, even with a
+     * custom pointer path, the workbench is the same directory so chat uploads
+     * remain reachable for cleanup/deletion. Only an external material store
+     * makes the workbench fall back to the configured anchor root (externalfallback);
+     * external material storage has no write tool (#490 provides reads).
+     *
+     * All writes resolve through this area: resolve_directory()/resolve_file()/
+     * resolve_writable_file() and their relative_* counterparts. The material
+     * store (area()) is reachable only through its pointer-aware read methods,
+     * list_entries_for_location()/read_content_for_location(), never as a write target.
      *
      * @return storage_area
      */
-    public static function werkbank_area(): storage_area {
+    public static function workbench_area(): storage_area {
         $area = self::area();
         return new storage_area(
             rootsetting: $area->rootsetting,
@@ -199,8 +184,7 @@ final class material_files {
     }
 
     /**
-     * Der eigene Nutzerkontext der angemeldeten Person - niemals aus
-     * Client-Eingaben ableitbar.
+     * The signed-in user's own context, never derived from client input.
      *
      * @return \context_user
      */
@@ -209,68 +193,55 @@ final class material_files {
     }
 
     /**
-     * Loest einen optionalen Client-Unterordner zu einem vollstaendigen
-     * Moodle-Dateipfad innerhalb der Werkbank auf (Issue #520: die Werkbank
-     * folgt dem Materialbestand-Pointer, solange dieser in Moodle liegt,
-     * siehe {@see werkbank_area()}).
+     * Resolve an optional client subdirectory into a complete Moodle workbench
+     * path. The workbench follows a material pointer while its target is in
+     * Moodle (#520); see workbench_area().
      *
-     * @param string $path Relativer Unterordner, z.B. "" oder "faecher/mathe".
-     * @return string Immer mit fuehrendem und abschliessendem "/".
+     * @param string $path Relative subdirectory, e.g. "" or "subjects/math".
+     * @return string Always with leading and trailing slashes.
      */
     public static function resolve_directory(string $path): string {
-        return storage_anchor::resolve_directory(self::werkbank_area(), $path);
+        return storage_anchor::resolve_directory(self::workbench_area(), $path);
     }
 
     /**
-     * Der Client-Pfad zu einem aufgeloesten Verzeichnis - relativ zur
-     * Wurzel. Die Wurzel selbst ist der leere Pfad.
+     * Client path relative to the root for a resolved directory. The root
+     * itself is the empty path.
      *
-     * @param string $directory Ergebnis von {@see resolve_directory()}
+     * @param string $directory Result of {@see resolve_directory()}
      * @return string
      */
     public static function relative_directory(string $directory): string {
-        return storage_anchor::relative_directory(self::werkbank_area(), $directory);
+        return storage_anchor::relative_directory(self::workbench_area(), $directory);
     }
 
     /**
-     * Der Client-Pfad einer Datei - wie {@see relative_directory()}, nur mit
-     * Dateinamen.
+     * Client file path: relative_directory() plus a filename.
      *
-     * @param string $directory Ergebnis von {@see resolve_directory()}
+     * @param string $directory Result of {@see resolve_directory()}
      * @param string $filename
      * @return string
      */
     public static function relative_file(string $directory, string $filename): string {
-        return storage_anchor::relative_file(self::werkbank_area(), $directory, $filename);
+        return storage_anchor::relative_file(self::workbench_area(), $directory, $filename);
     }
 
     /**
-     * Loest einen Client-Dateipfad (Ordner + Dateiname) auf - lesend, ohne
-     * Endungspruefung (Altbestand/von Hand abgelegte Dateien bleiben lesbar).
+     * Resolve a client file path (directory plus filename) for reading, without
+     * extension checks. Existing or manually placed files stay readable.
      *
-     * @param string $path z.B. "screenshot.png" oder "faecher/mathe/blatt.pdf".
-     * @return array{0: string, 1: string} [Ordnerpfad, Dateiname]
+     * @param string $path e.g. "screenshot.png" or "subjects/math/sheet.pdf".
+     * @return array{0: string, 1: string} [directory path, filename]
      */
     public static function resolve_file(string $path): array {
-        return storage_anchor::resolve_file(self::werkbank_area(), $path);
+        return storage_anchor::resolve_file(self::workbench_area(), $path);
     }
 
     /**
-     * Listet eine Ebene des Materialordners - ortsneutral (Issue #488).
+     * Recursively list material files, without directories, regardless of
+     * location (#488), for external\report_loose_material_files.
      *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
-     * @return array<int, array{name: string, type: string, size: int, mimetype: string,
-     *         contenthash: string, timemodified: int}>
-     */
-    public static function list_entries(string $directory): array {
-        return storage_anchor::list_entries($directory);
-    }
-
-    /**
-     * Listet den Materialordner rekursiv, nur Dateien - ortsneutral (Issue
-     * #488), fuer {@see \local_coursepilot\external\report_loose_material_files}.
-     *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $directory Result of {@see resolve_directory()}.
      * @return array<int, array{directory: string, name: string, size: int,
      *         contenthash: string, timecreated: int}>
      */
@@ -279,20 +250,19 @@ final class material_files {
     }
 
     /**
-     * Liest den Inhalt einer Materialdatei - ortsneutral (Issue #488).
+     * Read material content regardless of location (#488).
      *
-     * @param string $directory Ergebnis von {@see resolve_directory()}.
+     * @param string $directory Result of {@see resolve_directory()}.
      * @param string $filename
      * @return array{content: string, mimetype: string, size: int, contenthash: string,
-     *         timemodified: int}|null null, wenn die Datei fehlt oder ein Ordner ist.
+     *         timemodified: int}|null null if the file is missing or is a directory.
      */
     public static function read_content(string $directory, string $filename): ?array {
         return storage_anchor::read_content($directory, $filename);
     }
 
     /**
-     * Alle zulaessigen Dateiendungen (Spec 0018 §6), Vereinigung beider
-     * Whitelists.
+     * Union of both extension allowlists (Spec 0018 §6).
      *
      * @return string[]
      */
@@ -301,7 +271,7 @@ final class material_files {
     }
 
     /**
-     * Ob eine Dateiendung in einer der beiden Whitelists steht.
+     * Whether a filename extension belongs to either allowlist.
      *
      * @param string $filename
      * @return bool
@@ -312,11 +282,10 @@ final class material_files {
     }
 
     /**
-     * Die engere Einbett-Whitelist (Spec 0018 §6, Issue #433) - dieselbe
-     * Menge wie ALLOWED_IMAGE_EXTENSIONS, oeffentlich fuer die Pruefung beim
-     * Einbetten in eine Aktivitaetsbeschreibung: ein PDF darf im
-     * Materialordner liegen und als "Zusaetzliche Datei" angehaengt werden
-     * (Issue #429), aber nicht als `<img>` in den Intro-Text.
+     * Image embedding allowlist (Spec 0018 §6, #433), exposing
+     * ALLOWED_IMAGE_EXTENSIONS for activity-description validation. A PDF can
+     * be stored and attached as an additional file (#429), but cannot be
+     * embedded as an img element in the intro.
      *
      * @return string[]
      */
@@ -325,7 +294,7 @@ final class material_files {
     }
 
     /**
-     * Ob eine Dateiendung in der Einbett-Whitelist steht (Spec 0018 §6).
+     * Whether a filename extension is allowed for image embedding (Spec 0018 §6).
      *
      * @param string $filename
      * @return bool
@@ -336,87 +305,112 @@ final class material_files {
     }
 
     /**
-     * Wie {@see resolve_file()}, aber mit den Schreibregeln aus Spec 0018 §2.4
-     * (uebernommen aus Spec 0016 §5.1): Ordnersegmente nur aus
-     * `[A-Za-z0-9_-]`, Dateiname derselbe Zeichenvorrat plus eine zulaessige
-     * Endung (Spec 0018 §6) statt der `.md`-Regel des Kontextbereichs.
+     * Like resolve_file(), applying Spec 0018 §2.4 write rules (from Spec 0016
+     * §5.1): directory segments use [A-Za-z0-9_-], and filenames use those
+     * characters plus an allowed extension (Spec 0018 §6), rather than .md only.
      *
-     * @param string $path z.B. "screenshot.png" oder "faecher/mathe/blatt.pdf".
-     * @return array{0: string, 1: string} [Ordnerpfad, Dateiname]
+     * @param string $path e.g. "screenshot.png" or "subjects/math/sheet.pdf".
+     * @return array{0: string, 1: string} [directory path, filename]
      * @throws \moodle_exception invalidmaterialpath / materialfiledisallowedtype
      */
     public static function resolve_writable_file(string $path): array {
-        return storage_anchor::resolve_writable_file(self::werkbank_area(), $path);
+        return storage_anchor::resolve_writable_file(self::workbench_area(), $path);
     }
 
     /**
-     * Listet eine Ebene des angefragten Orts (Issue #495, Spec #486 §2/§7):
-     * "werkbank" bleibt die bisherige, pointerfreie Auflistung; "bestand"
-     * (Default) folgt dem Kontextpointer (Moodle oder extern, siehe
-     * {@see pointer_reader::list_entries()}). Beide Zweige weisen einen Pfad
-     * am oder unter dem Kontextbereich ab (ortsunabhaengig) und markieren
-     * einen unmittelbaren Kindordner, der selbst der Kontextbereich ist, als
-     * Eintragstyp "kontextbereich" statt "folder".
+     * List one level at the requested location (#495, Spec #486 §2/§7) through
+     * storage_anchor::port(). workbench stays in Private files; store (default)
+     * follows its pointer to Moodle or external storage. Both reject paths at
+     * or below the context area, irrespective of storage, and mark a direct
+     * child that is the context area as context_area rather than folder.
      *
-     * @param string $ort {@see ORT_BESTAND}/{@see ORT_WERKBANK}.
+     * @param string $locationkey {@see LOCATION_STORE}/{@see LOCATION_WORKBENCH}.
      * @param string $path
      * @return array{directory: string, entries: array}
-     * @throws \moodle_exception invalidmaterialort, materialpathiskontext, sowie
-     *         wie {@see pointer_reader::list_entries()}.
+     * @throws \moodle_exception invalidmateriallocation, materialpathiscontext,
+     *         materialexternalerror, plus location/pointer errors from the anchor.
      */
-    public static function list_entries_for_ort(string $ort, string $path): array {
-        $location = self::location_for_ort($ort);
-        $kontext = storage_anchor::effective_location(context_files::area());
-        $normalisedpath = self::normalise_path($path);
-        self::guard_not_kontextbereich($location, $kontext, $normalisedpath);
-
-        if ($ort === self::ORT_WERKBANK) {
-            $directory = self::resolve_directory($path);
-            $result = ['directory' => self::relative_directory($directory), 'entries' => self::list_entries($directory)];
-        } else {
-            // Eigener Fehlertext statt des KI-gerichteten Kontext-Lücken-
-            // Textes (Issue #526, Spec #486 §8): der Materialbestand ist
-            // keine Kontext-Lücke im Sinne der Spec.
-            $result = pointer_reader::list_entries(self::area(), $path, null, 'materialexternalerror');
+    public static function list_entries_for_location(string $locationkey, string $path): array {
+        [$area, $location, $contextlocation, $normalisedpath] = self::guarded_location($locationkey, $path);
+        try {
+            $entries = storage_anchor::port($area)->list($area, $path);
+        } catch (webdav_error $e) {
+            // Use material-specific failure text instead of the AI-directed
+            // context-gap message (#526, Spec #486 §8).
+            throw pointer_reader::webdav_exception($e, 'materialexternalerror');
         }
 
-        $result['entries'] = array_map(
-            static fn (array $entry): array => self::mark_kontextbereich_entry($entry, $location, $kontext, $normalisedpath),
-            $result['entries']
-        );
-        return $result;
+        return [
+            'directory' => $normalisedpath,
+            'entries' => array_map(
+                static fn (array $entry): array => self::mark_context_area_entry(
+                    self::with_contenthash($entry, $location),
+                    $location,
+                    $contextlocation,
+                    $normalisedpath
+                ),
+                $entries
+            ),
+        ];
     }
 
     /**
-     * Liest eine Datei des angefragten Orts (Issue #495) - siehe
-     * {@see list_entries_for_ort()} fuer die Ort-/Kontextbereich-Logik.
+     * Read a file at the requested location (#495). See
+     * list_entries_for_location() for location/context-area isolation.
      *
-     * @param string $ort {@see ORT_BESTAND}/{@see ORT_WERKBANK}.
+     * @param string $locationkey {@see LOCATION_STORE}/{@see LOCATION_WORKBENCH}.
      * @param string $path
      * @return array{path: string, content: string, mimetype: string, size: int,
      *         contenthash: string, timemodified: int}|null
-     * @throws \moodle_exception invalidmaterialort, materialpathiskontext, sowie
-     *         wie {@see pointer_reader::read_content()}.
+     * @throws \moodle_exception as in {@see list_entries_for_location()}, plus invalidmaterialpath.
      */
-    public static function read_content_for_ort(string $ort, string $path): ?array {
-        $location = self::location_for_ort($ort);
-        $kontext = storage_anchor::effective_location(context_files::area());
-        $normalisedpath = self::normalise_path($path);
-        self::guard_not_kontextbereich($location, $kontext, $normalisedpath);
-
-        if ($ort === self::ORT_WERKBANK) {
-            [$directory, $filename] = self::resolve_file($path);
-            $content = self::read_content($directory, $filename);
-            return $content === null ? null : ($content + ['path' => self::relative_file($directory, $filename)]);
+    public static function read_content_for_location(string $locationkey, string $path): ?array {
+        [$area, $location, , $normalisedpath] = self::guarded_location($locationkey, $path);
+        try {
+            $file = storage_anchor::port($area)->read($area, $path);
+        } catch (webdav_error $e) {
+            throw pointer_reader::webdav_exception($e, 'materialexternalerror');
         }
-        // Siehe list_entries_for_ort(): eigener Fehlertext, keine Kontext-Lücke.
-        return pointer_reader::read_content(self::area(), $path, null, 'materialexternalerror');
+        return $file === null ? null : self::with_contenthash($file, $location) + ['path' => $normalisedpath];
     }
 
     /**
-     * Der Client-Pfad, segmentgeprueft, aber nicht an eine Wurzel gebunden -
-     * fuer Fehlermeldungen und Vergleichsschluessel, bevor feststeht, ob der
-     * Pfad ueberhaupt aufloesbar ist.
+     * Area and resolved locations for a material request after enforcing
+     * context-area protection.
+     *
+     * @param string $locationkey
+     * @param string $path
+     * @return array{0: storage_area, 1: pointer_location, 2: pointer_location, 3: string}
+     * @throws \moodle_exception invalidmateriallocation, materialpathiscontext
+     */
+    private static function guarded_location(string $locationkey, string $path): array {
+        $location = self::location_for_value($locationkey);
+        $contextlocation = storage_anchor::effective_location(context_files::area());
+        $normalisedpath = self::normalise_path($path);
+        self::guard_not_context_area($location, $contextlocation, $normalisedpath);
+        $area = $locationkey === self::LOCATION_WORKBENCH ? self::workbench_area() : self::area();
+        return [$area, $location, $contextlocation, $normalisedpath];
+    }
+
+    /**
+     * Expose the adapter checksum as contenthash with the same shape for both
+     * locations. Directories and external material have none (Spec #486 §7):
+     * an ETag/modification-time substitute is not presented as a content checksum.
+     *
+     * @param array $entry Entry or file from {@see storage_port}.
+     * @param pointer_location $location Location containing the entry.
+     * @return array
+     */
+    private static function with_contenthash(array $entry, pointer_location $location): array {
+        $hascontenthash = $location->kind === pointer_location::MOODLE && ($entry['type'] ?? 'file') !== 'folder';
+        $entry['contenthash'] = $hascontenthash ? $entry['checksum'] : '';
+        unset($entry['checksum']);
+        return $entry;
+    }
+
+    /**
+     * Validate client path segments without binding to a root. Used for error
+     * messages/comparison keys before knowing whether the path can resolve.
      *
      * @param string $path
      * @return string
@@ -427,67 +421,64 @@ final class material_files {
     }
 
     /**
-     * @param string $ort
+     * @param string $locationkey
      * @return pointer_location
-     * @throws \moodle_exception invalidmaterialort
+     * @throws \moodle_exception invalidmateriallocation
      */
-    private static function location_for_ort(string $ort): pointer_location {
-        if (!in_array($ort, [self::ORT_BESTAND, self::ORT_WERKBANK], true)) {
-            throw new \moodle_exception('invalidmaterialort', 'local_coursepilot', '', $ort);
+    private static function location_for_value(string $locationkey): pointer_location {
+        if (!in_array($locationkey, [self::LOCATION_STORE, self::LOCATION_WORKBENCH], true)) {
+            throw new \moodle_exception('invalidmateriallocation', 'local_coursepilot', '', $locationkey);
         }
-        return $ort === self::ORT_WERKBANK
-            ? storage_anchor::effective_location(self::werkbank_area())
+        return $locationkey === self::LOCATION_WORKBENCH
+            ? storage_anchor::effective_location(self::workbench_area())
             : storage_anchor::effective_location(self::area());
     }
 
     /**
-     * Materialwege lehnen jeden Pfad am oder unter dem Kontextbereich ab
-     * (Issue #495, Spec #486 §2/§7) - ortsunabhaengig, ueber den
-     * Vergleichsschluessel aus {@see pointer_location::comparison_key()}.
+     * Material paths at or below the context area are rejected regardless of
+     * location (#495, Spec #486 §2/§7), using pointer_location::comparison_key().
      *
-     * @param pointer_location $location Ort, an dem $subpath aufgeloest wird.
-     * @param pointer_location $kontext Aufgeloester Kontextbereich.
-     * @param string $subpath Bereits segmentgeprueft, siehe {@see normalise_path()}.
-     * @throws \moodle_exception materialpathiskontext
+     * @param pointer_location $location Location resolving subpath.
+     * @param pointer_location $contextlocation Resolved context area.
+     * @param string $subpath Already segment-validated; see normalise_path().
+     * @throws \moodle_exception materialpathiscontext
      */
-    private static function guard_not_kontextbereich(pointer_location $location, pointer_location $kontext, string $subpath): void {
-        if (str_starts_with($location->comparison_key($subpath), $kontext->comparison_key())) {
-            throw new \moodle_exception('materialpathiskontext', 'local_coursepilot');
+    private static function guard_not_context_area(pointer_location $location, pointer_location $contextlocation, string $subpath): void {
+        if (str_starts_with($location->comparison_key($subpath), $contextlocation->comparison_key())) {
+            throw new \moodle_exception('materialpathiscontext', 'local_coursepilot');
         }
     }
 
     /**
-     * Markiert einen unmittelbaren Kindordner, der selbst der Kontextbereich
-     * ist, als eigenen Eintragstyp "kontextbereich" statt "folder" (Issue
-     * #495, Spec #486 §2/§7) - sichtbar gelistet, aber ueber die Materialwege
-     * nicht zu betreten (das erzwingt {@see guard_not_kontextbereich()} beim
-     * naechsten Zugriff).
+     * Mark a direct child that is the context area as context_area, not folder
+     * (#495, Spec #486 §2/§7). It is listed visibly but guard_not_context_area()
+     * blocks subsequent access through material tools.
      *
      * @param array $entry
-     * @param pointer_location $location Ort, an dem $parentpath liegt.
-     * @param pointer_location $kontext Aufgeloester Kontextbereich.
-     * @param string $parentpath Aufgeloester Elternpfad, segmentgeprueft.
+     * @param pointer_location $location Location containing parentpath.
+     * @param pointer_location $contextlocation Resolved context area.
+     * @param string $parentpath Resolved, segment-validated parent path.
      * @return array
      */
-    private static function mark_kontextbereich_entry(
+    private static function mark_context_area_entry(
         array $entry,
         pointer_location $location,
-        pointer_location $kontext,
+        pointer_location $contextlocation,
         string $parentpath
     ): array {
         if ($entry['type'] !== 'folder') {
             return $entry;
         }
         $childpath = $parentpath === '' ? $entry['name'] : $parentpath . '/' . $entry['name'];
-        if ($location->comparison_key($childpath) === $kontext->comparison_key()) {
-            $entry['type'] = 'kontextbereich';
+        if ($location->comparison_key($childpath) === $contextlocation->comparison_key()) {
+            $entry['type'] = 'context_area';
         }
         return $entry;
     }
 
     /**
-     * Standard-Nutzerrecht auf die eigenen Dateien (wie context_files) - der
-     * Materialordner liegt im selben Bereich wie "Meine Dateien".
+     * Require the standard permission to manage one's own files, as in
+     * context_files. The material folder shares the Private files area.
      *
      * @throws \required_capability_exception
      */
@@ -496,23 +487,21 @@ final class material_files {
     }
 
     /**
-     * Restplatz in Byte nach Nutzerquote - dieselbe, root-unabhaengige
-     * Berechnung wie {@see context_files::remaining_quota()}; im gemeinsamen
-     * {@see storage_anchor} wiederverwendet statt verdoppelt, weil sie sich
-     * auf die gesamte Nutzerquote bezieht, nicht auf einen Unterordner.
+     * Remaining user quota in bytes, independent of root, as in
+     * context_files::remaining_quota(). Reuse storage_anchor because the quota
+     * covers the whole user rather than a subdirectory.
      *
-     * @return int|null Restplatz in Byte, oder null wenn keine Grenze gilt.
+     * @return int|null Remaining bytes, or null when unlimited.
      */
     public static function remaining_quota(): ?int {
         return storage_anchor::remaining_quota();
     }
 
     /**
-     * Weist einen Schreibvorgang ab, der die Nutzerquote sprengen wuerde -
-     * das deckt auch die volle Quote ab (Restplatz 0, jeder positive Zuwachs
-     * scheitert), Spec 0018 §8.1.
+     * Reject writes exceeding the user quota, including any positive growth
+     * when zero space remains (Spec 0018 §8.1).
      *
-     * @param int $additionalbytes Zuwachs gegenueber dem bisherigen Stand.
+     * @param int $additionalbytes Growth compared with the previous content.
      * @throws \moodle_exception materialquotaexceeded
      */
     public static function require_quota(int $additionalbytes): void {
@@ -520,11 +509,11 @@ final class material_files {
     }
 
     /**
-     * Warnmeldung, wenn nach einem Schreibvorgang weniger als 10% der
-     * Nutzerquote uebrig bleiben (Spec 0018 §8.1, Form wie Spec 0016 §5.4).
+     * Warn when a write leaves less than 10% of user quota
+     * (Spec 0018 §8.1, following Spec 0016 §5.4).
      *
-     * @param int $additionalbytes Zuwachs gegenueber dem bisherigen Stand.
-     * @return string|null Warnmeldung, oder null wenn keine Warnung noetig ist.
+     * @param int $additionalbytes Growth compared with the previous content.
+     * @return string|null Warning text, or null when no warning is needed.
      */
     public static function quota_warning(int $additionalbytes): ?string {
         global $CFG;
@@ -542,13 +531,11 @@ final class material_files {
     }
 
     /**
-     * Groessengrenze je Datei fuer {@see resolve_into_draft()} (Spec #486 §7,
-     * Issue #496): der Entwurf zaehlt nicht gegen die Nutzerquote (eine
-     * Bestandsdatei durchlaeuft nie {@see require_quota()}), stattdessen gilt
-     * $CFG->maxbytes - dieselbe Grenze, die Moodles eigener Formularweg
-     * (Dateimanager/-picker) fuer Uploads in eine Aktivitaet anlegt.
-     * $CFG->maxbytes <= 0 bedeutet "keine eigene Grenze" (Moodle-Konvention,
-     * siehe get_max_upload_file_size()).
+     * Per-file size limit for resolve_into_draft() (Spec #486 §7, #496).
+     * Drafts do not consume user quota, so existing-store files do not call
+     * require_quota(). Instead apply CFG->maxbytes, the same limit Moodle
+     * uses for activity uploads in file managers/pickers. A nonpositive value
+     * means no additional limit (Moodle convention; get_max_upload_file_size()).
      *
      * @param int $bytes
      * @return void
@@ -568,7 +555,7 @@ final class material_files {
     }
 
     /**
-     * Moodle-Dateisatz fuer eine Datei im Materialordner.
+     * Moodle file record for a material file.
      *
      * @param int $contextid
      * @param string $directory
@@ -580,46 +567,35 @@ final class material_files {
     }
 
     /**
-     * Loest eine Liste von Materialordner-Pfaden zu einem Dateimanager-Entwurf
-     * auf (Spec 0018 §4.2/§7: "der Verweisweg ist fuer alle Herkuenfte
-     * derselbe Pfad ab dem Materialordner"). Der Entwurf wird zuerst mit den
-     * bereits an $targetcontextid/$component/$filearea/$itemid haengenden
-     * Dateien vorbelegt (file_prepare_draft_area) - bestehende Anhaenge
-     * bleiben also erhalten, ein Aufruf haengt nur an, ersetzt nicht.
+     * Resolve material paths into a file-manager draft (Spec 0018 §4.2/§7).
+     * Prepare existing targetcontextid/component/filearea/itemid attachments
+     * with file_prepare_draft_area() first. Preserve them: calls append, not replace.
      *
-     * Rein lesend gegenueber dem Materialordner: jede Quelldatei wird
-     * kopiert, nie verschoben oder geloescht - scheitert der Aufrufer danach
-     * beim eigentlichen Schreiben, bleibt die Materialdatei unangetastet
-     * liegen (Spec 0018 §4.2 "kein Verlust im Fehlerfall").
+     * Read-only for sources: copy each file without moving or deleting it. If a
+     * later activity write fails, material files remain untouched (Spec 0018 §4.2).
      *
-     * Jeder Listeneintrag ist entweder ein reiner Materialordner-Pfad
-     * (String, landet im Draft-Wurzelverzeichnis "/") oder ein Objekt
-     * `['pfad' => <materialordner-pfad>, 'zielordner' => <unterordner>]`
-     * (Issue #434, "Zielverzeichnis innerhalb des Ordners wählbar" -
-     * mod_folder fuehrt echte Unterordner, mod_assign/mod_resource-Fileareas
-     * sind flach und nutzen deshalb nur den String-Fall). "zielordner"
-     * durchlaeuft dieselbe Segmentpruefung wie ein Materialordner-Pfad
-     * (kein separates Regelwerk fuer den Draft-Zielpfad).
+     * Each entry is either a path string (placed at draft root /) or an object
+     * {path, target_folder} (#434: choose a folder inside mod_folder's content).
+     * mod_folder supports real subdirectories; mod_assign/mod_resource file areas
+     * are flat and use strings. target_folder uses the same segment validation
+     * as material paths, without a separate draft-path policy.
      *
-     * Seit Issue #496 (Spec #486 §7) liest die Quelle ueber
-     * {@see read_content_for_ort()} statt fest ueber die Werkbank - "bestand"
-     * (Default) kopiert also direkt aus dem gewachsenen Materialbestand der
-     * Lehrkraft, ohne Umweg ueber die Werkbank. Fuer diesen Zweig zaehlt der
-     * Entwurf nicht gegen die Nutzerquote (Spec #486 §7: "Der Entwurf
-     * belastet die Nutzerquote nicht"), stattdessen gilt je Datei die Grenze
-     * {@see self::guard_embed_size()} ($CFG->maxbytes) - eine Werkbank-Datei
-     * bleibt bei ihrer bestehenden Grenze (Servergrenze beim Hochladen ueber
-     * upload_material_file), keine neue Grenze durch diesen Kopiervorgang.
+     * Since #496 (Spec #486 §7), read_content_for_location() resolves the source.
+     * store (default) copies directly from the teacher's existing material without
+     * staging in the workbench. Drafts do not consume user quota; each store
+     * file is subject to guard_embed_size() (CFG->maxbytes). Workbench files
+     * already passed upload_material_file's server limit, so copying adds no
+     * new limit for them.
      *
-     * @param int $targetcontextid Kontext der Zielaktivitaet (Modulkontext).
-     * @param string $component z.B. "mod_assign".
-     * @param string $filearea z.B. "introattachment".
+     * @param int $targetcontextid Target activity module context.
+     * @param string $component e.g. "mod_assign".
+     * @param string $filearea e.g. "introattachment".
      * @param int $itemid
-     * @param array $paths Materialordner-Pfade, z.B. ["arbeitsblatt.pdf"], oder
-     *        `['pfad' => ..., 'zielordner' => ...]`-Objekte.
-     * @param string $ort {@see ORT_BESTAND}/{@see ORT_WERKBANK} - Quelle der Pfade (Issue #496).
-     * @return int Entwurfs-Itemid, direkt als *_update_instance()-Feldwert nutzbar.
-     * @throws \moodle_exception invalidmaterialpath / invalidmaterialort / materialpathiskontext /
+     * @param array $paths Material paths, e.g. ["worksheet.pdf"], or
+     *        `['path' => ..., 'target_folder' => ...]` objects.
+     * @param string $locationkey {@see LOCATION_STORE}/{@see LOCATION_WORKBENCH} - Source of paths (#496).
+     * @return int Draft item ID, usable as a *_update_instance() field value.
+     * @throws \moodle_exception invalidmaterialpath / invalidmateriallocation / materialpathiscontext /
      *         materialfilenotfound / materialembedtoolarge
      */
     public static function resolve_into_draft(
@@ -628,7 +604,7 @@ final class material_files {
         string $filearea,
         int $itemid,
         array $paths,
-        string $ort = self::ORT_BESTAND
+        string $locationkey = self::LOCATION_STORE
     ): int {
         $fs = get_file_storage();
         $draftitemid = 0;
@@ -636,61 +612,54 @@ final class material_files {
 
         $usercontext = self::own_context();
         foreach ($paths as $entry) {
-            self::embed_draft_entry($fs, $usercontext->id, $draftitemid, $entry, $ort);
+            self::embed_draft_entry($fs, $usercontext->id, $draftitemid, $entry, $locationkey);
         }
 
         return $draftitemid;
     }
 
     /**
-     * Loest einen einzelnen Listeneintrag auf und kopiert ihn in den Entwurf
-     * (Issue #523: aus resolve_into_draft() ausgelagert, um die Funktion
-     * unter der 50-Zeilen-Grenze zu halten).
+     * Resolve one list entry and copy it into the draft (#523: extracted from
+     * resolve_into_draft() to keep the function below 50 lines).
      *
      * @param \file_storage $fs
      * @param int $usercontextid
      * @param int $draftitemid
      * @param string|array $entry
-     * @param string $ort
+     * @param string $locationkey
      */
     private static function embed_draft_entry(
         \file_storage $fs,
         int $usercontextid,
         int $draftitemid,
         $entry,
-        string $ort
+        string $locationkey
     ): void {
         [$path, $targetdirectory] = self::split_draft_entry($entry);
-        $source = self::read_content_for_ort($ort, $path);
+        $source = self::read_content_for_location($locationkey, $path);
         if ($source === null) {
             throw new \moodle_exception('materialfilenotfound', 'local_coursepilot', '', self::normalise_path($path));
         }
-        if ($ort === self::ORT_BESTAND) {
-            // Nur der Bestand-Zweig braucht diese Grenze (Spec #486 §7):
-            // eine Werkbank-Datei durchlief bereits die Servergrenze von
-            // upload_material_file (get_max_upload_file_size()) beim
-            // Hochladen - eine zusaetzliche $CFG->maxbytes-Pruefung hier
-            // wuerde eine bereits abgelegte, groessere Werkbank-Datei
-            // nachtraeglich am Einbetten hindern (Verhaltensaenderung
-            // ohne Grundlage in der Spec, Review-Fund zu Issue #496).
+        if ($locationkey === self::LOCATION_STORE) {
+            // Only store sources need this limit (Spec #486 §7). Workbench files
+            // already passed upload_material_file's get_max_upload_file_size() limit.
+            // Applying CFG->maxbytes here would retroactively prevent embedding a
+            // larger stored workbench file, changing behavior without spec support
+            // (#496 review finding).
             self::guard_embed_size(strlen($source['content']));
         }
         $filename = basename($source['path']);
 
         $existing = $fs->get_file($usercontextid, 'user', 'draft', $draftitemid, $targetdirectory, $filename);
         if ($existing) {
-            // Gleicher Dateiname erneut referenziert - juengste Version gewinnt.
+            // The same filename was referenced again: newest content wins.
             $existing->delete();
         }
-        // ponytail: read_content() gibt bewusst kein stored_file zurueck
-        // (Issue #487/#488, siehe storage_anchor::read_content()) - der
-        // Kopiervorgang traegt deshalb nur noch Mimetype explizit weiter,
-        // nicht Lizenz/Autor des Originals (Moodle-Defaults gelten dann
-        // fuer den Entwurf). In der Praxis identisch, weil Materialdateien
-        // ausschliesslich ueber diese Werkzeuge angelegt werden und dabei
-        // ohnehin nie eine eigene Lizenz/einen eigenen Autor setzen.
-        // Aufwerten (stored_file-Kopie mit vollen Metadaten), sobald ein
-        // echter Fall auftritt, in dem das einen Unterschied macht.
+        // ponytail: read_content() intentionally returns no stored_file (#487/#488;
+        // see storage_anchor::read_content()). Copy only MIME type explicitly,
+        // leaving license/author to draft defaults. Material uploads through these
+        // tools already use default metadata. Upgrade to stored_file copies with
+        // full metadata when a real case demonstrates the difference.
         $fs->create_file_from_string([
             'contextid' => $usercontextid,
             'component' => 'user',
@@ -703,11 +672,11 @@ final class material_files {
     }
 
     /**
-     * Zerlegt einen {@see self::resolve_into_draft()}-Listeneintrag in
-     * Materialordner-Pfad und Draft-Zielordner (Issue #434).
+     * Split a resolve_into_draft() entry into material path and draft target
+     * directory (#434).
      *
-     * @param mixed $entry String oder `['pfad' => ..., 'zielordner' => ...]`.
-     * @return array{0: string, 1: string} [Materialordner-Pfad, Draft-Zielordner mit "/"-Rahmen].
+     * @param mixed $entry String or `['path' => ..., 'target_folder' => ...]`.
+     * @return array{0: string, 1: string} [material path, draft target directory with surrounding slashes].
      * @throws \moodle_exception invalidmaterialpath
      */
     private static function split_draft_entry($entry): array {
@@ -715,27 +684,24 @@ final class material_files {
         if (is_string($entry)) {
             return [$path, '/'];
         }
-        $zielordner = $entry['zielordner'] ?? '';
-        if (!is_string($zielordner)) {
+        $targetfolder = $entry['target_folder'] ?? '';
+        if (!is_string($targetfolder)) {
             throw new \moodle_exception('invalidmaterialpath', 'local_coursepilot');
         }
-        // Dieselbe Segmentpruefung wie ein gewoehnlicher Materialordner-Pfad
-        // (kein separates Regelwerk fuer den Draft-Zielpfad): resolve_directory()
-        // wirft bei "."/".."-Segmenten; relative_directory() zieht die
-        // Materialwurzel wieder ab, uebrig bleiben die geprueften Segmente.
-        $relative = self::relative_directory(self::resolve_directory($zielordner));
+        // Use ordinary material-path validation rather than a separate draft
+        // policy: resolve_directory() rejects . and .. segments, and
+        // relative_directory() removes the root, leaving validated segments.
+        $relative = self::relative_directory(self::resolve_directory($targetfolder));
         $targetdirectory = $relative === '' ? '/' : '/' . $relative . '/';
         return [$path, $targetdirectory];
     }
 
     /**
-     * Der reine Materialordner-Pfad eines {@see self::resolve_into_draft()}-
-     * Listeneintrags, ohne Zielordner - oeffentlich, damit Aufrufer wie
-     * {@see \local_coursepilot\external\update_module_settings::trash_files_about_to_be_replaced()}
-     * denselben String/Objekt-Fall nicht ein zweites Mal von Hand
-     * unterscheiden muessen (Issue #434).
+     * Extract a material path from a resolve_into_draft() entry, without its
+     * target folder. Public so callers such as catalog\write_target::update_activity()
+     * need not repeat the string/object distinction (#434).
      *
-     * @param mixed $entry String oder `['pfad' => ..., 'zielordner' => ...]`.
+     * @param mixed $entry String or `['path' => ..., 'target_folder' => ...]`.
      * @return string
      * @throws \moodle_exception invalidmaterialpath
      */
@@ -743,23 +709,20 @@ final class material_files {
         if (is_string($entry)) {
             return $entry;
         }
-        if (!is_array($entry) || !isset($entry['pfad']) || !is_string($entry['pfad'])) {
+        if (!is_array($entry) || !isset($entry['path']) || !is_string($entry['path'])) {
             throw new \moodle_exception('invalidmaterialpath', 'local_coursepilot');
         }
-        return $entry['pfad'];
+        return $entry['path'];
     }
 
     /**
-     * Alle `contenthash`-Werte, die in einer Aktivitaets-Filearea eines
-     * Kurses auftauchen, in dem die aufrufende Person Coursepilot nutzen darf
-     * (Spec 0018 §8.2, Issue #438) - kein neuer Zustand, jeder Aufruf fragt
-     * frisch ab, statt eine Verwendungstabelle zu fuehren, die driften
-     * koennte.
+     * Collect contenthash values from activity file areas in courses where the
+     * caller can use Coursepilot (Spec 0018 §8.2, #438). Query each time rather
+     * than maintaining a usage table that could drift.
      *
-     * Erfasst wird der komplette Kurskontext-Teilbaum (jede Aktivitaet,
-     * jede Fragebank innerhalb des Kurses), nicht nur `mod_resource`/
-     * `mod_folder`: eine eingebettete Datei in einer Aufgabenbeschreibung
-     * oder einem Fragetext ist genauso "verwendet".
+     * Include the entire course context subtree, all activities and question
+     * banks, rather than only mod_resource/mod_folder. Files embedded in
+     * assignment descriptions or question text count as used too.
      *
      * @return string[]
      */
@@ -788,39 +751,35 @@ final class material_files {
     }
 
     /**
-     * Setzt den Inhalt einer Materialdatei neu - {@see storage_anchor::replace()}
-     * wiederverwendet statt verdoppelt: die Funktion ist rein
-     * dateisystemisch (Zwischendatei, dann erst die alte weg, Spec 0016 §5.3)
-     * und kennt weder Kontext- noch Materialwurzel.
+     * Replace material content through storage_anchor::replace(), avoiding
+     * duplicated file-system logic. It stages a temporary file before deleting
+     * the old file (Spec 0016 §5.3), regardless of context/material roots.
      *
-     * @param \stored_file|null $existing Bisherige Datei, falls vorhanden.
-     * @param array $filerecord Ziel aus {@see filerecord()}.
-     * @param string $content Vollstaendiger neuer Inhalt.
+     * @param \stored_file|null $existing Previous file, if any.
+     * @param array $filerecord Target record from filerecord().
+     * @param string $content Complete new content.
      */
     public static function replace(?\stored_file $existing, array $filerecord, string $content): void {
         storage_anchor::replace($existing, $filerecord, $content);
     }
 
     /**
-     * Quotengeprueftes Schreiben einer Materialdatei - gemeinsamer Kern fuer
-     * jeden Aufrufer, der Bytes in den Materialordner legt (Spec 0018 §8.1):
-     * {@see \local_coursepilot\external\upload_material_file} (Chat-Anhang,
-     * mit vorgelagerter Endungs-Whitelist + Gleichzeitigkeitsschutz) und
-     * {@see \local_coursepilot\external\export_questions_xml} (vollstaendiger
-     * XML-Export, ohne Endungs-Whitelist - ".xml" steht bewusst nicht auf
-     * der Upload-Whitelist, siehe {@see resolve_writable_file()}). Vorher
-     * war diese Groessen-/Quote-/Schreib-Choreografie in beiden Endpunkten
-     * dupliziert (Ticket #437 Standards-Review).
+     * Quota-checked material write shared by upload_material_file (chat
+     * attachments with preceding extension/concurrency checks) and
+     * export_questions_xml (complete XML export without the upload allowlist,
+     * which deliberately excludes .xml; see resolve_writable_file()).
+     * Previously these endpoints duplicated size/quota/write orchestration
+     * (#437 standards review).
      *
-     * @param string $directory Ergebnis von {@see resolve_file()}/{@see resolve_writable_file()}.
+     * @param string $directory Result of resolve_file()/resolve_writable_file().
      * @param string $filename
-     * @param string $content Vollstaendiger neuer Inhalt.
-     * @param int $oldsize Bisherige Dateigroesse in Byte, 0 wenn die Datei noch nicht existiert
-     *        (Aufrufer kennt sie meist schon, z.B. fuer eine eigene Gleichzeitigkeits- oder
-     *        "created"-Pruefung ueber {@see read_content()}).
-     * @param array $recordoverrides Zusaetzliche/ueberschreibende Dateisatz-Felder, siehe
-     *        {@see storage_anchor::write()} - z.B. das `source`-Feld eines Bildausschnitts.
-     * @return string|null Quotenwarnung, oder null wenn keine Warnung noetig ist.
+     * @param string $content Complete new content.
+     * @param int $oldsize Previous file size in bytes, zero if absent
+     *        (usually already known by the caller, e.g. from its own concurrency or
+     *        created check through read_content()).
+     * @param array $recordoverrides Additional/overriding file record fields; see
+     *        storage_anchor::write(), e.g. a crop's source field.
+     * @return string|null Quota warning, or null when no warning is needed.
      * @throws \moodle_exception materialquotaexceeded
      */
     public static function write(

@@ -24,58 +24,33 @@ use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use core_privacy\local\request\transform;
 use local_coursepilot\context_files;
+use local_coursepilot\history\retention;
+use local_coursepilot\history\version_history;
 
 /**
- * Voller Privacy-Provider (#336, erweitert in #345 um Kontextdateien aus
- * #343): die Autorisierungscode- und Token-Tabellen binden `userid` an die
- * Lehrkraft, die den Client autorisiert hat - `null_provider` traegt hier
- * nicht (anders als beim Moodle-Webservice-Token, siehe
- * core_webservice\privacy\provider), weil lokale, plugin-eigene Tabellen
- * betroffen sind, kein Core-Loeschmechanismus existiert. Voller Provider wie
- * im Resolutionskommentar zu #298 (Punkt 7) vereinbart: metadata\provider +
- * request\plugin\provider + core_userlist_provider.
+ * Full privacy provider (#336, extended for context files in #345/#343).
+ * OAuth codes and tokens link userid to the authorizing teacher. Local
+ * plugin tables need metadata, request and userlist providers because
+ * core has no deletion mechanism for them (#298 resolution, point 7).
  *
- * Zwei Kontextebenen: Autorisierungscodes/Token haengen am Systemkontext
- * (kein Kurs-/Modulbezug), Kontextdateien (#343) am privaten Nutzerkontext
- * der jeweiligen Lehrkraft ({@see \local_coursepilot\context_files}).
+ * OAuth records belong to the system context; context data belongs to
+ * the teacher's user context. After migration to Private Files (#407,
+ * Spec 0016 §3.2), this provider handles only the legacy
+ * local_coursepilot/coursepilot_context file area. Core user privacy
+ * exports and deletes current user/private context and material files
+ * (Spec 0018 §2, #428). A second path here would duplicate exports or
+ * delete unrelated Private Files. Once teachers clear migrated legacy
+ * files, the legacy handling can be removed.
  *
- * Der Datei-Teil dieses Providers deckt seit dem Umzug auf Moodles Private
- * Files (#407, Spec 0016 Abschnitt 3.2) nur noch den **Altbestand** in der
- * alten Filearea `local_coursepilot/coursepilot_context` ab - deshalb stehen hier
- * ueberall LEGACY_COMPONENT/LEGACY_FILEAREA statt der aktuellen Konstanten.
- * Die neuen Kontextdateien liegen in `user/private` und werden vom
- * Core-Provider (core_user, `user/classes/privacy/provider.php`) exportiert
- * und geloescht; Coursepilot fasst sie bewusst NICHT an - ein zweiter Export
- * waere Doppelarbeit, ein zweiter Loeschpfad wuerde fremde Dateien aus
- * "Meine Dateien" mitreissen. Ist der Altbestand vollstaendig umgezogen und
- * von der Lehrkraft geraeumt, kann der Datei-Teil in einem spaeteren Release
- * ersatzlos entfallen.
+ * Log events (#339) are handled by logstore_standard's privacy provider,
+ * which exports/deletes a user's logs regardless of source plugin. Events
+ * already supply userid, contextid and component.
  *
- * Derselbe Grund gilt fuer den Materialordner (Spec 0018 §2, #428,
- * {@see \local_coursepilot\material_files}): auch er liegt in `user/private`
- * (eigener Unterordner, gleicher Anker) und wird bereits vom Core-Provider
- * exportiert/geloescht - kein zusaetzlicher Export-/Loeschpfad hier noetig.
- *
- * Protokollereignisse (#339) sind bewusst NICHT hier abgedeckt: das Ablegen,
- * Exportieren und Loeschen der eigentlichen Log-Eintraege besorgt Moodle-Core
- * zentral ueber logstore_standard's eigenen Privacy-Provider (der exportiert/
- * loescht alle Log-Eintraege eines Nutzers unabhaengig vom ausloesenden
- * Plugin) - ein eigener Export-/Loeschpfad hier waere doppelte, mit Core
- * kollidierende Arbeit. Die Ereignisse selbst tragen bereits die dafuer
- * noetigen Merkmale (userid, contextid, component), siehe
- * classes/event/tool_access_*.php.
- *
- * Der Aenderungsverlauf (local_coursepilot_cm_version/_version_file/_cm_file,
- * #385/#386/#387) ist aus demselben Grund nur in get_metadata() beschrieben,
- * ohne eigenen Export-/Loeschpfad fuer die dort mitgefuehrte userid: dieses
- * Ticket (#387) verlangt eine beschriebene Aufbewahrung, keinen vollen
- * GDPR-Pfad je Nutzer. Anders als bei Log-Eintraegen gibt es hier aber
- * bereits eine harte Obergrenze durch Code, nicht durch einen Core-Provider:
- * die admin-seitige Loeschfrist (Standard 1 Jahr, siehe
- * local_coursepilot\history\retention) sowie die Kurs-/Aktivitaets-Kaskade
- * loeschen jeden Stand spaetestens automatisch. Ein manueller Export-/
- * Loeschpfad je Nutzer kann bei Bedarf nachgeruestet werden, sobald der
- * Verlauf ueber Ticket 10 hinaus tatsaechlich personenbezogene Inhalte traegt.
+ * Change history (#385/#641) belongs to module contexts. Discover it by
+ * state userid for existing modules; retention handles vanished modules.
+ * Export only the requester's metadata, without snapshot content, and
+ * files allowed by history\file_policy. Delete through the shared
+ * history\retention::delete_versions() contract.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -92,7 +67,7 @@ final class provider implements
      */
     public static function get_metadata(collection $collection): collection {
         $collection = self::describe_oauth_and_version_tables($collection);
-        $collection = self::describe_context_and_werkbank_tables($collection);
+        $collection = self::describe_context_and_workbench_tables($collection);
 
         $collection->add_external_location_link('webdav_external_storage', [
             'path' => 'privacy:metadata:webdav_external_storage:path',
@@ -103,9 +78,8 @@ final class provider implements
     }
 
     /**
-     * Registriert die OAuth- und Aktivitaetsstand-Tabellen (Issue #523: aus
-     * get_metadata() ausgelagert, um die Funktion unter der
-     * 50-Zeilen-Grenze zu halten).
+     * Describe OAuth and activity-version tables (Issue #523, extracted from
+     * get_metadata() to keep it within 50 lines).
      *
      * @param collection $collection
      * @return collection
@@ -120,7 +94,15 @@ final class provider implements
             'used' => 'privacy:metadata:oauth_code:used',
         ], 'privacy:metadata:oauth_code');
 
+        $collection->add_database_table('local_coursepilot_oauth_grant', [
+            'userid' => 'privacy:metadata:oauth_grant:userid',
+            'clientid' => 'privacy:metadata:oauth_grant:clientid',
+            'revoked' => 'privacy:metadata:oauth_grant:revoked',
+            'timecreated' => 'privacy:metadata:oauth_grant:timecreated',
+        ], 'privacy:metadata:oauth_grant');
+
         $collection->add_database_table('local_coursepilot_oauth_token', [
+            'connectionid' => 'privacy:metadata:oauth_token:connectionid',
             'clientid' => 'privacy:metadata:oauth_token:clientid',
             'userid' => 'privacy:metadata:oauth_token:userid',
             'expires' => 'privacy:metadata:oauth_token:expires',
@@ -134,13 +116,17 @@ final class provider implements
         $collection->add_database_table('local_coursepilot_cm_version', [
             'cmid' => 'privacy:metadata:cm_version:cmid',
             'courseid' => 'privacy:metadata:cm_version:courseid',
+            'version' => 'privacy:metadata:cm_version:version',
+            'source' => 'privacy:metadata:cm_version:source',
+            'sourcecmid' => 'privacy:metadata:cm_version:sourcecmid',
             'userid' => 'privacy:metadata:cm_version:userid',
+            'moduleinfo_json' => 'privacy:metadata:cm_version:moduleinfo_json',
+            'coursemodule_json' => 'privacy:metadata:cm_version:coursemodule_json',
+            'arrangement_json' => 'privacy:metadata:cm_version:arrangement_json',
             'timecreated' => 'privacy:metadata:cm_version:timecreated',
         ], 'privacy:metadata:cm_version');
-        // Beide Tabellen tragen keine userid, nur die Dateibeschreibung eines
-        // Standes (siehe Klassenkommentar oben) - trotzdem mit Feldern statt
-        // [] deklariert, sonst warnt Moodle-Core bei jedem get_metadata()-
-        // Aufruf ("Table '...' was supplied without any fields").
+        // Both tables store file descriptions without userid. Still declare fields
+        // rather than [] to avoid Moodle's missing-fields metadata warning.
         $collection->add_database_table('local_coursepilot_cm_version_file', [
             'versionid' => 'privacy:metadata:cm_version_file:versionid',
             'fileid' => 'privacy:metadata:cm_version_file:fileid',
@@ -159,41 +145,36 @@ final class provider implements
     }
 
     /**
-     * Registriert das Markierungsgedaechtnis und das Werkbank-Downloadticket
-     * (Issue #523: aus get_metadata() ausgelagert).
+     * Describe marking memory and workbench download tickets (Issue #523,
+     * extracted from get_metadata()).
      *
      * @param collection $collection
      * @return collection
      */
-    private static function describe_context_and_werkbank_tables(collection $collection): collection {
-        // Markierungsgedaechtnis (#493, Spec #486 §6): traegt userid und den
-        // Client-Pfad einer Kontextdatei, siehe local_coursepilot\mark_memory.
+    private static function describe_context_and_workbench_tables(collection $collection): collection {
+        // Marking memory (#493, Spec #486 §6): user ID and context-file client path.
+        // See local_coursepilot\mark_memory.
         $collection->add_database_table('local_coursepilot_context_mark', [
             'userid' => 'privacy:metadata:context_mark:userid',
             'path' => 'privacy:metadata:context_mark:path',
             'ismarked' => 'privacy:metadata:context_mark:ismarked',
         ], 'privacy:metadata:context_mark');
 
-        // Externer Ablageort (#500, ADR 0021, Spec #486 §11): Kontextbereich
-        // und Materialbestand koennen am WebDAV-Speicher der Lehrkraft
-        // liegen, ausserhalb jedes Moodle-Loesch-/Exportmechanismus. Pointer
-        // (Kontextpointer-Datei), Ausstandsnotiz und Werkbank bleiben davon
-        // unberuehrt - sie liegen weiter in `user/private` und sind ueber
-        // Moodle-Cores eigenen Provider (user/classes/privacy/provider.php)
-        // gedeckt, wie im Klassenkommentar oben begruendet. Hier wird nur der
-        // externe Ort selbst benannt, den eine Auskunft sonst verschweigen
-        // wuerde.
-        // Werkbank-Downloadticket (#501, Spec #486 §13): system-kontextgebunden
-        // wie die OAuth-Tabellen (kein Kurs-/Modulbezug), nur der Hash des
-        // Ticketgeheimnisses wird gefuehrt, siehe local_coursepilot\werkbank_ticket.
-        $collection->add_database_table('local_coursepilot_werkbank_ticket', [
-            'userid' => 'privacy:metadata:werkbank_ticket:userid',
-            'path' => 'privacy:metadata:werkbank_ticket:path',
-            'contenthash' => 'privacy:metadata:werkbank_ticket:contenthash',
-            'oauthtokenid' => 'privacy:metadata:werkbank_ticket:oauthtokenid',
-            'expires' => 'privacy:metadata:werkbank_ticket:expires',
-            'timecreated' => 'privacy:metadata:werkbank_ticket:timecreated',
-        ], 'privacy:metadata:werkbank_ticket');
+        // External storage (#500, ADR 0021, Spec #486 §11) is outside Moodle's
+        // export/deletion mechanisms. Pointer, pending note and workbench remain
+        // in user/private and are covered by core user privacy. Declare the
+        // external location here so the privacy report does not omit it.
+        // Workbench tickets (#501, Spec #486 §13) belong to the system context,
+        // like OAuth records. Store only a hash of the ticket secret.
+        $collection->add_database_table('local_coursepilot_workbench_ticket', [
+            'userid' => 'privacy:metadata:workbench_ticket:userid',
+            'path' => 'privacy:metadata:workbench_ticket:path',
+            'contenthash' => 'privacy:metadata:workbench_ticket:contenthash',
+            'oauthtokenid' => 'privacy:metadata:workbench_ticket:oauthtokenid',
+            'oauthconnectionid' => 'privacy:metadata:workbench_ticket:oauthconnectionid',
+            'expires' => 'privacy:metadata:workbench_ticket:expires',
+            'timecreated' => 'privacy:metadata:workbench_ticket:timecreated',
+        ], 'privacy:metadata:workbench_ticket');
 
         return $collection;
     }
@@ -208,7 +189,8 @@ final class provider implements
         $contextlist = new contextlist();
         $hasoauthdata = $DB->record_exists('local_coursepilot_oauth_code', ['userid' => $userid])
             || $DB->record_exists('local_coursepilot_oauth_token', ['userid' => $userid])
-            || $DB->record_exists('local_coursepilot_werkbank_ticket', ['userid' => $userid]);
+            || $DB->record_exists('local_coursepilot_oauth_grant', ['userid' => $userid])
+            || $DB->record_exists('local_coursepilot_workbench_ticket', ['userid' => $userid]);
         if ($hasoauthdata) {
             $contextlist->add_system_context();
         }
@@ -217,6 +199,14 @@ final class provider implements
         if (self::context_user_has_data($usercontext)) {
             $contextlist->add_user_context($userid);
         }
+
+        $contextlist->add_from_sql(
+            'SELECT ctx.id
+               FROM {context} ctx
+               JOIN {local_coursepilot_cm_version} v ON v.cmid = ctx.instanceid
+              WHERE ctx.contextlevel = :contextlevel AND v.userid = :userid',
+            ['contextlevel' => CONTEXT_MODULE, 'userid' => $userid]
+        );
 
         return $contextlist;
     }
@@ -230,21 +220,25 @@ final class provider implements
         if ($context instanceof \context_system) {
             $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_oauth_code}', []);
             $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_oauth_token}', []);
-            $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_werkbank_ticket}', []);
+            $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_oauth_grant}', []);
+            $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_workbench_ticket}', []);
             return;
         }
 
         if ($context instanceof \context_user && self::context_user_has_data($context)) {
             $userlist->add_user($context->instanceid);
         }
+
+        if ($context instanceof \context_module) {
+            $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_cm_version} WHERE cmid = :cmid',
+                ['cmid' => $context->instanceid]);
+        }
     }
 
     /**
-     * Ob im Nutzerkontext tatsaechlich Kontextdateien oder Eintraege im
-     * Markierungsgedaechtnis liegen - anders als core_user::get_users_in_context()
-     * (die den Kontexteigentuemer blind hinzufuegt) prueft dieser Provider den
-     * echten Bestand, damit ein beliebiger Nutzerkontext ohne Daten nicht
-     * faelschlich auftaucht.
+     * Whether a user context has actual context files or marking-memory rows.
+     * Unlike core_user::get_users_in_context(), check data rather than blindly
+     * adding the context owner, avoiding empty contexts in discovery.
      *
      * @param \context_user $context
      * @return bool
@@ -285,13 +279,52 @@ final class provider implements
             if ($context instanceof \context_system) {
                 self::export_system_context($context, $userid);
             }
+
+            if ($context instanceof \context_module) {
+                self::export_history($context, $userid);
+            }
         }
     }
 
     /**
-     * Exportiert Kontextdateien und Markierungsgedaechtnis fuer den eigenen
-     * Nutzerkontext (Issue #523: aus export_user_data() ausgelagert, um die
-     * Funktion unter der 50-Zeilen-Grenze zu halten).
+     * Exports the requester's own history states of one activity: metadata and
+     * file names allowed by the history file policy, never the snapshot content
+     * (it may hold other teachers' design work) or files outside the policy.
+     *
+     * @param \context_module $context
+     * @param int $userid
+     */
+    private static function export_history(\context_module $context, int $userid): void {
+        global $DB;
+
+        $records = $DB->get_records('local_coursepilot_cm_version',
+            ['cmid' => $context->instanceid, 'userid' => $userid], 'version ASC');
+        if (!$records) {
+            return;
+        }
+        $modname = (string) get_coursemodule_from_id('', $context->instanceid, 0, false, MUST_EXIST)->modname;
+        $exportfile = static fn(\stdClass $file): \stdClass => (object) [
+            'filearea' => $file->filearea,
+            'filename' => $file->filename,
+            'gap' => transform::yesno($file->gap),
+        ];
+        $versions = array_map(static fn(\stdClass $record): \stdClass => (object) [
+            'version' => (int) $record->version,
+            'source' => $record->source,
+            'sourcecmid' => $record->sourcecmid,
+            'timecreated' => transform::datetime($record->timecreated),
+            'files' => array_map($exportfile, version_history::allowed_files((int) $record->id, $modname)),
+        ], array_values($records));
+
+        writer::with_context($context)->export_data(
+            [get_string('pluginname', 'local_coursepilot'), get_string('historytitle', 'local_coursepilot')],
+            (object) ['versions' => $versions]
+        );
+    }
+
+    /**
+     * Export legacy context files and marking memory for the user context.
+     * Extracted from export_user_data() to keep it within 50 lines (Issue #523).
      *
      * @param \context_user $context
      * @param int $userid
@@ -320,8 +353,8 @@ final class provider implements
     }
 
     /**
-     * Exportiert OAuth-Codes/-Tokens und Werkbank-Downloadtickets fuer den
-     * Systemkontext (Issue #523: aus export_user_data() ausgelagert).
+     * Export OAuth codes/tokens and workbench download tickets for the system
+     * context (Issue #523, extracted from export_user_data()).
      *
      * @param \context_system $context
      * @param int $userid
@@ -346,7 +379,14 @@ final class provider implements
             'timecreated' => transform::datetime($record->timecreated),
         ], array_values($tokens));
 
-        $tickets = $DB->get_records('local_coursepilot_werkbank_ticket', ['userid' => $userid]);
+        $grants = $DB->get_records('local_coursepilot_oauth_grant', ['userid' => $userid]);
+        $exportedgrants = array_map(static fn($record): \stdClass => (object) [
+            'id' => $record->id, 'clientid' => $record->clientid,
+            'revoked' => transform::yesno($record->revoked),
+            'timecreated' => transform::datetime($record->timecreated),
+        ], array_values($grants));
+
+        $tickets = $DB->get_records('local_coursepilot_workbench_ticket', ['userid' => $userid]);
         $exportedtickets = array_map(static fn($record): \stdClass => (object) [
             'path' => $record->path,
             'expires' => transform::datetime($record->expires),
@@ -358,7 +398,8 @@ final class provider implements
             (object) [
                 'oauth_codes' => $exportedcodes,
                 'oauth_tokens' => $exportedtokens,
-                'werkbank_tickets' => $exportedtickets,
+                'oauth_connections' => $exportedgrants,
+                'workbench_tickets' => $exportedtickets,
             ]
         );
     }
@@ -374,17 +415,23 @@ final class provider implements
             return;
         }
 
+        if ($context instanceof \context_module) {
+            retention::purge_cm((int) $context->instanceid);
+            return;
+        }
+
         if (!$context instanceof \context_system) {
             return;
         }
         $DB->delete_records('local_coursepilot_oauth_code');
         $DB->delete_records('local_coursepilot_oauth_token');
-        $DB->delete_records('local_coursepilot_werkbank_ticket');
+        $DB->delete_records('local_coursepilot_oauth_grant');
+        $DB->delete_records('local_coursepilot_workbench_ticket');
     }
 
     /**
-     * Loescht alle Kontextdateien (#343) und das Markierungsgedaechtnis
-     * (#493) im gegebenen Nutzerkontext.
+     * Delete legacy context files (#343) and marking memory (#493) in the
+     * given user context.
      *
      * @param \context $context
      */
@@ -413,22 +460,22 @@ final class provider implements
             if ($context instanceof \context_user && (int) $context->instanceid === $userid) {
                 self::delete_context_files($context);
             }
+            if ($context instanceof \context_module) {
+                retention::purge_cm_for_users((int) $context->instanceid, [$userid]);
+            }
         }
 
-        // Beide Seiten sind hier Zeichenketten, nicht Zahlen: Die Kontext-IDs
-        // stammen aus einer Datenbankabfrage (contextlist::add_from_sql()),
-        // und SYSCONTEXTID wird beim Aufbau der Moodle-Umgebung aus einem
-        // Datenbankfeld gesetzt - gemessen als string '1'. Ein strenger
-        // Vergleich ohne Umwandlung traf deshalb nie zu, und eine
-        // Loeschanfrage ueber den Nutzerkontext liess Verbindungen, Codes und
-        // Werkbank-Tickets stehen.
+        // Database context IDs and SYSCONTEXTID may be strings. Normalize both
+        // to integers before strict comparison; otherwise user-context deletion
+        // could leave connections, codes and workbench tickets behind.
         $contextids = array_map('intval', $contextlist->get_contextids());
         if (!in_array((int) SYSCONTEXTID, $contextids, true)) {
             return;
         }
         $DB->delete_records('local_coursepilot_oauth_code', ['userid' => $userid]);
         $DB->delete_records('local_coursepilot_oauth_token', ['userid' => $userid]);
-        $DB->delete_records('local_coursepilot_werkbank_ticket', ['userid' => $userid]);
+        $DB->delete_records('local_coursepilot_oauth_grant', ['userid' => $userid]);
+        $DB->delete_records('local_coursepilot_workbench_ticket', ['userid' => $userid]);
     }
 
     /**
@@ -444,12 +491,18 @@ final class provider implements
             return;
         }
 
+        if ($context instanceof \context_module) {
+            retention::purge_cm_for_users((int) $context->instanceid, $userlist->get_userids());
+            return;
+        }
+
         if (!$context instanceof \context_system) {
             return;
         }
         [$insql, $inparams] = $DB->get_in_or_equal($userlist->get_userids(), SQL_PARAMS_NAMED);
         $DB->delete_records_select('local_coursepilot_oauth_code', "userid $insql", $inparams);
         $DB->delete_records_select('local_coursepilot_oauth_token', "userid $insql", $inparams);
-        $DB->delete_records_select('local_coursepilot_werkbank_ticket', "userid $insql", $inparams);
+        $DB->delete_records_select('local_coursepilot_oauth_grant', "userid $insql", $inparams);
+        $DB->delete_records_select('local_coursepilot_workbench_ticket', "userid $insql", $inparams);
     }
 }

@@ -27,23 +27,20 @@ use local_coursepilot\material_files;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Gezielter Bildausschnitt (Spec 0018 §5, Issue #431): eigener Endpunkt statt
- * Upload-Parameter, weil der Zuschnitt auf einer bereits liegenden
- * Materialdatei arbeitet - sitzt der Ausschnitt nicht, kostet der zweite
- * Versuch einen Aufruf statt eines zweiten Uploads.
+ * Crop a material image (Spec 0018 §5, #431). A separate endpoint rather
+ * than an upload parameter because the source is already stored. If the
+ * crop needs adjustment, another attempt costs one call rather than an upload.
  *
- * Koordinaten sind relativ (0-1) auf die Vorschau aus preview_material_file
- * (§3.1), geschnitten wird aber aus dem Original in voller Aufloesung - die
- * Vorschaugroesse bleibt damit eine reine Serverentscheidung.
+ * Coordinates are relative (0-1) to preview_material_file's preview (§3.1),
+ * but cropping uses the full-resolution original. Preview dimensions remain
+ * a server decision.
  *
- * Herkunft des Ausschnitts landet in Moodles vorhandenem `source`-Feld der
- * Zieldatei - kein neues Feld, keine Tabelle (§5, §8.2). Dort erwartet Moodle-Core
- * ein serialisiertes Objekt statt eines rohen Strings, siehe unserialize_object()
- * in moodlelib.php.
+ * Store provenance in Moodle's existing source field of the target file;
+ * no extra field or table (§5, §8.2). Core expects a serialized object rather
+ * than a raw string; see unserialize_object() in moodlelib.php.
  *
- * Unmittelbar englisch deklariert (#572, Spec 0025 §A): "location" statt
- * "ort" - {@see \local_coursepilot\material_files::ort_parameter()} bleibt
- * intern deutsch benannt, der Parametername an dieser Grenze ist englisch.
+ * The published contract directly uses location instead of the legacy ort
+ * (#572, Spec 0025 §A), via material_files::location_parameter().
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -51,7 +48,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 class crop_material_file extends external_api {
 
-    /** @var int JPEG-Qualitaet fuer einen Zuschnitt mit jpg/jpeg-Zielendung. */
+    /** @var int JPEG quality for a crop whose target extension is jpg/jpeg. */
     private const JPEG_QUALITY = 85;
 
     /**
@@ -59,19 +56,19 @@ class crop_material_file extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'sourcepath' => new external_value(PARAM_PATH, 'Pfad der zuzuschneidenden Materialdatei, relativ zum Materialordner'),
-            'targetpath' => new external_value(PARAM_PATH, 'Zielpfad des Ausschnitts, relativ zum Materialordner, z.B. "ausschnitt.png"'),
-            'x0' => new external_value(PARAM_FLOAT, 'Linke Kante des Ausschnitts, relativ 0-1'),
-            'y0' => new external_value(PARAM_FLOAT, 'Obere Kante des Ausschnitts, relativ 0-1'),
-            'x1' => new external_value(PARAM_FLOAT, 'Rechte Kante des Ausschnitts, relativ 0-1'),
-            'y1' => new external_value(PARAM_FLOAT, 'Untere Kante des Ausschnitts, relativ 0-1'),
+            'sourcepath' => new external_value(PARAM_PATH, 'Source material image path, relative to the material folder'),
+            'targetpath' => new external_value(PARAM_PATH, 'Target crop path, relative to the material folder, e.g. "crop.png"'),
+            'x0' => new external_value(PARAM_FLOAT, 'Left crop edge, relative 0-1'),
+            'y0' => new external_value(PARAM_FLOAT, 'Top crop edge, relative 0-1'),
+            'x1' => new external_value(PARAM_FLOAT, 'Right crop edge, relative 0-1'),
+            'y1' => new external_value(PARAM_FLOAT, 'Bottom crop edge, relative 0-1'),
             'expected_contenthash' => new external_value(
                 PARAM_ALPHANUMEXT,
-                'Optional: contenthash der Zieldatei aus dem letzten Auflisten - passt er nicht, bricht der Vorgang ab',
+                'Optional: target contenthash from the last listing; a mismatch aborts the operation',
                 VALUE_DEFAULT,
                 ''
             ),
-            'location' => material_files::ort_parameter(),
+            'location' => material_files::location_parameter(),
         ]);
     }
 
@@ -85,8 +82,8 @@ class crop_material_file extends external_api {
      * @param float $y1
      * @param string $expectedcontenthash
      * @return array
-     * @throws \moodle_exception invalidmaterialpath, invalidmaterialort,
-     *         materialpathiskontext, materialfilenotfound,
+     * @throws \moodle_exception invalidmaterialpath, invalidmateriallocation,
+     *         materialpathiscontext, materialfilenotfound,
      *         materialgdmissing, materialcropsourceunsupported,
      *         materialcropoutputunsupported, materialcropinvalidcoordinates,
      *         materialfiledisallowedtype, materialfilechanged, materialquotaexceeded
@@ -99,7 +96,7 @@ class crop_material_file extends external_api {
         float $x1,
         float $y1,
         string $expectedcontenthash = '',
-        string $location = material_files::ORT_BESTAND
+        string $location = material_files::LOCATION_STORE
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'sourcepath' => $sourcepath,
@@ -136,15 +133,15 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Liest und prueft die Quelldatei (Issue #523: aus execute() ausgelagert,
-     * um die Funktion unter der 50-Zeilen-Grenze zu halten).
+     * Read and validate the source (#523: extracted from execute() to keep
+     * the function below 50 lines).
      *
-     * @param array $params Validierte Parameter von execute().
+     * @param array $params Validated execute() parameters.
      * @return array{0: array{content: string, path: string, size: int, timemodified: int}, 1: string}
-     *         [Quelldatei-Inhalt, aufgeloester Quellpfad]
+     *         [source content, resolved source path]
      */
     private static function resolve_source(array $params): array {
-        $sourcestored = material_area::read_for_ort($params['location'], $params['sourcepath']);
+        $sourcestored = material_area::read_for_location($params['location'], $params['sourcepath']);
         if ($sourcestored === null) {
             throw new \moodle_exception(
                 'materialfilenotfound',
@@ -163,12 +160,12 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Loest die Zieldatei auf und prueft den Gleichzeitigkeitsschutz (Issue
-     * #523: aus execute() ausgelagert).
+     * Resolve the target and check concurrency protection (#523: extracted
+     * from execute()).
      *
-     * @param array $params Validierte Parameter von execute().
-     * @return array{0: string, 1: string, 2: string, 3: ?array} [Zielordner, Zieldateiname,
-     *         Zielendung, bestehende Datei oder null]
+     * @param array $params Validated execute() parameters.
+     * @return array{0: string, 1: string, 2: string, 3: ?array} [target directory, target filename,
+     *         target extension, existing file or null]
      */
     private static function resolve_target(array $params): array {
         [$targetdir, $targetfilename] = material_files::resolve_writable_file($params['targetpath']);
@@ -177,9 +174,8 @@ class crop_material_file extends external_api {
             throw new \moodle_exception('materialcropoutputunsupported', 'local_coursepilot', '', $targetextension);
         }
 
-        // Gleichzeitigkeitsschutz auf der Zieldatei vor dem eigentlichen
-        // Zuschnitt pruefen (wie bei upload_material_file: erst alle
-        // Absagen, dann genau ein - hier: der teuerste - Arbeitsschritt).
+        // Check target concurrency before cropping, like upload_material_file:
+        // perform all rejection checks before the single expensive operation.
         $existing = material_files::read_content($targetdir, $targetfilename);
         if ($params['expected_contenthash'] !== ''
                 && ($existing === null || $existing['contenthash'] !== $params['expected_contenthash'])) {
@@ -190,10 +186,9 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Schneidet zu, schreibt die Zieldatei und baut die Antwort (Issue #523:
-     * aus execute() ausgelagert).
+     * Crop, write the target and build the response (#523: extracted from execute()).
      *
-     * @param array $params Validierte Parameter von execute().
+     * @param array $params Validated execute() parameters.
      * @param array{content: string, path: string, size: int, timemodified: int} $sourcestored
      * @param string $sourcerelative
      * @param string $targetdir
@@ -215,10 +210,9 @@ class crop_material_file extends external_api {
         $newsize = strlen($content);
         $oldsize = $existing !== null ? $existing['size'] : 0;
 
-        // Moodle erwartet im `source`-Feld entweder einen leeren String oder ein
-        // serialisiertes Objekt (unserialize_object() in moodlelib.php) - ein roher
-        // Pfad loest bei jedem spaeteren Core-Zugriff auf die Datei (Dateimanager,
-        // Draft-Handling) eine unserialize()-Warnung aus (Fund #431-Nachtest).
+        // Moodle expects an empty string or serialized object in source (see
+        // unserialize_object() in moodlelib.php). A raw path causes unserialize()
+        // warnings on later core file-manager/draft access (#431 follow-up).
         $warning = material_files::write($targetdir, $targetfilename, $content, $oldsize, [
             'source' => serialize((object) ['original' => $sourcerelative]),
         ]);
@@ -238,15 +232,14 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Laedt die Quelldatei als GD-Bild und schneidet zu (Issue #523: aus
-     * crop_and_write() ausgelagert, um die Funktion unter der
-     * 50-Zeilen-Grenze zu halten).
+     * Load the source as a GD image and crop it (#523: extracted from
+     * crop_and_write() to keep the function below 50 lines).
      *
-     * @param array $params Validierte Parameter von execute().
+     * @param array $params Validated execute() parameters.
      * @param array{content: string, path: string, size: int, timemodified: int} $sourcestored
      * @param string $sourcerelative
      * @param string $targetextension
-     * @return array{0: string, 1: int, 2: int} [Inhalt, Breite, Hoehe]
+     * @return array{0: string, 1: int, 2: int} [content, width, height]
      */
     private static function load_and_crop(
         array $params,
@@ -256,8 +249,8 @@ class crop_material_file extends external_api {
     ): array {
         $source = @imagecreatefromstring($sourcestored['content']);
         if ($source === false) {
-            // Bildendung, aber GD kann die Bytes nicht lesen (defekte Datei) -
-            // dieselbe erklaerte Nichtverfuegbarkeit wie preview_material_file.
+            // The extension names an image, but GD cannot read the corrupt bytes.
+            // Explain unavailability in the same way as preview_material_file.
             throw new \moodle_exception('materialcropsourceunsupported', 'local_coursepilot', '', $sourcerelative);
         }
 
@@ -277,10 +270,10 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Baut die Zuschnitt-Antwort (Issue #523: aus crop_and_write()
-     * ausgelagert, um die Funktion unter der 50-Zeilen-Grenze zu halten).
+     * Build the crop response (#523: extracted from crop_and_write() to keep
+     * the function below 50 lines).
      *
-     * @param array $params Validierte Parameter von execute().
+     * @param array $params Validated execute() parameters.
      * @param array{content: string, path: string, size: int, timemodified: int} $sourcestored
      * @param string $sourcerelative
      * @param string $targetdir
@@ -316,10 +309,9 @@ class crop_material_file extends external_api {
 
         return [
             'path' => $targetrelative,
-            // Ort + Pruefmerkmal (Groesse, Aenderungszeit) statt eines
-            // reinen Pfads (Issue #495): der Materialbestand traegt keinen
-            // contenthash, dieser Fingerabdruck ist deshalb das einzige, was
-            // die KI ueber "was genau wurde zugeschnitten" mitnehmen kann.
+            // Return location plus size/modification-time fingerprint, not just a path
+            // (#495). Material storage has no contenthash, so this is the only evidence
+            // the AI can retain of exactly which source was cropped.
             'source' => self::describe_source($params['location'], $sourcerelative, $sourcestored),
             'created' => $existing === null,
             'width' => $width,
@@ -334,25 +326,24 @@ class crop_material_file extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'path' => new external_value(PARAM_TEXT, 'Aufgeloester Zielpfad des Ausschnitts, relativ zum Materialordner'),
+            'path' => new external_value(PARAM_TEXT, 'Resolved crop target path, relative to the material folder'),
             'source' => new external_value(
                 PARAM_TEXT,
                 'Location and fingerprint of the source file: "<location>:<path> (<size> byte, changed <timestamp>)" - '
                     . 'the material store carries no contenthash, this fingerprint replaces it here'
             ),
-            'created' => new external_value(PARAM_BOOL, 'true, wenn der Ausschnitt neu angelegt wurde'),
-            'width' => new external_value(PARAM_INT, 'Breite des Ausschnitts in Pixeln, aus dem Original berechnet'),
-            'height' => new external_value(PARAM_INT, 'Hoehe des Ausschnitts in Pixeln, aus dem Original berechnet'),
-            'size' => new external_value(PARAM_INT, 'Groesse des Ausschnitts in Byte'),
-            'message' => new external_value(PARAM_RAW, 'Aenderungsmeldung in Lehrkraft-Deutsch, inkl. Quotenwarnung falls zutreffend'),
+            'created' => new external_value(PARAM_BOOL, 'true if the crop was newly created'),
+            'width' => new external_value(PARAM_INT, 'Crop width in pixels, computed from the original'),
+            'height' => new external_value(PARAM_INT, 'Crop height in pixels, computed from the original'),
+            'size' => new external_value(PARAM_INT, 'Crop size in bytes'),
+            'message' => new external_value(PARAM_RAW, 'Localized teacher-facing change message, including a quota warning when applicable'),
         ]);
     }
 
     /**
-     * "Ort und Pruefmerkmal (Groesse und Aenderungszeit)" der Quelldatei
-     * (Issue #495) - fuer eine externe Bestandsdatei gibt es keinen
-     * contenthash zum Vergleichen (Spec #486 §7: "contenthash bleibt leer"),
-     * dieser Fingerabdruck ist der Ersatz.
+     * Source location and fingerprint (size and modification time, #495).
+     * External existing files have no contenthash to compare (Spec #486 §7),
+     * so this fingerprint replaces it.
      *
      * @param string $location
      * @param string $path
@@ -361,7 +352,7 @@ class crop_material_file extends external_api {
      */
     private static function describe_source(string $location, string $path, array $stored): string {
         return sprintf(
-            '%s:%s (%d Byte, geändert %s)',
+            '%s:%s (%d bytes, modified %s)',
             $location,
             $path,
             $stored['size'],
@@ -370,8 +361,8 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Relative Koordinaten muessen in [0,1] liegen und eine Flaeche groesser
-     * 0 ergeben - kein stiller Clip (Spec 0018, Abnahmekriterium).
+     * Relative coordinates must lie in [0,1] and define an area greater than
+     * zero. Do not silently clip them (Spec 0018 acceptance criterion).
      *
      * @param float $x0
      * @param float $y0
@@ -389,8 +380,8 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Schneidet aus dem geladenen Originalbild in voller Aufloesung aus
-     * (Spec 0018 §3.1) und kodiert das Ergebnis nach der Zielendung.
+     * Crop the full-resolution original (Spec 0018 §3.1) and encode it for the
+     * target extension.
      *
      * @param \GdImage $source
      * @param int $origwidth
@@ -400,7 +391,7 @@ class crop_material_file extends external_api {
      * @param float $x1
      * @param float $y1
      * @param string $targetextension
-     * @return array{0: string, 1: int, 2: int} [Bildinhalt, Breite, Hoehe]
+     * @return array{0: string, 1: int, 2: int} [image content, width, height]
      */
     private static function crop(
         \GdImage $source,
@@ -425,8 +416,7 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Rechnet die relativen Koordinaten auf ein Pixel-Rechteck um (Issue
-     * #523: aus crop() ausgelagert).
+     * Convert relative coordinates to a pixel rectangle (#523: extracted from crop()).
      *
      * @return array{0: int, 1: int, 2: int, 3: int} [px0, py0, width, height]
      */
@@ -442,13 +432,12 @@ class crop_material_file extends external_api {
         $py0 = (int) round($y0 * $origheight);
         $px1 = (int) round($x1 * $origwidth);
         $py1 = (int) round($y1 * $origheight);
-        // ponytail: Rundung kann zwei sehr nah beieinanderliegende relative
-        // Koordinaten auf ein 0px-Rechteck kollabieren lassen (z.B. x0=0.499/
-        // x1=0.501 auf einem 10px breiten Bild) - max(1, ...) klemmt das
-        // still auf 1px statt zu werfen. Die validierte Flaeche > 0 (relative
-        // Koordinaten, guard_coordinates()) ist das Abnahmekriterium; dieser
-        // Rundungsfall ist ein Sonderfall auf sehr kleinen Originalen. Eigene
-        // Fehlermeldung erst, wenn das in der Praxis auftritt.
+        // ponytail: Rounding can collapse nearby relative coordinates to a zero-
+        // pixel rectangle (e.g. x0=0.499/x1=0.501 on a 10px image). max(1, ...)
+        // clamps this to one pixel rather than throwing. Validated relative area
+        // greater than zero (guard_coordinates()) is the acceptance criterion;
+        // this rounding case affects very small originals. Add a dedicated error
+        // only if it occurs in practice.
         $width = max(1, min($origwidth - $px0, $px1 - $px0));
         $height = max(1, min($origheight - $py0, $py1 - $py0));
 
@@ -456,8 +445,7 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Baut die Ziel-Leinwand und kopiert den Ausschnitt hinein (Issue #523:
-     * aus crop() ausgelagert).
+     * Create the target canvas and copy the crop into it (#523: extracted from crop()).
      */
     private static function render_canvas(
         \GdImage $source,
@@ -470,7 +458,7 @@ class crop_material_file extends external_api {
         $canvas = imagecreatetruecolor($width, $height);
         $isjpeg = in_array($targetextension, ['jpg', 'jpeg'], true);
         if ($isjpeg) {
-            // JPEG kennt keine Transparenz - weisse Leinwand wie image_preview::build().
+            // JPEG has no transparency; use a white canvas as in image_preview::build().
             imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
         } else {
             imagealphablending($canvas, false);
@@ -483,8 +471,7 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Gibt die Leinwand im Zielformat auf den Output-Buffer aus (Issue #523:
-     * aus crop() ausgelagert).
+     * Write the canvas to the output buffer in the target format (#523: extracted from crop()).
      */
     private static function output_canvas(\GdImage $canvas, string $targetextension): void {
         switch ($targetextension) {

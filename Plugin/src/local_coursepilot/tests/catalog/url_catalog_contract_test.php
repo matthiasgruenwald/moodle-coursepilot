@@ -19,8 +19,8 @@ namespace local_coursepilot\catalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Katalog-gegen-Moodle-Vertragstest fuer mod_url (Ticket #380, Vorbild
- * label_catalog_contract_test.php aus #379).
+ * Catalog/Moodle contract for mod_url (Ticket #380), following
+ * label_catalog_contract_test from #379.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -31,8 +31,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class url_catalog_contract_test extends \advanced_testcase {
 
     /**
-     * Jede von url gefuehrte Datenbankspalte muss die reale Spaltenmenge von
-     * {url} exakt ergeben.
+     * Catalog fields, real blocklisted columns and id exactly match the
+     * url table columns. Pseudofields do not count as database columns.
      */
     public function test_url_table_columns_match_the_catalog(): void {
         global $DB;
@@ -53,14 +53,14 @@ final class url_catalog_contract_test extends \advanced_testcase {
         $this->assertSame(
             $realcolumns,
             array_values(array_unique($known)),
-            "Die Spalten der Tabelle 'url' und der Feldkatalog (url::fields()/blocklist()) sind "
-                . 'auseinandergelaufen - Moodle hat vermutlich eine Spalte hinzugefuegt, entfernt oder umbenannt.'
+            "The columns of table 'url' and the field catalog (url::fields()/blocklist()) have "
+                . 'diverged - Moodle probably added, removed or renamed a column.'
         );
     }
 
     /**
-     * url hat KEINE "revision"-Spalte - ein Regressionswaechter gegen ein
-     * versehentliches Uebertragen aus page/resource/folder.
+     * url has no revision column; guard against accidental copying from
+     * page, resource or folder.
      */
     public function test_url_has_no_revision_column(): void {
         global $DB;
@@ -73,8 +73,8 @@ final class url_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * "externalurl" ist bewusst KEIN PARAM_URL (Ticket #380/Spec 0015 §4.4) -
-     * geprueft wird gegen url_appears_valid_url().
+     * externalurl uses url_appears_valid_url(), rather than PARAM_URL
+     * (Ticket #380, Spec 0015 §4.4).
      */
     public function test_externalurl_is_not_param_url(): void {
         global $CFG;
@@ -82,17 +82,17 @@ final class url_catalog_contract_test extends \advanced_testcase {
 
         $externalurl = current(array_filter(url::fields(), static fn (field $f): bool => $f->name === 'externalurl'));
 
-        $this->assertNotFalse($externalurl, 'Feld externalurl fehlt im Katalog.');
+        $this->assertNotFalse($externalurl, 'Field externalurl is missing from the catalog.');
         $this->assertNotSame('PARAM_URL', $externalurl->type);
         $this->assertSame('url_appears_valid_url()', $externalurl->sourcecallable);
         $this->assertTrue(
             function_exists('url_appears_valid_url'),
-            'url_appears_valid_url() existiert auf dieser Instanz nicht mehr.'
+            'url_appears_valid_url() no longer exists on this instance.'
         );
     }
 
     /**
-     * "displayoptions" und "parameters" stehen auf der Sperrliste (Ticket #380).
+     * displayoptions and parameters are blocklisted (Ticket #380).
      */
     public function test_displayoptions_and_parameters_are_blocked(): void {
         $this->assertContains('displayoptions', url::blocklist());
@@ -100,7 +100,7 @@ final class url_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Jede referenzierte aufrufbare Quelle existiert wirklich.
+     * Every referenced callable source exists.
      */
     public function test_referenced_callable_sources_exist(): void {
         global $CFG;
@@ -114,13 +114,13 @@ final class url_catalog_contract_test extends \advanced_testcase {
             $fields
         ));
 
-        $this->assertNotEmpty($callables, 'Kein Feld referenziert eine aufrufbare Quelle - Testannahme verletzt.');
+        $this->assertNotEmpty($callables, 'No field references a callable source; test assumption violated.');
 
         foreach ($callables as $callable) {
             $functionname = rtrim($callable, '()');
             $this->assertTrue(
                 function_exists($functionname),
-                "Referenzierte aufrufbare Quelle $callable existiert auf dieser Instanz nicht mehr."
+                "Referenced callable source $callable no longer exists on this instance."
             );
         }
     }

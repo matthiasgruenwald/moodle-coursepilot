@@ -23,7 +23,7 @@ use local_coursepilot\webdav\webdav_instance;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Der erste Schreibvorgang (Spec 0015 §3.3, Ticket #388).
+ * First write operation (Spec 0015 §3.3, issue #388).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -40,7 +40,7 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * @return array{0: \stdClass, 1: \stdClass} Kurs, Lehrkraft (editingteacher).
+     * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
         $course = $this->getDataGenerator()->create_course();
@@ -52,7 +52,7 @@ final class update_module_settings_test extends \advanced_testcase {
 
     /**
      * @param int $cmid
-     * @return array Ist-Stand, dieselbe Form wie get_module_settings.
+     * @return array Current state, with the same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -63,10 +63,9 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Patch auf ein Feld aendert genau dieses Feld, nennt Vorher-/
-     * Nachher-Wert, und laesst eine parallele Handaenderung an einem anderen
-     * Feld unangetastet (Abnahmekriterien: Diff, Read-modify-write
-     * unmittelbar vor dem Schreiben).
+     * A single-field patch changes only that field, reports before/after
+     * values and preserves concurrent manual edits to other fields.
+     * Read-modify-write occurs immediately before writing.
      */
     public function test_patch_changes_named_field_and_survives_concurrent_hand_edit(): void {
         global $DB;
@@ -78,8 +77,8 @@ final class update_module_settings_test extends \advanced_testcase {
             'name' => 'Alter Titel',
         ]);
 
-        // Parallele Handaenderung an einem ANDEREN Feld, direkt vor dem
-        // Schreibvorgang - muss ueberleben (Spec 0015 §3.3).
+        // Preserve a concurrent manual edit to another field made immediately
+        // before writing (Spec 0015 §3.3).
         $DB->set_field('page', 'intro', 'Handaenderung der Lehrkraft', ['id' => $page->id]);
 
         $result = external_api::clean_returnvalue(
@@ -100,8 +99,7 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Patch, der den bestehenden Wert nur wiederholt, meldet keine
-     * Aenderung.
+     * Repeating an existing value reports no changes.
      */
     public function test_patch_matching_current_value_reports_no_change(): void {
         $this->resetAfterTest();
@@ -121,8 +119,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Patch, der den bestehenden Wert nur wiederholt, meldet auch in der
-     * Meldung selbst keine Aenderung - nicht nur in "aenderungen".
+     * Repeating an existing value reports no change in the message itself,
+     * not just in changes.
      */
     public function test_patch_matching_current_value_says_so_in_the_message(): void {
         $this->resetAfterTest();
@@ -137,14 +135,12 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['name' => 'Gleicher Titel']))
         );
 
-        $this->assertStringContainsString('Keine Aenderung', $result['message']);
+        $this->assertStringContainsString('No change', $result['message']);
     }
 
     /**
-     * Ein Pseudofeld hat keine Spalte in der Instanztabelle, der
-     * Vorher/Nachher-Vergleich kann es also nicht sehen. Die Meldung darf
-     * deshalb trotzdem nicht "Keine Aenderung" behaupten - geschrieben wurde
-     * sehr wohl (#403).
+     * Pseudofields have no instance-table columns, so ordinary before/after
+     * comparison misses them. Do not claim no change when a write occurred (#403).
      */
     public function test_written_pseudofield_is_named_in_the_message(): void {
         $this->resetAfterTest();
@@ -162,7 +158,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($cmid, json_encode(['assignsubmission_file_enabled' => 1]))
         );
 
-        $this->assertStringNotContainsString('Keine Aenderung', $result['message']);
+        $this->assertStringNotContainsString('No change', $result['message']);
         $this->assertStringContainsString('assignsubmission_file_enabled', $result['message']);
         $this->assertEquals(1, $DB->get_field('assign_plugin_config', 'value', [
             'assignment' => $assign->id,
@@ -173,8 +169,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Wiederholte Pseudofelder stehen in choice_options; der Diff-Bericht muss
-     * deshalb den nach dem nativen Schreibweg gelesenen Wert zeigen (#564).
+     * Repeated pseudofields live in choice_options; report their values
+     * read back after native writing (#564).
      */
     public function test_choice_option_patch_report_uses_persisted_value(): void {
         $this->resetAfterTest();
@@ -186,7 +182,7 @@ final class update_module_settings_test extends \advanced_testcase {
                 'intro' => 'Bitte waehlen',
                 'option' => ['Ja', 'Nein'],
                 'allowupdate' => 1,
-            ]), \local_coursepilot\material_files::ORT_BESTAND)
+            ]), \local_coursepilot\material_files::LOCATION_STORE)
         );
         $before = $this->read($created['cmid']);
 
@@ -206,8 +202,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Auch beim Patchen ist "coursepagevisibility" Lese-Vokabular: die Meldung
-     * nennt den Schreibweg statt "Unbekanntes Feld" (#404).
+     * coursepagevisibility is read vocabulary. Explain its write path
+     * instead of reporting an unknown field (#404).
      */
     public function test_read_only_vocabulary_points_to_the_writable_field(): void {
         $this->resetAfterTest();
@@ -226,8 +222,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Unbekannter Feldname scheitert, nichts wird geschrieben - die Meldung
-     * nennt das Feld und verweist auf describe_module_fields.
+     * Reject unknown fields without writes; name the field and point to
+     * describe_module_fields.
      */
     public function test_unknown_field_fails_and_writes_nothing(): void {
         $this->resetAfterTest();
@@ -250,7 +246,7 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Gesperrtes Feld (durchgaengige Sperrliste) scheitert ebenso.
+     * Reject fields on the shared denylist.
      */
     public function test_blocked_field_fails_and_writes_nothing(): void {
         $this->resetAfterTest();
@@ -273,8 +269,7 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Unerlaubter Wert (ausserhalb des dokumentierten Wertebereichs)
-     * scheitert ebenso.
+     * Reject values outside the documented range.
      */
     public function test_invalid_value_fails_and_writes_nothing(): void {
         $this->resetAfterTest();
@@ -294,7 +289,7 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Eine verletzte Kombinationsregel scheitert, ohne Teilstand.
+     * Reject combination-rule violations without partial writes.
      */
     public function test_combination_rule_violation_fails_and_writes_nothing(): void {
         $this->resetAfterTest();
@@ -307,7 +302,7 @@ final class update_module_settings_test extends \advanced_testcase {
         ]);
 
         try {
-            // cutoffdate liegt vor duedate - verletzt die Kombinationsregel.
+            // cutoffdate before duedate violates the combination rule.
             update_module_settings::execute($forum->cmid, json_encode(['cutoffdate' => 1000000000]));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
@@ -319,8 +314,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * forcesubscribe=2 (Auto-Abonnement) wird als Nebenwirkung ausdruecklich
-     * in der Antwort ausgesprochen (Spec 0015 §3.3, Katalogkategorie 5).
+     * Report automatic subscription (forcesubscribe=2) explicitly as a side
+     * effect (Spec 0015 §3.3, catalog category 5).
      */
     public function test_forum_forcesubscribe_side_effect_is_announced(): void {
         $this->resetAfterTest();
@@ -337,19 +332,17 @@ final class update_module_settings_test extends \advanced_testcase {
         );
 
         $this->assertNotEmpty($result['side_effects']);
-        $this->assertStringContainsString('Kursteilnehmenden', $result['side_effects'][0]);
-        $this->assertStringContainsString('abonniert', $result['side_effects'][0]);
-        $this->assertStringContainsString('Kursteilnehmenden', $result['message']);
+        $this->assertStringContainsString('course participants', $result['side_effects'][0]);
+        $this->assertStringContainsString('subscribed', $result['side_effects'][0]);
+        $this->assertStringContainsString('course participants', $result['message']);
     }
 
     /**
-     * update_moduleinfo() (course/modlib.php:675-680) ueberschreibt
-     * $moduleinfo->intro immer aus $moduleinfo->introeditor['text'] - ohne
-     * pseudofield_carry_forward::sync_intro_editor_from_patch() (Issue #433,
-     * generalisiert aus dem assign-spezifischen introimages-Fix) wuerde ein
-     * reiner "intro"-Patch auf JEDER Aktivitaetsart mit FEATURE_MOD_INTRO
-     * stillschweigend verpuffen - hier stellvertretend an forum geprueft,
-     * nicht nur an assign.
+     * update_moduleinfo() overwrites intro from introeditor[text].
+     * pseudofield_carry_forward::sync_intro_editor_from_patch() prevents
+     * intro-only patches from silently vanishing for every FEATURE_MOD_INTRO
+     * activity (#433, generalized from assign introimages). Test forum as
+     * well as assign.
      */
     public function test_intro_patch_persists_on_a_non_assign_activity(): void {
         $this->resetAfterTest();
@@ -362,8 +355,7 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Abschlussfeld im Patch scheitert (Sperrliste, course_modules-
-     * completion*-Spalten).
+     * Reject completion fields on the course_modules completion* denylist.
      */
     public function test_completion_field_is_blocked(): void {
         $this->resetAfterTest();
@@ -379,8 +371,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Aktivitaetsarten mit eigenem Schreibweg (quiz -> update_quiz_settings)
-     * werden nicht ueber dieses Vehikel geschrieben.
+     * Activity types with dedicated writers, such as update_quiz_settings,
+     * cannot use this generic writer.
      */
     public function test_modname_with_own_write_vehicle_is_rejected(): void {
         $this->resetAfterTest();
@@ -396,8 +388,7 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Eine nicht von Coursepilot gefuehrte Aktivitaetsart scheitert mit
-     * derselben Meldung wie describe_module_fields.
+     * Reject unsupported activity types with the describe_module_fields message.
      */
     public function test_unknown_modname_is_rejected(): void {
         $this->resetAfterTest();
@@ -413,9 +404,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Schreiben im fremden Kurs ohne native Bearbeiten-Berechtigung
-     * scheitert mit klarer Meldung, nicht still - lesend bleibt Coursepilot
-     * weiter nutzbar (Spec 0015 §3.3).
+     * Clearly reject writes without native editing capability; read-only
+     * Coursepilot access remains available (Spec 0015 §3.3).
      */
     public function test_write_without_native_capability_fails_but_read_still_works(): void {
         $this->resetAfterTest();
@@ -428,13 +418,12 @@ final class update_module_settings_test extends \advanced_testcase {
             'name' => 'Fremder Kurs',
         ]);
 
-        // Nicht-bearbeitende Lehrkraft: hat local/coursepilot:use, aber nicht
-        // moodle/course:manageactivities.
+        // Non-editing teacher has local/coursepilot:use but lacks moodle/course:manageactivities.
         $nonedit = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->enrol_user($nonedit->id, $course->id, 'teacher');
         $this->setUser($nonedit);
 
-        // Lesend bleibt nutzbar.
+        // Read access remains available.
         $this->assertSame('Fremder Kurs', $this->read($page->cmid)['name']);
 
         $this->expectException(\required_capability_exception::class);
@@ -442,8 +431,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Der Schreibvorgang erzeugt einen Stand im Aenderungsverlauf (#385-387
-     * beobachten course_module_updated automatisch).
+     * Writing creates a history version through the course_module_updated
+     * observer (#385–387).
      */
     public function test_write_creates_a_history_version(): void {
         global $DB;
@@ -451,8 +440,8 @@ final class update_module_settings_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
         $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
 
-        // course_module_created hat bereits Version 1 angelegt (#385) - der
-        // Schreibvorgang hier muss eine WEITERE Version hinzufuegen.
+        // course_module_created already recorded version 1 (#385); this write
+        // must add another version.
         $before = $DB->count_records('local_coursepilot_cm_version', ['cmid' => $page->cmid]);
 
         update_module_settings::execute($page->cmid, json_encode(['name' => 'Verlauf-Test']));
@@ -461,19 +450,18 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Keine direkte DB-Schreibung auf einer Instanztabelle (ADR 0016) - der
-     * einzige Schreibweg ist update_moduleinfo().
+     * Use only update_moduleinfo(), never direct instance-table writes
+     * (ADR 0016).
      */
     public function test_source_never_writes_the_instance_table_directly(): void {
-        $source = file_get_contents(__DIR__ . '/../../classes/external/update_module_settings.php');
+        $source = file_get_contents(__DIR__ . '/../../classes/catalog/write_target.php');
         $this->assertStringNotContainsString('$DB->update_record', $source);
         $this->assertStringNotContainsString('$DB->insert_record', $source);
         $this->assertStringContainsString('update_moduleinfo(', $source);
     }
 
     /**
-     * Eine Aktivitaet laesst sich verbergen (visible=0) und wieder sichtbar
-     * machen (visible=1) - Ticket #390, Abnahmekriterium 1.
+     * Hide (visible=0) and show (visible=1) activities (#390, criterion 1).
      */
     public function test_visibility_can_be_hidden_and_shown_again(): void {
         $this->resetAfterTest();
@@ -488,13 +476,10 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Stealth (visibleoncoursepage=0) funktioniert generisch fuer alle acht
-     * vom Feldkatalog gefuehrten, ueber dieses Vehikel geschriebenen
-     * Aktivitaetsarten (Ticket #390, Abnahmekriterium 2) - quiz hat einen
-     * eigenen Schreibweg (update_quiz_settings) und ist deshalb nicht dabei.
-     * "coursepagevisibility" (Lese-Vokabular) wechselt dabei ebenfalls auf
-     * "stealth" - dasselbe Wort wie get_module_settings/get_course_catalog
-     * (Abnahmekriterium: identische Feldnamen).
+     * Stealth (visibleoncoursepage=0) works for all eight catalog types using
+     * this writer (#390, criterion 2). Quiz has its own writer. Read vocabulary
+     * coursepagevisibility becomes stealth, matching get_module_settings
+     * and get_course_catalog.
      */
     public function test_stealth_visibility_works_for_all_eight_activity_types(): void {
         $this->resetAfterTest();
@@ -502,9 +487,9 @@ final class update_module_settings_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
 
         $modnames = registry::known_modnames();
-        $this->assertContains('quiz', $modnames, 'quiz muss weiterhin katalogisiert sein (eigener Schreibweg).');
+        $this->assertContains('quiz', $modnames, 'quiz must remain cataloged (own write path).');
         $modnamesviaupdatemodulesettings = array_values(array_diff($modnames, ['quiz']));
-        $this->assertCount(8, $modnamesviaupdatemodulesettings, 'Erwartet acht Aktivitaetsarten ueber dieses Vehikel.');
+        $this->assertCount(8, $modnamesviaupdatemodulesettings, 'Expected eight activity types via this vehicle.');
 
         foreach ($modnamesviaupdatemodulesettings as $modname) {
             $instance = $this->getDataGenerator()->get_plugin_generator('mod_' . $modname)->create_instance([
@@ -524,9 +509,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Bei abgeschaltetem allowstealth scheitert ein Stealth-Patch mit einer
-     * klaren Meldung, es wird nichts geschrieben (Ticket #390,
-     * Abnahmekriterium 3).
+     * Disabling allowstealth rejects stealth patches without writes
+     * (#390, criterion 3).
      */
     public function test_stealth_fails_with_clear_message_when_allowstealth_is_off(): void {
         $this->resetAfterTest();
@@ -545,9 +529,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Trotz abgeschaltetem allowstealth bleiben visible (Verbergen im Kurs)
-     * und die Rueckkehr auf visibleoncoursepage=1 uneingeschraenkt moeglich -
-     * die Sperre trifft nur den Zielwert 0.
+     * With allowstealth off, hiding via visible and restoring
+     * visibleoncoursepage=1 remain allowed; only target value 0 is blocked.
      */
     public function test_hiding_is_still_allowed_when_stealth_is_off(): void {
         $this->resetAfterTest();
@@ -563,8 +546,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * groupmode und groupingid lassen sich setzen, mit Vorher-/Nachher-
-     * Meldung in Lehrkraft-Deutsch (Ticket #390, Abnahmekriterium 4/8).
+     * Set groupmode and groupingid with localized before/after reports
+     * (#390, criteria 4/8).
      */
     public function test_groupmode_and_groupingid_can_be_set(): void {
         $this->resetAfterTest();
@@ -584,8 +567,8 @@ final class update_module_settings_test extends \advanced_testcase {
         $this->assertSame(SEPARATEGROUPS, $after['groupmode']);
         $this->assertSame((int) $grouping->id, $after['groupingid']);
 
-        // Vorher-/Nachher-Zustand in Lehrkraft-Deutsch (Ticket #390,
-        // Abnahmekriterium 8) - nicht nur der Feldname, auch die Werte.
+        // Localized before/after reports include values as well as field names
+        // (#390, criterion 8).
         $this->assertCount(2, $result['changes']);
         $bygroupmode = array_values(array_filter($result['changes'], fn($c) => $c['field'] === 'groupmode'))[0];
         $this->assertSame('0', $bygroupmode['before_json']);
@@ -596,7 +579,7 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * idnumber laesst sich setzen (Ticket #390, Abnahmekriterium 5).
+     * Set idnumber (#390, criterion 5).
      */
     public function test_idnumber_can_be_set(): void {
         $this->resetAfterTest();
@@ -610,8 +593,7 @@ final class update_module_settings_test extends \advanced_testcase {
 
         $this->assertSame('kp-390', $this->read($page->cmid)['idnumber']);
 
-        // Vorher-/Nachher-Zustand in Lehrkraft-Deutsch (Ticket #390,
-        // Abnahmekriterium 8).
+        // Localized before/after state (#390, criterion 8).
         $this->assertCount(1, $result['changes']);
         $this->assertSame('idnumber', $result['changes'][0]['field']);
         $this->assertSame('""', $result['changes'][0]['before_json']);
@@ -620,9 +602,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * set_coursemodule_groupmode() (in Moodle 5.2 deprecated) wird nirgends
-     * im Plugin verwendet - der Gruppenmodus laeuft ausschliesslich ueber den
-     * Formularweg (update_moduleinfo()) (Ticket #390, Abnahmekriterium 4).
+     * Never use set_coursemodule_groupmode(), deprecated in Moodle 5.2.
+     * Set group mode only through update_moduleinfo() (#390, criterion 4).
      */
     public function test_deprecated_set_coursemodule_groupmode_is_never_used(): void {
         $plugindir = __DIR__ . '/../..';
@@ -641,8 +622,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Erstellt eine Materialdatei fuer den aktuell angemeldeten Nutzer -
-     * derselbe Ablageort, den upload_material_file bespielt (Issue #428).
+     * Create a material file for the current user in upload_material_file’s
+     * storage location (#428).
      *
      * @param string $path
      * @param string $content
@@ -666,12 +647,9 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Richtet den externen Materialbestand (WebDAV-Fake) fuer eine bereits
-     * angemeldete Lehrkraft ein - anders als
-     * {@see webdav_instance_fixture::set_up_external_material()} (das seine
-     * eigene Person anlegt) fuer eine schon im Kurs eingeschriebene
-     * Lehrkraft, damit derselbe Aufruf zugleich Kurs-Schreibrechte hat
-     * (Issue #496).
+     * Set up fake external material storage for an already enrolled teacher
+     * (#496). Unlike webdav_instance_fixture::set_up_external_material(),
+     * which creates its own user, this keeps the same user’s course write rights.
      *
      * @param \stdClass $teacher
      * @return \local_coursepilot\tests\webdav\fake_webdav_transport
@@ -679,7 +657,7 @@ final class update_module_settings_test extends \advanced_testcase {
     private function set_up_external_material_for(\stdClass $teacher): \local_coursepilot\tests\webdav\fake_webdav_transport {
         $this->grant_webdav_capability($teacher);
         $instanceid = $this->create_webdav_instance($teacher);
-        $this->write_v2_pointer($teacher, 'materialbestand', $instanceid, 'Material');
+        $this->write_v2_pointer($teacher, 'material_store', $instanceid, 'Material');
 
         $fake = new \local_coursepilot\tests\webdav\fake_webdav_transport();
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake);
@@ -687,10 +665,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Einbettung direkt aus dem externen Materialbestand (Issue #496, Spec
-     * #486 §7): "ort" = "bestand" liest ueber den WebDAV-Transport-Fake und
-     * kopiert die Datei ueber den Entwurfsbereich in die Aktivitaet, ohne
-     * Umweg ueber die Werkbank.
+     * Embed from external inventory through fake WebDAV and a draft into
+     * the activity, without using the workbench (#496, Spec #486 §7).
      */
     public function test_introattachments_reference_attaches_material_file_from_external_bestand(): void {
         $this->resetAfterTest();
@@ -720,9 +696,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Explizit "ort" = "werkbank" greift weiterhin auf die Werkbank zu, auch
-     * wenn der Materialbestand extern liegt (Issue #496) - derselbe Vertrag
-     * wie bei den lesenden Materialwerkzeugen (Issue #495).
+     * Explicit location = workbench still uses the workbench when inventory
+     * is external, matching material readers (#495/#496).
      */
     public function test_introattachments_reference_with_ort_werkbank_ignores_external_bestand(): void {
         $this->resetAfterTest();
@@ -730,7 +705,7 @@ final class update_module_settings_test extends \advanced_testcase {
         $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance(['course' => $course->id]);
         $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
         $fake = $this->set_up_external_material_for($teacher);
-        $fake->seed_file('/Coursepilot/Material/nur-extern.pdf', 'extern');
+        $fake->seed_file('/Coursepilot/Material/nur-extern.pdf', 'external');
         $this->create_material_file('werkbankdatei.pdf', 'aus der Werkbank');
 
         $result = external_api::clean_returnvalue(
@@ -738,7 +713,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute(
                 $cmid,
                 json_encode(['introattachments' => ['werkbankdatei.pdf']]),
-                \local_coursepilot\material_files::ORT_WERKBANK
+                \local_coursepilot\material_files::LOCATION_WORKBENCH
             )
         );
 
@@ -750,9 +725,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Die Sperre unterhalb eines Eintrags vom Typ "kontextbereich" (Issue
-     * #495, Spec #486 §2/§7) greift auch an der Einbettung (Issue #496) -
-     * kein zweiter Zugang zu Kontextdateien am Personenbezug-Schalter vorbei.
+     * Embedding also rejects context_area paths, preventing an alternate
+     * access path bypassing personal-data checks (#495/#496, Spec #486 §2/§7).
      */
     public function test_introattachments_reference_under_kontextbereich_is_rejected(): void {
         $this->resetAfterTest();
@@ -760,8 +734,8 @@ final class update_module_settings_test extends \advanced_testcase {
         $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance(['course' => $course->id]);
         $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
         \local_coursepilot\storage_anchor::write_pointer_document([
-            'kontextbereich' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material/kontext'],
-            'materialbestand' => ['ort' => 'moodle', 'pfad' => 'coursepilot-material'],
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot-material/kontext'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
         ]);
         get_file_storage()->create_file_from_string([
             'contextid' => \local_coursepilot\material_files::own_context()->id,
@@ -774,16 +748,16 @@ final class update_module_settings_test extends \advanced_testcase {
 
         try {
             update_module_settings::execute($cmid, json_encode(['introattachments' => ['kontext/plan.md']]));
-            $this->fail('Ein Pfad unter dem Kontextbereich haette werfen muessen.');
+            $this->fail('A path under the context area should have thrown.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('materialpathiskontext', $e->errorcode);
+            $this->assertSame('materialpathiscontext', $e->errorcode);
         }
     }
 
     /**
-     * Verweisweg (Spec 0018 §4.2/§7, Issue #429): ein Materialordner-Pfad
-     * wird zur "Zusaetzliche Dateien"-Anlage der Aufgabe uebernommen - die
-     * Dateisperre aus Spec 0015 §4.3 faellt fuer assign.
+     * Reference material paths as assignment additional-file attachments
+     * (Spec 0018 §4.2/§7, #429). The Spec 0015 §4.3 file restriction no
+     * longer applies to assign.
      */
     public function test_introattachments_reference_attaches_material_file(): void {
         $this->resetAfterTest();
@@ -812,7 +786,7 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Ein zweiter Verweis haengt an, statt den ersten Anhang zu ersetzen
+     * A second reference appends rather than replacing the first attachment
      * (Spec 0018 §4.2).
      */
     public function test_introattachments_reference_preserves_earlier_attachment(): void {
@@ -833,8 +807,7 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Verweis auf eine nicht existierende Materialdatei scheitert mit
-     * einer Meldung, die den erwarteten Pfad nennt (Abnahmekriterium #429).
+     * Missing material files produce an error naming the expected path (#429).
      */
     public function test_introattachments_reference_to_missing_material_file_fails_with_clear_message(): void {
         $this->resetAfterTest();
@@ -851,10 +824,9 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Scheitert der Schreibvorgang (hier: verletzte Kombinationsregel eines
-     * anderen Feldes im selben Patch), bleibt die Materialdatei unangetastet
-     * liegen - ein zweiter Versuch kann denselben Verweis erneut nutzen,
-     * ohne erneut hochzuladen (Spec 0018 §4.2, Abnahmekriterium #429).
+     * A failed write, such as another field’s combination-rule violation,
+     * preserves the material file for retry without another upload
+     * (Spec 0018 §4.2, #429).
      */
     public function test_failed_attach_leaves_material_file_untouched(): void {
         $this->resetAfterTest();
@@ -868,8 +840,8 @@ final class update_module_settings_test extends \advanced_testcase {
         $this->create_material_file('arbeitsblatt.pdf', 'Arbeitsblattinhalt');
 
         try {
-            // cutoffdate liegt vor duedate - verletzt die Kombinationsregel,
-            // validate_patch() scheitert VOR jedem Materialzugriff.
+            // cutoffdate before duedate violates the combination rule;
+            // validate_patch() fails before any material access.
             update_module_settings::execute($cmid, json_encode([
                 'introattachments' => ['arbeitsblatt.pdf'],
                 'cutoffdate' => 1000000000,
@@ -902,13 +874,10 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Wie {@see self::test_failed_attach_leaves_material_file_untouched()},
-     * aber der Fehlschlag passiert nicht in validate_patch() (vor jedem
-     * Materialzugriff), sondern MITTEN im Aufloesungsschritt selbst: die
-     * erste referenzierte Datei existiert und wird bereits in den Entwurf
-     * kopiert, die zweite fehlt und laesst resolve_into_draft() abbrechen -
-     * update_moduleinfo() wird dadurch nie erreicht. Beide Materialdateien
-     * bleiben unangetastet, die Aufgabe bekommt keinen Anhang (#429).
+     * Fail during resolve_into_draft(), after copying the first reference
+     * but before resolving the missing second file. Never reach
+     * update_moduleinfo(); preserve materials and attach nothing (#429).
+     * See {@see self::test_failed_attach_leaves_material_file_untouched()}.
      */
     public function test_failed_attach_leaves_material_files_untouched_mid_resolution(): void {
         $this->resetAfterTest();
@@ -949,10 +918,9 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Ersetzen einer Aktivitaetsdatei (gleicher Dateiname erneut referenziert,
-     * anderer Inhalt) loescht die alte Datei nicht, sondern verdraengt sie in
-     * den Papierkorb - der Papierkorb-Datensatz zeigt auf denselben
-     * contenthash wie das Original (Spec 0018 §9.1, Issue #432).
+     * Replacing an activity file with the same filename moves the old
+     * version to trash with its original contenthash rather than deleting
+     * it (Spec 0018 §9.1, #432).
      */
     public function test_replacing_introattachment_trashes_the_old_file_with_the_same_contenthash(): void {
         $this->resetAfterTest();
@@ -987,9 +955,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Der Verlaufsstand markiert introattachment-Dateien nicht mehr pauschal
-     * als Luecke (gap=1) - fuer sie existiert seit Issue #432 ein echter
-     * Wiederherstellungsweg ueber den Papierkorb (Spec 0018 §9.1).
+     * introattachment files no longer count as history gaps because
+     * trash provides actual restoration (#432, Spec 0018 §9.1).
      */
     public function test_introattachment_files_are_not_marked_as_a_gap_in_the_history(): void {
         $this->resetAfterTest();
@@ -1042,10 +1009,9 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Fachabbildung in die Aufgabenbeschreibung einbetten (Spec 0018 §4.2/§5,
-     * Issue #433): eine Materialdatei landet als <img> IM Intro-Text, nicht
-     * als danebenliegender Anhang - der Alt-Text wird im Patch selbst
-     * mitgeschrieben (Glossar: Alt-Text als KI-Qualitätsroutine).
+     * Embed a material image inside assignment intro HTML rather than as
+     * a separate attachment (Spec 0018 §4.2/§5, #433). Supply alt text in
+     * the patch as part of the AI quality routine.
      */
     public function test_introimages_embeds_material_image_into_intro(): void {
         $this->resetAfterTest();
@@ -1064,11 +1030,9 @@ final class update_module_settings_test extends \advanced_testcase {
 
         $this->assertStringContainsString('intro', $result['message']);
         $after = $this->read($cmid);
-        // Moodle speichert Intro-Text mit dem @@PLUGINFILE@@-Platzhalter in
-        // der Datenbank (lib/filelib.php:1103) - die eigentliche
-        // pluginfile.php-URL entsteht erst beim Anzeigen ueber format_text().
-        // Der Beleg fuers Einbetten ist deshalb der Platzhalter plus die
-        // tatsaechlich abgelegte Datei (s.u.), nicht eine fertige URL.
+        // Moodle stores @@PLUGINFILE@@ in intro (lib/filelib.php:1103) and
+        // format_text() resolves pluginfile.php URLs on display. Prove embedding
+        // with the placeholder and physical file, not a rendered URL.
         $this->assertStringContainsString('alt="Saeulendiagramm der Messreihe"', $after['intro']);
         $this->assertStringContainsString('@@PLUGINFILE@@/diagramm.png', $after['intro']);
 
@@ -1078,10 +1042,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Der komplette Weg aus Spec 0018 §5 laeuft durch: eine Materialdatei
-     * wird zugeschnitten (#431), der Ausschnitt landet als eigene
-     * Materialdatei - und genau der laesst sich anschliessend einbetten,
-     * ohne erneut hochzuladen (Abnahmekriterium #433).
+     * Exercise the complete Spec 0018 §5 path: crop material (#431), save
+     * the crop as separate material and embed it without uploading again (#433).
      */
     public function test_cropped_material_file_can_be_embedded_afterwards(): void {
         $this->resetAfterTest();
@@ -1103,9 +1065,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Bildtyp ausserhalb der Einbett-Whitelist (Spec 0018 §6) wird mit
-     * klarer Meldung abgewiesen statt eingebettet - dieselbe Meldung wie
-     * beim Upload, engere Whitelist (Abnahmekriterium #433).
+     * Reject images outside the embedding whitelist with the upload error
+     * message, using a narrower whitelist (Spec 0018 §6, #433).
      */
     public function test_introimages_rejects_disallowed_extension_with_clear_message(): void {
         $this->resetAfterTest();
@@ -1129,9 +1090,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Ein Verweis auf eine nicht existierende Materialdatei scheitert mit
-     * einer Meldung, die den erwarteten Pfad nennt - dieselbe Zusicherung
-     * wie bei introattachments (#429).
+     * Missing image references name the expected path, as for
+     * introattachments (#429).
      */
     public function test_introimages_reference_to_missing_material_file_fails_with_clear_message(): void {
         $this->resetAfterTest();
@@ -1151,10 +1111,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Der Aenderungsverlauf verzeichnet ein eingebettetes Bild wie jede
-     * andere Aenderung (Abnahmekriterium #433): "intro" erscheint im Diff,
-     * und die eingebettete Datei selbst taucht im Dateibestand der Version
-     * auf.
+     * History records embedded images like other changes: intro appears
+     * in the diff and the file appears in the version’s file inventory (#433).
      */
     public function test_embedded_image_appears_in_the_change_history(): void {
         $this->resetAfterTest();
@@ -1183,11 +1141,9 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Wie {@see self::test_replacing_introattachment_trashes_the_old_file_with_the_same_contenthash()},
-     * nur fuer den Einbettungsweg: ein zweites Mal unter demselben
-     * Dateinamen eingebettet, landet die ALTE Fassung im Papierkorb statt
-     * verloren zu gehen - dieselbe Zusicherung wie bei introattachments,
-     * jetzt auch fuer die "intro"-Filearea (Spec 0018 §9.1).
+     * Re-embedding the same filename moves the old intro file to trash
+     * instead of losing it, matching introattachments (Spec 0018 §9.1).
+     * See {@see self::test_replacing_introattachment_trashes_the_old_file_with_the_same_contenthash()}.
      */
     public function test_replacing_an_embedded_image_trashes_the_old_file_with_the_same_contenthash(): void {
         $this->resetAfterTest();
@@ -1226,9 +1182,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Abnahmekriterium #399: Drift in einer Aktivitätsart sperrt genau diese
-     * fuers Schreiben, mit der Handlungsaufforderung "bitte der
-     * Administration melden" - Lesen (get_module_settings) bleibt moeglich.
+     * Catalog drift blocks only that activity type for writing and advises
+     * contacting administration; get_module_settings still reads (#399).
      */
     public function test_drift_blocks_the_write_but_not_the_read(): void {
         $this->resetAfterTest();
@@ -1243,27 +1198,23 @@ final class update_module_settings_test extends \advanced_testcase {
 
         try {
             update_module_settings::execute($page->cmid, json_encode(['name' => 'Neuer Titel']));
-            $this->fail('execute() haette wegen Drift werfen muessen.');
+            $this->fail('execute() should have thrown because of drift.');
         } catch (\moodle_exception $e) {
-            // Die genaue deutsche Formulierung ("bitte der Administration
-            // melden") wird in write_gate_test.php gegen das Sprachpaket
-            // geprueft (Testinstanz hat kein vollstaendiges de-Sprachpaket,
-            // nur lang/de/local_coursepilot.php im Plugin) - hier reicht der
-            // sprachunabhaengige Fehlercode.
+            // write_gate_test.php checks the exact language-pack wording. The test
+            // instance has only plugin German strings, not a full German pack;
+            // a language-independent error code suffices here.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
         }
 
-        // Lesen bleibt trotz Drift moeglich.
+        // Read access remains available despite drift.
         $this->read($page->cmid);
         $this->addToAssertionCount(1);
     }
 
     /**
-     * Die Hauptdatei einer bestehenden "resource" laesst sich per Patch
-     * ersetzen (Spec 0018 §9, Issue #434: die von create_module::Klassendoku
-     * benannte Luecke "die KI kann die Hauptdatei einer resource ersetzen").
-     * Gleicher Dateiname erneut referenziert -> alte Datei wandert in den
-     * Papierkorb statt geloescht zu werden (Spec 0018 §9.1, wie bei assign).
+     * Patch a resource’s main file (#434, Spec 0018 §9). Referencing the
+     * same filename moves the old content to trash rather than deleting it,
+     * as with assign (Spec 0018 §9.1).
      */
     public function test_resource_files_reference_replaces_main_file_and_trashes_the_old_one(): void {
         $this->resetAfterTest();
@@ -1292,17 +1243,14 @@ final class update_module_settings_test extends \advanced_testcase {
             'itemid',
             false
         );
-        $this->assertNotEmpty($trashed, 'Die ersetzte Hauptdatei muss in den Papierkorb wandern.');
+        $this->assertNotEmpty($trashed, 'The replaced main file must move to the trash.');
     }
 
     /**
-     * "files" bei "folder" scheitert auf dem Patch-Weg mit einer klaren
-     * Meldung statt still wirkungslos zu bleiben (Issue #434):
-     * folder_update_instance() (mod/folder/lib.php) liest den Draft-Itemid
-     * NICHT aus $data->files, sondern ueber file_get_submitted_draft_itemid()
-     * aus $_REQUEST - ein reiner Webservice-Aufruf haette also nie eine
-     * Wirkung gehabt, ohne dass Moodle einen Fehler meldet. "Dateien einem
-     * folder hinzufuegen" laeuft deshalb ausschliesslich ueber create_module.
+     * Reject folder files patches clearly (#434). folder_update_instance()
+     * reads its draft item ID from $_REQUEST through
+     * file_get_submitted_draft_itemid(), not data->files, so a pure webservice
+     * patch silently did nothing. Adding folder files uses create_module only.
      */
     public function test_folder_files_patch_fails_with_clear_message_instead_of_silently_doing_nothing(): void {
         $this->resetAfterTest();
@@ -1320,9 +1268,9 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * Riegel (#583, Abnahme): attemptreopenmethod=manual per Patch ohne
-     * Bestaetigung abgelehnt, mit Bestaetigung geschrieben; ein
-     * unveraendert wiederholter Riegel braucht keine neue Bestaetigung.
+     * Reject attemptreopenmethod=manual without confirmation and allow it
+     * with confirmation. Repeating an unchanged restriction needs no new
+     * confirmation (#583).
      */
     public function test_assign_manual_reopen_patch_needs_confirmation_once(): void {
         $this->resetAfterTest();
@@ -1335,12 +1283,12 @@ final class update_module_settings_test extends \advanced_testcase {
 
         try {
             update_module_settings::execute($assign->cmid, $patch);
-            $this->fail('attemptreopenmethod=manual haette bestaetigt werden muessen.');
+            $this->fail('attemptreopenmethod=manual should have required confirmation.');
         } catch (\moodle_exception $e) {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
         }
 
-        update_module_settings::execute($assign->cmid, $patch, \local_coursepilot\material_files::ORT_BESTAND,
+        update_module_settings::execute($assign->cmid, $patch, \local_coursepilot\material_files::LOCATION_STORE,
             ['attemptreopenmethod']);
         $settings = json_decode(get_module_settings::execute($assign->cmid)['settings_json'], true);
         $this->assertSame('manual', $settings['attemptreopenmethod']);
