@@ -38,6 +38,7 @@ return new class extends phpunit_coverage_info {
         'lang',
         'oauth',
         'workbench',
+        'werkbank',
     ];
 
     /** @var array Individual files at the plugin root. */
@@ -49,6 +50,8 @@ return new class extends phpunit_coverage_info {
         'oauth.php',
         'location_selection.php',
         'location_selection_browse.php',
+        'ortswahl.php',
+        'ortswahl_browse.php',
         'settings.php',
         'surface.php',
         'version.php',

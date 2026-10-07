@@ -114,7 +114,7 @@ final class workbench_ticket {
      *         workbenchticketaccountinactive, remoteaccessnotgranted, workbenchticketcontentchanged
      */
     public static function redeem(string $secret): array {
-        global $DB;
+        global $USER;
 
         if ((string) get_config('local_coursepilot', 'remoteaccessenabled') === '0') {
             throw new workbench_ticket_redemption_failed('remoteaccessdisabled', null);
@@ -131,7 +131,14 @@ final class workbench_ticket {
 
         self::assert_still_valid($ticket);
 
-        [$directory, $filename] = material_files::resolve_file($ticket->path);
+        $requestuser = $USER;
+        try {
+            // Storage locations belong to the validated owner, including anonymous downloads.
+            $USER = (object) ['id' => (int) $ticket->userid];
+            [$directory, $filename] = material_files::resolve_file($ticket->path);
+        } finally {
+            $USER = $requestuser;
+        }
         $file = self::resolve_ticket_file($ticket, $directory, $filename);
 
         return [

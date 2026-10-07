@@ -17,6 +17,7 @@
 namespace local_coursepilot;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -70,6 +71,36 @@ final class workbench_ticket_test extends \advanced_testcase {
         $this->expectException(\moodle_exception::class);
         $this->expectExceptionMessageMatches('/' . preg_quote(get_string('workbenchticketinvalid', 'local_coursepilot'), '/') . '/');
         workbench_ticket::redeem($secret);
+    }
+
+    public static function requester_provider(): array {
+        return ['anonymous' => [false], 'another teacher' => [true]];
+    }
+
+    #[DataProvider('requester_provider')]
+    public function test_redemption_uses_the_owners_selected_location_without_changing_request_identity(bool $anotherteacher): void {
+        global $USER;
+        $this->resetAfterTest();
+        $owner = $this->getDataGenerator()->create_user();
+        $this->setUser($owner);
+        $this->issue_connection((int) $owner->id);
+        storage_anchor::write_pointer_document([
+            'context_area' => ['location' => 'moodle', 'path' => 'retained/context'],
+            'material_store' => ['location' => 'moodle', 'path' => 'retained/material'],
+        ]);
+        [$directory, $filename] = material_files::resolve_file('selected.txt');
+        get_file_storage()->create_file_from_string(
+            material_files::filerecord(material_files::own_context()->id, $directory, $filename), 'Owner selected bytes');
+        $secret = $this->secret_from_url(workbench_ticket::issue('selected.txt')['url']);
+        $requester = $anotherteacher ? $this->getDataGenerator()->create_user() : null;
+        $this->setUser($requester);
+        $requestidentity = $USER;
+
+        $delivery = workbench_ticket::redeem($secret);
+
+        $this->assertSame('Owner selected bytes', $delivery['content']);
+        $this->assertSame((int) $owner->id, $delivery['userid']);
+        $this->assertSame($requestidentity, $USER);
     }
 
     public function test_expired_ticket_is_rejected(): void {

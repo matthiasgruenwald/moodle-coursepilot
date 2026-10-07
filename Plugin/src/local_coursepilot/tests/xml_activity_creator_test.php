@@ -99,6 +99,43 @@ final class xml_activity_creator_test extends \advanced_testcase {
         }
     }
 
+    public function test_failed_deletion_reports_the_remaining_hidden_activity(): void {
+        global $DB;
+        [$course, $xml] = $this->setup_course();
+        if ($DB->get_dbfamily() !== 'mysql') {
+            $this->markTestSkipped('MariaDB/MySQL failure trigger fixture required.');
+        }
+        $cfg = $DB->export_dbconfig();
+        $options = (array) ($cfg->dboptions ?? []);
+        $ddl = new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
+            (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
+        $trigger = 'cpcleanup' . bin2hex(random_bytes(8));
+        $table = $DB->get_prefix() . 'book';
+        $ddl->query("CREATE TRIGGER $trigger BEFORE DELETE ON $table FOR EACH ROW BEGIN
+            IF OLD.course = $course->id THEN
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Synthetic cleanup failure';
+            END IF;
+        END");
+        try {
+            $broken = str_replace('</book>', '<bogusfield>x</bogusfield></book>', $xml);
+            try {
+                xml_activity_creator::create($course->id, 'book', 1, $broken);
+                $this->fail('Incomplete cleanup must be reported.');
+            } catch (\moodle_exception $e) {
+                $this->assertSame('xmlactivitycleanupincomplete', $e->errorcode);
+                $remaining = $DB->get_record('course_modules', ['course' => $course->id], '*', MUST_EXIST);
+                $this->assertStringContainsString((string) $remaining->id, $e->getMessage());
+                $this->assertStringContainsString('Synthetic cleanup failure', $e->debuginfo);
+                $this->assertStringContainsString('bogusfield', $e->debuginfo);
+                $this->assertFalse((bool) get_fast_modinfo($course->id)->get_cm($remaining->id)->visible);
+            }
+        } finally {
+            $ddl->query("DROP TRIGGER IF EXISTS $trigger");
+            $ddl->close();
+        }
+    }
+
     public function test_kind_gate_rejects_catalogued_and_excluded(): void {
         [$course, $xml] = $this->setup_course();
         foreach (['page' => 'createfromxmlcatalogued', 'lesson' => 'kindexcludedquestions'] as $modname => $code) {
@@ -189,6 +226,50 @@ final class xml_activity_creator_test extends \advanced_testcase {
         }
         $this->assertTrue((bool) get_fast_modinfo($course->id)->get_cm($old)->visible);
         $this->assertSame($before, $this->footprint($course->id));
+    }
+
+    public function test_failed_predecessor_reset_still_discards_the_new_activity(): void {
+        global $DB;
+        [$course, $xml, $old] = $this->setup_old();
+        if ($DB->get_dbfamily() !== 'mysql') {
+            $this->markTestSkipped('MariaDB/MySQL failure trigger fixture required.');
+        }
+        $before = $this->footprint($course->id)['cm'];
+        $cfg = $DB->export_dbconfig();
+        $options = (array) ($cfg->dboptions ?? []);
+        $ddl = new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
+            (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
+        $key = 'cpreset' . bin2hex(random_bytes(8));
+        $historytable = $DB->get_prefix() . 'local_coursepilot_cm_version';
+        $cmtable = $DB->get_prefix() . 'course_modules';
+        try {
+            $ddl->query("CREATE TRIGGER {$key}history BEFORE INSERT ON $historytable FOR EACH ROW BEGIN
+                IF NEW.cmid = $old AND NEW.source = 'superseded' THEN
+                    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Synthetic supersede failure';
+                END IF;
+            END");
+            $ddl->query("CREATE TRIGGER {$key}visibility BEFORE UPDATE ON $cmtable FOR EACH ROW BEGIN
+                IF OLD.id = $old AND OLD.visible = 0 AND NEW.visible = 1 THEN
+                    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Synthetic predecessor reset failure';
+                END IF;
+            END");
+            try {
+                xml_activity_creator::create($course->id, 'book', 2, $xml, false, $old);
+                $this->fail('Incomplete visibility restoration must be reported.');
+            } catch (\moodle_exception $e) {
+                $this->assertSame('xmlactivitycleanupincomplete', $e->errorcode);
+                $this->assertStringContainsString((string) $old, $e->getMessage());
+                $this->assertStringContainsString('Synthetic supersede failure', $e->debuginfo);
+                $this->assertStringContainsString('Synthetic predecessor reset failure', $e->debuginfo);
+            }
+            $this->assertSame($before, $this->footprint($course->id)['cm']);
+            $this->assertFalse((bool) get_fast_modinfo($course->id)->get_cm($old)->visible);
+        } finally {
+            $ddl->query("DROP TRIGGER IF EXISTS {$key}history");
+            $ddl->query("DROP TRIGGER IF EXISTS {$key}visibility");
+            $ddl->close();
+        }
     }
 
     public function test_supersede_of_superseded_names_successor_and_still_runs(): void {

@@ -113,13 +113,23 @@ final class xml_activity_creator {
                 self::supersede($cmid, $replacescmid, (int) $USER->id);
             }
         } catch (\Throwable $e) {
+            $cleanupfailures = [];
             try {
                 if ($replacescmid !== null) {
                     course_module_placement::set_visible($replacescmid, $oldvisible);
                 }
+            } catch (\Throwable $cleanup) {
+                $cleanupfailures[] = 'Predecessor visibility: ' . $cleanup->getMessage();
+            }
+            try {
                 course_module_placement::discard_failed($cmid);
             } catch (\Throwable $cleanup) {
-                debugging('create_activity_from_xml cleanup failed: ' . $cleanup->getMessage(), DEBUG_DEVELOPER);
+                $cleanupfailures[] = 'New activity deletion: ' . $cleanup->getMessage();
+            }
+            if ($cleanupfailures) {
+                throw new moodle_exception('xmlactivitycleanupincomplete', 'local_coursepilot', '', (object) [
+                    'cmid' => $cmid, 'predecessor' => $replacescmid ?? 0,
+                ], 'Creation failed: ' . $e->getMessage() . '; ' . implode('; ', $cleanupfailures));
             }
             throw $e;
         }

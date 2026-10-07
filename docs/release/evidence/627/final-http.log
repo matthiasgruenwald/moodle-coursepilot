@@ -1,0 +1,6 @@
+PASS Published download URL delivers migrated bytes over HTTP
+PASS Published download URL enforces single use over HTTP
+PASS Real login form supplies a login token
+PASS Published location URL reaches the current form after login
+PASS Old location-form POST changes no selected storage location
+PASS Published browse URL retains the current sesskey guard

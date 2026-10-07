@@ -1,0 +1,4 @@
+PASS Actual baseline plugin version
+PASS Baseline uses the legacy selected context location
+PASS Baseline really captured the historical disallowed metadata
+Prepared real baseline token pairs, tickets and protected history.

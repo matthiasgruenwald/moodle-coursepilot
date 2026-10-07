@@ -1,6 +1,9 @@
 # Main-Merge und nächste Beta: Abnahmeplan
 
-Stand: 04.10.2026. Planung, keine Merge- oder Releasefreigabe.
+Historischer Plan vom 04.10.2026. Der aktuelle Stand und die Nutzerfreigabe zur
+Umsetzung vom 07.10.2026 stehen im [finalen Abnahmebericht](../release/627-main-merge-abnahme-2026-10-07.md).
+#585 und #626 wurden am 06.10.2026 akzeptiert. Moodle 5.2 bleibt gemäß #679
+außerhalb des Supports; die damalige 5.2-Anforderung unten ist überholt.
 
 ## Ausgangslage
 

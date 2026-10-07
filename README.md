@@ -2,6 +2,9 @@
 
 **Unterricht in Moodle planen und umsetzen.**
 
+[Dokumentation und Erste Schritte](https://matthiasgruenwald.github.io/moodle-coursepilot/de/)
+· [English documentation](https://matthiasgruenwald.github.io/moodle-coursepilot/en/)
+
 Coursepilot ist die schulbezogene Weiterentwicklung des MoodleMCP-Ansatzes: Lehrkräfte
 bauen bestehende Moodle-Kurse im Gespräch mit einer KI auf, statt sie zu klicken.
 
@@ -13,6 +16,10 @@ bauen bestehende Moodle-Kurse im Gespräch mit einer KI auf, statt sie zu klicke
 > verwendete BBS-Sprache (z.B. "Lernsituation").
 
 ## Einrichten
+
+Coursepilot `2.1.0-beta` ist für Moodle **5.1** geprüft. Eine Moodle-5.0-Instanz
+muss zuerst auf Moodle 5.1 aktualisiert werden. Moodle 5.2 wird noch nicht unterstützt
+(#679). Vor dem Plugin-Upgrade Datenbank und Moodle-Dateibereich sichern.
 
 1. Release-Kandidat bauen (`npm run build:native-release`, Issue #577) oder das Verzeichnis
    `Plugin/src/local_coursepilot/` direkt nach `local/coursepilot` kopieren, dann das
@@ -83,15 +90,10 @@ Englisch ist die Basissprache. Das gilt seit
 Sprachdateien, sondern auch für den Werkzeugvertrag: Parameternamen, Rückgabeschlüssel und
 Werkzeugbeschreibungen sind englisch, damit das Plugin international nutzbar bleibt.
 
-Deutsch wird in der Übergangsphase **vorübergehend** direkt mitgeliefert
-(`lang/de/local_coursepilot.php`), damit deutschsprachige Moodle-Instanzen sofort eine
-vollständige Oberfläche sehen. Das ist ein Provisorium: Der Moodle Marketplace erwartet,
-dass nur englische Strings ausgeliefert werden und Übersetzungen nach der Freigabe über
-**AMOS** (das Moodle-Übersetzungsportal) gepflegt werden. Sobald AMOS die deutsche
-Übersetzung übernimmt, wird die mitgelieferte Datei entfernt.
-
-Der **Skill-Korpus** ist davon ausgenommen: Er ist Prosa für Lehrkräfte, kein Moodle-String,
-und bleibt vorerst deutsch. Eine zweisprachige Auslieferung ist als eigener Schritt geplant.
+Der Release-Build enthält nur `lang/en/`. Die deutsche Datei unter `lang/de/`
+ist eine Entwicklungsübersetzung; veröffentlichte Übersetzungen folgen über
+**AMOS**. Auch der **Skill-Korpus** ist englisch. Die KI antwortet in der Sprache
+der Lehrkraft; Unterrichtsinhalte folgen der angefragten Sprache.
 
 ---
 

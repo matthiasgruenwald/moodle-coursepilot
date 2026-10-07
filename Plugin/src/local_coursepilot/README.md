@@ -8,6 +8,7 @@ revises course content in conversation — without installing anything locally.
 - **Requires:** Moodle 5.1 or later
 - **Licence:** AGPL-3.0-or-later (see `LICENSE`)
 - **Issue tracker:** https://github.com/matthiasgruenwald/moodle-coursepilot/issues
+- **Documentation:** https://matthiasgruenwald.github.io/moodle-coursepilot/en/
 
 ## What it does
 
@@ -63,6 +64,12 @@ Discovery follows RFC 8414 and RFC 9728. Both work without a web server change, 
 
 ## Supported versions
 
+For upgrades from 2.0.0-beta, upgrade Moodle 5.0 to Moodle 5.1 first and back up
+the database and Moodle data directory before replacing the plugin. Existing
+teacher files, selected storage locations, OAuth connections and history are migrated.
+Published location-selection and download URLs remain available as compatibility entries.
+Moodle 5.2 is not supported yet (issue #679).
+
 Tested combinations (full native PHPUnit suite in CI): **Moodle 5.1**
 (`MOODLE_501_STABLE`), each with **PHP 8.4 and MariaDB 11**.
 `version.php` requires Moodle 5.1 or later as a floor. PHP 8.2 is the minimum
@@ -71,11 +78,11 @@ combination (for example PostgreSQL) has been verified.
 
 ## Language
 
-English is the base language (`lang/en/`). Until the plugin is listed in the Moodle
-plugins directory, a complete German translation ships temporarily in `lang/de/`; once
-[AMOS](https://lang.moodle.org/) carries the translations, the bundled `lang/de/` is
-removed (issue #189). The teacher-facing skill corpus (`skills/`) is not a Moodle string and
-is not covered by AMOS (see `docs/adr/0024-englische-basis-und-komponente-coursepilot.md`).
+Release ZIPs ship only the English base language (`lang/en/`). The source tree's
+`lang/de/` is a development translation; published translations will use
+[AMOS](https://lang.moodle.org/). The skill corpus is also English, while clients
+reply in the teacher's language and create teaching content in the requested language
+(see `docs/adr/0024-englische-basis-und-komponente-coursepilot.md`).
 
 ### WebDAV storage behind a reverse proxy
 
