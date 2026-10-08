@@ -32,9 +32,8 @@
 #
 # Supportmatrix (dokumentiert, siehe auch docs/ci-native-server-mcp.md):
 #   Moodle 5.1 (MOODLE_501_STABLE) - Pflicht, Mindestversion ab 2.1 (ADR 0027).
-#   Keine Zusage fuer neuere Versionen: Moodle 5.2 aendert Tabellenspalten (assign, forum),
-#   der Schreibkatalog sperrt dort bewusst (eigenes Issue).
-#   PHP 8.4, MariaDB.
+#   Moodle 5.2 / 5.3 - Pflicht auf MariaDB 11 und PostgreSQL 17 (#679).
+#   PHP 8.3 und 8.4; frische ZIP-Installation auf jeder Moodle-Linie.
 
 name: Native Server-MCP CI
 
@@ -55,20 +54,40 @@ concurrency:
 
 jobs:
   phpunit:
-    name: PHPUnit (${{ matrix.moodle-branch }})
+    name: PHPUnit (${{ matrix.moodle-branch }}, ${{ matrix.database }}, PHP ${{ matrix.php-version }})
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         include:
           - moodle-branch: MOODLE_501_STABLE
+            database: mariadb
+            php-version: '8.4'
             measures-coverage: true
+          - moodle-branch: MOODLE_502_STABLE
+            database: mariadb
+            php-version: '8.3'
+            measures-coverage: false
+          - moodle-branch: MOODLE_502_STABLE
+            database: pgsql
+            php-version: '8.4'
+            measures-coverage: false
+          - moodle-branch: MOODLE_503_STABLE
+            database: mariadb
+            php-version: '8.3'
+            measures-coverage: false
+          - moodle-branch: MOODLE_503_STABLE
+            database: pgsql
+            php-version: '8.4'
+            measures-coverage: false
     env:
-      PHP_VERSION: '8.4'
-      DB: mariadb
+      PHP_VERSION: ${{ matrix.php-version }}
+      DB: ${{ matrix.database }}
+      DB_USER: ${{ matrix.database == 'pgsql' && 'postgres' || 'root' }}
+      DB_PASS: ${{ matrix.database == 'pgsql' && 'postgres' || '' }}
     services:
       mariadb:
-        image: mariadb:11
+        image: mariadb:11.4
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
           MYSQL_CHARACTER_SET_SERVER: utf8mb4
@@ -77,6 +96,18 @@ jobs:
           - 3306:3306
         options: >-
           --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
@@ -146,7 +177,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phpunit-${{ matrix.moodle-branch }}-${{ github.sha }}
+          name: phpunit-${{ matrix.moodle-branch }}-${{ matrix.database }}-php${{ matrix.php-version }}-${{ github.sha }}
           path: |
             ${{ github.workspace }}/coverage.xml
           if-no-files-found: warn
@@ -171,15 +202,19 @@ jobs:
         run: node scripts/ci/run-js-tests.js
 
   artifact:
-    name: Release-Artefakt (frische Installation)
+    name: Release-Artefakt (${{ matrix.moodle-branch }}, frische Installation)
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        moodle-branch: [MOODLE_501_STABLE, MOODLE_502_STABLE, MOODLE_503_STABLE]
     env:
       PHP_VERSION: '8.4'
       DB: mariadb
-      MOODLE_BRANCH: MOODLE_501_STABLE
+      MOODLE_BRANCH: ${{ matrix.moodle-branch }}
     services:
       mariadb:
-        image: mariadb:11
+        image: mariadb:11.4
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
           MYSQL_CHARACTER_SET_SERVER: utf8mb4
@@ -253,7 +288,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: native-release-zip-${{ github.sha }}
+          name: native-release-zip-${{ matrix.moodle-branch }}-${{ github.sha }}
           path: dist/native-release/local_coursepilot-*.zip
           if-no-files-found: warn
           retention-days: 30

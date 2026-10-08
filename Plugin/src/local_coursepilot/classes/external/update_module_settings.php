@@ -25,6 +25,7 @@ use core_external\external_value;
 use local_coursepilot\catalog\module_catalog;
 use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\registry;
+use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\write_target;
 use local_coursepilot\material_files;
 use local_coursepilot\write_gate;
@@ -115,6 +116,8 @@ class update_module_settings extends external_api {
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
+        pseudofield_carry_forward::apply($cm->modname, registry::for($cm->modname), $moduleinfo,
+            self::read_settings($cmid), $cm, [$fieldname => $draftitemid]);
         $moduleinfo->{$fieldname} = $draftitemid;
         \update_moduleinfo($cm, $moduleinfo, $course);
     }

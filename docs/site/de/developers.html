@@ -123,7 +123,7 @@
 
     <h2 id="tests">Tests und CI</h2>
     <ul>
-      <li><strong>PHPUnit:</strong> volle native Suite in <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/.github/workflows/native-ci.yml"><code>native-ci.yml</code></a>, Moodle 5.1 mit PHP 8.4 und MariaDB, dazu ein Job, der das Release-Artefakt frisch installiert und einen autorisierten Werkzeugaufruf ausführt.</li>
+      <li><strong>PHPUnit:</strong> volle native Suite in <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/.github/workflows/native-ci.yml"><code>native-ci.yml</code></a>, fünf Kombinationen aus Moodle 5.1/5.2/5.3, PHP 8.3/8.4, MariaDB 11.4 und PostgreSQL 17. Dazu frische ZIP-Installationen mit autorisiertem Werkzeugaufruf auf allen drei Moodle-Linien.</li>
       <li><strong>Coverage-Gate:</strong> 80&nbsp;% Zeilenabdeckung (PCOV, Moodle-5.1-Lauf), Quellumfang in <code>tests/coverage.php</code>.</li>
       <li><strong>Merge-Bedingung:</strong> nur der Sammelcheck <code>Gate (required)</code>; ein übersprungener Pflichtjob zählt als Fehlschlag.</li>
       <li><strong>Node-Suite:</strong> <code>npm run test:ci</code> für Hilfsskripte und diese Dokumentationsseite (Links, Bildpfade, Sprachgegenstücke).</li>
@@ -133,8 +133,8 @@
     <table>
       <thead><tr><th>Branch</th><th>Linie</th><th>Moodle</th><th>Inhalt</th></tr></thead>
       <tbody>
-        <tr><td><code>main</code></td><td>2.0.x</td><td>ab 5.0 (geprüft 5.0, 5.1)</td><td>veröffentlichter Stand, nur Hotfixes mit Tag, danach nach <code>dev</code> gemergt</td></tr>
-        <tr><td><code>dev</code></td><td>2.1+</td><td>ab 5.1</td><td>neue Funktionen, entwickelt und geprüft gegen eine Testinstanz mit Moodle 5.1</td></tr>
+        <tr><td><code>main</code></td><td>2.1.x</td><td>5.1, 5.2, 5.3</td><td>veröffentlichter Stand mit Tag; Release-Merges aus <code>dev</code>, Hotfixes danach nach <code>dev</code> zurückführen</td></tr>
+        <tr><td><code>dev</code></td><td>2.1+</td><td>ab 5.1</td><td>neue Funktionen; Pflicht-CI auf Moodle 5.1, 5.2 und 5.3, Spike auf Moodle 5.1</td></tr>
       </tbody>
     </table>
     <p>Feature-, Forschungs- und Prototypzweige zweigen von <code>dev</code> ab und werden nach dem Zurückführen gelöscht.</p>
@@ -148,17 +148,17 @@
 
     <h2 id="bekannte-grenzen">Bekannte Grenzen</h2>
     <ul>
-      <li><strong>Beta:</strong> <code>2.1.0-beta</code>, im Unterricht des Autors erprobt, noch nicht an einer weiteren Schule im Produktivbetrieb. In Randfällen gibt es kleinere Werkzeuglücken.</li>
+      <li><strong>Beta:</strong> <code>2.1.1-beta</code>, im Unterricht des Autors erprobt, noch nicht an einer weiteren Schule im Produktivbetrieb. In Randfällen gibt es kleinere Werkzeuglücken.</li>
       <li><strong>Keine Ratenbegrenzung</strong> am MCP-Endpunkt. Schutz kommt bisher aus OAuth, Fernzugriffsfreigabe je Person und Notbremse.</li>
       <li><strong>Moodle Plugins Directory:</strong> Die Einreichung ist offen (<a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues/192">#192</a>); bis dahin liegt die deutsche Übersetzung im Plugin statt in AMOS.</li>
       <li><strong>Änderungsverlauf nicht lückenlos:</strong> Testinhalte jenseits der Fragenanordnung, Notenbuch, zurückgespielte Sicherungen und direkte DB-Eingriffe fehlen; bei erschlossenen Arten nur die Instanzzeile, nicht die Kindtabellen (Kapitel, Einträge). Ersetzte Aktivitätsdateien kommen bei einer Rückkehr mit.</li>
       <li><strong>Erschlossene Aktivitätsarten</strong> werden nur angelegt oder abgelöst, nie bearbeitet; Arten mit Dateien im Inhalt fehlen noch.</li>
-      <li><strong>Geprüfte Umgebung</strong> nur PHP 8.4 mit MariaDB; PostgreSQL ungeprüft.</li>
+      <li><strong>Geprüfte Umgebung</strong> fünf verpflichtende Kombinationen mit PHP 8.3/8.4, MariaDB 11.4 und PostgreSQL 17. Andere Kombinationen sind nicht automatisch geprüft.</li>
       <li><strong>Skill-Korpus</strong> vorerst deutsch.</li>
     </ul>
   </main>
   <footer class="site-footer">
-    <p>Coursepilot · Beta (2.1.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Quellcode auf GitHub</a> · AGPL-3.0-or-later</p>
+    <p>Coursepilot · Beta (2.1.1-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Quellcode auf GitHub</a> · AGPL-3.0-or-later</p>
   </footer>
   <script src="../assets/site.js"></script>
 </body>

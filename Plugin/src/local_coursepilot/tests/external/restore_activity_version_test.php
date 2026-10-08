@@ -442,16 +442,22 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
-     * Rollback brings back a replaced activity file (Spec 0018 §9.1,
-     * issue #432): version 1 attaches file A, version 2 replaces it with
+     * Rollback brings back a replaced activity file: version 1 attaches file A,
+     * version 2 replaces it with
      * file B (same file name, different content) - the restore to
      * version 1 must have file A attached to the activity again, not
      * the gap from Spec 0015 §10.4.
      */
     public function test_restore_brings_back_a_replaced_activity_file(): void {
+        global $CFG, $DB;
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
-        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance(['course' => $course->id]);
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance(
+            ['course' => $course->id] + ((int) $CFG->branch >= 502 ? [
+                'markingworkflow' => 1, 'markingallocation' => 1, 'markercount' => 2,
+                'multimarkmethod' => 'average', 'multimarkrounding' => 2,
+            ] : [])
+        );
         $cmid = (int) get_coursemodule_from_instance('assign', $assign->id)->id;
         $modulecontext = \context_module::instance($cmid);
         set_config('allowpersonaldata', 1, 'local_coursepilot');
@@ -480,6 +486,13 @@ final class restore_activity_version_test extends \advanced_testcase {
         $intro = get_file_storage()->get_file($modulecontext->id, 'mod_assign', 'intro', 0, '/', 'design.png');
         $this->assertNotFalse($intro);
         $this->assertSame('Intro design', $intro->get_content());
+        if ((int) $CFG->branch >= 502) {
+            $after = $DB->get_record('assign', ['id' => $assign->id], '*', MUST_EXIST);
+            $this->assertEquals(2, $after->markercount);
+            $this->assertEquals(1, $after->markingallocation);
+            $this->assertSame('average', $after->multimarkmethod);
+            $this->assertEquals(2, $after->multimarkrounding);
+        }
         $versions = \local_coursepilot\history\version_history::list_versions($cmid)['versions'];
         $this->assertSame([1, 2, 3, 4], array_column($versions, 'version'));
         $files = \local_coursepilot\history\version_history::files_at($cmid, 4);

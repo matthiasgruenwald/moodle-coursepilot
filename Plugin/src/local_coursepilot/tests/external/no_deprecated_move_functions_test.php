@@ -47,10 +47,7 @@ final class no_deprecated_move_functions_test extends \advanced_testcase {
     ];
 
     public function test_plugin_source_never_calls_forbidden_functions_directly(): void {
-        // Only classes/ (production code), not tests/: tests/retention_test.php
-        // deliberately calls course_delete_module() to simulate a
-        // deletion (retention period test, #387) - a legitimate,
-        // pre-existing use, not a violation by ticket #391.
+        // Guard production calls; test fixtures use Moodle's native deletion path.
         $root = dirname(__DIR__, 2) . '/classes';
         $violations = [];
 

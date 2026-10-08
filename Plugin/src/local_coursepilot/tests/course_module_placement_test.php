@@ -110,7 +110,7 @@ final class course_module_placement_test extends \advanced_testcase {
         global $DB;
         [$course, [$a, $b]] = $this->course_with_pages();
         set_config('coursebinenable', 1, 'tool_recyclebin');
-        course_delete_module($b);
+        course_get_format($course)->delete_module(get_fast_modinfo($course)->get_cm($b), false);
         $bin = $DB->count_records('tool_recyclebin_course');
         $this->assertGreaterThan(0, $bin);
         course_module_placement::discard_failed($a);

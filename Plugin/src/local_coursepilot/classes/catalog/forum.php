@@ -49,7 +49,9 @@ final class forum implements module_catalog {
     }
 
     public static function fields(): array {
-        return [
+        global $CFG;
+
+        $fields = [
             new field(
                 'name',
                 'PARAM_TEXT',
@@ -315,6 +317,12 @@ final class forum implements module_catalog {
                     . 'mod/forum/db/install.xml (forum.lockdiscussionafter)'
             ),
         ];
+        if ((int) $CFG->branch >= 502) {
+            $fields[] = new field('showimmediately', 'PARAM_BOOL',
+                'In a Q&A forum, show other answers immediately after posting instead of waiting for the editing period.',
+                false, 0, [0, 1], null, 'mod/forum/mod_form.php (showimmediately)');
+        }
+        return $fields;
     }
 
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {

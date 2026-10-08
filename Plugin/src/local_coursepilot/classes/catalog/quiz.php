@@ -103,7 +103,9 @@ final class quiz implements module_catalog {
     }
 
     public static function fields(): array {
-        return [
+        global $CFG;
+
+        $fields = [
             new field(
                 'name',
                 'PARAM_TEXT',
@@ -404,6 +406,12 @@ final class quiz implements module_catalog {
                     . 'mod/quiz/db/install.xml (quiz.precreateattempts, NULLable)'
             ),
         ];
+        if ((int) $CFG->branch >= 503) {
+            $fields[] = new field('duedate', 'PARAM_INT',
+                'Unix timestamp: expected completion date, informational only. 0 = no due date.',
+                false, 0, null, null, 'mod/quiz/mod_form.php (duedate); mod/quiz/db/install.xml (quiz.duedate)');
+        }
+        return $fields;
     }
 
     /**
@@ -492,9 +500,16 @@ final class quiz implements module_catalog {
     }
 
     public static function write_options(): array {
+        global $CFG;
+
+        $daterules = [['reference' => 'timeopen', 'field' => 'timeclose', 'mode' => 'not_before']];
+        if ((int) $CFG->branch >= 503) {
+            $daterules[] = ['reference' => 'timeopen', 'field' => 'duedate', 'mode' => 'must_be_after'];
+            $daterules[] = ['reference' => 'duedate', 'field' => 'timeclose', 'mode' => 'not_before'];
+        }
         return [
             'restores_arrangement' => true,
-            'date_order_rules' => [['reference' => 'timeopen', 'field' => 'timeclose', 'mode' => 'not_before']],
+            'date_order_rules' => $daterules,
             // Learner-lock evaluation on current settings (#583): the form field
             // "quizpassword" maps to the "password" column.
             'settings_aliases' => ['quizpassword' => 'password'],

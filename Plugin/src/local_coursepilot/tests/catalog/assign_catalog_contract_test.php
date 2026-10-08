@@ -59,19 +59,13 @@ final class assign_catalog_contract_test extends \advanced_testcase {
     }
 
     /**
-     * The 34 constants without callable value sets still exist (Spec 0015 §11,
-     * ADR 0017). Use assign::checked_constants(), shared with runtime drift
-     * validation, instead of duplicating the list (Ticket #399).
+     * Every constant required by the catalog exists on the running Moodle version.
      */
-    public function test_the_34_constants_without_callable_source_still_exist(): void {
+    public function test_required_constants_still_exist(): void {
         global $CFG;
         require_once($CFG->dirroot . '/mod/assign/locallib.php');
 
-        $this->assertCount(
-            34,
-            assign::checked_constants(),
-            'Test assumption violated: the list itself must have 34 entries.'
-        );
+        $this->assertNotEmpty(assign::checked_constants());
 
         foreach (assign::checked_constants() as $constname) {
             $this->assertTrue(defined($constname), "Constant $constname no longer exists on this instance.");

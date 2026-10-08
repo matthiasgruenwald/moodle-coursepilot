@@ -587,6 +587,8 @@ final class oauth_lib_test extends \advanced_testcase {
         global $DB;
 
         $this->resetAfterTest();
+        // Exercise the endpoint transaction outside PHPUnit's enclosing PostgreSQL transaction.
+        $this->preventResetByRollback();
         $fixture = $this->registered_client_with_pkce();
         global $USER;
         $this->setUser($this->getDataGenerator()->create_user());

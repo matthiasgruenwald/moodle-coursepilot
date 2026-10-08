@@ -99,6 +99,57 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * A title patch preserves Moodle's multi-marker grading configuration.
+     */
+    public function test_title_patch_preserves_multi_marker_configuration(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        if ((int) $CFG->branch < 502) {
+            $this->markTestSkipped('Multiple markers require Moodle 5.2.');
+        }
+        [$course] = $this->course_with_editing_teacher();
+        $assignment = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+            'course' => $course->id, 'markingworkflow' => 1, 'markingallocation' => 1,
+            'markercount' => 2, 'multimarkmethod' => 'average', 'multimarkrounding' => 2,
+        ]);
+        if ((int) $CFG->branch >= 503) {
+            $DB->set_field('assign', 'optionalmarkercount', 1, ['id' => $assignment->id]);
+        }
+        $before = $DB->get_record('assign', ['id' => $assignment->id], '*', MUST_EXIST);
+
+        $result = external_api::clean_returnvalue(update_module_settings::execute_returns(),
+            update_module_settings::execute($assignment->cmid, json_encode(['name' => 'Neuer Titel'])));
+
+        $this->assertCount(1, $result['changes']);
+        $after = $DB->get_record('assign', ['id' => $assignment->id], '*', MUST_EXIST);
+        $this->assertSame('Neuer Titel', $after->name);
+        foreach (['markercount', 'multimarkmethod', 'multimarkrounding', 'optionalmarkercount'] as $field) {
+            if (property_exists($before, $field)) {
+                $this->assertSame($before->{$field}, $after->{$field}, $field);
+            }
+        }
+    }
+
+    /**
+     * Moodle 5.2's Q&A visibility switch is writable through the public contract.
+     */
+    public function test_qanda_showimmediately_can_be_changed(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        if ((int) $CFG->branch < 502) {
+            $this->markTestSkipped('Immediate Q&A visibility requires Moodle 5.2.');
+        }
+        [$course] = $this->course_with_editing_teacher();
+        $forum = $this->getDataGenerator()->get_plugin_generator('mod_forum')->create_instance([
+            'course' => $course->id, 'type' => 'qanda', 'showimmediately' => 0,
+        ]);
+        $result = external_api::clean_returnvalue(update_module_settings::execute_returns(),
+            update_module_settings::execute($forum->cmid, json_encode(['showimmediately' => 1])));
+        $this->assertSame('showimmediately', $result['changes'][0]['field']);
+        $this->assertEquals(1, $DB->get_field('forum', 'showimmediately', ['id' => $forum->id]));
+    }
+
+    /**
      * Repeating an existing value reports no changes.
      */
     public function test_patch_matching_current_value_reports_no_change(): void {
