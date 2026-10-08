@@ -174,7 +174,7 @@ final class activity_backup_test extends \advanced_testcase {
             $own = $DB->get_record('course_modules', ['course' => $course->id, 'instance' => 0], '*', MUST_EXIST);
             $foreign = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Foreign']);
             $deleted = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Foreign deleted']);
-            course_delete_module($deleted->cmid);
+            course_get_format($course)->delete_module(get_fast_modinfo($course)->get_cm($deleted->cmid), false);
             $bin = $DB->get_records('tool_recyclebin_course', ['courseid' => $course->id]);
             $this->assertNotEmpty($bin);
             $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);

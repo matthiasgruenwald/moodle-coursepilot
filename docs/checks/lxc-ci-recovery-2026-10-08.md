@@ -49,3 +49,9 @@ mit MariaDB sowie alle drei frischen ZIP-Installationen nach. Die dortigen
 PostgreSQL-Folgefehler beginnen an exakt der zusätzlich korrigierten
 Cleanup-Testgrenze. Die vollständige Matrix bleibt maßgeblich für eine
 Kompatibilitätszusage.
+
+Die zwei Notices wurden auf veraltete `course_delete_module()`-Aufrufe in
+Test-Fixtures eingegrenzt. Die Fixtures verwenden jetzt wie der Produktcode
+`course_get_format(...)->delete_module(...)`. Die beiden gemeldeten Fälle
+bestehen gezielt ohne Notices (zwei Tests, fünf Assertions); die weiteren
+beiden MariaDB-Trigger-Fixtures werden durch die Pflichtmatrix geprüft.

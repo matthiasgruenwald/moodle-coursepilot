@@ -167,7 +167,7 @@ final class export_default_activity_test extends \advanced_testcase {
             $this->assertTrue($teachercm->is_visible_on_course_page());
             $foreign = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Foreign']);
             $deleted = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Foreign deleted']);
-            course_delete_module($deleted->cmid);
+            course_get_format($course)->delete_module(get_fast_modinfo($course)->get_cm($deleted->cmid), false);
             $bin = $DB->get_records('tool_recyclebin_course', ['courseid' => $course->id]);
             $this->assertNotEmpty($bin);
             $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);

@@ -119,7 +119,7 @@ final class retention_test extends \advanced_testcase {
 
         $versionid = (int) $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $cm->id], MUST_EXIST);
 
-        course_delete_module($cm->id);
+        course_get_format($course)->delete_module(get_fast_modinfo($course)->get_cm($cm->id), false);
 
         $this->assertSame(0, (int) $DB->count_records('local_coursepilot_cm_version', ['cmid' => $cm->id]));
         $this->assertSame(0, (int) $DB->count_records('local_coursepilot_cm_version_file', ['versionid' => $versionid]));
