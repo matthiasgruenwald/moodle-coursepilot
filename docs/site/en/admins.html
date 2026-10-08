@@ -38,15 +38,15 @@
     </nav>
 
     <h2>Maturity</h2>
-    <p>Coursepilot is a <strong>beta</strong> (version <code>2.1.0-beta</code>, Moodle maturity <code>MATURITY_BETA</code>). It runs in the author's own teaching; production use at another school is still to come. Known limits are listed on the <a href="developers.html#bekannte-grenzen">developer page</a>.</p>
+    <p>Coursepilot is a <strong>beta</strong> (version <code>2.1.1-beta</code>, Moodle maturity <code>MATURITY_BETA</code>). It runs in the author's own teaching; production use at another school is still to come. Known limits are listed on the <a href="developers.html#bekannte-grenzen">developer page</a>.</p>
 
     <h2 id="voraussetzungen">Requirements</h2>
     <table>
       <thead><tr><th>Item</th><th>Requirement</th></tr></thead>
       <tbody>
-        <tr><td>Moodle</td><td>5.1 (minimum). Tested in CI: 5.1. Newer versions are not guaranteed; Moodle 5.2 is not supported yet.</td></tr>
-        <tr><td>PHP</td><td>at least 8.2 (Moodle 5.1's minimum), 8.4 recommended. CI tests with PHP 8.4.</td></tr>
-        <tr><td>Database</td><td>Tested with MariaDB 11. Other databases (e.g. PostgreSQL) are untested.</td></tr>
+        <tr><td>Moodle</td><td>Supported: 5.1 (minimum), 5.2 and 5.3; see the developer page for tested combinations.</td></tr>
+        <tr><td>PHP</td><td>at least 8.2 on Moodle 5.1. CI checks PHP 8.3 and 8.4 in the documented combinations.</td></tr>
+        <tr><td>Database</td><td>MariaDB 11.4 plus PostgreSQL 17 on Moodle 5.2 and 5.3 are required checks.</td></tr>
         <tr><td>Reachability</td><td>Publicly reachable over <code>https://</code>. The AI clients call the site from their provider's cloud; a site that is only on the school network or behind a VPN can't be reached.</td></tr>
         <tr><td>Web services</td><td>Web services and the REST protocol enabled.</td></tr>
         <tr><td><code>slasharguments</code></td><td>on (Moodle default). OAuth discovery runs through it without touching the web server.</td></tr>
@@ -156,7 +156,7 @@
     <p>The base language is English. Until translations are maintained through <a href="https://lang.moodle.org/">AMOS</a>, a complete German translation ships temporarily with the plugin (<code>lang/de/</code>). The instructions for the AI (skill corpus) aren't Moodle strings and are German for now.</p>
   </main>
   <footer class="site-footer">
-    <p>Coursepilot · Beta (2.1.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Source on GitHub</a> · AGPL-3.0-or-later</p>
+    <p>Coursepilot · Beta (2.1.1-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Source on GitHub</a> · AGPL-3.0-or-later</p>
   </footer>
   <script src="../assets/site.js"></script>
 </body>

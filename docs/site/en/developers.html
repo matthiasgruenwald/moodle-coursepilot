@@ -123,7 +123,7 @@
 
     <h2 id="tests">Tests and CI</h2>
     <ul>
-      <li><strong>PHPUnit:</strong> full native suite in <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/.github/workflows/native-ci.yml"><code>native-ci.yml</code></a>, Moodle 5.1 with PHP 8.4 and MariaDB, plus a job that freshly installs the release artifact and runs one authorized tool call.</li>
+      <li><strong>PHPUnit:</strong> full native suite in <a href="https://github.com/matthiasgruenwald/moodle-coursepilot/blob/main/.github/workflows/native-ci.yml"><code>native-ci.yml</code></a>, five combinations of Moodle 5.1/5.2/5.3, PHP 8.3/8.4, MariaDB 11.4 and PostgreSQL 17, plus fresh ZIP installation and an authorized tool call on all three Moodle lines.</li>
       <li><strong>Coverage gate:</strong> 80&nbsp;% line coverage (PCOV, Moodle 5.1 run), source scope in <code>tests/coverage.php</code>.</li>
       <li><strong>Merge condition:</strong> only the aggregate check <code>Gate (required)</code>; a skipped required job counts as a failure.</li>
       <li><strong>Node suite:</strong> <code>npm run test:ci</code> for helper scripts and this documentation site (links, image paths, language counterparts).</li>
@@ -133,7 +133,7 @@
     <table>
       <thead><tr><th>Branch</th><th>Line</th><th>Moodle</th><th>Contents</th></tr></thead>
       <tbody>
-        <tr><td><code>main</code></td><td>2.0.x</td><td>5.0 and later (tested 5.0, 5.1)</td><td>released state, hotfixes only, tagged, then merged into <code>dev</code></td></tr>
+        <tr><td><code>main</code></td><td>2.1.x</td><td>5.1, 5.2, 5.3</td><td>tagged release state; release merges from <code>dev</code>, hotfixes merged back into <code>dev</code></td></tr>
         <tr><td><code>dev</code></td><td>2.1+</td><td>5.1 and later</td><td>new features, developed and tested against a Moodle 5.1 test site</td></tr>
       </tbody>
     </table>
@@ -148,17 +148,17 @@
 
     <h2 id="bekannte-grenzen">Known limits</h2>
     <ul>
-      <li><strong>Beta:</strong> <code>2.1.0-beta</code>, tried in the author's own teaching, not yet in production at another school. There are minor tool gaps in edge cases.</li>
+      <li><strong>Beta:</strong> <code>2.1.1-beta</code>, tried in the author's own teaching, not yet in production at another school. There are minor tool gaps in edge cases.</li>
       <li><strong>No rate limiting</strong> at the MCP endpoint. Protection so far comes from OAuth, per-person remote access and the kill switch.</li>
       <li><strong>Moodle plugins directory:</strong> submission is pending (<a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues/192">#192</a>); until then, the German translation ships inside the plugin instead of AMOS.</li>
       <li><strong>Change history isn't complete:</strong> quiz content beyond question order, the gradebook, restored backups and direct DB changes are missing; for derived types only the instance row, not the child tables (chapters, entries). Replaced activity files come back on a restore.</li>
       <li><strong>Derived activity types</strong> are only created or superseded, never edited; types with files in their content are still missing.</li>
-      <li><strong>Tested environment</strong> is PHP 8.4 with MariaDB only; PostgreSQL untested.</li>
+      <li><strong>Tested environment</strong> covers five required combinations with PHP 8.3/8.4, MariaDB 11.4 and PostgreSQL 17. Other combinations are not implicitly verified.</li>
       <li><strong>Skill corpus</strong> German for now (<a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues/604">#604</a>).</li>
     </ul>
   </main>
   <footer class="site-footer">
-    <p>Coursepilot · Beta (2.1.0-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Source on GitHub</a> · AGPL-3.0-or-later</p>
+    <p>Coursepilot · Beta (2.1.1-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Source on GitHub</a> · AGPL-3.0-or-later</p>
   </footer>
   <script src="../assets/site.js"></script>
 </body>

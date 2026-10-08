@@ -38,6 +38,8 @@ final class discard_failed_callers_test extends \advanced_testcase {
     /** @return array{0: \stdClass, 1: string} course with existing activities, book XML "Created" */
     private function setup_course(): array {
         $this->resetAfterTest();
+        // Failed restores must finish their transaction before the next backup operation.
+        $this->preventResetByRollback();
         $course = $this->getDataGenerator()->create_course(['numsections' => 2]);
         $teacher = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');

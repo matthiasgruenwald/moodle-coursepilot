@@ -128,6 +128,8 @@ final class add_glossary_entries_test extends \advanced_testcase {
     public function test_entry_errors_preserve_successes_and_roll_back_failed_categories_and_files(): void {
         global $DB;
         $this->resetAfterTest();
+        // Exercise the endpoint transaction outside PHPUnit's enclosing PostgreSQL transaction.
+        $this->preventResetByRollback();
         $this->setAdminUser();
         $course = $this->getDataGenerator()->create_course();
         $glossary = $this->getDataGenerator()->create_module('glossary', [

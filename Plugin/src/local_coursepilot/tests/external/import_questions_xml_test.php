@@ -178,6 +178,8 @@ final class import_questions_xml_test extends \advanced_testcase {
      */
     public function test_failed_roundtrip_check_leaves_nothing_behind(): void {
         $this->resetAfterTest();
+        // Exercise the endpoint transaction outside PHPUnit's enclosing PostgreSQL transaction.
+        $this->preventResetByRollback();
 
         [, $categoryid] = $this->setup_course_and_category();
 
@@ -529,6 +531,8 @@ final class import_questions_xml_test extends \advanced_testcase {
      */
     public function test_calculated_with_dataset_definitions_reports_speaking_message(): void {
         $this->resetAfterTest();
+        // Exercise the endpoint transaction outside PHPUnit's enclosing PostgreSQL transaction.
+        $this->preventResetByRollback();
 
         [, $categoryid] = $this->setup_course_and_category();
 

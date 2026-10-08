@@ -44,6 +44,8 @@ final class catalog_file_write_test extends \advanced_testcase {
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
+        // Exercise the endpoint transaction outside PHPUnit's enclosing PostgreSQL transaction.
+        $this->preventResetByRollback();
         $this->course = $this->getDataGenerator()->create_course(['numsections' => 1]);
         $this->teacher = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->enrol_user($this->teacher->id, $this->course->id, 'editingteacher');

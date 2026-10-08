@@ -2,8 +2,9 @@
 
 Historischer Plan vom 04.10.2026. Der aktuelle Stand und die Nutzerfreigabe zur
 Umsetzung vom 07.10.2026 stehen im [finalen Abnahmebericht](../release/627-main-merge-abnahme-2026-10-07.md).
-#585 und #626 wurden am 06.10.2026 akzeptiert. Moodle 5.2 bleibt gemäß #679
-außerhalb des Supports; die damalige 5.2-Anforderung unten ist überholt.
+#585 und #626 wurden am 06.10.2026 akzeptiert. Mit 2.1.1-beta unterstützt
+Coursepilot gemäß #679 Moodle 5.1, 5.2 und 5.3; die aktuelle Pflichtmatrix
+steht in [der CI-Dokumentation](../ci-native-server-mcp.md).
 
 ## Ausgangslage
 
