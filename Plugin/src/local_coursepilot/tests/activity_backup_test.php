@@ -31,6 +31,12 @@ defined('MOODLE_INTERNAL') || die();
 #[CoversClass(activity_backup::class)]
 final class activity_backup_test extends \advanced_testcase {
 
+    protected function setUp(): void {
+        parent::setUp();
+        // Backup temporary-table bookkeeping must survive each operation's transaction boundary.
+        $this->preventResetByRollback();
+    }
+
     private function course_as_editing_teacher(): \stdClass {
         $course = $this->getDataGenerator()->create_course(['numsections' => 2]);
         $teacher = $this->getDataGenerator()->create_user();

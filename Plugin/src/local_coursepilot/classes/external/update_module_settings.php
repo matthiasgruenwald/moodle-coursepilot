@@ -25,6 +25,7 @@ use core_external\external_value;
 use local_coursepilot\catalog\module_catalog;
 use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\registry;
+use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\write_target;
 use local_coursepilot\material_files;
 use local_coursepilot\write_gate;

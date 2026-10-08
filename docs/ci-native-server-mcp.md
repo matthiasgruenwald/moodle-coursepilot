@@ -144,3 +144,13 @@ auf echten GitHub-Actions-Runnern grün; PHPUnit-Installation,
 Coverage-Erhebung und Artefakt-Installation sind damit real nachgewiesen.
 Die Vor-Merge-Abnahme mit Commit, ZIP-Prüfsumme und allen Kennzahlen steht in
 [`docs/release/2.0.0-alpha-vor-merge-abnahme.md`](release/2.0.0-alpha-vor-merge-abnahme.md).
+
+## PostgreSQL-Testtransaktionen
+
+Rollback-Verträge und Backup-Temporärtabellen werden mit
+`advanced_testcase::preventResetByRollback()` außerhalb der zusätzlichen
+PostgreSQL-Testtransaktion geprüft. Moodle verschachtelt delegierte
+Transaktionen ohne unabhängige Savepoints: innerhalb der Testhülle würde ein
+Rollback erst beim Testende wirken. Die Assertions prüfen deshalb die realen
+Transaktionsgrenzen des Werkzeugaufrufs; Moodle setzt die Testdaten anschließend
+über seinen regulären Datenbank-Reset zurück.

@@ -500,9 +500,16 @@ final class quiz implements module_catalog {
     }
 
     public static function write_options(): array {
+        global $CFG;
+
+        $daterules = [['reference' => 'timeopen', 'field' => 'timeclose', 'mode' => 'not_before']];
+        if ((int) $CFG->branch >= 503) {
+            $daterules[] = ['reference' => 'timeopen', 'field' => 'duedate', 'mode' => 'must_be_after'];
+            $daterules[] = ['reference' => 'duedate', 'field' => 'timeclose', 'mode' => 'not_before'];
+        }
         return [
             'restores_arrangement' => true,
-            'date_order_rules' => [['reference' => 'timeopen', 'field' => 'timeclose', 'mode' => 'not_before']],
+            'date_order_rules' => $daterules,
             // Learner-lock evaluation on current settings (#583): the form field
             // "quizpassword" maps to the "password" column.
             'settings_aliases' => ['quizpassword' => 'password'],

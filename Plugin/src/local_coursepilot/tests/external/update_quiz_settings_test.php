@@ -56,6 +56,33 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Invalid due-date ordering is rejected without changing the quiz.
+     */
+    public function test_due_date_order_is_validated_without_writes(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        if ((int) $CFG->branch < 503) {
+            $this->markTestSkipped('Quiz due dates require Moodle 5.3.');
+        }
+        [$course] = $this->course_with_editing_teacher();
+        $open = time() + DAYSECS;
+        $quiz = $this->getDataGenerator()->get_plugin_generator('mod_quiz')->create_instance([
+            'course' => $course->id, 'timeopen' => $open, 'duedate' => $open + 600, 'timeclose' => $open + 1200,
+        ]);
+        $before = $DB->get_record('quiz', ['id' => $quiz->id], '*', MUST_EXIST);
+        foreach ([['duedate' => $open], ['duedate' => $open + 1201],
+                ['timeopen' => $open + 600], ['timeclose' => $open + 599]] as $patch) {
+            try {
+                $this->patch($quiz->cmid, $patch);
+                $this->fail('Invalid date ordering must be rejected.');
+            } catch (\moodle_exception $e) {
+                $this->assertNotEmpty($e->errorcode);
+            }
+            $this->assertEquals($before, $DB->get_record('quiz', ['id' => $quiz->id], '*', MUST_EXIST));
+        }
+    }
+
+    /**
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
