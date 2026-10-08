@@ -19,16 +19,20 @@ werden muss, weil diese ausschließlich auf `Gate (required)` zeigt.
 
 ## Supportmatrix
 
-| Komponente | Version | Status |
-|---|---|---|
-| Moodle | 5.1 (`MOODLE_501_STABLE`) | Pflicht — Mindestversion ab 2.1 (ADR 0027) |
-| Moodle | 5.2 | nicht zugesagt: neue Spalten in `assign`/`forum`, der Schreibkatalog sperrt dort bewusst |
-| PHP | 8.4 | Pflicht |
-| Datenbank | MariaDB | Pflicht |
+| Moodle | PHP | Datenbank | Pflichtprüfung |
+|---|---|---|---|
+| 5.1 (`MOODLE_501_STABLE`) | 8.4 | MariaDB 11.4 | volle Suite + 80%-Coverage |
+| 5.2 (`MOODLE_502_STABLE`) | 8.3 | MariaDB 11.4 | volle Suite |
+| 5.2 (`MOODLE_502_STABLE`) | 8.4 | PostgreSQL 17 | volle Suite |
+| 5.3 (`MOODLE_503_STABLE`) | 8.3 | MariaDB 11.4 | volle Suite |
+| 5.3 (`MOODLE_503_STABLE`) | 8.4 | PostgreSQL 17 | volle Suite |
 
-Keine weitere Moodle-Version ist damit zugesagt. Eine Anhebung der
-Mindestversion (ADR 0024) erfordert einen eigenen Prüfnachweis, keine
-stillschweigende Erweiterung dieser Matrix.
+Alle fünf Kombinationen sind verpflichtend; ein Fehler sperrt den Gesamtcheck.
+Die Artefaktprüfung installiert das Release-ZIP zusätzlich auf jeder der drei
+Moodle-Linien mit PHP 8.4 und MariaDB 11.4. Die Mindestversion bleibt Moodle 5.1.
+Eine Kompatibilitätszusage setzt ein grünes vollständiges Gate und die
+Testinstanz-Abnahme voraus (ADR 0027). Andere Kombinationen sind dadurch
+nicht automatisch zugesagt.
 
 ## Coverage: Quellumfang und Schwelle
 
@@ -42,8 +46,8 @@ stillschweigende Erweiterung dieser Matrix.
   („includeUncoveredFiles"-Verhalten) — eine nie besuchte Datei senkt die
   Quote, statt aus der Zählung zu verschwinden.
 - Gemessen wird ausschließlich auf dem Matrix-Leg `MOODLE_501_STABLE`
-  (`measures-coverage: true` im Workflow) mit dem PCOV-Treiber. Der
-  Moodle-5.1-Leg läuft die volle Suite, misst aber keine eigene Quote —
+  (`measures-coverage: true` im Workflow) mit dem PCOV-Treiber. Die
+  übrigen Legs laufen die volle Suite, messen aber keine eigene Quote —
   unterschiedliche Läufe werden nicht zu einer günstigeren Quote
   zusammengerechnet.
 - Schwelle: `node scripts/ci/check-coverage.js <clover.xml> --threshold=80`

@@ -40,9 +40,10 @@ set -a; source /opt/kurspilot-spike/docker/kurspilot-spike.env; set +a
   vendor/bin/phpunit --testsuite local_coursepilot_testsuite
 ```
 
-Zugesagt sind Moodle 5.0 und 5.1 mit PHP 8.4 und MariaDB 11
-(`$plugin->requires = 2025041400`); die Spike-Instanz läuft auf 5.0.8. Die
-verbindliche Prüfung einschließlich 80%-Line-Coverage-Gate läuft in CI, siehe
+Die Mindestversion ist Moodle 5.1 (`$plugin->requires = 2025100600`); die
+Spike-Instanz läuft auf 5.1. Die verbindliche Matrix prüft Moodle 5.1/5.2/5.3
+mit PHP 8.3/8.4, MariaDB 11.4 und PostgreSQL 17. Die genauen Kombinationen
+und das 80%-Line-Coverage-Gate stehen in
 [`docs/ci-native-server-mcp.md`](../ci-native-server-mcp.md) (#268).
 
 #### Der volle Lauf braucht einen abgekoppelten Prozess
@@ -83,7 +84,7 @@ verbindliche CI läuft unverändert ohne diese Ausnahme.
 
 | Datei | Zweck |
 |---|---|
-| `tests/install_test.php` | Install-Smoke: Version, `requires >= 5.0`, beide Capabilities, externer Dienst |
+| `tests/install_test.php` | Install-Smoke: Version, `requires >= 5.1`, beide Capabilities, externer Dienst |
 | `tests/privacy_surface_test.php` | Vertragstest: real **registrierte** Oberfläche ↔ Allowlist ↔ verbotene Namensbestandteile |
 | `tests/instance_check_test.php` | Urteilsteil der Instanzprüfung per Selbstabruf (#340): Discovery-URL, Erfolgs-/Fehlerfälle, ohne echten HTTP-Request |
 | `tests/external/list_courses_test.php` | Je externer Funktion ein Test, plus Capability-Test (`CAPABILITY_MISSING`, keine Daten) |

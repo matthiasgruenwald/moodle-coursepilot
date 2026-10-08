@@ -68,13 +68,23 @@ For upgrades from 2.0.0-beta, upgrade Moodle 5.0 to Moodle 5.1 first and back up
 the database and Moodle data directory before replacing the plugin. Existing
 teacher files, selected storage locations, OAuth connections and history are migrated.
 Published location-selection and download URLs remain available as compatibility entries.
-Moodle 5.2 is not supported yet (issue #679).
+Required combinations (full native PHPUnit suite in CI):
 
-Tested combinations (full native PHPUnit suite in CI): **Moodle 5.1**
-(`MOODLE_501_STABLE`), each with **PHP 8.4 and MariaDB 11**.
-`version.php` requires Moodle 5.1 or later as a floor. PHP 8.2 is the minimum
-(Moodle 5.1's own floor); PHP 8.4 is recommended and is what CI verifies. No other Moodle, PHP or database
-combination (for example PostgreSQL) has been verified.
+| Moodle | PHP | Database |
+|---|---|---|
+| 5.1 | 8.4 | MariaDB 11.4 |
+| 5.2 | 8.3 | MariaDB 11.4 |
+| 5.2 | 8.4 | PostgreSQL 17 |
+| 5.3 | 8.3 | MariaDB 11.4 |
+| 5.3 | 8.4 | PostgreSQL 17 |
+
+Fresh release-ZIP installation is also checked on all three Moodle lines with
+PHP 8.4 and MariaDB 11.4. All required checks must pass before release.
+`version.php` requires Moodle 5.1 or later. Moodle 5.1's PHP floor remains 8.2;
+PHP 8.3/8.4 are the versions covered by the matrix. Other combinations are not
+implicitly verified. Assignment marker allocation and grade recalculation
+remain in Moodle's native form; Coursepilot preserves these settings during
+unrelated updates and history restores.
 
 ## Language
 
@@ -99,7 +109,7 @@ for everyone, including teachers whose storage is configured correctly.
 
 ## Status
 
-Beta (`2.1.0-beta`). The plugin is in real teaching use by its author; it has not yet been
+Beta (`2.1.1-beta`). The plugin is in real teaching use by its author; it has not yet been
 through a production deployment at another school.
 
 ## Development
