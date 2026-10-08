@@ -17,7 +17,7 @@ bauen bestehende Moodle-Kurse im Gespräch mit einer KI auf, statt sie zu klicke
 
 ## Einrichten
 
-Coursepilot `2.1.1-beta` wird gegen Moodle **5.1, 5.2 und 5.3** geprüft. Die
+Coursepilot `2.1.1-beta` unterstützt Moodle **5.1, 5.2 und 5.3**. Die
 verpflichtenden PHP-/Datenbankkombinationen stehen in
 [der CI-Dokumentation](docs/ci-native-server-mcp.md). Eine Moodle-5.0-Instanz
 muss zuerst auf Moodle 5.1 aktualisiert werden. Vor dem Plugin-Upgrade

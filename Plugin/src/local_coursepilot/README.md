@@ -64,6 +64,8 @@ Discovery follows RFC 8414 and RFC 9728. Both work without a web server change, 
 
 ## Supported versions
 
+Coursepilot `2.1.1-beta` supports Moodle **5.1, 5.2 and 5.3** in the combinations below.
+
 For upgrades from 2.0.0-beta, upgrade Moodle 5.0 to Moodle 5.1 first and back up
 the database and Moodle data directory before replacing the plugin. Existing
 teacher files, selected storage locations, OAuth connections and history are migrated.
