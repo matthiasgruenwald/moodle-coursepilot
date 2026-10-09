@@ -241,9 +241,10 @@ function runStatic(names, { container, repo, exec = containerExec }) {
       results[name] = checkExternalCapabilities(repo);
       continue;
     }
-    const { found, toolError } = name === 'deptrac' ? deptrac.runDeptrac({ container, repo, exec, toRepo: repoPath }) : runCheck(name, container, exec);
+    const isLayers = name === 'deptrac';
+    const { found, toolError } = isLayers ? deptrac.runDeptrac({ container, repo, exec, toRepo: repoPath }) : runCheck(name, container, exec);
     results[name] = found;
-    const blocking = name === 'deptrac' ? found.filter(deptrac.isBlocking).length : 0;
+    const blocking = isLayers ? found.filter(deptrac.isBlocking).length : 0;
     if (blocking > 0) {
       errors.push(`deptrac: ${blocking} blockierende Schichtbefunde`);
     }

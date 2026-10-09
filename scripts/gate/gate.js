@@ -5,7 +5,7 @@
  *   node scripts/gate/gate.js fast            Node-Tests + PHPUnit der Tests zu geaenderten Klassen
  *   node scripts/gate/gate.js full            volle PHPUnit-Suite mit pcov, danach Bericht
  *   node scripts/gate/gate.js report <clover> Bericht aus einem vorhandenen Clover-Bericht
- *   node scripts/gate/gate.js static          statische Pruefungen (moodle-cs, phpdoc, savepoints, Mustache, ESLint, PHPStan, Covers, englische Kommentare)
+ *   node scripts/gate/gate.js static          statische Pruefungen (moodle-cs, phpdoc, savepoints, Mustache, ESLint, PHPStan, Covers, englische Kommentare, deptrac-Schichtregeln)
  *   node scripts/gate/gate.js phpstan-baseline PHPStan-Baseline neu erzeugen
  *
  * PHP laeuft per `docker exec` im Gate-Container (scripts/gate/setup-container.sh).

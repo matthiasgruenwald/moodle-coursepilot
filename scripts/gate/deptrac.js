@@ -1,14 +1,14 @@
 /**
- * Gate-Pruefung "Schichtregeln" (ADR 0030) ueber deptrac.
+ * Gate-Prüfung "Schichtregeln" (ADR 0030) über deptrac.
  *
- * Konfiguration und Klassenliste: scripts/gate/deptrac/deptrac.yaml, bekannte Verstoesse:
+ * Konfiguration und Klassenliste: scripts/gate/deptrac/deptrac.yaml, bekannte Verstöße:
  * scripts/gate/deptrac/deptrac-baseline.yaml (darf nur schrumpfen, jeder Eintrag mit Ticket).
  * Befunde (Regel im Bericht):
- *   deptrac-violation       Verstoss ausserhalb der Baseline (blockiert)
+ *   deptrac-violation       Verstoß außerhalb der Baseline (blockiert)
  *   deptrac-unassigned      Klasse ohne Schichtzuordnung (blockiert)
- *   deptrac-baseline-stale  Baseline-Eintrag ohne Verstoss im Code (blockiert, Eintrag entfernen)
+ *   deptrac-baseline-stale  Baseline-Eintrag ohne Verstoß im Code (blockiert, Eintrag entfernen)
  *   deptrac-baseline-ticket Baseline-Eintrag ohne Ticketnummer (blockiert)
- *   deptrac-baselined       bekannter Verstoss aus der Baseline (nur Bericht)
+ *   deptrac-baselined       bekannter Verstoß aus der Baseline (nur Bericht)
  */
 
 'use strict';
@@ -24,8 +24,8 @@ const BLOCKING = new Set(['deptrac-violation', 'deptrac-unassigned', 'deptrac-ba
 const finding = (file, line, rule, text) => ({ file, line, rule, text });
 
 /**
- * deptrac-JSON: Fehler ("must not depend") sind Verstoesse, Warnungen
- * ("should not depend") sind durch die Baseline uebersprungene Verstoesse.
+ * deptrac-JSON: Fehler ("must not depend") sind Verstöße, Warnungen
+ * ("should not depend") sind durch die Baseline übersprungene Verstöße.
  */
 function parseDeptracJson(json) {
   const data = JSON.parse(json);
@@ -49,8 +49,8 @@ function parseUnassigned(out) {
 }
 
 /**
- * Baseline-Datei: Schluessel `    Klasse:` mit Listeneintraegen `      - Ziel`. Das Ticket
- * (`#nr`) steht in dem Kommentar, der den Eintrag einleitet und fuer die folgenden Schluessel gilt.
+ * Baseline-Datei: Schlüssel `    Klasse:` mit Listeneinträgen `      - Ziel`. Das Ticket
+ * (`#nr`) steht in dem Kommentar, der den Eintrag einleitet und für die folgenden Schlüssel gilt.
  */
 function parseBaseline(text) {
   const entries = [];
@@ -109,7 +109,7 @@ function evaluate(report, unassigned, baseline, toRepo = f => f) {
 const isBlocking = f => BLOCKING.has(f.rule);
 
 /**
- * Fuehrt deptrac im Container aus -> {found, toolError|null}. `exec(container, args)`
+ * Führt deptrac im Container aus -> {found, toolError|null}. `exec(container, args)`
  * liefert {stdout, out, code}; ein Lauf ohne auswertbares JSON ist ein Werkzeugfehler.
  */
 function runDeptrac({ container, repo, exec, toRepo }) {
@@ -121,7 +121,7 @@ function runDeptrac({ container, repo, exec, toRepo }) {
   try {
     report = parseDeptracJson(analyse.stdout);
   } catch (e) {
-    return { found: [], toolError: `deptrac-Ausgabe ungueltig (Exitcode ${analyse.code}): ${analyse.out.slice(0, 300)}` };
+    return { found: [], toolError: `deptrac-Ausgabe ungültig (Exitcode ${analyse.code}): ${analyse.out.slice(0, 300)}` };
   }
   if (unassigned.code !== 0 && unassigned.code !== 2) {
     return { found: [], toolError: `deptrac debug:unassigned Exitcode ${unassigned.code}: ${unassigned.out.slice(0, 300)}` };
@@ -130,4 +130,4 @@ function runDeptrac({ container, repo, exec, toRepo }) {
   return { found: evaluate(report, parseUnassigned(unassigned.stdout), baseline, toRepo), toolError: null };
 }
 
-module.exports = { DIR_REL, BLOCKING, parseDeptracJson, parseUnassigned, parseBaseline, evaluate, isBlocking, runDeptrac };
+module.exports = { parseDeptracJson, parseUnassigned, parseBaseline, evaluate, isBlocking, runDeptrac };

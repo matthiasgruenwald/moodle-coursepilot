@@ -1,10 +1,10 @@
 # Baseline der bekannten Schichtverstoesse (ADR 0030, Nachtrag 09.10.2026).
-# Darf nur schrumpfen: kein Eintrag ohne Ticket, neue Verstoesse blockieren, und ein Eintrag,
+# Darf nur schrumpfen: kein Eintrag ohne Ticket, neue Verstöße blockieren, und ein Eintrag,
 # den der Code nicht mehr braucht, ist selbst rot (Gate: deptrac-baseline-stale).
-# Jeder Eintrag nennt das Folgeticket, das ihn aufloest; Ziel ist eine leere Baseline.
+# Jeder Eintrag nennt das Folgeticket, das ihn auflöst; Ziel ist eine leere Baseline.
 deptrac:
   skip_violations:
-    # Adapter nutzt Fachlogik (Ausstandsnotiz-Uebersetzung) -> #693
+    # Adapter nutzt Fachlogik (Ausstandsnotiz-Übersetzung) -> #693
     local_coursepilot\webdav_storage_port:
       - local_coursepilot\pending_write_translation
     # get_module_settings aus vier Werkzeugen -> #696

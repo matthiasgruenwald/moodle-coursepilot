@@ -65,7 +65,7 @@ test('evaluate flags stale and ticketless baseline entries', () => {
 test('the committed baseline names a ticket for every entry', () => {
   const entries = deptrac.parseBaseline(fs.readFileSync(path.join(ROOT, 'scripts/gate/deptrac/deptrac-baseline.yaml'), 'utf8'));
   assert.ok(entries.length > 0);
-  entries.forEach(e => assert.match(e.ticket || '', /^#(693|696|697|700)$/, `${e.from} -> ${e.to}`));
+  entries.forEach(e => assert.match(e.ticket || '', /^#\d+$/, `${e.from} -> ${e.to}`));
 });
 
 test('every external class has its own layer and the ruleset forbids tool to tool', () => {

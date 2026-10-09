@@ -1,4 +1,4 @@
-# Schichtregeln aus ADR 0030 (laeuft im Gate-Container, Pfade dort).
+# Schichtregeln aus ADR 0030 (läuft im Gate-Container, Pfade dort).
 # Die Zuordnung der Wurzel-Klassen steht hier als Liste; die Klassen bleiben in ihrem Namespace.
 # Eine Wurzel-Klasse ohne Eintrag ist unzugeordnet und macht das Gate rot (gate.js, deptrac.js).
 # Die Baseline darf nur schrumpfen (ADR 0030, Nachtrag); jeder Eintrag nennt das Folgeticket.
@@ -21,8 +21,8 @@ deptrac:
           value: '#^local_coursepilot\\(dispatcher|tool_registry|observer|external_schema_converter|privacy_surface)$#'
         - type: classNameRegex
           value: '#^local_coursepilot\\(output|task|check|admin|privacy)\\#'
-    # Jedes Werkzeug ist eine eigene Schicht, damit Werkzeug -> Werkzeug ein Verstoss ist
-    # (deptrac erlaubt Abhaengigkeiten innerhalb einer Schicht immer).
+    # Jedes Werkzeug ist eine eigene Schicht, damit Werkzeug -> Werkzeug ein Verstoß ist
+    # (deptrac erlaubt Abhängigkeiten innerhalb einer Schicht immer).
     - name: Werkzeug_add_glossary_entries
       collectors:
         - type: classNameRegex
@@ -250,7 +250,7 @@ deptrac:
         - type: classNameRegex
           value: '#^local_coursepilot\\(catalog|history|quiz|activity_files)\\#'
     # Ports: Ablageort-Kern (Port, Anker, Pointer, Zugriffsprotokoll, Ereignisse) als Teil der Fachmodule;
-    # eigene Schicht, damit Adapter nur ihn und nicht die uebrige Fachlogik nutzen duerfen.
+    # eigene Schicht, damit Adapter nur ihn und nicht die übrige Fachlogik nutzen dürfen.
     - name: Ports
       collectors:
         - type: classNameRegex
