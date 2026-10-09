@@ -62,7 +62,7 @@
       <li><strong>Contract tests:</strong> <code>tool_schema_contract_test.php</code> and <code>privacy_surface_test.php</code> check the surface actually registered.</li>
     </ul>
 
-    <h2 id="werkzeuge">Tools by group (55)</h2>
+    <h2 id="werkzeuge">Tools by group (56)</h2>
     <table class="tools">
       <thead><tr><th>Group</th><th>Tools</th></tr></thead>
       <tbody>
@@ -70,7 +70,7 @@
         <tr><td>Sections (3)</td><td><code>coursepilot_ensure_section</code> <code>coursepilot_update_section</code> <code>coursepilot_move_section</code> </td></tr>
         <tr><td>Activities (9)</td><td><code>coursepilot_create_module</code> <code>coursepilot_update_module_settings</code> <code>coursepilot_move_module</code> <code>coursepilot_create_quiz</code> <code>coursepilot_update_quiz_settings</code> <code>coursepilot_set_completion</code> <code>coursepilot_set_restriction</code> <code>coursepilot_clone_activity</code> <code>coursepilot_add_glossary_entries</code> </td></tr>
         <tr><td>Versions (3)</td><td><code>coursepilot_list_activity_versions</code> <code>coursepilot_compare_activity_versions</code> <code>coursepilot_restore_activity_version</code> </td></tr>
-        <tr><td>Quiz and question bank (13)</td><td><code>coursepilot_ensure_question_bank</code> <code>coursepilot_ensure_question_category</code> <code>coursepilot_update_question_category</code> <code>coursepilot_get_question_categories</code> <code>coursepilot_plan_question_category_cleanup</code> <code>coursepilot_get_question</code> <code>coursepilot_move_question</code> <code>coursepilot_create_mc_question</code> <code>coursepilot_update_mc_question</code> <code>coursepilot_import_questions_xml</code> <code>coursepilot_export_questions_xml</code> <code>coursepilot_add_questions_to_quiz</code> <code>coursepilot_plan_quiz_cleanup</code> </td></tr>
+        <tr><td>Quiz and question bank (14)</td><td><code>coursepilot_ensure_question_bank</code> <code>coursepilot_ensure_question_category</code> <code>coursepilot_update_question_category</code> <code>coursepilot_get_question_categories</code> <code>coursepilot_ensure_quiz_question_categories</code> <code>coursepilot_plan_question_category_cleanup</code> <code>coursepilot_get_question</code> <code>coursepilot_move_question</code> <code>coursepilot_create_mc_question</code> <code>coursepilot_update_mc_question</code> <code>coursepilot_import_questions_xml</code> <code>coursepilot_export_questions_xml</code> <code>coursepilot_add_questions_to_quiz</code> <code>coursepilot_plan_quiz_cleanup</code> </td></tr>
         <tr><td>Clone lineage (1)</td><td><code>coursepilot_report_clone_lineage</code> </td></tr>
         <tr><td>Context area (6)</td><td><code>coursepilot_list_context_files</code> <code>coursepilot_read_context_file</code> <code>coursepilot_write_context_file</code> <code>coursepilot_append_context_file</code> <code>coursepilot_dismiss_pending_entry</code> <code>coursepilot_dismiss_previous_location</code> </td></tr>
         <tr><td>Material (8)</td><td><code>coursepilot_list_material_files</code> <code>coursepilot_upload_material_file</code> <code>coursepilot_preview_material_file</code> <code>coursepilot_crop_material_file</code> <code>coursepilot_compose_material_file</code> <code>coursepilot_report_loose_material_files</code> <code>coursepilot_delete_material_files</code> <code>coursepilot_create_workbench_download_links</code> </td></tr>
@@ -148,7 +148,7 @@
 
     <h2 id="bekannte-grenzen">Known limits</h2>
     <ul>
-      <li><strong>Beta:</strong> <code>2.1.1-beta</code>, tried in the author's own teaching, not yet in production at another school. There are minor tool gaps in edge cases.</li>
+      <li><strong>Beta:</strong> <code>2.1.2-beta</code>, tried in the author's own teaching, not yet in production at another school. There are minor tool gaps in edge cases.</li>
       <li><strong>No rate limiting</strong> at the MCP endpoint. Protection so far comes from OAuth, per-person remote access and the kill switch.</li>
       <li><strong>Moodle plugins directory:</strong> submission is pending (<a href="https://github.com/matthiasgruenwald/moodle-coursepilot/issues/192">#192</a>); until then, the German translation ships inside the plugin instead of AMOS.</li>
       <li><strong>Change history isn't complete:</strong> quiz content beyond question order, the gradebook, restored backups and direct DB changes are missing; for derived types only the instance row, not the child tables (chapters, entries). Replaced activity files come back on a restore.</li>
@@ -158,7 +158,7 @@
     </ul>
   </main>
   <footer class="site-footer">
-    <p>Coursepilot · Beta (2.1.1-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Source on GitHub</a> · AGPL-3.0-or-later</p>
+    <p>Coursepilot · Beta (2.1.2-beta) · <a href="https://github.com/matthiasgruenwald/moodle-coursepilot">Source on GitHub</a> · AGPL-3.0-or-later</p>
   </footer>
   <script src="../assets/site.js"></script>
 </body>

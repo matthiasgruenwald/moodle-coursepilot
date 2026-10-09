@@ -59,6 +59,7 @@ $string['tool_update_mc_question'] = 'Updates a multiple-choice question.';
 $string['tool_import_questions_xml'] = 'Imports questions from Moodle XML.';
 $string['tool_export_questions_xml'] = 'Exports questions as a complete Moodle XML file.';
 $string['tool_get_question_categories'] = 'Lists the question categories of a named question bank.';
+$string['tool_ensure_quiz_question_categories'] = 'Initializes and lists the native question categories of a quiz in the specified course. Returns its default category ID for creating quiz-local questions or subcategories. Questions can later be moved to a named course question bank with all versions and quiz references preserved, or transferred through the existing XML export/import tools.';
 $string['tool_plan_question_category_cleanup'] = 'Builds a non-destructive cleanup plan for empty leaf categories in a named question bank.';
 $string['questioncategorycleanupreason'] = 'Empty leaf category with no questions or subcategories. Coursepilot does not delete it; review it manually and, if appropriate, delete it in Moodle using the link.';
 $string['tool_get_question'] = 'Reads the latest version of a single question.';

@@ -40,6 +40,7 @@ final class tool_registry {
         'coursepilot_import_questions_xml' => ['classname' => 'local_coursepilot\external\import_questions_xml', 'descriptionkey' => 'tool_import_questions_xml'],
         'coursepilot_export_questions_xml' => ['classname' => 'local_coursepilot\external\export_questions_xml', 'descriptionkey' => 'tool_export_questions_xml'],
         'coursepilot_get_question_categories' => ['classname' => 'local_coursepilot\external\get_question_categories', 'descriptionkey' => 'tool_get_question_categories'],
+        'coursepilot_ensure_quiz_question_categories' => ['classname' => 'local_coursepilot\external\ensure_quiz_question_categories', 'descriptionkey' => 'tool_ensure_quiz_question_categories'],
         'coursepilot_plan_question_category_cleanup' => ['classname' => 'local_coursepilot\external\get_question_category_cleanup_plan', 'descriptionkey' => 'tool_plan_question_category_cleanup'],
         'coursepilot_get_question' => ['classname' => 'local_coursepilot\external\get_question', 'descriptionkey' => 'tool_get_question'],
         'coursepilot_plan_quiz_cleanup' => ['classname' => 'local_coursepilot\external\get_quiz_cleanup_plan', 'descriptionkey' => 'tool_plan_quiz_cleanup'],
