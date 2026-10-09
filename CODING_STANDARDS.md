@@ -88,13 +88,14 @@ Source: Moodle course API (`course/modlib.php`); ADR 0016.
 `Moodle` · **Must**
 Custom SQL uses `$DB` with placeholders (`?` or `:name`), never concatenated values, and
 avoids engine-specific syntax; where SQL differs, use the `$DB->sql_*()` helpers. It runs
-on every database Moodle supports; as of Moodle 5.0: MySQL, MariaDB, PostgreSQL, Microsoft
-SQL Server and Amazon Aurora MySQL.
+on every database Moodle supports; as of Moodle 5.0 (unchanged through 5.2): MySQL,
+MariaDB, PostgreSQL, Microsoft SQL Server and Amazon Aurora MySQL.
 Why: SQL that fails on one supported database blocks approval even when it works on the
 others.
 Source: Moodle plugin contribution checklist (Cross-DB compatibility, approval blockers);
-Moodle security guidelines (SQL injection); `admin/environment.xml` (Moodle 5.0 database
-vendors). CI tests MariaDB; PostgreSQL leg planned in #687.
+Moodle security guidelines (SQL injection); `admin/environment.xml` (Moodle 5.0–5.2 database
+vendors). CI tests MariaDB, and PostgreSQL for Moodle 5.2 and 5.3 (#679); #687 tracks
+the rest.
 
 **D3. Write actions raise Moodle events.** `Moodle` · **Must**
 Every action a person triggers that changes domain data, and every security-relevant
