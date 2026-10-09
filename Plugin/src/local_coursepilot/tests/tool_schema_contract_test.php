@@ -85,7 +85,7 @@ final class tool_schema_contract_test extends \advanced_testcase {
         $tools = tool_registry::allowed_tools();
         $functions = tool_registry::service_functions();
 
-        $this->assertCount(55, $tools);
+        $this->assertCount(56, $tools);
         $this->assertSame(array_keys($tools), array_keys($schemas));
 
         foreach ($tools as $name => $tool) {

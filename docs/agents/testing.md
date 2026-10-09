@@ -113,6 +113,20 @@ KURSPILOT_E2E_PROFILE=spike npx playwright test
 
 Ohne Profil oder Zugangsdaten werden die Specs übersprungen (Skip, kein Fehler).
 
+`quiz-local-questions.spike.e2e.spec.js` prüft den OAuth/MCP-HTTP-Weg ohne
+Browser-Login: Quiz-Kategorien initialisieren, Fragen schreiben/versionieren,
+XML in eine benannte Fragensammlung übernehmen und Fragen samt Versionen
+verschieben, jeweils mit Read-back der Quiz-Referenz. Der Test stellt sein
+OAuth-Token über `spike-e2e-token.sh` aus und benötigt Docker-Zugriff auf Spike.
+Er legt eindeutig benannte temporäre Aktivitäten in Kurs 6 an und entfernt sie
+sowie die exportierte XML-Datei im `finally`-Block. Bei XML-Reimport aus einem
+Export ist `location: 'workbench'` erforderlich, falls die Materialablage extern
+liegt. Einzellauf:
+
+```bash
+KURSPILOT_E2E_PROFILE=spike npx playwright test test/e2e/quiz-local-questions.spike.e2e.spec.js
+```
+
 ## Live-Tests gegen die Spike-Instanz (`local_coursepilot`)
 
 Das Servermodell-Plugin spricht kein Webservice-Token, sondern **OAuth**: der

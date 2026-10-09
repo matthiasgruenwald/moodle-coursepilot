@@ -56,7 +56,7 @@ the quiz activity itself.
 
 ## Named course question banks
 
-Before accessing categories or questions, establish a named course bank
+By default, before accessing categories or questions, establish a named course bank
 through `coursepilot_ensure_question_bank`. Propose a teacher-readable name
 based on course, topic or subject, e.g. Biology 9a — Immune system or
 Chemistry — Acids and bases. No technical Coursepilot prefix.
@@ -76,6 +76,29 @@ subtopic/section; see CONTEXT.md course bank and numbered content section.
 same parent, returning its id with created=false rather than duplicating.
 parent is required, e.g. the bank's topcategoryid for direct children.
 
+### Quiz-local questions
+
+When the teacher explicitly chooses to start in the quiz, call
+`coursepilot_ensure_quiz_question_categories(courseid, cmid)` after the quiz
+exists. It validates that exact quiz in the course and initializes its native
+default category if needed. Use defaultcategoryid for questions; use it as
+parent with `coursepilot_ensure_question_category` for subcategories. The
+response also lists all categories in that quiz context. This call can create
+categories and belongs in the approved implementation plan.
+
+Use the existing create/import and attach tools with those category IDs.
+To reuse later, establish a named course bank and choose either:
+
+- `coursepilot_move_question`: move the same entry and all versions; existing
+  quiz references remain attached to that entry. Preview and approve the move.
+- `coursepilot_export_questions_xml` in standard mode, then
+  `coursepilot_import_questions_xml` with xmlpath and location:workbench into
+  the named bank: an independent entry
+  in the destination shares the lineage; reimport creates its next version.
+  An unmatched exported idnumber triggers the existing suspect gate: show the
+  result and obtain explicit teacher confirmation before retrying confirmed=true.
+  The source quiz continues to use its original entry.
+
 ### Nondestructive cleanup
 
 Move misplaced categories through `coursepilot_update_question_category`
@@ -91,7 +114,8 @@ questions or categories.
 Use the same implementation-plan workflow as other activities: build,
 show overview and wait for approval.
 
-1. Establish the named bank as a planning decision before the first quiz.
+1. Establish the named bank as a planning decision before the first quiz,
+   unless the teacher explicitly chooses the quiz-local workflow above.
    Show name/structure for confirmation or revision. After approval,
    resolve it through coursepilot_ensure_question_bank and use returned
    questionbankid for categories/questions.
@@ -111,4 +135,4 @@ show overview and wait for approval.
 5. After approval, create the quiz with mode/grade, set completion and
    restrictions, create nongap questions, then attach all in one
    `coursepilot_add_questions_to_quiz` call (#13). Set activity.categoryid
-   when the quiz has questions; it belongs to the previously approved bank.
+   when the quiz has questions; it belongs to the approved bank or quiz context.

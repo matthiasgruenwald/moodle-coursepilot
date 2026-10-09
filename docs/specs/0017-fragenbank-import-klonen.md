@@ -32,6 +32,28 @@ vereinheitlicht; diese Spec vereinheitlicht den Mechanismus darunter.
 
 ---
 
+## Ergänzung: Quiz-lokale Fragen (#690, ADR 0031)
+
+Die benannte Kurs-Fragensammlung bleibt Standard. Auf Wunsch der Lehrkraft ist
+die eigene Quiz-Fragenablage erlaubt. `coursepilot_ensure_quiz_question_categories`
+prüft Quiz-CMID und Kurs sowie Kurs-/Aktivitätskontext und Moodle-Rechte, stellt
+die native Standardkategorie bereit und liefert alle Kategorien dieses Quiz.
+Nicht-Quiz-Aktivitäten und fremde Kurse werden abgewiesen. Die Kategorie-IDs
+werden mit den bestehenden Werkzeugen verwendet: Unterkategorien über
+`ensure_question_category`, Fragen über `create_mc_question` oder
+`import_questions_xml`, Quiz-Bindung über `add_questions_to_quiz`.
+
+Export/Import übernimmt den aktuellen Inhalt in einen eigenen Fragenbank-Eintrag
+der Ziel-Fragensammlung, behält die Abstammung und erzeugt dort beim Reimport
+eine neue Version. `move_question` verschiebt alternativ denselben Eintrag mit
+allen Versionen über Moodle-Core; der Quiz-Slot bleibt an denselben Eintrag
+gebunden. Der Integrationstest prüft beide Wege durch die externen Werkzeuge.
+Der bestehende `mod_qbank`-Vertrag bleibt unverändert.
+
+Eine im Ziel noch unbekannte exportierte idnumber löst das bestehende
+Verdachtsfall-Gate aus: zuerst `suspect` ohne Schreibzugriff, dann eine explizit
+bestätigte Übernahme. Quiz-lokale Fragen umgehen diesen Identitätsvertrag nicht.
+
 ## 1. Ein XML-Kern statt drei Schreibwege
 
 ### 1.1 Die Entscheidung
