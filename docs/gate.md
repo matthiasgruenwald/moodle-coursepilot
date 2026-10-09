@@ -44,6 +44,8 @@ Container auf:
 npm run gate -- fast               # Node-Tests + PHPUnit der Tests zu geänderten Klassen
 npm run gate -- full               # volle Suite mit pcov, danach Bericht (rund 15 Minuten)
 npm run gate -- report <clover.xml> # nur Bericht aus vorhandenem Clover-Bericht
+npm run gate -- static             # alle statischen Prüfungen (rund 1 Minute)
+npm run gate -- phpstan-baseline   # PHPStan-Baseline neu erzeugen
 ```
 
 `full` spiegelt `Plugin/src/local_coursepilot` in den Container, baut die
@@ -71,6 +73,35 @@ Regeln heute nur Messwerte: `coverage-file` (Datei unter 90 %), `crap-method`
 ungültiger Clover-Bericht, 0 ausführbare Zeilen, Methoden ohne CRAP-Wert,
 fehlgeschlagene Tests oder ein nicht laufender Container enden mit Exitcode 1,
 nie grün. Tests: `test/gate.test.js` mit Fixtures unter `test/fixtures/gate/`.
+
+## Statische Prüfungen
+
+Laufen im Gate-Container und **berichten nur**: Befunde stehen im Bericht, blockieren
+aber nichts. Ein Werkzeug, das ohne auswertbaren Befund mit Fehlercode endet, ist
+rot (`gate-error`). `fast` führt moodle-cs, phpdoc, PHPStan und die Covers-Prüfung aus,
+`full` und `static` zusätzlich savepoints, Mustache und ESLint.
+
+| Prüfung | Regel im Bericht | Werkzeug |
+|---|---|---|
+| moodle-cs | `moodle-cs-error`, `moodle-cs-warning` | `moodle-plugin-ci phpcs` (TODO-Kommentare nur mit Link `https://github.com/matthiasgruenwald/moodle-coursepilot/issues/<nr>`) |
+| phpdoc | `phpdoc` | `moodle-plugin-ci phpdoc` |
+| savepoints | `savepoints` | `moodle-plugin-ci savepoints` |
+| Mustache | `mustache` | `moodle-plugin-ci mustache` (vnu-jar, Java 11) |
+| ESLint, AMD-Build | `eslint`, `grunt-stale` | `moodle-plugin-ci grunt` |
+| PHPStan Level 6 | `phpstan` | `scripts/gate/phpstan/phpstan.neon` mit Baseline |
+| Covers-Pflicht | `covers-missing` | Node, listet nicht abstrakte `*_test`-Klassen ohne `#[Covers…]` |
+
+`full` und `static` schreiben zusätzlich `/opt/kurspilot-gate/reports/gate-static.json`.
+
+`moodle-plugin-ci` (symfony ^5.4) lässt sich nicht im Root-`composer.json` neben
+deptrac und Infection auflösen und liegt deshalb als eigenes dev-only Projekt unter
+`scripts/gate/plugin-ci/` (mit Lockfile). Das Setup-Skript installiert es zusammen mit
+den Root-Werkzeugen, Node 22, den Moodle-npm-Paketen und Java 11 in den Gate-Container.
+
+**PHPStan-Baseline** (`scripts/gate/phpstan/phpstan-baseline.neon`) ist versioniert und darf
+nur schrumpfen (ADR 0029). Pfade darin gelten relativ zum Container. Neu erzeugen mit
+`npm run gate -- phpstan-baseline`. Nicht baseline-fähige Befunde (`return.missing`)
+bleiben im Bericht sichtbar. Die Tests unter `tests/` sind im Lauf enthalten.
 
 ## Messwerte im Vergleich zur Spec-Baseline
 

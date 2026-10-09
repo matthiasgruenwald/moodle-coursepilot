@@ -12,6 +12,11 @@ services:
       - "${GATE_DIR}/moodledata:/var/www/moodledata"
       - "${GATE_DIR}/phpunitdata:/var/www/phpunitdata"
       - "${GATE_DIR}/reports:/var/www/reports"
+      - "${GATE_DIR}/ci:/opt/plugin-ci:ro"
+      - "${GATE_DIR}/dev:/opt/dev-tools:ro"
+      - "${GATE_DIR}/phpstan:/var/www/phpstan-config:ro"
+      - "${GATE_DIR}/node:/opt/node:ro"
+      - "${GATE_DIR}/java:/opt/java:ro"
       - "${GATE_DIR}/plugin:/var/www/html/public/local/coursepilot"
     environment:
       MOODLE_DOCKER_DBTYPE: mariadb

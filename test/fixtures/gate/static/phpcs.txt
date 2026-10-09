@@ -1,0 +1,45 @@
+ RUN  Moodle CodeSniffer standard on local_coursepilot
+
+
+FILE: /var/www/html/public/local/coursepilot/classes/storage_anchor.php
+------------------------------------------------------------------------------------------------------------------------------------
+FOUND 7 ERRORS AND 3 WARNINGS AFFECTING 10 LINES
+------------------------------------------------------------------------------------------------------------------------------------
+   5 | ERROR   | [x] Line 4 of the opening comment must start "// it under the terms of the GNU General Public License as published
+     |         |     by". (moodle.Files.BoilerplateComment.WrongLine)
+  12 | ERROR   | [x] Line 11 of the opening comment must start "// GNU General Public License for more details.".
+     |         |     (moodle.Files.BoilerplateComment.WrongLine)
+  14 | ERROR   | [x] Line 13 of the opening comment must start "// You should have received a copy of the GNU General Public
+     |         |     License". (moodle.Files.BoilerplateComment.WrongLine)
+  37 | ERROR   | [x] Opening brace must not be followed by a blank line (PSR12.Classes.OpeningBraceSpace.Found)
+ 120 | WARNING | [ ] Line exceeds 132 characters; contains 141 characters (moodle.Files.LineLength.TooLong)
+ 506 | WARNING | [ ] Inline comments must start with a capital letter, digit or 3-dots sequence
+     |         |     (moodle.Commenting.InlineComment.NotCapital)
+ 618 | ERROR   | [ ] Missing docblock for function list_entries (moodle.Commenting.MissingDocblock.Function)
+ 621 | ERROR   | [x] The first expression of a multi-line control structure must be on the line after the opening parenthesis
+     |         |     (PSR12.ControlStructures.ControlStructureSpacing.FirstExpressionLine)
+ 622 | ERROR   | [x] The closing parenthesis of a multi-line control structure must be on the line after the last expression
+     |         |     (PSR12.ControlStructures.ControlStructureSpacing.CloseParenthesisLine)
+ 626 | WARNING | [ ] Inline comments must start with a capital letter, digit or 3-dots sequence
+     |         |     (moodle.Commenting.InlineComment.NotCapital)
+------------------------------------------------------------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 6 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+FILE: /var/www/html/public/local/coursepilot/connections.php
+------------------------------------------------------------------------------------------------------------------------------------
+FOUND 3 ERRORS AFFECTING 3 LINES
+------------------------------------------------------------------------------------------------------------------------------------
+  5 | ERROR | [x] Line 4 of the opening comment must start "// it under the terms of the GNU General Public License as published
+    |       |     by". (moodle.Files.BoilerplateComment.WrongLine)
+ 12 | ERROR | [x] Line 11 of the opening comment must start "// GNU General Public License for more details.".
+    |       |     (moodle.Files.BoilerplateComment.WrongLine)
+ 14 | ERROR | [x] Line 13 of the opening comment must start "// You should have received a copy of the GNU General Public License".
+    |       |     (moodle.Files.BoilerplateComment.WrongLine)
+------------------------------------------------------------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+------------------------------------------------------------------------------------------------------------------------------------
+
+

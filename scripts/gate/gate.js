@@ -5,6 +5,8 @@
  *   node scripts/gate/gate.js fast            Node-Tests + PHPUnit der Tests zu geaenderten Klassen
  *   node scripts/gate/gate.js full            volle PHPUnit-Suite mit pcov, danach Bericht
  *   node scripts/gate/gate.js report <clover> Bericht aus einem vorhandenen Clover-Bericht
+ *   node scripts/gate/gate.js static          statische Pruefungen (moodle-cs, phpdoc, savepoints, Mustache, ESLint, PHPStan, Covers)
+ *   node scripts/gate/gate.js phpstan-baseline PHPStan-Baseline neu erzeugen
  *
  * PHP laeuft per `docker exec` im Gate-Container (scripts/gate/setup-container.sh).
  * Ausgabe: eine Zeile pro Befund im Format `datei:zeile: regel: text`, zuletzt
@@ -18,11 +20,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
+const staticChecks = require('./static');
+
+const { PLUGIN_REL, PLUGIN_IN_CONTAINER, repoPath } = staticChecks;
 const REPO = path.resolve(__dirname, '..', '..');
-const PLUGIN_REL = 'Plugin/src/local_coursepilot';
 const CONTAINER = process.env.GATE_CONTAINER || 'kurspilot-gate-webserver-1';
 const GATE_DIR = process.env.GATE_DIR || '/opt/kurspilot-gate';
-const PLUGIN_IN_CONTAINER = '/var/www/html/public/local/coursepilot';
 const CLOVER_IN_CONTAINER = '/var/www/reports/clover.xml';
 // Nur Messwerte fuer die Regelnamen im Bericht; blockieren nichts (ADR 0029).
 const FILE_COVERAGE_RULE = 90;
@@ -94,11 +97,6 @@ function parseClover(xml) {
 }
 
 const pct = (covered, statements) => (statements === 0 ? 100 : (covered / statements) * 100);
-
-/** Pfad im Container -> Pfad im Repo (fuer Datei:Zeile-Ausgabe). */
-function repoPath(file) {
-  return file.startsWith(PLUGIN_IN_CONTAINER) ? PLUGIN_REL + file.slice(PLUGIN_IN_CONTAINER.length) : file;
-}
 
 /** @returns {{lines: string[], summary: object}} */
 function buildReport(parsed) {
@@ -188,11 +186,15 @@ function requireContainer() {
   }
 }
 
-function preparePlugin() {
+function syncPlugin() {
   const sync = sh('bash', [path.join(__dirname, 'sync-plugin.sh')], { env: { ...process.env, GATE_DIR } });
   if (sync.status !== 0) {
     throw new Error(`Plugin-Sync fehlgeschlagen: ${sync.stderr}`);
   }
+}
+
+function preparePlugin() {
+  syncPlugin();
   const cfg = sh('docker', ['exec', '-w', '/var/www/html', CONTAINER, 'php', 'public/admin/tool/phpunit/cli/util.php', '--buildcomponentconfigs']);
   if (cfg.status !== 0) {
     throw new Error(`PHPUnit-Konfiguration nicht erzeugt: ${cfg.stdout}${cfg.stderr}`);
@@ -220,30 +222,18 @@ function changedFiles() {
   return `${tracked.stdout}\n${fresh.stdout}`.split('\n').filter(Boolean);
 }
 
-function readTests() {
-  const dir = path.join(REPO, PLUGIN_REL, 'tests');
-  const out = [];
-  const walk = d => fs.readdirSync(d, { withFileTypes: true }).forEach(e => {
-    const p = path.join(d, e.name);
-    if (e.isDirectory()) {
-      walk(p);
-    } else if (e.name.endsWith('_test.php')) {
-      out.push({ file: p, content: fs.readFileSync(p, 'utf8') });
-    }
-  });
-  walk(dir);
-  return out;
-}
-
 function runFast() {
   let ok = nodeTests();
-  const { tests, unmapped } = mapChangedToTests(changedFiles(), readTests());
+  const { tests, unmapped } = mapChangedToTests(changedFiles(), staticChecks.readPluginTests(REPO));
   unmapped.forEach(f => console.log(`${f}:0: no-test-mapped: keine Testklasse mit CoversClass fuer diese Datei`));
+  requireContainer();
   if (tests.length > 0) {
-    requireContainer();
     preparePlugin();
     ok = phpunit(['--filter', `/\\b(${tests.join('|')})\\b/`], false).status === 0 && ok;
+  } else {
+    syncPlugin();
   }
+  ok = printStatic(staticChecks.FAST_CHECKS) && ok;
   console.log(`summary: mode=fast node=${ok ? 'ok' : 'fail'} phpunit_tests=${tests.length}`);
   return ok;
 }
@@ -256,7 +246,33 @@ function runFull() {
     console.log('summary: mode=full phpunit=fail');
     return false;
   }
-  return printReport(path.join(GATE_DIR, 'reports', 'clover.xml'), path.join(GATE_DIR, 'reports', 'gate-report.json'));
+  const reported = printReport(path.join(GATE_DIR, 'reports', 'clover.xml'), path.join(GATE_DIR, 'reports', 'gate-report.json'));
+  return printStatic(staticChecks.ALL_CHECKS) && reported;
+}
+
+/** Statische Pruefungen: Befunde als Zeilen, vollstaendig als JSON; Werkzeugfehler sind rot. */
+function printStatic(names) {
+  const report = staticChecks.runStatic(names, { container: CONTAINER, repo: REPO });
+  fs.mkdirSync(path.join(GATE_DIR, 'reports'), { recursive: true });
+  fs.writeFileSync(path.join(GATE_DIR, 'reports', 'gate-static.json'), JSON.stringify({ summary: report.summary, errors: report.errors, results: report.results }, null, 1));
+  report.lines.forEach(l => console.log(l));
+  report.errors.forEach(e => console.log(`gate:0: gate-error: ${e}`));
+  console.log(report.summary);
+  return report.errors.length === 0;
+}
+
+function runStaticOnly() {
+  requireContainer();
+  syncPlugin();
+  return printStatic(staticChecks.ALL_CHECKS);
+}
+
+function runPhpstanBaseline() {
+  requireContainer();
+  syncPlugin();
+  staticChecks.generatePhpstanBaseline({ container: CONTAINER, repo: REPO, gateDir: GATE_DIR });
+  console.log('summary: phpstan-baseline erzeugt');
+  return true;
 }
 
 function printReport(cloverPath, jsonPath) {
@@ -279,10 +295,16 @@ function main(argv) {
     if (mode === 'full') {
       return runFull();
     }
+    if (mode === 'static') {
+      return runStaticOnly();
+    }
+    if (mode === 'phpstan-baseline') {
+      return runPhpstanBaseline();
+    }
     if (mode === 'report') {
       return printReport(arg);
     }
-    console.error('Aufruf: gate.js fast | full | report <clover.xml>');
+    console.error('Aufruf: gate.js fast | full | static | phpstan-baseline | report <clover.xml>');
     return false;
   } catch (e) {
     console.log(`gate:0: gate-error: ${e.message}`);
