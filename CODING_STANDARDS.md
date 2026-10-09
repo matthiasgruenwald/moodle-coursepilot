@@ -217,9 +217,8 @@ Why: Moodle's approval review treats any breach as a blocker; moodle-cs checks o
 Source: Moodle security guidelines (summary); Moodle plugin contribution checklist
 (Security).
 
-**M5. Every external function checks context and capability first.** Each external
-function calls `validate_context()` and checks its capability, directly or through a shared
-resolver, before reading or writing data in that context.
+**M5. Every external function checks context and capability first.** The gate enforces this
+(`external-check-missing`, `docs/gate.md`).
 Why: web service clients reach data only through external functions; one that skips the
 check exposes data of every course on the site.
 Source: Moodle dev docs, "Writing a new service" (`validate_context()` required in all
@@ -325,7 +324,7 @@ a class in the same change.
 Why: the exclusion is honest only while the scripts hold no logic.
 Source: Spec 0029, user stories 17–18.
 
-Planned gate checks that will retire rules here (C1): M5 → #686, M7 on PostgreSQL → #687.
+Planned gate checks that will retire rules here (C1): M7 on PostgreSQL → #687.
 
 ---
 

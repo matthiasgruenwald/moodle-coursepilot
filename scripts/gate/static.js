@@ -14,6 +14,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const { checkEnglishComments } = require('./english');
+const { checkExternalCapabilities } = require('./capability');
 
 const PLUGIN_REL = 'Plugin/src/local_coursepilot';
 const PLUGIN_IN_CONTAINER = '/var/www/html/public/local/coursepilot';
@@ -187,8 +188,8 @@ const CHECKS = {
   phpstan: { parse: null },
 };
 
-const FAST_CHECKS = ['moodle-cs', 'phpdoc', 'phpstan', 'covers', 'english'];
-const ALL_CHECKS = ['moodle-cs', 'phpdoc', 'savepoints', 'mustache', 'eslint', 'phpstan', 'covers', 'english'];
+const FAST_CHECKS = ['moodle-cs', 'phpdoc', 'phpstan', 'covers', 'english', 'external'];
+const ALL_CHECKS = ['moodle-cs', 'phpdoc', 'savepoints', 'mustache', 'eslint', 'phpstan', 'covers', 'english', 'external'];
 
 function containerExec(container, args) {
   const env = ['-e', 'MOODLE_DIR=/var/www/html', '-e', `PATH=${CONTAINER_PATH}`];
@@ -233,6 +234,10 @@ function runStatic(names, { container, repo, exec = containerExec }) {
     }
     if (name === 'english') {
       results[name] = checkEnglishComments(repo);
+      continue;
+    }
+    if (name === 'external') {
+      results[name] = checkExternalCapabilities(repo);
       continue;
     }
     const { found, toolError } = runCheck(name, container, exec);

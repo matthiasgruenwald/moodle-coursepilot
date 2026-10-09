@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "resolvers": [
+    {
+      "call": "question_bank_context::resolve",
+      "validates": true,
+      "requires": true,
+      "reason": "validiert Kurs- und Fragensammlungs-Kontext und prüft local/coursepilot:use in beiden"
+    },
+    {
+      "call": "material_files::require_manage_own_files",
+      "requires": true,
+      "reason": "delegiert an storage_anchor, das moodle/user:manageownfiles im eigenen Nutzerkontext verlangt"
+    },
+    {
+      "call": "context_files::require_manage_own_files",
+      "requires": true,
+      "reason": "delegiert an storage_anchor, das moodle/user:manageownfiles im eigenen Nutzerkontext verlangt"
+    },
+    {
+      "call": "remote_access::require_granted",
+      "requires": true,
+      "reason": "verlangt die Fernzugriffsfreigabe (Capability local/coursepilot:remoteaccess bzw. gewählte Kohorten) im Systemkontext"
+    }
+  ]
+}

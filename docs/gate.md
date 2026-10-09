@@ -78,7 +78,7 @@ nie grün. Tests: `test/gate.test.js` mit Fixtures unter `test/fixtures/gate/`.
 
 Laufen im Gate-Container und **berichten nur**: Befunde stehen im Bericht, blockieren
 aber nichts. Ein Werkzeug, das ohne auswertbaren Befund mit Fehlercode endet, ist
-rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-cs, phpdoc, PHPStan, die Covers-Prüfung und die Kommentarsprache aus,
+rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-cs, phpdoc, PHPStan, die Covers-Prüfung, die Kommentarsprache und die Kontext-/Capability-Prüfung externer Funktionen aus,
 `full` und `static` zusätzlich savepoints, Mustache und ESLint.
 
 | Prüfung | Regel im Bericht | Werkzeug |
@@ -90,6 +90,7 @@ rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-c
 | ESLint, AMD-Build | `eslint`, `grunt-stale` | `moodle-plugin-ci grunt` |
 | PHPStan Level 6 | `phpstan` | `scripts/gate/phpstan/phpstan.neon` mit Baseline |
 | Kommentarsprache | `english-comment`, `english-ignore-invalid` | Node (`scripts/gate/english.js`): Umlaut/ß oder deutsches Funktionswort in einem PHP-Kommentar oder Docblock; ausgenommen `lang/de/`, `tests/fixtures/`, String-Literale. Fehlalarme nur in `scripts/gate/english-ignore.json` (`file`, `match`, `reason`; ohne Begründung rot) |
+| Externe Funktionen | `external-check-missing`, `external-ignore-invalid` | Node (`scripts/gate/capability.js`): jede Klasse in `classes/external/` ruft in `execute()` (auch über Methoden derselben Klasse, die es per `self::`/`static::`/`$this->` aufruft) `validate_context()` und `require_capability()`/`has_capability()` auf, oder einen Resolver aus `scripts/gate/external-resolvers.json` (feste, versionierte Liste; `call` als `klasse::methode`, `validates`/`requires`, `reason`). Ausnahmen nur in `scripts/gate/external-ignore.json` (`file`, `missing` = `context` oder `capability`, `reason`; ohne Begründung rot). Ausgabe: Klasse und fehlender Aufruf |
 | Covers-Pflicht | `covers-missing` | Node, listet nicht abstrakte `*_test`-Klassen ohne `#[Covers…]` |
 
 `full` und `static` schreiben zusätzlich `/opt/kurspilot-gate/reports/gate-static.json`.
