@@ -15,6 +15,7 @@ services:
       - "${GATE_DIR}/ci:/opt/plugin-ci:ro"
       - "${GATE_DIR}/dev:/opt/dev-tools:ro"
       - "${GATE_DIR}/phpstan:/var/www/phpstan-config:ro"
+      - "${GATE_DIR}/deptrac:/var/www/deptrac-config:ro"
       - "${GATE_DIR}/node:/opt/node:ro"
       - "${GATE_DIR}/java:/opt/java:ro"
       - "${GATE_DIR}/plugin:/var/www/html/public/local/coursepilot"

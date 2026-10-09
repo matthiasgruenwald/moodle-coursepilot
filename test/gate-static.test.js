@@ -82,6 +82,11 @@ test('real plugin tests: covers findings are listed with repo paths', () => {
 });
 
 const fakeExec = (map, codeFor = () => 0) => (container, args) => {
+  if (args.some(a => a.endsWith('/bin/deptrac'))) {
+    // Leerer deptrac-Lauf: keine Verstoesse, alles zugeordnet; die Baseline-Eintraege waeren veraltet.
+    const out = args.includes('analyse') ? '{"files":{}}' : '';
+    return { out, stdout: out, code: 0 };
+  }
   const key = args.includes('analyse') ? 'phpstan' : args[args.indexOf('/opt/plugin-ci/vendor/bin/moodle-plugin-ci') + 1];
   const out = map[key] ?? '';
   return { out, stdout: out, code: codeFor(key) };
@@ -97,7 +102,7 @@ test('runStatic: every check appears in report lines and summary; findings do no
   for (const rule of ['moodle-cs-error', 'moodle-cs-warning', 'phpdoc', 'mustache', 'eslint', 'phpstan', 'covers-missing']) {
     assert.ok(rules.has(rule), rule);
   }
-  assert.deepEqual(r.errors, []);
+  assert.deepEqual(r.errors, ['deptrac: 12 blockierende Schichtbefunde']);
   assert.match(r.summary, /^summary: static moodle_cs_errors=10 moodle_cs_warnings=3 phpdoc=3 /);
   assert.match(r.summary, /mustache=2 eslint=3 phpstan=2 covers=\d+/);
 });

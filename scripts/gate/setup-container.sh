@@ -16,7 +16,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 export GATE_DIR
 case "$GATE_DIR" in /tmp|/tmp/*) echo "GATE_DIR darf nicht unter /tmp liegen" >&2; exit 1;; esac
-mkdir -p "$GATE_DIR"/{moodledata,phpunitdata,reports,plugin,db,ci,dev,phpstan,node,java}
+mkdir -p "$GATE_DIR"/{moodledata,phpunitdata,reports,plugin,db,ci,dev,phpstan,deptrac,node,java}
 chmod 777 "$GATE_DIR/phpunitdata"
 
 # 1. Passwort einmalig erzeugen (nie ausgeben).

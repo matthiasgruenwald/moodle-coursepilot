@@ -76,8 +76,8 @@ nie grün. Tests: `test/gate.test.js` mit Fixtures unter `test/fixtures/gate/`.
 
 ## Statische Prüfungen
 
-Laufen im Gate-Container und **berichten nur**: Befunde stehen im Bericht, blockieren
-aber nichts. Ein Werkzeug, das ohne auswertbaren Befund mit Fehlercode endet, ist
+Laufen im Gate-Container und **berichten**: Befunde stehen im Bericht und blockieren
+nicht, ausgenommen die Schichtregeln (deptrac). Ein Werkzeug, das ohne auswertbaren Befund mit Fehlercode endet, ist
 rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-cs, phpdoc, PHPStan, die Covers-Prüfung, die Kommentarsprache und die Kontext-/Capability-Prüfung externer Funktionen aus,
 `full` und `static` zusätzlich savepoints, Mustache und ESLint.
 
@@ -92,6 +92,26 @@ rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-c
 | Kommentarsprache | `english-comment`, `english-ignore-invalid` | Node (`scripts/gate/english.js`): Umlaut/ß oder deutsches Funktionswort in einem PHP-Kommentar oder Docblock; ausgenommen `lang/de/`, `tests/fixtures/`, String-Literale. Fehlalarme nur in `scripts/gate/english-ignore.json` (`file`, `match`, `reason`; ohne Begründung rot) |
 | Externe Funktionen | `external-check-missing`, `external-ignore-invalid` (auch für veraltete Ausnahmen) | Node (`scripts/gate/capability.js`): jede Klasse in `classes/external/` ruft in `execute()` (auch über Methoden derselben Klasse, die es per `self::`/`static::`/`$this->` aufruft) `validate_context()` und `require_capability()`/`has_capability()` auf, oder einen Resolver aus `scripts/gate/external-resolvers.json` (feste, versionierte Liste; `call` als `klasse::methode`, `validates`/`requires`, `reason`). Ausnahmen nur in `scripts/gate/external-ignore.json` (`file`, `missing` = `context` oder `capability`, `reason`; ohne Begründung rot). Ausgabe: Klasse und fehlender Aufruf |
 | Covers-Pflicht | `covers-missing` | Node, listet nicht abstrakte `*_test`-Klassen ohne `#[Covers…]` |
+| Schichtregeln | `deptrac-violation`, `deptrac-unassigned`, `deptrac-baseline-stale`, `deptrac-baseline-ticket` (blockieren), `deptrac-baselined` (nur Bericht) | deptrac, siehe Abschnitt unten (`scripts/gate/deptrac.js`) |
+
+**Schichtregeln (ADR 0030)** prüft deptrac mit `scripts/gate/deptrac/deptrac.yaml`. Die Datei
+enthält die Klassenliste für den Wurzel-Namespace und die Regeln: Einstieg darf alles nutzen,
+Werkzeuge nur Fachmodule, Ports und Adapter, Fachmodule nie Werkzeuge, Adapter nur Ports. „Ports“ ist der
+Ablageort-Kern (Port, Anker, Pointer, Zugriffsprotokoll, Ereignisse) und gehört fachlich zu den Fachmodulen;
+er ist eine eigene Schicht, damit ein Adapter nur ihn und nicht die übrige Fachlogik nutzen darf. Jedes
+Werkzeug ist eine eigene Schicht, weil deptrac Abhängigkeiten innerhalb einer Schicht immer erlaubt und
+Werkzeug → Werkzeug sonst unsichtbar bliebe. Das Gate ist rot bei:
+
+- einem Verstoß, der nicht in der Baseline steht (`deptrac-violation`),
+- einer Klasse ohne Schichtzuordnung, etwa einer neuen Wurzel-Klasse oder einem neuen Werkzeug, das nicht in der Liste steht (`deptrac-unassigned`),
+- einem Baseline-Eintrag, den der Code nicht mehr verletzt (`deptrac-baseline-stale`),
+- einem Baseline-Eintrag ohne Ticketnummer (`deptrac-baseline-ticket`).
+
+Neue Wurzel-Klasse oder neues Werkzeug: Eintrag in `deptrac.yaml` ergänzen (Regex der passenden Schicht
+bzw. eine neue `Werkzeug_…`-Schicht samt Ruleset-Zeile). Die Baseline `scripts/gate/deptrac/deptrac-baseline.yaml`
+ist versioniert und darf nur schrumpfen; jeder Eintrag nennt das auflösende Ticket (#693, #696, #697, #700) und
+verschwindet mit dessen Umbau. Bekannte Verstöße erscheinen als `deptrac-baselined` im Bericht. Der Lauf nutzt
+die Konfiguration aus `/var/www/deptrac-config` im Container, die `sync-plugin.sh` spiegelt.
 
 `full` und `static` schreiben zusätzlich `/opt/kurspilot-gate/reports/gate-static.json`.
 
