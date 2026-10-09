@@ -4,6 +4,7 @@
 
 - `npm test` - `node --test`, Vertragstests der nativen Linie
 - `npm run build:native-release` - Release-ZIP aus `Plugin/src/local_coursepilot/`
+- `npm run gate -- fast|full` - Qualitäts-Gate (Messung, Gate-Container), siehe [`docs/gate.md`](../gate.md)
 
 ## Plugin-Quelle
 

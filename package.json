@@ -10,7 +10,8 @@
     "test": "node --test 'test/**/*.test.js'",
     "test:ci": "node scripts/ci/run-js-tests.js",
     "test:e2e": "playwright test",
-    "build:native-release": "node scripts/build-native-release.js"
+    "build:native-release": "node scripts/build-native-release.js",
+    "gate": "node scripts/gate/gate.js"
   },
   "license": "AGPL-3.0-or-later",
   "devDependencies": {

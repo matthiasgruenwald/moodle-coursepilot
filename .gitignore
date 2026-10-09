@@ -71,3 +71,6 @@ Thumbs.db
 
 # Belege und Token eines Abnahmelaufs (scripts/spike-abnahme-426.sh)
 .abnahme-426/
+
+# Dev-Werkzeuge des Gates (composer.json, nie im Release-ZIP)
+/vendor/
