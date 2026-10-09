@@ -1,7 +1,7 @@
 # Coding Standards
 
-> **Revised with the association developers' feedback (#657).** Sources and their checks:
-> `docs/research/coding-standards-quellen.md`.
+Adopted with the association developers (#657). Sources and their checks:
+`docs/research/coding-standards-quellen.md`.
 
 This file holds only the rules **no tool enforces** and a reviewer can check on a diff.
 Architecture goals and structural decisions live elsewhere: ADRs in `docs/adr/`, and the
