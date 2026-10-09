@@ -1,7 +1,7 @@
 /**
  * Statische Pruefungen des Gates (Spec 0029): moodle-cs, phpdoc, savepoints,
  * Mustache und ESLint ueber moodle-plugin-ci, PHPStan Level 6 mit Baseline und
- * die Covers-Pflicht fuer Testklassen. Dieses Modul enthaelt die Parser und
+ * die Covers-Pflicht fuer Testklassen und englische Kommentare (english.js). Dieses Modul enthaelt die Parser und
  * Runner; gate.js bindet es ein. Befunde werden nur berichtet, blockieren nicht.
  *
  * Befundzeile: `datei:zeile: regel: text` (wie die Messwerte in gate.js).
@@ -12,6 +12,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+
+const { checkEnglishComments } = require('./english');
 
 const PLUGIN_REL = 'Plugin/src/local_coursepilot';
 const PLUGIN_IN_CONTAINER = '/var/www/html/public/local/coursepilot';
@@ -185,8 +187,8 @@ const CHECKS = {
   phpstan: { parse: null },
 };
 
-const FAST_CHECKS = ['moodle-cs', 'phpdoc', 'phpstan', 'covers'];
-const ALL_CHECKS = ['moodle-cs', 'phpdoc', 'savepoints', 'mustache', 'eslint', 'phpstan', 'covers'];
+const FAST_CHECKS = ['moodle-cs', 'phpdoc', 'phpstan', 'covers', 'english'];
+const ALL_CHECKS = ['moodle-cs', 'phpdoc', 'savepoints', 'mustache', 'eslint', 'phpstan', 'covers', 'english'];
 
 function containerExec(container, args) {
   const env = ['-e', 'MOODLE_DIR=/var/www/html', '-e', `PATH=${CONTAINER_PATH}`];
@@ -227,6 +229,10 @@ function runStatic(names, { container, repo, exec = containerExec }) {
   for (const name of names) {
     if (name === 'covers') {
       results[name] = findMissingCovers(readPluginTests(repo));
+      continue;
+    }
+    if (name === 'english') {
+      results[name] = checkEnglishComments(repo);
       continue;
     }
     const { found, toolError } = runCheck(name, container, exec);

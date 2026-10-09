@@ -172,8 +172,8 @@ the smell baseline of the `/code-review` skill.
 Adopt together with Part 1. Written for any Moodle plugin; `<component>` is the plugin's
 Frankenstyle name (for example `local_coursepilot`).
 
-**M1. Code prose is English.** Identifiers, comments, docblocks and test titles are English;
-the plugin ships only `lang/en/`.
+**M1. Code prose is English.** Identifiers and test titles are English; the plugin ships only
+`lang/en/`. The gate checks comments and docblocks (`english-comment`).
 Why: Moodle is international; reviewers and contributors read the code, and translations
 come through AMOS after approval.
 Source: Moodle plugin contribution checklist (English, Strings).
@@ -325,8 +325,7 @@ a class in the same change.
 Why: the exclusion is honest only while the scripts hold no logic.
 Source: Spec 0029, user stories 17–18.
 
-Planned gate checks that will retire rules here (C1): M1 and P4 comments → #685, M5 → #686,
-M7 on PostgreSQL → #687.
+Planned gate checks that will retire rules here (C1): M5 → #686, M7 on PostgreSQL → #687.
 
 ---
 

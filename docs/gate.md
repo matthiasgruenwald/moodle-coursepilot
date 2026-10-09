@@ -78,7 +78,7 @@ nie grün. Tests: `test/gate.test.js` mit Fixtures unter `test/fixtures/gate/`.
 
 Laufen im Gate-Container und **berichten nur**: Befunde stehen im Bericht, blockieren
 aber nichts. Ein Werkzeug, das ohne auswertbaren Befund mit Fehlercode endet, ist
-rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-cs, phpdoc, PHPStan und die Covers-Prüfung aus,
+rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-cs, phpdoc, PHPStan, die Covers-Prüfung und die Kommentarsprache aus,
 `full` und `static` zusätzlich savepoints, Mustache und ESLint.
 
 | Prüfung | Regel im Bericht | Werkzeug |
@@ -89,6 +89,7 @@ rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-c
 | Mustache | `mustache` | `moodle-plugin-ci mustache` (vnu-jar, Java 11) |
 | ESLint, AMD-Build | `eslint`, `grunt-stale` | `moodle-plugin-ci grunt` |
 | PHPStan Level 6 | `phpstan` | `scripts/gate/phpstan/phpstan.neon` mit Baseline |
+| Kommentarsprache | `english-comment`, `english-ignore-invalid` | Node (`scripts/gate/english.js`): Umlaut/ß oder deutsches Funktionswort in einem PHP-Kommentar oder Docblock; ausgenommen `lang/de/`, `tests/fixtures/`, String-Literale. Fehlalarme nur in `scripts/gate/english-ignore.json` (`file`, `match`, `reason`; ohne Begründung rot) |
 | Covers-Pflicht | `covers-missing` | Node, listet nicht abstrakte `*_test`-Klassen ohne `#[Covers…]` |
 
 `full` und `static` schreiben zusätzlich `/opt/kurspilot-gate/reports/gate-static.json`.
