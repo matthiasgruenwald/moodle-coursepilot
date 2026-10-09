@@ -78,7 +78,7 @@ nie grün. Tests: `test/gate.test.js` mit Fixtures unter `test/fixtures/gate/`.
 
 Laufen im Gate-Container und **berichten nur**: Befunde stehen im Bericht, blockieren
 aber nichts. Ein Werkzeug, das ohne auswertbaren Befund mit Fehlercode endet, ist
-rot (`gate-error`). `fast` führt moodle-cs, phpdoc, PHPStan und die Covers-Prüfung aus,
+rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-cs, phpdoc, PHPStan und die Covers-Prüfung aus,
 `full` und `static` zusätzlich savepoints, Mustache und ESLint.
 
 | Prüfung | Regel im Bericht | Werkzeug |

@@ -17,7 +17,7 @@ const PLUGIN_REL = 'Plugin/src/local_coursepilot';
 const PLUGIN_IN_CONTAINER = '/var/www/html/public/local/coursepilot';
 const PHPSTAN_CONFIG = '/var/www/phpstan-config/phpstan.neon';
 const PHPSTAN_BASELINE_REL = 'scripts/gate/phpstan/phpstan-baseline.neon';
-// Nur Issues dieses Repos duerfen in TODO-Kommentaren stehen (Plan zu Spec 0029).
+// TODO-Kommentare muessen auf ein Issue dieses Repos verlinken.
 const TODO_COMMENT_REGEX = 'https://github\\.com/matthiasgruenwald/moodle-coursepilot/issues/[0-9]+';
 const CONTAINER_PATH = '/opt/node/bin:/opt/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
 
@@ -177,12 +177,12 @@ function readPluginTests(repo) {
  * (rot), kein "sauber".
  */
 const CHECKS = {
-  'moodle-cs': { tool: 'ci', args: ['phpcs', '--max-warnings=-1', `--todo-comment-regex=${TODO_COMMENT_REGEX}`, '.'], parse: parsePhpcs },
-  phpdoc: { tool: 'ci', args: ['phpdoc', '.'], parse: parsePhpdoc },
-  savepoints: { tool: 'ci', args: ['savepoints', '.'], parse: parseSavepoints },
-  mustache: { tool: 'ci', args: ['mustache', '.'], parse: parseMustache },
-  eslint: { tool: 'ci', args: ['grunt', '.'], parse: parseGrunt },
-  phpstan: { tool: 'phpstan', parse: null },
+  'moodle-cs': { args: ['phpcs', '--max-warnings=-1', `--todo-comment-regex=${TODO_COMMENT_REGEX}`, '.'], parse: parsePhpcs },
+  phpdoc: { args: ['phpdoc', '.'], parse: parsePhpdoc },
+  savepoints: { args: ['savepoints', '.'], parse: parseSavepoints },
+  mustache: { args: ['mustache', '.'], parse: parseMustache },
+  eslint: { args: ['grunt', '.'], parse: parseGrunt },
+  phpstan: { parse: null },
 };
 
 const FAST_CHECKS = ['moodle-cs', 'phpdoc', 'phpstan', 'covers'];

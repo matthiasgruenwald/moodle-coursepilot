@@ -6,6 +6,7 @@ parameters:
     level: 6
     paths:
         - /var/www/html/public/local/coursepilot
+    # amd (JavaScript) und skills (Markdown-Korpus) enthalten kein PHP.
     excludePaths:
         - /var/www/html/public/local/coursepilot/amd
         - /var/www/html/public/local/coursepilot/skills
@@ -21,4 +22,5 @@ parameters:
     bootstrapFiles:
         - /var/www/phpstan-config/bootstrap.php
     tmpDir: /tmp/phpstan
+    # Entfaellt, sobald die Baseline schrumpft und die Ratsche (Folgeticket) veraltete Eintraege meldet.
     reportUnmatchedIgnoredErrors: false

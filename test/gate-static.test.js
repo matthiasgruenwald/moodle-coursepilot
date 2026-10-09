@@ -78,7 +78,7 @@ test('covers: lists test classes without a Covers attribute, skips abstract and 
 
 test('real plugin tests: covers findings are listed with repo paths', () => {
   const found = s.findMissingCovers(s.readPluginTests(path.join(__dirname, '..')));
-  assert.ok(found.every(f => f.file.startsWith(`${P}/tests/`)));
+  assert.deepEqual(found.map(f => path.basename(f.file)).sort(), ['connections_page_test.php', 'lib_test.php', 'umlaut_test.php']);
 });
 
 const fakeExec = (map, codeFor = () => 0) => (container, args) => {
@@ -111,6 +111,14 @@ test('runStatic: tool that fails without parsable findings is a tool error, neve
 
 test('gate static: red with gate-error when the container is not running', () => {
   const r = spawnSync('node', [path.join(__dirname, '..', 'scripts', 'gate', 'gate.js'), 'static'], {
+    encoding: 'utf8', env: { ...process.env, GATE_CONTAINER: 'does-not-exist-gate' },
+  });
+  assert.equal(r.status, 1);
+  assert.match(r.stdout, /gate-error/);
+});
+
+test('gate phpstan-baseline: red with gate-error when the container is not running', () => {
+  const r = spawnSync('node', [path.join(__dirname, '..', 'scripts', 'gate', 'gate.js'), 'phpstan-baseline'], {
     encoding: 'utf8', env: { ...process.env, GATE_CONTAINER: 'does-not-exist-gate' },
   });
   assert.equal(r.status, 1);
