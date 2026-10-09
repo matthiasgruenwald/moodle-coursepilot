@@ -19,7 +19,7 @@ const IGNORE_REL = 'scripts/gate/english-ignore.json';
 const SKIP_DIRS = [`${PLUGIN_REL}/lang/de/`, `${PLUGIN_REL}/tests/fixtures/`];
 // Nur Woerter, die im Englischen nicht vorkommen (kein "die", "was", "war", "an").
 const GERMAN_WORDS = ['und', 'oder', 'nicht', 'wird', 'werden', 'wurde', 'wenn', 'aber', 'eine', 'einer', 'einen', 'dass', 'kann', 'sind', 'ist', 'auch', 'nur', 'der', 'das', 'dem', 'fuer', 'ueber', 'zum', 'zur', 'ohne'];
-const GERMAN_REGEX = new RegExp(`[äöüÄÖÜß]|\\b(?:${GERMAN_WORDS.join('|')})\\b`, 'gu');
+const GERMAN_REGEX = new RegExp(`[äöüÄÖÜß]|\\b(?:${GERMAN_WORDS.join('|')})\\b`, 'giu');
 
 /** Kommentare einer PHP-Quelle als {line, text}; Strings, Heredocs und Attribute (`#[`) sind keine. */
 function extractComments(src) {
@@ -29,7 +29,7 @@ function extractComments(src) {
   const n = src.length;
   while (i < n) {
     const c = src[i];
-    const two = src.substr(i, 2);
+    const two = src.slice(i, i + 2);
     if (c === '\'' || c === '"') {
       i++;
       while (i < n && src[i] !== c) {
@@ -52,9 +52,9 @@ function extractComments(src) {
       const stop = end === -1 ? n : end;
       out.push({ line, text: src.slice(i, stop) });
       i = stop;
-    } else if (src.substr(i, 3) === '<<<') {
+    } else if (src.slice(i, i + 3) === '<<<') {
       const m = src.slice(i).match(/^<<<\s*['"]?(\w+)['"]?\r?\n/);
-      const end = m ? src.slice(i + m[0].length).search(new RegExp(`^\\s*${m[1]}\\b`, 'm')) : -1;
+      const end = m ? src.slice(i + m[0].length).search(new RegExp(`^[ \\t]*${m[1]}\\b[ \\t]*[;,)]*[ \\t]*\\r?$`, 'm')) : -1;
       const stop = end === -1 ? i + 3 : i + m[0].length + end;
       line += (src.slice(i, stop).match(/\n/g) || []).length;
       i = stop;
@@ -85,12 +85,13 @@ const finding = (file, line, text) => ({ file, line, rule: 'english-comment', te
  */
 function findGermanComments(files, ignores = []) {
   const found = [];
+  const valid = e => Boolean(e && e.file && e.match && typeof e.reason === 'string' && e.reason.trim() !== '');
   ignores.forEach((e, k) => {
-    if (!e || !e.file || !e.match || typeof e.reason !== 'string' || e.reason.trim() === '') {
+    if (!valid(e)) {
       found.push({ file: IGNORE_REL, line: k + 1, rule: 'english-ignore-invalid', text: `Eintrag ${k + 1} braucht file, match und reason` });
     }
   });
-  const ignored = (file, match) => ignores.some(e => e && e.file === file && e.match === match && e.reason && e.reason.trim() !== '');
+  const ignored = (file, match) => ignores.some(e => valid(e) && e.file === file && e.match === match);
   for (const f of files) {
     if (SKIP_DIRS.some(d => f.file.startsWith(d))) {
       continue;
@@ -120,9 +121,13 @@ function readPluginPhp(repo) {
 
 function readIgnores(repo) {
   const p = path.join(repo, IGNORE_REL);
-  return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : [];
+  const list = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : [];
+  if (!Array.isArray(list)) {
+    throw new Error(`${IGNORE_REL} muss ein Array sein`);
+  }
+  return list;
 }
 
 const checkEnglishComments = repo => findGermanComments(readPluginPhp(repo), readIgnores(repo));
 
-module.exports = { GERMAN_WORDS, extractComments, germanHits, findGermanComments, checkEnglishComments };
+module.exports = { findGermanComments, checkEnglishComments };

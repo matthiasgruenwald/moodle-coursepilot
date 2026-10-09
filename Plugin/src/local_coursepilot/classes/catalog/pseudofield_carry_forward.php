@@ -71,7 +71,7 @@ final class pseudofield_carry_forward {
      *
      * @param string $modname
      * @param class-string<module_catalog> $catalogclass
-     * @param array $patch Wird in-place normalisiert.
+     * @param array $patch Normalised in place.
      * @return void
      * @throws \moodle_exception invalideditorpseudofield
      */

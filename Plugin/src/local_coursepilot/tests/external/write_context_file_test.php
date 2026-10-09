@@ -1070,7 +1070,7 @@ final class write_context_file_test extends \advanced_testcase {
         [$user, $fake] = $this->set_up_external_context();
         $fake->seed_folder('/Coursepilot/Kontext');
 
-        // Nur PUT scheitert - siehe test_unreachable_classifies_as_spaeter_nachtragen().
+        // Only PUT fails, see test_unreachable_classifies_as_spaeter_nachtragen().
         $onlyputfails = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
             public function __construct(private readonly fake_webdav_transport $inner) {
             }
