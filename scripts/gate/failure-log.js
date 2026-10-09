@@ -14,8 +14,8 @@ const logPath = () => process.env.GATE_FAILURE_LOG || DEFAULT_LOG;
 const clean = s => String(s).replace(/[\t\r\n]+/g, ' ');
 
 /** Zeilen fuer eine Pruefung: ein `fail` je Befund, sonst ein `ok`. */
-function entriesFor(check, found, now = new Date()) {
-  const date = now.toISOString();
+function entriesFor(check, found) {
+  const date = new Date().toISOString();
   if (found.length === 0) {
     return [[date, check, '-', 'ok']];
   }
@@ -34,14 +34,12 @@ function append(entries, file = logPath()) {
   }
 }
 
-const logCheck = (check, found, now) => append(entriesFor(check, found, now));
-const logAbort = (check, now = new Date()) => append([[now.toISOString(), check, '-', 'abort']]);
+const logCheck = (check, found) => append(entriesFor(check, found));
+const logAbort = check => append([[new Date().toISOString(), check, '-', 'abort']]);
 
 function parse(text) {
-  return text.split('\n').filter(Boolean).map(l => {
-    const [date, check, file, result] = l.split('\t');
-    return { date, check, file, result };
-  });
+  return text.split('\n').map(l => l.split('\t')).filter(c => c.length === 4)
+    .map(([date, check, file, result]) => ({ date, check, file, result }));
 }
 
 const tally = (rows, key) => {
@@ -56,14 +54,12 @@ function ranking(rows, top = 20) {
   const files = tally(bad.filter(r => r.file !== '-'), 'file').slice(0, top);
   const checks = tally(bad, 'check').slice(0, top);
   const fmt = (title, list) => [title, ...(list.length ? list.map(([k, n], i) => `${i + 1}. ${n}x ${k}`) : ['(keine)'])];
-  return [...fmt('Dateien:', files), '', ...fmt('Pruefungen:', checks), '', `summary: ranking runs_rows=${rows.length} failures=${bad.length}`].join('\n');
+  return [...fmt('Dateien:', files), '', ...fmt('Pruefungen:', checks), '', `summary: ranking rows=${rows.length} failures=${bad.length}`].join('\n');
 }
 
 function report(top, file = logPath()) {
-  if (!fs.existsSync(file)) {
-    throw new Error(`Fehlschlagslog fehlt: ${file}`);
-  }
-  return ranking(parse(fs.readFileSync(file, 'utf8')), top);
+  // Frischer Checkout ohne Log: leere Rangliste, kein Fehler.
+  return ranking(fs.existsSync(file) ? parse(fs.readFileSync(file, 'utf8')) : [], top);
 }
 
 module.exports = { entriesFor, append, logCheck, logAbort, parse, ranking, report, logPath };

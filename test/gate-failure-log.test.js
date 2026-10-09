@@ -23,16 +23,17 @@ test('ranking: files and checks ordered by failure count, ok rows ignored, abort
   assert.match(out, /failures=6/);
 });
 
-test('ranking command: prints ranking from GATE_FAILURE_LOG, fails when log is missing', () => {
+test('ranking command: prints ranking from GATE_FAILURE_LOG, empty ranking when log is missing', () => {
   const ok = spawnSync('node', [GATE, 'ranking'], { encoding: 'utf8', env: { ...process.env, GATE_FAILURE_LOG: FIXTURE } });
   assert.equal(ok.status, 0);
   assert.match(ok.stdout, /Dateien:/);
   assert.match(ok.stdout, /Pruefungen:/);
   const missing = spawnSync('node', [GATE, 'ranking'], { encoding: 'utf8', env: { ...process.env, GATE_FAILURE_LOG: '/nonexistent/x.log' } });
-  assert.equal(missing.status, 1);
+  assert.equal(missing.status, 0);
+  assert.match(missing.stdout, /failures=0/);
 });
 
-test('runStatic: appends one row per finding or ok, and an abort row when a check throws', () => {
+test('runStatic: appends an ok row, and an abort row when a check throws', () => {
   const file = tmpLog();
   process.env.GATE_FAILURE_LOG = file;
   try {
@@ -45,4 +46,8 @@ test('runStatic: appends one row per finding or ok, and an abort row when a chec
   }
   const rows = failureLog.parse(fs.readFileSync(file, 'utf8'));
   assert.deepEqual(rows.map(r => `${r.check}:${r.result}`), ['savepoints:ok', 'savepoints:abort']);
+});
+
+test('parse: skips truncated lines', () => {
+  assert.equal(failureLog.parse('a\tb\n2026\tx\ty\tfail\n').length, 1);
 });

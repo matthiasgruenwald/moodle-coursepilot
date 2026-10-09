@@ -10,12 +10,12 @@
 'use strict';
 
 const fs = require('node:fs');
-const failureLog = require('./failure-log');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const { checkEnglishComments } = require('./english');
 const { checkExternalCapabilities } = require('./capability');
+const failureLog = require('./failure-log');
 const deptrac = require('./deptrac');
 
 const PLUGIN_REL = 'Plugin/src/local_coursepilot';

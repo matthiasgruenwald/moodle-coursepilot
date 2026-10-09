@@ -214,11 +214,12 @@ function phpunit(extra, coverage) {
 /** Ergebnis einer Pruefung ohne Dateibezug ins Fehlschlagslog. */
 function logOutcome(check, ok) {
   failureLog.append([[new Date().toISOString(), check, '-', ok ? 'ok' : 'fail']]);
-  return ok;
 }
 
 function nodeTests() {
-  return logOutcome('node-tests', sh('npm', ['test', '--silent'], { inherit: true }).status === 0);
+  const ok = sh('npm', ['test', '--silent'], { inherit: true }).status === 0;
+  logOutcome('node-tests', ok);
+  return ok;
 }
 
 function changedFiles() {
@@ -237,7 +238,9 @@ function runFast() {
   requireContainer();
   if (tests.length > 0) {
     preparePlugin();
-    ok = logOutcome('phpunit', phpunit(['--filter', `/\\b(${tests.join('|')})\\b/`], false).status === 0) && ok;
+    const passed = phpunit(['--filter', `/\\b(${tests.join('|')})\\b/`], false).status === 0;
+    logOutcome('phpunit', passed);
+    ok = passed && ok;
   } else {
     syncPlugin();
   }
@@ -250,11 +253,13 @@ function runFull() {
   requireContainer();
   preparePlugin();
   fs.rmSync(path.join(GATE_DIR, 'reports', 'clover.xml'), { force: true });
-  if (!logOutcome('phpunit', phpunit(['--coverage-clover', CLOVER_IN_CONTAINER], true).status === 0)) {
+  const passed = phpunit(['--coverage-clover', CLOVER_IN_CONTAINER], true).status === 0;
+  logOutcome('phpunit', passed);
+  if (!passed) {
     console.log('summary: mode=full phpunit=fail');
     return false;
   }
-  const reported = printReport(path.join(GATE_DIR, 'reports', 'clover.xml'), path.join(GATE_DIR, 'reports', 'gate-report.json'));
+  const reported = printReport(path.join(GATE_DIR, 'reports', 'clover.xml'), path.join(GATE_DIR, 'reports', 'gate-report.json'), true);
   return printStatic(staticChecks.ALL_CHECKS) && reported;
 }
 
@@ -286,19 +291,18 @@ function runPhpstanBaseline() {
 /** `datei:zeile: regel: text`-Zeilen der Messwerte als fail-Eintraege. */
 function coverageEntries(lines) {
   const now = new Date().toISOString();
-  return lines.map(l => {
-    const m = l.match(/^(.+?):\d+: ([\w-]+):/);
-    return [now, m[2], m[1], 'fail'];
-  });
+  return lines.map(l => l.match(/^(.+?):\d+: ([\w-]+):/)).filter(Boolean).map(m => [now, m[2], m[1], 'fail']);
 }
 
-function printReport(cloverPath, jsonPath) {
+function printReport(cloverPath, jsonPath, logFailures = false) {
   const { lines, summary, perFile, perMethod } = reportFromFile(cloverPath);
   if (jsonPath) {
     // Vollstaendiger Bericht: Coverage je Datei, CRAP je Methode.
     fs.writeFileSync(jsonPath, JSON.stringify({ summary, files: perFile, methods: perMethod }, null, 1));
   }
-  failureLog.append(coverageEntries(lines));
+  if (logFailures) {
+    failureLog.append(coverageEntries(lines));
+  }
   lines.forEach(l => console.log(l));
   console.log(formatSummary(summary));
   return true;
