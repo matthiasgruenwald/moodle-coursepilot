@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Gate-Kommando (Spec 0029, #660). Nur Messung: noch keine Schwelle blockiert.
+ * Gate-Kommando (Spec 0029). Nur Messung: noch keine Schwelle blockiert.
  *
  *   node scripts/gate/gate.js fast            Node-Tests + PHPUnit der Tests zu geaenderten Klassen
  *   node scripts/gate/gate.js full            volle PHPUnit-Suite mit pcov, danach Bericht
@@ -87,6 +87,9 @@ function parseClover(xml) {
   if (files.length === 0) {
     throw new Error('Clover ungueltig: keine <file>-Eintraege');
   }
+  if (methods.length === 0) {
+    throw new Error('Clover ungueltig: keine Methoden, CRAP waere ungemessen');
+  }
   return { total, files, methods };
 }
 
@@ -113,6 +116,8 @@ function buildReport(parsed) {
       lines.push(`${repoPath(m.file)}:${m.line}: crap-method: ${m.name} crap=${m.crap} complexity=${m.complexity}`);
     }
   }
+  const perFile = files.map(f => ({ file: repoPath(f.name), coverage: Number(pct(f.covered, f.statements).toFixed(1)), lines: `${f.covered}/${f.statements}` }));
+  const perMethod = methods.map(m => ({ file: repoPath(m.file), line: m.line, name: m.name, complexity: m.complexity, crap: m.crap }));
   const summary = {
     coverage: Number(pct(parsed.total.covered, parsed.total.statements).toFixed(2)),
     lines: `${parsed.total.covered}/${parsed.total.statements}`,
@@ -122,7 +127,7 @@ function buildReport(parsed) {
     methodsCrapOver8: parsed.methods.filter(m => m.crap > CRAP_RULE).length,
     methodsCrapOver30: parsed.methods.filter(m => m.crap > CRAP_HIGH).length,
   };
-  return { lines, summary };
+  return { lines, summary, perFile, perMethod };
 }
 
 function formatSummary(s) {
@@ -207,9 +212,12 @@ function nodeTests() {
 }
 
 function changedFiles() {
-  const tracked = sh('git', ['diff', '--name-only', 'HEAD']).stdout;
-  const fresh = sh('git', ['ls-files', '--others', '--exclude-standard']).stdout;
-  return `${tracked}\n${fresh}`.split('\n').filter(Boolean);
+  const tracked = sh('git', ['diff', '--name-only', 'HEAD']);
+  const fresh = sh('git', ['ls-files', '--others', '--exclude-standard']);
+  if (tracked.status !== 0 || fresh.status !== 0) {
+    throw new Error(`git-Aufruf fehlgeschlagen: ${tracked.stderr}${fresh.stderr}`);
+  }
+  return `${tracked.stdout}\n${fresh.stdout}`.split('\n').filter(Boolean);
 }
 
 function readTests() {
@@ -248,11 +256,15 @@ function runFull() {
     console.log('summary: mode=full phpunit=fail');
     return false;
   }
-  return printReport(path.join(GATE_DIR, 'reports', 'clover.xml'));
+  return printReport(path.join(GATE_DIR, 'reports', 'clover.xml'), path.join(GATE_DIR, 'reports', 'gate-report.json'));
 }
 
-function printReport(cloverPath) {
-  const { lines, summary } = reportFromFile(cloverPath);
+function printReport(cloverPath, jsonPath) {
+  const { lines, summary, perFile, perMethod } = reportFromFile(cloverPath);
+  if (jsonPath) {
+    // Vollstaendiger Bericht: Coverage je Datei, CRAP je Methode.
+    fs.writeFileSync(jsonPath, JSON.stringify({ summary, files: perFile, methods: perMethod }, null, 1));
+  }
   lines.forEach(l => console.log(l));
   console.log(formatSummary(summary));
   return true;

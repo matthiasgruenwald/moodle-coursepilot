@@ -59,6 +59,7 @@ Volle Autonomie: `git add/commit/push`, `gh pr/issue` etc. ohne R체ckfrage ausf�
 ```bash
 npm test                       # node --test, Vertragstests der nativen Linie
 npm run build:native-release   # Release-ZIP aus Plugin/src/local_coursepilot
+npm run gate -- fast|full      # Qualit채ts-Gate (Messung), siehe docs/gate.md
 ```
 
 PHPUnit l채uft nur im Spike-Container, siehe `docs/agents/testing.md`; in CI zus채tzlich 체ber `.github/workflows/native-ci.yml`.

@@ -1,4 +1,4 @@
-# Gate-Container (Spec 0029, #660): Moodle 5.1, PHP 8.4, MariaDB 11.4, pcov.
+# Gate-Container (Spec 0029): Moodle 5.1, PHP 8.4, MariaDB 11.4, pcov.
 # Eigener Compose-Stack, eigene Datenbank; keine Verbindung zu Spike oder
 # coursepilot-afk-*. Start und Einrichtung: scripts/gate/setup-container.sh.
 name: kurspilot-gate

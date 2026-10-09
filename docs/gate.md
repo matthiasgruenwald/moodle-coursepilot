@@ -1,6 +1,6 @@
 # Gate-Container und Gate-Kommando
 
-Stand: Spec 0029, Ticket #660 (Tracer Bullet). Das Gate **misst nur**: Es zeigt
+Stand: Spec 0029, Tracer Bullet. Das Gate **misst nur**: Es zeigt
 Coverage und CRAP, blockiert aber noch nichts (Ratsche und Schwellen folgen in
 den nächsten Tickets, ADR 0029).
 
@@ -42,7 +42,7 @@ Container auf:
 
 ```bash
 npm run gate -- fast               # Node-Tests + PHPUnit der Tests zu geänderten Klassen
-npm run gate -- full               # volle Suite mit pcov, danach Bericht (rund 20 Minuten)
+npm run gate -- full               # volle Suite mit pcov, danach Bericht (rund 15 Minuten)
 npm run gate -- report <clover.xml> # nur Bericht aus vorhandenem Clover-Bericht
 ```
 

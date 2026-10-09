@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Richtet den dauerhaften Gate-Container ein (Spec 0029, #660). Wiederholbar:
+# Richtet den dauerhaften Gate-Container ein (Spec 0029). Wiederholbar:
 # jeder Schritt prüft seinen Zustand und überspringt, was schon steht.
 #
 #   bash scripts/gate/setup-container.sh            # alles
@@ -14,6 +14,7 @@ GATE_MOODLE_REPO="${GATE_MOODLE_REPO:-/opt/moodle}"
 GATE_MOODLE_REF="${GATE_MOODLE_REF:-origin/MOODLE_501_STABLE}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export GATE_DIR
+case "$GATE_DIR" in /tmp|/tmp/*) echo "GATE_DIR darf nicht unter /tmp liegen" >&2; exit 1;; esac
 mkdir -p "$GATE_DIR"/{moodledata,phpunitdata,reports,plugin,db}
 chmod 777 "$GATE_DIR/phpunitdata"
 
@@ -64,7 +65,7 @@ fi
 # 5. Plugin spiegeln, Stack starten, PHPUnit-Umgebung initialisieren.
 "$HERE/sync-plugin.sh"
 compose up -d
-until compose exec -T db mariadb-admin ping -h127.0.0.1 -uroot -p"$GATE_DB_PASSWORD" --silent 2>/dev/null; do sleep 2; done
+until compose exec -T db bash -c 'mariadb-admin ping -h127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD" --silent' 2>/dev/null; do sleep 2; done
 if [[ ! -f "$GATE_DIR/phpunitdata/phpunit/.gate-initialised" ]]; then
   compose exec -T -w /var/www/html webserver php public/admin/tool/phpunit/cli/init.php
   touch "$GATE_DIR/phpunitdata/phpunit/.gate-initialised"

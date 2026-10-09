@@ -38,7 +38,7 @@ test('report command: valid fixture prints findings and exits 0 (nothing blocks 
   assert.match(r.out, /a\.php:30: crap-method: hard crap=462/);
 });
 
-for (const name of ['clover-empty.xml', 'clover-invalid.xml', 'clover-zero.xml', 'clover-no-crap.xml', 'does-not-exist.xml']) {
+for (const name of ['clover-empty.xml', 'clover-invalid.xml', 'clover-zero.xml', 'clover-no-crap.xml', 'clover-no-methods.xml', 'does-not-exist.xml']) {
   test(`report command: ${name} is red, never green`, () => {
     const r = cli('report', fixture(name));
     assert.equal(r.status, 1);
