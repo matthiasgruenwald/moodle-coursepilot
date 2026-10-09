@@ -1,6 +1,6 @@
 /**
  * Gate-Pruefung "externe Funktionen validieren Kontext und pruefen eine
- * Capability" (Regel S3, Moodle-Doku "Writing a new service").
+ * Capability" (Regel M5, Moodle-Doku "Writing a new service").
  *
  * Jede Klasse in classes/external/ muss in execute() `validate_context()` und
  * `require_capability()`/`has_capability()` aufrufen (auch ueber Methoden derselben
@@ -113,8 +113,12 @@ function findExternalGaps(files, resolvers = [], ignores = []) {
     }
     for (const kind of Object.keys(KINDS)) {
       const viaResolver = resolverCalls(resolvers, kind).some(c => new RegExp(`\\b${c.replace(/[:\\]/g, m => `\\${m}`)}\\s*\\(`).test(exec.body));
-      if (!DIRECT[kind].test(exec.body) && !viaResolver && !ignored(f.file, kind)) {
+      const satisfied = DIRECT[kind].test(exec.body) || viaResolver;
+      if (!satisfied && !ignored(f.file, kind)) {
         found.push(finding(f.file, exec.line, `Klasse ${cls}: ${KINDS[kind]} fehlt in execute()`));
+      }
+      if (satisfied && ignored(f.file, kind)) {
+        found.push(invalid(0, `Ausnahme für ${cls} (${kind}) ist veraltet: Aufruf vorhanden, Eintrag entfernen`));
       }
     }
   }

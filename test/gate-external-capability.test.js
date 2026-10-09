@@ -61,9 +61,15 @@ test('ignore entry with reason silences exactly the named gap; without reason it
   const t = tool('self::validate_context($c);');
   assert.deepEqual(findExternalGaps([t], RESOLVERS, [{ file: t.file, missing: 'capability', reason }]), []);
   const wrongKind = findExternalGaps([t], RESOLVERS, [{ file: t.file, missing: 'context', reason }]);
-  assert.equal(wrongKind.length, 1);
+  assert.deepEqual(wrongKind.map(f => f.rule).sort(), ['external-check-missing', 'external-ignore-invalid']);
   const bad = findExternalGaps([t], RESOLVERS, [{ file: t.file, missing: 'capability', reason: ' ' }]);
   assert.deepEqual(bad.map(f => f.rule).sort(), ['external-check-missing', 'external-ignore-invalid']);
+});
+
+test('stale ignore entry (check is present) is red', () => {
+  const t = tool("self::validate_context($c); require_capability('a', $c);");
+  const found = findExternalGaps([t], RESOLVERS, [{ file: t.file, missing: 'capability', reason }]);
+  assert.deepEqual(found.map(f => f.rule), ['external-ignore-invalid']);
 });
 
 test('invalid resolver entry is red; class without execute() is red', () => {
