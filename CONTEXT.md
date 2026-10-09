@@ -827,7 +827,7 @@ Eine eigene, benannte Fragensammlung fuer einen Moodle-Kurs oder ein **Coursepil
 _Avoid_: systemgeteilte Fragensammlung, namenlose oder schwer wiederfindbare Fragensammlung, Fragen ohne Kursbezug in globale Bereiche schreiben, technisches Praefix wie "Coursepilot" im Fragensammlungsnamen, starre Fragensammlungsstruktur ohne Lehrkraftentscheidung, unbewusst nur im Quiz abgelegte Fragen ohne Übernahmeweg, sofort globale Ablage
 
 **Quiz-lokale Fragen**:
-_Code_: quiz-local questions
+Code: quiz-local questions
 Fragen im eigenen Aktivitätskontext eines Quiz, die zunächst nur dort verfügbar sind. Die Lehrkraft kann diese Ablage bewusst wählen und die Fragen später über Moodle-XML in eine benannte **Kurs-Fragensammlung** übernehmen oder einschließlich aller Versionen dorthin verschieben. Beim Verschieben bleibt der Fragenbank-Eintrag und damit die Quiz-Referenz erhalten; der XML-Transfer erzeugt im Ziel einen eigenen Stand derselben Abstammung. Die benannte Kurs-Fragensammlung bleibt die Standardablage.
 _Avoid_: beliebige Modulkontexte als Fragenablage öffnen, beim Verschieben Versionen oder Quiz-Referenzen verlieren, XML-Transfer mit identitätserhaltendem Verschieben gleichsetzen
 

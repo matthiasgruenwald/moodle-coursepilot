@@ -92,7 +92,8 @@ To reuse later, establish a named course bank and choose either:
 - `coursepilot_move_question`: move the same entry and all versions; existing
   quiz references remain attached to that entry. Preview and approve the move.
 - `coursepilot_export_questions_xml` in standard mode, then
-  `coursepilot_import_questions_xml` into the named bank: an independent entry
+  `coursepilot_import_questions_xml` with xmlpath and location:workbench into
+  the named bank: an independent entry
   in the destination shares the lineage; reimport creates its next version.
   An unmatched exported idnumber triggers the existing suspect gate: show the
   result and obtain explicit teacher confirmation before retrying confirmed=true.
