@@ -46,6 +46,7 @@ npm run gate -- full               # volle Suite mit pcov, danach Bericht (rund 
 npm run gate -- report <clover.xml> # nur Bericht aus vorhandenem Clover-Bericht
 npm run gate -- static             # alle statischen Prüfungen (rund 1 Minute)
 npm run gate -- phpstan-baseline   # PHPStan-Baseline neu erzeugen
+npm run gate -- ranking [n]        # Fehlschlags-Rangliste nach Datei und Prüfung
 ```
 
 `full` spiegelt `Plugin/src/local_coursepilot` in den Container, baut die
@@ -73,6 +74,17 @@ Regeln heute nur Messwerte: `coverage-file` (Datei unter 90 %), `crap-method`
 ungültiger Clover-Bericht, 0 ausführbare Zeilen, Methoden ohne CRAP-Wert,
 fehlgeschlagene Tests oder ein nicht laufender Container enden mit Exitcode 1,
 nie grün. Tests: `test/gate.test.js` mit Fixtures unter `test/fixtures/gate/`.
+
+## Fehlschlagslog und Rangliste
+
+Jeder Lauf hängt pro Prüfung Zeilen an `.gate-failures.log` im Repo-Wurzelverzeichnis
+(gitignoriert, überschreibbar über `GATE_FAILURE_LOG`). Format, tab-getrennt:
+`Datum` (ISO), `Prüfung` (bei Befunden die Regel), `Datei` (`-` ohne Dateibezug), `Ergebnis`
+(`ok`, `fail`, `abort`). Eine Prüfung schreibt sofort nach ihrem Ende; wirft sie oder
+endet ein Werkzeug ohne auswertbaren Befund, steht `abort`, und frühere Prüfungen des
+Laufs bleiben im Log. `npm run gate -- ranking` zeigt die Fehlschläge (`fail`, `abort`)
+als Rangliste nach Datei und nach Prüfung. Das ist Trend, keine Schwelle: Eine Datei
+oben in der Liste ist Kandidat für größeres Aufräumen (ADR 0029).
 
 ## Statische Prüfungen
 

@@ -75,3 +75,6 @@ Thumbs.db
 # Dev-Werkzeuge des Gates (composer.json, nie im Release-ZIP)
 /vendor/
 /scripts/gate/plugin-ci/vendor/
+
+# Gate-Fehlschlagslog (npm run gate -- ranking)
+/.gate-failures.log

@@ -7,6 +7,7 @@
  *   node scripts/gate/gate.js report <clover> Bericht aus einem vorhandenen Clover-Bericht
  *   node scripts/gate/gate.js static          statische Pruefungen (moodle-cs, phpdoc, savepoints, Mustache, ESLint, PHPStan, Covers, englische Kommentare, deptrac-Schichtregeln)
  *   node scripts/gate/gate.js phpstan-baseline PHPStan-Baseline neu erzeugen
+ *   node scripts/gate/gate.js ranking [n]     Fehlschlags-Rangliste nach Datei und Pruefung aus .gate-failures.log
  *
  * PHP laeuft per `docker exec` im Gate-Container (scripts/gate/setup-container.sh).
  * Ausgabe: eine Zeile pro Befund im Format `datei:zeile: regel: text`, zuletzt
@@ -21,6 +22,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const staticChecks = require('./static');
+const failureLog = require('./failure-log');
 
 const { PLUGIN_REL, PLUGIN_IN_CONTAINER, repoPath } = staticChecks;
 const REPO = path.resolve(__dirname, '..', '..');
@@ -209,8 +211,14 @@ function phpunit(extra, coverage) {
   return dexec([...php, '/var/www/html/vendor/bin/phpunit', '-c', 'phpunit.xml', ...extra], { inherit: true });
 }
 
+/** Ergebnis einer Pruefung ohne Dateibezug ins Fehlschlagslog. */
+function logOutcome(check, ok) {
+  failureLog.append([[new Date().toISOString(), check, '-', ok ? 'ok' : 'fail']]);
+  return ok;
+}
+
 function nodeTests() {
-  return sh('npm', ['test', '--silent'], { inherit: true }).status === 0;
+  return logOutcome('node-tests', sh('npm', ['test', '--silent'], { inherit: true }).status === 0);
 }
 
 function changedFiles() {
@@ -229,7 +237,7 @@ function runFast() {
   requireContainer();
   if (tests.length > 0) {
     preparePlugin();
-    ok = phpunit(['--filter', `/\\b(${tests.join('|')})\\b/`], false).status === 0 && ok;
+    ok = logOutcome('phpunit', phpunit(['--filter', `/\\b(${tests.join('|')})\\b/`], false).status === 0) && ok;
   } else {
     syncPlugin();
   }
@@ -242,7 +250,7 @@ function runFull() {
   requireContainer();
   preparePlugin();
   fs.rmSync(path.join(GATE_DIR, 'reports', 'clover.xml'), { force: true });
-  if (phpunit(['--coverage-clover', CLOVER_IN_CONTAINER], true).status !== 0) {
+  if (!logOutcome('phpunit', phpunit(['--coverage-clover', CLOVER_IN_CONTAINER], true).status === 0)) {
     console.log('summary: mode=full phpunit=fail');
     return false;
   }
@@ -275,12 +283,22 @@ function runPhpstanBaseline() {
   return true;
 }
 
+/** `datei:zeile: regel: text`-Zeilen der Messwerte als fail-Eintraege. */
+function coverageEntries(lines) {
+  const now = new Date().toISOString();
+  return lines.map(l => {
+    const m = l.match(/^(.+?):\d+: ([\w-]+):/);
+    return [now, m[2], m[1], 'fail'];
+  });
+}
+
 function printReport(cloverPath, jsonPath) {
   const { lines, summary, perFile, perMethod } = reportFromFile(cloverPath);
   if (jsonPath) {
     // Vollstaendiger Bericht: Coverage je Datei, CRAP je Methode.
     fs.writeFileSync(jsonPath, JSON.stringify({ summary, files: perFile, methods: perMethod }, null, 1));
   }
+  failureLog.append(coverageEntries(lines));
   lines.forEach(l => console.log(l));
   console.log(formatSummary(summary));
   return true;
@@ -304,9 +322,16 @@ function main(argv) {
     if (mode === 'report') {
       return printReport(arg);
     }
-    console.error('Aufruf: gate.js fast | full | static | phpstan-baseline | report <clover.xml>');
+    if (mode === 'ranking') {
+      console.log(failureLog.report(arg ? Number(arg) : undefined));
+      return true;
+    }
+    console.error('Aufruf: gate.js fast | full | static | phpstan-baseline | report <clover.xml> | ranking [anzahl]');
     return false;
   } catch (e) {
+    if (mode !== 'ranking') {
+      failureLog.logAbort(mode);
+    }
     console.log(`gate:0: gate-error: ${e.message}`);
     return false;
   }

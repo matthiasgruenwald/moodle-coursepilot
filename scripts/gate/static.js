@@ -10,6 +10,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const failureLog = require('./failure-log');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
@@ -229,30 +230,46 @@ function runStatic(names, { container, repo, exec = containerExec }) {
   const results = {};
   const errors = [];
   for (const name of names) {
-    if (name === 'covers') {
-      results[name] = findMissingCovers(readPluginTests(repo));
-      continue;
+    const before = errors.length;
+    try {
+      runOne(name, { container, repo, exec, results, errors });
+    } catch (e) {
+      failureLog.logAbort(name);
+      throw e;
     }
-    if (name === 'english') {
-      results[name] = checkEnglishComments(repo);
-      continue;
-    }
-    if (name === 'external') {
-      results[name] = checkExternalCapabilities(repo);
-      continue;
-    }
-    const isLayers = name === 'deptrac';
-    const { found, toolError } = isLayers ? deptrac.runDeptrac({ container, repo, exec, toRepo: repoPath }) : runCheck(name, container, exec);
-    results[name] = found;
-    const blocking = isLayers ? found.filter(deptrac.isBlocking).length : 0;
-    if (blocking > 0) {
-      errors.push(`deptrac: ${blocking} blockierende Schichtbefunde`);
-    }
-    if (toolError) {
-      errors.push(`${name}: ${toolError}`);
+    // Werkzeugfehler ohne Befund zaehlt als Abbruch, nie als gruen.
+    if (errors.length > before && results[name].length === 0) {
+      failureLog.logAbort(name);
+    } else {
+      failureLog.logCheck(name, results[name]);
     }
   }
   return buildStaticReport(results, errors);
+}
+
+function runOne(name, { container, repo, exec, results, errors }) {
+  if (name === 'covers') {
+    results[name] = findMissingCovers(readPluginTests(repo));
+    return;
+  }
+  if (name === 'english') {
+    results[name] = checkEnglishComments(repo);
+    return;
+  }
+  if (name === 'external') {
+    results[name] = checkExternalCapabilities(repo);
+    return;
+  }
+  const isLayers = name === 'deptrac';
+  const { found, toolError } = isLayers ? deptrac.runDeptrac({ container, repo, exec, toRepo: repoPath }) : runCheck(name, container, exec);
+  results[name] = found;
+  const blocking = isLayers ? found.filter(deptrac.isBlocking).length : 0;
+  if (blocking > 0) {
+    errors.push(`deptrac: ${blocking} blockierende Schichtbefunde`);
+  }
+  if (toolError) {
+    errors.push(`${name}: ${toolError}`);
+  }
 }
 
 function buildStaticReport(results, errors) {
