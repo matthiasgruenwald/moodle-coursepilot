@@ -51,6 +51,8 @@ test('Quiz-local questions retain versions and quiz references through XML trans
       fields_json: JSON.stringify({ questiontext: 'What is two plus two?' }) });
     expect(updated.version).toBe(2);
     const source = await call('get_question', { categoryid: category.id, questionid: question.questionid });
+    expect(source.categoryid).toBe(category.id);
+    expect(source.questionbankentryid).toBe(question.questionbankentryid);
 
     const bank = await call('ensure_question_bank', { courseid: config.courseId, name: `${name}-Bank` });
     cmids.push(bank.questionbankid);

@@ -83,6 +83,8 @@ final class ensure_quiz_question_categories_test extends \advanced_testcase {
         $this->assertSame(2, $updated['version']);
         $this->assertSame($entryid, $updated['questionbankentryid']);
         $source = self::call(get_question::class, $category['id'], '', $question['questionid']);
+        $this->assertSame($category['id'], $source['categoryid']);
+        $this->assertSame($entryid, $source['questionbankentryid']);
 
         $bank = self::call(ensure_question_bank::class, $course->id, 'Course arithmetic');
         $target = self::call(ensure_question_category::class, 'Transferred', $bank['topcategoryid']);
