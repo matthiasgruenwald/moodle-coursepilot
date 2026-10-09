@@ -824,7 +824,12 @@ _Avoid_: feste Versionsbindung als Standard, manuelles Nachziehen jeder Korrektu
 
 **Kurs-Fragensammlung**:
 Eine eigene, benannte Fragensammlung fuer einen Moodle-Kurs oder ein **Coursepilot-Projekt**, in der durch MoodleMcp erzeugte Fragen organisiert und fuer mehrere Testaktivitaeten wiederverwendbar bleiben. Ihr Name orientiert sich am Kurs, Thema oder fachlichen Inhalt, nicht am technischen Werkzeugnamen. Ob eine eigene Fragensammlung pro Unterrichtseinheit entsteht oder ob mehrere Unterrichtseinheiten in einer groesseren Halbjahres- oder Jahres-Fragensammlung mit Unterkategorien liegen, ist eine Planungsentscheidung der Lehrkraft und haengt von Kurszuschnitt, Fragenmenge und Wiederverwendung ab. Coursepilot macht einen Autovorschlag fuer Name und Ablage, zeigt ihn in der Planvorschau und laesst ihn vor Moodle-Schreibzugriff aendern oder bestaetigen. Die systemweit geteilte Fragensammlung ist eine Altlast und darf nicht mehr als Ziel fuer Coursepilot-Fragen genutzt werden.
-_Avoid_: systemgeteilte Fragensammlung, namenlose oder schwer wiederfindbare Fragensammlung, Fragen ohne Kursbezug in globale Bereiche schreiben, technisches Praefix wie "Coursepilot" im Fragensammlungsnamen, starre Fragensammlungsstruktur ohne Lehrkraftentscheidung, nur in der Aktivitaet versteckte Fragen, sofort globale Ablage
+_Avoid_: systemgeteilte Fragensammlung, namenlose oder schwer wiederfindbare Fragensammlung, Fragen ohne Kursbezug in globale Bereiche schreiben, technisches Praefix wie "Coursepilot" im Fragensammlungsnamen, starre Fragensammlungsstruktur ohne Lehrkraftentscheidung, unbewusst nur im Quiz abgelegte Fragen ohne Übernahmeweg, sofort globale Ablage
+
+**Quiz-lokale Fragen**:
+_Code_: quiz-local questions
+Fragen im eigenen Aktivitätskontext eines Quiz, die zunächst nur dort verfügbar sind. Die Lehrkraft kann diese Ablage bewusst wählen und die Fragen später über Moodle-XML in eine benannte **Kurs-Fragensammlung** übernehmen oder einschließlich aller Versionen dorthin verschieben. Beim Verschieben bleibt der Fragenbank-Eintrag und damit die Quiz-Referenz erhalten; der XML-Transfer erzeugt im Ziel einen eigenen Stand derselben Abstammung. Die benannte Kurs-Fragensammlung bleibt die Standardablage.
+_Avoid_: beliebige Modulkontexte als Fragenablage öffnen, beim Verschieben Versionen oder Quiz-Referenzen verlieren, XML-Transfer mit identitätserhaltendem Verschieben gleichsetzen
 
 **Fragensammlungs-Bereinigung**:
 Das nachtraegliche nicht-destruktive Ordnen von Fragen und Kategorien, wenn Coursepilot-Fragen an der falschen Stelle gelandet sind, zum Beispiel in einer systemgeteilten Altlast. Erlaubt sind Verschieben, Umbenennen und Veraendern ueber neue Frageversionen, jeweils nach Vorschau und Freigabe. Dafuer braucht Coursepilot schmale Werkzeuge zum Verschieben beziehungsweise Aktualisieren von Fragenkategorien, aber kein Loeschwerkzeug. Loeschen von Fragen oder Kategorien gehoert nicht zu V1; wenn Dubletten oder leere Kategorien stoeren, bleibt das als offene Nacharbeit sichtbar oder wird ausserhalb von Coursepilot manuell entschieden.
@@ -1047,7 +1052,7 @@ _Avoid_: Doku nach Dateien statt nach Zielgruppe gliedern
 - Eine **Versionierte Frageaenderung** ist der verpflichtende Nachsteuerungsweg fuer bestehende Fragen
 - Eine **Versionierte Frageaenderung** erhaelt die Identitaet der Frage, damit Tests mit vorhandenen Versuchen weiter nutzbar bleiben
 - **Immer aktuellste Version** ist die Standardbindung zwischen Test und Frage fuer Version 1
-- Die von MoodleMcp erzeugten Fragen liegen standardmaessig in einer **Kurs-Fragensammlung**
+- Die von MoodleMcp erzeugten Fragen liegen standardmäßig in einer **Kurs-Fragensammlung**; auf ausdrücklichen Wunsch sind **Quiz-lokale Fragen** mit späterem Übernahmeweg möglich
 - Die **Kurs-Fragensammlung** soll Umordnen und Wiederverwenden innerhalb von Moodle ermoeglichen
 - In einer **Kurs-Fragensammlung** braucht eine **Unterrichtseinheit** mindestens eine Kategorieebene fuer **Unterthemen**
 - Innerhalb eines **Unterthemas** werden Fragen bei mehreren Testbloecken ueber **Nummerierte Inhaltsabschnitte** organisiert
@@ -1318,7 +1323,7 @@ _Avoid_: Doku nach Dateien statt nach Zielgruppe gliedern
 > **Domain expert:** "Standardmaessig nein. Der Test soll fuer neue Versuche **Immer aktuellste Version** nutzen, damit Korrekturen ohne Formulararbeit wirksam werden."
 
 > **Dev:** "Wo sollen die Fragen organisatorisch liegen?"
-> **Domain expert:** "In einer **Kurs-Fragensammlung** auf Kursebene. Dort bleiben sie sichtbar, umsortierbar und fuer mehrere Tests nutzbar."
+> **Domain expert:** "Standardmäßig in einer **Kurs-Fragensammlung** auf Kursebene. Auf Wunsch zuerst als **Quiz-lokale Fragen**; später können wir sie verschieben oder über XML übernehmen."
 
 > **Dev:** "Wie werden Fragen innerhalb eines Kurses organisiert?"
 > **Domain expert:** "Mindestens nach **Unterthema**. Wenn es dort mehrere Testbloecke gibt, werden sie als **Nummerierte Inhaltsabschnitte** mit fachlichem Namen sichtbar."

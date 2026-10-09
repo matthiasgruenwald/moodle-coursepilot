@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_coursepilot';
-$plugin->version   = 2026100701;
+$plugin->version   = 2026100900;
 // 2.0.x supported Moodle 5.0. Moodle 5.1 is the minimum starting with 2.1 (ADR 0027).
 $plugin->requires  = 2025100600;
 // Beta after practical testing (ADR 0027). Continues Coursepilot 1.x:

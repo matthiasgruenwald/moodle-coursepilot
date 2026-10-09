@@ -25,6 +25,7 @@ Read this to select the responsible read or write tool.
 | `coursepilot_ensure_question_category` | Idempotently find/create a subtopic/content category in a selected bank |
 | `coursepilot_update_question_category` | Nondestructively rename/move categories into the correct bank/parent |
 | `coursepilot_get_question_categories` | Read categories in a selected bank |
+| `coursepilot_ensure_quiz_question_categories` | Initialize/list categories in one quiz; returns its default category for quiz-local questions |
 | `coursepilot_plan_question_category_cleanup` | Read-only manual review plan for empty leaf categories; courseid and questionbankid (CMID). Return bank name, category ID/name/parent, Moodle link and instructions; exclude categories with questions/children and the top category |
 | `coursepilot_move_question` | Move a question and all versions nondestructively into a target category |
 | `coursepilot_create_quiz` | Create mod_quiz with a mode selecting a complete settings preset; see quiz-and-question-bank |
