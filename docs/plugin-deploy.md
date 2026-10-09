@@ -12,13 +12,13 @@ Entwicklungsstände von `dev` laufen stattdessen auf der Spike-Instanz, siehe
 Läuft auf dem Devstack-Host selbst, kein SSH-Umweg.
 
 1. Release-PR aus `dev` nach `main` bei grüner Pflicht-CI mergen und taggen
-   (z. B. `v2.1.1-beta`). Hotfixes auf `main` danach nach `dev` zurückführen.
+   (z. B. `v2.1.2-beta`). Hotfixes auf `main` danach nach `dev` zurückführen.
 2. Optional, vor Schemaänderungen: Datenbank-Dumps der Instanzen ziehen
    (`upgrade.php` ist nicht reversibel).
 3. Deploy:
 
    ```bash
-   bash scripts/deploy-plugin-devstack.sh v2.1.1-beta
+   bash scripts/deploy-plugin-devstack.sh v2.1.2-beta
    ```
 
    - entpackt `Plugin/src/local_coursepilot/` und `Plugin/src/well-known/` aus
@@ -38,7 +38,7 @@ Bestehende Tokens bleiben gültig.
 
 ## Unterstützte Zielversionen
 
-Coursepilot 2.1.1-beta unterstützt Moodle 5.1, 5.2 und 5.3 gemäß
+Coursepilot 2.1.2-beta unterstützt Moodle 5.1, 5.2 und 5.3 gemäß
 [Pflichtmatrix](ci-native-server-mcp.md). Die vier Zielinstanzen laufen auf
 5.1/MariaDB, 5.2/MariaDB, 5.3/MariaDB und 5.2/PostgreSQL. Ihre historischen
 Instanznamen bleiben unverändert. Vor einem Upgrade von Coursepilot 2.0.0-beta

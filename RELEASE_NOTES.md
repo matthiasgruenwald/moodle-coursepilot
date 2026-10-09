@@ -6,6 +6,13 @@ lokalen Coursepilot-MCP. Entwicklungs- und Issue-Repository ist
 (primäres Repository); der Plugin-Quellbaum wird separat als Mirror für das Moodle Plugin
 Directory veröffentlicht.
 
+## Coursepilot 2.1.2-beta — Quiz-lokale Fragen
+
+- Fragen können auf Wunsch zuerst im eigenen Quiz-Kontext angelegt werden. Das neue Werkzeug `coursepilot_ensure_quiz_question_categories` prüft Kurs, Quiz und Moodle-Rechte und stellt die native Standardkategorie bereit.
+- Vorhandene Fragenwerkzeuge übernehmen Anlegen, Versionieren, XML-Transfer und Verschieben. Beim Verschieben in eine benannte Kurs-Fragensammlung bleiben alle Versionen und die Quiz-Referenz erhalten. XML-Übernahme verwendet den bestehenden Bestätigungs- und Identitätsvertrag.
+- Benannte Kurs-Fragensammlungen bleiben die Standardablage; bestehende `mod_qbank`-Workflows bleiben unverändert.
+- Moodle 5.1, 5.2 und 5.3 bleiben gemäß Pflichtmatrix unterstützt. Reifegrad: Beta. Die neue Moodle-Buildnummer ist `2026100901`; bestehende Installationen führen das reguläre Plugin-Upgrade aus.
+
 ## Unveröffentlicht (dev) – Altstand 1.x entfernt
 
 Der lokale stdio-Weg (Coursepilot 1.x: `legacy/local_coursepilot/`, `moodle-mcp.js`,
