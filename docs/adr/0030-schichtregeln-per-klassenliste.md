@@ -33,3 +33,29 @@ deptrac-Konfiguration. Klassen werden dafür **nicht** in neue Namespaces versch
 - Neue Wurzel-Klassen brauchen einen Eintrag in der Klassenliste; fehlt er, schlägt das Gate
   fehl (keine stille Zuordnung).
 - Die drei Rückkanten werden im Architektur-Aufräumen aufgelöst, bevor die Regel scharf wird.
+
+## Nachtrag 09.10.2026 — Rückkanten korrigiert, deptrac mit Baseline
+
+Die Architekturprüfung aus #658 hat die Rückkanten im Abschnitt Context nachgemessen
+(dev @ 9f76cdc). `catalog → external` und `webdav → external` sind nur `@see`-Docblocks,
+im Code wird kein Werkzeug aufgerufen. Die echten Verstöße sind:
+
+- **Werkzeug ruft Werkzeug**: `get_module_settings::execute` aus fünf Werkzeugen
+  (`create_module`, `set_completion`, `set_restriction`, `update_module_settings`,
+  `restore_activity_version`); `restore_activity_version` ruft `update_module_settings`
+  und `set_completion`; `update_mc_question` und `create_mc_question` rufen
+  `create_mc_question`, `export_questions_xml` und `import_questions_xml`.
+- **Adapter nutzt Fachlogik**: `webdav_storage_port` übersetzt Fehlschläge selbst über
+  `pending_write_translation`.
+
+Geändert gegenüber der Decision:
+
+- deptrac wird mit einer **versionierten Baseline** scharf, die nur schrumpfen darf
+  (gleiche Ratschen-Regel wie die PHPStan-Baseline in ADR 0029). Jeder Eintrag nennt das
+  Folgeticket, das ihn auflöst. Neue Verstöße blockieren sofort.
+- Die Verstöße werden **nach** dem Scharfschalten des Gates aufgelöst, in eigenen
+  Deepening-Tickets, damit die Umbauten unter Coverage- und CRAP-Prüfung laufen. Vorher
+  aufgelöst werden nur die Docblock-Kanten.
+
+Die Consequence „Die drei Rückkanten werden aufgelöst, bevor die Regel scharf wird“ gilt
+damit nicht mehr. Ziel bleibt eine leere Baseline nach Abschluss der Deepening-Tickets.
