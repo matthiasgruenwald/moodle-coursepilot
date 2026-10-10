@@ -97,10 +97,20 @@ final class quiz implements module_catalog {
         'closed' => 'after the quiz has closed',
     ];
 
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'quiz';
     }
 
+    /**
+     * Provides fields.
+     *
+     * @return array
+     */
     public static function fields(): array {
         global $CFG;
 
@@ -423,6 +433,10 @@ final class quiz implements module_catalog {
     /**
      * Quiz remains the ADR 0016 exception: grading and question arrangement
      * sit outside the generic form path and are therefore read here.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
      */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         global $DB;
@@ -505,6 +519,11 @@ final class quiz implements module_catalog {
         ];
     }
 
+    /**
+     * Writes options.
+     *
+     * @return array
+     */
     public static function write_options(): array {
         global $CFG;
 
@@ -522,6 +541,11 @@ final class quiz implements module_catalog {
         ];
     }
 
+    /**
+     * Provides common field names.
+     *
+     * @return array
+     */
     public static function common_field_names(): array {
         return [
             'name',
@@ -537,6 +561,11 @@ final class quiz implements module_catalog {
         ];
     }
 
+    /**
+     * Provides pseudofields.
+     *
+     * @return array
+     */
     public static function pseudofields(): array {
         $fields = [
             new field(
@@ -609,6 +638,11 @@ final class quiz implements module_catalog {
         return $fields;
     }
 
+    /**
+     * Provides blocklist.
+     *
+     * @return array
+     */
     public static function blocklist(): array {
         return [
             'grade',
@@ -627,6 +661,11 @@ final class quiz implements module_catalog {
         ];
     }
 
+    /**
+     * Provides combination rules.
+     *
+     * @return array
+     */
     public static function combination_rules(): array {
         return [
             '"timeclose" must not precede "timeopen" when both are set (mod/quiz/mod_form.php: '
@@ -639,6 +678,11 @@ final class quiz implements module_catalog {
         ];
     }
 
+    /**
+     * Provides side effects.
+     *
+     * @return array
+     */
     public static function side_effects(): array {
         return [
             '"timeopen"/"timeclose" each create or update a calendar event '
@@ -646,6 +690,11 @@ final class quiz implements module_catalog {
         ];
     }
 
+    /**
+     * Provides bundles.
+     *
+     * @return array
+     */
     public static function bundles(): array {
         return [
             'mini-check' => array_merge([
@@ -724,14 +773,29 @@ final class quiz implements module_catalog {
         return $result;
     }
 
+    /**
+     * Writes route.
+     *
+     * @return ?string
+     */
     public static function write_route(): ?string {
         return 'update_quiz_settings';
     }
 
+    /**
+     * Provides checked constants.
+     *
+     * @return array
+     */
     public static function checked_constants(): array {
         return [];
     }
 
+    /**
+     * Provides learner locks.
+     *
+     * @return array
+     */
     public static function learner_locks(): array {
         return [
             'attempts' => ['op' => 'greater', 'value' => 0,
@@ -754,6 +818,8 @@ final class quiz implements module_catalog {
     /**
      * Automatically graded unless an instance contains a manually graded
      * question (e.g. essay); then the teacher determines the grade (#583).
+     *
+     * @param int $instanceid The instanceid.
      */
     public static function grade_origin(int $instanceid = 0): string {
         global $CFG;
@@ -769,6 +835,11 @@ final class quiz implements module_catalog {
         return learner_locks::GRADE_AUTOMATIC;
     }
 
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

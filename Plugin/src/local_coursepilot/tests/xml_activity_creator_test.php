@@ -28,7 +28,11 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(xml_activity_creator::class)]
 final class xml_activity_creator_test extends \advanced_testcase {
-    /** @return array{0: \stdClass, 1: string} course and a book activity XML named "Created" */
+    /**
+     * Sets up course.
+     *
+     * @return array{0: \stdClass, 1: string} course and a book activity XML named "Created"
+     */
     private function setup_course(): array {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course(['numsections' => 3]);
@@ -40,6 +44,12 @@ final class xml_activity_creator_test extends \advanced_testcase {
         return [$course, $xml];
     }
 
+    /**
+     * Provides footprint.
+     *
+     * @param int $courseid The courseid.
+     * @return array
+     */
     private function footprint(int $courseid): array {
         global $DB;
         return [
@@ -152,7 +162,9 @@ final class xml_activity_creator_test extends \advanced_testcase {
         }
     }
 
-    /** Old book in section 2 between two page neighbours; returns [course, xml, old cmid, neighbour cmid]. */
+    /**
+     * Old book in section 2 between two page neighbours; returns [course, xml, old cmid, neighbour cmid].
+     */
     private function setup_old(): array {
         [$course, $xml] = $this->setup_course();
         $old = xml_activity_creator::create($course->id, 'book', 2, $xml)['cmid'];

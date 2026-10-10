@@ -402,6 +402,8 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
+     * Finds entry.
+     *
      * @param array $entries
      * @param string $name
      * @return array|null

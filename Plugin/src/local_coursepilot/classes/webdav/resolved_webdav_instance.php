@@ -27,18 +27,24 @@ namespace local_coursepilot\webdav;
  */
 final class resolved_webdav_instance {
     /**
+     * Creates the resolved webdav instance.
+     *
      * @param string $baseurl HTTPS instance URL including base path and trailing slash.
      * @param webdav_transport $transport Production curl_transport with freshly read credentials,
      *        or the injected test fake; the same seam as webdav_client
      *        (Spec #486 Testing Decisions).
      */
     public function __construct(
+        /** @var string HTTPS instance URL including base path and trailing slash. */
         private readonly string $baseurl,
+        /** @var webdav_transport Production curl_transport with freshly read credentials, */
         private readonly webdav_transport $transport,
     ) {
     }
 
     /**
+     * Returns new client using the supplied transport.
+     *
      * @return webdav_client New client using the supplied transport.
      */
     public function client(): webdav_client {
@@ -46,6 +52,8 @@ final class resolved_webdav_instance {
     }
 
     /**
+     * Returns directory URL with a trailing slash.
+     *
      * @param string $relativepath Already segment-validated, without leading or trailing slashes.
      * @return string Directory URL with a trailing slash.
      */
@@ -54,6 +62,8 @@ final class resolved_webdav_instance {
     }
 
     /**
+     * Returns file URL without a trailing slash.
+     *
      * @param string $relativepath Already segment-validated, without leading or trailing slashes.
      * @return string File URL without a trailing slash.
      */
@@ -62,6 +72,8 @@ final class resolved_webdav_instance {
     }
 
     /**
+     * Provides url.
+     *
      * @param string $relativepath
      * @return string
      */

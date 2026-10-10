@@ -134,6 +134,8 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
+     * Provides cases for path like name provider.
+     *
      * @return array<string, string[]>
      */
     public static function path_like_name_provider(): array {

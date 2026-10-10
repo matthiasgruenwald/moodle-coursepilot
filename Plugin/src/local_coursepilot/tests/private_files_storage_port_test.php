@@ -32,10 +32,20 @@ use local_coursepilot\tests\storage_port_contract_test;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(private_files_storage_port::class)]
 final class private_files_storage_port_test extends storage_port_contract_test {
+    /**
+     * Provides port.
+     *
+     * @return storage_port
+     */
     protected function port(): storage_port {
         return new private_files_storage_port();
     }
 
+    /**
+     * Provides area.
+     *
+     * @return storage_area
+     */
     protected function area(): storage_area {
         return new storage_area(
             rootsetting: 'storageportcontracttestroot',

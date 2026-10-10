@@ -40,8 +40,17 @@ final class webdav_setup_steps {
      */
     public const LOCATION_SELECTION_PAGE = '/local/coursepilot/location_selection.php';
 
+    /**
+     * Step repository active.
+     */
     public const STEP_REPOSITORY_ACTIVE = 'repository_active';
+    /**
+     * Step user instances.
+     */
     public const STEP_USER_INSTANCES = 'user_instances';
+    /**
+     * Step capability.
+     */
     public const STEP_CAPABILITY = 'capability';
     /**
      * The three steps, evaluated live for a specific person - each

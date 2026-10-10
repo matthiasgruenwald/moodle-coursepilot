@@ -42,6 +42,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class create_workbench_download_links extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -53,6 +55,8 @@ class create_workbench_download_links extends external_api {
     }
 
     /**
+     * Runs the create workbench download links tool.
+     *
      * @param string[] $paths
      * @return array
      * @throws \moodle_exception invalidmaterialpath, materialfilenotfound
@@ -79,6 +83,8 @@ class create_workbench_download_links extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

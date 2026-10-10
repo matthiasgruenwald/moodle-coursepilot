@@ -45,6 +45,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class append_context_file extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -77,6 +79,8 @@ class append_context_file extends external_api {
     }
 
     /**
+     * Runs the append context file tool.
+     *
      * @param string $path
      * @param string $content
      * @param string $pendingentry
@@ -125,7 +129,8 @@ class append_context_file extends external_api {
      * rotation hint (Spec 0016 §5.2/§8.4) from the location-neutral result
      * of {@see context_area::append()}.
      *
-     * @param array{path: string, created: bool, size: int} $result
+     * @param array $result
+     * @phpstan-param array{path:string,created:bool,size:int} $result
      * @return array
      */
     private static function build_response(array $result): array {
@@ -148,6 +153,8 @@ class append_context_file extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -42,6 +42,8 @@ final class drift_check_test extends \advanced_testcase {
     }
 
     /**
+     * Provides cases for known modname provider.
+     *
      * @return array<string, string[]>
      */
     public static function known_modname_provider(): array {
@@ -136,50 +138,129 @@ final class drift_check_test extends \advanced_testcase {
  * Test double claiming a column absent from label.
  */
 final class drift_check_test_fake_catalog_with_bad_column implements module_catalog {
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'label';
     }
+    /**
+     * Provides fields.
+     *
+     * @return array
+     */
     public static function fields(): array {
         return [
             new field('nichtexistierendespalte', 'PARAM_RAW', 'x', false, null, null, null, 'test'),
         ];
     }
+    /**
+     * Provides state.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
+     * @return array
+     */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return [];
     }
+    /**
+     * Writes options.
+     *
+     * @return array
+     */
     public static function write_options(): array {
         return [];
     }
+    /**
+     * Provides common field names.
+     *
+     * @return array
+     */
     public static function common_field_names(): array {
         return [];
     }
+    /**
+     * Provides pseudofields.
+     *
+     * @return array
+     */
     public static function pseudofields(): array {
         return [];
     }
+    /**
+     * Provides blocklist.
+     *
+     * @return array
+     */
     public static function blocklist(): array {
         return ['name'];
     }
+    /**
+     * Provides combination rules.
+     *
+     * @return array
+     */
     public static function combination_rules(): array {
         return [];
     }
+    /**
+     * Provides side effects.
+     *
+     * @return array
+     */
     public static function side_effects(): array {
         return [];
     }
+    /**
+     * Provides bundles.
+     *
+     * @return array
+     */
     public static function bundles(): array {
         return [];
     }
+    /**
+     * Writes route.
+     *
+     * @return ?string
+     */
     public static function write_route(): ?string {
         return null;
     }
+    /**
+     * Provides checked constants.
+     *
+     * @return array
+     */
     public static function checked_constants(): array {
         return [];
     }
+    /**
+     * Provides learner locks.
+     *
+     * @return array
+     */
     public static function learner_locks(): array {
         return [];
     }
+    /**
+     * Provides grade origin.
+     *
+     * @param int $instanceid The instanceid.
+     * @return string
+     */
     public static function grade_origin(int $instanceid = 0): string {
         return learner_locks::GRADE_NONE;
     }
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return 500;
     }
@@ -189,9 +270,19 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
  * Test double referencing a nonexistent callable source.
  */
 final class drift_check_test_fake_catalog_with_bad_callable implements module_catalog {
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'label';
     }
+    /**
+     * Provides fields.
+     *
+     * @return array
+     */
     public static function fields(): array {
         return [
             new field('intro', 'PARAM_RAW', 'x', true, null, null, null, 'test'),
@@ -207,42 +298,111 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
             ),
         ];
     }
+    /**
+     * Provides state.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
+     * @return array
+     */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return [];
     }
+    /**
+     * Writes options.
+     *
+     * @return array
+     */
     public static function write_options(): array {
         return [];
     }
+    /**
+     * Provides common field names.
+     *
+     * @return array
+     */
     public static function common_field_names(): array {
         return [];
     }
+    /**
+     * Provides pseudofields.
+     *
+     * @return array
+     */
     public static function pseudofields(): array {
         return [];
     }
+    /**
+     * Provides blocklist.
+     *
+     * @return array
+     */
     public static function blocklist(): array {
         return ['name'];
     }
+    /**
+     * Provides combination rules.
+     *
+     * @return array
+     */
     public static function combination_rules(): array {
         return [];
     }
+    /**
+     * Provides side effects.
+     *
+     * @return array
+     */
     public static function side_effects(): array {
         return [];
     }
+    /**
+     * Provides bundles.
+     *
+     * @return array
+     */
     public static function bundles(): array {
         return [];
     }
+    /**
+     * Writes route.
+     *
+     * @return ?string
+     */
     public static function write_route(): ?string {
         return null;
     }
+    /**
+     * Provides checked constants.
+     *
+     * @return array
+     */
     public static function checked_constants(): array {
         return [];
     }
+    /**
+     * Provides learner locks.
+     *
+     * @return array
+     */
     public static function learner_locks(): array {
         return [];
     }
+    /**
+     * Provides grade origin.
+     *
+     * @param int $instanceid The instanceid.
+     * @return string
+     */
     public static function grade_origin(int $instanceid = 0): string {
         return learner_locks::GRADE_NONE;
     }
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return 500;
     }
@@ -252,63 +412,152 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
  * Test double referencing a nonexistent constant.
  */
 class drift_check_test_fake_catalog_with_bad_constant implements module_catalog {
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'label';
     }
+    /**
+     * Provides fields.
+     *
+     * @return array
+     */
     public static function fields(): array {
         return [
             new field('intro', 'PARAM_RAW', 'x', true, null, null, null, 'test'),
             new field('introformat', 'PARAM_INT', 'x', false, 0, null, null, 'test'),
         ];
     }
+    /**
+     * Provides state.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
+     * @return array
+     */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return [];
     }
+    /**
+     * Writes options.
+     *
+     * @return array
+     */
     public static function write_options(): array {
         return [];
     }
+    /**
+     * Provides common field names.
+     *
+     * @return array
+     */
     public static function common_field_names(): array {
         return [];
     }
+    /**
+     * Provides pseudofields.
+     *
+     * @return array
+     */
     public static function pseudofields(): array {
         return [];
     }
+    /**
+     * Provides blocklist.
+     *
+     * @return array
+     */
     public static function blocklist(): array {
         return ['name'];
     }
+    /**
+     * Provides combination rules.
+     *
+     * @return array
+     */
     public static function combination_rules(): array {
         return [];
     }
+    /**
+     * Provides side effects.
+     *
+     * @return array
+     */
     public static function side_effects(): array {
         return [];
     }
+    /**
+     * Provides bundles.
+     *
+     * @return array
+     */
     public static function bundles(): array {
         return [];
     }
+    /**
+     * Writes route.
+     *
+     * @return ?string
+     */
     public static function write_route(): ?string {
         return null;
     }
+    /**
+     * Provides checked constants.
+     *
+     * @return array
+     */
     public static function checked_constants(): array {
         return ['NICHT_EXISTIERENDE_KONSTANTE_XYZ'];
     }
+    /**
+     * Provides learner locks.
+     *
+     * @return array
+     */
     public static function learner_locks(): array {
         return [];
     }
+    /**
+     * Provides grade origin.
+     *
+     * @param int $instanceid The instanceid.
+     * @return string
+     */
     public static function grade_origin(int $instanceid = 0): string {
         return learner_locks::GRADE_NONE;
     }
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return 500;
     }
 }
 
 final class drift_check_test_fake_catalog_with_bad_write_field extends drift_check_test_fake_catalog_with_bad_constant {
+    /**
+     * Writes options.
+     *
+     * @return array
+     */
     public static function write_options(): array {
         return ['material_reference_fields' => ['am_katalog_vorbei' => []]];
     }
 }
 
 final class drift_check_test_fake_catalog_with_bad_read_field extends drift_check_test_fake_catalog_with_bad_constant {
+    /**
+     * Writes options.
+     *
+     * @return array
+     */
     public static function write_options(): array {
         return ['read_fields' => ['am_katalog_vorbei_gelesen']];
     }

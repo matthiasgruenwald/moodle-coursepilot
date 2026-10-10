@@ -100,7 +100,8 @@ function local_coursepilot_read_oauth_passthrough(): ?array {
  * Handles submitted location selection (#494, Spec §5) only when finish
  * is present; otherwise displays the page without processing the form.
  *
- * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn
+ * @param ?array $oauthreturn
+ * @phpstan-param array{client:\stdClass,params:array<string,string>}|null $oauthreturn
  * @return array{type: string, text: string}|null
  */
 function local_coursepilot_handle_location_selection_finish(?array $oauthreturn): ?array {

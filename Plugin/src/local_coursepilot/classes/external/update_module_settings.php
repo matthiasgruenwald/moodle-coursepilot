@@ -75,6 +75,8 @@ class update_module_settings extends external_api {
     }
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -128,6 +130,8 @@ class update_module_settings extends external_api {
     }
 
     /**
+     * Runs the update module settings tool.
+     *
      * @param int $cmid
      * @param string $fieldsjson
      * @param string $location
@@ -297,7 +301,8 @@ class update_module_settings extends external_api {
      * would need a read layer per activity type; instead the
      * message states explicitly what it cannot compare.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param array $patch
      * @return array<string, mixed> Field name => value set.
      */
@@ -312,7 +317,8 @@ class update_module_settings extends external_api {
      *
      * @param array $changes
      * @param string[] $sideeffects
-     * @param array<string, mixed> $pseudofields Pseudofields written, see
+     * @param array $pseudofields Pseudofields written, see
+     * @phpstan-param array<string,mixed> $pseudofields
      *        {@see self::written_pseudofields()} - not comparable, but set.
      * @return string
      */
@@ -346,6 +352,8 @@ class update_module_settings extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

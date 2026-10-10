@@ -160,6 +160,8 @@ final class set_completion extends external_api {
     }
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -185,6 +187,8 @@ final class set_completion extends external_api {
     }
 
     /**
+     * Runs the set completion tool.
+     *
      * @param int $cmid
      * @param string $fieldsjson
      * @param bool $confirmed
@@ -290,7 +294,8 @@ final class set_completion extends external_api {
      * first enables the grade field or automatic completion - an
      * unchanged existing state needs no renewed confirmation.
      *
-     * @param class-string<\local_coursepilot\catalog\module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<\local_coursepilot\catalog\module_catalog> $catalogclass
      * @param int $instanceid
      * @param array $before
      * @param array $patch
@@ -328,6 +333,7 @@ final class set_completion extends external_api {
      * BEFORE any write access (all-or-nothing, like update_module_settings).
      *
      * @param array $patch
+     * @param string $modname The modname.
      * @return void
      * @throws moodle_exception invalidfieldname|completionunknownfield|completioninvalidfieldvalue
      */
@@ -388,6 +394,8 @@ final class set_completion extends external_api {
     }
 
     /**
+     * Reads settings.
+     *
      * @param int $cmid
      * @return array Current state, same shape as get_module_settings (already contains
      *         all five completion* fields).
@@ -433,6 +441,7 @@ final class set_completion extends external_api {
      * @param array $before
      * @param array $patch
      * @param bool $lockedchanged
+     * @param string $modname The modname.
      * @return void
      */
     private static function apply_patch(
@@ -495,6 +504,8 @@ final class set_completion extends external_api {
     }
 
     /**
+     * Builds message.
+     *
      * @param array $changes
      * @return string
      */
@@ -510,6 +521,8 @@ final class set_completion extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

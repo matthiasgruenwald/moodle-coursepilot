@@ -85,6 +85,8 @@ final class import_questions_xml extends external_api {
     public const MAX_XML_BYTES = 5 * 1024 * 1024;
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -118,6 +120,8 @@ final class import_questions_xml extends external_api {
     }
 
     /**
+     * Runs the import questions xml tool.
+     *
      * @param int $categoryid
      * @param string $xmlcontent
      * @param bool $confirmed
@@ -828,6 +832,8 @@ final class import_questions_xml extends external_api {
     }
 
     /**
+     * Provides result.
+     *
      * @param \stdClass $saved
      * @param string $status
      * @param string $name
@@ -853,7 +859,11 @@ final class import_questions_xml extends external_api {
         );
     }
 
-    /** Extract plain text from a qformat field (string or text-keyed array). */
+    /**
+     * Extract plain text from a qformat field (string or text-keyed array).
+     *
+     * @param mixed $value The value.
+     */
     private static function text_of($value): string {
         if (is_array($value)) {
             return (string) ($value['text'] ?? '');
@@ -864,7 +874,13 @@ final class import_questions_xml extends external_api {
         return (string) $value;
     }
 
-    /** Build the text/format/itemid structure expected by save_question(). */
+    /**
+     * Build the text/format/itemid structure expected by save_question().
+     *
+     * @param mixed $value The value.
+     * @param mixed $format The format.
+     * @param int $itemid The itemid.
+     */
     private static function as_text_array($value, $format, int $itemid = 0): array {
         if (is_array($value) && array_key_exists('text', $value)) {
             return [
@@ -876,12 +892,16 @@ final class import_questions_xml extends external_api {
         return ['text' => self::text_of($value), 'format' => $format ?? FORMAT_HTML, 'itemid' => $itemid];
     }
 
-    /** Generate a unique idnumber, following mc_question_version. */
+    /**
+     * Generate a unique idnumber, following mc_question_version.
+     */
     private static function generate_idnumber(): string {
         return 'kp-' . bin2hex(random_bytes(8));
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

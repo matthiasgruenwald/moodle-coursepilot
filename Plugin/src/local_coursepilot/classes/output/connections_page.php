@@ -29,8 +29,11 @@ namespace local_coursepilot\output;
  */
 final class connections_page {
     /**
+     * Provides page data.
+     *
      * @param \stdClass[] $tokens
-     * @param array<string, array<string, string>> $currentlocations see location_selection::current_locations_data()
+     * @param array $currentlocations see location_selection::current_locations_data()
+     * @phpstan-param array<string,array<string,string>> $currentlocations
      * @param \moodle_url $locationselectionurl
      * @return array<string, mixed>
      */

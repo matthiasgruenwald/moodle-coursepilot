@@ -39,7 +39,10 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(resource::class)]
 final class learner_locks_test extends \advanced_testcase {
     /**
-     * @param class-string<module_catalog> $catalogclass
+     * Provides fields by name.
+     *
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @return array<string, field>
      */
     private function fields_by_name(string $catalogclass): array {

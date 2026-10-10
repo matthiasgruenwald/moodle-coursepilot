@@ -64,6 +64,8 @@ require_once($CFG->dirroot . '/course/lib.php');
  */
 final class clone_activity extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -89,6 +91,8 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Runs the clone activity tool.
+     *
      * @param int $cmid
      * @param string $title
      * @param int $targetcourseid
@@ -299,6 +303,8 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Provides completion label.
+     *
      * @param int $expectedcompletion COMPLETION_xx value from completionlib.php
      * @return string
      */
@@ -312,6 +318,8 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Builds removed message.
+     *
      * @param array $removed
      * @return string
      */
@@ -322,6 +330,8 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Builds message.
+     *
      * @param string $title
      * @param bool $crosscourse
      * @param string|null $removedmessage
@@ -336,6 +346,8 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

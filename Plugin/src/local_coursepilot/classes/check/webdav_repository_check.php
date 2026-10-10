@@ -38,14 +38,29 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class webdav_repository_check extends check {
+    /**
+     * Returns id.
+     *
+     * @return string
+     */
     public function get_id(): string {
         return 'webdav_repository';
     }
 
+    /**
+     * Returns name.
+     *
+     * @return string
+     */
     public function get_name(): string {
         return get_string('webdavcheck1name', 'local_coursepilot');
     }
 
+    /**
+     * Returns result.
+     *
+     * @return result
+     */
     public function get_result(): result {
         global $USER;
 

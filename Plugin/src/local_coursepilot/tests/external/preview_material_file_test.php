@@ -45,6 +45,8 @@ final class preview_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Stores png.
+     *
      * @param string $filename
      * @param int $width
      * @param int $height

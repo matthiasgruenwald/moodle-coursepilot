@@ -98,6 +98,8 @@ final class arrangement {
     }
 
     /**
+     * Provides differs.
+     *
      * @param array $current
      * @param array $target
      * @return bool
@@ -258,6 +260,8 @@ final class arrangement {
     }
 
     /**
+     * Provides feedback matches.
+     *
      * @param int $quizid
      * @param array $targetfeedback
      * @return bool

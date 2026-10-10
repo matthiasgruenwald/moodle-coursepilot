@@ -56,6 +56,8 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
+     * Creates course teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course teacher without a global role, and their course.
      */
     private function create_course_teacher(): array {
@@ -66,6 +68,8 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
+     * Returns the access token.
+     *
      * @param int $userid
      * @return string The access token.
      */
@@ -91,14 +95,32 @@ final class remote_access_test extends \advanced_testcase {
         return $accesstoken;
     }
 
+    /**
+     * Provides headers.
+     *
+     * @return array
+     */
     private function headers(): array {
         return ['origin' => null, 'pathinfo' => '', 'method' => 'POST'];
     }
 
+    /**
+     * Provides initialize.
+     *
+     * @param string $token The token.
+     * @return array
+     */
     private function initialize(string $token): array {
         return dispatcher::handle(['id' => 1, 'method' => 'initialize'], $token, $this->headers());
     }
 
+    /**
+     * Returns sections.
+     *
+     * @param string $token The token.
+     * @param int $courseid The courseid.
+     * @return array
+     */
     private function get_sections(string $token, int $courseid): array {
         return dispatcher::handle(
             [

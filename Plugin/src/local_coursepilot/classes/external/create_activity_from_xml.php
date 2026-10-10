@@ -37,6 +37,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class create_activity_from_xml extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -68,6 +70,8 @@ final class create_activity_from_xml extends external_api {
     }
 
     /**
+     * Runs the create activity from xml tool.
+     *
      * @param int $courseid
      * @param string $modname
      * @param int $section
@@ -139,7 +143,10 @@ final class create_activity_from_xml extends external_api {
     }
 
     /**
-     * @param array{cmid: int, presets: string[], references: array, successor_cmid: int, hidden_predecessors: int} $result
+     * Provides shape.
+     *
+     * @param array $result
+     * @phpstan-param array{cmid:int,presets:string[],references:array,successor_cmid:int,hidden_predecessors:int} $result
      * @return array
      */
     private static function shape(array $result): array {
@@ -168,6 +175,8 @@ final class create_activity_from_xml extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -42,6 +42,8 @@ final class export_default_activity extends external_api {
     private const SECTION = 0;
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -52,6 +54,8 @@ final class export_default_activity extends external_api {
     }
 
     /**
+     * Runs the export default activity tool.
+     *
      * @param int $courseid
      * @param string $modname
      * @return array
@@ -135,6 +139,8 @@ final class export_default_activity extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

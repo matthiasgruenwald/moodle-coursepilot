@@ -34,7 +34,11 @@ defined('MOODLE_INTERNAL') || die();
  * @license https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class add_glossary_entries extends external_api {
-    /** @return external_function_parameters */
+    /**
+     * Describes the parameters of execute.
+     *
+     * @return external_function_parameters
+     */
     public static function execute_parameters(): external_function_parameters {
         $strings = static fn(string $description) => new external_multiple_structure(
             new external_value(PARAM_TEXT, $description),
@@ -69,6 +73,8 @@ final class add_glossary_entries extends external_api {
     }
 
     /**
+     * Runs the add glossary entries tool.
+     *
      * @param int $cmid
      * @param array $entries
      * @return array
@@ -104,7 +110,11 @@ final class add_glossary_entries extends external_api {
         }
     }
 
-    /** @return external_single_structure */
+    /**
+     * Describes the return value of execute.
+     *
+     * @return external_single_structure
+     */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Glossary course module ID'),

@@ -44,6 +44,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class list_context_files extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -60,6 +62,8 @@ class list_context_files extends external_api {
     }
 
     /**
+     * Runs the list context files tool.
+     *
      * @param string $path
      * @param bool $previouslocation
      * @return array
@@ -89,6 +93,8 @@ class list_context_files extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

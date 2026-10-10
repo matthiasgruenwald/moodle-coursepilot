@@ -34,6 +34,11 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class webdav_capability_check_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
+    /**
+     * Provides issue token.
+     *
+     * @param int $userid The userid.
+     */
     private function issue_token(int $userid): void {
         global $DB;
 

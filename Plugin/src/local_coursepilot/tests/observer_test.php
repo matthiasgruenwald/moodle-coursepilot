@@ -475,6 +475,8 @@ final class observer_test extends \advanced_testcase {
     }
 
     /**
+     * Creates quiz with two questions.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, quiz (with two questions).
      */
     private function create_quiz_with_two_questions(): array {

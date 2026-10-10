@@ -135,30 +135,79 @@ final class context_area_pending_test extends \advanced_testcase {
     }
 
     /**
+     * Provides failing port.
+     *
      * @param \Throwable $failure Thrown by write()/append() of the test double.
      * @return storage_port
      */
     private function failing_port(\Throwable $failure): storage_port {
         return new class ($failure) implements storage_port {
-            public function __construct(private readonly \Throwable $failure) {
+            /**
+             * Creates the context area pending test.
+             *
+             * @param \Throwable $failure The failure.
+             */
+            public function __construct(
+                /** @var \Throwable The failure. */
+                private readonly \Throwable $failure,
+            ) {
             }
 
+            /**
+             * Reads the context area pending test.
+             *
+             * @param storage_area $area The area.
+             * @param string $path The path.
+             * @return ?array
+             */
             public function read(storage_area $area, string $path): ?array {
                 return null;
             }
 
+            /**
+             * Lists the context area pending test.
+             *
+             * @param storage_area $area The area.
+             * @param string $path The path.
+             * @return array
+             */
             public function list(storage_area $area, string $path): array {
                 return [];
             }
 
+            /**
+             * Writes the context area pending test.
+             *
+             * @param storage_area $area The area.
+             * @param string $path The path.
+             * @param string $content The content.
+             * @param ?string $expectedchecksum The expectedchecksum.
+             * @return array
+             */
             public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
                 throw $this->failure;
             }
 
+            /**
+             * Appends the context area pending test.
+             *
+             * @param storage_area $area The area.
+             * @param string $path The path.
+             * @param string $content The content.
+             * @param ?string $expectedchecksum The expectedchecksum.
+             * @return array
+             */
             public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
                 throw $this->failure;
             }
 
+            /**
+             * Deletes the context area pending test.
+             *
+             * @param storage_area $area The area.
+             * @param string $path The path.
+             * @return bool
+             */
             public function delete(storage_area $area, string $path): bool {
                 return false;
             }
@@ -166,6 +215,8 @@ final class context_area_pending_test extends \advanced_testcase {
     }
 
     /**
+     * Provides invoke persist write.
+     *
      * @param storage_port $port
      * @param string $path
      * @param string $content
@@ -180,6 +231,8 @@ final class context_area_pending_test extends \advanced_testcase {
     }
 
     /**
+     * Provides invoke persist append.
+     *
      * @param storage_port $port
      * @param string $path
      * @param string $content

@@ -28,10 +28,16 @@ namespace local_coursepilot;
  */
 final class workbench_ticket_redemption_failed extends \moodle_exception {
     /**
+     * Creates the workbench ticket redemption failed.
+     *
      * @param string $errorcode Language key in local_coursepilot.
      * @param string|null $path Workbench path, or null if the ticket was already unknown.
      */
-    public function __construct(string $errorcode, public readonly ?string $path) {
+    public function __construct(
+        string $errorcode,
+        /** @var ?string Workbench path, or null if the ticket was already unknown. */
+        public readonly ?string $path,
+    ) {
         parent::__construct($errorcode, 'local_coursepilot');
     }
 }

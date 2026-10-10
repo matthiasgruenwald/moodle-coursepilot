@@ -26,6 +26,8 @@ require_once(__DIR__ . '/../lib.php');
  */
 final class lib_test extends advanced_testcase {
     /**
+     * Provides course.
+     *
      * @return array{0: stdClass, 1: context_course} Course, course context.
      */
     private function course(): array {

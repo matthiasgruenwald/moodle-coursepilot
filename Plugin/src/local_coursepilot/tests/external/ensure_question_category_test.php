@@ -145,6 +145,8 @@ final class ensure_question_category_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

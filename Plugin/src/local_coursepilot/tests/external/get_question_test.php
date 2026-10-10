@@ -96,6 +96,8 @@ final class get_question_test extends \advanced_testcase {
     }
 
     /**
+     * Creates course with question category.
+     *
      * @return array{0: \stdClass, 1: \stdClass}
      */
     private function create_course_with_question_category(): array {
@@ -108,6 +110,8 @@ final class get_question_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

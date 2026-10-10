@@ -126,7 +126,8 @@ final class quiz_write_bridge {
      *
      * @param \stdClass $moduleinfo Updated in place.
      * @param string[] $texts
-     * @param array<int, int|float|string> $boundaries
+     * @param array $boundaries
+     * @phpstan-param array<int,int|float|string> $boundaries
      * @return void
      */
     public static function apply_feedback_pseudofields(\stdClass $moduleinfo, array $texts, array $boundaries): void {
@@ -245,6 +246,8 @@ final class quiz_write_bridge {
     }
 
     /**
+     * Provides throw combination violation.
+     *
      * @param string $message
      * @return never
      * @throws moodle_exception combinationruleviolation

@@ -171,6 +171,8 @@ final class write_gate {
     }
 
     /**
+     * Provides cached violations.
+     *
      * @param string $modname
      * @return string[]
      */

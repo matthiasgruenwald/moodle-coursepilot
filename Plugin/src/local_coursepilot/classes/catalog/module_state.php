@@ -121,6 +121,8 @@ final class module_state {
     }
 
     /**
+     * Previews the module state.
+     *
      * @param string $html
      * @param bool $fullcontent
      * @return string
@@ -134,7 +136,8 @@ final class module_state {
      * Convert associative field/value settings to catalog name/value pairs.
      * Each catalog class uses this shared normalization for its own settings.
      *
-     * @param array<string, mixed> $settings
+     * @param array $settings
+     * @phpstan-param array<string,mixed> $settings
      * @return array<int, array{name: string, value: string}>
      */
     public static function settings(array $settings): array {
@@ -152,7 +155,8 @@ final class module_state {
      * declare groups in module_catalog::write_options()["repeated_group"], so
      * get_module_settings needs no module-specific branch.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param int $instanceid
      * @return array<string, mixed> Field name to value list; empty if the type declares no group.
      */

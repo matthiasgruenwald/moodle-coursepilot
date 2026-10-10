@@ -49,6 +49,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class get_course_catalog extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -61,6 +63,8 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Runs the get course catalog tool.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string $modname
@@ -105,6 +109,8 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Provides sections.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string $modulefilter
@@ -145,6 +151,8 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Provides modules.
+     *
      * @param int $sectionid
      * @param string $modulefilter
      * @param bool $fullcontent
@@ -202,6 +210,8 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Provides sequence index.
+     *
      * @param string $sequence
      * @param int $cmid
      * @return int
@@ -213,6 +223,8 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Provides module details.
+     *
      * @param string $modname
      * @param int $instanceid
      * @param int $cmid
@@ -228,6 +240,8 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Provides content field.
+     *
      * @param string $html
      * @param bool $fullcontent
      * @return array
@@ -241,6 +255,8 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Previews the get course catalog.
+     *
      * @param string $html
      * @param bool $fullcontent
      * @return string
@@ -254,6 +270,8 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

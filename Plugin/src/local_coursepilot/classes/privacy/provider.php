@@ -58,6 +58,8 @@ use local_coursepilot\history\version_history;
  */
 final class provider implements \core_privacy\local\metadata\provider, \core_privacy\local\request\core_userlist_provider, \core_privacy\local\request\plugin\provider {
     /**
+     * Returns metadata.
+     *
      * @param collection $collection
      * @return collection
      */
@@ -176,6 +178,8 @@ final class provider implements \core_privacy\local\metadata\provider, \core_pri
     }
 
     /**
+     * Returns contexts for userid.
+     *
      * @param int $userid
      * @return contextlist
      */
@@ -208,6 +212,8 @@ final class provider implements \core_privacy\local\metadata\provider, \core_pri
     }
 
     /**
+     * Returns users in context.
+     *
      * @param userlist $userlist
      */
     public static function get_users_in_context(userlist $userlist): void {
@@ -265,6 +271,8 @@ final class provider implements \core_privacy\local\metadata\provider, \core_pri
     }
 
     /**
+     * Exports user data.
+     *
      * @param approved_contextlist $contextlist
      */
     public static function export_user_data(approved_contextlist $contextlist): void {
@@ -407,6 +415,8 @@ final class provider implements \core_privacy\local\metadata\provider, \core_pri
     }
 
     /**
+     * Deletes data for all users in context.
+     *
      * @param \context $context
      */
     public static function delete_data_for_all_users_in_context(\context $context): void {
@@ -452,6 +462,8 @@ final class provider implements \core_privacy\local\metadata\provider, \core_pri
     }
 
     /**
+     * Deletes data for user.
+     *
      * @param approved_contextlist $contextlist
      */
     public static function delete_data_for_user(approved_contextlist $contextlist): void {
@@ -481,6 +493,8 @@ final class provider implements \core_privacy\local\metadata\provider, \core_pri
     }
 
     /**
+     * Deletes data for users.
+     *
      * @param approved_userlist $userlist
      */
     public static function delete_data_for_users(approved_userlist $userlist): void {

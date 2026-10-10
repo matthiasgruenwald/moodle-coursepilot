@@ -55,6 +55,8 @@ require_once($CFG->libdir . '/questionlib.php');
  */
 final class move_question extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -72,6 +74,8 @@ final class move_question extends external_api {
     }
 
     /**
+     * Runs the move question tool.
+     *
      * @param int $questionid
      * @param int $targetcategoryid
      * @param bool $confirmed
@@ -184,6 +188,8 @@ final class move_question extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

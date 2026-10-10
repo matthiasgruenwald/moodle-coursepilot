@@ -143,6 +143,11 @@ final class activity_type_templates_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Provides verified examples.
+     *
+     * @return array
+     */
     public static function verified_examples(): array {
         return [
             'book' => ['book', 'Short book', '/activity/book/chapters/chapter', 1],
@@ -184,8 +189,25 @@ final class activity_type_templates_test extends \advanced_testcase {
         $fake->seed_folder('/Coursepilot');
         $fake->seed_folder('/Coursepilot/Kontext');
         $transport = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
-            public function __construct(private readonly \local_coursepilot\tests\webdav\fake_webdav_transport $fake) {
+            /**
+             * Creates the activity type templates test.
+             *
+             * @param \local_coursepilot\tests\webdav\fake_webdav_transport $fake The fake.
+             */
+            public function __construct(
+                /** @var \local_coursepilot\tests\webdav\fake_webdav_transport The fake. */
+                private readonly \local_coursepilot\tests\webdav\fake_webdav_transport $fake,
+            ) {
             }
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param array $headers The headers.
+             * @param ?string $body The body.
+             * @return \local_coursepilot\webdav\webdav_response
+             */
             public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT' && str_ends_with($url, '/book.md')) {
                     $this->fake->seed_file('/Coursepilot/Kontext/activity-types/book.md', "Teacher's concurrent file");
@@ -253,8 +275,25 @@ final class activity_type_templates_test extends \advanced_testcase {
             storage_anchor::POINTER_FILENAME
         )->delete();
         $transport = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
-            public function __construct(private readonly \local_coursepilot\tests\webdav\fake_webdav_transport $fake) {
+            /**
+             * Creates the activity type templates test.
+             *
+             * @param \local_coursepilot\tests\webdav\fake_webdav_transport $fake The fake.
+             */
+            public function __construct(
+                /** @var \local_coursepilot\tests\webdav\fake_webdav_transport The fake. */
+                private readonly \local_coursepilot\tests\webdav\fake_webdav_transport $fake,
+            ) {
             }
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param array $headers The headers.
+             * @param ?string $body The body.
+             * @return \local_coursepilot\webdav\webdav_response
+             */
             public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     $this->fake->fill_storage();
@@ -277,6 +316,11 @@ final class activity_type_templates_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Provides external selection.
+     *
+     * @return array
+     */
     private function external_selection(): array {
         $current = location_selection::current('context_area');
         return [

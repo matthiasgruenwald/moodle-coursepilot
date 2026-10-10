@@ -33,6 +33,10 @@ final class course_module_placement {
     /**
      * Moves a cm into a section, before $beforecmid (null = section end).
      * Capability moodle/course:manageactivities is checked by cm_move itself.
+     *
+     * @param int $cmid The cmid.
+     * @param int $sectionid The sectionid.
+     * @param ?int $beforecmid The beforecmid.
      */
     public static function move_to(int $cmid, int $sectionid, ?int $beforecmid): void {
         $courseid = self::course_of($cmid);
@@ -49,6 +53,9 @@ final class course_module_placement {
 
     /**
      * Places a cm directly behind another one (the same section as $aftercmid).
+     *
+     * @param int $cmid The cmid.
+     * @param int $aftercmid The aftercmid.
      */
     public static function place_after(int $cmid, int $aftercmid): void {
         $courseid = self::course_of($cmid);
@@ -63,6 +70,12 @@ final class course_module_placement {
         self::move_to($cmid, (int) $after->section, $successor === null ? null : (int) $successor);
     }
 
+    /**
+     * Provides course of.
+     *
+     * @param int $cmid The cmid.
+     * @return int
+     */
     private static function course_of(int $cmid): int {
         global $DB;
         return (int) $DB->get_field('course_modules', 'course', ['id' => $cmid], MUST_EXIST);
@@ -70,6 +83,9 @@ final class course_module_placement {
 
     /**
      * Shows or hides a cm (cmactions::set_visibility).
+     *
+     * @param int $cmid The cmid.
+     * @param bool $visible The visible.
      */
     public static function set_visible(int $cmid, bool $visible): void {
         $courseid = self::course_of($cmid);
@@ -90,6 +106,9 @@ final class course_module_placement {
      * the native cm link when a restore failed between instance creation and linking.
      * A half-made row (instance = 0) is removed by hand, the regular delete cannot take it.
      * An unknown cmid is a no-op (idempotent).
+     *
+     * @param int $cmid The cmid.
+     * @param ?int $instanceid The instanceid.
      */
     public static function discard_failed(int $cmid, ?int $instanceid = null): void {
         global $DB, $CFG;

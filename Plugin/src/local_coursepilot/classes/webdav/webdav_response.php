@@ -29,13 +29,19 @@ namespace local_coursepilot\webdav;
  */
 final class webdav_response {
     /**
+     * Creates the webdav response.
+     *
      * @param int $statuscode HTTP status.
-     * @param array<string, string> $headers Response headers with lowercased keys (e.g. etag, content-type).
+     * @param array $headers Response headers with lowercased keys (e.g. etag, content-type).
+     * @phpstan-param array<string,string> $headers
      * @param string $body Unmodified response body.
      */
     public function __construct(
+        /** @var int HTTP status. */
         public readonly int $statuscode,
+        /** @var array The headers. */
         public readonly array $headers,
+        /** @var string Unmodified response body. */
         public readonly string $body,
     ) {
     }

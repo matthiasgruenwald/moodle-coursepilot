@@ -265,6 +265,9 @@ final class export_questions_xml_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
+     * @param string $shortname The shortname.
      * @return int
      */
     private function get_role_id(string $shortname): int {

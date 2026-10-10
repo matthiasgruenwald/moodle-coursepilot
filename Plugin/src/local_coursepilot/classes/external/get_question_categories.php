@@ -43,6 +43,8 @@ require_once($CFG->libdir . '/questionlib.php');
  */
 class get_question_categories extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -53,6 +55,8 @@ class get_question_categories extends external_api {
     }
 
     /**
+     * Runs the get question categories tool.
+     *
      * @param int $courseid
      * @param int $questionbankid
      * @return array
@@ -90,6 +94,8 @@ class get_question_categories extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_multiple_structure
      */
     public static function execute_returns(): external_multiple_structure {

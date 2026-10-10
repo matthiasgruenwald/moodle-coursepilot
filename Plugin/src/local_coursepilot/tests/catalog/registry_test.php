@@ -49,6 +49,11 @@ final class registry_test extends \advanced_testcase {
         $this->assertNull($kind->reasonkey);
     }
 
+    /**
+     * Provides cases for excluded provider.
+     *
+     * @return array
+     */
     public static function excluded_provider(): array {
         return [
             'lesson' => ['lesson', 'kindexcludedquestions'],

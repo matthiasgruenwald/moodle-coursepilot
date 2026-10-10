@@ -34,7 +34,8 @@ interface webdav_transport {
      *
      * @param string $method PROPFIND|GET|PUT|MKCOL|MOVE|DELETE.
      * @param string $url Complete https address.
-     * @param array<string, string> $headers Additional request headers
+     * @param array $headers Additional request headers
+     * @phpstan-param array<string,string> $headers
      *        (e.g. Depth, If-Match, If-None-Match, Destination), without
      *        the auth header - the transport sets that itself.
      * @param string|null $body Body, e.g. PROPFIND XML or file content.

@@ -77,6 +77,11 @@ final class history_cleanup_race_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Captures modes.
+     *
+     * @return array
+     */
     public static function capture_modes(): array {
         return [[false], [true]];
     }
@@ -174,6 +179,12 @@ final class history_cleanup_race_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Provides await condition.
+     *
+     * @param callable $condition The condition.
+     * @param string $message The message.
+     */
     private function await_condition(callable $condition, string $message): void {
         $deadline = microtime(true) + 15;
         do {

@@ -118,6 +118,8 @@ final class get_modules_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
@@ -127,6 +129,8 @@ final class get_modules_test extends \advanced_testcase {
     }
 
     /**
+     * Finds module.
+     *
      * @param array $result
      * @param int $cmid
      * @return array|null

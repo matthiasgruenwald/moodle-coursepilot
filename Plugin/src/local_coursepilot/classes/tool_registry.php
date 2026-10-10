@@ -83,17 +83,29 @@ final class tool_registry {
         'coursepilot_dismiss_previous_location' => ['classname' => 'local_coursepilot\external\dismiss_previous_location', 'descriptionkey' => 'tool_dismiss_previous_location'],
     ];
 
-    /** @return array<string, string> */
+    /**
+     * Provides allowed tools.
+     *
+     * @return array<string, string>
+     */
     public static function allowed_tools(): array {
         return array_map(static fn(array $tool): string => self::function_name($tool['classname']), self::TOOLS);
     }
 
-    /** @return array<string, string> */
+    /**
+     * Provides descriptions.
+     *
+     * @return array<string, string>
+     */
     public static function descriptions(): array {
         return array_map(static fn(array $tool): string => get_string($tool['descriptionkey'], 'local_coursepilot'), self::TOOLS);
     }
 
-    /** @return array<string, array{properties: array, required?: array}> */
+    /**
+     * Provides schemas.
+     *
+     * @return array<string, array{properties: array, required?: array}>
+     */
     public static function schemas(): array {
         $schemas = [];
         foreach (self::TOOLS as $name => $tool) {
@@ -103,7 +115,11 @@ final class tool_registry {
         return $schemas;
     }
 
-    /** @return array<string, array<string, mixed>> */
+    /**
+     * Provides service functions.
+     *
+     * @return array<string, array<string, mixed>>
+     */
     public static function service_functions(): array {
         $functions = [];
         foreach (self::TOOLS as $tool) {
@@ -117,19 +133,41 @@ final class tool_registry {
         return $functions;
     }
 
+    /**
+     * Tells whether the tool registry is write.
+     *
+     * @param string $toolname The toolname.
+     * @return bool
+     */
     public static function is_write(string $toolname): bool {
         return self::is_write_class(self::TOOLS[$toolname]['classname']);
     }
 
-    /** @return string[] */
+    /**
+     * Provides service function names.
+     *
+     * @return string[]
+     */
     public static function service_function_names(): array {
         return array_values(self::allowed_tools());
     }
 
+    /**
+     * Provides function name.
+     *
+     * @param string $classname The classname.
+     * @return string
+     */
     private static function function_name(string $classname): string {
         return 'local_coursepilot_' . substr($classname, strrpos($classname, '\\') + 1);
     }
 
+    /**
+     * Tells whether the tool registry is write class.
+     *
+     * @param string $classname The classname.
+     * @return bool
+     */
     private static function is_write_class(string $classname): bool {
         // Read-only despite the "export_" prefix: hands out XML, writes nothing.
         if (

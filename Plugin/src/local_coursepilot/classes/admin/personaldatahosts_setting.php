@@ -36,6 +36,8 @@ require_once($CFG->libdir . '/adminlib.php');
  */
 final class personaldatahosts_setting extends \admin_setting_configtextarea {
     /**
+     * Validates the personaldatahosts setting.
+     *
      * @param mixed $data
      * @return mixed true if valid, otherwise an error message.
      */

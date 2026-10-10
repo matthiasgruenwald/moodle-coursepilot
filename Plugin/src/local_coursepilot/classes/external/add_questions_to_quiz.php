@@ -57,6 +57,8 @@ require_once($CFG->libdir . '/questionlib.php');
  */
 final class add_questions_to_quiz extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -70,6 +72,8 @@ final class add_questions_to_quiz extends external_api {
     }
 
     /**
+     * Runs the add questions to quiz tool.
+     *
      * @param int $cmid
      * @param array $questionids
      * @return array
@@ -205,6 +209,8 @@ final class add_questions_to_quiz extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

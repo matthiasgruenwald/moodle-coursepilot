@@ -38,6 +38,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class dismiss_previous_location extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -45,6 +47,8 @@ class dismiss_previous_location extends external_api {
     }
 
     /**
+     * Runs the dismiss previous location tool.
+     *
      * @return array
      * @throws \moodle_exception previouslocationclosed if legacy context is not open.
      * @throws \required_capability_exception without moodle/user:manageownfiles,
@@ -73,6 +77,8 @@ class dismiss_previous_location extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

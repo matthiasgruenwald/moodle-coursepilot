@@ -77,6 +77,9 @@ final class mark_memory {
     /**
      * Remembers the bit for a file - creates the entry or replaces
      * it, depending on whether one already exists.
+     * @param string $path The path.
+     * @param int $size The size.
+     * @param int $timemodified The timemodified.
      * @param string|null $etag
      * @param bool $marked
      */

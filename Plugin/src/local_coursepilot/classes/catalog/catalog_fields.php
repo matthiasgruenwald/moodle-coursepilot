@@ -31,7 +31,8 @@ final class catalog_fields {
     /**
      * Validates a field specification exclusively against the given catalog.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param array $values
      * @param bool $patch True if the form patch path is used.
      * @return void
@@ -67,6 +68,12 @@ final class catalog_fields {
         }
     }
 
+    /**
+     * Provides template name.
+     *
+     * @param string $fieldname The fieldname.
+     * @return string
+     */
     private static function template_name(string $fieldname): string {
         return preg_match('/^(parameter|variable)_\d+$/', $fieldname) === 1
             ? preg_replace('/_\d+$/', '_N', $fieldname)

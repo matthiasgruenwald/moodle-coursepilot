@@ -95,6 +95,8 @@ final class context_pointer {
     }
 
     /**
+     * Resolves target.
+     *
      * @param array $decoded Pointer content already decoded from JSON.
      * @param string $pointerkey The resolving area's {@see storage_area::$pointerkey}.
      * @return pointer_location
@@ -128,6 +130,8 @@ final class context_pointer {
     }
 
     /**
+     * Resolves pair legacy.
+     *
      * @param array $decoded
      * @return array{context_area: pointer_location, material_store: pointer_location}
      * @throws \moodle_exception pointerincomplete/pointerunreachable
@@ -145,6 +149,8 @@ final class context_pointer {
     }
 
     /**
+     * Resolves pair v2.
+     *
      * @param array $decoded
      * @return array{context_area: pointer_location, material_store: pointer_location}
      * @throws \moodle_exception pointerincomplete/pointerunreachable
@@ -166,6 +172,8 @@ final class context_pointer {
     }
 
     /**
+     * Resolves single v2.
+     *
      * @param array $target
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable
@@ -237,6 +245,8 @@ final class context_pointer {
     }
 
     /**
+     * Resolves external.
+     *
      * @param array $target
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable
@@ -290,6 +300,8 @@ final class context_pointer {
     }
 
     /**
+     * Provides incomplete.
+     *
      * @throws \moodle_exception pointerincomplete
      */
     private static function incomplete(): never {

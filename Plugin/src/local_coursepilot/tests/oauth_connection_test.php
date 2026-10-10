@@ -20,6 +20,13 @@ namespace local_coursepilot;
 #[\PHPUnit\Framework\Attributes\CoversClass(oauth_lib::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(workbench_ticket::class)]
 final class oauth_connection_test extends \advanced_testcase {
+    /**
+     * Provides tokens.
+     *
+     * @param string $clientid The clientid.
+     * @param int $userid The userid.
+     * @return array
+     */
     private function tokens(string $clientid, int $userid): array {
         $verifier = str_repeat('v', 43);
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
@@ -90,6 +97,9 @@ final class oauth_connection_test extends \advanced_testcase {
         $this->assertNotNull(oauth_lib::rotate_refresh_token($other['refresh_token'], 'client-a'));
     }
 
+    /**
+     * Creates file.
+     */
     private function create_file(): void {
         [$directory, $filename] = material_files::resolve_file('synthetic.txt');
         get_file_storage()->create_file_from_string([
@@ -99,6 +109,11 @@ final class oauth_connection_test extends \advanced_testcase {
         ], 'synthetic bytes');
     }
 
+    /**
+     * Asserts ticket revoked.
+     *
+     * @param string $ticket The ticket.
+     */
     private function assert_ticket_revoked(string $ticket): void {
         try {
             workbench_ticket::redeem($ticket);
@@ -135,6 +150,11 @@ final class oauth_connection_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Provides ticket.
+     *
+     * @return string
+     */
     private function ticket(): string {
         parse_str(parse_url(workbench_ticket::issue('synthetic.txt')['url'], PHP_URL_QUERY), $query);
         return $query['ticket'];
@@ -202,6 +222,11 @@ final class oauth_connection_test extends \advanced_testcase {
         $this->assertNull(oauth_lib::authenticate_access_token($rotation['body']['access_token']));
     }
 
+    /**
+     * Provides ddl connection.
+     *
+     * @return \mysqli
+     */
     private function ddl_connection(): \mysqli {
         global $DB;
         $cfg = $DB->export_dbconfig();
@@ -217,7 +242,12 @@ final class oauth_connection_test extends \advanced_testcase {
         );
     }
 
-    /** Real processes overlap inside the connection transaction, in both orders. */
+    /**
+     * Real processes overlap inside the connection transaction, in both orders.
+     *
+     * @param string $first The first.
+     * @param string $second The second.
+     */
     #[\PHPUnit\Framework\Attributes\DataProvider('races')]
     public function test_parallel_connection_changes(string $first, string $second): void {
         global $DB, $USER;
@@ -334,6 +364,12 @@ final class oauth_connection_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Provides await condition.
+     *
+     * @param callable $condition The condition.
+     * @param string $message The message.
+     */
     private function await_condition(callable $condition, string $message): void {
         $deadline = microtime(true) + 15;
         do {
@@ -345,6 +381,11 @@ final class oauth_connection_test extends \advanced_testcase {
         $this->fail($message);
     }
 
+    /**
+     * Provides races.
+     *
+     * @return array
+     */
     public static function races(): array {
         return [['rotate', 'revoke'], ['revoke', 'rotate'], ['rotate', 'rotate'],
             ['rotate', 'replay'], ['replay', 'rotate']];

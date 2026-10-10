@@ -40,6 +40,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -51,6 +53,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Returns current state, with the same shape as get_module_settings.
+     *
      * @param int $cmid
      * @return array Current state, with the same shape as get_module_settings.
      */
@@ -1034,6 +1038,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Stores material png.
+     *
      * @param string $filename
      * @param int $width
      * @param int $height

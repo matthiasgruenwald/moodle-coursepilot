@@ -88,6 +88,8 @@ final class skill_corpus {
     }
 
     /**
+     * Provides dir.
+     *
      * @param string $kind
      * @return string
      */
@@ -119,6 +121,8 @@ final class skill_corpus {
     }
 
     /**
+     * Provides frontmatter description.
+     *
      * @param string $content
      * @return string|null
      */

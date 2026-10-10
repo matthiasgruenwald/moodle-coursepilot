@@ -29,6 +29,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(oauth_lib::class)]
 #[CoversClass(\local_coursepilot\storage_anchor::class)]
 final class oauth_lib_test extends \advanced_testcase {
+    /**
+     * Wwwroot.
+     */
     private const WWWROOT = 'https://coursepilot.example';
 
     /**

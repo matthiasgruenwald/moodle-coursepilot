@@ -95,6 +95,8 @@ final class set_restriction extends external_api {
     ];
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -113,6 +115,8 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Runs the set restriction tool.
+     *
      * @param int $cmid
      * @param string $conditionsjson
      * @param string[] $confirmlearnerlocks
@@ -187,6 +191,8 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Returns current state, same shape as get_module_settings.
+     *
      * @param int $cmid
      * @return array Current state, same shape as get_module_settings.
      */
@@ -257,6 +263,8 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Builds completion condition.
+     *
      * @param int $courseid
      * @param array $condition
      * @return stdClass
@@ -289,6 +297,8 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Builds date condition.
+     *
      * @param array $condition
      * @return stdClass
      */
@@ -308,6 +318,8 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Builds group condition.
+     *
      * @param int $courseid
      * @param array $condition
      * @return stdClass
@@ -413,6 +425,8 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Builds message.
+     *
      * @param int $count
      * @return string
      */
@@ -426,6 +440,8 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

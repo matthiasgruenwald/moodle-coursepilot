@@ -33,7 +33,11 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class get_question_category_cleanup_plan extends external_api {
-    /** @return external_function_parameters */
+    /**
+     * Describes the parameters of execute.
+     *
+     * @return external_function_parameters
+     */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'courseid' => new external_value(PARAM_INT, 'Course ID'),
@@ -42,6 +46,8 @@ class get_question_category_cleanup_plan extends external_api {
     }
 
     /**
+     * Runs the get question category cleanup plan tool.
+     *
      * @param int $courseid Course ID
      * @param int $questionbankid Question bank course module ID
      * @return array
@@ -78,7 +84,11 @@ class get_question_category_cleanup_plan extends external_api {
         return ['questionbankname' => $bankrecord->name, 'removals' => $removals];
     }
 
-    /** @return external_single_structure */
+    /**
+     * Describes the return value of execute.
+     *
+     * @return external_single_structure
+     */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'questionbankname' => new external_value(PARAM_TEXT, 'Name of the checked question bank'),

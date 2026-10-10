@@ -274,7 +274,8 @@ final class location_selection {
      * {@see webdav_setup_steps} supplies listskillspreviouslocationhint and
      * the model can inspect it with coursepilot_list_context_files as needed.
      *
-     * @param array<int, array{name: string, type: string}> $entries
+     * @param array $entries
+     * @phpstan-param array<int,array{name:string,type:string}> $entries
      * @return bool
      */
     private static function has_context_file(array $entries): bool {
@@ -331,7 +332,8 @@ final class location_selection {
      * Uses {@see \local_coursepilot\personal_data_hosts::allowed()} for
      * per-target display rather than raising a caller error.
      *
-     * @param array{location: string, path: string, instanceid?: int, fingerprint?: array} $value
+     * @param array $value
+     * @phpstan-param array{location:string,path:string,instanceid?:int,fingerprint?:array} $value
      * @return bool
      */
     private static function is_allowed(array $value): bool {
@@ -345,7 +347,8 @@ final class location_selection {
      * Formats the allowed-host label (#500, Spec #486 §11), shared by consent,
      * connection self-service and location selection.
      *
-     * @param array{allowed: bool} $value Result of {@see current()}.
+     * @param array $value Result of {@see current()}.
+     * @phpstan-param array{allowed:bool} $value
      * @return string
      */
     public static function allowed_label(array $value): string {
@@ -370,7 +373,8 @@ final class location_selection {
      * without any pointer writes. Only changed targets gain history entries;
      * without real changes, leave the pointer untouched.
      *
-     * @param array<string, array{type: string, instanceid?: int, path?: string, confirmed?: bool}> $selection
+     * @param array $selection
+     * @phpstan-param array<string,array{type:string,instanceid?:int,path?:string,confirmed?:bool}> $selection
      *        For each target either ['type' => 'moodle'] or
      *        ['type' => 'external', 'instanceid' => int, 'path' => string, 'confirmed' => bool].
      *        confirmed applies only to context_area (#518, Spec §5):
@@ -417,7 +421,8 @@ final class location_selection {
      * Resolves and validates requested targets (root restriction, IServ, access;
      * see {@see build_target()}).
      *
-     * @param array<string, array{type?: string, instanceid?: int, path?: string}> $selection
+     * @param array $selection
+     * @phpstan-param array<string,array{type?:string,instanceid?:int,path?:string}> $selection
      * @return array<string, array{location: string, path: string, instanceid?: int, fingerprint?: array}>
      */
     private static function resolve_wanted_targets(array $selection): array {
@@ -446,8 +451,10 @@ final class location_selection {
      * already exists by definition (Spec: newly selected folder). Create all
      * folders before {@see apply()} saves anything.
      *
-     * @param array<string, array{location: string, path: string, instanceid?: int}> $wanted
-     * @param array<string, array{location: string, path: string, instanceid?: int}> $current
+     * @param array $wanted
+     * @phpstan-param array<string,array{location:string,path:string,instanceid?:int}> $wanted
+     * @param array $current
+     * @phpstan-param array<string,array{location:string,path:string,instanceid?:int}> $current
      */
     private static function create_new_external_folders(array $wanted, array $current): void {
         foreach (self::TARGETS as $target) {
@@ -463,8 +470,10 @@ final class location_selection {
      * with provable legacy context, keeping exactly one previous location.
      * Its files remain untouched. A material-only move leaves that field unchanged.
      *
-     * @param array<string, array{location: string, path: string, instanceid?: int, fingerprint?: array}> $wanted
-     * @param array<string, array{location: string, path: string, instanceid?: int, fingerprint?: array}> $current
+     * @param array $wanted
+     * @phpstan-param array<string,array{location:string,path:string,instanceid?:int,fingerprint?:array}> $wanted
+     * @param array $current
+     * @phpstan-param array<string,array{location:string,path:string,instanceid?:int,fingerprint?:array}> $current
      * @return array{changed: string[], location_history: array, previouslocation: ?array}
      */
     private static function record_changes(array $wanted, array $current): array {
@@ -516,7 +525,8 @@ final class location_selection {
      * Whether the old context location contains provable entries (#498, Spec §5).
      * Location selection already communicates with both stores while choosing.
      *
-     * @param array{location: string, path: string, instanceid?: int, fingerprint?: array} $old
+     * @param array $old
+     * @phpstan-param array{location:string,path:string,instanceid?:int,fingerprint?:array} $old
      * @return bool
      * @throws \moodle_exception locationselectionexternalerror for actual connection failure
      *         (not an invalid old location).
@@ -550,6 +560,8 @@ final class location_selection {
     }
 
     /**
+     * Provides area.
+     *
      * @param string $target
      * @return storage_area
      */
@@ -558,6 +570,8 @@ final class location_selection {
     }
 
     /**
+     * Provides current pointer value.
+     *
      * @param string $target
      * @return array{location: string, path: string, instanceid?: int, fingerprint?: array}
      */
@@ -583,8 +597,11 @@ final class location_selection {
     }
 
     /**
+     * Builds target.
+     *
      * @param string $target
-     * @param array{type?: string, instanceid?: int, path?: string} $selection
+     * @param array $selection
+     * @phpstan-param array{type?:string,instanceid?:int,path?:string} $selection
      * @return array{location: string, path: string, instanceid?: int, fingerprint?: array}
      * @throws \moodle_exception locationselectionselectioninvalid, or errors from {@see webdav_instance::resolve_owned()}.
      */
@@ -633,8 +650,10 @@ final class location_selection {
      * material storage cannot be inside or equal to the context area. Validate
      * new targets before any folder creation or persistence.
      *
-     * @param array{location: string, path: string, instanceid?: int, fingerprint?: array} $contextarea
-     * @param array{location: string, path: string, instanceid?: int, fingerprint?: array} $materialstore
+     * @param array $contextarea
+     * @phpstan-param array{location:string,path:string,instanceid?:int,fingerprint?:array} $contextarea
+     * @param array $materialstore
+     * @phpstan-param array{location:string,path:string,instanceid?:int,fingerprint?:array} $materialstore
      * @throws \moodle_exception materialstoreincontext
      */
     private static function assert_no_overlap(array $contextarea, array $materialstore): void {
@@ -652,9 +671,12 @@ final class location_selection {
      *
      * Only context_area needs confirmation; material-store changes do not.
      *
-     * @param array<string, array{location: string, path: string, instanceid?: int}> $wanted
-     * @param array<string, array{location: string, path: string, instanceid?: int}> $current
-     * @param array<string, array{confirmed?: bool}> $selection Raw input passed to {@see apply()}.
+     * @param array $wanted
+     * @phpstan-param array<string,array{location:string,path:string,instanceid?:int}> $wanted
+     * @param array $current
+     * @phpstan-param array<string,array{location:string,path:string,instanceid?:int}> $current
+     * @param array $selection Raw input passed to {@see apply()}.
+     * @phpstan-param array<string,array{confirmed?:bool}> $selection
      * @throws \moodle_exception locationselectionfolderconfirmrequired
      */
     private static function assert_folder_handover_confirmed(array $wanted, array $current, array $selection): void {
@@ -673,7 +695,10 @@ final class location_selection {
     }
 
     /**
-     * @param array{location: string, path: string, instanceid?: int, fingerprint?: array} $value
+     * Provides to pointer location.
+     *
+     * @param array $value
+     * @phpstan-param array{location:string,path:string,instanceid?:int,fingerprint?:array} $value
      * @return pointer_location
      */
     private static function to_pointer_location(array $value): pointer_location {
@@ -724,6 +749,8 @@ final class location_selection {
     }
 
     /**
+     * Describes location.
+     *
      * @param array $value
      * @return string
      */
@@ -735,6 +762,8 @@ final class location_selection {
     }
 
     /**
+     * Describes external.
+     *
      * @param int $instanceid
      * @param string $path
      * @return string

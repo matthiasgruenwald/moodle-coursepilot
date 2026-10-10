@@ -58,10 +58,16 @@ final class webdav_instance {
     /** @var string The only IServ area under which a choice is allowed for IServ (Issue #497, Spec §5). */
     public const ISERV_FILES_AREA = 'Files';
 
+    /**
+     * Iserv areas.
+     */
     private const ISERV_AREAS = [self::ISERV_FILES_AREA, 'Groups', 'Print', 'Temp', 'Windows'];
 
     /**
+     * Resolves the webdav instance.
+     *
      * @param pointer_location $location Must be {@see pointer_location::EXTERNAL}.
+     * @param ?webdav_transport $transport The transport.
      * @return resolved_webdav_instance
      * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/
      *         webdavauthunsupported/webdavfingerprintchanged
@@ -88,6 +94,7 @@ final class webdav_instance {
      * writes into the pointer on completion ({@see fingerprint_of()}).
      *
      * @param int $instanceid
+     * @param ?webdav_transport $transport The transport.
      * @return resolved_webdav_instance
      * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/webdavauthunsupported
      */
@@ -133,7 +140,8 @@ final class webdav_instance {
      * fake through Moodle's request-local DI container; production receives
      * the regular cURL transport.
      *
-     * @param array<string, string|null> $options
+     * @param array $options
+     * @phpstan-param array<string,string|null> $options
      */
     private static function transport(array $options): webdav_transport {
         try {
@@ -181,7 +189,8 @@ final class webdav_instance {
      * (throws) and {@see has_supported_auth()} (does not throw) - Issue #497
      * standards review: both previously knew the condition once each, inverted.
      *
-     * @param array<string, string|null> $options
+     * @param array $options
+     * @phpstan-param array<string,string|null> $options
      * @return bool
      */
     private static function auth_supported(array $options): bool {
@@ -196,6 +205,7 @@ final class webdav_instance {
      * resolution checks without network (§2, check 8).
      *
      * @param int $instanceid
+     * @param ?webdav_transport $transport The transport.
      * @return bool
      * @throws \moodle_exception wie {@see resolve_owned()}.
      * @throws \local_coursepilot\webdav\webdav_error on a network error - to be handled by the caller.
@@ -206,7 +216,10 @@ final class webdav_instance {
     }
 
     /**
-     * @param array<int, array{name: string, type: string}> $entries Root level, {@see webdav_client::propfind()}.
+     * Tells whether the webdav instance is iserv listing.
+     *
+     * @param array $entries Root level, {@see webdav_client::propfind()}.
+     * @phpstan-param array<int,array{name:string,type:string}> $entries
      * @return bool
      */
     public static function is_iserv_listing(array $entries): bool {
@@ -238,7 +251,10 @@ final class webdav_instance {
     }
 
     /**
-     * @param array<string, string|null> $options
+     * Provides fingerprint.
+     *
+     * @param array $options
+     * @phpstan-param array<string,string|null> $options
      * @return array{server: string, basepath: string, account: string}
      */
     private static function fingerprint(array $options): array {
@@ -250,6 +266,8 @@ final class webdav_instance {
     }
 
     /**
+     * Provides normalised fingerprint.
+     *
      * @param array $fingerprint Raw from the pointer.
      * @return array{server: string, basepath: string, account: string}
      */
@@ -262,7 +280,10 @@ final class webdav_instance {
     }
 
     /**
-     * @param array<string, string|null> $options
+     * Returns https address of the instance incl. base path, with trailing "/".
+     *
+     * @param array $options
+     * @phpstan-param array<string,string|null> $options
      * @return string https address of the instance incl. base path, with trailing "/".
      */
     private static function base_url(array $options): string {

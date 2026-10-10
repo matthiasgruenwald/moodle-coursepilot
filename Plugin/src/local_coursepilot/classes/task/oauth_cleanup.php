@@ -26,6 +26,8 @@ namespace local_coursepilot\task;
  */
 final class oauth_cleanup extends \core\task\scheduled_task {
     /**
+     * Returns name.
+     *
      * @return string
      */
     public function get_name(): string {

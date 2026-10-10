@@ -1115,6 +1115,8 @@ final class location_selection_test extends \advanced_testcase {
     private int $lastinstanceid = 0;
 
     /**
+     * Prepares instance.
+     *
      * @return array{0: \stdClass, 1: fake_webdav_transport}
      */
     private function prepare_instance(): array {

@@ -54,11 +54,17 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class write_target {
     /**
-     * @param array<string, mixed> $changes Explicitly named fields.
-     * @param array<string, mixed> $state Effective target: defaults/current overlaid with $changes.
+     * Creates the write target.
+     *
+     * @param array $changes Explicitly named fields.
+     * @phpstan-param array<string,mixed> $changes
+     * @param array $state Effective target: defaults/current overlaid with $changes.
+     * @phpstan-param array<string,mixed> $state
      */
     private function __construct(
+        /** @var array The changes. */
         public readonly array $changes,
+        /** @var array The state. */
         public readonly array $state
     ) {
     }
@@ -66,8 +72,10 @@ final class write_target {
     /**
      * Checks a new activity: missing fields take their catalog form default.
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array<string, mixed> $changes
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param array $changes
+     * @phpstan-param array<string,mixed> $changes
      * @param string[] $confirmedlocks
      * @return self
      * @throws moodle_exception on any rejected rule; nothing is written.
@@ -89,9 +97,12 @@ final class write_target {
     /**
      * Checks a patch on an existing activity against its current state.
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array<string, mixed> $changes
-     * @param array<string, mixed> $current Current state in catalog vocabulary.
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param array $changes
+     * @phpstan-param array<string,mixed> $changes
+     * @param array $current Current state in catalog vocabulary.
+     * @phpstan-param array<string,mixed> $current
      * @param string[] $confirmedlocks
      * @return self
      * @throws moodle_exception on any rejected rule; nothing is written.
@@ -113,10 +124,12 @@ final class write_target {
      * target, check file references, then resolve files and run
      * add_moduleinfo() transactionally.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param \stdClass $course
      * @param int $sectionnum
-     * @param array<string, mixed> $fields Named fields as sent by the client.
+     * @param array $fields Named fields as sent by the client.
+     * @phpstan-param array<string,mixed> $fields
      * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH}.
      * @param string[] $confirmedlocks
      * @return array{cmid: int, changes: array<string, mixed>} New cmid and the normalised named fields.
@@ -167,11 +180,14 @@ final class write_target {
      * the current state, check file references, then trash replaced
      * files, resolve drafts and run update_moduleinfo() transactionally.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param \stdClass $cm
      * @param \stdClass $course
-     * @param array<string, mixed> $patch Named fields as sent by the client.
-     * @param array<string, mixed> $current Current state in catalog vocabulary.
+     * @param array $patch Named fields as sent by the client.
+     * @phpstan-param array<string,mixed> $patch
+     * @param array $current Current state in catalog vocabulary.
+     * @phpstan-param array<string,mixed> $current
      * @param string $location
      * @param string[] $confirmedlocks
      * @return array<string, mixed> The normalised patch.
@@ -220,7 +236,10 @@ final class write_target {
     }
 
     /**
-     * @param class-string<module_catalog> $catalogclass
+     * Asserts rules.
+     *
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @return void
      * @throws moodle_exception combinationruleviolation|stealthnotallowed
      */
@@ -264,7 +283,10 @@ final class write_target {
     }
 
     /**
-     * @param array{reference: string, field: string} $rule
+     * Provides touches.
+     *
+     * @param array $rule
+     * @phpstan-param array{reference:string,field:string} $rule
      * @return bool True when a change names one of the rule's fields.
      */
     private function touches(array $rule): bool {
@@ -272,7 +294,10 @@ final class write_target {
     }
 
     /**
-     * @param class-string<module_catalog> $catalogclass
+     * Provides violation.
+     *
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param string $message
      * @return never
      */
@@ -287,8 +312,10 @@ final class write_target {
      * Catalog form defaults (not DB column defaults) for every field not
      * named, plus the admin-configured defaults declared in write_options().
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array<string, mixed> $changes
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param array $changes
+     * @phpstan-param array<string,mixed> $changes
      * @return array<string, mixed>
      */
     private static function form_defaults(string $catalogclass, array $changes): array {
@@ -311,8 +338,10 @@ final class write_target {
      * A required field without a form default must be named; all missing
      * fields are reported at once (#404).
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array<string, mixed> $changes
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param array $changes
+     * @phpstan-param array<string,mixed> $changes
      * @return void
      * @throws moodle_exception requiredfieldwithoutdefault
      */
@@ -332,7 +361,10 @@ final class write_target {
     }
 
     /**
-     * @param class-string<module_catalog> $catalogclass
+     * Provides all fields.
+     *
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @return field[]
      */
     private static function all_fields(string $catalogclass): array {
@@ -343,7 +375,8 @@ final class write_target {
      * Writes the checked changes onto the native form object and resolves
      * file pseudofields into drafts. Runs inside the write transaction.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param \stdClass $moduleinfo Overlaid in place.
      * @param context $context Draft target context.
      * @param string $location
@@ -386,8 +419,11 @@ final class write_target {
     }
 
     /**
+     * Returns draft itemid.
+     *
      * @param context $context
-     * @param array{component: string, filearea: string} $spec
+     * @param array $spec
+     * @phpstan-param array{component:string,filearea:string} $spec
      * @param array $paths Checked by {@see self::assert_file_references()}.
      * @param string $location
      * @param bool $replacing
@@ -419,8 +455,10 @@ final class write_target {
      * Validates file pseudofields before any file is touched: the file
      * capability first, then list shapes and the embed whitelist.
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array<string, mixed> $changes
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param array $changes
+     * @phpstan-param array<string,mixed> $changes
      * @return void
      * @throws moodle_exception invalidmaterialreferencelist|materialfiledisallowedtype
      * @throws \required_capability_exception without moodle/user:manageownfiles
@@ -459,8 +497,10 @@ final class write_target {
     /**
      * Brings named create fields into the form the catalog rules judge.
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array<string, mixed> $fields Normalised in place.
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param array $fields Normalised in place.
+     * @phpstan-param array<string,mixed> $fields
      * @return void
      * @throws moodle_exception invalideditorpseudofield
      */

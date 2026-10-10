@@ -67,7 +67,8 @@ final class dispatcher {
      *        null if decoding failed (parse-error case).
      * @param string|null $token The Bearer token already extracted from
      *        the Authorization header.
-     * @param array{origin: ?string, pathinfo: ?string, method: ?string, protocolversion?: ?string} $headers
+     * @param array $headers
+     * @phpstan-param array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string} $headers
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     public static function handle(?array $request, ?string $token, array $headers): array {
@@ -109,7 +110,8 @@ final class dispatcher {
      *
      * @param array|null $request
      * @param string|null $token
-     * @param array{origin: ?string, pathinfo: ?string, method: ?string, protocolversion?: ?string} $headers
+     * @param array $headers
+     * @phpstan-param array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string} $headers
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     private static function handle_authorized(?array $request, ?string $token, array $headers): array {
@@ -257,7 +259,8 @@ final class dispatcher {
      *
      * @param mixed $id
      * @param array $params
-     * @param array{origin: ?string, pathinfo: ?string, method: ?string, protocolversion?: ?string} $headers
+     * @param array $headers
+     * @phpstan-param array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string} $headers
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     private static function handle_tools_call($id, array $params, array $headers): array {
@@ -396,7 +399,8 @@ final class dispatcher {
      * forgotten tools/call error branch made all tool messages unreadable.
      * initialize/server/discover precede negotiation; absent headers select legacy.
      *
-     * @param array{protocolversion?: ?string} $headers
+     * @param array $headers
+     * @phpstan-param array{protocolversion?:?string} $headers
      * @param string $resulttype 'complete', the revision's only success value
      *        for every result.
      * @param int|null $ttlms Freshness in milliseconds for list results only.
@@ -493,8 +497,14 @@ final class dispatcher {
     }
 
     /**
+     * Provides error.
+     *
+     * @param int $status The status.
      * @param mixed $id
-     * @param array<string, string> $extraheaders
+     * @param int $code The code.
+     * @param string $message The message.
+     * @param array $extraheaders
+     * @phpstan-param array<string,string> $extraheaders
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     private static function error(int $status, $id, int $code, string $message, array $extraheaders = []): array {
@@ -512,7 +522,11 @@ final class dispatcher {
     }
 
     /**
-     * @param array<string, string> $headers
+     * Provides result.
+     *
+     * @param int $status The status.
+     * @param array $headers
+     * @phpstan-param array<string,string> $headers
      * @param array|null $body
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */

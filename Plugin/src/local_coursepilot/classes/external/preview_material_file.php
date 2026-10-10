@@ -45,6 +45,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class preview_material_file extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -55,6 +57,8 @@ class preview_material_file extends external_api {
     }
 
     /**
+     * Runs the preview material file tool.
+     *
      * @param string $path
      * @param string $location
      * @return array
@@ -142,6 +146,8 @@ class preview_material_file extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

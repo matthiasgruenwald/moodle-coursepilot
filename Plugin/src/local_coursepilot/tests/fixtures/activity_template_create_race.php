@@ -17,6 +17,11 @@
 // preflight but before persistence. Keep the namespace override in this child only.
 
 namespace local_coursepilot {
+    /**
+     * Returns file storage.
+     *
+     * @param mixed $reset The reset.
+     */
     function get_file_storage($reset = false) {
         $fs = \get_file_storage($reset);
         if (!$reset) {

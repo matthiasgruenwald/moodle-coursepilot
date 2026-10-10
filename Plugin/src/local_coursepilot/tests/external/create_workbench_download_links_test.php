@@ -94,6 +94,12 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         create_workbench_download_links::execute(['nichtvorhanden.pdf']);
     }
 
+    /**
+     * Provides issue connection.
+     *
+     * @param int $userid The userid.
+     * @return int
+     */
     private function issue_connection(int $userid): int {
         global $DB;
 
@@ -116,6 +122,12 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         return (int) $DB->insert_record('local_coursepilot_oauth_token', $record);
     }
 
+    /**
+     * Stores the create workbench download links test.
+     *
+     * @param string $path The path.
+     * @param string $content The content.
+     */
     private function store(string $path, string $content): void {
         [$directory, $filename] = material_files::resolve_file($path);
         get_file_storage()->create_file_from_string([

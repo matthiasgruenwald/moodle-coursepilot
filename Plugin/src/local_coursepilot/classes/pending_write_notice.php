@@ -153,7 +153,10 @@ final class pending_write_notice {
     }
 
     /**
-     * @param array<string, array{timestamp: int, path: string, operation: string, error_class: string, course_id: int}> $entries
+     * Saves the pending write notice.
+     *
+     * @param array $entries
+     * @phpstan-param array<string,array{timestamp:int,path:string,operation:string,error_class:string,course_id:int}> $entries
      * @throws \moodle_exception pendingnotequotaexceeded
      */
     private static function save(array $entries): void {
@@ -184,7 +187,10 @@ final class pending_write_notice {
     }
 
     /**
-     * @param array<string, mixed> $existing Already assigned identifiers (keys).
+     * Generates identifier.
+     *
+     * @param array $existing Already assigned identifiers (keys).
+     * @phpstan-param array<string,mixed> $existing
      * @return string
      */
     private static function generate_identifier(array $existing): string {

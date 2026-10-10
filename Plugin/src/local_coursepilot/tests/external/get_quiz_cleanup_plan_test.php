@@ -132,6 +132,8 @@ final class get_quiz_cleanup_plan_test extends \advanced_testcase {
     }
 
     /**
+     * Creates course with quiz.
+     *
      * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass}
      */
     private function create_course_with_quiz(): array {
@@ -145,6 +147,8 @@ final class get_quiz_cleanup_plan_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

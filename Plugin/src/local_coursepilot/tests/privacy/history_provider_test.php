@@ -79,6 +79,8 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
     }
 
     /**
+     * Adds file.
+     *
      * @param string $component
      * @param string $filearea
      * @param string $filename
@@ -94,6 +96,8 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
     }
 
     /**
+     * Adds version.
+     *
      * @param \stdClass $cm
      * @param int $version
      * @param int $userid
@@ -116,6 +120,8 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
     }
 
     /**
+     * Counts versions.
+     *
      * @param int $userid
      * @param \stdClass $cm
      * @return int
@@ -125,7 +131,9 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
         return $DB->count_records('local_coursepilot_cm_version', ['userid' => $userid, 'cmid' => $cm->id]);
     }
 
-    /** Count of version_file links pointing at no existing state. */
+    /**
+     * Count of version_file links pointing at no existing state.
+     */
     private function dangling_links(): int {
         global $DB;
         return $DB->count_records_sql('SELECT COUNT(1) FROM {local_coursepilot_cm_version_file} vf

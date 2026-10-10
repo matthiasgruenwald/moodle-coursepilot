@@ -91,6 +91,8 @@ final class get_sections_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
@@ -100,6 +102,8 @@ final class get_sections_test extends \advanced_testcase {
     }
 
     /**
+     * Finds section.
+     *
      * @param array $result
      * @param int $sectionnum
      * @return array|null

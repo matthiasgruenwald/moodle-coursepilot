@@ -47,7 +47,9 @@ abstract class storage_port_contract_test extends \advanced_testcase {
      */
     abstract protected function area(): storage_area;
 
-    /** WebDAV is outside Moodle's user quota. */
+    /**
+     * WebDAV is outside Moodle's user quota.
+     */
     protected function applies_user_quota(): bool {
         return true;
     }

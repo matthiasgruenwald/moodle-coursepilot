@@ -122,11 +122,22 @@ final class activity_backup {
         }
     }
 
+    /**
+     * Provides backup path.
+     *
+     * @param string $backupid The backupid.
+     * @return string
+     */
     private static function backup_path(string $backupid): string {
         global $CFG;
         return $CFG->tempdir . '/backup/' . $backupid;
     }
 
+    /**
+     * Provides discard tempdir.
+     *
+     * @param string $backupid The backupid.
+     */
     private static function discard_tempdir(string $backupid): void {
         global $CFG;
         if (empty($CFG->keeptempdirectoriesonbackup)) {
@@ -134,6 +145,12 @@ final class activity_backup {
         }
     }
 
+    /**
+     * Provides modname of.
+     *
+     * @param string $xml The xml.
+     * @return string
+     */
     private static function modname_of(string $xml): string {
         $dom = new \DOMDocument();
         $modname = $dom->loadXML($xml, LIBXML_NONET) ? $dom->documentElement->getAttribute('modulename') : '';
@@ -149,6 +166,10 @@ final class activity_backup {
     /**
      * Builds the backup scaffold (the 16 files Moodle expects) around one activity XML.
      *
+     * @param string $activityxml The activityxml.
+     * @param string $modname The modname.
+     * @param int $sectionnum The sectionnum.
+     * @param bool $hidden The hidden.
      * @return string backup id
      */
     private static function scaffold(string $activityxml, string $modname, int $sectionnum, bool $hidden): string {
@@ -199,6 +220,14 @@ final class activity_backup {
         return $backupid;
     }
 
+    /**
+     * Provides moodle backup xml.
+     *
+     * @param string $modname The modname.
+     * @param string $dir The dir.
+     * @param int $now The now.
+     * @return string
+     */
     private static function moodle_backup_xml(string $modname, string $dir, int $now): string {
         global $CFG;
         $cmid = self::SYNTH_CMID;
@@ -231,6 +260,13 @@ final class activity_backup {
             . "<settings>$settings</settings></information></moodle_backup>";
     }
 
+    /**
+     * Runs restore.
+     *
+     * @param string $backupid The backupid.
+     * @param int $courseid The courseid.
+     * @return int
+     */
     private static function run_restore(string $backupid, int $courseid): int {
         global $USER;
         $rc = new \restore_controller(

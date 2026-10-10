@@ -31,6 +31,8 @@ use local_coursepilot\personal_data_hosts;
  */
 final class connection_storage_location {
     /**
+     * Describes the connection storage location.
+     *
      * @param int $userid
      * @return array{targets: array<string, string>, markers: string[]}
      *         targets: completed display line per target (e.g. "Context area: external: cloud.example.test").
@@ -73,7 +75,10 @@ final class connection_storage_location {
     }
 
     /**
-     * @param array{state: string, host: ?string, defect: ?string} $state
+     * Provides state label.
+     *
+     * @param array $state
+     * @phpstan-param array{state:string,host:?string,defect:?string} $state
      * @return string
      */
     private static function state_label(array $state): string {
@@ -86,6 +91,8 @@ final class connection_storage_location {
     }
 
     /**
+     * Provides defect label.
+     *
      * @param string $defect One of the pointer_scan DEFECT_* values.
      * @return string
      */

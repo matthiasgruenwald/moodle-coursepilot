@@ -27,6 +27,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
+ * Provides xmldb local coursepilot upgrade.
+ *
  * @param int $oldversion
  * @return bool
  */

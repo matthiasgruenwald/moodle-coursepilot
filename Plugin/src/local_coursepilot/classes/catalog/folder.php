@@ -39,10 +39,20 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class folder implements module_catalog {
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'folder';
     }
 
+    /**
+     * Provides fields.
+     *
+     * @return array
+     */
     public static function fields(): array {
         return [
             new field(
@@ -119,10 +129,23 @@ final class folder implements module_catalog {
         ];
     }
 
+    /**
+     * Provides state.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
+     * @return array
+     */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return module_state::unknown(self::modname(), $instanceid, $fullcontent);
     }
 
+    /**
+     * Writes options.
+     *
+     * @return array
+     */
     public static function write_options(): array {
         return [
             'material_reference_fields' => ['files' => \local_coursepilot\material_files::CONTENT_FILEAREAS['folder']],
@@ -131,10 +154,20 @@ final class folder implements module_catalog {
         ];
     }
 
+    /**
+     * Provides common field names.
+     *
+     * @return array
+     */
     public static function common_field_names(): array {
         return array_map(static fn (field $f): string => $f->name, self::fields());
     }
 
+    /**
+     * Provides pseudofields.
+     *
+     * @return array
+     */
     public static function pseudofields(): array {
         return [
             new field(
@@ -158,12 +191,22 @@ final class folder implements module_catalog {
         ];
     }
 
+    /**
+     * Provides blocklist.
+     *
+     * @return array
+     */
     public static function blocklist(): array {
         return [
             'revision',
         ];
     }
 
+    /**
+     * Provides combination rules.
+     *
+     * @return array
+     */
     public static function combination_rules(): array {
         return [
             'display=1 (inline) is incompatible with automatic completion tracking on view '
@@ -172,6 +215,11 @@ final class folder implements module_catalog {
         ];
     }
 
+    /**
+     * Provides side effects.
+     *
+     * @return array
+     */
     public static function side_effects(): array {
         return [
             'folder can also be created without "files" - an empty folder is valid, unlike resource without '
@@ -179,26 +227,57 @@ final class folder implements module_catalog {
         ];
     }
 
+    /**
+     * Provides bundles.
+     *
+     * @return array
+     */
     public static function bundles(): array {
         return [];
     }
 
+    /**
+     * Writes route.
+     *
+     * @return ?string
+     */
     public static function write_route(): ?string {
         return null;
     }
 
+    /**
+     * Provides checked constants.
+     *
+     * @return array
+     */
     public static function checked_constants(): array {
         return ['FOLDER_DISPLAY_PAGE', 'FOLDER_DISPLAY_INLINE'];
     }
 
+    /**
+     * Provides learner locks.
+     *
+     * @return array
+     */
     public static function learner_locks(): array {
         return [];
     }
 
+    /**
+     * Provides grade origin.
+     *
+     * @param int $instanceid The instanceid.
+     * @return string
+     */
     public static function grade_origin(int $instanceid = 0): string {
         return learner_locks::GRADE_NONE;
     }
 
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

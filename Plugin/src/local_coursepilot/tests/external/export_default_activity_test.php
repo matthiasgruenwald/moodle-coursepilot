@@ -32,7 +32,11 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(export_default_activity::class)]
 final class export_default_activity_test extends \advanced_testcase {
-    /** @return array{0: \stdClass, 1: \stdClass} course and teacher (logged in) */
+    /**
+     * Sets up teacher.
+     *
+     * @return array{0: \stdClass, 1: \stdClass} course and teacher (logged in)
+     */
     private function setup_teacher(): array {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
@@ -42,7 +46,11 @@ final class export_default_activity_test extends \advanced_testcase {
         return [$course, $teacher];
     }
 
-    /** Everything a leftover activity could touch. */
+    /**
+     * Everything a leftover activity could touch.
+     *
+     * @param int $courseid The courseid.
+     */
     private function footprint(int $courseid): array {
         global $DB;
         return [

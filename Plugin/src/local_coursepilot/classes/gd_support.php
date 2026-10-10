@@ -41,6 +41,8 @@ final class gd_support {
     private static ?bool $overridefortests = null;
 
     /**
+     * Provides available.
+     *
      * @return bool
      */
     public static function available(): bool {

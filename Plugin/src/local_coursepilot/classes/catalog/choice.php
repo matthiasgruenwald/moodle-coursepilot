@@ -57,10 +57,20 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class choice implements module_catalog {
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'choice';
     }
 
+    /**
+     * Provides fields.
+     *
+     * @return array
+     */
     public static function fields(): array {
         return [
             new field(
@@ -231,10 +241,23 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Provides state.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
+     * @return array
+     */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return module_state::unknown(self::modname(), $instanceid, $fullcontent);
     }
 
+    /**
+     * Writes options.
+     *
+     * @return array
+     */
     public static function write_options(): array {
         return [
             'scalar_to_repeated' => ['limit' => 'option'],
@@ -258,10 +281,20 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Provides common field names.
+     *
+     * @return array
+     */
     public static function common_field_names(): array {
         return array_map(static fn (field $f): string => $f->name, self::fields());
     }
 
+    /**
+     * Provides pseudofields.
+     *
+     * @return array
+     */
     public static function pseudofields(): array {
         return [
             new field(
@@ -308,12 +341,22 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Provides blocklist.
+     *
+     * @return array
+     */
     public static function blocklist(): array {
         return [
             'completionsubmit',
         ];
     }
 
+    /**
+     * Provides combination rules.
+     *
+     * @return array
+     */
     public static function combination_rules(): array {
         return [
             '"limit[]" must have as many entries as "option[]" (same key in '
@@ -323,6 +366,11 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Provides side effects.
+     *
+     * @return array
+     */
     public static function side_effects(): array {
         return [
             'Switching "publish" from anonymous (0) to named (1) makes answers already given '
@@ -332,6 +380,11 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Provides bundles.
+     *
+     * @return array
+     */
     public static function bundles(): array {
         return [
             'allocation' => [
@@ -345,14 +398,29 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Writes route.
+     *
+     * @return ?string
+     */
     public static function write_route(): ?string {
         return null;
     }
 
+    /**
+     * Provides checked constants.
+     *
+     * @return array
+     */
     public static function checked_constants(): array {
         return [];
     }
 
+    /**
+     * Provides learner locks.
+     *
+     * @return array
+     */
     public static function learner_locks(): array {
         // allowupdate: the form default 0 is itself a lock. It counts
         // on creation too (#583) - whoever wants to create it open names
@@ -365,10 +433,21 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Provides grade origin.
+     *
+     * @param int $instanceid The instanceid.
+     * @return string
+     */
     public static function grade_origin(int $instanceid = 0): string {
         return learner_locks::GRADE_NONE;
     }
 
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

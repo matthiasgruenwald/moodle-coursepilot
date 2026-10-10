@@ -36,6 +36,11 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class compose_material_file extends external_api {
+    /**
+     * Describes the parameters of execute.
+     *
+     * @return external_function_parameters
+     */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'parts' => new external_multiple_structure(new external_single_structure([
@@ -69,6 +74,8 @@ class compose_material_file extends external_api {
     }
 
     /**
+     * Runs the compose material file tool.
+     *
      * @param array $parts Ordered source parts.
      * @param string $arrangement vertical or horizontal.
      * @param string $targetpath Workbench PNG path.
@@ -107,7 +114,12 @@ class compose_material_file extends external_api {
         ];
     }
 
-    /** @return array{0: array, 1: string[]} Validated source bytes and descriptions. */
+    /**
+     * Reads sources.
+     *
+     * @param array $parts The parts.
+     * @return array{0: array, 1: string[]} Validated source bytes and descriptions.
+     */
     private static function read_sources(array $parts): array {
         $inputs = [];
         $sources = [];
@@ -136,6 +148,11 @@ class compose_material_file extends external_api {
         return [$inputs, $sources];
     }
 
+    /**
+     * Describes the return value of execute.
+     *
+     * @return external_single_structure
+     */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'path' => new external_value(PARAM_TEXT, 'Resolved PNG target path relative to the workbench root'),

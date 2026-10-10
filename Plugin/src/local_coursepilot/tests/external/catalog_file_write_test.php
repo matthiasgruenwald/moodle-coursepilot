@@ -245,6 +245,8 @@ final class catalog_file_write_test extends \advanced_testcase {
     }
 
     /**
+     * Provides rejected creates.
+     *
      * @return array<string, array{0: array, 1: string}>
      */
     public static function rejected_creates(): array {
@@ -353,6 +355,8 @@ final class catalog_file_write_test extends \advanced_testcase {
     }
 
     /**
+     * Stores material.
+     *
      * @param string $path
      * @param string $content
      */
@@ -370,6 +374,8 @@ final class catalog_file_write_test extends \advanced_testcase {
     }
 
     /**
+     * Returns PNG bytes.
+     *
      * @param int $size
      * @return string PNG bytes.
      */

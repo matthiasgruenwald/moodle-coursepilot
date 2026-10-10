@@ -91,23 +91,36 @@ final class webdav_storage_port implements storage_port {
     ];
 
     /**
+     * Creates the webdav storage port.
+     *
      * @param int $instanceid The WebDAV user instance, exclusively from
      *        a server-side source (never from client input) -
      *        instance ownership is checked by {@see webdav_instance::resolve_owned()}.
      * @param string $baserelativepath Base folder within the instance in
      *        which this adapter works. Empty means: the instance root.
+     * @param ?webdav_transport $transport The transport.
+     * @param ?pointer_location $location The location.
+     * @param int $courseid The courseid.
      */
     public function __construct(
+        /** @var int The WebDAV user instance, exclusively from */
         private readonly int $instanceid,
+        /** @var string Base folder within the instance in */
         private readonly string $baserelativepath = '',
+        /** @var ?webdav_transport The transport. */
         private readonly ?webdav_transport $transport = null,
+        /** @var ?pointer_location The location. */
         private readonly ?pointer_location $location = null,
+        /** @var int The courseid. */
         private readonly int $courseid = 0,
     ) {
     }
 
     /**
-     * @inheritDoc
+     * Reads the webdav storage port.
+     *
+     * @param storage_area $area The area.
+     * @param string $path The path.
      */
     public function read(storage_area $area, string $path): ?array {
         [$folders, $filename] = $this->split_file_path($area, $path);
@@ -146,7 +159,10 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * @inheritDoc
+     * Lists the webdav storage port.
+     *
+     * @param storage_area $area The area.
+     * @param string $path The path.
      */
     public function list(storage_area $area, string $path): array {
         $clientdirectory = storage_anchor::normalise_client_path($area, $path);
@@ -174,7 +190,12 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * @inheritDoc
+     * Writes the webdav storage port.
+     *
+     * @param storage_area $area The area.
+     * @param string $path The path.
+     * @param string $content The content.
+     * @param ?string $expectedchecksum The expectedchecksum.
      */
     public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
@@ -211,7 +232,12 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * @inheritDoc
+     * Appends the webdav storage port.
+     *
+     * @param storage_area $area The area.
+     * @param string $path The path.
+     * @param string $content The content.
+     * @param ?string $expectedchecksum The expectedchecksum.
      */
     public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
@@ -315,7 +341,10 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * @inheritDoc
+     * Deletes the webdav storage port.
+     *
+     * @param storage_area $area The area.
+     * @param string $path The path.
      */
     public function delete(storage_area $area, string $path): bool {
         [$folders, $filename] = $this->split_file_path($area, $path);
@@ -368,6 +397,8 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
+     * Returns segments of the base folder, without empty parts.
+     *
      * @return string[] Segments of the base folder, without empty parts.
      */
     private function base_segments(): array {
@@ -378,6 +409,8 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
+     * Returns base folder segments followed by $extra.
+     *
      * @param string[] $extra
      * @return string[] Base folder segments followed by $extra.
      */
@@ -386,6 +419,8 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
+     * Returns full instance-relative path of a file.
+     *
      * @param string[] $folders
      * @param string $filename
      * @return string Full instance-relative path of a file.
@@ -418,6 +453,9 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
+     * Requires pointer root.
+     *
+     * @param resolved_webdav_instance $resolved The resolved.
      * @throws webdav_error
      * @throws \moodle_exception contextrootmissing
      */
@@ -462,7 +500,8 @@ final class webdav_storage_port implements storage_port {
      * @param webdav_client $client
      * @param string $fileurl
      * @param string $content
-     * @param array{etag: ?string, timemodified: int, size: int}|null $existing
+     * @param ?array $existing
+     * @phpstan-param array{etag:?string,timemodified:int,size:int}|null $existing
      * @param string $clientpath For the error message.
      * @throws storage_conflict_exception
      * @throws webdav_error every other error.
@@ -487,7 +526,8 @@ final class webdav_storage_port implements storage_port {
      * current state - even if the file is now missing entirely.
      * No comparison if no check value was passed (`null`).
      *
-     * @param array{etag: ?string, timemodified: int, size: int}|null $existing
+     * @param ?array $existing
+     * @phpstan-param array{etag:?string,timemodified:int,size:int}|null $existing
      * @param string|null $expectedchecksum
      * @param string $clientpath For the error message.
      * @throws storage_conflict_exception

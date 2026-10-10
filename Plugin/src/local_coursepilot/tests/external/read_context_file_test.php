@@ -43,7 +43,9 @@ final class read_context_file_test extends \advanced_testcase {
         parent::tearDown();
     }
 
-    /** Canonical names resolve existing German files without migrating storage. */
+    /**
+     * Canonical names resolve existing German files without migrating storage.
+     */
     public function test_canonical_names_read_legacy_files_and_return_actual_paths(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
@@ -523,6 +525,8 @@ final class read_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Creates context file.
+     *
      * @param \stdClass $user
      * @param string $filepath
      * @param string $filename

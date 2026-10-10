@@ -29,6 +29,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(create_quiz::class)]
 final class create_quiz_test extends \advanced_testcase {
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -65,6 +67,8 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * Creates the create quiz test.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param array $felder
@@ -88,6 +92,8 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * Returns raw quiz table row.
+     *
      * @param int $cmid
      * @return \stdClass Raw quiz table row.
      */

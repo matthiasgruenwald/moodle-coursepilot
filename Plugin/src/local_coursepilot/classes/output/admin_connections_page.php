@@ -31,6 +31,8 @@ use local_coursepilot\admin\connection_storage_location;
  */
 final class admin_connections_page {
     /**
+     * Provides page data.
+     *
      * @param \stdClass[] $tokens
      * @return array<string, mixed>
      */

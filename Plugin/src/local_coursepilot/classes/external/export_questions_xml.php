@@ -57,6 +57,8 @@ require_once($CFG->dirroot . '/question/format/xml/format.php');
  */
 final class export_questions_xml extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -85,6 +87,8 @@ final class export_questions_xml extends external_api {
     }
 
     /**
+     * Runs the export questions xml tool.
+     *
      * @param int[] $questionids
      * @param string $targetpath
      * @param bool $placeholder
@@ -324,7 +328,8 @@ final class export_questions_xml extends external_api {
      * and unsuitable for sharing (Spec 0018 §7.2, ticket #437).
      *
      * @param int $count
-     * @param array<int, array{name: string, files: string[]}> $missing
+     * @param array $missing
+     * @phpstan-param array<int,array{name:string,files:string[]}> $missing
      * @param bool $placeholder
      * @return string
      */
@@ -348,6 +353,8 @@ final class export_questions_xml extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

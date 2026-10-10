@@ -41,6 +41,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class dismiss_pending_entry extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -50,6 +52,8 @@ class dismiss_pending_entry extends external_api {
     }
 
     /**
+     * Runs the dismiss pending entry tool.
+     *
      * @param string $identifier
      * @return array
      * @throws \moodle_exception pendingunknown if the identifier does not exist
@@ -73,6 +77,8 @@ class dismiss_pending_entry extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

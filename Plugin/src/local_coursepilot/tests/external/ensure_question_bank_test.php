@@ -109,6 +109,8 @@ final class ensure_question_bank_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

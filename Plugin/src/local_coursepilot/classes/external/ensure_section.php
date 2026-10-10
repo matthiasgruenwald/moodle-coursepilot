@@ -42,6 +42,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class ensure_section extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -53,6 +55,8 @@ final class ensure_section extends external_api {
     }
 
     /**
+     * Runs the ensure section tool.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string|null $name
@@ -115,6 +119,8 @@ final class ensure_section extends external_api {
     }
 
     /**
+     * Builds message.
+     *
      * @param int $sectionnum
      * @param bool $existed
      * @param bool $namechanged
@@ -136,6 +142,8 @@ final class ensure_section extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

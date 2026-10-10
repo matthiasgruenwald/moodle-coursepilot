@@ -77,6 +77,8 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * Returns slot rows, ascending by "slot".
+     *
      * @param int $quizid
      * @return \stdClass[] Slot rows, ascending by "slot".
      */
@@ -86,6 +88,8 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * Seeds attempt.
+     *
      * @param int $quizid
      * @param int $userid
      * @return void

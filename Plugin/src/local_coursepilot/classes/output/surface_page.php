@@ -32,9 +32,13 @@ use local_coursepilot\privacy_surface;
  */
 final class surface_page {
     /**
-     * @param array<int, array{type: string, name: string, detail: string}> $violations
+     * Provides page data.
+     *
+     * @param array $violations
+     * @phpstan-param array<int,array{type:string,name:string,detail:string}> $violations
      * @param string[] $registered
-     * @param array{ok: bool, detail: string, url: string, httpcode: ?int} $selfcheck
+     * @param array $selfcheck
+     * @phpstan-param array{ok:bool,detail:string,url:string,httpcode:?int} $selfcheck
      * @return array<string, mixed>
      */
     public static function page_data(array $violations, array $registered, array $selfcheck): array {
@@ -64,6 +68,8 @@ final class surface_page {
     }
 
     /**
+     * Provides allowed tools rows.
+     *
      * @return list<array{tool: string, function: string}>
      */
     private static function allowed_tools_rows(): array {
@@ -75,6 +81,8 @@ final class surface_page {
     }
 
     /**
+     * Lists items.
+     *
      * @param string[] $items
      * @return list<array{text: string}>
      */

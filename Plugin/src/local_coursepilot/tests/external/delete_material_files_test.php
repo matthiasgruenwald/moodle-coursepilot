@@ -83,6 +83,12 @@ final class delete_material_files_test extends \advanced_testcase {
         delete_material_files::execute(['../../../etc/passwd']);
     }
 
+    /**
+     * Stores the delete material files test.
+     *
+     * @param string $filename The filename.
+     * @param string $content The content.
+     */
     private function store(string $filename, string $content): void {
         get_file_storage()->create_file_from_string([
             'contextid' => material_files::own_context()->id,
@@ -94,6 +100,12 @@ final class delete_material_files_test extends \advanced_testcase {
         ], $content);
     }
 
+    /**
+     * Provides exists.
+     *
+     * @param string $filename The filename.
+     * @return bool
+     */
     private function exists(string $filename): bool {
         return (bool) get_file_storage()->get_file(
             material_files::own_context()->id,

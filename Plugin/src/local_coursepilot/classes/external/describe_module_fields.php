@@ -59,6 +59,8 @@ class describe_module_fields extends external_api {
         . 'write endpoint follows in a later development stage.';
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -80,6 +82,8 @@ class describe_module_fields extends external_api {
     }
 
     /**
+     * Runs the describe module fields tool.
+     *
      * @param string $modname
      * @param bool $full
      * @return array
@@ -168,7 +172,8 @@ class describe_module_fields extends external_api {
      * mixed types, so use a JSON row rather than a dynamic structure, as with
      * get_course_catalog::plugin_config_field() supplemental files.
      *
-     * @param array<string, array<string, mixed>> $bundles
+     * @param array $bundles
+     * @phpstan-param array<string,array<string,mixed>> $bundles
      * @return array<int, array{name: string, fields_json: string}>
      */
     private static function bundles(array $bundles): array {
@@ -180,6 +185,8 @@ class describe_module_fields extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

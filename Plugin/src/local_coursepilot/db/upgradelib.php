@@ -258,6 +258,8 @@ function local_coursepilot_translate_pending_entries(array $entries): array {
 /**
  * Add stable grants and backfill in bounded, independently committed batches.
  * Unknown historical families stay NULL; never group by user/client or guess.
+ *
+ * @param database_manager $dbman The dbman.
  */
 function local_coursepilot_migrate_oauth_connections(database_manager $dbman): void {
     global $DB;

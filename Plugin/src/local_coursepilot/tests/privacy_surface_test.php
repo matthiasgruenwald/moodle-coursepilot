@@ -90,6 +90,8 @@ final class privacy_surface_test extends \advanced_testcase {
     }
 
     /**
+     * Provides cases for forbidden name provider.
+     *
      * @return array<string, string[]>
      */
     public static function forbidden_name_provider(): array {
@@ -126,6 +128,8 @@ final class privacy_surface_test extends \advanced_testcase {
     }
 
     /**
+     * Describes the privacy surface test.
+     *
      * @param array $violations
      * @return string
      */

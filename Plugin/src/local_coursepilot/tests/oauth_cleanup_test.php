@@ -28,12 +28,34 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(oauth_cleanup::class)]
 #[CoversClass(task\oauth_cleanup::class)]
 final class oauth_cleanup_test extends \advanced_testcase {
+    /**
+     * Code.
+     */
     private const CODE = 'local_coursepilot_oauth_code';
+    /**
+     * Token.
+     */
     private const TOKEN = 'local_coursepilot_oauth_token';
+    /**
+     * Grant.
+     */
     private const GRANT = 'local_coursepilot_oauth_grant';
+    /**
+     * Client.
+     */
     private const CLIENT = 'local_coursepilot_oauth_client';
+    /**
+     * Callback.
+     */
     private const CALLBACK = 'https://client.example/callback';
 
+    /**
+     * Provides tokens.
+     *
+     * @param string $clientid The clientid.
+     * @param int $userid The userid.
+     * @return array
+     */
     private function tokens(string $clientid, int $userid): array {
         $verifier = str_repeat('v', 43);
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
@@ -41,11 +63,25 @@ final class oauth_cleanup_test extends \advanced_testcase {
         return oauth_lib::exchange_code($code, $clientid, self::CALLBACK, $verifier);
     }
 
+    /**
+     * Provides connection.
+     *
+     * @param array $pair The pair.
+     * @return int
+     */
     private function connection(array $pair): int {
         oauth_lib::authenticate_access_token($pair['access_token']);
         return oauth_lib::current_connection_id();
     }
 
+    /**
+     * Provides code.
+     *
+     * @param string $clientid The clientid.
+     * @param int $expires The expires.
+     * @param int $used The used.
+     * @return int
+     */
     private function code(string $clientid, int $expires, int $used = 0): int {
         global $DB;
         return $DB->insert_record(self::CODE, (object) ['code' => oauth_lib::random_token(16),
@@ -53,6 +89,13 @@ final class oauth_cleanup_test extends \advanced_testcase {
             'codechallenge' => 'c', 'expires' => $expires, 'used' => $used]);
     }
 
+    /**
+     * Provides client.
+     *
+     * @param string $clientid The clientid.
+     * @param int $timecreated The timecreated.
+     * @param string $source The source.
+     */
     private function client(string $clientid, int $timecreated, string $source = 'dcr'): void {
         global $DB;
         $DB->insert_record(self::CLIENT, (object) ['clientid' => $clientid, 'redirecturis' => json_encode([self::CALLBACK]),

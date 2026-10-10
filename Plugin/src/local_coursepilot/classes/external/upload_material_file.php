@@ -39,6 +39,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class upload_material_file extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -55,6 +57,8 @@ class upload_material_file extends external_api {
     }
 
     /**
+     * Runs the upload material file tool.
+     *
      * @param string $path
      * @param string $contentbase64
      * @param string $expectedcontenthash
@@ -91,7 +95,8 @@ class upload_material_file extends external_api {
      * Builds the response from {@see material_area::write()} (#539, formerly
      * #523), extracted from execute() to keep functions below 50 lines.
      *
-     * @param array{path: string, created: bool, size: int, oldsize: int, warning: ?string} $written
+     * @param array $written
+     * @phpstan-param array{path:string,created:bool,size:int,oldsize:int,warning:?string} $written
      * @return array
      */
     private static function build_response(array $written): array {
@@ -115,6 +120,8 @@ class upload_material_file extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

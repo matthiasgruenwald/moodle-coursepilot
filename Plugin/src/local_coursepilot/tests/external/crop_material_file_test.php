@@ -44,6 +44,8 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Stores png.
+     *
      * @param string $filename
      * @param int $width
      * @param int $height
@@ -155,6 +157,8 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Provides invalid coordinate cases.
+     *
      * @return array<string, array{0: float, 1: float, 2: float, 3: float}>
      */
     public static function invalid_coordinate_cases(): array {
@@ -168,6 +172,12 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Checks that rejects invalid coordinates.
+     *
+     * @param float $x0 The x0.
+     * @param float $y0 The y0.
+     * @param float $x1 The x1.
+     * @param float $y1 The y1.
      * @dataProvider invalid_coordinate_cases
      */
     #[\PHPUnit\Framework\Attributes\DataProvider('invalid_coordinate_cases')]
@@ -283,6 +293,10 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Returns PNG bytes of a 1000x1000 image.
+     *
+     * @param int $width The width.
+     * @param int $height The height.
      * @return string PNG bytes of a 1000x1000 image.
      */
     private function build_png(int $width = 1000, int $height = 1000): string {

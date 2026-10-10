@@ -36,7 +36,13 @@ final class material_composition {
     /** @var int Header left padding in pixels. */
     private const PADDING = 12;
 
-    /** @return array{0: string, 1: int, 2: int} PNG bytes, width and height. */
+    /**
+     * Renders the material composition.
+     *
+     * @param array $inputs The inputs.
+     * @param string $arrangement The arrangement.
+     * @return array{0: string, 1: int, 2: int} PNG bytes, width and height.
+     */
     public static function render(array $inputs, string $arrangement): array {
         if (!gd_support::available()) {
             throw new \moodle_exception('materialgdmissing', 'local_coursepilot');
@@ -69,7 +75,13 @@ final class material_composition {
         }
     }
 
-    /** @return array Image, pixel rectangle and layout size for one part. */
+    /**
+     * Returns image, pixel rectangle and layout size for one part.
+     *
+     * @param array $input The input.
+     * @param string $font The font.
+     * @return array Image, pixel rectangle and layout size for one part.
+     */
     private static function prepare_part(array $input, string $font): array {
         $extension = strtolower(pathinfo($input['sourcepath'], PATHINFO_EXTENSION));
         if (!in_array($extension, gd_support::RASTER_IMAGE_EXTENSIONS, true)) {
@@ -95,7 +107,11 @@ final class material_composition {
         ];
     }
 
-    /** Same range, positive-area validation and rounding semantics as crop_material_file. */
+    /**
+     * Same range, positive-area validation and rounding semantics as crop_material_file.
+     *
+     * @param array $crop The crop.
+     */
     private static function guard_coordinates(array $crop): void {
         foreach ($crop as $value) {
             if (!is_finite($value) || $value < 0.0 || $value > 1.0) {
@@ -107,7 +123,13 @@ final class material_composition {
         }
     }
 
-    /** @return array{0: int, 1: int} Width and height including inter-part gaps. */
+    /**
+     * Provides dimensions.
+     *
+     * @param array $parts The parts.
+     * @param string $arrangement The arrangement.
+     * @return array{0: int, 1: int} Width and height including inter-part gaps.
+     */
     private static function dimensions(array $parts, string $arrangement): array {
         $widths = array_column($parts, 'width');
         $heights = array_column($parts, 'height');
@@ -117,7 +139,14 @@ final class material_composition {
             : [array_sum($widths) + $gaps, max($heights)];
     }
 
-    /** Place each part at the top/left, preserving its pixels including alpha. */
+    /**
+     * Place each part at the top/left, preserving its pixels including alpha.
+     *
+     * @param \GdImage $canvas The canvas.
+     * @param array $parts The parts.
+     * @param string $arrangement The arrangement.
+     * @param string $font The font.
+     */
     private static function draw_parts(\GdImage $canvas, array $parts, string $arrangement, string $font): void {
         $x = 0;
         $y = 0;

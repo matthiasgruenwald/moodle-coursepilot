@@ -51,6 +51,8 @@ class crop_material_file extends external_api {
     private const JPEG_QUALITY = 85;
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -72,14 +74,16 @@ class crop_material_file extends external_api {
     }
 
     /**
+     * Runs the crop material file tool.
+     *
      * @param string $sourcepath
-     * @param string $location
      * @param string $targetpath
      * @param float $x0
      * @param float $y0
      * @param float $x1
      * @param float $y1
      * @param string $expectedcontenthash
+     * @param string $location
      * @return array
      * @throws \moodle_exception invalidmaterialpath, invalidmateriallocation,
      *         materialpathiscontext, materialfilenotfound,
@@ -190,7 +194,8 @@ class crop_material_file extends external_api {
      * Crop, write the target and build the response (#523: extracted from execute()).
      *
      * @param array $params Validated execute() parameters.
-     * @param array{content: string, path: string, size: int, timemodified: int} $sourcestored
+     * @param array $sourcestored
+     * @phpstan-param array{content:string,path:string,size:int,timemodified:int} $sourcestored
      * @param string $sourcerelative
      * @param string $targetdir
      * @param string $targetfilename
@@ -237,7 +242,8 @@ class crop_material_file extends external_api {
      * crop_and_write() to keep the function below 50 lines).
      *
      * @param array $params Validated execute() parameters.
-     * @param array{content: string, path: string, size: int, timemodified: int} $sourcestored
+     * @param array $sourcestored
+     * @phpstan-param array{content:string,path:string,size:int,timemodified:int} $sourcestored
      * @param string $sourcerelative
      * @param string $targetextension
      * @return array{0: string, 1: int, 2: int} [content, width, height]
@@ -275,7 +281,8 @@ class crop_material_file extends external_api {
      * the function below 50 lines).
      *
      * @param array $params Validated execute() parameters.
-     * @param array{content: string, path: string, size: int, timemodified: int} $sourcestored
+     * @param array $sourcestored
+     * @phpstan-param array{content:string,path:string,size:int,timemodified:int} $sourcestored
      * @param string $sourcerelative
      * @param string $targetdir
      * @param string $targetfilename
@@ -323,6 +330,8 @@ class crop_material_file extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
@@ -348,7 +357,8 @@ class crop_material_file extends external_api {
      *
      * @param string $location
      * @param string $path
-     * @param array{size: int, timemodified: int} $stored
+     * @param array $stored
+     * @phpstan-param array{size:int,timemodified:int} $stored
      * @return string
      */
     private static function describe_source(string $location, string $path, array $stored): string {
@@ -419,6 +429,12 @@ class crop_material_file extends external_api {
     /**
      * Convert relative coordinates to a pixel rectangle (#523: extracted from crop()).
      *
+     * @param int $origwidth The origwidth.
+     * @param int $origheight The origheight.
+     * @param float $x0 The x0.
+     * @param float $y0 The y0.
+     * @param float $x1 The x1.
+     * @param float $y1 The y1.
      * @return array{0: int, 1: int, 2: int, 3: int} [px0, py0, width, height]
      */
     private static function pixel_rect(
@@ -447,6 +463,13 @@ class crop_material_file extends external_api {
 
     /**
      * Create the target canvas and copy the crop into it (#523: extracted from crop()).
+     *
+     * @param \GdImage $source The source.
+     * @param int $px0 The px0.
+     * @param int $py0 The py0.
+     * @param int $width The width.
+     * @param int $height The height.
+     * @param string $targetextension The targetextension.
      */
     private static function render_canvas(
         \GdImage $source,
@@ -473,6 +496,9 @@ class crop_material_file extends external_api {
 
     /**
      * Write the canvas to the output buffer in the target format (#523: extracted from crop()).
+     *
+     * @param \GdImage $canvas The canvas.
+     * @param string $targetextension The targetextension.
      */
     private static function output_canvas(\GdImage $canvas, string $targetextension): void {
         switch ($targetextension) {

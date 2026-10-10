@@ -161,6 +161,8 @@ final class upload_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Provides upload.
+     *
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash
@@ -171,6 +173,8 @@ final class upload_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Reads stored.
+     *
      * @param \stdClass $user
      * @param string $filepath
      * @param string $filename
@@ -189,6 +193,8 @@ final class upload_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Reads file object.
+     *
      * @param int $contextid
      * @param string $filepath
      * @param string $filename

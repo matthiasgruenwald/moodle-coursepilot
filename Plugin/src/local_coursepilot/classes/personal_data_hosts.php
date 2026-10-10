@@ -69,6 +69,8 @@ final class personal_data_hosts {
     }
 
     /**
+     * Returns configured domains, lowercased, with empty lines removed.
+     *
      * @return string[] Configured domains, lowercased, with empty lines removed.
      */
     public static function configured(): array {
@@ -92,6 +94,8 @@ final class personal_data_hosts {
     }
 
     /**
+     * Parses the personal data hosts.
+     *
      * @param string $raw
      * @return string[]
      */
@@ -107,6 +111,8 @@ final class personal_data_hosts {
     }
 
     /**
+     * Normalises the personal data hosts.
+     *
      * @param string $value
      * @return string
      */

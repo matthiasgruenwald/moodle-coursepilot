@@ -133,6 +133,12 @@ final class pointer_writer {
      * A conflict returns the existing merge instruction and creates no pending
      * note (ADR 0023 point 2: caller error, not storage failure). Every other
      * failure records a pending write through {@see fail()}.
+     *
+     * @param webdav_error $e The e.
+     * @param string $clientpath The clientpath.
+     * @param pointer_location $location The location.
+     * @param string $operation The operation.
+     * @param int $courseid The courseid.
      */
     private static function translate_or_record(
         webdav_error $e,

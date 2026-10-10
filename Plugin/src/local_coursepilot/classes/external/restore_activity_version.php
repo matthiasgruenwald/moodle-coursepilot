@@ -93,6 +93,8 @@ final class restore_activity_version extends external_api {
     ];
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -111,6 +113,8 @@ final class restore_activity_version extends external_api {
     }
 
     /**
+     * Runs the restore activity version tool.
+     *
      * @param int $cmid
      * @param int $targetversion
      * @param bool $confirmed
@@ -384,7 +388,8 @@ final class restore_activity_version extends external_api {
      * target state (e.g. "sectionnum" - the target state only knows
      * "section") is automatically left out instead of being written wrongly.
      *
-     * @param class-string<\local_coursepilot\catalog\module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<\local_coursepilot\catalog\module_catalog> $catalogclass
      * @param array $before
      * @param array $target
      * @return array
@@ -486,6 +491,8 @@ final class restore_activity_version extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

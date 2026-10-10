@@ -56,15 +56,20 @@ final class webdav_client {
     private const PROPFIND_BODY = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><allprop/></propfind>';
 
     /**
+     * Creates the webdav client.
+     *
      * @param webdav_transport $transport The swappable transport seam.
      *        In production {@see curl_transport}, in tests the reusable
      *        in-memory fake.
-     * @param callable $clock () => float, seconds since some fixed
+     * @param ?callable $clock () => float, seconds since some fixed
+     * @phpstan-param callable $clock
      *        zero point. Only needed for the retry clock - replaceable in
      *        tests so nothing is actually waited for.
-     * @param callable $sleeper (float $seconds) => void.
+     * @param ?callable $sleeper (float $seconds) => void.
+     * @phpstan-param callable $sleeper
      */
     public function __construct(
+        /** @var webdav_transport The swappable transport seam. */
         private readonly webdav_transport $transport,
         ?callable $clock = null,
         ?callable $sleeper = null,
@@ -103,6 +108,8 @@ final class webdav_client {
     }
 
     /**
+     * Returns file body.
+     *
      * @param string $url
      * @return string File body.
      * @throws webdav_error
@@ -180,6 +187,8 @@ final class webdav_client {
     }
 
     /**
+     * Moves the webdav client.
+     *
      * @param string $sourceurl
      * @param string $destinationurl Full destination address.
      * @throws webdav_error
@@ -189,6 +198,8 @@ final class webdav_client {
     }
 
     /**
+     * Deletes the webdav client.
+     *
      * @param string $url
      * @throws webdav_error
      */
@@ -203,7 +214,8 @@ final class webdav_client {
      *
      * @param string $method
      * @param string $url
-     * @param array<string, string> $headers
+     * @param array $headers
+     * @phpstan-param array<string,string> $headers
      * @param string|null $body
      * @param int[] $successcodes
      * @return webdav_response
@@ -243,6 +255,8 @@ final class webdav_client {
     }
 
     /**
+     * Asserts https.
+     *
      * @param string $url
      * @throws \InvalidArgumentException
      */
@@ -253,6 +267,8 @@ final class webdav_client {
     }
 
     /**
+     * Provides classify.
+     *
      * @param webdav_response $response
      * @param int[] $successcodes
      * @return string|null A {@see webdav_error} constant, or null on success.
@@ -301,6 +317,8 @@ final class webdav_client {
     }
 
     /**
+     * Returns decoded path part, without trailing slash.
+     *
      * @param string $url
      * @return string Decoded path part, without trailing slash.
      */

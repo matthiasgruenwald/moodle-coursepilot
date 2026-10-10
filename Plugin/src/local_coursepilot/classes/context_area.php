@@ -65,6 +65,8 @@ final class context_area {
     }
 
     /**
+     * Reads from.
+     *
      * @param storage_port $port
      * @param string $path
      * @return array|null
@@ -169,7 +171,8 @@ final class context_area {
      * Pre-read failures and conditional-create conflicts are best-effort failures,
      * never a reason to interrupt location selection (#603).
      *
-     * @param array<string, string> $files Relative path => complete content.
+     * @param array $files Relative path => complete content.
+     * @phpstan-param array<string,string> $files
      * @return string[] Paths actually created.
      */
     public static function supplement_missing(array $files): array {
@@ -273,6 +276,7 @@ final class context_area {
      * @param string $content
      * @param string $operation One of the {@see pending_write_translation} OP_* constants.
      * @param int $courseid
+     * @param ?string $expectedchecksum The expectedchecksum.
      * @return array{path: string, created: bool, size: int, checksum: string}
      * @throws \moodle_exception contextquotaexceeded, pendingwritefailed, pendingnotewritefailed
      */
@@ -348,7 +352,8 @@ final class context_area {
      * Rejects an existing personal-data-marked target when the #344 switch
      * is off. Shared by {@see write()} and {@see append()} at both locations.
      *
-     * @param array{content: string}|null $existing Result of {@see private_files_storage_port::read()}.
+     * @param ?array $existing Result of {@see private_files_storage_port::read()}.
+     * @phpstan-param array{content:string}|null $existing
      * @param string $path
      * @throws \moodle_exception contextfilelocked
      */

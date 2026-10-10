@@ -40,6 +40,13 @@ final class compose_material_file_test extends \advanced_testcase {
         parent::tearDown();
     }
 
+    /**
+     * Provides png.
+     *
+     * @param int $width The width.
+     * @param int $height The height.
+     * @return string
+     */
     private function png(int $width, int $height): string {
         $image = imagecreatetruecolor($width, $height);
         for ($y = 0; $y < $height; $y++) {
@@ -52,6 +59,12 @@ final class compose_material_file_test extends \advanced_testcase {
         return $content;
     }
 
+    /**
+     * Stores the compose material file test.
+     *
+     * @param string $filename The filename.
+     * @param string $content The content.
+     */
     private function store(string $filename, string $content): void {
         get_file_storage()->create_file_from_string([
             'contextid' => material_files::own_context()->id,
@@ -63,6 +76,12 @@ final class compose_material_file_test extends \advanced_testcase {
         ], $content);
     }
 
+    /**
+     * Provides result image.
+     *
+     * @param string $path The path.
+     * @return \GdImage
+     */
     private function result_image(string $path): \GdImage {
         $stored = material_area::read_for_location('workbench', $path);
         $this->assertNotNull($stored);
@@ -70,6 +89,14 @@ final class compose_material_file_test extends \advanced_testcase {
         return imagecreatefromstring($stored['content']);
     }
 
+    /**
+     * Asserts pixels.
+     *
+     * @param \GdImage $source The source.
+     * @param \GdImage $target The target.
+     * @param int $x The x.
+     * @param int $y The y.
+     */
     private function assert_pixels(\GdImage $source, \GdImage $target, int $x, int $y): void {
         for ($sy = 0; $sy < imagesy($source); $sy++) {
             for ($sx = 0; $sx < imagesx($source); $sx++) {
@@ -169,6 +196,11 @@ final class compose_material_file_test extends \advanced_testcase {
         imagedestroy($image);
     }
 
+    /**
+     * Provides failure cases.
+     *
+     * @return array
+     */
     public static function failure_cases(): array {
         $valid = ['sourcepath' => 'page.png'];
         return [

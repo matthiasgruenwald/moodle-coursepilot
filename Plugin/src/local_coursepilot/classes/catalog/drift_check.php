@@ -78,7 +78,8 @@ final class drift_check {
      * changing the registry.
      *
      * @param string $modname Table/module name to check.
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @return string[]
      */
     public static function check_catalog(string $modname, string $catalogclass): array {
@@ -93,6 +94,8 @@ final class drift_check {
     }
 
     /**
+     * Requires known libraries.
+     *
      * @param string $modname
      * @return void
      */
@@ -114,7 +117,8 @@ final class drift_check {
      * contract tests (e.g. files, blocked until Spec 0018).
      *
      * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @return string[]
      */
     private static function column_violations(string $modname, string $catalogclass): array {
@@ -155,7 +159,8 @@ final class drift_check {
      * Check callable sources referenced by fields and pseudofields,
      * including functions and static methods.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @return string[]
      */
     private static function callable_violations(string $catalogclass): array {
@@ -188,7 +193,8 @@ final class drift_check {
      * Check constants referenced by module_catalog::checked_constants()
      * and shared_block::checked_constants().
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @return string[]
      */
     private static function constant_violations(string $catalogclass): array {
@@ -210,7 +216,8 @@ final class drift_check {
      * Each field-related write option must name a catalog field. This also
      * catches newly read or written fields that would bypass the catalog.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @return string[]
      */
     private static function write_option_violations(string $catalogclass): array {

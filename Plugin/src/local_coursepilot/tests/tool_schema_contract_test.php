@@ -99,7 +99,9 @@ final class tool_schema_contract_test extends \advanced_testcase {
         }
     }
 
-    /** Moodle passes validated named inputs positionally, in declaration order. */
+    /**
+     * Moodle passes validated named inputs positionally, in declaration order.
+     */
     public function test_registered_external_parameters_match_execute_positions(): void {
         foreach (tool_registry::service_function_names() as $name) {
             $function = \core_external\external_api::external_function_info($name);
@@ -159,7 +161,9 @@ final class tool_schema_contract_test extends \advanced_testcase {
         }
     }
 
-    /** The published input and output descriptions must use English (#605). */
+    /**
+     * The published input and output descriptions must use English (#605).
+     */
     public function test_every_public_contract_description_is_english(): void {
         $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
         foreach (tool_registry::descriptions() as $name => $description) {
@@ -175,7 +179,9 @@ final class tool_schema_contract_test extends \advanced_testcase {
         $this->assertDoesNotMatchRegularExpression($forbidden, dispatcher::HANDSHAKE_INSTRUCTIONS);
     }
 
-    /** Field catalog descriptions also reach the model as tool result data (#605). */
+    /**
+     * Field catalog descriptions also reach the model as tool result data (#605).
+     */
     public function test_every_catalog_description_is_english(): void {
         $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
         foreach (\local_coursepilot\catalog\registry::known_modnames() as $modname) {
@@ -203,6 +209,13 @@ final class tool_schema_contract_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Asserts english schema descriptions.
+     *
+     * @param array $schema The schema.
+     * @param string $forbidden The forbidden.
+     * @param string $name The name.
+     */
     private function assert_english_schema_descriptions(array $schema, string $forbidden, string $name): void {
         foreach ($schema as $key => $value) {
             if ($key === 'description') {
@@ -213,6 +226,13 @@ final class tool_schema_contract_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Asserts english return descriptions.
+     *
+     * @param external_description $description The description.
+     * @param string $forbidden The forbidden.
+     * @param string $name The name.
+     */
     private function assert_english_return_descriptions(external_description $description, string $forbidden, string $name): void {
         $this->assertDoesNotMatchRegularExpression($forbidden, $description->desc, $name);
         if ($description instanceof external_single_structure) {
@@ -238,6 +258,9 @@ final class tool_schema_contract_test extends \advanced_testcase {
     }
 
     /**
+     * Provides structure keys.
+     *
+     * @param external_description $structure The structure.
      * @return string[]
      */
     private static function structure_keys(external_description $structure): array {
@@ -262,6 +285,12 @@ final class tool_schema_contract_test extends \advanced_testcase {
         return $keys;
     }
 
+    /**
+     * Provides tool name for.
+     *
+     * @param string $classname The classname.
+     * @return string
+     */
     private function tool_name_for(string $classname): string {
         foreach (tool_registry::service_functions() as $name => $tool) {
             if ($tool['classname'] === $classname) {

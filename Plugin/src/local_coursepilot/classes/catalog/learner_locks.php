@@ -83,7 +83,8 @@ final class learner_locks {
      * Whether $value matches the condition. A missing value (null) never
      * creates a learner lock: an unset field cannot prevent progress.
      *
-     * @param array{op: string, value?: mixed} $condition
+     * @param array $condition
+     * @phpstan-param array{op:string,value?:mixed} $condition
      * @param mixed $value
      * @return bool
      */
@@ -124,7 +125,8 @@ final class learner_locks {
     /**
      * Find all learner locks triggered by the effective values to write.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param array $named Fields named by the call, including its field bundle.
      * @param array $defaults Filled form defaults, only for fields not named in $named.
      * @return array<int, array{id: string, detail: string}>
@@ -151,7 +153,8 @@ final class learner_locks {
      * Like {@see find()}, for a patch of existing values. A patch repeating
      * the current value needs no new confirmation: the lock already exists.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param array $patch
      * @param array $before
      * @return array<int, array{id: string, detail: string}>
@@ -171,7 +174,8 @@ final class learner_locks {
     /**
      * Existing learner locks for an instance, used by read tools.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param array $settings Current state as in get_module_settings (DB columns);
      *        settings_aliases maps differing form names to columns
      *        (quiz: quizpassword -> password).
@@ -197,7 +201,8 @@ final class learner_locks {
      * JSON learner-lock condition for describe_module_fields, or "null" when
      * the field cannot create a lock.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param string $fieldname
      * @return string
      */
@@ -225,7 +230,8 @@ final class learner_locks {
      * its reason so the agent can decide without further lookup. Write nothing.
      *
      * @param string $modname
-     * @param array<int, array{id: string, detail: string}> $found
+     * @param array $found
+     * @phpstan-param array<int,array{id:string,detail:string}> $found
      * @param string[] $confirmed
      * @return void
      * @throws moodle_exception learnerlocksunconfirmed

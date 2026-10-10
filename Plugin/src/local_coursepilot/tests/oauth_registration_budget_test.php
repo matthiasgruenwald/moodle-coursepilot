@@ -31,10 +31,23 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class oauth_registration_budget_test extends \advanced_testcase {
     use \local_coursepilot\tests\oauth_budget_race;
 
+    /**
+     * Table.
+     */
     private const TABLE = 'local_coursepilot_oauth_budget';
 
+    /**
+     * Callback.
+     */
     private const CALLBACK = 'https://client.example/callback';
 
+    /**
+     * Registers the oauth registration budget test.
+     *
+     * @param string $source The source.
+     * @param ?string $body The body.
+     * @return array
+     */
     private function register(string $source, ?string $body = null): array {
         return oauth_lib::handle_registration(
             'POST',
@@ -43,11 +56,22 @@ final class oauth_registration_budget_test extends \advanced_testcase {
         );
     }
 
+    /**
+     * Provides limits.
+     *
+     * @param int $site The site.
+     * @param int $source The source.
+     */
     private function limits(int $site, int $source): void {
         set_config('oauthregistersitelimit', $site, 'local_coursepilot');
         set_config('oauthregistersourcelimit', $source, 'local_coursepilot');
     }
 
+    /**
+     * Provides clients.
+     *
+     * @return int
+     */
     private function clients(): int {
         global $DB;
         return $DB->count_records('local_coursepilot_oauth_client');
@@ -203,7 +227,9 @@ final class oauth_registration_budget_test extends \advanced_testcase {
             'client_id' => $clientid, 'refresh_token' => $tokens['body']['refresh_token']])['status']);
     }
 
-    /** Real processes contend for the last allowed registration behind a DB barrier. */
+    /**
+     * Real processes contend for the last allowed registration behind a DB barrier.
+     */
     public function test_parallel_registrations_cannot_exceed_budget(): void {
         $this->resetAfterTest();
         $this->limits(1, 5);

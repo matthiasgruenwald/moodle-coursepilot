@@ -29,7 +29,11 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(course_module_placement::class)]
 final class course_module_placement_test extends \advanced_testcase {
-    /** @return array{0: \stdClass, 1: int[]} course and the cmids of three pages in section 1 */
+    /**
+     * Provides course with pages.
+     *
+     * @return array{0: \stdClass, 1: int[]} course and the cmids of three pages in section 1
+     */
     private function course_with_pages(): array {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course(['numsections' => 2]);
@@ -43,12 +47,24 @@ final class course_module_placement_test extends \advanced_testcase {
         return [$course, $cmids];
     }
 
-    /** @return int[] cmids of a section in course order */
+    /**
+     * Returns cmids of a section in course order.
+     *
+     * @param int $courseid The courseid.
+     * @param int $sectionnum The sectionnum.
+     * @return int[] cmids of a section in course order
+     */
     private function order(int $courseid, int $sectionnum): array {
         rebuild_course_cache($courseid, true);
         return array_map('intval', get_fast_modinfo($courseid)->sections[$sectionnum] ?? []);
     }
 
+    /**
+     * Provides cmids.
+     *
+     * @param int $courseid The courseid.
+     * @return array
+     */
     private function cmids(int $courseid): array {
         global $DB;
         return array_map('intval', $DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$courseid]));

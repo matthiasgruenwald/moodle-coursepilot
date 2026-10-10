@@ -200,6 +200,8 @@ final class version_history {
     }
 
     /**
+     * Loads version.
+     *
      * @param int $cmid
      * @param int $version
      * @return \stdClass
@@ -219,6 +221,8 @@ final class version_history {
     }
 
     /**
+     * Describes version.
+     *
      * @param \stdClass $record
      * @param \stdClass|null $previous
      * @param string $lang
@@ -252,6 +256,8 @@ final class version_history {
     }
 
     /**
+     * Provides summary line.
+     *
      * @param \stdClass|null $previous
      * @param \stdClass $record
      * @param array $meta
@@ -335,7 +341,11 @@ final class version_history {
         return array_merge($coursemodule, $moduleinfo);
     }
 
-    /** Safe comparison projection; raw state_at remains exclusively for native restoration. */
+    /**
+     * Safe comparison projection; raw state_at remains exclusively for native restoration.
+     *
+     * @param \stdClass $record The record.
+     */
     private static function public_state(\stdClass $record): array {
         $state = self::state($record);
         foreach (['availability', 'availabilityconditionsjson'] as $field) {
@@ -434,6 +444,8 @@ final class version_history {
     }
 
     /**
+     * Provides fullname.
+     *
      * @param int $userid
      * @param string $lang
      * @return string

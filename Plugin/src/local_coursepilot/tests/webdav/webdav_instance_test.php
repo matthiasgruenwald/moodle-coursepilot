@@ -34,6 +34,13 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class webdav_instance_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
+    /**
+     * Provides location.
+     *
+     * @param int $instanceid The instanceid.
+     * @param ?array $fingerprint The fingerprint.
+     * @return pointer_location
+     */
     private function location(int $instanceid, ?array $fingerprint = null): pointer_location {
         return pointer_location::external($instanceid, 'Coursepilot-Kontext', $fingerprint ?? $this->fixture_fingerprint());
     }

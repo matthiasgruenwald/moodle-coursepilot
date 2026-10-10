@@ -101,6 +101,8 @@ final class get_question_categories_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
@@ -110,6 +112,8 @@ final class get_question_categories_test extends \advanced_testcase {
     }
 
     /**
+     * Finds category.
+     *
      * @param array $result
      * @param int $id
      * @return array|null

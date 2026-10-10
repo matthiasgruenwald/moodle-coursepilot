@@ -47,6 +47,8 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 #[CoversClass(\local_coursepilot\question_suspect_gate::class)]
 final class report_clone_lineage_test extends \advanced_testcase {
     /**
+     * Provides course with quiz and teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, quiz.
      */
     private function course_with_quiz_and_teacher(): array {
@@ -59,6 +61,8 @@ final class report_clone_lineage_test extends \advanced_testcase {
     }
 
     /**
+     * Returns question_categories row.
+     *
      * @param \stdClass $course Course whose module context carries the category.
      * @return \stdClass question_categories row
      */
@@ -69,6 +73,13 @@ final class report_clone_lineage_test extends \advanced_testcase {
             ->create_question_category(['contextid' => $qbankcontext->id]);
     }
 
+    /**
+     * Adds question to quiz.
+     *
+     * @param \stdClass $quiz The quiz.
+     * @param \stdClass $category The category.
+     * @param string $name The name.
+     */
     private function add_question_to_quiz(\stdClass $quiz, \stdClass $category, string $name): void {
         $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $question = $questiongenerator->create_question('truefalse', null, ['category' => $category->id, 'name' => $name]);

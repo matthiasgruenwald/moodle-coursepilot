@@ -42,6 +42,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class report_loose_material_files extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -49,6 +51,8 @@ class report_loose_material_files extends external_api {
     }
 
     /**
+     * Runs the report loose material files tool.
+     *
      * @return array
      * @throws \required_capability_exception without moodle/user:manageownfiles
      */
@@ -88,6 +92,8 @@ class report_loose_material_files extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

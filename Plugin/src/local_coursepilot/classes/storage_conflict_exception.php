@@ -29,6 +29,8 @@ namespace local_coursepilot;
  */
 final class storage_conflict_exception extends \moodle_exception {
     /**
+     * Creates the storage conflict exception.
+     *
      * @param string $path Client path of the affected file, for the message.
      */
     public function __construct(string $path) {

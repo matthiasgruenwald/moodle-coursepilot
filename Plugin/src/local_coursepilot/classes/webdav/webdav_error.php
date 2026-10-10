@@ -54,11 +54,14 @@ final class webdav_error extends \RuntimeException {
     public const REDIRECTED = 'redirected';
 
     /**
+     * Creates the webdav error.
+     *
      * @param string $errorclass One of the constants of this class.
      * @param string $message Internal, developer-oriented message - never
      *        passed on to a teacher, never a secret.
      */
     public function __construct(
+        /** @var string One of the constants of this class. */
         public readonly string $errorclass,
         string $message = '',
     ) {
@@ -105,8 +108,10 @@ final class webdav_error extends \RuntimeException {
      *
      * @template T
      * @param self $e
-     * @param T $whenmissing Return value when $e is "not found".
-     * @param callable(self): \Throwable $onfailure Builds the exception for
+     * @param mixed $whenmissing Return value when $e is "not found".
+     * @phpstan-param T $whenmissing
+     * @param callable $onfailure Builds the exception for
+     * @phpstan-param callable(self):\Throwable $onfailure
      *        every other error - or passes $e through unchanged
      *        ({@see \local_coursepilot\webdav_storage_port}).
      * @return T

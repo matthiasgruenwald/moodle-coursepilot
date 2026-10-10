@@ -61,6 +61,11 @@ final class webdav_storage_port_test extends storage_port_contract_test {
         parent::tearDown();
     }
 
+    /**
+     * Provides port.
+     *
+     * @return storage_port
+     */
     protected function port(): storage_port {
         return new webdav_storage_port(
             $this->instanceid,
@@ -69,6 +74,11 @@ final class webdav_storage_port_test extends storage_port_contract_test {
         );
     }
 
+    /**
+     * Provides area.
+     *
+     * @return storage_area
+     */
     protected function area(): storage_area {
         return new storage_area(
             rootsetting: 'storageportcontracttestroot',
@@ -83,6 +93,11 @@ final class webdav_storage_port_test extends storage_port_contract_test {
         );
     }
 
+    /**
+     * Provides applies user quota.
+     *
+     * @return bool
+     */
     protected function applies_user_quota(): bool {
         return false;
     }
@@ -93,9 +108,26 @@ final class webdav_storage_port_test extends storage_port_contract_test {
      */
     public function test_write_records_ausstand_when_the_underlying_put_fails(): void {
         $onlyputfails = new class (new fake_webdav_transport()) implements \local_coursepilot\webdav\webdav_transport {
-            public function __construct(private readonly fake_webdav_transport $inner) {
+            /**
+             * Creates the webdav storage port test.
+             *
+             * @param fake_webdav_transport $inner The inner.
+             */
+            public function __construct(
+                /** @var fake_webdav_transport The inner. */
+                private readonly fake_webdav_transport $inner,
+            ) {
             }
 
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param array $headers The headers.
+             * @param ?string $body The body.
+             * @return \local_coursepilot\webdav\webdav_response
+             */
             public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     return new \local_coursepilot\webdav\webdav_response(507, [], '');
@@ -128,9 +160,26 @@ final class webdav_storage_port_test extends storage_port_contract_test {
      */
     public function test_append_records_ausstand_when_the_underlying_put_fails(): void {
         $onlyputfails = new class (new fake_webdav_transport()) implements \local_coursepilot\webdav\webdav_transport {
-            public function __construct(private readonly fake_webdav_transport $inner) {
+            /**
+             * Creates the webdav storage port test.
+             *
+             * @param fake_webdav_transport $inner The inner.
+             */
+            public function __construct(
+                /** @var fake_webdav_transport The inner. */
+                private readonly fake_webdav_transport $inner,
+            ) {
             }
 
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param array $headers The headers.
+             * @param ?string $body The body.
+             * @return \local_coursepilot\webdav\webdav_response
+             */
             public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     return new \local_coursepilot\webdav\webdav_response(507, [], '');

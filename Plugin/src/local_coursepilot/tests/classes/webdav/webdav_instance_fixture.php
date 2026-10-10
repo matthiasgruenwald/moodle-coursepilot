@@ -75,7 +75,8 @@ trait webdav_instance_fixture {
      * their own user context.
      *
      * @param \stdClass $user
-     * @param array<string, string|int> $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case.
+     * @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case.
+     * @phpstan-param array<string,string|int> $overrides
      * @return int Instance ID.
      */
     protected function create_webdav_instance(\stdClass $user, array $overrides = []): int {

@@ -48,6 +48,8 @@ require_once($CFG->dirroot . '/question/classes/local/bank/question_bank_helper.
  */
 final class ensure_question_bank extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -58,6 +60,8 @@ final class ensure_question_bank extends external_api {
     }
 
     /**
+     * Runs the ensure question bank tool.
+     *
      * @param int $courseid
      * @param string $name
      * @return array
@@ -132,6 +136,8 @@ final class ensure_question_bank extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -33,7 +33,10 @@ use local_coursepilot\storage_anchor;
  */
 final class location_selection {
     /**
-     * @param array<string, string> $oauthpassthrough
+     * Provides editor data.
+     *
+     * @param array $oauthpassthrough
+     * @phpstan-param array<string,string> $oauthpassthrough
      * @return array<string, mixed>
      */
     public static function editor_data(array $oauthpassthrough = []): array {
@@ -75,6 +78,8 @@ final class location_selection {
     }
 
     /**
+     * Provides targets.
+     *
      * @return list<array<string, mixed>>
      */
     private static function targets(): array {
@@ -94,7 +99,10 @@ final class location_selection {
     }
 
     /**
-     * @param array<string, string> $oauthpassthrough
+     * Provides oauth fields.
+     *
+     * @param array $oauthpassthrough
+     * @phpstan-param array<string,string> $oauthpassthrough
      * @return list<array{name: string, value: string}>
      */
     private static function oauth_fields(array $oauthpassthrough): array {
@@ -106,6 +114,8 @@ final class location_selection {
     }
 
     /**
+     * Provides current locations data.
+     *
      * @return array<string, array<string, string>>
      */
     public static function current_locations_data(): array {
@@ -121,8 +131,13 @@ final class location_selection {
     }
 
     /**
-     * @param array{type: string, text: string}|null $finishresult
-     * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn
+     * Provides page data.
+     *
+     * @param \stdClass $user The user.
+     * @param ?array $finishresult
+     * @phpstan-param array{type:string,text:string}|null $finishresult
+     * @param ?array $oauthreturn
+     * @phpstan-param array{client:\stdClass,params:array<string,string>}|null $oauthreturn
      * @return array<string, mixed>
      */
     public static function page_data(\stdClass $user, ?array $finishresult, ?array $oauthreturn): array {
@@ -145,7 +160,10 @@ final class location_selection {
     }
 
     /**
-     * @param array{type: string, text: string}|null $finishresult
+     * Provides notification data.
+     *
+     * @param ?array $finishresult
+     * @phpstan-param array{type:string,text:string}|null $finishresult
      * @return array{class: string, text: string}|null
      */
     private static function notification_data(?array $finishresult): ?array {
@@ -162,7 +180,10 @@ final class location_selection {
     }
 
     /**
-     * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn
+     * Provides oauth return data.
+     *
+     * @param ?array $oauthreturn
+     * @phpstan-param array{client:\stdClass,params:array<string,string>}|null $oauthreturn
      * @return array{clientname: string, backurl: string}|null
      */
     private static function oauth_return_data(?array $oauthreturn): ?array {
@@ -177,6 +198,8 @@ final class location_selection {
     }
 
     /**
+     * Provides history data.
+     *
      * @return array{empty: bool, entries: list<array<string, string>>}
      */
     private static function history_data(): array {

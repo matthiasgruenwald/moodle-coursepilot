@@ -35,6 +35,8 @@ final class cm_references {
     public const KIND_COURSE_COMPLETION = 'course_completion';
 
     /**
+     * Provides references to.
+     *
      * @param int $cmid
      * @return array<int, array{kind: string, location_id: int, location: string}> location_id is the
      *         cmid (activity), section id (section) or course id (course completion).
@@ -141,6 +143,13 @@ final class cm_references {
         return ($node['type'] ?? null) === 'completion' && (int) ($node['cm'] ?? -1) === 0;
     }
 
+    /**
+     * Provides tree points at.
+     *
+     * @param string $availability The availability.
+     * @param int $cmid The cmid.
+     * @return bool
+     */
     private static function tree_points_at(string $availability, int $cmid): bool {
         $tree = json_decode($availability, true);
         if (!is_array($tree)) {

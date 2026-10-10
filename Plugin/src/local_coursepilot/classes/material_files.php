@@ -420,6 +420,8 @@ final class material_files {
     }
 
     /**
+     * Provides location for value.
+     *
      * @param string $locationkey
      * @return pointer_location
      * @throws \moodle_exception invalidmateriallocation

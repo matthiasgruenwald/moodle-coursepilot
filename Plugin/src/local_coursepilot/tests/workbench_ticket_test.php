@@ -72,6 +72,11 @@ final class workbench_ticket_test extends \advanced_testcase {
         workbench_ticket::redeem($secret);
     }
 
+    /**
+     * Provides cases for requester provider.
+     *
+     * @return array
+     */
     public static function requester_provider(): array {
         return ['anonymous' => [false], 'another teacher' => [true]];
     }
@@ -379,6 +384,12 @@ final class workbench_ticket_test extends \advanced_testcase {
         workbench_ticket::redeem($secret);
     }
 
+    /**
+     * Provides grant remote access.
+     *
+     * @param int $userid The userid.
+     * @return int
+     */
     private function grant_remote_access(int $userid): int {
         $roleid = create_role('Remote access', 'remote' . $userid, '', '');
         assign_capability(remote_access::CAPABILITY, CAP_ALLOW, $roleid, \context_system::instance()->id, true);
@@ -386,12 +397,25 @@ final class workbench_ticket_test extends \advanced_testcase {
         return $roleid;
     }
 
+    /**
+     * Provides secret from url.
+     *
+     * @param string $url The url.
+     * @return string
+     */
     private function secret_from_url(string $url): string {
         $query = parse_url($url, PHP_URL_QUERY);
         parse_str((string) $query, $params);
         return (string) $params['ticket'];
     }
 
+    /**
+     * Provides issue connection.
+     *
+     * @param int $userid The userid.
+     * @param bool $grant The grant.
+     * @return int
+     */
     private function issue_connection(int $userid, bool $grant = true): int {
         global $DB;
 
@@ -419,6 +443,13 @@ final class workbench_ticket_test extends \advanced_testcase {
         return $id;
     }
 
+    /**
+     * Stores the workbench ticket test.
+     *
+     * @param string $filename The filename.
+     * @param string $content The content.
+     * @param bool $overwrite The overwrite.
+     */
     private function store(string $filename, string $content, bool $overwrite = false): void {
         $fs = get_file_storage();
         $filerecord = [

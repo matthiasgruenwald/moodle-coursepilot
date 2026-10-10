@@ -39,9 +39,14 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class activity_drift extends check {
     /**
+     * Creates the activity drift.
+     *
      * @param string $modname Moodle module name (mod_XXX without prefix).
      */
-    public function __construct(private readonly string $modname) {
+    public function __construct(
+        /** @var string Moodle module name (mod_XXX without prefix). */
+        private readonly string $modname,
+    ) {
     }
 
     /**
@@ -54,6 +59,8 @@ final class activity_drift extends check {
     }
 
     /**
+     * Returns name.
+     *
      * @return string
      */
     public function get_name(): string {
@@ -61,6 +68,8 @@ final class activity_drift extends check {
     }
 
     /**
+     * Returns result.
+     *
      * @return result
      */
     public function get_result(): result {

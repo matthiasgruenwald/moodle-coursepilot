@@ -49,6 +49,8 @@ final class update_section extends external_api {
     private const SETTABLE_FIELDS = ['name', 'summary', 'visible'];
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -64,6 +66,8 @@ final class update_section extends external_api {
     }
 
     /**
+     * Runs the update section tool.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string $fieldsjson
@@ -155,6 +159,8 @@ final class update_section extends external_api {
     }
 
     /**
+     * Provides diff.
+     *
      * @param array $patch
      * @param array $before
      * @param \section_info $after
@@ -177,6 +183,8 @@ final class update_section extends external_api {
     }
 
     /**
+     * Builds message.
+     *
      * @param array $changes
      * @param bool $hidesactivities
      * @return string
@@ -201,6 +209,8 @@ final class update_section extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

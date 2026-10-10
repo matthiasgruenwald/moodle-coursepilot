@@ -88,6 +88,8 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -99,6 +101,8 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Provides patch.
+     *
      * @param int $cmid
      * @param array $felder
      * @param string $mode
@@ -120,6 +124,8 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Returns raw quiz table row.
+     *
      * @param int $cmid
      * @return \stdClass Raw quiz table row.
      */
@@ -129,7 +135,12 @@ final class update_quiz_settings_test extends \advanced_testcase {
         return $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST);
     }
 
-    /** An 80% requirement is supplied as points, never as a percentage. */
+    /**
+     * An 80% requirement is supplied as points, never as a percentage.
+     *
+     * @param float $maximum The maximum.
+     * @param float $passing The passing.
+     */
     #[DataProvider('passing_grades')]
     public function test_gradepass_is_persisted_in_quiz_grade_points(float $maximum, float $passing): void {
         global $DB;
@@ -148,6 +159,11 @@ final class update_quiz_settings_test extends \advanced_testcase {
         $this->assertEquals($passing, json_decode($changes['gradepass']['after_json']));
     }
 
+    /**
+     * Provides passing grades.
+     *
+     * @return array
+     */
     public static function passing_grades(): array {
         return [
             'ten points' => [10.0, 8.0], 'twenty-five points' => [25.0, 20.0],
@@ -155,7 +171,9 @@ final class update_quiz_settings_test extends \advanced_testcase {
         ];
     }
 
-    /** Read tools and the published field catalog agree on points and persisted values. */
+    /**
+     * Read tools and the published field catalog agree on points and persisted values.
+     */
     public function test_gradepass_readback_and_contract_are_consistent(): void {
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
@@ -186,7 +204,9 @@ final class update_quiz_settings_test extends \advanced_testcase {
         $this->assertStringContainsString('0 to the maximum', $passing['meaning']);
     }
 
-    /** Changing the threshold preserves questions, pages, sections, feedback and settings. */
+    /**
+     * Changing the threshold preserves questions, pages, sections, feedback and settings.
+     */
     public function test_gradepass_preserves_existing_quiz_content_and_settings(): void {
         global $DB;
         $this->resetAfterTest();
@@ -220,7 +240,11 @@ final class update_quiz_settings_test extends \advanced_testcase {
         }
     }
 
-    /** Invalid thresholds reject the entire call before even changing the maximum grade. */
+    /**
+     * Invalid thresholds reject the entire call before even changing the maximum grade.
+     *
+     * @param mixed $passing The passing.
+     */
     #[DataProvider('invalid_passing_grades')]
     public function test_invalid_gradepass_rejects_the_entire_patch(mixed $passing): void {
         global $DB;
@@ -242,6 +266,11 @@ final class update_quiz_settings_test extends \advanced_testcase {
         $this->assertSame($versions, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $quiz->cmid]));
     }
 
+    /**
+     * Provides invalid passing grades.
+     *
+     * @return array
+     */
     public static function invalid_passing_grades(): array {
         return [
             'negative' => [-0.01], 'above new maximum' => [8], 'percent mistaken for points' => [80],
@@ -251,7 +280,9 @@ final class update_quiz_settings_test extends \advanced_testcase {
         ];
     }
 
-    /** JSON can decode an overflowing numeric literal to infinity. */
+    /**
+     * JSON can decode an overflowing numeric literal to infinity.
+     */
     public function test_nonfinite_numeric_gradepass_is_rejected_before_writing(): void {
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
@@ -266,7 +297,9 @@ final class update_quiz_settings_test extends \advanced_testcase {
         $this->assertSame($before, get_module_settings::execute($quiz->cmid)['settings_json']);
     }
 
-    /** New maximum, decimal points and disabling the threshold survive the Moodle lifecycle. */
+    /**
+     * New maximum, decimal points and disabling the threshold survive the Moodle lifecycle.
+     */
     public function test_gradepass_uses_new_maximum_and_can_be_disabled(): void {
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();

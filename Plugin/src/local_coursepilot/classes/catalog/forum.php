@@ -43,10 +43,20 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class forum implements module_catalog {
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'forum';
     }
 
+    /**
+     * Provides fields.
+     *
+     * @return array
+     */
     public static function fields(): array {
         global $CFG;
 
@@ -331,10 +341,23 @@ final class forum implements module_catalog {
         return $fields;
     }
 
+    /**
+     * Provides state.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
+     * @return array
+     */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return module_state::unknown(self::modname(), $instanceid, $fullcontent);
     }
 
+    /**
+     * Writes options.
+     *
+     * @return array
+     */
     public static function write_options(): array {
         return [
             'date_order_rules' => [['reference' => 'duedate', 'field' => 'cutoffdate', 'mode' => 'not_before']],
@@ -342,10 +365,20 @@ final class forum implements module_catalog {
         ];
     }
 
+    /**
+     * Provides common field names.
+     *
+     * @return array
+     */
     public static function common_field_names(): array {
         return array_map(static fn (field $f): string => $f->name, self::fields());
     }
 
+    /**
+     * Provides pseudofields.
+     *
+     * @return array
+     */
     public static function pseudofields(): array {
         return [
             new field(
@@ -364,6 +397,11 @@ final class forum implements module_catalog {
         ];
     }
 
+    /**
+     * Provides blocklist.
+     *
+     * @return array
+     */
     public static function blocklist(): array {
         return [
             'assesstimestart',
@@ -371,6 +409,11 @@ final class forum implements module_catalog {
         ];
     }
 
+    /**
+     * Provides combination rules.
+     *
+     * @return array
+     */
     public static function combination_rules(): array {
         return [
             '"cutoffdate" must not be before "duedate" (mod/forum/mod_form.php: validation()).',
@@ -379,6 +422,11 @@ final class forum implements module_catalog {
         ];
     }
 
+    /**
+     * Provides side effects.
+     *
+     * @return array
+     */
     public static function side_effects(): array {
         return [
             '"forcesubscribe"=2 (auto-subscription) immediately subscribes all potential course participants '
@@ -389,18 +437,38 @@ final class forum implements module_catalog {
         ];
     }
 
+    /**
+     * Provides bundles.
+     *
+     * @return array
+     */
     public static function bundles(): array {
         return [];
     }
 
+    /**
+     * Writes route.
+     *
+     * @return ?string
+     */
     public static function write_route(): ?string {
         return null;
     }
 
+    /**
+     * Provides checked constants.
+     *
+     * @return array
+     */
     public static function checked_constants(): array {
         return ['FORUM_INITIALSUBSCRIBE'];
     }
 
+    /**
+     * Provides learner locks.
+     *
+     * @return array
+     */
     public static function learner_locks(): array {
         return [
             'cutoffdate' => ['op' => 'nonzero',
@@ -415,6 +483,8 @@ final class forum implements module_catalog {
     /**
      * The teacher grades - unless an instance has neither post rating nor
      * overall grade.
+     *
+     * @param int $instanceid The instanceid.
      */
     public static function grade_origin(int $instanceid = 0): string {
         global $DB;
@@ -428,6 +498,11 @@ final class forum implements module_catalog {
         return learner_locks::GRADE_TEACHER;
     }
 
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

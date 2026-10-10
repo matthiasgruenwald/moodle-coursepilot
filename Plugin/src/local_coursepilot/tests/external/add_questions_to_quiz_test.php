@@ -36,6 +36,8 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 #[CoversClass(add_questions_to_quiz::class)]
 final class add_questions_to_quiz_test extends \advanced_testcase {
     /**
+     * Creates course with quiz.
+     *
      * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass} Course, quiz, question category.
      */
     private function create_course_with_quiz(): array {
@@ -49,6 +51,8 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * Logs in editing teacher.
+     *
      * @param \stdClass $course
      * @return \stdClass
      */
@@ -250,6 +254,8 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * Seeds attempt.
+     *
      * @param int $quizid
      * @param int $userid
      * @return void
@@ -273,6 +279,8 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

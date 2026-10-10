@@ -32,7 +32,12 @@ defined('MOODLE_INTERNAL') || die();
 #[CoversClass(add_glossary_entries::class)]
 #[CoversClass(\local_coursepilot\glossary_entry_writer::class)]
 final class add_glossary_entries_test extends \advanced_testcase {
-    /** The registered External path applies defaults and validates returns. */
+    /**
+     * The registered External path applies defaults and validates returns.
+     *
+     * @param int $cmid The cmid.
+     * @param array $entries The entries.
+     */
     private function call(int $cmid, array $entries): array {
         global $USER;
         $USER->ignoresesskey = true;

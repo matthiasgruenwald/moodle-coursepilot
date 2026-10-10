@@ -32,6 +32,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class question_bank_context {
     /**
+     * Resolves the question bank context.
+     *
      * @param int $courseid Course ID
      * @param int $questionbankid Question bank course module ID
      * @return array{0: \stdClass, 1: context_module} Module row with bank name and validated context

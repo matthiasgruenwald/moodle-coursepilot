@@ -56,6 +56,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class report_clone_lineage extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -65,6 +67,8 @@ final class report_clone_lineage extends external_api {
     }
 
     /**
+     * Runs the report clone lineage tool.
+     *
      * @param int $cmid
      * @return array
      * @throws invalid_parameter_exception
@@ -146,7 +150,8 @@ final class report_clone_lineage extends external_api {
      * not repeatedly resolve it.
      *
      * @param int $contextid
-     * @param array<int, int> $cache By reference, contextid => courseid
+     * @param array $cache By reference, contextid => courseid
+     * @phpstan-param array<int,int> $cache
      * @return int
      */
     private static function course_of_context(int $contextid, array &$cache): int {
@@ -163,6 +168,8 @@ final class report_clone_lineage extends external_api {
     }
 
     /**
+     * Builds message.
+     *
      * @param array $questions
      * @return string
      */
@@ -194,6 +201,8 @@ final class report_clone_lineage extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

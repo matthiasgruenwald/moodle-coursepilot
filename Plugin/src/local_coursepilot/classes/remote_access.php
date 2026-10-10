@@ -32,6 +32,8 @@ final class remote_access {
     public const CAPABILITY = 'local/coursepilot:useremote';
 
     /**
+     * Tells whether the remote access is granted.
+     *
      * @param int|null $userid Defaults to the current user.
      * @return bool
      */
@@ -113,6 +115,8 @@ final class remote_access {
     }
 
     /**
+     * Provides selected cohort ids.
+     *
      * @return int[]
      */
     private static function selected_cohort_ids(): array {

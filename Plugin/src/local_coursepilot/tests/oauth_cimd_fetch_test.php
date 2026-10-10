@@ -24,7 +24,9 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
     use \local_coursepilot\tests\webdav\webdav_instance_fixture;
     use \local_coursepilot\tests\oauth_budget_race;
 
-    /** A CA-signed local peer works; untrusted and mismatched peers cannot register clients. */
+    /**
+     * A CA-signed local peer works; untrusted and mismatched peers cannot register clients.
+     */
     public function test_tls_identity_is_required(): void {
         $this->with_peer('trusted', function (string $base): void {
             $client = oauth_lib::get_client($base . '/valid');
@@ -37,7 +39,9 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         }
     }
 
-    /** The receive limit applies without Content-Length, including decoded chunked bodies. */
+    /**
+     * The receive limit applies without Content-Length, including decoded chunked bodies.
+     */
     public function test_oversized_streaming_metadata_is_not_cached(): void {
         foreach (['/chunked', '/unframed'] as $path) {
             $this->with_peer('trusted', function (string $base) use ($path): void {
@@ -49,7 +53,9 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         }
     }
 
-    /** Moodle host/port policy, redirects and the existing five-second deadline remain enforced. */
+    /**
+     * Moodle host/port policy, redirects and the existing five-second deadline remain enforced.
+     */
     public function test_fetch_policy_and_deadline_are_preserved(): void {
         global $CFG;
         $this->with_peer('trusted', function (string $base, string $requests) use ($CFG): void {
@@ -73,7 +79,9 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         });
     }
 
-    /** Public metadata never includes the configured storage credentials. */
+    /**
+     * Public metadata never includes the configured storage credentials.
+     */
     public function test_public_fetch_sends_no_storage_credentials(): void {
         $this->with_peer('trusted', function (string $base, string $requests): void {
             $user = $this->getDataGenerator()->create_user();
@@ -91,7 +99,9 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         });
     }
 
-    /** Unknown ids up to the site/source limits are fetched; the first excess starts no network work (#643). */
+    /**
+     * Unknown ids up to the site/source limits are fetched; the first excess starts no network work (#643).
+     */
     public function test_unknown_ids_are_budgeted_before_first_fetch(): void {
         $this->with_peer('trusted', function (string $base, string $requests): void {
             $this->cimd_limits(3, 2);
@@ -123,7 +133,9 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         });
     }
 
-    /** Failed fetches are cached negatively for a finite time; repeats start no network work (#643). */
+    /**
+     * Failed fetches are cached negatively for a finite time; repeats start no network work (#643).
+     */
     public function test_failed_fetches_are_negatively_cached(): void {
         global $DB;
         $this->with_peer('trusted', function (string $base, string $requests) use ($DB): void {
@@ -155,7 +167,9 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         });
     }
 
-    /** Moodle net blocks and the streaming size cap still apply to budgeted fetches; both failures are cached. */
+    /**
+     * Moodle net blocks and the streaming size cap still apply to budgeted fetches; both failures are cached.
+     */
     public function test_transport_failures_use_budget_and_are_negatively_cached(): void {
         global $CFG;
         $this->with_peer('trusted', function (string $base, string $requests) use ($CFG): void {
@@ -175,7 +189,9 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         });
     }
 
-    /** A parallel first lookup that lost the insert race returns the stored client, not a DB error. */
+    /**
+     * A parallel first lookup that lost the insert race returns the stored client, not a DB error.
+     */
     public function test_duplicate_cimd_insert_returns_stored_client(): void {
         $this->resetAfterTest();
         $url = 'https://client.example/cimd.json';
@@ -184,7 +200,9 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         $this->assertSame((int) $first->id, (int) oauth_lib::cache_cimd_client($url, $metadata)->id);
     }
 
-    /** Overlong and non-https ids are refused before budget and network. */
+    /**
+     * Overlong and non-https ids are refused before budget and network.
+     */
     public function test_invalid_ids_consume_no_budget(): void {
         global $DB;
         $this->with_peer('trusted', function (string $base, string $requests) use ($DB): void {
@@ -198,7 +216,9 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         });
     }
 
-    /** Two real processes race for the last site fetch unit: exactly one fetch happens (#643). */
+    /**
+     * Two real processes race for the last site fetch unit: exactly one fetch happens (#643).
+     */
     public function test_parallel_unknown_ids_cannot_exceed_budget(): void {
         $this->with_peer('trusted', function (string $base, string $requests): void {
             global $CFG;
@@ -228,26 +248,52 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         return oauth_lib::get_client($clientid, $retryafter);
     }
 
+    /**
+     * Provides cimd limits.
+     *
+     * @param int $site The site.
+     * @param int $source The source.
+     */
     private function cimd_limits(int $site, int $source): void {
         set_config('oauthcimdsitelimit', $site, 'local_coursepilot');
         set_config('oauthcimdsourcelimit', $source, 'local_coursepilot');
     }
 
+    /**
+     * Provides gets.
+     *
+     * @param string $requests The requests.
+     * @return int
+     */
     private function gets(string $requests): int {
         return is_file($requests) ? substr_count(file_get_contents($requests), 'GET ') : 0;
     }
 
+    /**
+     * Provides stored.
+     *
+     * @param string $clientid The clientid.
+     * @return bool
+     */
     private function stored(string $clientid): bool {
         global $DB;
         return $DB->record_exists('local_coursepilot_oauth_client', ['clientid' => $clientid]);
     }
 
+    /**
+     * Provides authorize params.
+     *
+     * @param string $clientid The clientid.
+     * @return array
+     */
     private function authorize_params(string $clientid): array {
         return ['response_type' => 'code', 'client_id' => $clientid, 'redirect_uri' => 'https://client.example/callback',
             'code_challenge' => str_repeat('c', 43), 'code_challenge_method' => 'S256'];
     }
 
-    /** Budget state holds only HMACs: no URL, path or address. */
+    /**
+     * Budget state holds only HMACs: no URL, path or address.
+     */
     private function assert_no_raw_identifiers(): void {
         global $DB;
         foreach ($DB->get_records('local_coursepilot_oauth_budget') as $row) {
@@ -255,7 +301,12 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         }
     }
 
-    /** Start a local TLS peer signed by a freshly generated synthetic CA. */
+    /**
+     * Start a local TLS peer signed by a freshly generated synthetic CA.
+     *
+     * @param string $identity The identity.
+     * @param callable $check The check.
+     */
     private function with_peer(string $identity, callable $check): void {
         global $CFG;
         $this->resetAfterTest();
@@ -309,7 +360,11 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         }
     }
 
-    /** Rejection must not leave a cached client record behind. */
+    /**
+     * Rejection must not leave a cached client record behind.
+     *
+     * @param string $url The url.
+     */
     private function assert_rejected(string $url): void {
         global $DB;
         $this->assertNull(oauth_lib::get_client($url));

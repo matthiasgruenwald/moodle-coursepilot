@@ -45,6 +45,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class read_context_file extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -61,6 +63,8 @@ class read_context_file extends external_api {
     }
 
     /**
+     * Runs the read context file tool.
+     *
      * @param string $path
      * @param bool $previouslocation
      * @return array
@@ -120,6 +124,8 @@ class read_context_file extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -27,6 +27,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class glossary_entry_writer {
     /**
+     * Adds the glossary entry writer.
+     *
      * @param array $input Validated External entry
      * @param \stdClass $course
      * @param \stdClass $cm
@@ -114,7 +116,16 @@ final class glossary_entry_writer {
         }
     }
 
-    /** Explicit state follows mod/glossary/approve.php, limited to this new entry. */
+    /**
+     * Explicit state follows mod/glossary/approve.php, limited to this new entry.
+     *
+     * @param array $input The input.
+     * @param \stdClass $entry The entry.
+     * @param \stdClass $course The course.
+     * @param \stdClass $cm The cm.
+     * @param \stdClass $glossary The glossary.
+     * @param \context_module $context The context.
+     */
     private static function approval(
         array $input,
         \stdClass $entry,
@@ -149,7 +160,14 @@ final class glossary_entry_writer {
         }
     }
 
-    /** Copy teacher material through the shared location-aware draft path. */
+    /**
+     * Copy teacher material through the shared location-aware draft path.
+     *
+     * @param array $input The input.
+     * @param \stdClass $entry The entry.
+     * @param \stdClass $course The course.
+     * @param \context_module $context The context.
+     */
     private static function files(
         array $input,
         \stdClass $entry,
@@ -195,7 +213,13 @@ final class glossary_entry_writer {
         }
     }
 
-    /** Category metadata only; creation follows mod/glossary/editcategories.php. */
+    /**
+     * Category metadata only; creation follows mod/glossary/editcategories.php.
+     *
+     * @param array $names The names.
+     * @param \stdClass $glossary The glossary.
+     * @param \context_module $context The context.
+     */
     private static function categories(array $names, \stdClass $glossary, \context_module $context): array {
         global $DB;
         $ids = [];

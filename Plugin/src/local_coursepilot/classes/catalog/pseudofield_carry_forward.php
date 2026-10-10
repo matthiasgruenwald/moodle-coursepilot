@@ -36,7 +36,8 @@ final class pseudofield_carry_forward {
      * Apply all six preparation steps for $modname.
      *
      * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param \stdClass $moduleinfo Updated in place.
      * @param array $before Current state before writing, for editor pseudofields.
      * @param \stdClass $cm
@@ -68,9 +69,10 @@ final class pseudofield_carry_forward {
      * Accept strings as shorthand and wrap them in editor arrays. Reject
      * other values without text, naming the field instead of losing content.
      *
-     * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param array $patch Normalised in place.
+     * @param string $modname
      * @return void
      * @throws \moodle_exception invalideditorpseudofield
      */
@@ -194,7 +196,8 @@ final class pseudofield_carry_forward {
      *
      * Skip null defaults, used for editor arrays, since null is no useful substitute.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param \stdClass $moduleinfo Updated in place.
      * @param array $patch
      * @return void
@@ -214,9 +217,12 @@ final class pseudofield_carry_forward {
      * Reconstruct editor arrays from the flat catalog contract. Moodle writes
      * content from the editor array rather than the instance columns.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $modname The modname.
+     * @param string $catalogclass
+     * @phpstan-param class-string<module_catalog> $catalogclass
      * @param \stdClass $moduleinfo Updated in place.
      * @param array $before
+     * @param \stdClass $cm The cm.
      * @param array $patch
      * @return void
      */

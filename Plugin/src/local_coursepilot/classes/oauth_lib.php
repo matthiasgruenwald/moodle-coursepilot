@@ -568,7 +568,8 @@ final class oauth_lib {
      * redirects (error/error_description/state). Omit empty or absent values.
      *
      * @param string $redirecturi
-     * @param array<string, ?string> $params
+     * @param array $params
+     * @phpstan-param array<string,?string> $params
      * @return string
      */
     public static function build_redirect_url(string $redirecturi, array $params): string {
@@ -1023,18 +1024,29 @@ final class oauth_lib {
         );
     }
 
-    /** Stable issuing connection, independent of the token generation. */
+    /**
+     * Stable issuing connection, independent of the token generation.
+     */
     public static function current_connection_id(): ?int {
         return self::$currentconnectionid;
     }
 
-    /** Tickets keep their own expiry; require the grant and its owner. */
+    /**
+     * Tickets keep their own expiry; require the grant and its owner.
+     *
+     * @param int $id The id.
+     * @param int $userid The userid.
+     */
     public static function grant_active(int $id, int $userid): bool {
         global $DB;
         return $DB->record_exists(self::GRANT_TABLE, ['id' => $id, 'userid' => $userid, 'revoked' => 0]);
     }
 
-    /** Acquire the shared connection row within a delegated transaction. */
+    /**
+     * Acquire the shared connection row within a delegated transaction.
+     *
+     * @param int $id The id.
+     */
     private static function lock_connection(int $id): bool {
         global $DB;
         $marker = self::random_token(32);
@@ -1046,7 +1058,11 @@ final class oauth_lib {
         return $DB->record_exists(self::GRANT_TABLE, ['id' => $id, 'statehash' => $marker, 'revoked' => 0]);
     }
 
-    /** Revoke all generations and bound tickets while holding the grant lock. */
+    /**
+     * Revoke all generations and bound tickets while holding the grant lock.
+     *
+     * @param int $id The id.
+     */
     private static function revoke_locked_connection(int $id): void {
         global $DB;
         $DB->set_field(self::GRANT_TABLE, 'revoked', 1, ['id' => $id]);
@@ -1090,7 +1106,11 @@ final class oauth_lib {
     }
 
     /**
-     * @param array<string, string> $headers
+     * Provides result.
+     *
+     * @param int $status The status.
+     * @param array $headers
+     * @phpstan-param array<string,string> $headers
      * @param array $body
      * @return array{status: int, headers: array<string, string>, body: array}
      */

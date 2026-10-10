@@ -79,6 +79,11 @@ final class activity_file_supplement_test extends \advanced_testcase {
         $this->assertStringContainsString('<description>Scene 0</description>', activity_backup::export($record));
     }
 
+    /**
+     * Provides gallery fixture.
+     *
+     * @return array
+     */
     private function gallery_fixture(): array {
         if (!\core_plugin_manager::instance()->get_plugin_info('mod_lightboxgallery')) {
             $this->markTestSkipped('Requires real mod_lightboxgallery; run the isolated optional-plugin suite.');
@@ -112,6 +117,11 @@ final class activity_file_supplement_test extends \advanced_testcase {
         $this->assertEquals($before, $this->durable_state());
     }
 
+    /**
+     * Provides durable state.
+     *
+     * @return array
+     */
     private function durable_state(): array {
         global $DB;
         $state = [];
@@ -236,6 +246,13 @@ final class activity_file_supplement_test extends \advanced_testcase {
         $this->assertTrue((bool) get_fast_modinfo($course->id)->get_cm($empty['cmid'])->visible);
     }
 
+    /**
+     * Provides material image.
+     *
+     * @param string $filename The filename.
+     * @param int $width The width.
+     * @param int $height The height.
+     */
     private function material_image(string $filename, int $width = 360, int $height = 120): void {
         $image = imagecreatetruecolor($width, $height);
         ob_start();
@@ -249,12 +266,29 @@ final class activity_file_supplement_test extends \advanced_testcase {
         );
     }
 
+    /**
+     * Calls create.
+     *
+     * @param int $courseid The courseid.
+     * @param string $xml The xml.
+     * @param array $files The files.
+     * @return array
+     */
     private function call_create(int $courseid, string $xml, array $files): array {
         $response = $this->call_response($courseid, $xml, $files);
         $this->assertFalse($response['error'], json_encode($response));
         return $response['data'];
     }
 
+    /**
+     * Calls response.
+     *
+     * @param int $courseid The courseid.
+     * @param string $xml The xml.
+     * @param array $files The files.
+     * @param array $extra The extra.
+     * @return array
+     */
     private function call_response(int $courseid, string $xml, array $files, array $extra = []): array {
         $_POST['sesskey'] = sesskey();
         $response = external_api::call_external_function('local_coursepilot_create_activity_from_xml', [

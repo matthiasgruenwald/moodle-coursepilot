@@ -61,6 +61,8 @@ final class write_target_test extends \advanced_testcase {
     }
 
     /**
+     * Counts modules.
+     *
      * @param string $modname
      * @return int
      */
@@ -70,6 +72,8 @@ final class write_target_test extends \advanced_testcase {
     }
 
     /**
+     * Returns raw instance row.
+     *
      * @param string $modname
      * @param int $cmid
      * @return \stdClass Raw instance row.
@@ -81,6 +85,8 @@ final class write_target_test extends \advanced_testcase {
     }
 
     /**
+     * Provides quiz fields.
+     *
      * @return array<string, mixed>
      */
     private static function quiz_fields(): array {
@@ -88,7 +94,9 @@ final class write_target_test extends \advanced_testcase {
             'preferredbehaviour' => 'deferredfeedback'];
     }
 
-    /** The same date violation is rejected identically on create and update, without mutation. */
+    /**
+     * The same date violation is rejected identically on create and update, without mutation.
+     */
     public function test_same_date_violation_is_rejected_on_create_and_update(): void {
         $forum = $this->getDataGenerator()->create_module('forum', ['course' => $this->course->id]);
         $dates = ['duedate' => 2000000000, 'cutoffdate' => 1900000000];
@@ -108,7 +116,9 @@ final class write_target_test extends \advanced_testcase {
         $this->assertEquals(0, $this->instance('forum', $forum->cmid)->duedate);
     }
 
-    /** Quiz keeps its own write tools, but decides the date rule the same way. */
+    /**
+     * Quiz keeps its own write tools, but decides the date rule the same way.
+     */
     public function test_same_quiz_date_violation_is_rejected_on_create_and_update(): void {
         $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $this->course->id]);
         $dates = ['timeopen' => 2000000000, 'timeclose' => 1900000000];
@@ -126,7 +136,9 @@ final class write_target_test extends \advanced_testcase {
         $this->assertEquals(0, $this->instance('quiz', $quiz->cmid)->timeopen);
     }
 
-    /** Stealth without allowstealth is rejected by every catalog write path. */
+    /**
+     * Stealth without allowstealth is rejected by every catalog write path.
+     */
     public function test_stealth_is_rejected_on_every_write_path(): void {
         set_config('allowstealth', 0);
         $forum = $this->getDataGenerator()->create_module('forum', ['course' => $this->course->id]);
@@ -146,7 +158,9 @@ final class write_target_test extends \advanced_testcase {
         $this->assertSame(1, $this->count_modules('quiz'));
     }
 
-    /** A filled form default is part of the target: its learner lock counts on create, as a change does on update. */
+    /**
+     * A filled form default is part of the target: its learner lock counts on create, as a change does on update.
+     */
     public function test_learner_lock_from_default_and_from_change_is_rejected_alike(): void {
         $choice = create_module::execute($this->course->id, 0, 'choice', json_encode([
             'name' => 'C', 'intro' => '', 'allowupdate' => 1, 'option' => ['Ja', 'Nein'],
@@ -168,7 +182,9 @@ final class write_target_test extends \advanced_testcase {
         $this->assertEquals(1, $this->instance('choice', $choice['cmid'])->allowupdate);
     }
 
-    /** Unknown and blocked fields stay rejected on both paths. */
+    /**
+     * Unknown and blocked fields stay rejected on both paths.
+     */
     public function test_unknown_and_blocked_fields_are_rejected_on_create_and_update(): void {
         $forum = $this->getDataGenerator()->create_module('forum', ['course' => $this->course->id]);
         foreach (['nosuchfield' => 'unknownfield', 'course' => 'blockedfield'] as $field => $errorcode) {
@@ -185,7 +201,9 @@ final class write_target_test extends \advanced_testcase {
         $this->assertSame(1, $this->count_modules('forum'));
     }
 
-    /** Unnamed fields take their catalog form defaults and cannot violate a rule. */
+    /**
+     * Unnamed fields take their catalog form defaults and cannot violate a rule.
+     */
     public function test_create_fills_defaults_into_the_target(): void {
         $result = create_module::execute($this->course->id, 0, 'assign', json_encode([
             'name' => 'A', 'intro' => '', 'cutoffdate' => 1900000000,
@@ -197,7 +215,9 @@ final class write_target_test extends \advanced_testcase {
         $this->assertSame(['cutoffdate', 'intro', 'name'], $this->sorted(array_column($result['created_fields'], 'field')));
     }
 
-    /** A date change is checked against the full target: unchanged current values count. */
+    /**
+     * A date change is checked against the full target: unchanged current values count.
+     */
     public function test_date_patch_is_checked_against_unchanged_current_values(): void {
         $assign = $this->getDataGenerator()->create_module('assign', [
             'course' => $this->course->id, 'allowsubmissionsfromdate' => 1800000000, 'duedate' => 0, 'cutoffdate' => 0,
@@ -210,7 +230,9 @@ final class write_target_test extends \advanced_testcase {
         $this->assertEquals(0, $this->instance('assign', $assign->cmid)->duedate);
     }
 
-    /** A mixed target (one date changed, the other current) is accepted when valid. */
+    /**
+     * A mixed target (one date changed, the other current) is accepted when valid.
+     */
     public function test_valid_mixed_target_is_written(): void {
         $assign = $this->getDataGenerator()->create_module('assign', [
             'course' => $this->course->id, 'allowsubmissionsfromdate' => 1800000000, 'duedate' => 0, 'cutoffdate' => 0,
@@ -221,7 +243,9 @@ final class write_target_test extends \advanced_testcase {
         $this->assertEquals(1900000000, $this->instance('assign', $assign->cmid)->duedate);
     }
 
-    /** An independent patch does not re-judge historic invalid dates. */
+    /**
+     * An independent patch does not re-judge historic invalid dates.
+     */
     public function test_independent_patch_ignores_historic_invalid_dates(): void {
         global $DB;
         $forum = $this->getDataGenerator()->create_module('forum', ['course' => $this->course->id]);
@@ -237,7 +261,9 @@ final class write_target_test extends \advanced_testcase {
         $this->assertSame('Renamed quiz', $this->instance('quiz', $quiz->cmid)->name);
     }
 
-    /** The parallel-length rule of choice applies to create and update alike. */
+    /**
+     * The parallel-length rule of choice applies to create and update alike.
+     */
     public function test_parallel_array_lengths_are_enforced_on_create_and_update(): void {
         $choice = create_module::execute($this->course->id, 0, 'choice', json_encode([
             'name' => 'C', 'intro' => '', 'allowupdate' => 1, 'option' => ['Ja', 'Nein'],
@@ -262,6 +288,8 @@ final class write_target_test extends \advanced_testcase {
     }
 
     /**
+     * Tells whether the write target test has option.
+     *
      * @param int $cmid
      * @param string $text
      * @return bool
@@ -273,6 +301,8 @@ final class write_target_test extends \advanced_testcase {
     }
 
     /**
+     * Provides sorted.
+     *
      * @param string[] $values
      * @return string[]
      */

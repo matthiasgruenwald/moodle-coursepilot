@@ -30,6 +30,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(set_completion::class)]
 final class set_completion_test extends \advanced_testcase {
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course (completion tracking on), teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -42,6 +44,8 @@ final class set_completion_test extends \advanced_testcase {
     }
 
     /**
+     * Returns current state, same shape as get_module_settings.
+     *
      * @param int $cmid
      * @return array Current state, same shape as get_module_settings.
      */

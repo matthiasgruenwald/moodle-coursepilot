@@ -41,6 +41,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class get_modules extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -51,6 +53,8 @@ class get_modules extends external_api {
     }
 
     /**
+     * Runs the get modules tool.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @return array
@@ -120,6 +124,8 @@ class get_modules extends external_api {
     }
 
     /**
+     * Provides sequence index.
+     *
      * @param string $sequence
      * @param int $cmid
      * @return int
@@ -131,6 +137,8 @@ class get_modules extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_multiple_structure
      */
     public static function execute_returns(): external_multiple_structure {

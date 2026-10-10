@@ -428,6 +428,8 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
+     * Provides upload material.
+     *
      * @param string $path
      * @param string $content
      * @return void
@@ -438,6 +440,8 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
+     * Provides stored question file.
+     *
      * @param string $component
      * @param string $filearea
      * @param int $itemid

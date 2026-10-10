@@ -47,6 +47,8 @@ require_once($CFG->dirroot . '/course/lib.php');
  */
 class get_quiz_cleanup_plan extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -60,6 +62,8 @@ class get_quiz_cleanup_plan extends external_api {
     }
 
     /**
+     * Runs the get quiz cleanup plan tool.
+     *
      * @param int $cmid
      * @param array $keep_questionbankentryids
      * @return array
@@ -121,6 +125,8 @@ class get_quiz_cleanup_plan extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

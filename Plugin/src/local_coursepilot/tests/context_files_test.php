@@ -290,6 +290,8 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
+     * Creates legacy file.
+     *
      * @param int $contextid
      * @param string $filepath
      * @param string $filename
@@ -370,6 +372,8 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
+     * Returns context ID of the newly logged-in teacher.
+     *
      * @param string $content
      * @return int Context ID of the newly logged-in teacher.
      */
@@ -384,6 +388,8 @@ final class context_files_test extends \advanced_testcase {
     }
 
     /**
+     * Provides journal.
+     *
      * @param int $contextid
      * @return \stored_file|null
      */

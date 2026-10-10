@@ -54,6 +54,8 @@ final class registry {
     }
 
     /**
+     * Returns the catalog class, or null when the activity type has no catalog.
+     *
      * @param string $modname
      * @return module_catalog|null The catalog class, or null when the activity type has no catalog.
      */
@@ -106,6 +108,8 @@ final class registry {
     }
 
     /**
+     * Returns the catalog class.
+     *
      * @param string $modname
      * @return class-string<module_catalog> The catalog class.
      * @throws \moodle_exception unknownmodname when the type is not cataloged.

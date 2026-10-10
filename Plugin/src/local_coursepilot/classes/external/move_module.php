@@ -49,6 +49,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class move_module extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -67,6 +69,8 @@ final class move_module extends external_api {
     }
 
     /**
+     * Runs the move module tool.
+     *
      * @param int $cmid
      * @param int $sectionnum
      * @param int|null $position
@@ -127,6 +131,8 @@ final class move_module extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

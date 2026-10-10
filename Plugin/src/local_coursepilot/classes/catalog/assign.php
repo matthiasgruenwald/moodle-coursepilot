@@ -91,6 +91,11 @@ require_once($CFG->dirroot . '/grade/grading/lib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class assign implements module_catalog {
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'assign';
     }
@@ -123,6 +128,11 @@ final class assign implements module_catalog {
         ];
     }
 
+    /**
+     * Provides fields.
+     *
+     * @return array
+     */
     public static function fields(): array {
         return [
             new field(
@@ -471,6 +481,14 @@ final class assign implements module_catalog {
         ];
     }
 
+    /**
+     * Provides state.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
+     * @return array
+     */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         global $DB;
 
@@ -535,6 +553,11 @@ final class assign implements module_catalog {
         ][$field] ?? $field;
     }
 
+    /**
+     * Writes options.
+     *
+     * @return array
+     */
     public static function write_options(): array {
         return [
             'editor_content' => ['activityeditor' => ['activity', 'activityformat']],
@@ -557,6 +580,11 @@ final class assign implements module_catalog {
         ];
     }
 
+    /**
+     * Provides pseudofields.
+     *
+     * @return array
+     */
     public static function pseudofields(): array {
         return [
             new field(
@@ -773,6 +801,11 @@ final class assign implements module_catalog {
         ];
     }
 
+    /**
+     * Provides blocklist.
+     *
+     * @return array
+     */
     public static function blocklist(): array {
         global $CFG;
 
@@ -788,6 +821,11 @@ final class assign implements module_catalog {
         return $fields;
     }
 
+    /**
+     * Provides combination rules.
+     *
+     * @return array
+     */
     public static function combination_rules(): array {
         return [
             '"duedate" must be after "allowsubmissionsfromdate" if both are set '
@@ -803,6 +841,11 @@ final class assign implements module_catalog {
         ];
     }
 
+    /**
+     * Provides side effects.
+     *
+     * @return array
+     */
     public static function side_effects(): array {
         return [
             '"sendnotifications"=1 sends an email to all teachers of the assignment '
@@ -813,6 +856,11 @@ final class assign implements module_catalog {
         ];
     }
 
+    /**
+     * Provides bundles.
+     *
+     * @return array
+     */
     public static function bundles(): array {
         return [
             'standard' => [
@@ -840,10 +888,20 @@ final class assign implements module_catalog {
         ];
     }
 
+    /**
+     * Writes route.
+     *
+     * @return ?string
+     */
     public static function write_route(): ?string {
         return null;
     }
 
+    /**
+     * Provides checked constants.
+     *
+     * @return array
+     */
     public static function checked_constants(): array {
         // The 34 constants from mod/assign/locallib.php without a callable
         // value set (Spec 0015 §11, ticket #382/#399). Exactly one exception:
@@ -887,6 +945,11 @@ final class assign implements module_catalog {
         ];
     }
 
+    /**
+     * Provides learner locks.
+     *
+     * @return array
+     */
     public static function learner_locks(): array {
         // Baseline from #582, verified against Moodle 5.0.8
         // (mod/assign/locallib.php: submissions_open(), is_blind_marking(),
@@ -914,6 +977,8 @@ final class assign implements module_catalog {
     /**
      * The teacher grades - unless an instance has no grading
      * (grade = 0, e.g. bundle "exercise").
+     *
+     * @param int $instanceid The instanceid.
      */
     public static function grade_origin(int $instanceid = 0): string {
         global $DB;
@@ -924,6 +989,11 @@ final class assign implements module_catalog {
         return learner_locks::GRADE_TEACHER;
     }
 
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

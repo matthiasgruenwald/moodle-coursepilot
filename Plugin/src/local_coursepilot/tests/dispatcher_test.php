@@ -87,6 +87,8 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
@@ -96,13 +98,18 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
+     * Provides headers.
+     *
+     * @param array $overrides The overrides.
      * @return array{origin: null, pathinfo: string, method: string}
      */
     private function headers(array $overrides = []): array {
         return array_merge(['origin' => null, 'pathinfo' => '', 'method' => 'POST'], $overrides);
     }
 
-    /** Named MCP inputs must survive Moodle's positional External invocation (#633). */
+    /**
+     * Named MCP inputs must survive Moodle's positional External invocation (#633).
+     */
     public function test_xml_preview_requires_predecessor_without_mutation(): void {
         $this->resetAfterTest();
         [$token, $arguments] = $this->xml_supersede_fixture();
@@ -157,7 +164,9 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['cmid' => 1]));
     }
 
-    /** Synthetic first module has the historically dangerous truthy cmid 1. */
+    /**
+     * Synthetic first module has the historically dangerous truthy cmid 1.
+     */
     private function xml_supersede_fixture(): array {
         global $DB;
         [$teacher, $token] = $this->create_authenticated_user();
@@ -184,6 +193,13 @@ final class dispatcher_test extends \advanced_testcase {
             'activity_xml' => $xml, 'replaces_cmid' => 1], $other];
     }
 
+    /**
+     * Provides xml call.
+     *
+     * @param string $token The token.
+     * @param array $arguments The arguments.
+     * @return array
+     */
     private function xml_call(string $token, array $arguments): array {
         $response = dispatcher::handle(
             ['id' => 1, 'method' => 'tools/call',
@@ -195,7 +211,9 @@ final class dispatcher_test extends \advanced_testcase {
         return $response['body']['result'];
     }
 
-    /** Snapshot durable activity state; ordinary access auditing is allowed. */
+    /**
+     * Snapshot durable activity state; ordinary access auditing is allowed.
+     */
     private function xml_mutation_state(): array {
         global $DB;
         $result = [];
@@ -208,7 +226,9 @@ final class dispatcher_test extends \advanced_testcase {
         return $result;
     }
 
-    /** History never exposes submission metadata or profile values, including legacy rows. */
+    /**
+     * History never exposes submission metadata or profile values, including legacy rows.
+     */
     public function test_history_comparison_protects_current_and_legacy_data(): void {
         global $DB, $CFG;
         $this->resetAfterTest();
@@ -897,6 +917,8 @@ XML;
     }
 
     /**
+     * Returns questionid of the latest version.
+     *
      * @param int $questionbankentryid
      * @return int questionid of the latest version
      */

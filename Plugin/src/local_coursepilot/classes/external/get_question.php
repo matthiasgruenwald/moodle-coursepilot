@@ -45,6 +45,8 @@ require_once($CFG->libdir . '/questionlib.php');
  */
 class get_question extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -56,6 +58,8 @@ class get_question extends external_api {
     }
 
     /**
+     * Runs the get question tool.
+     *
      * @param int $categoryid
      * @param string $name
      * @param int $questionid
@@ -207,6 +211,8 @@ class get_question extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

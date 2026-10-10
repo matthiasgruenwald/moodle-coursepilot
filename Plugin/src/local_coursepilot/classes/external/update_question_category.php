@@ -47,6 +47,8 @@ require_once($CFG->libdir . '/questionlib.php');
  */
 final class update_question_category extends external_api {
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -58,6 +60,8 @@ final class update_question_category extends external_api {
     }
 
     /**
+     * Runs the update question category tool.
+     *
      * @param int $categoryid
      * @param string $name
      * @param int $parent
@@ -171,6 +175,8 @@ final class update_question_category extends external_api {
     }
 
     /**
+     * Builds message.
+     *
      * @param bool $renamed
      * @param bool $moved
      * @param string $name
@@ -190,6 +196,8 @@ final class update_question_category extends external_api {
     }
 
     /**
+     * Collects subtree ids.
+     *
      * @param int $categoryid
      * @return int[]
      */
@@ -213,6 +221,8 @@ final class update_question_category extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

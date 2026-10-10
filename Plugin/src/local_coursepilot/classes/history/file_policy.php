@@ -27,7 +27,13 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class file_policy {
-    /** Whether this component/file area belongs to the activity's restorable design. */
+    /**
+     * Whether this component/file area belongs to the activity's restorable design.
+     *
+     * @param string $modname The modname.
+     * @param string $component The component.
+     * @param string $filearea The filearea.
+     */
     public static function allows(string $modname, string $component, string $filearea): bool {
         if ($component === 'mod_' . $modname && $filearea === 'intro') {
             return true;

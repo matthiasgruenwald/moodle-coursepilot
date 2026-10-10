@@ -46,6 +46,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class availability_privacy {
     /**
+     * Returns masked JSON, or empty string.
+     *
      * @param string $availability Raw Moodle availability JSON.
      * @return string Masked JSON, or empty string.
      */
@@ -62,6 +64,8 @@ class availability_privacy {
     }
 
     /**
+     * Provides sanitize node.
+     *
      * @param array $node
      * @return array
      */
@@ -74,6 +78,8 @@ class availability_privacy {
     }
 
     /**
+     * Provides sanitize condition.
+     *
      * @param array $condition
      * @return array
      */

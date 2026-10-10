@@ -27,6 +27,13 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(xml_activity_creator::class)]
 final class xml_activity_creator_compare_test extends \basic_testcase {
+    /**
+     * Provides xml.
+     *
+     * @param string $inner The inner.
+     * @param string $attrs The attrs.
+     * @return string
+     */
     private function xml(string $inner, string $attrs = 'id="1" moduleid="5" modulename="book" contextid="9"'): string {
         return "<activity $attrs><book id=\"1\">$inner</book></activity>";
     }

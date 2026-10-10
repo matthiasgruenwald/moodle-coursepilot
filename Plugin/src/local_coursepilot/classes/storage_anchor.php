@@ -206,6 +206,9 @@ final class storage_anchor {
     /**
      * Single location dispatcher for tool paths. Only this layer reads the
      * pointer; tools and area facades use the returned port.
+     *
+     * @param storage_area $area The area.
+     * @param int $courseid The courseid.
      */
     public static function port(storage_area $area, int $courseid = 0): storage_port {
         return self::port_at(self::effective_location($area), $courseid);
@@ -215,6 +218,9 @@ final class storage_anchor {
      * The adapter for an already resolved location - only for the read-only
      * previous location ({@see previous_location}), whose location comes from
      * the pointer history instead of the current pointer.
+     *
+     * @param pointer_location $location The location.
+     * @param int $courseid The courseid.
      */
     public static function port_at(pointer_location $location, int $courseid = 0): storage_port {
         if ($location->kind === pointer_location::MOODLE) {
@@ -278,8 +284,10 @@ final class storage_anchor {
      * Saves confirmed location selection as a complete pointer document.
      * Page logic supplies values, never bypasses the anchor for file writes.
      *
-     * @param array<string, array> $locations
-     * @param array<int, array> $history
+     * @param array $locations
+     * @phpstan-param array<string,array> $locations
+     * @param array $history
+     * @phpstan-param array<int,array> $history
      * @param array|null $previouslocation
      */
     public static function save_location_selection(array $locations, array $history, ?array $previouslocation): void {
@@ -614,6 +622,12 @@ final class storage_anchor {
         );
     }
 
+    /**
+     * Lists entries.
+     *
+     * @param string $directory The directory.
+     * @return array
+     */
     public static function list_entries(string $directory): array {
         $entries = [];
         foreach (self::directory_files($directory, false, true) as $file) {

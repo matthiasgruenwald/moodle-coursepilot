@@ -66,16 +66,22 @@ final class version_source {
     private const MARKERS = [self::SUPERSEDED];
 
     /**
+     * Creates the version source.
+     *
      * @param string $key
      * @param int|null $refcmid
      */
     public function __construct(
+        /** @var string The key. */
         public readonly string $key,
+        /** @var ?int The refcmid. */
         public readonly ?int $refcmid = null,
     ) {
     }
 
     /**
+     * Creates the from record version source.
+     *
      * @param \stdClass $record local_coursepilot_cm_version row
      * @return self
      */
@@ -84,6 +90,8 @@ final class version_source {
     }
 
     /**
+     * Tells whether the version source is discovered.
+     *
      * @return bool true for the retroactive starting state
      */
     public function is_discovered(): bool {
@@ -91,6 +99,8 @@ final class version_source {
     }
 
     /**
+     * Tells whether the version source is marker.
+     *
      * @return bool true if the state is a marker, not a content snapshot to diff
      */
     public function is_marker(): bool {
@@ -98,6 +108,8 @@ final class version_source {
     }
 
     /**
+     * Returns teacher-facing label.
+     *
      * @param string $lang Explicit language for UI or tool callers.
      * @return string teacher-facing label
      */

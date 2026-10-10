@@ -28,7 +28,9 @@ use core_external\external_api;
 #[\PHPUnit\Framework\Attributes\CoversClass(get_question_category_cleanup_plan::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_bank_context::class)]
 final class get_question_category_cleanup_plan_test extends \advanced_testcase {
-    /** An empty leaf is listed with a manual instruction; nothing is deleted. */
+    /**
+     * An empty leaf is listed with a manual instruction; nothing is deleted.
+     */
     public function test_lists_empty_leaf_without_deleting_it(): void {
         global $CFG, $DB;
         $this->resetAfterTest();
@@ -53,7 +55,9 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         $this->assertTrue($DB->record_exists('question_categories', ['id' => $category->id]));
     }
 
-    /** The tool is registered as read-only with the same schema and service allowlist. */
+    /**
+     * The tool is registered as read-only with the same schema and service allowlist.
+     */
     public function test_registered_as_read_only_tool(): void {
         $this->resetAfterTest();
         $tool = 'coursepilot_plan_question_category_cleanup';
@@ -72,7 +76,9 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         );
     }
 
-    /** A parent with an empty child needs two manual cleanup passes (#315). */
+    /**
+     * A parent with an empty child needs two manual cleanup passes (#315).
+     */
     public function test_parent_is_only_listed_after_its_empty_child_is_removed(): void {
         global $DB;
         $this->resetAfterTest();
@@ -93,7 +99,9 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         $this->assertSame([(int) $parent->id], array_column($second['removals'], 'id'));
     }
 
-    /** A bank with questions only has no suggestions; even a childless top is never listed. */
+    /**
+     * A bank with questions only has no suggestions; even a childless top is never listed.
+     */
     public function test_clean_bank_and_childless_top_return_empty_lists(): void {
         global $DB;
         $this->resetAfterTest();
@@ -111,7 +119,12 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         $this->assertSame([], get_question_category_cleanup_plan::execute($course->id, $toponly->cmid)['removals']);
     }
 
-    /** Each capability is enforced in the specified context. */
+    /**
+     * Each capability is enforced in the specified context.
+     *
+     * @param string $capability The capability.
+     * @param string $level The level.
+     */
     #[\PHPUnit\Framework\Attributes\DataProvider('denied_capability_provider')]
     public function test_rejects_missing_capability(string $capability, string $level): void {
         global $DB;
@@ -126,7 +139,11 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         get_question_category_cleanup_plan::execute($course->id, $bank->cmid);
     }
 
-    /** @return array */
+    /**
+     * Provides cases for denied capability provider.
+     *
+     * @return array
+     */
     public static function denied_capability_provider(): array {
         return [
             'course use' => ['local/coursepilot:use', 'course'],
@@ -135,7 +152,9 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         ];
     }
 
-    /** A question bank CMID from another course cannot be used. */
+    /**
+     * A question bank CMID from another course cannot be used.
+     */
     public function test_rejects_bank_from_another_course(): void {
         $this->resetAfterTest();
         [$course] = $this->create_populated_bank();
@@ -146,7 +165,9 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         get_question_category_cleanup_plan::execute($course->id, $foreignbank->cmid);
     }
 
-    /** A CMID of another module type is rejected even in the same course. */
+    /**
+     * A CMID of another module type is rejected even in the same course.
+     */
     public function test_rejects_non_bank_module(): void {
         $this->resetAfterTest();
         [$course] = $this->create_populated_bank();
@@ -156,7 +177,11 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         get_question_category_cleanup_plan::execute($course->id, $page->cmid);
     }
 
-    /** @return array Course, bank and bank context; teacher is the current user. */
+    /**
+     * Returns course, bank and bank context; teacher is the current user.
+     *
+     * @return array Course, bank and bank context; teacher is the current user.
+     */
     private function create_populated_bank(): array {
         global $DB;
         $course = $this->getDataGenerator()->create_course();

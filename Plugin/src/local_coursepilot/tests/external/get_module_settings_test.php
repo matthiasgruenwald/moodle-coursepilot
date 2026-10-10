@@ -220,6 +220,8 @@ final class get_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
@@ -229,6 +231,8 @@ final class get_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Finds in list.
+     *
      * @param array $result
      * @param int $cmid
      * @return array|null
@@ -243,6 +247,8 @@ final class get_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Finds in catalog.
+     *
      * @param array $result
      * @param int $cmid
      * @return array|null

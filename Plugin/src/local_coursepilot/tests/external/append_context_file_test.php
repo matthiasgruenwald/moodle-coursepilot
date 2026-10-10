@@ -456,7 +456,12 @@ final class append_context_file_test extends \advanced_testcase {
         );
     }
 
-    /** A concurrent edit after preflight must not replace the checked/authorised target. */
+    /**
+     * A concurrent edit after preflight must not replace the checked/authorised target.
+     *
+     * @param bool $withchecksum The withchecksum.
+     * @param bool $marked The marked.
+     */
     #[\PHPUnit\Framework\Attributes\DataProvider('concurrent_edits')]
     public function test_append_rejects_change_after_preflight(bool $withchecksum, bool $marked): void {
         $this->resetAfterTest();
@@ -466,11 +471,36 @@ final class append_context_file_test extends \advanced_testcase {
         $checksum = $withchecksum ? read_context_file::execute('journal.md')['contenthash'] : '';
         $replacement = $marked ? $this->marked_content() : '# Concurrent edit';
         $transport = new class ($fake, $replacement) implements \local_coursepilot\webdav\webdav_transport {
+            /**
+             * Changed.
+             *
+             * @var bool
+             */
             private bool $changed = false;
 
-            public function __construct(private readonly fake_webdav_transport $inner, private readonly string $replacement) {
+            /**
+             * Creates the append context file test.
+             *
+             * @param fake_webdav_transport $inner The inner.
+             * @param string $replacement The replacement.
+             */
+            public function __construct(
+                /** @var fake_webdav_transport The inner. */
+                private readonly fake_webdav_transport $inner,
+                /** @var string The replacement. */
+                private readonly string $replacement,
+            ) {
             }
 
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param array $headers The headers.
+             * @param ?string $body The body.
+             * @return \local_coursepilot\webdav\webdav_response
+             */
             public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
                 $response = $this->inner->request($method, $url, $headers, $body);
                 if (!$this->changed && $method === 'GET' && str_ends_with($url, '/journal.md')) {
@@ -492,6 +522,11 @@ final class append_context_file_test extends \advanced_testcase {
         $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
     }
 
+    /**
+     * Provides concurrent edits.
+     *
+     * @return array
+     */
     public static function concurrent_edits(): array {
         return [[true, false], [false, true]];
     }
@@ -860,8 +895,11 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Returns validated endpoint response.
+     *
      * @param string $path
      * @param string $content
+     * @param string $expectedcontenthash The expectedcontenthash.
      * @return array Validated endpoint response.
      */
     private function append(string $path, string $content, string $expectedcontenthash = ''): array {
@@ -870,6 +908,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Provides external content.
+     *
      * @param fake_webdav_transport $fake
      * @param string $path
      * @return string
@@ -881,6 +921,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Provides marked content.
+     *
      * @return string Content with the legacy frontmatter marking "personenbezug: true".
      */
     private function marked_content(): string {
@@ -888,6 +930,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Provides stored file.
+     *
      * @param \stdClass $user
      * @param string $filepath
      * @param string $filename
@@ -906,6 +950,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Reads stored.
+     *
      * @param \stdClass $user
      * @param string $filepath
      * @param string $filename
@@ -918,6 +964,8 @@ final class append_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Creates context file.
+     *
      * @param \stdClass $user
      * @param string $filepath
      * @param string $filename

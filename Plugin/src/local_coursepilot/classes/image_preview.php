@@ -39,6 +39,8 @@ final class image_preview {
     private const JPEG_QUALITY = 80;
 
     /**
+     * Builds the image preview.
+     *
      * @param string $binary Raw content of the source file.
      * @return array{image_base64: string, mimetype: string, width: int, height: int}
      * @throws \moodle_exception materialpreviewunsupported if GD cannot

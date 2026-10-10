@@ -38,6 +38,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[CoversClass(registry::class)]
 final class module_roundtrip_test extends \advanced_testcase {
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -65,6 +67,14 @@ final class module_roundtrip_test extends \advanced_testcase {
         \local_coursepilot\material_files::replace(null, $filerecord, $content);
     }
 
+    /**
+     * Creates via module tool.
+     *
+     * @param int $courseid The courseid.
+     * @param string $modname The modname.
+     * @param array $felder The felder.
+     * @return array
+     */
     private function create_via_module_tool(int $courseid, string $modname, array $felder): array {
         return external_api::clean_returnvalue(
             create_module::execute_returns(),
@@ -72,6 +82,12 @@ final class module_roundtrip_test extends \advanced_testcase {
         );
     }
 
+    /**
+     * Creates quiz instance.
+     *
+     * @param int $courseid The courseid.
+     * @return array
+     */
     private function create_quiz_instance(int $courseid): array {
         $felder = [
             'name' => 'Rundlauf-Test',
@@ -87,6 +103,8 @@ final class module_roundtrip_test extends \advanced_testcase {
     }
 
     /**
+     * Returns current state, with the same shape as get_module_settings.
+     *
      * @param int $cmid
      * @return array Current state, with the same shape as get_module_settings.
      */
@@ -98,6 +116,13 @@ final class module_roundtrip_test extends \advanced_testcase {
         return json_decode($result['settings_json'], true);
     }
 
+    /**
+     * Provides patch.
+     *
+     * @param string $modname The modname.
+     * @param int $cmid The cmid.
+     * @param array $felder The felder.
+     */
     private function patch(string $modname, int $cmid, array $felder): void {
         if ($modname === 'quiz') {
             external_api::clean_returnvalue(
@@ -201,6 +226,8 @@ final class module_roundtrip_test extends \advanced_testcase {
     }
 
     /**
+     * Provides cases for modname provider.
+     *
      * @return array<string, array{0: string}>
      */
     public static function modname_provider(): array {

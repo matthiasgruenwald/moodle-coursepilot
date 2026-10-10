@@ -121,6 +121,9 @@ final class shared_block {
         ]);
     }
 
+    /**
+     * Blocklist.
+     */
     public const BLOCKLIST = [
         'timemodified',
         'timecreated',
