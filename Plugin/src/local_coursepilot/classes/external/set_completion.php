@@ -191,7 +191,7 @@ final class set_completion extends external_api {
      * @param string $fieldsjson
      * @param bool $confirmed
      * @param string[] $confirmlearnerlocks
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $cmid,
@@ -294,8 +294,8 @@ final class set_completion extends external_api {
      *
      * @param string $catalogclass Type: class-string<\local_coursepilot\catalog\module_catalog>.
      * @param int $instanceid
-     * @param array $before
-     * @param array $patch
+     * @param mixed[] $before
+     * @param mixed[] $patch
      * @param string[] $changedlocked
      * @return array<int, array{id: string, detail: string}>
      */
@@ -329,7 +329,7 @@ final class set_completion extends external_api {
      * An unknown field or a value outside the allowed range fails
      * BEFORE any write access (all-or-nothing, like update_module_settings).
      *
-     * @param array $patch
+     * @param mixed[] $patch
      * @param string $modname The modname.
      * @return void
      * @throws moodle_exception invalidfieldname|completionunknownfield|completioninvalidfieldvalue
@@ -394,7 +394,7 @@ final class set_completion extends external_api {
      * Reads settings.
      *
      * @param int $cmid
-     * @return array Current state, same shape as get_module_settings (already contains
+     * @return mixed[] Current state, same shape as get_module_settings (already contains
      *         all five completion* fields).
      */
     private static function read_settings(int $cmid): array {
@@ -407,8 +407,8 @@ final class set_completion extends external_api {
      * the value compared to $before? A patch that merely repeats the existing
      * value triggers neither the two-step flow nor "completionunlocked".
      *
-     * @param array $before
-     * @param array $patch
+     * @param mixed[] $before
+     * @param mixed[] $patch
      * @param string[] $fields
      * @return string[]
      */
@@ -435,8 +435,8 @@ final class set_completion extends external_api {
      * no lock-field change exists.
      *
      * @param \stdClass $moduleinfo Is extended in place.
-     * @param array $before
-     * @param array $patch
+     * @param mixed[] $before
+     * @param mixed[] $patch
      * @param bool $lockedchanged
      * @param string $modname The modname.
      * @return void
@@ -480,9 +480,9 @@ final class set_completion extends external_api {
      * before/after comparison like update_module_settings::diff_and_side_effects().
      *
      * @param string[] $fields
-     * @param array $before
-     * @param array $after
-     * @return array
+     * @param mixed[] $before
+     * @param mixed[] $after
+     * @return mixed[]
      */
     private static function diff(array $fields, array $before, array $after): array {
         $changes = [];
@@ -503,7 +503,7 @@ final class set_completion extends external_api {
     /**
      * Builds message.
      *
-     * @param array $changes
+     * @param mixed[] $changes
      * @return string
      */
     private static function build_message(array $changes): string {

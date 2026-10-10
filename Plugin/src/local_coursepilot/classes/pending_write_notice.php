@@ -155,7 +155,8 @@ final class pending_write_notice {
     /**
      * Saves the pending write notice.
      *
-     * @param array $entries Type: array<string,array{timestamp:int,path:string,operation:string,error_class:string,course_id:int}>.
+     * @param mixed[] $entries
+     *        Type: array<string,array{timestamp:int,path:string,operation:string,error_class:string,course_id:int}>.
      * @throws \moodle_exception pendingnotequotaexceeded
      */
     private static function save(array $entries): void {

@@ -37,6 +37,7 @@ final class add_glossary_entries_test extends \advanced_testcase {
      *
      * @param int $cmid The cmid.
      * @param array $entries The entries.
+     * @return mixed[]
      */
     private function call(int $cmid, array $entries): array {
         global $USER;

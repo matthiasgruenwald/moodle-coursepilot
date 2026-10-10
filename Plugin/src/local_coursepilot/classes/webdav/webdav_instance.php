@@ -160,7 +160,7 @@ final class webdav_instance {
      * fake through Moodle's request-local DI container; production receives
      * the regular cURL transport.
      *
-     * @param array $options Type: array<string,string|null>.
+     * @param mixed[] $options Type: array<string,string|null>.
      */
     private static function transport(array $options): webdav_transport {
         try {
@@ -209,7 +209,7 @@ final class webdav_instance {
      * (throws) and {@see has_supported_auth()} (does not throw) - Issue #497
      * standards review: both previously knew the condition once each, inverted.
      *
-     * @param array $options Type: array<string,string|null>.
+     * @param mixed[] $options Type: array<string,string|null>.
      * @return bool
      */
     private static function auth_supported(array $options): bool {
@@ -237,7 +237,7 @@ final class webdav_instance {
     /**
      * Tells whether the webdav instance is iserv listing.
      *
-     * @param array $entries Root level, {@see webdav_client::propfind()}. Type: array<int,array{name:string,type:string}>.
+     * @param mixed[] $entries Root level, {@see webdav_client::propfind()}. Type: array<int,array{name:string,type:string}>.
      * @return bool
      */
     public static function is_iserv_listing(array $entries): bool {
@@ -271,7 +271,7 @@ final class webdav_instance {
     /**
      * Provides fingerprint.
      *
-     * @param array $options Type: array<string,string|null>.
+     * @param mixed[] $options Type: array<string,string|null>.
      * @return array{server: string, basepath: string, account: string}
      */
     private static function fingerprint(array $options): array {
@@ -285,7 +285,7 @@ final class webdav_instance {
     /**
      * Provides normalised fingerprint.
      *
-     * @param array $fingerprint Raw from the pointer.
+     * @param mixed[] $fingerprint Raw from the pointer.
      * @return array{server: string, basepath: string, account: string}
      */
     private static function normalised_fingerprint(array $fingerprint): array {
@@ -299,7 +299,7 @@ final class webdav_instance {
     /**
      * Returns https address of the instance incl. base path, with trailing "/".
      *
-     * @param array $options Type: array<string,string|null>.
+     * @param mixed[] $options Type: array<string,string|null>.
      * @return string https address of the instance incl. base path, with trailing "/".
      */
     private static function base_url(array $options): string {

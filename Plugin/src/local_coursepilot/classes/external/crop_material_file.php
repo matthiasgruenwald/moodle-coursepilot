@@ -82,7 +82,7 @@ class crop_material_file extends external_api {
      * @param float $y1
      * @param string $expectedcontenthash
      * @param string $location
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidmaterialpath, invalidmateriallocation,
      *         materialpathiscontext, materialfilenotfound,
      *         materialgdmissing, materialcropsourceunsupported,
@@ -137,7 +137,7 @@ class crop_material_file extends external_api {
      * Read and validate the source (#523: extracted from execute() to keep
      * the function below 50 lines).
      *
-     * @param array $params Validated execute() parameters.
+     * @param mixed[] $params Validated execute() parameters.
      * @return array{0: array{content: string, path: string, size: int, timemodified: int}, 1: string}
      *         [source content, resolved source path]
      */
@@ -164,7 +164,7 @@ class crop_material_file extends external_api {
      * Resolve the target and check concurrency protection (#523: extracted
      * from execute()).
      *
-     * @param array $params Validated execute() parameters.
+     * @param mixed[] $params Validated execute() parameters.
      * @return array{0: string, 1: string, 2: string, 3: ?array} [target directory, target filename,
      *         target extension, existing file or null]
      */
@@ -191,14 +191,14 @@ class crop_material_file extends external_api {
     /**
      * Crop, write the target and build the response (#523: extracted from execute()).
      *
-     * @param array $params Validated execute() parameters.
-     * @param array $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
+     * @param mixed[] $params Validated execute() parameters.
+     * @param mixed[] $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
      * @param string $sourcerelative
      * @param string $targetdir
      * @param string $targetfilename
      * @param string $targetextension
      * @param ?array $existing
-     * @return array
+     * @return mixed[]
      */
     private static function crop_and_write(
         array $params,
@@ -238,8 +238,8 @@ class crop_material_file extends external_api {
      * Load the source as a GD image and crop it (#523: extracted from
      * crop_and_write() to keep the function below 50 lines).
      *
-     * @param array $params Validated execute() parameters.
-     * @param array $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
+     * @param mixed[] $params Validated execute() parameters.
+     * @param mixed[] $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
      * @param string $sourcerelative
      * @param string $targetextension
      * @return array{0: string, 1: int, 2: int} [content, width, height]
@@ -276,8 +276,8 @@ class crop_material_file extends external_api {
      * Build the crop response (#523: extracted from crop_and_write() to keep
      * the function below 50 lines).
      *
-     * @param array $params Validated execute() parameters.
-     * @param array $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
+     * @param mixed[] $params Validated execute() parameters.
+     * @param mixed[] $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
      * @param string $sourcerelative
      * @param string $targetdir
      * @param string $targetfilename
@@ -286,7 +286,7 @@ class crop_material_file extends external_api {
      * @param int $height
      * @param int $newsize
      * @param ?string $warning
-     * @return array
+     * @return mixed[]
      */
     private static function build_crop_response(
         array $params,
@@ -355,7 +355,7 @@ class crop_material_file extends external_api {
      *
      * @param string $location
      * @param string $path
-     * @param array $stored Type: array{size:int,timemodified:int}.
+     * @param mixed[] $stored Type: array{size:int,timemodified:int}.
      * @return string
      */
     private static function describe_source(string $location, string $path, array $stored): string {

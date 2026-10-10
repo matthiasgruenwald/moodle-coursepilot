@@ -83,11 +83,11 @@ final class create_mc_question extends external_api {
      * @param string $name
      * @param string $questiontext
      * @param string $selectionmode
-     * @param array $answers
+     * @param mixed[] $answers
      * @param float $defaultmark
      * @param string $generalfeedback
      * @param bool $confirmed
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $categoryid,
@@ -185,7 +185,7 @@ final class create_mc_question extends external_api {
      * Public: reused by {@see \local_coursepilot\external\update_mc_question}
      * (ticket #419), which patches the same simple fields rather than creating.
      *
-     * @param array $answers
+     * @param mixed[] $answers
      * @param string $selectionmode
      * @return void
      */
@@ -226,7 +226,7 @@ final class create_mc_question extends external_api {
      * one for a first import. No further gate is needed there, as this
      * endpoint's gate has already decided BEFORE this call.
      *
-     * @param array $params
+     * @param mixed[] $params
      * @return string
      */
     private static function build_xml(array $params): string {

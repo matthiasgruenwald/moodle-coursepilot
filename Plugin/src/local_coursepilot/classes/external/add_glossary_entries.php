@@ -87,8 +87,8 @@ final class add_glossary_entries extends external_api {
      * Runs the add glossary entries tool.
      *
      * @param int $cmid
-     * @param array $entries
-     * @return array
+     * @param mixed[] $entries
+     * @return mixed[]
      */
     public static function execute(int $cmid, array $entries): array {
         global $CFG, $DB;

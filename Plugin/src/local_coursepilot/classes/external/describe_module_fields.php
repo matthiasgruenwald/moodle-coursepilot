@@ -84,7 +84,7 @@ class describe_module_fields extends external_api {
      *
      * @param string $modname
      * @param bool $full
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception unknownmodname if $modname is not supported.
      */
     public static function execute(string $modname = '', bool $full = false): array {
@@ -170,7 +170,7 @@ class describe_module_fields extends external_api {
      * mixed types, so use a JSON row rather than a dynamic structure, as with
      * get_course_catalog::plugin_config_field() supplemental files.
      *
-     * @param array $bundles Type: array<string,array<string,mixed>>.
+     * @param mixed[] $bundles Type: array<string,array<string,mixed>>.
      * @return array<int, array{name: string, fields_json: string}>
      */
     private static function bundles(array $bundles): array {

@@ -98,8 +98,8 @@ final class arrangement {
     /**
      * Provides differs.
      *
-     * @param array $current
-     * @param array $target
+     * @param mixed[] $current
+     * @param mixed[] $target
      * @return bool
      */
     public static function differs(array $current, array $target): bool {
@@ -115,7 +115,7 @@ final class arrangement {
      * coding_exception from structure::check_can_be_edited().
      *
      * @param int $quizid
-     * @param array $target Arrangement state returned by capture().
+     * @param mixed[] $target Arrangement state returned by capture().
      * @throws \moodle_exception arrangementrestoreblocked if the quiz already has attempts.
      */
     public static function restore(int $quizid, array $target): void {
@@ -150,7 +150,7 @@ final class arrangement {
      * through restore_page_breaks(), using Moodle's update_page_break() API.
      *
      * @param \mod_quiz\quiz_settings $quizobj
-     * @param array $targetslots Only slots that currently exist.
+     * @param mixed[] $targetslots Only slots that currently exist.
      * @return void
      */
     private static function restore_slot_order(\mod_quiz\quiz_settings $quizobj, array $targetslots): void {
@@ -169,7 +169,7 @@ final class arrangement {
      * boundaries rather than absolute page numbers.
      *
      * @param \mod_quiz\quiz_settings $quizobj
-     * @param array $targetslots In target order, already reordered by restore_slot_order().
+     * @param mixed[] $targetslots In target order, already reordered by restore_slot_order().
      * @return void
      */
     private static function restore_page_breaks(\mod_quiz\quiz_settings $quizobj, array $targetslots): void {
@@ -187,7 +187,7 @@ final class arrangement {
      * pinning the version current at capture time.
      *
      * @param \mod_quiz\quiz_settings $quizobj
-     * @param array $targetslots
+     * @param mixed[] $targetslots
      * @return void
      */
     private static function restore_slot_fields(\mod_quiz\quiz_settings $quizobj, array $targetslots): void {
@@ -217,7 +217,7 @@ final class arrangement {
      * section counts, which represent content changes like missing slots.
      *
      * @param \mod_quiz\quiz_settings $quizobj
-     * @param array $targetsections
+     * @param mixed[] $targetsections
      * @return void
      */
     private static function restore_sections(\mod_quiz\quiz_settings $quizobj, array $targetsections): void {
@@ -244,7 +244,7 @@ final class arrangement {
      * pattern from mod/quiz/lib.php: quiz_after_add_or_update().
      *
      * @param int $quizid
-     * @param array $targetfeedback
+     * @param mixed[] $targetfeedback
      * @return void
      */
     private static function restore_feedback(int $quizid, array $targetfeedback): void {
@@ -264,7 +264,7 @@ final class arrangement {
      * Provides feedback matches.
      *
      * @param int $quizid
-     * @param array $targetfeedback
+     * @param mixed[] $targetfeedback
      * @return bool
      */
     private static function feedback_matches(int $quizid, array $targetfeedback): bool {

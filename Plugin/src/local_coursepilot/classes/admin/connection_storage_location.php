@@ -81,7 +81,7 @@ final class connection_storage_location {
     /**
      * Provides state label.
      *
-     * @param array $state Type: array{state:string,host:?string,defect:?string}.
+     * @param mixed[] $state Type: array{state:string,host:?string,defect:?string}.
      * @return string
      */
     private static function state_label(array $state): string {

@@ -68,7 +68,7 @@ final class report_clone_lineage extends external_api {
      * Runs the report clone lineage tool.
      *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      * @throws invalid_parameter_exception
      */
     public static function execute(int $cmid): array {
@@ -167,7 +167,7 @@ final class report_clone_lineage extends external_api {
     /**
      * Builds message.
      *
-     * @param array $questions
+     * @param mixed[] $questions
      * @return string
      */
     private static function build_message(array $questions): string {

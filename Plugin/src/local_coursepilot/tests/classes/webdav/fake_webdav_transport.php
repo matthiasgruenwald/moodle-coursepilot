@@ -187,7 +187,7 @@ final class fake_webdav_transport implements webdav_transport {
      *
      * @param string $method The method.
      * @param string $url The url.
-     * @param array $headers The headers.
+     * @param mixed[] $headers The headers.
      * @param ?string $body The body.
      * @return webdav_response
      */
@@ -272,7 +272,7 @@ final class fake_webdav_transport implements webdav_transport {
      * Handles put.
      *
      * @param string $path The path.
-     * @param array $headers The headers.
+     * @param mixed[] $headers The headers.
      * @param string $body The body.
      * @return webdav_response
      */
@@ -409,7 +409,8 @@ final class fake_webdav_transport implements webdav_transport {
      * Provides multistatus xml.
      *
      * @param string $requesturl href of the resolved level itself, used for client comparison.
-     * @param array $entries Path => entry. Type: array<string,array{content:string,etag:?string,lastmodified:int,collection:bool}>.
+     * @param mixed[] $entries Path => entry.
+     *        Type: array<string,array{content:string,etag:?string,lastmodified:int,collection:bool}>.
      */
     private function multistatus_xml(string $requesturl, array $entries): string {
         $base = $this->origin($requesturl);

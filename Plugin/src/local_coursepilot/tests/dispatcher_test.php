@@ -100,7 +100,7 @@ final class dispatcher_test extends \advanced_testcase {
     /**
      * Provides headers.
      *
-     * @param array $overrides The overrides.
+     * @param mixed[] $overrides The overrides.
      * @return array{origin: null, pathinfo: string, method: string}
      */
     private function headers(array $overrides = []): array {
@@ -166,6 +166,8 @@ final class dispatcher_test extends \advanced_testcase {
 
     /**
      * Synthetic first module has the historically dangerous truthy cmid 1.
+     *
+     * @return mixed[]
      */
     private function xml_supersede_fixture(): array {
         global $DB;
@@ -197,8 +199,8 @@ final class dispatcher_test extends \advanced_testcase {
      * Provides xml call.
      *
      * @param string $token The token.
-     * @param array $arguments The arguments.
-     * @return array
+     * @param mixed[] $arguments The arguments.
+     * @return mixed[]
      */
     private function xml_call(string $token, array $arguments): array {
         $response = dispatcher::handle(
@@ -213,6 +215,8 @@ final class dispatcher_test extends \advanced_testcase {
 
     /**
      * Snapshot durable activity state; ordinary access auditing is allowed.
+     *
+     * @return mixed[]
      */
     private function xml_mutation_state(): array {
         global $DB;
@@ -1630,7 +1634,7 @@ XML;
      * without.
      *
      * @param string $method
-     * @return array
+     * @return mixed[]
      */
     private function arguments_for(string $method): array {
         if ($method === 'tools/call') {

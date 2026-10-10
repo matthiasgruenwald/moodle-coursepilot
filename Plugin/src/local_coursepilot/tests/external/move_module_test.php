@@ -47,7 +47,7 @@ final class move_module_test extends \advanced_testcase {
      * @param int $cmid
      * @param int $sectionnum
      * @param int|null $position
-     * @return array
+     * @return mixed[]
      */
     private function move(int $cmid, int $sectionnum, ?int $position = null): array {
         return external_api::clean_returnvalue(

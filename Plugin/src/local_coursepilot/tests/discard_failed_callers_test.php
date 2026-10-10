@@ -66,6 +66,7 @@ final class discard_failed_callers_test extends \advanced_testcase {
      * Everything a discard of an existing activity would change.
      *
      * @param int $courseid The courseid.
+     * @return mixed[]
      */
     private function course_state(int $courseid): array {
         global $DB;

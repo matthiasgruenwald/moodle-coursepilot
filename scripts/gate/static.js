@@ -293,7 +293,14 @@ function buildStaticReport(results, errors) {
 /** PHPStan-Baseline neu erzeugen und ins Repo kopieren. */
 function generatePhpstanBaseline({ container, repo, gateDir, exec = containerExec }) {
   const inContainer = '/var/www/reports/phpstan-baseline.neon';
-  const r = exec(container, phpstanArgs([`--generate-baseline=${inContainer}`, '--allow-empty-baseline']));
+  // Ohne die bestehende Baseline analysieren: Mit eingebundener Baseline schriebe PHPStan nur die
+  // neuen Befunde und verlore die alten Eintraege.
+  const bare = '/tmp/phpstan-without-baseline.neon';
+  const prep = exec(container, ['sh', '-c', `sed '/phpstan-baseline.neon/d;/^includes:/d' ${PHPSTAN_CONFIG} > ${bare}`]);
+  if (prep.code !== 0) {
+    throw new Error(`PHPStan-Konfiguration ohne Baseline nicht erzeugt (Exitcode ${prep.code}): ${prep.out.slice(-300)}`);
+  }
+  const r = exec(container, [...phpstanArgs([`--generate-baseline=${inContainer}`, '--allow-empty-baseline'])].map(a => (a === PHPSTAN_CONFIG ? bare : a)));
   const generated = path.join(gateDir, 'reports', 'phpstan-baseline.neon');
   if (r.code !== 0 || !fs.existsSync(generated)) {
     throw new Error(`PHPStan-Baseline nicht erzeugt (Exitcode ${r.code}): ${r.out.slice(-300)}`);

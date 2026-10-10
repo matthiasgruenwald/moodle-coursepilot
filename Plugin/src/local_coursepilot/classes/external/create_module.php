@@ -87,7 +87,7 @@ final class create_module extends external_api {
      * @param string $fieldsjson
      * @param string $location
      * @param string[] $confirmlearnerlocks
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $courseid,
@@ -189,7 +189,7 @@ final class create_module extends external_api {
      * {@see update_module_settings::read_settings()}.
      *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      */
     private static function read_settings(int $cmid): array {
         $result = get_module_settings::execute($cmid);
@@ -219,8 +219,8 @@ final class create_module extends external_api {
      * teacher: they are implicit settings, not requested changes.
      *
      * @param string $modname
-     * @param array $merged
-     * @param array $after
+     * @param mixed[] $merged
+     * @param mixed[] $after
      * @return array{0: array, 1: string[]}
      */
     private static function report_and_side_effects(string $modname, array $merged, array $after): array {
@@ -248,7 +248,7 @@ final class create_module extends external_api {
      * change report).
      *
      * @param string $modname
-     * @param array $createdfields
+     * @param mixed[] $createdfields
      * @param string[] $sideeffects
      * @return string
      */

@@ -530,7 +530,7 @@ final class append_context_file_test extends \advanced_testcase {
     /**
      * Provides concurrent edits.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function concurrent_edits(): array {
         return [[true, false], [false, true]];
@@ -905,7 +905,7 @@ final class append_context_file_test extends \advanced_testcase {
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash The expectedcontenthash.
-     * @return array Validated endpoint response.
+     * @return mixed[] Validated endpoint response.
      */
     private function append(string $path, string $content, string $expectedcontenthash = ''): array {
         $result = append_context_file::execute($path, $content, '', $expectedcontenthash);

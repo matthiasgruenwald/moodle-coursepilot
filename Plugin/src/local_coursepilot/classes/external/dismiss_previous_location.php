@@ -47,7 +47,7 @@ class dismiss_previous_location extends external_api {
     /**
      * Runs the dismiss previous location tool.
      *
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception previouslocationclosed if legacy context is not open.
      * @throws \required_capability_exception without moodle/user:manageownfiles,
      *         only for legacy context in Moodle (#517,

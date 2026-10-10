@@ -52,7 +52,7 @@ class get_sections extends external_api {
      * Runs the get sections tool.
      *
      * @param int $courseid
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $courseid): array {
         global $DB;

@@ -138,7 +138,7 @@ final class oauth_cleanup {
      *
      * @param string $table
      * @param string $where Fixed SQL from this class, never user input.
-     * @param array $params
+     * @param mixed[] $params
      * @param int $batch
      * @return int
      */

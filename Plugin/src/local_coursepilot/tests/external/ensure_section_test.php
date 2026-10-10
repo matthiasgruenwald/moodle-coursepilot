@@ -47,7 +47,7 @@ final class ensure_section_test extends \advanced_testcase {
      * @param int $courseid
      * @param int $sectionnum
      * @param string|null $name
-     * @return array
+     * @return mixed[]
      */
     private function ensure(int $courseid, int $sectionnum, ?string $name = null): array {
         return external_api::clean_returnvalue(

@@ -130,7 +130,7 @@ final class privacy_surface_test extends \advanced_testcase {
     /**
      * Describes the privacy surface test.
      *
-     * @param array $violations
+     * @param mixed[] $violations
      * @return string
      */
     private static function describe(array $violations): string {

@@ -60,7 +60,7 @@ class upload_material_file extends external_api {
      * @param string $path
      * @param string $contentbase64
      * @param string $expectedcontenthash
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidmaterialpath, materialfiledisallowedtype,
      *         materialfiletoolarge, materialfilechanged, materialquotaexceeded
      * @throws \invalid_parameter_exception invalid base64
@@ -93,8 +93,8 @@ class upload_material_file extends external_api {
      * Builds the response from {@see material_area::write()} (#539, formerly
      * #523), extracted from execute() to keep functions below 50 lines.
      *
-     * @param array $written Type: array{path:string,created:bool,size:int,oldsize:int,warning:?string}.
-     * @return array
+     * @param mixed[] $written Type: array{path:string,created:bool,size:int,oldsize:int,warning:?string}.
+     * @return mixed[]
      */
     private static function build_response(array $written): array {
         $message = $written['created']

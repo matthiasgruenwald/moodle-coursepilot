@@ -41,7 +41,7 @@ final class previous_location {
      * or null if no legacy files are open (no pointer, pointer of the
      * first version, or the field is missing/invalid).
      *
-     * @return array|null
+     * @return mixed[]|null
      */
     public static function current(): ?array {
         $document = storage_anchor::read_raw_pointer();

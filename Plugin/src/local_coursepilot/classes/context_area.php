@@ -69,7 +69,7 @@ final class context_area {
      *
      * @param storage_port $port
      * @param string $path
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function read_from(storage_port $port, string $path): ?array {
         $area = context_files::area();
@@ -121,9 +121,9 @@ final class context_area {
      * Renames the adapter checksum to "contenthash" and adds "locked".
      *
      * @param storage_port $port The adapter that listed the entry.
-     * @param array $entry An entry from {@see storage_port::list()}.
+     * @param mixed[] $entry An entry from {@see storage_port::list()}.
      * @param string $directory Result directory, see {@see list()}.
-     * @return array
+     * @return mixed[]
      */
     private static function annotate_entry(storage_port $port, array $entry, string $directory): array {
         $checksum = $entry['checksum'];
@@ -149,7 +149,7 @@ final class context_area {
      * same adapter that listed it.
      *
      * @param storage_port $port
-     * @param array $entry
+     * @param mixed[] $entry
      * @param string $directory
      * @return bool
      */

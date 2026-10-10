@@ -30,6 +30,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 
 defined('MOODLE_INTERNAL') || die();
 
+// phpcs:disable PSR1.Classes.ClassDeclaration.MultipleClasses -- The fake catalogs are test doubles of this one test.
+
 /**
  * Runtime deep checks (#399, ADR 0017) reuse the catalog contract-test
  * logic through the class used by {@see \local_coursepilot\write_gate}.
@@ -160,7 +162,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     /**
      * Provides fields.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function fields(): array {
         return [
@@ -173,7 +175,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
      * @param int $instanceid The instanceid.
      * @param int $cmid The cmid.
      * @param bool $fullcontent The fullcontent.
-     * @return array
+     * @return mixed[]
      */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return [];
@@ -181,7 +183,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     /**
      * Writes options.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function write_options(): array {
         return [];
@@ -189,7 +191,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     /**
      * Provides common field names.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function common_field_names(): array {
         return [];
@@ -197,7 +199,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     /**
      * Provides pseudofields.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function pseudofields(): array {
         return [];
@@ -205,7 +207,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     /**
      * Provides blocklist.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function blocklist(): array {
         return ['name'];
@@ -213,7 +215,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     /**
      * Provides combination rules.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function combination_rules(): array {
         return [];
@@ -221,7 +223,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     /**
      * Provides side effects.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function side_effects(): array {
         return [];
@@ -229,7 +231,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     /**
      * Provides bundles.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function bundles(): array {
         return [];
@@ -245,7 +247,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     /**
      * Provides checked constants.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function checked_constants(): array {
         return [];
@@ -253,7 +255,7 @@ final class drift_check_test_fake_catalog_with_bad_column implements module_cata
     /**
      * Provides learner locks.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function learner_locks(): array {
         return [];
@@ -292,7 +294,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     /**
      * Provides fields.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function fields(): array {
         return [
@@ -315,7 +317,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
      * @param int $instanceid The instanceid.
      * @param int $cmid The cmid.
      * @param bool $fullcontent The fullcontent.
-     * @return array
+     * @return mixed[]
      */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return [];
@@ -323,7 +325,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     /**
      * Writes options.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function write_options(): array {
         return [];
@@ -331,7 +333,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     /**
      * Provides common field names.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function common_field_names(): array {
         return [];
@@ -339,7 +341,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     /**
      * Provides pseudofields.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function pseudofields(): array {
         return [];
@@ -347,7 +349,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     /**
      * Provides blocklist.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function blocklist(): array {
         return ['name'];
@@ -355,7 +357,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     /**
      * Provides combination rules.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function combination_rules(): array {
         return [];
@@ -363,7 +365,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     /**
      * Provides side effects.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function side_effects(): array {
         return [];
@@ -371,7 +373,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     /**
      * Provides bundles.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function bundles(): array {
         return [];
@@ -387,7 +389,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     /**
      * Provides checked constants.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function checked_constants(): array {
         return [];
@@ -395,7 +397,7 @@ final class drift_check_test_fake_catalog_with_bad_callable implements module_ca
     /**
      * Provides learner locks.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function learner_locks(): array {
         return [];
@@ -434,7 +436,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     /**
      * Provides fields.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function fields(): array {
         return [
@@ -448,7 +450,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
      * @param int $instanceid The instanceid.
      * @param int $cmid The cmid.
      * @param bool $fullcontent The fullcontent.
-     * @return array
+     * @return mixed[]
      */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return [];
@@ -456,7 +458,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     /**
      * Writes options.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function write_options(): array {
         return [];
@@ -464,7 +466,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     /**
      * Provides common field names.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function common_field_names(): array {
         return [];
@@ -472,7 +474,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     /**
      * Provides pseudofields.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function pseudofields(): array {
         return [];
@@ -480,7 +482,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     /**
      * Provides blocklist.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function blocklist(): array {
         return ['name'];
@@ -488,7 +490,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     /**
      * Provides combination rules.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function combination_rules(): array {
         return [];
@@ -496,7 +498,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     /**
      * Provides side effects.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function side_effects(): array {
         return [];
@@ -504,7 +506,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     /**
      * Provides bundles.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function bundles(): array {
         return [];
@@ -520,7 +522,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     /**
      * Provides checked constants.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function checked_constants(): array {
         return ['NICHT_EXISTIERENDE_KONSTANTE_XYZ'];
@@ -528,7 +530,7 @@ class drift_check_test_fake_catalog_with_bad_constant implements module_catalog 
     /**
      * Provides learner locks.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function learner_locks(): array {
         return [];
@@ -559,7 +561,7 @@ final class drift_check_test_fake_catalog_with_bad_write_field extends drift_che
     /**
      * Writes options.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function write_options(): array {
         return ['material_reference_fields' => ['am_katalog_vorbei' => []]];
@@ -573,7 +575,7 @@ final class drift_check_test_fake_catalog_with_bad_read_field extends drift_chec
     /**
      * Writes options.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function write_options(): array {
         return ['read_fields' => ['am_katalog_vorbei_gelesen']];

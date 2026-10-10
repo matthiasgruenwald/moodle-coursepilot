@@ -67,7 +67,7 @@ final class dispatcher {
      *        null if decoding failed (parse-error case).
      * @param string|null $token The Bearer token already extracted from
      *        the Authorization header.
-     * @param array $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
+     * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     public static function handle(?array $request, ?string $token, array $headers): array {
@@ -109,7 +109,7 @@ final class dispatcher {
      *
      * @param array|null $request
      * @param string|null $token
-     * @param array $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
+     * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     private static function handle_authorized(?array $request, ?string $token, array $headers): array {
@@ -256,8 +256,8 @@ final class dispatcher {
      * webservices (#295, item 1).
      *
      * @param mixed $id
-     * @param array $params
-     * @param array $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
+     * @param mixed[] $params
+     * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     private static function handle_tools_call($id, array $params, array $headers): array {
@@ -396,7 +396,7 @@ final class dispatcher {
      * forgotten tools/call error branch made all tool messages unreadable.
      * initialize/server/discover precede negotiation; absent headers select legacy.
      *
-     * @param array $headers Type: array{protocolversion?:?string}.
+     * @param mixed[] $headers Type: array{protocolversion?:?string}.
      * @param string $resulttype 'complete', the revision's only success value
      *        for every result.
      * @param int|null $ttlms Freshness in milliseconds for list results only.
@@ -467,7 +467,7 @@ final class dispatcher {
     /**
      * Derives the tool list from the allowlist, keeping listed and callable tools identical.
      *
-     * @return array
+     * @return mixed[]
      */
     private static function tools(): array {
         $descriptions = tool_registry::descriptions();

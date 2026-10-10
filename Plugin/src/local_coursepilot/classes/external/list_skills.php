@@ -55,7 +55,7 @@ final class list_skills extends external_api {
     /**
      * Runs the list skills tool.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function execute(): array {
         self::validate_parameters(self::execute_parameters(), []);

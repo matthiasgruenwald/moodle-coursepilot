@@ -64,7 +64,7 @@ class list_context_files extends external_api {
      *
      * @param string $path
      * @param bool $previouslocation
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidcontextpath if $path contains a "."/".."
      *         segment; previouslocationclosed if previous_location is requested
      *         without open legacy context.

@@ -77,8 +77,8 @@ final class context_pointer {
      * recursive, idempotent, without validation. Translate values only under
      * "location" and "target"; preserve paths.
      *
-     * @param array $decoded
-     * @return array
+     * @param mixed[] $decoded
+     * @return mixed[]
      */
     public static function normalise(array $decoded): array {
         $result = [];
@@ -97,7 +97,7 @@ final class context_pointer {
     /**
      * Resolves target.
      *
-     * @param array $decoded Pointer content already decoded from JSON.
+     * @param mixed[] $decoded Pointer content already decoded from JSON.
      * @param string $pointerkey The resolving area's {@see storage_area::$pointerkey}.
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable
@@ -132,7 +132,7 @@ final class context_pointer {
     /**
      * Resolves pair legacy.
      *
-     * @param array $decoded
+     * @param mixed[] $decoded
      * @return array{context_area: pointer_location, material_store: pointer_location}
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
@@ -151,7 +151,7 @@ final class context_pointer {
     /**
      * Resolves pair v2.
      *
-     * @param array $decoded
+     * @param mixed[] $decoded
      * @return array{context_area: pointer_location, material_store: pointer_location}
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
@@ -174,7 +174,7 @@ final class context_pointer {
     /**
      * Resolves single v2.
      *
-     * @param array $target
+     * @param mixed[] $target
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
@@ -201,7 +201,7 @@ final class context_pointer {
      * Apply the IServ check (8), but not the nesting check (7): the previous
      * location is never compared with the current material store.
      *
-     * @param array $value Value of "previous_location" in the pointer document.
+     * @param mixed[] $value Value of "previous_location" in the pointer document.
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable/webdaviservfilesonly
      */
@@ -237,7 +237,7 @@ final class context_pointer {
      * Recognize the first format: "context_area" is a flat string rather than
      * an object. Both paths represent Moodle locations (Spec §2).
      *
-     * @param array $decoded
+     * @param mixed[] $decoded
      * @return bool
      */
     private static function is_legacy(array $decoded): bool {
@@ -247,7 +247,7 @@ final class context_pointer {
     /**
      * Resolves external.
      *
-     * @param array $target
+     * @param mixed[] $target
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */

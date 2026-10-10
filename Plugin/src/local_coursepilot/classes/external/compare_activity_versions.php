@@ -54,7 +54,7 @@ class compare_activity_versions extends external_api {
      * @param int $cmid
      * @param int $fromversion
      * @param int $toversion
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $cmid, int $fromversion, int $toversion): array {
         $params = self::validate_parameters(self::execute_parameters(), [

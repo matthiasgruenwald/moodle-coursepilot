@@ -56,7 +56,7 @@ final class export_default_activity extends external_api {
      *
      * @param int $courseid
      * @param string $modname
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception defaultactivitycatalogued, kindexcluded*
      */
     public static function execute(int $courseid, string $modname): array {

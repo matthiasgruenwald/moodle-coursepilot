@@ -114,9 +114,9 @@ final class get_question_categories_test extends \advanced_testcase {
     /**
      * Finds category.
      *
-     * @param array $result
+     * @param mixed[] $result
      * @param int $id
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function find_category(array $result, int $id): ?array {
         foreach ($result as $category) {

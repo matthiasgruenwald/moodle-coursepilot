@@ -51,7 +51,7 @@ class report_loose_material_files extends external_api {
     /**
      * Runs the report loose material files tool.
      *
-     * @return array
+     * @return mixed[]
      * @throws \required_capability_exception without moodle/user:manageownfiles
      */
     public static function execute(): array {

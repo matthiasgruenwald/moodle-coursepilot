@@ -127,7 +127,7 @@ final class import_questions_xml extends external_api {
      * @param bool $confirmed
      * @param string $xmlpath
      * @param string $location
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $categoryid,
@@ -153,7 +153,7 @@ final class import_questions_xml extends external_api {
      * Check context/capabilities, resolve the XML and parse questions (#523:
      * extracted from execute() to keep the function below 50 lines).
      *
-     * @param array $params Validated execute() parameters.
+     * @param mixed[] $params Validated execute() parameters.
      * @return array{0: \stdClass, 1: \context, 2: array}
      */
     private static function resolve_and_parse(array $params): array {
@@ -184,9 +184,9 @@ final class import_questions_xml extends external_api {
      *
      * @param \stdClass $category
      * @param \context $context
-     * @param array $questions
+     * @param mixed[] $questions
      * @param bool $confirmed
-     * @return array
+     * @return mixed[]
      */
     private static function import_all(\stdClass $category, \context $context, array $questions, bool $confirmed): array {
         global $DB;
@@ -461,7 +461,7 @@ final class import_questions_xml extends external_api {
      * @param \context $context
      * @param \stdClass $question
      * @param bool $confirmed
-     * @return array
+     * @return mixed[]
      */
     private static function import_one(
         \stdClass $category,
@@ -514,7 +514,7 @@ final class import_questions_xml extends external_api {
      * @param \stdClass $question
      * @param string $name
      * @param string $xmlidnumber
-     * @return array
+     * @return mixed[]
      */
     private static function unmatched_idnumber_response(
         \stdClass $category,
@@ -837,7 +837,7 @@ final class import_questions_xml extends external_api {
      * @param \stdClass $saved
      * @param string $status
      * @param string $name
-     * @return array
+     * @return mixed[]
      */
     private static function result(\stdClass $saved, string $status, string $name): array {
         global $DB;
@@ -880,6 +880,7 @@ final class import_questions_xml extends external_api {
      * @param mixed $value The value.
      * @param mixed $format The format.
      * @param int $itemid The itemid.
+     * @return mixed[]
      */
     private static function as_text_array($value, $format, int $itemid = 0): array {
         if (is_array($value) && array_key_exists('text', $value)) {

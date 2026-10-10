@@ -53,7 +53,7 @@ class list_material_files extends external_api {
      *
      * @param string $path
      * @param string $location
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidmaterialpath if $path contains a "."/".."
      *         segment; invalidmateriallocation for an unknown
      *         location value; materialpathiscontext if the context area is inside

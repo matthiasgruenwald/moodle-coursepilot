@@ -83,7 +83,7 @@ final class learner_locks {
      * Whether $value matches the condition. A missing value (null) never
      * creates a learner lock: an unset field cannot prevent progress.
      *
-     * @param array $condition Type: array{op:string,value?:mixed}.
+     * @param mixed[] $condition Type: array{op:string,value?:mixed}.
      * @param mixed $value
      * @return bool
      */
@@ -125,8 +125,8 @@ final class learner_locks {
      * Find all learner locks triggered by the effective values to write.
      *
      * @param string $catalogclass Type: class-string<module_catalog>.
-     * @param array $named Fields named by the call, including its field bundle.
-     * @param array $defaults Filled form defaults, only for fields not named in $named.
+     * @param mixed[] $named Fields named by the call, including its field bundle.
+     * @param mixed[] $defaults Filled form defaults, only for fields not named in $named.
      * @return array<int, array{id: string, detail: string}>
      */
     public static function find(string $catalogclass, array $named, array $defaults = []): array {
@@ -152,8 +152,8 @@ final class learner_locks {
      * the current value needs no new confirmation: the lock already exists.
      *
      * @param string $catalogclass Type: class-string<module_catalog>.
-     * @param array $patch
-     * @param array $before
+     * @param mixed[] $patch
+     * @param mixed[] $before
      * @return array<int, array{id: string, detail: string}>
      */
     public static function find_changed(string $catalogclass, array $patch, array $before): array {
@@ -172,7 +172,7 @@ final class learner_locks {
      * Existing learner locks for an instance, used by read tools.
      *
      * @param string $catalogclass Type: class-string<module_catalog>.
-     * @param array $settings Current state as in get_module_settings (DB columns);
+     * @param mixed[] $settings Current state as in get_module_settings (DB columns);
      *        settings_aliases maps differing form names to columns
      *        (quiz: quizpassword -> password).
      * @return array<int, array{field: string, value_json: string, reason: string}>
@@ -212,8 +212,8 @@ final class learner_locks {
      * Values explicitly overridden by the call still require confirmation.
      *
      * @param string[] $confirmed Explicitly confirmed learner locks.
-     * @param array $bundle Field values of the selected mode.
-     * @param array $named Fields explicitly named in the call.
+     * @param mixed[] $bundle Field values of the selected mode.
+     * @param mixed[] $named Fields explicitly named in the call.
      * @return string[]
      */
     public static function confirmed_with_mode(array $confirmed, array $bundle, array $named): array {
@@ -225,7 +225,7 @@ final class learner_locks {
      * its reason so the agent can decide without further lookup. Write nothing.
      *
      * @param string $modname
-     * @param array $found Type: array<int,array{id:string,detail:string}>.
+     * @param mixed[] $found Type: array<int,array{id:string,detail:string}>.
      * @param string[] $confirmed
      * @return void
      * @throws moodle_exception learnerlocksunconfirmed

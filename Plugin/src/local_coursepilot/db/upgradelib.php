@@ -225,8 +225,8 @@ function local_coursepilot_migrate_anchor_files(): void {
  * Translates entries of a pending note from before #602 (German keys,
  * operations and WebDAV error classes) into the English form.
  *
- * @param array $entries Identifier => entry.
- * @return array
+ * @param mixed[] $entries Identifier => entry.
+ * @return mixed[]
  */
 function local_coursepilot_translate_pending_entries(array $entries): array {
     $keys = ['zeitpunkt' => 'timestamp', 'pfad' => 'path', 'vorgang' => 'operation',

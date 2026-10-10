@@ -65,7 +65,7 @@ class read_context_file extends external_api {
      *
      * @param string $path
      * @param bool $previouslocation
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidcontextpath for an empty path or
      *         a "."/".." segment; contextfilenotfound for missing files;
      *         previouslocationclosed if "previous_location" is requested without

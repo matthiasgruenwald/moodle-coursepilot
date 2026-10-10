@@ -294,7 +294,7 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
      * Provides authorize params.
      *
      * @param string $clientid The clientid.
-     * @return array
+     * @return mixed[]
      */
     private function authorize_params(string $clientid): array {
         return ['response_type' => 'code', 'client_id' => $clientid, 'redirect_uri' => 'https://client.example/callback',

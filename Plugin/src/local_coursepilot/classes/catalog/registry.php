@@ -57,7 +57,7 @@ final class registry {
      * Returns the catalog class, or null when the activity type has no catalog.
      *
      * @param string $modname
-     * @return module_catalog|null The catalog class, or null when the activity type has no catalog.
+     * @return class-string<module_catalog>|null The catalog class, or null when the activity type has no catalog.
      */
     public static function for(string $modname): ?string {
         return self::CATALOGS[$modname] ?? null;

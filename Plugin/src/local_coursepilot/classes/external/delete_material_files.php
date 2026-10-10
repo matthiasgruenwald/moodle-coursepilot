@@ -52,7 +52,7 @@ class delete_material_files extends external_api {
      * Runs the delete material files tool.
      *
      * @param string[] $paths
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidmaterialpath, materialdeletefilenotfound
      * @throws \required_capability_exception without moodle/user:manageownfiles
      */

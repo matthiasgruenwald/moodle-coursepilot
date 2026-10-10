@@ -52,7 +52,7 @@ final class registry_test extends \advanced_testcase {
     /**
      * Provides cases for excluded provider.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function excluded_provider(): array {
         return [

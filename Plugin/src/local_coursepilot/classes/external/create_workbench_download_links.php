@@ -56,7 +56,7 @@ class create_workbench_download_links extends external_api {
      * Runs the create workbench download links tool.
      *
      * @param string[] $paths
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidmaterialpath, materialfilenotfound
      * @throws \required_capability_exception without moodle/user:manageownfiles
      */

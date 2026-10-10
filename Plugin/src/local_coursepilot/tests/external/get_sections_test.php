@@ -104,9 +104,9 @@ final class get_sections_test extends \advanced_testcase {
     /**
      * Finds section.
      *
-     * @param array $result
+     * @param mixed[] $result
      * @param int $sectionnum
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function find_section(array $result, int $sectionnum): ?array {
         foreach ($result as $section) {

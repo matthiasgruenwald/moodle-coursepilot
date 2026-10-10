@@ -91,8 +91,8 @@ final class create_activity_from_xml extends external_api {
      * @param bool $hidden
      * @param int $replacescmid
      * @param bool $dryrun
-     * @param array $files Material paths, file areas and optional captions.
-     * @return array
+     * @param mixed[] $files Material paths, file areas and optional captions.
+     * @return mixed[]
      */
     public static function execute(
         int $courseid,
@@ -157,8 +157,8 @@ final class create_activity_from_xml extends external_api {
     /**
      * Provides shape.
      *
-     * @param array $result Type: array{cmid:int,presets:string[],references:array,successor_cmid:int,hidden_predecessors:int}.
-     * @return array
+     * @param mixed[] $result Type: array{cmid:int,presets:string[],references:array,successor_cmid:int,hidden_predecessors:int}.
+     * @return mixed[]
      */
     private static function shape(array $result): array {
         $messages = [];

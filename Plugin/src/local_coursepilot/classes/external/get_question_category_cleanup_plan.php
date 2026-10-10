@@ -48,7 +48,7 @@ class get_question_category_cleanup_plan extends external_api {
      *
      * @param int $courseid Course ID
      * @param int $questionbankid Question bank course module ID
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $courseid, int $questionbankid): array {
         global $CFG, $DB;

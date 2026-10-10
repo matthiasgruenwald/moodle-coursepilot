@@ -67,7 +67,7 @@ final class course_module_placement_test extends \advanced_testcase {
      * Provides cmids.
      *
      * @param int $courseid The courseid.
-     * @return array
+     * @return mixed[]
      */
     private function cmids(int $courseid): array {
         global $DB;

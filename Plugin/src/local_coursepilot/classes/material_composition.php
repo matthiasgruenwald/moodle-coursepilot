@@ -37,7 +37,7 @@ final class material_composition {
     /**
      * Renders the material composition.
      *
-     * @param array $inputs The inputs.
+     * @param mixed[] $inputs The inputs.
      * @param string $arrangement The arrangement.
      * @return array{0: string, 1: int, 2: int} PNG bytes, width and height.
      */
@@ -76,9 +76,9 @@ final class material_composition {
     /**
      * Returns image, pixel rectangle and layout size for one part.
      *
-     * @param array $input The input.
+     * @param mixed[] $input The input.
      * @param string $font The font.
-     * @return array Image, pixel rectangle and layout size for one part.
+     * @return mixed[] Image, pixel rectangle and layout size for one part.
      */
     private static function prepare_part(array $input, string $font): array {
         $extension = strtolower(pathinfo($input['sourcepath'], PATHINFO_EXTENSION));
@@ -108,7 +108,7 @@ final class material_composition {
     /**
      * Same range, positive-area validation and rounding semantics as crop_material_file.
      *
-     * @param array $crop The crop.
+     * @param mixed[] $crop The crop.
      */
     private static function guard_coordinates(array $crop): void {
         foreach ($crop as $value) {
@@ -124,7 +124,7 @@ final class material_composition {
     /**
      * Provides dimensions.
      *
-     * @param array $parts The parts.
+     * @param mixed[] $parts The parts.
      * @param string $arrangement The arrangement.
      * @return array{0: int, 1: int} Width and height including inter-part gaps.
      */
@@ -141,7 +141,7 @@ final class material_composition {
      * Place each part at the top/left, preserving its pixels including alpha.
      *
      * @param \GdImage $canvas The canvas.
-     * @param array $parts The parts.
+     * @param mixed[] $parts The parts.
      * @param string $arrangement The arrangement.
      * @param string $font The font.
      */

@@ -45,7 +45,7 @@ final class activity_file_supplement {
      *
      * @param string $modname The modname.
      * @param \context $context The context.
-     * @param array $entries The entries.
+     * @param mixed[] $entries The entries.
      */
     public static function validate(string $modname, \context $context, array $entries): void {
         if (!$entries) {
@@ -75,7 +75,7 @@ final class activity_file_supplement {
      * Only the new, still hidden activity owned by this create call may be passed.
      *
      * @param \stdClass $cm The cm.
-     * @param array $entries The entries.
+     * @param mixed[] $entries The entries.
      */
     public static function apply(\stdClass $cm, array $entries): void {
         global $DB;
@@ -104,7 +104,7 @@ final class activity_file_supplement {
      * @param \stdClass $cm The cm.
      * @param \context_module $context The context.
      * @param string $type The type.
-     * @param array $entry The entry.
+     * @param mixed[] $entry The entry.
      */
     private static function copy(\stdClass $cm, \context_module $context, string $type, array $entry): void {
         $fs = get_file_storage();

@@ -61,7 +61,7 @@ final class stale_read_transport implements webdav_transport {
      *
      * @param string $method The method.
      * @param string $url The url.
-     * @param array $headers The headers.
+     * @param mixed[] $headers The headers.
      * @param ?string $body The body.
      * @return webdav_response
      */

@@ -30,7 +30,7 @@ final class catalog_fields {
      * Validates a field specification exclusively against the given catalog.
      *
      * @param string $catalogclass Type: class-string<module_catalog>.
-     * @param array $values
+     * @param mixed[] $values
      * @param bool $patch True if the form patch path is used.
      * @return void
      */

@@ -68,7 +68,7 @@ final class move_section_test extends \advanced_testcase {
      * @param int $courseid
      * @param int $von
      * @param int $nach
-     * @return array
+     * @return mixed[]
      */
     private function move(int $courseid, int $von, int $nach): array {
         return external_api::clean_returnvalue(

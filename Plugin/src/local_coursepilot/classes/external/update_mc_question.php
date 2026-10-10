@@ -110,7 +110,7 @@ final class update_mc_question extends external_api {
      * @param string $fieldsjson
      * @param bool $confirmed
      * @param string $location
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $questionid,
@@ -154,8 +154,8 @@ final class update_mc_question extends external_api {
      * same bank entry (the idnumber just assigned matches by construction) -
      * same response format as create_mc_question.
      *
-     * @param array $result
-     * @return array
+     * @param mixed[] $result
+     * @return mixed[]
      */
     private static function build_suspect_response(array $result): array {
         return [
@@ -208,7 +208,7 @@ final class update_mc_question extends external_api {
      *
      * @param \stdClass $question
      * @param \context $context
-     * @param array $params Validated parameters of execute().
+     * @param mixed[] $params Validated parameters of execute().
      * @return array{0: array, 1: ?int, 2: array<int, int>}
      */
     private static function apply_field_patch(\stdClass $question, \context $context, array $params): array {
@@ -298,11 +298,11 @@ final class update_mc_question extends external_api {
      * builds the success response (issue #523: extracted from execute()).
      * @param \stdClass $entry
      * @param \context $context
-     * @param array $write Type: array{result:array,backfilled:bool,idnumber:string,missingfiles:string[]}.
+     * @param mixed[] $write Type: array{result:array,backfilled:bool,idnumber:string,missingfiles:string[]}.
      * @param ?int $questiontextdraftitemid
      * @param int[] $answerfeedbackdraftitemids
      * @param \stdClass $question
-     * @return array
+     * @return mixed[]
      */
     private static function build_success_response(
         \stdClass $entry,
@@ -496,7 +496,7 @@ final class update_mc_question extends external_api {
      *
      * @param \context $context Category context (target of the file storage).
      * @param string[] $questiontextimages Material folder paths for questiontext.
-     * @param array $answerfeedbackimages Answer index => material folder paths. Type: array<int,string[]>.
+     * @param mixed[] $answerfeedbackimages Answer index => material folder paths. Type: array<int,string[]>.
      * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
      *        source of the paths (issue #496).
      * @return array{0: int|null, 1: array<int, int>} [draft itemid for questiontext (null without request),

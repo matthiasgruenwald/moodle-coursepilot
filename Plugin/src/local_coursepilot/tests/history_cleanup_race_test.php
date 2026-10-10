@@ -90,7 +90,7 @@ final class history_cleanup_race_test extends \advanced_testcase {
     /**
      * Captures modes.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function capture_modes(): array {
         return [[false], [true]];

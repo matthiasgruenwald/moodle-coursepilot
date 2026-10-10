@@ -75,8 +75,8 @@ final class add_questions_to_quiz extends external_api {
      * Runs the add questions to quiz tool.
      *
      * @param int $cmid
-     * @param array $questionids
-     * @return array
+     * @param mixed[] $questionids
+     * @return mixed[]
      */
     public static function execute(int $cmid, array $questionids): array {
         global $DB, $USER;
@@ -144,7 +144,7 @@ final class add_questions_to_quiz extends external_api {
     /**
      * The teacher-facing message: what was appended, what was skipped.
      *
-     * @param array $appended
+     * @param mixed[] $appended
      * @return string
      */
     private static function build_message(array $appended): string {
@@ -175,7 +175,7 @@ final class add_questions_to_quiz extends external_api {
      * so the quiz can be checked without opening it.
      *
      * @param int $quizid
-     * @return array
+     * @return mixed[]
      */
     private static function slot_state(int $quizid): array {
         global $DB;

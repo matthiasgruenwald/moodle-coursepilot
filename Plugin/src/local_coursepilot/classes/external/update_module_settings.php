@@ -134,7 +134,7 @@ class update_module_settings extends external_api {
      * @param string $fieldsjson
      * @param string $location
      * @param string[] $confirmlearnerlocks
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $cmid,
@@ -241,7 +241,7 @@ class update_module_settings extends external_api {
      * read part").
      *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      */
     private static function read_settings(int $cmid): array {
         $result = get_module_settings::execute($cmid);
@@ -257,9 +257,9 @@ class update_module_settings extends external_api {
      * change.
      *
      * @param string $modname
-     * @param array $patch
-     * @param array $before
-     * @param array $after
+     * @param mixed[] $patch
+     * @param mixed[] $before
+     * @param mixed[] $after
      * @return array{0: array, 1: string[]}
      */
     private static function diff_and_side_effects(string $modname, array $patch, array $before, array $after): array {
@@ -300,7 +300,7 @@ class update_module_settings extends external_api {
      * message states explicitly what it cannot compare.
      *
      * @param string $catalogclass Type: class-string<module_catalog>.
-     * @param array $patch
+     * @param mixed[] $patch
      * @return array<string, mixed> Field name => value set.
      */
     private static function written_pseudofields(string $catalogclass, array $patch): array {
@@ -312,7 +312,7 @@ class update_module_settings extends external_api {
      * The teacher-facing change message (Spec 0015 §3.3: "the response
      * is the change message").
      *
-     * @param array $changes
+     * @param mixed[] $changes
      * @param string[] $sideeffects
      * @param mixed[] $pseudofields Pseudofields written, see
      *        {@see self::written_pseudofields()} - not comparable, but set.

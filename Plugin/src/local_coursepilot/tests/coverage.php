@@ -37,7 +37,7 @@ defined('MOODLE_INTERNAL') || die();
  * Coverage scope of the plugin for tool_phpunit.
  */
 return new class extends phpunit_coverage_info {
-    /** @var array Verzeichnisse des nativen Produktionscodes. */
+    /** @var mixed[] Verzeichnisse des nativen Produktionscodes. */
     protected $includelistfolders = [
         'admin',
         'classes',
@@ -48,7 +48,7 @@ return new class extends phpunit_coverage_info {
         'werkbank',
     ];
 
-    /** @var array Individual files at the plugin root. */
+    /** @var mixed[] Individual files at the plugin root. */
     protected $includelistfiles = [
         'connections.php',
         'history.php',

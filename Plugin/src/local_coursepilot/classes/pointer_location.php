@@ -72,7 +72,7 @@ final class pointer_location {
      *
      * @param int $instanceid WebDAV user instance repository_instances.id.
      * @param string $relativepath Selected folder relative to the instance base path.
-     * @param array $fingerprint Type: array{server:string,basepath:string,account:string}.
+     * @param mixed[] $fingerprint Type: array{server:string,basepath:string,account:string}.
      *        Server/base path/account at selection time (Spec §2).
      * @return self
      */

@@ -72,7 +72,7 @@ final class move_module extends external_api {
      * @param int $cmid
      * @param int $sectionnum
      * @param int|null $position
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception sectionnotfound
      */
     public static function execute(int $cmid, int $sectionnum, ?int $position = null): array {

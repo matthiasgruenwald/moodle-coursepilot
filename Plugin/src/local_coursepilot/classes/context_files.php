@@ -187,7 +187,7 @@ final class context_files {
      * @param int $contextid
      * @param string $directory
      * @param string $filename
-     * @return array
+     * @return mixed[]
      */
     public static function filerecord(int $contextid, string $directory, string $filename): array {
         return storage_anchor::filerecord($contextid, $directory, $filename);
@@ -198,7 +198,7 @@ final class context_files {
      * See {@see storage_anchor::replace()} for temporary-file sequencing rationale.
      *
      * @param \stored_file|null $existing Existing file, if present.
-     * @param array $filerecord Target from {@see filerecord()}.
+     * @param mixed[] $filerecord Target from {@see filerecord()}.
      * @param string $content Complete new content.
      */
     public static function replace(?\stored_file $existing, array $filerecord, string $content): void {

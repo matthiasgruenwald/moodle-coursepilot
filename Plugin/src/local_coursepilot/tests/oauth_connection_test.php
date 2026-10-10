@@ -35,7 +35,7 @@ final class oauth_connection_test extends \advanced_testcase {
      *
      * @param string $clientid The clientid.
      * @param int $userid The userid.
-     * @return array
+     * @return mixed[]
      */
     private function tokens(string $clientid, int $userid): array {
         $verifier = str_repeat('v', 43);
@@ -400,7 +400,7 @@ final class oauth_connection_test extends \advanced_testcase {
     /**
      * Provides races.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function races(): array {
         return [['rotate', 'revoke'], ['revoke', 'rotate'], ['rotate', 'rotate'],

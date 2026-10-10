@@ -51,7 +51,7 @@ class list_activity_versions extends external_api {
      * Runs the list activity versions tool.
      *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $cmid): array {
         $params = self::validate_parameters(self::execute_parameters(), ['cmid' => $cmid]);

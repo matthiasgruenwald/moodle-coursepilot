@@ -70,7 +70,7 @@ final class update_question_category extends external_api {
      * @param int $categoryid
      * @param string $name
      * @param int $parent
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $categoryid, string $name = '', int $parent = 0): array {
         global $DB;

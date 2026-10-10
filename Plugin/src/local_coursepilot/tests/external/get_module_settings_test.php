@@ -233,9 +233,9 @@ final class get_module_settings_test extends \advanced_testcase {
     /**
      * Finds in list.
      *
-     * @param array $result
+     * @param mixed[] $result
      * @param int $cmid
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function find_in_list(array $result, int $cmid): ?array {
         foreach ($result as $module) {
@@ -249,9 +249,9 @@ final class get_module_settings_test extends \advanced_testcase {
     /**
      * Finds in catalog.
      *
-     * @param array $result
+     * @param mixed[] $result
      * @param int $cmid
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function find_in_catalog(array $result, int $cmid): ?array {
         foreach ($result['sections'] as $section) {

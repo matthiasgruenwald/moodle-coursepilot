@@ -166,7 +166,7 @@ final class upload_material_file_test extends \advanced_testcase {
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash
-     * @return array
+     * @return mixed[]
      */
     private function upload(string $path, string $content, string $expectedcontenthash = ''): array {
         return upload_material_file::execute($path, base64_encode($content), $expectedcontenthash);

@@ -89,7 +89,7 @@ final class location_selection {
      *
      * @param int $userid
      * @param array|null $browse Result of {@see browse()}, when a level is open.
-     * @return array
+     * @return mixed[]
      */
     public static function page_state(int $userid, ?array $browse = null): array {
         $setup = self::setup_state($userid);
@@ -246,7 +246,7 @@ final class location_selection {
      *
      * @param \local_coursepilot\webdav\resolved_webdav_instance $instance
      * @param string $relative
-     * @return array
+     * @return mixed[]
      */
     private static function fetch_raw_entries(
         \local_coursepilot\webdav\resolved_webdav_instance $instance,
@@ -280,7 +280,7 @@ final class location_selection {
      * {@see webdav_setup_steps} supplies listskillspreviouslocationhint and
      * the model can inspect it with coursepilot_list_context_files as needed.
      *
-     * @param array $entries Type: array<int,array{name:string,type:string}>.
+     * @param mixed[] $entries Type: array<int,array{name:string,type:string}>.
      * @return bool
      */
     private static function has_context_file(array $entries): bool {
@@ -337,7 +337,7 @@ final class location_selection {
      * Uses {@see \local_coursepilot\personal_data_hosts::allowed()} for
      * per-target display rather than raising a caller error.
      *
-     * @param array $value Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
+     * @param mixed[] $value Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
      * @return bool
      */
     private static function is_allowed(array $value): bool {
@@ -351,7 +351,7 @@ final class location_selection {
      * Formats the allowed-host label (#500, Spec #486 §11), shared by consent,
      * connection self-service and location selection.
      *
-     * @param array $value Result of {@see current()}. Type: array{allowed:bool}.
+     * @param mixed[] $value Result of {@see current()}. Type: array{allowed:bool}.
      * @return string
      */
     public static function allowed_label(array $value): string {
@@ -376,7 +376,7 @@ final class location_selection {
      * without any pointer writes. Only changed targets gain history entries;
      * without real changes, leave the pointer untouched.
      *
-     * @param array $selection Type: array<string,array{type:string,instanceid?:int,path?:string,confirmed?:bool}>.
+     * @param mixed[] $selection Type: array<string,array{type:string,instanceid?:int,path?:string,confirmed?:bool}>.
      *        For each target either ['type' => 'moodle'] or
      *        ['type' => 'external', 'instanceid' => int, 'path' => string, 'confirmed' => bool].
      *        confirmed applies only to context_area (#518, Spec §5):
@@ -423,7 +423,7 @@ final class location_selection {
      * Resolves and validates requested targets (root restriction, IServ, access;
      * see {@see build_target()}).
      *
-     * @param array $selection Type: array<string,array{type?:string,instanceid?:int,path?:string}>.
+     * @param mixed[] $selection Type: array<string,array{type?:string,instanceid?:int,path?:string}>.
      * @return array<string, array{location: string, path: string, instanceid?: int, fingerprint?: array}>
      */
     private static function resolve_wanted_targets(array $selection): array {
@@ -452,8 +452,8 @@ final class location_selection {
      * already exists by definition (Spec: newly selected folder). Create all
      * folders before {@see apply()} saves anything.
      *
-     * @param array $wanted Type: array<string,array{location:string,path:string,instanceid?:int}>.
-     * @param array $current Type: array<string,array{location:string,path:string,instanceid?:int}>.
+     * @param mixed[] $wanted Type: array<string,array{location:string,path:string,instanceid?:int}>.
+     * @param mixed[] $current Type: array<string,array{location:string,path:string,instanceid?:int}>.
      */
     private static function create_new_external_folders(array $wanted, array $current): void {
         foreach (self::TARGETS as $target) {
@@ -472,8 +472,8 @@ final class location_selection {
      * with provable legacy context, keeping exactly one previous location.
      * Its files remain untouched. A material-only move leaves that field unchanged.
      *
-     * @param array $wanted Type: array<string,array{location:string,path:string,instanceid?:int,fingerprint?:array}>.
-     * @param array $current Type: array<string,array{location:string,path:string,instanceid?:int,fingerprint?:array}>.
+     * @param mixed[] $wanted Type: array<string,array{location:string,path:string,instanceid?:int,fingerprint?:array}>.
+     * @param mixed[] $current Type: array<string,array{location:string,path:string,instanceid?:int,fingerprint?:array}>.
      * @return array{changed: string[], location_history: array, previouslocation: ?array}
      */
     private static function record_changes(array $wanted, array $current): array {
@@ -525,7 +525,7 @@ final class location_selection {
      * Whether the old context location contains provable entries (#498, Spec §5).
      * Location selection already communicates with both stores while choosing.
      *
-     * @param array $old Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
+     * @param mixed[] $old Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
      * @return bool
      * @throws \moodle_exception locationselectionexternalerror for actual connection failure
      *         (not an invalid old location).
@@ -599,7 +599,7 @@ final class location_selection {
      * Builds target.
      *
      * @param string $target
-     * @param array $selection Type: array{type?:string,instanceid?:int,path?:string}.
+     * @param mixed[] $selection Type: array{type?:string,instanceid?:int,path?:string}.
      * @return array{location: string, path: string, instanceid?: int, fingerprint?: array}
      * @throws \moodle_exception locationselectionselectioninvalid, or errors from {@see webdav_instance::resolve_owned()}.
      */
@@ -648,8 +648,8 @@ final class location_selection {
      * material storage cannot be inside or equal to the context area. Validate
      * new targets before any folder creation or persistence.
      *
-     * @param array $contextarea Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
-     * @param array $materialstore Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
+     * @param mixed[] $contextarea Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
+     * @param mixed[] $materialstore Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
      * @throws \moodle_exception materialstoreincontext
      */
     private static function assert_no_overlap(array $contextarea, array $materialstore): void {
@@ -667,9 +667,9 @@ final class location_selection {
      *
      * Only context_area needs confirmation; material-store changes do not.
      *
-     * @param array $wanted Type: array<string,array{location:string,path:string,instanceid?:int}>.
-     * @param array $current Type: array<string,array{location:string,path:string,instanceid?:int}>.
-     * @param array $selection Raw input passed to {@see apply()}. Type: array<string,array{confirmed?:bool}>.
+     * @param mixed[] $wanted Type: array<string,array{location:string,path:string,instanceid?:int}>.
+     * @param mixed[] $current Type: array<string,array{location:string,path:string,instanceid?:int}>.
+     * @param mixed[] $selection Raw input passed to {@see apply()}. Type: array<string,array{confirmed?:bool}>.
      * @throws \moodle_exception locationselectionfolderconfirmrequired
      */
     private static function assert_folder_handover_confirmed(array $wanted, array $current, array $selection): void {
@@ -690,7 +690,7 @@ final class location_selection {
     /**
      * Provides to pointer location.
      *
-     * @param array $value Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
+     * @param mixed[] $value Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
      * @return pointer_location
      */
     private static function to_pointer_location(array $value): pointer_location {
@@ -730,8 +730,8 @@ final class location_selection {
      * Compares two targets for the same place. Ignore the fingerprint: an
      * unchanged instance with a freshly read equivalent fingerprint is no move.
      *
-     * @param array $a
-     * @param array $b
+     * @param mixed[] $a
+     * @param mixed[] $b
      * @return bool
      */
     private static function same_place(array $a, array $b): bool {
@@ -747,7 +747,7 @@ final class location_selection {
     /**
      * Describes location.
      *
-     * @param array $value
+     * @param mixed[] $value
      * @return string
      */
     public static function describe_location(array $value): string {

@@ -51,7 +51,7 @@ final class folder implements module_catalog {
     /**
      * Provides fields.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function fields(): array {
         return [
@@ -135,7 +135,7 @@ final class folder implements module_catalog {
      * @param int $instanceid The instanceid.
      * @param int $cmid The cmid.
      * @param bool $fullcontent The fullcontent.
-     * @return array
+     * @return mixed[]
      */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return module_state::unknown(self::modname(), $instanceid, $fullcontent);
@@ -144,7 +144,7 @@ final class folder implements module_catalog {
     /**
      * Writes options.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function write_options(): array {
         return [
@@ -157,7 +157,7 @@ final class folder implements module_catalog {
     /**
      * Provides common field names.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function common_field_names(): array {
         return array_map(static fn (field $f): string => $f->name, self::fields());
@@ -166,7 +166,7 @@ final class folder implements module_catalog {
     /**
      * Provides pseudofields.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function pseudofields(): array {
         return [
@@ -194,7 +194,7 @@ final class folder implements module_catalog {
     /**
      * Provides blocklist.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function blocklist(): array {
         return [
@@ -205,7 +205,7 @@ final class folder implements module_catalog {
     /**
      * Provides combination rules.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function combination_rules(): array {
         return [
@@ -218,7 +218,7 @@ final class folder implements module_catalog {
     /**
      * Provides side effects.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function side_effects(): array {
         return [
@@ -230,7 +230,7 @@ final class folder implements module_catalog {
     /**
      * Provides bundles.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function bundles(): array {
         return [];
@@ -248,7 +248,7 @@ final class folder implements module_catalog {
     /**
      * Provides checked constants.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function checked_constants(): array {
         return ['FOLDER_DISPLAY_PAGE', 'FOLDER_DISPLAY_INLINE'];
@@ -257,7 +257,7 @@ final class folder implements module_catalog {
     /**
      * Provides learner locks.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function learner_locks(): array {
         return [];

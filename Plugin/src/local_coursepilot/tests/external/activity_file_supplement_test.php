@@ -82,7 +82,7 @@ final class activity_file_supplement_test extends \advanced_testcase {
     /**
      * Provides gallery fixture.
      *
-     * @return array
+     * @return mixed[]
      */
     private function gallery_fixture(): array {
         if (!\core_plugin_manager::instance()->get_plugin_info('mod_lightboxgallery')) {
@@ -120,7 +120,7 @@ final class activity_file_supplement_test extends \advanced_testcase {
     /**
      * Provides durable state.
      *
-     * @return array
+     * @return mixed[]
      */
     private function durable_state(): array {
         global $DB;
@@ -271,8 +271,8 @@ final class activity_file_supplement_test extends \advanced_testcase {
      *
      * @param int $courseid The courseid.
      * @param string $xml The xml.
-     * @param array $files The files.
-     * @return array
+     * @param mixed[] $files The files.
+     * @return mixed[]
      */
     private function call_create(int $courseid, string $xml, array $files): array {
         $response = $this->call_response($courseid, $xml, $files);
@@ -285,9 +285,9 @@ final class activity_file_supplement_test extends \advanced_testcase {
      *
      * @param int $courseid The courseid.
      * @param string $xml The xml.
-     * @param array $files The files.
-     * @param array $extra The extra.
-     * @return array
+     * @param mixed[] $files The files.
+     * @param mixed[] $extra The extra.
+     * @return mixed[]
      */
     private function call_response(int $courseid, string $xml, array $files, array $extra = []): array {
         $_POST['sesskey'] = sesskey();

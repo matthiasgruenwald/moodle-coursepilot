@@ -80,7 +80,7 @@ for (const [lang, heading] of Object.entries(TOOL_HEADINGS)) {
   test(`${lang} developer page lists exactly the registered tools and their count`, () => {
     const registry = fs.readFileSync(
       path.join(__dirname, '..', 'Plugin', 'src', 'local_coursepilot', 'classes', 'tool_registry.php'), 'utf8');
-    const registered = [...registry.matchAll(/'(coursepilot_\w+)' => \['classname'/g)].map((m) => m[1]).sort();
+    const registered = [...registry.matchAll(/'(coursepilot_\w+)' => \[\s*'classname'/g)].map((m) => m[1]).sort();
     const page = fs.readFileSync(path.join(SITE_ROOT, lang, 'developers.html'), 'utf8');
     const table = page.match(/<table class="tools">[\s\S]*?<\/table>/);
     assert.ok(table, `${lang}/developers.html has no tools table`);

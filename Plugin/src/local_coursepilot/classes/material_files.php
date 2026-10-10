@@ -396,9 +396,9 @@ final class material_files {
      * locations. Directories and external material have none (Spec #486 §7):
      * an ETag/modification-time substitute is not presented as a content checksum.
      *
-     * @param array $entry Entry or file from {@see storage_port}.
+     * @param mixed[] $entry Entry or file from {@see storage_port}.
      * @param pointer_location $location Location containing the entry.
-     * @return array
+     * @return mixed[]
      */
     private static function with_contenthash(array $entry, pointer_location $location): array {
         $hascontenthash = $location->kind === pointer_location::MOODLE && ($entry['type'] ?? 'file') !== 'folder';
@@ -459,11 +459,11 @@ final class material_files {
      * (#495, Spec #486 §2/§7). It is listed visibly but guard_not_context_area()
      * blocks subsequent access through material tools.
      *
-     * @param array $entry
+     * @param mixed[] $entry
      * @param pointer_location $location Location containing parentpath.
      * @param pointer_location $contextlocation Resolved context area.
      * @param string $parentpath Resolved, segment-validated parent path.
-     * @return array
+     * @return mixed[]
      */
     private static function mark_context_area_entry(
         array $entry,
@@ -565,7 +565,7 @@ final class material_files {
      * @param int $contextid
      * @param string $directory
      * @param string $filename
-     * @return array
+     * @return mixed[]
      */
     public static function filerecord(int $contextid, string $directory, string $filename): array {
         return storage_anchor::filerecord($contextid, $directory, $filename);
@@ -596,7 +596,7 @@ final class material_files {
      * @param string $component e.g. "mod_assign".
      * @param string $filearea e.g. "introattachment".
      * @param int $itemid
-     * @param array $paths Material paths, e.g. ["worksheet.pdf"], or
+     * @param mixed[] $paths Material paths, e.g. ["worksheet.pdf"], or
      *        `['path' => ..., 'target_folder' => ...]` objects.
      * @param string $locationkey {@see LOCATION_STORE}/{@see LOCATION_WORKBENCH} - Source of paths (#496).
      * @return int Draft item ID, usable as a *_update_instance() field value.
@@ -761,7 +761,7 @@ final class material_files {
      * the old file (Spec 0016 §5.3), regardless of context/material roots.
      *
      * @param \stored_file|null $existing Previous file, if any.
-     * @param array $filerecord Target record from filerecord().
+     * @param mixed[] $filerecord Target record from filerecord().
      * @param string $content Complete new content.
      */
     public static function replace(?\stored_file $existing, array $filerecord, string $content): void {
@@ -782,7 +782,7 @@ final class material_files {
      * @param int $oldsize Previous file size in bytes, zero if absent
      *        (usually already known by the caller, e.g. from its own concurrency or
      *        created check through read_content()).
-     * @param array $recordoverrides Additional/overriding file record fields; see
+     * @param mixed[] $recordoverrides Additional/overriding file record fields; see
      *        storage_anchor::write(), e.g. a crop's source field.
      * @return string|null Quota warning, or null when no warning is needed.
      * @throws \moodle_exception materialquotaexceeded

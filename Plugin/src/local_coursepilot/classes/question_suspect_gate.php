@@ -164,7 +164,7 @@ final class question_suspect_gate {
      *
      * @param int $categoryid
      * @param string $name
-     * @return array
+     * @return mixed[]
      */
     public static function find_name_candidates(int $categoryid, string $name): array {
         global $DB;

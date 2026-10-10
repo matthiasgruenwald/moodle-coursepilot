@@ -109,7 +109,7 @@ final class oauth_lib {
      * without global access, so it can be tested without bootstrapping Moodle.
      *
      * @param string $wwwroot
-     * @return array
+     * @return mixed[]
      */
     public static function authorization_server_metadata(string $wwwroot): array {
         return [
@@ -138,7 +138,7 @@ final class oauth_lib {
      * of reading that header. Both use this source.
      *
      * @param string $wwwroot
-     * @return array
+     * @return mixed[]
      */
     public static function protected_resource_metadata(string $wwwroot): array {
         return [
@@ -168,8 +168,8 @@ final class oauth_lib {
     /**
      * Register a client through DCR (RFC 7591).
      *
-     * @param array $metadata Decoded JSON registration body.
-     * @return array On error: ['error' => ..., 'error_description' => ...].
+     * @param mixed[] $metadata Decoded JSON registration body.
+     * @return mixed[] On error: ['error' => ..., 'error_description' => ...].
      *               On success: complete client record including client_id.
      */
     public static function register_client(array $metadata): array {
@@ -194,8 +194,8 @@ final class oauth_lib {
      * Validate DCR metadata without side effects, so invalid requests are
      * rejected before they consume budget (#642).
      *
-     * @param array $metadata
-     * @return array|null RFC 7591 error, or null when valid.
+     * @param mixed[] $metadata
+     * @return mixed[]|null RFC 7591 error, or null when valid.
      */
     private static function registration_error(array $metadata): ?array {
         $redirecturis = $metadata['redirect_uris'] ?? null;
@@ -226,7 +226,7 @@ final class oauth_lib {
      *
      * @param string $clientid
      * @param string|null $clientname
-     * @param array $redirecturis
+     * @param mixed[] $redirecturis
      * @param string $tokenendpointauthmethod
      * @param string|null $clientsecret
      * @param string $source 'dcr' or 'cimd'.
@@ -310,7 +310,7 @@ final class oauth_lib {
      * Convert a client row to the RFC 7591 response shape.
      *
      * @param \stdClass $record
-     * @return array
+     * @return mixed[]
      */
     public static function client_registration_response(\stdClass $record): array {
         $response = [
@@ -457,7 +457,7 @@ final class oauth_lib {
      * add refresh only if changing documents prove necessary in practice.
      *
      * @param string $url client_id (the CIMD URL).
-     * @param array $metadata Decoded CIMD metadata.
+     * @param mixed[] $metadata Decoded CIMD metadata.
      * @return \stdClass|null null for invalid or missing redirect_uris.
      */
     public static function cache_cimd_client(string $url, array $metadata): ?\stdClass {
@@ -483,7 +483,7 @@ final class oauth_lib {
      * as with handle_discovery()/handle_registration(). oauth/authorize.php
      * calls it after login and renders either consent or an error page.
      *
-     * @param array $params response_type, client_id, redirect_uri,
+     * @param mixed[] $params response_type, client_id, redirect_uri,
      *        code_challenge, code_challenge_method (all expected as strings).
      * @return array{error: string, error_description: string}|array{client: \stdClass}
      */
@@ -569,7 +569,7 @@ final class oauth_lib {
      * redirects (error/error_description/state). Omit empty or absent values.
      *
      * @param string $redirecturi
-     * @param array $params Type: array<string,?string>.
+     * @param mixed[] $params Type: array<string,?string>.
      * @return string
      */
     public static function build_redirect_url(string $redirecturi, array $params): string {
@@ -606,7 +606,7 @@ final class oauth_lib {
      * @param string $clientid
      * @param string $redirecturi
      * @param string $codeverifier
-     * @return array|null null on any error (RFC 6749: invalid_grant,
+     * @return mixed[]|null null on any error (RFC 6749: invalid_grant,
      *         without exposing the detailed cause).
      */
     public static function exchange_code(string $code, string $clientid, string $redirecturi, string $codeverifier): ?array {
@@ -648,7 +648,7 @@ final class oauth_lib {
      *
      * @param string $refreshtoken
      * @param string $clientid
-     * @return array|null null for an invalid, expired or revoked token
+     * @return mixed[]|null null for an invalid, expired or revoked token
      *         or a client mismatch.
      */
     public static function rotate_refresh_token(string $refreshtoken, string $clientid): ?array {
@@ -1110,7 +1110,7 @@ final class oauth_lib {
      *
      * @param int $status The status.
      * @param string[] $headers
-     * @param array $body
+     * @param mixed[] $body
      * @return array{status: int, headers: array<string, string>, body: array}
      */
     private static function result(int $status, array $headers, array $body): array {

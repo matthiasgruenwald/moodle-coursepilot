@@ -1718,7 +1718,7 @@ final class write_context_file_test extends \advanced_testcase {
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash
-     * @return array Validated endpoint response.
+     * @return mixed[] Validated endpoint response.
      */
     private function write(string $path, string $content, string $expectedcontenthash = ''): array {
         $result = write_context_file::execute($path, $content, $expectedcontenthash);

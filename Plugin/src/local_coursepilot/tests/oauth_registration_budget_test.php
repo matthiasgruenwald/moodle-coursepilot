@@ -46,7 +46,7 @@ final class oauth_registration_budget_test extends \advanced_testcase {
      *
      * @param string $source The source.
      * @param ?string $body The body.
-     * @return array
+     * @return mixed[]
      */
     private function register(string $source, ?string $body = null): array {
         return oauth_lib::handle_registration(

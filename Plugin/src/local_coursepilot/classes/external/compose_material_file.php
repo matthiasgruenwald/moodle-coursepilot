@@ -44,13 +44,16 @@ class compose_material_file extends external_api {
             'parts' => new external_multiple_structure(new external_single_structure([
                 'sourcepath' => new external_value(PARAM_PATH, 'Source file path relative to its location root'),
                 'location' => material_files::location_parameter(),
-                'crop' => new external_single_structure([
-                    'x0' => new external_value(PARAM_FLOAT, 'Left edge, relative 0-1'),
-                    'y0' => new external_value(PARAM_FLOAT, 'Top edge, relative 0-1'),
-                    'x1' => new external_value(PARAM_FLOAT, 'Right edge, relative 0-1'),
-                    'y1' => new external_value(PARAM_FLOAT, 'Bottom edge, relative 0-1'),
-                ], 'Optional crop from the full-resolution original, using the same coordinates as crop_material_file',
-                VALUE_OPTIONAL),
+                'crop' => new external_single_structure(
+                    [
+                        'x0' => new external_value(PARAM_FLOAT, 'Left edge, relative 0-1'),
+                        'y0' => new external_value(PARAM_FLOAT, 'Top edge, relative 0-1'),
+                        'x1' => new external_value(PARAM_FLOAT, 'Right edge, relative 0-1'),
+                        'y1' => new external_value(PARAM_FLOAT, 'Bottom edge, relative 0-1'),
+                    ],
+                    'Optional crop from the full-resolution original, using the same coordinates as crop_material_file',
+                    VALUE_OPTIONAL
+                ),
                 'source_header_text' => new external_value(
                     PARAM_TEXT,
                     'Optional source reference rendered above this part in the fixed house style',
@@ -75,10 +78,10 @@ class compose_material_file extends external_api {
     /**
      * Runs the compose material file tool.
      *
-     * @param array $parts Ordered source parts.
+     * @param mixed[] $parts Ordered source parts.
      * @param string $arrangement vertical or horizontal.
      * @param string $targetpath Workbench PNG path.
-     * @return array Target metadata and ordered source descriptions, without image bytes.
+     * @return mixed[] Target metadata and ordered source descriptions, without image bytes.
      */
     public static function execute(array $parts, string $arrangement, string $targetpath): array {
         $params = self::validate_parameters(self::execute_parameters(), compact('parts', 'arrangement', 'targetpath'));
@@ -121,7 +124,7 @@ class compose_material_file extends external_api {
     /**
      * Reads sources.
      *
-     * @param array $parts The parts.
+     * @param mixed[] $parts The parts.
      * @return array{0: array, 1: string[]} Validated source bytes and descriptions.
      */
     private static function read_sources(array $parts): array {

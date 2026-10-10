@@ -64,7 +64,7 @@ final class ensure_question_bank extends external_api {
      *
      * @param int $courseid
      * @param string $name
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $courseid, string $name): array {
         global $DB;

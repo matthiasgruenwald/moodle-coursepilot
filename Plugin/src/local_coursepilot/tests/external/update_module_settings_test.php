@@ -56,7 +56,7 @@ final class update_module_settings_test extends \advanced_testcase {
      * Returns current state, with the same shape as get_module_settings.
      *
      * @param int $cmid
-     * @return array Current state, with the same shape as get_module_settings.
+     * @return mixed[] Current state, with the same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(

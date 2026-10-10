@@ -222,7 +222,7 @@ final class context_area_pending_test extends \advanced_testcase {
      * @param string $content
      * @param string $operation
      * @param int $courseid
-     * @return array
+     * @return mixed[]
      */
     private function invoke_persist_write(
         storage_port $port,
@@ -244,7 +244,7 @@ final class context_area_pending_test extends \advanced_testcase {
      * @param string $content
      * @param string $operation
      * @param int $courseid
-     * @return array
+     * @return mixed[]
      */
     private function invoke_persist_append(
         storage_port $port,

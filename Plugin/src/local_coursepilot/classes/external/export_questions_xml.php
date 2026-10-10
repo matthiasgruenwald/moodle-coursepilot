@@ -92,7 +92,7 @@ final class export_questions_xml extends external_api {
      * @param int[] $questionids
      * @param string $targetpath
      * @param bool $placeholder
-     * @return array
+     * @return mixed[]
      */
     public static function execute(array $questionids, string $targetpath = '', bool $placeholder = false): array {
         $params = self::validate_parameters(self::execute_parameters(), [
@@ -328,7 +328,7 @@ final class export_questions_xml extends external_api {
      * and unsuitable for sharing (Spec 0018 §7.2, ticket #437).
      *
      * @param int $count
-     * @param array $missing Type: array<int,array{name:string,files:string[]}>.
+     * @param mixed[] $missing Type: array<int,array{name:string,files:string[]}>.
      * @param bool $placeholder
      * @return string
      */

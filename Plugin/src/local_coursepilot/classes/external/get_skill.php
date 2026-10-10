@@ -61,7 +61,7 @@ final class get_skill extends external_api {
      * Runs the get skill tool.
      *
      * @param string $name
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception unknownskillname, if $name is not in the corpus directory.
      */
     public static function execute(string $name): array {

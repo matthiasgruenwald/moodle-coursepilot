@@ -71,11 +71,11 @@ final class create_quiz_test extends \advanced_testcase {
      *
      * @param int $courseid
      * @param int $sectionnum
-     * @param array $felder
+     * @param mixed[] $felder
      * @param string $mode
      * @param float $grade
      * @param string[] $confirmlearnerlocks Explicitly confirmed learner restrictions (#583).
-     * @return array
+     * @return mixed[]
      */
     private function create(
         int $courseid,

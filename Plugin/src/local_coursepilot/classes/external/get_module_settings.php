@@ -61,7 +61,7 @@ class get_module_settings extends external_api {
      * Runs the get module settings tool.
      *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $cmid): array {
         $params = self::validate_parameters(self::execute_parameters(), ['cmid' => $cmid]);

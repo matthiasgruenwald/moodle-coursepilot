@@ -131,9 +131,9 @@ final class get_modules_test extends \advanced_testcase {
     /**
      * Finds module.
      *
-     * @param array $result
+     * @param mixed[] $result
      * @param int $cmid
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function find_module(array $result, int $cmid): ?array {
         foreach ($result as $module) {

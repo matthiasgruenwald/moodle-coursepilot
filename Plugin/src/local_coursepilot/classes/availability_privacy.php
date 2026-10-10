@@ -64,8 +64,8 @@ class availability_privacy {
     /**
      * Provides sanitize node.
      *
-     * @param array $node
-     * @return array
+     * @param mixed[] $node
+     * @return mixed[]
      */
     private static function sanitize_node(array $node): array {
         if (!isset($node['c']) || !is_array($node['c'])) {
@@ -78,8 +78,8 @@ class availability_privacy {
     /**
      * Provides sanitize condition.
      *
-     * @param array $condition
-     * @return array
+     * @param mixed[] $condition
+     * @return mixed[]
      */
     private static function sanitize_condition(array $condition): array {
         if (isset($condition['c']) && is_array($condition['c'])) {

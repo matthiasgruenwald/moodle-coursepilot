@@ -68,7 +68,7 @@ class get_question extends external_api {
      * @param int $categoryid
      * @param string $name
      * @param int $questionid
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $categoryid, string $name = '', int $questionid = 0): array {
         global $DB;

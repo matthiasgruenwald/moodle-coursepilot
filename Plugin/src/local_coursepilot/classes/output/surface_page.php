@@ -34,9 +34,9 @@ final class surface_page {
     /**
      * Provides page data.
      *
-     * @param array $violations Type: array<int,array{type:string,name:string,detail:string}>.
+     * @param mixed[] $violations Type: array<int,array{type:string,name:string,detail:string}>.
      * @param string[] $registered
-     * @param array $selfcheck Type: array{ok:bool,detail:string,url:string,httpcode:?int}.
+     * @param mixed[] $selfcheck Type: array{ok:bool,detail:string,url:string,httpcode:?int}.
      * @return array<string, mixed>
      */
     public static function page_data(array $violations, array $registered, array $selfcheck): array {

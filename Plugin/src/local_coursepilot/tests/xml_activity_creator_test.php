@@ -48,7 +48,7 @@ final class xml_activity_creator_test extends \advanced_testcase {
      * Provides footprint.
      *
      * @param int $courseid The courseid.
-     * @return array
+     * @return mixed[]
      */
     private function footprint(int $courseid): array {
         global $DB;
@@ -164,6 +164,8 @@ final class xml_activity_creator_test extends \advanced_testcase {
 
     /**
      * Old book in section 2 between two page neighbours; returns [course, xml, old cmid, neighbour cmid].
+     *
+     * @return mixed[]
      */
     private function setup_old(): array {
         [$course, $xml] = $this->setup_course();

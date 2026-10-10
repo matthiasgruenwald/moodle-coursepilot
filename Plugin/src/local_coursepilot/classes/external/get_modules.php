@@ -55,7 +55,7 @@ class get_modules extends external_api {
      *
      * @param int $courseid
      * @param int $sectionnum
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $courseid, int $sectionnum = -1): array {
         global $DB;

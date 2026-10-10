@@ -79,7 +79,7 @@ final class move_question extends external_api {
      * @param int $questionid
      * @param int $targetcategoryid
      * @param bool $confirmed
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $questionid, int $targetcategoryid, bool $confirmed = false): array {
         global $DB;

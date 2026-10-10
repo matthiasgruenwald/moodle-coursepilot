@@ -68,7 +68,7 @@ final class ensure_question_category extends external_api {
      *
      * @param string $name
      * @param int $parent
-     * @return array
+     * @return mixed[]
      */
     public static function execute(string $name, int $parent): array {
         global $DB;

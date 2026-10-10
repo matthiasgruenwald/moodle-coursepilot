@@ -98,7 +98,7 @@ final class remote_access_test extends \advanced_testcase {
     /**
      * Provides headers.
      *
-     * @return array
+     * @return mixed[]
      */
     private function headers(): array {
         return ['origin' => null, 'pathinfo' => '', 'method' => 'POST'];
@@ -108,7 +108,7 @@ final class remote_access_test extends \advanced_testcase {
      * Provides initialize.
      *
      * @param string $token The token.
-     * @return array
+     * @return mixed[]
      */
     private function initialize(string $token): array {
         return dispatcher::handle(['id' => 1, 'method' => 'initialize'], $token, $this->headers());
@@ -119,7 +119,7 @@ final class remote_access_test extends \advanced_testcase {
      *
      * @param string $token The token.
      * @param int $courseid The courseid.
-     * @return array
+     * @return mixed[]
      */
     private function get_sections(string $token, int $courseid): array {
         return dispatcher::handle(

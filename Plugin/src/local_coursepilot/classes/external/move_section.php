@@ -64,7 +64,7 @@ final class move_section extends external_api {
      * @param int $courseid
      * @param int $sourcesectionnum
      * @param int $targetsectionnum
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception sectionnotmovable|sectiontargetoutofrange
      */
     public static function execute(int $courseid, int $sourcesectionnum, int $targetsectionnum): array {

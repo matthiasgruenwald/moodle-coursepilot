@@ -98,7 +98,7 @@ final class catalog_file_write_test extends \advanced_testcase {
     /**
      * Every stored file, every activity row and every history version.
      *
-     * @return array
+     * @return mixed[]
      */
     private function snapshot(): array {
         global $DB;

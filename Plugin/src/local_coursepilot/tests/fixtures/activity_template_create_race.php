@@ -29,7 +29,7 @@ namespace local_coursepilot {
      *
      * @param mixed $reset The reset.
      */
-    function get_file_storage($reset = false) {
+    function get_file_storage($reset = false): \file_storage {
         $fs = \get_file_storage($reset);
         if (!$reset) {
             foreach (debug_backtrace() as $frame) {

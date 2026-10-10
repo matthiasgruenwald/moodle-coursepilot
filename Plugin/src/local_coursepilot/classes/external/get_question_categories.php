@@ -59,7 +59,7 @@ class get_question_categories extends external_api {
      *
      * @param int $courseid
      * @param int $questionbankid
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $courseid, int $questionbankid): array {
         global $DB;

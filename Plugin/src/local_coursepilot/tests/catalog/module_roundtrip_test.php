@@ -72,8 +72,8 @@ final class module_roundtrip_test extends \advanced_testcase {
      *
      * @param int $courseid The courseid.
      * @param string $modname The modname.
-     * @param array $felder The felder.
-     * @return array
+     * @param mixed[] $felder The felder.
+     * @return mixed[]
      */
     private function create_via_module_tool(int $courseid, string $modname, array $felder): array {
         return external_api::clean_returnvalue(
@@ -86,7 +86,7 @@ final class module_roundtrip_test extends \advanced_testcase {
      * Creates quiz instance.
      *
      * @param int $courseid The courseid.
-     * @return array
+     * @return mixed[]
      */
     private function create_quiz_instance(int $courseid): array {
         $felder = [
@@ -106,7 +106,7 @@ final class module_roundtrip_test extends \advanced_testcase {
      * Returns current state, with the same shape as get_module_settings.
      *
      * @param int $cmid
-     * @return array Current state, with the same shape as get_module_settings.
+     * @return mixed[] Current state, with the same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -121,7 +121,7 @@ final class module_roundtrip_test extends \advanced_testcase {
      *
      * @param string $modname The modname.
      * @param int $cmid The cmid.
-     * @param array $felder The felder.
+     * @param mixed[] $felder The felder.
      */
     private function patch(string $modname, int $cmid, array $felder): void {
         if ($modname === 'quiz') {

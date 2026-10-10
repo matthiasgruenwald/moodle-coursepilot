@@ -48,7 +48,7 @@ class list_courses extends external_api {
     /**
      * Runs the list courses tool.
      *
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception CAPABILITY_MISSING if no course is authorized.
      */
     public static function execute(): array {

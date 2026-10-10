@@ -51,7 +51,7 @@ final class quiz_write_bridge {
      * Timing suffix to bitmask, using Moodle's own constants rather than
      * a plugin-specific bitmask vocabulary.
      *
-     * @var array<string, int>
+     * @return array<string, int>
      */
     private static function review_timings(): array {
         return [
@@ -124,7 +124,7 @@ final class quiz_write_bridge {
      *
      * @param \stdClass $moduleinfo Updated in place.
      * @param string[] $texts
-     * @param array $boundaries Type: array<int,int|float|string>.
+     * @param mixed[] $boundaries Type: array<int,int|float|string>.
      * @return void
      */
     public static function apply_feedback_pseudofields(\stdClass $moduleinfo, array $texts, array $boundaries): void {
@@ -180,8 +180,8 @@ final class quiz_write_bridge {
      * decided by {@see write_target}; like there, a rule only fires when the
      * patch touches one of its fields, so unchanged legacy values are not re-judged.
      *
-     * @param array $effective Checked target state ({@see write_target::$state}).
-     * @param array $patch Fields explicitly set by the patch/bundle. Without feedbacktext,
+     * @param mixed[] $effective Checked target state ({@see write_target::$state}).
+     * @param mixed[] $patch Fields explicitly set by the patch/bundle. Without feedbacktext,
      *        there is no feedback rule to check; carried-forward current values are valid.
      * @param float $grade Effective maximum grade for feedback boundaries: the new grade
      *        if changed in this call, otherwise the current grade.

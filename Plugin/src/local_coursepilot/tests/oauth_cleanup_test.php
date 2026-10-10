@@ -54,7 +54,7 @@ final class oauth_cleanup_test extends \advanced_testcase {
      *
      * @param string $clientid The clientid.
      * @param int $userid The userid.
-     * @return array
+     * @return mixed[]
      */
     private function tokens(string $clientid, int $userid): array {
         $verifier = str_repeat('v', 43);
@@ -66,7 +66,7 @@ final class oauth_cleanup_test extends \advanced_testcase {
     /**
      * Provides connection.
      *
-     * @param array $pair The pair.
+     * @param mixed[] $pair The pair.
      * @return int
      */
     private function connection(array $pair): int {

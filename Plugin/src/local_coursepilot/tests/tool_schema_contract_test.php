@@ -214,7 +214,7 @@ final class tool_schema_contract_test extends \advanced_testcase {
     /**
      * Asserts english schema descriptions.
      *
-     * @param array $schema The schema.
+     * @param mixed[] $schema The schema.
      * @param string $forbidden The forbidden.
      * @param string $name The name.
      */

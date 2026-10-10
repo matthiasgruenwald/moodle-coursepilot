@@ -31,7 +31,7 @@ final class module_state {
      * need no knowledge of module tables or pseudofield readers.
      *
      * @param \stdClass $cm
-     * @return array
+     * @return mixed[]
      */
     public static function effective_settings(\stdClass $cm): array {
         global $CFG, $DB;

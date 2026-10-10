@@ -76,12 +76,12 @@ final class create_module_test extends \advanced_testcase {
      * @param int $courseid
      * @param int $sectionnum
      * @param string $modname
-     * @param array $felder
+     * @param mixed[] $felder
      * @param string $ort
      * {@see \local_coursepilot\material_files::LOCATION_STORE}/{@see \local_coursepilot\material_files::LOCATION_WORKBENCH}
      *        (Issue #496).
      * @param string[] $confirmlearnerlocks Explicitly confirmed learner restrictions (#583).
-     * @return array
+     * @return mixed[]
      */
     private function create(
         int $courseid,
@@ -101,9 +101,9 @@ final class create_module_test extends \advanced_testcase {
      * Simulate AI preparation: apply bundle values first, then explicit
      * fields. Bundles are not endpoint parameters (Spec 0015 §2.4).
      *
-     * @param array $bundle
-     * @param array $felder
-     * @return array
+     * @param mixed[] $bundle
+     * @param mixed[] $felder
+     * @return mixed[]
      */
     private function merge_bundle(array $bundle, array $felder): array {
         return array_merge($bundle, $felder);
@@ -113,7 +113,7 @@ final class create_module_test extends \advanced_testcase {
      * Returns current state, with the same shape as get_module_settings.
      *
      * @param int $cmid
-     * @return array Current state, with the same shape as get_module_settings.
+     * @return mixed[] Current state, with the same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -271,7 +271,7 @@ final class create_module_test extends \advanced_testcase {
     /**
      * Provides invalid intro images.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function invalid_intro_images(): array {
         return [

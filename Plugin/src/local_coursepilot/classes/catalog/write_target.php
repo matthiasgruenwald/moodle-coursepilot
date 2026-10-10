@@ -270,7 +270,7 @@ final class write_target {
     /**
      * Provides touches.
      *
-     * @param array $rule Type: array{reference:string,field:string}.
+     * @param mixed[] $rule Type: array{reference:string,field:string}.
      * @return bool True when a change names one of the rule's fields.
      */
     private function touches(array $rule): bool {
@@ -399,8 +399,8 @@ final class write_target {
      * Returns draft itemid.
      *
      * @param context $context
-     * @param array $spec Type: array{component:string,filearea:string}.
-     * @param array $paths Checked by {@see self::assert_file_references()}.
+     * @param mixed[] $spec Type: array{component:string,filearea:string}.
+     * @param mixed[] $paths Checked by {@see self::assert_file_references()}.
      * @param string $location
      * @param bool $replacing
      * @return int Draft itemid.

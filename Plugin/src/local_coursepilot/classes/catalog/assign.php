@@ -131,7 +131,7 @@ final class assign implements module_catalog {
     /**
      * Provides fields.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function fields(): array {
         return [
@@ -487,7 +487,7 @@ final class assign implements module_catalog {
      * @param int $instanceid The instanceid.
      * @param int $cmid The cmid.
      * @param bool $fullcontent The fullcontent.
-     * @return array
+     * @return mixed[]
      */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         global $DB;
@@ -602,7 +602,7 @@ final class assign implements module_catalog {
     /**
      * Writes options.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function write_options(): array {
         return [
@@ -629,7 +629,7 @@ final class assign implements module_catalog {
     /**
      * Provides pseudofields.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function pseudofields(): array {
         return [
@@ -850,7 +850,7 @@ final class assign implements module_catalog {
     /**
      * Provides blocklist.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function blocklist(): array {
         global $CFG;
@@ -870,7 +870,7 @@ final class assign implements module_catalog {
     /**
      * Provides combination rules.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function combination_rules(): array {
         return [
@@ -890,7 +890,7 @@ final class assign implements module_catalog {
     /**
      * Provides side effects.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function side_effects(): array {
         return [
@@ -905,7 +905,7 @@ final class assign implements module_catalog {
     /**
      * Provides bundles.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function bundles(): array {
         return [
@@ -946,7 +946,7 @@ final class assign implements module_catalog {
     /**
      * Provides checked constants.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function checked_constants(): array {
         // The 34 constants from mod/assign/locallib.php without a callable
@@ -994,7 +994,7 @@ final class assign implements module_catalog {
     /**
      * Provides learner locks.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function learner_locks(): array {
         // Baseline from #582, verified against Moodle 5.0.8

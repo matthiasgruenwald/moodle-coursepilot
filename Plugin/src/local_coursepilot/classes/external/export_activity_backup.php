@@ -49,7 +49,7 @@ final class export_activity_backup extends external_api {
      * Runs the export activity backup tool.
      *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception clonenobackupsupport
      */
     public static function execute(int $cmid): array {

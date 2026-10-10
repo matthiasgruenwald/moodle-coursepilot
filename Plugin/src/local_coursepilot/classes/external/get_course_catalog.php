@@ -72,7 +72,7 @@ class get_course_catalog extends external_api {
      * @param int $sectionnum
      * @param string $modname
      * @param string $detail
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $courseid,
@@ -118,7 +118,7 @@ class get_course_catalog extends external_api {
      * @param int $sectionnum
      * @param string $modulefilter
      * @param bool $fullcontent
-     * @return array
+     * @return mixed[]
      */
     private static function sections(int $courseid, int $sectionnum, string $modulefilter, bool $fullcontent): array {
         global $DB;
@@ -159,7 +159,7 @@ class get_course_catalog extends external_api {
      * @param int $sectionid
      * @param string $modulefilter
      * @param bool $fullcontent
-     * @return array
+     * @return mixed[]
      */
     private static function modules(int $sectionid, string $modulefilter, bool $fullcontent): array {
         global $DB;
@@ -232,7 +232,7 @@ class get_course_catalog extends external_api {
      * @param int $instanceid
      * @param int $cmid
      * @param bool $fullcontent
-     * @return array
+     * @return mixed[]
      */
     private static function module_details(string $modname, int $instanceid, int $cmid, bool $fullcontent): array {
         $catalogclass = registry::for($modname);
@@ -247,7 +247,7 @@ class get_course_catalog extends external_api {
      *
      * @param string $html
      * @param bool $fullcontent
-     * @return array
+     * @return mixed[]
      */
     private static function content_field(string $html, bool $fullcontent): array {
         return [

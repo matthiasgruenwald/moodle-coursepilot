@@ -65,8 +65,8 @@ class get_quiz_cleanup_plan extends external_api {
      * Runs the get quiz cleanup plan tool.
      *
      * @param int $cmid
-     * @param array $keepquestionbankentryids
-     * @return array
+     * @param mixed[] $keepquestionbankentryids
+     * @return mixed[]
      */
     public static function execute(int $cmid, array $keepquestionbankentryids): array {
         global $CFG, $DB;

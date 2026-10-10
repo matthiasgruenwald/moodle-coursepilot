@@ -32,7 +32,7 @@ final class connections_page {
      * Provides page data.
      *
      * @param \stdClass[] $tokens
-     * @param array $currentlocations see location_selection::current_locations_data() Type: array<string,array<string,string>>.
+     * @param mixed[] $currentlocations see location_selection::current_locations_data() Type: array<string,array<string,string>>.
      * @param \moodle_url $locationselectionurl
      * @return array<string, mixed>
      */

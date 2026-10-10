@@ -95,7 +95,7 @@ class write_context_file extends external_api {
      * @param string $pendingentry
      * @param bool $createonly
      * @param int $courseid
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
      *         contextfiletoolarge, contextfilelocked, contextfilechanged,
      *         contextfilealreadyexists, contextquotaexceeded
@@ -140,8 +140,8 @@ class write_context_file extends external_api {
      * Builds the teacher-facing change message from the location-independent
      * result of {@see context_area::write()}.
      *
-     * @param array $result Type: array{path:string,created:bool,size:int,oldsize:int}.
-     * @return array
+     * @param mixed[] $result Type: array{path:string,created:bool,size:int,oldsize:int}.
+     * @return mixed[]
      */
     private static function build_response(array $result): array {
         $message = $result['created']

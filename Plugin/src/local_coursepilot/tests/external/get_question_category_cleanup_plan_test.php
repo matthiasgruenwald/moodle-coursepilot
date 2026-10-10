@@ -143,7 +143,7 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
     /**
      * Provides cases for denied capability provider.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function denied_capability_provider(): array {
         return [
@@ -181,7 +181,7 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
     /**
      * Returns course, bank and bank context; teacher is the current user.
      *
-     * @return array Course, bank and bank context; teacher is the current user.
+     * @return mixed[] Course, bank and bank context; teacher is the current user.
      */
     private function create_populated_bank(): array {
         global $DB;

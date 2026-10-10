@@ -58,7 +58,7 @@ final class ensure_section extends external_api {
      * @param int $courseid
      * @param int $sectionnum
      * @param string|null $name
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidsectionnum
      */
     public static function execute(int $courseid, int $sectionnum, ?string $name = null): array {

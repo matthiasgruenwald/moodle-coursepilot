@@ -199,7 +199,7 @@ final class compose_material_file_test extends \advanced_testcase {
     /**
      * Provides failure cases.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function failure_cases(): array {
         $valid = ['sourcepath' => 'page.png'];

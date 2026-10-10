@@ -90,7 +90,7 @@ final class create_quiz extends external_api {
      * @param string $mode
      * @param float $grade
      * @param string[] $confirmlearnerlocks
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $courseid,
@@ -204,7 +204,7 @@ final class create_quiz extends external_api {
      * grade (always set, never from fields_json), and side effects. Same
      * principle as {@see create_module::report_and_side_effects()}.
      *
-     * @param array $merged
+     * @param mixed[] $merged
      * @param float $grade
      * @return array{0: array, 1: string[]}
      */
@@ -232,7 +232,7 @@ final class create_quiz extends external_api {
     /**
      * Teacher-facing creation message (Spec 0015 §3.4/§5).
      *
-     * @param array $createdfields
+     * @param mixed[] $createdfields
      * @param string[] $sideeffects
      * @return string
      */

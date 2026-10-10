@@ -122,15 +122,18 @@ final class drift_check {
     private static function column_violations(string $modname, string $catalogclass): array {
         global $DB;
 
+        /** @var class-string<module_catalog> $catalog */
+        $catalog = $catalogclass;
+
         $realcolumns = array_keys($DB->get_columns($modname));
         sort($realcolumns);
 
-        $pseudofieldnames = array_map(static fn (field $f): string => $f->name, $catalogclass::pseudofields());
-        $blockedrealcolumns = array_diff($catalogclass::blocklist(), $pseudofieldnames);
+        $pseudofieldnames = array_map(static fn (field $f): string => $f->name, $catalog::pseudofields());
+        $blockedrealcolumns = array_diff($catalog::blocklist(), $pseudofieldnames);
 
         $known = array_merge(
             ['id'],
-            array_map(static fn (field $f): string => $f->name, $catalogclass::fields()),
+            array_map(static fn (field $f): string => $f->name, $catalog::fields()),
             $blockedrealcolumns,
             array_intersect(shared_block::BLOCKLIST, $realcolumns)
         );

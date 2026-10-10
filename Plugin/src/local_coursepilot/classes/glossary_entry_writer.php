@@ -27,12 +27,12 @@ final class glossary_entry_writer {
     /**
      * Adds the glossary entry writer.
      *
-     * @param array $input Validated External entry
+     * @param mixed[] $input Validated External entry
      * @param \stdClass $course
      * @param \stdClass $cm
      * @param \stdClass $glossary
      * @param \context_module $context
-     * @return array
+     * @return mixed[]
      */
     public static function add(
         array $input,
@@ -105,6 +105,7 @@ final class glossary_entry_writer {
                     'errorcode' => '', 'message' => ''];
             } catch (\Throwable $e) {
                 $transaction->rollback($e);
+                throw $e;
             }
         } catch (\moodle_exception $e) {
             // Database/debug details must never enter the teacher or model context.
@@ -117,7 +118,7 @@ final class glossary_entry_writer {
     /**
      * Explicit state follows mod/glossary/approve.php, limited to this new entry.
      *
-     * @param array $input The input.
+     * @param mixed[] $input The input.
      * @param \stdClass $entry The entry.
      * @param \stdClass $course The course.
      * @param \stdClass $cm The cm.
@@ -161,7 +162,7 @@ final class glossary_entry_writer {
     /**
      * Copy teacher material through the shared location-aware draft path.
      *
-     * @param array $input The input.
+     * @param mixed[] $input The input.
      * @param \stdClass $entry The entry.
      * @param \stdClass $course The course.
      * @param \context_module $context The context.
@@ -217,6 +218,7 @@ final class glossary_entry_writer {
      * @param array $names The names.
      * @param \stdClass $glossary The glossary.
      * @param \context_module $context The context.
+     * @return mixed[]
      */
     private static function categories(array $names, \stdClass $glossary, \context_module $context): array {
         global $DB;

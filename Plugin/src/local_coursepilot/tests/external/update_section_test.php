@@ -46,8 +46,8 @@ final class update_section_test extends \advanced_testcase {
      *
      * @param int $courseid
      * @param int $sectionnum
-     * @param array $fields
-     * @return array
+     * @param mixed[] $fields
+     * @return mixed[]
      */
     private function update(int $courseid, int $sectionnum, array $fields): array {
         return external_api::clean_returnvalue(

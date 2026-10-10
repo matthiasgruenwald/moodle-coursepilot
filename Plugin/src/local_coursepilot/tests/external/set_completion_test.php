@@ -47,7 +47,7 @@ final class set_completion_test extends \advanced_testcase {
      * Returns current state, same shape as get_module_settings.
      *
      * @param int $cmid
-     * @return array Current state, same shape as get_module_settings.
+     * @return mixed[] Current state, same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(

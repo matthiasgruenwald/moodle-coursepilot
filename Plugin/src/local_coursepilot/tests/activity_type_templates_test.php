@@ -151,7 +151,7 @@ final class activity_type_templates_test extends \advanced_testcase {
     /**
      * Provides verified examples.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function verified_examples(): array {
         return [
@@ -347,7 +347,7 @@ final class activity_type_templates_test extends \advanced_testcase {
     /**
      * Provides external selection.
      *
-     * @return array
+     * @return mixed[]
      */
     private function external_selection(): array {
         $current = location_selection::current('context_area');

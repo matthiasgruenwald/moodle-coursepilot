@@ -38,9 +38,9 @@ final class pseudofield_carry_forward {
      * @param string $modname
      * @param string $catalogclass Type: class-string<module_catalog>.
      * @param \stdClass $moduleinfo Updated in place.
-     * @param array $before Current state before writing, for editor pseudofields.
+     * @param mixed[] $before Current state before writing, for editor pseudofields.
      * @param \stdClass $cm
-     * @param array $patch Explicit caller fields, preserved here.
+     * @param mixed[] $patch Explicit caller fields, preserved here.
      * @return void
      */
     public static function apply(
@@ -69,7 +69,7 @@ final class pseudofield_carry_forward {
      * other values without text, naming the field instead of losing content.
      *
      * @param string $catalogclass Type: class-string<module_catalog>.
-     * @param array $patch Normalised in place.
+     * @param mixed[] $patch Normalised in place.
      * @return void
      * @throws \moodle_exception invalideditorpseudofield
      */
@@ -111,7 +111,7 @@ final class pseudofield_carry_forward {
      * @param string $modname
      * @param \stdClass $moduleinfo Updated in place.
      * @param \stdClass $cm
-     * @param array $patch
+     * @param mixed[] $patch
      * @return void
      */
     private static function carry_forward_assign_plugin_config(
@@ -171,7 +171,7 @@ final class pseudofield_carry_forward {
      * Shared by update_module_settings and the dedicated quiz write route.
      *
      * @param \stdClass $moduleinfo Updated in place.
-     * @param array $patch
+     * @param mixed[] $patch
      * @return void
      */
     public static function sync_intro_editor_from_patch(\stdClass $moduleinfo, array $patch): void {
@@ -195,7 +195,7 @@ final class pseudofield_carry_forward {
      *
      * @param string $catalogclass Type: class-string<module_catalog>.
      * @param \stdClass $moduleinfo Updated in place.
-     * @param array $patch
+     * @param mixed[] $patch
      * @return void
      */
     private static function fill_pseudofield_defaults(string $catalogclass, \stdClass $moduleinfo, array $patch): void {
@@ -216,9 +216,9 @@ final class pseudofield_carry_forward {
      * @param string $modname The modname.
      * @param string $catalogclass Type: class-string<module_catalog>.
      * @param \stdClass $moduleinfo Updated in place.
-     * @param array $before
+     * @param mixed[] $before
      * @param \stdClass $cm The cm.
-     * @param array $patch
+     * @param mixed[] $patch
      * @return void
      */
     private static function prepare_editor_content_pseudofields(
@@ -272,7 +272,7 @@ final class pseudofield_carry_forward {
      *
      * @param string $modname
      * @param \stdClass $moduleinfo Updated in place.
-     * @param array $patch
+     * @param mixed[] $patch
      * @return void
      */
     private static function carry_forward_draft_file_pseudofield(string $modname, \stdClass $moduleinfo, array $patch): void {
@@ -293,7 +293,7 @@ final class pseudofield_carry_forward {
      * @param string $modname
      * @param \stdClass $moduleinfo Updated in place.
      * @param \stdClass $cm
-     * @param array $patch
+     * @param mixed[] $patch
      * @return void
      */
     private static function carry_forward_choice_options(

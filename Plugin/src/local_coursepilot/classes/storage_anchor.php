@@ -150,7 +150,7 @@ final class storage_anchor {
      * Reads the fixed anchor's pointer file and decodes its JSON object.
      * File I/O only; {@see context_pointer} interprets generations and fields.
      *
-     * @return array|null null without a pointer file (open).
+     * @return mixed[]|null null without a pointer file (open).
      * @throws \moodle_exception pointerunreadable
      */
     private static function raw_pointer(): ?array {
@@ -262,7 +262,7 @@ final class storage_anchor {
      * Public raw-pointer read (#494): location selection needs the complete
      * document, including history, rather than only one resolved target.
      *
-     * @return array|null null without a pointer file.
+     * @return mixed[]|null null without a pointer file.
      * @throws \moodle_exception pointerunreadable
      */
     public static function read_raw_pointer(): ?array {
@@ -277,7 +277,7 @@ final class storage_anchor {
      * Moves no files, only replaces the small pointer with the usual
      * temporary-file choreography in {@see replace()}.
      *
-     * @param array $document Complete pointer document (context_area,
+     * @param mixed[] $document Complete pointer document (context_area,
      *        material_store, location_history).
      */
     public static function write_pointer_document(array $document): void {
@@ -530,7 +530,7 @@ final class storage_anchor {
      * @param int $contextid
      * @param string $directory
      * @param string $filename
-     * @return array
+     * @return mixed[]
      */
     public static function filerecord(int $contextid, string $directory, string $filename): array {
         return [
@@ -629,7 +629,7 @@ final class storage_anchor {
      * Lists entries.
      *
      * @param string $directory The directory.
-     * @return array
+     * @return mixed[]
      */
     public static function list_entries(string $directory): array {
         $entries = [];
@@ -657,7 +657,7 @@ final class storage_anchor {
                 'name' => $file->get_filename(),
                 'type' => 'file',
                 'size' => (int) $file->get_filesize(),
-                'mimetype' => (string) ($file->get_mimetype() ?? ''),
+                'mimetype' => (string) $file->get_mimetype(),
                 'contenthash' => $file->get_contenthash(),
                 'timemodified' => (int) $file->get_timemodified(),
             ];
@@ -680,7 +680,7 @@ final class storage_anchor {
         }
         return [
             'content' => $file->get_content(),
-            'mimetype' => (string) ($file->get_mimetype() ?? ''),
+            'mimetype' => (string) $file->get_mimetype(),
             'size' => (int) $file->get_filesize(),
             'contenthash' => $file->get_contenthash(),
             'timemodified' => (int) $file->get_timemodified(),
@@ -695,7 +695,7 @@ final class storage_anchor {
      * @param string $directory Result of {@see resolve_directory()}.
      * @param string $filename
      * @param string $content Complete new content.
-     * @param array $recordoverrides Additional/overriding file-record fields
+     * @param mixed[] $recordoverrides Additional/overriding file-record fields
      *        (#488), e.g. the source field for an image crop
      *        ({@see \local_coursepilot\external\crop_material_file}).
      *        Empty leaves the ordinary {@see filerecord()} record
@@ -759,7 +759,7 @@ final class storage_anchor {
      * but preserves the content.
      *
      * @param \stored_file|null $existing Existing file, if present.
-     * @param array $filerecord Target from {@see filerecord()}.
+     * @param mixed[] $filerecord Target from {@see filerecord()}.
      * @param string $content Complete new content.
      */
     public static function replace(?\stored_file $existing, array $filerecord, string $content): void {

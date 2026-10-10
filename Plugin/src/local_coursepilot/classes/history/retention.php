@@ -230,7 +230,7 @@ final class retention {
      * links and every file metadata row no longer referenced by another state.
      * Used by retention, activity/course cascades and privacy deletion.
      *
-     * @param array $versionids
+     * @param mixed[] $versionids
      * @return void
      */
     public static function delete_versions(array $versionids): void {
@@ -252,7 +252,7 @@ final class retention {
     /**
      * Deletes those of the given cm_file rows that no state links to any more.
      *
-     * @param array $fileids
+     * @param mixed[] $fileids
      * @return void
      */
     private static function delete_orphan_files(array $fileids): void {

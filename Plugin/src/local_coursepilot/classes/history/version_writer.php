@@ -105,6 +105,7 @@ final class version_writer {
             return $versionid;
         } catch (\Throwable $e) {
             $transaction->rollback($e);
+            throw $e;
         }
     }
 
@@ -162,6 +163,7 @@ final class version_writer {
             return $versionid;
         } catch (\Throwable $e) {
             $transaction->rollback($e);
+            throw $e;
         }
     }
 
@@ -189,7 +191,7 @@ final class version_writer {
      * form side effects.
      *
      * @param \stdClass $cm
-     * @return array
+     * @return mixed[]
      */
     private static function build_moduleinfo(\stdClass $cm): array {
         global $CFG, $DB;
@@ -237,7 +239,7 @@ final class version_writer {
      * gradepass/gradecat/outcome fields as in course/modlib.php::get_moduleinfo_data()
      * (lines 848-885), deliberately kept outside of get_module_settings.
      *
-     * @param array $data
+     * @param mixed[] $data
      * @param \stdClass $cm
      * @return void
      */

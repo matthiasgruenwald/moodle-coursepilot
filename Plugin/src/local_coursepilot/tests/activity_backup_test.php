@@ -78,7 +78,7 @@ final class activity_backup_test extends \advanced_testcase {
     /**
      * Provides tempdir entries.
      *
-     * @return array
+     * @return mixed[]
      */
     private function tempdir_entries(): array {
         global $CFG;

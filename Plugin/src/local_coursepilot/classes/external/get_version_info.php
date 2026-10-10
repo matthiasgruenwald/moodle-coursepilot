@@ -53,7 +53,7 @@ final class get_version_info extends external_api {
     /**
      * Runs the get version info tool.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function execute(): array {
         global $CFG;

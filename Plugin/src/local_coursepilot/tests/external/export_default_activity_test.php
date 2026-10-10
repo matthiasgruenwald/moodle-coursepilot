@@ -50,6 +50,7 @@ final class export_default_activity_test extends \advanced_testcase {
      * Everything a leftover activity could touch.
      *
      * @param int $courseid The courseid.
+     * @return mixed[]
      */
     private function footprint(int $courseid): array {
         global $DB;

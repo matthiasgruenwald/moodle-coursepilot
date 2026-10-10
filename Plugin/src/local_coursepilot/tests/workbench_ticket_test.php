@@ -77,7 +77,7 @@ final class workbench_ticket_test extends \advanced_testcase {
     /**
      * Provides cases for requester provider.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function requester_provider(): array {
         return ['anonymous' => [false], 'another teacher' => [true]];

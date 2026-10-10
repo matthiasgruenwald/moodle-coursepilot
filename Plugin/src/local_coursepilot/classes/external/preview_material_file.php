@@ -59,7 +59,7 @@ class preview_material_file extends external_api {
      *
      * @param string $path
      * @param string $location
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidmaterialpath, invalidmateriallocation,
      *         materialpathiscontext, materialfilenotfound, materialgdmissing,
      *         materialpreviewunsupported
@@ -105,7 +105,7 @@ class preview_material_file extends external_api {
      *
      * @param string $relativepath
      * @param string $content
-     * @return array
+     * @return mixed[]
      */
     private static function build_preview_response(string $relativepath, string $content): array {
         // Even image extensions can contain unreadable bytes or disguised SVG.
@@ -134,7 +134,7 @@ class preview_material_file extends external_api {
      *
      * @param string $relativepath
      * @param string $message
-     * @return array
+     * @return mixed[]
      */
     private static function unavailable_response(string $relativepath, string $message): array {
         return [

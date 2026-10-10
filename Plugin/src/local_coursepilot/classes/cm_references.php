@@ -99,8 +99,8 @@ final class cm_references {
      * Shared tree walk: every completion condition node of an availability tree
      * (nested groups included), in document order.
      *
-     * @param array $tree Decoded availability JSON.
-     * @return array[] Condition nodes with type "completion".
+     * @param mixed[] $tree Decoded availability JSON.
+     * @return mixed[][] Condition nodes with type "completion".
      */
     private static function completion_conditions(array $tree): array {
         $nodes = [];
@@ -118,7 +118,7 @@ final class cm_references {
     /**
      * Every completion condition of a tree as "cm:e".
      *
-     * @param array $tree
+     * @param mixed[] $tree
      * @return string[]
      */
     public static function completion_pairs(array $tree): array {
@@ -134,7 +134,7 @@ final class cm_references {
     /**
      * Completion condition whose cm Moodle could not translate on restore (cm 0).
      *
-     * @param array $node
+     * @param mixed[] $node
      * @return bool
      */
     public static function is_dangling_completion(array $node): bool {

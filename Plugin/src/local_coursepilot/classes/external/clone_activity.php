@@ -97,7 +97,7 @@ final class clone_activity extends external_api {
      * @param string $title
      * @param int $targetcourseid
      * @param bool $visible
-     * @return array
+     * @return mixed[]
      * @throws invalid_parameter_exception
      * @throws moodle_exception clonenobackupsupport
      */
@@ -235,10 +235,10 @@ final class clone_activity extends external_api {
      * only the flat tree from {@see set_restriction}. Remove groups emptied
      * by cleanup instead of leaving empty wrappers.
      *
-     * @param array $node
+     * @param mixed[] $node
      * @param array|null $sourcenode The same source-tree node before cloning, used for the message.
-     * @param array $removed By reference: message for each removed condition.
-     * @return array|null null if the node or entire tree became empty.
+     * @param mixed[] $removed By reference: message for each removed condition.
+     * @return mixed[]|null null if the node or entire tree became empty.
      */
     private static function strip_dangling_completion(array $node, ?array $sourcenode, array &$removed): ?array {
         if (!isset($node['c']) || !is_array($node['c'])) {
@@ -320,7 +320,7 @@ final class clone_activity extends external_api {
     /**
      * Builds removed message.
      *
-     * @param array $removed
+     * @param mixed[] $removed
      * @return string
      */
     private static function build_removed_message(array $removed): string {

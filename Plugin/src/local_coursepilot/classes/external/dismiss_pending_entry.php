@@ -53,7 +53,7 @@ class dismiss_pending_entry extends external_api {
      * Runs the dismiss pending entry tool.
      *
      * @param string $identifier
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception pendingunknown if the identifier does not exist
      * @throws \required_capability_exception without moodle/user:manageownfiles
      */

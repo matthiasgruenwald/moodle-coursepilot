@@ -95,7 +95,7 @@ final class update_quiz_settings extends external_api {
      * @param string $mode
      * @param float $grade
      * @param string[] $confirmlearnerlocks
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $cmid,
@@ -256,9 +256,9 @@ final class update_quiz_settings extends external_api {
      * Also report calendar changes for timeopen/timeclose (quiz::side_effects())
      * and effects of a grade change.
      *
-     * @param array $merged
-     * @param array $before
-     * @param array $after
+     * @param mixed[] $merged
+     * @param mixed[] $before
+     * @param mixed[] $after
      * @param bool $gradechanged
      * @return array{0: array, 1: string[]}
      */
@@ -310,7 +310,7 @@ final class update_quiz_settings extends external_api {
     /**
      * Teacher-facing change message (Spec 0015 §3.3/§5).
      *
-     * @param array $changes
+     * @param mixed[] $changes
      * @param string[] $sideeffects
      * @return string
      */

@@ -116,7 +116,7 @@ final class restore_activity_version extends external_api {
      * @param int $cmid
      * @param int $targetversion
      * @param bool $confirmed
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $cmid, int $targetversion, bool $confirmed = false): array {
         $params = self::validate_parameters(self::execute_parameters(), [
@@ -291,7 +291,7 @@ final class restore_activity_version extends external_api {
      *
      * @param \stdClass $cm
      * @param int $targetversion
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception arrangementrestoreblocked if the quiz already has attempts and
      *         the arrangement differs; writevehicleblocked if the arrangement does not differ.
      */
@@ -374,7 +374,7 @@ final class restore_activity_version extends external_api {
      * comparison when building the patch.
      *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      */
     private static function read_settings(int $cmid): array {
         $result = get_module_settings::execute($cmid);
@@ -390,9 +390,9 @@ final class restore_activity_version extends external_api {
      * "section") is automatically left out instead of being written wrongly.
      *
      * @param string $catalogclass Type: class-string<\local_coursepilot\catalog\module_catalog>.
-     * @param array $before
-     * @param array $target
-     * @return array
+     * @param mixed[] $before
+     * @param mixed[] $target
+     * @return mixed[]
      */
     private static function build_normal_patch(string $catalogclass, array $before, array $target): array {
         $blocklist = array_unique(array_merge(shared_block::BLOCKLIST, $catalogclass::blocklist()));
@@ -418,9 +418,9 @@ final class restore_activity_version extends external_api {
      * independent of "confirmed": whether they are actually written is decided
      * by {@see self::execute()}.
      *
-     * @param array $before
-     * @param array $target
-     * @return array
+     * @param mixed[] $before
+     * @param mixed[] $target
+     * @return mixed[]
      */
     private static function build_completion_patch(array $before, array $target): array {
         $patch = [];
@@ -443,7 +443,7 @@ final class restore_activity_version extends external_api {
      * message of its own.
      *
      * @param int $targetversion
-     * @param array $changes
+     * @param mixed[] $changes
      * @param string|null $completionwarning set_completion's message if its own
      *        two-step flow prevented writing the completion fields.
      * @param string|null $arrangementmessage Additional sentence from {@see self::restore_quiz_arrangement()}.

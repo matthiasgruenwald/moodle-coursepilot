@@ -84,7 +84,7 @@ class append_context_file extends external_api {
      * @param string $pendingentry
      * @param string $expectedcontenthash
      * @param int $courseid
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
      *         contextfiletoolarge, contextfilelocked, contextquotaexceeded,
      *         contextfileexternalconflict (external, issue #513)
@@ -127,8 +127,8 @@ class append_context_file extends external_api {
      * rotation hint (Spec 0016 §5.2/§8.4) from the location-neutral result
      * of {@see context_area::append()}.
      *
-     * @param array $result Type: array{path:string,created:bool,size:int}.
-     * @return array
+     * @param mixed[] $result Type: array{path:string,created:bool,size:int}.
+     * @return mixed[]
      */
     private static function build_response(array $result): array {
         $message = $result['created']

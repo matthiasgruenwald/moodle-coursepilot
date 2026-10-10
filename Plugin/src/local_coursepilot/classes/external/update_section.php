@@ -69,7 +69,7 @@ final class update_section extends external_api {
      * @param int $courseid
      * @param int $sectionnum
      * @param string $fieldsjson
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $courseid, int $sectionnum, string $fieldsjson): array {
         global $CFG;
@@ -127,8 +127,8 @@ final class update_section extends external_api {
      * All-or-nothing check BEFORE writing: unknown field,
      * disallowed value for "visible".
      *
-     * @param array $patch
-     * @return array Moodle field names => value, directly for course_update_section().
+     * @param mixed[] $patch
+     * @return mixed[] Moodle field names => value, directly for course_update_section().
      * @throws moodle_exception unknownfield|invalidfieldvalue
      */
     private static function validate_patch(array $patch): array {
@@ -159,10 +159,10 @@ final class update_section extends external_api {
     /**
      * Provides diff.
      *
-     * @param array $patch
-     * @param array $before
+     * @param mixed[] $patch
+     * @param mixed[] $before
      * @param \section_info $after
-     * @return array
+     * @return mixed[]
      */
     private static function diff(array $patch, array $before, \section_info $after): array {
         $changes = [];
@@ -183,7 +183,7 @@ final class update_section extends external_api {
     /**
      * Builds message.
      *
-     * @param array $changes
+     * @param mixed[] $changes
      * @param bool $hidesactivities
      * @return string
      */

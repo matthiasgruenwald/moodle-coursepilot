@@ -109,7 +109,7 @@ final class quiz implements module_catalog {
     /**
      * Provides fields.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function fields(): array {
         global $CFG;
@@ -437,6 +437,7 @@ final class quiz implements module_catalog {
      * @param int $instanceid The instanceid.
      * @param int $cmid The cmid.
      * @param bool $fullcontent The fullcontent.
+     * @return mixed[]
      */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         global $DB;
@@ -469,7 +470,7 @@ final class quiz implements module_catalog {
      * Arrangement changes use the core structure API (ADR 0016).
      *
      * @param int $quizid
-     * @return array
+     * @return mixed[]
      */
     private static function quiz_slots(int $quizid): array {
         global $DB;
@@ -507,7 +508,7 @@ final class quiz implements module_catalog {
      *
      * @param \stdClass $cm
      * @param \stdClass $instance
-     * @return array
+     * @return mixed[]
      */
     public static function effective_state(\stdClass $cm, \stdClass $instance): array {
         return array_merge(
@@ -546,7 +547,7 @@ final class quiz implements module_catalog {
     /**
      * Writes options.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function write_options(): array {
         global $CFG;
@@ -568,7 +569,7 @@ final class quiz implements module_catalog {
     /**
      * Provides common field names.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function common_field_names(): array {
         return [
@@ -588,7 +589,7 @@ final class quiz implements module_catalog {
     /**
      * Provides pseudofields.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function pseudofields(): array {
         $fields = [
@@ -665,7 +666,7 @@ final class quiz implements module_catalog {
     /**
      * Provides blocklist.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function blocklist(): array {
         return [
@@ -688,7 +689,7 @@ final class quiz implements module_catalog {
     /**
      * Provides combination rules.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function combination_rules(): array {
         return [
@@ -705,7 +706,7 @@ final class quiz implements module_catalog {
     /**
      * Provides side effects.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function side_effects(): array {
         return [
@@ -717,7 +718,7 @@ final class quiz implements module_catalog {
     /**
      * Provides bundles.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function bundles(): array {
         return [
@@ -800,16 +801,16 @@ final class quiz implements module_catalog {
     /**
      * Writes route.
      *
-     * @return ?string
+     * @return string
      */
-    public static function write_route(): ?string {
+    public static function write_route(): string {
         return 'update_quiz_settings';
     }
 
     /**
      * Provides checked constants.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function checked_constants(): array {
         return [];
@@ -818,7 +819,7 @@ final class quiz implements module_catalog {
     /**
      * Provides learner locks.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function learner_locks(): array {
         return [
