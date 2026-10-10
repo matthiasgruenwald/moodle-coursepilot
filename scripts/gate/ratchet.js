@@ -18,10 +18,17 @@ const CRAP_MAX = 8;
 const finding = (file, line, rule, text) => ({ file, line, rule, text });
 const formatFinding = f => `${f.file}:${f.line}: ${f.rule}: ${f.text}`;
 
-/** `true`, wenn der Repo-Pfad (relativ zum Plugin) unter eine Ausnahme der Baseline faellt. */
-function isExcluded(inner, exclusions) {
+/**
+ * `true`, wenn die Datei (repo-relativ) unter eine Ausnahme der Baseline faellt. Die einzige
+ * Stelle der Ausschlusslogik: Nenner, Bericht und geaenderte Dateien fragen sie.
+ */
+function isExcluded(name, exclusions, pluginPrefix) {
+  const inner = name.startsWith(pluginPrefix) ? name.slice(pluginPrefix.length) : name;
   return exclusions.some(e => (e.path.endsWith('/') ? inner.startsWith(e.path) : inner === e.path));
 }
+
+/** Prozent Line-Coverage; ohne ausfuehrbare Zeilen 100. */
+const pct = (covered, statements) => (statements === 0 ? 100 : (covered / statements) * 100);
 
 /**
  * Fasst den Messwert zusammen: Dateien der Ausschlussliste zaehlen nicht in den Nenner.
@@ -29,34 +36,29 @@ function isExcluded(inner, exclusions) {
  * @param {string} pluginPrefix `Plugin/src/local_coursepilot/`
  */
 function totals(files, exclusions, pluginPrefix) {
-  let statements = 0;
-  let covered = 0;
-  for (const f of files) {
-    const inner = f.name.startsWith(pluginPrefix) ? f.name.slice(pluginPrefix.length) : f.name;
-    if (!isExcluded(inner, exclusions)) {
-      statements += f.statements;
-      covered += f.covered;
-    }
-  }
-  return { statements, covered };
+  const kept = files.filter(f => !isExcluded(f.name, exclusions, pluginPrefix));
+  return {
+    statements: kept.reduce((a, f) => a + f.statements, 0),
+    covered: kept.reduce((a, f) => a + f.covered, 0),
+  };
 }
 
 /** a < b, exakt ueber Kreuzprodukt (kein Gleitkomma-Rauschen). */
 const ratioBelow = (a, b) => a.covered * b.statements < b.covered * a.statements;
 
-const pct = t => `${((t.covered / t.statements) * 100).toFixed(2)}% (${t.covered}/${t.statements})`;
+const describe = t => `${pct(t.covered, t.statements).toFixed(2)}% (${t.covered}/${t.statements})`;
 
 /** Gesamt-Coverage darf nie sinken. */
 function coverageFindings(measured, baseline) {
   return ratioBelow(measured, baseline)
-    ? [finding('scripts/gate/baseline.json', 0, 'ratchet-coverage', `Gesamt-Coverage ${pct(measured)} unter Baseline ${pct(baseline)}`)]
+    ? [finding('scripts/gate/baseline.json', 0, 'ratchet-coverage', `Gesamt-Coverage ${describe(measured)} unter Baseline ${describe(baseline)}`)]
     : [];
 }
 
 /** Die Baseline-Datei selbst wird nur besser fortgeschrieben, nie gegenueber dem Ziel-Branch gesenkt. */
 function loweredFindings(baseline, base) {
   return base && ratioBelow(baseline, base)
-    ? [finding('scripts/gate/baseline.json', 0, 'ratchet-baseline-lowered', `Baseline ${pct(baseline)} niedriger als im Ziel-Branch ${pct(base)}`)]
+    ? [finding('scripts/gate/baseline.json', 0, 'ratchet-baseline-lowered', `Baseline ${describe(baseline)} niedriger als im Ziel-Branch ${describe(base)}`)]
     : [];
 }
 
@@ -91,11 +93,21 @@ function grown(current, base) {
   return [...current].filter(([key, n]) => n > (base.get(key) || 0)).map(([key, n]) => ({ key, now: n, before: base.get(key) || 0 }));
 }
 
-function phpstanFindings(currentText, baseText, rel) {
+/**
+ * @param {(path: string) => string} renamed bildet einen Baseline-Pfad des Vergleichsstands auf den
+ *   heutigen Pfad ab, damit eine reine Umbenennung die Baseline nicht wachsen laesst
+ */
+function phpstanFindings(currentText, baseText, rel, renamed = p => p) {
   if (baseText === null) {
     return [];
   }
-  return grown(parsePhpstanBaseline(currentText), parsePhpstanBaseline(baseText))
+  const base = new Map();
+  for (const [key, n] of parsePhpstanBaseline(baseText)) {
+    const [file, id] = key.split(' | ');
+    const moved = `${renamed(file)} | ${id}`;
+    base.set(moved, (base.get(moved) || 0) + n);
+  }
+  return grown(parsePhpstanBaseline(currentText), base)
     .map(g => finding(rel, 0, 'ratchet-phpstan-grown', `${g.key}: ${g.now} statt hoechstens ${g.before}, Baseline darf nur schrumpfen`));
 }
 
@@ -163,11 +175,10 @@ function changedFindings({ files, methods, changed, readSource, exclusions, plug
   const found = [];
   for (const f of files) {
     const ranges = changed.get(f.name);
-    const inner = f.name.slice(pluginPrefix.length);
-    if (!ranges || !f.name.startsWith(pluginPrefix) || inner.startsWith('tests/') || isExcluded(inner, exclusions) || f.statements === 0) {
+    if (!ranges || !f.name.startsWith(pluginPrefix) || f.name.startsWith(`${pluginPrefix}tests/`) || isExcluded(f.name, exclusions, pluginPrefix) || f.statements === 0) {
       continue;
     }
-    const p = (f.covered / f.statements) * 100;
+    const p = pct(f.covered, f.statements);
     if (p < FILE_MIN) {
       found.push(finding(f.name, 0, 'ratchet-file-coverage', `geaenderte Datei hat ${p.toFixed(1)}% (${f.covered}/${f.statements}) Line-Coverage, verlangt ${FILE_MIN}%`));
     }
@@ -184,6 +195,7 @@ function changedFindings({ files, methods, changed, readSource, exclusions, plug
 
 module.exports = {
   isExcluded,
+  pct,
   totals,
   coverageFindings,
   loweredFindings,

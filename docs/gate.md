@@ -173,11 +173,22 @@ Bestand über der Regel blockiert erst, wenn jemand ihn anfasst.
 
 Dazu kommen die statischen Prüfungen (siehe oben) und die Schichtregeln.
 
+**Was wann greift:** `pre-commit` (`fast`) blockiert bei statischen Befunden, fehlgeschlagenen
+Tests und wachsenden Baselines (`ratchet-phpstan-grown`, `ratchet-deptrac-grown`,
+`ratchet-baseline-lowered`). Die Regeln, die einen Coverage-Bericht brauchen, also
+Gesamt-Coverage, Datei ≥ 90 % und Methode CRAP ≤ 8, greifen erst bei `pre-push` (`full`) und in CI.
+
 **Geänderte Datei und Methode:** Das Kommando liest `git diff -U0` des Arbeitsbaums gegen den
 Vergleichsstand und nimmt neue, unversionierte Dateien komplett als geändert. Eine Methode
 gilt als geändert, wenn eine geänderte Zeile zwischen ihrer Startzeile (aus dem Clover-Bericht)
 und der letzten Code-Zeile vor der nächsten Methode liegt; Docblock, Attribute und Leerzeilen
 der nächsten Methode gehören nicht dazu. Testdateien und ausgeschlossene Dateien zählen nicht.
+Gelöschte Dateien erzeugen keinen Befund. Eine reine Umbenennung (versioniert, oder unversioniert
+mit gleichem Inhalt wie die gelöschte Datei) gilt nicht als geändert und lässt die PHPStan-Baseline
+nicht wachsen, weil der Pfad des Vergleichsstands auf den neuen Namen abgebildet wird. Eine
+Umbenennung mit Änderung prüft nur die geänderten Zeilen. Wird eine Klasse (nicht nur die Datei)
+umbenannt, erscheint ihr deptrac-Baseline-Eintrag als neues Paar; Eintrag und Umbenennung
+gehören in dasselbe Ticket und der Eintrag wird dort mit umbenannt.
 
 **Vergleichsstand:** `GATE_BASE_REF`, sonst der jüngere von Merge-Base mit `origin/dev` und
 `armedAt` aus der Baseline, sonst `HEAD`. `armedAt` ist der Stand der Messung beim
@@ -215,12 +226,17 @@ npm run hooks:install
 | Hook | Ruft auf | Dauer |
 |---|---|---|
 | `pre-commit` | `gate fast` (Node-Tests, PHPUnit zu geänderten Klassen, statische Prüfungen, Baseline-Ratsche) | unter einer Minute plus zugeordnete PHPUnit-Tests |
-| `pre-push` | `gate full` (volle Suite, Coverage- und CRAP-Ratsche, alle statischen Prüfungen) | rund 15 Minuten |
+| `pre-push` | `gate full` (volle Suite, Coverage- und CRAP-Ratsche, alle statischen Prüfungen); einmal je Push, auch bei mehreren Refs | rund 15 Minuten |
 | Edit-Hook Claude/Codex | `gate edit`, startet `fast` bei Änderung an Plugin-PHP, `test/**/*.js` oder `scripts/gate/**` | wie `fast` |
 
 Der Edit-Hook (`.claude/settings.json`, `.codex/hooks.json`) schreibt Befunde auf stderr und
 endet mit Exitcode 2, damit der Agent sie als Rückmeldung bekommt und weiterarbeitet. Ein
 stiller `php -l`-Hook entfällt, `fast` enthält die Syntaxprüfung über moodle-cs und PHPStan.
+Das Gate prüft den Arbeitsbaum. Damit das Geprüfte der gepushte Stand ist, blockiert `pre-push`,
+wenn ein gepushter Branch nicht `HEAD` ist oder versionierte Dateien geändert sind (committen oder
+stashen). Löschen und Tags laufen ohne Gate. Der Edit-Hook ignoriert eine nicht lesbare
+Hook-Eingabe (kein Edit-Ereignis) und meldet jeden Werkzeugfehler (`gate-error`) wie einen Befund
+auf stderr mit Exitcode 2.
 Hooks lassen sich mit `git commit --no-verify` übergehen; verbindlich bleibt CI.
 Ohne laufenden Gate-Container ist `fast` rot (`gate-error`).
 

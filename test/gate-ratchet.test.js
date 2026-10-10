@@ -83,15 +83,15 @@ function makeRepo({ baseline = BASELINE, phpstan = 3, pairs = [['a\\x', 'a\\y']]
 }
 
 /** Clover mit Datei a.php (Methoden easy/hard/next) und optionalen weiteren Dateien. */
-function clover({ aCovered = 9, aStatements = 10, crapHard = 12, crapNext = 1, extraFiles = [] } = {}) {
+function clover({ aCovered = 9, aStatements = 10, crapHard = 12, crapNext = 1, extraFiles = [], withA = true } = {}) {
   const file = (name, st, cov, methods = '') => `<file name="${CONTAINER_PLUGIN}/${name}">${methods}<metrics statements="${st}" coveredstatements="${cov}"/></file>`;
   const m = (line, name, crap) => `<line num="${line}" type="method" name="${name}" complexity="2" crap="${crap}" count="1"/>`;
   const files = [
-    file('classes/a.php', aStatements, aCovered, m(8, 'easy', 1) + m(12, 'hard', crapHard) + m(22, 'next', crapNext)),
-    ...extraFiles.map(e => file(e.name, e.st, e.cov)),
+    ...(withA ? [file('classes/a.php', aStatements, aCovered, m(8, 'easy', 1) + m(12, 'hard', crapHard) + m(22, 'next', crapNext))] : []),
+    ...extraFiles.map(e => file(e.name, e.st, e.cov, e.methods || '')),
   ];
-  const st = aStatements + extraFiles.reduce((a, e) => a + e.st, 0);
-  const cov = aCovered + extraFiles.reduce((a, e) => a + e.cov, 0);
+  const st = (withA ? aStatements : 0) + extraFiles.reduce((a, e) => a + e.st, 0);
+  const cov = (withA ? aCovered : 0) + extraFiles.reduce((a, e) => a + e.cov, 0);
   return `<?xml version="1.0"?><coverage><project>${files.join('')}<metrics statements="${st}" coveredstatements="${cov}"/></project></coverage>`;
 }
 
@@ -209,6 +209,45 @@ test('ratchet: fehlende Baseline, fehlender oder leerer Clover sind rot, nie gru
   assert.match(missing.out, /gate-error: Baseline fehlt/);
 });
 
+test('ratchet: reine Umbenennung (versioniert oder unversioniert) ist weder geaendert noch waechst die PHPStan-Baseline', () => {
+  const renamedBaseline = PHPSTAN(3).replace('classes/a.php', 'classes/z.php');
+  for (const stage of [true, false]) {
+    const repo = makeRepo();
+    fs.renameSync(path.join(repo, PLUGIN, 'classes/a.php'), path.join(repo, PLUGIN, 'classes/z.php'));
+    write(repo, 'scripts/gate/phpstan/phpstan-baseline.neon', renamedBaseline);
+    if (stage) {
+      git(repo, 'add', '-A');
+    }
+    const methods = '<line num="8" type="method" name="easy" complexity="1" crap="30" count="0"/>';
+    const xml = clover({ withA: false, extraFiles: [{ name: 'classes/z.php', st: 10, cov: 1, methods }, ...goodExtra] });
+    const r = ratchet(repo, xml);
+    assert.equal(r.status, 0, `stage=${stage}: ${r.out}`);
+  }
+});
+
+test('ratchet: umbenannte Datei mit Aenderung prueft nur die geaenderten Methoden', () => {
+  const repo = makeRepo();
+  fs.renameSync(path.join(repo, PLUGIN, 'classes/a.php'), path.join(repo, PLUGIN, 'classes/z.php'));
+  write(repo, `${PLUGIN}/classes/z.php`, SOURCE.replace('return 3;', 'return 33;'));
+  git(repo, 'add', '-A');
+  write(repo, 'scripts/gate/phpstan/phpstan-baseline.neon', PHPSTAN(3).replace('classes/a.php', 'classes/z.php'));
+  const z = `<file name="${CONTAINER_PLUGIN}/classes/z.php"><line num="8" type="method" name="easy" complexity="1" crap="30" count="0"/><line num="12" type="method" name="hard" complexity="2" crap="30" count="0"/><metrics statements="10" coveredstatements="10"/></file>`;
+  const full = `<?xml version="1.0"?><coverage><project>${z}<file name="${CONTAINER_PLUGIN}/classes/b.php"><metrics statements="90" coveredstatements="81"/></file><metrics statements="100" coveredstatements="91"/></project></coverage>`;
+  const r = ratchet(repo, full);
+  assert.equal(r.status, 1);
+  assert.match(r.out, /classes\/z\.php:12: ratchet-method-crap: geaenderte Methode hard/);
+  assert.doesNotMatch(r.out, /ratchet-method-crap: .*easy/);
+  assert.doesNotMatch(r.out, /ratchet-phpstan-grown/);
+});
+
+test('ratchet: geloeschte Datei erzeugt keinen Verstoss, auch nicht mit altem Eintrag im Clover', () => {
+  const repo = makeRepo();
+  fs.rmSync(path.join(repo, PLUGIN, 'classes/a.php'));
+  const other = [{ name: 'classes/b.php', st: 90, cov: 81, methods: '<line num="3" type="method" name="m" complexity="1" crap="1" count="1"/>' }];
+  assert.equal(ratchet(repo, clover({ withA: false, extraFiles: other })).status, 0);
+  assert.equal(ratchet(repo, clover({ aCovered: 0, crapHard: 99, extraFiles: goodExtra })).status, 0);
+});
+
 test('baseline: hebt an, verweigert Senken', () => {
   const repo = makeRepo();
   const file = path.join(repo, 'clover.xml');
@@ -289,18 +328,63 @@ test('pre-commit: Gate rot blockiert den Commit, gruen laesst ihn durch', () => 
   assert.equal(ok.status, 0, ok.stderr);
 });
 
-test('pre-push: Gate full rot blockiert den Push, Loeschen eines Branches nicht', () => {
-  const repo = hookRepo(1);
+/** hookRepo mit einem Commit und lokalem Bare-Remote. */
+function pushRepo(exitcode) {
+  const repo = hookRepo(exitcode);
   const remote = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-remote-'));
   git(remote, 'init', '-q', '--bare');
   git(repo, 'commit', '--no-verify', '-qm', 'x');
   git(repo, 'remote', 'add', 'origin', remote);
-  const push = spawnSync('git', ['push', 'origin', 'HEAD:refs/heads/work'], { cwd: repo, encoding: 'utf8' });
-  assert.notEqual(push.status, 0);
-  assert.match(push.stdout, /stub full/);
+  return repo;
+}
+
+const push = (repo, ...args) => {
+  const r = spawnSync('git', ['push', 'origin', ...args], { cwd: repo, encoding: 'utf8' });
+  return { status: r.status, out: `${r.stdout}${r.stderr}` };
+};
+
+test('pre-push: Gate full rot blockiert den Push, gruen laesst ihn durch', () => {
+  const red = pushRepo(1);
+  const blocked = push(red, 'HEAD:refs/heads/work');
+  assert.notEqual(blocked.status, 0);
+  assert.match(blocked.out, /stub full/);
+  const green = pushRepo(0);
+  assert.equal(push(green, 'HEAD:refs/heads/work').status, 0);
+});
+
+test('pre-push: Loeschen eines Branches und Tags brauchen kein Gate', () => {
+  const repo = pushRepo(1);
   git(repo, 'push', '--no-verify', 'origin', 'HEAD:refs/heads/work');
-  const del = spawnSync('git', ['push', 'origin', '--delete', 'work'], { cwd: repo, encoding: 'utf8' });
-  assert.equal(del.status, 0, del.stderr);
+  assert.equal(push(repo, '--delete', 'work').status, 0);
+  git(repo, 'tag', 'v1');
+  assert.equal(push(repo, 'v1').status, 0);
+});
+
+test('pre-push: mehrere Refs, auch Loeschen plus Neuanlage, laufen ueber ein Gate', () => {
+  const repo = pushRepo(1);
+  git(repo, 'push', '--no-verify', 'origin', 'HEAD:refs/heads/old');
+  const two = push(repo, 'HEAD:refs/heads/a', 'HEAD:refs/heads/b');
+  assert.notEqual(two.status, 0);
+  assert.equal(two.out.match(/stub full/g).length, 1);
+  const mixed = push(repo, ':refs/heads/old', 'HEAD:refs/heads/new');
+  assert.notEqual(mixed.status, 0);
+  assert.match(mixed.out, /stub full/);
+});
+
+test('pre-push: gepushter Stand muss der geprueften sein (Ref nicht HEAD, geaenderter Arbeitsbaum)', () => {
+  const repo = pushRepo(0);
+  git(repo, 'branch', 'other');
+  write(repo, 'b.txt', 'b');
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '--no-verify', '-qm', 'y');
+  const other = push(repo, 'other:refs/heads/other');
+  assert.notEqual(other.status, 0);
+  assert.match(other.out, /zeigt nicht auf HEAD/);
+  write(repo, 'a.txt', 'geaendert');
+  const dirty = push(repo, 'HEAD:refs/heads/work');
+  assert.notEqual(dirty.status, 0);
+  assert.match(dirty.out, /versionierte Dateien sind geaendert/);
+  assert.doesNotMatch(dirty.out, /stub full/);
 });
 
 test('Aktivierung und Edit-Hooks: ein npm-Skript, Claude und Codex rufen dasselbe Gate, kein php -l', () => {

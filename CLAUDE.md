@@ -84,7 +84,7 @@ Entpackt Plugin und `well-known` aus dem Tag nach `/opt/plugins/*-main` und füh
 
 ## Hooks (siehe `.claude/settings.json`, `scripts/githooks/`)
 
-Nach Edit/Write von Plugin-PHP, `test/**/*.js` oder `scripts/gate/**` läuft `npm run gate -- edit`
+Nach Edit/Write von Plugin-PHP, `test/**/*.js` oder `scripts/gate/**` läuft `node scripts/gate/gate.js edit`
 (dasselbe Gate wie `pre-commit`, Befunde als Rückmeldung bei Exitcode 2). Git-Hooks einmal pro Klon
 aktivieren: `npm run hooks:install` (`pre-commit` = `gate fast`, `pre-push` = `gate full`, kein Husky).
 

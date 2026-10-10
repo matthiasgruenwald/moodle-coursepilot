@@ -109,7 +109,15 @@ function parseClover(xml) {
   return { total, files, methods };
 }
 
-const pct = (covered, statements) => (statements === 0 ? 100 : (covered / statements) * 100);
+const { pct } = ratchet;
+
+/** Clover-Dateien und -Methoden mit Repo-Pfaden statt Container-Pfaden. */
+function repoClover(parsed) {
+  return {
+    files: parsed.files.map(f => ({ ...f, name: repoPath(f.name) })),
+    methods: parsed.methods.map(m => ({ ...m, file: repoPath(m.file) })),
+  };
+}
 
 /**
  * @param {object} parsed Ergebnis von parseClover
@@ -118,38 +126,37 @@ const pct = (covered, statements) => (statements === 0 ? 100 : (covered / statem
  */
 function buildReport(parsed, exclusions = []) {
   const lines = [];
-  const kept = name => !ratchet.isExcluded(repoPath(name).slice(PLUGIN_PREFIX.length), exclusions);
-  parsed = {
-    files: parsed.files.filter(f => kept(f.name)),
-    methods: parsed.methods.filter(m => kept(m.file)),
+  const all = repoClover(parsed);
+  const kept = name => !ratchet.isExcluded(name, exclusions, PLUGIN_PREFIX);
+  const fileList = all.files.filter(f => kept(f.name));
+  const methodList = all.methods.filter(m => kept(m.file));
+  const total = {
+    statements: fileList.reduce((a, f) => a + f.statements, 0),
+    covered: fileList.reduce((a, f) => a + f.covered, 0),
   };
-  parsed.total = {
-    statements: parsed.files.reduce((a, f) => a + f.statements, 0),
-    covered: parsed.files.reduce((a, f) => a + f.covered, 0),
-  };
-  const files = [...parsed.files].sort((a, b) => a.name.localeCompare(b.name));
+  const files = [...fileList].sort((a, b) => a.name.localeCompare(b.name));
   for (const f of files) {
     const p = pct(f.covered, f.statements);
     if (f.statements > 0 && p < FILE_COVERAGE_RULE) {
-      lines.push(`${repoPath(f.name)}:0: coverage-file: ${p.toFixed(1)}% (${f.covered}/${f.statements}) unter ${FILE_COVERAGE_RULE}%`);
+      lines.push(`${f.name}:0: coverage-file: ${p.toFixed(1)}% (${f.covered}/${f.statements}) unter ${FILE_COVERAGE_RULE}%`);
     }
   }
-  const methods = [...parsed.methods].sort((a, b) => b.crap - a.crap);
+  const methods = [...methodList].sort((a, b) => b.crap - a.crap);
   for (const m of methods) {
     if (m.crap > CRAP_RULE) {
-      lines.push(`${repoPath(m.file)}:${m.line}: crap-method: ${m.name} crap=${m.crap} complexity=${m.complexity}`);
+      lines.push(`${m.file}:${m.line}: crap-method: ${m.name} crap=${m.crap} complexity=${m.complexity}`);
     }
   }
-  const perFile = files.map(f => ({ file: repoPath(f.name), coverage: Number(pct(f.covered, f.statements).toFixed(1)), lines: `${f.covered}/${f.statements}` }));
-  const perMethod = methods.map(m => ({ file: repoPath(m.file), line: m.line, name: m.name, complexity: m.complexity, crap: m.crap }));
+  const perFile = files.map(f => ({ file: f.name, coverage: Number(pct(f.covered, f.statements).toFixed(1)), lines: `${f.covered}/${f.statements}` }));
+  const perMethod = methods.map(m => ({ file: m.file, line: m.line, name: m.name, complexity: m.complexity, crap: m.crap }));
   const summary = {
-    coverage: Number(pct(parsed.total.covered, parsed.total.statements).toFixed(2)),
-    lines: `${parsed.total.covered}/${parsed.total.statements}`,
-    files: parsed.files.length,
-    filesBelow50: parsed.files.filter(f => f.statements > 0 && pct(f.covered, f.statements) < 50).length,
-    methods: parsed.methods.length,
-    methodsCrapOver8: parsed.methods.filter(m => m.crap > CRAP_RULE).length,
-    methodsCrapOver30: parsed.methods.filter(m => m.crap > CRAP_HIGH).length,
+    coverage: Number(pct(total.covered, total.statements).toFixed(2)),
+    lines: `${total.covered}/${total.statements}`,
+    files: fileList.length,
+    filesBelow50: fileList.filter(f => f.statements > 0 && pct(f.covered, f.statements) < 50).length,
+    methods: methodList.length,
+    methodsCrapOver8: methodList.filter(m => m.crap > CRAP_RULE).length,
+    methodsCrapOver30: methodList.filter(m => m.crap > CRAP_HIGH).length,
   };
   return { lines, summary, perFile, perMethod };
 }
@@ -376,24 +383,47 @@ function resolveBase(armedAt) {
     return process.env.GATE_BASE_REF;
   }
   const heads = ['origin/dev', 'dev'].map(ref => (git(['merge-base', 'HEAD', ref]) || '').trim()).filter(Boolean);
-  const armed = armedAt && git(['rev-parse', '--verify', `${armedAt}^{commit}`]) && isAncestor(armedAt, 'HEAD') ? [armedAt] : [];
-  const candidates = [...heads.slice(0, 1), ...armed];
+  const armedCandidate = armedAt && git(['rev-parse', '--verify', `${armedAt}^{commit}`]) && isAncestor(armedAt, 'HEAD') ? [armedAt] : [];
+  const candidates = [...heads.slice(0, 1), ...armedCandidate];
   if (candidates.length === 0) {
     return 'HEAD';
   }
   return candidates.reduce((a, b) => (a === b || isAncestor(a, b) ? b : a));
 }
 
-/** Geaenderte Zeilen seit `base` (Arbeitsbaum) plus neue, unversionierte Dateien als `all`. */
-function changedLinesSince(base) {
-  const diff = git(['diff', '-U0', '--no-color', '--no-renames', base, '--']);
+/**
+ * Aenderungen seit `base` (Arbeitsbaum): geaenderte Zeilen je Datei, neue unversionierte
+ * Dateien als `all`, Umbenennungen als Map alt -> neu. Eine unversionierte Datei, deren Inhalt
+ * einer geloeschten versionierten gleicht, ist eine Umbenennung und keine neue Datei.
+ * @returns {{changed: Map<string, [number, number][]|'all'>, renames: Map<string, string>}}
+ */
+function changesSince(base) {
+  const diff = git(['diff', '-U0', '--no-color', '-M', base, '--']);
+  const status = git(['diff', '--name-status', '-M', base, '--']);
   const fresh = git(['ls-files', '--others', '--exclude-standard']);
-  if (diff === null || fresh === null) {
+  if (diff === null || status === null || fresh === null) {
     throw new Error(`git diff gegen ${base} fehlgeschlagen`);
   }
   const changed = ratchet.parseChangedLines(diff);
-  fresh.split('\n').filter(Boolean).forEach(f => changed.set(f, 'all'));
-  return changed;
+  const renames = new Map();
+  const deleted = new Map();
+  for (const row of status.split('\n')) {
+    const [code, from, to] = row.split('\t');
+    if (code && code[0] === 'R') {
+      renames.set(from, to);
+    } else if (code === 'D') {
+      deleted.set(git(['rev-parse', `${base}:${from}`]), from);
+    }
+  }
+  for (const file of fresh.split('\n').filter(Boolean)) {
+    const from = deleted.get(git(['hash-object', '--', file]));
+    if (from) {
+      renames.set(from, file);
+    } else {
+      changed.set(file, 'all');
+    }
+  }
+  return { changed, renames };
 }
 
 /**
@@ -410,26 +440,31 @@ function runRatchet(cloverPath) {
   const pairs = text => deptrac.parseBaseline(text).map(e => `${e.from} -> ${e.to}`);
   const deptracNow = fs.readFileSync(path.join(REPO, DEPTRAC_BASELINE_REL), 'utf8');
   const deptracBase = gitShow(base, DEPTRAC_BASELINE_REL);
-  found.push(...ratchet.phpstanFindings(phpstanNow, gitShow(base, PHPSTAN_BASELINE_REL), PHPSTAN_BASELINE_REL));
+  const { changed, renames } = changesSince(base);
+  // Baseline-Pfade sind Container-relativ (`../html/public/local/coursepilot/...`).
+  const baselinePrefix = '../html/public/local/coursepilot/';
+  const renamedBaselinePath = p => {
+    const to = p.startsWith(baselinePrefix) && renames.get(PLUGIN_PREFIX + p.slice(baselinePrefix.length));
+    return to ? baselinePrefix + to.slice(PLUGIN_PREFIX.length) : p;
+  };
+  found.push(...ratchet.phpstanFindings(phpstanNow, gitShow(base, PHPSTAN_BASELINE_REL), PHPSTAN_BASELINE_REL, renamedBaselinePath));
   found.push(...ratchet.deptracFindings(pairs(deptracNow), deptracBase === null ? null : pairs(deptracBase), DEPTRAC_BASELINE_REL));
   let measuredNote = 'ohne Clover (nur Baselines)';
   const baseCoverage = baseBaseline === null ? null : JSON.parse(baseBaseline).coverage;
   found.push(...ratchet.loweredFindings(baseline.coverage, baseCoverage));
   if (cloverPath) {
-    const parsed = loadParsed(cloverPath);
-    const files = parsed.files.map(f => ({ ...f, name: repoPath(f.name) }));
-    const methods = parsed.methods.map(m => ({ ...m, file: repoPath(m.file) }));
+    const { files, methods } = repoClover(loadParsed(cloverPath));
     const measured = ratchet.totals(files, baseline.excluded, PLUGIN_PREFIX);
     found.push(...ratchet.coverageFindings(measured, baseline.coverage));
     found.push(...ratchet.changedFindings({
       files,
       methods,
-      changed: changedLinesSince(base),
+      changed,
       readSource: rel => fs.readFileSync(path.join(REPO, rel), 'utf8').split('\n'),
       exclusions: baseline.excluded,
       pluginPrefix: PLUGIN_PREFIX,
     }));
-    measuredNote = `coverage=${((measured.covered / measured.statements) * 100).toFixed(2)}% baseline=${((baseline.coverage.covered / baseline.coverage.statements) * 100).toFixed(2)}%`;
+    measuredNote = `coverage=${pct(measured.covered, measured.statements).toFixed(2)}% baseline=${pct(baseline.coverage.covered, baseline.coverage.statements).toFixed(2)}%`;
   }
   const lines = found.map(ratchet.formatFinding);
   lines.push(`summary: ratchet base=${base.slice(0, 12)} ${measuredNote} violations=${found.length}`);
@@ -445,14 +480,13 @@ function printRatchet(cloverPath) {
 /** Hebt die Coverage-Baseline an; nie nach unten. */
 function runBaseline(cloverPath) {
   const baseline = loadBaseline();
-  const parsed = loadParsed(cloverPath);
-  const measured = ratchet.totals(parsed.files.map(f => ({ ...f, name: repoPath(f.name) })), baseline.excluded, PLUGIN_PREFIX);
+  const measured = ratchet.totals(repoClover(loadParsed(cloverPath)).files, baseline.excluded, PLUGIN_PREFIX);
   if (ratchet.coverageFindings(measured, baseline.coverage).length > 0) {
     throw new Error('Messwert liegt unter der Baseline, die Baseline wird nie gesenkt');
   }
   const next = { ...baseline, coverage: { covered: measured.covered, statements: measured.statements } };
   fs.writeFileSync(path.join(REPO, BASELINE_REL), `${JSON.stringify(next, null, 2)}\n`);
-  console.log(`summary: baseline coverage=${((measured.covered / measured.statements) * 100).toFixed(2)}% lines=${measured.covered}/${measured.statements}`);
+  console.log(`summary: baseline coverage=${pct(measured.covered, measured.statements).toFixed(2)}% lines=${measured.covered}/${measured.statements}`);
   return true;
 }
 
@@ -470,6 +504,7 @@ function runEditHook(stdin) {
     // Claude: file_path; Codex apply_patch: Patch-Text in command.
     files = [input.file_path, ...String(input.command || '').matchAll(/^\*\*\* (?:Add|Update) File: (.+)$/gm)].map(f => (Array.isArray(f) ? f[1] : f));
   } catch (e) {
+    // Keine lesbare Hook-Eingabe: kein Edit-Ereignis, nichts zu pruefen (Hook darf nie selbst blockieren).
     return true;
   }
   if (!files.some(f => f && EDIT_TRIGGER.test(path.relative(REPO, path.resolve(REPO, f))))) {
