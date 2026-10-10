@@ -114,6 +114,81 @@ test('runStatic: tool that fails without parsable findings is a tool error, neve
   assert.equal(r.results.savepoints.length, 1);
 });
 
+for (const code of [2, 255]) {
+  for (const report of [{}, { totals: {}, files: {}, errors: [] }, { totals: { errors: 0, file_errors: 0 } }]) {
+    test(`runStatic: PHPStan exit ${code} with incomplete report ${JSON.stringify(report)} is a tool error`, () => {
+      const exec = fakeExec({ phpstan: JSON.stringify(report) }, () => code);
+      const r = s.runStatic(['phpstan'], { container: 'x', repo: path.join(__dirname, '..'), exec });
+      assert.equal(r.errors.length, 1);
+      assert.match(r.errors[0], new RegExp(`Exitcode ${code}`));
+    });
+  }
+}
+
+test('runStatic: a real complete clean PHPStan report is green only with exit 0', () => {
+  for (const code of [0, 2, 255]) {
+    const exec = fakeExec({ phpstan: read('phpstan-clean.json') }, () => code);
+    const r = s.runStatic(['phpstan'], { container: 'x', repo: path.join(__dirname, '..'), exec });
+    assert.equal(r.blocking, 0);
+    assert.equal(r.errors.length, code === 0 ? 0 : 1);
+  }
+});
+
+test('runStatic: incomplete PHPStan reports retain findings and internal errors', () => {
+  const report = JSON.parse(read('phpstan.json'));
+  report.errors = ['Internal error: analysis crashed'];
+  report.files['/var/www/html/public/local/coursepilot/classes/broken.php'] = { errors: 1 };
+  const exec = fakeExec({ phpstan: JSON.stringify(report) }, () => 255);
+  const r = s.runStatic(['phpstan'], { container: 'x', repo: path.join(__dirname, '..'), exec });
+  assert.equal(r.blocking, 2);
+  assert.match(r.lines[0], /connections.php:39: phpstan: Variable/);
+  assert.match(r.errors.join(' '), /Internal error: analysis crashed/);
+  assert.match(r.errors.join(' '), /Exitcode 255/);
+});
+
+test('runStatic: malformed or contradictory PHPStan reports are red even with exit 0', () => {
+  const clean = JSON.parse(read('phpstan-clean.json'));
+  const reports = [
+    null, [], {}, { ...clean, totals: {} }, { totals: clean.totals },
+    { ...clean, totals: { errors: 1, file_errors: 0 } },
+    { ...clean, totals: { errors: 0, file_errors: 1 } },
+    { ...clean, errors: [null] }, { ...clean, files: [] },
+  ];
+  for (const report of reports) {
+    const exec = fakeExec({ phpstan: JSON.stringify(report) });
+    const r = s.runStatic(['phpstan'], { container: 'x', repo: path.join(__dirname, '..'), exec });
+    assert.equal(r.errors.length, 1, JSON.stringify(report));
+  }
+});
+
+test('runStatic: malformed PHPStan messages do not hide later findings or internal errors', () => {
+  const report = JSON.parse(read('phpstan.json'));
+  Object.values(report.files)[0].messages.unshift(null, { message: 42 });
+  report.errors = ['Internal error: incomplete analysis', null];
+  const exec = fakeExec({ phpstan: JSON.stringify(report) }, () => 2);
+  const r = s.runStatic(['phpstan'], { container: 'x', repo: path.join(__dirname, '..'), exec });
+  assert.equal(r.blocking, 2);
+  assert.match(r.lines[1], /connections.php:40: phpstan: Variable/);
+  assert.match(r.errors.join(' '), /Internal error: incomplete analysis/);
+  assert.match(r.errors.join(' '), /Exitcode 2/);
+});
+
+for (const field of ['line', 'identifier']) {
+  test(`runStatic: malformed PHPStan ${field} preserves messages and internal errors`, () => {
+    const report = JSON.parse(read('phpstan.json'));
+    Object.values(report.files)[0].messages[0][field] = { toString: null };
+    report.errors = ['Internal error: analysis crashed'];
+    const exec = fakeExec({ phpstan: JSON.stringify(report) }, () => 255);
+    const r = s.runStatic(['phpstan'], { container: 'x', repo: path.join(__dirname, '..'), exec });
+    assert.equal(r.blocking, 2);
+    assert.match(r.lines[0], /phpstan: Variable \$PAGE might not be defined\./);
+    assert.match(r.lines[1], /connections.php:40: phpstan: Variable/);
+    assert.equal(r.results.phpstan[0].line, field === 'line' ? 0 : 39);
+    assert.match(r.errors.join(' '), /Internal error: analysis crashed/);
+    assert.match(r.errors.join(' '), /Exitcode 255/);
+  });
+}
+
 test('gate static: red with gate-error when the container is not running', () => {
   const r = spawnSync('node', [path.join(__dirname, '..', 'scripts', 'gate', 'gate.js'), 'static'], {
     encoding: 'utf8', env: { ...process.env, GATE_CONTAINER: 'does-not-exist-gate' },

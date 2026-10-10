@@ -131,12 +131,32 @@ function parseSavepoints(out, code) {
 function parsePhpstan(json) {
   const data = JSON.parse(json);
   const found = [];
-  for (const [file, entry] of Object.entries(data.files || {})) {
+  const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  let complete = isObject(data)
+    && Number.isInteger(data.totals?.errors) && data.totals.errors >= 0
+    && Number.isInteger(data.totals?.file_errors) && data.totals.file_errors >= 0
+    && isObject(data.files) && Array.isArray(data.errors);
+  const toolErrors = Array.isArray(data?.errors) ? data.errors.filter(e => typeof e === 'string' && e.trim() !== '') : [];
+  for (const [file, entry] of Object.entries(isObject(data?.files) ? data.files : {})) {
+    if (!Array.isArray(entry?.messages)) {
+      complete = false;
+      continue;
+    }
+    complete = complete && entry.errors === entry.messages.length;
     for (const m of entry.messages) {
-      found.push(finding(file, m.line || 0, 'phpstan', `${m.message}${m.identifier ? ` (${m.identifier})` : ''}`));
+      if (typeof m?.message !== 'string' || m.message.trim() === '') {
+        complete = false;
+        continue;
+      }
+      const validLine = m.line === null || (Number.isInteger(m.line) && m.line >= 0);
+      const identifier = typeof m.identifier === 'string' ? m.identifier : '';
+      complete = complete && validLine && (m.identifier == null || typeof m.identifier === 'string');
+      found.push(finding(file, validLine ? m.line || 0 : 0, 'phpstan', `${m.message}${identifier ? ` (${identifier})` : ''}`));
     }
   }
-  return { found, toolErrors: data.errors || [] };
+  complete = complete && data.totals.errors === toolErrors.length && data.errors.length === toolErrors.length
+    && data.totals.file_errors === found.length;
+  return { found, toolErrors, complete };
 }
 
 /**
@@ -212,7 +232,10 @@ function runCheck(name, container, exec = containerExec) {
   if (name === 'phpstan') {
     const r = exec(container, phpstanArgs(['--error-format=json']));
     try {
-      const { found, toolErrors } = parsePhpstan(r.stdout);
+      const { found, toolErrors, complete } = parsePhpstan(r.stdout);
+      if (!complete || (r.code !== 0 && found.length === 0 && toolErrors.length === 0)) {
+        toolErrors.push(`PHPStan-Bericht unvollständig oder ohne auswertbare Befunde (Exitcode ${r.code}): ${r.out.slice(0, 300)}`);
+      }
       return { found, toolError: toolErrors.length > 0 ? toolErrors.join(' | ') : null };
     } catch (e) {
       return { found: [], toolError: `PHPStan-Ausgabe ungueltig (Exitcode ${r.code}): ${r.out.slice(0, 300)}` };

@@ -102,6 +102,10 @@ Laufen im Gate-Container. **Jeder Befund blockiert**, ausgenommen `deptrac-basel
 rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-cs, phpdoc, PHPStan, die Covers-Prüfung, die Kommentarsprache und die Kontext-/Capability-Prüfung externer Funktionen aus,
 `full` und `static` zusätzlich savepoints, Mustache und ESLint.
 
+PHPStan wird über Exitcode und JSON-Bericht gemeinsam bewertet: Nur ein vollständiger,
+sauberer Bericht mit Exit 0 ist grün. Fehlende oder widersprüchliche Summen und beschädigte
+Einträge sind Werkzeugfehler; auswertbare Befunde und interne Fehler bleiben im Bericht erhalten.
+
 | Prüfung | Regel im Bericht | Werkzeug |
 |---|---|---|
 | moodle-cs | `moodle-cs-error`, `moodle-cs-warning` | `moodle-plugin-ci phpcs` (TODO-Kommentare nur mit Link `https://github.com/matthiasgruenwald/moodle-coursepilot/issues/<nr>`; ohne den Sniff `moodle.Files.BoilerplateComment`, weil er die GPL-Kopfzeile verlangt und das Projekt nach ADR 0025 unter AGPL steht) |
