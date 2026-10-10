@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once(__DIR__ . '/../lib.php');
 
 /**
@@ -24,9 +26,13 @@ require_once(__DIR__ . '/../lib.php');
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-final class local_coursepilot_lib_test extends advanced_testcase {
-
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_extend_navigation_course')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_extend_navigation_user_settings')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_status_checks')]
+final class lib_test extends advanced_testcase {
     /**
+     * Provides course.
+     *
      * @return array{0: stdClass, 1: context_course} Course, course context.
      */
     private function course(): array {

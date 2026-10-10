@@ -28,7 +28,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(pseudofield_carry_forward::class)]
 final class pseudofield_carry_forward_test extends \advanced_testcase {
-
     /**
      * get_moduleinfo_data() formats gradepass for the active language ("0,00"
      * in German). Convert it back to a number before writing; otherwise the

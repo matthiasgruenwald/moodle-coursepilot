@@ -20,8 +20,6 @@ use core\check\check;
 use core\check\result;
 use local_coursepilot\write_gate;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * One Moodle admin status check (standard callback
  * "<component>_status_checks()", see local_coursepilot/lib.php) per
@@ -38,11 +36,15 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class activity_drift extends check {
-
     /**
+     * Creates the activity drift.
+     *
      * @param string $modname Moodle module name (mod_XXX without prefix).
      */
-    public function __construct(private readonly string $modname) {
+    public function __construct(
+        /** @var string Moodle module name (mod_XXX without prefix). */
+        private readonly string $modname,
+    ) {
     }
 
     /**
@@ -55,6 +57,8 @@ final class activity_drift extends check {
     }
 
     /**
+     * Returns name.
+     *
      * @return string
      */
     public function get_name(): string {
@@ -62,6 +66,8 @@ final class activity_drift extends check {
     }
 
     /**
+     * Returns result.
+     *
      * @return result
      */
     public function get_result(): result {

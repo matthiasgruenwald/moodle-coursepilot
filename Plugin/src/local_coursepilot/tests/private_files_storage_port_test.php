@@ -14,10 +14,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
+/**
+ * Storage contract tests for the private files adapter.
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
+ */
+
 namespace local_coursepilot;
 
 use local_coursepilot\tests\storage_port_contract_test;
 
+// phpcs:disable moodle.PHPUnit.TestCaseNames.Missing -- The test case is inherited from storage_port_contract_test.
 /**
  * Storage contract against the first adapter (Issue #536, Spec 0021):
  * private_files_storage_port runs the shared storage_port_contract_test.
@@ -32,11 +41,20 @@ use local_coursepilot\tests\storage_port_contract_test;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(private_files_storage_port::class)]
 final class private_files_storage_port_test extends storage_port_contract_test {
-
+    /**
+     * Provides port.
+     *
+     * @return storage_port
+     */
     protected function port(): storage_port {
         return new private_files_storage_port();
     }
 
+    /**
+     * Provides area.
+     *
+     * @return storage_area
+     */
     protected function area(): storage_area {
         return new storage_area(
             rootsetting: 'storageportcontracttestroot',

@@ -37,7 +37,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(provider::class)]
 final class provider_test extends \core_privacy\tests\provider_testcase {
-
     /**
      * Declare external storage using add_external_location_link (#500,
      * ADR 0021, Spec #486 §11), even though Coursepilot cannot export
@@ -121,7 +120,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $user = $this->getDataGenerator()->create_user();
 
         $DB->insert_record('local_coursepilot_oauth_code', (object) [
-            'code' => 'code-'.$user->id,
+            'code' => 'code-' . $user->id,
             'clientid' => 'test-client',
             'userid' => $user->id,
             'redirecturi' => 'https://example.test/callback',

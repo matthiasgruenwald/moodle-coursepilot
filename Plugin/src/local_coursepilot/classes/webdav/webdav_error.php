@@ -29,7 +29,6 @@ namespace local_coursepilot\webdav;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class webdav_error extends \RuntimeException {
-
     /** @var string No DAV XML body on a 404, or another unclear status - silently retried. */
     public const UNCLEAR = 'unclear';
 
@@ -55,11 +54,14 @@ final class webdav_error extends \RuntimeException {
     public const REDIRECTED = 'redirected';
 
     /**
+     * Creates the webdav error.
+     *
      * @param string $errorclass One of the constants of this class.
      * @param string $message Internal, developer-oriented message - never
      *        passed on to a teacher, never a secret.
      */
     public function __construct(
+        /** @var string One of the constants of this class. */
         public readonly string $errorclass,
         string $message = '',
     ) {
@@ -104,13 +106,12 @@ final class webdav_error extends \RuntimeException {
      * still has to recognise it as a {@see webdav_error}), the location
      * selection immediately translates it into a teacher message.
      *
-     * @template T
      * @param self $e
-     * @param T $whenmissing Return value when $e is "not found".
-     * @param callable(self): \Throwable $onfailure Builds the exception for
-     *        every other error - or passes $e through unchanged
-     *        ({@see \local_coursepilot\webdav_storage_port}).
-     * @return T
+     * @param mixed $whenmissing Return value when $e is "not found". Type: T.
+     * @param callable $onfailure Builds the exception for every other error - or
+     *        passes $e through unchanged ({@see \local_coursepilot\webdav_storage_port}).
+     *        Signature: callable(self):\Throwable.
+     * @return mixed $whenmissing or never (throws).
      * @throws \Throwable The result of $onfailure($e).
      */
     public static function empty_when_missing(self $e, mixed $whenmissing, callable $onfailure): mixed {

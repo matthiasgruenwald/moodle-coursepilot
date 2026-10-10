@@ -1,0 +1,26 @@
+# PHPStan Level 6 fuer das Plugin (laeuft im Gate-Container, Pfade dort).
+# Die Baseline darf nur schrumpfen (ADR 0029); neu erzeugen: npm run gate -- phpstan-baseline
+includes:
+    - phpstan-baseline.neon
+parameters:
+    level: 6
+    paths:
+        - /var/www/html/public/local/coursepilot
+    # amd (JavaScript) und skills (Markdown-Korpus) enthalten kein PHP.
+    excludePaths:
+        - /var/www/html/public/local/coursepilot/amd
+        - /var/www/html/public/local/coursepilot/skills
+    scanDirectories:
+        - /var/www/html/public/lib
+        - /var/www/html/public/mod
+        - /var/www/html/public/question
+        - /var/www/html/public/course
+        - /var/www/html/public/user
+        - /var/www/html/public/files
+        - /var/www/html/public/admin
+        - /var/www/html/vendor/phpunit
+    bootstrapFiles:
+        - /var/www/phpstan-config/bootstrap.php
+    tmpDir: /tmp/phpstan
+    # Entfaellt, sobald die Baseline schrumpft und die Ratsche (Folgeticket) veraltete Eintraege meldet.
+    reportUnmatchedIgnoredErrors: false

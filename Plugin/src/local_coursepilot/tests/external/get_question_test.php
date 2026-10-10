@@ -28,7 +28,6 @@ use core_external\external_api;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(get_question::class)]
 final class get_question_test extends \advanced_testcase {
-
     /**
      * Find the current version by name, including answers and the correct answer.
      */
@@ -97,6 +96,8 @@ final class get_question_test extends \advanced_testcase {
     }
 
     /**
+     * Creates course with question category.
+     *
      * @return array{0: \stdClass, 1: \stdClass}
      */
     private function create_course_with_question_category(): array {
@@ -109,6 +110,8 @@ final class get_question_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

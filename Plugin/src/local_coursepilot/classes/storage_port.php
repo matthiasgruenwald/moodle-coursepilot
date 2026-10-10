@@ -36,7 +36,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 interface storage_port {
-
     /** Internal condition for a preflight that observed no target file. */
     public const MISSING_CHECKSUM = "\0coursepilot-missing";
 

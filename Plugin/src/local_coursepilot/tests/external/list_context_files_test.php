@@ -560,6 +560,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
+     * Returns context-file content with the legacy frontmatter marking.
+     *
      * @return string Context-file content with the legacy frontmatter marking
      *         "coursepilot.personenbezug: true".
      */
@@ -568,9 +570,11 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * @param array $entries
+     * Finds entry.
+     *
+     * @param mixed[] $entries
      * @param string $name
-     * @return array|null
+     * @return mixed[]|null
      */
     private function find_entry(array $entries, string $name): ?array {
         foreach ($entries as $entry) {
@@ -582,6 +586,8 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
+     * Creates context file.
+     *
      * @param \stdClass $user
      * @param string $filepath
      * @param string $filename

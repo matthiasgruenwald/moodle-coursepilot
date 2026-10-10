@@ -36,6 +36,7 @@
 define('WS_SERVER', true);
 define('NO_DEBUG_DISPLAY', true);
 
+// phpcs:ignore moodle.Files.RequireLogin.Missing -- Bearer-token endpoint; dispatcher authenticates every request itself.
 require(__DIR__ . '/../../config.php');
 
 use local_coursepilot\dispatcher;

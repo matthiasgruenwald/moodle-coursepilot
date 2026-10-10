@@ -32,7 +32,6 @@ use local_coursepilot\catalog\registry;
 #[\PHPUnit\Framework\Attributes\CoversClass(get_course_catalog::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(module_state::class)]
 final class get_course_catalog_test extends \advanced_testcase {
-
     /**
      * All supported module types return catalog-backed state. Preserve
      * existing specialized-reader settings keys in the catalog contract.
@@ -240,6 +239,8 @@ final class get_course_catalog_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
@@ -249,9 +250,11 @@ final class get_course_catalog_test extends \advanced_testcase {
     }
 
     /**
-     * @param array $result
+     * Finds module.
+     *
+     * @param mixed[] $result
      * @param int $cmid
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function find_module(array $result, int $cmid): ?array {
         foreach ($result['sections'] as $section) {

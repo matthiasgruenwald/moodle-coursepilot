@@ -27,7 +27,6 @@ use core_external\external_api;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(export_questions_xml::class)]
 final class export_questions_xml_test extends \advanced_testcase {
-
     /**
      * Standard-mode round trip (Spec 0018 §7.2, #437): export a complete XML
      * file into material storage, returning only its path, and reimport via
@@ -266,6 +265,9 @@ final class export_questions_xml_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
+     * @param string $shortname The shortname.
      * @return int
      */
     private function get_role_id(string $shortname): int {

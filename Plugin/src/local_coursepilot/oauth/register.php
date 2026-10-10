@@ -41,8 +41,11 @@ use local_coursepilot\oauth_lib;
 
 $rawbody = file_get_contents('php://input', false, null, 0, oauth_lib::REGISTRATION_MAX_BODY_BYTES + 1);
 
-$response = oauth_lib::handle_registration($_SERVER['REQUEST_METHOD'] ?? 'POST',
-    $rawbody === false ? '' : $rawbody, oauth_budget::request_source());
+$response = oauth_lib::handle_registration(
+    $_SERVER['REQUEST_METHOD'] ?? 'POST',
+    $rawbody === false ? '' : $rawbody,
+    oauth_budget::request_source()
+);
 
 http_response_code($response['status']);
 foreach ($response['headers'] as $name => $value) {

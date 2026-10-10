@@ -28,8 +28,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(list_activity_versions::class)]
 final class list_activity_versions_test extends \advanced_testcase {
-
     /**
+     * Creates page.
+     *
      * @return array{0: \stdClass, 1: \stdClass}
      */
     private function create_page(): array {
@@ -82,6 +83,8 @@ final class list_activity_versions_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

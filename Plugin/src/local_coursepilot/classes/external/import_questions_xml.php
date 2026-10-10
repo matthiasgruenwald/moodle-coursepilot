@@ -78,7 +78,6 @@ require_once($CFG->dirroot . '/question/format/xml/format.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class import_questions_xml extends external_api {
-
     /**
      * @var int Size limit per import (#424 follow-up 2), applied to resolved XML.
      *      See {@see self::guard_server_size_limit()} for the rationale.
@@ -86,6 +85,8 @@ final class import_questions_xml extends external_api {
     public const MAX_XML_BYTES = 5 * 1024 * 1024;
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -119,12 +120,14 @@ final class import_questions_xml extends external_api {
     }
 
     /**
+     * Runs the import questions xml tool.
+     *
      * @param int $categoryid
      * @param string $xmlcontent
      * @param bool $confirmed
      * @param string $xmlpath
      * @param string $location
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $categoryid,
@@ -150,8 +153,8 @@ final class import_questions_xml extends external_api {
      * Check context/capabilities, resolve the XML and parse questions (#523:
      * extracted from execute() to keep the function below 50 lines).
      *
-     * @param array $params Validated execute() parameters.
-     * @return array{0: \stdClass, 1: \context, 2: array}
+     * @param mixed[] $params Validated execute() parameters.
+     * @return array{0: \stdClass, 1: \context, 2: mixed[]}
      */
     private static function resolve_and_parse(array $params): array {
         global $DB;
@@ -181,14 +184,14 @@ final class import_questions_xml extends external_api {
      *
      * @param \stdClass $category
      * @param \context $context
-     * @param array $questions
+     * @param mixed[] $questions
      * @param bool $confirmed
-     * @return array
+     * @return mixed[]
      */
     private static function import_all(\stdClass $category, \context $context, array $questions, bool $confirmed): array {
         global $DB;
 
-        // moodle_transaction has no destructor. Explicitly roll back here because
+        // Note: moodle_transaction has no destructor. Explicitly roll back here because
         // round-trip mismatches intentionally occur AFTER the write rather than
         // in its preceding validation.
         $transaction = $DB->start_delegated_transaction();
@@ -422,7 +425,7 @@ final class import_questions_xml extends external_api {
 
         $lines = explode("\n", str_replace(["\r\n", "\r"], "\n", $xmlcontent));
 
-        // qformat_xml::readquestions() does NOT throw for parse errors. It echoes
+        // Note: qformat_xml::readquestions() does NOT throw for parse errors. It echoes
         // a message via qformat_default::error() and returns false. Capture that
         // output to avoid HTML in the web service response, then throw instead.
         ob_start();
@@ -458,7 +461,7 @@ final class import_questions_xml extends external_api {
      * @param \context $context
      * @param \stdClass $question
      * @param bool $confirmed
-     * @return array
+     * @return mixed[]
      */
     private static function import_one(
         \stdClass $category,
@@ -511,7 +514,7 @@ final class import_questions_xml extends external_api {
      * @param \stdClass $question
      * @param string $name
      * @param string $xmlidnumber
-     * @return array
+     * @return mixed[]
      */
     private static function unmatched_idnumber_response(
         \stdClass $category,
@@ -562,18 +565,22 @@ final class import_questions_xml extends external_api {
         $form->category = $category->id . ',' . $context->id;
         $form->status = question_version_status::QUESTION_STATUS_READY;
         $form->idnumber = $idnumber;
-        // qformat_xml::readquestions() creates draft files for embedded <file>
+        // Note: qformat_xml::readquestions() creates draft files for embedded <file>
         // blocks (question/format/xml/format.php: import_files_as_draft()) and
         // attaches questiontextitemid/generalfeedbackitemid separately rather than
         // inside the text fields. Pass these item IDs through; otherwise
         // save_question()->file_save_draft_area_files() is never called and images
         // from BOTH doors are silently discarded (Spec 0018 §7.1, #437).
         $form->questiontext = self::as_text_array(
-            $question->questiontext ?? '', $question->questiontextformat ?? FORMAT_HTML,
-            $question->questiontextitemid ?? 0);
+            $question->questiontext ?? '',
+            $question->questiontextformat ?? FORMAT_HTML,
+            $question->questiontextitemid ?? 0
+        );
         $form->generalfeedback = self::as_text_array(
-            $question->generalfeedback ?? '', $question->generalfeedbackformat ?? FORMAT_HTML,
-            $question->generalfeedbackitemid ?? 0);
+            $question->generalfeedback ?? '',
+            $question->generalfeedbackformat ?? FORMAT_HTML,
+            $question->generalfeedbackitemid ?? 0
+        );
         if (!isset($form->defaultmark)) {
             // Moodle XML exports historically use <defaultgrade>.
             $form->defaultmark = $question->defaultgrade ?? 1.0;
@@ -679,7 +686,7 @@ final class import_questions_xml extends external_api {
 
         $xml = $qformat->writequestion($reloaded);
 
-        // writequestion() returns only a <question> block, but readquestions()
+        // Note: writequestion() returns only a <question> block, but readquestions()
         // expects a <quiz> root (xmlize's xml["quiz"] structure).
         return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<quiz>\n" . $xml . "\n</quiz>";
     }
@@ -770,7 +777,8 @@ final class import_questions_xml extends external_api {
         }
         foreach ($expectedanswers as $i => $answer) {
             $other = $actualanswers[$i];
-            if ($answer['text'] !== $other['text']
+            if (
+                $answer['text'] !== $other['text']
                 || abs($answer['fraction'] - $other['fraction']) > 0.00001
                 || $answer['feedback'] !== $other['feedback']
             ) {
@@ -804,7 +812,7 @@ final class import_questions_xml extends external_api {
         }
 
         if (isset($qo->answer) && is_bool($qo->answer)) {
-            // truefalse uses a single boolean (true means the correct answer is true)
+            // Note: truefalse uses a single boolean (true means the correct answer is true)
             // with separate feedback for each option.
             return [
                 [
@@ -824,10 +832,12 @@ final class import_questions_xml extends external_api {
     }
 
     /**
+     * Provides result.
+     *
      * @param \stdClass $saved
      * @param string $status
      * @param string $name
-     * @return array
+     * @return mixed[]
      */
     private static function result(\stdClass $saved, string $status, string $name): array {
         global $DB;
@@ -849,7 +859,11 @@ final class import_questions_xml extends external_api {
         );
     }
 
-    /** Extract plain text from a qformat field (string or text-keyed array). */
+    /**
+     * Extract plain text from a qformat field (string or text-keyed array).
+     *
+     * @param mixed $value The value.
+     */
     private static function text_of($value): string {
         if (is_array($value)) {
             return (string) ($value['text'] ?? '');
@@ -860,7 +874,14 @@ final class import_questions_xml extends external_api {
         return (string) $value;
     }
 
-    /** Build the text/format/itemid structure expected by save_question(). */
+    /**
+     * Build the text/format/itemid structure expected by save_question().
+     *
+     * @param mixed $value The value.
+     * @param mixed $format The format.
+     * @param int $itemid The itemid.
+     * @return mixed[]
+     */
     private static function as_text_array($value, $format, int $itemid = 0): array {
         if (is_array($value) && array_key_exists('text', $value)) {
             return [
@@ -872,12 +893,16 @@ final class import_questions_xml extends external_api {
         return ['text' => self::text_of($value), 'format' => $format ?? FORMAT_HTML, 'itemid' => $itemid];
     }
 
-    /** Generate a unique idnumber, following mc_question_version. */
+    /**
+     * Generate a unique idnumber, following mc_question_version.
+     */
     private static function generate_idnumber(): string {
         return 'kp-' . bin2hex(random_bytes(8));
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
@@ -894,7 +919,10 @@ final class import_questions_xml extends external_api {
                             PARAM_INT,
                             'New version number (0 for "suspect")'
                         ),
-                        'status' => new external_value(PARAM_ALPHAEXT, '"first_import" (first import) | "reimport" (new version of the same entry) | "suspect" (suspect case)'),
+                        'status' => new external_value(
+                            PARAM_ALPHAEXT,
+                            '"first_import" (first import) | "reimport" (new version of the same entry) | "suspect" (suspect case)'
+                        ),
                         'message' => new external_value(PARAM_RAW, 'Teacher-facing message'),
                     ],
                     question_suspect_gate::response_fields()

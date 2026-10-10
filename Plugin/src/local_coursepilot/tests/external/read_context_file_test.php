@@ -43,12 +43,20 @@ final class read_context_file_test extends \advanced_testcase {
         parent::tearDown();
     }
 
-    /** Canonical names resolve existing German files without migrating storage. */
+    /**
+     * Canonical names resolve existing German files without migrating storage.
+     */
     public function test_canonical_names_read_legacy_files_and_return_actual_paths(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
-        foreach (['templates.md' => 'vorlagen.md', 'notepad.md' => 'merkzettel.md', 'CONTEXT-people.md' => 'CONTEXT.personen.md'] as $canonical => $legacy) {
+        foreach (
+            [
+                'templates.md' => 'vorlagen.md',
+                'notepad.md' => 'merkzettel.md',
+                'CONTEXT-people.md' => 'CONTEXT.personen.md',
+            ] as $canonical => $legacy
+        ) {
             $this->create_context_file($user, '/coursepilot/', $legacy, '# Legacy ' . $legacy);
             $result = read_context_file::execute($canonical);
             $result = external_api::clean_returnvalue(read_context_file::execute_returns(), $result);
@@ -474,7 +482,7 @@ final class read_context_file_test extends \advanced_testcase {
             $this->fail('Authentication denial must reject the read.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavexternalerror', $e->errorcode);
-            // Issue #516: read failures explicitly name the context gap. PHPUnit
+            // Read failures explicitly name the context gap. PHPUnit
             // resolves English only; write_context_file_test::
             // test_german_messages_carry_the_required_wording() checks German wording.
             $this->assertStringContainsString('context gap', $e->getMessage());
@@ -523,6 +531,8 @@ final class read_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Creates context file.
+     *
      * @param \stdClass $user
      * @param string $filepath
      * @param string $filename

@@ -18,7 +18,9 @@ namespace local_coursepilot\admin;
 
 use local_coursepilot\personal_data_hosts;
 
-// admin_setting_configtextarea is a legacy global class from adminlib.php,
+defined('MOODLE_INTERNAL') || die();
+
+// Note: admin_setting_configtextarea is a legacy global class from adminlib.php,
 // without PSR-4 autoloading. Admin settings usually load it first, but PHPUnit
 // and early callers may not. Import $CFG because autoloading can run inside
 // a function where it would otherwise be out of scope.
@@ -35,8 +37,9 @@ require_once($CFG->libdir . '/adminlib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class personaldatahosts_setting extends \admin_setting_configtextarea {
-
     /**
+     * Validates the personaldatahosts setting.
+     *
      * @param mixed $data
      * @return mixed true if valid, otherwise an error message.
      */

@@ -33,7 +33,6 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class shared_block {
-
     /**
      * Always blocked fields (Spec 0015 §2.2, category 3): every module
      * recomputes these; a patch must not set them.
@@ -122,6 +121,9 @@ final class shared_block {
         ]);
     }
 
+    /**
+     * Blocklist.
+     */
     public const BLOCKLIST = [
         'timemodified',
         'timecreated',

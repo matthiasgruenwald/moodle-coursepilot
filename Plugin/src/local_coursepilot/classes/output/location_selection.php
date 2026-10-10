@@ -33,7 +33,9 @@ use local_coursepilot\storage_anchor;
  */
 final class location_selection {
     /**
-     * @param array<string, string> $oauthpassthrough
+     * Provides editor data.
+     *
+     * @param string[] $oauthpassthrough
      * @return array<string, mixed>
      */
     public static function editor_data(array $oauthpassthrough = []): array {
@@ -55,7 +57,7 @@ final class location_selection {
      * @return array<string, mixed>
      */
     public static function amd_configuration(\stdClass $user): array {
-        // Issue #565: page_state() includes the full unbounded location history.
+        // Page_state() includes the full unbounded location history.
         // AMD does not use it; history is already rendered by the server.
         // Send only the instances actually needed here.
         $state = selection::page_state((int) $user->id);
@@ -75,6 +77,8 @@ final class location_selection {
     }
 
     /**
+     * Provides targets.
+     *
      * @return list<array<string, mixed>>
      */
     private static function targets(): array {
@@ -94,7 +98,9 @@ final class location_selection {
     }
 
     /**
-     * @param array<string, string> $oauthpassthrough
+     * Provides oauth fields.
+     *
+     * @param string[] $oauthpassthrough
      * @return list<array{name: string, value: string}>
      */
     private static function oauth_fields(array $oauthpassthrough): array {
@@ -106,6 +112,8 @@ final class location_selection {
     }
 
     /**
+     * Provides current locations data.
+     *
      * @return array<string, array<string, string>>
      */
     public static function current_locations_data(): array {
@@ -113,7 +121,11 @@ final class location_selection {
         foreach (selection::TARGETS as $target) {
             $location = selection::current($target);
             $locations[$target] = [
-                'label' => get_string('locationselectioncurrent' . str_replace('_', '', $target), 'local_coursepilot', $location['display']),
+                'label' => get_string(
+                    'locationselectioncurrent' . str_replace('_', '', $target),
+                    'local_coursepilot',
+                    $location['display']
+                ),
                 'allowancelabel' => selection::allowed_label($location),
             ];
         }
@@ -121,8 +133,11 @@ final class location_selection {
     }
 
     /**
-     * @param array{type: string, text: string}|null $finishresult
-     * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn
+     * Provides page data.
+     *
+     * @param \stdClass $user The user.
+     * @param ?array $finishresult Type: array{type:string,text:string}|null.
+     * @param ?array $oauthreturn Type: array{client:\stdClass,params:array<string,string>}|null.
      * @return array<string, mixed>
      */
     public static function page_data(\stdClass $user, ?array $finishresult, ?array $oauthreturn): array {
@@ -145,7 +160,9 @@ final class location_selection {
     }
 
     /**
-     * @param array{type: string, text: string}|null $finishresult
+     * Provides notification data.
+     *
+     * @param ?array $finishresult Type: array{type:string,text:string}|null.
      * @return array{class: string, text: string}|null
      */
     private static function notification_data(?array $finishresult): ?array {
@@ -162,7 +179,9 @@ final class location_selection {
     }
 
     /**
-     * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn
+     * Provides oauth return data.
+     *
+     * @param ?array $oauthreturn Type: array{client:\stdClass,params:array<string,string>}|null.
      * @return array{clientname: string, backurl: string}|null
      */
     private static function oauth_return_data(?array $oauthreturn): ?array {
@@ -177,6 +196,8 @@ final class location_selection {
     }
 
     /**
+     * Provides history data.
+     *
      * @return array{empty: bool, entries: list<array<string, string>>}
      */
     private static function history_data(): array {
@@ -188,7 +209,9 @@ final class location_selection {
                     $entry['target'] === 'context_area' ? 'locationselectiontabcontextarea' : 'locationselectiontabmaterialstore',
                     'local_coursepilot'
                 ),
-                'from' => isset($entry['from']) ? selection::describe_location($entry['from']) : (string) ($entry['from_text'] ?? ''),
+                'from' => isset($entry['from'])
+                    ? selection::describe_location($entry['from'])
+                    : (string) ($entry['from_text'] ?? ''),
                 'to' => isset($entry['to']) ? selection::describe_location($entry['to']) : (string) ($entry['to_text'] ?? ''),
             ];
         }

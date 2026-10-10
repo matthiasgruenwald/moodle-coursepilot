@@ -28,8 +28,9 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class storage_conflict_exception extends \moodle_exception {
-
     /**
+     * Creates the storage conflict exception.
+     *
      * @param string $path Client path of the affected file, for the message.
      */
     public function __construct(string $path) {

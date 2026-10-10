@@ -24,8 +24,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\shared_block;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Activities of a course or section (#342): identifiers (cmid, type,
  * name) for targeted access, without delivering course content.
@@ -40,8 +38,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class get_modules extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -52,9 +51,11 @@ class get_modules extends external_api {
     }
 
     /**
+     * Runs the get modules tool.
+     *
      * @param int $courseid
      * @param int $sectionnum
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $courseid, int $sectionnum = -1): array {
         global $DB;
@@ -72,8 +73,11 @@ class get_modules extends external_api {
         $sqlparams = ['courseid' => $params['courseid']];
 
         if ($params['sectionnum'] >= 0) {
-            $section = $DB->get_record('course_sections',
-                ['course' => $params['courseid'], 'section' => $params['sectionnum']], 'id');
+            $section = $DB->get_record(
+                'course_sections',
+                ['course' => $params['courseid'], 'section' => $params['sectionnum']],
+                'id'
+            );
             if ($section) {
                 $where .= ' AND cm.section = :sectionid';
                 $sqlparams['sectionid'] = $section->id;
@@ -89,7 +93,7 @@ class get_modules extends external_api {
               ORDER BY cs.section";
 
         $rows = array_values($DB->get_records_sql($sql, $sqlparams));
-        usort($rows, function($a, $b) {
+        usort($rows, function ($a, $b) {
             return [$a->sectionnum, self::sequence_index((string) $a->sequence, (int) $a->cmid)]
                 <=> [$b->sectionnum, self::sequence_index((string) $b->sequence, (int) $b->cmid)];
         });
@@ -118,6 +122,8 @@ class get_modules extends external_api {
     }
 
     /**
+     * Provides sequence index.
+     *
      * @param string $sequence
      * @param int $cmid
      * @return int
@@ -129,16 +135,18 @@ class get_modules extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_multiple_structure
      */
     public static function execute_returns(): external_multiple_structure {
         return new external_multiple_structure(
             new external_single_structure([
-                'cmid'       => new external_value(PARAM_INT,  'Course module ID (use for update calls)'),
-                'sectionnum' => new external_value(PARAM_INT,  'Section number'),
+                'cmid'       => new external_value(PARAM_INT, 'Course module ID (use for update calls)'),
+                'sectionnum' => new external_value(PARAM_INT, 'Section number'),
                 'modname'    => new external_value(PARAM_TEXT, 'Module type (page, assign, label, url...)'),
                 'name'       => new external_value(PARAM_TEXT, 'Display name of the activity'),
-                'visible'    => new external_value(PARAM_INT,  'Visible (1) or hidden (0)'),
+                'visible'    => new external_value(PARAM_INT, 'Visible (1) or hidden (0)'),
                 'visibleoncoursepage' => new external_value(PARAM_INT, 'Stealth: 1 = shown on course page, 0 = stealth'),
                 'coursepagevisibility' => new external_value(PARAM_TEXT, 'shown | stealth'),
                 'availability_status' => new external_value(PARAM_TEXT, 'shown | stealth | hidden'),

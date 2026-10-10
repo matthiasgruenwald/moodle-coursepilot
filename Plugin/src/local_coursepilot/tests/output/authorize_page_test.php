@@ -27,7 +27,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(authorize_page::class)]
 final class authorize_page_test extends \advanced_testcase {
-
     public function test_consent_text_names_the_client_and_contains_markup(): void {
         $this->resetAfterTest();
 

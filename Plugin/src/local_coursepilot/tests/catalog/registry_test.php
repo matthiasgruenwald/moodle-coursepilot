@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[CoversClass(registry::class)]
 #[CoversClass(activity_kind::class)]
 final class registry_test extends \advanced_testcase {
-
     public function test_catalogued_type_carries_its_catalog(): void {
         $kind = registry::kind('page');
 
@@ -50,6 +49,11 @@ final class registry_test extends \advanced_testcase {
         $this->assertNull($kind->reasonkey);
     }
 
+    /**
+     * Provides cases for excluded provider.
+     *
+     * @return mixed[]
+     */
     public static function excluded_provider(): array {
         return [
             'lesson' => ['lesson', 'kindexcludedquestions'],

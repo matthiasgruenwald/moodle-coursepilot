@@ -24,5 +24,7 @@
 
 require_once(__DIR__ . '/../../config.php');
 require_login();
-redirect(new moodle_url('/local/coursepilot/location_selection.php'),
-    get_string('locationselectionmoved', 'local_coursepilot'));
+redirect(
+    new moodle_url('/local/coursepilot/location_selection.php'),
+    get_string('locationselectionmoved', 'local_coursepilot')
+);

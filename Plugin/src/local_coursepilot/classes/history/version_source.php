@@ -16,8 +16,6 @@
 
 namespace local_coursepilot\history;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Source of a history state as one concept (#596, Spec 0026 module 5, ADR 0028):
  * key, reference cmid and label live here instead of being known piecemeal by
@@ -32,7 +30,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class version_source {
-
     /** @var string Native Moodle write path. */
     public const MOODLE = 'moodle';
 
@@ -67,16 +64,22 @@ final class version_source {
     private const MARKERS = [self::SUPERSEDED];
 
     /**
+     * Creates the version source.
+     *
      * @param string $key
      * @param int|null $refcmid
      */
     public function __construct(
+        /** @var string The key. */
         public readonly string $key,
+        /** @var ?int The refcmid. */
         public readonly ?int $refcmid = null,
     ) {
     }
 
     /**
+     * Creates the from record version source.
+     *
      * @param \stdClass $record local_coursepilot_cm_version row
      * @return self
      */
@@ -85,6 +88,8 @@ final class version_source {
     }
 
     /**
+     * Tells whether the version source is discovered.
+     *
      * @return bool true for the retroactive starting state
      */
     public function is_discovered(): bool {
@@ -92,6 +97,8 @@ final class version_source {
     }
 
     /**
+     * Tells whether the version source is marker.
+     *
      * @return bool true if the state is a marker, not a content snapshot to diff
      */
     public function is_marker(): bool {
@@ -99,6 +106,8 @@ final class version_source {
     }
 
     /**
+     * Returns teacher-facing label.
+     *
      * @param string $lang Explicit language for UI or tool callers.
      * @return string teacher-facing label
      */
@@ -107,6 +116,10 @@ final class version_source {
             return $this->key;
         }
         return get_string_manager()->get_string(
-            self::LABELS[$this->key], 'local_coursepilot', (string) ($this->refcmid ?? '?'), $lang);
+            self::LABELS[$this->key],
+            'local_coursepilot',
+            (string) ($this->refcmid ?? '?'),
+            $lang
+        );
     }
 }

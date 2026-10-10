@@ -31,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
 #[\PHPUnit\Framework\Attributes\CoversClass(delete_material_files::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_files::class)]
 final class delete_material_files_test extends \advanced_testcase {
-
     public function test_deletes_exactly_named_files(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
@@ -84,6 +83,12 @@ final class delete_material_files_test extends \advanced_testcase {
         delete_material_files::execute(['../../../etc/passwd']);
     }
 
+    /**
+     * Stores the delete material files test.
+     *
+     * @param string $filename The filename.
+     * @param string $content The content.
+     */
     private function store(string $filename, string $content): void {
         get_file_storage()->create_file_from_string([
             'contextid' => material_files::own_context()->id,
@@ -95,6 +100,12 @@ final class delete_material_files_test extends \advanced_testcase {
         ], $content);
     }
 
+    /**
+     * Provides exists.
+     *
+     * @param string $filename The filename.
+     * @return bool
+     */
     private function exists(string $filename): bool {
         return (bool) get_file_storage()->get_file(
             material_files::own_context()->id,

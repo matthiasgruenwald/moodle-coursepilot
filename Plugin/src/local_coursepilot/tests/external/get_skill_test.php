@@ -35,7 +35,6 @@ require_once($CFG->dirroot . '/cohort/lib.php');
  */
 #[CoversClass(get_skill::class)]
 final class get_skill_test extends \advanced_testcase {
-
     /**
      * Return content, referenced parts and corpus version.
      */
@@ -89,6 +88,8 @@ final class get_skill_test extends \advanced_testcase {
     }
 
     /**
+     * Provides cases for path like name provider.
+     *
      * @return array<string, string[]>
      */
     public static function path_like_name_provider(): array {

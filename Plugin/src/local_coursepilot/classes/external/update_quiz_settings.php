@@ -30,8 +30,6 @@ use local_coursepilot\catalog\write_target;
 use local_coursepilot\write_gate;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Quiz patch (Spec 0015 §5, #398): quiz is a justified exception to the
  * generic write vehicle {@see update_module_settings}. The catalog (#383)
@@ -58,8 +56,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class update_quiz_settings extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -89,12 +88,14 @@ final class update_quiz_settings extends external_api {
     }
 
     /**
+     * Runs the update quiz settings tool.
+     *
      * @param int $cmid
      * @param string $fieldsjson
      * @param string $mode
      * @param float $grade
      * @param string[] $confirmlearnerlocks
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $cmid,
@@ -160,7 +161,7 @@ final class update_quiz_settings extends external_api {
 
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
-        // get_moduleinfo_data() returns the raw quiz row plus the shared block
+        // Note: get_moduleinfo_data() returns the raw quiz row plus the shared block
         // (visible, groupmode, cmidnumber, ...), as for update_module_settings.
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
         // The form state rounds gradepass to display decimals. Preserve the
@@ -202,11 +203,15 @@ final class update_quiz_settings extends external_api {
         } else {
             $current = quiz_write_bridge::read_feedback((int) $quiz->id);
             if ($current['feedbacktext']) {
-                quiz_write_bridge::apply_feedback_pseudofields($moduleinfo, $current['feedbacktext'], $current['feedbackboundaries']);
+                quiz_write_bridge::apply_feedback_pseudofields(
+                    $moduleinfo,
+                    $current['feedbacktext'],
+                    $current['feedbackboundaries']
+                );
             }
         }
 
-        // #400: get_moduleinfo_data() returns gradepass in display format
+        // Get_moduleinfo_data() returns gradepass in display format
         // ("0,00"). Writing it back unchecked fails at the database after the
         // change has already persisted.
         pseudofield_carry_forward::unformat_localised_gradepass($moduleinfo);
@@ -251,11 +256,11 @@ final class update_quiz_settings extends external_api {
      * Also report calendar changes for timeopen/timeclose (quiz::side_effects())
      * and effects of a grade change.
      *
-     * @param array $merged
-     * @param array $before
-     * @param array $after
+     * @param mixed[] $merged
+     * @param mixed[] $before
+     * @param mixed[] $after
      * @param bool $gradechanged
-     * @return array{0: array, 1: string[]}
+     * @return array{0: mixed[], 1: string[]}
      */
     private static function diff_and_side_effects(array $merged, array $before, array $after, bool $gradechanged): array {
         $changes = [];
@@ -288,12 +293,15 @@ final class update_quiz_settings extends external_api {
             ];
         }
 
-        if ((array_key_exists('timeopen', $merged) && (int) $after['timeopen'] > 0)
-                || (array_key_exists('timeclose', $merged) && (int) $after['timeclose'] > 0)) {
+        if (
+            (array_key_exists('timeopen', $merged) && (int) $after['timeopen'] > 0)
+                || (array_key_exists('timeclose', $merged) && (int) $after['timeclose'] > 0)
+        ) {
             $sideeffects[] = 'The calendar event for the quiz was updated.';
         }
         if ($gradechanged) {
-            $sideeffects[] = 'Existing attempt grades and overall feedback boundaries were rescaled proportionally to the new grade.';
+            $sideeffects[] = 'Existing attempt grades and overall feedback boundaries were rescaled proportionally to the new '
+                . 'grade.';
         }
 
         return [$changes, $sideeffects];
@@ -302,7 +310,7 @@ final class update_quiz_settings extends external_api {
     /**
      * Teacher-facing change message (Spec 0015 §3.3/§5).
      *
-     * @param array $changes
+     * @param mixed[] $changes
      * @param string[] $sideeffects
      * @return string
      */
@@ -325,6 +333,8 @@ final class update_quiz_settings extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

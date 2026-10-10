@@ -24,8 +24,6 @@ use local_coursepilot\pending_write_notice;
 use local_coursepilot\context_area;
 use local_coursepilot\context_files;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Appends content to a file in the context area of the calling teacher
  * (issue #409, Spec 0016 §4.2).
@@ -44,8 +42,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class append_context_file extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -78,12 +77,14 @@ class append_context_file extends external_api {
     }
 
     /**
+     * Runs the append context file tool.
+     *
      * @param string $path
      * @param string $content
      * @param string $pendingentry
      * @param string $expectedcontenthash
      * @param int $courseid
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
      *         contextfiletoolarge, contextfilelocked, contextquotaexceeded,
      *         contextfileexternalconflict (external, issue #513)
@@ -126,8 +127,8 @@ class append_context_file extends external_api {
      * rotation hint (Spec 0016 §5.2/§8.4) from the location-neutral result
      * of {@see context_area::append()}.
      *
-     * @param array{path: string, created: bool, size: int} $result
-     * @return array
+     * @param mixed[] $result Type: array{path:string,created:bool,size:int}.
+     * @return mixed[]
      */
     private static function build_response(array $result): array {
         $message = $result['created']
@@ -149,6 +150,8 @@ class append_context_file extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -49,7 +49,7 @@ try {
     echo json_encode(['ok' => true, 'state' => location_selection::page_state((int) $USER->id, $result)]);
 } catch (moodle_exception $e) {
     http_response_code(400);
-    // #565: the client translates errorkey on display through core/str,
+    // The client translates errorkey on display through core/str,
     // never stores a rendered sentence in page state. It needs the same
     // placeholders as server rendering: named error class and location-page
     // reference; see pointer_reader::webdav_exception().

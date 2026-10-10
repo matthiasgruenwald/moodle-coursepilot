@@ -28,8 +28,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(ensure_section::class)]
 final class ensure_section_test extends \advanced_testcase {
-
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -41,10 +42,12 @@ final class ensure_section_test extends \advanced_testcase {
     }
 
     /**
+     * Ensures the ensure section test.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string|null $name
-     * @return array
+     * @return mixed[]
      */
     private function ensure(int $courseid, int $sectionnum, ?string $name = null): array {
         return external_api::clean_returnvalue(
@@ -122,6 +125,8 @@ final class ensure_section_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

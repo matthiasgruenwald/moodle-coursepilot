@@ -24,8 +24,6 @@ use core_external\external_value;
 use local_coursepilot\glossary_entry_writer;
 use local_coursepilot\material_files;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Adds teacher-authored entries without exposing existing learner content (#593).
  *
@@ -34,25 +32,49 @@ defined('MOODLE_INTERNAL') || die();
  * @license https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class add_glossary_entries extends external_api {
-    /** @return external_function_parameters */
+    /**
+     * Describes the parameters of execute.
+     *
+     * @return external_function_parameters
+     */
     public static function execute_parameters(): external_function_parameters {
         $strings = static fn(string $description) => new external_multiple_structure(
-            new external_value(PARAM_TEXT, $description), $description, VALUE_DEFAULT, []);
+            new external_value(PARAM_TEXT, $description),
+            $description,
+            VALUE_DEFAULT,
+            []
+        );
         $paths = static fn(string $description) => new external_multiple_structure(
             new external_value(PARAM_RAW, 'Relative material path; file contents never enter the response'),
-            $description, VALUE_DEFAULT, []);
+            $description,
+            VALUE_DEFAULT,
+            []
+        );
         return new external_function_parameters([
             'cmid' => new external_value(PARAM_INT, 'Glossary course module ID, fresh or existing'),
             'entries' => new external_multiple_structure(new external_single_structure([
                 'concept' => new external_value(PARAM_TEXT, 'Concept'),
                 'definition' => new external_value(PARAM_RAW, 'Definition; use @@PLUGINFILE@@/filename for embedded files'),
-                'definitionformat' => new external_value(PARAM_INT, 'Moodle text format: 0 Moodle, 1 HTML, 2 plain, 4 Markdown', VALUE_DEFAULT, FORMAT_HTML),
+                'definitionformat' => new external_value(
+                    PARAM_INT,
+                    'Moodle text format: 0 Moodle, 1 HTML, 2 plain, 4 Markdown',
+                    VALUE_DEFAULT,
+                    FORMAT_HTML
+                ),
                 'aliases' => $strings('Keywords or aliases, one per item'),
                 'categories' => $strings('Category names; missing categories require mod/glossary:managecategories'),
-                'usedynalink' => new external_value(PARAM_BOOL, 'Automatic linking, only if enabled for the glossary; otherwise Moodle defaults apply', VALUE_OPTIONAL),
+                'usedynalink' => new external_value(
+                    PARAM_BOOL,
+                    'Automatic linking, only if enabled for the glossary; otherwise Moodle defaults apply',
+                    VALUE_OPTIONAL
+                ),
                 'casesensitive' => new external_value(PARAM_BOOL, 'Case-sensitive linking', VALUE_OPTIONAL),
                 'fullmatch' => new external_value(PARAM_BOOL, 'Link whole words only', VALUE_OPTIONAL),
-                'approved' => new external_value(PARAM_BOOL, 'Explicit approval state requires mod/glossary:approve; omit for Moodle default approval', VALUE_OPTIONAL),
+                'approved' => new external_value(
+                    PARAM_BOOL,
+                    'Explicit approval state requires mod/glossary:approve; omit for Moodle default approval',
+                    VALUE_OPTIONAL
+                ),
                 'tags' => $strings('Entry tags, when glossary entry tagging is enabled'),
                 'attachment_files' => $paths('Attachments copied from the teacher material area'),
                 'definition_files' => $paths('Embedded definition files copied from the teacher material area'),
@@ -62,9 +84,11 @@ final class add_glossary_entries extends external_api {
     }
 
     /**
+     * Runs the add glossary entries tool.
+     *
      * @param int $cmid
-     * @param array $entries
-     * @return array
+     * @param mixed[] $entries
+     * @return mixed[]
      */
     public static function execute(int $cmid, array $entries): array {
         global $CFG, $DB;
@@ -97,7 +121,11 @@ final class add_glossary_entries extends external_api {
         }
     }
 
-    /** @return external_single_structure */
+    /**
+     * Describes the return value of execute.
+     *
+     * @return external_single_structure
+     */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'cmid' => new external_value(PARAM_INT, 'Glossary course module ID'),

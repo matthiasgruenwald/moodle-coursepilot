@@ -28,7 +28,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(admin_connections_page::class)]
 final class admin_connections_page_test extends \advanced_testcase {
-
     public function test_empty_flag_is_true_without_tokens(): void {
         $this->resetAfterTest();
         $data = admin_connections_page::page_data([]);

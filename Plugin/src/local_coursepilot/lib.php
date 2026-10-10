@@ -22,8 +22,6 @@
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Links connection self-service (#338) only in the current user's profile.
  * Moodle invokes this callback for each viewed profile; $iscurrentuser
@@ -164,7 +162,8 @@ function local_coursepilot_extend_navigation_course(
 function local_coursepilot_status_checks(): array {
     return array_merge(
         array_map(
-            static fn (string $modname): \local_coursepilot\check\activity_drift => new \local_coursepilot\check\activity_drift($modname),
+            static fn (string $modname): \local_coursepilot\check\activity_drift =>
+                new \local_coursepilot\check\activity_drift($modname),
             \local_coursepilot\catalog\registry::known_modnames()
         ),
         [

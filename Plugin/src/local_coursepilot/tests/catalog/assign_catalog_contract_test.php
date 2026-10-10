@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(assign::class)]
 #[CoversClass(\local_coursepilot\catalog\shared_block::class)]
 final class assign_catalog_contract_test extends \advanced_testcase {
-
     /**
      * Cataloged columns, including nosubmissions, revealidentities and
      * completionsubmit from assign::blocklist(), exactly match the assign table.

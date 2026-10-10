@@ -28,7 +28,6 @@ use core_external\external_api;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(get_modules::class)]
 final class get_modules_test extends \advanced_testcase {
-
     /**
      * Return cmid, type and name for every activity.
      */
@@ -119,6 +118,8 @@ final class get_modules_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
@@ -128,9 +129,11 @@ final class get_modules_test extends \advanced_testcase {
     }
 
     /**
-     * @param array $result
+     * Finds module.
+     *
+     * @param mixed[] $result
      * @param int $cmid
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function find_module(array $result, int $cmid): ?array {
         foreach ($result as $module) {

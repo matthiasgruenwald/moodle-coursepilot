@@ -27,8 +27,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(history_page::class)]
 final class history_page_test extends \advanced_testcase {
-
     /**
+     * Creates page.
+     *
      * @return array{0: \stdClass, 1: \stdClass}
      */
     private function create_page(): array {

@@ -27,7 +27,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(connections_page::class)]
 final class connections_page_test extends \advanced_testcase {
-
     public function test_empty_flag_is_true_without_tokens(): void {
         $this->resetAfterTest();
         $data = connections_page::page_data([], ['context_area' => [], 'material_store' => []], new \moodle_url('/'));

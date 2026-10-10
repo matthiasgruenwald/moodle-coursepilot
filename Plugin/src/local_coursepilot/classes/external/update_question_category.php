@@ -46,23 +46,31 @@ require_once($CFG->libdir . '/questionlib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class update_question_category extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'categoryid' => new external_value(PARAM_INT, 'ID of the category to change'),
             'name' => new external_value(PARAM_TEXT, 'New category name (empty = keep the current name)', VALUE_DEFAULT, ''),
-            'parent' => new external_value(PARAM_INT, 'ID of the new parent category (0 = keep the current parent)', VALUE_DEFAULT, 0),
+            'parent' => new external_value(
+                PARAM_INT,
+                'ID of the new parent category (0 = keep the current parent)',
+                VALUE_DEFAULT,
+                0
+            ),
         ]);
     }
 
     /**
+     * Runs the update question category tool.
+     *
      * @param int $categoryid
      * @param string $name
      * @param int $parent
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $categoryid, string $name = '', int $parent = 0): array {
         global $DB;
@@ -172,6 +180,8 @@ final class update_question_category extends external_api {
     }
 
     /**
+     * Builds message.
+     *
      * @param bool $renamed
      * @param bool $moved
      * @param string $name
@@ -191,6 +201,8 @@ final class update_question_category extends external_api {
     }
 
     /**
+     * Collects subtree ids.
+     *
      * @param int $categoryid
      * @return int[]
      */
@@ -214,6 +226,8 @@ final class update_question_category extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

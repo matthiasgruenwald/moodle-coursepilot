@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
-
 namespace local_coursepilot\external;
 
 use context_course;
@@ -27,8 +26,6 @@ use local_coursepilot\course_module_placement;
 use local_coursepilot\catalog\registry;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Default activity XML of a developed activity type (Spec 0026, #589): creates the
  * activity with the Moodle form defaults, exports it with {@see activity_backup::export()}
@@ -39,11 +36,12 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class export_default_activity extends external_api {
-
     /** Section used for the throwaway activity; always exists. */
     private const SECTION = 0;
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -54,9 +52,11 @@ final class export_default_activity extends external_api {
     }
 
     /**
+     * Runs the export default activity tool.
+     *
      * @param int $courseid
      * @param string $modname
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception defaultactivitycatalogued, kindexcluded*
      */
     public static function execute(int $courseid, string $modname): array {
@@ -88,8 +88,13 @@ final class export_default_activity extends external_api {
                         empty($moduleinfo->instance) ? null : (int) $moduleinfo->instance
                     );
                 } catch (\Throwable $cleanup) {
-                    throw new moodle_exception('defaultactivitycleanupfailed', 'local_coursepilot', '', null,
-                        $cleanup->getMessage());
+                    throw new moodle_exception(
+                        'defaultactivitycleanupfailed',
+                        'local_coursepilot',
+                        '',
+                        null,
+                        $cleanup->getMessage()
+                    );
                 }
             }
         }
@@ -114,12 +119,14 @@ final class export_default_activity extends external_api {
         $form->set_data($data);
         // Unsubmitted form: exportValues() yields the defaults (get_data() would be null).
         // The three-state visibility element cannot export without a submission; it is set below.
+        // phpcs:disable Squiz.Scope.StaticThisUsage.Found -- The closure is bound to the form object via call().
         $values = (function () {
             if ($this->_form->elementExists('visible')) {
                 $this->_form->removeElement('visible');
             }
             return $this->_form->exportValues();
         })->call($form);
+        // phpcs:enable Squiz.Scope.StaticThisUsage.Found
 
         $moduleinfo = (object) array_merge((array) $data, $values);
         $moduleinfo->modulename = $modname;
@@ -132,6 +139,8 @@ final class export_default_activity extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

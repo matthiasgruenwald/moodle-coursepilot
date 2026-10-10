@@ -23,8 +23,6 @@ use core_external\external_value;
 use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Creates or fully overwrites a material file for the calling teacher
  * (Spec 0018 §2/§4.2/§8.1, #428). Single entry point for all sources,
@@ -38,8 +36,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class upload_material_file extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -56,10 +55,12 @@ class upload_material_file extends external_api {
     }
 
     /**
+     * Runs the upload material file tool.
+     *
      * @param string $path
      * @param string $contentbase64
      * @param string $expectedcontenthash
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidmaterialpath, materialfiledisallowedtype,
      *         materialfiletoolarge, materialfilechanged, materialquotaexceeded
      * @throws \invalid_parameter_exception invalid base64
@@ -92,8 +93,8 @@ class upload_material_file extends external_api {
      * Builds the response from {@see material_area::write()} (#539, formerly
      * #523), extracted from execute() to keep functions below 50 lines.
      *
-     * @param array{path: string, created: bool, size: int, oldsize: int, warning: ?string} $written
-     * @return array
+     * @param mixed[] $written Type: array{path:string,created:bool,size:int,oldsize:int,warning:?string}.
+     * @return mixed[]
      */
     private static function build_response(array $written): array {
         $message = $written['created']
@@ -116,6 +117,8 @@ class upload_material_file extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -16,8 +16,6 @@
 
 namespace local_coursepilot;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Masks the personal data in Moodle availability conditions before
  * output to an AI (#341).
@@ -45,8 +43,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class availability_privacy {
-
     /**
+     * Returns masked JSON, or empty string.
+     *
      * @param string $availability Raw Moodle availability JSON.
      * @return string Masked JSON, or empty string.
      */
@@ -63,8 +62,10 @@ class availability_privacy {
     }
 
     /**
-     * @param array $node
-     * @return array
+     * Provides sanitize node.
+     *
+     * @param mixed[] $node
+     * @return mixed[]
      */
     private static function sanitize_node(array $node): array {
         if (!isset($node['c']) || !is_array($node['c'])) {
@@ -75,8 +76,10 @@ class availability_privacy {
     }
 
     /**
-     * @param array $condition
-     * @return array
+     * Provides sanitize condition.
+     *
+     * @param mixed[] $condition
+     * @return mixed[]
      */
     private static function sanitize_condition(array $condition): array {
         if (isset($condition['c']) && is_array($condition['c'])) {

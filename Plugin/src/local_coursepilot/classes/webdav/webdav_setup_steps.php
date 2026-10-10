@@ -40,8 +40,17 @@ final class webdav_setup_steps {
      */
     public const LOCATION_SELECTION_PAGE = '/local/coursepilot/location_selection.php';
 
+    /**
+     * Step repository active.
+     */
     public const STEP_REPOSITORY_ACTIVE = 'repository_active';
+    /**
+     * Step user instances.
+     */
     public const STEP_USER_INSTANCES = 'user_instances';
+    /**
+     * Step capability.
+     */
     public const STEP_CAPABILITY = 'capability';
     /**
      * The three steps, evaluated live for a specific person - each
@@ -62,7 +71,7 @@ final class webdav_setup_steps {
         $repositoryrecord = $DB->get_record('repository', ['type' => self::REPOSITORY_TYPE]);
         $repositoryactive = $repositoryrecord !== false && (int) $repositoryrecord->visible === 1;
         $userinstancesallowed = (bool) get_config(self::REPOSITORY_TYPE, 'enableuserinstances');
-        // $userid > 0 before the context access (issue #505 finding #1): the CLI
+        // Note: $userid > 0 before the context access (issue #505 finding #1): the CLI
         // calls with $USER->id = 0, context_user::instance(0) throws
         // dml_missing_record there. Without a person the capability is "no" anyway.
         $hascapability = $userid > 0 && has_capability(self::CAPABILITY, \context_user::instance($userid));

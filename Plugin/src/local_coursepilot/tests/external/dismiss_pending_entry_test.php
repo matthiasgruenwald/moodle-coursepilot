@@ -31,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(dismiss_pending_entry::class)]
 final class dismiss_pending_entry_test extends \advanced_testcase {
-
     /**
      * Remove an existing entry and confirm it in the response.
      */

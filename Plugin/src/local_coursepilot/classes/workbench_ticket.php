@@ -44,7 +44,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class workbench_ticket {
-
     /** @var string DB table of the issued tickets. */
     public const TABLE = 'local_coursepilot_workbench_ticket';
 

@@ -28,8 +28,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(update_section::class)]
 final class update_section_test extends \advanced_testcase {
-
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -41,10 +42,12 @@ final class update_section_test extends \advanced_testcase {
     }
 
     /**
+     * Updates the update section test.
+     *
      * @param int $courseid
      * @param int $sectionnum
-     * @param array $fields
-     * @return array
+     * @param mixed[] $fields
+     * @return mixed[]
      */
     private function update(int $courseid, int $sectionnum, array $fields): array {
         return external_api::clean_returnvalue(
@@ -134,6 +137,8 @@ final class update_section_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

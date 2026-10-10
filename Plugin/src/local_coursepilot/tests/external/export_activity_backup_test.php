@@ -31,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(export_activity_backup::class)]
 final class export_activity_backup_test extends \advanced_testcase {
-
     public function test_returns_activity_xml(): void {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();

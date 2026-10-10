@@ -64,7 +64,6 @@ require_once($CFG->libdir . '/questionlib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class update_mc_question extends external_api {
-
     /** @var string[] Allowed patch fields - everything else is an error (trust boundary). */
     private const PATCHABLE_FIELDS = [
         'name', 'questiontext', 'selectionmode', 'answers', 'defaultmark', 'generalfeedback',
@@ -76,6 +75,8 @@ final class update_mc_question extends external_api {
     ];
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -103,11 +104,13 @@ final class update_mc_question extends external_api {
     }
 
     /**
+     * Runs the update mc question tool.
+     *
      * @param int $questionid
      * @param string $fieldsjson
      * @param bool $confirmed
      * @param string $location
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $questionid,
@@ -151,8 +154,8 @@ final class update_mc_question extends external_api {
      * same bank entry (the idnumber just assigned matches by construction) -
      * same response format as create_mc_question.
      *
-     * @param array $result
-     * @return array
+     * @param mixed[] $result
+     * @return mixed[]
      */
     private static function build_suspect_response(array $result): array {
         return [
@@ -191,7 +194,8 @@ final class update_mc_question extends external_api {
         if ($question->qtype !== 'multichoice') {
             throw new \invalid_parameter_exception(
                 'update_mc_question only works for multiple-choice questions (qtype "multichoice"); '
-                    . 'this question is "' . $question->qtype . '".');
+                . 'this question is "' . $question->qtype . '".'
+            );
         }
 
         return [$question, $category, $context];
@@ -204,11 +208,8 @@ final class update_mc_question extends external_api {
      *
      * @param \stdClass $question
      * @param \context $context
-     * @param array $params Validated parameters of execute().
-     * @param \stdClass $question
-     * @param \context $context
-     * @param array $params Validierte Parameter von execute().
-     * @return array{0: array, 1: ?int, 2: array<int, int>}
+     * @param mixed[] $params Validated parameters of execute().
+     * @return array{0: mixed[], 1: ?int, 2: array<int, int>}
      */
     private static function apply_field_patch(\stdClass $question, \context $context, array $params): array {
         $patch = self::decode_patch($params['fields_json']);
@@ -243,7 +244,7 @@ final class update_mc_question extends external_api {
      * @param int $categoryid
      * @param \stdClass $entry
      * @param bool $confirmed
-     * @return array{result: array, backfilled: bool, idnumber: string, missingfiles: string[]}
+     * @return array{result: mixed[], backfilled: bool, idnumber: string, missingfiles: string[]}
      */
     private static function persist_new_version(
         \stdClass $question,
@@ -297,11 +298,11 @@ final class update_mc_question extends external_api {
      * builds the success response (issue #523: extracted from execute()).
      * @param \stdClass $entry
      * @param \context $context
-     * @param array{result: array, backfilled: bool, idnumber: string, missingfiles: string[]} $write
+     * @param mixed[] $write Type: array{result:array,backfilled:bool,idnumber:string,missingfiles:string[]}.
      * @param ?int $questiontextdraftitemid
-     * @param array<int, int> $answerfeedbackdraftitemids
+     * @param int[] $answerfeedbackdraftitemids
      * @param \stdClass $question
-     * @return array
+     * @return mixed[]
      */
     private static function build_success_response(
         \stdClass $entry,
@@ -362,7 +363,8 @@ final class update_mc_question extends external_api {
             if (!in_array($fieldname, self::PATCHABLE_FIELDS, true)) {
                 throw new \invalid_parameter_exception(
                     'Unknown field "' . $fieldname . '" in fields_json. Allowed: '
-                        . implode(', ', self::PATCHABLE_FIELDS) . '.');
+                    . implode(', ', self::PATCHABLE_FIELDS) . '.'
+                );
             }
         }
 
@@ -377,7 +379,7 @@ final class update_mc_question extends external_api {
      * unchanged) answers/selection mode state with the same rules as a new
      * creation ({@see create_mc_question::validate_answers()}).
      * @param \stdClass $question Is modified in place.
-     * @param array<string, mixed> $patch
+     * @param mixed[] $patch
      * @return void
      */
     private static function apply_patch(\stdClass $question, array $patch): void {
@@ -438,7 +440,8 @@ final class update_mc_question extends external_api {
         foreach (array_values($answers) as $i => $answer) {
             if (!is_array($answer) || !array_key_exists('answer', $answer) || !array_key_exists('fraction', $answer)) {
                 throw new \invalid_parameter_exception(
-                    'Every answer option in "answers" needs "answer" and "fraction".');
+                    'Every answer option in "answers" needs "answer" and "fraction".'
+                );
             }
             $object = new \stdClass();
             $object->id = -($i + 1);
@@ -461,7 +464,7 @@ final class update_mc_question extends external_api {
      * newly written question_answers rows in this order (see
      * {@see self::embed_images()}).
      *
-     * @param array<string, mixed> $patch
+     * @param mixed[] $patch
      * @return array<int, string[]> Index => list of material folder paths
      */
     private static function extract_answer_feedback_images(array $patch): array {
@@ -493,7 +496,7 @@ final class update_mc_question extends external_api {
      *
      * @param \context $context Category context (target of the file storage).
      * @param string[] $questiontextimages Material folder paths for questiontext.
-     * @param array<int, string[]> $answerfeedbackimages Answer index => material folder paths.
+     * @param mixed[] $answerfeedbackimages Answer index => material folder paths. Type: array<int,string[]>.
      * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
      *        source of the paths (issue #496).
      * @return array{0: int|null, 1: array<int, int>} [draft itemid for questiontext (null without request),
@@ -532,6 +535,8 @@ final class update_mc_question extends external_api {
     }
 
     /**
+     * Asserts allowed embed extensions.
+     *
      * @param string[] $paths
      * @return void
      * @throws moodle_exception materialfiledisallowedtype
@@ -563,7 +568,7 @@ final class update_mc_question extends external_api {
      * @param \context $context
      * @param int $questionid New question.id of the written version.
      * @param int|null $questiontextdraftitemid
-     * @param array<int, int> $answerfeedbackdraftitemids Answer index => draft itemid.
+     * @param int[] $answerfeedbackdraftitemids Answer index => draft itemid.
      * @return void
      */
     private static function embed_images(
@@ -579,7 +584,14 @@ final class update_mc_question extends external_api {
         if ($questiontextdraftitemid !== null) {
             $current = $DB->get_field('question', 'questiontext', ['id' => $questionid], MUST_EXIST);
             $new = file_save_draft_area_files(
-                $questiontextdraftitemid, $context->id, 'question', 'questiontext', $questionid, $fileoptions, $current);
+                $questiontextdraftitemid,
+                $context->id,
+                'question',
+                'questiontext',
+                $questionid,
+                $fileoptions,
+                $current
+            );
             file_clear_draft_area($questiontextdraftitemid);
             $DB->set_field('question', 'questiontext', $new, ['id' => $questionid]);
         }
@@ -590,24 +602,35 @@ final class update_mc_question extends external_api {
                 if (!isset($answers[$index])) {
                     throw new \invalid_parameter_exception(
                         'feedback_images refers to answer option ' . $index . ', but "answers" has only '
-                            . count($answers) . ' entries.');
+                        . count($answers) . ' entries.'
+                    );
                 }
                 $answer = $answers[$index];
                 $new = file_save_draft_area_files(
-                    $draftitemid, $context->id, 'question', 'answerfeedback', (int) $answer->id,
-                    $fileoptions, (string) $answer->feedback);
+                    $draftitemid,
+                    $context->id,
+                    'question',
+                    'answerfeedback',
+                    (int) $answer->id,
+                    $fileoptions,
+                    (string) $answer->feedback
+                );
                 file_clear_draft_area($draftitemid);
                 $DB->set_field('question_answers', 'feedback', $new, ['id' => $answer->id]);
             }
         }
     }
 
-    /** Generates a new, unique idnumber (same scheme as import_questions_xml). */
+    /**
+     * Generates a new, unique idnumber (same scheme as import_questions_xml).
+     */
     private static function generate_idnumber(): string {
         return 'kp-' . bin2hex(random_bytes(8));
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

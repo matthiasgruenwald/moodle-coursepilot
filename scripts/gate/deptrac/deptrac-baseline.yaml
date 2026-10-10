@@ -1,0 +1,30 @@
+# Baseline der bekannten Schichtverstoesse (ADR 0030, Nachtrag 09.10.2026).
+# Darf nur schrumpfen: kein Eintrag ohne Ticket, neue Verstöße blockieren, und ein Eintrag,
+# den der Code nicht mehr braucht, ist selbst rot (Gate: deptrac-baseline-stale).
+# Jeder Eintrag nennt das Folgeticket, das ihn auflöst; Ziel ist eine leere Baseline.
+deptrac:
+  skip_violations:
+    # Adapter nutzt Fachlogik (Ausstandsnotiz-Übersetzung) -> #693
+    local_coursepilot\webdav_storage_port:
+      - local_coursepilot\pending_write_translation
+    # get_module_settings aus vier Werkzeugen -> #696
+    local_coursepilot\external\create_module:
+      - local_coursepilot\external\get_module_settings
+    local_coursepilot\external\set_completion:
+      - local_coursepilot\external\get_module_settings
+    local_coursepilot\external\set_restriction:
+      - local_coursepilot\external\get_module_settings
+    local_coursepilot\external\update_module_settings:
+      - local_coursepilot\external\get_module_settings
+    # MC-Fragen: update_mc_question und create_mc_question rufen Werkzeuge -> #697
+    local_coursepilot\external\create_mc_question:
+      - local_coursepilot\external\import_questions_xml
+    local_coursepilot\external\update_mc_question:
+      - local_coursepilot\external\create_mc_question
+      - local_coursepilot\external\export_questions_xml
+      - local_coursepilot\external\import_questions_xml
+    # Wiederherstellen ruft drei Werkzeuge -> #700
+    local_coursepilot\external\restore_activity_version:
+      - local_coursepilot\external\get_module_settings
+      - local_coursepilot\external\set_completion
+      - local_coursepilot\external\update_module_settings

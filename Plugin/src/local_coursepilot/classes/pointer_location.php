@@ -28,23 +28,38 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class pointer_location {
-
     /** @var string Target is in Moodle Private Files. */
     public const MOODLE = 'moodle';
 
     /** @var string Target is in a WebDAV user instance. */
     public const EXTERNAL = 'external';
 
+    /**
+     * Creates the pointer location.
+     *
+     * @param string $kind The kind.
+     * @param ?string $path The path.
+     * @param ?int $instanceid The instanceid.
+     * @param ?string $relativepath The relativepath.
+     * @param ?array $fingerprint The fingerprint.
+     */
     private function __construct(
+        /** @var string The kind. */
         public readonly string $kind,
+        /** @var ?string The path. */
         public readonly ?string $path = null,
+        /** @var ?int The instanceid. */
         public readonly ?int $instanceid = null,
+        /** @var ?string The relativepath. */
         public readonly ?string $relativepath = null,
+        /** @var ?array The fingerprint. */
         public readonly ?array $fingerprint = null,
     ) {
     }
 
     /**
+     * Creates the moodle pointer location.
+     *
      * @param string $path Always with leading and trailing slashes.
      * @return self
      */
@@ -53,9 +68,11 @@ final class pointer_location {
     }
 
     /**
+     * Creates the external pointer location.
+     *
      * @param int $instanceid WebDAV user instance repository_instances.id.
      * @param string $relativepath Selected folder relative to the instance base path.
-     * @param array{server: string, basepath: string, account: string} $fingerprint
+     * @param mixed[] $fingerprint Type: array{server:string,basepath:string,account:string}.
      *        Server/base path/account at selection time (Spec §2).
      * @return self
      */
@@ -89,6 +106,8 @@ final class pointer_location {
     }
 
     /**
+     * Provides normalised path.
+     *
      * @param string $base
      * @param string $subpath
      * @return string Always with leading and trailing slashes; root is "/".

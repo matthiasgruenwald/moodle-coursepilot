@@ -28,7 +28,6 @@ use core_external\external_api;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(move_question::class)]
 final class move_question_test extends \advanced_testcase {
-
     /**
      * All versions of the question move along, questionbankentryid
      * stays unchanged.
@@ -221,6 +220,8 @@ final class move_question_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

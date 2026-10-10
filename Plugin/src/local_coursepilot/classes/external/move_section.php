@@ -23,8 +23,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Write core 13 (Spec 0015 phase 3, ticket #391): moves a section
  * to another position in the course.
@@ -47,8 +45,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class move_section extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -60,10 +59,12 @@ final class move_section extends external_api {
     }
 
     /**
+     * Runs the move section tool.
+     *
      * @param int $courseid
      * @param int $sourcesectionnum
      * @param int $targetsectionnum
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception sectionnotmovable|sectiontargetoutofrange
      */
     public static function execute(int $courseid, int $sourcesectionnum, int $targetsectionnum): array {
@@ -133,6 +134,8 @@ final class move_section extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -30,7 +30,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(activity_drift::class)]
 final class activity_drift_test extends \advanced_testcase {
-
     /**
      * Passing catalog on the current test instance yields result::OK.
      */

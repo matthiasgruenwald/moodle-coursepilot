@@ -28,11 +28,12 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class remote_access {
-
     /** @var string Capability for the role-based grant. */
     public const CAPABILITY = 'local/coursepilot:useremote';
 
     /**
+     * Tells whether the remote access is granted.
+     *
      * @param int|null $userid Defaults to the current user.
      * @return bool
      */
@@ -114,6 +115,8 @@ final class remote_access {
     }
 
     /**
+     * Provides selected cohort ids.
+     *
      * @return int[]
      */
     private static function selected_cohort_ids(): array {

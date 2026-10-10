@@ -33,7 +33,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(external_schema_converter::class)]
 #[CoversClass(\local_coursepilot\tool_registry::class)]
 final class tool_schema_contract_test extends \advanced_testcase {
-
     public function test_tool_registration_contains_no_literal_descriptions_or_schema(): void {
         $registry = new \ReflectionClass(tool_registry::class);
         $tools = $registry->getReflectionConstant('TOOLS')->getValue();
@@ -100,7 +99,9 @@ final class tool_schema_contract_test extends \advanced_testcase {
         }
     }
 
-    /** Moodle passes validated named inputs positionally, in declaration order. */
+    /**
+     * Moodle passes validated named inputs positionally, in declaration order.
+     */
     public function test_registered_external_parameters_match_execute_positions(): void {
         foreach (tool_registry::service_function_names() as $name) {
             $function = \core_external\external_api::external_function_info($name);
@@ -111,8 +112,11 @@ final class tool_schema_contract_test extends \advanced_testcase {
             foreach (array_values($declarations) as $position => $declaration) {
                 $key = array_keys($declarations)[$position];
                 $argument = $arguments[$position];
-                $this->assertSame(str_replace('_', '', $key), str_replace('_', '', strtolower($argument->getName())),
-                    "{$name}: parameter {$key} does not match execute position {$position}");
+                $this->assertSame(
+                    str_replace('_', '', $key),
+                    str_replace('_', '', strtolower($argument->getName())),
+                    "{$name}: parameter {$key} does not match execute position {$position}"
+                );
                 if ($declaration->required === VALUE_DEFAULT && $argument->isDefaultValueAvailable()) {
                     $this->assertSame($declaration->default, $argument->getDefaultValue(), "{$name}: {$key} default");
                 }
@@ -157,9 +161,12 @@ final class tool_schema_contract_test extends \advanced_testcase {
         }
     }
 
-    /** The published input and output descriptions must use English (#605). */
+    /**
+     * The published input and output descriptions must use English (#605).
+     */
     public function test_every_public_contract_description_is_english(): void {
-        $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
+        $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|'
+            . 'ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
         foreach (tool_registry::descriptions() as $name => $description) {
             $this->assertDoesNotMatchRegularExpression($forbidden, $description, $name);
         }
@@ -173,25 +180,44 @@ final class tool_schema_contract_test extends \advanced_testcase {
         $this->assertDoesNotMatchRegularExpression($forbidden, dispatcher::HANDSHAKE_INSTRUCTIONS);
     }
 
-    /** Field catalog descriptions also reach the model as tool result data (#605). */
+    /**
+     * Field catalog descriptions also reach the model as tool result data (#605).
+     */
     public function test_every_catalog_description_is_english(): void {
-        $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
+        $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|'
+            . 'ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
         foreach (\local_coursepilot\catalog\registry::known_modnames() as $modname) {
             $catalog = \local_coursepilot\catalog\registry::for($modname);
-            $fields = array_merge($catalog::fields(), $catalog::pseudofields(),
-                \local_coursepilot\catalog\shared_block::fields(), \local_coursepilot\catalog\shared_block::pseudofields());
+            $fields = array_merge(
+                $catalog::fields(),
+                $catalog::pseudofields(),
+                \local_coursepilot\catalog\shared_block::fields(),
+                \local_coursepilot\catalog\shared_block::pseudofields()
+            );
             foreach ($fields as $field) {
                 foreach ([$field->type, $field->meaning, $field->source] as $text) {
                     $this->assertDoesNotMatchRegularExpression($forbidden, $text, "{$modname}: {$field->name}");
                 }
             }
-            foreach (array_merge($catalog::combination_rules(), $catalog::side_effects(),
-                    \local_coursepilot\catalog\shared_block::side_effects()) as $text) {
+            foreach (
+                array_merge(
+                    $catalog::combination_rules(),
+                    $catalog::side_effects(),
+                    \local_coursepilot\catalog\shared_block::side_effects()
+                ) as $text
+            ) {
                 $this->assertDoesNotMatchRegularExpression($forbidden, $text, $modname);
             }
         }
     }
 
+    /**
+     * Asserts english schema descriptions.
+     *
+     * @param mixed[] $schema The schema.
+     * @param string $forbidden The forbidden.
+     * @param string $name The name.
+     */
     private function assert_english_schema_descriptions(array $schema, string $forbidden, string $name): void {
         foreach ($schema as $key => $value) {
             if ($key === 'description') {
@@ -202,6 +228,13 @@ final class tool_schema_contract_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Asserts english return descriptions.
+     *
+     * @param external_description $description The description.
+     * @param string $forbidden The forbidden.
+     * @param string $name The name.
+     */
     private function assert_english_return_descriptions(external_description $description, string $forbidden, string $name): void {
         $this->assertDoesNotMatchRegularExpression($forbidden, $description->desc, $name);
         if ($description instanceof external_single_structure) {
@@ -227,6 +260,9 @@ final class tool_schema_contract_test extends \advanced_testcase {
     }
 
     /**
+     * Provides structure keys.
+     *
+     * @param external_description $structure The structure.
      * @return string[]
      */
     private static function structure_keys(external_description $structure): array {
@@ -241,14 +277,22 @@ final class tool_schema_contract_test extends \advanced_testcase {
             $keys[] = $key;
             if ($description instanceof external_single_structure) {
                 $keys = array_merge($keys, self::structure_keys($description));
-            } else if ($description instanceof external_multiple_structure
-                && $description->content instanceof external_single_structure) {
+            } else if (
+                $description instanceof external_multiple_structure
+                && $description->content instanceof external_single_structure
+            ) {
                 $keys = array_merge($keys, self::structure_keys($description->content));
             }
         }
         return $keys;
     }
 
+    /**
+     * Provides tool name for.
+     *
+     * @param string $classname The classname.
+     * @return string
+     */
     private function tool_name_for(string $classname): string {
         foreach (tool_registry::service_functions() as $name => $tool) {
             if ($tool['classname'] === $classname) {

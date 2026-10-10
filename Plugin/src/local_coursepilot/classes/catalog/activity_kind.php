@@ -33,13 +33,18 @@ final class activity_kind {
     public const EXCLUDED = 'excluded';
 
     /**
+     * Creates the activity kind.
+     *
      * @param string $kind One of the constants.
      * @param string|null $catalog Catalog class, only for CATALOGUED.
      * @param string|null $reasonkey Language string key (local_coursepilot), only for EXCLUDED.
      */
     public function __construct(
+        /** @var string One of the constants. */
         public readonly string $kind,
+        /** @var ?string Catalog class, only for CATALOGUED. */
         public readonly ?string $catalog = null,
+        /** @var ?string Language string key (local_coursepilot), only for EXCLUDED. */
         public readonly ?string $reasonkey = null
     ) {
     }

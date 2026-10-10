@@ -30,8 +30,9 @@ use local_coursepilot\personal_data_hosts;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class connection_storage_location {
-
     /**
+     * Describes the connection storage location.
+     *
      * @param int $userid
      * @return array{targets: array<string, string>, markers: string[]}
      *         targets: completed display line per target (e.g. "Context area: external: cloud.example.test").
@@ -48,7 +49,11 @@ final class connection_storage_location {
             $targets[$target] = get_string('storagelocationtarget' . str_replace('_', '', $target), 'local_coursepilot')
                 . ': ' . self::state_label($state);
 
-            if ($state['state'] === pointer_scan::STATE_EXTERNAL && $state['host'] !== null && !personal_data_hosts::allowed($state['host'])) {
+            if (
+                $state['state'] === pointer_scan::STATE_EXTERNAL
+                && $state['host'] !== null
+                && !personal_data_hosts::allowed($state['host'])
+            ) {
                 $hostblocked = true;
             }
             if ($state['defect'] !== null) {
@@ -74,7 +79,9 @@ final class connection_storage_location {
     }
 
     /**
-     * @param array{state: string, host: ?string, defect: ?string} $state
+     * Provides state label.
+     *
+     * @param mixed[] $state Type: array{state:string,host:?string,defect:?string}.
      * @return string
      */
     private static function state_label(array $state): string {
@@ -87,6 +94,8 @@ final class connection_storage_location {
     }
 
     /**
+     * Provides defect label.
+     *
      * @param string $defect One of the pointer_scan DEFECT_* values.
      * @return string
      */

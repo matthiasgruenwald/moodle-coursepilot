@@ -31,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(report_loose_material_files::class)]
 final class report_loose_material_files_test extends \advanced_testcase {
-
     public function test_lists_unused_file_as_loose(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
@@ -141,6 +140,12 @@ final class report_loose_material_files_test extends \advanced_testcase {
         $this->assertNotNull($result['remaining_quota_mb']);
     }
 
+    /**
+     * Stores material file.
+     *
+     * @param string $filename The filename.
+     * @param string $content The content.
+     */
     private function store_material_file(string $filename, string $content): void {
         get_file_storage()->create_file_from_string([
             'contextid' => material_files::own_context()->id,

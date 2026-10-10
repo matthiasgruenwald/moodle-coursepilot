@@ -1,0 +1,7 @@
+2026-10-01T10:00:00.000Z	phpstan	Plugin/src/local_coursepilot/classes/a.php	fail
+2026-10-01T10:00:00.000Z	phpstan	Plugin/src/local_coursepilot/classes/a.php	fail
+2026-10-01T10:00:00.000Z	moodle-cs-error	Plugin/src/local_coursepilot/classes/a.php	fail
+2026-10-01T10:00:00.000Z	moodle-cs-error	Plugin/src/local_coursepilot/classes/b.php	fail
+2026-10-01T10:00:00.000Z	covers	-	ok
+2026-10-02T10:00:00.000Z	phpstan	Plugin/src/local_coursepilot/classes/b.php	fail
+2026-10-02T10:00:00.000Z	mustache	-	abort

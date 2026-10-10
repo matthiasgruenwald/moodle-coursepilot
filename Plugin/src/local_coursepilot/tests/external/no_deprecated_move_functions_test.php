@@ -34,7 +34,6 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  */
 #[CoversNothing]
 final class no_deprecated_move_functions_test extends \advanced_testcase {
-
     /** @var string[] Function names that ticket #391 names as deprecated in 5.2. */
     private const FORBIDDEN_FUNCTIONS = [
         'move_section_to',

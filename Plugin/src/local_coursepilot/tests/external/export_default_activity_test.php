@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
-
 namespace local_coursepilot\external;
 
 use core_external\external_api;
@@ -33,8 +32,11 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(export_default_activity::class)]
 final class export_default_activity_test extends \advanced_testcase {
-
-    /** @return array{0: \stdClass, 1: \stdClass} course and teacher (logged in) */
+    /**
+     * Sets up teacher.
+     *
+     * @return array{0: \stdClass, 1: \stdClass} course and teacher (logged in)
+     */
     private function setup_teacher(): array {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
@@ -44,7 +46,12 @@ final class export_default_activity_test extends \advanced_testcase {
         return [$course, $teacher];
     }
 
-    /** Everything a leftover activity could touch. */
+    /**
+     * Everything a leftover activity could touch.
+     *
+     * @param int $courseid The courseid.
+     * @return mixed[]
+     */
     private function footprint(int $courseid): array {
         global $DB;
         return [
@@ -156,7 +163,12 @@ final class export_default_activity_test extends \advanced_testcase {
                 stream_set_blocking($pipes[2], false);
                 $this->fail('Export barrier: ' . stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]));
             }
-            $own = $DB->get_record('course_modules', ['course' => $course->id, 'module' => $DB->get_field('modules', 'id', ['name' => 'book'])], '*', MUST_EXIST);
+            $own = $DB->get_record(
+                'course_modules',
+                ['course' => $course->id, 'module' => $DB->get_field('modules', 'id', ['name' => 'book'])],
+                '*',
+                MUST_EXIST
+            );
             $this->assertSame(0, (int) $own->visible);
             $this->assertSame(0, (int) $own->visibleoncoursepage);
             // Spec 0028 story 33 protects learners; teachers retain native hidden-activity access.
@@ -226,10 +238,14 @@ final class export_default_activity_test extends \advanced_testcase {
         $sink = $this->redirectEvents();
         $result = export_default_activity::execute($course->id, 'book');
         $events = $sink->get_events();
-        $created = array_values(array_filter($events,
-            fn($event) => $event instanceof \core\event\course_module_created));
-        $deleted = array_values(array_filter($events,
-            fn($event) => $event instanceof \core\event\course_module_deleted));
+        $created = array_values(array_filter(
+            $events,
+            fn($event) => $event instanceof \core\event\course_module_created
+        ));
+        $deleted = array_values(array_filter(
+            $events,
+            fn($event) => $event instanceof \core\event\course_module_deleted
+        ));
         $this->assertStringContainsString('<book id=', $result['xml']);
         $this->assertCount(1, $created);
         $this->assertCount(1, $deleted);

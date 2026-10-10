@@ -29,7 +29,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class personal_data_hosts {
-
     /**
      * Whether a resolved WebDAV host is approved: an exact configured domain
      * or one of its subdomains ({@see \local_coursepilot\webdav\webdav_instance::resolve()}).
@@ -61,13 +60,17 @@ final class personal_data_hosts {
      * @throws \moodle_exception contextfilehostnotallowed
      */
     public static function require_allowed_location(?pointer_location $location, string $path): void {
-        if ($location !== null && $location->kind === pointer_location::EXTERNAL
-                && !self::allowed((string) ($location->fingerprint['server'] ?? ''))) {
+        if (
+            $location !== null && $location->kind === pointer_location::EXTERNAL
+                && !self::allowed((string) ($location->fingerprint['server'] ?? ''))
+        ) {
             throw new \moodle_exception('contextfilehostnotallowed', 'local_coursepilot', '', $path);
         }
     }
 
     /**
+     * Returns configured domains, lowercased, with empty lines removed.
+     *
      * @return string[] Configured domains, lowercased, with empty lines removed.
      */
     public static function configured(): array {
@@ -91,6 +94,8 @@ final class personal_data_hosts {
     }
 
     /**
+     * Parses the personal data hosts.
+     *
      * @param string $raw
      * @return string[]
      */
@@ -106,6 +111,8 @@ final class personal_data_hosts {
     }
 
     /**
+     * Normalises the personal data hosts.
+     *
      * @param string $value
      * @return string
      */

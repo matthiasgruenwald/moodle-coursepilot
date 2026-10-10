@@ -61,7 +61,7 @@ if ($cmid) {
 
 require_login($course, true, $cmid ? $cm : null);
 $coursecontext = context_course::instance($course->id);
-// local/coursepilot:viewhistory uses CONTEXT_COURSE (db/access.php),
+// Note: local/coursepilot:viewhistory uses CONTEXT_COURSE (db/access.php),
 // so check the course context even in cmid mode.
 require_capability('local/coursepilot:viewhistory', $coursecontext);
 
@@ -123,7 +123,6 @@ if ($cmid && $restoreversion) {
             new moodle_url('/local/coursepilot/history.php', [
                 'cmid' => $cmid,
                 'restore' => $restoreversion,
-                'confirmed' => 1,
                 'confirmed' => 1,
                 'sesskey' => sesskey(),
             ]),

@@ -24,8 +24,6 @@ use local_coursepilot\pending_write_notice;
 use local_coursepilot\context_area;
 use local_coursepilot\context_files;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Creates a file in the calling teacher's context area or overwrites it
  * completely (Issue #408, Spec 0016 §4.1).
@@ -49,8 +47,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class write_context_file extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -88,13 +87,15 @@ class write_context_file extends external_api {
     }
 
     /**
+     * Runs the write context file tool.
+     *
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash
      * @param string $pendingentry
      * @param bool $createonly
      * @param int $courseid
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
      *         contextfiletoolarge, contextfilelocked, contextfilechanged,
      *         contextfilealreadyexists, contextquotaexceeded
@@ -139,8 +140,8 @@ class write_context_file extends external_api {
      * Builds the teacher-facing change message from the location-independent
      * result of {@see context_area::write()}.
      *
-     * @param array{path: string, created: bool, size: int, oldsize: int} $result
-     * @return array
+     * @param mixed[] $result Type: array{path:string,created:bool,size:int,oldsize:int}.
+     * @return mixed[]
      */
     private static function build_response(array $result): array {
         $message = $result['created']
@@ -160,6 +161,8 @@ class write_context_file extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

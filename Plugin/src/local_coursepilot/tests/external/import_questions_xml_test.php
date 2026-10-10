@@ -229,8 +229,11 @@ final class import_questions_xml_test extends \advanced_testcase {
         [, $categoryid] = $this->setup_course_and_category();
         $this->place_material_file('diagramm.png', self::PNG_BYTES);
 
-        $xml = str_replace('material="diagramm.png"', "material='diagramm.png'",
-            self::multichoice_xml_with_material_file('Frage mit Bild', 'Fragetext', 'Feedback'));
+        $xml = str_replace(
+            'material="diagramm.png"',
+            "material='diagramm.png'",
+            self::multichoice_xml_with_material_file('Frage mit Bild', 'Fragetext', 'Feedback')
+        );
 
         $result = import_questions_xml::execute($categoryid, $xml);
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
@@ -272,7 +275,9 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         [, $categoryid] = $this->setup_course_and_category();
         $this->place_material_file('export.xml', self::multichoice_xml_with_embedded_base64(
-            'Frage aus Verweistuer', 'Fragetext', 'Feedback'
+            'Frage aus Verweistuer',
+            'Fragetext',
+            'Feedback'
         ));
 
         $result = import_questions_xml::execute($categoryid, '', false, 'export.xml');
@@ -312,7 +317,9 @@ final class import_questions_xml_test extends \advanced_testcase {
         [, $categoryid, $teacher] = $this->setup_course_and_category();
         $fake = $this->set_up_external_material_for($teacher);
         $fake->seed_file('/Coursepilot/Material/export.xml', self::multichoice_xml_with_embedded_base64(
-            'Frage aus Verweistuer (Bestand)', 'Fragetext', 'Feedback'
+            'Frage aus Verweistuer (Bestand)',
+            'Fragetext',
+            'Feedback'
         ));
 
         $result = import_questions_xml::execute($categoryid, '', false, 'export.xml');
@@ -333,11 +340,18 @@ final class import_questions_xml_test extends \advanced_testcase {
         $fake = $this->set_up_external_material_for($teacher);
         $fake->seed_file('/Coursepilot/Material/export.xml', 'nicht das, was gelesen werden soll');
         $this->place_material_file('export.xml', self::multichoice_xml_with_embedded_base64(
-            'Frage aus der Werkbank', 'Fragetext', 'Feedback'
+            'Frage aus der Werkbank',
+            'Fragetext',
+            'Feedback'
         ));
 
         $result = import_questions_xml::execute(
-            $categoryid, '', false, 'export.xml', material_files::LOCATION_WORKBENCH);
+            $categoryid,
+            '',
+            false,
+            'export.xml',
+            material_files::LOCATION_WORKBENCH
+        );
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
 
         $this->assertSame('first_import', $result['questions'][0]['status']);
@@ -696,6 +710,7 @@ XML;
      * @return string
      */
     private static function calculated_xml_with_dataset_definitions(): string {
+        // phpcs:disable moodle.Files.LineLength -- Embedded Moodle XML fixture, wrapping would change the data.
         return <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
 <quiz>
@@ -734,6 +749,7 @@ XML;
   </question>
 </quiz>
 XML;
+        // phpcs:enable moodle.Files.LineLength
     }
 
     /**

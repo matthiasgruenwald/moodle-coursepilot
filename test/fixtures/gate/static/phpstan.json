@@ -1,0 +1,25 @@
+{
+ "totals": {
+  "errors": 0,
+  "file_errors": 2
+ },
+ "files": {
+  "/var/www/html/public/local/coursepilot/admin/connections.php": {
+   "errors": 2,
+   "messages": [
+    {
+     "message": "Variable $PAGE might not be defined.",
+     "line": 39,
+     "ignorable": true,
+     "identifier": "variable.undefined"
+    },
+    {
+     "message": "Variable $PAGE might not be defined.",
+     "line": 40,
+     "ignorable": true,
+     "identifier": "variable.undefined"
+    }
+   ]
+  }
+ }
+}

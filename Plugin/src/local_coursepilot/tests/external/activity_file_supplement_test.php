@@ -8,11 +8,11 @@
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
 //
 // You should have received a copy of the GNU Affero General Public License
-// along with Coursepilot. If not, see <https://www.gnu.org/licenses/>.
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
 
@@ -49,8 +49,14 @@ final class activity_file_supplement_test extends \advanced_testcase {
         $context = \context_module::instance($cm->id);
         $gallery = $DB->get_record('lightboxgallery', ['id' => $cm->instance], '*', MUST_EXIST);
         $fs = get_file_storage();
-        $files = array_values($fs->get_area_files($context->id, 'mod_lightboxgallery', 'gallery_images', 0,
-            'filename', false));
+        $files = array_values($fs->get_area_files(
+            $context->id,
+            'mod_lightboxgallery',
+            'gallery_images',
+            0,
+            'filename',
+            false
+        ));
         $this->assertCount(3, $files);
         // Inspect thumbnails before constructing display objects: creation must already have generated them.
         $thumbs = $fs->get_area_files($context->id, 'mod_lightboxgallery', 'gallery_thumbs', 0, 'filename', false);
@@ -73,6 +79,11 @@ final class activity_file_supplement_test extends \advanced_testcase {
         $this->assertStringContainsString('<description>Scene 0</description>', activity_backup::export($record));
     }
 
+    /**
+     * Provides gallery fixture.
+     *
+     * @return mixed[]
+     */
     private function gallery_fixture(): array {
         if (!\core_plugin_manager::instance()->get_plugin_info('mod_lightboxgallery')) {
             $this->markTestSkipped('Requires real mod_lightboxgallery; run the isolated optional-plugin suite.');
@@ -82,8 +93,10 @@ final class activity_file_supplement_test extends \advanced_testcase {
         $teacher = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
         $this->setUser($teacher);
-        $gallery = $this->getDataGenerator()->create_module('lightboxgallery',
-            ['course' => $course->id, 'captionfull' => 1, 'captionpos' => 0]);
+        $gallery = $this->getDataGenerator()->create_module(
+            'lightboxgallery',
+            ['course' => $course->id, 'captionfull' => 1, 'captionpos' => 0]
+        );
         $cm = get_coursemodule_from_id('lightboxgallery', $gallery->cmid, $course->id, false, MUST_EXIST);
         return [$course, activity_backup::export($cm)];
     }
@@ -104,11 +117,18 @@ final class activity_file_supplement_test extends \advanced_testcase {
         $this->assertEquals($before, $this->durable_state());
     }
 
+    /**
+     * Provides durable state.
+     *
+     * @return mixed[]
+     */
     private function durable_state(): array {
         global $DB;
         $state = [];
-        foreach (['course_modules', 'course_sections', 'lightboxgallery', 'lightboxgallery_image_meta',
-                'lightboxgallery_comments', 'files', 'local_coursepilot_cm_version', 'tool_recyclebin_course'] as $table) {
+        foreach (
+            ['course_modules', 'course_sections', 'lightboxgallery', 'lightboxgallery_image_meta',
+                'lightboxgallery_comments', 'files', 'local_coursepilot_cm_version', 'tool_recyclebin_course'] as $table
+        ) {
             $state[$table] = $DB->get_records($table, null, 'id');
         }
         // Native restore/deletion may update section bookkeeping timestamps, like access logs.
@@ -122,8 +142,10 @@ final class activity_file_supplement_test extends \advanced_testcase {
         global $DB;
         [$course, $xml] = $this->gallery_fixture();
         $DB->delete_records('modules', ['name' => 'lightboxgallery']);
-        $this->assertSame(\local_coursepilot\catalog\activity_kind::EXCLUDED,
-            \local_coursepilot\catalog\registry::kind('lightboxgallery')->kind);
+        $this->assertSame(
+            \local_coursepilot\catalog\activity_kind::EXCLUDED,
+            \local_coursepilot\catalog\registry::kind('lightboxgallery')->kind
+        );
         $before = $this->durable_state();
         $response = $this->call_response($course->id, $xml, []);
         $this->assertTrue($response['error']);
@@ -134,18 +156,22 @@ final class activity_file_supplement_test extends \advanced_testcase {
     public function test_invalid_area_duplicate_filename_and_non_image_leave_no_activity(): void {
         [$course, $xml] = $this->gallery_fixture();
         $this->material_image('image.png');
-        material_files::replace(null,
+        material_files::replace(
+            null,
             material_files::filerecord(material_files::own_context()->id, '/coursepilot-material/', 'invalid.png'),
-            'This is not an image');
+            'This is not an image'
+        );
         $before = $this->durable_state();
-        foreach ([
+        foreach (
+            [
             'activityfileinvalidarea' => [['path' => 'image.png', 'filearea' => 'gallery_thumbs']],
             'activityfileduplicate' => [
                 ['path' => 'image.png', 'filearea' => 'gallery_images'],
                 ['path' => 'other/image.png', 'filearea' => 'gallery_images'],
             ],
             'activityfileinvalidimage' => [['path' => 'invalid.png', 'filearea' => 'gallery_images']],
-        ] as $code => $entries) {
+            ] as $code => $entries
+        ) {
             $response = $this->call_response($course->id, $xml, $entries);
             $this->assertTrue($response['error']);
             $this->assertSame($code, $response['exception']->errorcode);
@@ -160,8 +186,11 @@ final class activity_file_supplement_test extends \advanced_testcase {
         $roleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
         assign_capability('mod/lightboxgallery:addimage', CAP_PROHIBIT, $roleid, \context_course::instance($course->id));
         $before = $this->durable_state();
-        $response = $this->call_response($course->id, $xml,
-            [['path' => 'image.png', 'filearea' => 'gallery_images']]);
+        $response = $this->call_response(
+            $course->id,
+            $xml,
+            [['path' => 'image.png', 'filearea' => 'gallery_images']]
+        );
         $this->assertTrue($response['error']);
         $this->assertSame('nopermissions', $response['exception']->errorcode);
         $this->assertEquals($before, $this->durable_state());
@@ -182,8 +211,12 @@ final class activity_file_supplement_test extends \advanced_testcase {
         ];
         foreach ($cases as $code => [$entries, $prohibit]) {
             if ($prohibit) {
-                assign_capability('mod/lightboxgallery:addimage', CAP_PROHIBIT, $roleid,
-                    \context_course::instance($course->id));
+                assign_capability(
+                    'mod/lightboxgallery:addimage',
+                    CAP_PROHIBIT,
+                    $roleid,
+                    \context_course::instance($course->id)
+                );
             }
             $sink = $this->redirectEvents();
             $response = $this->call_response($course->id, $xml, $entries);
@@ -199,8 +232,12 @@ final class activity_file_supplement_test extends \advanced_testcase {
         global $DB;
         [$course, $xml] = $this->gallery_fixture();
         $this->material_image('image.png');
-        $result = $this->call_response($course->id, $xml,
-            [['path' => 'image.png', 'filearea' => 'gallery_images', 'location' => 'workbench']], ['hidden' => true]);
+        $result = $this->call_response(
+            $course->id,
+            $xml,
+            [['path' => 'image.png', 'filearea' => 'gallery_images', 'location' => 'workbench']],
+            ['hidden' => true]
+        );
         $this->assertFalse($result['error'], json_encode($result));
         $cm = get_fast_modinfo($course->id)->get_cm($result['data']['cmid']);
         $this->assertFalse((bool) $cm->visible);
@@ -209,22 +246,49 @@ final class activity_file_supplement_test extends \advanced_testcase {
         $this->assertTrue((bool) get_fast_modinfo($course->id)->get_cm($empty['cmid'])->visible);
     }
 
+    /**
+     * Provides material image.
+     *
+     * @param string $filename The filename.
+     * @param int $width The width.
+     * @param int $height The height.
+     */
     private function material_image(string $filename, int $width = 360, int $height = 120): void {
         $image = imagecreatetruecolor($width, $height);
         ob_start();
         imagepng($image);
         $content = ob_get_clean();
         imagedestroy($image);
-        material_files::replace(null,
-            material_files::filerecord(material_files::own_context()->id, '/coursepilot-material/', $filename), $content);
+        material_files::replace(
+            null,
+            material_files::filerecord(material_files::own_context()->id, '/coursepilot-material/', $filename),
+            $content
+        );
     }
 
+    /**
+     * Calls create.
+     *
+     * @param int $courseid The courseid.
+     * @param string $xml The xml.
+     * @param mixed[] $files The files.
+     * @return mixed[]
+     */
     private function call_create(int $courseid, string $xml, array $files): array {
         $response = $this->call_response($courseid, $xml, $files);
         $this->assertFalse($response['error'], json_encode($response));
         return $response['data'];
     }
 
+    /**
+     * Calls response.
+     *
+     * @param int $courseid The courseid.
+     * @param string $xml The xml.
+     * @param mixed[] $files The files.
+     * @param mixed[] $extra The extra.
+     * @return mixed[]
+     */
     private function call_response(int $courseid, string $xml, array $files, array $extra = []): array {
         $_POST['sesskey'] = sesskey();
         $response = external_api::call_external_function('local_coursepilot_create_activity_from_xml', [

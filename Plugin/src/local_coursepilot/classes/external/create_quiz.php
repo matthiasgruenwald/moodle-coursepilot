@@ -29,8 +29,6 @@ use local_coursepilot\catalog\write_target;
 use local_coursepilot\write_gate;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Quiz counterpart to {@see create_module} (Spec 0015 §5, #398): quiz is
  * a justified exception to the generic tool, but its catalog (#383)
@@ -49,8 +47,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class create_quiz extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -83,13 +82,15 @@ final class create_quiz extends external_api {
     }
 
     /**
+     * Runs the create quiz tool.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string $fieldsjson
      * @param string $mode
      * @param float $grade
      * @param string[] $confirmlearnerlocks
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $courseid,
@@ -203,16 +204,22 @@ final class create_quiz extends external_api {
      * grade (always set, never from fields_json), and side effects. Same
      * principle as {@see create_module::report_and_side_effects()}.
      *
-     * @param array $merged
+     * @param mixed[] $merged
      * @param float $grade
-     * @return array{0: array, 1: string[]}
+     * @return array{0: mixed[], 1: string[]}
      */
     private static function report_and_side_effects(array $merged, float $grade): array {
         $createdfields = [];
         foreach ($merged as $fieldname => $value) {
-            $createdfields[] = ['field' => $fieldname, 'value_json' => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+            $createdfields[] = [
+                'field' => $fieldname,
+                'value_json' => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ];
         }
-        $createdfields[] = ['field' => 'grade', 'value_json' => json_encode($grade, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+        $createdfields[] = [
+            'field' => 'grade',
+            'value_json' => json_encode($grade, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        ];
 
         $sideeffects = [];
         if ((int) ($merged['timeopen'] ?? 0) > 0 || (int) ($merged['timeclose'] ?? 0) > 0) {
@@ -225,7 +232,7 @@ final class create_quiz extends external_api {
     /**
      * Teacher-facing creation message (Spec 0015 §3.4/§5).
      *
-     * @param array $createdfields
+     * @param mixed[] $createdfields
      * @param string[] $sideeffects
      * @return string
      */
@@ -244,6 +251,8 @@ final class create_quiz extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

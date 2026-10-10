@@ -56,8 +56,9 @@ require_once($CFG->libdir . '/questionlib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class add_questions_to_quiz extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -71,9 +72,11 @@ final class add_questions_to_quiz extends external_api {
     }
 
     /**
+     * Runs the add questions to quiz tool.
+     *
      * @param int $cmid
-     * @param array $questionids
-     * @return array
+     * @param mixed[] $questionids
+     * @return mixed[]
      */
     public static function execute(int $cmid, array $questionids): array {
         global $DB, $USER;
@@ -109,7 +112,7 @@ final class add_questions_to_quiz extends external_api {
             $question = $DB->get_record('question', ['id' => (int) $questionid], '*', MUST_EXIST);
             question_require_capability_on($question, 'use');
 
-            // quiz_add_quiz_question() returns an explicit false ONLY in the
+            // Note: quiz_add_quiz_question() returns an explicit false ONLY in the
             // duplicate case - on success the function falls through without
             // "return" (PHP then yields null, not true). "!== false"
             // is therefore the correct success check, not truthiness.
@@ -141,7 +144,7 @@ final class add_questions_to_quiz extends external_api {
     /**
      * The teacher-facing message: what was appended, what was skipped.
      *
-     * @param array $appended
+     * @param mixed[] $appended
      * @return string
      */
     private static function build_message(array $appended): string {
@@ -172,7 +175,7 @@ final class add_questions_to_quiz extends external_api {
      * so the quiz can be checked without opening it.
      *
      * @param int $quizid
-     * @return array
+     * @return mixed[]
      */
     private static function slot_state(int $quizid): array {
         global $DB;
@@ -206,6 +209,8 @@ final class add_questions_to_quiz extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -31,7 +31,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class personal_data {
-
     /**
      * Whether the instance delivers context files marked as personal data
      * to the AI. Default: off (see `settings.php`).

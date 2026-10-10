@@ -26,12 +26,20 @@ use local_coursepilot\history\retention;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class purge_history extends \core\task\scheduled_task {
-    /** @return string */
+    /**
+     * Returns name.
+     *
+     * @return string
+     */
     public function get_name(): string {
         return get_string('taskpurgehistory', 'local_coursepilot');
     }
 
-    /** @return void */
+    /**
+     * Runs the purge history tool.
+     *
+     * @return void
+     */
     public function execute(): void {
         retention::enforce();
     }

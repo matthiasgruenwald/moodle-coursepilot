@@ -29,7 +29,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(oauth_lib::class)]
 #[CoversClass(\local_coursepilot\storage_anchor::class)]
 final class oauth_lib_test extends \advanced_testcase {
-
+    /**
+     * Wwwroot.
+     */
     private const WWWROOT = 'https://coursepilot.example';
 
     /**
@@ -209,7 +211,7 @@ final class oauth_lib_test extends \advanced_testcase {
         $this->assertSame('cimd', $record->source);
         $this->assertSame(['https://client.example/callback'], json_decode($record->redirecturis, true));
 
-        // get_client() subsequently finds the cached row directly in the database.
+        // Note: get_client() subsequently finds the cached row directly in the database.
         $found = oauth_lib::get_client($url);
         $this->assertNotNull($found);
         $this->assertSame($url, $found->clientid);
@@ -307,7 +309,10 @@ final class oauth_lib_test extends \advanced_testcase {
         ]);
 
         $this->assertSame('invalid_request', $result['error']);
-        $this->assertSame('response_type=code, client_id, redirect_uri and code_challenge are required.', $result['error_description']);
+        $this->assertSame(
+            'response_type=code, client_id, redirect_uri and code_challenge are required.',
+            $result['error_description']
+        );
     }
 
     /**
@@ -963,5 +968,4 @@ final class oauth_lib_test extends \advanced_testcase {
         oauth_lib::revoke_all_tokens();
         $assertlocationunchanged();
     }
-
 }

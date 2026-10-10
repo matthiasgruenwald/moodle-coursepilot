@@ -31,20 +31,47 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class oauth_registration_budget_test extends \advanced_testcase {
     use \local_coursepilot\tests\oauth_budget_race;
 
+    /**
+     * Table.
+     */
     private const TABLE = 'local_coursepilot_oauth_budget';
 
+    /**
+     * Callback.
+     */
     private const CALLBACK = 'https://client.example/callback';
 
+    /**
+     * Registers the oauth registration budget test.
+     *
+     * @param string $source The source.
+     * @param ?string $body The body.
+     * @return mixed[]
+     */
     private function register(string $source, ?string $body = null): array {
-        return oauth_lib::handle_registration('POST',
-            $body ?? json_encode(['client_name' => 'Synthetic', 'redirect_uris' => [self::CALLBACK]]), $source);
+        return oauth_lib::handle_registration(
+            'POST',
+            $body ?? json_encode(['client_name' => 'Synthetic', 'redirect_uris' => [self::CALLBACK]]),
+            $source
+        );
     }
 
+    /**
+     * Provides limits.
+     *
+     * @param int $site The site.
+     * @param int $source The source.
+     */
     private function limits(int $site, int $source): void {
         set_config('oauthregistersitelimit', $site, 'local_coursepilot');
         set_config('oauthregistersourcelimit', $source, 'local_coursepilot');
     }
 
+    /**
+     * Provides clients.
+     *
+     * @return int
+     */
     private function clients(): int {
         global $DB;
         return $DB->count_records('local_coursepilot_oauth_client');
@@ -75,8 +102,10 @@ final class oauth_registration_budget_test extends \advanced_testcase {
         unset_config('oauthregistersitelimit', 'local_coursepilot');
         unset_config('oauthregistersourcelimit', 'local_coursepilot');
         unset_config('oauthregisterwindow', 'local_coursepilot');
-        $this->assertSame(oauth_lib::REGISTRATION_SITE_LIMIT, oauth_budget::setting('oauthregistersitelimit',
-            oauth_lib::REGISTRATION_SITE_LIMIT));
+        $this->assertSame(oauth_lib::REGISTRATION_SITE_LIMIT, oauth_budget::setting(
+            'oauthregistersitelimit',
+            oauth_lib::REGISTRATION_SITE_LIMIT
+        ));
         set_config('oauthregisterwindow', 0, 'local_coursepilot');
         $this->assertSame(1, oauth_budget::setting('oauthregisterwindow', oauth_lib::REGISTRATION_WINDOW));
     }
@@ -107,8 +136,10 @@ final class oauth_registration_budget_test extends \advanced_testcase {
         $this->assertSame('invalid_client_metadata', $response['body']['error']);
 
         $longuri = 'https://client.example/' . str_repeat('a', oauth_lib::REGISTRATION_MAX_URI_LENGTH);
-        $this->assertSame(400, $this->register('192.0.2.1',
-            json_encode(['redirect_uris' => [$longuri]]))['status']);
+        $this->assertSame(400, $this->register(
+            '192.0.2.1',
+            json_encode(['redirect_uris' => [$longuri]])
+        )['status']);
         $many = array_fill(0, oauth_lib::REGISTRATION_MAX_REDIRECT_URIS + 1, self::CALLBACK);
         $this->assertSame(400, $this->register('192.0.2.1', json_encode(['redirect_uris' => $many]))['status']);
         $this->assertSame(0, $this->clients());
@@ -138,8 +169,11 @@ final class oauth_registration_budget_test extends \advanced_testcase {
 
         $this->assertFalse($DB->record_exists(self::TABLE, ['sourcekey' => 'stale']));
         $this->assertSame(3, $this->clients());
-        $this->assertLessThanOrEqual(4, $DB->count_records(self::TABLE),
-            'Per-source rows only exist for requests that passed the site budget.');
+        $this->assertLessThanOrEqual(
+            4,
+            $DB->count_records(self::TABLE),
+            'Per-source rows only exist for requests that passed the site budget.'
+        );
         foreach ($DB->get_records(self::TABLE) as $row) {
             $this->assertLessThanOrEqual(time() + oauth_lib::REGISTRATION_WINDOW, (int) $row->expires);
             $this->assertStringNotContainsString('198.51.100', $row->sourcekey, 'No raw addresses in budget state.');
@@ -193,7 +227,9 @@ final class oauth_registration_budget_test extends \advanced_testcase {
             'client_id' => $clientid, 'refresh_token' => $tokens['body']['refresh_token']])['status']);
     }
 
-    /** Real processes contend for the last allowed registration behind a DB barrier. */
+    /**
+     * Real processes contend for the last allowed registration behind a DB barrier.
+     */
     public function test_parallel_registrations_cannot_exceed_budget(): void {
         $this->resetAfterTest();
         $this->limits(1, 5);

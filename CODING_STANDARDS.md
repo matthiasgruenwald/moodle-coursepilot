@@ -68,7 +68,7 @@ through a shared resolver, before reading or writing data in that context.
 Why: web service clients reach data only through external functions; one that skips the
 check exposes data of every course on the site.
 Source: Moodle dev docs, "Writing a new service" (`validate_context()` required in all
-external functions). moodle-cs does not check this; planned gate check #686.
+external functions). The gate checks this (`external-check-missing`, `docs/gate.md`).
 
 ---
 
@@ -273,8 +273,7 @@ descriptions. The plugin ships only `lang/en/`.
 Why: Moodle is international; reviewers and contributors read the code, a published
 interface is final once clients depend on it, and translations come through AMOS after
 approval.
-Source: Moodle plugin contribution checklist (English, Strings); ADR 0024. Planned gate
-check for comments: #685.
+Source: Moodle plugin contribution checklist (English, Strings); ADR 0024. The gate checks comments and docblocks (`english-comment`, `docs/gate.md`).
 
 **N4. User-visible text and errors use language strings.** `Moodle` · **Must**
 Every text a user sees comes from `get_string()` (or `{{#str}}` in templates) with a key in
@@ -461,8 +460,7 @@ surviving mutants on changed lines, moodle-cs (including coverage metadata on ev
 boilerplate and `@copyright`, naming, `require_login()` in page scripts, forbidden functions
 such as `eval` and `unserialize`, and the TODO issue format), phpdoc, savepoints, Mustache,
 ESLint, PHPStan level and baseline, layer dependencies and the class list. See ADR 0029, ADR
-0030 and Spec 0029. Planned gate checks that will retire rules here (A1): N3 comments →
-#685, S3 → #686, D2 on PostgreSQL → #687.
+0030 and Spec 0029. Planned gate checks that will retire rules here (A1): D2 on PostgreSQL → #687.
 
 **Architecture:** layer placement in Coursepilot (ADR 0030), MCP access vs. Moodle AI access,
 moving large data around the model's context — see the ADRs and the architecture

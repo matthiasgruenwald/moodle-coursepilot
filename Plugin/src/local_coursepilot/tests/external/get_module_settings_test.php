@@ -28,7 +28,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(get_module_settings::class)]
 final class get_module_settings_test extends \advanced_testcase {
-
     /**
      * Return raw instance fields, such as intro, without a custom Coursepilot schema.
      */
@@ -221,6 +220,8 @@ final class get_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
@@ -230,9 +231,11 @@ final class get_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * @param array $result
+     * Finds in list.
+     *
+     * @param mixed[] $result
      * @param int $cmid
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function find_in_list(array $result, int $cmid): ?array {
         foreach ($result as $module) {
@@ -244,9 +247,11 @@ final class get_module_settings_test extends \advanced_testcase {
     }
 
     /**
-     * @param array $result
+     * Finds in catalog.
+     *
+     * @param mixed[] $result
      * @param int $cmid
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function find_in_catalog(array $result, int $cmid): ?array {
         foreach ($result['sections'] as $section) {

@@ -14,18 +14,27 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
+/**
+ * Tests.
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
+ */
+
 namespace local_coursepilot\catalog;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
+ * Tests for the catalog field value object.
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(field::class)]
 final class field_test extends \advanced_testcase {
-
     /**
      * Field release, date, stealth and learner-lock rules are decided once in
      * the catalog write target (#646); the external adapters keep no second

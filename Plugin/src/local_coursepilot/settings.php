@@ -117,7 +117,8 @@ if ($hassiteconfig) {
     // Anonymous OAuth registration (#642) and CIMD fetch (#643) budgets: finite site-wide and
     // per-source limits per window; no unlimited option, non-positive values
     // fall back defensively, see local_coursepilot\oauth_budget::setting().
-    foreach ([
+    foreach (
+        [
         'oauthregistersitelimit' => \local_coursepilot\oauth_lib::REGISTRATION_SITE_LIMIT,
         'oauthregistersourcelimit' => \local_coursepilot\oauth_lib::REGISTRATION_SOURCE_LIMIT,
         'oauthregisterwindow' => \local_coursepilot\oauth_lib::REGISTRATION_WINDOW,
@@ -125,7 +126,8 @@ if ($hassiteconfig) {
         'oauthcimdsitelimit' => \local_coursepilot\oauth_lib::CIMD_SITE_LIMIT,
         'oauthcimdsourcelimit' => \local_coursepilot\oauth_lib::CIMD_SOURCE_LIMIT,
         'oauthcimdwindow' => \local_coursepilot\oauth_lib::CIMD_WINDOW,
-    ] as $name => $default) {
+        ] as $name => $default
+    ) {
         $settings->add(new admin_setting_configtext(
             'local_coursepilot/' . $name,
             get_string('setting' . $name, 'local_coursepilot'),
@@ -154,7 +156,11 @@ if ($hassiteconfig) {
     $settings->add(new \local_coursepilot\admin\personaldatahosts_setting(
         'local_coursepilot/personaldatahosts',
         get_string('settingpersonaldatahosts', 'local_coursepilot'),
-        get_string('settingpersonaldatahosts_desc', 'local_coursepilot', get_string('externallocationprivacyinfo', 'local_coursepilot')),
+        get_string(
+            'settingpersonaldatahosts_desc',
+            'local_coursepilot',
+            get_string('externallocationprivacyinfo', 'local_coursepilot')
+        ),
         '',
         PARAM_RAW
     ));

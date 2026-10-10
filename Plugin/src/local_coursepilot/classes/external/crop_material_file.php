@@ -24,8 +24,6 @@ use local_coursepilot\gd_support;
 use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Crop a material image (Spec 0018 §5, #431). A separate endpoint rather
  * than an upload parameter because the source is already stored. If the
@@ -47,11 +45,12 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class crop_material_file extends external_api {
-
     /** @var int JPEG quality for a crop whose target extension is jpg/jpeg. */
     private const JPEG_QUALITY = 85;
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -73,15 +72,17 @@ class crop_material_file extends external_api {
     }
 
     /**
+     * Runs the crop material file tool.
+     *
      * @param string $sourcepath
-     * @param string $location
      * @param string $targetpath
      * @param float $x0
      * @param float $y0
      * @param float $x1
      * @param float $y1
      * @param string $expectedcontenthash
-     * @return array
+     * @param string $location
+     * @return mixed[]
      * @throws \moodle_exception invalidmaterialpath, invalidmateriallocation,
      *         materialpathiscontext, materialfilenotfound,
      *         materialgdmissing, materialcropsourceunsupported,
@@ -136,7 +137,7 @@ class crop_material_file extends external_api {
      * Read and validate the source (#523: extracted from execute() to keep
      * the function below 50 lines).
      *
-     * @param array $params Validated execute() parameters.
+     * @param mixed[] $params Validated execute() parameters.
      * @return array{0: array{content: string, path: string, size: int, timemodified: int}, 1: string}
      *         [source content, resolved source path]
      */
@@ -163,7 +164,7 @@ class crop_material_file extends external_api {
      * Resolve the target and check concurrency protection (#523: extracted
      * from execute()).
      *
-     * @param array $params Validated execute() parameters.
+     * @param mixed[] $params Validated execute() parameters.
      * @return array{0: string, 1: string, 2: string, 3: ?array} [target directory, target filename,
      *         target extension, existing file or null]
      */
@@ -177,8 +178,10 @@ class crop_material_file extends external_api {
         // Check target concurrency before cropping, like upload_material_file:
         // perform all rejection checks before the single expensive operation.
         $existing = material_files::read_content($targetdir, $targetfilename);
-        if ($params['expected_contenthash'] !== ''
-                && ($existing === null || $existing['contenthash'] !== $params['expected_contenthash'])) {
+        if (
+            $params['expected_contenthash'] !== ''
+                && ($existing === null || $existing['contenthash'] !== $params['expected_contenthash'])
+        ) {
             throw new \moodle_exception('materialfilechanged', 'local_coursepilot', '', $params['targetpath']);
         }
 
@@ -188,14 +191,14 @@ class crop_material_file extends external_api {
     /**
      * Crop, write the target and build the response (#523: extracted from execute()).
      *
-     * @param array $params Validated execute() parameters.
-     * @param array{content: string, path: string, size: int, timemodified: int} $sourcestored
+     * @param mixed[] $params Validated execute() parameters.
+     * @param mixed[] $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
      * @param string $sourcerelative
      * @param string $targetdir
      * @param string $targetfilename
      * @param string $targetextension
      * @param ?array $existing
-     * @return array
+     * @return mixed[]
      */
     private static function crop_and_write(
         array $params,
@@ -235,8 +238,8 @@ class crop_material_file extends external_api {
      * Load the source as a GD image and crop it (#523: extracted from
      * crop_and_write() to keep the function below 50 lines).
      *
-     * @param array $params Validated execute() parameters.
-     * @param array{content: string, path: string, size: int, timemodified: int} $sourcestored
+     * @param mixed[] $params Validated execute() parameters.
+     * @param mixed[] $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
      * @param string $sourcerelative
      * @param string $targetextension
      * @return array{0: string, 1: int, 2: int} [content, width, height]
@@ -273,8 +276,8 @@ class crop_material_file extends external_api {
      * Build the crop response (#523: extracted from crop_and_write() to keep
      * the function below 50 lines).
      *
-     * @param array $params Validated execute() parameters.
-     * @param array{content: string, path: string, size: int, timemodified: int} $sourcestored
+     * @param mixed[] $params Validated execute() parameters.
+     * @param mixed[] $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
      * @param string $sourcerelative
      * @param string $targetdir
      * @param string $targetfilename
@@ -283,7 +286,7 @@ class crop_material_file extends external_api {
      * @param int $height
      * @param int $newsize
      * @param ?string $warning
-     * @return array
+     * @return mixed[]
      */
     private static function build_crop_response(
         array $params,
@@ -322,6 +325,8 @@ class crop_material_file extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
@@ -336,7 +341,10 @@ class crop_material_file extends external_api {
             'width' => new external_value(PARAM_INT, 'Crop width in pixels, computed from the original'),
             'height' => new external_value(PARAM_INT, 'Crop height in pixels, computed from the original'),
             'size' => new external_value(PARAM_INT, 'Crop size in bytes'),
-            'message' => new external_value(PARAM_RAW, 'Localized teacher-facing change message, including a quota warning when applicable'),
+            'message' => new external_value(
+                PARAM_RAW,
+                'Localized teacher-facing change message, including a quota warning when applicable'
+            ),
         ]);
     }
 
@@ -347,7 +355,7 @@ class crop_material_file extends external_api {
      *
      * @param string $location
      * @param string $path
-     * @param array{size: int, timemodified: int} $stored
+     * @param mixed[] $stored Type: array{size:int,timemodified:int}.
      * @return string
      */
     private static function describe_source(string $location, string $path, array $stored): string {
@@ -418,6 +426,12 @@ class crop_material_file extends external_api {
     /**
      * Convert relative coordinates to a pixel rectangle (#523: extracted from crop()).
      *
+     * @param int $origwidth The origwidth.
+     * @param int $origheight The origheight.
+     * @param float $x0 The x0.
+     * @param float $y0 The y0.
+     * @param float $x1 The x1.
+     * @param float $y1 The y1.
      * @return array{0: int, 1: int, 2: int, 3: int} [px0, py0, width, height]
      */
     private static function pixel_rect(
@@ -432,7 +446,7 @@ class crop_material_file extends external_api {
         $py0 = (int) round($y0 * $origheight);
         $px1 = (int) round($x1 * $origwidth);
         $py1 = (int) round($y1 * $origheight);
-        // ponytail: Rounding can collapse nearby relative coordinates to a zero-
+        // Deliberate shortcut - ponytail: Rounding can collapse nearby relative coordinates to a zero-
         // pixel rectangle (e.g. x0=0.499/x1=0.501 on a 10px image). max(1, ...)
         // clamps this to one pixel rather than throwing. Validated relative area
         // greater than zero (guard_coordinates()) is the acceptance criterion;
@@ -446,6 +460,13 @@ class crop_material_file extends external_api {
 
     /**
      * Create the target canvas and copy the crop into it (#523: extracted from crop()).
+     *
+     * @param \GdImage $source The source.
+     * @param int $px0 The px0.
+     * @param int $py0 The py0.
+     * @param int $width The width.
+     * @param int $height The height.
+     * @param string $targetextension The targetextension.
      */
     private static function render_canvas(
         \GdImage $source,
@@ -472,6 +493,9 @@ class crop_material_file extends external_api {
 
     /**
      * Write the canvas to the output buffer in the target format (#523: extracted from crop()).
+     *
+     * @param \GdImage $canvas The canvas.
+     * @param string $targetextension The targetextension.
      */
     private static function output_canvas(\GdImage $canvas, string $targetextension): void {
         switch ($targetextension) {

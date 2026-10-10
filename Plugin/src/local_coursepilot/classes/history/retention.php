@@ -16,8 +16,6 @@
 
 namespace local_coursepilot\history;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * History retention and the shared history deletion contract (#387, #640).
  *
@@ -33,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class retention {
-
     /** @var int Default in days (Spec 0015 §10.7). */
     public const DEFAULT_DAYS = 365;
 
@@ -110,8 +107,12 @@ final class retention {
             return;
         }
         [$insql, $inparams] = $DB->get_in_or_equal(array_values($userids));
-        self::delete_versions($DB->get_fieldset_select('local_coursepilot_cm_version', 'id',
-            "cmid = ? AND userid $insql", array_merge([$cmid], $inparams)));
+        self::delete_versions($DB->get_fieldset_select(
+            'local_coursepilot_cm_version',
+            'id',
+            "cmid = ? AND userid $insql",
+            array_merge([$cmid], $inparams)
+        ));
     }
 
     /**
@@ -142,11 +143,13 @@ final class retention {
      * @return void
      */
     public static function enforce(int $batchsize = self::BATCH_SIZE, int $maxbatches = self::MAX_BATCHES): void {
-        for ($i = 0; $i < $maxbatches && self::purge_expired_batch($batchsize) === $batchsize; $i++) {
-            // Next batch.
+        $batches = 0;
+        while ($batches < $maxbatches && self::purge_expired_batch($batchsize) === $batchsize) {
+            $batches++;
         }
-        for ($i = 0; $i < $maxbatches && self::sweep_file_batch($batchsize) === $batchsize; $i++) {
-            // Next batch.
+        $batches = 0;
+        while ($batches < $maxbatches && self::sweep_file_batch($batchsize) === $batchsize) {
+            $batches++;
         }
     }
 
@@ -161,7 +164,14 @@ final class retention {
 
         $cutoff = time() - self::days() * DAYSECS;
         $versionids = array_keys($DB->get_records_select(
-            'local_coursepilot_cm_version', 'timecreated < ?', [$cutoff], '', 'id', 0, $limit));
+            'local_coursepilot_cm_version',
+            'timecreated < ?',
+            [$cutoff],
+            '',
+            'id',
+            0,
+            $limit
+        ));
         self::delete_versions($versionids);
         return count($versionids);
     }
@@ -179,7 +189,14 @@ final class retention {
 
         $cursor = (int) get_config('local_coursepilot', self::CURSOR);
         $fileids = array_keys($DB->get_records_select(
-            'local_coursepilot_cm_file', 'id > ?', [$cursor], 'id ASC', 'id', 0, $limit));
+            'local_coursepilot_cm_file',
+            'id > ?',
+            [$cursor],
+            'id ASC',
+            'id',
+            0,
+            $limit
+        ));
         if ($fileids) {
             [$insql, $params] = $DB->get_in_or_equal($fileids);
             // Activities whose module is gone are skipped: without a module type
@@ -213,7 +230,7 @@ final class retention {
      * links and every file metadata row no longer referenced by another state.
      * Used by retention, activity/course cascades and privacy deletion.
      *
-     * @param array $versionids
+     * @param mixed[] $versionids
      * @return void
      */
     public static function delete_versions(array $versionids): void {
@@ -235,7 +252,7 @@ final class retention {
     /**
      * Deletes those of the given cm_file rows that no state links to any more.
      *
-     * @param array $fileids
+     * @param mixed[] $fileids
      * @return void
      */
     private static function delete_orphan_files(array $fileids): void {

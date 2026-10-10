@@ -30,13 +30,17 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(activity_backup::class)]
 final class activity_backup_test extends \advanced_testcase {
-
     protected function setUp(): void {
         parent::setUp();
         // Backup temporary-table bookkeeping must survive each operation's transaction boundary.
         $this->preventResetByRollback();
     }
 
+    /**
+     * Provides course as editing teacher.
+     *
+     * @return \stdClass
+     */
     private function course_as_editing_teacher(): \stdClass {
         $course = $this->getDataGenerator()->create_course(['numsections' => 2]);
         $teacher = $this->getDataGenerator()->create_user();
@@ -45,6 +49,12 @@ final class activity_backup_test extends \advanced_testcase {
         return $course;
     }
 
+    /**
+     * Provides page xml.
+     *
+     * @param string $name The name.
+     * @return string
+     */
     private function page_xml(string $name): string {
         return '<activity id="1" moduleid="900001" modulename="page" contextid="1"><page id="1">'
             . '<name>' . $name . '</name><intro></intro><introformat>1</introformat>'
@@ -54,12 +64,22 @@ final class activity_backup_test extends \advanced_testcase {
             . '<timemodified>0</timemodified></page></activity>';
     }
 
-    /** @return int[] */
+    /**
+     * Provides cmids.
+     *
+     * @param int $courseid The courseid.
+     * @return int[]
+     */
     private function cmids(int $courseid): array {
         global $DB;
         return array_map('intval', $DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$courseid]));
     }
 
+    /**
+     * Provides tempdir entries.
+     *
+     * @return mixed[]
+     */
     private function tempdir_entries(): array {
         global $CFG;
         // Moodle's own controller debug logs (*.log) stay by design; only directories count.

@@ -24,8 +24,6 @@ use core_external\external_value;
 use local_coursepilot\context_area;
 use local_coursepilot\context_files;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Lists the calling teacher's context area (#343): one fixed file area
  * in their own private user context. No parameter selects another area,
@@ -43,8 +41,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class list_context_files extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -61,9 +60,11 @@ class list_context_files extends external_api {
     }
 
     /**
+     * Runs the list context files tool.
+     *
      * @param string $path
      * @param bool $previouslocation
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidcontextpath if $path contains a "."/".."
      *         segment; previouslocationclosed if previous_location is requested
      *         without open legacy context.
@@ -90,6 +91,8 @@ class list_context_files extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

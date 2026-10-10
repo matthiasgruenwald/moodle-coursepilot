@@ -1,0 +1,5 @@
+#!/bin/sh
+# Versionierter Git-Hook (ADR 0029): schnelles Gate vor jedem Commit.
+# Aktivierung: npm run hooks:install
+cd "$(git rev-parse --show-toplevel)" || exit 1
+exec node scripts/gate/gate.js fast

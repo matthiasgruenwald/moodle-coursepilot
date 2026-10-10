@@ -1,0 +1,330 @@
+# Schichtregeln aus ADR 0030 (läuft im Gate-Container, Pfade dort).
+# Die Zuordnung der Wurzel-Klassen steht hier als Liste; die Klassen bleiben in ihrem Namespace.
+# Eine Wurzel-Klasse ohne Eintrag ist unzugeordnet und macht das Gate rot (gate.js, deptrac.js).
+# Die Baseline darf nur schrumpfen (ADR 0030, Nachtrag); jeder Eintrag nennt das Folgeticket.
+imports:
+  - deptrac-baseline.yaml
+deptrac:
+  paths:
+    - /var/www/html/public/local/coursepilot/classes
+  analyser:
+    types:
+      - class
+      - class_superglobal
+      - use
+      - function
+      - function_superglobal
+  layers:
+    - name: Einstieg
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\(dispatcher|tool_registry|observer|external_schema_converter|privacy_surface)$#'
+        - type: classNameRegex
+          value: '#^local_coursepilot\\(output|task|check|admin|privacy)\\#'
+    # Jedes Werkzeug ist eine eigene Schicht, damit Werkzeug -> Werkzeug ein Verstoß ist
+    # (deptrac erlaubt Abhängigkeiten innerhalb einer Schicht immer).
+    - name: Werkzeug_add_glossary_entries
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\add_glossary_entries$#'
+    - name: Werkzeug_add_questions_to_quiz
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\add_questions_to_quiz$#'
+    - name: Werkzeug_append_context_file
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\append_context_file$#'
+    - name: Werkzeug_clone_activity
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\clone_activity$#'
+    - name: Werkzeug_compare_activity_versions
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\compare_activity_versions$#'
+    - name: Werkzeug_compose_material_file
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\compose_material_file$#'
+    - name: Werkzeug_create_activity_from_xml
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\create_activity_from_xml$#'
+    - name: Werkzeug_create_mc_question
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\create_mc_question$#'
+    - name: Werkzeug_create_module
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\create_module$#'
+    - name: Werkzeug_create_quiz
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\create_quiz$#'
+    - name: Werkzeug_create_workbench_download_links
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\create_workbench_download_links$#'
+    - name: Werkzeug_crop_material_file
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\crop_material_file$#'
+    - name: Werkzeug_delete_material_files
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\delete_material_files$#'
+    - name: Werkzeug_describe_module_fields
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\describe_module_fields$#'
+    - name: Werkzeug_dismiss_pending_entry
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\dismiss_pending_entry$#'
+    - name: Werkzeug_dismiss_previous_location
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\dismiss_previous_location$#'
+    - name: Werkzeug_ensure_question_bank
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\ensure_question_bank$#'
+    - name: Werkzeug_ensure_question_category
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\ensure_question_category$#'
+    - name: Werkzeug_ensure_quiz_question_categories
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\ensure_quiz_question_categories$#'
+    - name: Werkzeug_ensure_section
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\ensure_section$#'
+    - name: Werkzeug_export_activity_backup
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\export_activity_backup$#'
+    - name: Werkzeug_export_default_activity
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\export_default_activity$#'
+    - name: Werkzeug_export_questions_xml
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\export_questions_xml$#'
+    - name: Werkzeug_get_course_catalog
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\get_course_catalog$#'
+    - name: Werkzeug_get_module_settings
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\get_module_settings$#'
+    - name: Werkzeug_get_modules
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\get_modules$#'
+    - name: Werkzeug_get_question
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\get_question$#'
+    - name: Werkzeug_get_question_categories
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\get_question_categories$#'
+    - name: Werkzeug_get_question_category_cleanup_plan
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\get_question_category_cleanup_plan$#'
+    - name: Werkzeug_get_quiz_cleanup_plan
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\get_quiz_cleanup_plan$#'
+    - name: Werkzeug_get_sections
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\get_sections$#'
+    - name: Werkzeug_get_skill
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\get_skill$#'
+    - name: Werkzeug_get_version_info
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\get_version_info$#'
+    - name: Werkzeug_import_questions_xml
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\import_questions_xml$#'
+    - name: Werkzeug_list_activity_versions
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\list_activity_versions$#'
+    - name: Werkzeug_list_context_files
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\list_context_files$#'
+    - name: Werkzeug_list_courses
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\list_courses$#'
+    - name: Werkzeug_list_material_files
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\list_material_files$#'
+    - name: Werkzeug_list_skills
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\list_skills$#'
+    - name: Werkzeug_move_module
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\move_module$#'
+    - name: Werkzeug_move_question
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\move_question$#'
+    - name: Werkzeug_move_section
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\move_section$#'
+    - name: Werkzeug_preview_material_file
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\preview_material_file$#'
+    - name: Werkzeug_read_context_file
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\read_context_file$#'
+    - name: Werkzeug_report_clone_lineage
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\report_clone_lineage$#'
+    - name: Werkzeug_report_loose_material_files
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\report_loose_material_files$#'
+    - name: Werkzeug_restore_activity_version
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\restore_activity_version$#'
+    - name: Werkzeug_set_completion
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\set_completion$#'
+    - name: Werkzeug_set_restriction
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\set_restriction$#'
+    - name: Werkzeug_update_mc_question
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\update_mc_question$#'
+    - name: Werkzeug_update_module_settings
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\update_module_settings$#'
+    - name: Werkzeug_update_question_category
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\update_question_category$#'
+    - name: Werkzeug_update_quiz_settings
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\update_quiz_settings$#'
+    - name: Werkzeug_update_section
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\update_section$#'
+    - name: Werkzeug_upload_material_file
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\upload_material_file$#'
+    - name: Werkzeug_write_context_file
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\write_context_file$#'
+    - name: Fachmodule
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\(remote_access|location_selection|activity_backup|activity_file_supplement|activity_file_trash|availability_privacy|cm_references|context_area|context_files|context_pointer|course_module_placement|gd_support|glossary_entry_writer|image_preview|instance_check|mark_memory|material_area|material_composition|material_files|oauth_budget|oauth_cleanup|oauth_lib|pending_write_notice|pending_write_translation|personal_data|personal_data_hosts|plugin_meta|previous_location|question_bank_context|question_suspect_gate|skill_corpus|workbench_ticket|workbench_ticket_redemption_failed|write_gate|xml_activity_creator)$#'
+        - type: classNameRegex
+          value: '#^local_coursepilot\\(catalog|history|quiz|activity_files)\\#'
+    # Ports: Ablageort-Kern (Port, Anker, Pointer, Zugriffsprotokoll, Ereignisse) als Teil der Fachmodule;
+    # eigene Schicht, damit Adapter nur ihn und nicht die übrige Fachlogik nutzen dürfen.
+    - name: Ports
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\(storage_port|storage_area|storage_conflict_exception|storage_anchor|pointer_location|pointer_reader|pointer_writer|access_log)$#'
+        - type: classNameRegex
+          value: '#^local_coursepilot\\event\\#'
+    - name: Adapter
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\(webdav_storage_port|private_files_storage_port)$#'
+        - type: classNameRegex
+          value: '#^local_coursepilot\\webdav\\#'
+  ruleset:
+    Einstieg: [Fachmodule, Ports, Adapter, Werkzeug_add_glossary_entries, Werkzeug_add_questions_to_quiz, Werkzeug_append_context_file, Werkzeug_clone_activity, Werkzeug_compare_activity_versions, Werkzeug_compose_material_file, Werkzeug_create_activity_from_xml, Werkzeug_create_mc_question, Werkzeug_create_module, Werkzeug_create_quiz, Werkzeug_create_workbench_download_links, Werkzeug_crop_material_file, Werkzeug_delete_material_files, Werkzeug_describe_module_fields, Werkzeug_dismiss_pending_entry, Werkzeug_dismiss_previous_location, Werkzeug_ensure_question_bank, Werkzeug_ensure_question_category, Werkzeug_ensure_quiz_question_categories, Werkzeug_ensure_section, Werkzeug_export_activity_backup, Werkzeug_export_default_activity, Werkzeug_export_questions_xml, Werkzeug_get_course_catalog, Werkzeug_get_module_settings, Werkzeug_get_modules, Werkzeug_get_question, Werkzeug_get_question_categories, Werkzeug_get_question_category_cleanup_plan, Werkzeug_get_quiz_cleanup_plan, Werkzeug_get_sections, Werkzeug_get_skill, Werkzeug_get_version_info, Werkzeug_import_questions_xml, Werkzeug_list_activity_versions, Werkzeug_list_context_files, Werkzeug_list_courses, Werkzeug_list_material_files, Werkzeug_list_skills, Werkzeug_move_module, Werkzeug_move_question, Werkzeug_move_section, Werkzeug_preview_material_file, Werkzeug_read_context_file, Werkzeug_report_clone_lineage, Werkzeug_report_loose_material_files, Werkzeug_restore_activity_version, Werkzeug_set_completion, Werkzeug_set_restriction, Werkzeug_update_mc_question, Werkzeug_update_module_settings, Werkzeug_update_question_category, Werkzeug_update_quiz_settings, Werkzeug_update_section, Werkzeug_upload_material_file, Werkzeug_write_context_file]
+    Werkzeug_add_glossary_entries: &werkzeug [Fachmodule, Ports, Adapter]
+    Werkzeug_add_questions_to_quiz: *werkzeug
+    Werkzeug_append_context_file: *werkzeug
+    Werkzeug_clone_activity: *werkzeug
+    Werkzeug_compare_activity_versions: *werkzeug
+    Werkzeug_compose_material_file: *werkzeug
+    Werkzeug_create_activity_from_xml: *werkzeug
+    Werkzeug_create_mc_question: *werkzeug
+    Werkzeug_create_module: *werkzeug
+    Werkzeug_create_quiz: *werkzeug
+    Werkzeug_create_workbench_download_links: *werkzeug
+    Werkzeug_crop_material_file: *werkzeug
+    Werkzeug_delete_material_files: *werkzeug
+    Werkzeug_describe_module_fields: *werkzeug
+    Werkzeug_dismiss_pending_entry: *werkzeug
+    Werkzeug_dismiss_previous_location: *werkzeug
+    Werkzeug_ensure_question_bank: *werkzeug
+    Werkzeug_ensure_question_category: *werkzeug
+    Werkzeug_ensure_quiz_question_categories: *werkzeug
+    Werkzeug_ensure_section: *werkzeug
+    Werkzeug_export_activity_backup: *werkzeug
+    Werkzeug_export_default_activity: *werkzeug
+    Werkzeug_export_questions_xml: *werkzeug
+    Werkzeug_get_course_catalog: *werkzeug
+    Werkzeug_get_module_settings: *werkzeug
+    Werkzeug_get_modules: *werkzeug
+    Werkzeug_get_question: *werkzeug
+    Werkzeug_get_question_categories: *werkzeug
+    Werkzeug_get_question_category_cleanup_plan: *werkzeug
+    Werkzeug_get_quiz_cleanup_plan: *werkzeug
+    Werkzeug_get_sections: *werkzeug
+    Werkzeug_get_skill: *werkzeug
+    Werkzeug_get_version_info: *werkzeug
+    Werkzeug_import_questions_xml: *werkzeug
+    Werkzeug_list_activity_versions: *werkzeug
+    Werkzeug_list_context_files: *werkzeug
+    Werkzeug_list_courses: *werkzeug
+    Werkzeug_list_material_files: *werkzeug
+    Werkzeug_list_skills: *werkzeug
+    Werkzeug_move_module: *werkzeug
+    Werkzeug_move_question: *werkzeug
+    Werkzeug_move_section: *werkzeug
+    Werkzeug_preview_material_file: *werkzeug
+    Werkzeug_read_context_file: *werkzeug
+    Werkzeug_report_clone_lineage: *werkzeug
+    Werkzeug_report_loose_material_files: *werkzeug
+    Werkzeug_restore_activity_version: *werkzeug
+    Werkzeug_set_completion: *werkzeug
+    Werkzeug_set_restriction: *werkzeug
+    Werkzeug_update_mc_question: *werkzeug
+    Werkzeug_update_module_settings: *werkzeug
+    Werkzeug_update_question_category: *werkzeug
+    Werkzeug_update_quiz_settings: *werkzeug
+    Werkzeug_update_section: *werkzeug
+    Werkzeug_upload_material_file: *werkzeug
+    Werkzeug_write_context_file: *werkzeug
+    Fachmodule: [Fachmodule, Ports, Adapter]
+    Ports: [Ports, Fachmodule, Adapter]
+    Adapter: [Ports]

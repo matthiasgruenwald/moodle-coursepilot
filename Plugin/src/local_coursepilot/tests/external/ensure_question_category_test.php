@@ -27,7 +27,6 @@ use core_external\external_api;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(ensure_question_category::class)]
 final class ensure_question_category_test extends \advanced_testcase {
-
     /**
      * Create a category below the top category of a fresh question bank.
      */
@@ -146,6 +145,8 @@ final class ensure_question_category_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

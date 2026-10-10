@@ -1,5 +1,18 @@
 <?php
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Coursepilot is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Coursepilot is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
 
@@ -10,8 +23,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\question_bank_context;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Builds a manual, non-destructive cleanup plan for empty leaf categories.
  *
@@ -20,7 +31,11 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class get_question_category_cleanup_plan extends external_api {
-    /** @return external_function_parameters */
+    /**
+     * Describes the parameters of execute.
+     *
+     * @return external_function_parameters
+     */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'courseid' => new external_value(PARAM_INT, 'Course ID'),
@@ -29,9 +44,11 @@ class get_question_category_cleanup_plan extends external_api {
     }
 
     /**
+     * Runs the get question category cleanup plan tool.
+     *
      * @param int $courseid Course ID
      * @param int $questionbankid Question bank course module ID
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $courseid, int $questionbankid): array {
         global $CFG, $DB;
@@ -65,7 +82,11 @@ class get_question_category_cleanup_plan extends external_api {
         return ['questionbankname' => $bankrecord->name, 'removals' => $removals];
     }
 
-    /** @return external_single_structure */
+    /**
+     * Describes the return value of execute.
+     *
+     * @return external_single_structure
+     */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'questionbankname' => new external_value(PARAM_TEXT, 'Name of the checked question bank'),

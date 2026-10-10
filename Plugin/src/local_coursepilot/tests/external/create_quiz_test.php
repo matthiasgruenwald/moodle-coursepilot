@@ -28,8 +28,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(create_quiz::class)]
 final class create_quiz_test extends \advanced_testcase {
-
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -66,13 +67,15 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * Creates the create quiz test.
+     *
      * @param int $courseid
      * @param int $sectionnum
-     * @param array $felder
+     * @param mixed[] $felder
      * @param string $mode
      * @param float $grade
      * @param string[] $confirmlearnerlocks Explicitly confirmed learner restrictions (#583).
-     * @return array
+     * @return mixed[]
      */
     private function create(
         int $courseid,
@@ -89,6 +92,8 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * Returns raw quiz table row.
+     *
      * @param int $cmid
      * @return \stdClass Raw quiz table row.
      */
@@ -130,7 +135,7 @@ final class create_quiz_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
 
         $felder = $this->minimal_fields();
-        $felder['attempts'] = 7; // mini-check-Buendel setzt sonst 0.
+        $felder['attempts'] = 7; // The mini-check bundle otherwise sets it to 0.
 
         $result = $this->create($course->id, 0, $felder, 'mini-check', -1.0, ['attempts']);
         $quiz = $this->raw_quiz($result['cmid']);
@@ -305,7 +310,7 @@ final class create_quiz_test extends \advanced_testcase {
             $this->create($course->id, 0, $this->minimal_fields(), 'mini-check');
             $this->fail('execute() should have thrown because of drift.');
         } catch (\moodle_exception $e) {
-            // write_gate_test.php checks exact wording against the language pack.
+            // Note: write_gate_test.php checks exact wording against the language pack.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
         }
     }

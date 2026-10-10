@@ -36,8 +36,8 @@ namespace local_coursepilot\webdav;
  * redirects (`CURLOPT_FOLLOWLOCATION = 1`, up to ten levels deep,
  * emulated on the PHP side). Without an explicit counter-setting, the
  * Basic authentication header could be read over an unencrypted or foreign address
- * (security finding HIGH, Issue #510). {@see
- * transport_options()} therefore sets certificate verification,
+ * (security finding HIGH, Issue #510). {@see self::transport_options()}
+ * therefore sets certificate verification,
  * redirect block, total timeout and response size limit on every request -
  * a 3xx response is interpreted by {@see webdav_client::classify()} as the named
  * error `REDIRECTED`, an exceeded time/size limit is reported by
@@ -49,7 +49,6 @@ namespace local_coursepilot\webdav;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class curl_transport implements webdav_transport {
-
     /** @var int Total timeout of a request in seconds (CURLOPT_TIMEOUT). */
     private const TOTAL_TIMEOUT_SECONDS = 30;
 
@@ -57,6 +56,8 @@ final class curl_transport implements webdav_transport {
     private const MAX_RESPONSE_BYTES = 50 * 1024 * 1024;
 
     /**
+     * Creates the curl transport.
+     *
      * @param \curl $curl Preconfigured Moodle curl instance. Tests can
      *        inject their own `securityhelper` here (see the
      *        `\curl` constructor) without setting `ignoresecurity`.
@@ -64,12 +65,24 @@ final class curl_transport implements webdav_transport {
      * @param string $password
      */
     public function __construct(
+        /** @var \curl Preconfigured Moodle curl instance. Tests can */
         private readonly \curl $curl,
+        /** @var string The username. */
         private readonly string $username,
+        /** @var string The password. */
         private readonly string $password,
     ) {
     }
 
+    /**
+     * Provides request.
+     *
+     * @param string $method The method.
+     * @param string $url The url.
+     * @param mixed[] $headers The headers.
+     * @param ?string $body The body.
+     * @return webdav_response
+     */
     public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
         $options = $this->transport_options($headers);
 
@@ -103,7 +116,7 @@ final class curl_transport implements webdav_transport {
      * As its own method so that a transport test can verify the set options without
      * real network access.
      *
-     * @param array<string, string> $headers
+     * @param string[] $headers
      * @return array<string, mixed>
      */
     private function transport_options(array $headers): array {
@@ -149,7 +162,9 @@ final class curl_transport implements webdav_transport {
     }
 
     /**
-     * @param array<string, string> $headers
+     * Formats headers.
+     *
+     * @param string[] $headers
      * @return string[] "Name: value" lines for CURLOPT_HTTPHEADER.
      */
     private function format_headers(array $headers): array {
@@ -161,6 +176,8 @@ final class curl_transport implements webdav_transport {
     }
 
     /**
+     * Provides response headers.
+     *
      * @return array<string, string> Response headers of the last request, keys lowercased.
      */
     private function response_headers(): array {

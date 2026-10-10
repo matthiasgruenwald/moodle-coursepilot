@@ -30,8 +30,10 @@ use core_external\external_value;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class external_schema_converter {
-
     /**
+     * Provides from parameters.
+     *
+     * @param external_function_parameters $parameters The parameters.
      * @return array{properties: array<string, array>, required?: string[]}
      */
     public static function from_parameters(external_function_parameters $parameters): array {
@@ -41,6 +43,9 @@ final class external_schema_converter {
     }
 
     /**
+     * Provides from description.
+     *
+     * @param external_description $description The description.
      * @return array<string, mixed>
      */
     private static function from_description(external_description $description): array {
@@ -72,6 +77,9 @@ final class external_schema_converter {
     }
 
     /**
+     * Provides from structure.
+     *
+     * @param external_single_structure $structure The structure.
      * @return array{type: string, properties: array<string, array>, required?: string[]}
      */
     private static function from_structure(external_single_structure $structure): array {

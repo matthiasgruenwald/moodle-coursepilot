@@ -1,5 +1,18 @@
 <?php
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Coursepilot is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Coursepilot is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
 
@@ -142,7 +155,11 @@ final class ensure_quiz_question_categories_test extends \advanced_testcase {
         ensure_quiz_question_categories::execute($course->id, $module->cmid);
     }
 
-    /** @return array<string, array{string, bool}> */
+    /**
+     * Supplies activity and course combinations that cannot identify the requested quiz.
+     *
+     * @return array<string, array{string, bool}>
+     */
     public static function invalid_module_provider(): array {
         return ['page' => ['page', false], 'question bank' => ['qbank', false], 'foreign quiz' => ['quiz', true]];
     }
@@ -169,7 +186,11 @@ final class ensure_quiz_question_categories_test extends \advanced_testcase {
         ensure_quiz_question_categories::execute($course->id, $quiz->cmid);
     }
 
-    /** @return array<string, array{string, bool}> */
+    /**
+     * Supplies the course and module permissions required before category initialization.
+     *
+     * @return array<string, array{string, bool}>
+     */
     public static function missing_capability_provider(): array {
         return [
             'course access' => ['local/coursepilot:use', false],
@@ -194,9 +215,9 @@ final class ensure_quiz_question_categories_test extends \advanced_testcase {
     /**
      * Execute the same parameter and return validation as an external client.
      *
-     * @param class-string<external_api> $tool External tool class
+     * @param string $tool External tool class name
      * @param mixed ...$args Tool arguments
-     * @return array
+     * @return mixed[]
      */
     private static function call(string $tool, mixed ...$args): array {
         return external_api::clean_returnvalue($tool::execute_returns(), $tool::execute(...$args));

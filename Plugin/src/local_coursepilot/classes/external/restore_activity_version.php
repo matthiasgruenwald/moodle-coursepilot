@@ -29,8 +29,6 @@ use local_coursepilot\history\version_history;
 use local_coursepilot\quiz\arrangement;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * "Three versions ago it was better" as an executable write
  * (Spec 0015 §10.7, ticket #395, phase 4): the old state is carried forward
@@ -71,7 +69,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class restore_activity_version extends external_api {
-
     /**
      * The completion fields (identical to
      * {@see set_completion}::ALLOWED_FIELDS plus its module-specific
@@ -94,6 +91,8 @@ final class restore_activity_version extends external_api {
     ];
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -112,10 +111,12 @@ final class restore_activity_version extends external_api {
     }
 
     /**
+     * Runs the restore activity version tool.
+     *
      * @param int $cmid
      * @param int $targetversion
      * @param bool $confirmed
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $cmid, int $targetversion, bool $confirmed = false): array {
         $params = self::validate_parameters(self::execute_parameters(), [
@@ -157,7 +158,10 @@ final class restore_activity_version extends external_api {
 
         $changes = [];
         if ($normalpatch) {
-            $result = update_module_settings::execute($params['cmid'], json_encode($normalpatch, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            $result = update_module_settings::execute(
+                $params['cmid'],
+                json_encode($normalpatch, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+            );
             $changes = array_merge($changes, $result['changes']);
         }
 
@@ -173,7 +177,7 @@ final class restore_activity_version extends external_api {
                 );
                 $changes = array_merge($changes, $result['changes']);
             } catch (moodle_exception $e) {
-                // set_completion's own two-step flow applies (ticket #392): without
+                // Note: set_completion's own two-step flow applies (ticket #392): without
                 // confirmation AND a real data-loss risk it writes nothing and
                 // reports the number of affected learners - exactly the "data-loss
                 // warning" this endpoint is meant to reuse instead of inventing
@@ -287,7 +291,7 @@ final class restore_activity_version extends external_api {
      *
      * @param \stdClass $cm
      * @param int $targetversion
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception arrangementrestoreblocked if the quiz already has attempts and
      *         the arrangement differs; writevehicleblocked if the arrangement does not differ.
      */
@@ -370,7 +374,7 @@ final class restore_activity_version extends external_api {
      * comparison when building the patch.
      *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      */
     private static function read_settings(int $cmid): array {
         $result = get_module_settings::execute($cmid);
@@ -385,10 +389,10 @@ final class restore_activity_version extends external_api {
      * target state (e.g. "sectionnum" - the target state only knows
      * "section") is automatically left out instead of being written wrongly.
      *
-     * @param class-string<\local_coursepilot\catalog\module_catalog> $catalogclass
-     * @param array $before
-     * @param array $target
-     * @return array
+     * @param string $catalogclass Type: class-string<\local_coursepilot\catalog\module_catalog>.
+     * @param mixed[] $before
+     * @param mixed[] $target
+     * @return mixed[]
      */
     private static function build_normal_patch(string $catalogclass, array $before, array $target): array {
         $blocklist = array_unique(array_merge(shared_block::BLOCKLIST, $catalogclass::blocklist()));
@@ -414,9 +418,9 @@ final class restore_activity_version extends external_api {
      * independent of "confirmed": whether they are actually written is decided
      * by {@see self::execute()}.
      *
-     * @param array $before
-     * @param array $target
-     * @return array
+     * @param mixed[] $before
+     * @param mixed[] $target
+     * @return mixed[]
      */
     private static function build_completion_patch(array $before, array $target): array {
         $patch = [];
@@ -439,7 +443,7 @@ final class restore_activity_version extends external_api {
      * message of its own.
      *
      * @param int $targetversion
-     * @param array $changes
+     * @param mixed[] $changes
      * @param string|null $completionwarning set_completion's message if its own
      *        two-step flow prevented writing the completion fields.
      * @param string|null $arrangementmessage Additional sentence from {@see self::restore_quiz_arrangement()}.
@@ -487,6 +491,8 @@ final class restore_activity_version extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -30,10 +30,11 @@ use local_coursepilot\location_selection;
  * Prepares display-neutral state for the OAuth consent template.
  */
 final class authorize_page {
-
     /**
+     * Provides page data.
+     *
      * @param string $clientname
-     * @param array<string, string> $params response_type/client_id/redirect_uri/code_challenge/code_challenge_method
+     * @param string[] $params response_type/client_id/redirect_uri/code_challenge/code_challenge_method
      * @param string $state
      * @param \moodle_url $formurl
      * @param \moodle_url $locationselectionurl
@@ -64,6 +65,8 @@ final class authorize_page {
     }
 
     /**
+     * Provides consent text.
+     *
      * @param string $clientname
      * @param bool $allowpersonaldata
      * @return string HTML - the source strings already contain markup (<strong>, <br>).
@@ -82,6 +85,8 @@ final class authorize_page {
     }
 
     /**
+     * Provides location data.
+     *
      * @param string $target
      * @return array{text: string}
      */
@@ -96,7 +101,9 @@ final class authorize_page {
     }
 
     /**
-     * @param array<string, string> $params
+     * Provides hidden fields.
+     *
+     * @param string[] $params
      * @param string $state
      * @return list<array{name: string, value: string}>
      */

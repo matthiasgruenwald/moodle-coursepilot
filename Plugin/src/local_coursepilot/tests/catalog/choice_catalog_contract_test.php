@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(choice::class)]
 #[CoversClass(\local_coursepilot\catalog\shared_block::class)]
 final class choice_catalog_contract_test extends \advanced_testcase {
-
     /**
      * Cataloged columns exactly match the choice table.
      */

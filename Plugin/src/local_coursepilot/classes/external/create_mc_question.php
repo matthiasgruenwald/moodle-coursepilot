@@ -47,8 +47,9 @@ require_once($CFG->libdir . '/questionlib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class create_mc_question extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -76,15 +77,17 @@ final class create_mc_question extends external_api {
     }
 
     /**
+     * Runs the create mc question tool.
+     *
      * @param int $categoryid
      * @param string $name
      * @param string $questiontext
      * @param string $selectionmode
-     * @param array $answers
+     * @param mixed[] $answers
      * @param float $defaultmark
      * @param string $generalfeedback
      * @param bool $confirmed
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $categoryid,
@@ -157,7 +160,15 @@ final class create_mc_question extends external_api {
                 'questionbankentryid' => (int) $question['questionbankentryid'],
                 'version' => (int) $question['version'],
                 'status' => $question['status'],
-                'message' => get_string('mcquestioncreated', 'local_coursepilot', (object) ['name' => $params['name'], 'entryid' => $question['questionbankentryid'], 'version' => $question['version']]),
+                'message' => get_string(
+                    'mcquestioncreated',
+                    'local_coursepilot',
+                    (object) [
+                        'name' => $params['name'],
+                        'entryid' => $question['questionbankentryid'],
+                        'version' => $question['version'],
+                    ]
+                ),
             ],
             question_suspect_gate::empty_result()
         );
@@ -174,7 +185,7 @@ final class create_mc_question extends external_api {
      * Public: reused by {@see \local_coursepilot\external\update_mc_question}
      * (ticket #419), which patches the same simple fields rather than creating.
      *
-     * @param array $answers
+     * @param mixed[] $answers
      * @param string $selectionmode
      * @return void
      */
@@ -198,10 +209,13 @@ final class create_mc_question extends external_api {
             throw new \invalid_parameter_exception('At least one answer must have a positive fraction.');
         }
         $positivesum = round(array_sum(array_map(
-            static fn($answer) => max(0.0, (float) $answer['fraction']), $answers)), 2);
+            static fn($answer) => max(0.0, (float) $answer['fraction']),
+            $answers
+        )), 2);
         if (abs($positivesum - 1.0) > 0.001) {
             throw new \invalid_parameter_exception(
-                'Positive fraction values must sum to exactly 1 (currently ' . $positivesum . ').');
+                'Positive fraction values must sum to exactly 1 (currently ' . $positivesum . ').'
+            );
         }
     }
 
@@ -212,7 +226,7 @@ final class create_mc_question extends external_api {
      * one for a first import. No further gate is needed there, as this
      * endpoint's gate has already decided BEFORE this call.
      *
-     * @param array $params
+     * @param mixed[] $params
      * @return string
      */
     private static function build_xml(array $params): string {
@@ -271,6 +285,8 @@ XML;
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

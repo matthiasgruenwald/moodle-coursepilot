@@ -22,8 +22,6 @@ use core\output\action_link;
 use local_coursepilot\admin\pointer_scan;
 use local_coursepilot\webdav\webdav_setup_steps;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * WebDAV setup check 1 (Issue #499, Spec #486 §12): repository enabled.
  * Disabled returns INFO (optional) while no context pointer targets external
@@ -38,15 +36,29 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class webdav_repository_check extends check {
-
+    /**
+     * Returns id.
+     *
+     * @return string
+     */
     public function get_id(): string {
         return 'webdav_repository';
     }
 
+    /**
+     * Returns name.
+     *
+     * @return string
+     */
     public function get_name(): string {
         return get_string('webdavcheck1name', 'local_coursepilot');
     }
 
+    /**
+     * Returns result.
+     *
+     * @return result
+     */
     public function get_result(): result {
         global $USER;
 

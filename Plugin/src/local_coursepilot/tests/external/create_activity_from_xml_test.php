@@ -31,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(create_activity_from_xml::class)]
 final class create_activity_from_xml_test extends \advanced_testcase {
-
     public function test_lightboxgallery_missing_timemodified_is_rejected_without_mutation(): void {
         global $DB;
         if (!\core_plugin_manager::instance()->get_plugin_info('mod_lightboxgallery')) {
@@ -86,9 +85,12 @@ final class create_activity_from_xml_test extends \advanced_testcase {
         $xml = export_default_activity::execute($course->id, 'book')['xml'];
         $old = create_activity_from_xml::execute($course->id, 'book', 1, $xml)['cmid'];
         $other = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
-        $DB->set_field('course_modules', 'availability',
+        $DB->set_field(
+            'course_modules',
+            'availability',
             json_encode(['op' => '&', 'c' => [['type' => 'completion', 'cm' => $old, 'e' => 1]], 'showc' => [true]]),
-            ['id' => $other->cmid]);
+            ['id' => $other->cmid]
+        );
 
         $result = create_activity_from_xml::execute($course->id, 'book', 1, $xml, false, $old);
         $result = external_api::clean_returnvalue(create_activity_from_xml::execute_returns(), $result);
@@ -108,9 +110,12 @@ final class create_activity_from_xml_test extends \advanced_testcase {
         $xml = export_default_activity::execute($course->id, 'book')['xml'];
         $old = create_activity_from_xml::execute($course->id, 'book', 1, $xml)['cmid'];
         $other = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
-        $DB->set_field('course_modules', 'availability',
+        $DB->set_field(
+            'course_modules',
+            'availability',
             json_encode(['op' => '&', 'c' => [['type' => 'completion', 'cm' => $old, 'e' => 1]], 'showc' => [true]]),
-            ['id' => $other->cmid]);
+            ['id' => $other->cmid]
+        );
         $cms = $DB->count_records('course_modules');
         $versions = $DB->count_records('local_coursepilot_cm_version');
 

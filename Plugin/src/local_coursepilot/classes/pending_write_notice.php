@@ -35,7 +35,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class pending_write_notice {
-
     /**
      * Records a failed write operation and returns the newly
      * assigned identifier.
@@ -154,7 +153,10 @@ final class pending_write_notice {
     }
 
     /**
-     * @param array<string, array{timestamp: int, path: string, operation: string, error_class: string, course_id: int}> $entries
+     * Saves the pending write notice.
+     *
+     * @param mixed[] $entries
+     *        Type: array<string,array{timestamp:int,path:string,operation:string,error_class:string,course_id:int}>.
      * @throws \moodle_exception pendingnotequotaexceeded
      */
     private static function save(array $entries): void {
@@ -185,7 +187,9 @@ final class pending_write_notice {
     }
 
     /**
-     * @param array<string, mixed> $existing Already assigned identifiers (keys).
+     * Generates identifier.
+     *
+     * @param mixed[] $existing Already assigned identifiers (keys).
      * @return string
      */
     private static function generate_identifier(array $existing): string {

@@ -27,7 +27,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class plugin_meta {
-
     /**
      * $plugin from the running version.php, not config_plugins, so deployment
      * without upgrade.php remains visible (see get_version_info::execute()).

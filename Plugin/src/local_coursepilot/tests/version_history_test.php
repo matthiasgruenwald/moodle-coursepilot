@@ -31,7 +31,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(version_history::class)]
 final class version_history_test extends \advanced_testcase {
-
     /**
      * Create a course, page and editing teacher. Creation already fires
      * course_module_created (version 1, source moodle, #386, Spec 0015 §10.3).

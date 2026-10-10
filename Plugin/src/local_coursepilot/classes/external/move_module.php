@@ -24,8 +24,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Write core 13 (Spec 0015 phase 3, #391): move an activity to another
  * section, optionally to a specific position within it.
@@ -48,8 +46,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class move_module extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -68,10 +67,12 @@ final class move_module extends external_api {
     }
 
     /**
+     * Runs the move module tool.
+     *
      * @param int $cmid
      * @param int $sectionnum
      * @param int|null $position
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception sectionnotfound
      */
     public static function execute(int $cmid, int $sectionnum, ?int $position = null): array {
@@ -128,6 +129,8 @@ final class move_module extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

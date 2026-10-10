@@ -42,8 +42,9 @@ require_once($CFG->libdir . '/questionlib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class get_question_categories extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -54,9 +55,11 @@ class get_question_categories extends external_api {
     }
 
     /**
+     * Runs the get question categories tool.
+     *
      * @param int $courseid
      * @param int $questionbankid
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $courseid, int $questionbankid): array {
         global $DB;
@@ -71,7 +74,8 @@ class get_question_categories extends external_api {
         // Make sure the top category exists (creates it if necessary).
         question_get_top_category($qbankcontext->id, true);
 
-        $categories = $DB->get_records('question_categories',
+        $categories = $DB->get_records(
+            'question_categories',
             ['contextid' => $qbankcontext->id],
             'parent ASC, sortorder ASC, name ASC',
             'id, name, parent'
@@ -90,14 +94,16 @@ class get_question_categories extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_multiple_structure
      */
     public static function execute_returns(): external_multiple_structure {
         return new external_multiple_structure(
             new external_single_structure([
-                'id'     => new external_value(PARAM_INT,  'Category ID'),
+                'id'     => new external_value(PARAM_INT, 'Category ID'),
                 'name'   => new external_value(PARAM_TEXT, 'Category name'),
-                'parent' => new external_value(PARAM_INT,  'Parent category ID (0 for the top category itself)'),
+                'parent' => new external_value(PARAM_INT, 'Parent category ID (0 for the top category itself)'),
             ])
         );
     }

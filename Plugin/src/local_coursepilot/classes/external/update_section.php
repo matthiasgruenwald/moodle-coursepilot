@@ -25,8 +25,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Write core 13 (Spec 0015 Phase 3, ticket #391): patches name, summary
  * and visibility of an existing section - only the supplied fields
@@ -45,11 +43,12 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class update_section extends external_api {
-
     /** @var string[] Catalog of the fields patchable via this endpoint. */
     private const SETTABLE_FIELDS = ['name', 'summary', 'visible'];
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -65,10 +64,12 @@ final class update_section extends external_api {
     }
 
     /**
+     * Runs the update section tool.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string $fieldsjson
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $courseid, int $sectionnum, string $fieldsjson): array {
         global $CFG;
@@ -126,8 +127,8 @@ final class update_section extends external_api {
      * All-or-nothing check BEFORE writing: unknown field,
      * disallowed value for "visible".
      *
-     * @param array $patch
-     * @return array Moodle field names => value, directly for course_update_section().
+     * @param mixed[] $patch
+     * @return mixed[] Moodle field names => value, directly for course_update_section().
      * @throws moodle_exception unknownfield|invalidfieldvalue
      */
     private static function validate_patch(array $patch): array {
@@ -156,10 +157,12 @@ final class update_section extends external_api {
     }
 
     /**
-     * @param array $patch
-     * @param array $before
+     * Provides diff.
+     *
+     * @param mixed[] $patch
+     * @param mixed[] $before
      * @param \section_info $after
-     * @return array
+     * @return mixed[]
      */
     private static function diff(array $patch, array $before, \section_info $after): array {
         $changes = [];
@@ -178,7 +181,9 @@ final class update_section extends external_api {
     }
 
     /**
-     * @param array $changes
+     * Builds message.
+     *
+     * @param mixed[] $changes
      * @param bool $hidesactivities
      * @return string
      */
@@ -202,6 +207,8 @@ final class update_section extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

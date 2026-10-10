@@ -28,7 +28,6 @@ use core_external\external_api;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(get_sections::class)]
 final class get_sections_test extends \advanced_testcase {
-
     /**
      * Return section id, number, name and visibility.
      */
@@ -92,6 +91,8 @@ final class get_sections_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
@@ -101,9 +102,11 @@ final class get_sections_test extends \advanced_testcase {
     }
 
     /**
-     * @param array $result
+     * Finds section.
+     *
+     * @param mixed[] $result
      * @param int $sectionnum
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function find_section(array $result, int $sectionnum): ?array {
         foreach ($result as $section) {

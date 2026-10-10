@@ -57,11 +57,20 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class choice implements module_catalog {
-
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'choice';
     }
 
+    /**
+     * Provides fields.
+     *
+     * @return mixed[]
+     */
     public static function fields(): array {
         return [
             new field(
@@ -232,10 +241,23 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Provides state.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
+     * @return mixed[]
+     */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return module_state::unknown(self::modname(), $instanceid, $fullcontent);
     }
 
+    /**
+     * Writes options.
+     *
+     * @return mixed[]
+     */
     public static function write_options(): array {
         return [
             'scalar_to_repeated' => ['limit' => 'option'],
@@ -259,10 +281,20 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Provides common field names.
+     *
+     * @return mixed[]
+     */
     public static function common_field_names(): array {
         return array_map(static fn (field $f): string => $f->name, self::fields());
     }
 
+    /**
+     * Provides pseudofields.
+     *
+     * @return mixed[]
+     */
     public static function pseudofields(): array {
         return [
             new field(
@@ -277,6 +309,7 @@ final class choice implements module_catalog {
                 null,
                 'mod/choice/mod_form.php:53-78 (repeat_elements() of the option/limit/optionid group); '
                     . 'mod/choice/lib.php:110/151 (choice_add_instance()/choice_update_instance(): '
+                    // phpcs:ignore moodle.Strings.ForbiddenStrings.Found -- Source citation keeps its code span.
                     . '`foreach ($choice->option as $key => $value)`)'
             ),
             new field(
@@ -289,6 +322,7 @@ final class choice implements module_catalog {
                 null,
                 null,
                 'mod/choice/mod_form.php:53,61-64 (repeat_elements(), default 0); mod/choice/lib.php:116-117/156-157 '
+                    // phpcs:ignore moodle.Strings.ForbiddenStrings.Found -- Source citation keeps its code span.
                     . '(`$choice->limit[$key]`)'
             ),
             new field(
@@ -309,12 +343,22 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Provides blocklist.
+     *
+     * @return mixed[]
+     */
     public static function blocklist(): array {
         return [
             'completionsubmit',
         ];
     }
 
+    /**
+     * Provides combination rules.
+     *
+     * @return mixed[]
+     */
     public static function combination_rules(): array {
         return [
             '"limit[]" must have as many entries as "option[]" (same key in '
@@ -324,6 +368,11 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Provides side effects.
+     *
+     * @return mixed[]
+     */
     public static function side_effects(): array {
         return [
             'Switching "publish" from anonymous (0) to named (1) makes answers already given '
@@ -333,6 +382,11 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Provides bundles.
+     *
+     * @return mixed[]
+     */
     public static function bundles(): array {
         return [
             'allocation' => [
@@ -346,18 +400,32 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Writes route.
+     *
+     * @return ?string
+     */
     public static function write_route(): ?string {
         return null;
     }
 
+    /**
+     * Provides checked constants.
+     *
+     * @return mixed[]
+     */
     public static function checked_constants(): array {
         return [];
     }
 
+    /**
+     * Provides learner locks.
+     *
+     * @return mixed[]
+     */
     public static function learner_locks(): array {
-        // allowupdate: the form default 0 is itself a lock. It counts
-        // on creation too (#583) - whoever wants to create it open names
-        // "allowupdate": 1 (as does the "allocation" bundle).
+        // Field allowupdate: the form default 0 is itself a lock. It counts on creation too (#583).
+        // Whoever wants to create it open names "allowupdate": 1 (as does the "allocation" bundle).
         return [
             'allowupdate' => ['op' => 'equals', 'value' => 0,
                 'reason' => 'Learners cannot change their answer; a correction needs the teacher to delete the response.'],
@@ -366,10 +434,21 @@ final class choice implements module_catalog {
         ];
     }
 
+    /**
+     * Provides grade origin.
+     *
+     * @param int $instanceid The instanceid.
+     * @return string
+     */
     public static function grade_origin(int $instanceid = 0): string {
         return learner_locks::GRADE_NONE;
     }
 
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

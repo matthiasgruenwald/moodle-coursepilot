@@ -30,7 +30,6 @@ use local_coursepilot\webdav\webdav_setup_steps;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class pointer_reader {
-
     /**
      * Derive a check value from ETag or `getlastmodified` (Issue #513,
      * Spec #486 §4/§6). {@see webdav_storage_port} returns it as `contenthash`
@@ -72,7 +71,7 @@ final class pointer_reader {
             $stringkey = 'webdavexternalerrorunclear';
         }
         return new \moodle_exception($stringkey, 'local_coursepilot', '', (object) [
-            // Issue #565: localized label rather than the internal constant; see webdav_error::label().
+            // Localized label rather than the internal constant; see webdav_error::label().
             'errorclass' => webdav_error::label($e->errorclass),
             'page' => webdav_setup_steps::LOCATION_SELECTION_PAGE,
         ]);

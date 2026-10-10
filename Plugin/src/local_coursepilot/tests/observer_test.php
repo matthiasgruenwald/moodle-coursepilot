@@ -45,7 +45,6 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 #[CoversClass(observer::class)]
 #[CoversClass(\local_coursepilot\history\version_writer::class)]
 final class observer_test extends \advanced_testcase {
-
     /**
      * Creates a course with a page activity and an editing teacher.
      *
@@ -84,7 +83,7 @@ final class observer_test extends \advanced_testcase {
     private function edit_via_module_form(\stdClass $cm, \stdClass $course, string $newname): void {
         [, , , $moduleinfo] = get_moduleinfo_data($cm, $course);
         $moduleinfo->name = $newname;
-        // mod_page_mod_form::data_preprocessing() maps content/contentformat onto its
+        // Note: mod_page_mod_form::data_preprocessing() maps content/contentformat onto its
         // own 'page' editor field, which get_moduleinfo_data() (module-independent) does not
         // know - without this line page_update_instance() lacks the field that every real
         // form submission delivers.
@@ -185,7 +184,12 @@ final class observer_test extends \advanced_testcase {
         // files only land in the version of the manual change (version 2).
         $version = $DB->get_record('local_coursepilot_cm_version', ['cmid' => $cm->id, 'version' => 2], '*', MUST_EXIST);
 
-        $introrow = $DB->get_record('local_coursepilot_cm_file', ['pathnamehash' => $introfile->get_pathnamehash()], '*', MUST_EXIST);
+        $introrow = $DB->get_record(
+            'local_coursepilot_cm_file',
+            ['pathnamehash' => $introfile->get_pathnamehash()],
+            '*',
+            MUST_EXIST
+        );
         $introlink = $DB->get_record('local_coursepilot_cm_version_file', [
             'versionid' => $version->id,
             'fileid' => $introrow->id,
@@ -476,6 +480,8 @@ final class observer_test extends \advanced_testcase {
     }
 
     /**
+     * Creates quiz with two questions.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, quiz (with two questions).
      */
     private function create_quiz_with_two_questions(): array {

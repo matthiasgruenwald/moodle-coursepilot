@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(personal_data_hosts_check::class)]
 final class personal_data_hosts_check_test extends \advanced_testcase {
-
     public function test_is_info_when_list_is_empty(): void {
         $this->resetAfterTest();
 

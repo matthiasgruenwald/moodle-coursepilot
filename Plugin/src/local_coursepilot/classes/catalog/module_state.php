@@ -5,12 +5,18 @@
 // it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
+//
+// Coursepilot is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\catalog;
 
 use local_coursepilot\availability_privacy;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Shared implementation of the catalog read contract.
@@ -20,13 +26,12 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class module_state {
-
     /**
      * Full state in catalog vocabulary for read-modify-write. External tools
      * need no knowledge of module tables or pseudofield readers.
      *
      * @param \stdClass $cm
-     * @return array
+     * @return mixed[]
      */
     public static function effective_settings(\stdClass $cm): array {
         global $CFG, $DB;
@@ -79,7 +84,7 @@ final class module_state {
      * @param string $modname
      * @param int $instanceid
      * @param bool $fullcontent
-     * @return array{name: string, content: array, settings: array, quizslots: array}
+     * @return array{name: string, content: mixed[], settings: mixed[], quizslots: mixed[]}
      */
     public static function unknown(string $modname, int $instanceid, bool $fullcontent): array {
         global $DB;
@@ -95,7 +100,7 @@ final class module_state {
      * in later steps.
      *
      * @param bool $fullcontent
-     * @return array{name: string, content: array, settings: array, quizslots: array}
+     * @return array{name: string, content: mixed[], settings: mixed[], quizslots: mixed[]}
      */
     public static function empty(bool $fullcontent): array {
         return ['name' => '', 'content' => self::content_field('', $fullcontent), 'settings' => [], 'quizslots' => []];
@@ -110,10 +115,16 @@ final class module_state {
      * @return array{html: string, preview: string, truncated: bool}
      */
     public static function content_field(string $html, bool $fullcontent): array {
-        return ['html' => $fullcontent ? $html : '', 'preview' => self::preview($html, $fullcontent), 'truncated' => !$fullcontent && trim($html) !== ''];
+        return [
+            'html' => $fullcontent ? $html : '',
+            'preview' => self::preview($html, $fullcontent),
+            'truncated' => !$fullcontent && trim($html) !== '',
+        ];
     }
 
     /**
+     * Previews the module state.
+     *
      * @param string $html
      * @param bool $fullcontent
      * @return string
@@ -127,7 +138,7 @@ final class module_state {
      * Convert associative field/value settings to catalog name/value pairs.
      * Each catalog class uses this shared normalization for its own settings.
      *
-     * @param array<string, mixed> $settings
+     * @param mixed[] $settings
      * @return array<int, array{name: string, value: string}>
      */
     public static function settings(array $settings): array {
@@ -145,7 +156,7 @@ final class module_state {
      * declare groups in module_catalog::write_options()["repeated_group"], so
      * get_module_settings needs no module-specific branch.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param int $instanceid
      * @return array<string, mixed> Field name to value list; empty if the type declares no group.
      */

@@ -22,4 +22,5 @@
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- Entry shim; the included script loads config.php.
 require_once(__DIR__ . '/location_selection_browse.php');

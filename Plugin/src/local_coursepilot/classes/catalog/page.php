@@ -37,11 +37,20 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class page implements module_catalog {
-
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'page';
     }
 
+    /**
+     * Provides fields.
+     *
+     * @return mixed[]
+     */
     public static function fields(): array {
         return [
             new field(
@@ -115,6 +124,14 @@ final class page implements module_catalog {
         ];
     }
 
+    /**
+     * Provides state.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
+     * @return mixed[]
+     */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         global $DB;
 
@@ -128,14 +145,29 @@ final class page implements module_catalog {
         return $details;
     }
 
+    /**
+     * Writes options.
+     *
+     * @return mixed[]
+     */
     public static function write_options(): array {
         return ['editor_content' => ['page' => ['content', 'contentformat']]];
     }
 
+    /**
+     * Provides common field names.
+     *
+     * @return mixed[]
+     */
     public static function common_field_names(): array {
         return array_map(static fn (field $f): string => $f->name, self::fields());
     }
 
+    /**
+     * Provides pseudofields.
+     *
+     * @return mixed[]
+     */
     public static function pseudofields(): array {
         return [
             new field(
@@ -148,6 +180,7 @@ final class page implements module_catalog {
                 null,
                 null,
                 null,
+                // phpcs:ignore moodle.Strings.ForbiddenStrings.Found -- Source citation keeps its code span.
                 'mod/page/lib.php (page_update_instance(): `$data->content = $data->page[\'text\'];`)'
             ),
             new field(
@@ -159,6 +192,7 @@ final class page implements module_catalog {
                 0,
                 [0, 1],
                 null,
+                // phpcs:ignore moodle.Strings.ForbiddenStrings.Found -- Source citation keeps its code span.
                 'mod/page/lib.php (page_update_instance(): `$displayoptions[\'printintro\']`); Default '
                     . 'mod/page/settings.php:41'
             ),
@@ -170,6 +204,7 @@ final class page implements module_catalog {
                 1,
                 [0, 1],
                 null,
+                // phpcs:ignore moodle.Strings.ForbiddenStrings.Found -- Source citation keeps its code span.
                 'mod/page/lib.php (page_update_instance(): `$displayoptions[\'printlastmodified\']`); Default '
                     . 'mod/page/settings.php:43'
             ),
@@ -199,6 +234,11 @@ final class page implements module_catalog {
         ];
     }
 
+    /**
+     * Provides blocklist.
+     *
+     * @return mixed[]
+     */
     public static function blocklist(): array {
         return [
             'revision',
@@ -208,34 +248,75 @@ final class page implements module_catalog {
         ];
     }
 
+    /**
+     * Provides combination rules.
+     *
+     * @return mixed[]
+     */
     public static function combination_rules(): array {
         return [];
     }
 
+    /**
+     * Provides side effects.
+     *
+     * @return mixed[]
+     */
     public static function side_effects(): array {
         return [];
     }
 
+    /**
+     * Provides bundles.
+     *
+     * @return mixed[]
+     */
     public static function bundles(): array {
         return [];
     }
 
+    /**
+     * Writes route.
+     *
+     * @return ?string
+     */
     public static function write_route(): ?string {
         return null;
     }
 
+    /**
+     * Provides checked constants.
+     *
+     * @return mixed[]
+     */
     public static function checked_constants(): array {
         return ['RESOURCELIB_DISPLAY_POPUP'];
     }
 
+    /**
+     * Provides learner locks.
+     *
+     * @return mixed[]
+     */
     public static function learner_locks(): array {
         return [];
     }
 
+    /**
+     * Provides grade origin.
+     *
+     * @param int $instanceid The instanceid.
+     * @return string
+     */
     public static function grade_origin(int $instanceid = 0): string {
         return learner_locks::GRADE_NONE;
     }
 
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

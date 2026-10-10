@@ -39,7 +39,6 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 #[CoversClass(restore_activity_version::class)]
 #[CoversClass(arrangement::class)]
 final class restore_activity_version_quiz_test extends \advanced_testcase {
-
     /**
      * Creates course, quiz and two questions and then captures a clean
      * baseline (the two slot_created events when adding the
@@ -78,6 +77,8 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * Returns slot rows, ascending by "slot".
+     *
      * @param int $quizid
      * @return \stdClass[] Slot rows, ascending by "slot".
      */
@@ -87,6 +88,8 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * Seeds attempt.
+     *
      * @param int $quizid
      * @param int $userid
      * @return void

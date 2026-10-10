@@ -29,8 +29,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(restore_activity_version::class)]
 final class restore_activity_version_test extends \advanced_testcase {
-
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -43,8 +44,10 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
+     * Returns current state, same shape as get_module_settings.
+     *
      * @param int $cmid
-     * @return array Current state, same shape as get_module_settings.
+     * @return mixed[] Current state, same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -55,6 +58,8 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
+     * Seeds completion data.
+     *
      * @param int $cmid
      * @param int $userid
      * @return void
@@ -467,10 +472,12 @@ final class restore_activity_version_test extends \advanced_testcase {
         ], 'Intro design');
 
         $this->create_material_file('blatt.pdf', 'Fassung A');
-        update_module_settings::execute($cmid, json_encode(['introattachments' => ['blatt.pdf']])); // Version 2
+        update_module_settings::execute($cmid, json_encode(['introattachments' => ['blatt.pdf']]));
+        // Version 2.
 
         $this->create_material_file('blatt.pdf', 'Fassung B');
-        update_module_settings::execute($cmid, json_encode(['introattachments' => ['blatt.pdf']])); // Version 3
+        update_module_settings::execute($cmid, json_encode(['introattachments' => ['blatt.pdf']]));
+        // Version 3.
 
         $replaced = get_file_storage()->get_file($modulecontext->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf');
         $this->assertSame('Fassung B', $replaced->get_content());
@@ -503,6 +510,8 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

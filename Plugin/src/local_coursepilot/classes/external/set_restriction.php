@@ -29,8 +29,6 @@ use local_coursepilot\catalog\registry;
 use moodle_exception;
 use stdClass;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The only write path for restrictions (Spec 0015, ticket #393): builds the
  * native "availability" JSON from teacher-friendly arguments instead of
@@ -65,7 +63,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class set_restriction extends external_api {
-
     /**
      * Teacher-facing status words for "completion" -> Moodle's
      * COMPLETION_xx values (lib/completionlib.php: INCOMPLETE=0, COMPLETE=1,
@@ -96,6 +93,8 @@ final class set_restriction extends external_api {
     ];
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -114,10 +113,12 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Runs the set restriction tool.
+     *
      * @param int $cmid
      * @param string $conditionsjson
      * @param string[] $confirmlearnerlocks
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $cmid, string $conditionsjson, array $confirmlearnerlocks = []): array {
         global $CFG;
@@ -188,8 +189,10 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Returns current state, same shape as get_module_settings.
+     *
      * @param int $cmid
-     * @return array Current state, same shape as get_module_settings.
+     * @return mixed[] Current state, same shape as get_module_settings.
      */
     private static function read_settings(int $cmid): array {
         $result = get_module_settings::execute($cmid);
@@ -220,7 +223,7 @@ final class set_restriction extends external_api {
      * JSON object - both become associative arrays. "conditions_json" must
      * however be a list (JSON array), not an object.
      *
-     * @param array $value
+     * @param mixed[] $value
      * @return bool
      */
     private static function is_json_object(array $value): bool {
@@ -233,7 +236,7 @@ final class set_restriction extends external_api {
      * get_json() factory of the three supported condition types.
      *
      * @param int $courseid
-     * @param array $condition
+     * @param mixed[] $condition
      * @return stdClass
      * @throws moodle_exception restrictionunknowntype|restrictionactivitynotfound|restrictioninvalidstatus|
      *         restrictioninvaliddate|restrictiongroupnotfound
@@ -258,14 +261,18 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Builds completion condition.
+     *
      * @param int $courseid
-     * @param array $condition
+     * @param mixed[] $condition
      * @return stdClass
      */
     private static function build_completion_condition(int $courseid, array $condition): stdClass {
         $activitycmid = self::positive_int($condition['activity_cmid'] ?? null);
-        if ($activitycmid === null
-                || !get_coursemodule_from_id('', $activitycmid, $courseid, false, IGNORE_MISSING)) {
+        if (
+            $activitycmid === null
+                || !get_coursemodule_from_id('', $activitycmid, $courseid, false, IGNORE_MISSING)
+        ) {
             throw new moodle_exception(
                 'restrictionactivitynotfound',
                 'local_coursepilot',
@@ -288,7 +295,9 @@ final class set_restriction extends external_api {
     }
 
     /**
-     * @param array $condition
+     * Builds date condition.
+     *
+     * @param mixed[] $condition
      * @return stdClass
      */
     private static function build_date_condition(array $condition): stdClass {
@@ -307,8 +316,10 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Builds group condition.
+     *
      * @param int $courseid
-     * @param array $condition
+     * @param mixed[] $condition
      * @return stdClass
      */
     private static function build_group_condition(int $courseid, array $condition): stdClass {
@@ -412,6 +423,8 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Builds message.
+     *
      * @param int $count
      * @return string
      */
@@ -425,6 +438,8 @@ final class set_restriction extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

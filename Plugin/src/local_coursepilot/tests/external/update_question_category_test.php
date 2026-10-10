@@ -27,7 +27,6 @@ use core_external\external_api;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(update_question_category::class)]
 final class update_question_category_test extends \advanced_testcase {
-
     /**
      * Renaming changes the name and preserves the parent category.
      */
@@ -283,6 +282,8 @@ final class update_question_category_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

@@ -505,7 +505,10 @@ final class location_selection_test extends \advanced_testcase {
                 'material_store' => ['type' => 'moodle'],
             ]);
         } finally {
-            $this->assertSame('not_selected', location_selection::page_state((int) $user->id)['locations']['context_area']['state']);
+            $this->assertSame(
+                'not_selected',
+                location_selection::page_state((int) $user->id)['locations']['context_area']['state']
+            );
             \core\di::reset_container();
         }
     }
@@ -542,12 +545,15 @@ final class location_selection_test extends \advanced_testcase {
                 'material_store' => ['type' => 'moodle'],
             ]);
         } finally {
-            $this->assertSame('not_selected', location_selection::page_state((int) $user->id)['locations']['context_area']['state']);
+            $this->assertSame(
+                'not_selected',
+                location_selection::page_state((int) $user->id)['locations']['context_area']['state']
+            );
             \core\di::reset_container();
         }
     }
 
-    // --- Issue #497: locks, IServ detection, handover of a filled folder ---
+    // Locks, IServ detection, handover of a filled folder.
 
     public function test_browse_root_is_not_selectable(): void {
         $this->resetAfterTest();
@@ -707,7 +713,10 @@ final class location_selection_test extends \advanced_testcase {
                 'material_store' => ['type' => 'moodle'],
             ]);
         } finally {
-            $this->assertSame('not_selected', location_selection::page_state((int) $user->id)['locations']['context_area']['state']);
+            $this->assertSame(
+                'not_selected',
+                location_selection::page_state((int) $user->id)['locations']['context_area']['state']
+            );
             \core\di::reset_container();
         }
     }
@@ -743,7 +752,10 @@ final class location_selection_test extends \advanced_testcase {
                 'material_store' => ['type' => 'external', 'instanceid' => $instanceid, 'path' => 'Unterricht/Material'],
             ]);
         } finally {
-            $this->assertSame('not_selected', location_selection::page_state((int) $user->id)['locations']['context_area']['state']);
+            $this->assertSame(
+                'not_selected',
+                location_selection::page_state((int) $user->id)['locations']['context_area']['state']
+            );
             \core\di::reset_container();
         }
     }
@@ -765,13 +777,16 @@ final class location_selection_test extends \advanced_testcase {
                 'context_area' => ['type' => 'external', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
                 'material_store' => ['type' => 'moodle'],
             ]);
-            $this->assertFalse(location_selection::open_with_access((int) $user->id), 'Location selection is no longer open once a location is chosen.');
+            $this->assertFalse(
+                location_selection::open_with_access((int) $user->id),
+                'Location selection is no longer open once a location is chosen.'
+            );
         } finally {
             \core\di::reset_container();
         }
     }
 
-    // --- Issue #498: legacy items (previous location) ---
+    // Legacy items (previous location).
 
     /**
      * Record the previous Moodle location only when it contains context
@@ -1025,8 +1040,13 @@ final class location_selection_test extends \advanced_testcase {
         try {
             // Establish the old location without selecting it here: selection now
             // supplies Markdown templates, which would no longer be this fixture.
-            $this->write_v2_pointer($user, 'context_area', $instanceid, 'Alt',
-                $this->fixture_fingerprint() + ['iserv' => false]);
+            $this->write_v2_pointer(
+                $user,
+                'context_area',
+                $instanceid,
+                'Alt',
+                $this->fixture_fingerprint() + ['iserv' => false]
+            );
             location_selection::apply([
                 'context_area' => ['type' => 'external', 'instanceid' => $instanceid, 'path' => 'Neu'],
                 'material_store' => ['type' => 'moodle'],
@@ -1110,6 +1130,8 @@ final class location_selection_test extends \advanced_testcase {
     private int $lastinstanceid = 0;
 
     /**
+     * Prepares instance.
+     *
      * @return array{0: \stdClass, 1: fake_webdav_transport}
      */
     private function prepare_instance(): array {

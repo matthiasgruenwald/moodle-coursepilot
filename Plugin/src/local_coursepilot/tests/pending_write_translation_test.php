@@ -28,7 +28,6 @@ namespace local_coursepilot;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(pending_write_translation::class)]
 final class pending_write_translation_test extends \advanced_testcase {
-
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();

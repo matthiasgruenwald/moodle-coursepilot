@@ -39,7 +39,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class mark_memory {
-
     /** @var string Table name, see db/install.xml. */
     private const TABLE = 'local_coursepilot_context_mark';
 
@@ -65,9 +64,11 @@ final class mark_memory {
         if (!$record) {
             return null;
         }
-        if ((int) $record->filesize !== $size
+        if (
+            (int) $record->filesize !== $size
                 || (int) $record->timemodified !== $timemodified
-                || (string) $record->etag !== (string) ($etag ?? '')) {
+                || (string) $record->etag !== (string) ($etag ?? '')
+        ) {
             return null;
         }
         return (bool) $record->ismarked;
@@ -76,6 +77,9 @@ final class mark_memory {
     /**
      * Remembers the bit for a file - creates the entry or replaces
      * it, depending on whether one already exists.
+     * @param string $path The path.
+     * @param int $size The size.
+     * @param int $timemodified The timemodified.
      * @param string|null $etag
      * @param bool $marked
      */

@@ -28,7 +28,6 @@ use core_external\external_api;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(get_question_categories::class)]
 final class get_question_categories_test extends \advanced_testcase {
-
     /**
      * Return top and child categories with id, name and parent ID.
      */
@@ -102,6 +101,8 @@ final class get_question_categories_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
@@ -111,9 +112,11 @@ final class get_question_categories_test extends \advanced_testcase {
     }
 
     /**
-     * @param array $result
+     * Finds category.
+     *
+     * @param mixed[] $result
      * @param int $id
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function find_category(array $result, int $id): ?array {
         foreach ($result as $category) {

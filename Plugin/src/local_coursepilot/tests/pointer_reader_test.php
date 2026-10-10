@@ -30,7 +30,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(pointer_reader::class)]
 final class pointer_reader_test extends \advanced_testcase {
-
     /**
      * ETag takes precedence over getlastmodified; SHA-1 hex is safe for
      * PARAM_ALPHANUMEXT even when ETags contain quotes.

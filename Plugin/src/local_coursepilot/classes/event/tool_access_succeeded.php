@@ -33,8 +33,9 @@ namespace local_coursepilot\event;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class tool_access_succeeded extends \core\event\base {
-
     /**
+     * Returns description.
+     *
      * @return string
      */
     public function get_description() {
@@ -42,6 +43,8 @@ class tool_access_succeeded extends \core\event\base {
     }
 
     /**
+     * Returns name.
+     *
      * @return string
      */
     public static function get_name() {
@@ -49,6 +52,8 @@ class tool_access_succeeded extends \core\event\base {
     }
 
     /**
+     * Initialises the tool access succeeded.
+     *
      * @return void
      */
     protected function init() {
@@ -58,6 +63,8 @@ class tool_access_succeeded extends \core\event\base {
     }
 
     /**
+     * Validates data.
+     *
      * @return void
      * @throws \coding_exception
      */
@@ -69,6 +76,8 @@ class tool_access_succeeded extends \core\event\base {
     }
 
     /**
+     * Returns other mapping.
+     *
      * @return false
      */
     public static function get_other_mapping() {

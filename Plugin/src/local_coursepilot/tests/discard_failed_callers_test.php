@@ -34,8 +34,11 @@ defined('MOODLE_INTERNAL') || die();
 #[CoversClass(export_default_activity::class)]
 #[CoversClass(xml_activity_creator::class)]
 final class discard_failed_callers_test extends \advanced_testcase {
-
-    /** @return array{0: \stdClass, 1: string} course with existing activities, book XML "Created" */
+    /**
+     * Sets up course.
+     *
+     * @return array{0: \stdClass, 1: string} course with existing activities, book XML "Created"
+     */
     private function setup_course(): array {
         $this->resetAfterTest();
         // Failed restores must finish their transaction before the next backup operation.
@@ -48,15 +51,23 @@ final class discard_failed_callers_test extends \advanced_testcase {
         $xml = preg_replace('#<name>.*?</name>#s', '<name>Created</name>', $xml, 1);
         foreach ([0, 1] as $section) {
             foreach (['book' => 'Old', 'page' => 'Page'] as $modname => $prefix) {
-                $this->getDataGenerator()->create_module($modname, ['course' => $course->id, 'name' => "$prefix $section"],
-                    ['section' => $section]);
+                $this->getDataGenerator()->create_module(
+                    $modname,
+                    ['course' => $course->id, 'name' => "$prefix $section"],
+                    ['section' => $section]
+                );
             }
         }
         set_config('coursebinenable', 1, 'tool_recyclebin');
         return [$course, $xml];
     }
 
-    /** Everything a discard of an existing activity would change. */
+    /**
+     * Everything a discard of an existing activity would change.
+     *
+     * @param int $courseid The courseid.
+     * @return mixed[]
+     */
     private function course_state(int $courseid): array {
         global $DB;
         $state = [];
@@ -69,6 +80,11 @@ final class discard_failed_callers_test extends \advanced_testcase {
         return $state;
     }
 
+    /**
+     * Asserts fails.
+     *
+     * @param callable $call The call.
+     */
     private function assert_fails(callable $call): void {
         try {
             $call();

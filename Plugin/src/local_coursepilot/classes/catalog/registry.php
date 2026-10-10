@@ -26,7 +26,6 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class registry {
-
     /**
      * Module name to catalog class.
      *
@@ -55,8 +54,10 @@ final class registry {
     }
 
     /**
+     * Returns the catalog class, or null when the activity type has no catalog.
+     *
      * @param string $modname
-     * @return module_catalog|null The catalog class, or null when the activity type has no catalog.
+     * @return class-string<module_catalog>|null The catalog class, or null when the activity type has no catalog.
      */
     public static function for(string $modname): ?string {
         return self::CATALOGS[$modname] ?? null;
@@ -91,18 +92,24 @@ final class registry {
         if (in_array($modname, self::EXCLUDED_QUESTIONS, true)) {
             return new activity_kind(activity_kind::EXCLUDED, null, 'kindexcludedquestions');
         }
-        if (in_array($modname, self::EXCLUDED_FILES, true)
-                && !\local_coursepilot\activity_file_supplement::supports($modname)) {
+        if (
+            in_array($modname, self::EXCLUDED_FILES, true)
+                && !\local_coursepilot\activity_file_supplement::supports($modname)
+        ) {
             return new activity_kind(activity_kind::EXCLUDED, null, 'kindexcludedfiles');
         }
-        if (!$DB->record_exists('modules', ['name' => $modname])
-                || !plugin_supports('mod', $modname, FEATURE_BACKUP_MOODLE2, false)) {
+        if (
+            !$DB->record_exists('modules', ['name' => $modname])
+                || !plugin_supports('mod', $modname, FEATURE_BACKUP_MOODLE2, false)
+        ) {
             return new activity_kind(activity_kind::EXCLUDED, null, 'kindexcludednobackup');
         }
         return new activity_kind(activity_kind::DEVELOPED);
     }
 
     /**
+     * Returns the catalog class.
+     *
      * @param string $modname
      * @return class-string<module_catalog> The catalog class.
      * @throws \moodle_exception unknownmodname when the type is not cataloged.

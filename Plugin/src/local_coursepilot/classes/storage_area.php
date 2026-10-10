@@ -31,14 +31,15 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class storage_area {
-
     /**
+     * Creates the storage area.
+     *
      * @param string $rootsetting Plugin setting naming the root folder.
      * @param string $defaultroot Default root if the setting is empty.
      * @param string $invalidpathkey Language key for rejected paths
      *        (`.`/`..` segments or invalid folder segments).
      * @param string $quotaerrorkey Language key for writes exceeding the user quota.
-     * @param \Closure(string): void $checkwritablename Throws an area-specific
+     * @param \Closure $checkwritablename Throws an area-specific Type: \Closure(string):void.
      *        moodle_exception for an invalid filename; otherwise returns.
      * @param string|null $pointerkey Area field in the context pointer (issue #445),
      *        e.g. context_area/material_store. Null for areas without pointers
@@ -49,12 +50,19 @@ final class storage_area {
      *        explicit; see {@see storage_anchor::root()}.
      */
     public function __construct(
+        /** @var string Plugin setting naming the root folder. */
         public readonly string $rootsetting,
+        /** @var string Default root if the setting is empty. */
         public readonly string $defaultroot,
+        /** @var string Language key for rejected paths */
         public readonly string $invalidpathkey,
+        /** @var string Language key for writes exceeding the user quota. */
         public readonly string $quotaerrorkey,
+        /** @var \Closure The checkwritablename. */
         public readonly \Closure $checkwritablename,
+        /** @var ?string Area field in the context pointer (issue #445), */
         public readonly ?string $pointerkey = null,
+        /** @var bool For external pointers, fall back to the */
         public readonly bool $externalfallback = false,
     ) {
     }

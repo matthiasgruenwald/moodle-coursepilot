@@ -45,24 +45,30 @@ require_once($CFG->libdir . '/questionlib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class ensure_question_category extends external_api {
-
     /** @var int Sort position of new categories; identical to local_coursepilot\question_category_defaults::SORTORDER. */
     private const SORTORDER = 999;
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'name' => new external_value(PARAM_TEXT, 'Category name, convention: "<section number> <title>", e.g. "7.2 Materials and their properties"'),
+            'name' => new external_value(
+                PARAM_TEXT,
+                'Category name, convention: "<section number> <title>", e.g. "7.2 Materials and their properties"'
+            ),
             'parent' => new external_value(PARAM_INT, 'ID of the parent category (e.g. topcategoryid from ensure_question_bank)'),
         ]);
     }
 
     /**
+     * Runs the ensure question category tool.
+     *
      * @param string $name
      * @param int $parent
-     * @return array
+     * @return mixed[]
      */
     public static function execute(string $name, int $parent): array {
         global $DB;
@@ -118,6 +124,8 @@ final class ensure_question_category extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
@@ -126,7 +134,10 @@ final class ensure_question_category extends external_api {
             'name' => new external_value(PARAM_TEXT, 'Category name'),
             'parent' => new external_value(PARAM_INT, 'ID of the parent category'),
             'contextid' => new external_value(PARAM_INT, 'Context ID of the question bank'),
-            'created' => new external_value(PARAM_BOOL, 'true if newly created; false if a same-named one under the same parent was reused'),
+            'created' => new external_value(
+                PARAM_BOOL,
+                'true if newly created; false if a same-named one under the same parent was reused'
+            ),
             'message' => new external_value(PARAM_RAW, 'Teacher-facing message'),
         ]);
     }

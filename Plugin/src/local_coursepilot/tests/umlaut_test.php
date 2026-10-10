@@ -29,8 +29,8 @@
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-final class local_coursepilot_umlaut_test extends advanced_testcase {
-
+#[\PHPUnit\Framework\Attributes\CoversNothing]
+final class umlaut_test extends advanced_testcase {
     /**
      * German language-pack substitutions fixed by #521. The English
      * corpus and tool descriptions are covered by their language contracts.
@@ -40,7 +40,21 @@ final class local_coursepilot_umlaut_test extends advanced_testcase {
     private function forbidden_by_file(): array {
         $root = __DIR__ . '/../';
         return [
-            $root . 'lang/de/local_coursepilot.php' => ['Aktivitaet', 'Dateigroesse', 'Groesse', 'Inhaltspruefsumme', 'Loeschen', 'Markierungsgedaechtnis', 'Schluessel', 'fuer', 'gehoert', 'laeuft', 'noetig', 'rueckschreibbar', 'vollstaendig'],
+            $root . 'lang/de/local_coursepilot.php' => [
+                'Aktivitaet',
+                'Dateigroesse',
+                'Groesse',
+                'Inhaltspruefsumme',
+                'Loeschen',
+                'Markierungsgedaechtnis',
+                'Schluessel',
+                'fuer',
+                'gehoert',
+                'laeuft',
+                'noetig',
+                'rueckschreibbar',
+                'vollstaendig',
+            ],
         ];
     }
 

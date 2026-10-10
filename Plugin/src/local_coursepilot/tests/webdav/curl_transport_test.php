@@ -32,7 +32,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(curl_transport::class)]
 final class curl_transport_test extends \advanced_testcase {
-
     /**
      * A security helper that blocks every address - simulates Moodle's
      * host block without depending on real network or admin settings.
@@ -43,9 +42,18 @@ final class curl_transport_test extends \advanced_testcase {
      */
     private function always_blocking_helper(): \core\files\curl_security_helper {
         return new class extends \core\files\curl_security_helper {
+            /**
+             * Provides url is blocked.
+             *
+             * @param mixed $urlstring The urlstring.
+             * @param mixed $notused The notused.
+             */
             public function url_is_blocked($urlstring, $notused = null) {
                 return true;
             }
+            /**
+             * Returns blocked url string.
+             */
             public function get_blocked_url_string() {
                 return 'Blocked by Moodle host block.';
             }
@@ -126,6 +134,8 @@ final class curl_transport_test extends \advanced_testcase {
     }
 
     /**
+     * Provides verbs.
+     *
      * @return array<string, array{0: string, 1: ?string}>
      */
     public static function verbs(): array {

@@ -28,7 +28,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(access_log::class)]
 final class access_log_test extends \advanced_testcase {
-
     /**
      * Fresh installs without a configured value default to read access
      * and errors.
@@ -198,7 +197,7 @@ final class access_log_test extends \advanced_testcase {
         $this->resetAfterTest();
         $sink = $this->redirectEvents();
 
-        $token = 'sk-'.str_repeat('a', 40);
+        $token = 'sk-' . str_repeat('a', 40);
         access_log::log_failure('AUTHENTICATION_FAILED');
 
         $event = $sink->get_events()[0];

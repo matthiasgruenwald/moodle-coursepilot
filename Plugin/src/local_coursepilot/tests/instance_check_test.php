@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(instance_check::class)]
 final class instance_check_test extends \advanced_testcase {
-
     public function test_successful_json_response_is_ok(): void {
         $judgement = instance_check::evaluate(200, '{"issuer":"https://example.test"}');
 

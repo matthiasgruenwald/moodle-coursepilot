@@ -31,7 +31,6 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class drift_check {
-
     /**
      * Libraries defining catalog callable sources that core does not load
      * for every request. weblib.php and moodlelib.php are already loaded by
@@ -79,7 +78,7 @@ final class drift_check {
      * changing the registry.
      *
      * @param string $modname Table/module name to check.
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return string[]
      */
     public static function check_catalog(string $modname, string $catalogclass): array {
@@ -94,6 +93,8 @@ final class drift_check {
     }
 
     /**
+     * Requires known libraries.
+     *
      * @param string $modname
      * @return void
      */
@@ -115,21 +116,24 @@ final class drift_check {
      * contract tests (e.g. files, blocked until Spec 0018).
      *
      * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return string[]
      */
     private static function column_violations(string $modname, string $catalogclass): array {
         global $DB;
 
+        /** @var class-string<module_catalog> $catalog */
+        $catalog = $catalogclass;
+
         $realcolumns = array_keys($DB->get_columns($modname));
         sort($realcolumns);
 
-        $pseudofieldnames = array_map(static fn (field $f): string => $f->name, $catalogclass::pseudofields());
-        $blockedrealcolumns = array_diff($catalogclass::blocklist(), $pseudofieldnames);
+        $pseudofieldnames = array_map(static fn (field $f): string => $f->name, $catalog::pseudofields());
+        $blockedrealcolumns = array_diff($catalog::blocklist(), $pseudofieldnames);
 
         $known = array_merge(
             ['id'],
-            array_map(static fn (field $f): string => $f->name, $catalogclass::fields()),
+            array_map(static fn (field $f): string => $f->name, $catalog::fields()),
             $blockedrealcolumns,
             array_intersect(shared_block::BLOCKLIST, $realcolumns)
         );
@@ -156,7 +160,7 @@ final class drift_check {
      * Check callable sources referenced by fields and pseudofields,
      * including functions and static methods.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return string[]
      */
     private static function callable_violations(string $catalogclass): array {
@@ -189,7 +193,7 @@ final class drift_check {
      * Check constants referenced by module_catalog::checked_constants()
      * and shared_block::checked_constants().
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return string[]
      */
     private static function constant_violations(string $catalogclass): array {
@@ -211,7 +215,7 @@ final class drift_check {
      * Each field-related write option must name a catalog field. This also
      * catches newly read or written fields that would bypass the catalog.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return string[]
      */
     private static function write_option_violations(string $catalogclass): array {

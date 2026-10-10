@@ -28,7 +28,6 @@ use local_coursepilot\admin\personaldatahosts_setting;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(personal_data_hosts::class)]
 final class personal_data_hosts_test extends \advanced_testcase {
-
     /**
      * An empty list approves no external hosts.
      */

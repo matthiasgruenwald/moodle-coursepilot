@@ -23,13 +23,19 @@
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalGlobalState -- Standalone child process, runs before or without a Moodle bootstrap.
 
 require_once(__DIR__ . '/phpunit_process_bootstrap.php');
 if (isset($argv[2])) {
     $_SERVER['REMOTE_ADDR'] = $argv[1];
-    echo \local_coursepilot\oauth_lib::handle_token('POST',
-        ['grant_type' => 'authorization_code', 'client_id' => $argv[2]])['status'];
+    echo \local_coursepilot\oauth_lib::handle_token(
+        'POST',
+        ['grant_type' => 'authorization_code', 'client_id' => $argv[2]]
+    )['status'];
 } else {
-    echo \local_coursepilot\oauth_lib::handle_registration('POST',
-        json_encode(['redirect_uris' => ['https://client.example/callback']]), $argv[1])['status'];
+    echo \local_coursepilot\oauth_lib::handle_registration(
+        'POST',
+        json_encode(['redirect_uris' => ['https://client.example/callback']]),
+        $argv[1]
+    )['status'];
 }

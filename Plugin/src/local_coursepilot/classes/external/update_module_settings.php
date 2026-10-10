@@ -31,8 +31,6 @@ use local_coursepilot\material_files;
 use local_coursepilot\write_gate;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The first write operation (Spec 0015 §3.3, ticket #388, phase 3): patches
  * individual settings of an existing activity via the native form path
@@ -59,7 +57,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class update_module_settings extends external_api {
-
     /**
      * The material reference pseudofields (write_options() "material_reference_fields")
      * of an activity type, for {@see \local_coursepilot\external\restore_activity_version},
@@ -76,6 +73,8 @@ class update_module_settings extends external_api {
     }
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -116,18 +115,26 @@ class update_module_settings extends external_api {
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
-        pseudofield_carry_forward::apply($cm->modname, registry::for($cm->modname), $moduleinfo,
-            self::read_settings($cmid), $cm, [$fieldname => $draftitemid]);
+        pseudofield_carry_forward::apply(
+            $cm->modname,
+            registry::for($cm->modname),
+            $moduleinfo,
+            self::read_settings($cmid),
+            $cm,
+            [$fieldname => $draftitemid]
+        );
         $moduleinfo->{$fieldname} = $draftitemid;
         \update_moduleinfo($cm, $moduleinfo, $course);
     }
 
     /**
+     * Runs the update module settings tool.
+     *
      * @param int $cmid
      * @param string $fieldsjson
      * @param string $location
      * @param string[] $confirmlearnerlocks
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $cmid,
@@ -234,7 +241,7 @@ class update_module_settings extends external_api {
      * read part").
      *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      */
     private static function read_settings(int $cmid): array {
         $result = get_module_settings::execute($cmid);
@@ -250,10 +257,10 @@ class update_module_settings extends external_api {
      * change.
      *
      * @param string $modname
-     * @param array $patch
-     * @param array $before
-     * @param array $after
-     * @return array{0: array, 1: string[]}
+     * @param mixed[] $patch
+     * @param mixed[] $before
+     * @param mixed[] $after
+     * @return array{0: mixed[], 1: string[]}
      */
     private static function diff_and_side_effects(string $modname, array $patch, array $before, array $after): array {
         $changes = [];
@@ -292,8 +299,8 @@ class update_module_settings extends external_api {
      * would need a read layer per activity type; instead the
      * message states explicitly what it cannot compare.
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array $patch
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param mixed[] $patch
      * @return array<string, mixed> Field name => value set.
      */
     private static function written_pseudofields(string $catalogclass, array $patch): array {
@@ -305,9 +312,9 @@ class update_module_settings extends external_api {
      * The teacher-facing change message (Spec 0015 §3.3: "the response
      * is the change message").
      *
-     * @param array $changes
+     * @param mixed[] $changes
      * @param string[] $sideeffects
-     * @param array<string, mixed> $pseudofields Pseudofields written, see
+     * @param mixed[] $pseudofields Pseudofields written, see
      *        {@see self::written_pseudofields()} - not comparable, but set.
      * @return string
      */
@@ -341,6 +348,8 @@ class update_module_settings extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

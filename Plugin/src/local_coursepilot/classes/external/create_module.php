@@ -30,8 +30,6 @@ use local_coursepilot\material_files;
 use local_coursepilot\write_gate;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Create a new activity through the native form route (Spec 0015 §3.4,
  * Ticket #389, phase 3): can_add_moduleinfo() checks permissions and
@@ -58,8 +56,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class create_module extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -80,13 +79,15 @@ final class create_module extends external_api {
     }
 
     /**
+     * Runs the create module tool.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string $modname
      * @param string $fieldsjson
      * @param string $location
      * @param string[] $confirmlearnerlocks
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $courseid,
@@ -188,7 +189,7 @@ final class create_module extends external_api {
      * {@see update_module_settings::read_settings()}.
      *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      */
     private static function read_settings(int $cmid): array {
         $result = get_module_settings::execute($cmid);
@@ -196,9 +197,17 @@ final class create_module extends external_api {
         $fieldname = registry::for($result['modname'])::write_options()['intro_image_field'] ?? null;
         if ($fieldname !== null) {
             $files = get_file_storage()->get_area_files(
-                \context_module::instance($cmid)->id, 'mod_' . $result['modname'], 'intro', 0, 'filename', false);
+                \context_module::instance($cmid)->id,
+                'mod_' . $result['modname'],
+                'intro',
+                0,
+                'filename',
+                false
+            );
             $settings[$fieldname] = array_values(array_map(
-                static fn(\stored_file $file): string => $file->get_filename(), $files));
+                static fn(\stored_file $file): string => $file->get_filename(),
+                $files
+            ));
         }
         return $settings;
     }
@@ -210,9 +219,9 @@ final class create_module extends external_api {
      * teacher: they are implicit settings, not requested changes.
      *
      * @param string $modname
-     * @param array $merged
-     * @param array $after
-     * @return array{0: array, 1: string[]}
+     * @param mixed[] $merged
+     * @param mixed[] $after
+     * @return array{0: mixed[], 1: string[]}
      */
     private static function report_and_side_effects(string $modname, array $merged, array $after): array {
         $createdfields = [];
@@ -239,7 +248,7 @@ final class create_module extends external_api {
      * change report).
      *
      * @param string $modname
-     * @param array $createdfields
+     * @param mixed[] $createdfields
      * @param string[] $sideeffects
      * @return string
      */
@@ -259,6 +268,8 @@ final class create_module extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -28,8 +28,6 @@ use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\shared_block;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Field catalog as data (Spec 0015 §3.1, #379). Read-only: describes an
  * activity type's settings in language teachers understand, instead of
@@ -49,7 +47,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class describe_module_fields extends external_api {
-
     /**
      * Write vehicle hint for types without their own write_route() (Spec 0015
      * §1/§3.1: update_moduleinfo()). Deliberately avoids specific MCP tool names
@@ -60,6 +57,8 @@ class describe_module_fields extends external_api {
         . 'write endpoint follows in a later development stage.';
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -81,9 +80,11 @@ class describe_module_fields extends external_api {
     }
 
     /**
+     * Runs the describe module fields tool.
+     *
      * @param string $modname
      * @param bool $full
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception unknownmodname if $modname is not supported.
      */
     public static function execute(string $modname = '', bool $full = false): array {
@@ -169,7 +170,7 @@ class describe_module_fields extends external_api {
      * mixed types, so use a JSON row rather than a dynamic structure, as with
      * get_course_catalog::plugin_config_field() supplemental files.
      *
-     * @param array<string, array<string, mixed>> $bundles
+     * @param mixed[] $bundles Type: array<string,array<string,mixed>>.
      * @return array<int, array{name: string, fields_json: string}>
      */
     private static function bundles(array $bundles): array {
@@ -181,6 +182,8 @@ class describe_module_fields extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -34,6 +34,13 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class webdav_instance_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
+    /**
+     * Provides location.
+     *
+     * @param int $instanceid The instanceid.
+     * @param ?array $fingerprint The fingerprint.
+     * @return pointer_location
+     */
     private function location(int $instanceid, ?array $fingerprint = null): pointer_location {
         return pointer_location::external($instanceid, 'Coursepilot-Kontext', $fingerprint ?? $this->fixture_fingerprint());
     }
@@ -78,7 +85,10 @@ final class webdav_instance_test extends \advanced_testcase {
 
         $resolved = webdav_instance::resolve($this->location($instanceid));
 
-        $this->assertSame('https://cloud.example.test:8443/Coursepilot/Coursepilot-Kontext', $resolved->file_url('Coursepilot-Kontext'));
+        $this->assertSame(
+            'https://cloud.example.test:8443/Coursepilot/Coursepilot-Kontext',
+            $resolved->file_url('Coursepilot-Kontext')
+        );
     }
 
     public function test_missing_instance_throws_named_error(): void {
@@ -291,7 +301,7 @@ final class webdav_instance_test extends \advanced_testcase {
         }
     }
 
-    // --- Issue #497: has_supported_auth(), IServ-Erkennung ---
+    // Has_supported_auth(), IServ detection.
 
     public function test_has_supported_auth_is_true_for_https_basic_instance(): void {
         $this->resetAfterTest();

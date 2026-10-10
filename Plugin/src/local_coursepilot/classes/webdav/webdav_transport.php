@@ -28,14 +28,13 @@ namespace local_coursepilot\webdav;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 interface webdav_transport {
-
     /**
      * A single HTTP request. The transport does not interpret the status -
      * that is the job of {@see webdav_client}.
      *
      * @param string $method PROPFIND|GET|PUT|MKCOL|MOVE|DELETE.
      * @param string $url Complete https address.
-     * @param array<string, string> $headers Additional request headers
+     * @param string[] $headers Additional request headers
      *        (e.g. Depth, If-Match, If-None-Match, Destination), without
      *        the auth header - the transport sets that itself.
      * @param string|null $body Body, e.g. PROPFIND XML or file content.

@@ -29,8 +29,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(set_completion::class)]
 final class set_completion_test extends \advanced_testcase {
-
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course (completion tracking on), teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -43,8 +44,10 @@ final class set_completion_test extends \advanced_testcase {
     }
 
     /**
+     * Returns current state, same shape as get_module_settings.
+     *
      * @param int $cmid
-     * @return array Current state, same shape as get_module_settings.
+     * @return mixed[] Current state, same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -83,8 +86,10 @@ final class set_completion_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
         $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
 
-        foreach (['completion', 'completionview', 'completionexpected', 'completionusegrade',
-                'completionpassgrade', 'completionunlocked'] as $field) {
+        foreach (
+            ['completion', 'completionview', 'completionexpected', 'completionusegrade',
+                'completionpassgrade', 'completionunlocked'] as $field
+        ) {
             try {
                 update_module_settings::execute($page->cmid, json_encode([$field => 1]));
                 $this->fail('Expected moodle_exception was not thrown for field "' . $field . '".');
@@ -208,7 +213,10 @@ final class set_completion_test extends \advanced_testcase {
 
         $result = external_api::clean_returnvalue(
             set_completion::execute_returns(),
-            set_completion::execute($page->cmid, json_encode(['completion' => COMPLETION_TRACKING_AUTOMATIC, 'completionview' => 1]))
+            set_completion::execute(
+                $page->cmid,
+                json_encode(['completion' => COMPLETION_TRACKING_AUTOMATIC, 'completionview' => 1])
+            )
         );
 
         $this->assertSame(COMPLETION_TRACKING_AUTOMATIC, $this->read($page->cmid)['completion']);

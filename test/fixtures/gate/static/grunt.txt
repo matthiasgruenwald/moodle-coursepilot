@@ -1,0 +1,11 @@
+ RUN  Grunt on local_coursepilot
+Running "eslint:amd" (eslint) task
+
+/var/www/html/public/local/coursepilot/amd/src/location_selection.js
+  12:5  error    'foo' is defined but never used  no-unused-vars
+  30:1  warning  Missing JSDoc comment            jsdoc/require-jsdoc
+
+2 problems (1 error, 1 warning)
+
+Done.
+File is stale and needs to be rebuilt: amd/build/location_selection.min.js

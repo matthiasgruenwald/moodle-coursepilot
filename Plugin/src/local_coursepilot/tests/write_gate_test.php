@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(write_gate::class)]
 final class write_gate_test extends \advanced_testcase {
-
     /**
      * All catalogs pass on the current instance: reviewed when the manual
      * review covers its Moodle major version, otherwise automatically checked

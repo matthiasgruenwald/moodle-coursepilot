@@ -30,7 +30,6 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(get_version_info::class)]
 final class get_version_info_test extends \advanced_testcase {
-
     /**
      * Return nonempty Moodle release/version/branch and plugin version/release
      * from version.php, without placeholders.

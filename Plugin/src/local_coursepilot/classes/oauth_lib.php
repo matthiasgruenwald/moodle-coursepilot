@@ -34,7 +34,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class oauth_lib {
-
     /** @var string Database table for DCR/CIMD-registered clients. */
     private const CLIENT_TABLE = 'local_coursepilot_oauth_client';
 
@@ -110,7 +109,7 @@ final class oauth_lib {
      * without global access, so it can be tested without bootstrapping Moodle.
      *
      * @param string $wwwroot
-     * @return array
+     * @return mixed[]
      */
     public static function authorization_server_metadata(string $wwwroot): array {
         return [
@@ -139,7 +138,7 @@ final class oauth_lib {
      * of reading that header. Both use this source.
      *
      * @param string $wwwroot
-     * @return array
+     * @return mixed[]
      */
     public static function protected_resource_metadata(string $wwwroot): array {
         return [
@@ -156,7 +155,7 @@ final class oauth_lib {
      *
      * @param string $wwwroot
      * @param string $pathinfo Already trimmed PATH_INFO value.
-     * @return array{status: int, headers: array<string, string>, body: array}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]}
      */
     public static function handle_discovery(string $wwwroot, string $pathinfo): array {
         $known = ['', '.well-known/openid-configuration', '.well-known/oauth-authorization-server'];
@@ -169,8 +168,8 @@ final class oauth_lib {
     /**
      * Register a client through DCR (RFC 7591).
      *
-     * @param array $metadata Decoded JSON registration body.
-     * @return array On error: ['error' => ..., 'error_description' => ...].
+     * @param mixed[] $metadata Decoded JSON registration body.
+     * @return mixed[] On error: ['error' => ..., 'error_description' => ...].
      *               On success: complete client record including client_id.
      */
     public static function register_client(array $metadata): array {
@@ -195,8 +194,8 @@ final class oauth_lib {
      * Validate DCR metadata without side effects, so invalid requests are
      * rejected before they consume budget (#642).
      *
-     * @param array $metadata
-     * @return array|null RFC 7591 error, or null when valid.
+     * @param mixed[] $metadata
+     * @return mixed[]|null RFC 7591 error, or null when valid.
      */
     private static function registration_error(array $metadata): ?array {
         $redirecturis = $metadata['redirect_uris'] ?? null;
@@ -213,7 +212,8 @@ final class oauth_lib {
             if (!self::is_allowed_redirect_uri($uri)) {
                 return [
                     'error' => 'invalid_redirect_uri',
-                    'error_description' => 'redirect_uri must use https or a loopback address (http://127.0.0.1 / http://localhost).',
+                    'error_description' => 'redirect_uri must use https or a loopback address (http://127.0.0.1 / '
+                        . 'http://localhost).',
                 ];
             }
         }
@@ -226,7 +226,7 @@ final class oauth_lib {
      *
      * @param string $clientid
      * @param string|null $clientname
-     * @param array $redirecturis
+     * @param mixed[] $redirecturis
      * @param string $tokenendpointauthmethod
      * @param string|null $clientsecret
      * @param string $source 'dcr' or 'cimd'.
@@ -263,7 +263,7 @@ final class oauth_lib {
      * @param string $rawbody Raw request body, read at most one byte beyond
      *        {@see REGISTRATION_MAX_BODY_BYTES}.
      * @param string $source Trusted request source ({@see oauth_budget::request_source()}).
-     * @return array{status: int, headers: array<string, string>, body: array}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]}
      */
     public static function handle_registration(string $method, string $rawbody, string $source): array {
         if ($method !== 'POST') {
@@ -290,10 +290,13 @@ final class oauth_lib {
             return self::result(400, [], $error);
         }
 
-        $retryafter = oauth_budget::consume('register', $source,
+        $retryafter = oauth_budget::consume(
+            'register',
+            $source,
             oauth_budget::setting('oauthregistersitelimit', self::REGISTRATION_SITE_LIMIT),
             oauth_budget::setting('oauthregistersourcelimit', self::REGISTRATION_SOURCE_LIMIT),
-            oauth_budget::setting('oauthregisterwindow', self::REGISTRATION_WINDOW));
+            oauth_budget::setting('oauthregisterwindow', self::REGISTRATION_WINDOW)
+        );
         if ($retryafter > 0) {
             return self::result(429, ['Retry-After' => (string) $retryafter], [
                 'error' => 'temporarily_unavailable',
@@ -307,7 +310,7 @@ final class oauth_lib {
      * Convert a client row to the RFC 7591 response shape.
      *
      * @param \stdClass $record
-     * @return array
+     * @return mixed[]
      */
     public static function client_registration_response(\stdClass $record): array {
         $response = [
@@ -373,14 +376,20 @@ final class oauth_lib {
         if ($record) {
             return $record;
         }
-        if (!self::looks_like_cimd_url($clientid) || strlen($clientid) > self::CIMD_MAX_URI_LENGTH
-                || oauth_budget::active('cimdfail', $clientid)) {
+        if (
+            !self::looks_like_cimd_url($clientid) || strlen($clientid) > self::CIMD_MAX_URI_LENGTH
+                || oauth_budget::active('cimdfail', $clientid)
+        ) {
             return null;
         }
         $sitelimit = oauth_budget::setting('oauthcimdsitelimit', self::CIMD_SITE_LIMIT);
-        $retryafter = oauth_budget::consume('cimd', oauth_budget::request_source(), $sitelimit,
+        $retryafter = oauth_budget::consume(
+            'cimd',
+            oauth_budget::request_source(),
+            $sitelimit,
             oauth_budget::setting('oauthcimdsourcelimit', self::CIMD_SOURCE_LIMIT),
-            oauth_budget::setting('oauthcimdwindow', self::CIMD_WINDOW));
+            oauth_budget::setting('oauthcimdwindow', self::CIMD_WINDOW)
+        );
         if ($retryafter > 0) {
             return null;
         }
@@ -448,7 +457,7 @@ final class oauth_lib {
      * add refresh only if changing documents prove necessary in practice.
      *
      * @param string $url client_id (the CIMD URL).
-     * @param array $metadata Decoded CIMD metadata.
+     * @param mixed[] $metadata Decoded CIMD metadata.
      * @return \stdClass|null null for invalid or missing redirect_uris.
      */
     public static function cache_cimd_client(string $url, array $metadata): ?\stdClass {
@@ -474,7 +483,7 @@ final class oauth_lib {
      * as with handle_discovery()/handle_registration(). oauth/authorize.php
      * calls it after login and renders either consent or an error page.
      *
-     * @param array $params response_type, client_id, redirect_uri,
+     * @param mixed[] $params response_type, client_id, redirect_uri,
      *        code_challenge, code_challenge_method (all expected as strings).
      * @return array{error: string, error_description: string}|array{client: \stdClass}
      */
@@ -560,7 +569,7 @@ final class oauth_lib {
      * redirects (error/error_description/state). Omit empty or absent values.
      *
      * @param string $redirecturi
-     * @param array<string, ?string> $params
+     * @param mixed[] $params Type: array<string,?string>.
      * @return string
      */
     public static function build_redirect_url(string $redirecturi, array $params): string {
@@ -597,7 +606,7 @@ final class oauth_lib {
      * @param string $clientid
      * @param string $redirecturi
      * @param string $codeverifier
-     * @return array|null null on any error (RFC 6749: invalid_grant,
+     * @return mixed[]|null null on any error (RFC 6749: invalid_grant,
      *         without exposing the detailed cause).
      */
     public static function exchange_code(string $code, string $clientid, string $redirecturi, string $codeverifier): ?array {
@@ -639,7 +648,7 @@ final class oauth_lib {
      *
      * @param string $refreshtoken
      * @param string $clientid
-     * @return array|null null for an invalid, expired or revoked token
+     * @return mixed[]|null null for an invalid, expired or revoked token
      *         or a client mismatch.
      */
     public static function rotate_refresh_token(string $refreshtoken, string $clientid): ?array {
@@ -765,7 +774,7 @@ final class oauth_lib {
      *
      * @param string $method
      * @param array|null $body
-     * @return array{status: int, headers: array<string, string>, body: array}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]}
      */
     public static function handle_token(string $method, ?array $body): array {
         if ($method !== 'POST') {
@@ -785,7 +794,7 @@ final class oauth_lib {
         if (!$client) {
             return self::result(400, [], ['error' => 'invalid_client']);
         }
-        // client_secret_post clients also authenticate with a secret; PKCE already
+        // Note: client_secret_post clients also authenticate with a secret; PKCE already
         // covers public clients (#291).
         if ($client->tokenendpointauthmethod === 'client_secret_post') {
             $secret = (string) ($body['client_secret'] ?? '');
@@ -837,8 +846,10 @@ final class oauth_lib {
         self::$currenttokenid = null;
         self::$currentconnectionid = null;
         $record = $DB->get_record(self::TOKEN_TABLE, ['accesstokenhash' => self::token_hash($accesstoken)]);
-        if (!$record || (int) $record->revoked === 1 || $record->expires < time()
-                || empty($record->connectionid) || !self::grant_active((int) $record->connectionid, (int) $record->userid)) {
+        if (
+            !$record || (int) $record->revoked === 1 || $record->expires < time()
+                || empty($record->connectionid) || !self::grant_active((int) $record->connectionid, (int) $record->userid)
+        ) {
             return null;
         }
         self::$currenttokenid = (int) $record->id;
@@ -1013,28 +1024,45 @@ final class oauth_lib {
         );
     }
 
-    /** Stable issuing connection, independent of the token generation. */
+    /**
+     * Stable issuing connection, independent of the token generation.
+     */
     public static function current_connection_id(): ?int {
         return self::$currentconnectionid;
     }
 
-    /** Tickets keep their own expiry; require the grant and its owner. */
+    /**
+     * Tickets keep their own expiry; require the grant and its owner.
+     *
+     * @param int $id The id.
+     * @param int $userid The userid.
+     */
     public static function grant_active(int $id, int $userid): bool {
         global $DB;
         return $DB->record_exists(self::GRANT_TABLE, ['id' => $id, 'userid' => $userid, 'revoked' => 0]);
     }
 
-    /** Acquire the shared connection row within a delegated transaction. */
+    /**
+     * Acquire the shared connection row within a delegated transaction.
+     *
+     * @param int $id The id.
+     */
     private static function lock_connection(int $id): bool {
         global $DB;
         $marker = self::random_token(32);
-        $DB->execute('UPDATE {' . self::GRANT_TABLE . '}
+        $DB->execute(
+            'UPDATE {' . self::GRANT_TABLE . '}
                          SET statehash = :marker WHERE id = :id AND revoked = 0',
-            ['marker' => $marker, 'id' => $id]);
+            ['marker' => $marker, 'id' => $id]
+        );
         return $DB->record_exists(self::GRANT_TABLE, ['id' => $id, 'statehash' => $marker, 'revoked' => 0]);
     }
 
-    /** Revoke all generations and bound tickets while holding the grant lock. */
+    /**
+     * Revoke all generations and bound tickets while holding the grant lock.
+     *
+     * @param int $id The id.
+     */
     private static function revoke_locked_connection(int $id): void {
         global $DB;
         $DB->set_field(self::GRANT_TABLE, 'revoked', 1, ['id' => $id]);
@@ -1049,7 +1077,7 @@ final class oauth_lib {
      * ponytail: no key material without a use. If real OIDC with signed ID tokens
      * becomes necessary, add RS256 keys here; Moodle already vendors firebase/php-jwt.
      *
-     * @return array{keys: array}
+     * @return array{keys: mixed[]}
      */
     public static function jwks_document(): array {
         return ['keys' => []];
@@ -1078,9 +1106,12 @@ final class oauth_lib {
     }
 
     /**
-     * @param array<string, string> $headers
-     * @param array $body
-     * @return array{status: int, headers: array<string, string>, body: array}
+     * Provides result.
+     *
+     * @param int $status The status.
+     * @param string[] $headers
+     * @param mixed[] $body
+     * @return array{status: int, headers: array<string, string>, body: mixed[]}
      */
     private static function result(int $status, array $headers, array $body): array {
         return ['status' => $status, 'headers' => $headers, 'body' => $body];

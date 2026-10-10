@@ -30,8 +30,9 @@ use local_coursepilot\admin\connection_storage_location;
  * Prepares display-neutral state for the admin connections template.
  */
 final class admin_connections_page {
-
     /**
+     * Provides page data.
+     *
      * @param \stdClass[] $tokens
      * @return array<string, mixed>
      */

@@ -28,7 +28,6 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(pending_write_notice::class)]
 final class pending_write_notice_test extends \advanced_testcase {
-
     /**
      * One entry per failed operation: identifier, time, path, operation and
      * error class, without content (ADR 0023).

@@ -4,6 +4,7 @@
 
 - `npm test` - `node --test`, Vertragstests der nativen Linie
 - `npm run build:native-release` - Release-ZIP aus `Plugin/src/local_coursepilot/`
+- `npm run gate -- fast|full` - Qualitäts-Gate (Messung, Gate-Container), siehe [`docs/gate.md`](../gate.md)
 
 ## Plugin-Quelle
 
@@ -162,10 +163,22 @@ curl -s -X POST https://spike.gruenwald.fun/local/coursepilot/mcp.php \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-## Hook-Checks manuell spiegeln
+## Hooks aktivieren
 
-Codex führt Claude-Hooks nicht zuverlässig automatisch aus. Nach passenden Änderungen manuell ausführen:
+Claude, Codex und Menschen nutzen dieselben Git-Hooks und dasselbe Gate-Kommando
+(`scripts/gate/gate.js`, siehe [`docs/gate.md`](../gate.md)). Einmal pro Klon:
 
-- `*.js` geändert -> `node --check <datei>`
-- `*.php` geändert -> `php -l <datei>`
-- `test/*.test.js` geändert -> `npm test`
+```bash
+npm run hooks:install   # git config core.hooksPath scripts/githooks
+```
+
+- `pre-commit` führt `npm run gate -- fast` aus und blockiert den Commit bei Befund.
+- `pre-push` führt `npm run gate -- full` aus (rund 15 Minuten) und blockiert bei
+  Ratschenverletzung. Den vollen Lauf abgekoppelt starten, wenn der Harness lange
+  Läufe abschießt (Exit 144), siehe oben. Der Hook blockiert, wenn ein gepushter
+  Branch nicht `HEAD` ist oder versionierte Dateien geändert sind: Geprüft wird der
+  Arbeitsbaum, er muss dem gepushten Stand entsprechen.
+- Die Edit-Hooks in `.claude/settings.json` und `.codex/hooks.json` rufen
+  `gate edit` auf (Plugin-PHP, `test/**/*.js`, `scripts/gate/**`). Codex führt
+  Hooks nicht in jeder Konfiguration automatisch aus; dann vor dem Commit
+  `npm run gate -- fast` selbst starten, der `pre-commit`-Hook greift in jedem Fall.

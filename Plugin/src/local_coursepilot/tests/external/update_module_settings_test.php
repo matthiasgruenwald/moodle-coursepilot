@@ -40,6 +40,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -51,8 +53,10 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Returns current state, with the same shape as get_module_settings.
+     *
      * @param int $cmid
-     * @return array Current state, with the same shape as get_module_settings.
+     * @return mixed[] Current state, with the same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -117,8 +121,10 @@ final class update_module_settings_test extends \advanced_testcase {
         }
         $before = $DB->get_record('assign', ['id' => $assignment->id], '*', MUST_EXIST);
 
-        $result = external_api::clean_returnvalue(update_module_settings::execute_returns(),
-            update_module_settings::execute($assignment->cmid, json_encode(['name' => 'Neuer Titel'])));
+        $result = external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($assignment->cmid, json_encode(['name' => 'Neuer Titel']))
+        );
 
         $this->assertCount(1, $result['changes']);
         $after = $DB->get_record('assign', ['id' => $assignment->id], '*', MUST_EXIST);
@@ -143,8 +149,10 @@ final class update_module_settings_test extends \advanced_testcase {
         $forum = $this->getDataGenerator()->get_plugin_generator('mod_forum')->create_instance([
             'course' => $course->id, 'type' => 'qanda', 'showimmediately' => 0,
         ]);
-        $result = external_api::clean_returnvalue(update_module_settings::execute_returns(),
-            update_module_settings::execute($forum->cmid, json_encode(['showimmediately' => 1])));
+        $result = external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($forum->cmid, json_encode(['showimmediately' => 1]))
+        );
         $this->assertSame('showimmediately', $result['changes'][0]['field']);
         $this->assertEquals(1, $DB->get_field('forum', 'showimmediately', ['id' => $forum->id]));
     }
@@ -353,7 +361,7 @@ final class update_module_settings_test extends \advanced_testcase {
         ]);
 
         try {
-            // cutoffdate before duedate violates the combination rule.
+            // Note: cutoffdate before duedate violates the combination rule.
             update_module_settings::execute($forum->cmid, json_encode(['cutoffdate' => 1000000000]));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
@@ -491,7 +499,7 @@ final class update_module_settings_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
         $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
 
-        // course_module_created already recorded version 1 (#385); this write
+        // Note: course_module_created already recorded version 1 (#385); this write
         // must add another version.
         $before = $DB->count_records('local_coursepilot_cm_version', ['cmid' => $page->cmid]);
 
@@ -891,7 +899,7 @@ final class update_module_settings_test extends \advanced_testcase {
         $this->create_material_file('arbeitsblatt.pdf', 'Arbeitsblattinhalt');
 
         try {
-            // cutoffdate before duedate violates the combination rule;
+            // Note: cutoffdate before duedate violates the combination rule;
             // validate_patch() fails before any material access.
             update_module_settings::execute($cmid, json_encode([
                 'introattachments' => ['arbeitsblatt.pdf'],
@@ -1030,6 +1038,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Stores material png.
+     *
      * @param string $filename
      * @param int $width
      * @param int $height
@@ -1251,7 +1261,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['name' => 'Neuer Titel']));
             $this->fail('execute() should have thrown because of drift.');
         } catch (\moodle_exception $e) {
-            // write_gate_test.php checks the exact language-pack wording. The test
+            // Note: write_gate_test.php checks the exact language-pack wording. The test
             // instance has only plugin German strings, not a full German pack;
             // a language-independent error code suffices here.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
@@ -1339,8 +1349,12 @@ final class update_module_settings_test extends \advanced_testcase {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
         }
 
-        update_module_settings::execute($assign->cmid, $patch, \local_coursepilot\material_files::LOCATION_STORE,
-            ['attemptreopenmethod']);
+        update_module_settings::execute(
+            $assign->cmid,
+            $patch,
+            \local_coursepilot\material_files::LOCATION_STORE,
+            ['attemptreopenmethod']
+        );
         $settings = json_decode(get_module_settings::execute($assign->cmid)['settings_json'], true);
         $this->assertSame('manual', $settings['attemptreopenmethod']);
 

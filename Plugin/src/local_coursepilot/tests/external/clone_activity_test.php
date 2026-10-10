@@ -33,8 +33,9 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(clone_activity::class)]
 final class clone_activity_test extends \advanced_testcase {
-
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {

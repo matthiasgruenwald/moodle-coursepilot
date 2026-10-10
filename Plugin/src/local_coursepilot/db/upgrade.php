@@ -24,9 +24,9 @@
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
+ * Provides xmldb local coursepilot upgrade.
+ *
  * @param int $oldversion
  * @return bool
  */
@@ -270,18 +270,20 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
     }
 
     if ($oldversion < 2026100200) {
-        // #602 (ADR 0024): English history source keys.
+        // ADR 0024: English history source keys.
         local_coursepilot_migrate_history_sources();
 
         upgrade_plugin_savepoint(true, 2026100200, 'local', 'coursepilot');
     }
 
     if ($oldversion < 2026100201) {
-        // #602 (ADR 0024): English workbench ticket table, anchor filenames
+        // ADR 0024: English workbench ticket table, anchor filenames
         // and stored keys.
         $oldtable = new xmldb_table('local_coursepilot_werkbank_ticket');
-        if ($dbman->table_exists($oldtable)
-                && !$dbman->table_exists(new xmldb_table('local_coursepilot_workbench_ticket'))) {
+        if (
+            $dbman->table_exists($oldtable)
+                && !$dbman->table_exists(new xmldb_table('local_coursepilot_workbench_ticket'))
+        ) {
             $dbman->rename_table($oldtable, 'local_coursepilot_workbench_ticket');
         }
         local_coursepilot_migrate_anchor_files();
@@ -295,9 +297,9 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
     }
 
     if ($oldversion < 2026100340) {
-        // #640: indexes for the scheduled history retention and metadata sweep.
-        foreach (['local_coursepilot_cm_version' => 'timecreated', 'local_coursepilot_cm_version_file' => 'fileid']
-                as $tablename => $field) {
+        // Indexes for the scheduled history retention and metadata sweep.
+        $retentionindexes = ['local_coursepilot_cm_version' => 'timecreated', 'local_coursepilot_cm_version_file' => 'fileid'];
+        foreach ($retentionindexes as $tablename => $field) {
             $index = new xmldb_index($field, XMLDB_INDEX_NOTUNIQUE, [$field]);
             $table = new xmldb_table($tablename);
             if (!$dbman->index_exists($table, $index)) {
@@ -308,7 +310,7 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
     }
 
     if ($oldversion < 2026100342) {
-        // #642: windowed budgets for anonymous OAuth registration and CIMD.
+        // Windowed budgets for anonymous OAuth registration and CIMD.
         $table = new xmldb_table('local_coursepilot_oauth_budget');
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('scope', XMLDB_TYPE_CHAR, '16', null, XMLDB_NOTNULL, null, null);
@@ -325,7 +327,7 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
     }
 
     if ($oldversion < 2026100344) {
-        // #644: indexes of the bounded OAuth cleanup; the task is renamed to oauth_cleanup.
+        // Indexes of the bounded OAuth cleanup; the task is renamed to oauth_cleanup.
         local_coursepilot_add_oauth_cleanup_indexes($dbman);
         upgrade_plugin_savepoint(true, 2026100344, 'local', 'coursepilot');
     }

@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(describe_module_fields::class)]
 final class describe_module_fields_test extends \advanced_testcase {
-
     /**
      * Without modname, list supported activity types (user story 13).
      */
@@ -278,7 +277,12 @@ final class describe_module_fields_test extends \advanced_testcase {
         sort($names);
 
         $this->assertSame(
-            ['local/coursepilot:restoreversion', 'local/coursepilot:use', 'local/coursepilot:useremote', 'local/coursepilot:viewhistory'],
+            [
+                'local/coursepilot:restoreversion',
+                'local/coursepilot:use',
+                'local/coursepilot:useremote',
+                'local/coursepilot:viewhistory',
+            ],
             $names
         );
     }

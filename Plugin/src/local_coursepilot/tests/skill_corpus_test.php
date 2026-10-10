@@ -31,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
 #[CoversClass(skill_corpus::class)]
 #[CoversClass(\local_coursepilot\tool_registry::class)]
 final class skill_corpus_test extends \advanced_testcase {
-
     /**
      * list() returns names, kinds, triggers and sizes without content.
      */
@@ -135,6 +134,8 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
+     * Provides cases for path like name provider.
+     *
      * @return array<string, string[]>
      */
     public static function path_like_name_provider(): array {
@@ -226,14 +227,15 @@ final class skill_corpus_test extends \advanced_testcase {
             $this->assertStringContainsString($tool, $corpus);
             $schema = tool_registry::schemas()[$tool]['properties'];
             foreach ($fields as $field) {
-                $this->assertMatchesRegularExpression('/`[^`]*\\b' . preg_quote($field, '/') . '\\b/', $corpus);
+                $this->assertMatchesRegularExpression('/\x60[^\x60]*\\b' . preg_quote($field, '/') . '\\b/', $corpus);
                 $this->assertArrayHasKey($field, $schema, "{$tool}: {$field} is absent from the schema.");
             }
         }
     }
     public function test_graphics_reference_exposes_source_header_and_composition_rules(): void {
         $content = preg_replace('/\s+/u', ' ', skill_corpus::get('graphics')['content']);
-        foreach ([
+        foreach (
+            [
             'Add a source header by default for textbook illustrations',
             'The teacher can opt out of the source header',
             'abbreviation is unambiguous from the filename or context',
@@ -247,7 +249,8 @@ final class skill_corpus_test extends \advanced_testcase {
             'one alt text',
             'the same page',
             'a header on the first part',
-        ] as $rule) {
+            ] as $rule
+        ) {
             $this->assertStringContainsString($rule, $content);
         }
         $this->assertStringContainsString('coursepilot_compose_material_file', $content);
@@ -266,7 +269,8 @@ final class skill_corpus_test extends \advanced_testcase {
                 $entry['name'] . ': German prose remains in the English corpus'
             );
             $this->assertDoesNotMatchRegularExpression(
-                '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u',
+                '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|'
+                    . 'Kurs|Lehrkraft|Altbestand)\\b/u',
                 $content,
                 $entry['name'] . ': German umlauts or function words in the English corpus'
             );

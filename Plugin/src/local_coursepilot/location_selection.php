@@ -100,7 +100,7 @@ function local_coursepilot_read_oauth_passthrough(): ?array {
  * Handles submitted location selection (#494, Spec §5) only when finish
  * is present; otherwise displays the page without processing the form.
  *
- * @param array{client: \stdClass, params: array<string, string>}|null $oauthreturn
+ * @param ?array $oauthreturn Type: array{client:\stdClass,params:array<string,string>}|null.
  * @return array{type: string, text: string}|null
  */
 function local_coursepilot_handle_location_selection_finish(?array $oauthreturn): ?array {
@@ -112,8 +112,11 @@ function local_coursepilot_handle_location_selection_finish(?array $oauthreturn)
         $providedtemplates = [];
         $changed = location_selection::apply(local_coursepilot_read_location_selection(), $providedtemplates);
         if ($providedtemplates) {
-            \core\notification::success(get_string('activitytypetemplatesprovided', 'local_coursepilot',
-                implode(', ', $providedtemplates)));
+            \core\notification::success(get_string(
+                'activitytypetemplatesprovided',
+                'local_coursepilot',
+                implode(', ', $providedtemplates)
+            ));
         }
         if ($oauthreturn !== null) {
             // Return to consent (#563) whether or not locations changed: the teacher
@@ -121,11 +124,20 @@ function local_coursepilot_handle_location_selection_finish(?array $oauthreturn)
             redirect(new moodle_url('/local/coursepilot/oauth/authorize.php', $oauthreturn['params']));
         }
         return empty($changed)
-            ? ['type' => \core\output\notification::NOTIFY_INFO, 'text' => get_string('locationselectionfinishnochange', 'local_coursepilot')]
-            : ['type' => \core\output\notification::NOTIFY_SUCCESS, 'text' => get_string('locationselectionfinishsuccess', 'local_coursepilot', implode(', ', array_map(
-                static fn (string $target): string => get_string('locationselectiontab' . str_replace('_', '', $target), 'local_coursepilot'),
-                $changed
-            )))];
+            ? [
+                'type' => \core\output\notification::NOTIFY_INFO,
+                'text' => get_string('locationselectionfinishnochange', 'local_coursepilot'),
+            ]
+            : [
+                'type' => \core\output\notification::NOTIFY_SUCCESS,
+                'text' => get_string('locationselectionfinishsuccess', 'local_coursepilot', implode(', ', array_map(
+                    static fn (string $target): string => get_string(
+                        'locationselectiontab' . str_replace('_', '', $target),
+                        'local_coursepilot'
+                    ),
+                    $changed
+                ))),
+            ];
     } catch (moodle_exception $e) {
         // Stay on location selection on failure, including OAuth flow, so
         // redirecting cannot hide the error message.

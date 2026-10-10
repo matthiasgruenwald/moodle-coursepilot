@@ -21,8 +21,6 @@ use core\check\result;
 use core\output\action_link;
 use local_coursepilot\personal_data_hosts;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * WebDAV setup check 4 (Issue #499, Spec #486 §12): approved storage hosts.
  * An empty personaldatahosts list returns INFO (marked files only in Moodle),
@@ -33,15 +31,29 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class personal_data_hosts_check extends check {
-
+    /**
+     * Returns id.
+     *
+     * @return string
+     */
     public function get_id(): string {
         return 'webdav_personal_data_hosts';
     }
 
+    /**
+     * Returns name.
+     *
+     * @return string
+     */
     public function get_name(): string {
         return get_string('webdavcheck4name', 'local_coursepilot');
     }
 
+    /**
+     * Returns result.
+     *
+     * @return result
+     */
     public function get_result(): result {
         $actionlink = new action_link(
             new \moodle_url('/admin/settings.php', ['section' => 'local_coursepilot']),

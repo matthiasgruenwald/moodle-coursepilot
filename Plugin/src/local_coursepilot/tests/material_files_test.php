@@ -26,7 +26,6 @@ namespace local_coursepilot;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(material_files::class)]
 final class material_files_test extends \advanced_testcase {
-
     public function test_resolve_directory_defaults_to_root(): void {
         $this->resetAfterTest();
         $this->assertSame('/coursepilot-material/', material_files::resolve_directory(''));
@@ -597,7 +596,13 @@ final class material_files_test extends \advanced_testcase {
         );
 
         $this->assertNotFalse(get_file_storage()->get_file(
-            material_files::own_context()->id, 'user', 'draft', $draftitemid, '/', 'gross.pdf'));
+            material_files::own_context()->id,
+            'user',
+            'draft',
+            $draftitemid,
+            '/',
+            'gross.pdf'
+        ));
     }
 
     /**
@@ -624,7 +629,13 @@ final class material_files_test extends \advanced_testcase {
         );
 
         $this->assertNotFalse(get_file_storage()->get_file(
-            material_files::own_context()->id, 'user', 'draft', $draftitemid, '/', 'blatt.pdf'));
+            material_files::own_context()->id,
+            'user',
+            'draft',
+            $draftitemid,
+            '/',
+            'blatt.pdf'
+        ));
     }
 
     /**

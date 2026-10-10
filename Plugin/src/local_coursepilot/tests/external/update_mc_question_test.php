@@ -137,7 +137,11 @@ final class update_mc_question_test extends \advanced_testcase {
 
         $newpenalty = $DB->get_field('question', 'penalty', ['id' => $result['questionid']], MUST_EXIST);
         $newoptions = $DB->get_record(
-            'qtype_multichoice_options', ['questionid' => $result['questionid']], '*', MUST_EXIST);
+            'qtype_multichoice_options',
+            ['questionid' => $result['questionid']],
+            '*',
+            MUST_EXIST
+        );
 
         $this->assertEqualsWithDelta(0.5, (float) $newpenalty, 0.0001, 'penalty blieb erhalten.');
         $this->assertEquals(0, $newoptions->shuffleanswers, 'shuffleanswers blieb erhalten.');
@@ -165,12 +169,17 @@ final class update_mc_question_test extends \advanced_testcase {
         $neighbour = create_mc_question::execute($categoryid, 'Nachbarfrage', 'Frage B', 'single', $answers);
         $neighbour = external_api::clean_returnvalue(create_mc_question::execute_returns(), $neighbour);
         $neighbouridnumber = $DB->get_field(
-            'question_bank_entries', 'idnumber', ['id' => $neighbour['questionbankentryid']], MUST_EXIST);
+            'question_bank_entries',
+            'idnumber',
+            ['id' => $neighbour['questionbankentryid']],
+            MUST_EXIST
+        );
 
         // Simulate an imported question with no idnumber.
         $DB->set_field('question_bank_entries', 'idnumber', null, ['id' => $target['questionbankentryid']]);
         $this->assertEmpty(
-            $DB->get_field('question_bank_entries', 'idnumber', ['id' => $target['questionbankentryid']], MUST_EXIST));
+            $DB->get_field('question_bank_entries', 'idnumber', ['id' => $target['questionbankentryid']], MUST_EXIST)
+        );
 
         $result = update_mc_question::execute(
             $target['questionid'],
@@ -183,12 +192,20 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->assertSame($target['questionbankentryid'], $result['questionbankentryid'], 'New version, no new entry.');
 
         $newidnumber = $DB->get_field(
-            'question_bank_entries', 'idnumber', ['id' => $target['questionbankentryid']], MUST_EXIST);
+            'question_bank_entries',
+            'idnumber',
+            ['id' => $target['questionbankentryid']],
+            MUST_EXIST
+        );
         $this->assertNotEmpty($newidnumber, 'Exactly this one question now has an idnumber.');
 
         // The neighboring question remains unchanged.
         $unchangedneighbouridnumber = $DB->get_field(
-            'question_bank_entries', 'idnumber', ['id' => $neighbour['questionbankentryid']], MUST_EXIST);
+            'question_bank_entries',
+            'idnumber',
+            ['id' => $neighbour['questionbankentryid']],
+            MUST_EXIST
+        );
         $this->assertSame($neighbouridnumber, $unchangedneighbouridnumber);
     }
 
@@ -311,7 +328,10 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->upload_material('diagramm.png', 'Version-1');
 
         $created = create_mc_question::execute(
-            $categoryid, 'Frage', 'Text', 'single',
+            $categoryid,
+            'Frage',
+            'Text',
+            'single',
             [
                 ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
                 ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],
@@ -347,7 +367,10 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->upload_material('arbeitsblatt.pdf', 'PDF-Inhalt');
 
         $created = create_mc_question::execute(
-            $categoryid, 'Frage', 'Text', 'single',
+            $categoryid,
+            'Frage',
+            'Text',
+            'single',
             [
                 ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
                 ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],
@@ -383,7 +406,10 @@ final class update_mc_question_test extends \advanced_testcase {
         [, $categoryid] = $this->setup_course_and_category();
 
         $created = create_mc_question::execute(
-            $categoryid, 'Frage', 'Text', 'single',
+            $categoryid,
+            'Frage',
+            'Text',
+            'single',
             [
                 ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
                 ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],
@@ -402,6 +428,8 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
+     * Provides upload material.
+     *
      * @param string $path
      * @param string $content
      * @return void
@@ -412,6 +440,8 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
+     * Provides stored question file.
+     *
      * @param string $component
      * @param string $filearea
      * @param int $itemid
@@ -420,7 +450,7 @@ final class update_mc_question_test extends \advanced_testcase {
      */
     private function stored_question_file(string $component, string $filearea, int $itemid, string $filename) {
         global $DB;
-        // ponytail: query directly. get_area_files() would need the category
+        // Deliberate shortcut - ponytail: query directly. get_area_files() would need the category
         // context; component/filearea/itemid/filename identifies the file here.
         $record = $DB->get_record('files', [
             'component' => $component,

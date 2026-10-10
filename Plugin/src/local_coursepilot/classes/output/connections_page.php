@@ -28,10 +28,11 @@ namespace local_coursepilot\output;
  * Prepares display-neutral state for the teacher's connections template.
  */
 final class connections_page {
-
     /**
+     * Provides page data.
+     *
      * @param \stdClass[] $tokens
-     * @param array<string, array<string, string>> $currentlocations see location_selection::current_locations_data()
+     * @param mixed[] $currentlocations see location_selection::current_locations_data() Type: array<string,array<string,string>>.
      * @param \moodle_url $locationselectionurl
      * @return array<string, mixed>
      */

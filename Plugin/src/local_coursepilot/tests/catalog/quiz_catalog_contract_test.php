@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(quiz::class)]
 #[CoversClass(\local_coursepilot\catalog\shared_block::class)]
 final class quiz_catalog_contract_test extends \advanced_testcase {
-
     /**
      * Six callable quiz sources from the class documentation, as pairs of
      * callable name and static-method flag. Existence is part of acceptance #383.

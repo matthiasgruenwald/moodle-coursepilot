@@ -30,7 +30,6 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(upload_material_file::class)]
 final class upload_material_file_test extends \advanced_testcase {
-
     public function test_creates_new_file(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
@@ -162,16 +161,20 @@ final class upload_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Provides upload.
+     *
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash
-     * @return array
+     * @return mixed[]
      */
     private function upload(string $path, string $content, string $expectedcontenthash = ''): array {
         return upload_material_file::execute($path, base64_encode($content), $expectedcontenthash);
     }
 
     /**
+     * Reads stored.
+     *
      * @param \stdClass $user
      * @param string $filepath
      * @param string $filename
@@ -190,6 +193,8 @@ final class upload_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Reads file object.
+     *
      * @param int $contextid
      * @param string $filepath
      * @param string $filename

@@ -20,8 +20,6 @@ use mod_quiz\question\display_options;
 use mod_quiz\quiz_settings as native_quiz_settings;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Bridge for external/create_quiz and external/update_quiz_settings
  * (Spec 0015 §5, Ticket #398). Translate quiz catalog vocabulary to the
@@ -43,7 +41,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class quiz_write_bridge {
-
     /** @var string[] The eight review types; see quiz::REVIEW_TYPES. */
     private const REVIEW_TYPES = [
         'attempt', 'correctness', 'maxmarks', 'marks',
@@ -54,7 +51,7 @@ final class quiz_write_bridge {
      * Timing suffix to bitmask, using Moodle's own constants rather than
      * a plugin-specific bitmask vocabulary.
      *
-     * @var array<string, int>
+     * @return array<string, int>
      */
     private static function review_timings(): array {
         return [
@@ -127,7 +124,7 @@ final class quiz_write_bridge {
      *
      * @param \stdClass $moduleinfo Updated in place.
      * @param string[] $texts
-     * @param array<int, int|float|string> $boundaries
+     * @param mixed[] $boundaries Type: array<int,int|float|string>.
      * @return void
      */
     public static function apply_feedback_pseudofields(\stdClass $moduleinfo, array $texts, array $boundaries): void {
@@ -183,8 +180,8 @@ final class quiz_write_bridge {
      * decided by {@see write_target}; like there, a rule only fires when the
      * patch touches one of its fields, so unchanged legacy values are not re-judged.
      *
-     * @param array $effective Checked target state ({@see write_target::$state}).
-     * @param array $patch Fields explicitly set by the patch/bundle. Without feedbacktext,
+     * @param mixed[] $effective Checked target state ({@see write_target::$state}).
+     * @param mixed[] $patch Fields explicitly set by the patch/bundle. Without feedbacktext,
      *        there is no feedback rule to check; carried-forward current values are valid.
      * @param float $grade Effective maximum grade for feedback boundaries: the new grade
      *        if changed in this call, otherwise the current grade.
@@ -196,8 +193,10 @@ final class quiz_write_bridge {
         // any grade change or activity patch, and never coerce strings/bools to points.
         if (array_key_exists('gradepass', $patch)) {
             $passing = $patch['gradepass'];
-            if ((!is_int($passing) && !is_float($passing)) || !is_finite((float) $passing)
-                    || $passing < 0 || $passing > $grade) {
+            if (
+                (!is_int($passing) && !is_float($passing)) || !is_finite((float) $passing)
+                    || $passing < 0 || $passing > $grade
+            ) {
                 throw new moodle_exception('invalidquizgradepass', 'local_coursepilot', '', ['maximum' => $grade]);
             }
         }
@@ -244,6 +243,8 @@ final class quiz_write_bridge {
     }
 
     /**
+     * Provides throw combination violation.
+     *
      * @param string $message
      * @return never
      * @throws moodle_exception combinationruleviolation

@@ -21,8 +21,6 @@ use core\check\result;
 use core\output\action_link;
 use local_coursepilot\webdav\webdav_setup_steps;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * WebDAV setup check 2 (Issue #499, Spec #486 §12): user instances allowed.
  * Return NA when the repository is disabled because the option has no
@@ -34,15 +32,29 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class webdav_user_instances_check extends check {
-
+    /**
+     * Returns id.
+     *
+     * @return string
+     */
     public function get_id(): string {
         return 'webdav_user_instances';
     }
 
+    /**
+     * Returns name.
+     *
+     * @return string
+     */
     public function get_name(): string {
         return get_string('webdavcheck2name', 'local_coursepilot');
     }
 
+    /**
+     * Returns result.
+     *
+     * @return result
+     */
     public function get_result(): result {
         global $USER;
 

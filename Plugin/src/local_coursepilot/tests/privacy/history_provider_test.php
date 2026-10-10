@@ -33,7 +33,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(provider::class)]
 final class history_provider_test extends \core_privacy\tests\provider_testcase {
-
     /** @var \stdClass */
     private \stdClass $author;
 
@@ -80,6 +79,8 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
     }
 
     /**
+     * Adds file.
+     *
      * @param string $component
      * @param string $filearea
      * @param string $filename
@@ -95,6 +96,8 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
     }
 
     /**
+     * Adds version.
+     *
      * @param \stdClass $cm
      * @param int $version
      * @param int $userid
@@ -117,6 +120,8 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
     }
 
     /**
+     * Counts versions.
+     *
      * @param int $userid
      * @param \stdClass $cm
      * @return int
@@ -126,7 +131,9 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
         return $DB->count_records('local_coursepilot_cm_version', ['userid' => $userid, 'cmid' => $cm->id]);
     }
 
-    /** Count of version_file links pointing at no existing state. */
+    /**
+     * Count of version_file links pointing at no existing state.
+     */
     private function dangling_links(): int {
         global $DB;
         return $DB->count_records_sql('SELECT COUNT(1) FROM {local_coursepilot_cm_version_file} vf
@@ -204,8 +211,11 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
         $this->assertSame(1, $this->count_versions($this->other->id, $this->cm));
         $this->assertSame(1, $this->count_versions($this->author->id, $this->othercm));
 
-        provider::delete_data_for_users(new approved_userlist($ctx, 'local_coursepilot',
-            [$this->author->id, $this->other->id]));
+        provider::delete_data_for_users(new approved_userlist(
+            $ctx,
+            'local_coursepilot',
+            [$this->author->id, $this->other->id]
+        ));
 
         $this->assertSame(0, $this->count_versions($this->other->id, $this->cm));
         $this->assertSame(1, $this->count_versions($this->author->id, $this->othercm));
@@ -229,11 +239,17 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
         global $DB;
         $before = $DB->count_records('local_coursepilot_cm_version');
 
-        provider::delete_data_for_user(new approved_contextlist($this->author, 'local_coursepilot',
-            [\context_system::instance()->id, \context_user::instance($this->author->id)->id]));
+        provider::delete_data_for_user(new approved_contextlist(
+            $this->author,
+            'local_coursepilot',
+            [\context_system::instance()->id, \context_user::instance($this->author->id)->id]
+        ));
         provider::delete_data_for_all_users_in_context(\context_course::instance($this->cm->course));
-        provider::delete_data_for_users(new approved_userlist(\context_system::instance(), 'local_coursepilot',
-            [$this->author->id]));
+        provider::delete_data_for_users(new approved_userlist(
+            \context_system::instance(),
+            'local_coursepilot',
+            [$this->author->id]
+        ));
 
         $this->assertSame($before, $DB->count_records('local_coursepilot_cm_version'));
     }
@@ -259,8 +275,10 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
             }
         }
         $fields = array_keys($tables['local_coursepilot_cm_version']->get_privacy_fields());
-        foreach (['userid', 'version', 'source', 'sourcecmid', 'moduleinfo_json', 'coursemodule_json',
-                'arrangement_json'] as $field) {
+        foreach (
+            ['userid', 'version', 'source', 'sourcecmid', 'moduleinfo_json', 'coursemodule_json',
+                'arrangement_json'] as $field
+        ) {
             $this->assertContains($field, $fields);
         }
         $summary = get_string('privacy:metadata:cm_version', 'local_coursepilot');

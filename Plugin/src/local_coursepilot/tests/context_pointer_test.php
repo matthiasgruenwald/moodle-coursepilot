@@ -30,7 +30,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(context_pointer::class)]
 #[CoversClass(\local_coursepilot\pointer_location::class)]
 final class context_pointer_test extends \advanced_testcase {
-
     public function test_legacy_pointer_resolves_both_fields_as_moodle(): void {
         $decoded = ['kontextbereich' => 'custom-context', 'materialordner' => 'custom-material'];
 
@@ -373,7 +372,7 @@ final class context_pointer_test extends \advanced_testcase {
         context_pointer::resolve_target($decoded, 'context_area');
     }
 
-    // --- resolve_previous() (Issue #498, Spec #486 §9) ---
+    // Resolving the previous location.
 
     public function test_resolve_previous_moodle_value(): void {
         $location = context_pointer::resolve_previous(['location' => 'moodle', 'path' => 'alter-kontext']);

@@ -27,7 +27,6 @@ namespace local_coursepilot;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(mark_memory::class)]
 final class mark_memory_test extends \advanced_testcase {
-
     /**
      * lookup() returns null before remember().
      */

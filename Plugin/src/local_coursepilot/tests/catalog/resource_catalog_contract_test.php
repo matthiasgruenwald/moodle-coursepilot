@@ -30,7 +30,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(resource::class)]
 #[CoversClass(\local_coursepilot\catalog\shared_block::class)]
 final class resource_catalog_contract_test extends \advanced_testcase {
-
     /**
      * Catalog fields, real blocklisted columns and id exactly match the
      * resource table columns. Pseudofields do not count as database columns.

@@ -22,8 +22,6 @@ use core\output\action_link;
 use local_coursepilot\oauth_lib;
 use local_coursepilot\webdav\webdav_setup_steps;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * WebDAV setup check 3 (Issue #499, Spec #486 §12): effective WebDAV
  * capability in each connected user's own context. Check has_capability,
@@ -38,15 +36,29 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class webdav_capability_check extends check {
-
+    /**
+     * Returns id.
+     *
+     * @return string
+     */
     public function get_id(): string {
         return 'webdav_capability';
     }
 
+    /**
+     * Returns name.
+     *
+     * @return string
+     */
     public function get_name(): string {
         return get_string('webdavcheck3name', 'local_coursepilot');
     }
 
+    /**
+     * Returns result.
+     *
+     * @return result
+     */
     public function get_result(): result {
         global $USER, $DB;
 

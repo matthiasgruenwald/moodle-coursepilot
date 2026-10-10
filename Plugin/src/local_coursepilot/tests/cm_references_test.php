@@ -32,14 +32,24 @@ require_once($CFG->libdir . '/completionlib.php');
  */
 #[CoversClass(cm_references::class)]
 final class cm_references_test extends \advanced_testcase {
-
+    /**
+     * Provides tree.
+     *
+     * @param int $cmid The cmid.
+     * @param bool $nested The nested.
+     * @return string
+     */
     private function tree(int $cmid, bool $nested = false): string {
         $cond = ['type' => 'completion', 'cm' => $cmid, 'e' => 1];
         $c = $nested ? [['op' => '|', 'c' => [$cond]]] : [$cond];
         return json_encode(['op' => '&', 'c' => $c, 'showc' => [true]]);
     }
 
-    /** @return array{0: \stdClass, 1: int, 2: int} course, target cmid, other cmid */
+    /**
+     * Sets up course.
+     *
+     * @return array{0: \stdClass, 1: int, 2: int} course, target cmid, other cmid
+     */
     private function setup_course(): array {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course(['numsections' => 2]);

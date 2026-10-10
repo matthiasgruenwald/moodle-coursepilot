@@ -30,7 +30,6 @@ use local_coursepilot\history\version_history;
  * Prepares display-neutral state for the history.php templates.
  */
 final class history_page {
-
     /**
      * Activity version list (?cmid=).
      *

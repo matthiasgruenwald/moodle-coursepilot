@@ -116,7 +116,7 @@ class instance_check {
         $url = self::discovery_url($wwwroot);
 
         try {
-            // \curl (lib/filelib.php) is not generally autoloaded - unlike
+            // Note: \curl (lib/filelib.php) is not generally autoloaded - unlike
             // in the full web request bootstrap, it is not always pulled in under
             // CLI_SCRIPT. Load explicitly instead of relying on
             // a chance hit through other includes.

@@ -28,8 +28,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(move_section::class)]
 final class move_section_test extends \advanced_testcase {
-
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course (4 sections), teacher.
      */
     private function course_with_editing_teacher(): array {
@@ -46,6 +47,8 @@ final class move_section_test extends \advanced_testcase {
     }
 
     /**
+     * Provides names by sectionnum.
+     *
      * @param \stdClass $course
      * @return array<int, string> sectionnum => name, sortiert
      */
@@ -60,10 +63,12 @@ final class move_section_test extends \advanced_testcase {
     }
 
     /**
+     * Moves the move section test.
+     *
      * @param int $courseid
      * @param int $von
      * @param int $nach
-     * @return array
+     * @return mixed[]
      */
     private function move(int $courseid, int $von, int $nach): array {
         return external_api::clean_returnvalue(
@@ -122,6 +127,8 @@ final class move_section_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

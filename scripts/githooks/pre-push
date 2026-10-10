@@ -1,0 +1,24 @@
+#!/bin/sh
+# Versionierter Git-Hook (ADR 0029): volles Gate mit Ratsche vor jedem Push.
+# Das Gate prueft den Arbeitsbaum. Damit das gepruefte dem gepushten Stand entspricht, blockiert der
+# Hook, wenn ein Branch-Ref nicht HEAD ist oder versionierte Dateien geaendert sind.
+# Loeschen und Tags (kein neuer Code) brauchen kein Gate. Mehrere Refs: das Gate laeuft einmal.
+# Aktivierung: npm run hooks:install
+cd "$(git rev-parse --show-toplevel)" || exit 1
+head=$(git rev-parse HEAD)
+run=0
+while read -r _lref sha ref _rsha; do
+  case "$sha" in *[!0]*) ;; *) continue ;; esac
+  case "$ref" in refs/heads/*) ;; *) continue ;; esac
+  if [ "$sha" != "$head" ]; then
+    echo "pre-push: Push nach $ref zeigt nicht auf HEAD; das Gate prueft den ausgecheckten Stand. Branch auschecken oder --no-verify." >&2
+    exit 1
+  fi
+  run=1
+done
+[ "$run" = 1 ] || exit 0
+if ! git diff --quiet HEAD --; then
+  echo "pre-push: versionierte Dateien sind geaendert; erst committen oder stashen, sonst prueft das Gate nicht den gepushten Stand." >&2
+  exit 1
+fi
+exec node scripts/gate/gate.js full

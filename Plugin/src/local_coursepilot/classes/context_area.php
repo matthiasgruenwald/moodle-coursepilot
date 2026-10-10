@@ -40,7 +40,6 @@ use local_coursepilot\webdav\webdav_error;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class context_area {
-
     /**
      * Reads a context file through the current location's adapter. The
      * checksum is returned as "contenthash" for both locations.
@@ -66,9 +65,11 @@ final class context_area {
     }
 
     /**
+     * Reads from.
+     *
      * @param storage_port $port
      * @param string $path
-     * @return array|null
+     * @return mixed[]|null
      */
     private static function read_from(storage_port $port, string $path): ?array {
         $area = context_files::area();
@@ -93,7 +94,7 @@ final class context_area {
      *
      * @param string $path
      * @param bool $previouslocation Lists the read-only previous location instead.
-     * @return array{directory: string, entries: array}
+     * @return array{directory: string, entries: mixed[]}
      */
     public static function list(string $path, bool $previouslocation = false): array {
         $area = context_files::area();
@@ -120,9 +121,9 @@ final class context_area {
      * Renames the adapter checksum to "contenthash" and adds "locked".
      *
      * @param storage_port $port The adapter that listed the entry.
-     * @param array $entry An entry from {@see storage_port::list()}.
+     * @param mixed[] $entry An entry from {@see storage_port::list()}.
      * @param string $directory Result directory, see {@see list()}.
-     * @return array
+     * @return mixed[]
      */
     private static function annotate_entry(storage_port $port, array $entry, string $directory): array {
         $checksum = $entry['checksum'];
@@ -148,7 +149,7 @@ final class context_area {
      * same adapter that listed it.
      *
      * @param storage_port $port
-     * @param array $entry
+     * @param mixed[] $entry
      * @param string $directory
      * @return bool
      */
@@ -170,7 +171,7 @@ final class context_area {
      * Pre-read failures and conditional-create conflicts are best-effort failures,
      * never a reason to interrupt location selection (#603).
      *
-     * @param array<string, string> $files Relative path => complete content.
+     * @param string[] $files Relative path => complete content.
      * @return string[] Paths actually created.
      */
     public static function supplement_missing(array $files): array {
@@ -274,6 +275,7 @@ final class context_area {
      * @param string $content
      * @param string $operation One of the {@see pending_write_translation} OP_* constants.
      * @param int $courseid
+     * @param ?string $expectedchecksum The expectedchecksum.
      * @return array{path: string, created: bool, size: int, checksum: string}
      * @throws \moodle_exception contextquotaexceeded, pendingwritefailed, pendingnotewritefailed
      */
@@ -349,7 +351,7 @@ final class context_area {
      * Rejects an existing personal-data-marked target when the #344 switch
      * is off. Shared by {@see write()} and {@see append()} at both locations.
      *
-     * @param array{content: string}|null $existing Result of {@see private_files_storage_port::read()}.
+     * @param ?array $existing Result of {@see private_files_storage_port::read()}. Type: array{content:string}|null.
      * @param string $path
      * @throws \moodle_exception contextfilelocked
      */

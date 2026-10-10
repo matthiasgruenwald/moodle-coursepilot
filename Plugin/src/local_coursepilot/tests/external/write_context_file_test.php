@@ -874,11 +874,33 @@ final class write_context_file_test extends \advanced_testcase {
         // create/overwrite classification. fill_storage() instead blocks MKCOL
         // before existence is known; test_external_storage_full_records_ausstand_with_five_part_message
         // uses that behavior for the creation case.
-        $onlyputfails = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
-            public function __construct(private readonly fake_webdav_transport $inner) {
+        $onlyputfails = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
+            /**
+             * Creates the write context file test.
+             *
+             * @param fake_webdav_transport $inner The inner.
+             */
+            public function __construct(
+                /** @var fake_webdav_transport The inner. */
+                private readonly fake_webdav_transport $inner,
+            ) {
             }
 
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param array $headers The headers.
+             * @param ?string $body The body.
+             * @return \local_coursepilot\webdav\webdav_response
+             */
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     return new \local_coursepilot\webdav\webdav_response(507, [], '');
                 }
@@ -991,11 +1013,33 @@ final class write_context_file_test extends \advanced_testcase {
         [$user, $fake] = $this->set_up_external_context();
         $fake->seed_folder('/Coursepilot/Kontext');
 
-        $onlyputfails401 = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
-            public function __construct(private readonly fake_webdav_transport $inner) {
+        $onlyputfails401 = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
+            /**
+             * Creates the write context file test.
+             *
+             * @param fake_webdav_transport $inner The inner.
+             */
+            public function __construct(
+                /** @var fake_webdav_transport The inner. */
+                private readonly fake_webdav_transport $inner,
+            ) {
             }
 
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param array $headers The headers.
+             * @param ?string $body The body.
+             * @return \local_coursepilot\webdav\webdav_response
+             */
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     return new \local_coursepilot\webdav\webdav_response(401, [], '');
                 }
@@ -1031,11 +1075,33 @@ final class write_context_file_test extends \advanced_testcase {
 
         // Only PUT fails. Existence and personal-data PROPFIND reads work so
         // the request reaches the actual write rather than failing on a read.
-        $onlyputfails = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
-            public function __construct(private readonly fake_webdav_transport $inner) {
+        $onlyputfails = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
+            /**
+             * Creates the write context file test.
+             *
+             * @param fake_webdav_transport $inner The inner.
+             */
+            public function __construct(
+                /** @var fake_webdav_transport The inner. */
+                private readonly fake_webdav_transport $inner,
+            ) {
             }
 
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param array $headers The headers.
+             * @param ?string $body The body.
+             * @return \local_coursepilot\webdav\webdav_response
+             */
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     throw new \local_coursepilot\webdav\webdav_transport_exception('DNS-Aufloesung fehlgeschlagen (Simuliert).');
                 }
@@ -1070,12 +1136,34 @@ final class write_context_file_test extends \advanced_testcase {
         [$user, $fake] = $this->set_up_external_context();
         $fake->seed_folder('/Coursepilot/Kontext');
 
-        // Nur PUT scheitert - siehe test_unreachable_classifies_as_spaeter_nachtragen().
-        $onlyputfails = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
-            public function __construct(private readonly fake_webdav_transport $inner) {
+        // Only PUT fails, see test_unreachable_classifies_as_spaeter_nachtragen().
+        $onlyputfails = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
+            /**
+             * Creates the write context file test.
+             *
+             * @param fake_webdav_transport $inner The inner.
+             */
+            public function __construct(
+                /** @var fake_webdav_transport The inner. */
+                private readonly fake_webdav_transport $inner,
+            ) {
             }
 
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param array $headers The headers.
+             * @param ?string $body The body.
+             * @return \local_coursepilot\webdav\webdav_response
+             */
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     return new \local_coursepilot\webdav\webdav_response(500, [], '');
                 }
@@ -1330,6 +1418,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Provides external content.
+     *
      * @param fake_webdav_transport $fake
      * @param string $path
      * @return string
@@ -1374,14 +1464,16 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertStringContainsString('keinesfalls an einem anderen Ort ablegen', $string['pendingwritefailed']);
 
         // Teacher-facing German text never calls pending writes Ausstand (#516, CONTEXT.md).
-        foreach ([
+        foreach (
+            [
             'pendingwritefailed',
             'pendingnotewritefailed',
             'pendingnotequotaexceeded',
             'pendingunknown',
             'pendingdismissed',
             'storagelocationmarkerpending',
-        ] as $key) {
+            ] as $key
+        ) {
             $this->assertStringNotContainsString('Ausstand', $string[$key], "\"$key\" must not contain \"Ausstand\".");
         }
 
@@ -1506,11 +1598,33 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_folder('/Coursepilot/Kontext');
         $fake->seed_file('/Coursepilot/Kontext/lerngruppe.md', $this->marked_content());
 
-        $getfails = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
-            public function __construct(private readonly fake_webdav_transport $inner) {
+        $getfails = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
+            /**
+             * Creates the write context file test.
+             *
+             * @param fake_webdav_transport $inner The inner.
+             */
+            public function __construct(
+                /** @var fake_webdav_transport The inner. */
+                private readonly fake_webdav_transport $inner,
+            ) {
             }
 
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param array $headers The headers.
+             * @param ?string $body The body.
+             * @return \local_coursepilot\webdav\webdav_response
+             */
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'GET') {
                     return new \local_coursepilot\webdav\webdav_response(503, [], '');
                 }
@@ -1599,10 +1713,12 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Returns validated endpoint response.
+     *
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash
-     * @return array Validated endpoint response.
+     * @return mixed[] Validated endpoint response.
      */
     private function write(string $path, string $content, string $expectedcontenthash = ''): array {
         $result = write_context_file::execute($path, $content, $expectedcontenthash);
@@ -1610,6 +1726,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Provides marked content.
+     *
      * @return string Content with the legacy frontmatter marking "personenbezug: true".
      */
     private function marked_content(): string {
@@ -1617,6 +1735,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Provides stored file.
+     *
      * @param \stdClass $user
      * @param string $filepath
      * @param string $filename
@@ -1635,6 +1755,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Reads stored.
+     *
      * @param \stdClass $user
      * @param string $filepath
      * @param string $filename
@@ -1647,6 +1769,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Creates context file.
+     *
      * @param \stdClass $user
      * @param string $filepath
      * @param string $filename

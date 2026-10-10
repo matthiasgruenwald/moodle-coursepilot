@@ -31,7 +31,6 @@ use local_coursepilot\storage_anchor;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class pointer_scan {
-
     /** @var string[] The two pointer targets, as in location_selection::TARGETS. */
     public const TARGETS = context_pointer::TARGETS;
 
@@ -90,7 +89,7 @@ final class pointer_scan {
      * without depending on the current user.
      *
      * @param int $userid
-     * @return array|null
+     * @return mixed[]|null
      */
     public static function raw_pointer_for(int $userid): ?array {
         $file = get_file_storage()->get_file(
@@ -128,7 +127,7 @@ final class pointer_scan {
             return false;
         }
         $decoded = json_decode($file->get_content(), true);
-        return is_array($decoded) && !array_is_list($decoded) && !empty($decoded);
+        return is_array($decoded) && !array_is_list($decoded);
     }
 
     /**

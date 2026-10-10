@@ -40,6 +40,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -69,14 +71,17 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
+     * Creates the create module test.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string $modname
-     * @param array $felder
-     * @param string $ort {@see \local_coursepilot\material_files::LOCATION_STORE}/{@see \local_coursepilot\material_files::LOCATION_WORKBENCH}
+     * @param mixed[] $felder
+     * @param string $ort
+     * {@see \local_coursepilot\material_files::LOCATION_STORE}/{@see \local_coursepilot\material_files::LOCATION_WORKBENCH}
      *        (Issue #496).
      * @param string[] $confirmlearnerlocks Explicitly confirmed learner restrictions (#583).
-     * @return array
+     * @return mixed[]
      */
     private function create(
         int $courseid,
@@ -96,17 +101,19 @@ final class create_module_test extends \advanced_testcase {
      * Simulate AI preparation: apply bundle values first, then explicit
      * fields. Bundles are not endpoint parameters (Spec 0015 §2.4).
      *
-     * @param array $bundle
-     * @param array $felder
-     * @return array
+     * @param mixed[] $bundle
+     * @param mixed[] $felder
+     * @return mixed[]
      */
     private function merge_bundle(array $bundle, array $felder): array {
         return array_merge($bundle, $felder);
     }
 
     /**
+     * Returns current state, with the same shape as get_module_settings.
+     *
      * @param int $cmid
-     * @return array Current state, with the same shape as get_module_settings.
+     * @return mixed[] Current state, with the same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -149,7 +156,13 @@ final class create_module_test extends \advanced_testcase {
         $this->assertEquals(0, $after['nosubmissions'], 'nosubmissions must be 0 - at least one submission type active.');
         $this->assertSame('Beschreibung', $after['intro']);
         $this->assertSame([], get_file_storage()->get_area_files(
-            \context_module::instance($result['cmid'])->id, 'mod_assign', 'intro', 0, 'filename', false));
+            \context_module::instance($result['cmid'])->id,
+            'mod_assign',
+            'intro',
+            0,
+            'filename',
+            false
+        ));
         $this->assertNotContains('introimages', array_column($result['created_fields'], 'field'));
     }
 
@@ -215,8 +228,14 @@ final class create_module_test extends \advanced_testcase {
         $this->assertSame('Bildinhalt 581', $file->get_content());
         $this->assertSame(sha1('Bildinhalt 581'), $file->get_contenthash());
         $this->assertStringContainsString('@@PLUGINFILE@@/diagramm.png', $this->read($result['cmid'])['intro']);
-        $rendered = file_rewrite_pluginfile_urls($this->read($result['cmid'])['intro'], 'pluginfile.php',
-            $context->id, 'mod_assign', 'intro', 0);
+        $rendered = file_rewrite_pluginfile_urls(
+            $this->read($result['cmid'])['intro'],
+            'pluginfile.php',
+            $context->id,
+            'mod_assign',
+            'intro',
+            0
+        );
         $this->assertStringContainsString('/pluginfile.php/' . $context->id . '/mod_assign/intro/0/diagramm.png', $rendered);
         $this->assertStringNotContainsString('draftfile.php', $rendered);
         $fields = array_column($result['created_fields'], 'value_json', 'field');
@@ -249,6 +268,11 @@ final class create_module_test extends \advanced_testcase {
         $this->assertSame('["diagramm.png"]', $fields['introimages']);
     }
 
+    /**
+     * Provides invalid intro images.
+     *
+     * @return mixed[]
+     */
     public static function invalid_intro_images(): array {
         return [
             'missing file' => [['missing.png'], 'materialfilenotfound'],
@@ -287,8 +311,13 @@ final class create_module_test extends \advanced_testcase {
         $this->resetAfterTest();
         [$course, $teacher] = $this->course_with_editing_teacher();
         $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
-        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid,
-            \context_user::instance($teacher->id)->id, true);
+        assign_capability(
+            'moodle/user:manageownfiles',
+            CAP_PROHIBIT,
+            $roleid,
+            \context_user::instance($teacher->id)->id,
+            true
+        );
 
         try {
             $this->create($course->id, 0, 'assign', [
@@ -725,7 +754,7 @@ final class create_module_test extends \advanced_testcase {
             $this->create($course->id, 0, 'forum', [
                 'name' => 'Ankuendigungen',
                 'intro' => 'Wichtige Hinweise',
-                // cutoffdate before duedate violates the combination rule.
+                // Note: cutoffdate before duedate violates the combination rule.
                 'duedate' => 2000000000,
                 'cutoffdate' => 1000000000,
             ]);
@@ -912,11 +941,11 @@ final class create_module_test extends \advanced_testcase {
             ]);
             $this->fail('execute() should have thrown because of drift.');
         } catch (\moodle_exception $e) {
-            // write_gate_test.php checks exact wording against the language pack.
+            // Note: write_gate_test.php checks exact wording against the language pack.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
         }
 
-        // folder remains creatable; only page is blocked.
+        // Note: folder remains creatable; only page is blocked.
         $this->create($course->id, 0, 'folder', ['name' => 'x']);
         $this->addToAssertionCount(1);
     }
@@ -944,8 +973,14 @@ final class create_module_test extends \advanced_testcase {
 
         $result = external_api::clean_returnvalue(
             create_module::execute_returns(),
-            create_module::execute($course->id, 0, 'assign', json_encode($felder),
-                \local_coursepilot\material_files::LOCATION_STORE, ['attemptreopenmethod'])
+            create_module::execute(
+                $course->id,
+                0,
+                'assign',
+                json_encode($felder),
+                \local_coursepilot\material_files::LOCATION_STORE,
+                ['attemptreopenmethod']
+            )
         );
         $this->assertSame('manual', $this->read($result['cmid'])['attemptreopenmethod']);
     }

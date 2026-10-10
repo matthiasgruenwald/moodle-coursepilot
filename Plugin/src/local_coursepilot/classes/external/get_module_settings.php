@@ -26,8 +26,6 @@ use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\module_state;
 use local_coursepilot\catalog\registry;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Full activity state (Spec 0015 §3.2, Ticket #384), exposed as field JSON
  * without a plugin-specific intermediate representation that would need
@@ -48,8 +46,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class get_module_settings extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -59,8 +58,10 @@ class get_module_settings extends external_api {
     }
 
     /**
+     * Runs the get module settings tool.
+     *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $cmid): array {
         $params = self::validate_parameters(self::execute_parameters(), ['cmid' => $cmid]);
@@ -82,6 +83,8 @@ class get_module_settings extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

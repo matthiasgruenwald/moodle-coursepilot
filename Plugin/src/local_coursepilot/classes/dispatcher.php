@@ -35,7 +35,6 @@ use core_external\external_api;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class dispatcher {
-
     /** @var string Legacy protocol revision (initialize handshake). */
     public const LEGACY_VERSION = '2025-06-18';
 
@@ -68,8 +67,8 @@ final class dispatcher {
      *        null if decoding failed (parse-error case).
      * @param string|null $token The Bearer token already extracted from
      *        the Authorization header.
-     * @param array{origin: ?string, pathinfo: ?string, method: ?string, protocolversion?: ?string} $headers
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     public static function handle(?array $request, ?string $token, array $headers): array {
         global $CFG;
@@ -79,7 +78,7 @@ final class dispatcher {
         if ($origin !== null) {
             $allowed = array_merge([rtrim($CFG->wwwroot, '/')], self::EXTRA_ALLOWED_ORIGINS);
             if (!in_array(rtrim($origin, '/'), $allowed, true)) {
-                // #339: log separately, before handle_authorized(); this response
+                // Log separately, before handle_authorized(); this response
                 // does not use the JSON-RPC error format.
                 access_log::log_failure('Origin not allowed');
                 return self::result(403, [], ['error' => 'Origin not allowed']);
@@ -110,8 +109,8 @@ final class dispatcher {
      *
      * @param array|null $request
      * @param string|null $token
-     * @param array{origin: ?string, pathinfo: ?string, method: ?string, protocolversion?: ?string} $headers
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function handle_authorized(?array $request, ?string $token, array $headers): array {
         global $CFG;
@@ -136,7 +135,7 @@ final class dispatcher {
 
         $method = $headers['method'] ?? 'POST';
         if ($method !== 'POST') {
-            // #339: deliberately unlogged; this is a misconfigured HTTP client,
+            // Deliberately unlogged; this is a misconfigured HTTP client,
             // without a parsed JSON-RPC request or tool reference.
             return self::result(405, ['Allow' => 'POST'], ['error' => 'Method Not Allowed - MCP over HTTP is POST only']);
         }
@@ -215,7 +214,7 @@ final class dispatcher {
                     'id' => $id,
                     'result' => [
                         'tools' => self::tools(),
-                        // data is invalid for tools/list ("Unsupported result type data for
+                        // Note: data is invalid for tools/list ("Unsupported result type data for
                         // tools/list"). The full list is not paginated, so use complete.
                     ] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
                 ]);
@@ -223,7 +222,7 @@ final class dispatcher {
             case 'tools/call':
                 return self::handle_tools_call($id, $params, $headers);
 
-            // #401: empty responses instead of 404. We expose no resources or
+            // Empty responses instead of 404. We expose no resources or
             // prompts and advertise neither capability, but Codex requests these
             // three discovery methods after every handshake.
             case 'resources/list':
@@ -257,9 +256,9 @@ final class dispatcher {
      * webservices (#295, item 1).
      *
      * @param mixed $id
-     * @param array $params
-     * @param array{origin: ?string, pathinfo: ?string, method: ?string, protocolversion?: ?string} $headers
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @param mixed[] $params
+     * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function handle_tools_call($id, array $params, array $headers): array {
         $toolname = (string) ($params['name'] ?? '');
@@ -268,7 +267,7 @@ final class dispatcher {
             return self::error(404, $id, -32601, 'Unknown tool: ' . $toolname);
         }
 
-        // #573 (Spec 0025 §A): every tool declares English inputs directly.
+        // Spec 0025 §A: every tool declares English inputs directly.
         // The #568 input translation is removed; Moodle parameter declarations
         // are the single contract.
         $response = external_api::call_external_function($function, $params['arguments'] ?? []);
@@ -397,7 +396,7 @@ final class dispatcher {
      * forgotten tools/call error branch made all tool messages unreadable.
      * initialize/server/discover precede negotiation; absent headers select legacy.
      *
-     * @param array{protocolversion?: ?string} $headers
+     * @param mixed[] $headers Type: array{protocolversion?:?string}.
      * @param string $resulttype 'complete', the revision's only success value
      *        for every result.
      * @param int|null $ttlms Freshness in milliseconds for list results only.
@@ -468,7 +467,7 @@ final class dispatcher {
     /**
      * Derives the tool list from the allowlist, keeping listed and callable tools identical.
      *
-     * @return array
+     * @return mixed[]
      */
     private static function tools(): array {
         $descriptions = tool_registry::descriptions();
@@ -494,9 +493,14 @@ final class dispatcher {
     }
 
     /**
+     * Provides error.
+     *
+     * @param int $status The status.
      * @param mixed $id
-     * @param array<string, string> $extraheaders
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @param int $code The code.
+     * @param string $message The message.
+     * @param string[] $extraheaders
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function error(int $status, $id, int $code, string $message, array $extraheaders = []): array {
         // Single funnel for JSON-RPC errors (#339): authentication, capability,
@@ -513,9 +517,12 @@ final class dispatcher {
     }
 
     /**
-     * @param array<string, string> $headers
+     * Provides result.
+     *
+     * @param int $status The status.
+     * @param string[] $headers
      * @param array|null $body
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function result(int $status, array $headers, ?array $body): array {
         return ['status' => $status, 'headers' => $headers, 'body' => $body];

@@ -23,8 +23,6 @@ use local_coursepilot\activity_file_trash;
 use local_coursepilot\material_files;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Checked target state of a catalog write (Spec 0028 F11, issue #646).
  *
@@ -53,13 +51,16 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class write_target {
-
     /**
-     * @param array<string, mixed> $changes Explicitly named fields.
-     * @param array<string, mixed> $state Effective target: defaults/current overlaid with $changes.
+     * Creates the write target.
+     *
+     * @param mixed[] $changes Explicitly named fields.
+     * @param mixed[] $state Effective target: defaults/current overlaid with $changes.
      */
     private function __construct(
+        /** @var array The changes. */
         public readonly array $changes,
+        /** @var array The state. */
         public readonly array $state
     ) {
     }
@@ -67,8 +68,8 @@ final class write_target {
     /**
      * Checks a new activity: missing fields take their catalog form default.
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array<string, mixed> $changes
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param mixed[] $changes
      * @param string[] $confirmedlocks
      * @return self
      * @throws moodle_exception on any rejected rule; nothing is written.
@@ -90,9 +91,9 @@ final class write_target {
     /**
      * Checks a patch on an existing activity against its current state.
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array<string, mixed> $changes
-     * @param array<string, mixed> $current Current state in catalog vocabulary.
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param mixed[] $changes
+     * @param mixed[] $current Current state in catalog vocabulary.
      * @param string[] $confirmedlocks
      * @return self
      * @throws moodle_exception on any rejected rule; nothing is written.
@@ -114,10 +115,10 @@ final class write_target {
      * target, check file references, then resolve files and run
      * add_moduleinfo() transactionally.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param \stdClass $course
      * @param int $sectionnum
-     * @param array<string, mixed> $fields Named fields as sent by the client.
+     * @param mixed[] $fields Named fields as sent by the client.
      * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH}.
      * @param string[] $confirmedlocks
      * @return array{cmid: int, changes: array<string, mixed>} New cmid and the normalised named fields.
@@ -148,7 +149,7 @@ final class write_target {
             foreach ($target->defaults() as $fieldname => $value) {
                 $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
             }
-            // mod_folder reads "files" (draft itemid) unguarded in
+            // Note: mod_folder reads "files" (draft itemid) unguarded in
             // folder_add_instance(); an empty folder needs a "no draft" placeholder.
             foreach ($catalogclass::write_options()['missing_form_values'] ?? [] as $field => $value) {
                 if (!property_exists($moduleinfo, $field)) {
@@ -168,11 +169,11 @@ final class write_target {
      * the current state, check file references, then trash replaced
      * files, resolve drafts and run update_moduleinfo() transactionally.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param \stdClass $cm
      * @param \stdClass $course
-     * @param array<string, mixed> $patch Named fields as sent by the client.
-     * @param array<string, mixed> $current Current state in catalog vocabulary.
+     * @param mixed[] $patch Named fields as sent by the client.
+     * @param mixed[] $current Current state in catalog vocabulary.
      * @param string $location
      * @param string[] $confirmedlocks
      * @return array<string, mixed> The normalised patch.
@@ -194,11 +195,17 @@ final class write_target {
 
         require_once($CFG->dirroot . '/course/modlib.php');
         self::in_transaction(static function () use ($target, $catalogclass, $cm, $course, $current, $location): void {
-            // get_moduleinfo_data() returns [cm, context, module, data, cw];
+            // Note: get_moduleinfo_data() returns [cm, context, module, data, cw];
             // "data" is the form-path object that is overlaid and written back.
             [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
-            pseudofield_carry_forward::apply($catalogclass::modname(), $catalogclass, $moduleinfo, $current, $cm,
-                $target->changes);
+            pseudofield_carry_forward::apply(
+                $catalogclass::modname(),
+                $catalogclass,
+                $moduleinfo,
+                $current,
+                $cm,
+                $target->changes
+            );
             $target->apply_changes($catalogclass, $moduleinfo, context_module::instance($cm->id), $location, true);
             \update_moduleinfo($cm, $moduleinfo, $course);
         });
@@ -215,7 +222,9 @@ final class write_target {
     }
 
     /**
-     * @param class-string<module_catalog> $catalogclass
+     * Asserts rules.
+     *
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return void
      * @throws moodle_exception combinationruleviolation|stealthnotallowed
      */
@@ -259,7 +268,9 @@ final class write_target {
     }
 
     /**
-     * @param array{reference: string, field: string} $rule
+     * Provides touches.
+     *
+     * @param mixed[] $rule Type: array{reference:string,field:string}.
      * @return bool True when a change names one of the rule's fields.
      */
     private function touches(array $rule): bool {
@@ -267,7 +278,9 @@ final class write_target {
     }
 
     /**
-     * @param class-string<module_catalog> $catalogclass
+     * Provides violation.
+     *
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param string $message
      * @return never
      */
@@ -282,8 +295,8 @@ final class write_target {
      * Catalog form defaults (not DB column defaults) for every field not
      * named, plus the admin-configured defaults declared in write_options().
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array<string, mixed> $changes
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param mixed[] $changes
      * @return array<string, mixed>
      */
     private static function form_defaults(string $catalogclass, array $changes): array {
@@ -306,8 +319,8 @@ final class write_target {
      * A required field without a form default must be named; all missing
      * fields are reported at once (#404).
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array<string, mixed> $changes
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param mixed[] $changes
      * @return void
      * @throws moodle_exception requiredfieldwithoutdefault
      */
@@ -327,7 +340,9 @@ final class write_target {
     }
 
     /**
-     * @param class-string<module_catalog> $catalogclass
+     * Provides all fields.
+     *
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return field[]
      */
     private static function all_fields(string $catalogclass): array {
@@ -338,7 +353,7 @@ final class write_target {
      * Writes the checked changes onto the native form object and resolves
      * file pseudofields into drafts. Runs inside the write transaction.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param \stdClass $moduleinfo Overlaid in place.
      * @param context $context Draft target context.
      * @param string $location
@@ -375,15 +390,17 @@ final class write_target {
             }
             $moduleinfo->introeditor['itemid'] = $draftitemid;
         }
-        // update_moduleinfo() always takes intro from introeditor; a pure
+        // Note: update_moduleinfo() always takes intro from introeditor; a pure
         // "intro" change would otherwise vanish.
         pseudofield_carry_forward::sync_intro_editor_from_patch($moduleinfo, $this->changes);
     }
 
     /**
+     * Returns draft itemid.
+     *
      * @param context $context
-     * @param array{component: string, filearea: string} $spec
-     * @param array $paths Checked by {@see self::assert_file_references()}.
+     * @param mixed[] $spec Type: array{component:string,filearea:string}.
+     * @param mixed[] $paths Checked by {@see self::assert_file_references()}.
      * @param string $location
      * @param bool $replacing
      * @return int Draft itemid.
@@ -393,8 +410,14 @@ final class write_target {
             // Moodle core deletes the old record deep in
             // file_save_draft_area_files(); keep it restorable (Spec 0018 §9.1).
             $newnames = array_map(static fn($entry): string => basename(material_files::entry_path($entry)), $paths);
-            $existing = get_file_storage()->get_area_files($context->id, $spec['component'], $spec['filearea'], 0,
-                'filename', false);
+            $existing = get_file_storage()->get_area_files(
+                $context->id,
+                $spec['component'],
+                $spec['filearea'],
+                0,
+                'filename',
+                false
+            );
             foreach ($existing as $file) {
                 if (in_array($file->get_filename(), $newnames, true)) {
                     activity_file_trash::trash($file, $context->instanceid);
@@ -408,8 +431,8 @@ final class write_target {
      * Validates file pseudofields before any file is touched: the file
      * capability first, then list shapes and the embed whitelist.
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array<string, mixed> $changes
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param mixed[] $changes
      * @return void
      * @throws moodle_exception invalidmaterialreferencelist|materialfiledisallowedtype
      * @throws \required_capability_exception without moodle/user:manageownfiles
@@ -448,8 +471,8 @@ final class write_target {
     /**
      * Brings named create fields into the form the catalog rules judge.
      *
-     * @param class-string<module_catalog> $catalogclass
-     * @param array<string, mixed> $fields Normalised in place.
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param mixed[] $fields Normalised in place.
      * @return void
      * @throws moodle_exception invalideditorpseudofield
      */
@@ -458,15 +481,17 @@ final class write_target {
         // A bundle carries e.g. choice "limit" as one value for every option;
         // the form field is one entry per option.
         foreach ($options['scalar_to_repeated'] ?? [] as $field => $reference) {
-            if (array_key_exists($field, $fields) && !is_array($fields[$field])
-                    && isset($fields[$reference]) && is_array($fields[$reference])) {
+            if (
+                array_key_exists($field, $fields) && !is_array($fields[$field])
+                    && isset($fields[$reference]) && is_array($fields[$reference])
+            ) {
                 $fields[$field] = array_fill(0, count($fields[$reference]), (int) $fields[$field]);
             }
         }
         // Before deriving content: a non-array editor value would otherwise
         // create an empty page silently (#405).
         pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $fields);
-        // add_moduleinfo() runs *_add_instance() without $mform, so e.g.
+        // Note: add_moduleinfo() runs *_add_instance() without $mform, so e.g.
         // page_add_instance() never copies the editor into its columns.
         foreach ($options['editor_content'] ?? [] as $editor => [$textfield, $formatfield]) {
             if (!isset($fields[$editor]) || !is_array($fields[$editor])) {

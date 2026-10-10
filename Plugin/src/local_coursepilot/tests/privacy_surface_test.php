@@ -33,7 +33,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 #[CoversClass(privacy_surface::class)]
 final class privacy_surface_test extends \advanced_testcase {
-
     /**
      * The registered service surface matches the contract.
      */
@@ -91,6 +90,8 @@ final class privacy_surface_test extends \advanced_testcase {
     }
 
     /**
+     * Provides cases for forbidden name provider.
+     *
      * @return array<string, string[]>
      */
     public static function forbidden_name_provider(): array {
@@ -127,7 +128,9 @@ final class privacy_surface_test extends \advanced_testcase {
     }
 
     /**
-     * @param array $violations
+     * Describes the privacy surface test.
+     *
+     * @param mixed[] $violations
      * @return string
      */
     private static function describe(array $violations): string {

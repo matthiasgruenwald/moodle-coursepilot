@@ -31,7 +31,6 @@ namespace local_coursepilot\webdav;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class webdav_client {
-
     /**
      * @var float Maximum retry duration for `unclear/throttled` (spec
      *      §4, issue #529). Deliberately kept short: a measurement against a
@@ -57,15 +56,18 @@ final class webdav_client {
     private const PROPFIND_BODY = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><allprop/></propfind>';
 
     /**
+     * Creates the webdav client.
+     *
      * @param webdav_transport $transport The swappable transport seam.
      *        In production {@see curl_transport}, in tests the reusable
      *        in-memory fake.
-     * @param callable $clock () => float, seconds since some fixed
+     * @param ?callable $clock () => float, seconds since some fixed Type: callable.
      *        zero point. Only needed for the retry clock - replaceable in
      *        tests so nothing is actually waited for.
-     * @param callable $sleeper (float $seconds) => void.
+     * @param ?callable $sleeper (float $seconds) => void. Type: callable.
      */
     public function __construct(
+        /** @var webdav_transport The swappable transport seam. */
         private readonly webdav_transport $transport,
         ?callable $clock = null,
         ?callable $sleeper = null,
@@ -104,6 +106,8 @@ final class webdav_client {
     }
 
     /**
+     * Returns file body.
+     *
      * @param string $url
      * @return string File body.
      * @throws webdav_error
@@ -143,7 +147,7 @@ final class webdav_client {
         $headers = [];
         if ($etag !== null) {
             $headers['If-Match'] = $etag;
-        } elseif ($expectedlastmodified !== null) {
+        } else if ($expectedlastmodified !== null) {
             $current = $this->propfind($url, 0);
             $actual = $current[0]['timemodified'] ?? null;
             if ($actual !== $expectedlastmodified) {
@@ -181,6 +185,8 @@ final class webdav_client {
     }
 
     /**
+     * Moves the webdav client.
+     *
      * @param string $sourceurl
      * @param string $destinationurl Full destination address.
      * @throws webdav_error
@@ -190,6 +196,8 @@ final class webdav_client {
     }
 
     /**
+     * Deletes the webdav client.
+     *
      * @param string $url
      * @throws webdav_error
      */
@@ -204,7 +212,7 @@ final class webdav_client {
      *
      * @param string $method
      * @param string $url
-     * @param array<string, string> $headers
+     * @param string[] $headers
      * @param string|null $body
      * @param int[] $successcodes
      * @return webdav_response
@@ -244,6 +252,8 @@ final class webdav_client {
     }
 
     /**
+     * Asserts https.
+     *
      * @param string $url
      * @throws \InvalidArgumentException
      */
@@ -254,6 +264,8 @@ final class webdav_client {
     }
 
     /**
+     * Provides classify.
+     *
      * @param webdav_response $response
      * @param int[] $successcodes
      * @return string|null A {@see webdav_error} constant, or null on success.
@@ -302,6 +314,8 @@ final class webdav_client {
     }
 
     /**
+     * Returns decoded path part, without trailing slash.
+     *
      * @param string $url
      * @return string Decoded path part, without trailing slash.
      */
@@ -316,7 +330,8 @@ final class webdav_client {
      * present. The MIME type comes purely from the extension ({@see mimeinfo()}) -
      * no content sniffing here, that would force an additional GET for every file
      * with an unknown extension when listing and thereby violate the
-     * existing zero-GET contract of {@see \local_coursepilot\external\list_context_files_test::test_switch_on_never_fetches_marked_file_content()}
+     * existing zero-GET contract of
+     * {@see \local_coursepilot\external\list_context_files_test::test_switch_on_never_fetches_marked_file_content()}
      * (issue #560 - sniffing instead sits in {@see webdav_storage_port::read()},
      * where the content is fetched anyway).
      *

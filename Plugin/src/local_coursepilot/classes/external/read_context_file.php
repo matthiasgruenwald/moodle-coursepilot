@@ -26,8 +26,6 @@ use local_coursepilot\context_files;
 use local_coursepilot\personal_data;
 use local_coursepilot\storage_anchor;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Reads a file from the calling teacher's context area (Issue #343).
  * The original read-only contract exposes no write operation.
@@ -44,8 +42,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class read_context_file extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -62,9 +61,11 @@ class read_context_file extends external_api {
     }
 
     /**
+     * Runs the read context file tool.
+     *
      * @param string $path
      * @param bool $previouslocation
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidcontextpath for an empty path or
      *         a "."/".." segment; contextfilenotfound for missing files;
      *         previouslocationclosed if "previous_location" is requested without
@@ -121,6 +122,8 @@ class read_context_file extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

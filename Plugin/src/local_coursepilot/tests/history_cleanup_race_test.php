@@ -14,13 +14,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
+/**
+ * Native history capture retains design files while the scheduled cleanup overlaps.
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
+ */
+
 namespace local_coursepilot;
 
 use local_coursepilot\history\retention;
 use local_coursepilot\history\version_history;
 use local_coursepilot\history\version_writer;
 
-/** Native history capture retains design files while the scheduled cleanup overlaps. */
+/**
+ * Native history capture retains design files while the scheduled cleanup overlaps.
+ */
 #[\PHPUnit\Framework\Attributes\CoversClass(retention::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(version_writer::class)]
 final class history_cleanup_race_test extends \advanced_testcase {
@@ -42,9 +52,14 @@ final class history_cleanup_race_test extends \advanced_testcase {
         $before = $DB->get_records('local_coursepilot_cm_version', ['cmid' => $page->cmid]);
         $cfg = $DB->export_dbconfig();
         $options = (array) ($cfg->dboptions ?? []);
-        $ddl = new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
+        $ddl = new \mysqli(
+            $cfg->dbhost,
+            $cfg->dbuser,
+            $cfg->dbpass,
+            $cfg->dbname,
             (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
-            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null
+        );
         $key = 'cp648' . bin2hex(random_bytes(8));
         $table = $DB->get_prefix() . 'local_coursepilot_cm_version_file';
         $ddl->query("CREATE TRIGGER $key BEFORE INSERT ON $table FOR EACH ROW
@@ -72,6 +87,11 @@ final class history_cleanup_race_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Captures modes.
+     *
+     * @return mixed[]
+     */
     public static function capture_modes(): array {
         return [[false], [true]];
     }
@@ -96,9 +116,14 @@ final class history_cleanup_race_test extends \advanced_testcase {
         $DB->delete_records('local_coursepilot_cm_version_file', ['versionid' => $old]);
         $cfg = $DB->export_dbconfig();
         $options = (array) ($cfg->dboptions ?? []);
-        $ddl = new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
+        $ddl = new \mysqli(
+            $cfg->dbhost,
+            $cfg->dbuser,
+            $cfg->dbpass,
+            $cfg->dbname,
             (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
-            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null
+        );
         $key = 'cp648' . bin2hex(random_bytes(8));
         $gate = $key . 'gate';
         $ready = $key . 'ready';
@@ -111,18 +136,30 @@ final class history_cleanup_race_test extends \advanced_testcase {
         $processes = [];
         $pipes = [];
         try {
-            $processes[0] = proc_open([PHP_BINARY, __DIR__ . '/fixtures/history_cleanup_process.php',
+            $processes[0] = proc_open(
+                [PHP_BINARY, __DIR__ . '/fixtures/history_cleanup_process.php',
                 'capture', (string) $page->cmid, (string) $USER->id],
-                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[0]);
-            $this->await_condition(fn() => $DB->get_field_sql('SELECT IS_USED_LOCK(?)', [$ready]),
-                'Capture did not reach the file-link barrier.');
-            $processes[1] = proc_open([PHP_BINARY, __DIR__ . '/fixtures/history_cleanup_process.php', 'cleanup'],
-                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[1]);
+                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+                $pipes[0]
+            );
+            $this->await_condition(
+                fn() => $DB->get_field_sql('SELECT IS_USED_LOCK(?)', [$ready]),
+                'Capture did not reach the file-link barrier.'
+            );
+            $processes[1] = proc_open(
+                [PHP_BINARY, __DIR__ . '/fixtures/history_cleanup_process.php', 'cleanup'],
+                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+                $pipes[1]
+            );
             // The old implementation finishes cleanup; the fixed one waits on the metadata row.
-            $this->await_condition(fn() => !proc_get_status($processes[1])['running'] ||
-                (int) $DB->get_field_sql('SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE INFO LIKE ?',
-                    ['UPDATE ' . $DB->get_prefix() . 'local_coursepilot_cm_file%']) > 0,
-                'Cleanup neither finished nor reached the shared file-row lock.');
+            $this->await_condition(
+                fn() => !proc_get_status($processes[1])['running'] ||
+                (int) $DB->get_field_sql(
+                    'SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE INFO LIKE ?',
+                    ['UPDATE ' . $DB->get_prefix() . 'local_coursepilot_cm_file%']
+                ) > 0,
+                'Cleanup neither finished nor reached the shared file-row lock.'
+            );
             $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);
             $results = [];
             foreach ($processes as $i => $process) {
@@ -152,6 +189,12 @@ final class history_cleanup_race_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Provides await condition.
+     *
+     * @param callable $condition The condition.
+     * @param string $message The message.
+     */
     private function await_condition(callable $condition, string $message): void {
         $deadline = microtime(true) + 15;
         do {

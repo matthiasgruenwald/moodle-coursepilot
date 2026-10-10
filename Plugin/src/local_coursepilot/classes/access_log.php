@@ -34,7 +34,6 @@ use local_coursepilot\event\tool_access_succeeded;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class access_log {
-
     /** @var int No logging. */
     public const LEVEL_NONE = 0;
 

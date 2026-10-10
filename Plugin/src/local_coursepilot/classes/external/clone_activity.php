@@ -63,8 +63,9 @@ require_once($CFG->dirroot . '/course/lib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class clone_activity extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -90,11 +91,13 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Runs the clone activity tool.
+     *
      * @param int $cmid
      * @param string $title
      * @param int $targetcourseid
      * @param bool $visible
-     * @return array
+     * @return mixed[]
      * @throws invalid_parameter_exception
      * @throws moodle_exception clonenobackupsupport
      */
@@ -232,10 +235,10 @@ final class clone_activity extends external_api {
      * only the flat tree from {@see set_restriction}. Remove groups emptied
      * by cleanup instead of leaving empty wrappers.
      *
-     * @param array $node
+     * @param mixed[] $node
      * @param array|null $sourcenode The same source-tree node before cloning, used for the message.
-     * @param array $removed By reference: message for each removed condition.
-     * @return array|null null if the node or entire tree became empty.
+     * @param mixed[] $removed By reference: message for each removed condition.
+     * @return mixed[]|null null if the node or entire tree became empty.
      */
     private static function strip_dangling_completion(array $node, ?array $sourcenode, array &$removed): ?array {
         if (!isset($node['c']) || !is_array($node['c'])) {
@@ -300,6 +303,8 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Provides completion label.
+     *
      * @param int $expectedcompletion COMPLETION_xx value from completionlib.php
      * @return string
      */
@@ -313,7 +318,9 @@ final class clone_activity extends external_api {
     }
 
     /**
-     * @param array $removed
+     * Builds removed message.
+     *
+     * @param mixed[] $removed
      * @return string
      */
     private static function build_removed_message(array $removed): string {
@@ -323,6 +330,8 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Builds message.
+     *
      * @param string $title
      * @param bool $crosscourse
      * @param string|null $removedmessage
@@ -337,6 +346,8 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

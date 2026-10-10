@@ -44,23 +44,31 @@ require_once($CFG->libdir . '/questionlib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class get_question extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'categoryid' => new external_value(PARAM_INT,  'ID of the question bank category'),
+            'categoryid' => new external_value(PARAM_INT, 'ID of the question bank category'),
             'name'       => new external_value(PARAM_TEXT, 'Name of the question (alternative to questionid)', VALUE_DEFAULT, ''),
-            'questionid' => new external_value(PARAM_INT,  'questionid of any version of the question (alternative to name)', VALUE_DEFAULT, 0),
+            'questionid' => new external_value(
+                PARAM_INT,
+                'questionid of any version of the question (alternative to name)',
+                VALUE_DEFAULT,
+                0
+            ),
         ]);
     }
 
     /**
+     * Runs the get question tool.
+     *
      * @param int $categoryid
      * @param string $name
      * @param int $questionid
-     * @return array
+     * @return mixed[]
      */
     public static function execute(int $categoryid, string $name = '', int $questionid = 0): array {
         global $DB;
@@ -73,15 +81,20 @@ class get_question extends external_api {
 
         if ($params['name'] === '' && $params['questionid'] === 0) {
             throw new \invalid_parameter_exception(
-                'Either name or questionid must be specified.');
+                'Either name or questionid must be specified.'
+            );
         }
 
-        $category = $DB->get_record('question_categories',
-            ['id' => $params['categoryid']], '*', MUST_EXIST);
+        $category = $DB->get_record(
+            'question_categories',
+            ['id' => $params['categoryid']],
+            '*',
+            MUST_EXIST
+        );
         $context = \context::instance_by_id($category->contextid);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // moodle/question:view does not exist (any more); Moodle only knows
+        // Note: moodle/question:view does not exist (any more); Moodle only knows
         // viewmine/viewall. viewall fits the read capability here.
         require_capability('moodle/question:viewall', $context);
 
@@ -90,8 +103,13 @@ class get_question extends external_api {
             : self::entry_id_from_name((int) $params['categoryid'], (string) $params['name']);
 
         if ($entryid === 0) {
-            throw new \moodle_exception('notfound', 'error', '',
-                null, 'No question found for the given criteria.');
+            throw new \moodle_exception(
+                'notfound',
+                'error',
+                '',
+                null,
+                'No question found for the given criteria.'
+            );
         }
 
         $latest = $DB->get_record_sql(
@@ -102,15 +120,27 @@ class get_question extends external_api {
             IGNORE_MULTIPLE
         );
         if (!$latest) {
-            throw new \moodle_exception('notfound', 'error', '',
-                null, 'No version found for questionbankentryid ' . $entryid . '.');
+            throw new \moodle_exception(
+                'notfound',
+                'error',
+                '',
+                null,
+                'No version found for questionbankentryid ' . $entryid . '.'
+            );
         }
 
-        $question = $DB->get_record('question',
-            ['id' => $latest->questionid], '*', MUST_EXIST);
+        $question = $DB->get_record(
+            'question',
+            ['id' => $latest->questionid],
+            '*',
+            MUST_EXIST
+        );
 
-        $answers = $DB->get_records('question_answers',
-            ['question' => $question->id], 'id ASC');
+        $answers = $DB->get_records(
+            'question_answers',
+            ['question' => $question->id],
+            'id ASC'
+        );
 
         $answerlist = [];
         $correctindex = -1;
@@ -134,7 +164,12 @@ class get_question extends external_api {
         return [
             'questionid'          => (int) $question->id,
             'questionbankentryid' => (int) $entryid,
-            'categoryid'          => (int) $DB->get_field('question_bank_entries', 'questioncategoryid', ['id' => $entryid], MUST_EXIST),
+            'categoryid'          => (int) $DB->get_field(
+                'question_bank_entries',
+                'questioncategoryid',
+                ['id' => $entryid],
+                MUST_EXIST
+            ),
             'version'             => (int) $latest->version,
             'name'                => (string) $question->name,
             'questiontext'        => (string) $question->questiontext,
@@ -186,30 +221,35 @@ class get_question extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'questionid'          => new external_value(PARAM_INT,   'ID of the latest-version question row'),
-            'questionbankentryid' => new external_value(PARAM_INT,   'ID of the question_bank_entries row (question identity)'),
-            'categoryid'          => new external_value(PARAM_INT,   'Current question bank category of the question'),
-            'version'             => new external_value(PARAM_INT,   'Current version number'),
-            'name'                => new external_value(PARAM_TEXT,  'Name of the question'),
-            'questiontext'        => new external_value(PARAM_RAW,   'Question text (HTML)'),
-            'generalfeedback'     => new external_value(PARAM_RAW,   'General feedback (HTML)'),
-            'qtype'               => new external_value(PARAM_TEXT,  'Question type (usually multichoice)'),
+            'questionid'          => new external_value(PARAM_INT, 'ID of the latest-version question row'),
+            'questionbankentryid' => new external_value(PARAM_INT, 'ID of the question_bank_entries row (question identity)'),
+            'categoryid'          => new external_value(PARAM_INT, 'Current question bank category of the question'),
+            'version'             => new external_value(PARAM_INT, 'Current version number'),
+            'name'                => new external_value(PARAM_TEXT, 'Name of the question'),
+            'questiontext'        => new external_value(PARAM_RAW, 'Question text (HTML)'),
+            'generalfeedback'     => new external_value(PARAM_RAW, 'General feedback (HTML)'),
+            'qtype'               => new external_value(PARAM_TEXT, 'Question type (usually multichoice)'),
             'defaultmark'         => new external_value(PARAM_FLOAT, 'Default mark of the question'),
             'answers'             => new external_multiple_structure(
                 new external_single_structure([
-                    'id'       => new external_value(PARAM_INT,   'question_answers.id'),
-                    'answer'   => new external_value(PARAM_RAW,   'Answer text (HTML)'),
+                    'id'       => new external_value(PARAM_INT, 'question_answers.id'),
+                    'answer'   => new external_value(PARAM_RAW, 'Answer text (HTML)'),
                     'fraction' => new external_value(PARAM_FLOAT, 'Weight of the answer'),
-                    'feedback' => new external_value(PARAM_RAW,   'Answer-specific feedback (HTML)'),
-                    'correct'  => new external_value(PARAM_BOOL,  'Answer has a positive weight'),
+                    'feedback' => new external_value(PARAM_RAW, 'Answer-specific feedback (HTML)'),
+                    'correct'  => new external_value(PARAM_BOOL, 'Answer has a positive weight'),
                 ]),
                 'Answer options in creation order'
             ),
-            'correctindex'        => new external_value(PARAM_INT,   '0-based index of the correct answer in answers[] (-1 if none detected)'),
+            'correctindex'        => new external_value(
+                PARAM_INT,
+                '0-based index of the correct answer in answers[] (-1 if none detected)'
+            ),
             'selectionmode'       => new external_value(PARAM_ALPHA, 'single or multiple'),
         ]);
     }

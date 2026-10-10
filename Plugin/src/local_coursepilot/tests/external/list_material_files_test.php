@@ -402,9 +402,11 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * @param array $entries
+     * Finds entry.
+     *
+     * @param mixed[] $entries
      * @param string $name
-     * @return array|null
+     * @return mixed[]|null
      */
     private function find_entry(array $entries, string $name): ?array {
         foreach ($entries as $entry) {

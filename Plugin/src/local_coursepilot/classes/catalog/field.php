@@ -37,7 +37,6 @@ use moodle_exception;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class field {
-
     /**
      * Field specifications from JSON objects must have string keys.
      *
@@ -52,6 +51,8 @@ final class field {
     }
 
     /**
+     * Creates the field.
+     *
      * @param string $name Moodle field name (form path contract).
      * @param string $type PARAM_* constant or short description of the type.
      * @param string $meaning Meaning for the teacher/AI.
@@ -65,13 +66,21 @@ final class field {
      *        $sourcecallable is set (where the function itself lives).
      */
     public function __construct(
+        /** @var string Moodle field name (form path contract). */
         public readonly string $name,
+        /** @var string PARAM_* constant or short description of the type. */
         public readonly string $type,
+        /** @var string Meaning for the teacher/AI. */
         public readonly string $meaning,
+        /** @var bool Required field without a default? */
         public readonly bool $required,
+        /** @var mixed Form default, null if none exists. */
         public readonly mixed $default,
+        /** @var ?array Allowed values, literal - null if only determinable via */
         public readonly ?array $values,
+        /** @var ?string Name of a callable Moodle source */
         public readonly ?string $sourcecallable,
+        /** @var string File:line reference - always given, even if */
         public readonly string $source,
     ) {
     }

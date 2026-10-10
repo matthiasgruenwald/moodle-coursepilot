@@ -25,8 +25,6 @@ use local_coursepilot\image_preview;
 use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Returns a JPEG preview with longest edge 768px (Spec 0018 §3, #430).
  * The model needs to see content for cropping and alt text. Dispatcher
@@ -44,8 +42,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class preview_material_file extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -56,9 +55,11 @@ class preview_material_file extends external_api {
     }
 
     /**
+     * Runs the preview material file tool.
+     *
      * @param string $path
      * @param string $location
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidmaterialpath, invalidmateriallocation,
      *         materialpathiscontext, materialfilenotfound, materialgdmissing,
      *         materialpreviewunsupported
@@ -71,7 +72,12 @@ class preview_material_file extends external_api {
 
         $stored = material_area::read_for_location($params['location'], $params['path']);
         if ($stored === null) {
-            throw new \moodle_exception('materialfilenotfound', 'local_coursepilot', '', material_files::normalise_path($params['path']));
+            throw new \moodle_exception(
+                'materialfilenotfound',
+                'local_coursepilot',
+                '',
+                material_files::normalise_path($params['path'])
+            );
         }
         $relativepath = $stored['path'];
         $filename = basename($relativepath);
@@ -99,7 +105,7 @@ class preview_material_file extends external_api {
      *
      * @param string $relativepath
      * @param string $content
-     * @return array
+     * @return mixed[]
      */
     private static function build_preview_response(string $relativepath, string $content): array {
         // Even image extensions can contain unreadable bytes or disguised SVG.
@@ -128,7 +134,7 @@ class preview_material_file extends external_api {
      *
      * @param string $relativepath
      * @param string $message
-     * @return array
+     * @return mixed[]
      */
     private static function unavailable_response(string $relativepath, string $message): array {
         return [
@@ -143,6 +149,8 @@ class preview_material_file extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
@@ -171,8 +179,20 @@ class preview_material_file extends external_api {
                 null,
                 NULL_ALLOWED
             ),
-            'width' => new external_value(PARAM_INT, 'Preview width in pixels, null when unavailable', VALUE_DEFAULT, null, NULL_ALLOWED),
-            'height' => new external_value(PARAM_INT, 'Preview height in pixels, null when unavailable', VALUE_DEFAULT, null, NULL_ALLOWED),
+            'width' => new external_value(
+                PARAM_INT,
+                'Preview width in pixels, null when unavailable',
+                VALUE_DEFAULT,
+                null,
+                NULL_ALLOWED
+            ),
+            'height' => new external_value(
+                PARAM_INT,
+                'Preview height in pixels, null when unavailable',
+                VALUE_DEFAULT,
+                null,
+                NULL_ALLOWED
+            ),
         ]);
     }
 }

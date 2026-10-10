@@ -27,7 +27,13 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(xml_activity_creator::class)]
 final class xml_activity_creator_compare_test extends \basic_testcase {
-
+    /**
+     * Provides xml.
+     *
+     * @param string $inner The inner.
+     * @param string $attrs The attrs.
+     * @return string
+     */
     private function xml(string $inner, string $attrs = 'id="1" moduleid="5" modulename="book" contextid="9"'): string {
         return "<activity $attrs><book id=\"1\">$inner</book></activity>";
     }
@@ -60,7 +66,8 @@ final class xml_activity_creator_compare_test extends \basic_testcase {
 
     public function test_ids_times_contextid_and_file_references_are_ignored(): void {
         $in = $this->xml('<name>A</name><bookid>3</bookid><timecreated>1</timecreated><timemodified>2</timemodified>'
-            . '<contextid>4</contextid><intro>&lt;img src="@@PLUGINFILE@@/a.png"&gt;</intro>', 'id="1" moduleid="5" modulename="book" contextid="9"');
+            . '<contextid>4</contextid><intro>&lt;img src="@@PLUGINFILE@@/a.png"&gt;</intro>', 'id="1" moduleid="5" '
+                . 'modulename="book" contextid="9"');
         $out = '<activity id="77" moduleid="6" modulename="book" contextid="10"><book id="2"><name>A</name>'
             . '<bookid>8</bookid><timecreated>100</timecreated><timemodified>200</timemodified><contextid>11</contextid>'
             . '<intro>other</intro></book></activity>';
@@ -68,8 +75,12 @@ final class xml_activity_creator_compare_test extends \basic_testcase {
     }
 
     public function test_repeated_elements_match_by_position(): void {
-        $in = $this->xml('<chapters><chapter id="1"><title>A</title></chapter><chapter id="2"><title>B</title></chapter></chapters>');
-        $out = $this->xml('<chapters><chapter id="5"><title>A</title></chapter><chapter id="6"><title>X</title></chapter></chapters>');
+        $in = $this->xml(
+            '<chapters><chapter id="1"><title>A</title></chapter><chapter id="2"><title>B</title></chapter></chapters>'
+        );
+        $out = $this->xml(
+            '<chapters><chapter id="5"><title>A</title></chapter><chapter id="6"><title>X</title></chapter></chapters>'
+        );
         $result = xml_activity_creator::compare($in, $out);
         $this->assertSame('activity/book/chapters/chapter/title', $result['mismatches'][0]['path']);
         $this->assertSame('X', $result['mismatches'][0]['actual']);

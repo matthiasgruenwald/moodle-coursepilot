@@ -40,7 +40,6 @@ use local_coursepilot\webdav\webdav_setup_steps;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class location_selection {
-
     /** @var string[] The two target names in the pointer document (Spec §2). */
     public const TARGETS = context_pointer::TARGETS;
 
@@ -69,11 +68,11 @@ final class location_selection {
      * the wrong empty state, even with an existing instance.
      *
      * @param int $userid
-     * @return array{state: string, steps: array}
+     * @return array{state: string, steps: mixed[]}
      */
     public static function setup_state(int $userid): array {
         $steps = webdav_setup_steps::catalog($userid);
-        // #528: all three setup steps are independent; checking only the capability
+        // All three setup steps are independent; checking only the capability
         // step is insufficient. enabled_for_user() combines them explicitly with AND.
         if (!webdav_setup_steps::enabled_for_user($userid)) {
             return ['state' => self::STATE_NOT_ENABLED, 'steps' => $steps];
@@ -90,7 +89,7 @@ final class location_selection {
      *
      * @param int $userid
      * @param array|null $browse Result of {@see browse()}, when a level is open.
-     * @return array
+     * @return mixed[]
      */
     public static function page_state(int $userid, ?array $browse = null): array {
         $setup = self::setup_state($userid);
@@ -247,9 +246,12 @@ final class location_selection {
      *
      * @param \local_coursepilot\webdav\resolved_webdav_instance $instance
      * @param string $relative
-     * @return array
+     * @return mixed[]
      */
-    private static function fetch_raw_entries(\local_coursepilot\webdav\resolved_webdav_instance $instance, string $relative): array {
+    private static function fetch_raw_entries(
+        \local_coursepilot\webdav\resolved_webdav_instance $instance,
+        string $relative
+    ): array {
         try {
             return $instance->client()->propfind($instance->directory_url($relative), 1);
         } catch (webdav_error $e) {
@@ -258,7 +260,10 @@ final class location_selection {
             return webdav_error::empty_when_missing(
                 $e,
                 [],
-                static fn (webdav_error $e): \moodle_exception => pointer_reader::webdav_exception($e, 'locationselectionexternalerror')
+                static fn (webdav_error $e): \moodle_exception => pointer_reader::webdav_exception(
+                    $e,
+                    'locationselectionexternalerror'
+                )
             );
         }
     }
@@ -275,7 +280,7 @@ final class location_selection {
      * {@see webdav_setup_steps} supplies listskillspreviouslocationhint and
      * the model can inspect it with coursepilot_list_context_files as needed.
      *
-     * @param array<int, array{name: string, type: string}> $entries
+     * @param mixed[] $entries Type: array<int,array{name:string,type:string}>.
      * @return bool
      */
     private static function has_context_file(array $entries): bool {
@@ -315,7 +320,7 @@ final class location_selection {
      * default root.
      *
      * @param string $target "context_area" or "material_store".
-     * @return array{location: string, path: string, instanceid?: int, fingerprint?: array,
+     * @return array{location: string, path: string, instanceid?: int, fingerprint?: mixed[],
      *         chosen: bool, display: string, allowed: bool}
      */
     public static function current(string $target): array {
@@ -332,7 +337,7 @@ final class location_selection {
      * Uses {@see \local_coursepilot\personal_data_hosts::allowed()} for
      * per-target display rather than raising a caller error.
      *
-     * @param array{location: string, path: string, instanceid?: int, fingerprint?: array} $value
+     * @param mixed[] $value Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
      * @return bool
      */
     private static function is_allowed(array $value): bool {
@@ -346,7 +351,7 @@ final class location_selection {
      * Formats the allowed-host label (#500, Spec #486 §11), shared by consent,
      * connection self-service and location selection.
      *
-     * @param array{allowed: bool} $value Result of {@see current()}.
+     * @param mixed[] $value Result of {@see current()}. Type: array{allowed:bool}.
      * @return string
      */
     public static function allowed_label(array $value): string {
@@ -371,7 +376,7 @@ final class location_selection {
      * without any pointer writes. Only changed targets gain history entries;
      * without real changes, leave the pointer untouched.
      *
-     * @param array<string, array{type: string, instanceid?: int, path?: string, confirmed?: bool}> $selection
+     * @param mixed[] $selection Type: array<string,array{type:string,instanceid?:int,path?:string,confirmed?:bool}>.
      *        For each target either ['type' => 'moodle'] or
      *        ['type' => 'external', 'instanceid' => int, 'path' => string, 'confirmed' => bool].
      *        confirmed applies only to context_area (#518, Spec §5):
@@ -418,7 +423,7 @@ final class location_selection {
      * Resolves and validates requested targets (root restriction, IServ, access;
      * see {@see build_target()}).
      *
-     * @param array<string, array{type?: string, instanceid?: int, path?: string}> $selection
+     * @param mixed[] $selection Type: array<string,array{type?:string,instanceid?:int,path?:string}>.
      * @return array<string, array{location: string, path: string, instanceid?: int, fingerprint?: array}>
      */
     private static function resolve_wanted_targets(array $selection): array {
@@ -447,12 +452,15 @@ final class location_selection {
      * already exists by definition (Spec: newly selected folder). Create all
      * folders before {@see apply()} saves anything.
      *
-     * @param array<string, array{location: string, path: string, instanceid?: int}> $wanted
-     * @param array<string, array{location: string, path: string, instanceid?: int}> $current
+     * @param mixed[] $wanted Type: array<string,array{location:string,path:string,instanceid?:int}>.
+     * @param mixed[] $current Type: array<string,array{location:string,path:string,instanceid?:int}>.
      */
     private static function create_new_external_folders(array $wanted, array $current): void {
         foreach (self::TARGETS as $target) {
-            if ($wanted[$target]['location'] === pointer_location::EXTERNAL && !self::same_place($current[$target], $wanted[$target])) {
+            if (
+                $wanted[$target]['location'] === pointer_location::EXTERNAL
+                && !self::same_place($current[$target], $wanted[$target])
+            ) {
                 self::ensure_directory((int) $wanted[$target]['instanceid'], (string) $wanted[$target]['path']);
             }
         }
@@ -464,9 +472,9 @@ final class location_selection {
      * with provable legacy context, keeping exactly one previous location.
      * Its files remain untouched. A material-only move leaves that field unchanged.
      *
-     * @param array<string, array{location: string, path: string, instanceid?: int, fingerprint?: array}> $wanted
-     * @param array<string, array{location: string, path: string, instanceid?: int, fingerprint?: array}> $current
-     * @return array{changed: string[], location_history: array, previouslocation: ?array}
+     * @param mixed[] $wanted Type: array<string,array{location:string,path:string,instanceid?:int,fingerprint?:array}>.
+     * @param mixed[] $current Type: array<string,array{location:string,path:string,instanceid?:int,fingerprint?:array}>.
+     * @return array{changed: string[], location_history: mixed[], previouslocation: ?array}
      */
     private static function record_changes(array $wanted, array $current): array {
         $changed = [];
@@ -494,18 +502,18 @@ final class location_selection {
     }
 
         /**
-     * @var string[] Error keys indicating the old location itself is no longer
-     *      valid (missing/foreign instance, revoked
-     *      access, unsupported authentication). Same
-     *      list as {@see \local_coursepilot\pointer_writer::LOCATION_FAILURE_CODES}.
-     *      Treat as no provable legacy context rather than blocking
-     *      completion. An actual connection failure
-     *      (locationselectionexternalerror) is not specific to the old
-     *      location; like every other failure in this flow it propagates
-     *      and rejects the entire operation rather than
-     *      silently losing legacy context (Spec §5:
-     *      on failure, nothing is saved).
-     */
+         * @var string[] Error keys indicating the old location itself is no longer
+         *      valid (missing/foreign instance, revoked
+         *      access, unsupported authentication). Same
+         *      list as {@see \local_coursepilot\pointer_writer::LOCATION_FAILURE_CODES}.
+         *      Treat as no provable legacy context rather than blocking
+         *      completion. An actual connection failure
+         *      (locationselectionexternalerror) is not specific to the old
+         *      location; like every other failure in this flow it propagates
+         *      and rejects the entire operation rather than
+         *      silently losing legacy context (Spec §5:
+         *      on failure, nothing is saved).
+         */
     private const OLD_LOCATION_INVALID_CODES = [
         'webdavinstancemissing',
         'webdavinstanceforeign',
@@ -517,7 +525,7 @@ final class location_selection {
      * Whether the old context location contains provable entries (#498, Spec §5).
      * Location selection already communicates with both stores while choosing.
      *
-     * @param array{location: string, path: string, instanceid?: int, fingerprint?: array} $old
+     * @param mixed[] $old Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
      * @return bool
      * @throws \moodle_exception locationselectionexternalerror for actual connection failure
      *         (not an invalid old location).
@@ -551,6 +559,8 @@ final class location_selection {
     }
 
     /**
+     * Provides area.
+     *
      * @param string $target
      * @return storage_area
      */
@@ -559,13 +569,15 @@ final class location_selection {
     }
 
     /**
+     * Provides current pointer value.
+     *
      * @param string $target
-     * @return array{location: string, path: string, instanceid?: int, fingerprint?: array}
+     * @return array{location: string, path: string, instanceid?: int, fingerprint?: mixed[]}
      */
     private static function current_pointer_value(string $target): array {
         $area = self::area($target);
         $location = storage_anchor::resolve_pointer_location($area);
-        // chosen (#525, Spec §5) distinguishes a resolved pointer from a displayed
+        // Note: chosen (#525, Spec §5) distinguishes a resolved pointer from a displayed
         // default root during first setup. Browser JavaScript preselects completed
         // targets without skipping that first setup.
         if ($location === null) {
@@ -584,9 +596,11 @@ final class location_selection {
     }
 
     /**
+     * Builds target.
+     *
      * @param string $target
-     * @param array{type?: string, instanceid?: int, path?: string} $selection
-     * @return array{location: string, path: string, instanceid?: int, fingerprint?: array}
+     * @param mixed[] $selection Type: array{type?:string,instanceid?:int,path?:string}.
+     * @return array{location: string, path: string, instanceid?: int, fingerprint?: mixed[]}
      * @throws \moodle_exception locationselectionselectioninvalid, or errors from {@see webdav_instance::resolve_owned()}.
      */
     private static function build_target(string $target, array $selection): array {
@@ -634,8 +648,8 @@ final class location_selection {
      * material storage cannot be inside or equal to the context area. Validate
      * new targets before any folder creation or persistence.
      *
-     * @param array{location: string, path: string, instanceid?: int, fingerprint?: array} $contextarea
-     * @param array{location: string, path: string, instanceid?: int, fingerprint?: array} $materialstore
+     * @param mixed[] $contextarea Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
+     * @param mixed[] $materialstore Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
      * @throws \moodle_exception materialstoreincontext
      */
     private static function assert_no_overlap(array $contextarea, array $materialstore): void {
@@ -653,9 +667,9 @@ final class location_selection {
      *
      * Only context_area needs confirmation; material-store changes do not.
      *
-     * @param array<string, array{location: string, path: string, instanceid?: int}> $wanted
-     * @param array<string, array{location: string, path: string, instanceid?: int}> $current
-     * @param array<string, array{confirmed?: bool}> $selection Raw input passed to {@see apply()}.
+     * @param mixed[] $wanted Type: array<string,array{location:string,path:string,instanceid?:int}>.
+     * @param mixed[] $current Type: array<string,array{location:string,path:string,instanceid?:int}>.
+     * @param mixed[] $selection Raw input passed to {@see apply()}. Type: array<string,array{confirmed?:bool}>.
      * @throws \moodle_exception locationselectionfolderconfirmrequired
      */
     private static function assert_folder_handover_confirmed(array $wanted, array $current, array $selection): void {
@@ -674,14 +688,20 @@ final class location_selection {
     }
 
     /**
-     * @param array{location: string, path: string, instanceid?: int, fingerprint?: array} $value
+     * Provides to pointer location.
+     *
+     * @param mixed[] $value Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
      * @return pointer_location
      */
     private static function to_pointer_location(array $value): pointer_location {
         if ($value['location'] === pointer_location::MOODLE) {
             return pointer_location::moodle('/' . trim((string) $value['path'], '/') . '/');
         }
-        return pointer_location::external((int) $value['instanceid'], (string) $value['path'], (array) ($value['fingerprint'] ?? []));
+        return pointer_location::external(
+            (int) $value['instanceid'],
+            (string) $value['path'],
+            (array) ($value['fingerprint'] ?? [])
+        );
     }
 
     /**
@@ -710,8 +730,8 @@ final class location_selection {
      * Compares two targets for the same place. Ignore the fingerprint: an
      * unchanged instance with a freshly read equivalent fingerprint is no move.
      *
-     * @param array $a
-     * @param array $b
+     * @param mixed[] $a
+     * @param mixed[] $b
      * @return bool
      */
     private static function same_place(array $a, array $b): bool {
@@ -725,7 +745,9 @@ final class location_selection {
     }
 
     /**
-     * @param array $value
+     * Describes location.
+     *
+     * @param mixed[] $value
      * @return string
      */
     public static function describe_location(array $value): string {
@@ -736,6 +758,8 @@ final class location_selection {
     }
 
     /**
+     * Describes external.
+     *
      * @param int $instanceid
      * @param string $path
      * @return string
@@ -748,7 +772,11 @@ final class location_selection {
         if ($path === '') {
             return get_string('locationselectionlocationexternalalroot', 'local_coursepilot', $label);
         }
-        return get_string('locationselectionlocationexternal', 'local_coursepilot', (object) ['instance' => $label, 'path' => $path]);
+        return get_string(
+            'locationselectionlocationexternal',
+            'local_coursepilot',
+            (object) ['instance' => $label, 'path' => $path]
+        );
     }
 
     /**

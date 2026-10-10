@@ -34,8 +34,9 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
  */
 #[CoversClass(arrangement::class)]
 final class arrangement_test extends \advanced_testcase {
-
     /**
+     * Creates quiz with two questions.
+     *
      * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass, 3: \stdClass} Course, quiz, question 1, question 2.
      */
     private function create_quiz_with_two_questions(): array {
@@ -61,6 +62,8 @@ final class arrangement_test extends \advanced_testcase {
     }
 
     /**
+     * Returns slot rows in ascending slot order.
+     *
      * @param int $quizid
      * @return \stdClass[] Slot rows in ascending slot order.
      */
@@ -218,6 +221,8 @@ final class arrangement_test extends \advanced_testcase {
     }
 
     /**
+     * Seeds attempt.
+     *
      * @param int $quizid
      * @param int $userid
      * @return void

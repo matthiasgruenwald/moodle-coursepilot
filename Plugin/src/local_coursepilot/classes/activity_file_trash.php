@@ -32,7 +32,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class activity_file_trash {
-
     /** @var string Dedicated component for internal storage, without a download route. */
     public const COMPONENT = 'local_coursepilot';
 
@@ -52,14 +51,16 @@ final class activity_file_trash {
         $fs = get_file_storage();
         $filepath = '/' . $cmid . '/' . $file->get_pathnamehash() . '/';
 
-        if ($fs->file_exists(
-            $file->get_contextid(),
-            self::COMPONENT,
-            self::FILEAREA,
-            $cmid,
-            $filepath,
-            $file->get_filename()
-        )) {
+        if (
+            $fs->file_exists(
+                $file->get_contextid(),
+                self::COMPONENT,
+                self::FILEAREA,
+                $cmid,
+                $filepath,
+                $file->get_filename()
+            )
+        ) {
             // Already preserved, e.g. a second write attempt after a failure.
             return;
         }

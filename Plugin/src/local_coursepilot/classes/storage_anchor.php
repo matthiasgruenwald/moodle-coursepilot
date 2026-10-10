@@ -35,7 +35,6 @@ use local_coursepilot\webdav\webdav_setup_steps;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class storage_anchor {
-
     /** @var string Moodle file component: Private Files. */
     public const COMPONENT = 'user';
 
@@ -117,7 +116,12 @@ final class storage_anchor {
             // This caller does not support external storage (#490 originally
             // provided reads only). Falling back silently would create a second,
             // partial area, so return a named error instead.
-            throw new \moodle_exception('pointerexternalnotsupported', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
+            throw new \moodle_exception(
+                'pointerexternalnotsupported',
+                'local_coursepilot',
+                '',
+                webdav_setup_steps::LOCATION_SELECTION_PAGE
+            );
         }
         return $location->path;
     }
@@ -146,7 +150,7 @@ final class storage_anchor {
      * Reads the fixed anchor's pointer file and decodes its JSON object.
      * File I/O only; {@see context_pointer} interprets generations and fields.
      *
-     * @return array|null null without a pointer file (open).
+     * @return mixed[]|null null without a pointer file (open).
      * @throws \moodle_exception pointerunreadable
      */
     private static function raw_pointer(): ?array {
@@ -207,6 +211,9 @@ final class storage_anchor {
     /**
      * Single location dispatcher for tool paths. Only this layer reads the
      * pointer; tools and area facades use the returned port.
+     *
+     * @param storage_area $area The area.
+     * @param int $courseid The courseid.
      */
     public static function port(storage_area $area, int $courseid = 0): storage_port {
         return self::port_at(self::effective_location($area), $courseid);
@@ -216,6 +223,9 @@ final class storage_anchor {
      * The adapter for an already resolved location - only for the read-only
      * previous location ({@see previous_location}), whose location comes from
      * the pointer history instead of the current pointer.
+     *
+     * @param pointer_location $location The location.
+     * @param int $courseid The courseid.
      */
     public static function port_at(pointer_location $location, int $courseid = 0): storage_port {
         if ($location->kind === pointer_location::MOODLE) {
@@ -252,7 +262,7 @@ final class storage_anchor {
      * Public raw-pointer read (#494): location selection needs the complete
      * document, including history, rather than only one resolved target.
      *
-     * @return array|null null without a pointer file.
+     * @return mixed[]|null null without a pointer file.
      * @throws \moodle_exception pointerunreadable
      */
     public static function read_raw_pointer(): ?array {
@@ -267,7 +277,7 @@ final class storage_anchor {
      * Moves no files, only replaces the small pointer with the usual
      * temporary-file choreography in {@see replace()}.
      *
-     * @param array $document Complete pointer document (context_area,
+     * @param mixed[] $document Complete pointer document (context_area,
      *        material_store, location_history).
      */
     public static function write_pointer_document(array $document): void {
@@ -279,8 +289,8 @@ final class storage_anchor {
      * Saves confirmed location selection as a complete pointer document.
      * Page logic supplies values, never bypasses the anchor for file writes.
      *
-     * @param array<string, array> $locations
-     * @param array<int, array> $history
+     * @param array[] $locations
+     * @param array[] $history
      * @param array|null $previouslocation
      */
     public static function save_location_selection(array $locations, array $history, ?array $previouslocation): void {
@@ -503,7 +513,7 @@ final class storage_anchor {
         if ($remaining === null || $additionalbytes <= $remaining) {
             return;
         }
-        // ponytail: include page for every area even though materialquotaexceeded
+        // Deliberate shortcut - ponytail: include page for every area even though materialquotaexceeded
         // does not currently use it. A per-area branch would cost more code than
         // the unused key (get_string ignores it). Split only when another area
         // must explicitly omit the page.
@@ -520,7 +530,7 @@ final class storage_anchor {
      * @param int $contextid
      * @param string $directory
      * @param string $filename
-     * @return array
+     * @return mixed[]
      */
     public static function filerecord(int $contextid, string $directory, string $filename): array {
         return [
@@ -615,15 +625,23 @@ final class storage_anchor {
         );
     }
 
+    /**
+     * Lists entries.
+     *
+     * @param string $directory The directory.
+     * @return mixed[]
+     */
     public static function list_entries(string $directory): array {
         $entries = [];
         foreach (self::directory_files($directory, false, true) as $file) {
-            if (!$file->is_directory()
-                    && ($file->get_filename() === self::POINTER_FILENAME || $file->get_filename() === self::PENDING_FILENAME)) {
+            if (
+                !$file->is_directory()
+                    && ($file->get_filename() === self::POINTER_FILENAME || $file->get_filename() === self::PENDING_FILENAME)
+            ) {
                 continue;
             }
             if ($file->is_directory()) {
-                // get_directory_files() excludes the requested directory's own
+                // Note: get_directory_files() excludes the requested directory's own
                 // placeholder (:dirid); only immediate subfolders appear here.
                 $entries[] = [
                     'name' => trim(substr($file->get_filepath(), strlen($directory)), '/'),
@@ -639,7 +657,7 @@ final class storage_anchor {
                 'name' => $file->get_filename(),
                 'type' => 'file',
                 'size' => (int) $file->get_filesize(),
-                'mimetype' => (string) ($file->get_mimetype() ?? ''),
+                'mimetype' => (string) $file->get_mimetype(),
                 'contenthash' => $file->get_contenthash(),
                 'timemodified' => (int) $file->get_timemodified(),
             ];
@@ -662,7 +680,7 @@ final class storage_anchor {
         }
         return [
             'content' => $file->get_content(),
-            'mimetype' => (string) ($file->get_mimetype() ?? ''),
+            'mimetype' => (string) $file->get_mimetype(),
             'size' => (int) $file->get_filesize(),
             'contenthash' => $file->get_contenthash(),
             'timemodified' => (int) $file->get_timemodified(),
@@ -677,7 +695,7 @@ final class storage_anchor {
      * @param string $directory Result of {@see resolve_directory()}.
      * @param string $filename
      * @param string $content Complete new content.
-     * @param array $recordoverrides Additional/overriding file-record fields
+     * @param mixed[] $recordoverrides Additional/overriding file-record fields
      *        (#488), e.g. the source field for an image crop
      *        ({@see \local_coursepilot\external\crop_material_file}).
      *        Empty leaves the ordinary {@see filerecord()} record
@@ -741,7 +759,7 @@ final class storage_anchor {
      * but preserves the content.
      *
      * @param \stored_file|null $existing Existing file, if present.
-     * @param array $filerecord Target from {@see filerecord()}.
+     * @param mixed[] $filerecord Target from {@see filerecord()}.
      * @param string $content Complete new content.
      */
     public static function replace(?\stored_file $existing, array $filerecord, string $content): void {

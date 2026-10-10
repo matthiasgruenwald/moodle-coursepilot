@@ -1,0 +1,2059 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Variable \$OUTPUT might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: ../html/public/local/coursepilot/admin/connections.php
+
+		-
+			message: '#^Variable \$PAGE might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: ../html/public/local/coursepilot/admin/connections.php
+
+		-
+			message: '#^Call to method set_caption\(\) on an unknown class lightboxgallery_image\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/classes/activity_files/lightboxgallery.php
+
+		-
+			message: '#^Instantiated class lightboxgallery_image not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/classes/activity_files/lightboxgallery.php
+
+		-
+			message: '#^Method local_coursepilot\\admin\\pointer_scan\:\:has_external_target\(\) has parameter \$decoded with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/admin/pointer_scan.php
+
+		-
+			message: '#^Method local_coursepilot\\admin\\pointer_scan\:\:has_open_previous_location\(\) has parameter \$decoded with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/admin/pointer_scan.php
+
+		-
+			message: '#^Method local_coursepilot\\admin\\pointer_scan\:\:target_state\(\) has parameter \$decoded with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/admin/pointer_scan.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/classes/admin/remoteaccesscohorts_setting.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: ../html/public/local/coursepilot/classes/admin/remoteaccesscohorts_setting.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/catalog/assign.php
+
+		-
+			message: '#^Method local_coursepilot\\catalog\\field\:\:__construct\(\) has parameter \$values with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/catalog/field.php
+
+		-
+			message: '#^Method local_coursepilot\\catalog\\write_target\:\:__construct\(\) has parameter \$changes with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/catalog/write_target.php
+
+		-
+			message: '#^Method local_coursepilot\\catalog\\write_target\:\:__construct\(\) has parameter \$state with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/catalog/write_target.php
+
+		-
+			message: '#^Parameter \#1 \$plugin of function get_config expects string, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../html/public/local/coursepilot/classes/catalog/write_target.php
+
+		-
+			message: '#^Class core\\check\\result constructor invoked with 4 parameters, 2\-3 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../html/public/local/coursepilot/classes/check/personal_data_hosts_check.php
+
+		-
+			message: '#^Class core\\check\\result constructor invoked with 4 parameters, 2\-3 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../html/public/local/coursepilot/classes/check/webdav_capability_check.php
+
+		-
+			message: '#^Class core\\check\\result constructor invoked with 4 parameters, 2\-3 required\.$#'
+			identifier: arguments.count
+			count: 2
+			path: ../html/public/local/coursepilot/classes/check/webdav_repository_check.php
+
+		-
+			message: '#^Class core\\check\\result constructor invoked with 4 parameters, 2\-3 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../html/public/local/coursepilot/classes/check/webdav_user_instances_check.php
+
+		-
+			message: '#^Constant COMPLETION_CRITERIA_TYPE_ACTIVITY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/classes/cm_references.php
+
+		-
+			message: '#^Dead catch \- local_coursepilot\\webdav\\webdav_error is never thrown in the try block\.$#'
+			identifier: catch.neverThrown
+			count: 4
+			path: ../html/public/local/coursepilot/classes/context_area.php
+
+		-
+			message: '#^Method local_coursepilot\\context_area\:\:guard_existing_locked\(\) has parameter \$existing with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/context_area.php
+
+		-
+			message: '#^Access to an undefined property core_course\\cm_info\:\:\$section\.$#'
+			identifier: property.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/classes/course_module_placement.php
+
+		-
+			message: '#^Method local_coursepilot\\dispatcher\:\:handle\(\) has parameter \$request with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/dispatcher.php
+
+		-
+			message: '#^Method local_coursepilot\\dispatcher\:\:handle_authorized\(\) has parameter \$request with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/dispatcher.php
+
+		-
+			message: '#^Method local_coursepilot\\dispatcher\:\:result\(\) has parameter \$body with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/dispatcher.php
+
+		-
+			message: '#^Class local_coursepilot\\event\\tool_access_failed has PHPDoc tag @property\-read for property \$other with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/event/tool_access_failed.php
+
+		-
+			message: '#^Class local_coursepilot\\event\\tool_access_succeeded has PHPDoc tag @property\-read for property \$other with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/event/tool_access_succeeded.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\clone_activity\:\:describe_removed_condition\(\) has parameter \$sourcechild with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/clone_activity.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\clone_activity\:\:strip_dangling_completion\(\) has parameter \$sourcenode with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/clone_activity.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/create_mc_question.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\crop_material_file\:\:build_crop_response\(\) has parameter \$existing with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/crop_material_file.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\crop_material_file\:\:crop_and_write\(\) has parameter \$existing with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/crop_material_file.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\crop_material_file\:\:resolve_target\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/crop_material_file.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: ../html/public/local/coursepilot/classes/external/ensure_question_bank.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/ensure_question_category.php
+
+		-
+			message: '#^Call to an undefined method qformat_xml\:\:setCategory\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/export_questions_xml.php
+
+		-
+			message: '#^Call to an undefined method qformat_xml\:\:setContexts\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/export_questions_xml.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: ../html/public/local/coursepilot/classes/external/export_questions_xml.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/get_question.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/get_question_categories.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/get_quiz_cleanup_plan.php
+
+		-
+			message: '#^Access to an undefined property qformat_xml\:\:\$importerrors\.$#'
+			identifier: property.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
+
+		-
+			message: '#^Call to an undefined method qformat_xml\:\:setCategory\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
+
+		-
+			message: '#^Call to an undefined method qformat_xml\:\:setCatfromfile\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
+
+		-
+			message: '#^Call to an undefined method qformat_xml\:\:setContextfromfile\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
+
+		-
+			message: '#^Call to an undefined method qformat_xml\:\:setContexts\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
+
+		-
+			message: '#^Call to an undefined method qformat_xml\:\:setMatchgrades\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
+
+		-
+			message: '#^Call to an undefined method qformat_xml\:\:setStoponerror\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
+
+		-
+			message: '#^Result of \|\| is always false\.$#'
+			identifier: booleanOr.alwaysFalse
+			count: 2
+			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between array and false will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/move_question.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\set_restriction\:\:build_date_condition\(\) should return stdClass but returns availability_date\\stdClass\.$#'
+			identifier: return.type
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/set_restriction.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\set_restriction\:\:build_group_condition\(\) should return stdClass but returns availability_group\\stdClass\.$#'
+			identifier: return.type
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/set_restriction.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between mixed and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/set_restriction.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/update_mc_question.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/update_mc_question.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/update_question_category.php
+
+		-
+			message: '#^Call to function array_key_exists\(\) with ''summaryformat'' and array\{name\?\: mixed, summary\: mixed, visible\?\: mixed\} will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/update_section.php
+
+		-
+			message: '#^Method local_coursepilot\\external_schema_converter\:\:from_parameters\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external_schema_converter.php
+
+		-
+			message: '#^Method local_coursepilot\\external_schema_converter\:\:from_structure\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external_schema_converter.php
+
+		-
+			message: '#^Parameter \#1 \$structure of static method local_coursepilot\\external_schema_converter\:\:from_structure\(\) expects core_external\\external_single_structure, core_external\\external_description given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external_schema_converter.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between bool and 0 will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external_schema_converter.php
+
+		-
+			message: '#^Method local_coursepilot\\glossary_entry_writer\:\:categories\(\) has parameter \$names with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/glossary_entry_writer.php
+
+		-
+			message: '#^Parameter \#3 \$a of method core_string_manager\:\:get_string\(\) expects array\|object\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../html/public/local/coursepilot/classes/history/version_history.php
+
+		-
+			message: '#^Parameter \#3 \$a of method core_string_manager\:\:get_string\(\) expects array\|object\|string\|null, int\<1, max\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: ../html/public/local/coursepilot/classes/history/version_history.php
+
+		-
+			message: '#^Parameter \#3 \$a of method core_string_manager\:\:get_string\(\) expects array\|object\|string\|null, int\<min, \-1\>\|int\<1, max\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../html/public/local/coursepilot/classes/history/version_history.php
+
+		-
+			message: '#^Method local_coursepilot\\location_selection\:\:current\(\) should return array\{location\: string, path\: string, instanceid\?\: int, fingerprint\?\: array\<mixed\>, chosen\: bool, display\: string, allowed\: bool\} but returns array\{display\: string, allowed\: bool, location\: string, path\: string, instanceid\?\: int, fingerprint\?\: array\<mixed\>\}\.$#'
+			identifier: return.type
+			count: 1
+			path: ../html/public/local/coursepilot/classes/location_selection.php
+
+		-
+			message: '#^Method local_coursepilot\\location_selection\:\:history\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/location_selection.php
+
+		-
+			message: '#^Method local_coursepilot\\location_selection\:\:page_state\(\) has parameter \$browse with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/location_selection.php
+
+		-
+			message: '#^Method local_coursepilot\\location_selection\:\:record_changes\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/location_selection.php
+
+		-
+			message: '#^Method local_coursepilot\\location_selection\:\:resolve_current_targets\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/location_selection.php
+
+		-
+			message: '#^Method local_coursepilot\\location_selection\:\:resolve_wanted_targets\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/location_selection.php
+
+		-
+			message: '#^Offset ''date'' on array\{date\: int, target\: string, from\: array, to\: array\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: ../html/public/local/coursepilot/classes/location_selection.php
+
+		-
+			message: '#^Offset ''from'' on array\{date\: int, target\: string, from\: array, to\: array\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: ../html/public/local/coursepilot/classes/location_selection.php
+
+		-
+			message: '#^Offset ''target'' on array\{date\: int, target\: string, from\: array, to\: array\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: ../html/public/local/coursepilot/classes/location_selection.php
+
+		-
+			message: '#^Offset ''to'' on array\{date\: int, target\: string, from\: array, to\: array\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: ../html/public/local/coursepilot/classes/location_selection.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: ../html/public/local/coursepilot/classes/location_selection.php
+
+		-
+			message: '#^Method local_coursepilot\\material_files\:\:embed_draft_entry\(\) has parameter \$entry with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/material_files.php
+
+		-
+			message: '#^Variable \$allowed might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/oauth_budget.php
+
+		-
+			message: '#^Method local_coursepilot\\oauth_lib\:\:handle_token\(\) has parameter \$body with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/oauth_lib.php
+
+		-
+			message: '#^Variable \$count might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/oauth_lib.php
+
+		-
+			message: '#^Variable \$tokens might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: ../html/public/local/coursepilot/classes/oauth_lib.php
+
+		-
+			message: '#^Method local_coursepilot\\output\\location_selection\:\:notification_data\(\) has parameter \$finishresult with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/output/location_selection.php
+
+		-
+			message: '#^Method local_coursepilot\\output\\location_selection\:\:oauth_return_data\(\) has parameter \$oauthreturn with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/output/location_selection.php
+
+		-
+			message: '#^Method local_coursepilot\\output\\location_selection\:\:page_data\(\) has parameter \$finishresult with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/output/location_selection.php
+
+		-
+			message: '#^Method local_coursepilot\\output\\location_selection\:\:page_data\(\) has parameter \$oauthreturn with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/output/location_selection.php
+
+		-
+			message: '#^Offset ''date'' on array\{date\: int, target\: string, from\: array, to\: array\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: ../html/public/local/coursepilot/classes/output/location_selection.php
+
+		-
+			message: '#^Offset ''from'' on array\{date\: int, target\: string, from\: array, to\: array\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: ../html/public/local/coursepilot/classes/output/location_selection.php
+
+		-
+			message: '#^Offset ''from_text'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: ../html/public/local/coursepilot/classes/output/location_selection.php
+
+		-
+			message: '#^Offset ''to'' on array\{date\: int, target\: string, from\: array, to\: array\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: ../html/public/local/coursepilot/classes/output/location_selection.php
+
+		-
+			message: '#^Offset ''to_text'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: ../html/public/local/coursepilot/classes/output/location_selection.php
+
+		-
+			message: '#^Offset ''course_id'' on array\{timestamp\: int, path\: string, operation\: string, error_class\: string, course_id\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: ../html/public/local/coursepilot/classes/pending_write_notice.php
+
+		-
+			message: '#^Method local_coursepilot\\pointer_location\:\:__construct\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/pointer_location.php
+
+		-
+			message: '#^Parameter \#4 \$itemid of method core_privacy\\local\\request\\content_writer\:\:export_area_files\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../html/public/local/coursepilot/classes/privacy/provider.php
+
+		-
+			message: '#^Method local_coursepilot\\private_files_storage_port\:\:require_checksum_match\(\) has parameter \$existing with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/private_files_storage_port.php
+
+		-
+			message: '#^Method local_coursepilot\\storage_anchor\:\:save_location_selection\(\) has parameter \$history with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/storage_anchor.php
+
+		-
+			message: '#^Method local_coursepilot\\storage_anchor\:\:save_location_selection\(\) has parameter \$locations with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/storage_anchor.php
+
+		-
+			message: '#^Method local_coursepilot\\storage_anchor\:\:save_location_selection\(\) has parameter \$previouslocation with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/storage_anchor.php
+
+		-
+			message: '#^Parameter \#5 \$filepath of method file_storage\:\:get_directory_files\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../html/public/local/coursepilot/classes/storage_anchor.php
+
+		-
+			message: '#^Method local_coursepilot\\tool_registry\:\:schemas\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/tool_registry.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_response\:\:__construct\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/webdav/webdav_response.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav_storage_port\:\:put\(\) has parameter \$existing with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/webdav_storage_port.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav_storage_port\:\:require_checksum_match\(\) has parameter \$existing with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/classes/webdav_storage_port.php
+
+		-
+			message: '#^Offset ''server'' on array\{server\: string, basepath\: string, account\: string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: ../html/public/local/coursepilot/classes/webdav_storage_port.php
+
+		-
+			message: '#^Offset ''timemodified'' on array\{name\: string, type\: string, size\: int, timemodified\: int, etag\: string\|null, mimetype\: string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: ../html/public/local/coursepilot/classes/webdav_storage_port.php
+
+		-
+			message: '#^Variable \$OUTPUT might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: ../html/public/local/coursepilot/connections.php
+
+		-
+			message: '#^Variable \$PAGE might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: ../html/public/local/coursepilot/connections.php
+
+		-
+			message: '#^Parameter \#2 \$type of class xmldb_index constructor expects string\|null, false given\.$#'
+			identifier: argument.type
+			count: 3
+			path: ../html/public/local/coursepilot/db/upgrade.php
+
+		-
+			message: '#^Parameter \#2 \$type of method xmldb_table\:\:add_index\(\) expects int, false given\.$#'
+			identifier: argument.type
+			count: 2
+			path: ../html/public/local/coursepilot/db/upgrade.php
+
+		-
+			message: '#^Parameter \#2 \$type of method xmldb_table\:\:add_index\(\) expects int, true given\.$#'
+			identifier: argument.type
+			count: 9
+			path: ../html/public/local/coursepilot/db/upgrade.php
+
+		-
+			message: '#^Parameter \#2 \$type of class xmldb_index constructor expects string\|null, false given\.$#'
+			identifier: argument.type
+			count: 5
+			path: ../html/public/local/coursepilot/db/upgradelib.php
+
+		-
+			message: '#^Parameter \#2 \$type of class xmldb_index constructor expects string\|null, true given\.$#'
+			identifier: argument.type
+			count: 6
+			path: ../html/public/local/coursepilot/db/upgradelib.php
+
+		-
+			message: '#^Parameter \#2 \$type of method xmldb_table\:\:add_index\(\) expects int, false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../html/public/local/coursepilot/db/upgradelib.php
+
+		-
+			message: '#^Right side of \|\| is always true\.$#'
+			identifier: booleanOr.rightAlwaysTrue
+			count: 1
+			path: ../html/public/local/coursepilot/history.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: ../html/public/local/coursepilot/history.php
+
+		-
+			message: '#^Variable \$OUTPUT might not be defined\.$#'
+			identifier: variable.undefined
+			count: 7
+			path: ../html/public/local/coursepilot/history.php
+
+		-
+			message: '#^Variable \$PAGE might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: ../html/public/local/coursepilot/history.php
+
+		-
+			message: '#^Function local_coursepilot_handle_location_selection_finish\(\) has parameter \$oauthreturn with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/location_selection.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/oauth.php
+
+		-
+			message: '#^Variable \$OUTPUT might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: ../html/public/local/coursepilot/oauth/authorize.php
+
+		-
+			message: '#^Variable \$PAGE might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: ../html/public/local/coursepilot/oauth/authorize.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/oauth/protected-resource.php
+
+		-
+			message: '#^Parameter \#4 \$defaultsetting of class admin_setting_configcheckbox constructor expects string, int given\.$#'
+			identifier: argument.type
+			count: 2
+			path: ../html/public/local/coursepilot/settings.php
+
+		-
+			message: '#^Parameter \#4 \$defaultsetting of class admin_setting_configtext constructor expects string, int given\.$#'
+			identifier: argument.type
+			count: 2
+			path: ../html/public/local/coursepilot/settings.php
+
+		-
+			message: '#^Variable \$ADMIN might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: ../html/public/local/coursepilot/settings.php
+
+		-
+			message: '#^Variable \$hassiteconfig might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/settings.php
+
+		-
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/surface.php
+
+		-
+			message: '#^Variable \$OUTPUT might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: ../html/public/local/coursepilot/surface.php
+
+		-
+			message: '#^Variable \$PAGE might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: ../html/public/local/coursepilot/surface.php
+
+		-
+			message: '#^Method local_coursepilot\\activity_type_templates_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
+
+		-
+			message: '#^Method local_coursepilot\\activity_type_templates_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
+
+		-
+			message: '#^Method local_coursepilot\\activity_type_templates_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/activity_type_templates_test\.php\:196\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/activity_type_templates_test\.php\:300\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
+
+		-
+			message: '#^Method local_coursepilot\\admin\\connection_storage_location_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/admin/connection_storage_location_test.php
+
+		-
+			message: '#^Method local_coursepilot\\admin\\connection_storage_location_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/admin/connection_storage_location_test.php
+
+		-
+			message: '#^Method local_coursepilot\\admin\\connection_storage_location_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/admin/connection_storage_location_test.php
+
+		-
+			message: '#^Method local_coursepilot\\admin\\pointer_scan_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/admin/pointer_scan_test.php
+
+		-
+			message: '#^Method local_coursepilot\\admin\\pointer_scan_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/admin/pointer_scan_test.php
+
+		-
+			message: '#^Method local_coursepilot\\admin\\pointer_scan_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/admin/pointer_scan_test.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with bool and ''Constant FORUM…'' will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/catalog/forum_catalog_contract_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/catalog/learner_locks_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question_category\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/catalog/learner_locks_test.php
+
+		-
+			message: '#^Offset ''op'' on array\{op\: string, value\?\: mixed, reason\: string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: ../html/public/local/coursepilot/tests/catalog/learner_locks_test.php
+
+		-
+			message: '#^Offset ''reason'' on array\{op\: string, value\?\: mixed, reason\: string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: ../html/public/local/coursepilot/tests/catalog/learner_locks_test.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with bool and ''Constant…'' will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/catalog/page_catalog_contract_test.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\) with string will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/catalog/quiz_catalog_contract_test.php
+
+		-
+			message: '#^Method local_coursepilot\\check\\webdav_capability_check_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/check/webdav_capability_check_test.php
+
+		-
+			message: '#^Method local_coursepilot\\check\\webdav_capability_check_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/check/webdav_capability_check_test.php
+
+		-
+			message: '#^Method local_coursepilot\\check\\webdav_capability_check_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/check/webdav_capability_check_test.php
+
+		-
+			message: '#^Method local_coursepilot\\check\\webdav_repository_check_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/check/webdav_repository_check_test.php
+
+		-
+			message: '#^Method local_coursepilot\\check\\webdav_repository_check_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/check/webdav_repository_check_test.php
+
+		-
+			message: '#^Method local_coursepilot\\check\\webdav_repository_check_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/check/webdav_repository_check_test.php
+
+		-
+			message: '#^Method local_coursepilot\\check\\webdav_user_instances_check_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/check/webdav_user_instances_check_test.php
+
+		-
+			message: '#^Method local_coursepilot\\check\\webdav_user_instances_check_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/check/webdav_user_instances_check_test.php
+
+		-
+			message: '#^Method local_coursepilot\\check\\webdav_user_instances_check_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/check/webdav_user_instances_check_test.php
+
+		-
+			message: '#^Constant COMPLETION_CRITERIA_TYPE_ACTIVITY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/cm_references_test.php
+
+		-
+			message: '#^Method local_coursepilot\\storage_port@anonymous/tests/context_area_pending_test\.php\:144\:\:append\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/context_area_pending_test.php
+
+		-
+			message: '#^Method local_coursepilot\\storage_port@anonymous/tests/context_area_pending_test\.php\:144\:\:list\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/context_area_pending_test.php
+
+		-
+			message: '#^Method local_coursepilot\\storage_port@anonymous/tests/context_area_pending_test\.php\:144\:\:read\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/context_area_pending_test.php
+
+		-
+			message: '#^Method local_coursepilot\\storage_port@anonymous/tests/context_area_pending_test\.php\:144\:\:write\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/context_area_pending_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 4
+			path: ../html/public/local/coursepilot/tests/dispatcher_test.php
+
+		-
+			message: '#^Call to method get_image_caption\(\) on an unknown class lightboxgallery_image\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/activity_file_supplement_test.php
+
+		-
+			message: '#^Call to method get_image_display_html\(\) on an unknown class lightboxgallery_image\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/activity_file_supplement_test.php
+
+		-
+			message: '#^Instantiated class lightboxgallery_image not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/activity_file_supplement_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_content\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/add_glossary_entries_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\add_glossary_entries_test\:\:call\(\) has parameter \$entries with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/add_glossary_entries_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/add_questions_to_quiz_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question\(\)\.$#'
+			identifier: method.notFound
+			count: 8
+			path: ../html/public/local/coursepilot/tests/external/add_questions_to_quiz_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question_category\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/add_questions_to_quiz_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\append_context_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/append_context_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\append_context_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/append_context_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\append_context_file_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/append_context_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/external/append_context_file_test\.php\:473\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/append_context_file_test.php
+
+		-
+			message: '#^Offset ''contextfileappended'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/external/append_context_file_test.php
+
+		-
+			message: '#^Offset ''contextfilerotation'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/append_context_file_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/catalog_file_write_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\catalog_file_write_test\:\:rejected_creates\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/catalog_file_write_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\catalog_file_write_test\:\:rejected_updates\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/catalog_file_write_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\catalog_file_write_test\:\:test_rejected_create_mutates_neither_files_nor_course\(\) has parameter \$invalid with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/catalog_file_write_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\catalog_file_write_test\:\:test_rejected_update_mutates_neither_files_nor_activity\(\) has parameter \$invalid with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/catalog_file_write_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/compare_activity_versions_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\compose_material_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/compose_material_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\compose_material_file_test\:\:test_failures_leave_no_new_file_and_preserve_existing_target\(\) has parameter \$parts with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/compose_material_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\compose_material_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/compose_material_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\compose_material_file_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/compose_material_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\create_module_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/create_module_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\create_module_test\:\:test_assign_create_rejects_invalid_intro_images_without_activity\(\) has parameter \$paths with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/create_module_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\create_module_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/create_module_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\create_module_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/create_module_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\crop_material_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/crop_material_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\crop_material_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/crop_material_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\crop_material_file_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/crop_material_file_test.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with true will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/dismiss_previous_location_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\dismiss_previous_location_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/dismiss_previous_location_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\dismiss_previous_location_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/dismiss_previous_location_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\dismiss_previous_location_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/dismiss_previous_location_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 5
+			path: ../html/public/local/coursepilot/tests/external/get_course_catalog_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 5
+			path: ../html/public/local/coursepilot/tests/external/get_module_settings_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/external/get_modules_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question_category\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/get_question_categories_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/get_question_category_cleanup_plan_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question_category\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: ../html/public/local/coursepilot/tests/external/get_question_category_cleanup_plan_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: ../html/public/local/coursepilot/tests/external/get_question_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question_category\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/get_question_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/get_quiz_cleanup_plan_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/external/get_quiz_cleanup_plan_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question_category\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/get_quiz_cleanup_plan_test.php
+
+		-
+			message: '#^Function cohort_add_member not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/get_skill_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\import_questions_xml_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/import_questions_xml_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\import_questions_xml_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/import_questions_xml_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\import_questions_xml_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/import_questions_xml_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/list_activity_versions_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\list_context_files_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/list_context_files_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\list_context_files_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/list_context_files_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\list_context_files_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/list_context_files_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\list_material_files_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/list_material_files_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\list_material_files_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/list_material_files_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\list_material_files_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/list_material_files_test.php
+
+		-
+			message: '#^Function cohort_add_member not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/list_skills_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\list_skills_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/list_skills_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\list_skills_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/list_skills_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\list_skills_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/list_skills_test.php
+
+		-
+			message: '#^Offset ''listskillspreviouslocationhint'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/list_skills_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\preview_material_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/preview_material_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\preview_material_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/preview_material_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\preview_material_file_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/preview_material_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\read_context_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/read_context_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\read_context_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/read_context_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\read_context_file_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/read_context_file_test.php
+
+		-
+			message: '#^Offset ''webdavexternalerror'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/external/read_context_file_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/report_clone_lineage_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/report_clone_lineage_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question_category\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/report_clone_lineage_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/restore_activity_version_quiz_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/external/restore_activity_version_quiz_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question_category\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/restore_activity_version_quiz_test.php
+
+		-
+			message: '#^Call to function is_subclass_of\(\) with ''local_coursepilot\\\\quiz\\\\arrangement'' and ''core_external\\\\external_api'' will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/restore_activity_version_quiz_test.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertFalse\(\) with false and ''arrangement must…'' will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/restore_activity_version_quiz_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 16
+			path: ../html/public/local/coursepilot/tests/external/restore_activity_version_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 20
+			path: ../html/public/local/coursepilot/tests/external/set_completion_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 13
+			path: ../html/public/local/coursepilot/tests/external/set_restriction_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\update_mc_question_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/update_mc_question_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\update_mc_question_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/update_mc_question_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\update_mc_question_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/update_mc_question_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 43
+			path: ../html/public/local/coursepilot/tests/external/update_module_settings_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\update_module_settings_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/update_module_settings_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\update_module_settings_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/update_module_settings_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\update_module_settings_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/update_module_settings_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 13
+			path: ../html/public/local/coursepilot/tests/external/update_quiz_settings_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/update_quiz_settings_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question_category\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/update_quiz_settings_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\write_context_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\write_context_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\external\\write_context_file_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/external/write_context_file_test\.php\:1016\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/external/write_context_file_test\.php\:1078\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/external/write_context_file_test\.php\:1140\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/external/write_context_file_test\.php\:1601\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/external/write_context_file_test\.php\:877\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Offset ''contextfilechanged'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Offset ''contextfilecreated'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Offset ''contextfilehostnotallowed'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Offset ''contextfileoverwritten'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 3
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Offset ''contextquotaexceeded'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Offset ''pendingdismissed''\|''pendingnotequotaexceeded''\|''pendingnotewritefailed''\|''pendingunknown''\|''pendingwritefailed''\|''storagelocationmarkerpending'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Offset ''pendingnotequotaexceeded'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Offset ''pendingnotewritefailed'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Offset ''pendingwritefailed'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 8
+			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
+
+		-
+			message: '#^Offset ''function'' on array\{function\: string, line\?\: int, file\?\: string, class\: ''local_coursepilot\\\\private_files_storage_port'', type\?\: ''\-\>''\|''\:\:'', args\?\: list\<mixed\>, object\?\: object\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: ../html/public/local/coursepilot/tests/fixtures/activity_template_create_race.php
+
+		-
+			message: '#^Variable \$DB might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/tests/fixtures/activity_template_create_race.php
+
+		-
+			message: '#^Variable \$DB might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/tests/fixtures/default_export_process.php
+
+		-
+			message: '#^Variable \$DB might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/tests/fixtures/failed_restore_process.php
+
+		-
+			message: '#^Variable \$DB might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/tests/fixtures/history_cleanup_process.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/history_cleanup_race_test.php
+
+		-
+			message: '#^Function cohort_add_member not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/lib_test.php
+
+		-
+			message: '#^Method local_coursepilot\\location_selection_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/location_selection_test.php
+
+		-
+			message: '#^Method local_coursepilot\\location_selection_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/location_selection_test.php
+
+		-
+			message: '#^Method local_coursepilot\\location_selection_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/location_selection_test.php
+
+		-
+			message: '#^Offset ''path'' does not exist on null\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/location_selection_test.php
+
+		-
+			message: '#^Method local_coursepilot\\oauth_cimd_fetch_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/oauth_cimd_fetch_test.php
+
+		-
+			message: '#^Method local_coursepilot\\oauth_cimd_fetch_test\:\:race_on_site_budget\(\) has parameter \$first with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/oauth_cimd_fetch_test.php
+
+		-
+			message: '#^Method local_coursepilot\\oauth_cimd_fetch_test\:\:race_on_site_budget\(\) has parameter \$second with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/oauth_cimd_fetch_test.php
+
+		-
+			message: '#^Method local_coursepilot\\oauth_cimd_fetch_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/oauth_cimd_fetch_test.php
+
+		-
+			message: '#^Method local_coursepilot\\oauth_cimd_fetch_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/oauth_cimd_fetch_test.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with true will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/oauth_cleanup_test.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertIsArray\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/oauth_lib_test.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with true will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/oauth_registration_budget_test.php
+
+		-
+			message: '#^Method local_coursepilot\\oauth_registration_budget_test\:\:race_on_site_budget\(\) has parameter \$first with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/oauth_registration_budget_test.php
+
+		-
+			message: '#^Method local_coursepilot\\oauth_registration_budget_test\:\:race_on_site_budget\(\) has parameter \$second with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/oauth_registration_budget_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/observer_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/observer_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question_category\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/observer_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/output/history_page_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/privacy/history_provider_test.php
+
+		-
+			message: '#^Call to an undefined method core_privacy\\local\\request\\content_writer\:\:get_data\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/privacy/history_provider_test.php
+
+		-
+			message: '#^Parameter \#3 \$contextids of class core_privacy\\tests\\request\\approved_contextlist constructor expects array\<int\>, array\<int, int\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: ../html/public/local/coursepilot/tests/privacy/history_provider_test.php
+
+		-
+			message: '#^Parameter \#3 \$contextids of class core_privacy\\tests\\request\\approved_contextlist constructor expects array\<int\>, array\<int\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../html/public/local/coursepilot/tests/privacy/history_provider_test.php
+
+		-
+			message: '#^Call to an undefined method core_privacy\\local\\request\\content_writer\:\:get_data\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/privacy/provider_test.php
+
+		-
+			message: '#^Call to an undefined method core_privacy\\local\\request\\content_writer\:\:get_files\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/privacy/provider_test.php
+
+		-
+			message: '#^Parameter \#3 \$contextids of class core_privacy\\tests\\request\\approved_contextlist constructor expects array\<int\>, array\<int\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: ../html/public/local/coursepilot/tests/privacy/provider_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/quiz/arrangement_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/quiz/arrangement_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_question_category\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/quiz/arrangement_test.php
+
+		-
+			message: '#^Function cohort_add_member not found\.$#'
+			identifier: function.notFound
+			count: 3
+			path: ../html/public/local/coursepilot/tests/remote_access_test.php
+
+		-
+			message: '#^Function cohort_delete_cohort not found\.$#'
+			identifier: function.notFound
+			count: 2
+			path: ../html/public/local/coursepilot/tests/remote_access_test.php
+
+		-
+			message: '#^Function cohort_remove_member not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/remote_access_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 6
+			path: ../html/public/local/coursepilot/tests/retention_test.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\) with core\\task\\scheduled_task will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 2
+			path: ../html/public/local/coursepilot/tests/retention_test.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertSame\(\) with 0 and 0 will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/retention_test.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertSame\(\) with 1 and 1 will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/retention_test.php
+
+		-
+			message: '#^Parameter \#2 \$type of class xmldb_index constructor expects string\|null, false given\.$#'
+			identifier: argument.type
+			count: 2
+			path: ../html/public/local/coursepilot/tests/retention_test.php
+
+		-
+			message: '#^Offset ''settingintroheading_desc'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/umlaut_test.php
+
+		-
+			message: '#^Parameter \#2 \$type of class xmldb_index constructor expects string\|null, true given\.$#'
+			identifier: argument.type
+			count: 6
+			path: ../html/public/local/coursepilot/tests/upgradelib_test.php
+
+		-
+			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/version_history_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_client_test\:\:redirect_statuscodes\(\) should return array\<string, array\{int\}\> but returns array\{301\: array\{301\}, 302\: array\{302\}, 303\: array\{303\}, 307\: array\{307\}, 308\: array\{308\}\}\.$#'
+			identifier: return.type
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_client_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav/webdav_client_test\.php\:307\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_client_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav/webdav_client_test\.php\:401\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_client_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav/webdav_client_test\.php\:454\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_client_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav/webdav_client_test\.php\:484\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_client_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav/webdav_client_test\.php\:518\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_client_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav/webdav_client_test\.php\:562\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_client_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav/webdav_client_test\.php\:624\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_client_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav/webdav_client_test\.php\:677\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_client_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_instance_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_instance_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_instance_test\:\:location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_instance_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_instance_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_instance_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_instance_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_instance_test.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertIsBool\(\) with bool will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_setup_steps_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_setup_steps_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_setup_steps_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_setup_steps_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_setup_steps_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_setup_steps_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav/webdav_setup_steps_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav_storage_port_test\.php\:106\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav_storage_port_test\.php\:163\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav_storage_port_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav_storage_port_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php
+
+		-
+			message: '#^Method local_coursepilot\\webdav_storage_port_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php
+
+		-
+			message: '#^Function cohort_add_member not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/workbench_ticket_test.php
+
+		-
+			message: '#^Function cohort_remove_member not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/workbench_ticket_test.php
+
+		-
+			message: '#^Offset ''modnamedriftlocked'' does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/write_gate_test.php
+
+		-
+			message: '#^Variable \$plugin might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: ../html/public/local/coursepilot/version.php

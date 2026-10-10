@@ -24,8 +24,6 @@ use core_external\external_value;
 use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Lists the calling teacher's material store (Spec 0018 §2, #428): file
  * size, contenthash, modification time and remaining user quota. No
@@ -38,8 +36,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class list_material_files extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -50,9 +49,11 @@ class list_material_files extends external_api {
     }
 
     /**
+     * Runs the list material files tool.
+     *
      * @param string $path
      * @param string $location
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidmaterialpath if $path contains a "."/".."
      *         segment; invalidmateriallocation for an unknown
      *         location value; materialpathiscontext if the context area is inside
@@ -79,6 +80,8 @@ class list_material_files extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

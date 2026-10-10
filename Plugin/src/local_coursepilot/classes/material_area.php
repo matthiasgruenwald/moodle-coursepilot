@@ -45,13 +45,12 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class material_area {
-
     /**
      * Lists one level of the requested material location with identical fields for both locations (issues #539/#645).
      *
      * @param string $locationkey {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH}.
      * @param string $path
-     * @return array{directory: string, entries: array}
+     * @return array{directory: string, entries: mixed[]}
      * @throws \moodle_exception As in {@see material_files::list_entries_for_location()}.
      */
     public static function list(string $locationkey, string $path): array {

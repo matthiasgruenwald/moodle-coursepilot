@@ -1,0 +1,42 @@
+[
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_version_info.php",
+    "missing": "capability",
+    "reason": "kontextfreies Werkzeug: liefert nur Plugin-Version und Release, keine Kurs- oder Nutzerdaten; Anmeldung und Fernzugriffsfreigabe prüft der Dispatcher"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/describe_module_fields.php",
+    "missing": "capability",
+    "reason": "kontextfreies Werkzeug: statischer Feldkatalog der Aktivitätstypen, keine Kurs- oder Nutzerdaten; Anmeldung und Fernzugriffsfreigabe prüft der Dispatcher"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/list_context_files.php",
+    "missing": "capability",
+    "reason": "liest nur den eigenen Kontextbereich der Person; bewusst keine Zusatz-Capability, die normalen Nutzerrechte genügen (Kontext wird im eigenen Nutzerkontext validiert)"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/read_context_file.php",
+    "missing": "capability",
+    "reason": "liest nur den eigenen Kontextbereich der Person; bewusst keine Zusatz-Capability, die normalen Nutzerrechte genügen (Kontext wird im eigenen Nutzerkontext validiert)"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/list_material_files.php",
+    "missing": "capability",
+    "reason": "liest nur die eigenen Materialdateien der Person; reine Leseoperation im eigenen Nutzerkontext ohne Zusatz-Capability"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/preview_material_file.php",
+    "missing": "capability",
+    "reason": "liest nur die eigenen Materialdateien der Person; reine Leseoperation im eigenen Nutzerkontext ohne Zusatz-Capability"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/write_context_file.php",
+    "missing": "capability",
+    "reason": "context_area::write() verlangt moodle/user:manageownfiles nur für die Moodle-Ablage; bei externem Speicherort gilt stattdessen die Anmeldung am Speicher, daher kein unbedingter Aufruf in execute()"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/append_context_file.php",
+    "missing": "capability",
+    "reason": "context_area::append() verlangt moodle/user:manageownfiles nur für die Moodle-Ablage; bei externem Speicherort gilt stattdessen die Anmeldung am Speicher, daher kein unbedingter Aufruf in execute()"
+  }
+]

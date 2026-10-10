@@ -14,12 +14,29 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
+/**
+ * Synthetic regressions at the existing OAuth and download boundaries (#638, #639).
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
+ */
+
 namespace local_coursepilot;
 
-/** Synthetic regressions at the existing OAuth and download boundaries (#638, #639). */
+/**
+ * Synthetic regressions at the existing OAuth and download boundaries (#638, #639).
+ */
 #[\PHPUnit\Framework\Attributes\CoversClass(oauth_lib::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(workbench_ticket::class)]
 final class oauth_connection_test extends \advanced_testcase {
+    /**
+     * Provides tokens.
+     *
+     * @param string $clientid The clientid.
+     * @param int $userid The userid.
+     * @return mixed[]
+     */
     private function tokens(string $clientid, int $userid): array {
         $verifier = str_repeat('v', 43);
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
@@ -41,7 +58,10 @@ final class oauth_connection_test extends \advanced_testcase {
         $rotated = oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a');
         $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token($rotated['access_token']));
         $this->assertSame($connection, oauth_lib::current_connection_id());
-        $history = $DB->get_record('local_coursepilot_oauth_token', ['refreshtokenhash' => hash('sha256', $original['refresh_token'])]);
+        $history = $DB->get_record(
+            'local_coursepilot_oauth_token',
+            ['refreshtokenhash' => hash('sha256', $original['refresh_token'])]
+        );
         $this->assertNotFalse($history);
         $this->assertSame($connection, (int) $history->connectionid);
         $this->assertNull(oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a'));
@@ -71,8 +91,12 @@ final class oauth_connection_test extends \advanced_testcase {
         $this->assertNull(oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-b'));
         $this->assertNotNull(oauth_lib::authenticate_access_token($successor['access_token']));
         // Consumed evidence survives its old expiry; descendants have their own lifetimes.
-        $DB->set_field('local_coursepilot_oauth_token', 'refreshexpires', time() - 1,
-            ['refreshtokenhash' => hash('sha256', $original['refresh_token'])]);
+        $DB->set_field(
+            'local_coursepilot_oauth_token',
+            'refreshexpires',
+            time() - 1,
+            ['refreshtokenhash' => hash('sha256', $original['refresh_token'])]
+        );
         $this->assertNull(oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a'));
         foreach ([$original, $attacker, $successor] as $pair) {
             $this->assertNull(oauth_lib::authenticate_access_token($pair['access_token']));
@@ -86,6 +110,9 @@ final class oauth_connection_test extends \advanced_testcase {
         $this->assertNotNull(oauth_lib::rotate_refresh_token($other['refresh_token'], 'client-a'));
     }
 
+    /**
+     * Creates file.
+     */
     private function create_file(): void {
         [$directory, $filename] = material_files::resolve_file('synthetic.txt');
         get_file_storage()->create_file_from_string([
@@ -95,6 +122,11 @@ final class oauth_connection_test extends \advanced_testcase {
         ], 'synthetic bytes');
     }
 
+    /**
+     * Asserts ticket revoked.
+     *
+     * @param string $ticket The ticket.
+     */
     private function assert_ticket_revoked(string $ticket): void {
         try {
             workbench_ticket::redeem($ticket);
@@ -131,6 +163,11 @@ final class oauth_connection_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Provides ticket.
+     *
+     * @return string
+     */
     private function ticket(): string {
         parse_str(parse_url(workbench_ticket::issue('synthetic.txt')['url'], PHP_URL_QUERY), $query);
         return $query['ticket'];
@@ -198,17 +235,32 @@ final class oauth_connection_test extends \advanced_testcase {
         $this->assertNull(oauth_lib::authenticate_access_token($rotation['body']['access_token']));
     }
 
+    /**
+     * Provides ddl connection.
+     *
+     * @return \mysqli
+     */
     private function ddl_connection(): \mysqli {
         global $DB;
         $cfg = $DB->export_dbconfig();
         // Moodle's execute() rejects trigger-body semicolons; use the native DDL connection.
         $options = (array) ($cfg->dboptions ?? []);
-        return new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
+        return new \mysqli(
+            $cfg->dbhost,
+            $cfg->dbuser,
+            $cfg->dbpass,
+            $cfg->dbname,
             (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
-            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null
+        );
     }
 
-    /** Real processes overlap inside the connection transaction, in both orders. */
+    /**
+     * Real processes overlap inside the connection transaction, in both orders.
+     *
+     * @param string $first The first.
+     * @param string $second The second.
+     */
     #[\PHPUnit\Framework\Attributes\DataProvider('races')]
     public function test_parallel_connection_changes(string $first, string $second): void {
         global $DB, $USER;
@@ -250,19 +302,34 @@ final class oauth_connection_test extends \advanced_testcase {
         $processes = [];
         $pipes = [];
         try {
-            $processes[0] = proc_open([PHP_BINARY, __DIR__ . '/fixtures/oauth_connection_process.php',
+            $processes[0] = proc_open(
+                [PHP_BINARY, __DIR__ . '/fixtures/oauth_connection_process.php',
                 $first, ($first === 'replay' ? $original : $active)['refresh_token'], (string) $tokenid],
-                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[0]);
-            $this->await_condition(fn() => $DB->get_field_sql('SELECT IS_USED_LOCK(?)', [$ready]), 'First connection did not reach barrier');
-            $processes[1] = proc_open([PHP_BINARY, __DIR__ . '/fixtures/oauth_connection_process.php',
+                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+                $pipes[0]
+            );
+            $this->await_condition(
+                fn() => $DB->get_field_sql('SELECT IS_USED_LOCK(?)', [$ready]),
+                'First connection did not reach barrier'
+            );
+            $processes[1] = proc_open(
+                [PHP_BINARY, __DIR__ . '/fixtures/oauth_connection_process.php',
                 $second, ($second === 'replay' ? $original : $active)['refresh_token'], (string) $tokenid],
-                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[1]);
-            $this->await_condition(fn() => (int) $DB->get_field_sql(
-                'SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE INFO LIKE :query AND ID <> IS_USED_LOCK(:ready)',
-                ['query' => 'UPDATE ' . $DB->get_prefix() . 'local_coursepilot_oauth_grant%', 'ready' => $ready]) > 0,
-                'Second connection did not wait on the shared grant row');
-            $this->assertSame((int) $USER->id, oauth_lib::authenticate_access_token($active['access_token']),
-                'An uncommitted revocation must not expose partially changed connection state.');
+                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+                $pipes[1]
+            );
+            $this->await_condition(
+                fn() => (int) $DB->get_field_sql(
+                    'SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE INFO LIKE :query AND ID <> IS_USED_LOCK(:ready)',
+                    ['query' => 'UPDATE ' . $DB->get_prefix() . 'local_coursepilot_oauth_grant%', 'ready' => $ready]
+                ) > 0,
+                'Second connection did not wait on the shared grant row'
+            );
+            $this->assertSame(
+                (int) $USER->id,
+                oauth_lib::authenticate_access_token($active['access_token']),
+                'An uncommitted revocation must not expose partially changed connection state.'
+            );
             $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);
             $results = [];
             foreach ($processes as $i => $process) {
@@ -313,6 +380,12 @@ final class oauth_connection_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * Provides await condition.
+     *
+     * @param callable $condition The condition.
+     * @param string $message The message.
+     */
     private function await_condition(callable $condition, string $message): void {
         $deadline = microtime(true) + 15;
         do {
@@ -324,6 +397,11 @@ final class oauth_connection_test extends \advanced_testcase {
         $this->fail($message);
     }
 
+    /**
+     * Provides races.
+     *
+     * @return mixed[]
+     */
     public static function races(): array {
         return [['rotate', 'revoke'], ['revoke', 'rotate'], ['rotate', 'rotate'],
             ['rotate', 'replay'], ['replay', 'rotate']];

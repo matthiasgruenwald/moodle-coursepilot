@@ -56,8 +56,9 @@ require_once($CFG->dirroot . '/question/format/xml/format.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class export_questions_xml extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -86,10 +87,12 @@ final class export_questions_xml extends external_api {
     }
 
     /**
+     * Runs the export questions xml tool.
+     *
      * @param int[] $questionids
      * @param string $targetpath
      * @param bool $placeholder
-     * @return array
+     * @return mixed[]
      */
     public static function execute(array $questionids, string $targetpath = '', bool $placeholder = false): array {
         $params = self::validate_parameters(self::execute_parameters(), [
@@ -172,7 +175,7 @@ final class export_questions_xml extends external_api {
         [$question, $category, $context] = self::resolve_native_question($questionid);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // moodle/question:view no longer exists; Moodle only knows
+        // Note: moodle/question:view no longer exists; Moodle only knows
         // viewmine/viewall (see get_question.php). viewall matches the
         // read permission here: export is a read operation.
         require_capability('moodle/question:viewall', $context);
@@ -232,8 +235,13 @@ final class export_questions_xml extends external_api {
 
         $version = $DB->get_record('question_versions', ['questionid' => $questionid]);
         if (!$version) {
-            throw new \moodle_exception('notfound', 'error', '',
-                null, 'No question with questionid ' . $questionid . ' found.');
+            throw new \moodle_exception(
+                'notfound',
+                'error',
+                '',
+                null,
+                'No question with questionid ' . $questionid . ' found.'
+            );
         }
 
         $latest = $DB->get_record_sql(
@@ -303,7 +311,7 @@ final class export_questions_xml extends external_api {
             static function (array $m) use (&$filenames): string {
                 $filename = $m[1];
                 $filenames[] = $filename;
-                // "--" would prematurely close the XML comment.
+                // Note: "--" would prematurely close the XML comment.
                 $safe = str_replace('--', '- -', $filename);
                 return '<!-- File removed (no binary transport in export): ' . $safe . " -->\n";
             },
@@ -320,12 +328,16 @@ final class export_questions_xml extends external_api {
      * and unsuitable for sharing (Spec 0018 §7.2, ticket #437).
      *
      * @param int $count
-     * @param array<int, array{name: string, files: string[]}> $missing
+     * @param mixed[] $missing Type: array<int,array{name:string,files:string[]}>.
      * @param bool $placeholder
      * @return string
      */
     private static function build_message(int $count, array $missing, bool $placeholder): string {
-        $base = $count === 1 ? get_string('questionexportone', 'local_coursepilot') : get_string('questionexportmany', 'local_coursepilot', $count);
+        $base = $count === 1 ? get_string('questionexportone', 'local_coursepilot') : get_string(
+            'questionexportmany',
+            'local_coursepilot',
+            $count
+        );
 
         if ($placeholder) {
             $base .= ' ' . get_string('questionexportplaceholder', 'local_coursepilot');
@@ -337,13 +349,19 @@ final class export_questions_xml extends external_api {
 
         $details = [];
         foreach ($missing as $entry) {
-            $details[] = get_string('questionexportmissingdetail', 'local_coursepilot', (object) ['name' => $entry['name'], 'files' => implode(', ', $entry['files'])]);
+            $details[] = get_string(
+                'questionexportmissingdetail',
+                'local_coursepilot',
+                (object) ['name' => $entry['name'], 'files' => implode(', ', $entry['files'])]
+            );
         }
 
         return $base . ' ' . get_string('questionexportmissing', 'local_coursepilot', implode('; ', $details));
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

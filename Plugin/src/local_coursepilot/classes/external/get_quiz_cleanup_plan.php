@@ -46,8 +46,9 @@ require_once($CFG->dirroot . '/course/lib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class get_quiz_cleanup_plan extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -61,16 +62,18 @@ class get_quiz_cleanup_plan extends external_api {
     }
 
     /**
+     * Runs the get quiz cleanup plan tool.
+     *
      * @param int $cmid
-     * @param array $keep_questionbankentryids
-     * @return array
+     * @param mixed[] $keepquestionbankentryids
+     * @return mixed[]
      */
-    public static function execute(int $cmid, array $keep_questionbankentryids): array {
+    public static function execute(int $cmid, array $keepquestionbankentryids): array {
         global $CFG, $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
-            'keep_questionbankentryids' => $keep_questionbankentryids,
+            'keep_questionbankentryids' => $keepquestionbankentryids,
         ]);
         $cm = get_coursemodule_from_id('quiz', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
@@ -110,7 +113,8 @@ class get_quiz_cleanup_plan extends external_api {
                 'questionname' => (string) $row->questionname,
                 'categoryid' => (int) $row->questioncategoryid,
                 'categoryname' => (string) $row->categoryname,
-                'reason' => 'Not part of the new quiz version. Remove it from this quiz only; the question is not deleted from the question bank and stays reusable.',
+                'reason' => 'Not part of the new quiz version. Remove it from this quiz only; the question is not deleted from '
+                    . 'the question bank and stays reusable.',
             ];
         }
 
@@ -122,6 +126,8 @@ class get_quiz_cleanup_plan extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -31,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
 #[CoversClass(workbench_ticket::class)]
 #[CoversClass(\local_coursepilot\oauth_lib::class)]
 final class workbench_ticket_test extends \advanced_testcase {
-
     public function setUp(): void {
         parent::setUp();
         oauth_lib::reset_current_token_id();
@@ -69,16 +68,25 @@ final class workbench_ticket_test extends \advanced_testcase {
         workbench_ticket::redeem($secret);
 
         $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('workbenchticketinvalid', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('workbenchticketinvalid', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
+    /**
+     * Provides cases for requester provider.
+     *
+     * @return mixed[]
+     */
     public static function requester_provider(): array {
         return ['anonymous' => [false], 'another teacher' => [true]];
     }
 
     #[DataProvider('requester_provider')]
-    public function test_redemption_uses_the_owners_selected_location_without_changing_request_identity(bool $anotherteacher): void {
+    public function test_redemption_uses_the_owners_selected_location_without_changing_request_identity(
+        bool $anotherteacher
+    ): void {
         global $USER;
         $this->resetAfterTest();
         $owner = $this->getDataGenerator()->create_user();
@@ -90,7 +98,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         ]);
         [$directory, $filename] = material_files::resolve_file('selected.txt');
         get_file_storage()->create_file_from_string(
-            material_files::filerecord(material_files::own_context()->id, $directory, $filename), 'Owner selected bytes');
+            material_files::filerecord(material_files::own_context()->id, $directory, $filename),
+            'Owner selected bytes'
+        );
         $secret = $this->secret_from_url(workbench_ticket::issue('selected.txt')['url']);
         $requester = $anotherteacher ? $this->getDataGenerator()->create_user() : null;
         $this->setUser($requester);
@@ -113,7 +123,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         $DB->set_field(workbench_ticket::TABLE, 'expires', time() - 1, ['tickethash' => hash('sha256', $secret)]);
 
         $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('workbenchticketexpired', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('workbenchticketexpired', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
@@ -129,7 +141,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         $this->store('blatt.pdf', 'geaendert', true);
 
         $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('workbenchticketcontentchanged', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('workbenchticketcontentchanged', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
@@ -183,7 +197,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         $this->assertTrue(oauth_lib::revoke_token($tokenid));
 
         $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('workbenchticketconnectionrevoked', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('workbenchticketconnectionrevoked', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
@@ -221,7 +237,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         $DB->set_field('user', 'deleted', 1, ['id' => $user->id]);
 
         $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('workbenchticketaccountinactive', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('workbenchticketaccountinactive', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
@@ -352,7 +370,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         $this->setUser();
         $this->assertTrue(oauth_lib::connection_active($tokenid));
         $this->expectException(workbench_ticket_redemption_failed::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('remoteaccessnotgranted', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('remoteaccessnotgranted', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
@@ -374,10 +394,18 @@ final class workbench_ticket_test extends \advanced_testcase {
         $this->assertTrue(oauth_lib::connection_active($tokenid));
         $this->assertTrue(has_capability('local/coursepilot:use', \context_course::instance($course->id), $user->id));
         $this->expectException(workbench_ticket_redemption_failed::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('remoteaccessnotgranted', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('remoteaccessnotgranted', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
+    /**
+     * Provides grant remote access.
+     *
+     * @param int $userid The userid.
+     * @return int
+     */
     private function grant_remote_access(int $userid): int {
         $roleid = create_role('Remote access', 'remote' . $userid, '', '');
         assign_capability(remote_access::CAPABILITY, CAP_ALLOW, $roleid, \context_system::instance()->id, true);
@@ -385,12 +413,25 @@ final class workbench_ticket_test extends \advanced_testcase {
         return $roleid;
     }
 
+    /**
+     * Provides secret from url.
+     *
+     * @param string $url The url.
+     * @return string
+     */
     private function secret_from_url(string $url): string {
         $query = parse_url($url, PHP_URL_QUERY);
         parse_str((string) $query, $params);
         return (string) $params['ticket'];
     }
 
+    /**
+     * Provides issue connection.
+     *
+     * @param int $userid The userid.
+     * @param bool $grant The grant.
+     * @return int
+     */
     private function issue_connection(int $userid, bool $grant = true): int {
         global $DB;
 
@@ -418,6 +459,13 @@ final class workbench_ticket_test extends \advanced_testcase {
         return $id;
     }
 
+    /**
+     * Stores the workbench ticket test.
+     *
+     * @param string $filename The filename.
+     * @param string $content The content.
+     * @param bool $overwrite The overwrite.
+     */
     private function store(string $filename, string $content, bool $overwrite = false): void {
         $fs = get_file_storage();
         $filerecord = [

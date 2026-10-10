@@ -1,0 +1,33 @@
+{
+  "armedAt": "67c2026a1593a9832fd8efb545d8243906d525ca",
+  "coverage": {
+    "covered": 11356,
+    "statements": 14006
+  },
+  "excluded": [
+    {
+      "path": "lang/",
+      "reason": "Sprachdateien sind reine String-Tabellen ohne Logik und lassen sich unter #[CoversClass] nicht zuordnen."
+    },
+    {
+      "path": "db/access.php",
+      "reason": "Deklarative Capability-Tabelle ohne Logik, unter #[CoversClass] nicht zuordnungsfaehig."
+    },
+    {
+      "path": "db/events.php",
+      "reason": "Deklarative Observer-Tabelle ohne Logik, unter #[CoversClass] nicht zuordnungsfaehig."
+    },
+    {
+      "path": "db/services.php",
+      "reason": "Deklarative Dienst-Tabelle ohne Logik, unter #[CoversClass] nicht zuordnungsfaehig."
+    },
+    {
+      "path": "db/tasks.php",
+      "reason": "Deklarative Aufgaben-Tabelle ohne Logik, unter #[CoversClass] nicht zuordnungsfaehig."
+    },
+    {
+      "path": "version.php",
+      "reason": "Versionsangaben des Plugins ohne Logik."
+    }
+  ]
+}

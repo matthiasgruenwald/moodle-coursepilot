@@ -22,8 +22,6 @@ use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Write core 13 (Spec 0015 phase 3, ticket #391): idempotent creation of a
  * section - creates it if "sectionnum" does not exist yet, otherwise only
@@ -41,8 +39,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class ensure_section extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -54,10 +53,12 @@ final class ensure_section extends external_api {
     }
 
     /**
+     * Runs the ensure section tool.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string|null $name
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidsectionnum
      */
     public static function execute(int $courseid, int $sectionnum, ?string $name = null): array {
@@ -97,7 +98,7 @@ final class ensure_section extends external_api {
 
         $wantedname = $params['name'];
         if ($wantedname !== null && $wantedname !== $oldname) {
-            // course_update_section() (course/lib.php) is the thin,
+            // Note: course_update_section() (course/lib.php) is the thin,
             // stable wrapper around sectionactions::update() - identical to
             // what course/editsection.php calls when saving the form.
             course_update_section($course, $sectioninfo, ['name' => $wantedname]);
@@ -116,6 +117,8 @@ final class ensure_section extends external_api {
     }
 
     /**
+     * Builds message.
+     *
      * @param int $sectionnum
      * @param bool $existed
      * @param bool $namechanged
@@ -123,7 +126,13 @@ final class ensure_section extends external_api {
      * @param string $finalname
      * @return string
      */
-    private static function build_message(int $sectionnum, bool $existed, bool $namechanged, string $oldname, string $finalname): string {
+    private static function build_message(
+        int $sectionnum,
+        bool $existed,
+        bool $namechanged,
+        string $oldname,
+        string $finalname
+    ): string {
         $a = (object) ['sectionnum' => $sectionnum, 'oldname' => $oldname, 'name' => $finalname];
         if (!$existed) {
             return $namechanged
@@ -137,6 +146,8 @@ final class ensure_section extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
