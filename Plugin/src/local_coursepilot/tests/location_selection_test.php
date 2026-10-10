@@ -553,7 +553,7 @@ final class location_selection_test extends \advanced_testcase {
         }
     }
 
-    // Issue #497: locks, IServ detection, handover of a filled folder.
+    // Locks, IServ detection, handover of a filled folder.
 
     public function test_browse_root_is_not_selectable(): void {
         $this->resetAfterTest();
@@ -786,7 +786,7 @@ final class location_selection_test extends \advanced_testcase {
         }
     }
 
-    // Issue #498: legacy items (previous location).
+    // Legacy items (previous location).
 
     /**
      * Record the previous Moodle location only when it contains context

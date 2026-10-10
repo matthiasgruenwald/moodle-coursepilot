@@ -50,7 +50,7 @@ final class material_area {
      *
      * @param string $locationkey {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH}.
      * @param string $path
-     * @return array{directory: string, entries: array}
+     * @return array{directory: string, entries: mixed[]}
      * @throws \moodle_exception As in {@see material_files::list_entries_for_location()}.
      */
     public static function list(string $locationkey, string $path): array {

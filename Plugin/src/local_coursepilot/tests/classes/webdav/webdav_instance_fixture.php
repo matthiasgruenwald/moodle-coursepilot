@@ -120,7 +120,7 @@ trait webdav_instance_fixture {
     /**
      * Default test-instance verification marker, as carried in a v2 pointer.
      *
-     * @return array{server: string, basispfad: string, konto: string}
+     * @return array{server: string, basepath: string, account: string}
      */
     protected function fixture_fingerprint(): array {
         return ['server' => $this->fixtureserver, 'basepath' => $this->fixturebasispfad, 'account' => $this->fixturekonto];

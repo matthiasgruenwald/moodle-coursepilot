@@ -84,7 +84,7 @@ final class module_state {
      * @param string $modname
      * @param int $instanceid
      * @param bool $fullcontent
-     * @return array{name: string, content: array, settings: array, quizslots: array}
+     * @return array{name: string, content: mixed[], settings: mixed[], quizslots: mixed[]}
      */
     public static function unknown(string $modname, int $instanceid, bool $fullcontent): array {
         global $DB;
@@ -100,7 +100,7 @@ final class module_state {
      * in later steps.
      *
      * @param bool $fullcontent
-     * @return array{name: string, content: array, settings: array, quizslots: array}
+     * @return array{name: string, content: mixed[], settings: mixed[], quizslots: mixed[]}
      */
     public static function empty(bool $fullcontent): array {
         return ['name' => '', 'content' => self::content_field('', $fullcontent), 'settings' => [], 'quizslots' => []];

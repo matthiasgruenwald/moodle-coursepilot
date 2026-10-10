@@ -301,7 +301,7 @@ final class webdav_instance_test extends \advanced_testcase {
         }
     }
 
-    // Issue #497: has_supported_auth(), IServ detection.
+    // Has_supported_auth(), IServ detection.
 
     public function test_has_supported_auth_is_true_for_https_basic_instance(): void {
         $this->resetAfterTest();

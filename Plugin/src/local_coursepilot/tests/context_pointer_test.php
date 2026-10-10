@@ -372,7 +372,7 @@ final class context_pointer_test extends \advanced_testcase {
         context_pointer::resolve_target($decoded, 'context_area');
     }
 
-    // Issue #498, Spec #486 §9: resolve_previous().
+    // Resolving the previous location.
 
     public function test_resolve_previous_moodle_value(): void {
         $location = context_pointer::resolve_previous(['location' => 'moodle', 'path' => 'alter-kontext']);

@@ -260,7 +260,7 @@ class update_module_settings extends external_api {
      * @param mixed[] $patch
      * @param mixed[] $before
      * @param mixed[] $after
-     * @return array{0: array, 1: string[]}
+     * @return array{0: mixed[], 1: string[]}
      */
     private static function diff_and_side_effects(string $modname, array $patch, array $before, array $after): array {
         $changes = [];

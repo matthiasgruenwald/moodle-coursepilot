@@ -86,7 +86,7 @@ final class question_suspect_gate {
      * Empty fields for the non-collision case, using the same keys as
      * {@see response_fields()} for a stable response shape.
      *
-     * @return array{idnumber: string, categoryid: int, candidates: array, questiontext_old: string, questiontext_new: string}
+     * @return array{idnumber: string, categoryid: int, candidates: mixed[], questiontext_old: string, questiontext_new: string}
      */
     public static function empty_result(): array {
         return [
@@ -140,7 +140,7 @@ final class question_suspect_gate {
      * @param \stdClass $collision Result of {@see find_idnumber_collision()}
      * @param int $categoryid Target category
      * @param string $newquestiontext Question text to write or move
-     * @return array{idnumber: string, categoryid: int, candidates: array, questiontext_old: string, questiontext_new: string}
+     * @return array{idnumber: string, categoryid: int, candidates: mixed[], questiontext_old: string, questiontext_new: string}
      */
     public static function response(\stdClass $collision, int $categoryid, string $newquestiontext): array {
         return [

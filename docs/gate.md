@@ -148,7 +148,7 @@ Jede Befundart (`identifier`), die in der Baseline bleibt, steht mit einer Begr�
 beide Listen übereinstimmen. Eine neue Befundart in der Baseline braucht also eine Begründung,
 und eine nicht mehr vorkommende muss aus der Datei verschwinden.
 
-## Statische Prüfungen ohne Befund (Spec 0029, Ticket 10)
+## Statische Prüfungen ohne Befund
 
 moodle-cs (Errors und Warnings), phpdoc, savepoints, Mustache, ESLint, AMD-Build, PHPStan nach
 Baseline und die Covers-Pflicht melden null. Wo eine Regel nicht zum Projekt passt, steht die

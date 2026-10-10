@@ -68,7 +68,7 @@ final class dispatcher {
      * @param string|null $token The Bearer token already extracted from
      *        the Authorization header.
      * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     public static function handle(?array $request, ?string $token, array $headers): array {
         global $CFG;
@@ -78,7 +78,7 @@ final class dispatcher {
         if ($origin !== null) {
             $allowed = array_merge([rtrim($CFG->wwwroot, '/')], self::EXTRA_ALLOWED_ORIGINS);
             if (!in_array(rtrim($origin, '/'), $allowed, true)) {
-                // Issue #339: log separately, before handle_authorized(); this response
+                // Log separately, before handle_authorized(); this response
                 // does not use the JSON-RPC error format.
                 access_log::log_failure('Origin not allowed');
                 return self::result(403, [], ['error' => 'Origin not allowed']);
@@ -110,7 +110,7 @@ final class dispatcher {
      * @param array|null $request
      * @param string|null $token
      * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function handle_authorized(?array $request, ?string $token, array $headers): array {
         global $CFG;
@@ -135,7 +135,7 @@ final class dispatcher {
 
         $method = $headers['method'] ?? 'POST';
         if ($method !== 'POST') {
-            // Issue #339: deliberately unlogged; this is a misconfigured HTTP client,
+            // Deliberately unlogged; this is a misconfigured HTTP client,
             // without a parsed JSON-RPC request or tool reference.
             return self::result(405, ['Allow' => 'POST'], ['error' => 'Method Not Allowed - MCP over HTTP is POST only']);
         }
@@ -222,7 +222,7 @@ final class dispatcher {
             case 'tools/call':
                 return self::handle_tools_call($id, $params, $headers);
 
-            // Issue #401: empty responses instead of 404. We expose no resources or
+            // Empty responses instead of 404. We expose no resources or
             // prompts and advertise neither capability, but Codex requests these
             // three discovery methods after every handshake.
             case 'resources/list':
@@ -258,7 +258,7 @@ final class dispatcher {
      * @param mixed $id
      * @param mixed[] $params
      * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function handle_tools_call($id, array $params, array $headers): array {
         $toolname = (string) ($params['name'] ?? '');
@@ -267,7 +267,7 @@ final class dispatcher {
             return self::error(404, $id, -32601, 'Unknown tool: ' . $toolname);
         }
 
-        // Issue #573 (Spec 0025 §A): every tool declares English inputs directly.
+        // Spec 0025 §A: every tool declares English inputs directly.
         // The #568 input translation is removed; Moodle parameter declarations
         // are the single contract.
         $response = external_api::call_external_function($function, $params['arguments'] ?? []);
@@ -500,7 +500,7 @@ final class dispatcher {
      * @param int $code The code.
      * @param string $message The message.
      * @param string[] $extraheaders
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function error(int $status, $id, int $code, string $message, array $extraheaders = []): array {
         // Single funnel for JSON-RPC errors (#339): authentication, capability,
@@ -522,7 +522,7 @@ final class dispatcher {
      * @param int $status The status.
      * @param string[] $headers
      * @param array|null $body
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function result(int $status, array $headers, ?array $body): array {
         return ['status' => $status, 'headers' => $headers, 'body' => $body];

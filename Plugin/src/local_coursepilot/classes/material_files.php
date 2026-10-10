@@ -325,7 +325,7 @@ final class material_files {
      *
      * @param string $locationkey {@see LOCATION_STORE}/{@see LOCATION_WORKBENCH}.
      * @param string $path
-     * @return array{directory: string, entries: array}
+     * @return array{directory: string, entries: mixed[]}
      * @throws \moodle_exception invalidmateriallocation, materialpathiscontext,
      *         materialexternalerror, plus location/pointer errors from the anchor.
      */

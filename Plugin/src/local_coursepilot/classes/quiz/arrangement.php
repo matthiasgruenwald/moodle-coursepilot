@@ -42,7 +42,7 @@ final class arrangement {
      * restore() receives the same shape.
      *
      * @param int $quizid
-     * @return array{slots: array, sections: array, feedback: array}
+     * @return array{slots: mixed[], sections: mixed[], feedback: mixed[]}
      */
     public static function capture(int $quizid): array {
         global $DB;

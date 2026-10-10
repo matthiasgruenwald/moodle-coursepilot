@@ -211,7 +211,7 @@ final class update_quiz_settings extends external_api {
             }
         }
 
-        // Issue #400: get_moduleinfo_data() returns gradepass in display format
+        // Get_moduleinfo_data() returns gradepass in display format
         // ("0,00"). Writing it back unchecked fails at the database after the
         // change has already persisted.
         pseudofield_carry_forward::unformat_localised_gradepass($moduleinfo);
@@ -260,7 +260,7 @@ final class update_quiz_settings extends external_api {
      * @param mixed[] $before
      * @param mixed[] $after
      * @param bool $gradechanged
-     * @return array{0: array, 1: string[]}
+     * @return array{0: mixed[], 1: string[]}
      */
     private static function diff_and_side_effects(array $merged, array $before, array $after, bool $gradechanged): array {
         $changes = [];

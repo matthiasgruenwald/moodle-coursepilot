@@ -84,7 +84,7 @@ final class pointer_writer {
      *      five-part failure response (Issue #492).
      */
     private const REASONS = [
-        // Issue #529: external Nextcloud rate limiting is expected; use calm wording.
+        // External Nextcloud rate limiting is expected; use calm wording.
         webdav_error::UNCLEAR => 'the storage is briefly throttling requests (normal on some Nextcloud instances)',
         webdav_error::NOT_FOUND => 'the target folder cannot be reached there',
         webdav_error::AUTH_REJECTED => 'the login to the storage was rejected',

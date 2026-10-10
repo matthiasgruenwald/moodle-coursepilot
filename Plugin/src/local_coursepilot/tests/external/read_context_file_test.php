@@ -482,7 +482,7 @@ final class read_context_file_test extends \advanced_testcase {
             $this->fail('Authentication denial must reject the read.');
         } catch (\moodle_exception $e) {
             $this->assertSame('webdavexternalerror', $e->errorcode);
-            // Issue #516: read failures explicitly name the context gap. PHPUnit
+            // Read failures explicitly name the context gap. PHPUnit
             // resolves English only; write_context_file_test::
             // test_german_messages_carry_the_required_wording() checks German wording.
             $this->assertStringContainsString('context gap', $e->getMessage());

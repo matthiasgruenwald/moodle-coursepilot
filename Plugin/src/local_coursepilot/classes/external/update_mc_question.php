@@ -209,7 +209,7 @@ final class update_mc_question extends external_api {
      * @param \stdClass $question
      * @param \context $context
      * @param mixed[] $params Validated parameters of execute().
-     * @return array{0: array, 1: ?int, 2: array<int, int>}
+     * @return array{0: mixed[], 1: ?int, 2: array<int, int>}
      */
     private static function apply_field_patch(\stdClass $question, \context $context, array $params): array {
         $patch = self::decode_patch($params['fields_json']);
@@ -244,7 +244,7 @@ final class update_mc_question extends external_api {
      * @param int $categoryid
      * @param \stdClass $entry
      * @param bool $confirmed
-     * @return array{result: array, backfilled: bool, idnumber: string, missingfiles: string[]}
+     * @return array{result: mixed[], backfilled: bool, idnumber: string, missingfiles: string[]}
      */
     private static function persist_new_version(
         \stdClass $question,

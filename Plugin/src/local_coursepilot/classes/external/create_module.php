@@ -221,7 +221,7 @@ final class create_module extends external_api {
      * @param string $modname
      * @param mixed[] $merged
      * @param mixed[] $after
-     * @return array{0: array, 1: string[]}
+     * @return array{0: mixed[], 1: string[]}
      */
     private static function report_and_side_effects(string $modname, array $merged, array $after): array {
         $createdfields = [];

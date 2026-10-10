@@ -68,11 +68,11 @@ final class location_selection {
      * the wrong empty state, even with an existing instance.
      *
      * @param int $userid
-     * @return array{state: string, steps: array}
+     * @return array{state: string, steps: mixed[]}
      */
     public static function setup_state(int $userid): array {
         $steps = webdav_setup_steps::catalog($userid);
-        // Issue #528: all three setup steps are independent; checking only the capability
+        // All three setup steps are independent; checking only the capability
         // step is insufficient. enabled_for_user() combines them explicitly with AND.
         if (!webdav_setup_steps::enabled_for_user($userid)) {
             return ['state' => self::STATE_NOT_ENABLED, 'steps' => $steps];
@@ -320,7 +320,7 @@ final class location_selection {
      * default root.
      *
      * @param string $target "context_area" or "material_store".
-     * @return array{location: string, path: string, instanceid?: int, fingerprint?: array,
+     * @return array{location: string, path: string, instanceid?: int, fingerprint?: mixed[],
      *         chosen: bool, display: string, allowed: bool}
      */
     public static function current(string $target): array {
@@ -474,7 +474,7 @@ final class location_selection {
      *
      * @param mixed[] $wanted Type: array<string,array{location:string,path:string,instanceid?:int,fingerprint?:array}>.
      * @param mixed[] $current Type: array<string,array{location:string,path:string,instanceid?:int,fingerprint?:array}>.
-     * @return array{changed: string[], location_history: array, previouslocation: ?array}
+     * @return array{changed: string[], location_history: mixed[], previouslocation: ?array}
      */
     private static function record_changes(array $wanted, array $current): array {
         $changed = [];
@@ -572,7 +572,7 @@ final class location_selection {
      * Provides current pointer value.
      *
      * @param string $target
-     * @return array{location: string, path: string, instanceid?: int, fingerprint?: array}
+     * @return array{location: string, path: string, instanceid?: int, fingerprint?: mixed[]}
      */
     private static function current_pointer_value(string $target): array {
         $area = self::area($target);
@@ -600,7 +600,7 @@ final class location_selection {
      *
      * @param string $target
      * @param mixed[] $selection Type: array{type?:string,instanceid?:int,path?:string}.
-     * @return array{location: string, path: string, instanceid?: int, fingerprint?: array}
+     * @return array{location: string, path: string, instanceid?: int, fingerprint?: mixed[]}
      * @throws \moodle_exception locationselectionselectioninvalid, or errors from {@see webdav_instance::resolve_owned()}.
      */
     private static function build_target(string $target, array $selection): array {

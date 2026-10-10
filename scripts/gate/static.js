@@ -24,8 +24,8 @@ const PHPSTAN_CONFIG = '/var/www/phpstan-config/phpstan.neon';
 const PHPSTAN_BASELINE_REL = 'scripts/gate/phpstan/phpstan-baseline.neon';
 // TODO-Kommentare muessen auf ein Issue dieses Repos verlinken.
 const TODO_COMMENT_REGEX = 'https://github\\.com/matthiasgruenwald/moodle-coursepilot/issues/[0-9]+';
-// Kopfzeilen-Sniff aus: moodle-cs verlangt die GPL-Boilerplate, das Projekt steht bewusst
-// unter AGPL-3.0-or-later (ADR 0025); der Dateikopf bleibt AGPL.
+// Header sniff excluded: moodle-cs demands the GPL boilerplate, the project is deliberately
+// AGPL-3.0-or-later (ADR 0025), so the file header stays AGPL.
 const MOODLE_CS_EXCLUDE = 'moodle.Files.BoilerplateComment';
 const CONTAINER_PATH = '/opt/node/bin:/opt/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
 
@@ -293,8 +293,8 @@ function buildStaticReport(results, errors) {
 /** PHPStan-Baseline neu erzeugen und ins Repo kopieren. */
 function generatePhpstanBaseline({ container, repo, gateDir, exec = containerExec }) {
   const inContainer = '/var/www/reports/phpstan-baseline.neon';
-  // Ohne die bestehende Baseline analysieren: Mit eingebundener Baseline schriebe PHPStan nur die
-  // neuen Befunde und verlore die alten Eintraege.
+  // Analyse without the existing baseline: with it included PHPStan writes only the new
+  // findings and the old entries would be lost.
   const bare = '/tmp/phpstan-without-baseline.neon';
   const prep = exec(container, ['sh', '-c', `sed '/phpstan-baseline.neon/d;/^includes:/d' ${PHPSTAN_CONFIG} > ${bare}`]);
   if (prep.code !== 0) {

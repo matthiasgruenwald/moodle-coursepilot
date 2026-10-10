@@ -206,7 +206,7 @@ final class create_quiz extends external_api {
      *
      * @param mixed[] $merged
      * @param float $grade
-     * @return array{0: array, 1: string[]}
+     * @return array{0: mixed[], 1: string[]}
      */
     private static function report_and_side_effects(array $merged, float $grade): array {
         $createdfields = [];

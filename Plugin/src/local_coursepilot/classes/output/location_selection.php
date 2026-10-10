@@ -57,7 +57,7 @@ final class location_selection {
      * @return array<string, mixed>
      */
     public static function amd_configuration(\stdClass $user): array {
-        // Issue #565: page_state() includes the full unbounded location history.
+        // Page_state() includes the full unbounded location history.
         // AMD does not use it; history is already rendered by the server.
         // Send only the instances actually needed here.
         $state = selection::page_state((int) $user->id);

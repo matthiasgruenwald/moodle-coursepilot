@@ -94,7 +94,7 @@ final class context_area {
      *
      * @param string $path
      * @param bool $previouslocation Lists the read-only previous location instead.
-     * @return array{directory: string, entries: array}
+     * @return array{directory: string, entries: mixed[]}
      */
     public static function list(string $path, bool $previouslocation = false): array {
         $area = context_files::area();

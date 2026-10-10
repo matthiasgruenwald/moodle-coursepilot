@@ -34,7 +34,7 @@ final class version_history {
      *
      * @param int $cmid
      * @param string $lang UI language; tool callers keep the English default.
-     * @return array{cmid: int, modname: string, versions: array, gap_notice: string}
+     * @return array{cmid: int, modname: string, versions: mixed[], gap_notice: string}
      */
     public static function list_versions(int $cmid, string $lang = 'en'): array {
         global $DB;

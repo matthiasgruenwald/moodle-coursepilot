@@ -335,7 +335,7 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertSame(200, $response['status']);
         $this->assertSame('local_coursepilot', $response['body']['result']['serverInfo']['name']);
 
-        // Issue #577: the handshake version comes from the same canonical source
+        // The handshake version comes from the same canonical source
         // as version.php - no hard-coded prototype value any more.
         global $CFG;
         $plugin = new \stdClass();
@@ -1698,7 +1698,7 @@ XML;
 
         $this->assertArrayNotHasKey('resultType', $legacy['body']['result']);
         $this->assertArrayNotHasKey('resultType', $unknown['body']['result']);
-        // Issue #458: 'complete' is the only success value that the revision knows
+        // The value 'complete' is the only success value that the revision knows
         // for tools/call ('input_required' remains reserved for the MRTR
         // pattern, which we do not offer). Caching fields belong exclusively
         // on list responses - a ttlMs on a write operation suggests to a

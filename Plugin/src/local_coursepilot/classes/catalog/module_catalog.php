@@ -58,7 +58,7 @@ interface module_catalog {
      * @param int $instanceid
      * @param int $cmid
      * @param bool $fullcontent
-     * @return array{name: string, content: array, settings: array, quizslots: array}
+     * @return array{name: string, content: mixed[], settings: mixed[], quizslots: mixed[]}
      */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array;
 

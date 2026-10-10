@@ -67,24 +67,6 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/catalog/field.php
 
 		-
-			message: '#^Method local_coursepilot\\catalog\\module_catalog\:\:state\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/catalog/module_catalog.php
-
-		-
-			message: '#^Method local_coursepilot\\catalog\\module_state\:\:empty\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/catalog/module_state.php
-
-		-
-			message: '#^Method local_coursepilot\\catalog\\module_state\:\:unknown\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/catalog/module_state.php
-
-		-
 			message: '#^Method local_coursepilot\\catalog\\write_target\:\:__construct\(\) has parameter \$changes with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -127,6 +109,12 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/check/webdav_user_instances_check.php
 
 		-
+			message: '#^Constant COMPLETION_CRITERIA_TYPE_ACTIVITY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/classes/cm_references.php
+
+		-
 			message: '#^Dead catch \- local_coursepilot\\webdav\\webdav_error is never thrown in the try block\.$#'
 			identifier: catch.neverThrown
 			count: 4
@@ -139,31 +127,13 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/context_area.php
 
 		-
-			message: '#^Method local_coursepilot\\context_area\:\:list\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/context_area.php
-
-		-
 			message: '#^Access to an undefined property core_course\\cm_info\:\:\$section\.$#'
 			identifier: property.notFound
 			count: 1
 			path: ../html/public/local/coursepilot/classes/course_module_placement.php
 
 		-
-			message: '#^Method local_coursepilot\\dispatcher\:\:error\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/dispatcher.php
-
-		-
 			message: '#^Method local_coursepilot\\dispatcher\:\:handle\(\) has parameter \$request with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/dispatcher.php
-
-		-
-			message: '#^Method local_coursepilot\\dispatcher\:\:handle\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/classes/dispatcher.php
@@ -175,25 +145,7 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/dispatcher.php
 
 		-
-			message: '#^Method local_coursepilot\\dispatcher\:\:handle_authorized\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/dispatcher.php
-
-		-
-			message: '#^Method local_coursepilot\\dispatcher\:\:handle_tools_call\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/dispatcher.php
-
-		-
 			message: '#^Method local_coursepilot\\dispatcher\:\:result\(\) has parameter \$body with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/dispatcher.php
-
-		-
-			message: '#^Method local_coursepilot\\dispatcher\:\:result\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/classes/dispatcher.php
@@ -223,28 +175,10 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/external/clone_activity.php
 
 		-
-			message: '#^Method local_coursepilot\\external\\compose_material_file\:\:read_sources\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/external/compose_material_file.php
-
-		-
 			message: '#^Variable \$CFG might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
 			path: ../html/public/local/coursepilot/classes/external/create_mc_question.php
-
-		-
-			message: '#^Method local_coursepilot\\external\\create_module\:\:report_and_side_effects\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/external/create_module.php
-
-		-
-			message: '#^Method local_coursepilot\\external\\create_quiz\:\:report_and_side_effects\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/external/create_quiz.php
 
 		-
 			message: '#^Method local_coursepilot\\external\\crop_material_file\:\:build_crop_response\(\) has parameter \$existing with no value type specified in iterable type array\.$#'
@@ -361,12 +295,6 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
 
 		-
-			message: '#^Method local_coursepilot\\external\\import_questions_xml\:\:resolve_and_parse\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
-
-		-
 			message: '#^Result of \|\| is always false\.$#'
 			identifier: booleanOr.alwaysFalse
 			count: 2
@@ -415,40 +343,16 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/external/update_mc_question.php
 
 		-
-			message: '#^Method local_coursepilot\\external\\update_mc_question\:\:apply_field_patch\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/external/update_mc_question.php
-
-		-
-			message: '#^Method local_coursepilot\\external\\update_mc_question\:\:persist_new_version\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/external/update_mc_question.php
-
-		-
 			message: '#^Variable \$CFG might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
 			path: ../html/public/local/coursepilot/classes/external/update_mc_question.php
-
-		-
-			message: '#^Method local_coursepilot\\external\\update_module_settings\:\:diff_and_side_effects\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/external/update_module_settings.php
 
 		-
 			message: '#^Variable \$CFG might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
 			path: ../html/public/local/coursepilot/classes/external/update_question_category.php
-
-		-
-			message: '#^Method local_coursepilot\\external\\update_quiz_settings\:\:diff_and_side_effects\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/external/update_quiz_settings.php
 
 		-
 			message: '#^Call to function array_key_exists\(\) with ''summaryformat'' and array\{name\?\: mixed, summary\: mixed, visible\?\: mixed\} will always evaluate to false\.$#'
@@ -487,12 +391,6 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/glossary_entry_writer.php
 
 		-
-			message: '#^Method local_coursepilot\\history\\version_history\:\:list_versions\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/history/version_history.php
-
-		-
 			message: '#^Parameter \#3 \$a of method core_string_manager\:\:get_string\(\) expects array\|object\|string\|null, int given\.$#'
 			identifier: argument.type
 			count: 1
@@ -511,26 +409,8 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/history/version_history.php
 
 		-
-			message: '#^Method local_coursepilot\\location_selection\:\:build_target\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/location_selection.php
-
-		-
-			message: '#^Method local_coursepilot\\location_selection\:\:current\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/location_selection.php
-
-		-
-			message: '#^Method local_coursepilot\\location_selection\:\:current\(\) should return array\{location\: string, path\: string, instanceid\?\: int, fingerprint\?\: array, chosen\: bool, display\: string, allowed\: bool\} but returns array\{display\: string, allowed\: bool, location\: string, path\: string, instanceid\?\: int, fingerprint\?\: array\}\.$#'
+			message: '#^Method local_coursepilot\\location_selection\:\:current\(\) should return array\{location\: string, path\: string, instanceid\?\: int, fingerprint\?\: array\<mixed\>, chosen\: bool, display\: string, allowed\: bool\} but returns array\{display\: string, allowed\: bool, location\: string, path\: string, instanceid\?\: int, fingerprint\?\: array\<mixed\>\}\.$#'
 			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/classes/location_selection.php
-
-		-
-			message: '#^Method local_coursepilot\\location_selection\:\:current_pointer_value\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/classes/location_selection.php
 
@@ -560,12 +440,6 @@ parameters:
 
 		-
 			message: '#^Method local_coursepilot\\location_selection\:\:resolve_wanted_targets\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/location_selection.php
-
-		-
-			message: '#^Method local_coursepilot\\location_selection\:\:setup_state\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/classes/location_selection.php
@@ -601,19 +475,7 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/location_selection.php
 
 		-
-			message: '#^Method local_coursepilot\\material_area\:\:list\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/material_area.php
-
-		-
 			message: '#^Method local_coursepilot\\material_files\:\:embed_draft_entry\(\) has parameter \$entry with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/material_files.php
-
-		-
-			message: '#^Method local_coursepilot\\material_files\:\:list_entries_for_location\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/classes/material_files.php
@@ -625,37 +487,7 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/oauth_budget.php
 
 		-
-			message: '#^Method local_coursepilot\\oauth_lib\:\:handle_discovery\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/oauth_lib.php
-
-		-
-			message: '#^Method local_coursepilot\\oauth_lib\:\:handle_registration\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/oauth_lib.php
-
-		-
 			message: '#^Method local_coursepilot\\oauth_lib\:\:handle_token\(\) has parameter \$body with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/oauth_lib.php
-
-		-
-			message: '#^Method local_coursepilot\\oauth_lib\:\:handle_token\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/oauth_lib.php
-
-		-
-			message: '#^Method local_coursepilot\\oauth_lib\:\:jwks_document\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/oauth_lib.php
-
-		-
-			message: '#^Method local_coursepilot\\oauth_lib\:\:result\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/classes/oauth_lib.php
@@ -751,24 +583,6 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/private_files_storage_port.php
 
 		-
-			message: '#^Method local_coursepilot\\question_suspect_gate\:\:empty_result\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/question_suspect_gate.php
-
-		-
-			message: '#^Method local_coursepilot\\question_suspect_gate\:\:response\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/question_suspect_gate.php
-
-		-
-			message: '#^Method local_coursepilot\\quiz\\arrangement\:\:capture\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/quiz/arrangement.php
-
-		-
 			message: '#^Method local_coursepilot\\storage_anchor\:\:save_location_selection\(\) has parameter \$history with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -827,18 +641,6 @@ parameters:
 			identifier: nullCoalesce.offset
 			count: 1
 			path: ../html/public/local/coursepilot/classes/webdav_storage_port.php
-
-		-
-			message: '#^Method local_coursepilot\\xml_activity_creator\:\:create\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/xml_activity_creator.php
-
-		-
-			message: '#^Method local_coursepilot\\xml_activity_creator\:\:preview_supersede\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/classes/xml_activity_creator.php
 
 		-
 			message: '#^Variable \$OUTPUT might not be defined\.$#'
@@ -991,12 +793,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
 
 		-
-			message: '#^Method local_coursepilot\\activity_type_templates_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
-
-		-
 			message: '#^Method local_coursepilot\\activity_type_templates_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1027,12 +823,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/admin/connection_storage_location_test.php
 
 		-
-			message: '#^Method local_coursepilot\\admin\\connection_storage_location_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/admin/connection_storage_location_test.php
-
-		-
 			message: '#^Method local_coursepilot\\admin\\connection_storage_location_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1047,12 +837,6 @@ parameters:
 		-
 			message: '#^Method local_coursepilot\\admin\\pointer_scan_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/admin/pointer_scan_test.php
-
-		-
-			message: '#^Method local_coursepilot\\admin\\pointer_scan_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
 			count: 1
 			path: ../html/public/local/coursepilot/tests/admin/pointer_scan_test.php
 
@@ -1117,12 +901,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/check/webdav_capability_check_test.php
 
 		-
-			message: '#^Method local_coursepilot\\check\\webdav_capability_check_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/check/webdav_capability_check_test.php
-
-		-
 			message: '#^Method local_coursepilot\\check\\webdav_capability_check_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1137,12 +915,6 @@ parameters:
 		-
 			message: '#^Method local_coursepilot\\check\\webdav_repository_check_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/check/webdav_repository_check_test.php
-
-		-
-			message: '#^Method local_coursepilot\\check\\webdav_repository_check_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
 			count: 1
 			path: ../html/public/local/coursepilot/tests/check/webdav_repository_check_test.php
 
@@ -1165,12 +937,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/check/webdav_user_instances_check_test.php
 
 		-
-			message: '#^Method local_coursepilot\\check\\webdav_user_instances_check_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/check/webdav_user_instances_check_test.php
-
-		-
 			message: '#^Method local_coursepilot\\check\\webdav_user_instances_check_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1181,6 +947,12 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/tests/check/webdav_user_instances_check_test.php
+
+		-
+			message: '#^Constant COMPLETION_CRITERIA_TYPE_ACTIVITY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/cm_references_test.php
 
 		-
 			message: '#^Method local_coursepilot\\storage_port@anonymous/tests/context_area_pending_test\.php\:144\:\:append\(\) return type has no value type specified in iterable type array\.$#'
@@ -1267,12 +1039,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/append_context_file_test.php
 
 		-
-			message: '#^Method local_coursepilot\\external\\append_context_file_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/append_context_file_test.php
-
-		-
 			message: '#^Method local_coursepilot\\external\\append_context_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1345,12 +1111,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/compose_material_file_test.php
 
 		-
-			message: '#^Method local_coursepilot\\external\\compose_material_file_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/compose_material_file_test.php
-
-		-
 			message: '#^Method local_coursepilot\\external\\compose_material_file_test\:\:test_failures_leave_no_new_file_and_preserve_existing_target\(\) has parameter \$parts with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1371,12 +1131,6 @@ parameters:
 		-
 			message: '#^Method local_coursepilot\\external\\create_module_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/create_module_test.php
-
-		-
-			message: '#^Method local_coursepilot\\external\\create_module_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/create_module_test.php
 
@@ -1405,12 +1159,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/crop_material_file_test.php
 
 		-
-			message: '#^Method local_coursepilot\\external\\crop_material_file_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/crop_material_file_test.php
-
-		-
 			message: '#^Method local_coursepilot\\external\\crop_material_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1431,12 +1179,6 @@ parameters:
 		-
 			message: '#^Method local_coursepilot\\external\\dismiss_previous_location_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/dismiss_previous_location_test.php
-
-		-
-			message: '#^Method local_coursepilot\\external\\dismiss_previous_location_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/dismiss_previous_location_test.php
 
@@ -1531,12 +1273,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/import_questions_xml_test.php
 
 		-
-			message: '#^Method local_coursepilot\\external\\import_questions_xml_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/import_questions_xml_test.php
-
-		-
 			message: '#^Method local_coursepilot\\external\\import_questions_xml_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1561,12 +1297,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/list_context_files_test.php
 
 		-
-			message: '#^Method local_coursepilot\\external\\list_context_files_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/list_context_files_test.php
-
-		-
 			message: '#^Method local_coursepilot\\external\\list_context_files_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1581,12 +1311,6 @@ parameters:
 		-
 			message: '#^Method local_coursepilot\\external\\list_material_files_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/list_material_files_test.php
-
-		-
-			message: '#^Method local_coursepilot\\external\\list_material_files_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/list_material_files_test.php
 
@@ -1615,12 +1339,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/list_skills_test.php
 
 		-
-			message: '#^Method local_coursepilot\\external\\list_skills_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/list_skills_test.php
-
-		-
 			message: '#^Method local_coursepilot\\external\\list_skills_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1645,12 +1363,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/preview_material_file_test.php
 
 		-
-			message: '#^Method local_coursepilot\\external\\preview_material_file_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/preview_material_file_test.php
-
-		-
 			message: '#^Method local_coursepilot\\external\\preview_material_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1665,12 +1377,6 @@ parameters:
 		-
 			message: '#^Method local_coursepilot\\external\\read_context_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/read_context_file_test.php
-
-		-
-			message: '#^Method local_coursepilot\\external\\read_context_file_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/read_context_file_test.php
 
@@ -1765,12 +1471,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/update_mc_question_test.php
 
 		-
-			message: '#^Method local_coursepilot\\external\\update_mc_question_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/update_mc_question_test.php
-
-		-
 			message: '#^Method local_coursepilot\\external\\update_mc_question_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1791,12 +1491,6 @@ parameters:
 		-
 			message: '#^Method local_coursepilot\\external\\update_module_settings_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/update_module_settings_test.php
-
-		-
-			message: '#^Method local_coursepilot\\external\\update_module_settings_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/update_module_settings_test.php
 
@@ -1833,12 +1527,6 @@ parameters:
 		-
 			message: '#^Method local_coursepilot\\external\\write_context_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
-
-		-
-			message: '#^Method local_coursepilot\\external\\write_context_file_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
 
@@ -1987,12 +1675,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/location_selection_test.php
 
 		-
-			message: '#^Method local_coursepilot\\location_selection_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/location_selection_test.php
-
-		-
 			message: '#^Method local_coursepilot\\location_selection_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2013,12 +1695,6 @@ parameters:
 		-
 			message: '#^Method local_coursepilot\\oauth_cimd_fetch_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/oauth_cimd_fetch_test.php
-
-		-
-			message: '#^Method local_coursepilot\\oauth_cimd_fetch_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
 			count: 1
 			path: ../html/public/local/coursepilot/tests/oauth_cimd_fetch_test.php
 
@@ -2053,7 +1729,7 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/oauth_cleanup_test.php
 
 		-
-			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertIsArray\(\) with array will always evaluate to true\.$#'
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertIsArray\(\) with array\<mixed\> will always evaluate to true\.$#'
 			identifier: method.alreadyNarrowedType
 			count: 1
 			path: ../html/public/local/coursepilot/tests/oauth_lib_test.php
@@ -2287,12 +1963,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/webdav/webdav_instance_test.php
 
 		-
-			message: '#^Method local_coursepilot\\webdav\\webdav_instance_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav/webdav_instance_test.php
-
-		-
 			message: '#^Method local_coursepilot\\webdav\\webdav_instance_test\:\:location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2323,12 +1993,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/webdav/webdav_setup_steps_test.php
 
 		-
-			message: '#^Method local_coursepilot\\webdav\\webdav_setup_steps_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav/webdav_setup_steps_test.php
-
-		-
 			message: '#^Method local_coursepilot\\webdav\\webdav_setup_steps_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2355,12 +2019,6 @@ parameters:
 		-
 			message: '#^Method local_coursepilot\\webdav_storage_port_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php
-
-		-
-			message: '#^Method local_coursepilot\\webdav_storage_port_test\:\:fixture_fingerprint\(\) should return array\{server\: string, basispfad\: string, konto\: string\} but returns array\{server\: string, basepath\: string, account\: string\}\.$#'
-			identifier: return.type
 			count: 1
 			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php
 

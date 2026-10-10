@@ -125,7 +125,7 @@ class compose_material_file extends external_api {
      * Reads sources.
      *
      * @param mixed[] $parts The parts.
-     * @return array{0: array, 1: string[]} Validated source bytes and descriptions.
+     * @return array{0: mixed[], 1: string[]} Validated source bytes and descriptions.
      */
     private static function read_sources(array $parts): array {
         $inputs = [];

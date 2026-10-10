@@ -154,7 +154,7 @@ final class import_questions_xml extends external_api {
      * extracted from execute() to keep the function below 50 lines).
      *
      * @param mixed[] $params Validated execute() parameters.
-     * @return array{0: \stdClass, 1: \context, 2: array}
+     * @return array{0: \stdClass, 1: \context, 2: mixed[]}
      */
     private static function resolve_and_parse(array $params): array {
         global $DB;

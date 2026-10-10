@@ -71,7 +71,7 @@ final class pointer_reader {
             $stringkey = 'webdavexternalerrorunclear';
         }
         return new \moodle_exception($stringkey, 'local_coursepilot', '', (object) [
-            // Issue #565: localized label rather than the internal constant; see webdav_error::label().
+            // Localized label rather than the internal constant; see webdav_error::label().
             'errorclass' => webdav_error::label($e->errorclass),
             'page' => webdav_setup_steps::LOCATION_SELECTION_PAGE,
         ]);

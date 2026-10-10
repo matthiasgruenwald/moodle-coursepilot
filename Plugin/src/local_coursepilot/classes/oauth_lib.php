@@ -155,7 +155,7 @@ final class oauth_lib {
      *
      * @param string $wwwroot
      * @param string $pathinfo Already trimmed PATH_INFO value.
-     * @return array{status: int, headers: array<string, string>, body: array}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]}
      */
     public static function handle_discovery(string $wwwroot, string $pathinfo): array {
         $known = ['', '.well-known/openid-configuration', '.well-known/oauth-authorization-server'];
@@ -263,7 +263,7 @@ final class oauth_lib {
      * @param string $rawbody Raw request body, read at most one byte beyond
      *        {@see REGISTRATION_MAX_BODY_BYTES}.
      * @param string $source Trusted request source ({@see oauth_budget::request_source()}).
-     * @return array{status: int, headers: array<string, string>, body: array}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]}
      */
     public static function handle_registration(string $method, string $rawbody, string $source): array {
         if ($method !== 'POST') {
@@ -774,7 +774,7 @@ final class oauth_lib {
      *
      * @param string $method
      * @param array|null $body
-     * @return array{status: int, headers: array<string, string>, body: array}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]}
      */
     public static function handle_token(string $method, ?array $body): array {
         if ($method !== 'POST') {
@@ -1077,7 +1077,7 @@ final class oauth_lib {
      * ponytail: no key material without a use. If real OIDC with signed ID tokens
      * becomes necessary, add RS256 keys here; Moodle already vendors firebase/php-jwt.
      *
-     * @return array{keys: array}
+     * @return array{keys: mixed[]}
      */
     public static function jwks_document(): array {
         return ['keys' => []];
@@ -1111,7 +1111,7 @@ final class oauth_lib {
      * @param int $status The status.
      * @param string[] $headers
      * @param mixed[] $body
-     * @return array{status: int, headers: array<string, string>, body: array}
+     * @return array{status: int, headers: array<string, string>, body: mixed[]}
      */
     private static function result(int $status, array $headers, array $body): array {
         return ['status' => $status, 'headers' => $headers, 'body' => $body];

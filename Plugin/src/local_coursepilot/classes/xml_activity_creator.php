@@ -63,7 +63,7 @@ final class xml_activity_creator {
      * @param int|null $replacescmid supersede this activity of the same type in the same course;
      *        $sectionnum is then ignored (the new one lands behind the old one)
      * @param mixed[] $files Declared file-area supplements from material paths.
-     * @return array{cmid: int, presets: string[], references: array, successor_cmid: int, hidden_predecessors: int}
+     * @return array{cmid: int, presets: string[], references: mixed[], successor_cmid: int, hidden_predecessors: int}
      * references: {@see cm_references::references_to()} of the old cmid, empty without $replacescmid;
      * successor_cmid/hidden_predecessors: {@see self::chain()}, 0 without $replacescmid
      * @throws moodle_exception kind gate, xmlroundtripmismatch
@@ -146,7 +146,7 @@ final class xml_activity_creator {
      * @param string $modname The modname.
      * @param string $activityxml The activityxml.
      * @param int $replacescmid The replacescmid.
-     * @return array{references: array, successor_cmid: int, hidden_predecessors: int}
+     * @return array{references: mixed[], successor_cmid: int, hidden_predecessors: int}
      * references: {@see cm_references::references_to()}; the rest: {@see self::chain()}
      * @throws moodle_exception kind gate
      * @throws invalid_parameter_exception invalid XML or unusable $replacescmid
