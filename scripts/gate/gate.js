@@ -55,10 +55,20 @@ function attrs(tag) {
 
 function num(value, what) {
   const n = Number(value);
-  if (value === undefined || value === '' || !Number.isFinite(n)) {
-    throw new Error(`Clover ungueltig: ${what} fehlt oder ist keine Zahl`);
+  if (value === undefined || value.trim() === '' || !Number.isFinite(n) || n < 0) {
+    throw new Error(`Clover ungueltig: ${what} fehlt oder ist keine nichtnegative Zahl`);
   }
   return n;
+}
+
+/** Coverage counts must describe a possible measurement. */
+function coverageMetrics(metrics, where) {
+  const statements = num(metrics.statements, `statements ${where}`);
+  const covered = num(metrics.coveredstatements, `coveredstatements ${where}`);
+  if (covered > statements) {
+    throw new Error(`Clover ungueltig: coveredstatements > statements ${where}`);
+  }
+  return { statements, covered };
 }
 
 /**
@@ -75,7 +85,7 @@ function parseClover(xml) {
     throw new Error('Clover ungueltig: keine Projektsumme (<metrics> vor </project>)');
   }
   const pm = attrs(project[1]);
-  const total = { statements: num(pm.statements, 'statements'), covered: num(pm.coveredstatements, 'coveredstatements') };
+  const total = coverageMetrics(pm, 'im Projekt');
   if (total.statements <= 0) {
     throw new Error('Clover ungueltig: 0 ausfuehrbare Zeilen');
   }
@@ -88,7 +98,7 @@ function parseClover(xml) {
       throw new Error(`Clover ungueltig: Datei ohne <metrics>: ${name}`);
     }
     const fm = attrs(metricTags[metricTags.length - 1][1]);
-    files.push({ name, statements: num(fm.statements, `statements in ${name}`), covered: num(fm.coveredstatements, `coveredstatements in ${name}`) });
+    files.push({ name, ...coverageMetrics(fm, `in ${name}`) });
     for (const line of body.matchAll(/<line\s+([^>]*type="method"[^>]*)\/>/g)) {
       const a = attrs(line[1]);
       methods.push({

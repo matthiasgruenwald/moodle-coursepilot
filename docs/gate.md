@@ -80,7 +80,7 @@ Messwerte im Bericht (blockieren nicht, die Ratsche blockiert nur Geändertes):
 `coverage-file` (Datei unter 90 %), `crap-method` (CRAP über 8), `no-test-mapped`
 (Hinweis). `gate-error` ist immer rot. Ein fehlender, leerer oder
 ungültiger Clover-Bericht, 0 ausführbare Zeilen, Methoden ohne CRAP-Wert,
-fehlgeschlagene Tests oder ein nicht laufender Container enden mit Exitcode 1,
+negative Metriken, mehr gedeckte als ausführbare Zeilen, fehlgeschlagene Tests oder ein nicht laufender Container enden mit Exitcode 1,
 nie grün. Tests: `test/gate.test.js` mit Fixtures unter `test/fixtures/gate/`.
 
 ## Fehlschlagslog und Rangliste
@@ -170,6 +170,7 @@ Bestand über der Regel blockiert erst, wenn jemand ihn anfasst.
 |---|---|
 | `ratchet-coverage` | Gesamt-Coverage unter dem Wert in `scripts/gate/baseline.json` (nach Ausschlussliste) |
 | `ratchet-baseline-lowered` | `baseline.json` niedriger als im Vergleichsstand |
+| `ratchet-clover-missing` | eine relevante geänderte Produktionsdatei im Clover fehlt (Coverage und CRAP ungemessen) |
 | `ratchet-file-coverage` | eine geänderte Produktionsdatei unter 90 % Line-Coverage |
 | `ratchet-method-crap` | eine geänderte Methode mit CRAP über 8 |
 | `ratchet-phpstan-grown` | die PHPStan-Baseline hat je Datei und Befundart mehr Einträge als im Vergleichsstand |

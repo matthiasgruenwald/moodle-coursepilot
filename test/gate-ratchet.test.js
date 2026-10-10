@@ -163,6 +163,46 @@ test('ratchet: Aenderung nur im Docblock der naechsten Methode trifft nicht die 
   assert.equal(ratchet(repo, clover({ crapHard: 40, extraFiles: goodExtra })).status, 0);
 });
 
+test('ratchet CLI: changed production files missing from Clover block coverage and CRAP', () => {
+  for (const tracked of [false, true]) {
+    const repo = makeRepo();
+    const file = tracked ? 'classes/a.php' : 'classes/new.php';
+    write(repo, `${PLUGIN}/${file}`, SOURCE.replace('return 1;', 'return 11;'));
+    const r = ratchet(repo, clover({ withA: !tracked, extraFiles: [{ ...goodExtra[0], methods: '<line num="8" type="method" name="easy" complexity="1" crap="1" count="1"/>' }] }));
+    assert.equal(r.status, 1, r.out);
+    assert.match(r.out, new RegExp(`${file}:0: ratchet-clover-missing:`));
+    assert.match(r.out, /Coverage.*CRAP/);
+  }
+});
+
+test('report and ratchet CLI: impossible Clover metrics are rejected', () => {
+  const repo = makeRepo();
+  const valid = clover({ extraFiles: goodExtra });
+  const invalid = [
+    ['negative file statements', valid.replace('statements="10"', 'statements="-10"')],
+    ['negative file covered', valid.replace('coveredstatements="9"', 'coveredstatements="-1"')],
+    ['file covered exceeds statements', valid.replace('coveredstatements="9"', 'coveredstatements="11"')],
+    ['negative project statements', valid.replace('statements="100"', 'statements="-100"')],
+    ['negative project covered', valid.replace('coveredstatements="90"', 'coveredstatements="-1"')],
+    ['project covered exceeds statements', valid.replace('coveredstatements="90"', 'coveredstatements="101"')],
+    ['negative method complexity', valid.replace('complexity="2"', 'complexity="-2"')],
+    ['negative method CRAP', valid.replace('crap="12"', 'crap="-12"')],
+    ['negative method line', valid.replace('num="8"', 'num="-8"')],
+  ];
+  for (const [scenario, xml] of invalid) {
+    write(repo, 'clover.xml', xml);
+    for (const mode of ['report', 'ratchet']) {
+      const r = run(repo, [mode, path.join(repo, 'clover.xml')]);
+      assert.equal(r.status, 1, `${scenario}, ${mode}: ${r.out}`);
+      assert.match(r.out, /gate-error: Clover ungueltig/);
+      assert.doesNotMatch(r.out, /^summary:/m);
+    }
+  }
+  write(repo, 'clover.xml', valid);
+  assert.equal(run(repo, ['report', path.join(repo, 'clover.xml')]).status, 0);
+  assert.equal(ratchet(repo, valid).status, 0);
+});
+
 test('ratchet: neue unversionierte Datei zaehlt komplett als geaendert', () => {
   const repo = makeRepo();
   write(repo, `${PLUGIN}/classes/c.php`, SOURCE);
@@ -235,6 +275,25 @@ test('ratchet: reine Umbenennung (versioniert oder unversioniert) ist weder geae
     const xml = clover({ withA: false, extraFiles: [{ name: 'classes/z.php', st: 10, cov: 1, methods }, ...goodExtra] });
     const r = ratchet(repo, xml);
     assert.equal(r.status, 0, `stage=${stage}: ${r.out}`);
+  }
+});
+
+test('ratchet CLI: missing Clover entries are allowed for exclusions and pure renames', () => {
+  for (const stage of [true, false]) {
+    const repo = makeRepo({ baseline: { ...BASELINE, excluded: [...BASELINE.excluded, { path: 'db/access.php', reason: 'Capability declarations without logic' }] } });
+    fs.renameSync(path.join(repo, PLUGIN, 'classes/a.php'), path.join(repo, PLUGIN, 'classes/z.php'));
+    write(repo, 'scripts/gate/phpstan/phpstan-baseline.neon', PHPSTAN(3).replace('classes/a.php', 'classes/z.php'));
+    write(repo, `${PLUGIN}/lang/en/local_coursepilot.php`, "<?php\n$string['a'] = 'changed';\n");
+    write(repo, `${PLUGIN}/db/access.php`, "<?php\n$capabilities = [];\n");
+    write(repo, `${PLUGIN}/tests/new_test.php`, "<?php\nclass new_test {}\n");
+    write(repo, `${PLUGIN}/classes/schema.json`, '{}');
+    if (stage) {
+      git(repo, 'add', '-A');
+    }
+    const other = [{ ...goodExtra[0], methods: '<line num="3" type="method" name="m" complexity="1" crap="1" count="1"/>' }];
+    const r = ratchet(repo, clover({ withA: false, extraFiles: other }));
+    assert.equal(r.status, 0, `stage=${stage}: ${r.out}`);
+    assert.match(r.out, /violations=0/);
   }
 });
 
