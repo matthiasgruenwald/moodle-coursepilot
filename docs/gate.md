@@ -139,8 +139,32 @@ den Root-Werkzeugen, Node 22, den Moodle-npm-Paketen und Java 11 in den Gate-Con
 
 **PHPStan-Baseline** (`scripts/gate/phpstan/phpstan-baseline.neon`) ist versioniert und darf
 nur schrumpfen (ADR 0029). Pfade darin gelten relativ zum Container. Neu erzeugen mit
-`npm run gate -- phpstan-baseline`. Nicht baseline-fähige Befunde (`return.missing`)
-bleiben im Bericht sichtbar. Die Tests unter `tests/` sind im Lauf enthalten.
+`npm run gate -- phpstan-baseline`; das Kommando analysiert ohne die bestehende Baseline und
+schreibt deshalb immer den vollständigen Bestand. Nicht baseline-fähige Befunde
+(`return.missing`) bleiben im Bericht sichtbar. Die Tests unter `tests/` sind im Lauf enthalten.
+
+Jede Befundart (`identifier`), die in der Baseline bleibt, steht mit einer Begründung in
+`scripts/gate/phpstan/baseline-reasons.json`; `test/gate-phpstan-baseline.test.js` verlangt, dass
+beide Listen übereinstimmen. Eine neue Befundart in der Baseline braucht also eine Begründung,
+und eine nicht mehr vorkommende muss aus der Datei verschwinden.
+
+## Statische Prüfungen ohne Befund (Spec 0029, Ticket 10)
+
+moodle-cs (Errors und Warnings), phpdoc, savepoints, Mustache, ESLint, AMD-Build, PHPStan nach
+Baseline und die Covers-Pflicht melden null. Wo eine Regel nicht zum Projekt passt, steht die
+Ausnahme versioniert und begründet im Code oder im Gate, nie stillschweigend:
+
+- **Dateikopf:** moodle-cs verlangt die GPL-Boilerplate, das Projekt steht nach ADR 0025 unter
+  AGPL-3.0-or-later. Der Sniff `moodle.Files.BoilerplateComment` ist deshalb in
+  `scripts/gate/static.js` ausgenommen; `phpcbf` darf die Köpfe nie umschreiben (ohne
+  `--exclude=moodle.Files.BoilerplateComment` würde es sie auf GPL setzen).
+- **Zeilenkommentare:** `// phpcs:ignore <Sniff> -- <Grund>` bzw. `phpcs:disable` mit Grund, nur dort, wo
+  der Sniff das Muster nicht kennt (Entry-Shims, Kindprozess-Fixtures, abstrakte Testbasis,
+  Heredoc-Fixtures, Markdown-Zitate in Strings).
+- **Typen in Docblocks:** `moodle-plugin-ci phpdoc` vergleicht den `@param`-Typ mit der Signatur und
+  moodle-cs verbietet `@phpstan-param`. Array-Parameter sind deshalb `mixed[]` oder `T[]`, die genaue
+  Form steht als `Type: …` in der Beschreibung; was sich so nicht ausdrücken lässt (nullable Arrays,
+  Test-Doubles), bleibt als `missingType.iterableValue` in der PHPStan-Baseline.
 
 ## Messwerte im Vergleich zur Spec-Baseline
 
