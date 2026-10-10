@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\catalog;
@@ -19,8 +19,6 @@ namespace local_coursepilot\catalog;
 use mod_quiz\question\display_options;
 use mod_quiz\quiz_settings as native_quiz_settings;
 use moodle_exception;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Bridge for external/create_quiz and external/update_quiz_settings
@@ -126,8 +124,7 @@ final class quiz_write_bridge {
      *
      * @param \stdClass $moduleinfo Updated in place.
      * @param string[] $texts
-     * @param array $boundaries
-     * @phpstan-param array<int,int|float|string> $boundaries
+     * @param array $boundaries Type: array<int,int|float|string>.
      * @return void
      */
     public static function apply_feedback_pseudofields(\stdClass $moduleinfo, array $texts, array $boundaries): void {

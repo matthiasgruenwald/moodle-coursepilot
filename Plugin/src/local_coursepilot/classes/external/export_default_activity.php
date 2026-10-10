@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -25,8 +25,6 @@ use local_coursepilot\activity_backup;
 use local_coursepilot\course_module_placement;
 use local_coursepilot\catalog\registry;
 use moodle_exception;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Default activity XML of a developed activity type (Spec 0026, #589): creates the
@@ -121,12 +119,14 @@ final class export_default_activity extends external_api {
         $form->set_data($data);
         // Unsubmitted form: exportValues() yields the defaults (get_data() would be null).
         // The three-state visibility element cannot export without a submission; it is set below.
+        // phpcs:disable Squiz.Scope.StaticThisUsage.Found -- The closure is bound to the form object via call().
         $values = (function () {
             if ($this->_form->elementExists('visible')) {
                 $this->_form->removeElement('visible');
             }
             return $this->_form->exportValues();
         })->call($form);
+        // phpcs:enable Squiz.Scope.StaticThisUsage.Found
 
         $moduleinfo = (object) array_merge((array) $data, $values);
         $moduleinfo->modulename = $modname;

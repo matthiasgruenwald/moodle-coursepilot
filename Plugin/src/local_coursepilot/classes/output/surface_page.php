@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
@@ -34,11 +34,9 @@ final class surface_page {
     /**
      * Provides page data.
      *
-     * @param array $violations
-     * @phpstan-param array<int,array{type:string,name:string,detail:string}> $violations
+     * @param array $violations Type: array<int,array{type:string,name:string,detail:string}>.
      * @param string[] $registered
-     * @param array $selfcheck
-     * @phpstan-param array{ok:bool,detail:string,url:string,httpcode:?int} $selfcheck
+     * @param array $selfcheck Type: array{ok:bool,detail:string,url:string,httpcode:?int}.
      * @return array<string, mixed>
      */
     public static function page_data(array $violations, array $registered, array $selfcheck): array {

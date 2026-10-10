@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -215,11 +215,10 @@ final class private_files_storage_port implements storage_port {
      * content, including a now missing file. A null checksum skips comparison
      * and keeps unconditional overwrite/create behaviour.
      *
-     * @param ?array $existing The existing.
+     * @param ?array $existing Stored file data (content, mimetype, size, contenthash,
+     *        timemodified) or null.
      * @param string|null $expectedchecksum
      * @param string $clientpath For the error message.
-     * @param array{content: string, mimetype: string, size: int, contenthash: string,
-     *        timemodified: int}|null $existing
      * @throws storage_conflict_exception
      */
     private function require_checksum_match(?array $existing, ?string $expectedchecksum, string $clientpath): void {

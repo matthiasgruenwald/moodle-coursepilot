@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -23,8 +23,6 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\xml_activity_creator;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Creates a developed (not catalogued) activity from an activity XML (Spec 0026, #590,
@@ -145,8 +143,7 @@ final class create_activity_from_xml extends external_api {
     /**
      * Provides shape.
      *
-     * @param array $result
-     * @phpstan-param array{cmid:int,presets:string[],references:array,successor_cmid:int,hidden_predecessors:int} $result
+     * @param array $result Type: array{cmid:int,presets:string[],references:array,successor_cmid:int,hidden_predecessors:int}.
      * @return array
      */
     private static function shape(array $result): array {

@@ -76,9 +76,9 @@ test('covers: lists test classes without a Covers attribute, skips abstract and 
   assert.ok(found.every(f => f.rule === 'covers-missing'));
 });
 
-test('real plugin tests: covers findings are listed with repo paths', () => {
+test('real plugin tests: every test class declares its coverage', () => {
   const found = s.findMissingCovers(s.readPluginTests(path.join(__dirname, '..')));
-  assert.deepEqual(found.map(f => path.basename(f.file)).sort(), ['connections_page_test.php', 'lib_test.php', 'umlaut_test.php']);
+  assert.deepEqual(found.map(f => path.basename(f.file)), []);
 });
 
 const fakeExec = (map, codeFor = () => 0) => (container, args) => {
@@ -99,12 +99,12 @@ test('runStatic: every check appears in report lines and summary; findings do no
   }, () => 1);
   const r = s.runStatic(s.ALL_CHECKS, { container: 'x', repo: path.join(__dirname, '..'), exec });
   const rules = new Set(r.lines.map(l => l.split(': ')[1]));
-  for (const rule of ['moodle-cs-error', 'moodle-cs-warning', 'phpdoc', 'mustache', 'eslint', 'phpstan', 'covers-missing']) {
+  for (const rule of ['moodle-cs-error', 'moodle-cs-warning', 'phpdoc', 'mustache', 'eslint', 'phpstan']) {
     assert.ok(rules.has(rule), rule);
   }
   assert.deepEqual(r.errors.map(e => e.split(':')[0]), ['deptrac']);
   assert.match(r.summary, /^summary: static moodle_cs_errors=10 moodle_cs_warnings=3 phpdoc=3 /);
-  assert.match(r.summary, /mustache=2 eslint=3 phpstan=2 covers=\d+/);
+  assert.match(r.summary, /mustache=2 eslint=3 phpstan=2 covers=0/);
 });
 
 test('runStatic: tool that fails without parsable findings is a tool error, never clean', () => {

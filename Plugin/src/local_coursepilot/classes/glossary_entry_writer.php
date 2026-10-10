@@ -2,21 +2,19 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Per-entry Core form write, with independent rollback and no existing-entry reads (#593).
@@ -57,7 +55,7 @@ final class glossary_entry_writer {
             foreach (explode("\n", implode("\n", $input['aliases'])) as $alias) {
                 $alias = trim($alias);
                 // Match the reserved single-character keywords rejected by Moodle's entry form.
-                if (strlen($alias) === 1 && preg_match('/[$-\\/:-?{-~!"^_`\\[\\]]/', $alias)) {
+                if (strlen($alias) === 1 && preg_match('/[$-\\/:-?{-~!"^_\x60\\[\\]]/', $alias)) {
                     throw new \moodle_exception('errreservedkeywords', 'glossary');
                 }
             }

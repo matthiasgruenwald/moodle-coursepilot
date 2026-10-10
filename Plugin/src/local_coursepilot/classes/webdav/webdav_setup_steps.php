@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\webdav;
@@ -71,7 +71,7 @@ final class webdav_setup_steps {
         $repositoryrecord = $DB->get_record('repository', ['type' => self::REPOSITORY_TYPE]);
         $repositoryactive = $repositoryrecord !== false && (int) $repositoryrecord->visible === 1;
         $userinstancesallowed = (bool) get_config(self::REPOSITORY_TYPE, 'enableuserinstances');
-        // $userid > 0 before the context access (issue #505 finding #1): the CLI
+        // Note: $userid > 0 before the context access (issue #505 finding #1): the CLI
         // calls with $USER->id = 0, context_user::instance(0) throws
         // dml_missing_record there. Without a person the capability is "no" anyway.
         $hascapability = $userid > 0 && has_capability(self::CAPABILITY, \context_user::instance($userid));

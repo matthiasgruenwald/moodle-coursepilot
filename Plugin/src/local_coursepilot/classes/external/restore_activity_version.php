@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -28,8 +28,6 @@ use local_coursepilot\catalog\shared_block;
 use local_coursepilot\history\version_history;
 use local_coursepilot\quiz\arrangement;
 use moodle_exception;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * "Three versions ago it was better" as an executable write
@@ -176,7 +174,7 @@ final class restore_activity_version extends external_api {
                 );
                 $changes = array_merge($changes, $result['changes']);
             } catch (moodle_exception $e) {
-                // set_completion's own two-step flow applies (ticket #392): without
+                // Note: set_completion's own two-step flow applies (ticket #392): without
                 // confirmation AND a real data-loss risk it writes nothing and
                 // reports the number of affected learners - exactly the "data-loss
                 // warning" this endpoint is meant to reuse instead of inventing
@@ -388,8 +386,7 @@ final class restore_activity_version extends external_api {
      * target state (e.g. "sectionnum" - the target state only knows
      * "section") is automatically left out instead of being written wrongly.
      *
-     * @param string $catalogclass
-     * @phpstan-param class-string<\local_coursepilot\catalog\module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<\local_coursepilot\catalog\module_catalog>.
      * @param array $before
      * @param array $target
      * @return array

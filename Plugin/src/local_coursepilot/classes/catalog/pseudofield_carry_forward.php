@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\catalog;
@@ -36,8 +36,7 @@ final class pseudofield_carry_forward {
      * Apply all six preparation steps for $modname.
      *
      * @param string $modname
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param \stdClass $moduleinfo Updated in place.
      * @param array $before Current state before writing, for editor pseudofields.
      * @param \stdClass $cm
@@ -69,10 +68,8 @@ final class pseudofield_carry_forward {
      * Accept strings as shorthand and wrap them in editor arrays. Reject
      * other values without text, naming the field instead of losing content.
      *
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param array $patch Normalised in place.
-     * @param string $modname
      * @return void
      * @throws \moodle_exception invalideditorpseudofield
      */
@@ -196,8 +193,7 @@ final class pseudofield_carry_forward {
      *
      * Skip null defaults, used for editor arrays, since null is no useful substitute.
      *
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param \stdClass $moduleinfo Updated in place.
      * @param array $patch
      * @return void
@@ -218,8 +214,7 @@ final class pseudofield_carry_forward {
      * content from the editor array rather than the instance columns.
      *
      * @param string $modname The modname.
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param \stdClass $moduleinfo Updated in place.
      * @param array $before
      * @param \stdClass $cm The cm.

@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -89,7 +89,7 @@ class get_question extends external_api {
         $context = \context::instance_by_id($category->contextid);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // moodle/question:view does not exist (any more); Moodle only knows
+        // Note: moodle/question:view does not exist (any more); Moodle only knows
         // viewmine/viewall. viewall fits the read capability here.
         require_capability('moodle/question:viewall', $context);
 

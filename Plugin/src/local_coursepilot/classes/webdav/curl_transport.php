@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\webdav;
@@ -116,8 +116,7 @@ final class curl_transport implements webdav_transport {
      * As its own method so that a transport test can verify the set options without
      * real network access.
      *
-     * @param array $headers
-     * @phpstan-param array<string,string> $headers
+     * @param string[] $headers
      * @return array<string, mixed>
      */
     private function transport_options(array $headers): array {
@@ -165,8 +164,7 @@ final class curl_transport implements webdav_transport {
     /**
      * Formats headers.
      *
-     * @param array $headers
-     * @phpstan-param array<string,string> $headers
+     * @param string[] $headers
      * @return string[] "Name: value" lines for CURLOPT_HTTPHEADER.
      */
     private function format_headers(array $headers): array {

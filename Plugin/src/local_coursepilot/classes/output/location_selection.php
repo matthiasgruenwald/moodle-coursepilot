@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
@@ -35,8 +35,7 @@ final class location_selection {
     /**
      * Provides editor data.
      *
-     * @param array $oauthpassthrough
-     * @phpstan-param array<string,string> $oauthpassthrough
+     * @param string[] $oauthpassthrough
      * @return array<string, mixed>
      */
     public static function editor_data(array $oauthpassthrough = []): array {
@@ -101,8 +100,7 @@ final class location_selection {
     /**
      * Provides oauth fields.
      *
-     * @param array $oauthpassthrough
-     * @phpstan-param array<string,string> $oauthpassthrough
+     * @param string[] $oauthpassthrough
      * @return list<array{name: string, value: string}>
      */
     private static function oauth_fields(array $oauthpassthrough): array {
@@ -134,10 +132,8 @@ final class location_selection {
      * Provides page data.
      *
      * @param \stdClass $user The user.
-     * @param ?array $finishresult
-     * @phpstan-param array{type:string,text:string}|null $finishresult
-     * @param ?array $oauthreturn
-     * @phpstan-param array{client:\stdClass,params:array<string,string>}|null $oauthreturn
+     * @param ?array $finishresult Type: array{type:string,text:string}|null.
+     * @param ?array $oauthreturn Type: array{client:\stdClass,params:array<string,string>}|null.
      * @return array<string, mixed>
      */
     public static function page_data(\stdClass $user, ?array $finishresult, ?array $oauthreturn): array {
@@ -162,8 +158,7 @@ final class location_selection {
     /**
      * Provides notification data.
      *
-     * @param ?array $finishresult
-     * @phpstan-param array{type:string,text:string}|null $finishresult
+     * @param ?array $finishresult Type: array{type:string,text:string}|null.
      * @return array{class: string, text: string}|null
      */
     private static function notification_data(?array $finishresult): ?array {
@@ -182,8 +177,7 @@ final class location_selection {
     /**
      * Provides oauth return data.
      *
-     * @param ?array $oauthreturn
-     * @phpstan-param array{client:\stdClass,params:array<string,string>}|null $oauthreturn
+     * @param ?array $oauthreturn Type: array{client:\stdClass,params:array<string,string>}|null.
      * @return array{clientname: string, backurl: string}|null
      */
     private static function oauth_return_data(?array $oauthreturn): ?array {

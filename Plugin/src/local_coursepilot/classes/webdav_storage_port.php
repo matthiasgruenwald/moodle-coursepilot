@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -500,8 +500,7 @@ final class webdav_storage_port implements storage_port {
      * @param webdav_client $client
      * @param string $fileurl
      * @param string $content
-     * @param ?array $existing
-     * @phpstan-param array{etag:?string,timemodified:int,size:int}|null $existing
+     * @param ?array $existing Type: array{etag:?string,timemodified:int,size:int}|null.
      * @param string $clientpath For the error message.
      * @throws storage_conflict_exception
      * @throws webdav_error every other error.
@@ -526,8 +525,7 @@ final class webdav_storage_port implements storage_port {
      * current state - even if the file is now missing entirely.
      * No comparison if no check value was passed (`null`).
      *
-     * @param ?array $existing
-     * @phpstan-param array{etag:?string,timemodified:int,size:int}|null $existing
+     * @param ?array $existing Type: array{etag:?string,timemodified:int,size:int}|null.
      * @param string|null $expectedchecksum
      * @param string $clientpath For the error message.
      * @throws storage_conflict_exception

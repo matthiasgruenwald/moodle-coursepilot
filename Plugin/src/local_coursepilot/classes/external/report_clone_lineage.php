@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -24,8 +24,6 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use invalid_parameter_exception;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Report question lineage after cloning (Spec 0017 §7.5, #422). For each
@@ -84,7 +82,7 @@ final class report_clone_lineage extends external_api {
         $context = context_module::instance($cm->id);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // moodle/question:view no longer exists. Use moodle/question:viewall/viewmine,
+        // Note: moodle/question:view no longer exists. Use moodle/question:viewall/viewmine,
         // as in get_question and export_questions_xml.
         require_capability('moodle/question:viewall', $context);
 
@@ -150,8 +148,7 @@ final class report_clone_lineage extends external_api {
      * not repeatedly resolve it.
      *
      * @param int $contextid
-     * @param array $cache By reference, contextid => courseid
-     * @phpstan-param array<int,int> $cache
+     * @param int[] $cache By reference, contextid => courseid
      * @return int
      */
     private static function course_of_context(int $contextid, array &$cache): int {

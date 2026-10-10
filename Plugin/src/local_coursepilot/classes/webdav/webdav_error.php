@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\webdav;
@@ -106,15 +106,12 @@ final class webdav_error extends \RuntimeException {
      * still has to recognise it as a {@see webdav_error}), the location
      * selection immediately translates it into a teacher message.
      *
-     * @template T
      * @param self $e
-     * @param mixed $whenmissing Return value when $e is "not found".
-     * @phpstan-param T $whenmissing
-     * @param callable $onfailure Builds the exception for
-     * @phpstan-param callable(self):\Throwable $onfailure
-     *        every other error - or passes $e through unchanged
-     *        ({@see \local_coursepilot\webdav_storage_port}).
-     * @return T
+     * @param mixed $whenmissing Return value when $e is "not found". Type: T.
+     * @param callable $onfailure Builds the exception for every other error - or
+     *        passes $e through unchanged ({@see \local_coursepilot\webdav_storage_port}).
+     *        Signature: callable(self):\Throwable.
+     * @return mixed $whenmissing or never (throws).
      * @throws \Throwable The result of $onfailure($e).
      */
     public static function empty_when_missing(self $e, mixed $whenmissing, callable $onfailure): mixed {

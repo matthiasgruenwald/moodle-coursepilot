@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -298,11 +298,9 @@ final class update_mc_question extends external_api {
      * builds the success response (issue #523: extracted from execute()).
      * @param \stdClass $entry
      * @param \context $context
-     * @param array $write
-     * @phpstan-param array{result:array,backfilled:bool,idnumber:string,missingfiles:string[]} $write
+     * @param array $write Type: array{result:array,backfilled:bool,idnumber:string,missingfiles:string[]}.
      * @param ?int $questiontextdraftitemid
-     * @param array $answerfeedbackdraftitemids
-     * @phpstan-param array<int,int> $answerfeedbackdraftitemids
+     * @param int[] $answerfeedbackdraftitemids
      * @param \stdClass $question
      * @return array
      */
@@ -381,8 +379,7 @@ final class update_mc_question extends external_api {
      * unchanged) answers/selection mode state with the same rules as a new
      * creation ({@see create_mc_question::validate_answers()}).
      * @param \stdClass $question Is modified in place.
-     * @param array $patch
-     * @phpstan-param array<string,mixed> $patch
+     * @param mixed[] $patch
      * @return void
      */
     private static function apply_patch(\stdClass $question, array $patch): void {
@@ -467,8 +464,7 @@ final class update_mc_question extends external_api {
      * newly written question_answers rows in this order (see
      * {@see self::embed_images()}).
      *
-     * @param array $patch
-     * @phpstan-param array<string,mixed> $patch
+     * @param mixed[] $patch
      * @return array<int, string[]> Index => list of material folder paths
      */
     private static function extract_answer_feedback_images(array $patch): array {
@@ -500,8 +496,7 @@ final class update_mc_question extends external_api {
      *
      * @param \context $context Category context (target of the file storage).
      * @param string[] $questiontextimages Material folder paths for questiontext.
-     * @param array $answerfeedbackimages Answer index => material folder paths.
-     * @phpstan-param array<int,string[]> $answerfeedbackimages
+     * @param array $answerfeedbackimages Answer index => material folder paths. Type: array<int,string[]>.
      * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
      *        source of the paths (issue #496).
      * @return array{0: int|null, 1: array<int, int>} [draft itemid for questiontext (null without request),
@@ -573,8 +568,7 @@ final class update_mc_question extends external_api {
      * @param \context $context
      * @param int $questionid New question.id of the written version.
      * @param int|null $questiontextdraftitemid
-     * @param array $answerfeedbackdraftitemids Answer index => draft itemid.
-     * @phpstan-param array<int,int> $answerfeedbackdraftitemids
+     * @param int[] $answerfeedbackdraftitemids Answer index => draft itemid.
      * @return void
      */
     private static function embed_images(

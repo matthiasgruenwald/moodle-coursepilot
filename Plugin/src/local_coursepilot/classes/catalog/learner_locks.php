@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\catalog;
@@ -83,8 +83,7 @@ final class learner_locks {
      * Whether $value matches the condition. A missing value (null) never
      * creates a learner lock: an unset field cannot prevent progress.
      *
-     * @param array $condition
-     * @phpstan-param array{op:string,value?:mixed} $condition
+     * @param array $condition Type: array{op:string,value?:mixed}.
      * @param mixed $value
      * @return bool
      */
@@ -125,8 +124,7 @@ final class learner_locks {
     /**
      * Find all learner locks triggered by the effective values to write.
      *
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param array $named Fields named by the call, including its field bundle.
      * @param array $defaults Filled form defaults, only for fields not named in $named.
      * @return array<int, array{id: string, detail: string}>
@@ -153,8 +151,7 @@ final class learner_locks {
      * Like {@see find()}, for a patch of existing values. A patch repeating
      * the current value needs no new confirmation: the lock already exists.
      *
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param array $patch
      * @param array $before
      * @return array<int, array{id: string, detail: string}>
@@ -174,8 +171,7 @@ final class learner_locks {
     /**
      * Existing learner locks for an instance, used by read tools.
      *
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param array $settings Current state as in get_module_settings (DB columns);
      *        settings_aliases maps differing form names to columns
      *        (quiz: quizpassword -> password).
@@ -201,8 +197,7 @@ final class learner_locks {
      * JSON learner-lock condition for describe_module_fields, or "null" when
      * the field cannot create a lock.
      *
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param string $fieldname
      * @return string
      */
@@ -230,8 +225,7 @@ final class learner_locks {
      * its reason so the agent can decide without further lookup. Write nothing.
      *
      * @param string $modname
-     * @param array $found
-     * @phpstan-param array<int,array{id:string,detail:string}> $found
+     * @param array $found Type: array<int,array{id:string,detail:string}>.
      * @param string[] $confirmed
      * @return void
      * @throws moodle_exception learnerlocksunconfirmed

@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\webdav;
@@ -127,7 +127,7 @@ final class webdav_instance {
             throw new \moodle_exception('webdavauthunsupported', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
         }
 
-        // \curl (lib/filelib.php) is not autoloaded - plain pages like
+        // Note: \curl (lib/filelib.php) is not autoloaded - plain pages like
         // location_selection_browse.php would fail with "Class curl not found".
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
@@ -140,17 +140,17 @@ final class webdav_instance {
      * fake through Moodle's request-local DI container; production receives
      * the regular cURL transport.
      *
-     * @param array $options
-     * @phpstan-param array<string,string|null> $options
+     * @param array $options Type: array<string,string|null>.
      */
     private static function transport(array $options): webdav_transport {
         try {
             $transport = \core\di::get(webdav_transport::class);
-            if ($transport instanceof webdav_transport) {
-                return $transport;
-            }
         } catch (\Throwable $e) {
             // No binding exists in production.
+            $transport = null;
+        }
+        if ($transport instanceof webdav_transport) {
+            return $transport;
         }
         return new curl_transport(
             new \curl(),
@@ -189,8 +189,7 @@ final class webdav_instance {
      * (throws) and {@see has_supported_auth()} (does not throw) - Issue #497
      * standards review: both previously knew the condition once each, inverted.
      *
-     * @param array $options
-     * @phpstan-param array<string,string|null> $options
+     * @param array $options Type: array<string,string|null>.
      * @return bool
      */
     private static function auth_supported(array $options): bool {
@@ -218,8 +217,7 @@ final class webdav_instance {
     /**
      * Tells whether the webdav instance is iserv listing.
      *
-     * @param array $entries Root level, {@see webdav_client::propfind()}.
-     * @phpstan-param array<int,array{name:string,type:string}> $entries
+     * @param array $entries Root level, {@see webdav_client::propfind()}. Type: array<int,array{name:string,type:string}>.
      * @return bool
      */
     public static function is_iserv_listing(array $entries): bool {
@@ -253,8 +251,7 @@ final class webdav_instance {
     /**
      * Provides fingerprint.
      *
-     * @param array $options
-     * @phpstan-param array<string,string|null> $options
+     * @param array $options Type: array<string,string|null>.
      * @return array{server: string, basepath: string, account: string}
      */
     private static function fingerprint(array $options): array {
@@ -282,8 +279,7 @@ final class webdav_instance {
     /**
      * Returns https address of the instance incl. base path, with trailing "/".
      *
-     * @param array $options
-     * @phpstan-param array<string,string|null> $options
+     * @param array $options Type: array<string,string|null>.
      * @return string https address of the instance incl. base path, with trailing "/".
      */
     private static function base_url(array $options): string {

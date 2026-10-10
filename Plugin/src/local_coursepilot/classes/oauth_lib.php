@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -568,8 +568,7 @@ final class oauth_lib {
      * redirects (error/error_description/state). Omit empty or absent values.
      *
      * @param string $redirecturi
-     * @param array $params
-     * @phpstan-param array<string,?string> $params
+     * @param array $params Type: array<string,?string>.
      * @return string
      */
     public static function build_redirect_url(string $redirecturi, array $params): string {
@@ -794,7 +793,7 @@ final class oauth_lib {
         if (!$client) {
             return self::result(400, [], ['error' => 'invalid_client']);
         }
-        // client_secret_post clients also authenticate with a secret; PKCE already
+        // Note: client_secret_post clients also authenticate with a secret; PKCE already
         // covers public clients (#291).
         if ($client->tokenendpointauthmethod === 'client_secret_post') {
             $secret = (string) ($body['client_secret'] ?? '');
@@ -1109,8 +1108,7 @@ final class oauth_lib {
      * Provides result.
      *
      * @param int $status The status.
-     * @param array $headers
-     * @phpstan-param array<string,string> $headers
+     * @param string[] $headers
      * @param array $body
      * @return array{status: int, headers: array<string, string>, body: array}
      */

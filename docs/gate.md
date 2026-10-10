@@ -95,7 +95,7 @@ rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-c
 
 | Prüfung | Regel im Bericht | Werkzeug |
 |---|---|---|
-| moodle-cs | `moodle-cs-error`, `moodle-cs-warning` | `moodle-plugin-ci phpcs` (TODO-Kommentare nur mit Link `https://github.com/matthiasgruenwald/moodle-coursepilot/issues/<nr>`) |
+| moodle-cs | `moodle-cs-error`, `moodle-cs-warning` | `moodle-plugin-ci phpcs` (TODO-Kommentare nur mit Link `https://github.com/matthiasgruenwald/moodle-coursepilot/issues/<nr>`; ohne den Sniff `moodle.Files.BoilerplateComment`, weil er die GPL-Kopfzeile verlangt und das Projekt nach ADR 0025 unter AGPL steht) |
 | phpdoc | `phpdoc` | `moodle-plugin-ci phpdoc` |
 | savepoints | `savepoints` | `moodle-plugin-ci savepoints` |
 | Mustache | `mustache` | `moodle-plugin-ci mustache` (vnu-jar, Java 11) |

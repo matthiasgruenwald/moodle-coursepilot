@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\catalog;
@@ -78,8 +78,7 @@ final class drift_check {
      * changing the registry.
      *
      * @param string $modname Table/module name to check.
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return string[]
      */
     public static function check_catalog(string $modname, string $catalogclass): array {
@@ -117,8 +116,7 @@ final class drift_check {
      * contract tests (e.g. files, blocked until Spec 0018).
      *
      * @param string $modname
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return string[]
      */
     private static function column_violations(string $modname, string $catalogclass): array {
@@ -159,8 +157,7 @@ final class drift_check {
      * Check callable sources referenced by fields and pseudofields,
      * including functions and static methods.
      *
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return string[]
      */
     private static function callable_violations(string $catalogclass): array {
@@ -193,8 +190,7 @@ final class drift_check {
      * Check constants referenced by module_catalog::checked_constants()
      * and shared_block::checked_constants().
      *
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return string[]
      */
     private static function constant_violations(string $catalogclass): array {
@@ -216,8 +212,7 @@ final class drift_check {
      * Each field-related write option must name a catalog field. This also
      * catches newly read or written fields that would bypass the catalog.
      *
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return string[]
      */
     private static function write_option_violations(string $catalogclass): array {

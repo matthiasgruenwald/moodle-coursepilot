@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
@@ -22,8 +22,6 @@
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Brings the existing OAuth tables in line with db/install.xml (#424 follow-up 3).
@@ -44,7 +42,7 @@ defined('MOODLE_INTERNAL') || die();
 function local_coursepilot_repair_oauth_schema_drift(database_manager $dbman): void {
     global $DB;
 
-    // clientid: 64 characters were enough for client_ids issued via DCR, not
+    // Note: clientid: 64 characters were enough for client_ids issued via DCR, not
     // for CIMD, where the client_id is the URL itself (install.xml: 255).
     //
     // local_coursepilot_oauth_client carries a unique index on the
@@ -74,7 +72,7 @@ function local_coursepilot_repair_oauth_schema_drift(database_manager $dbman): v
         }
     }
 
-    // codechallengemethod: PKCE is fixed to S256 (oauth_lib rejects
+    // Note: codechallengemethod: PKCE is fixed to S256 (oauth_lib rejects
     // every other method), the stored value was never read.
     // The column has therefore disappeared from install.xml - here it is dropped
     // from the existing data.
@@ -84,7 +82,7 @@ function local_coursepilot_repair_oauth_schema_drift(database_manager $dbman): v
         $dbman->drop_field($codetable, $challengemethod);
     }
 
-    // refreshtokenhash: NOT NULL according to install.xml. A row without a
+    // Note: refreshtokenhash: NOT NULL according to install.xml. A row without a
     // refresh token hash is unusable (the rotation from #336 cannot
     // renew it) - it is removed instead of being filled with a placeholder
     // that would look like a valid hash.

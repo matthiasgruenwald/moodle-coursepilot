@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\tests\webdav;
@@ -392,8 +392,7 @@ final class fake_webdav_transport implements webdav_transport {
      * Provides multistatus xml.
      *
      * @param string $requesturl href of the resolved level itself, used for client comparison.
-     * @param array $entries Path => entry.
-     * @phpstan-param array<string,array{content:string,etag:?string,lastmodified:int,collection:bool}> $entries
+     * @param array $entries Path => entry. Type: array<string,array{content:string,etag:?string,lastmodified:int,collection:bool}>.
      */
     private function multistatus_xml(string $requesturl, array $entries): string {
         $base = $this->origin($requesturl);

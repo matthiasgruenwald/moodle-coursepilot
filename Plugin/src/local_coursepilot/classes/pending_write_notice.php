@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -155,8 +155,7 @@ final class pending_write_notice {
     /**
      * Saves the pending write notice.
      *
-     * @param array $entries
-     * @phpstan-param array<string,array{timestamp:int,path:string,operation:string,error_class:string,course_id:int}> $entries
+     * @param array $entries Type: array<string,array{timestamp:int,path:string,operation:string,error_class:string,course_id:int}>.
      * @throws \moodle_exception pendingnotequotaexceeded
      */
     private static function save(array $entries): void {
@@ -189,8 +188,7 @@ final class pending_write_notice {
     /**
      * Generates identifier.
      *
-     * @param array $existing Already assigned identifiers (keys).
-     * @phpstan-param array<string,mixed> $existing
+     * @param mixed[] $existing Already assigned identifiers (keys).
      * @return string
      */
     private static function generate_identifier(array $existing): string {

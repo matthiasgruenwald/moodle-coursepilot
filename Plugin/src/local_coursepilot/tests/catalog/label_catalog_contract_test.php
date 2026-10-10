@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\catalog;
@@ -70,7 +70,7 @@ final class label_catalog_contract_test extends \advanced_testcase {
         $realcolumns = array_keys($DB->get_columns('course_modules'));
         $blockfields = array_map(static fn (field $f): string => $f->name, shared_block::fields());
 
-        // sectionnum maps to the section column (course/modlib.php:799).
+        // Note: sectionnum maps to the section column (course/modlib.php:799).
         // Check it separately rather than as a matching column name.
         $expecteddbcolumns = array_diff($blockfields, ['sectionnum']);
 

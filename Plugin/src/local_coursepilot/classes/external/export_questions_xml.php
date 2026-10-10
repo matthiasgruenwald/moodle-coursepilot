@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -175,7 +175,7 @@ final class export_questions_xml extends external_api {
         [$question, $category, $context] = self::resolve_native_question($questionid);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // moodle/question:view no longer exists; Moodle only knows
+        // Note: moodle/question:view no longer exists; Moodle only knows
         // viewmine/viewall (see get_question.php). viewall matches the
         // read permission here: export is a read operation.
         require_capability('moodle/question:viewall', $context);
@@ -311,7 +311,7 @@ final class export_questions_xml extends external_api {
             static function (array $m) use (&$filenames): string {
                 $filename = $m[1];
                 $filenames[] = $filename;
-                // "--" would prematurely close the XML comment.
+                // Note: "--" would prematurely close the XML comment.
                 $safe = str_replace('--', '- -', $filename);
                 return '<!-- File removed (no binary transport in export): ' . $safe . " -->\n";
             },
@@ -328,8 +328,7 @@ final class export_questions_xml extends external_api {
      * and unsuitable for sharing (Spec 0018 §7.2, ticket #437).
      *
      * @param int $count
-     * @param array $missing
-     * @phpstan-param array<int,array{name:string,files:string[]}> $missing
+     * @param array $missing Type: array<int,array{name:string,files:string[]}>.
      * @param bool $placeholder
      * @return string
      */

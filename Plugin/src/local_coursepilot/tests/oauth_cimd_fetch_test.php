@@ -1,24 +1,34 @@
 <?php
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
-// Moodle is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// Coursepilot is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Moodle is distributed in the hope that it will be useful,
+// Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
+
+/**
+ * Real TLS/streaming regressions at the public client lookup boundary.
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
+ */
 
 namespace local_coursepilot;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 
-/** Real TLS/streaming regressions at the public client lookup boundary. */
+/**
+ * Real TLS/streaming regressions at the public client lookup boundary.
+ */
 #[CoversClass(oauth_lib::class)]
 final class oauth_cimd_fetch_test extends \advanced_testcase {
     use \local_coursepilot\tests\webdav\webdav_instance_fixture;

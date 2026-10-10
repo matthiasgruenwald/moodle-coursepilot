@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -361,7 +361,7 @@ final class update_module_settings_test extends \advanced_testcase {
         ]);
 
         try {
-            // cutoffdate before duedate violates the combination rule.
+            // Note: cutoffdate before duedate violates the combination rule.
             update_module_settings::execute($forum->cmid, json_encode(['cutoffdate' => 1000000000]));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
@@ -499,7 +499,7 @@ final class update_module_settings_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
         $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
 
-        // course_module_created already recorded version 1 (#385); this write
+        // Note: course_module_created already recorded version 1 (#385); this write
         // must add another version.
         $before = $DB->count_records('local_coursepilot_cm_version', ['cmid' => $page->cmid]);
 
@@ -899,7 +899,7 @@ final class update_module_settings_test extends \advanced_testcase {
         $this->create_material_file('arbeitsblatt.pdf', 'Arbeitsblattinhalt');
 
         try {
-            // cutoffdate before duedate violates the combination rule;
+            // Note: cutoffdate before duedate violates the combination rule;
             // validate_patch() fails before any material access.
             update_module_settings::execute($cmid, json_encode([
                 'introattachments' => ['arbeitsblatt.pdf'],
@@ -1261,7 +1261,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['name' => 'Neuer Titel']));
             $this->fail('execute() should have thrown because of drift.');
         } catch (\moodle_exception $e) {
-            // write_gate_test.php checks the exact language-pack wording. The test
+            // Note: write_gate_test.php checks the exact language-pack wording. The test
             // instance has only plugin German strings, not a full German pack;
             // a language-independent error code suffices here.
             $this->assertSame('modnamedriftlocked', $e->errorcode);

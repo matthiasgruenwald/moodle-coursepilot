@@ -2,23 +2,21 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Moodle is distributed in the hope that it will be useful,
+// Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\catalog;
 
 use local_coursepilot\availability_privacy;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Shared implementation of the catalog read contract.
@@ -136,8 +134,7 @@ final class module_state {
      * Convert associative field/value settings to catalog name/value pairs.
      * Each catalog class uses this shared normalization for its own settings.
      *
-     * @param array $settings
-     * @phpstan-param array<string,mixed> $settings
+     * @param mixed[] $settings
      * @return array<int, array{name: string, value: string}>
      */
     public static function settings(array $settings): array {
@@ -155,8 +152,7 @@ final class module_state {
      * declare groups in module_catalog::write_options()["repeated_group"], so
      * get_module_settings needs no module-specific branch.
      *
-     * @param string $catalogclass
-     * @phpstan-param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param int $instanceid
      * @return array<string, mixed> Field name to value list; empty if the type declares no group.
      */

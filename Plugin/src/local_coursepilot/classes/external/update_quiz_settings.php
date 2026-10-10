@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -29,8 +29,6 @@ use local_coursepilot\catalog\quiz_write_bridge;
 use local_coursepilot\catalog\write_target;
 use local_coursepilot\write_gate;
 use moodle_exception;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Quiz patch (Spec 0015 §5, #398): quiz is a justified exception to the
@@ -163,7 +161,7 @@ final class update_quiz_settings extends external_api {
 
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
-        // get_moduleinfo_data() returns the raw quiz row plus the shared block
+        // Note: get_moduleinfo_data() returns the raw quiz row plus the shared block
         // (visible, groupmode, cmidnumber, ...), as for update_module_settings.
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
         // The form state rounds gradepass to display decimals. Preserve the
@@ -209,7 +207,7 @@ final class update_quiz_settings extends external_api {
             }
         }
 
-        // #400: get_moduleinfo_data() returns gradepass in display format
+        // Issue #400: get_moduleinfo_data() returns gradepass in display format
         // ("0,00"). Writing it back unchecked fails at the database after the
         // change has already persisted.
         pseudofield_carry_forward::unformat_localised_gradepass($moduleinfo);

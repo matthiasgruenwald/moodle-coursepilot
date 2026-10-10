@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
@@ -34,8 +34,7 @@ final class authorize_page {
      * Provides page data.
      *
      * @param string $clientname
-     * @param array $params response_type/client_id/redirect_uri/code_challenge/code_challenge_method
-     * @phpstan-param array<string,string> $params
+     * @param string[] $params response_type/client_id/redirect_uri/code_challenge/code_challenge_method
      * @param string $state
      * @param \moodle_url $formurl
      * @param \moodle_url $locationselectionurl
@@ -104,8 +103,7 @@ final class authorize_page {
     /**
      * Provides hidden fields.
      *
-     * @param array $params
-     * @phpstan-param array<string,string> $params
+     * @param string[] $params
      * @param string $state
      * @return list<array{name: string, value: string}>
      */

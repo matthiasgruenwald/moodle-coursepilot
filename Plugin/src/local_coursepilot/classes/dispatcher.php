@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -67,8 +67,7 @@ final class dispatcher {
      *        null if decoding failed (parse-error case).
      * @param string|null $token The Bearer token already extracted from
      *        the Authorization header.
-     * @param array $headers
-     * @phpstan-param array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string} $headers
+     * @param array $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     public static function handle(?array $request, ?string $token, array $headers): array {
@@ -79,7 +78,7 @@ final class dispatcher {
         if ($origin !== null) {
             $allowed = array_merge([rtrim($CFG->wwwroot, '/')], self::EXTRA_ALLOWED_ORIGINS);
             if (!in_array(rtrim($origin, '/'), $allowed, true)) {
-                // #339: log separately, before handle_authorized(); this response
+                // Issue #339: log separately, before handle_authorized(); this response
                 // does not use the JSON-RPC error format.
                 access_log::log_failure('Origin not allowed');
                 return self::result(403, [], ['error' => 'Origin not allowed']);
@@ -110,8 +109,7 @@ final class dispatcher {
      *
      * @param array|null $request
      * @param string|null $token
-     * @param array $headers
-     * @phpstan-param array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string} $headers
+     * @param array $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     private static function handle_authorized(?array $request, ?string $token, array $headers): array {
@@ -137,7 +135,7 @@ final class dispatcher {
 
         $method = $headers['method'] ?? 'POST';
         if ($method !== 'POST') {
-            // #339: deliberately unlogged; this is a misconfigured HTTP client,
+            // Issue #339: deliberately unlogged; this is a misconfigured HTTP client,
             // without a parsed JSON-RPC request or tool reference.
             return self::result(405, ['Allow' => 'POST'], ['error' => 'Method Not Allowed - MCP over HTTP is POST only']);
         }
@@ -216,7 +214,7 @@ final class dispatcher {
                     'id' => $id,
                     'result' => [
                         'tools' => self::tools(),
-                        // data is invalid for tools/list ("Unsupported result type data for
+                        // Note: data is invalid for tools/list ("Unsupported result type data for
                         // tools/list"). The full list is not paginated, so use complete.
                     ] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
                 ]);
@@ -224,7 +222,7 @@ final class dispatcher {
             case 'tools/call':
                 return self::handle_tools_call($id, $params, $headers);
 
-            // #401: empty responses instead of 404. We expose no resources or
+            // Issue #401: empty responses instead of 404. We expose no resources or
             // prompts and advertise neither capability, but Codex requests these
             // three discovery methods after every handshake.
             case 'resources/list':
@@ -259,8 +257,7 @@ final class dispatcher {
      *
      * @param mixed $id
      * @param array $params
-     * @param array $headers
-     * @phpstan-param array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string} $headers
+     * @param array $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     private static function handle_tools_call($id, array $params, array $headers): array {
@@ -270,7 +267,7 @@ final class dispatcher {
             return self::error(404, $id, -32601, 'Unknown tool: ' . $toolname);
         }
 
-        // #573 (Spec 0025 §A): every tool declares English inputs directly.
+        // Issue #573 (Spec 0025 §A): every tool declares English inputs directly.
         // The #568 input translation is removed; Moodle parameter declarations
         // are the single contract.
         $response = external_api::call_external_function($function, $params['arguments'] ?? []);
@@ -399,8 +396,7 @@ final class dispatcher {
      * forgotten tools/call error branch made all tool messages unreadable.
      * initialize/server/discover precede negotiation; absent headers select legacy.
      *
-     * @param array $headers
-     * @phpstan-param array{protocolversion?:?string} $headers
+     * @param array $headers Type: array{protocolversion?:?string}.
      * @param string $resulttype 'complete', the revision's only success value
      *        for every result.
      * @param int|null $ttlms Freshness in milliseconds for list results only.
@@ -503,8 +499,7 @@ final class dispatcher {
      * @param mixed $id
      * @param int $code The code.
      * @param string $message The message.
-     * @param array $extraheaders
-     * @phpstan-param array<string,string> $extraheaders
+     * @param string[] $extraheaders
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */
     private static function error(int $status, $id, int $code, string $message, array $extraheaders = []): array {
@@ -525,8 +520,7 @@ final class dispatcher {
      * Provides result.
      *
      * @param int $status The status.
-     * @param array $headers
-     * @phpstan-param array<string,string> $headers
+     * @param string[] $headers
      * @param array|null $body
      * @return array{status: int, headers: array<string, string>, body: array|null}
      */

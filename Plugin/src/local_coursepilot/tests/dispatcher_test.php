@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -331,7 +331,7 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertSame(200, $response['status']);
         $this->assertSame('local_coursepilot', $response['body']['result']['serverInfo']['name']);
 
-        // #577: the handshake version comes from the same canonical source
+        // Issue #577: the handshake version comes from the same canonical source
         // as version.php - no hard-coded prototype value any more.
         global $CFG;
         $plugin = new \stdClass();
@@ -815,7 +815,7 @@ final class dispatcher_test extends \advanced_testcase {
         $unconfirmed = $unconfirmedresponse['body']['result']['structuredContent']['questions'][0];
         $this->assertSame('suspect', $unconfirmed['status']);
 
-        // "confirmed": true confirms explicitly - now it is written.
+        // Note: "confirmed": true confirms explicitly - now it is written.
         $confirmedresponse = dispatcher::handle(
             [
                 'id' => 5,
@@ -1693,7 +1693,7 @@ XML;
 
         $this->assertArrayNotHasKey('resultType', $legacy['body']['result']);
         $this->assertArrayNotHasKey('resultType', $unknown['body']['result']);
-        // #458: 'complete' is the only success value that the revision knows
+        // Issue #458: 'complete' is the only success value that the revision knows
         // for tools/call ('input_required' remains reserved for the MRTR
         // pattern, which we do not offer). Caching fields belong exclusively
         // on list responses - a ttlMs on a write operation suggests to a

@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
@@ -32,8 +32,7 @@ final class connections_page {
      * Provides page data.
      *
      * @param \stdClass[] $tokens
-     * @param array $currentlocations see location_selection::current_locations_data()
-     * @phpstan-param array<string,array<string,string>> $currentlocations
+     * @param array $currentlocations see location_selection::current_locations_data() Type: array<string,array<string,string>>.
      * @param \moodle_url $locationselectionurl
      * @return array<string, mixed>
      */

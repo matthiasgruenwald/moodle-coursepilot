@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -113,7 +113,7 @@ final class oauth_cleanup {
     private static function delete_unused_clients(int $now, int $batch): int {
         global $DB;
 
-        // ponytail: the code check scans the code table, which only holds
+        // Deliberate shortcut - ponytail: the code check scans the code table, which only holds
         // codes of the last minutes after the code step; index clientid if that changes.
         $ids = array_keys($DB->get_records_sql(
             'SELECT c.id FROM {local_coursepilot_oauth_client} c

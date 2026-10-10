@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -27,8 +27,6 @@ use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\shared_block;
 use moodle_exception;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Field catalog as data (Spec 0015 §3.1, #379). Read-only: describes an
@@ -172,8 +170,7 @@ class describe_module_fields extends external_api {
      * mixed types, so use a JSON row rather than a dynamic structure, as with
      * get_course_catalog::plugin_config_field() supplemental files.
      *
-     * @param array $bundles
-     * @phpstan-param array<string,array<string,mixed>> $bundles
+     * @param array $bundles Type: array<string,array<string,mixed>>.
      * @return array<int, array{name: string, fields_json: string}>
      */
     private static function bundles(array $bundles): array {

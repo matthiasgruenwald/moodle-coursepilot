@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -21,8 +21,6 @@ use local_coursepilot\catalog\registry;
 use local_coursepilot\history\retention;
 use local_coursepilot\history\version_writer;
 use moodle_exception;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Create a developed activity type from an activity XML (Spec 0026 module 3, ADR 0028).
@@ -198,8 +196,7 @@ final class xml_activity_creator {
     /**
      * Follows $links from $start, cycle-safe.
      *
-     * @param array $links cmid => linked cmid
-     * @phpstan-param array<int,int> $links
+     * @param int[] $links cmid => linked cmid
      * @param int $start The start.
      * @return int[] the linked cmids in walking order, $start excluded
      */

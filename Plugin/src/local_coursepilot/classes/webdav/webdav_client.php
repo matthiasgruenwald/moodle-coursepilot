@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\webdav;
@@ -61,12 +61,10 @@ final class webdav_client {
      * @param webdav_transport $transport The swappable transport seam.
      *        In production {@see curl_transport}, in tests the reusable
      *        in-memory fake.
-     * @param ?callable $clock () => float, seconds since some fixed
-     * @phpstan-param callable $clock
+     * @param ?callable $clock () => float, seconds since some fixed Type: callable.
      *        zero point. Only needed for the retry clock - replaceable in
      *        tests so nothing is actually waited for.
-     * @param ?callable $sleeper (float $seconds) => void.
-     * @phpstan-param callable $sleeper
+     * @param ?callable $sleeper (float $seconds) => void. Type: callable.
      */
     public function __construct(
         /** @var webdav_transport The swappable transport seam. */
@@ -214,8 +212,7 @@ final class webdav_client {
      *
      * @param string $method
      * @param string $url
-     * @param array $headers
-     * @phpstan-param array<string,string> $headers
+     * @param string[] $headers
      * @param string|null $body
      * @param int[] $successcodes
      * @return webdav_response

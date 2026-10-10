@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -23,8 +23,6 @@ use core_external\external_value;
 use local_coursepilot\gd_support;
 use local_coursepilot\material_area;
 use local_coursepilot\material_files;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Crop a material image (Spec 0018 §5, #431). A separate endpoint rather
@@ -194,8 +192,7 @@ class crop_material_file extends external_api {
      * Crop, write the target and build the response (#523: extracted from execute()).
      *
      * @param array $params Validated execute() parameters.
-     * @param array $sourcestored
-     * @phpstan-param array{content:string,path:string,size:int,timemodified:int} $sourcestored
+     * @param array $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
      * @param string $sourcerelative
      * @param string $targetdir
      * @param string $targetfilename
@@ -242,8 +239,7 @@ class crop_material_file extends external_api {
      * crop_and_write() to keep the function below 50 lines).
      *
      * @param array $params Validated execute() parameters.
-     * @param array $sourcestored
-     * @phpstan-param array{content:string,path:string,size:int,timemodified:int} $sourcestored
+     * @param array $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
      * @param string $sourcerelative
      * @param string $targetextension
      * @return array{0: string, 1: int, 2: int} [content, width, height]
@@ -281,8 +277,7 @@ class crop_material_file extends external_api {
      * the function below 50 lines).
      *
      * @param array $params Validated execute() parameters.
-     * @param array $sourcestored
-     * @phpstan-param array{content:string,path:string,size:int,timemodified:int} $sourcestored
+     * @param array $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
      * @param string $sourcerelative
      * @param string $targetdir
      * @param string $targetfilename
@@ -357,8 +352,7 @@ class crop_material_file extends external_api {
      *
      * @param string $location
      * @param string $path
-     * @param array $stored
-     * @phpstan-param array{size:int,timemodified:int} $stored
+     * @param array $stored Type: array{size:int,timemodified:int}.
      * @return string
      */
     private static function describe_source(string $location, string $path, array $stored): string {
@@ -449,7 +443,7 @@ class crop_material_file extends external_api {
         $py0 = (int) round($y0 * $origheight);
         $px1 = (int) round($x1 * $origwidth);
         $py1 = (int) round($y1 * $origheight);
-        // ponytail: Rounding can collapse nearby relative coordinates to a zero-
+        // Deliberate shortcut - ponytail: Rounding can collapse nearby relative coordinates to a zero-
         // pixel rectangle (e.g. x0=0.499/x1=0.501 on a 10px image). max(1, ...)
         // clamps this to one pixel rather than throwing. Validated relative area
         // greater than zero (guard_coordinates()) is the acceptance criterion;

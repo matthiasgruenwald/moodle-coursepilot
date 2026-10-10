@@ -24,6 +24,9 @@ const PHPSTAN_CONFIG = '/var/www/phpstan-config/phpstan.neon';
 const PHPSTAN_BASELINE_REL = 'scripts/gate/phpstan/phpstan-baseline.neon';
 // TODO-Kommentare muessen auf ein Issue dieses Repos verlinken.
 const TODO_COMMENT_REGEX = 'https://github\\.com/matthiasgruenwald/moodle-coursepilot/issues/[0-9]+';
+// Kopfzeilen-Sniff aus: moodle-cs verlangt die GPL-Boilerplate, das Projekt steht bewusst
+// unter AGPL-3.0-or-later (ADR 0025); der Dateikopf bleibt AGPL.
+const MOODLE_CS_EXCLUDE = 'moodle.Files.BoilerplateComment';
 const CONTAINER_PATH = '/opt/node/bin:/opt/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
 
 /** Pfad im Container -> Pfad im Repo (fuer Datei:Zeile-Ausgabe). */
@@ -182,7 +185,7 @@ function readPluginTests(repo) {
  * (rot), kein "sauber".
  */
 const CHECKS = {
-  'moodle-cs': { args: ['phpcs', '--max-warnings=-1', `--todo-comment-regex=${TODO_COMMENT_REGEX}`, '.'], parse: parsePhpcs },
+  'moodle-cs': { args: ['phpcs', '--max-warnings=-1', `--exclude=${MOODLE_CS_EXCLUDE}`, `--todo-comment-regex=${TODO_COMMENT_REGEX}`, '.'], parse: parsePhpcs },
   phpdoc: { args: ['phpdoc', '.'], parse: parsePhpdoc },
   savepoints: { args: ['savepoints', '.'], parse: parseSavepoints },
   mustache: { args: ['mustache', '.'], parse: parseMustache },

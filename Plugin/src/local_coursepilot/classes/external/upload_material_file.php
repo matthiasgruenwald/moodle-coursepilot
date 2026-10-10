@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -22,8 +22,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\material_area;
 use local_coursepilot\material_files;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Creates or fully overwrites a material file for the calling teacher
@@ -95,8 +93,7 @@ class upload_material_file extends external_api {
      * Builds the response from {@see material_area::write()} (#539, formerly
      * #523), extracted from execute() to keep functions below 50 lines.
      *
-     * @param array $written
-     * @phpstan-param array{path:string,created:bool,size:int,oldsize:int,warning:?string} $written
+     * @param array $written Type: array{path:string,created:bool,size:int,oldsize:int,warning:?string}.
      * @return array
      */
     private static function build_response(array $written): array {

@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\catalog;
@@ -309,6 +309,7 @@ final class choice implements module_catalog {
                 null,
                 'mod/choice/mod_form.php:53-78 (repeat_elements() of the option/limit/optionid group); '
                     . 'mod/choice/lib.php:110/151 (choice_add_instance()/choice_update_instance(): '
+                    // phpcs:ignore moodle.Strings.ForbiddenStrings.Found -- Source citation keeps its code span.
                     . '`foreach ($choice->option as $key => $value)`)'
             ),
             new field(
@@ -321,6 +322,7 @@ final class choice implements module_catalog {
                 null,
                 null,
                 'mod/choice/mod_form.php:53,61-64 (repeat_elements(), default 0); mod/choice/lib.php:116-117/156-157 '
+                    // phpcs:ignore moodle.Strings.ForbiddenStrings.Found -- Source citation keeps its code span.
                     . '(`$choice->limit[$key]`)'
             ),
             new field(
@@ -422,9 +424,8 @@ final class choice implements module_catalog {
      * @return array
      */
     public static function learner_locks(): array {
-        // allowupdate: the form default 0 is itself a lock. It counts
-        // on creation too (#583) - whoever wants to create it open names
-        // "allowupdate": 1 (as does the "allocation" bundle).
+        // allowupdate: the form default 0 is itself a lock. It counts on creation too (#583).
+        // Whoever wants to create it open names "allowupdate": 1 (as does the "allocation" bundle).
         return [
             'allowupdate' => ['op' => 'equals', 'value' => 0,
                 'reason' => 'Learners cannot change their answer; a correction needs the teacher to delete the response.'],

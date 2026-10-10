@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -126,7 +126,7 @@ final class activity_type_templates_test extends \advanced_testcase {
         location_selection::apply(['context_area' => ['type' => 'moodle'], 'material_store' => ['type' => 'moodle']]);
         $file = context_area::read('activity-types/' . $modname . '.md');
         $this->assertStringContainsString('5.1.7+ (Build: 20260928)', $file['content']);
-        $this->assertSame(1, preg_match('/```xml\n(.*?)\n```/s', $file['content'], $matches));
+        $this->assertSame(1, preg_match('/\x60\x60\x60xml\n(.*?)\n\x60\x60\x60/s', $file['content'], $matches));
         $created = \local_coursepilot\external\create_activity_from_xml::execute($course->id, $modname, 1, $matches[1]);
         $this->assertGreaterThan(0, $created['cmid']);
         $exported = \local_coursepilot\external\export_activity_backup::execute($created['cmid']);

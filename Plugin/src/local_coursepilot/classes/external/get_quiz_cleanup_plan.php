@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -65,15 +65,15 @@ class get_quiz_cleanup_plan extends external_api {
      * Runs the get quiz cleanup plan tool.
      *
      * @param int $cmid
-     * @param array $keep_questionbankentryids
+     * @param array $keepquestionbankentryids
      * @return array
      */
-    public static function execute(int $cmid, array $keep_questionbankentryids): array {
+    public static function execute(int $cmid, array $keepquestionbankentryids): array {
         global $CFG, $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid' => $cmid,
-            'keep_questionbankentryids' => $keep_questionbankentryids,
+            'keep_questionbankentryids' => $keepquestionbankentryids,
         ]);
         $cm = get_coursemodule_from_id('quiz', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);

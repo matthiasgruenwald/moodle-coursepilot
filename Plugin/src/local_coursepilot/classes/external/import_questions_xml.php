@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -191,7 +191,7 @@ final class import_questions_xml extends external_api {
     private static function import_all(\stdClass $category, \context $context, array $questions, bool $confirmed): array {
         global $DB;
 
-        // moodle_transaction has no destructor. Explicitly roll back here because
+        // Note: moodle_transaction has no destructor. Explicitly roll back here because
         // round-trip mismatches intentionally occur AFTER the write rather than
         // in its preceding validation.
         $transaction = $DB->start_delegated_transaction();
@@ -425,7 +425,7 @@ final class import_questions_xml extends external_api {
 
         $lines = explode("\n", str_replace(["\r\n", "\r"], "\n", $xmlcontent));
 
-        // qformat_xml::readquestions() does NOT throw for parse errors. It echoes
+        // Note: qformat_xml::readquestions() does NOT throw for parse errors. It echoes
         // a message via qformat_default::error() and returns false. Capture that
         // output to avoid HTML in the web service response, then throw instead.
         ob_start();
@@ -565,7 +565,7 @@ final class import_questions_xml extends external_api {
         $form->category = $category->id . ',' . $context->id;
         $form->status = question_version_status::QUESTION_STATUS_READY;
         $form->idnumber = $idnumber;
-        // qformat_xml::readquestions() creates draft files for embedded <file>
+        // Note: qformat_xml::readquestions() creates draft files for embedded <file>
         // blocks (question/format/xml/format.php: import_files_as_draft()) and
         // attaches questiontextitemid/generalfeedbackitemid separately rather than
         // inside the text fields. Pass these item IDs through; otherwise
@@ -686,7 +686,7 @@ final class import_questions_xml extends external_api {
 
         $xml = $qformat->writequestion($reloaded);
 
-        // writequestion() returns only a <question> block, but readquestions()
+        // Note: writequestion() returns only a <question> block, but readquestions()
         // expects a <quiz> root (xmlize's xml["quiz"] structure).
         return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<quiz>\n" . $xml . "\n</quiz>";
     }
@@ -812,7 +812,7 @@ final class import_questions_xml extends external_api {
         }
 
         if (isset($qo->answer) && is_bool($qo->answer)) {
-            // truefalse uses a single boolean (true means the correct answer is true)
+            // Note: truefalse uses a single boolean (true means the correct answer is true)
             // with separate feedback for each option.
             return [
                 [
