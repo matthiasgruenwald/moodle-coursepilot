@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 /**
- * Gate-Kommando (Spec 0029). Nur Messung: noch keine Schwelle blockiert.
+ * Gate-Kommando (Spec 0029, ADR 0029): Messung und Ratsche. Rot (Exitcode 1) bei jedem
+ * Befund der statischen Pruefungen, bei fehlgeschlagenen Tests und bei Ratschenverletzung.
  *
  *   node scripts/gate/gate.js fast            Node-Tests + PHPUnit der Tests zu geaenderten Klassen
  *   node scripts/gate/gate.js full            volle PHPUnit-Suite mit pcov, danach Bericht
- *   node scripts/gate/gate.js report <clover> Bericht aus einem vorhandenen Clover-Bericht
+ *   node scripts/gate/gate.js report <clover> Bericht aus einem vorhandenen Clover-Bericht (nur Messwerte)
+ *   node scripts/gate/gate.js ratchet [clover] Ratsche: Baselines nur besser; mit Clover zusaetzlich Coverage, geaenderte Dateien und Methoden
+ *   node scripts/gate/gate.js baseline [clover] Coverage-Baseline anheben (verweigert, wenn der Messwert niedriger ist)
+ *   node scripts/gate/gate.js edit            Edit-Hook (Claude/Codex): liest Hook-JSON von stdin, ruft fast fuer Plugin-, Test- und Gate-Dateien
  *   node scripts/gate/gate.js static          statische Pruefungen (moodle-cs, phpdoc, savepoints, Mustache, ESLint, PHPStan, Covers, englische Kommentare, deptrac-Schichtregeln)
  *   node scripts/gate/gate.js phpstan-baseline PHPStan-Baseline neu erzeugen
  *   node scripts/gate/gate.js ranking [n]     Fehlschlags-Rangliste nach Datei und Pruefung aus .gate-failures.log
@@ -23,13 +27,20 @@ const { spawnSync } = require('node:child_process');
 
 const staticChecks = require('./static');
 const failureLog = require('./failure-log');
+const ratchet = require('./ratchet');
+const deptrac = require('./deptrac');
 
 const { PLUGIN_REL, PLUGIN_IN_CONTAINER, repoPath } = staticChecks;
-const REPO = path.resolve(__dirname, '..', '..');
+// GATE_REPO nur fuer Tests: das Repo, dessen Git-Stand und Baselines ausgewertet werden.
+const REPO = process.env.GATE_REPO || path.resolve(__dirname, '..', '..');
+const BASELINE_REL = 'scripts/gate/baseline.json';
+const PHPSTAN_BASELINE_REL = 'scripts/gate/phpstan/phpstan-baseline.neon';
+const DEPTRAC_BASELINE_REL = 'scripts/gate/deptrac/deptrac-baseline.yaml';
+const PLUGIN_PREFIX = `${PLUGIN_REL}/`;
 const CONTAINER = process.env.GATE_CONTAINER || 'kurspilot-gate-webserver-1';
 const GATE_DIR = process.env.GATE_DIR || '/opt/kurspilot-gate';
 const CLOVER_IN_CONTAINER = '/var/www/reports/clover.xml';
-// Nur Messwerte fuer die Regelnamen im Bericht; blockieren nichts (ADR 0029).
+// Regelwerte fuer den Messbericht; blockierend ist die Ratsche (ratchet.js).
 const FILE_COVERAGE_RULE = 90;
 const CRAP_RULE = 8;
 const CRAP_HIGH = 30;
@@ -100,9 +111,22 @@ function parseClover(xml) {
 
 const pct = (covered, statements) => (statements === 0 ? 100 : (covered / statements) * 100);
 
-/** @returns {{lines: string[], summary: object}} */
-function buildReport(parsed) {
+/**
+ * @param {object} parsed Ergebnis von parseClover
+ * @param {{path: string}[]} exclusions Ausschlussliste der Baseline (Pfade relativ zum Plugin)
+ * @returns {{lines: string[], summary: object}}
+ */
+function buildReport(parsed, exclusions = []) {
   const lines = [];
+  const kept = name => !ratchet.isExcluded(repoPath(name).slice(PLUGIN_PREFIX.length), exclusions);
+  parsed = {
+    files: parsed.files.filter(f => kept(f.name)),
+    methods: parsed.methods.filter(m => kept(m.file)),
+  };
+  parsed.total = {
+    statements: parsed.files.reduce((a, f) => a + f.statements, 0),
+    covered: parsed.files.reduce((a, f) => a + f.covered, 0),
+  };
   const files = [...parsed.files].sort((a, b) => a.name.localeCompare(b.name));
   for (const f of files) {
     const p = pct(f.covered, f.statements);
@@ -135,12 +159,29 @@ function formatSummary(s) {
     `methods=${s.methods} crap_over_8=${s.methodsCrapOver8} crap_over_30=${s.methodsCrapOver30}`;
 }
 
-/** Bericht aus Clover-Datei; wirft bei fehlender/ungueltiger Datei. */
-function reportFromFile(cloverPath) {
+function loadParsed(cloverPath) {
   if (!cloverPath || !fs.existsSync(cloverPath)) {
     throw new Error(`Clover-Bericht fehlt: ${cloverPath || '(kein Pfad)'}`);
   }
-  return buildReport(parseClover(fs.readFileSync(cloverPath, 'utf8')));
+  return parseClover(fs.readFileSync(cloverPath, 'utf8'));
+}
+
+/** Versionierte Baseline (Coverage, Ausschlussliste, Startpunkt der Ratsche); fehlt sie, ist das Gate rot. */
+function loadBaseline() {
+  const file = path.join(REPO, BASELINE_REL);
+  if (!fs.existsSync(file)) {
+    throw new Error(`Baseline fehlt: ${BASELINE_REL}`);
+  }
+  const b = JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (!b.coverage || !(b.coverage.statements > 0) || !Array.isArray(b.excluded)) {
+    throw new Error(`Baseline ungueltig: ${BASELINE_REL} braucht coverage.{covered,statements} und excluded[]`);
+  }
+  return b;
+}
+
+/** Bericht aus Clover-Datei; wirft bei fehlender/ungueltiger Datei. */
+function reportFromFile(cloverPath) {
+  return buildReport(loadParsed(cloverPath), loadBaseline().excluded);
 }
 
 /**
@@ -173,8 +214,11 @@ function mapChangedToTests(changed, tests) {
   return { tests: [...picked].sort(), unmapped };
 }
 
+// Im Edit-Hook gehoert die Kindausgabe auf stderr, nur dort liest der Agent sie.
+let childStdio = 'inherit';
+
 function sh(cmd, args, opts = {}) {
-  return spawnSync(cmd, args, { cwd: REPO, encoding: 'utf8', stdio: opts.inherit ? 'inherit' : 'pipe', ...opts });
+  return spawnSync(cmd, args, { cwd: REPO, encoding: 'utf8', stdio: opts.inherit ? childStdio : 'pipe', ...opts });
 }
 
 function dexec(args, opts = {}) {
@@ -244,6 +288,7 @@ function runFast() {
   } else {
     syncPlugin();
   }
+  ok = printRatchet() && ok;
   ok = printStatic(staticChecks.FAST_CHECKS) && ok;
   console.log(`summary: mode=fast node=${ok ? 'ok' : 'fail'} phpunit_tests=${tests.length}`);
   return ok;
@@ -259,8 +304,10 @@ function runFull() {
     console.log('summary: mode=full phpunit=fail');
     return false;
   }
-  const reported = printReport(path.join(GATE_DIR, 'reports', 'clover.xml'), path.join(GATE_DIR, 'reports', 'gate-report.json'), true);
-  return printStatic(staticChecks.ALL_CHECKS) && reported;
+  const clover = path.join(GATE_DIR, 'reports', 'clover.xml');
+  printReport(clover, path.join(GATE_DIR, 'reports', 'gate-report.json'), true);
+  const ratcheted = printRatchet(clover);
+  return printStatic(staticChecks.ALL_CHECKS) && ratcheted;
 }
 
 /** Statische Pruefungen: Befunde als Zeilen, vollstaendig als JSON; Werkzeugfehler sind rot. */
@@ -271,7 +318,7 @@ function printStatic(names) {
   report.lines.forEach(l => console.log(l));
   report.errors.forEach(e => console.log(`gate:0: gate-error: ${e}`));
   console.log(report.summary);
-  return report.errors.length === 0;
+  return report.errors.length === 0 && report.blocking === 0;
 }
 
 function runStaticOnly() {
@@ -308,6 +355,146 @@ function printReport(cloverPath, jsonPath, logFailures = false) {
   return true;
 }
 
+function git(args) {
+  const r = sh('git', args);
+  return r.status === 0 ? r.stdout : null;
+}
+
+/** Inhalt einer Datei im Ref oder `null` (Datei oder Ref fehlt). */
+const gitShow = (ref, rel) => git(['show', `${ref}:${rel}`]);
+
+const isAncestor = (a, b) => sh('git', ['merge-base', '--is-ancestor', a, b]).status === 0;
+
+/**
+ * Vergleichsstand der Ratsche: `GATE_BASE_REF`, sonst der juengere von Merge-Base mit dem
+ * Ziel-Branch (`origin/dev`, `dev`) und dem Startpunkt `armedAt` der Baseline, sonst HEAD.
+ * Der Startpunkt verhindert, dass das einmalige Aufraeumen vor dem Scharfschalten als
+ * "geaendert" gilt; nach dem Merge ist die Merge-Base juenger und gewinnt.
+ */
+function resolveBase(armedAt) {
+  if (process.env.GATE_BASE_REF) {
+    return process.env.GATE_BASE_REF;
+  }
+  const heads = ['origin/dev', 'dev'].map(ref => (git(['merge-base', 'HEAD', ref]) || '').trim()).filter(Boolean);
+  const armed = armedAt && git(['rev-parse', '--verify', `${armedAt}^{commit}`]) && isAncestor(armedAt, 'HEAD') ? [armedAt] : [];
+  const candidates = [...heads.slice(0, 1), ...armed];
+  if (candidates.length === 0) {
+    return 'HEAD';
+  }
+  return candidates.reduce((a, b) => (a === b || isAncestor(a, b) ? b : a));
+}
+
+/** Geaenderte Zeilen seit `base` (Arbeitsbaum) plus neue, unversionierte Dateien als `all`. */
+function changedLinesSince(base) {
+  const diff = git(['diff', '-U0', '--no-color', '--no-renames', base, '--']);
+  const fresh = git(['ls-files', '--others', '--exclude-standard']);
+  if (diff === null || fresh === null) {
+    throw new Error(`git diff gegen ${base} fehlgeschlagen`);
+  }
+  const changed = ratchet.parseChangedLines(diff);
+  fresh.split('\n').filter(Boolean).forEach(f => changed.set(f, 'all'));
+  return changed;
+}
+
+/**
+ * Ratsche. Ohne Clover nur die Baselines (schnell, fuer fast); mit Clover zusaetzlich
+ * Gesamt-Coverage, geaenderte Dateien (>= 90 %) und geaenderte Methoden (CRAP <= 8).
+ * @returns {{lines: string[], ok: boolean}}
+ */
+function runRatchet(cloverPath) {
+  const baseline = loadBaseline();
+  const base = resolveBase(baseline.armedAt);
+  const found = [];
+  const baseBaseline = gitShow(base, BASELINE_REL);
+  const phpstanNow = fs.readFileSync(path.join(REPO, PHPSTAN_BASELINE_REL), 'utf8');
+  const pairs = text => deptrac.parseBaseline(text).map(e => `${e.from} -> ${e.to}`);
+  const deptracNow = fs.readFileSync(path.join(REPO, DEPTRAC_BASELINE_REL), 'utf8');
+  const deptracBase = gitShow(base, DEPTRAC_BASELINE_REL);
+  found.push(...ratchet.phpstanFindings(phpstanNow, gitShow(base, PHPSTAN_BASELINE_REL), PHPSTAN_BASELINE_REL));
+  found.push(...ratchet.deptracFindings(pairs(deptracNow), deptracBase === null ? null : pairs(deptracBase), DEPTRAC_BASELINE_REL));
+  let measuredNote = 'ohne Clover (nur Baselines)';
+  const baseCoverage = baseBaseline === null ? null : JSON.parse(baseBaseline).coverage;
+  found.push(...ratchet.loweredFindings(baseline.coverage, baseCoverage));
+  if (cloverPath) {
+    const parsed = loadParsed(cloverPath);
+    const files = parsed.files.map(f => ({ ...f, name: repoPath(f.name) }));
+    const methods = parsed.methods.map(m => ({ ...m, file: repoPath(m.file) }));
+    const measured = ratchet.totals(files, baseline.excluded, PLUGIN_PREFIX);
+    found.push(...ratchet.coverageFindings(measured, baseline.coverage));
+    found.push(...ratchet.changedFindings({
+      files,
+      methods,
+      changed: changedLinesSince(base),
+      readSource: rel => fs.readFileSync(path.join(REPO, rel), 'utf8').split('\n'),
+      exclusions: baseline.excluded,
+      pluginPrefix: PLUGIN_PREFIX,
+    }));
+    measuredNote = `coverage=${((measured.covered / measured.statements) * 100).toFixed(2)}% baseline=${((baseline.coverage.covered / baseline.coverage.statements) * 100).toFixed(2)}%`;
+  }
+  const lines = found.map(ratchet.formatFinding);
+  lines.push(`summary: ratchet base=${base.slice(0, 12)} ${measuredNote} violations=${found.length}`);
+  return { lines, ok: found.length === 0 };
+}
+
+function printRatchet(cloverPath) {
+  const r = runRatchet(cloverPath);
+  r.lines.forEach(l => console.log(l));
+  return r.ok;
+}
+
+/** Hebt die Coverage-Baseline an; nie nach unten. */
+function runBaseline(cloverPath) {
+  const baseline = loadBaseline();
+  const parsed = loadParsed(cloverPath);
+  const measured = ratchet.totals(parsed.files.map(f => ({ ...f, name: repoPath(f.name) })), baseline.excluded, PLUGIN_PREFIX);
+  if (ratchet.coverageFindings(measured, baseline.coverage).length > 0) {
+    throw new Error('Messwert liegt unter der Baseline, die Baseline wird nie gesenkt');
+  }
+  const next = { ...baseline, coverage: { covered: measured.covered, statements: measured.statements } };
+  fs.writeFileSync(path.join(REPO, BASELINE_REL), `${JSON.stringify(next, null, 2)}\n`);
+  console.log(`summary: baseline coverage=${((measured.covered / measured.statements) * 100).toFixed(2)}% lines=${measured.covered}/${measured.statements}`);
+  return true;
+}
+
+/** Dateien, bei denen ein Edit das Gate ausloest: Plugin-PHP, Node-Tests, Gate-Skripte und -Konfiguration. */
+const EDIT_TRIGGER = /^(Plugin\/src\/local_coursepilot\/.*\.php|test\/.*\.js|scripts\/gate\/.*)$/;
+
+/**
+ * Edit-Hook fuer Claude (PostToolUse) und Codex: dasselbe Gate wie pre-commit. Befunde auf
+ * stderr und Exitcode 2, damit der Agent sie als Rueckmeldung bekommt und weiterarbeitet.
+ */
+function runEditHook(stdin) {
+  let files = [];
+  try {
+    const input = JSON.parse(stdin).tool_input || {};
+    // Claude: file_path; Codex apply_patch: Patch-Text in command.
+    files = [input.file_path, ...String(input.command || '').matchAll(/^\*\*\* (?:Add|Update) File: (.+)$/gm)].map(f => (Array.isArray(f) ? f[1] : f));
+  } catch (e) {
+    return true;
+  }
+  if (!files.some(f => f && EDIT_TRIGGER.test(path.relative(REPO, path.resolve(REPO, f))))) {
+    return true;
+  }
+  childStdio = ['ignore', 2, 2];
+  const out = [];
+  const log = console.log;
+  console.log = (...a) => out.push(a.join(' '));
+  let ok;
+  try {
+    ok = runFast();
+  } catch (e) {
+    out.push(`gate:0: gate-error: ${e.message}`);
+    ok = false;
+  } finally {
+    console.log = log;
+  }
+  if (!ok) {
+    process.stderr.write(`${out.filter(l => !/: deptrac-baselined: /.test(l)).join('\n')}\n`);
+    process.exitCode = 2;
+  }
+  return true;
+}
+
 function main(argv) {
   const [mode, arg] = argv;
   try {
@@ -326,11 +513,20 @@ function main(argv) {
     if (mode === 'report') {
       return printReport(arg);
     }
+    if (mode === 'ratchet') {
+      return printRatchet(arg);
+    }
+    if (mode === 'baseline') {
+      return runBaseline(arg || path.join(GATE_DIR, 'reports', 'clover.xml'));
+    }
+    if (mode === 'edit') {
+      return runEditHook(fs.readFileSync(0, 'utf8'));
+    }
     if (mode === 'ranking') {
       console.log(failureLog.report(arg ? Number(arg) : undefined));
       return true;
     }
-    console.error('Aufruf: gate.js fast | full | static | phpstan-baseline | report <clover.xml> | ranking [anzahl]');
+    console.error('Aufruf: gate.js fast | full | static | phpstan-baseline | report <clover.xml> | ratchet [clover.xml] | baseline [clover.xml] | edit | ranking [anzahl]');
     return false;
   } catch (e) {
     if (mode !== 'ranking') {
@@ -342,7 +538,8 @@ function main(argv) {
 }
 
 if (require.main === module) {
-  process.exit(main(process.argv.slice(2)) ? 0 : 1);
+  const ok = main(process.argv.slice(2));
+  process.exit(process.exitCode || (ok ? 0 : 1));
 }
 
-module.exports = { parseClover, buildReport, formatSummary, reportFromFile, mapChangedToTests };
+module.exports = { parseClover, buildReport, formatSummary, reportFromFile, mapChangedToTests, runRatchet };

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Versionierter Git-Hook (ADR 0029): volles Gate mit Ratsche vor jedem Push.
+# Loeschen von Branches/Tags (lokaler Hash nur Nullen) braucht kein Gate.
+# Aktivierung: npm run hooks:install
+cd "$(git rev-parse --show-toplevel)" || exit 1
+while read -r _ref sha _rest; do
+  case "$sha" in
+    *[!0]*) exec node scripts/gate/gate.js full ;;
+  esac
+done
+exit 0

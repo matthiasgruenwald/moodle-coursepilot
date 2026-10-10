@@ -11,7 +11,8 @@
     "test:ci": "node scripts/ci/run-js-tests.js",
     "test:e2e": "playwright test",
     "build:native-release": "node scripts/build-native-release.js",
-    "gate": "node scripts/gate/gate.js"
+    "gate": "node scripts/gate/gate.js",
+    "hooks:install": "git config core.hooksPath scripts/githooks"
   },
   "license": "AGPL-3.0-or-later",
   "devDependencies": {

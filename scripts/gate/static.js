@@ -2,7 +2,8 @@
  * Statische Pruefungen des Gates (Spec 0029): moodle-cs, phpdoc, savepoints,
  * Mustache und ESLint ueber moodle-plugin-ci, PHPStan Level 6 mit Baseline und
  * die Covers-Pflicht fuer Testklassen und englische Kommentare (english.js). Dieses Modul enthaelt die Parser und
- * Runner; gate.js bindet es ein. Befunde werden berichtet; nur deptrac-Schichtbefunde blockieren.
+ * Runner; gate.js bindet es ein. Jeder Befund blockiert, ausser `deptrac-baselined` (bekannter Verstoss
+ * aus der Baseline, nur Bericht).
  *
  * Befundzeile: `datei:zeile: regel: text` (wie die Messwerte in gate.js).
  */
@@ -287,7 +288,8 @@ function buildStaticReport(results, errors) {
       parts.push(`${name.replace('-', '_')}=${found.length}`);
     }
   }
-  return { lines, results, errors, summary: `summary: static ${parts.join(' ')}${errors.length ? ` tool_errors=${errors.length}` : ''}` };
+  const blocking = all.filter(f => f.rule !== 'deptrac-baselined').length;
+  return { lines, results, errors, blocking, summary: `summary: static ${parts.join(' ')}${errors.length ? ` tool_errors=${errors.length}` : ''}` };
 }
 
 /** PHPStan-Baseline neu erzeugen und ins Repo kopieren. */

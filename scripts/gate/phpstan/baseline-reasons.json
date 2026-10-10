@@ -19,5 +19,6 @@
   "booleanOr.alwaysFalse": "Rückgabe von qformat_xml::readquestions ist in Moodle als array dokumentiert, kann aber false liefern; die Prüfung bleibt als Absicherung.",
   "function.impossibleType": "Die Prüfung gilt dem Laufzeitwert aus Nutzereingabe bzw. einem Strukturtest; PHPStan kennt nur den statischen Array-Typ der Hilfsmethode.",
   "booleanOr.rightAlwaysTrue": "Redundante Prüfung auf eine bestätigte Aktion; der zweite Operand dient der Lesbarkeit der Ablaufbedingung.",
-  "missingType.parameter": "Daten-Provider-Parameter eines Tests nimmt je Fall unterschiedliche Typen entgegen."
+  "missingType.parameter": "Daten-Provider-Parameter eines Tests nimmt je Fall unterschiedliche Typen entgegen.",
+  "constant.notFound": "COMPLETION_CRITERIA_TYPE_ACTIVITY steht in completion/criteria/completion_criteria.php, das Moodle erst zur Laufzeit lädt; PHPStan scannt diese Datei nicht. Kein Laufzeitrisiko."
 }
