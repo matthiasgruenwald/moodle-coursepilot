@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 #[CoversClass(update_quiz_settings::class)]
 final class update_quiz_settings_test extends \advanced_testcase {
-
     /**
      * Moodle 5.3's informational due date survives a later unrelated patch.
      */
@@ -44,11 +43,15 @@ final class update_quiz_settings_test extends \advanced_testcase {
             'course' => $course->id, 'timelimit' => 600,
         ]);
         $duedate = time() + DAYSECS;
-        $result = external_api::clean_returnvalue(update_quiz_settings::execute_returns(),
-            update_quiz_settings::execute($quiz->cmid, json_encode(['duedate' => $duedate])));
+        $result = external_api::clean_returnvalue(
+            update_quiz_settings::execute_returns(),
+            update_quiz_settings::execute($quiz->cmid, json_encode(['duedate' => $duedate]))
+        );
         $this->assertSame('duedate', $result['changes'][0]['field']);
-        external_api::clean_returnvalue(update_quiz_settings::execute_returns(),
-            update_quiz_settings::execute($quiz->cmid, json_encode(['name' => 'Neuer Titel'])));
+        external_api::clean_returnvalue(
+            update_quiz_settings::execute_returns(),
+            update_quiz_settings::execute($quiz->cmid, json_encode(['name' => 'Neuer Titel']))
+        );
         $after = $DB->get_record('quiz', ['id' => $quiz->id], '*', MUST_EXIST);
         $this->assertEquals($duedate, $after->duedate);
         $this->assertEquals(600, $after->timelimit);
@@ -70,8 +73,10 @@ final class update_quiz_settings_test extends \advanced_testcase {
             'course' => $course->id, 'timeopen' => $open, 'duedate' => $open + 600, 'timeclose' => $open + 1200,
         ]);
         $before = $DB->get_record('quiz', ['id' => $quiz->id], '*', MUST_EXIST);
-        foreach ([['duedate' => $open], ['duedate' => $open + 1201],
-                ['timeopen' => $open + 600], ['timeclose' => $open + 599]] as $patch) {
+        foreach (
+            [['duedate' => $open], ['duedate' => $open + 1201],
+                ['timeopen' => $open + 600], ['timeclose' => $open + 599]] as $patch
+        ) {
             try {
                 $this->patch($quiz->cmid, $patch);
                 $this->fail('Invalid date ordering must be rejected.');
@@ -162,7 +167,8 @@ final class update_quiz_settings_test extends \advanced_testcase {
         $this->assertSame(8.125, $settings['gradepass']);
         $this->assertEquals(10, $settings['grademax']);
         $catalog = external_api::clean_returnvalue(
-            get_course_catalog::execute_returns(), get_course_catalog::execute($course->id, -1, 'quiz', 'full')
+            get_course_catalog::execute_returns(),
+            get_course_catalog::execute($course->id, -1, 'quiz', 'full')
         );
         foreach ($catalog['sections'] as $section) {
             foreach ($section['modules'] as $module) {
@@ -574,5 +580,4 @@ final class update_quiz_settings_test extends \advanced_testcase {
 
         $this->assertSame(2, (int) $DB->get_field('quiz', 'attempts', ['id' => $quiz->id]));
     }
-
 }

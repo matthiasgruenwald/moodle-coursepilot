@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -53,7 +53,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class write_gate {
-
     /** @var string Configuration component for get_config()/set_config(). */
     private const CONFIG_COMPONENT = 'local_coursepilot';
 
@@ -113,7 +112,7 @@ final class write_gate {
         $violations = self::cached_violations($modname);
         if ($violations) {
             $state = 'needs_work';
-        } elseif ((int) $CFG->branch > $catalogclass::reviewed_up_to_major()) {
+        } else if ((int) $CFG->branch > $catalogclass::reviewed_up_to_major()) {
             // Newer major version than the last manual review - machine-green,
             // but the residual risk that cannot be checked (value lists,
             // combination rules, side effects) has not yet been reviewed.

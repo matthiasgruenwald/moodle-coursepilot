@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -34,8 +34,13 @@ final class glossary_entry_writer {
      * @param \context_module $context
      * @return array
      */
-    public static function add(array $input, \stdClass $course, \stdClass $cm, \stdClass $glossary,
-        \context_module $context): array {
+    public static function add(
+        array $input,
+        \stdClass $course,
+        \stdClass $cm,
+        \stdClass $glossary,
+        \context_module $context
+    ): array {
         global $CFG, $DB;
         try {
             require_once($CFG->libdir . '/formslib.php');
@@ -57,8 +62,10 @@ final class glossary_entry_writer {
             if ($input['tags'] && !\core_tag_tag::is_enabled('mod_glossary', 'glossary_entries')) {
                 throw new \moodle_exception('glossaryentrytagsdisabled', 'local_coursepilot');
             }
-            if ($input['tags'] && \core_tag_area::get_showstandard('mod_glossary', 'glossary_entries')
-                == \core_tag_tag::STANDARD_ONLY) {
+            if (
+                $input['tags'] && \core_tag_area::get_showstandard('mod_glossary', 'glossary_entries')
+                == \core_tag_tag::STANDARD_ONLY
+            ) {
                 $collection = \core_tag_area::get_collection('mod_glossary', 'glossary_entries');
                 foreach ($input['tags'] as $tagname) {
                     $tag = \core_tag_tag::get_by_name($collection, clean_param($tagname, PARAM_TAG), 'id, isstandard');
@@ -81,8 +88,10 @@ final class glossary_entry_writer {
                     'aliases' => implode("\n", $input['aliases']),
                     'categories' => self::categories($input['categories'], $glossary, $context),
                 ];
-                foreach (['usedynalink' => 'glossary_linkentries', 'casesensitive' => 'glossary_casesensitive',
-                    'fullmatch' => 'glossary_fullmatch'] as $field => $setting) {
+                foreach (
+                    ['usedynalink' => 'glossary_linkentries', 'casesensitive' => 'glossary_casesensitive',
+                    'fullmatch' => 'glossary_fullmatch'] as $field => $setting
+                ) {
                     $entry->$field = $glossary->usedynalink ? ($input[$field] ?? $CFG->$setting) : $CFG->$setting;
                 }
                 self::files($input, $entry, $course, $context);
@@ -106,8 +115,14 @@ final class glossary_entry_writer {
     }
 
     /** Explicit state follows mod/glossary/approve.php, limited to this new entry. */
-    private static function approval(array $input, \stdClass $entry, \stdClass $course, \stdClass $cm,
-        \stdClass $glossary, \context_module $context): void {
+    private static function approval(
+        array $input,
+        \stdClass $entry,
+        \stdClass $course,
+        \stdClass $cm,
+        \stdClass $glossary,
+        \context_module $context
+    ): void {
         global $DB;
         if (!array_key_exists('approved', $input) || (bool) $entry->approved === (bool) $input['approved']) {
             return;
@@ -135,18 +150,34 @@ final class glossary_entry_writer {
     }
 
     /** Copy teacher material through the shared location-aware draft path. */
-    private static function files(array $input, \stdClass $entry, \stdClass $course,
-        \context_module $context): void {
+    private static function files(
+        array $input,
+        \stdClass $entry,
+        \stdClass $course,
+        \context_module $context
+    ): void {
         global $CFG;
         foreach (['definition_files' => 'entry', 'attachment_files' => 'attachment'] as $field => $area) {
             if (!$input[$field]) {
                 continue;
             }
             material_files::require_manage_own_files();
-            $draftid = material_files::resolve_into_draft($context->id, 'mod_glossary', $area, 0,
-                $input[$field], $input['location']);
-            $files = get_file_storage()->get_area_files(material_files::own_context()->id, 'user', 'draft',
-                $draftid, 'id', false);
+            $draftid = material_files::resolve_into_draft(
+                $context->id,
+                'mod_glossary',
+                $area,
+                0,
+                $input[$field],
+                $input['location']
+            );
+            $files = get_file_storage()->get_area_files(
+                material_files::own_context()->id,
+                'user',
+                'draft',
+                $draftid,
+                'id',
+                false
+            );
             $maxbytes = get_max_upload_file_size($CFG->maxbytes, $course->maxbytes);
             if (count($files) > 99) {
                 throw new \moodle_exception('glossaryentryfilelimit', 'local_coursepilot');

@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -31,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
 #[CoversClass(skill_corpus::class)]
 #[CoversClass(\local_coursepilot\tool_registry::class)]
 final class skill_corpus_test extends \advanced_testcase {
-
     /**
      * list() returns names, kinds, triggers and sizes without content.
      */
@@ -233,7 +232,8 @@ final class skill_corpus_test extends \advanced_testcase {
     }
     public function test_graphics_reference_exposes_source_header_and_composition_rules(): void {
         $content = preg_replace('/\s+/u', ' ', skill_corpus::get('graphics')['content']);
-        foreach ([
+        foreach (
+            [
             'Add a source header by default for textbook illustrations',
             'The teacher can opt out of the source header',
             'abbreviation is unambiguous from the filename or context',
@@ -247,7 +247,8 @@ final class skill_corpus_test extends \advanced_testcase {
             'one alt text',
             'the same page',
             'a header on the first part',
-        ] as $rule) {
+            ] as $rule
+        ) {
             $this->assertStringContainsString($rule, $content);
         }
         $this->assertStringContainsString('coursepilot_compose_material_file', $content);

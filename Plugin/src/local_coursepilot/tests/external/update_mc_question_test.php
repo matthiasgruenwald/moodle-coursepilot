@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -137,7 +137,11 @@ final class update_mc_question_test extends \advanced_testcase {
 
         $newpenalty = $DB->get_field('question', 'penalty', ['id' => $result['questionid']], MUST_EXIST);
         $newoptions = $DB->get_record(
-            'qtype_multichoice_options', ['questionid' => $result['questionid']], '*', MUST_EXIST);
+            'qtype_multichoice_options',
+            ['questionid' => $result['questionid']],
+            '*',
+            MUST_EXIST
+        );
 
         $this->assertEqualsWithDelta(0.5, (float) $newpenalty, 0.0001, 'penalty blieb erhalten.');
         $this->assertEquals(0, $newoptions->shuffleanswers, 'shuffleanswers blieb erhalten.');
@@ -165,12 +169,17 @@ final class update_mc_question_test extends \advanced_testcase {
         $neighbour = create_mc_question::execute($categoryid, 'Nachbarfrage', 'Frage B', 'single', $answers);
         $neighbour = external_api::clean_returnvalue(create_mc_question::execute_returns(), $neighbour);
         $neighbouridnumber = $DB->get_field(
-            'question_bank_entries', 'idnumber', ['id' => $neighbour['questionbankentryid']], MUST_EXIST);
+            'question_bank_entries',
+            'idnumber',
+            ['id' => $neighbour['questionbankentryid']],
+            MUST_EXIST
+        );
 
         // Simulate an imported question with no idnumber.
         $DB->set_field('question_bank_entries', 'idnumber', null, ['id' => $target['questionbankentryid']]);
         $this->assertEmpty(
-            $DB->get_field('question_bank_entries', 'idnumber', ['id' => $target['questionbankentryid']], MUST_EXIST));
+            $DB->get_field('question_bank_entries', 'idnumber', ['id' => $target['questionbankentryid']], MUST_EXIST)
+        );
 
         $result = update_mc_question::execute(
             $target['questionid'],
@@ -183,12 +192,20 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->assertSame($target['questionbankentryid'], $result['questionbankentryid'], 'New version, no new entry.');
 
         $newidnumber = $DB->get_field(
-            'question_bank_entries', 'idnumber', ['id' => $target['questionbankentryid']], MUST_EXIST);
+            'question_bank_entries',
+            'idnumber',
+            ['id' => $target['questionbankentryid']],
+            MUST_EXIST
+        );
         $this->assertNotEmpty($newidnumber, 'Exactly this one question now has an idnumber.');
 
         // The neighboring question remains unchanged.
         $unchangedneighbouridnumber = $DB->get_field(
-            'question_bank_entries', 'idnumber', ['id' => $neighbour['questionbankentryid']], MUST_EXIST);
+            'question_bank_entries',
+            'idnumber',
+            ['id' => $neighbour['questionbankentryid']],
+            MUST_EXIST
+        );
         $this->assertSame($neighbouridnumber, $unchangedneighbouridnumber);
     }
 
@@ -311,7 +328,10 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->upload_material('diagramm.png', 'Version-1');
 
         $created = create_mc_question::execute(
-            $categoryid, 'Frage', 'Text', 'single',
+            $categoryid,
+            'Frage',
+            'Text',
+            'single',
             [
                 ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
                 ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],
@@ -347,7 +367,10 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->upload_material('arbeitsblatt.pdf', 'PDF-Inhalt');
 
         $created = create_mc_question::execute(
-            $categoryid, 'Frage', 'Text', 'single',
+            $categoryid,
+            'Frage',
+            'Text',
+            'single',
             [
                 ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
                 ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],
@@ -383,7 +406,10 @@ final class update_mc_question_test extends \advanced_testcase {
         [, $categoryid] = $this->setup_course_and_category();
 
         $created = create_mc_question::execute(
-            $categoryid, 'Frage', 'Text', 'single',
+            $categoryid,
+            'Frage',
+            'Text',
+            'single',
             [
                 ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
                 ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],

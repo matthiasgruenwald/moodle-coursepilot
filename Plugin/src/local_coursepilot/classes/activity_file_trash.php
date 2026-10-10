@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -32,7 +32,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class activity_file_trash {
-
     /** @var string Dedicated component for internal storage, without a download route. */
     public const COMPONENT = 'local_coursepilot';
 
@@ -52,14 +51,16 @@ final class activity_file_trash {
         $fs = get_file_storage();
         $filepath = '/' . $cmid . '/' . $file->get_pathnamehash() . '/';
 
-        if ($fs->file_exists(
-            $file->get_contextid(),
-            self::COMPONENT,
-            self::FILEAREA,
-            $cmid,
-            $filepath,
-            $file->get_filename()
-        )) {
+        if (
+            $fs->file_exists(
+                $file->get_contextid(),
+                self::COMPONENT,
+                self::FILEAREA,
+                $cmid,
+                $filepath,
+                $file->get_filename()
+            )
+        ) {
             // Already preserved, e.g. a second write attempt after a failure.
             return;
         }

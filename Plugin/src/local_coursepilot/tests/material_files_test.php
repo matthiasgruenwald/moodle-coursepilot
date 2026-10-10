@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -26,7 +26,6 @@ namespace local_coursepilot;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(material_files::class)]
 final class material_files_test extends \advanced_testcase {
-
     public function test_resolve_directory_defaults_to_root(): void {
         $this->resetAfterTest();
         $this->assertSame('/coursepilot-material/', material_files::resolve_directory(''));
@@ -597,7 +596,13 @@ final class material_files_test extends \advanced_testcase {
         );
 
         $this->assertNotFalse(get_file_storage()->get_file(
-            material_files::own_context()->id, 'user', 'draft', $draftitemid, '/', 'gross.pdf'));
+            material_files::own_context()->id,
+            'user',
+            'draft',
+            $draftitemid,
+            '/',
+            'gross.pdf'
+        ));
     }
 
     /**
@@ -624,7 +629,13 @@ final class material_files_test extends \advanced_testcase {
         );
 
         $this->assertNotFalse(get_file_storage()->get_file(
-            material_files::own_context()->id, 'user', 'draft', $draftitemid, '/', 'blatt.pdf'));
+            material_files::own_context()->id,
+            'user',
+            'draft',
+            $draftitemid,
+            '/',
+            'blatt.pdf'
+        ));
     }
 
     /**

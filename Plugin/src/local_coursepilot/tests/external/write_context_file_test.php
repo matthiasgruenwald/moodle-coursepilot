@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -874,7 +874,7 @@ final class write_context_file_test extends \advanced_testcase {
         // create/overwrite classification. fill_storage() instead blocks MKCOL
         // before existence is known; test_external_storage_full_records_ausstand_with_five_part_message
         // uses that behavior for the creation case.
-        $onlyputfails = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
+        $onlyputfails = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
             public function __construct(private readonly fake_webdav_transport $inner) {
             }
 
@@ -991,7 +991,7 @@ final class write_context_file_test extends \advanced_testcase {
         [$user, $fake] = $this->set_up_external_context();
         $fake->seed_folder('/Coursepilot/Kontext');
 
-        $onlyputfails401 = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
+        $onlyputfails401 = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
             public function __construct(private readonly fake_webdav_transport $inner) {
             }
 
@@ -1031,7 +1031,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         // Only PUT fails. Existence and personal-data PROPFIND reads work so
         // the request reaches the actual write rather than failing on a read.
-        $onlyputfails = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
+        $onlyputfails = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
             public function __construct(private readonly fake_webdav_transport $inner) {
             }
 
@@ -1071,7 +1071,7 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_folder('/Coursepilot/Kontext');
 
         // Only PUT fails, see test_unreachable_classifies_as_spaeter_nachtragen().
-        $onlyputfails = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
+        $onlyputfails = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
             public function __construct(private readonly fake_webdav_transport $inner) {
             }
 
@@ -1374,14 +1374,16 @@ final class write_context_file_test extends \advanced_testcase {
         $this->assertStringContainsString('keinesfalls an einem anderen Ort ablegen', $string['pendingwritefailed']);
 
         // Teacher-facing German text never calls pending writes Ausstand (#516, CONTEXT.md).
-        foreach ([
+        foreach (
+            [
             'pendingwritefailed',
             'pendingnotewritefailed',
             'pendingnotequotaexceeded',
             'pendingunknown',
             'pendingdismissed',
             'storagelocationmarkerpending',
-        ] as $key) {
+            ] as $key
+        ) {
             $this->assertStringNotContainsString('Ausstand', $string[$key], "\"$key\" must not contain \"Ausstand\".");
         }
 
@@ -1506,7 +1508,7 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_folder('/Coursepilot/Kontext');
         $fake->seed_file('/Coursepilot/Kontext/lerngruppe.md', $this->marked_content());
 
-        $getfails = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
+        $getfails = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
             public function __construct(private readonly fake_webdav_transport $inner) {
             }
 

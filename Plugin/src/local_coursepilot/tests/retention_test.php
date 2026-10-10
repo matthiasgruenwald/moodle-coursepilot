@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -31,7 +31,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(observer::class)]
 #[CoversClass(\local_coursepilot\task\purge_history::class)]
 final class retention_test extends \advanced_testcase {
-
     /**
      * Create a course, page activity and editing teacher.
      *
@@ -284,8 +283,10 @@ final class retention_test extends \advanced_testcase {
         $this->assertFalse($DB->record_exists('local_coursepilot_cm_version_file', ['versionid' => $oldversion]));
         $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['id' => $own]));
         $this->assertTrue($DB->record_exists('local_coursepilot_cm_file', ['id' => $shared]));
-        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version_file',
-            ['versionid' => $keptversion, 'fileid' => $shared]));
+        $this->assertTrue($DB->record_exists(
+            'local_coursepilot_cm_version_file',
+            ['versionid' => $keptversion, 'fileid' => $shared]
+        ));
 
         retention::purge_cm((int) $other->cmid);
         $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['id' => $shared]));
@@ -313,10 +314,15 @@ final class retention_test extends \advanced_testcase {
         $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['id' => $unknown]));
         $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['id' => $orphan]));
         $this->assertFalse($DB->record_exists('local_coursepilot_cm_version_file', ['fileid' => $shareddisallowed]));
-        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version_file',
-            ['versionid' => $versionid, 'fileid' => $allowed]));
-        $this->assertEquals($versions, $DB->get_records('local_coursepilot_cm_version', null, 'id'),
-            'Unexpired states stay unchanged.');
+        $this->assertTrue($DB->record_exists(
+            'local_coursepilot_cm_version_file',
+            ['versionid' => $versionid, 'fileid' => $allowed]
+        ));
+        $this->assertEquals(
+            $versions,
+            $DB->get_records('local_coursepilot_cm_version', null, 'id'),
+            'Unexpired states stay unchanged.'
+        );
     }
 
     /** Fresh install registers the task and the indexes it relies on. */
@@ -325,9 +331,13 @@ final class retention_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->assertNotNull(\core\task\manager::get_scheduled_task(\local_coursepilot\task\purge_history::class));
         $dbman = $DB->get_manager();
-        $this->assertTrue($dbman->index_exists(new \xmldb_table('local_coursepilot_cm_version'),
-            new \xmldb_index('timecreated', XMLDB_INDEX_NOTUNIQUE, ['timecreated'])));
-        $this->assertTrue($dbman->index_exists(new \xmldb_table('local_coursepilot_cm_version_file'),
-            new \xmldb_index('fileid', XMLDB_INDEX_NOTUNIQUE, ['fileid'])));
+        $this->assertTrue($dbman->index_exists(
+            new \xmldb_table('local_coursepilot_cm_version'),
+            new \xmldb_index('timecreated', XMLDB_INDEX_NOTUNIQUE, ['timecreated'])
+        ));
+        $this->assertTrue($dbman->index_exists(
+            new \xmldb_table('local_coursepilot_cm_version_file'),
+            new \xmldb_index('fileid', XMLDB_INDEX_NOTUNIQUE, ['fileid'])
+        ));
     }
 }

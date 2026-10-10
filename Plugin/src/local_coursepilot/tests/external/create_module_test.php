@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -149,7 +149,13 @@ final class create_module_test extends \advanced_testcase {
         $this->assertEquals(0, $after['nosubmissions'], 'nosubmissions must be 0 - at least one submission type active.');
         $this->assertSame('Beschreibung', $after['intro']);
         $this->assertSame([], get_file_storage()->get_area_files(
-            \context_module::instance($result['cmid'])->id, 'mod_assign', 'intro', 0, 'filename', false));
+            \context_module::instance($result['cmid'])->id,
+            'mod_assign',
+            'intro',
+            0,
+            'filename',
+            false
+        ));
         $this->assertNotContains('introimages', array_column($result['created_fields'], 'field'));
     }
 
@@ -215,8 +221,14 @@ final class create_module_test extends \advanced_testcase {
         $this->assertSame('Bildinhalt 581', $file->get_content());
         $this->assertSame(sha1('Bildinhalt 581'), $file->get_contenthash());
         $this->assertStringContainsString('@@PLUGINFILE@@/diagramm.png', $this->read($result['cmid'])['intro']);
-        $rendered = file_rewrite_pluginfile_urls($this->read($result['cmid'])['intro'], 'pluginfile.php',
-            $context->id, 'mod_assign', 'intro', 0);
+        $rendered = file_rewrite_pluginfile_urls(
+            $this->read($result['cmid'])['intro'],
+            'pluginfile.php',
+            $context->id,
+            'mod_assign',
+            'intro',
+            0
+        );
         $this->assertStringContainsString('/pluginfile.php/' . $context->id . '/mod_assign/intro/0/diagramm.png', $rendered);
         $this->assertStringNotContainsString('draftfile.php', $rendered);
         $fields = array_column($result['created_fields'], 'value_json', 'field');
@@ -287,8 +299,13 @@ final class create_module_test extends \advanced_testcase {
         $this->resetAfterTest();
         [$course, $teacher] = $this->course_with_editing_teacher();
         $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
-        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid,
-            \context_user::instance($teacher->id)->id, true);
+        assign_capability(
+            'moodle/user:manageownfiles',
+            CAP_PROHIBIT,
+            $roleid,
+            \context_user::instance($teacher->id)->id,
+            true
+        );
 
         try {
             $this->create($course->id, 0, 'assign', [
@@ -944,8 +961,14 @@ final class create_module_test extends \advanced_testcase {
 
         $result = external_api::clean_returnvalue(
             create_module::execute_returns(),
-            create_module::execute($course->id, 0, 'assign', json_encode($felder),
-                \local_coursepilot\material_files::LOCATION_STORE, ['attemptreopenmethod'])
+            create_module::execute(
+                $course->id,
+                0,
+                'assign',
+                json_encode($felder),
+                \local_coursepilot\material_files::LOCATION_STORE,
+                ['attemptreopenmethod']
+            )
         );
         $this->assertSame('manual', $this->read($result['cmid'])['attemptreopenmethod']);
     }

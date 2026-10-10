@@ -1,5 +1,18 @@
 <?php
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
 
@@ -124,8 +137,11 @@ final class compose_material_file_test extends \advanced_testcase {
             imagedestroy($original);
             $original = imagecreatefromstring($second);
             $this->assert_pixels($original, $image, $expected[2], $expected[3]);
-            $this->assertSame(0xffffff, imagecolorat($image, $layout === 'vertical' ? 0 : 210,
-                $layout === 'vertical' ? 140 : 0));
+            $this->assertSame(0xffffff, imagecolorat(
+                $image,
+                $layout === 'vertical' ? 0 : 210,
+                $layout === 'vertical' ? 140 : 0
+            ));
             imagedestroy($original);
             imagedestroy($image);
         }
@@ -177,7 +193,10 @@ final class compose_material_file_test extends \advanced_testcase {
 
     #[\PHPUnit\Framework\Attributes\DataProvider('failure_cases')]
     public function test_failures_leave_no_new_file_and_preserve_existing_target(
-        array $parts, string $arrangement, string $target, string $errorcode
+        array $parts,
+        string $arrangement,
+        string $target,
+        string $errorcode
     ): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
@@ -217,8 +236,11 @@ final class compose_material_file_test extends \advanced_testcase {
         $this->store('page.png', $this->png(300, 40));
         $images = [];
         foreach (['umlaut' => 'Ökologie S. 12', 'plain' => 'Okologie S. 12'] as $name => $text) {
-            compose_material_file::execute([['sourcepath' => 'page.png', 'source_header_text' => $text]],
-                'vertical', $name . '.png');
+            compose_material_file::execute(
+                [['sourcepath' => 'page.png', 'source_header_text' => $text]],
+                'vertical',
+                $name . '.png'
+            );
             $images[$name] = $this->result_image($name . '.png');
         }
         // Independent visual signature of Ö: two separated ink runs above its round body.
@@ -234,8 +256,10 @@ final class compose_material_file_test extends \advanced_testcase {
             $dotrows += (int) ($runs === 2);
         }
         $this->assertGreaterThanOrEqual(2, $dotrows);
-        $this->assertNotSame(material_area::read_for_location('workbench', 'plain.png')['contenthash'],
-            material_area::read_for_location('workbench', 'umlaut.png')['contenthash']);
+        $this->assertNotSame(
+            material_area::read_for_location('workbench', 'plain.png')['contenthash'],
+            material_area::read_for_location('workbench', 'umlaut.png')['contenthash']
+        );
         foreach ($images as $image) {
             imagedestroy($image);
         }
@@ -243,8 +267,10 @@ final class compose_material_file_test extends \advanced_testcase {
 
     public function test_tool_is_registered_as_writing(): void {
         $this->assertTrue(\local_coursepilot\tool_registry::is_write('coursepilot_compose_material_file'));
-        $this->assertSame('local_coursepilot_compose_material_file',
-            \local_coursepilot\privacy_surface::function_for_tool('coursepilot_compose_material_file'));
+        $this->assertSame(
+            'local_coursepilot_compose_material_file',
+            \local_coursepilot\privacy_surface::function_for_tool('coursepilot_compose_material_file')
+        );
         $this->assertSame('write', \local_coursepilot\tool_registry::service_functions()['local_coursepilot_compose_material_file']['type']);
     }
 }

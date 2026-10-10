@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\privacy;
@@ -33,7 +33,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(provider::class)]
 final class history_provider_test extends \core_privacy\tests\provider_testcase {
-
     /** @var \stdClass */
     private \stdClass $author;
 
@@ -204,8 +203,11 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
         $this->assertSame(1, $this->count_versions($this->other->id, $this->cm));
         $this->assertSame(1, $this->count_versions($this->author->id, $this->othercm));
 
-        provider::delete_data_for_users(new approved_userlist($ctx, 'local_coursepilot',
-            [$this->author->id, $this->other->id]));
+        provider::delete_data_for_users(new approved_userlist(
+            $ctx,
+            'local_coursepilot',
+            [$this->author->id, $this->other->id]
+        ));
 
         $this->assertSame(0, $this->count_versions($this->other->id, $this->cm));
         $this->assertSame(1, $this->count_versions($this->author->id, $this->othercm));
@@ -229,11 +231,17 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
         global $DB;
         $before = $DB->count_records('local_coursepilot_cm_version');
 
-        provider::delete_data_for_user(new approved_contextlist($this->author, 'local_coursepilot',
-            [\context_system::instance()->id, \context_user::instance($this->author->id)->id]));
+        provider::delete_data_for_user(new approved_contextlist(
+            $this->author,
+            'local_coursepilot',
+            [\context_system::instance()->id, \context_user::instance($this->author->id)->id]
+        ));
         provider::delete_data_for_all_users_in_context(\context_course::instance($this->cm->course));
-        provider::delete_data_for_users(new approved_userlist(\context_system::instance(), 'local_coursepilot',
-            [$this->author->id]));
+        provider::delete_data_for_users(new approved_userlist(
+            \context_system::instance(),
+            'local_coursepilot',
+            [$this->author->id]
+        ));
 
         $this->assertSame($before, $DB->count_records('local_coursepilot_cm_version'));
     }
@@ -259,8 +267,10 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
             }
         }
         $fields = array_keys($tables['local_coursepilot_cm_version']->get_privacy_fields());
-        foreach (['userid', 'version', 'source', 'sourcecmid', 'moduleinfo_json', 'coursemodule_json',
-                'arrangement_json'] as $field) {
+        foreach (
+            ['userid', 'version', 'source', 'sourcecmid', 'moduleinfo_json', 'coursemodule_json',
+                'arrangement_json'] as $field
+        ) {
             $this->assertContains($field, $fields);
         }
         $summary = get_string('privacy:metadata:cm_version', 'local_coursepilot');

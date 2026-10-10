@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -33,7 +33,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(external_schema_converter::class)]
 #[CoversClass(\local_coursepilot\tool_registry::class)]
 final class tool_schema_contract_test extends \advanced_testcase {
-
     public function test_tool_registration_contains_no_literal_descriptions_or_schema(): void {
         $registry = new \ReflectionClass(tool_registry::class);
         $tools = $registry->getReflectionConstant('TOOLS')->getValue();
@@ -111,8 +110,11 @@ final class tool_schema_contract_test extends \advanced_testcase {
             foreach (array_values($declarations) as $position => $declaration) {
                 $key = array_keys($declarations)[$position];
                 $argument = $arguments[$position];
-                $this->assertSame(str_replace('_', '', $key), str_replace('_', '', strtolower($argument->getName())),
-                    "{$name}: parameter {$key} does not match execute position {$position}");
+                $this->assertSame(
+                    str_replace('_', '', $key),
+                    str_replace('_', '', strtolower($argument->getName())),
+                    "{$name}: parameter {$key} does not match execute position {$position}"
+                );
                 if ($declaration->required === VALUE_DEFAULT && $argument->isDefaultValueAvailable()) {
                     $this->assertSame($declaration->default, $argument->getDefaultValue(), "{$name}: {$key} default");
                 }
@@ -178,15 +180,24 @@ final class tool_schema_contract_test extends \advanced_testcase {
         $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
         foreach (\local_coursepilot\catalog\registry::known_modnames() as $modname) {
             $catalog = \local_coursepilot\catalog\registry::for($modname);
-            $fields = array_merge($catalog::fields(), $catalog::pseudofields(),
-                \local_coursepilot\catalog\shared_block::fields(), \local_coursepilot\catalog\shared_block::pseudofields());
+            $fields = array_merge(
+                $catalog::fields(),
+                $catalog::pseudofields(),
+                \local_coursepilot\catalog\shared_block::fields(),
+                \local_coursepilot\catalog\shared_block::pseudofields()
+            );
             foreach ($fields as $field) {
                 foreach ([$field->type, $field->meaning, $field->source] as $text) {
                     $this->assertDoesNotMatchRegularExpression($forbidden, $text, "{$modname}: {$field->name}");
                 }
             }
-            foreach (array_merge($catalog::combination_rules(), $catalog::side_effects(),
-                    \local_coursepilot\catalog\shared_block::side_effects()) as $text) {
+            foreach (
+                array_merge(
+                    $catalog::combination_rules(),
+                    $catalog::side_effects(),
+                    \local_coursepilot\catalog\shared_block::side_effects()
+                ) as $text
+            ) {
                 $this->assertDoesNotMatchRegularExpression($forbidden, $text, $modname);
             }
         }
@@ -241,8 +252,10 @@ final class tool_schema_contract_test extends \advanced_testcase {
             $keys[] = $key;
             if ($description instanceof external_single_structure) {
                 $keys = array_merge($keys, self::structure_keys($description));
-            } else if ($description instanceof external_multiple_structure
-                && $description->content instanceof external_single_structure) {
+            } else if (
+                $description instanceof external_multiple_structure
+                && $description->content instanceof external_single_structure
+            ) {
                 $keys = array_merge($keys, self::structure_keys($description->content));
             }
         }

@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -39,7 +39,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class get_sections extends external_api {
-
     /**
      * @return external_function_parameters
      */
@@ -64,7 +63,8 @@ class get_sections extends external_api {
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
 
-        $sections = $DB->get_records('course_sections',
+        $sections = $DB->get_records(
+            'course_sections',
             ['course' => $params['courseid']],
             'section ASC',
             'id, section, name, summary, visible'
@@ -90,11 +90,11 @@ class get_sections extends external_api {
     public static function execute_returns(): external_multiple_structure {
         return new external_multiple_structure(
             new external_single_structure([
-                'id'         => new external_value(PARAM_INT,  'Section DB ID'),
-                'sectionnum' => new external_value(PARAM_INT,  'Section number (0-based)'),
+                'id'         => new external_value(PARAM_INT, 'Section DB ID'),
+                'sectionnum' => new external_value(PARAM_INT, 'Section number (0-based)'),
                 'name'       => new external_value(PARAM_TEXT, 'Section name'),
-                'summary'    => new external_value(PARAM_RAW,  'Section summary HTML'),
-                'visible'    => new external_value(PARAM_INT,  'Visible flag'),
+                'summary'    => new external_value(PARAM_RAW, 'Section summary HTML'),
+                'visible'    => new external_value(PARAM_INT, 'Visible flag'),
             ])
         );
     }

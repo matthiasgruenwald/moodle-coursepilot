@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
@@ -117,7 +117,8 @@ if ($hassiteconfig) {
     // Anonymous OAuth registration (#642) and CIMD fetch (#643) budgets: finite site-wide and
     // per-source limits per window; no unlimited option, non-positive values
     // fall back defensively, see local_coursepilot\oauth_budget::setting().
-    foreach ([
+    foreach (
+        [
         'oauthregistersitelimit' => \local_coursepilot\oauth_lib::REGISTRATION_SITE_LIMIT,
         'oauthregistersourcelimit' => \local_coursepilot\oauth_lib::REGISTRATION_SOURCE_LIMIT,
         'oauthregisterwindow' => \local_coursepilot\oauth_lib::REGISTRATION_WINDOW,
@@ -125,7 +126,8 @@ if ($hassiteconfig) {
         'oauthcimdsitelimit' => \local_coursepilot\oauth_lib::CIMD_SITE_LIMIT,
         'oauthcimdsourcelimit' => \local_coursepilot\oauth_lib::CIMD_SOURCE_LIMIT,
         'oauthcimdwindow' => \local_coursepilot\oauth_lib::CIMD_WINDOW,
-    ] as $name => $default) {
+        ] as $name => $default
+    ) {
         $settings->add(new admin_setting_configtext(
             'local_coursepilot/' . $name,
             get_string('setting' . $name, 'local_coursepilot'),

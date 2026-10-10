@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -59,7 +59,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class update_module_settings extends external_api {
-
     /**
      * The material reference pseudofields (write_options() "material_reference_fields")
      * of an activity type, for {@see \local_coursepilot\external\restore_activity_version},
@@ -116,8 +115,14 @@ class update_module_settings extends external_api {
         $course = get_course((int) $cm->course);
         require_once($CFG->dirroot . '/course/modlib.php');
         [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
-        pseudofield_carry_forward::apply($cm->modname, registry::for($cm->modname), $moduleinfo,
-            self::read_settings($cmid), $cm, [$fieldname => $draftitemid]);
+        pseudofield_carry_forward::apply(
+            $cm->modname,
+            registry::for($cm->modname),
+            $moduleinfo,
+            self::read_settings($cmid),
+            $cm,
+            [$fieldname => $draftitemid]
+        );
         $moduleinfo->{$fieldname} = $draftitemid;
         \update_moduleinfo($cm, $moduleinfo, $course);
     }

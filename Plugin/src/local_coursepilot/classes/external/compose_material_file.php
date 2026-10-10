@@ -1,5 +1,18 @@
 <?php
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
 
@@ -34,14 +47,24 @@ class compose_material_file extends external_api {
                     'x1' => new external_value(PARAM_FLOAT, 'Right edge, relative 0-1'),
                     'y1' => new external_value(PARAM_FLOAT, 'Bottom edge, relative 0-1'),
                 ], 'Optional crop from the full-resolution original, using the same coordinates as crop_material_file', VALUE_OPTIONAL),
-                'source_header_text' => new external_value(PARAM_TEXT,
-                    'Optional source reference rendered above this part in the fixed house style', VALUE_DEFAULT, ''),
-                'expected_contenthash' => new external_value(PARAM_ALPHANUMEXT,
-                    'Optional SHA-1 of this source file; a mismatch aborts before writing', VALUE_DEFAULT, ''),
+                'source_header_text' => new external_value(
+                    PARAM_TEXT,
+                    'Optional source reference rendered above this part in the fixed house style',
+                    VALUE_DEFAULT,
+                    ''
+                ),
+                'expected_contenthash' => new external_value(
+                    PARAM_ALPHANUMEXT,
+                    'Optional SHA-1 of this source file; a mismatch aborts before writing',
+                    VALUE_DEFAULT,
+                    ''
+                ),
             ]), 'Ordered, non-empty list of raster parts; locations may be mixed'),
             'arrangement' => new external_value(PARAM_ALPHA, 'vertical (top to bottom) or horizontal (left to right)'),
-            'targetpath' => new external_value(PARAM_PATH,
-                'PNG target path relative to the workbench root, resolved like crop_material_file; an existing file is replaced'),
+            'targetpath' => new external_value(
+                PARAM_PATH,
+                'PNG target path relative to the workbench root, resolved like crop_material_file; an existing file is replaced'
+            ),
         ]);
     }
 
@@ -72,8 +95,11 @@ class compose_material_file extends external_api {
             'source' => serialize((object) ['original' => implode('; ', $sources)]),
         ]);
         $path = material_files::relative_file($directory, $filename);
-        $message = get_string('materialcompositionwritten', 'local_coursepilot',
-            (object) ['path' => $path, 'width' => $width, 'height' => $height]);
+        $message = get_string(
+            'materialcompositionwritten',
+            'local_coursepilot',
+            (object) ['path' => $path, 'width' => $width, 'height' => $height]
+        );
         return [
             'path' => $path, 'sources' => $sources, 'created' => $existing === null,
             'width' => $width, 'height' => $height, 'size' => strlen($content),
@@ -88,15 +114,24 @@ class compose_material_file extends external_api {
         foreach ($parts as $part) {
             $stored = material_area::read_for_location($part['location'], $part['sourcepath']);
             if ($stored === null) {
-                throw new \moodle_exception('materialfilenotfound', 'local_coursepilot', '',
-                    material_files::normalise_path($part['sourcepath']));
+                throw new \moodle_exception(
+                    'materialfilenotfound',
+                    'local_coursepilot',
+                    '',
+                    material_files::normalise_path($part['sourcepath'])
+                );
             }
             if ($part['expected_contenthash'] !== '' && sha1($stored['content']) !== $part['expected_contenthash']) {
                 throw new \moodle_exception('materialfilechanged', 'local_coursepilot', '', $stored['path']);
             }
             $inputs[] = $part + ['content' => $stored['content']];
-            $sources[] = sprintf('%s:%s (%d byte, changed %s)', $part['location'], $stored['path'],
-                $stored['size'], gmdate('Y-m-d\TH:i:s\Z', $stored['timemodified']));
+            $sources[] = sprintf(
+                '%s:%s (%d byte, changed %s)',
+                $part['location'],
+                $stored['path'],
+                $stored['size'],
+                gmdate('Y-m-d\TH:i:s\Z', $stored['timemodified'])
+            );
         }
         return [$inputs, $sources];
     }
@@ -104,8 +139,10 @@ class compose_material_file extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'path' => new external_value(PARAM_TEXT, 'Resolved PNG target path relative to the workbench root'),
-            'sources' => new external_multiple_structure(new external_value(PARAM_TEXT,
-                'Source location, resolved path, byte size and modification time'), 'Source descriptions in part order'),
+            'sources' => new external_multiple_structure(new external_value(
+                PARAM_TEXT,
+                'Source location, resolved path, byte size and modification time'
+            ), 'Source descriptions in part order'),
             'created' => new external_value(PARAM_BOOL, 'True if a new file was created, false if replaced'),
             'width' => new external_value(PARAM_INT, 'Output width in pixels'),
             'height' => new external_value(PARAM_INT, 'Output height in pixels'),

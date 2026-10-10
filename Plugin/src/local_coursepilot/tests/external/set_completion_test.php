@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(set_completion::class)]
 final class set_completion_test extends \advanced_testcase {
-
     /**
      * @return array{0: \stdClass, 1: \stdClass} Course (completion tracking on), teacher (editingteacher).
      */
@@ -83,8 +82,10 @@ final class set_completion_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
         $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
 
-        foreach (['completion', 'completionview', 'completionexpected', 'completionusegrade',
-                'completionpassgrade', 'completionunlocked'] as $field) {
+        foreach (
+            ['completion', 'completionview', 'completionexpected', 'completionusegrade',
+                'completionpassgrade', 'completionunlocked'] as $field
+        ) {
             try {
                 update_module_settings::execute($page->cmid, json_encode([$field => 1]));
                 $this->fail('Expected moodle_exception was not thrown for field "' . $field . '".');

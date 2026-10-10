@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\privacy;
@@ -56,11 +56,7 @@ use local_coursepilot\history\version_history;
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-final class provider implements
-    \core_privacy\local\metadata\provider,
-    \core_privacy\local\request\plugin\provider,
-    \core_privacy\local\request\core_userlist_provider {
-
+final class provider implements \core_privacy\local\metadata\provider, \core_privacy\local\request\core_userlist_provider, \core_privacy\local\request\plugin\provider {
     /**
      * @param collection $collection
      * @return collection
@@ -230,8 +226,11 @@ final class provider implements
         }
 
         if ($context instanceof \context_module) {
-            $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_cm_version} WHERE cmid = :cmid',
-                ['cmid' => $context->instanceid]);
+            $userlist->add_from_sql(
+                'userid',
+                'SELECT userid FROM {local_coursepilot_cm_version} WHERE cmid = :cmid',
+                ['cmid' => $context->instanceid]
+            );
         }
     }
 
@@ -297,8 +296,11 @@ final class provider implements
     private static function export_history(\context_module $context, int $userid): void {
         global $DB;
 
-        $records = $DB->get_records('local_coursepilot_cm_version',
-            ['cmid' => $context->instanceid, 'userid' => $userid], 'version ASC');
+        $records = $DB->get_records(
+            'local_coursepilot_cm_version',
+            ['cmid' => $context->instanceid, 'userid' => $userid],
+            'version ASC'
+        );
         if (!$records) {
             return;
         }

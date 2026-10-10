@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -31,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
 #[CoversClass(workbench_ticket::class)]
 #[CoversClass(\local_coursepilot\oauth_lib::class)]
 final class workbench_ticket_test extends \advanced_testcase {
-
     public function setUp(): void {
         parent::setUp();
         oauth_lib::reset_current_token_id();
@@ -90,7 +89,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         ]);
         [$directory, $filename] = material_files::resolve_file('selected.txt');
         get_file_storage()->create_file_from_string(
-            material_files::filerecord(material_files::own_context()->id, $directory, $filename), 'Owner selected bytes');
+            material_files::filerecord(material_files::own_context()->id, $directory, $filename),
+            'Owner selected bytes'
+        );
         $secret = $this->secret_from_url(workbench_ticket::issue('selected.txt')['url']);
         $requester = $anotherteacher ? $this->getDataGenerator()->create_user() : null;
         $this->setUser($requester);

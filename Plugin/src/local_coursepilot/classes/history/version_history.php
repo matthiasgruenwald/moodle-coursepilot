@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\history;
@@ -30,7 +30,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class version_history {
-
     /**
      * All versions of an activity, ascending, each with a one-line summary
      * against its predecessor (Spec 0015 §10.6, acceptance criterion 1+2).
@@ -290,7 +289,11 @@ final class version_history {
             $fieldnames = implode(', ', array_slice($fields, 0, 4));
             if (count($fields) > 4) {
                 $fieldnames .= get_string_manager()->get_string(
-                    'historymorefields', 'local_coursepilot', count($fields) - 4, $lang);
+                    'historymorefields',
+                    'local_coursepilot',
+                    count($fields) - 4,
+                    $lang
+                );
             }
             $parts[] = get_string_manager()->get_string('historyfieldschanged', 'local_coursepilot', $fieldnames, $lang);
         }
@@ -299,11 +302,19 @@ final class version_history {
         $removed = count($filechanges) - $added;
         if ($added) {
             $parts[] = get_string_manager()->get_string(
-                $added === 1 ? 'historyfileadded' : 'historyfilesadded', 'local_coursepilot', $added, $lang);
+                $added === 1 ? 'historyfileadded' : 'historyfilesadded',
+                'local_coursepilot',
+                $added,
+                $lang
+            );
         }
         if ($removed) {
             $parts[] = get_string_manager()->get_string(
-                $removed === 1 ? 'historyfileremoved' : 'historyfilesremoved', 'local_coursepilot', $removed, $lang);
+                $removed === 1 ? 'historyfileremoved' : 'historyfilesremoved',
+                'local_coursepilot',
+                $removed,
+                $lang
+            );
         }
 
         return $parts ? implode(', ', $parts)

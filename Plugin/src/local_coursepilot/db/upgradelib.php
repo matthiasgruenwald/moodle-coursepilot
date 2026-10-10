@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
@@ -52,11 +52,13 @@ function local_coursepilot_repair_oauth_schema_drift(database_manager $dbman): v
     // (ddl_dependency_exception), hence drop the index, change the column,
     // restore the index.
     // aendern, Index zurueck.
-    foreach ([
+    foreach (
+        [
         'local_coursepilot_oauth_client' => new xmldb_index('clientid', XMLDB_INDEX_UNIQUE, ['clientid']),
         'local_coursepilot_oauth_code' => null,
         'local_coursepilot_oauth_token' => null,
-    ] as $tablename => $index) {
+        ] as $tablename => $index
+    ) {
         $table = new xmldb_table($tablename);
         $clientid = new xmldb_field('clientid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
         if (!$dbman->field_exists($table, $clientid)) {
@@ -271,8 +273,10 @@ function local_coursepilot_migrate_oauth_connections(database_manager $dbman): v
     if (!$dbman->table_exists($grant)) {
         $dbman->create_table($grant);
     }
-    foreach (['local_coursepilot_oauth_token' => 'connectionid',
-            'local_coursepilot_workbench_ticket' => 'oauthconnectionid'] as $name => $column) {
+    foreach (
+        ['local_coursepilot_oauth_token' => 'connectionid',
+            'local_coursepilot_workbench_ticket' => 'oauthconnectionid'] as $name => $column
+    ) {
         $table = new xmldb_table($name);
         $field = new xmldb_field($column, XMLDB_TYPE_INTEGER, '10');
         if (!$dbman->field_exists($table, $field)) {
@@ -283,8 +287,17 @@ function local_coursepilot_migrate_oauth_connections(database_manager $dbman): v
             $dbman->add_index($table, $index);
         }
     }
-    while ($records = $DB->get_records_select('local_coursepilot_oauth_token',
-            'connectionid IS NULL AND revoked = 0', [], 'id', '*', 0, 100)) {
+    while (
+        $records = $DB->get_records_select(
+            'local_coursepilot_oauth_token',
+            'connectionid IS NULL AND revoked = 0',
+            [],
+            'id',
+            '*',
+            0,
+            100
+        )
+    ) {
         $transaction = $DB->start_delegated_transaction();
         try {
             foreach ($records as $record) {
@@ -293,8 +306,12 @@ function local_coursepilot_migrate_oauth_connections(database_manager $dbman): v
                     'statehash' => bin2hex(random_bytes(32)), 'timecreated' => $record->timecreated,
                 ]);
                 $DB->set_field('local_coursepilot_oauth_token', 'connectionid', $id, ['id' => $record->id]);
-                $DB->set_field('local_coursepilot_workbench_ticket', 'oauthconnectionid', $id,
-                    ['oauthtokenid' => $record->id, 'userid' => $record->userid]);
+                $DB->set_field(
+                    'local_coursepilot_workbench_ticket',
+                    'oauthconnectionid',
+                    $id,
+                    ['oauthtokenid' => $record->id, 'userid' => $record->userid]
+                );
             }
         } catch (Throwable $e) {
             $transaction->rollback($e);

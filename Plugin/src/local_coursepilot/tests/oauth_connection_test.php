@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -71,8 +71,12 @@ final class oauth_connection_test extends \advanced_testcase {
         $this->assertNull(oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-b'));
         $this->assertNotNull(oauth_lib::authenticate_access_token($successor['access_token']));
         // Consumed evidence survives its old expiry; descendants have their own lifetimes.
-        $DB->set_field('local_coursepilot_oauth_token', 'refreshexpires', time() - 1,
-            ['refreshtokenhash' => hash('sha256', $original['refresh_token'])]);
+        $DB->set_field(
+            'local_coursepilot_oauth_token',
+            'refreshexpires',
+            time() - 1,
+            ['refreshtokenhash' => hash('sha256', $original['refresh_token'])]
+        );
         $this->assertNull(oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a'));
         foreach ([$original, $attacker, $successor] as $pair) {
             $this->assertNull(oauth_lib::authenticate_access_token($pair['access_token']));
@@ -203,9 +207,14 @@ final class oauth_connection_test extends \advanced_testcase {
         $cfg = $DB->export_dbconfig();
         // Moodle's execute() rejects trigger-body semicolons; use the native DDL connection.
         $options = (array) ($cfg->dboptions ?? []);
-        return new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
+        return new \mysqli(
+            $cfg->dbhost,
+            $cfg->dbuser,
+            $cfg->dbpass,
+            $cfg->dbname,
             (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
-            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null
+        );
     }
 
     /** Real processes overlap inside the connection transaction, in both orders. */
@@ -250,19 +259,31 @@ final class oauth_connection_test extends \advanced_testcase {
         $processes = [];
         $pipes = [];
         try {
-            $processes[0] = proc_open([PHP_BINARY, __DIR__ . '/fixtures/oauth_connection_process.php',
+            $processes[0] = proc_open(
+                [PHP_BINARY, __DIR__ . '/fixtures/oauth_connection_process.php',
                 $first, ($first === 'replay' ? $original : $active)['refresh_token'], (string) $tokenid],
-                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[0]);
+                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+                $pipes[0]
+            );
             $this->await_condition(fn() => $DB->get_field_sql('SELECT IS_USED_LOCK(?)', [$ready]), 'First connection did not reach barrier');
-            $processes[1] = proc_open([PHP_BINARY, __DIR__ . '/fixtures/oauth_connection_process.php',
+            $processes[1] = proc_open(
+                [PHP_BINARY, __DIR__ . '/fixtures/oauth_connection_process.php',
                 $second, ($second === 'replay' ? $original : $active)['refresh_token'], (string) $tokenid],
-                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[1]);
-            $this->await_condition(fn() => (int) $DB->get_field_sql(
-                'SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE INFO LIKE :query AND ID <> IS_USED_LOCK(:ready)',
-                ['query' => 'UPDATE ' . $DB->get_prefix() . 'local_coursepilot_oauth_grant%', 'ready' => $ready]) > 0,
-                'Second connection did not wait on the shared grant row');
-            $this->assertSame((int) $USER->id, oauth_lib::authenticate_access_token($active['access_token']),
-                'An uncommitted revocation must not expose partially changed connection state.');
+                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+                $pipes[1]
+            );
+            $this->await_condition(
+                fn() => (int) $DB->get_field_sql(
+                    'SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE INFO LIKE :query AND ID <> IS_USED_LOCK(:ready)',
+                    ['query' => 'UPDATE ' . $DB->get_prefix() . 'local_coursepilot_oauth_grant%', 'ready' => $ready]
+                ) > 0,
+                'Second connection did not wait on the shared grant row'
+            );
+            $this->assertSame(
+                (int) $USER->id,
+                oauth_lib::authenticate_access_token($active['access_token']),
+                'An uncommitted revocation must not expose partially changed connection state.'
+            );
             $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);
             $results = [];
             foreach ($processes as $i => $process) {

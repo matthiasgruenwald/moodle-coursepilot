@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -53,9 +53,14 @@ final class oauth_connection_upgrade_test extends \advanced_testcase {
         $cfg = $DB->export_dbconfig();
         // Moodle's execute() rejects trigger-body semicolons; use the native DDL connection.
         $options = (array) ($cfg->dboptions ?? []);
-        $ddl = new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
+        $ddl = new \mysqli(
+            $cfg->dbhost,
+            $cfg->dbuser,
+            $cfg->dbpass,
+            $cfg->dbname,
             (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
-            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null
+        );
         $ddl->query("CREATE TRIGGER $trigger BEFORE UPDATE ON $table FOR EACH ROW BEGIN
             IF NEW.id = $ids[100] AND NEW.connectionid IS NOT NULL THEN
                 SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Synthetic interrupted migration';
@@ -80,8 +85,10 @@ final class oauth_connection_upgrade_test extends \advanced_testcase {
         $this->assertNull($DB->get_field('local_coursepilot_oauth_token', 'connectionid', ['id' => $unknown]));
         $ticketrecord = $DB->get_record(workbench_ticket::TABLE, ['id' => $ticket], '*', MUST_EXIST);
         $this->assertSame($expires, (int) $ticketrecord->expires);
-        $this->assertSame((int) $DB->get_field('local_coursepilot_oauth_token', 'connectionid', ['id' => $ids[0]]),
-            (int) $ticketrecord->oauthconnectionid);
+        $this->assertSame(
+            (int) $DB->get_field('local_coursepilot_oauth_token', 'connectionid', ['id' => $ids[0]]),
+            (int) $ticketrecord->oauthconnectionid
+        );
         $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token('access638-0'));
         $successor = oauth_lib::rotate_refresh_token('refresh638-0', 'legacy');
         $this->assertNotNull($successor);

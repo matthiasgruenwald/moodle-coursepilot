@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -40,7 +40,6 @@ use local_coursepilot\webdav\webdav_setup_steps;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class location_selection {
-
     /** @var string[] The two target names in the pointer document (Spec §2). */
     public const TARGETS = context_pointer::TARGETS;
 
@@ -494,18 +493,18 @@ final class location_selection {
     }
 
         /**
-     * @var string[] Error keys indicating the old location itself is no longer
-     *      valid (missing/foreign instance, revoked
-     *      access, unsupported authentication). Same
-     *      list as {@see \local_coursepilot\pointer_writer::LOCATION_FAILURE_CODES}.
-     *      Treat as no provable legacy context rather than blocking
-     *      completion. An actual connection failure
-     *      (locationselectionexternalerror) is not specific to the old
-     *      location; like every other failure in this flow it propagates
-     *      and rejects the entire operation rather than
-     *      silently losing legacy context (Spec §5:
-     *      on failure, nothing is saved).
-     */
+         * @var string[] Error keys indicating the old location itself is no longer
+         *      valid (missing/foreign instance, revoked
+         *      access, unsupported authentication). Same
+         *      list as {@see \local_coursepilot\pointer_writer::LOCATION_FAILURE_CODES}.
+         *      Treat as no provable legacy context rather than blocking
+         *      completion. An actual connection failure
+         *      (locationselectionexternalerror) is not specific to the old
+         *      location; like every other failure in this flow it propagates
+         *      and rejects the entire operation rather than
+         *      silently losing legacy context (Spec §5:
+         *      on failure, nothing is saved).
+         */
     private const OLD_LOCATION_INVALID_CODES = [
         'webdavinstancemissing',
         'webdavinstanceforeign',

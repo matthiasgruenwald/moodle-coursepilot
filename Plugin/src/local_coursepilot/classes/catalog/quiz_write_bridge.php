@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\catalog;
@@ -43,7 +43,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class quiz_write_bridge {
-
     /** @var string[] The eight review types; see quiz::REVIEW_TYPES. */
     private const REVIEW_TYPES = [
         'attempt', 'correctness', 'maxmarks', 'marks',
@@ -196,8 +195,10 @@ final class quiz_write_bridge {
         // any grade change or activity patch, and never coerce strings/bools to points.
         if (array_key_exists('gradepass', $patch)) {
             $passing = $patch['gradepass'];
-            if ((!is_int($passing) && !is_float($passing)) || !is_finite((float) $passing)
-                    || $passing < 0 || $passing > $grade) {
+            if (
+                (!is_int($passing) && !is_float($passing)) || !is_finite((float) $passing)
+                    || $passing < 0 || $passing > $grade
+            ) {
                 throw new moodle_exception('invalidquizgradepass', 'local_coursepilot', '', ['maximum' => $grade]);
             }
         }

@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\catalog;
@@ -33,7 +33,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(write_target::class)]
 final class write_target_test extends \advanced_testcase {
-
     /** @var \stdClass */
     private \stdClass $course;
 
@@ -95,7 +94,11 @@ final class write_target_test extends \advanced_testcase {
         $dates = ['duedate' => 2000000000, 'cutoffdate' => 1900000000];
 
         $oncreate = $this->rejection(fn() => create_module::execute(
-            $this->course->id, 0, 'forum', json_encode(['name' => 'F', 'intro' => ''] + $dates)));
+            $this->course->id,
+            0,
+            'forum',
+            json_encode(['name' => 'F', 'intro' => ''] + $dates)
+        ));
         $onupdate = $this->rejection(fn() => update_module_settings::execute($forum->cmid, json_encode($dates)));
 
         $this->assertSame('combinationruleviolation', $oncreate->errorcode);
@@ -111,7 +114,10 @@ final class write_target_test extends \advanced_testcase {
         $dates = ['timeopen' => 2000000000, 'timeclose' => 1900000000];
 
         $oncreate = $this->rejection(fn() => create_quiz::execute(
-            $this->course->id, 0, json_encode(self::quiz_fields() + $dates)));
+            $this->course->id,
+            0,
+            json_encode(self::quiz_fields() + $dates)
+        ));
         $onupdate = $this->rejection(fn() => update_quiz_settings::execute($quiz->cmid, json_encode($dates)));
 
         $this->assertSame('combinationruleviolation', $oncreate->errorcode);
@@ -148,7 +154,11 @@ final class write_target_test extends \advanced_testcase {
 
         // allowupdate defaults to 0, a learner lock, although this call does not name it.
         $oncreate = $this->rejection(fn() => create_module::execute(
-            $this->course->id, 0, 'choice', json_encode(['name' => 'C2', 'intro' => '', 'option' => ['Ja']])));
+            $this->course->id,
+            0,
+            'choice',
+            json_encode(['name' => 'C2', 'intro' => '', 'option' => ['Ja']])
+        ));
         $onupdate = $this->rejection(fn() => update_module_settings::execute($choice['cmid'], json_encode(['allowupdate' => 0])));
 
         $this->assertSame('learnerlocksunconfirmed', $oncreate->errorcode);
@@ -163,7 +173,11 @@ final class write_target_test extends \advanced_testcase {
         $forum = $this->getDataGenerator()->create_module('forum', ['course' => $this->course->id]);
         foreach (['nosuchfield' => 'unknownfield', 'course' => 'blockedfield'] as $field => $errorcode) {
             $oncreate = $this->rejection(fn() => create_module::execute(
-                $this->course->id, 0, 'forum', json_encode(['name' => 'F', 'intro' => '', $field => 1])));
+                $this->course->id,
+                0,
+                'forum',
+                json_encode(['name' => 'F', 'intro' => '', $field => 1])
+            ));
             $onupdate = $this->rejection(fn() => update_module_settings::execute($forum->cmid, json_encode([$field => 1])));
             $this->assertSame($errorcode, $oncreate->errorcode, $field);
             $this->assertSame($errorcode, $onupdate->errorcode, $field);
@@ -231,7 +245,11 @@ final class write_target_test extends \advanced_testcase {
         $wronglimit = ['option' => ['Ja', 'Nein'], 'limit' => [1, 2, 3]];
 
         $oncreate = $this->rejection(fn() => create_module::execute(
-            $this->course->id, 0, 'choice', json_encode(['name' => 'C2', 'intro' => '', 'allowupdate' => 1] + $wronglimit)));
+            $this->course->id,
+            0,
+            'choice',
+            json_encode(['name' => 'C2', 'intro' => '', 'allowupdate' => 1] + $wronglimit)
+        ));
         $onupdate = $this->rejection(fn() => update_module_settings::execute($choice['cmid'], json_encode(['limit' => [1, 2, 3]])));
 
         $this->assertSame('combinationruleviolation', $oncreate->errorcode);

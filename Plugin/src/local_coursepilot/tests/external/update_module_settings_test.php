@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -117,8 +117,10 @@ final class update_module_settings_test extends \advanced_testcase {
         }
         $before = $DB->get_record('assign', ['id' => $assignment->id], '*', MUST_EXIST);
 
-        $result = external_api::clean_returnvalue(update_module_settings::execute_returns(),
-            update_module_settings::execute($assignment->cmid, json_encode(['name' => 'Neuer Titel'])));
+        $result = external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($assignment->cmid, json_encode(['name' => 'Neuer Titel']))
+        );
 
         $this->assertCount(1, $result['changes']);
         $after = $DB->get_record('assign', ['id' => $assignment->id], '*', MUST_EXIST);
@@ -143,8 +145,10 @@ final class update_module_settings_test extends \advanced_testcase {
         $forum = $this->getDataGenerator()->get_plugin_generator('mod_forum')->create_instance([
             'course' => $course->id, 'type' => 'qanda', 'showimmediately' => 0,
         ]);
-        $result = external_api::clean_returnvalue(update_module_settings::execute_returns(),
-            update_module_settings::execute($forum->cmid, json_encode(['showimmediately' => 1])));
+        $result = external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($forum->cmid, json_encode(['showimmediately' => 1]))
+        );
         $this->assertSame('showimmediately', $result['changes'][0]['field']);
         $this->assertEquals(1, $DB->get_field('forum', 'showimmediately', ['id' => $forum->id]));
     }
@@ -1339,8 +1343,12 @@ final class update_module_settings_test extends \advanced_testcase {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
         }
 
-        update_module_settings::execute($assign->cmid, $patch, \local_coursepilot\material_files::LOCATION_STORE,
-            ['attemptreopenmethod']);
+        update_module_settings::execute(
+            $assign->cmid,
+            $patch,
+            \local_coursepilot\material_files::LOCATION_STORE,
+            ['attemptreopenmethod']
+        );
         $settings = json_decode(get_module_settings::execute($assign->cmid)['settings_json'], true);
         $this->assertSame('manual', $settings['attemptreopenmethod']);
 

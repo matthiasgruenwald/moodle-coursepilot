@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -36,8 +36,11 @@ final class oauth_registration_budget_test extends \advanced_testcase {
     private const CALLBACK = 'https://client.example/callback';
 
     private function register(string $source, ?string $body = null): array {
-        return oauth_lib::handle_registration('POST',
-            $body ?? json_encode(['client_name' => 'Synthetic', 'redirect_uris' => [self::CALLBACK]]), $source);
+        return oauth_lib::handle_registration(
+            'POST',
+            $body ?? json_encode(['client_name' => 'Synthetic', 'redirect_uris' => [self::CALLBACK]]),
+            $source
+        );
     }
 
     private function limits(int $site, int $source): void {
@@ -75,8 +78,10 @@ final class oauth_registration_budget_test extends \advanced_testcase {
         unset_config('oauthregistersitelimit', 'local_coursepilot');
         unset_config('oauthregistersourcelimit', 'local_coursepilot');
         unset_config('oauthregisterwindow', 'local_coursepilot');
-        $this->assertSame(oauth_lib::REGISTRATION_SITE_LIMIT, oauth_budget::setting('oauthregistersitelimit',
-            oauth_lib::REGISTRATION_SITE_LIMIT));
+        $this->assertSame(oauth_lib::REGISTRATION_SITE_LIMIT, oauth_budget::setting(
+            'oauthregistersitelimit',
+            oauth_lib::REGISTRATION_SITE_LIMIT
+        ));
         set_config('oauthregisterwindow', 0, 'local_coursepilot');
         $this->assertSame(1, oauth_budget::setting('oauthregisterwindow', oauth_lib::REGISTRATION_WINDOW));
     }
@@ -107,8 +112,10 @@ final class oauth_registration_budget_test extends \advanced_testcase {
         $this->assertSame('invalid_client_metadata', $response['body']['error']);
 
         $longuri = 'https://client.example/' . str_repeat('a', oauth_lib::REGISTRATION_MAX_URI_LENGTH);
-        $this->assertSame(400, $this->register('192.0.2.1',
-            json_encode(['redirect_uris' => [$longuri]]))['status']);
+        $this->assertSame(400, $this->register(
+            '192.0.2.1',
+            json_encode(['redirect_uris' => [$longuri]])
+        )['status']);
         $many = array_fill(0, oauth_lib::REGISTRATION_MAX_REDIRECT_URIS + 1, self::CALLBACK);
         $this->assertSame(400, $this->register('192.0.2.1', json_encode(['redirect_uris' => $many]))['status']);
         $this->assertSame(0, $this->clients());
@@ -138,8 +145,11 @@ final class oauth_registration_budget_test extends \advanced_testcase {
 
         $this->assertFalse($DB->record_exists(self::TABLE, ['sourcekey' => 'stale']));
         $this->assertSame(3, $this->clients());
-        $this->assertLessThanOrEqual(4, $DB->count_records(self::TABLE),
-            'Per-source rows only exist for requests that passed the site budget.');
+        $this->assertLessThanOrEqual(
+            4,
+            $DB->count_records(self::TABLE),
+            'Per-source rows only exist for requests that passed the site budget.'
+        );
         foreach ($DB->get_records(self::TABLE) as $row) {
             $this->assertLessThanOrEqual(time() + oauth_lib::REGISTRATION_WINDOW, (int) $row->expires);
             $this->assertStringNotContainsString('198.51.100', $row->sourcekey, 'No raw addresses in budget state.');

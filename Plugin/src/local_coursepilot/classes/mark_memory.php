@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -39,7 +39,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class mark_memory {
-
     /** @var string Table name, see db/install.xml. */
     private const TABLE = 'local_coursepilot_context_mark';
 
@@ -65,9 +64,11 @@ final class mark_memory {
         if (!$record) {
             return null;
         }
-        if ((int) $record->filesize !== $size
+        if (
+            (int) $record->filesize !== $size
                 || (int) $record->timemodified !== $timemodified
-                || (string) $record->etag !== (string) ($etag ?? '')) {
+                || (string) $record->etag !== (string) ($etag ?? '')
+        ) {
             return null;
         }
         return (bool) $record->ismarked;

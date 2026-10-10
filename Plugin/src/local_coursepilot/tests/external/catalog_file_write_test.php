@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -34,7 +34,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[CoversClass(create_module::class)]
 #[CoversClass(update_module_settings::class)]
 final class catalog_file_write_test extends \advanced_testcase {
-
     /** @var \stdClass */
     private \stdClass $course;
 
@@ -106,8 +105,13 @@ final class catalog_file_write_test extends \advanced_testcase {
         $files = array_map(
             static fn(\stdClass $f): string => implode('|', [$f->contextid, $f->component, $f->filearea,
                 $f->itemid, $f->filepath, $f->filename, $f->contenthash]),
-            $DB->get_records_select('files', "filename <> '.'", null, 'id',
-                'id, contextid, component, filearea, itemid, filepath, filename, contenthash')
+            $DB->get_records_select(
+                'files',
+                "filename <> '.'",
+                null,
+                'id',
+                'id, contextid, component, filearea, itemid, filepath, filename, contenthash'
+            )
         );
         return [
             'files' => array_values($files),
@@ -195,8 +199,13 @@ final class catalog_file_write_test extends \advanced_testcase {
         global $DB;
         $cmid = $this->assign_with_files();
         $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
-        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid,
-            \context_user::instance($this->teacher->id)->id, true);
+        assign_capability(
+            'moodle/user:manageownfiles',
+            CAP_PROHIBIT,
+            $roleid,
+            \context_user::instance($this->teacher->id)->id,
+            true
+        );
         $before = $this->snapshot();
 
         try {
@@ -321,8 +330,10 @@ final class catalog_file_write_test extends \advanced_testcase {
         $context = \context_module::instance($cmid);
         $fs = get_file_storage();
         $this->assertNotFalse($fs->get_file($context->id, 'mod_assign', 'intro', 0, '/', 'bild.png'));
-        $this->assertSame('First version',
-            $fs->get_file($context->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf')->get_content());
+        $this->assertSame(
+            'First version',
+            $fs->get_file($context->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf')->get_content()
+        );
         $instance = $DB->get_record('assign', ['id' => get_coursemodule_from_id('assign', $cmid)->instance]);
         $this->assertSame('<p>Do it</p>', $instance->activity);
         $defaultgrade = $instance->grade;
@@ -330,8 +341,10 @@ final class catalog_file_write_test extends \advanced_testcase {
         $this->store_material('blatt.pdf', 'Second version');
         update_module_settings::execute($cmid, json_encode(['introattachments' => ['blatt.pdf']]));
 
-        $this->assertSame('Second version',
-            $fs->get_file($context->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf')->get_content());
+        $this->assertSame(
+            'Second version',
+            $fs->get_file($context->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf')->get_content()
+        );
         $instance = $DB->get_record('assign', ['id' => $instance->id]);
         $this->assertSame('New', $instance->name);
         $this->assertSame('<p>Do it</p>', $instance->activity);
@@ -345,8 +358,14 @@ final class catalog_file_write_test extends \advanced_testcase {
      */
     private function store_material(string $path, string $content): void {
         $record = material_files::filerecord(material_files::own_context()->id, '/coursepilot-material/', $path);
-        $existing = get_file_storage()->get_file($record['contextid'], $record['component'], $record['filearea'],
-            $record['itemid'], $record['filepath'], $record['filename']);
+        $existing = get_file_storage()->get_file(
+            $record['contextid'],
+            $record['component'],
+            $record['filearea'],
+            $record['itemid'],
+            $record['filepath'],
+            $record['filename']
+        );
         material_files::replace($existing ?: null, $record, $content);
     }
 

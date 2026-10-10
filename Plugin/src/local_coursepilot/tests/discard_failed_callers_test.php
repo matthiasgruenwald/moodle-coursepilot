@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -34,7 +34,6 @@ defined('MOODLE_INTERNAL') || die();
 #[CoversClass(export_default_activity::class)]
 #[CoversClass(xml_activity_creator::class)]
 final class discard_failed_callers_test extends \advanced_testcase {
-
     /** @return array{0: \stdClass, 1: string} course with existing activities, book XML "Created" */
     private function setup_course(): array {
         $this->resetAfterTest();
@@ -48,8 +47,11 @@ final class discard_failed_callers_test extends \advanced_testcase {
         $xml = preg_replace('#<name>.*?</name>#s', '<name>Created</name>', $xml, 1);
         foreach ([0, 1] as $section) {
             foreach (['book' => 'Old', 'page' => 'Page'] as $modname => $prefix) {
-                $this->getDataGenerator()->create_module($modname, ['course' => $course->id, 'name' => "$prefix $section"],
-                    ['section' => $section]);
+                $this->getDataGenerator()->create_module(
+                    $modname,
+                    ['course' => $course->id, 'name' => "$prefix $section"],
+                    ['section' => $section]
+                );
             }
         }
         set_config('coursebinenable', 1, 'tool_recyclebin');

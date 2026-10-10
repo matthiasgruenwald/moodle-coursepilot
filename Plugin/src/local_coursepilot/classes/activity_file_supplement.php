@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -88,8 +88,14 @@ final class activity_file_supplement {
         $area = $entry['filearea'];
         $itemid = $type::FILEAREAS[$area];
         $component = 'mod_' . $cm->modname;
-        $draftid = material_files::resolve_into_draft($context->id, $component, $area, $itemid,
-            [$entry['path']], $entry['location'] ?? material_files::LOCATION_STORE);
+        $draftid = material_files::resolve_into_draft(
+            $context->id,
+            $component,
+            $area,
+            $itemid,
+            [$entry['path']],
+            $entry['location'] ?? material_files::LOCATION_STORE
+        );
         try {
             file_save_draft_area_files($draftid, $context->id, $component, $area, $itemid);
             $filename = basename(material_files::normalise_path($entry['path']));

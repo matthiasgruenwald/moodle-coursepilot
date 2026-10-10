@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -27,7 +27,6 @@ use core_external\external_api;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(create_mc_question::class)]
 final class create_mc_question_test extends \advanced_testcase {
-
     /**
      * Creating from plain fields generates an idnumber and version 1.
      * Reading through get_question returns the same core fields.
@@ -112,7 +111,15 @@ final class create_mc_question_test extends \advanced_testcase {
 
         // Confirmed creation still makes a separate bank entry with its own idnumber, without merging.
         $confirmed = create_mc_question::execute(
-            $categoryid, 'Dopplung', 'Zweite Fassung', 'single', $answers, 1.0, '', true);
+            $categoryid,
+            'Dopplung',
+            'Zweite Fassung',
+            'single',
+            $answers,
+            1.0,
+            '',
+            true
+        );
         $confirmed = external_api::clean_returnvalue(create_mc_question::execute_returns(), $confirmed);
 
         $this->assertSame('first_import', $confirmed['status']);

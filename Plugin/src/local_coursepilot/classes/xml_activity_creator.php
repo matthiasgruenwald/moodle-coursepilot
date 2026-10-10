@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -45,7 +45,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class xml_activity_creator {
-
     /** Text marker of a file reference; files are out of scope of the comparison. */
     private const FILE_MARKER = '@@PLUGINFILE@@';
 
@@ -169,8 +168,12 @@ final class xml_activity_creator {
     private static function chain(int $courseid, int $oldcmid): array {
         global $DB;
         $cms = get_fast_modinfo($courseid)->cms;
-        $markers = $DB->get_records('local_coursepilot_cm_version',
-            ['courseid' => $courseid, 'source' => version_writer::SOURCE_SUPERSEDED], 'id ASC', 'id, cmid, sourcecmid');
+        $markers = $DB->get_records(
+            'local_coursepilot_cm_version',
+            ['courseid' => $courseid, 'source' => version_writer::SOURCE_SUPERSEDED],
+            'id ASC',
+            'id, cmid, sourcecmid'
+        );
         $next = [];
         $previous = [];
         foreach ($markers as $m) {
@@ -234,8 +237,10 @@ final class xml_activity_creator {
             throw new invalid_parameter_exception("activity_xml is not a valid activity XML of type \"$modname\".");
         }
         // The Lightboxgallery restore step reads this field before inserting the activity.
-        if ($modname === 'lightboxgallery' &&
-                (new \DOMXPath($dom))->query('/activity/lightboxgallery/timemodified')->length === 0) {
+        if (
+            $modname === 'lightboxgallery' &&
+                (new \DOMXPath($dom))->query('/activity/lightboxgallery/timemodified')->length === 0
+        ) {
             throw new invalid_parameter_exception('activity_xml requires <timemodified> in <lightboxgallery>. '
                 . 'Use the complete XML from coursepilot_export_default_activity.');
         }
@@ -293,8 +298,10 @@ final class xml_activity_creator {
     private static function compare_leaf(\DOMElement $in, \DOMElement $out, string $path, array &$mismatches): void {
         $expected = self::normalise(self::text($in));
         $actual = self::normalise(self::text($out));
-        if (str_contains($expected, self::FILE_MARKER) || $expected === $actual
-                || (is_numeric($expected) && is_numeric($actual) && (float) $expected === (float) $actual)) {
+        if (
+            str_contains($expected, self::FILE_MARKER) || $expected === $actual
+                || (is_numeric($expected) && is_numeric($actual) && (float) $expected === (float) $actual)
+        ) {
             return;
         }
         $mismatches[] = ['path' => $path, 'expected' => $expected, 'actual' => $actual];

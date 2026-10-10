@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -465,7 +465,7 @@ final class append_context_file_test extends \advanced_testcase {
         $fake->seed_file('/Coursepilot/Kontext/journal.md', "# Journal\n");
         $checksum = $withchecksum ? read_context_file::execute('journal.md')['contenthash'] : '';
         $replacement = $marked ? $this->marked_content() : '# Concurrent edit';
-        $transport = new class($fake, $replacement) implements \local_coursepilot\webdav\webdav_transport {
+        $transport = new class ($fake, $replacement) implements \local_coursepilot\webdav\webdav_transport {
             private bool $changed = false;
 
             public function __construct(private readonly fake_webdav_transport $inner, private readonly string $replacement) {

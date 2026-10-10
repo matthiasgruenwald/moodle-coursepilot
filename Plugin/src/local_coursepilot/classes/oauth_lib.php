@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -34,7 +34,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class oauth_lib {
-
     /** @var string Database table for DCR/CIMD-registered clients. */
     private const CLIENT_TABLE = 'local_coursepilot_oauth_client';
 
@@ -290,10 +289,13 @@ final class oauth_lib {
             return self::result(400, [], $error);
         }
 
-        $retryafter = oauth_budget::consume('register', $source,
+        $retryafter = oauth_budget::consume(
+            'register',
+            $source,
             oauth_budget::setting('oauthregistersitelimit', self::REGISTRATION_SITE_LIMIT),
             oauth_budget::setting('oauthregistersourcelimit', self::REGISTRATION_SOURCE_LIMIT),
-            oauth_budget::setting('oauthregisterwindow', self::REGISTRATION_WINDOW));
+            oauth_budget::setting('oauthregisterwindow', self::REGISTRATION_WINDOW)
+        );
         if ($retryafter > 0) {
             return self::result(429, ['Retry-After' => (string) $retryafter], [
                 'error' => 'temporarily_unavailable',
@@ -373,14 +375,20 @@ final class oauth_lib {
         if ($record) {
             return $record;
         }
-        if (!self::looks_like_cimd_url($clientid) || strlen($clientid) > self::CIMD_MAX_URI_LENGTH
-                || oauth_budget::active('cimdfail', $clientid)) {
+        if (
+            !self::looks_like_cimd_url($clientid) || strlen($clientid) > self::CIMD_MAX_URI_LENGTH
+                || oauth_budget::active('cimdfail', $clientid)
+        ) {
             return null;
         }
         $sitelimit = oauth_budget::setting('oauthcimdsitelimit', self::CIMD_SITE_LIMIT);
-        $retryafter = oauth_budget::consume('cimd', oauth_budget::request_source(), $sitelimit,
+        $retryafter = oauth_budget::consume(
+            'cimd',
+            oauth_budget::request_source(),
+            $sitelimit,
             oauth_budget::setting('oauthcimdsourcelimit', self::CIMD_SOURCE_LIMIT),
-            oauth_budget::setting('oauthcimdwindow', self::CIMD_WINDOW));
+            oauth_budget::setting('oauthcimdwindow', self::CIMD_WINDOW)
+        );
         if ($retryafter > 0) {
             return null;
         }
@@ -837,8 +845,10 @@ final class oauth_lib {
         self::$currenttokenid = null;
         self::$currentconnectionid = null;
         $record = $DB->get_record(self::TOKEN_TABLE, ['accesstokenhash' => self::token_hash($accesstoken)]);
-        if (!$record || (int) $record->revoked === 1 || $record->expires < time()
-                || empty($record->connectionid) || !self::grant_active((int) $record->connectionid, (int) $record->userid)) {
+        if (
+            !$record || (int) $record->revoked === 1 || $record->expires < time()
+                || empty($record->connectionid) || !self::grant_active((int) $record->connectionid, (int) $record->userid)
+        ) {
             return null;
         }
         self::$currenttokenid = (int) $record->id;
@@ -1028,9 +1038,11 @@ final class oauth_lib {
     private static function lock_connection(int $id): bool {
         global $DB;
         $marker = self::random_token(32);
-        $DB->execute('UPDATE {' . self::GRANT_TABLE . '}
+        $DB->execute(
+            'UPDATE {' . self::GRANT_TABLE . '}
                          SET statehash = :marker WHERE id = :id AND revoked = 0',
-            ['marker' => $marker, 'id' => $id]);
+            ['marker' => $marker, 'id' => $id]
+        );
         return $DB->record_exists(self::GRANT_TABLE, ['id' => $id, 'statehash' => $marker, 'revoked' => 0]);
     }
 

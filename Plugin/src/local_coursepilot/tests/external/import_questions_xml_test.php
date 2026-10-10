@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -229,8 +229,11 @@ final class import_questions_xml_test extends \advanced_testcase {
         [, $categoryid] = $this->setup_course_and_category();
         $this->place_material_file('diagramm.png', self::PNG_BYTES);
 
-        $xml = str_replace('material="diagramm.png"', "material='diagramm.png'",
-            self::multichoice_xml_with_material_file('Frage mit Bild', 'Fragetext', 'Feedback'));
+        $xml = str_replace(
+            'material="diagramm.png"',
+            "material='diagramm.png'",
+            self::multichoice_xml_with_material_file('Frage mit Bild', 'Fragetext', 'Feedback')
+        );
 
         $result = import_questions_xml::execute($categoryid, $xml);
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
@@ -272,7 +275,9 @@ final class import_questions_xml_test extends \advanced_testcase {
 
         [, $categoryid] = $this->setup_course_and_category();
         $this->place_material_file('export.xml', self::multichoice_xml_with_embedded_base64(
-            'Frage aus Verweistuer', 'Fragetext', 'Feedback'
+            'Frage aus Verweistuer',
+            'Fragetext',
+            'Feedback'
         ));
 
         $result = import_questions_xml::execute($categoryid, '', false, 'export.xml');
@@ -312,7 +317,9 @@ final class import_questions_xml_test extends \advanced_testcase {
         [, $categoryid, $teacher] = $this->setup_course_and_category();
         $fake = $this->set_up_external_material_for($teacher);
         $fake->seed_file('/Coursepilot/Material/export.xml', self::multichoice_xml_with_embedded_base64(
-            'Frage aus Verweistuer (Bestand)', 'Fragetext', 'Feedback'
+            'Frage aus Verweistuer (Bestand)',
+            'Fragetext',
+            'Feedback'
         ));
 
         $result = import_questions_xml::execute($categoryid, '', false, 'export.xml');
@@ -333,11 +340,18 @@ final class import_questions_xml_test extends \advanced_testcase {
         $fake = $this->set_up_external_material_for($teacher);
         $fake->seed_file('/Coursepilot/Material/export.xml', 'nicht das, was gelesen werden soll');
         $this->place_material_file('export.xml', self::multichoice_xml_with_embedded_base64(
-            'Frage aus der Werkbank', 'Fragetext', 'Feedback'
+            'Frage aus der Werkbank',
+            'Fragetext',
+            'Feedback'
         ));
 
         $result = import_questions_xml::execute(
-            $categoryid, '', false, 'export.xml', material_files::LOCATION_WORKBENCH);
+            $categoryid,
+            '',
+            false,
+            'export.xml',
+            material_files::LOCATION_WORKBENCH
+        );
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
 
         $this->assertSame('first_import', $result['questions'][0]['status']);

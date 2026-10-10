@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\catalog;
@@ -53,7 +53,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class write_target {
-
     /**
      * @param array<string, mixed> $changes Explicitly named fields.
      * @param array<string, mixed> $state Effective target: defaults/current overlaid with $changes.
@@ -197,8 +196,14 @@ final class write_target {
             // get_moduleinfo_data() returns [cm, context, module, data, cw];
             // "data" is the form-path object that is overlaid and written back.
             [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
-            pseudofield_carry_forward::apply($catalogclass::modname(), $catalogclass, $moduleinfo, $current, $cm,
-                $target->changes);
+            pseudofield_carry_forward::apply(
+                $catalogclass::modname(),
+                $catalogclass,
+                $moduleinfo,
+                $current,
+                $cm,
+                $target->changes
+            );
             $target->apply_changes($catalogclass, $moduleinfo, context_module::instance($cm->id), $location, true);
             \update_moduleinfo($cm, $moduleinfo, $course);
         });
@@ -393,8 +398,14 @@ final class write_target {
             // Moodle core deletes the old record deep in
             // file_save_draft_area_files(); keep it restorable (Spec 0018 §9.1).
             $newnames = array_map(static fn($entry): string => basename(material_files::entry_path($entry)), $paths);
-            $existing = get_file_storage()->get_area_files($context->id, $spec['component'], $spec['filearea'], 0,
-                'filename', false);
+            $existing = get_file_storage()->get_area_files(
+                $context->id,
+                $spec['component'],
+                $spec['filearea'],
+                0,
+                'filename',
+                false
+            );
             foreach ($existing as $file) {
                 if (in_array($file->get_filename(), $newnames, true)) {
                     activity_file_trash::trash($file, $context->instanceid);
@@ -458,8 +469,10 @@ final class write_target {
         // A bundle carries e.g. choice "limit" as one value for every option;
         // the form field is one entry per option.
         foreach ($options['scalar_to_repeated'] ?? [] as $field => $reference) {
-            if (array_key_exists($field, $fields) && !is_array($fields[$field])
-                    && isset($fields[$reference]) && is_array($fields[$reference])) {
+            if (
+                array_key_exists($field, $fields) && !is_array($fields[$field])
+                    && isset($fields[$reference]) && is_array($fields[$reference])
+            ) {
                 $fields[$field] = array_fill(0, count($fields[$reference]), (int) $fields[$field]);
             }
         }

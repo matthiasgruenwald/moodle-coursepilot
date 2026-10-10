@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -30,7 +30,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(dispatcher::class)]
 #[CoversClass(\local_coursepilot\history\file_policy::class)]
 final class dispatcher_test extends \advanced_testcase {
-
     /**
      * Creates a user with a valid OAuth access token (#337) - replaces the
      * former web service token workaround. By default the system-wide
@@ -146,8 +145,10 @@ final class dispatcher_test extends \advanced_testcase {
         // Moodle updates the modification timestamp when visibility changes.
         unset($oldbook->timemodified, $afterbook->timemodified);
         $this->assertEquals($oldbook, $afterbook);
-        $this->assertEquals($before['course_modules'][$other->cmid],
-            $DB->get_record('course_modules', ['id' => $other->cmid], '*', MUST_EXIST));
+        $this->assertEquals(
+            $before['course_modules'][$other->cmid],
+            $DB->get_record('course_modules', ['id' => $other->cmid], '*', MUST_EXIST)
+        );
         $this->assertEquals($before['files'], $DB->get_records('files', null, 'id'));
         $oldsection = $before['course_modules'][1]->section;
         $sequence = explode(',', $DB->get_field('course_sections', 'sequence', ['id' => $oldsection], MUST_EXIST));
@@ -169,9 +170,12 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertSame(1, (int) $book->cmid);
         $xml = \local_coursepilot\external\export_default_activity::execute($course->id, 'book')['xml'];
         $other = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
-        $DB->set_field('course_modules', 'availability',
+        $DB->set_field(
+            'course_modules',
+            'availability',
             json_encode(['op' => '&', 'c' => [['type' => 'completion', 'cm' => 1, 'e' => 1]], 'showc' => [true]]),
-            ['id' => $other->cmid]);
+            ['id' => $other->cmid]
+        );
         get_file_storage()->create_file_from_string([
             'contextid' => \context_module::instance(1)->id, 'component' => 'mod_book', 'filearea' => 'intro',
             'itemid' => 0, 'filepath' => '/', 'filename' => 'synthetic.txt',
@@ -181,9 +185,12 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     private function xml_call(string $token, array $arguments): array {
-        $response = dispatcher::handle(['id' => 1, 'method' => 'tools/call',
+        $response = dispatcher::handle(
+            ['id' => 1, 'method' => 'tools/call',
             'params' => ['name' => 'coursepilot_create_activity_from_xml', 'arguments' => $arguments]],
-            $token, $this->headers());
+            $token,
+            $this->headers()
+        );
         $this->assertSame(200, $response['status']);
         return $response['body']['result'];
     }
@@ -192,8 +199,10 @@ final class dispatcher_test extends \advanced_testcase {
     private function xml_mutation_state(): array {
         global $DB;
         $result = [];
-        foreach (['course_modules', 'course_sections', 'book', 'book_chapters', 'files',
-                'local_coursepilot_cm_version', 'local_coursepilot_cm_file', 'local_coursepilot_cm_version_file'] as $table) {
+        foreach (
+            ['course_modules', 'course_sections', 'book', 'book_chapters', 'files',
+                'local_coursepilot_cm_version', 'local_coursepilot_cm_file', 'local_coursepilot_cm_version_file'] as $table
+        ) {
             $result[$table] = $DB->get_records($table, null, 'id');
         }
         return $result;
@@ -212,9 +221,11 @@ final class dispatcher_test extends \advanced_testcase {
         $assign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
         $cmid = (int) $assign->cmid;
         $context = \context_module::instance($cmid);
-        foreach ([['assignsubmission_file', 'submission_files', 'student-secret.pdf'],
+        foreach (
+            [['assignsubmission_file', 'submission_files', 'student-secret.pdf'],
                 ['mod_assign', 'unknown', 'unknown-secret.pdf'],
-                ['mod_assign', 'intro', 'design.png']] as [$component, $area, $name]) {
+                ['mod_assign', 'intro', 'design.png']] as [$component, $area, $name]
+        ) {
             get_file_storage()->create_file_from_string([
                 'contextid' => $context->id, 'component' => $component, 'filearea' => $area,
                 'itemid' => 0, 'filepath' => '/', 'filename' => $name,
@@ -232,8 +243,10 @@ final class dispatcher_test extends \advanced_testcase {
 
         // Simulate historical metadata from before the positive allowlist, even with gap=0.
         $versionid = $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $cmid, 'version' => 2]);
-        foreach ([['assignsubmission_file', 'submission_files', 'legacy-student.pdf'],
-                ['mod_assign', 'unknown', 'legacy-unknown.pdf']] as [$component, $area, $name]) {
+        foreach (
+            [['assignsubmission_file', 'submission_files', 'legacy-student.pdf'],
+                ['mod_assign', 'unknown', 'legacy-unknown.pdf']] as [$component, $area, $name]
+        ) {
             $fileid = $DB->insert_record('local_coursepilot_cm_file', (object) [
                 'component' => $component, 'filearea' => $area, 'filename' => $name,
                 'pathnamehash' => sha1($name), 'contenthash' => sha1('synthetic'),
@@ -244,15 +257,19 @@ final class dispatcher_test extends \advanced_testcase {
                 'versionid' => $versionid, 'fileid' => $fileid, 'gap' => 0,
             ]);
         }
-        foreach (['coursepilot_compare_activity_versions' => ['cmid' => $cmid, 'from_version' => 1, 'to_version' => 2],
-                'coursepilot_list_activity_versions' => ['cmid' => $cmid]] as $name => $arguments) {
+        foreach (
+            ['coursepilot_compare_activity_versions' => ['cmid' => $cmid, 'from_version' => 1, 'to_version' => 2],
+                'coursepilot_list_activity_versions' => ['cmid' => $cmid]] as $name => $arguments
+        ) {
             $response = dispatcher::handle(['id' => 1, 'method' => 'tools/call',
                 'params' => ['name' => $name, 'arguments' => $arguments]], $token, $this->headers());
             $this->assertSame(200, $response['status']);
             $this->assertFalse($response['body']['result']['isError'] ?? false, json_encode($response));
             $encoded = json_encode($response);
-            foreach (['student-secret.pdf', 'unknown-secret.pdf', 'legacy-student.pdf', 'legacy-unknown.pdf',
-                    'private-profile@example.invalid'] as $secret) {
+            foreach (
+                ['student-secret.pdf', 'unknown-secret.pdf', 'legacy-student.pdf', 'legacy-unknown.pdf',
+                    'private-profile@example.invalid'] as $secret
+            ) {
                 $this->assertStringNotContainsString($secret, $encoded);
             }
             if ($name === 'coursepilot_compare_activity_versions') {

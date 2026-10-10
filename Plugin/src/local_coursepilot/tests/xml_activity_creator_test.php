@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -28,7 +28,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(xml_activity_creator::class)]
 final class xml_activity_creator_test extends \advanced_testcase {
-
     /** @return array{0: \stdClass, 1: string} course and a book activity XML named "Created" */
     private function setup_course(): array {
         $this->resetAfterTest();
@@ -107,9 +106,14 @@ final class xml_activity_creator_test extends \advanced_testcase {
         }
         $cfg = $DB->export_dbconfig();
         $options = (array) ($cfg->dboptions ?? []);
-        $ddl = new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
+        $ddl = new \mysqli(
+            $cfg->dbhost,
+            $cfg->dbuser,
+            $cfg->dbpass,
+            $cfg->dbname,
             (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
-            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null
+        );
         $trigger = 'cpcleanup' . bin2hex(random_bytes(8));
         $table = $DB->get_prefix() . 'book';
         $ddl->query("CREATE TRIGGER $trigger BEFORE DELETE ON $table FOR EACH ROW BEGIN
@@ -237,9 +241,14 @@ final class xml_activity_creator_test extends \advanced_testcase {
         $before = $this->footprint($course->id)['cm'];
         $cfg = $DB->export_dbconfig();
         $options = (array) ($cfg->dboptions ?? []);
-        $ddl = new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
+        $ddl = new \mysqli(
+            $cfg->dbhost,
+            $cfg->dbuser,
+            $cfg->dbpass,
+            $cfg->dbname,
             (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
-            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null
+        );
         $key = 'cpreset' . bin2hex(random_bytes(8));
         $historytable = $DB->get_prefix() . 'local_coursepilot_cm_version';
         $cmtable = $DB->get_prefix() . 'course_modules';

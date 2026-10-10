@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\history;
@@ -33,7 +33,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class retention {
-
     /** @var int Default in days (Spec 0015 §10.7). */
     public const DEFAULT_DAYS = 365;
 
@@ -110,8 +109,12 @@ final class retention {
             return;
         }
         [$insql, $inparams] = $DB->get_in_or_equal(array_values($userids));
-        self::delete_versions($DB->get_fieldset_select('local_coursepilot_cm_version', 'id',
-            "cmid = ? AND userid $insql", array_merge([$cmid], $inparams)));
+        self::delete_versions($DB->get_fieldset_select(
+            'local_coursepilot_cm_version',
+            'id',
+            "cmid = ? AND userid $insql",
+            array_merge([$cmid], $inparams)
+        ));
     }
 
     /**
@@ -161,7 +164,14 @@ final class retention {
 
         $cutoff = time() - self::days() * DAYSECS;
         $versionids = array_keys($DB->get_records_select(
-            'local_coursepilot_cm_version', 'timecreated < ?', [$cutoff], '', 'id', 0, $limit));
+            'local_coursepilot_cm_version',
+            'timecreated < ?',
+            [$cutoff],
+            '',
+            'id',
+            0,
+            $limit
+        ));
         self::delete_versions($versionids);
         return count($versionids);
     }
@@ -179,7 +189,14 @@ final class retention {
 
         $cursor = (int) get_config('local_coursepilot', self::CURSOR);
         $fileids = array_keys($DB->get_records_select(
-            'local_coursepilot_cm_file', 'id > ?', [$cursor], 'id ASC', 'id', 0, $limit));
+            'local_coursepilot_cm_file',
+            'id > ?',
+            [$cursor],
+            'id ASC',
+            'id',
+            0,
+            $limit
+        ));
         if ($fileids) {
             [$insql, $params] = $DB->get_in_or_equal($fileids);
             // Activities whose module is gone are skipped: without a module type

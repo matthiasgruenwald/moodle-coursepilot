@@ -2,18 +2,17 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
-
 
 namespace local_coursepilot\external;
 
@@ -33,7 +32,6 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(export_default_activity::class)]
 final class export_default_activity_test extends \advanced_testcase {
-
     /** @return array{0: \stdClass, 1: \stdClass} course and teacher (logged in) */
     private function setup_teacher(): array {
         $this->resetAfterTest();
@@ -226,10 +224,14 @@ final class export_default_activity_test extends \advanced_testcase {
         $sink = $this->redirectEvents();
         $result = export_default_activity::execute($course->id, 'book');
         $events = $sink->get_events();
-        $created = array_values(array_filter($events,
-            fn($event) => $event instanceof \core\event\course_module_created));
-        $deleted = array_values(array_filter($events,
-            fn($event) => $event instanceof \core\event\course_module_deleted));
+        $created = array_values(array_filter(
+            $events,
+            fn($event) => $event instanceof \core\event\course_module_created
+        ));
+        $deleted = array_values(array_filter(
+            $events,
+            fn($event) => $event instanceof \core\event\course_module_deleted
+        ));
         $this->assertStringContainsString('<book id=', $result['xml']);
         $this->assertCount(1, $created);
         $this->assertCount(1, $deleted);

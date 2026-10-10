@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -37,7 +37,6 @@ use local_coursepilot\webdav\webdav_instance;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(webdav_storage_port::class)]
 final class webdav_storage_port_test extends storage_port_contract_test {
-
     use webdav_instance_fixture;
 
     /** @var int|null Default test user’s instance; see setUp(). */
@@ -93,7 +92,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
      * returning a translated error, matching pointer_writer’s external path.
      */
     public function test_write_records_ausstand_when_the_underlying_put_fails(): void {
-        $onlyputfails = new class(new fake_webdav_transport()) implements \local_coursepilot\webdav\webdav_transport {
+        $onlyputfails = new class (new fake_webdav_transport()) implements \local_coursepilot\webdav\webdav_transport {
             public function __construct(private readonly fake_webdav_transport $inner) {
             }
 
@@ -128,7 +127,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
      * as writing.
      */
     public function test_append_records_ausstand_when_the_underlying_put_fails(): void {
-        $onlyputfails = new class(new fake_webdav_transport()) implements \local_coursepilot\webdav\webdav_transport {
+        $onlyputfails = new class (new fake_webdav_transport()) implements \local_coursepilot\webdav\webdav_transport {
             public function __construct(private readonly fake_webdav_transport $inner) {
             }
 

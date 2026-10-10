@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -36,7 +36,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class create_activity_from_xml extends external_api {
-
     /**
      * @return external_function_parameters
      */
@@ -49,14 +48,22 @@ final class create_activity_from_xml extends external_api {
             'hidden' => new external_value(PARAM_BOOL, 'Leave the activity hidden after the check', VALUE_DEFAULT, false),
             'replaces_cmid' => new external_value(PARAM_INT, 'Supersede this activity (same type, same course): the new one is placed directly behind it, the old one is only hidden. 0 = create only', VALUE_DEFAULT, 0),
             'dry_run' => new external_value(PARAM_BOOL, 'Only with replaces_cmid: write nothing, return the references to the old activity (plan preview)', VALUE_DEFAULT, false),
-            'files' => new external_multiple_structure(new external_single_structure([
+            'files' => new external_multiple_structure(
+                new external_single_structure([
                 'path' => new external_value(PARAM_RAW, 'Path in the material store; binary contents stay on the server'),
                 'filearea' => new external_value(PARAM_ALPHANUMEXT, 'Declared activity file area; lightboxgallery: gallery_images'),
                 'caption' => new external_value(PARAM_NOTAGS, 'Image caption (plain text), empty if omitted', VALUE_DEFAULT, ''),
-                'location' => new external_value(PARAM_ALPHA, \local_coursepilot\material_files::LOCATION_DESCRIPTION,
-                    VALUE_DEFAULT, \local_coursepilot\material_files::LOCATION_STORE),
-            ]), 'Files copied after the XML round trip and before visibility; only declared activity file areas are allowed',
-                VALUE_DEFAULT, []),
+                'location' => new external_value(
+                    PARAM_ALPHA,
+                    \local_coursepilot\material_files::LOCATION_DESCRIPTION,
+                    VALUE_DEFAULT,
+                    \local_coursepilot\material_files::LOCATION_STORE
+                ),
+                ]),
+                'Files copied after the XML round trip and before visibility; only declared activity file areas are allowed',
+                VALUE_DEFAULT,
+                []
+            ),
         ]);
     }
 
@@ -112,7 +119,11 @@ final class create_activity_from_xml extends external_api {
                 throw new \invalid_parameter_exception('dry_run needs replaces_cmid.');
             }
             $preview = xml_activity_creator::preview_supersede(
-                $params['courseid'], $params['modname'], $params['activity_xml'], $params['replaces_cmid']);
+                $params['courseid'],
+                $params['modname'],
+                $params['activity_xml'],
+                $params['replaces_cmid']
+            );
             return self::shape(['cmid' => 0, 'presets' => []] + $preview);
         }
         $result = xml_activity_creator::create(
@@ -174,14 +185,20 @@ final class create_activity_from_xml extends external_api {
                 ]),
                 'Places that still point at the superseded activity (only with replaces_cmid); not resolved'
             ),
-            'successor_cmid' => new external_value(PARAM_INT,
+            'successor_cmid' => new external_value(
+                PARAM_INT,
                 'Newest activity that already supersedes replaces_cmid (ask the teacher whether to supersede that one instead), '
-                . '0 if none'),
-            'hidden_predecessors' => new external_value(PARAM_INT,
+                . '0 if none'
+            ),
+            'hidden_predecessors' => new external_value(
+                PARAM_INT,
                 'Hidden earlier versions in the chain behind the new activity: replaces_cmid (hidden by superseding) '
-                . 'plus its hidden predecessors; 0 without replaces_cmid'),
-            'message' => new external_value(PARAM_RAW,
-                'Hints about Moodle presets, unresolved references and the superseding chain, empty if there are none'),
+                . 'plus its hidden predecessors; 0 without replaces_cmid'
+            ),
+            'message' => new external_value(
+                PARAM_RAW,
+                'Hints about Moodle presets, unresolved references and the superseding chain, empty if there are none'
+            ),
         ]);
     }
 }

@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -47,7 +47,6 @@ require_once($CFG->libdir . '/questionlib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class create_mc_question extends external_api {
-
     /**
      * @return external_function_parameters
      */
@@ -198,10 +197,13 @@ final class create_mc_question extends external_api {
             throw new \invalid_parameter_exception('At least one answer must have a positive fraction.');
         }
         $positivesum = round(array_sum(array_map(
-            static fn($answer) => max(0.0, (float) $answer['fraction']), $answers)), 2);
+            static fn($answer) => max(0.0, (float) $answer['fraction']),
+            $answers
+        )), 2);
         if (abs($positivesum - 1.0) > 0.001) {
             throw new \invalid_parameter_exception(
-                'Positive fraction values must sum to exactly 1 (currently ' . $positivesum . ').');
+                'Positive fraction values must sum to exactly 1 (currently ' . $positivesum . ').'
+            );
         }
     }
 

@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -64,7 +64,6 @@ require_once($CFG->libdir . '/questionlib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class update_mc_question extends external_api {
-
     /** @var string[] Allowed patch fields - everything else is an error (trust boundary). */
     private const PATCHABLE_FIELDS = [
         'name', 'questiontext', 'selectionmode', 'answers', 'defaultmark', 'generalfeedback',
@@ -191,7 +190,8 @@ final class update_mc_question extends external_api {
         if ($question->qtype !== 'multichoice') {
             throw new \invalid_parameter_exception(
                 'update_mc_question only works for multiple-choice questions (qtype "multichoice"); '
-                    . 'this question is "' . $question->qtype . '".');
+                . 'this question is "' . $question->qtype . '".'
+            );
         }
 
         return [$question, $category, $context];
@@ -362,7 +362,8 @@ final class update_mc_question extends external_api {
             if (!in_array($fieldname, self::PATCHABLE_FIELDS, true)) {
                 throw new \invalid_parameter_exception(
                     'Unknown field "' . $fieldname . '" in fields_json. Allowed: '
-                        . implode(', ', self::PATCHABLE_FIELDS) . '.');
+                    . implode(', ', self::PATCHABLE_FIELDS) . '.'
+                );
             }
         }
 
@@ -438,7 +439,8 @@ final class update_mc_question extends external_api {
         foreach (array_values($answers) as $i => $answer) {
             if (!is_array($answer) || !array_key_exists('answer', $answer) || !array_key_exists('fraction', $answer)) {
                 throw new \invalid_parameter_exception(
-                    'Every answer option in "answers" needs "answer" and "fraction".');
+                    'Every answer option in "answers" needs "answer" and "fraction".'
+                );
             }
             $object = new \stdClass();
             $object->id = -($i + 1);
@@ -579,7 +581,14 @@ final class update_mc_question extends external_api {
         if ($questiontextdraftitemid !== null) {
             $current = $DB->get_field('question', 'questiontext', ['id' => $questionid], MUST_EXIST);
             $new = file_save_draft_area_files(
-                $questiontextdraftitemid, $context->id, 'question', 'questiontext', $questionid, $fileoptions, $current);
+                $questiontextdraftitemid,
+                $context->id,
+                'question',
+                'questiontext',
+                $questionid,
+                $fileoptions,
+                $current
+            );
             file_clear_draft_area($questiontextdraftitemid);
             $DB->set_field('question', 'questiontext', $new, ['id' => $questionid]);
         }
@@ -590,12 +599,19 @@ final class update_mc_question extends external_api {
                 if (!isset($answers[$index])) {
                     throw new \invalid_parameter_exception(
                         'feedback_images refers to answer option ' . $index . ', but "answers" has only '
-                            . count($answers) . ' entries.');
+                        . count($answers) . ' entries.'
+                    );
                 }
                 $answer = $answers[$index];
                 $new = file_save_draft_area_files(
-                    $draftitemid, $context->id, 'question', 'answerfeedback', (int) $answer->id,
-                    $fileoptions, (string) $answer->feedback);
+                    $draftitemid,
+                    $context->id,
+                    'question',
+                    'answerfeedback',
+                    (int) $answer->id,
+                    $fileoptions,
+                    (string) $answer->feedback
+                );
                 file_clear_draft_area($draftitemid);
                 $DB->set_field('question_answers', 'feedback', $new, ['id' => $answer->id]);
             }

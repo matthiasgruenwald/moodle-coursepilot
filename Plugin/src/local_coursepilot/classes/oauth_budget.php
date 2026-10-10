@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -29,7 +29,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class oauth_budget {
-
     /** @var string Budget counters, one per scope/source/window. */
     private const TABLE = 'local_coursepilot_oauth_budget';
 
@@ -84,8 +83,14 @@ final class oauth_budget {
      * @param int $sourcelimit
      * @return bool
      */
-    private static function consume_locked(string $scope, int $siteid, string $source, int $expires,
-            int $sitelimit, int $sourcelimit): bool {
+    private static function consume_locked(
+        string $scope,
+        int $siteid,
+        string $source,
+        int $expires,
+        int $sitelimit,
+        int $sourcelimit
+    ): bool {
         global $DB;
 
         $DB->execute('UPDATE {' . self::TABLE . '} SET hits = hits + 1 WHERE id = ?', [$siteid]);
@@ -119,8 +124,11 @@ final class oauth_budget {
      */
     public static function active(string $scope, string $source): bool {
         global $DB;
-        return $DB->record_exists_select(self::TABLE, 'scope = ? AND sourcekey = ? AND expires > ?',
-            [$scope, self::key($source), time()]);
+        return $DB->record_exists_select(
+            self::TABLE,
+            'scope = ? AND sourcekey = ? AND expires > ?',
+            [$scope, self::key($source), time()]
+        );
     }
 
     /**

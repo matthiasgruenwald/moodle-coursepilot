@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -40,7 +40,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class get_modules extends external_api {
-
     /**
      * @return external_function_parameters
      */
@@ -72,8 +71,11 @@ class get_modules extends external_api {
         $sqlparams = ['courseid' => $params['courseid']];
 
         if ($params['sectionnum'] >= 0) {
-            $section = $DB->get_record('course_sections',
-                ['course' => $params['courseid'], 'section' => $params['sectionnum']], 'id');
+            $section = $DB->get_record(
+                'course_sections',
+                ['course' => $params['courseid'], 'section' => $params['sectionnum']],
+                'id'
+            );
             if ($section) {
                 $where .= ' AND cm.section = :sectionid';
                 $sqlparams['sectionid'] = $section->id;
@@ -89,7 +91,7 @@ class get_modules extends external_api {
               ORDER BY cs.section";
 
         $rows = array_values($DB->get_records_sql($sql, $sqlparams));
-        usort($rows, function($a, $b) {
+        usort($rows, function ($a, $b) {
             return [$a->sectionnum, self::sequence_index((string) $a->sequence, (int) $a->cmid)]
                 <=> [$b->sectionnum, self::sequence_index((string) $b->sequence, (int) $b->cmid)];
         });
@@ -134,11 +136,11 @@ class get_modules extends external_api {
     public static function execute_returns(): external_multiple_structure {
         return new external_multiple_structure(
             new external_single_structure([
-                'cmid'       => new external_value(PARAM_INT,  'Course module ID (use for update calls)'),
-                'sectionnum' => new external_value(PARAM_INT,  'Section number'),
+                'cmid'       => new external_value(PARAM_INT, 'Course module ID (use for update calls)'),
+                'sectionnum' => new external_value(PARAM_INT, 'Section number'),
                 'modname'    => new external_value(PARAM_TEXT, 'Module type (page, assign, label, url...)'),
                 'name'       => new external_value(PARAM_TEXT, 'Display name of the activity'),
-                'visible'    => new external_value(PARAM_INT,  'Visible (1) or hidden (0)'),
+                'visible'    => new external_value(PARAM_INT, 'Visible (1) or hidden (0)'),
                 'visibleoncoursepage' => new external_value(PARAM_INT, 'Stealth: 1 = shown on course page, 0 = stealth'),
                 'coursepagevisibility' => new external_value(PARAM_TEXT, 'shown | stealth'),
                 'availability_status' => new external_value(PARAM_TEXT, 'shown | stealth | hidden'),

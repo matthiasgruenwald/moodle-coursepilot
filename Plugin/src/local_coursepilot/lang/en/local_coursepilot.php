@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
@@ -24,12 +24,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Coursepilot';
+$string['capabilitymissing'] = 'CAPABILITY_MISSING:{$a}';
+$string['coursepilot:restoreversion'] = 'Restore activities to an earlier version';
 $string['coursepilot:use'] = 'Use Coursepilot in a course';
 $string['coursepilot:useremote'] = 'Connect an AI chat to Coursepilot (remote access)';
 $string['coursepilot:viewhistory'] = 'View the change history of activities';
-$string['coursepilot:restoreversion'] = 'Restore activities to an earlier version';
-$string['capabilitymissing'] = 'CAPABILITY_MISSING:{$a}';
+$string['pluginname'] = 'Coursepilot';
 
 // MCP tool descriptions. These strings are part of the public tool contract.
 $string['tool_list_courses'] = 'Lists the courses the calling teacher may use Coursepilot in.';

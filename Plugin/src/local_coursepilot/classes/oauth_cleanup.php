@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -32,7 +32,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class oauth_cleanup {
-
     /** @var int Rows per step and run; the next run continues. */
     public const BATCH = 500;
 
@@ -55,8 +54,12 @@ final class oauth_cleanup {
         $deleted += self::delete_batch(workbench_ticket::TABLE, 'expires < :now', ['now' => $now], $batch);
         $deleted += self::delete_dead_connections($now, $batch);
         // Unattributed historical rows: never usable, only revoked or expired ones exist after the #638 backfill.
-        $deleted += self::delete_batch('local_coursepilot_oauth_token',
-            'connectionid IS NULL AND (revoked = 1 OR refreshexpires < :now)', ['now' => $now], $batch);
+        $deleted += self::delete_batch(
+            'local_coursepilot_oauth_token',
+            'connectionid IS NULL AND (revoked = 1 OR refreshexpires < :now)',
+            ['now' => $now],
+            $batch
+        );
         return $deleted + self::delete_unused_clients($now, $batch);
     }
 
@@ -81,7 +84,11 @@ final class oauth_cleanup {
               WHERE g.revoked = 1
                  OR NOT EXISTS (SELECT 1 FROM {local_coursepilot_oauth_token} t
                                  WHERE t.connectionid = g.id AND t.refreshexpires >= :now)
-           ORDER BY g.id', ['now' => $now], 0, $batch));
+           ORDER BY g.id',
+            ['now' => $now],
+            0,
+            $batch
+        ));
         if (!$ids) {
             return 0;
         }
@@ -115,7 +122,11 @@ final class oauth_cleanup {
                                  WHERE g.revoked = 0 AND g.clientid = c.clientid)
                 AND NOT EXISTS (SELECT 1 FROM {local_coursepilot_oauth_code} o
                                  WHERE o.clientid = c.clientid AND o.expires >= :now)
-           ORDER BY c.id', ['horizon' => $now - self::CLIENT_UNUSED_TTL, 'now' => $now], 0, $batch));
+           ORDER BY c.id',
+            ['horizon' => $now - self::CLIENT_UNUSED_TTL, 'now' => $now],
+            0,
+            $batch
+        ));
         if ($ids) {
             $DB->delete_records_list('local_coursepilot_oauth_client', 'id', $ids);
         }

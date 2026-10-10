@@ -1,6 +1,18 @@
 <?php
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
-// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
 
@@ -97,7 +109,8 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
             $this->assertSame('temporarily_unavailable', $token['body']['error']);
             $this->assertGreaterThan(0, (int) $token['headers']['Retry-After']);
             $this->assertSame('temporarily_unavailable', oauth_lib::validate_authorize_request(
-                $this->authorize_params($base . '/c2'))['error']);
+                $this->authorize_params($base . '/c2')
+            )['error']);
             $this->assertSame(3, $this->gets($requests), 'Rejected lookups start no network work.');
             $this->assertFalse($this->stored($base . '/c1'));
 
@@ -194,8 +207,10 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
             set_config('curlsecurityblockedhosts', '');
             set_config('curlsecurityallowedport', $CFG->curlsecurityallowedport);
 
-            $this->assertSame([400, 429], $this->race_on_site_budget(['192.0.2.1', $base . '/p1'],
-                ['192.0.2.2', $base . '/p2']), 'One known client reaches grant validation, one is refused.');
+            $this->assertSame([400, 429], $this->race_on_site_budget(
+                ['192.0.2.1', $base . '/p1'],
+                ['192.0.2.2', $base . '/p2']
+            ), 'One known client reaches grant validation, one is refused.');
             $this->assertSame(1, $this->gets($requests));
         });
     }
@@ -254,16 +269,24 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         $ca = openssl_csr_sign($cacsr, null, $cakey, 1, $options + ['x509_extensions' => 'ca']);
         $key = openssl_pkey_new($options);
         $csr = openssl_csr_new(['commonName' => $identity === 'wronghost' ? 'wrong.example' : 'localhost'], $key, $options);
-        $cert = openssl_csr_sign($csr, $identity === 'selfsigned' ? null : $ca,
-            $identity === 'selfsigned' ? $key : $cakey, 1, $options + ['x509_extensions' => 'leaf']);
+        $cert = openssl_csr_sign(
+            $csr,
+            $identity === 'selfsigned' ? null : $ca,
+            $identity === 'selfsigned' ? $key : $cakey,
+            1,
+            $options + ['x509_extensions' => 'leaf']
+        );
         openssl_x509_export_to_file($cert, $directory . '/peer.pem');
         openssl_pkey_export_to_file($key, $directory . '/peer.key', null, $options);
         $capath = $CFG->dataroot . '/moodleorgca.crt';
         $previousca = is_file($capath) ? file_get_contents($capath) : null;
         openssl_x509_export_to_file($ca, $capath);
-        $process = proc_open([PHP_BINARY, __DIR__ . '/fixtures/cimd_https_server.php',
+        $process = proc_open(
+            [PHP_BINARY, __DIR__ . '/fixtures/cimd_https_server.php',
             $directory . '/peer.pem', $directory . '/peer.key', $directory . '/requests'],
-            [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['file', $directory . '/server.log', 'a']], $pipes);
+            [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['file', $directory . '/server.log', 'a']],
+            $pipes
+        );
         try {
             stream_set_timeout($pipes[1], 5);
             $address = trim(fgets($pipes[1]));

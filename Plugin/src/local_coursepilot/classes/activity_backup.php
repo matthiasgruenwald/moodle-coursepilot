@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -137,8 +137,10 @@ final class activity_backup {
     private static function modname_of(string $xml): string {
         $dom = new \DOMDocument();
         $modname = $dom->loadXML($xml, LIBXML_NONET) ? $dom->documentElement->getAttribute('modulename') : '';
-        if ($dom->documentElement?->nodeName !== 'activity' || !preg_match('/^[a-z][a-z0-9]*$/', $modname)
-                || !plugin_supports('mod', $modname, FEATURE_BACKUP_MOODLE2)) {
+        if (
+            $dom->documentElement?->nodeName !== 'activity' || !preg_match('/^[a-z][a-z0-9]*$/', $modname)
+                || !plugin_supports('mod', $modname, FEATURE_BACKUP_MOODLE2)
+        ) {
             throw new invalid_parameter_exception('Not an activity XML of a backup-capable activity type.');
         }
         return $modname;
@@ -201,8 +203,10 @@ final class activity_backup {
         global $CFG;
         $cmid = self::SYNTH_CMID;
         $settings = '';
-        foreach (['users' => 0, 'activities' => 1, 'files' => 1, 'filters' => 1, 'calendarevents' => 1, 'groups' => 1,
-                'competencies' => 1, 'customfield' => 1, 'contentbankcontent' => 1] as $name => $value) {
+        foreach (
+            ['users' => 0, 'activities' => 1, 'files' => 1, 'filters' => 1, 'calendarevents' => 1, 'groups' => 1,
+                'competencies' => 1, 'customfield' => 1, 'contentbankcontent' => 1] as $name => $value
+        ) {
             $settings .= "<setting><level>root</level><name>$name</name><value>$value</value></setting>";
         }
         $act = "<activity>{$modname}_{$cmid}</activity>";
@@ -262,16 +266,26 @@ final class activity_backup {
                 }
             }
             if (!$owned) {
-                throw new moodle_exception('activitycleanupincomplete', 'local_coursepilot', '', null,
-                    'Restore reported no owned activity identity; no automatic deletion was attempted.');
+                throw new moodle_exception(
+                    'activitycleanupincomplete',
+                    'local_coursepilot',
+                    '',
+                    null,
+                    'Restore reported no owned activity identity; no automatic deletion was attempted.'
+                );
             }
             try {
                 foreach ($owned as $cmid => $instanceid) {
                     course_module_placement::discard_failed($cmid, $instanceid ?: null);
                 }
             } catch (\Throwable $cleanup) {
-                throw new moodle_exception('activitycleanupincomplete', 'local_coursepilot', '', null,
-                    $cleanup->getMessage());
+                throw new moodle_exception(
+                    'activitycleanupincomplete',
+                    'local_coursepilot',
+                    '',
+                    null,
+                    $cleanup->getMessage()
+                );
             }
             throw $failure;
         } finally {

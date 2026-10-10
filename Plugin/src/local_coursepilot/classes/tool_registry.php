@@ -1,5 +1,18 @@
 <?php
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
 
@@ -119,10 +132,12 @@ final class tool_registry {
 
     private static function is_write_class(string $classname): bool {
         // Read-only despite the "export_" prefix: hands out XML, writes nothing.
-        if (in_array($classname, [
+        if (
+            in_array($classname, [
             'local_coursepilot\\external\\create_workbench_download_links',
             'local_coursepilot\\external\\export_activity_backup',
-        ], true)) {
+            ], true)
+        ) {
             return false;
         }
         return preg_match('/\\\\(?:restore|update|create|set|ensure|move|import|export|add|write|append|upload|crop|compose|delete|clone|dismiss)_/', $classname) === 1;

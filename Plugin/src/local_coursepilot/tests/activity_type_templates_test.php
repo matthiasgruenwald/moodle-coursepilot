@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(context_area::class)]
 #[CoversClass(private_files_storage_port::class)]
 final class activity_type_templates_test extends \advanced_testcase {
-
     use \local_coursepilot\tests\webdav\webdav_instance_fixture;
 
     public function test_location_selection_supplies_verified_templates_in_private_files(): void {
@@ -48,8 +47,10 @@ final class activity_type_templates_test extends \advanced_testcase {
             $this->assertNotNull($file);
             $this->assertSame(file_get_contents(__DIR__ . '/../activity-types/' . $modname . '.md'), $file['content']);
         }
-        $this->assertSame(['book.md', 'checklist.md', 'glossary.md'],
-            array_column(context_area::list('activity-types')['entries'], 'name'));
+        $this->assertSame(
+            ['book.md', 'checklist.md', 'glossary.md'],
+            array_column(context_area::list('activity-types')['entries'], 'name')
+        );
         $this->assertNull(context_area::read('activity-types/lightboxgallery.md'));
     }
     public function test_repeated_location_selection_has_no_writes_or_template_notice(): void {
@@ -72,7 +73,10 @@ final class activity_type_templates_test extends \advanced_testcase {
         $this->setUser($this->getDataGenerator()->create_user());
         $content = "---\ncoursepilot.personenbezug: true\n---\nTeacher's own notes\n";
         get_file_storage()->create_file_from_string(context_files::filerecord(
-            context_files::own_context()->id, '/coursepilot/activity-types/', 'book.md'), $content);
+            context_files::own_context()->id,
+            '/coursepilot/activity-types/',
+            'book.md'
+        ), $content);
         $before = context_area::read('activity-types/book.md');
         $this->assertTrue(personal_data::is_marked($content));
         $this->assertFalse(personal_data::allowed());
@@ -154,8 +158,14 @@ final class activity_type_templates_test extends \advanced_testcase {
         $fake->seed_folder('/Coursepilot/Kontext');
         $fake->fail_once('/Coursepilot/Kontext/activity-types/book.md', 401);
         $selection = $this->external_selection();
-        get_file_storage()->get_file(context_files::own_context()->id, 'user', 'private', 0,
-            '/coursepilot/', storage_anchor::POINTER_FILENAME)->delete();
+        get_file_storage()->get_file(
+            context_files::own_context()->id,
+            'user',
+            'private',
+            0,
+            '/coursepilot/',
+            storage_anchor::POINTER_FILENAME
+        )->delete();
         try {
             $provided = [];
             $this->assertSame(['context_area'], location_selection::apply($selection, $provided));
@@ -173,7 +183,7 @@ final class activity_type_templates_test extends \advanced_testcase {
         [$user, $fake] = $this->set_up_external_context();
         $fake->seed_folder('/Coursepilot');
         $fake->seed_folder('/Coursepilot/Kontext');
-        $transport = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
+        $transport = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
             public function __construct(private readonly \local_coursepilot\tests\webdav\fake_webdav_transport $fake) {
             }
             public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
@@ -211,8 +221,11 @@ final class activity_type_templates_test extends \advanced_testcase {
         // Moodle tracks table changes in the parent process for teardown.
         // Mark files here so child-created rows cannot escape the test reset.
         get_file_storage()->create_directory(context_files::own_context()->id, 'user', 'private', 0, '/coursepilot/');
-        $process = proc_open([PHP_BINARY, __DIR__ . '/fixtures/activity_template_create_race.php', (string) $user->id],
-            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        $process = proc_open(
+            [PHP_BINARY, __DIR__ . '/fixtures/activity_template_create_race.php', (string) $user->id],
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes
+        );
         $output = stream_get_contents($pipes[1]);
         $errors = stream_get_contents($pipes[2]);
         fclose($pipes[1]);
@@ -231,9 +244,15 @@ final class activity_type_templates_test extends \advanced_testcase {
         $fake->seed_folder('/Coursepilot');
         $fake->seed_folder('/Coursepilot/Kontext');
         $selection = $this->external_selection();
-        get_file_storage()->get_file(context_files::own_context()->id, 'user', 'private', 0,
-            '/coursepilot/', storage_anchor::POINTER_FILENAME)->delete();
-        $transport = new class($fake) implements \local_coursepilot\webdav\webdav_transport {
+        get_file_storage()->get_file(
+            context_files::own_context()->id,
+            'user',
+            'private',
+            0,
+            '/coursepilot/',
+            storage_anchor::POINTER_FILENAME
+        )->delete();
+        $transport = new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
             public function __construct(private readonly \local_coursepilot\tests\webdav\fake_webdav_transport $fake) {
             }
             public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
@@ -265,5 +284,4 @@ final class activity_type_templates_test extends \advanced_testcase {
             'material_store' => ['type' => 'moodle'],
         ];
     }
-
 }

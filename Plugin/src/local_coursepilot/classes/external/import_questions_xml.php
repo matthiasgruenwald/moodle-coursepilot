@@ -2,16 +2,16 @@
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
 //
 // Coursepilot is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // Coursepilot is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Affero General Public License
+// You should have received a copy of the GNU General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
@@ -78,7 +78,6 @@ require_once($CFG->dirroot . '/question/format/xml/format.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class import_questions_xml extends external_api {
-
     /**
      * @var int Size limit per import (#424 follow-up 2), applied to resolved XML.
      *      See {@see self::guard_server_size_limit()} for the rationale.
@@ -569,11 +568,15 @@ final class import_questions_xml extends external_api {
         // save_question()->file_save_draft_area_files() is never called and images
         // from BOTH doors are silently discarded (Spec 0018 §7.1, #437).
         $form->questiontext = self::as_text_array(
-            $question->questiontext ?? '', $question->questiontextformat ?? FORMAT_HTML,
-            $question->questiontextitemid ?? 0);
+            $question->questiontext ?? '',
+            $question->questiontextformat ?? FORMAT_HTML,
+            $question->questiontextitemid ?? 0
+        );
         $form->generalfeedback = self::as_text_array(
-            $question->generalfeedback ?? '', $question->generalfeedbackformat ?? FORMAT_HTML,
-            $question->generalfeedbackitemid ?? 0);
+            $question->generalfeedback ?? '',
+            $question->generalfeedbackformat ?? FORMAT_HTML,
+            $question->generalfeedbackitemid ?? 0
+        );
         if (!isset($form->defaultmark)) {
             // Moodle XML exports historically use <defaultgrade>.
             $form->defaultmark = $question->defaultgrade ?? 1.0;
@@ -770,7 +773,8 @@ final class import_questions_xml extends external_api {
         }
         foreach ($expectedanswers as $i => $answer) {
             $other = $actualanswers[$i];
-            if ($answer['text'] !== $other['text']
+            if (
+                $answer['text'] !== $other['text']
                 || abs($answer['fraction'] - $other['fraction']) > 0.00001
                 || $answer['feedback'] !== $other['feedback']
             ) {
