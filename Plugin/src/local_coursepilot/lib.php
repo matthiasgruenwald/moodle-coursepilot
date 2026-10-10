@@ -162,7 +162,8 @@ function local_coursepilot_extend_navigation_course(
 function local_coursepilot_status_checks(): array {
     return array_merge(
         array_map(
-            static fn (string $modname): \local_coursepilot\check\activity_drift => new \local_coursepilot\check\activity_drift($modname),
+            static fn (string $modname): \local_coursepilot\check\activity_drift =>
+                new \local_coursepilot\check\activity_drift($modname),
             \local_coursepilot\catalog\registry::known_modnames()
         ),
         [

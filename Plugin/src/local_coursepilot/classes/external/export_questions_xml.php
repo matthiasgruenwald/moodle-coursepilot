@@ -333,7 +333,11 @@ final class export_questions_xml extends external_api {
      * @return string
      */
     private static function build_message(int $count, array $missing, bool $placeholder): string {
-        $base = $count === 1 ? get_string('questionexportone', 'local_coursepilot') : get_string('questionexportmany', 'local_coursepilot', $count);
+        $base = $count === 1 ? get_string('questionexportone', 'local_coursepilot') : get_string(
+            'questionexportmany',
+            'local_coursepilot',
+            $count
+        );
 
         if ($placeholder) {
             $base .= ' ' . get_string('questionexportplaceholder', 'local_coursepilot');
@@ -345,7 +349,11 @@ final class export_questions_xml extends external_api {
 
         $details = [];
         foreach ($missing as $entry) {
-            $details[] = get_string('questionexportmissingdetail', 'local_coursepilot', (object) ['name' => $entry['name'], 'files' => implode(', ', $entry['files'])]);
+            $details[] = get_string(
+                'questionexportmissingdetail',
+                'local_coursepilot',
+                (object) ['name' => $entry['name'], 'files' => implode(', ', $entry['files'])]
+            );
         }
 
         return $base . ' ' . get_string('questionexportmissing', 'local_coursepilot', implode('; ', $details));

@@ -55,7 +55,12 @@ final class update_question_category extends external_api {
         return new external_function_parameters([
             'categoryid' => new external_value(PARAM_INT, 'ID of the category to change'),
             'name' => new external_value(PARAM_TEXT, 'New category name (empty = keep the current name)', VALUE_DEFAULT, ''),
-            'parent' => new external_value(PARAM_INT, 'ID of the new parent category (0 = keep the current parent)', VALUE_DEFAULT, 0),
+            'parent' => new external_value(
+                PARAM_INT,
+                'ID of the new parent category (0 = keep the current parent)',
+                VALUE_DEFAULT,
+                0
+            ),
         ]);
     }
 

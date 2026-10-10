@@ -224,7 +224,13 @@ final class context_area_pending_test extends \advanced_testcase {
      * @param int $courseid
      * @return array
      */
-    private function invoke_persist_write(storage_port $port, string $path, string $content, string $operation, int $courseid): array {
+    private function invoke_persist_write(
+        storage_port $port,
+        string $path,
+        string $content,
+        string $operation,
+        int $courseid
+    ): array {
         $method = new \ReflectionMethod(context_area::class, 'persist_moodle_write');
         $method->setAccessible(true);
         return $method->invoke(null, $port, $path, $content, $operation, $courseid);
@@ -240,7 +246,13 @@ final class context_area_pending_test extends \advanced_testcase {
      * @param int $courseid
      * @return array
      */
-    private function invoke_persist_append(storage_port $port, string $path, string $content, string $operation, int $courseid): array {
+    private function invoke_persist_append(
+        storage_port $port,
+        string $path,
+        string $content,
+        string $operation,
+        int $courseid
+    ): array {
         $method = new \ReflectionMethod(context_area::class, 'persist_moodle_append');
         $method->setAccessible(true);
         return $method->invoke(null, $port, $path, $content, $operation, $courseid);

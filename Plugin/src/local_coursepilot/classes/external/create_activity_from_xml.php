@@ -44,10 +44,24 @@ final class create_activity_from_xml extends external_api {
             'courseid' => new external_value(PARAM_INT, 'Course ID'),
             'modname' => new external_value(PARAM_ALPHANUMEXT, 'Developed activity type, e.g. "book"'),
             'section' => new external_value(PARAM_INT, 'Section number (0 = general section)'),
-            'activity_xml' => new external_value(PARAM_RAW, 'Activity XML (<module>.xml of a backup), e.g. from coursepilot_export_default_activity'),
+            'activity_xml' => new external_value(
+                PARAM_RAW,
+                'Activity XML (<module>.xml of a backup), e.g. from coursepilot_export_default_activity'
+            ),
             'hidden' => new external_value(PARAM_BOOL, 'Leave the activity hidden after the check', VALUE_DEFAULT, false),
-            'replaces_cmid' => new external_value(PARAM_INT, 'Supersede this activity (same type, same course): the new one is placed directly behind it, the old one is only hidden. 0 = create only', VALUE_DEFAULT, 0),
-            'dry_run' => new external_value(PARAM_BOOL, 'Only with replaces_cmid: write nothing, return the references to the old activity (plan preview)', VALUE_DEFAULT, false),
+            'replaces_cmid' => new external_value(
+                PARAM_INT,
+                'Supersede this activity (same type, same course): the new one is placed directly behind it, the old one is only '
+                    . 'hidden. 0 = create only',
+                VALUE_DEFAULT,
+                0
+            ),
+            'dry_run' => new external_value(
+                PARAM_BOOL,
+                'Only with replaces_cmid: write nothing, return the references to the old activity (plan preview)',
+                VALUE_DEFAULT,
+                false
+            ),
             'files' => new external_multiple_structure(
                 new external_single_structure([
                 'path' => new external_value(PARAM_RAW, 'Path in the material store; binary contents stay on the server'),
@@ -185,7 +199,10 @@ final class create_activity_from_xml extends external_api {
             ),
             'references' => new external_multiple_structure(
                 new external_single_structure([
-                    'kind' => new external_value(PARAM_ALPHANUMEXT, 'activity_availability, section_availability or course_completion'),
+                    'kind' => new external_value(
+                        PARAM_ALPHANUMEXT,
+                        'activity_availability, section_availability or course_completion'
+                    ),
                     'location_id' => new external_value(PARAM_INT, 'cmid, section id or course id of the referencing place'),
                     'location' => new external_value(PARAM_TEXT, 'Readable place'),
                 ]),

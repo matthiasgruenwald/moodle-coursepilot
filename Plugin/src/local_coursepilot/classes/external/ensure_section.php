@@ -126,7 +126,13 @@ final class ensure_section extends external_api {
      * @param string $finalname
      * @return string
      */
-    private static function build_message(int $sectionnum, bool $existed, bool $namechanged, string $oldname, string $finalname): string {
+    private static function build_message(
+        int $sectionnum,
+        bool $existed,
+        bool $namechanged,
+        string $oldname,
+        string $finalname
+    ): string {
         $a = (object) ['sectionnum' => $sectionnum, 'oldname' => $oldname, 'name' => $finalname];
         if (!$existed) {
             return $namechanged

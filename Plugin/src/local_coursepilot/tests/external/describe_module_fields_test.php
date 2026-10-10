@@ -277,7 +277,12 @@ final class describe_module_fields_test extends \advanced_testcase {
         sort($names);
 
         $this->assertSame(
-            ['local/coursepilot:restoreversion', 'local/coursepilot:use', 'local/coursepilot:useremote', 'local/coursepilot:viewhistory'],
+            [
+                'local/coursepilot:restoreversion',
+                'local/coursepilot:use',
+                'local/coursepilot:useremote',
+                'local/coursepilot:viewhistory',
+            ],
             $names
         );
     }

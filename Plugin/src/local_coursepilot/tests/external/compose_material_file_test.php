@@ -303,6 +303,9 @@ final class compose_material_file_test extends \advanced_testcase {
             'local_coursepilot_compose_material_file',
             \local_coursepilot\privacy_surface::function_for_tool('coursepilot_compose_material_file')
         );
-        $this->assertSame('write', \local_coursepilot\tool_registry::service_functions()['local_coursepilot_compose_material_file']['type']);
+        $this->assertSame(
+            'write',
+            \local_coursepilot\tool_registry::service_functions()['local_coursepilot_compose_material_file']['type']
+        );
     }
 }

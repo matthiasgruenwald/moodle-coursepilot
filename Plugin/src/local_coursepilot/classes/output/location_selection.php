@@ -121,7 +121,11 @@ final class location_selection {
         foreach (selection::TARGETS as $target) {
             $location = selection::current($target);
             $locations[$target] = [
-                'label' => get_string('locationselectioncurrent' . str_replace('_', '', $target), 'local_coursepilot', $location['display']),
+                'label' => get_string(
+                    'locationselectioncurrent' . str_replace('_', '', $target),
+                    'local_coursepilot',
+                    $location['display']
+                ),
                 'allowancelabel' => selection::allowed_label($location),
             ];
         }
@@ -205,7 +209,9 @@ final class location_selection {
                     $entry['target'] === 'context_area' ? 'locationselectiontabcontextarea' : 'locationselectiontabmaterialstore',
                     'local_coursepilot'
                 ),
-                'from' => isset($entry['from']) ? selection::describe_location($entry['from']) : (string) ($entry['from_text'] ?? ''),
+                'from' => isset($entry['from'])
+                    ? selection::describe_location($entry['from'])
+                    : (string) ($entry['from_text'] ?? ''),
                 'to' => isset($entry['to']) ? selection::describe_location($entry['to']) : (string) ($entry['to_text'] ?? ''),
             ];
         }

@@ -111,7 +111,12 @@ final class activity_type_templates_test extends \advanced_testcase {
     }
 
     #[\PHPUnit\Framework\Attributes\DataProvider('verified_examples')]
-    public function test_delivered_example_creates_and_roundtrips(string $modname, string $name, string $childpath, int $children): void {
+    public function test_delivered_example_creates_and_roundtrips(
+        string $modname,
+        string $name,
+        string $childpath,
+        int $children
+    ): void {
         global $DB;
         $this->resetAfterTest();
         // Core-only CI does not install optional modules. Dedicated verification
@@ -208,7 +213,12 @@ final class activity_type_templates_test extends \advanced_testcase {
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT' && str_ends_with($url, '/book.md')) {
                     $this->fake->seed_file('/Coursepilot/Kontext/activity-types/book.md', "Teacher's concurrent file");
                 }
@@ -226,10 +236,23 @@ final class activity_type_templates_test extends \advanced_testcase {
             foreach ($puts as $put) {
                 $this->assertSame('*', $put['headers']['If-None-Match'] ?? null);
             }
-            $writes = count(array_filter($fake->requests(), static fn (array $r): bool => in_array($r['method'], ['PUT', 'MKCOL', 'DELETE', 'MOVE'])));
+            $writes = count(
+                array_filter(
+                    $fake->requests(),
+                    static fn (array $r): bool => in_array($r['method'], ['PUT', 'MKCOL', 'DELETE', 'MOVE'])
+                )
+            );
             location_selection::apply($this->external_selection(), $provided);
             $this->assertSame([], $provided);
-            $this->assertSame($writes, count(array_filter($fake->requests(), static fn (array $r): bool => in_array($r['method'], ['PUT', 'MKCOL', 'DELETE', 'MOVE']))));
+            $this->assertSame(
+                $writes,
+                count(
+                    array_filter(
+                        $fake->requests(),
+                        static fn (array $r): bool => in_array($r['method'], ['PUT', 'MKCOL', 'DELETE', 'MOVE'])
+                    )
+                )
+            );
         } finally {
             \core\di::reset_container();
         }
@@ -294,7 +317,12 @@ final class activity_type_templates_test extends \advanced_testcase {
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     $this->fake->fill_storage();
                 }

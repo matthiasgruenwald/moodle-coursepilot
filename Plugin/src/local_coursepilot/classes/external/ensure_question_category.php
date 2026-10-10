@@ -55,7 +55,10 @@ final class ensure_question_category extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'name' => new external_value(PARAM_TEXT, 'Category name, convention: "<section number> <title>", e.g. "7.2 Materials and their properties"'),
+            'name' => new external_value(
+                PARAM_TEXT,
+                'Category name, convention: "<section number> <title>", e.g. "7.2 Materials and their properties"'
+            ),
             'parent' => new external_value(PARAM_INT, 'ID of the parent category (e.g. topcategoryid from ensure_question_bank)'),
         ]);
     }
@@ -131,7 +134,10 @@ final class ensure_question_category extends external_api {
             'name' => new external_value(PARAM_TEXT, 'Category name'),
             'parent' => new external_value(PARAM_INT, 'ID of the parent category'),
             'contextid' => new external_value(PARAM_INT, 'Context ID of the question bank'),
-            'created' => new external_value(PARAM_BOOL, 'true if newly created; false if a same-named one under the same parent was reused'),
+            'created' => new external_value(
+                PARAM_BOOL,
+                'true if newly created; false if a same-named one under the same parent was reused'
+            ),
             'message' => new external_value(PARAM_RAW, 'Teacher-facing message'),
         ]);
     }

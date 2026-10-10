@@ -402,7 +402,12 @@ final class update_quiz_settings_test extends \advanced_testcase {
 
         $records = array_values($DB->get_records('quiz_feedback', ['quizid' => $raw->id], 'mingrade DESC'));
         $feedback = current(array_filter($records, fn ($record) => $record->feedbacktext === 'Bestanden'));
-        $this->assertEqualsWithDelta(25.0, (float) $feedback->mingrade, 0.0001, 'Boundary must be converted proportionally (50->25 when halved).');
+        $this->assertEqualsWithDelta(
+            25.0,
+            (float) $feedback->mingrade,
+            0.0001,
+            'Boundary must be converted proportionally (50->25 when halved).'
+        );
     }
 
     /**
@@ -430,7 +435,12 @@ final class update_quiz_settings_test extends \advanced_testcase {
 
         $records = array_values($DB->get_records('quiz_feedback', ['quizid' => $raw->id], 'mingrade DESC'));
         $feedback = current(array_filter($records, fn ($record) => $record->feedbacktext === 'Bestanden'));
-        $this->assertEqualsWithDelta(25.0, (float) $feedback->mingrade, 0.0001, 'Explicitly given boundary must not be scaled additionally.');
+        $this->assertEqualsWithDelta(
+            25.0,
+            (float) $feedback->mingrade,
+            0.0001,
+            'Explicitly given boundary must not be scaled additionally.'
+        );
     }
 
     /**

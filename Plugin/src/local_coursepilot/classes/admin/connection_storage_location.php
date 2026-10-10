@@ -49,7 +49,11 @@ final class connection_storage_location {
             $targets[$target] = get_string('storagelocationtarget' . str_replace('_', '', $target), 'local_coursepilot')
                 . ': ' . self::state_label($state);
 
-            if ($state['state'] === pointer_scan::STATE_EXTERNAL && $state['host'] !== null && !personal_data_hosts::allowed($state['host'])) {
+            if (
+                $state['state'] === pointer_scan::STATE_EXTERNAL
+                && $state['host'] !== null
+                && !personal_data_hosts::allowed($state['host'])
+            ) {
                 $hostblocked = true;
             }
             if ($state['defect'] !== null) {

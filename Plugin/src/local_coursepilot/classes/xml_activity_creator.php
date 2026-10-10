@@ -253,7 +253,11 @@ final class xml_activity_creator {
             libxml_clear_errors();
             libxml_use_internal_errors($previous);
         }
-        if (!$ok || $dom->documentElement->nodeName !== 'activity' || $dom->documentElement->getAttribute('modulename') !== $modname) {
+        if (
+            !$ok
+            || $dom->documentElement->nodeName !== 'activity'
+            || $dom->documentElement->getAttribute('modulename') !== $modname
+        ) {
             throw new invalid_parameter_exception("activity_xml is not a valid activity XML of type \"$modname\".");
         }
         // The Lightboxgallery restore step reads this field before inserting the activity.
@@ -295,7 +299,13 @@ final class xml_activity_creator {
      * @param array $mismatches The mismatches.
      * @param array $presets The presets.
      */
-    private static function compare_node(\DOMElement $in, \DOMElement $out, string $path, array &$mismatches, array &$presets): void {
+    private static function compare_node(
+        \DOMElement $in,
+        \DOMElement $out,
+        string $path,
+        array &$mismatches,
+        array &$presets
+    ): void {
         $inchildren = self::element_children($in);
         if (!$inchildren) {
             self::compare_leaf($in, $out, $path, $mismatches);

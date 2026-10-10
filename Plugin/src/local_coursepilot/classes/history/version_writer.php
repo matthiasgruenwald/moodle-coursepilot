@@ -114,7 +114,8 @@ final class version_writer {
      * @param int $cmid
      * @param int $userid User under which the write ran (event userid).
      * @param string $source
-     * @param int|null $sourcecmid Reference cmid, see {@see version_source}: clone source (cloned) or new cmid (superseded), otherwise null.
+     * @param int|null $sourcecmid Reference cmid, see {@see version_source}: clone source (cloned) or new cmid (superseded),
+     * otherwise null.
      * @return int id of the newly created version
      */
     public static function capture(
@@ -176,7 +177,10 @@ final class version_writer {
         if ($cm->modname !== 'quiz') {
             return null;
         }
-        return json_encode(\local_coursepilot\quiz\arrangement::capture((int) $cm->instance), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return json_encode(
+            \local_coursepilot\quiz\arrangement::capture((int) $cm->instance),
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
     }
 
     /**

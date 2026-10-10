@@ -330,7 +330,8 @@ final class webdav_client {
      * present. The MIME type comes purely from the extension ({@see mimeinfo()}) -
      * no content sniffing here, that would force an additional GET for every file
      * with an unknown extension when listing and thereby violate the
-     * existing zero-GET contract of {@see \local_coursepilot\external\list_context_files_test::test_switch_on_never_fetches_marked_file_content()}
+     * existing zero-GET contract of
+     * {@see \local_coursepilot\external\list_context_files_test::test_switch_on_never_fetches_marked_file_content()}
      * (issue #560 - sniffing instead sits in {@see webdav_storage_port::read()},
      * where the content is fetched anyway).
      *

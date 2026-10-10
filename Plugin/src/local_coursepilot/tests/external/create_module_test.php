@@ -77,7 +77,8 @@ final class create_module_test extends \advanced_testcase {
      * @param int $sectionnum
      * @param string $modname
      * @param array $felder
-     * @param string $ort {@see \local_coursepilot\material_files::LOCATION_STORE}/{@see \local_coursepilot\material_files::LOCATION_WORKBENCH}
+     * @param string $ort
+     * {@see \local_coursepilot\material_files::LOCATION_STORE}/{@see \local_coursepilot\material_files::LOCATION_WORKBENCH}
      *        (Issue #496).
      * @param string[] $confirmlearnerlocks Explicitly confirmed learner restrictions (#583).
      * @return array

@@ -115,7 +115,11 @@ final class module_state {
      * @return array{html: string, preview: string, truncated: bool}
      */
     public static function content_field(string $html, bool $fullcontent): array {
-        return ['html' => $fullcontent ? $html : '', 'preview' => self::preview($html, $fullcontent), 'truncated' => !$fullcontent && trim($html) !== ''];
+        return [
+            'html' => $fullcontent ? $html : '',
+            'preview' => self::preview($html, $fullcontent),
+            'truncated' => !$fullcontent && trim($html) !== '',
+        ];
     }
 
     /**

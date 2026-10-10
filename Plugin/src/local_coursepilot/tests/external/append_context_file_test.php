@@ -501,7 +501,12 @@ final class append_context_file_test extends \advanced_testcase {
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 $response = $this->inner->request($method, $url, $headers, $body);
                 if (!$this->changed && $method === 'GET' && str_ends_with($url, '/journal.md')) {
                     $this->changed = true;

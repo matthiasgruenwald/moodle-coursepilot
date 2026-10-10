@@ -203,7 +203,11 @@ final class update_quiz_settings extends external_api {
         } else {
             $current = quiz_write_bridge::read_feedback((int) $quiz->id);
             if ($current['feedbacktext']) {
-                quiz_write_bridge::apply_feedback_pseudofields($moduleinfo, $current['feedbacktext'], $current['feedbackboundaries']);
+                quiz_write_bridge::apply_feedback_pseudofields(
+                    $moduleinfo,
+                    $current['feedbacktext'],
+                    $current['feedbackboundaries']
+                );
             }
         }
 
@@ -296,7 +300,8 @@ final class update_quiz_settings extends external_api {
             $sideeffects[] = 'The calendar event for the quiz was updated.';
         }
         if ($gradechanged) {
-            $sideeffects[] = 'Existing attempt grades and overall feedback boundaries were rescaled proportionally to the new grade.';
+            $sideeffects[] = 'Existing attempt grades and overall feedback boundaries were rescaled proportionally to the new '
+                . 'grade.';
         }
 
         return [$changes, $sideeffects];

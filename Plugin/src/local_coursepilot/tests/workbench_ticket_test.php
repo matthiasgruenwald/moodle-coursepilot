@@ -68,7 +68,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         workbench_ticket::redeem($secret);
 
         $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('workbenchticketinvalid', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('workbenchticketinvalid', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
@@ -82,7 +84,9 @@ final class workbench_ticket_test extends \advanced_testcase {
     }
 
     #[DataProvider('requester_provider')]
-    public function test_redemption_uses_the_owners_selected_location_without_changing_request_identity(bool $anotherteacher): void {
+    public function test_redemption_uses_the_owners_selected_location_without_changing_request_identity(
+        bool $anotherteacher
+    ): void {
         global $USER;
         $this->resetAfterTest();
         $owner = $this->getDataGenerator()->create_user();
@@ -119,7 +123,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         $DB->set_field(workbench_ticket::TABLE, 'expires', time() - 1, ['tickethash' => hash('sha256', $secret)]);
 
         $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('workbenchticketexpired', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('workbenchticketexpired', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
@@ -135,7 +141,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         $this->store('blatt.pdf', 'geaendert', true);
 
         $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('workbenchticketcontentchanged', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('workbenchticketcontentchanged', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
@@ -189,7 +197,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         $this->assertTrue(oauth_lib::revoke_token($tokenid));
 
         $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('workbenchticketconnectionrevoked', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('workbenchticketconnectionrevoked', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
@@ -227,7 +237,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         $DB->set_field('user', 'deleted', 1, ['id' => $user->id]);
 
         $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('workbenchticketaccountinactive', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('workbenchticketaccountinactive', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
@@ -358,7 +370,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         $this->setUser();
         $this->assertTrue(oauth_lib::connection_active($tokenid));
         $this->expectException(workbench_ticket_redemption_failed::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('remoteaccessnotgranted', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('remoteaccessnotgranted', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 
@@ -380,7 +394,9 @@ final class workbench_ticket_test extends \advanced_testcase {
         $this->assertTrue(oauth_lib::connection_active($tokenid));
         $this->assertTrue(has_capability('local/coursepilot:use', \context_course::instance($course->id), $user->id));
         $this->expectException(workbench_ticket_redemption_failed::class);
-        $this->expectExceptionMessageMatches('/' . preg_quote(get_string('remoteaccessnotgranted', 'local_coursepilot'), '/') . '/');
+        $this->expectExceptionMessageMatches(
+            '/' . preg_quote(get_string('remoteaccessnotgranted', 'local_coursepilot'), '/') . '/'
+        );
         workbench_ticket::redeem($secret);
     }
 

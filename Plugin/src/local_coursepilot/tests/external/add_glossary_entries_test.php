@@ -97,7 +97,10 @@ final class add_glossary_entries_test extends \advanced_testcase {
         $this->assertNotFalse($attachment);
         $this->assertSame('private file payload', $attachment->get_content());
         $this->assertNotFalse($fs->get_file($context->id, 'mod_glossary', 'entry', $id, '/', 'diagram.svg'));
-        $this->assertStringContainsString('@@PLUGINFILE@@/diagram.svg', $DB->get_field('glossary_entries', 'definition', ['id' => $id]));
+        $this->assertStringContainsString(
+            '@@PLUGINFILE@@/diagram.svg',
+            $DB->get_field('glossary_entries', 'definition', ['id' => $id])
+        );
         $this->assertStringNotContainsString('private file payload', json_encode($result));
         $this->assertNotNull(\local_coursepilot\material_files::read_content_for_location('workbench', 'worksheet.pdf'));
     }
@@ -149,7 +152,11 @@ final class add_glossary_entries_test extends \advanced_testcase {
                 'attachment_files' => ['missing.pdf']],
             ['concept' => 'Last', 'definition' => 'Final'],
         ]);
-        $this->assertSame([true, false, false, false, false, true], array_column($result['entries'], 'success'), json_encode($result));
+        $this->assertSame(
+            [true, false, false, false, false, true],
+            array_column($result['entries'], 'success'),
+            json_encode($result)
+        );
         $this->assertSame('errconceptalreadyexists', $result['entries'][1]['errorcode']);
         $this->assertSame('errreservedkeywords', $result['entries'][2]['errorcode']);
         $this->assertSame('glossaryentryformat', $result['entries'][3]['errorcode']);
@@ -198,7 +205,10 @@ final class add_glossary_entries_test extends \advanced_testcase {
         $this->assertStringNotContainsString('Private learner', json_encode($response));
         $createdid = $response['body']['result']['structuredContent']['entries'][0]['entryid'];
         $this->assertEquals($teacher->id, $DB->get_field('glossary_entries', 'userid', ['id' => $createdid]));
-        $this->assertSame([], \local_coursepilot\privacy_surface::check(\local_coursepilot\privacy_surface::registered_functions()));
+        $this->assertSame(
+            [],
+            \local_coursepilot\privacy_surface::check(\local_coursepilot\privacy_surface::registered_functions())
+        );
         $this->assertTrue(\local_coursepilot\tool_registry::is_write('coursepilot_add_glossary_entries'));
         assign_capability('mod/glossary:write', CAP_PROHIBIT, $roleid, \context_module::instance($glossary->cmid)->id);
         $denied = dispatcher::handle(['id' => 3, 'method' => 'tools/call', 'params' => [
@@ -244,7 +254,10 @@ final class add_glossary_entries_test extends \advanced_testcase {
         ]);
         $CFG->glossary_linkentries = 0;
         upload_material_file::execute('large.pdf', base64_encode('too large for course'));
-        \core_tag_area::update($DB->get_record('tag_area', ['component' => 'mod_glossary', 'itemtype' => 'glossary_entries']), ['enabled' => 0]);
+        \core_tag_area::update(
+            $DB->get_record('tag_area', ['component' => 'mod_glossary', 'itemtype' => 'glossary_entries']),
+            ['enabled' => 0]
+        );
         $result = $this->call($glossary->cmid, [
             ['concept' => 'Plain', 'definition' => 'Plain text', 'definitionformat' => FORMAT_PLAIN, 'usedynalink' => true],
             ['concept' => 'Tagged', 'definition' => 'Disabled tags', 'tags' => ['science']],

@@ -211,9 +211,15 @@ final class create_quiz extends external_api {
     private static function report_and_side_effects(array $merged, float $grade): array {
         $createdfields = [];
         foreach ($merged as $fieldname => $value) {
-            $createdfields[] = ['field' => $fieldname, 'value_json' => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+            $createdfields[] = [
+                'field' => $fieldname,
+                'value_json' => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ];
         }
-        $createdfields[] = ['field' => 'grade', 'value_json' => json_encode($grade, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+        $createdfields[] = [
+            'field' => 'grade',
+            'value_json' => json_encode($grade, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        ];
 
         $sideeffects = [];
         if ((int) ($merged['timeopen'] ?? 0) > 0 || (int) ($merged['timeclose'] ?? 0) > 0) {

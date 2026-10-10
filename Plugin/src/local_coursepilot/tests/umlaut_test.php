@@ -40,7 +40,21 @@ final class umlaut_test extends advanced_testcase {
     private function forbidden_by_file(): array {
         $root = __DIR__ . '/../';
         return [
-            $root . 'lang/de/local_coursepilot.php' => ['Aktivitaet', 'Dateigroesse', 'Groesse', 'Inhaltspruefsumme', 'Loeschen', 'Markierungsgedaechtnis', 'Schluessel', 'fuer', 'gehoert', 'laeuft', 'noetig', 'rueckschreibbar', 'vollstaendig'],
+            $root . 'lang/de/local_coursepilot.php' => [
+                'Aktivitaet',
+                'Dateigroesse',
+                'Groesse',
+                'Inhaltspruefsumme',
+                'Loeschen',
+                'Markierungsgedaechtnis',
+                'Schluessel',
+                'fuer',
+                'gehoert',
+                'laeuft',
+                'noetig',
+                'rueckschreibbar',
+                'vollstaendig',
+            ],
         ];
     }
 

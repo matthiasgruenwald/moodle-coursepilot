@@ -50,7 +50,8 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
             'parent' => (int) $category->parent,
             'editurl' => $CFG->wwwroot . '/question/edit.php?cmid=' . $bank->cmid
                 . '&cat=' . $category->id . ',' . $context->id,
-            'reason' => 'Empty leaf category with no questions or subcategories. Coursepilot does not delete it; review it manually and, if appropriate, delete it in Moodle using the link.',
+            'reason' => 'Empty leaf category with no questions or subcategories. Coursepilot does not delete it; review it '
+                . 'manually and, if appropriate, delete it in Moodle using the link.',
         ]], $result['removals']);
         $this->assertTrue($DB->record_exists('question_categories', ['id' => $category->id]));
     }

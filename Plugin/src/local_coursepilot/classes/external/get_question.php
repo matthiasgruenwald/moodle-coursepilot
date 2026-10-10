@@ -53,7 +53,12 @@ class get_question extends external_api {
         return new external_function_parameters([
             'categoryid' => new external_value(PARAM_INT, 'ID of the question bank category'),
             'name'       => new external_value(PARAM_TEXT, 'Name of the question (alternative to questionid)', VALUE_DEFAULT, ''),
-            'questionid' => new external_value(PARAM_INT, 'questionid of any version of the question (alternative to name)', VALUE_DEFAULT, 0),
+            'questionid' => new external_value(
+                PARAM_INT,
+                'questionid of any version of the question (alternative to name)',
+                VALUE_DEFAULT,
+                0
+            ),
         ]);
     }
 
@@ -159,7 +164,12 @@ class get_question extends external_api {
         return [
             'questionid'          => (int) $question->id,
             'questionbankentryid' => (int) $entryid,
-            'categoryid'          => (int) $DB->get_field('question_bank_entries', 'questioncategoryid', ['id' => $entryid], MUST_EXIST),
+            'categoryid'          => (int) $DB->get_field(
+                'question_bank_entries',
+                'questioncategoryid',
+                ['id' => $entryid],
+                MUST_EXIST
+            ),
             'version'             => (int) $latest->version,
             'name'                => (string) $question->name,
             'questiontext'        => (string) $question->questiontext,
@@ -236,7 +246,10 @@ class get_question extends external_api {
                 ]),
                 'Answer options in creation order'
             ),
-            'correctindex'        => new external_value(PARAM_INT, '0-based index of the correct answer in answers[] (-1 if none detected)'),
+            'correctindex'        => new external_value(
+                PARAM_INT,
+                '0-based index of the correct answer in answers[] (-1 if none detected)'
+            ),
             'selectionmode'       => new external_value(PARAM_ALPHA, 'single or multiple'),
         ]);
     }

@@ -918,7 +918,10 @@ final class import_questions_xml extends external_api {
                             PARAM_INT,
                             'New version number (0 for "suspect")'
                         ),
-                        'status' => new external_value(PARAM_ALPHAEXT, '"first_import" (first import) | "reimport" (new version of the same entry) | "suspect" (suspect case)'),
+                        'status' => new external_value(
+                            PARAM_ALPHAEXT,
+                            '"first_import" (first import) | "reimport" (new version of the same entry) | "suspect" (suspect case)'
+                        ),
                         'message' => new external_value(PARAM_RAW, 'Teacher-facing message'),
                     ],
                     question_suspect_gate::response_fields()

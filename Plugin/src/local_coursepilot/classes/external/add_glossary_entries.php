@@ -55,13 +55,26 @@ final class add_glossary_entries extends external_api {
             'entries' => new external_multiple_structure(new external_single_structure([
                 'concept' => new external_value(PARAM_TEXT, 'Concept'),
                 'definition' => new external_value(PARAM_RAW, 'Definition; use @@PLUGINFILE@@/filename for embedded files'),
-                'definitionformat' => new external_value(PARAM_INT, 'Moodle text format: 0 Moodle, 1 HTML, 2 plain, 4 Markdown', VALUE_DEFAULT, FORMAT_HTML),
+                'definitionformat' => new external_value(
+                    PARAM_INT,
+                    'Moodle text format: 0 Moodle, 1 HTML, 2 plain, 4 Markdown',
+                    VALUE_DEFAULT,
+                    FORMAT_HTML
+                ),
                 'aliases' => $strings('Keywords or aliases, one per item'),
                 'categories' => $strings('Category names; missing categories require mod/glossary:managecategories'),
-                'usedynalink' => new external_value(PARAM_BOOL, 'Automatic linking, only if enabled for the glossary; otherwise Moodle defaults apply', VALUE_OPTIONAL),
+                'usedynalink' => new external_value(
+                    PARAM_BOOL,
+                    'Automatic linking, only if enabled for the glossary; otherwise Moodle defaults apply',
+                    VALUE_OPTIONAL
+                ),
                 'casesensitive' => new external_value(PARAM_BOOL, 'Case-sensitive linking', VALUE_OPTIONAL),
                 'fullmatch' => new external_value(PARAM_BOOL, 'Link whole words only', VALUE_OPTIONAL),
-                'approved' => new external_value(PARAM_BOOL, 'Explicit approval state requires mod/glossary:approve; omit for Moodle default approval', VALUE_OPTIONAL),
+                'approved' => new external_value(
+                    PARAM_BOOL,
+                    'Explicit approval state requires mod/glossary:approve; omit for Moodle default approval',
+                    VALUE_OPTIONAL
+                ),
                 'tags' => $strings('Entry tags, when glossary entry tagging is enabled'),
                 'attachment_files' => $paths('Attachments copied from the teacher material area'),
                 'definition_files' => $paths('Embedded definition files copied from the teacher material area'),

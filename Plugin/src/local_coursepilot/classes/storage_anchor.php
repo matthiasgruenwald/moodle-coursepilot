@@ -116,7 +116,12 @@ final class storage_anchor {
             // This caller does not support external storage (#490 originally
             // provided reads only). Falling back silently would create a second,
             // partial area, so return a named error instead.
-            throw new \moodle_exception('pointerexternalnotsupported', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
+            throw new \moodle_exception(
+                'pointerexternalnotsupported',
+                'local_coursepilot',
+                '',
+                webdav_setup_steps::LOCATION_SELECTION_PAGE
+            );
         }
         return $location->path;
     }

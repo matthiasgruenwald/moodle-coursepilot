@@ -165,7 +165,8 @@ final class tool_schema_contract_test extends \advanced_testcase {
      * The published input and output descriptions must use English (#605).
      */
     public function test_every_public_contract_description_is_english(): void {
-        $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
+        $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|'
+            . 'ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
         foreach (tool_registry::descriptions() as $name => $description) {
             $this->assertDoesNotMatchRegularExpression($forbidden, $description, $name);
         }
@@ -183,7 +184,8 @@ final class tool_schema_contract_test extends \advanced_testcase {
      * Field catalog descriptions also reach the model as tool result data (#605).
      */
     public function test_every_catalog_description_is_english(): void {
-        $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
+        $forbidden = '/[äöüÄÖÜß]|\\b(?:der|die|das|und|oder|nicht|fuer|für|wird|werden|eine|einer|eines|einem|einen|zum|zur|mit|'
+            . 'ohne|Kurs|Lehrkraft|Altbestand)\\b/u';
         foreach (\local_coursepilot\catalog\registry::known_modnames() as $modname) {
             $catalog = \local_coursepilot\catalog\registry::for($modname);
             $fields = array_merge(

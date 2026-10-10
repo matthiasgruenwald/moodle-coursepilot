@@ -323,7 +323,11 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
         require_once($CFG->libdir . '/filelib.php');
         $directory = make_request_directory();
         $config = $directory . '/openssl.cnf';
-        file_put_contents($config, "[req]\ndistinguished_name=dn\n[dn]\n[ca]\nbasicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign\n[leaf]\nbasicConstraints=CA:FALSE\nextendedKeyUsage=serverAuth\n");
+        file_put_contents(
+            $config,
+            "[req]\ndistinguished_name=dn\n[dn]\n[ca]\nbasicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign\n[leaf]\n"
+                . "basicConstraints=CA:FALSE\nextendedKeyUsage=serverAuth\n"
+        );
         $options = ['config' => $config, 'digest_alg' => 'sha256', 'private_key_bits' => 2048];
         $cakey = openssl_pkey_new($options);
         $cacsr = openssl_csr_new(['commonName' => 'Synthetic CIMD CA'], $cakey, $options);

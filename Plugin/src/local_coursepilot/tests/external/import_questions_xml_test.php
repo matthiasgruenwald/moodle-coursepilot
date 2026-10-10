@@ -710,6 +710,7 @@ XML;
      * @return string
      */
     private static function calculated_xml_with_dataset_definitions(): string {
+        // phpcs:disable moodle.Files.LineLength -- Embedded Moodle XML fixture, wrapping would change the data.
         return <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
 <quiz>
@@ -748,6 +749,7 @@ XML;
   </question>
 </quiz>
 XML;
+        // phpcs:enable moodle.Files.LineLength
     }
 
     /**

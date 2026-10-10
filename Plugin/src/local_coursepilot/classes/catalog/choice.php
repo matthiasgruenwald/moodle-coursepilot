@@ -424,7 +424,7 @@ final class choice implements module_catalog {
      * @return array
      */
     public static function learner_locks(): array {
-        // allowupdate: the form default 0 is itself a lock. It counts on creation too (#583).
+        // Field allowupdate: the form default 0 is itself a lock. It counts on creation too (#583).
         // Whoever wants to create it open names "allowupdate": 1 (as does the "allocation" bundle).
         return [
             'allowupdate' => ['op' => 'equals', 'value' => 0,

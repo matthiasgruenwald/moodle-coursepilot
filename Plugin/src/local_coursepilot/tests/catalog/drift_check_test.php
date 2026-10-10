@@ -15,7 +15,8 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Runtime deep checks (#399, ADR 0017) reuse the catalog contract-test logic through the class used by {@see \local_coursepilot\write_gate}.
+ * Runtime deep checks (#399, ADR 0017) reuse the catalog contract-test logic through the class used by
+ * {@see \local_coursepilot\write_gate}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

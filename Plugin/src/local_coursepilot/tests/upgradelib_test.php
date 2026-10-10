@@ -205,7 +205,10 @@ final class upgradelib_test extends \advanced_testcase {
 
         $broken = $this->getDataGenerator()->create_user();
         $brokencontext = \context_user::instance($broken->id);
-        $fs->create_file_from_string(['contextid' => $brokencontext->id] + $record + ['filename' => '.coursepilot-ort.json'], '{kaputt');
+        $fs->create_file_from_string(
+            ['contextid' => $brokencontext->id] + $record + ['filename' => '.coursepilot-ort.json'],
+            '{kaputt'
+        );
 
         local_coursepilot_migrate_anchor_files();
         local_coursepilot_migrate_anchor_files();

@@ -158,7 +158,10 @@ final class restore_activity_version extends external_api {
 
         $changes = [];
         if ($normalpatch) {
-            $result = update_module_settings::execute($params['cmid'], json_encode($normalpatch, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            $result = update_module_settings::execute(
+                $params['cmid'],
+                json_encode($normalpatch, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+            );
             $changes = array_merge($changes, $result['changes']);
         }
 

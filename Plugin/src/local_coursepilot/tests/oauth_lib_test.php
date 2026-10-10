@@ -309,7 +309,10 @@ final class oauth_lib_test extends \advanced_testcase {
         ]);
 
         $this->assertSame('invalid_request', $result['error']);
-        $this->assertSame('response_type=code, client_id, redirect_uri and code_challenge are required.', $result['error_description']);
+        $this->assertSame(
+            'response_type=code, client_id, redirect_uri and code_challenge are required.',
+            $result['error_description']
+        );
     }
 
     /**

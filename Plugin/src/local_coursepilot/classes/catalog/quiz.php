@@ -442,7 +442,12 @@ final class quiz implements module_catalog {
         global $DB;
 
         $details = module_state::empty($fullcontent);
-        $quiz = $DB->get_record('quiz', ['id' => $instanceid], 'id, name, intro, preferredbehaviour, attempts, grademethod, timelimit, grade', IGNORE_MISSING);
+        $quiz = $DB->get_record(
+            'quiz',
+            ['id' => $instanceid],
+            'id, name, intro, preferredbehaviour, attempts, grademethod, timelimit, grade',
+            IGNORE_MISSING
+        );
         if (!$quiz) {
             return $details;
         }
@@ -468,11 +473,30 @@ final class quiz implements module_catalog {
      */
     private static function quiz_slots(int $quizid): array {
         global $DB;
-        $rows = $DB->get_records_sql('SELECT qs.id AS slotid, qs.slot, qr.questionbankentryid, qbe.questioncategoryid FROM {quiz_slots} qs LEFT JOIN {question_references} qr ON qr.itemid = qs.id AND qr.component = :component AND qr.questionarea = :area LEFT JOIN {question_bank_entries} qbe ON qbe.id = qr.questionbankentryid WHERE qs.quizid = :quizid ORDER BY qs.slot', ['component' => 'mod_quiz', 'area' => 'slot', 'quizid' => $quizid]);
+        $rows = $DB->get_records_sql(
+            'SELECT qs.id AS slotid, qs.slot, qr.questionbankentryid, qbe.questioncategoryid FROM {quiz_slots} qs LEFT JOIN '
+                . '{question_references} qr ON qr.itemid = qs.id AND qr.component = :component AND qr.questionarea = :area LEFT '
+                    . 'JOIN '
+                . '{question_bank_entries} qbe ON qbe.id = qr.questionbankentryid WHERE qs.quizid = :quizid ORDER BY qs.slot',
+            ['component' => 'mod_quiz', 'area' => 'slot', 'quizid' => $quizid]
+        );
         $slots = [];
         foreach ($rows as $row) {
-            $latest = empty($row->questionbankentryid) ? null : $DB->get_record_sql('SELECT qv.questionid, qv.version, q.name, q.qtype FROM {question_versions} qv JOIN {question} q ON q.id = qv.questionid WHERE qv.questionbankentryid = ? ORDER BY qv.version DESC', [$row->questionbankentryid], IGNORE_MULTIPLE);
-            $slots[] = ['slot' => (int) $row->slot, 'categoryid' => empty($row->questioncategoryid) ? 0 : (int) $row->questioncategoryid, 'questionbankentryid' => empty($row->questionbankentryid) ? 0 : (int) $row->questionbankentryid, 'questionid' => $latest ? (int) $latest->questionid : 0, 'version' => $latest ? (int) $latest->version : 0, 'questionname' => $latest ? (string) $latest->name : '', 'qtype' => $latest ? (string) $latest->qtype : ''];
+            $latest = empty($row->questionbankentryid) ? null : $DB->get_record_sql(
+                'SELECT qv.questionid, qv.version, q.name, q.qtype FROM {question_versions} qv JOIN {question} q ON q.id = '
+                    . 'qv.questionid WHERE qv.questionbankentryid = ? ORDER BY qv.version DESC',
+                [$row->questionbankentryid],
+                IGNORE_MULTIPLE
+            );
+            $slots[] = [
+                'slot' => (int) $row->slot,
+                'categoryid' => empty($row->questioncategoryid) ? 0 : (int) $row->questioncategoryid,
+                'questionbankentryid' => empty($row->questionbankentryid) ? 0 : (int) $row->questionbankentryid,
+                'questionid' => $latest ? (int) $latest->questionid : 0,
+                'version' => $latest ? (int) $latest->version : 0,
+                'questionname' => $latest ? (string) $latest->name : '',
+                'qtype' => $latest ? (string) $latest->qtype : '',
+            ];
         }
         return $slots;
     }

@@ -162,7 +162,12 @@ final class export_default_activity_test extends \advanced_testcase {
                 stream_set_blocking($pipes[2], false);
                 $this->fail('Export barrier: ' . stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]));
             }
-            $own = $DB->get_record('course_modules', ['course' => $course->id, 'module' => $DB->get_field('modules', 'id', ['name' => 'book'])], '*', MUST_EXIST);
+            $own = $DB->get_record(
+                'course_modules',
+                ['course' => $course->id, 'module' => $DB->get_field('modules', 'id', ['name' => 'book'])],
+                '*',
+                MUST_EXIST
+            );
             $this->assertSame(0, (int) $own->visible);
             $this->assertSame(0, (int) $own->visibleoncoursepage);
             // Spec 0028 story 33 protects learners; teachers retain native hidden-activity access.

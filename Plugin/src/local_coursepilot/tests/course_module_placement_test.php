@@ -42,7 +42,11 @@ final class course_module_placement_test extends \advanced_testcase {
         $this->setUser($teacher);
         $cmids = [];
         foreach (['A', 'B', 'C'] as $name) {
-            $cmids[] = (int) $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => $name], ['section' => 1])->cmid;
+            $cmids[] = (int) $this->getDataGenerator()->create_module(
+                'page',
+                ['course' => $course->id, 'name' => $name],
+                ['section' => 1]
+            )->cmid;
         }
         return [$course, $cmids];
     }

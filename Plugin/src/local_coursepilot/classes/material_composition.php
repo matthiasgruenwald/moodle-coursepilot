@@ -160,7 +160,16 @@ final class material_composition {
                 imagettftext($canvas, self::FONT_SIZE, 0, $x + self::PADDING - $left, $y + $baseline, $blue, $font, $part['text']);
             }
             imagealphablending($canvas, false);
-            imagecopy($canvas, $part['image'], $x, $y + $part['header'], $part['x'], $part['y'], $part['cropwidth'], $part['cropheight']);
+            imagecopy(
+                $canvas,
+                $part['image'],
+                $x,
+                $y + $part['header'],
+                $part['x'],
+                $part['y'],
+                $part['cropwidth'],
+                $part['cropheight']
+            );
             if ($arrangement === 'vertical') {
                 $y += $part['height'] + self::GAP;
             } else {

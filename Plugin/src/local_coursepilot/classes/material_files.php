@@ -444,7 +444,11 @@ final class material_files {
      * @param string $subpath Already segment-validated; see normalise_path().
      * @throws \moodle_exception materialpathiscontext
      */
-    private static function guard_not_context_area(pointer_location $location, pointer_location $contextlocation, string $subpath): void {
+    private static function guard_not_context_area(
+        pointer_location $location,
+        pointer_location $contextlocation,
+        string $subpath
+    ): void {
         if (str_starts_with($location->comparison_key($subpath), $contextlocation->comparison_key())) {
             throw new \moodle_exception('materialpathiscontext', 'local_coursepilot');
         }

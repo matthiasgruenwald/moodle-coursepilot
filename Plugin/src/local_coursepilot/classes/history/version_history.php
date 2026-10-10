@@ -238,7 +238,8 @@ final class version_history {
      *
      * @param \stdClass $record
      * @param string $lang
-     * @return array{version: int, source: string, discovered: bool, source_cmid: int|null, userid: int, user: string, timestamp: int}
+     * @return array{version: int, source: string, discovered: bool, source_cmid: int|null, userid: int, user: string, timestamp:
+     * int}
      */
     private static function describe_meta(\stdClass $record, string $lang = 'en'): array {
         $source = version_source::from_record($record);

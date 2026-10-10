@@ -184,7 +184,12 @@ final class observer_test extends \advanced_testcase {
         // files only land in the version of the manual change (version 2).
         $version = $DB->get_record('local_coursepilot_cm_version', ['cmid' => $cm->id, 'version' => 2], '*', MUST_EXIST);
 
-        $introrow = $DB->get_record('local_coursepilot_cm_file', ['pathnamehash' => $introfile->get_pathnamehash()], '*', MUST_EXIST);
+        $introrow = $DB->get_record(
+            'local_coursepilot_cm_file',
+            ['pathnamehash' => $introfile->get_pathnamehash()],
+            '*',
+            MUST_EXIST
+        );
         $introlink = $DB->get_record('local_coursepilot_cm_version_file', [
             'versionid' => $version->id,
             'fileid' => $introrow->id,

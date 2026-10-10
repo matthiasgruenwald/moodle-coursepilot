@@ -160,7 +160,15 @@ final class create_mc_question extends external_api {
                 'questionbankentryid' => (int) $question['questionbankentryid'],
                 'version' => (int) $question['version'],
                 'status' => $question['status'],
-                'message' => get_string('mcquestioncreated', 'local_coursepilot', (object) ['name' => $params['name'], 'entryid' => $question['questionbankentryid'], 'version' => $question['version']]),
+                'message' => get_string(
+                    'mcquestioncreated',
+                    'local_coursepilot',
+                    (object) [
+                        'name' => $params['name'],
+                        'entryid' => $question['questionbankentryid'],
+                        'version' => $question['version'],
+                    ]
+                ),
             ],
             question_suspect_gate::empty_result()
         );

@@ -156,7 +156,11 @@ if ($hassiteconfig) {
     $settings->add(new \local_coursepilot\admin\personaldatahosts_setting(
         'local_coursepilot/personaldatahosts',
         get_string('settingpersonaldatahosts', 'local_coursepilot'),
-        get_string('settingpersonaldatahosts_desc', 'local_coursepilot', get_string('externallocationprivacyinfo', 'local_coursepilot')),
+        get_string(
+            'settingpersonaldatahosts_desc',
+            'local_coursepilot',
+            get_string('externallocationprivacyinfo', 'local_coursepilot')
+        ),
         '',
         PARAM_RAW
     ));

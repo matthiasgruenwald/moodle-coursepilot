@@ -72,7 +72,12 @@ class preview_material_file extends external_api {
 
         $stored = material_area::read_for_location($params['location'], $params['path']);
         if ($stored === null) {
-            throw new \moodle_exception('materialfilenotfound', 'local_coursepilot', '', material_files::normalise_path($params['path']));
+            throw new \moodle_exception(
+                'materialfilenotfound',
+                'local_coursepilot',
+                '',
+                material_files::normalise_path($params['path'])
+            );
         }
         $relativepath = $stored['path'];
         $filename = basename($relativepath);
@@ -174,8 +179,20 @@ class preview_material_file extends external_api {
                 null,
                 NULL_ALLOWED
             ),
-            'width' => new external_value(PARAM_INT, 'Preview width in pixels, null when unavailable', VALUE_DEFAULT, null, NULL_ALLOWED),
-            'height' => new external_value(PARAM_INT, 'Preview height in pixels, null when unavailable', VALUE_DEFAULT, null, NULL_ALLOWED),
+            'width' => new external_value(
+                PARAM_INT,
+                'Preview width in pixels, null when unavailable',
+                VALUE_DEFAULT,
+                null,
+                NULL_ALLOWED
+            ),
+            'height' => new external_value(
+                PARAM_INT,
+                'Preview height in pixels, null when unavailable',
+                VALUE_DEFAULT,
+                null,
+                NULL_ALLOWED
+            ),
         ]);
     }
 }

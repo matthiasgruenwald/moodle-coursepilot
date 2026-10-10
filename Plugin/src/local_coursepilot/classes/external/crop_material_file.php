@@ -341,7 +341,10 @@ class crop_material_file extends external_api {
             'width' => new external_value(PARAM_INT, 'Crop width in pixels, computed from the original'),
             'height' => new external_value(PARAM_INT, 'Crop height in pixels, computed from the original'),
             'size' => new external_value(PARAM_INT, 'Crop size in bytes'),
-            'message' => new external_value(PARAM_RAW, 'Localized teacher-facing change message, including a quota warning when applicable'),
+            'message' => new external_value(
+                PARAM_RAW,
+                'Localized teacher-facing change message, including a quota warning when applicable'
+            ),
         ]);
     }
 

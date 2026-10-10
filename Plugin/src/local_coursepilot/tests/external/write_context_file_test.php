@@ -895,7 +895,12 @@ final class write_context_file_test extends \advanced_testcase {
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     return new \local_coursepilot\webdav\webdav_response(507, [], '');
                 }
@@ -1029,7 +1034,12 @@ final class write_context_file_test extends \advanced_testcase {
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     return new \local_coursepilot\webdav\webdav_response(401, [], '');
                 }
@@ -1086,7 +1096,12 @@ final class write_context_file_test extends \advanced_testcase {
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     throw new \local_coursepilot\webdav\webdav_transport_exception('DNS-Aufloesung fehlgeschlagen (Simuliert).');
                 }
@@ -1143,7 +1158,12 @@ final class write_context_file_test extends \advanced_testcase {
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     return new \local_coursepilot\webdav\webdav_response(500, [], '');
                 }
@@ -1599,7 +1619,12 @@ final class write_context_file_test extends \advanced_testcase {
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'GET') {
                     return new \local_coursepilot\webdav\webdav_response(503, [], '');
                 }

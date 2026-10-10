@@ -213,7 +213,10 @@ final class set_completion_test extends \advanced_testcase {
 
         $result = external_api::clean_returnvalue(
             set_completion::execute_returns(),
-            set_completion::execute($page->cmid, json_encode(['completion' => COMPLETION_TRACKING_AUTOMATIC, 'completionview' => 1]))
+            set_completion::execute(
+                $page->cmid,
+                json_encode(['completion' => COMPLETION_TRACKING_AUTOMATIC, 'completionview' => 1])
+            )
         );
 
         $this->assertSame(COMPLETION_TRACKING_AUTOMATIC, $this->read($page->cmid)['completion']);

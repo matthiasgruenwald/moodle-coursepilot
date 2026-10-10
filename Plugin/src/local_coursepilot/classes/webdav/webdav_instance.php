@@ -77,7 +77,12 @@ final class webdav_instance {
 
         $options = self::fresh_options((int) $location->instanceid);
         if (self::fingerprint($options) !== self::normalised_fingerprint($location->fingerprint ?? [])) {
-            throw new \moodle_exception('webdavfingerprintchanged', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
+            throw new \moodle_exception(
+                'webdavfingerprintchanged',
+                'local_coursepilot',
+                '',
+                webdav_setup_steps::LOCATION_SELECTION_PAGE
+            );
         }
 
         return $resolved;
@@ -109,12 +114,22 @@ final class webdav_instance {
             ['id' => $instanceid, 'type' => self::REPOSITORY_TYPE]
         );
         if (!$record) {
-            throw new \moodle_exception('webdavinstancemissing', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
+            throw new \moodle_exception(
+                'webdavinstancemissing',
+                'local_coursepilot',
+                '',
+                webdav_setup_steps::LOCATION_SELECTION_PAGE
+            );
         }
 
         $owncontextid = storage_anchor::own_context()->id;
         if ((int) $record->contextid !== (int) $owncontextid || \core\session\manager::is_loggedinas()) {
-            throw new \moodle_exception('webdavinstanceforeign', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
+            throw new \moodle_exception(
+                'webdavinstanceforeign',
+                'local_coursepilot',
+                '',
+                webdav_setup_steps::LOCATION_SELECTION_PAGE
+            );
         }
 
         if (!webdav_setup_steps::enabled_for_user((int) $USER->id)) {
@@ -124,7 +139,12 @@ final class webdav_instance {
         $options = self::fresh_options($instanceid);
 
         if (!self::auth_supported($options)) {
-            throw new \moodle_exception('webdavauthunsupported', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
+            throw new \moodle_exception(
+                'webdavauthunsupported',
+                'local_coursepilot',
+                '',
+                webdav_setup_steps::LOCATION_SELECTION_PAGE
+            );
         }
 
         // Note: \curl (lib/filelib.php) is not autoloaded - plain pages like

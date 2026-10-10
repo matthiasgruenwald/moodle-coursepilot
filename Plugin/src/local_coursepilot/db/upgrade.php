@@ -280,8 +280,10 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
         // Issue #602 (ADR 0024): English workbench ticket table, anchor filenames
         // and stored keys.
         $oldtable = new xmldb_table('local_coursepilot_werkbank_ticket');
-        if ($dbman->table_exists($oldtable)
-                && !$dbman->table_exists(new xmldb_table('local_coursepilot_workbench_ticket'))) {
+        if (
+            $dbman->table_exists($oldtable)
+                && !$dbman->table_exists(new xmldb_table('local_coursepilot_workbench_ticket'))
+        ) {
             $dbman->rename_table($oldtable, 'local_coursepilot_workbench_ticket');
         }
         local_coursepilot_migrate_anchor_files();

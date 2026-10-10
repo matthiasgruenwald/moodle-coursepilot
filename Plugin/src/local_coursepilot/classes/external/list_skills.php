@@ -135,7 +135,10 @@ final class list_skills extends external_api {
                     'path' => new external_value(PARAM_TEXT, 'Relative target file path in the context area'),
                     'entries' => new external_multiple_structure(
                         new external_single_structure([
-                            'identifier' => new external_value(PARAM_ALPHANUMEXT, 'Identifier, for pending_entry=<identifier> or coursepilot_dismiss_pending_entry'),
+                            'identifier' => new external_value(
+                                PARAM_ALPHANUMEXT,
+                                'Identifier, for pending_entry=<identifier> or coursepilot_dismiss_pending_entry'
+                            ),
                             'timestamp' => new external_value(PARAM_INT, 'Unix timestamp of the failed operation'),
                             'operation' => new external_value(
                                 PARAM_TEXT,

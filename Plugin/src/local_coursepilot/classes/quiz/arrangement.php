@@ -103,7 +103,10 @@ final class arrangement {
      * @return bool
      */
     public static function differs(array $current, array $target): bool {
-        return json_encode($current, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !== json_encode($target, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return json_encode(
+            $current,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        ) !== json_encode($target, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     /**
@@ -266,6 +269,9 @@ final class arrangement {
      */
     private static function feedback_matches(int $quizid, array $targetfeedback): bool {
         $current = self::capture($quizid)['feedback'];
-        return json_encode($current, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) === json_encode($targetfeedback, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return json_encode($current, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) === json_encode(
+            $targetfeedback,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
     }
 }

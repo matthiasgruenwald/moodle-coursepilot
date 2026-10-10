@@ -49,7 +49,8 @@ class compose_material_file extends external_api {
                     'y0' => new external_value(PARAM_FLOAT, 'Top edge, relative 0-1'),
                     'x1' => new external_value(PARAM_FLOAT, 'Right edge, relative 0-1'),
                     'y1' => new external_value(PARAM_FLOAT, 'Bottom edge, relative 0-1'),
-                ], 'Optional crop from the full-resolution original, using the same coordinates as crop_material_file', VALUE_OPTIONAL),
+                ], 'Optional crop from the full-resolution original, using the same coordinates as crop_material_file',
+                VALUE_OPTIONAL),
                 'source_header_text' => new external_value(
                     PARAM_TEXT,
                     'Optional source reference rendered above this part in the fixed house style',
@@ -91,7 +92,12 @@ class compose_material_file extends external_api {
         }
         [$directory, $filename] = material_files::resolve_writable_file($params['targetpath']);
         if (strtolower(pathinfo($filename, PATHINFO_EXTENSION)) !== 'png') {
-            throw new \moodle_exception('materialcompositionoutputunsupported', 'local_coursepilot', '', pathinfo($filename, PATHINFO_EXTENSION));
+            throw new \moodle_exception(
+                'materialcompositionoutputunsupported',
+                'local_coursepilot',
+                '',
+                pathinfo($filename, PATHINFO_EXTENSION)
+            );
         }
         [$inputs, $sources] = self::read_sources($params['parts']);
         [$content, $width, $height] = material_composition::render($inputs, $params['arrangement']);

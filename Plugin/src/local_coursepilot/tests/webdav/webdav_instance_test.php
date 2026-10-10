@@ -85,7 +85,10 @@ final class webdav_instance_test extends \advanced_testcase {
 
         $resolved = webdav_instance::resolve($this->location($instanceid));
 
-        $this->assertSame('https://cloud.example.test:8443/Coursepilot/Coursepilot-Kontext', $resolved->file_url('Coursepilot-Kontext'));
+        $this->assertSame(
+            'https://cloud.example.test:8443/Coursepilot/Coursepilot-Kontext',
+            $resolved->file_url('Coursepilot-Kontext')
+        );
     }
 
     public function test_missing_instance_throws_named_error(): void {

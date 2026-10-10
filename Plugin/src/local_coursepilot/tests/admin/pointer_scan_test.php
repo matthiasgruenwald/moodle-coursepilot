@@ -214,7 +214,9 @@ final class pointer_scan_test extends \advanced_testcase {
     public function test_has_open_previous_location_reads_vorheriger_ort_field(): void {
         $this->resetAfterTest();
 
-        $this->assertTrue(pointer_scan::has_open_previous_location(['previous_location' => ['location' => 'moodle', 'path' => 'alt']]));
+        $this->assertTrue(
+            pointer_scan::has_open_previous_location(['previous_location' => ['location' => 'moodle', 'path' => 'alt']])
+        );
         $this->assertFalse(pointer_scan::has_open_previous_location(['context_area' => []]));
         $this->assertFalse(pointer_scan::has_open_previous_location(null));
     }

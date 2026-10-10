@@ -505,7 +505,10 @@ final class location_selection_test extends \advanced_testcase {
                 'material_store' => ['type' => 'moodle'],
             ]);
         } finally {
-            $this->assertSame('not_selected', location_selection::page_state((int) $user->id)['locations']['context_area']['state']);
+            $this->assertSame(
+                'not_selected',
+                location_selection::page_state((int) $user->id)['locations']['context_area']['state']
+            );
             \core\di::reset_container();
         }
     }
@@ -542,7 +545,10 @@ final class location_selection_test extends \advanced_testcase {
                 'material_store' => ['type' => 'moodle'],
             ]);
         } finally {
-            $this->assertSame('not_selected', location_selection::page_state((int) $user->id)['locations']['context_area']['state']);
+            $this->assertSame(
+                'not_selected',
+                location_selection::page_state((int) $user->id)['locations']['context_area']['state']
+            );
             \core\di::reset_container();
         }
     }
@@ -707,7 +713,10 @@ final class location_selection_test extends \advanced_testcase {
                 'material_store' => ['type' => 'moodle'],
             ]);
         } finally {
-            $this->assertSame('not_selected', location_selection::page_state((int) $user->id)['locations']['context_area']['state']);
+            $this->assertSame(
+                'not_selected',
+                location_selection::page_state((int) $user->id)['locations']['context_area']['state']
+            );
             \core\di::reset_container();
         }
     }
@@ -743,7 +752,10 @@ final class location_selection_test extends \advanced_testcase {
                 'material_store' => ['type' => 'external', 'instanceid' => $instanceid, 'path' => 'Unterricht/Material'],
             ]);
         } finally {
-            $this->assertSame('not_selected', location_selection::page_state((int) $user->id)['locations']['context_area']['state']);
+            $this->assertSame(
+                'not_selected',
+                location_selection::page_state((int) $user->id)['locations']['context_area']['state']
+            );
             \core\di::reset_container();
         }
     }
@@ -765,7 +777,10 @@ final class location_selection_test extends \advanced_testcase {
                 'context_area' => ['type' => 'external', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
                 'material_store' => ['type' => 'moodle'],
             ]);
-            $this->assertFalse(location_selection::open_with_access((int) $user->id), 'Location selection is no longer open once a location is chosen.');
+            $this->assertFalse(
+                location_selection::open_with_access((int) $user->id),
+                'Location selection is no longer open once a location is chosen.'
+            );
         } finally {
             \core\di::reset_container();
         }

@@ -75,7 +75,8 @@ trait webdav_instance_fixture {
      * their own user context.
      *
      * @param \stdClass $user
-     * @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type: array<string,string|int>.
+     * @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:
+     * array<string,string|int>.
      * @return int Instance ID.
      */
     protected function create_webdav_instance(\stdClass $user, array $overrides = []): int {
@@ -152,7 +153,10 @@ trait webdav_instance_fixture {
 
         $pointer = [
             'context_area' => $externtarget === 'context_area' ? $external : $inmoodle,
-            'material_store' => $externtarget === 'material_store' ? $external : ['location' => 'moodle', 'path' => 'coursepilot-material'],
+            'material_store' => $externtarget === 'material_store' ? $external : [
+                'location' => 'moodle',
+                'path' => 'coursepilot-material',
+            ],
         ];
 
         get_file_storage()->create_file_from_string([

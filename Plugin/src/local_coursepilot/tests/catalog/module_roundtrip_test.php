@@ -251,7 +251,11 @@ final class module_roundtrip_test extends \advanced_testcase {
 
         $before = $this->read($case['cmid']);
         $this->assertArrayHasKey($case['field'], $before, "{$modname}: patched field must be readable.");
-        $this->assertNotSame($case['value'], $before[$case['field']], "{$modname}: initial value must not already be the target value.");
+        $this->assertNotSame(
+            $case['value'],
+            $before[$case['field']],
+            "{$modname}: initial value must not already be the target value."
+        );
 
         $this->patch($modname, $case['cmid'], [$case['field'] => $case['value']]);
 

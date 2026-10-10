@@ -55,7 +55,12 @@ class get_course_catalog extends external_api {
         return new external_function_parameters([
             'courseid'   => new external_value(PARAM_INT, 'Course ID'),
             'sectionnum' => new external_value(PARAM_INT, 'Section number (0-based, -1 = all sections)', VALUE_DEFAULT, -1),
-            'modname'    => new external_value(PARAM_TEXT, 'Optional module type filter: page, label, assign, quiz, url', VALUE_DEFAULT, ''),
+            'modname'    => new external_value(
+                PARAM_TEXT,
+                'Optional module type filter: page, label, assign, quiz, url',
+                VALUE_DEFAULT,
+                ''
+            ),
             'detail'     => new external_value(PARAM_ALPHA, 'compact or full content detail', VALUE_DEFAULT, 'compact'),
         ]);
     }
@@ -309,7 +314,10 @@ class get_course_catalog extends external_api {
                             'modname' => new external_value(PARAM_TEXT, 'Module type'),
                             'name' => new external_value(PARAM_TEXT, 'Module display name'),
                             'visible' => new external_value(PARAM_INT, 'Visible flag'),
-                            'visibleoncoursepage' => new external_value(PARAM_INT, 'Stealth: 1 = shown on course page, 0 = stealth'),
+                            'visibleoncoursepage' => new external_value(
+                                PARAM_INT,
+                                'Stealth: 1 = shown on course page, 0 = stealth'
+                            ),
                             'coursepagevisibility' => new external_value(PARAM_TEXT, 'shown | stealth'),
                             'availability_status' => new external_value(PARAM_TEXT, 'shown | stealth | hidden'),
                             'groupmode' => new external_value(PARAM_INT, 'Group mode: 0 = none, 1 = separate, 2 = visible'),

@@ -58,7 +58,10 @@ final class oauth_connection_test extends \advanced_testcase {
         $rotated = oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a');
         $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token($rotated['access_token']));
         $this->assertSame($connection, oauth_lib::current_connection_id());
-        $history = $DB->get_record('local_coursepilot_oauth_token', ['refreshtokenhash' => hash('sha256', $original['refresh_token'])]);
+        $history = $DB->get_record(
+            'local_coursepilot_oauth_token',
+            ['refreshtokenhash' => hash('sha256', $original['refresh_token'])]
+        );
         $this->assertNotFalse($history);
         $this->assertSame($connection, (int) $history->connectionid);
         $this->assertNull(oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a'));
@@ -305,7 +308,10 @@ final class oauth_connection_test extends \advanced_testcase {
                 [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
                 $pipes[0]
             );
-            $this->await_condition(fn() => $DB->get_field_sql('SELECT IS_USED_LOCK(?)', [$ready]), 'First connection did not reach barrier');
+            $this->await_condition(
+                fn() => $DB->get_field_sql('SELECT IS_USED_LOCK(?)', [$ready]),
+                'First connection did not reach barrier'
+            );
             $processes[1] = proc_open(
                 [PHP_BINARY, __DIR__ . '/fixtures/oauth_connection_process.php',
                 $second, ($second === 'replay' ? $original : $active)['refresh_token'], (string) $tokenid],

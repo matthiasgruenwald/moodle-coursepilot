@@ -102,7 +102,11 @@ final class connection_storage_location_test extends \advanced_testcase {
 
         $description = connection_storage_location::describe((int) $user->id);
 
-        $expected = get_string('storagelocationmarkerdefect', 'local_coursepilot', get_string('storagelocationdefectinstancemissing', 'local_coursepilot'));
+        $expected = get_string(
+            'storagelocationmarkerdefect',
+            'local_coursepilot',
+            get_string('storagelocationdefectinstancemissing', 'local_coursepilot')
+        );
         $this->assertContains($expected, $description['markers']);
     }
 

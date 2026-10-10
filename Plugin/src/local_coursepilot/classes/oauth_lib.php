@@ -212,7 +212,8 @@ final class oauth_lib {
             if (!self::is_allowed_redirect_uri($uri)) {
                 return [
                     'error' => 'invalid_redirect_uri',
-                    'error_description' => 'redirect_uri must use https or a loopback address (http://127.0.0.1 / http://localhost).',
+                    'error_description' => 'redirect_uri must use https or a loopback address (http://127.0.0.1 / '
+                        . 'http://localhost).',
                 ];
             }
         }

@@ -124,11 +124,20 @@ function local_coursepilot_handle_location_selection_finish(?array $oauthreturn)
             redirect(new moodle_url('/local/coursepilot/oauth/authorize.php', $oauthreturn['params']));
         }
         return empty($changed)
-            ? ['type' => \core\output\notification::NOTIFY_INFO, 'text' => get_string('locationselectionfinishnochange', 'local_coursepilot')]
-            : ['type' => \core\output\notification::NOTIFY_SUCCESS, 'text' => get_string('locationselectionfinishsuccess', 'local_coursepilot', implode(', ', array_map(
-                static fn (string $target): string => get_string('locationselectiontab' . str_replace('_', '', $target), 'local_coursepilot'),
-                $changed
-            )))];
+            ? [
+                'type' => \core\output\notification::NOTIFY_INFO,
+                'text' => get_string('locationselectionfinishnochange', 'local_coursepilot'),
+            ]
+            : [
+                'type' => \core\output\notification::NOTIFY_SUCCESS,
+                'text' => get_string('locationselectionfinishsuccess', 'local_coursepilot', implode(', ', array_map(
+                    static fn (string $target): string => get_string(
+                        'locationselectiontab' . str_replace('_', '', $target),
+                        'local_coursepilot'
+                    ),
+                    $changed
+                ))),
+            ];
     } catch (moodle_exception $e) {
         // Stay on location selection on failure, including OAuth flow, so
         // redirecting cannot hide the error message.

@@ -248,7 +248,10 @@ final class location_selection {
      * @param string $relative
      * @return array
      */
-    private static function fetch_raw_entries(\local_coursepilot\webdav\resolved_webdav_instance $instance, string $relative): array {
+    private static function fetch_raw_entries(
+        \local_coursepilot\webdav\resolved_webdav_instance $instance,
+        string $relative
+    ): array {
         try {
             return $instance->client()->propfind($instance->directory_url($relative), 1);
         } catch (webdav_error $e) {
@@ -257,7 +260,10 @@ final class location_selection {
             return webdav_error::empty_when_missing(
                 $e,
                 [],
-                static fn (webdav_error $e): \moodle_exception => pointer_reader::webdav_exception($e, 'locationselectionexternalerror')
+                static fn (webdav_error $e): \moodle_exception => pointer_reader::webdav_exception(
+                    $e,
+                    'locationselectionexternalerror'
+                )
             );
         }
     }
@@ -451,7 +457,10 @@ final class location_selection {
      */
     private static function create_new_external_folders(array $wanted, array $current): void {
         foreach (self::TARGETS as $target) {
-            if ($wanted[$target]['location'] === pointer_location::EXTERNAL && !self::same_place($current[$target], $wanted[$target])) {
+            if (
+                $wanted[$target]['location'] === pointer_location::EXTERNAL
+                && !self::same_place($current[$target], $wanted[$target])
+            ) {
                 self::ensure_directory((int) $wanted[$target]['instanceid'], (string) $wanted[$target]['path']);
             }
         }
@@ -688,7 +697,11 @@ final class location_selection {
         if ($value['location'] === pointer_location::MOODLE) {
             return pointer_location::moodle('/' . trim((string) $value['path'], '/') . '/');
         }
-        return pointer_location::external((int) $value['instanceid'], (string) $value['path'], (array) ($value['fingerprint'] ?? []));
+        return pointer_location::external(
+            (int) $value['instanceid'],
+            (string) $value['path'],
+            (array) ($value['fingerprint'] ?? [])
+        );
     }
 
     /**
@@ -759,7 +772,11 @@ final class location_selection {
         if ($path === '') {
             return get_string('locationselectionlocationexternalalroot', 'local_coursepilot', $label);
         }
-        return get_string('locationselectionlocationexternal', 'local_coursepilot', (object) ['instance' => $label, 'path' => $path]);
+        return get_string(
+            'locationselectionlocationexternal',
+            'local_coursepilot',
+            (object) ['instance' => $label, 'path' => $path]
+        );
     }
 
     /**

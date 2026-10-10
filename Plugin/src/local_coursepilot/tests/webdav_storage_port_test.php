@@ -124,7 +124,12 @@ final class webdav_storage_port_test extends storage_port_contract_test {
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     return new \local_coursepilot\webdav\webdav_response(507, [], '');
                 }
@@ -176,7 +181,12 @@ final class webdav_storage_port_test extends storage_port_contract_test {
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
-            public function request(string $method, string $url, array $headers = [], ?string $body = null): \local_coursepilot\webdav\webdav_response {
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
                 if ($method === 'PUT') {
                     return new \local_coursepilot\webdav\webdav_response(507, [], '');
                 }

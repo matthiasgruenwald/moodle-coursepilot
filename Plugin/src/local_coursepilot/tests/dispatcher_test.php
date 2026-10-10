@@ -1525,7 +1525,8 @@ XML;
         $exception = (object) [
             'errorcode' => 'invalidresponse',
             'message' => 'Invalid response value detected.',
-            'debuginfo' => "Invalid response value detected in sections[0].modules[0].settings[2].value.\nError code: invalidresponse",
+            'debuginfo' => "Invalid response value detected in sections[0].modules[0].settings[2].value.\nError code: "
+                . "invalidresponse",
         ];
         $method = new \ReflectionMethod(dispatcher::class, 'diagnostic_detail');
 
@@ -2048,7 +2049,10 @@ XML;
 
         $this->assertSame(200, $response['status']);
         $this->assertTrue($response['body']['result']['isError']);
-        $this->assertStringContainsString('CAPABILITY_MISSING:local/coursepilot:use', $response['body']['result']['content'][0]['text']);
+        $this->assertStringContainsString(
+            'CAPABILITY_MISSING:local/coursepilot:use',
+            $response['body']['result']['content'][0]['text']
+        );
     }
 
     /**

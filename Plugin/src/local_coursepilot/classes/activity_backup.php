@@ -188,12 +188,14 @@ final class activity_backup {
             'scales.xml' => '<scales_definition></scales_definition>',
             'outcomes.xml' => '<outcomes_definition></outcomes_definition>',
             'questions.xml' => '<question_categories></question_categories>',
-            'groups.xml' => '<groups><groupcustomfields></groupcustomfields><groupings><groupingcustomfields></groupingcustomfields></groupings></groups>',
+            'groups.xml' => '<groups><groupcustomfields></groupcustomfields><groupings><groupingcustomfields>'
+                . '</groupingcustomfields></groupings></groups>',
             "$dir/calendar.xml" => '<events></events>',
             "$dir/inforef.xml" => '<inforef></inforef>',
             "$dir/filters.xml" => '<filters><filter_actives></filter_actives><filter_configs></filter_configs></filters>',
             "$dir/roles.xml" => '<roles><role_overrides></role_overrides><role_assignments></role_assignments></roles>',
-            "$dir/grades.xml" => '<activity_gradebook><grade_items></grade_items><grade_letters></grade_letters></activity_gradebook>',
+            "$dir/grades.xml" => '<activity_gradebook><grade_items></grade_items>'
+                . '<grade_letters></grade_letters></activity_gradebook>',
             "$dir/grade_history.xml" => '<grade_history><grade_grades></grade_grades></grade_history>',
             "$dir/competencies.xml" => '<course_module_competencies><competencies></competencies></course_module_competencies>',
             "$dir/module.xml" => "<module id=\"$cmid\" version=\"$modversion\"><modulename>$modname</modulename>"
@@ -201,8 +203,10 @@ final class activity_backup {
                 . "<added>$now</added><score>0</score><indent>0</indent><visible>$visible</visible>"
                 . "<visibleoncoursepage>1</visibleoncoursepage><visibleold>$visible</visibleold>"
                 . '<groupmode>0</groupmode>'
-                . '<groupingid>0</groupingid><completion>0</completion><completiongradeitemnumber>$@NULL@$</completiongradeitemnumber>'
-                . '<completionpassgrade>0</completionpassgrade><completionview>0</completionview><completionexpected>0</completionexpected>'
+                . '<groupingid>0</groupingid><completion>0</completion>'
+                    . '<completiongradeitemnumber>$@NULL@$</completiongradeitemnumber>'
+                . '<completionpassgrade>0</completionpassgrade><completionview>0</completionview>'
+                    . '<completionexpected>0</completionexpected>'
                 . '<availability>$@NULL@$</availability><showdescription>0</showdescription><downloadcontent>1</downloadcontent>'
                 . '<lang>$@NULL@$</lang><tags></tags></module>',
             "$dir/$modname.xml" => preg_replace('/^<\?xml[^>]*>\s*/', '', ltrim($activityxml)),
@@ -248,7 +252,8 @@ final class activity_backup {
             . '<backup_version>' . \backup::VERSION . "</backup_version><backup_release>$backuprelease</backup_release>"
             . "<backup_date>$now</backup_date><mnet_remoteusers>0</mnet_remoteusers><include_files>0</include_files>"
             . '<include_file_references_to_external_content>0</include_file_references_to_external_content>'
-            . '<original_wwwroot>https://synthetic.invalid</original_wwwroot><original_site_identifier_hash>synthetic</original_site_identifier_hash>'
+            . '<original_wwwroot>https://synthetic.invalid</original_wwwroot>'
+                . '<original_site_identifier_hash>synthetic</original_site_identifier_hash>'
             . '<original_course_id>1</original_course_id><original_course_format>topics</original_course_format>'
             . '<original_course_fullname>s</original_course_fullname><original_course_shortname>s</original_course_shortname>'
             . '<original_course_startdate>0</original_course_startdate><original_course_enddate>0</original_course_enddate>'

@@ -50,7 +50,13 @@ final class read_context_file_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
-        foreach (['templates.md' => 'vorlagen.md', 'notepad.md' => 'merkzettel.md', 'CONTEXT-people.md' => 'CONTEXT.personen.md'] as $canonical => $legacy) {
+        foreach (
+            [
+                'templates.md' => 'vorlagen.md',
+                'notepad.md' => 'merkzettel.md',
+                'CONTEXT-people.md' => 'CONTEXT.personen.md',
+            ] as $canonical => $legacy
+        ) {
             $this->create_context_file($user, '/coursepilot/', $legacy, '# Legacy ' . $legacy);
             $result = read_context_file::execute($canonical);
             $result = external_api::clean_returnvalue(read_context_file::execute_returns(), $result);

@@ -57,7 +57,11 @@ final class fake_webdav_transport implements webdav_transport {
     /** @var int Monotonic timestamp clock for deterministically distinct modification times. */
     private int $clocktick = 1_700_000_000;
 
-    /** @var array<int, array{method: string, url: string, headers: array<string, string>, body: ?string}> Request log for assertions such as PUT with If-None-Match: *. */
+    /**
+     * Request log for assertions such as PUT with If-None-Match: *.
+     *
+     * @var array<int, array{method: string, url: string, headers: array<string, string>, body: ?string}>
+     */
     private array $log = [];
 
     /**
@@ -239,7 +243,11 @@ final class fake_webdav_transport implements webdav_transport {
                 }
             }
         }
-        return new webdav_response(207, ['content-type' => 'application/xml; charset=utf-8'], $this->multistatus_xml($requesturl, $entries));
+        return new webdav_response(
+            207,
+            ['content-type' => 'application/xml; charset=utf-8'],
+            $this->multistatus_xml($requesturl, $entries)
+        );
     }
 
     /**
@@ -383,9 +391,18 @@ final class fake_webdav_transport implements webdav_transport {
         $areas = ['Files', 'Groups', 'Print', 'Temp', 'Windows'];
         $entries = [$rootpath => ['content' => '', 'etag' => null, 'lastmodified' => $this->clocktick, 'collection' => true]];
         foreach ($areas as $area) {
-            $entries[$rootpath . '/' . $area] = ['content' => '', 'etag' => null, 'lastmodified' => $this->clocktick, 'collection' => true];
+            $entries[$rootpath . '/' . $area] = [
+                'content' => '',
+                'etag' => null,
+                'lastmodified' => $this->clocktick,
+                'collection' => true,
+            ];
         }
-        return new webdav_response(207, ['content-type' => 'application/xml; charset=utf-8'], $this->multistatus_xml($requesturl, $entries));
+        return new webdav_response(
+            207,
+            ['content-type' => 'application/xml; charset=utf-8'],
+            $this->multistatus_xml($requesturl, $entries)
+        );
     }
 
     /**

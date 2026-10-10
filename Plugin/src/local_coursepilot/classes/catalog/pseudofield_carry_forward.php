@@ -296,7 +296,12 @@ final class pseudofield_carry_forward {
      * @param array $patch
      * @return void
      */
-    private static function carry_forward_choice_options(string $modname, \stdClass $moduleinfo, \stdClass $cm, array $patch): void {
+    private static function carry_forward_choice_options(
+        string $modname,
+        \stdClass $moduleinfo,
+        \stdClass $cm,
+        array $patch
+    ): void {
         global $DB;
 
         if ($modname !== 'choice' || array_key_exists('option', $patch)) {

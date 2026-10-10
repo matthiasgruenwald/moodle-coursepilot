@@ -146,7 +146,8 @@ final class forum implements module_catalog {
                 0,
                 null,
                 null,
-                'course/moodleform_mod.php:743-746 (add_rating_settings(), modgrade element; scale value = grademax/scaleid); column '
+                'course/moodleform_mod.php:743-746 (add_rating_settings(), modgrade element; scale value = grademax/scaleid); '
+                    . 'column '
                     . 'mod/forum/db/install.xml (forum.scale)'
             ),
             new field(
