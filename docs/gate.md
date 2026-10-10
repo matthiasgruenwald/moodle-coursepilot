@@ -126,11 +126,9 @@ verschwindet mit dessen Umbau. Bekannte Verstöße erscheinen als `deptrac-basel
 die Konfiguration aus `/var/www/deptrac-config` im Container, die `sync-plugin.sh` spiegelt.
 
 deptrac wertet Docblocks nicht aus: Die Analyse läuft über `class`, `use` und `function`, nicht über
-Kommentare. `{@see \local_coursepilot\external\…}` in `catalog/` und `webdav/` (etwa `catalog/resource`,
-`catalog/shared_block`, `webdav/webdav_client`) erzeugt deshalb keine Kante; der Lauf auf diesem Stand meldet dort
-keinen Befund, obwohl die Verweise stehen. Ein echter `use`-Import oder Aufruf wäre dagegen ein Verstoß.
-`catalog/learner_locks` nutzt `core_external\external_*` (Moodle-Kern); der Namespace liegt in keiner Schicht und
-bleibt ohne Befund. Der Bericht enthält nur noch die Baseline-Einträge der Tickets #693, #696, #697 und #700.
+Kommentare. Ein `{@see \local_coursepilot\external\…}` erzeugt deshalb keine Kante, ein echter `use`-Import oder
+Aufruf eines Werkzeugs aus `catalog/` oder `webdav/` dagegen einen Verstoß. Namespaces des Moodle-Kerns
+(`core_external\…`) liegen in keiner Schicht und bleiben ohne Befund.
 
 `full` und `static` schreiben zusätzlich `/opt/kurspilot-gate/reports/gate-static.json`.
 
