@@ -82,14 +82,14 @@ Entpackt Plugin und `well-known` aus dem Tag nach `/opt/plugins/*-main` und füh
 
 ---
 
-## Hooks (siehe `.claude/settings.json`)
+## Hooks (siehe `.claude/settings.json`, `scripts/githooks/`)
 
-Nach Edit/Write automatisch:
-- `*.js` → `node --check` (Syntax)
-- `*.php` → `php -l` (Syntax, Plugin/src)
-- `test/*.test.js` → `npm test`
+Nach Edit/Write von Plugin-PHP, `test/**/*.js` oder `scripts/gate/**` läuft `npm run gate -- edit`
+(dasselbe Gate wie `pre-commit`, Befunde als Rückmeldung bei Exitcode 2). Git-Hooks einmal pro Klon
+aktivieren: `npm run hooks:install` (`pre-commit` = `gate fast`, `pre-push` = `gate full`, kein Husky).
 
-Codex nutzt diese Hooks nicht automatisch – `.codex/hooks.json` spiegelt dieselbe Logik.
+Codex nutzt dieselben Hooks: `.codex/hooks.json` spiegelt `.claude/settings.json`, Details in
+[`docs/gate.md`](docs/gate.md) und [`docs/agents/testing.md`](docs/agents/testing.md).
 
 ---
 

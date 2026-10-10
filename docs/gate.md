@@ -1,8 +1,9 @@
 # Gate-Container und Gate-Kommando
 
-Stand: Spec 0029, Tracer Bullet. Das Gate **misst nur**: Es zeigt
-Coverage und CRAP, blockiert aber noch nichts (Ratsche und Schwellen folgen in
-den nächsten Tickets, ADR 0029).
+Stand: Spec 0029, Gate scharf. Das Gate misst Coverage und CRAP, führt die
+statischen Prüfungen aus und **blockiert** nach der Ratschenregel aus ADR 0029
+(Abschnitt [Ratsche](#ratsche)). Git-Hooks und Edit-Hooks rufen dasselbe
+Kommando auf (Abschnitt [Hooks](#hooks)).
 
 ## Gate-Container
 
@@ -44,6 +45,9 @@ Container auf:
 npm run gate -- fast               # Node-Tests + PHPUnit der Tests zu geänderten Klassen
 npm run gate -- full               # volle Suite mit pcov, danach Bericht (rund 15 Minuten)
 npm run gate -- report <clover.xml> # nur Bericht aus vorhandenem Clover-Bericht
+npm run gate -- ratchet [clover.xml] # Ratsche; ohne Clover nur die Baselines
+npm run gate -- baseline [clover.xml] # Coverage-Baseline anheben (nie senken)
+npm run gate -- edit               # Edit-Hook: Hook-JSON von stdin, ruft fast
 npm run gate -- static             # alle statischen Prüfungen (rund 1 Minute)
 npm run gate -- phpstan-baseline   # PHPStan-Baseline neu erzeugen
 npm run gate -- ranking [n]        # Fehlschlags-Rangliste nach Datei und Prüfung
@@ -53,6 +57,9 @@ npm run gate -- ranking [n]        # Fehlschlags-Rangliste nach Datei und Prüfu
 PHPUnit-Konfiguration, schreibt den Clover-Bericht nach
 `/opt/kurspilot-gate/reports/clover.xml` und wertet ihn aus. Der volle Lauf
 braucht einen abgekoppelten Prozess, siehe [`agents/testing.md`](agents/testing.md).
+
+`fast` führt zusätzlich die Baseline-Ratsche aus (ohne Messwert). `full` wertet nach der
+Suite die Ratsche mit dem Clover-Bericht aus. Exitcode 1 bei jedem blockierenden Befund.
 
 `fast` ordnet geänderte Dateien (`git diff HEAD` plus neue Dateien) Tests zu:
 Produktionsklasse `classes/…/foo.php` gehört zu Tests mit
@@ -69,8 +76,9 @@ Plugin/src/local_coursepilot/classes/x.php:30: crap-method: hard crap=462 comple
 summary: coverage=82.3% lines=… files=… files_below_50=… methods=… crap_over_8=… crap_over_30=…
 ```
 
-Regeln heute nur Messwerte: `coverage-file` (Datei unter 90 %), `crap-method`
-(CRAP über 8), `no-test-mapped`, `gate-error`. Ein fehlender, leerer oder
+Messwerte im Bericht (blockieren nicht, die Ratsche blockiert nur Geändertes):
+`coverage-file` (Datei unter 90 %), `crap-method` (CRAP über 8), `no-test-mapped`
+(Hinweis). `gate-error` ist immer rot. Ein fehlender, leerer oder
 ungültiger Clover-Bericht, 0 ausführbare Zeilen, Methoden ohne CRAP-Wert,
 fehlgeschlagene Tests oder ein nicht laufender Container enden mit Exitcode 1,
 nie grün. Tests: `test/gate.test.js` mit Fixtures unter `test/fixtures/gate/`.
@@ -88,8 +96,9 @@ oben in der Liste ist Kandidat für größeres Aufräumen (ADR 0029).
 
 ## Statische Prüfungen
 
-Laufen im Gate-Container und **berichten**: Befunde stehen im Bericht und blockieren
-nicht, ausgenommen die Schichtregeln (deptrac). Ein Werkzeug, das ohne auswertbaren Befund mit Fehlercode endet, ist
+Laufen im Gate-Container. **Jeder Befund blockiert**, ausgenommen `deptrac-baselined`
+(bekannter Verstoß aus der deptrac-Baseline, nur Bericht). Der Bestand ist ohne Befund
+(PHPStan über seine Baseline). Ein Werkzeug, das ohne auswertbaren Befund mit Fehlercode endet, ist
 rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-cs, phpdoc, PHPStan, die Covers-Prüfung, die Kommentarsprache und die Kontext-/Capability-Prüfung externer Funktionen aus,
 `full` und `static` zusätzlich savepoints, Mustache und ESLint.
 
@@ -147,6 +156,73 @@ Jede Befundart (`identifier`), die in der Baseline bleibt, steht mit einer Begr�
 `scripts/gate/phpstan/baseline-reasons.json`; `test/gate-phpstan-baseline.test.js` verlangt, dass
 beide Listen übereinstimmen. Eine neue Befundart in der Baseline braucht also eine Begründung,
 und eine nicht mehr vorkommende muss aus der Datei verschwinden.
+
+## Ratsche
+
+ADR 0029: Das Gate blockiert, was schlechter wird, und prüft, was geändert wird. Der
+Bestand über der Regel blockiert erst, wenn jemand ihn anfasst.
+
+| Regel im Bericht | Blockiert, wenn |
+|---|---|
+| `ratchet-coverage` | Gesamt-Coverage unter dem Wert in `scripts/gate/baseline.json` (nach Ausschlussliste) |
+| `ratchet-baseline-lowered` | `baseline.json` niedriger als im Vergleichsstand |
+| `ratchet-file-coverage` | eine geänderte Produktionsdatei unter 90 % Line-Coverage |
+| `ratchet-method-crap` | eine geänderte Methode mit CRAP über 8 |
+| `ratchet-phpstan-grown` | die PHPStan-Baseline hat je Datei und Befundart mehr Einträge als im Vergleichsstand |
+| `ratchet-deptrac-grown` | die deptrac-Baseline hat ein neues Paar Quelle → Ziel gegenüber dem Vergleichsstand |
+
+Dazu kommen die statischen Prüfungen (siehe oben) und die Schichtregeln.
+
+**Geänderte Datei und Methode:** Das Kommando liest `git diff -U0` des Arbeitsbaums gegen den
+Vergleichsstand und nimmt neue, unversionierte Dateien komplett als geändert. Eine Methode
+gilt als geändert, wenn eine geänderte Zeile zwischen ihrer Startzeile (aus dem Clover-Bericht)
+und der letzten Code-Zeile vor der nächsten Methode liegt; Docblock, Attribute und Leerzeilen
+der nächsten Methode gehören nicht dazu. Testdateien und ausgeschlossene Dateien zählen nicht.
+
+**Vergleichsstand:** `GATE_BASE_REF`, sonst der jüngere von Merge-Base mit `origin/dev` und
+`armedAt` aus der Baseline, sonst `HEAD`. `armedAt` ist der Stand der Messung beim
+Scharfschalten; er verhindert, dass das einmalige Aufräumen davor als „geändert“ zählt. Nach dem
+Merge nach `dev` ist die Merge-Base jünger und gewinnt. Gibt es die Baseline-Dateien im
+Vergleichsstand nicht, entfällt der Vergleich.
+
+**Baseline-Datei** `scripts/gate/baseline.json`: `coverage` (`covered`/`statements`, Wert des
+vollen Laufs ohne die ausgeschlossenen Dateien), `excluded` (Pfad relativ zum Plugin, `/` am Ende
+= Verzeichnis, je Eintrag `reason`) und `armedAt`. Fortschreiben nur nach oben:
+
+```bash
+npm run gate -- full        # Messung
+npm run gate -- baseline    # hebt coverage an; verweigert, wenn der Messwert niedriger ist
+```
+
+**Ausschlussliste:** Sprachdateien, `db/access.php`, `db/events.php`, `db/services.php`,
+`db/tasks.php` und `version.php` sind reine Datentabellen ohne Logik. Unter `#[CoversClass]`
+lassen sie sich keiner Klasse zuordnen; sie tauchten nur deshalb in der Messung auf, weil
+Testklassen ohne Covers-Angabe alles Ausgeführte gutschrieben. Mit der Covers-Pflicht
+(`covers-missing`) fiel die Gutschrift weg: Die Messung sank von 82,33 % auf 75,48 %, davon
+1005 Zeilen aus diesen Dateien, der Rest ist Zuwachs an Code. Ohne diese Dateien im Nenner liegt
+der Bestand bei 81,08 % (11356/14006); das ist die Baseline. Seiten-Einstiegsskripte
+(`mcp.php`, `settings.php` u. a.) stehen noch im Nenner und sind bei Änderung an die 90 %-Regel
+gebunden, bis ihre Logik in Klassen liegt.
+
+## Hooks
+
+Versionierte Hooks unter `scripts/githooks/`, aktiviert über `core.hooksPath`:
+
+```bash
+npm run hooks:install
+```
+
+| Hook | Ruft auf | Dauer |
+|---|---|---|
+| `pre-commit` | `gate fast` (Node-Tests, PHPUnit zu geänderten Klassen, statische Prüfungen, Baseline-Ratsche) | unter einer Minute plus zugeordnete PHPUnit-Tests |
+| `pre-push` | `gate full` (volle Suite, Coverage- und CRAP-Ratsche, alle statischen Prüfungen) | rund 15 Minuten |
+| Edit-Hook Claude/Codex | `gate edit`, startet `fast` bei Änderung an Plugin-PHP, `test/**/*.js` oder `scripts/gate/**` | wie `fast` |
+
+Der Edit-Hook (`.claude/settings.json`, `.codex/hooks.json`) schreibt Befunde auf stderr und
+endet mit Exitcode 2, damit der Agent sie als Rückmeldung bekommt und weiterarbeitet. Ein
+stiller `php -l`-Hook entfällt, `fast` enthält die Syntaxprüfung über moodle-cs und PHPStan.
+Hooks lassen sich mit `git commit --no-verify` übergehen; verbindlich bleibt CI.
+Ohne laufenden Gate-Container ist `fast` rot (`gate-error`).
 
 ## Statische Prüfungen ohne Befund
 

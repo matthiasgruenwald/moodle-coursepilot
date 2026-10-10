@@ -63,4 +63,4 @@ damit nicht mehr. Ziel bleibt eine leere Baseline nach Abschluss der Deepening-T
 Umsetzung in deptrac (#662): Der Ablageort-Kern (Port, Anker, Pointer, Zugriffsprotokoll, Ereignisse)
 ist als Teil der Fachmodule eine eigene Schicht „Ports“, damit ein Adapter nur ihn nutzen darf und nicht
 die übrige Fachlogik. Jedes Werkzeug ist eine eigene Schicht, weil deptrac Abhängigkeiten innerhalb einer
-Schicht immer erlaubt. Der Vergleich der Baseline mit der des Ziel-Branches (Ratsche) folgt in einem eigenen Ticket.
+Schicht immer erlaubt. Der Vergleich der Baseline mit der des Ziel-Branches (Ratsche, `ratchet-deptrac-grown`) ist im Gate umgesetzt (`docs/gate.md`).
