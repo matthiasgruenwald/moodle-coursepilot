@@ -211,11 +211,23 @@ Umbenennung mit Änderung prüft nur die geänderten Zeilen. Wird eine Klasse (n
 umbenannt, erscheint ihr deptrac-Baseline-Eintrag als neues Paar; Eintrag und Umbenennung
 gehören in dasselbe Ticket und der Eintrag wird dort mit umbenannt.
 
-**Vergleichsstand:** `GATE_BASE_REF`, sonst der jüngere von Merge-Base mit `origin/dev` und
-`armedAt` aus der Baseline, sonst `HEAD`. `armedAt` ist der Stand der Messung beim
-Scharfschalten; er verhindert, dass das einmalige Aufräumen davor als „geändert“ zählt. Nach dem
-Merge nach `dev` ist die Merge-Base jünger und gewinnt. Gibt es die Baseline-Dateien im
-Vergleichsstand nicht, entfällt der Vergleich.
+**Vergleichsstand:** Ein explizites `GATE_BASE_REF` gewinnt immer: CI setzt bei PRs
+`origin/<tatsächlicher Zielbranch>` (auch `origin/main`), bei Push auf `dev`/`main` den
+Commit vor dem Push. Manuelle CI-Abnahmen wählen `dev` oder `main` ausdrücklich.
+CI lädt die vollständige Historie und alle Branch-Refs (`fetch-depth: 0`). Ein ungültiger
+Ref, flache Historie, fehlende gemeinsame Historie oder eine fehlende erforderliche
+Coverage-/PHPStan-/deptrac-Baseline im Vergleichsstand ist ein Fehler, kein grüner Vergleich.
+Die Baselines werden gegen den Zielbranch-Stand verglichen; geänderte Zeilen gegen die
+Merge-Base mit diesem Stand. So werden ausschließlich auf dem Zielbranch hinzugekommene
+Dateien nicht als PR-Änderung behandelt.
+
+Ohne expliziten Ref bleibt lokal der jüngere von Merge-Base mit `origin/dev` und `armedAt`,
+sonst `HEAD`. `armedAt` bleibt als historischer Startpunkt des einmaligen Scharfschaltens
+begründet erhalten. CLI-Nachweise prüfen die ältere Entwicklungsbasis, den expliziten
+Zielref (der `armedAt` ignoriert) und den neueren übernommenen Stand: nach Übernahme gewinnt
+die jüngere Merge-Base und neue Änderungen werden wieder geprüft. `armedAt` wird nicht
+verschoben. Der erstmalige Rollout auf `main` braucht seine eigene Messung und Abnahme,
+siehe [CI und Main-Bootstrap](ci-native-server-mcp.md#main-bootstrap).
 
 **Baseline-Datei** `scripts/gate/baseline.json`: `coverage` (`covered`/`statements`, Wert des
 vollen Laufs ohne die ausgeschlossenen Dateien), `excluded` (Pfad relativ zum Plugin, `/` am Ende
@@ -317,3 +329,20 @@ statt 5.0 gemessen wird; neue Dateien und Methoden erhöhen Nenner und Zähler.
 sind dev-only. Das Release-ZIP entsteht ausschließlich aus
 `Plugin/src/local_coursepilot/`; `test/native-release-artifact.test.js` prüft,
 dass kein Dev-Tool darin landet. `vendor/` ist gitignoriert.
+
+## Verbindliche CI und Artefakte
+
+Native CI führt denselben `npm run gate -- full`-Einstieg auf einem frisch eingerichteten,
+isolierten Moodle-5.1-/MariaDB-/PHP-8.4-Gate aus. Der Job `quality` gehört zusammen mit
+`phpunit`, `js-native` und `artifact` zu `Gate (required)`. Ausschließlich `success` für
+alle vier Jobs ist grün; fehlend, übersprungen, abgebrochen und fehlgeschlagen bleiben rot.
+
+`gate-trend-MOODLE_501_STABLE-<SHA>` enthält `gate-report.json` mit Gesamt-Coverage und
+`summary.methodsCrapOver8` sowie den Datei-/Methodenmesswerten. MSI kommt erst mit der
+Mutationsphase. Auch bei roten Läufen wird das vorhandene Berichtsverzeichnis hochgeladen:
+Clover, `gate-static.json`, Git-Kontext, Setup-/full-Log und Exitdatei. Bei einem frühen
+Setup-/Testfehler können Messwerte fehlen; die vorhandenen Logs sind dann der Fehlernachweis,
+keine ersatzweise erfolgreiche Messung. Der Upload ist selbst verpflichtend.
+
+Feature-PRs sind erst nach der echten grünen Abnahme des gesamten Pflichtchecks zugelassen.
+Lokales Grün, Workflow-Vertragstests oder ein einzelner grüner Matrix-Leg reichen nicht.

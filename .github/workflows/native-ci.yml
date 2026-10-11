@@ -5,26 +5,10 @@
 # Spike- oder Produktivinstanz, keine persoenlichen Verbindungen, kein
 # Praxiskurs (User Story 2/14).
 #
-# Vier Pflichtjobs plus ein stabiler Gesamtcheck ("Gate (required)"), der als
-# einziger Merge-Check dient - Matrixleg-Namen duerfen sich aendern, ohne die
-# Branch-Protection-Regel neu einrichten zu muessen (User Story 13):
-#
-#   phpunit   - volle native PHPUnit-Suite (inkl. Vertragstests aus #567) je
-#               unterstuetzter Moodle-Version; ein benannter Leg
-#               (MOODLE_501_STABLE) erhebt zusaetzlich die 80%-Line-Coverage
-#               ueber den gesamten nativen PHP-Produktionscode
-#               (tests/coverage.php), inklusive nie ausgefuehrter Zeilen.
-#   js-native - natives JS/AMD: Syntaxpruefung des AMD-Quellmoduls plus die
-#               Node-Suite ohne die dokumentiert plattform-/altstandgebundenen
-#               Faelle (scripts/ci/run-js-tests.js).
-#   artifact  - baut das installierbare Release-ZIP (#577) und installiert es
-#               auf einer eigenen, vom phpunit-Job getrennten frischen
-#               Moodle-Instanz; prueft Registrierung, Discovery und einen
-#               autorisierten MCP-Werkzeugaufruf (scripts/ci/verify-native-artifact.php).
-#   gate      - aggregiert die drei obigen Jobs. Laeuft mit if:always() und
-#               wertet needs.*.result explizit aus, damit ein uebersprungener
-#               oder fehlgeschlagener Pflichtjob nie zu einem gruenen
-#               Gesamtcheck fuehrt (Testing Decisions #268).
+# quality: Moodle 5.1, derselbe full-Einstieg wie lokal, inklusive Ratsche.
+# phpunit: weitere unterstützte Moodle-/DB-Kombinationen ohne zweite Coverage-Regel.
+# js-native und artifact bleiben Pflichtjobs; Gate (required) prüft alle Ergebnisse.
+# Fehlgeschlagene, fehlende oder übersprungene Jobs können nicht grün aggregieren.
 #
 # Bewusst KEIN paths-Filter: Aenderungen an Test-, Build- und
 # Workflow-Konfiguration selbst loesen den Pflichtlauf aus, kein
@@ -44,7 +28,14 @@ on:
   push:
     branches: [main, dev]
   pull_request: {}
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: Zielbranch für die Ratsche beim manuellen Abnahmelauf
+        type: choice
+        options: [dev, main]
+        default: dev
+        required: true
 
 # Nur der neueste Lauf je Ref zaehlt - keine veralteten, parallel laufenden
 # Ergebnisse fuer denselben Branch/PR.
@@ -53,6 +44,60 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  quality:
+    name: Full quality gate (Moodle 5.1, MariaDB, PHP 8.4)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    env:
+      GATE_DIR: ${{ github.workspace }}/../coursepilot-gate
+      GATE_MOODLE_REPO: ${{ github.workspace }}/../moodle-source
+      GATE_MOODLE_REF: origin/MOODLE_501_STABLE
+      # PR: actual target branch. Push: compare the state before the push.
+      GATE_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event_name == 'push' && github.event.before || format('origin/{0}', inputs.target_branch) }}
+    steps:
+      - name: Vollständige Plugin-Historie und Zielbranch-Refs auschecken
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Vergleich und Git-Historie protokollieren
+        run: |
+          mkdir -p "$GATE_DIR/reports"
+          {
+            git rev-parse HEAD
+            echo "GATE_BASE_REF=$GATE_BASE_REF"
+            git rev-parse --verify "$GATE_BASE_REF^{commit}"
+            git rev-parse --is-shallow-repository
+            git merge-base HEAD "$GATE_BASE_REF"
+          } | tee "$GATE_DIR/reports/git-context.log"
+
+      - name: Isoliertes Moodle-5.1-Gate mit versionierten Werkzeugen einrichten
+        run: |
+          git clone --branch MOODLE_501_STABLE https://github.com/moodle/moodle.git "$GATE_MOODLE_REPO"
+          bash scripts/gate/setup-container.sh 2>&1 | tee "$GATE_DIR/reports/setup.log"
+
+      - name: Verbindliches volles Gate
+        run: |
+          set +e
+          npm run gate -- full 2>&1 | tee "$GATE_DIR/reports/full.log"
+          result=${PIPESTATUS[0]}
+          echo "$result" > "$GATE_DIR/reports/full.exit"
+          exit "$result"
+
+      - name: Trend und Diagnose hochladen (auch bei rotem Gate)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-trend-MOODLE_501_STABLE-${{ github.sha }}
+          path: ${{ env.GATE_DIR }}/reports/
+          if-no-files-found: error
+          retention-days: 30
+
   phpunit:
     name: PHPUnit (${{ matrix.moodle-branch }}, ${{ matrix.database }}, PHP ${{ matrix.php-version }})
     runs-on: ubuntu-22.04
@@ -60,26 +105,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - moodle-branch: MOODLE_501_STABLE
-            database: mariadb
-            php-version: '8.4'
-            measures-coverage: true
           - moodle-branch: MOODLE_502_STABLE
             database: mariadb
             php-version: '8.3'
-            measures-coverage: false
           - moodle-branch: MOODLE_502_STABLE
             database: pgsql
             php-version: '8.4'
-            measures-coverage: false
           - moodle-branch: MOODLE_503_STABLE
             database: mariadb
             php-version: '8.3'
-            measures-coverage: false
           - moodle-branch: MOODLE_503_STABLE
             database: pgsql
             php-version: '8.4'
-            measures-coverage: false
     env:
       PHP_VERSION: ${{ matrix.php-version }}
       DB: ${{ matrix.database }}
@@ -112,7 +149,7 @@ jobs:
           --health-timeout=5s
           --health-retries=5
     steps:
-      - name: Native Plugin-Quelle und Coverage-Gate-Skript auschecken
+      - name: Native Plugin-Quelle auschecken
         uses: actions/checkout@v4
         with:
           path: plugin
@@ -120,17 +157,17 @@ jobs:
             Plugin/src/local_coursepilot
             scripts/ci
 
-      - name: Node einrichten (fuer das Coverage-Gate-Skript)
+      - name: Node einrichten
         uses: actions/setup-node@v4
         with:
           node-version: '24'
 
-      - name: PHP einrichten (Coverage-Treiber nur auf dem messenden Leg)
+      - name: PHP einrichten
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: pgsql, mysqli, gd, zip, soap, intl, exif, mbstring, xml
-          coverage: ${{ matrix.measures-coverage && 'pcov' || 'none' }}
+          coverage: none
           # Uploadgrenzen wie auf realen Kurspilot-Servern (Spike: 200M/206M);
           # import_questions_xml_test setzt voraus, dass die Servergrenze
           # ueber der Fachgrenze MAX_XML_BYTES liegt (PHP-Default 2M nicht).
@@ -157,31 +194,8 @@ jobs:
       - name: PHP-Syntaxpruefung (guenstiges Sicherheitsnetz vor dem vollen Testlauf)
         run: moodle-plugin-ci phplint
 
-      - name: Volle native PHPUnit-Suite (inkl. Vertragstests aus #567), Coverage nur auf dem messenden Leg
-        run: |
-          if [ "${{ matrix.measures-coverage }}" = "true" ]; then
-            moodle-plugin-ci phpunit --coverage-clover
-          else
-            moodle-plugin-ci phpunit
-          fi
-
-      - name: 80%-Coverage-Gate (nur messender Leg)
-        if: matrix.measures-coverage
-        # moodle-plugin-ci schreibt --coverage-clover als coverage.xml in das
-        # Arbeitsverzeichnis, aus dem `moodle-plugin-ci` selbst aufgerufen
-        # wurde (getcwd() im CI-Tool-Prozess) - hier $GITHUB_WORKSPACE, da
-        # kein Schritt zuvor das Verzeichnis wechselt.
-        run: node plugin/scripts/ci/check-coverage.js "${{ github.workspace }}/coverage.xml" --threshold=80
-
-      - name: Test- und Coverage-Berichte hochladen (auch bei Fehlschlag)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: phpunit-${{ matrix.moodle-branch }}-${{ matrix.database }}-php${{ matrix.php-version }}-${{ github.sha }}
-          path: |
-            ${{ github.workspace }}/coverage.xml
-          if-no-files-found: warn
-          retention-days: 30
+      - name: Volle native PHPUnit-Suite (Coverage misst ausschließlich quality)
+        run: moodle-plugin-ci phpunit
 
   js-native:
     name: Native JS/AMD
@@ -296,18 +310,13 @@ jobs:
   gate:
     name: Gate (required)
     if: always()
-    needs: [phpunit, js-native, artifact]
+    needs: [quality, phpunit, js-native, artifact]
     runs-on: ubuntu-22.04
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Alle Pflichtjobs erfolgreich?
-        run: |
-          echo "phpunit:   ${{ needs.phpunit.result }}"
-          echo "js-native: ${{ needs.js-native.result }}"
-          echo "artifact:  ${{ needs.artifact.result }}"
-          if [ "${{ needs.phpunit.result }}" != "success" ] || \
-             [ "${{ needs.js-native.result }}" != "success" ] || \
-             [ "${{ needs.artifact.result }}" != "success" ]; then
-            echo "::error::Mindestens ein Pflichtjob ist nicht erfolgreich (uebersprungen zaehlt als nicht erfolgreich)."
-            exit 1
-          fi
-          echo "Alle Pflichtjobs erfolgreich."
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: node scripts/ci/required-check.js

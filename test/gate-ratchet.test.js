@@ -104,6 +104,117 @@ function ratchet(repo, xml) {
 // Der Bestand misst 90/100 = 90 % gesamt; Baseline 80 %. a.php: 9/10.
 const goodExtra = [{ name: 'classes/b.php', st: 90, cov: 81 }];
 
+test('ratchet CLI: every required target baseline must exist', () => {
+  for (const rel of ['scripts/gate/baseline.json', 'scripts/gate/phpstan/phpstan-baseline.neon', 'scripts/gate/deptrac/deptrac-baseline.yaml']) {
+    const repo = makeRepo();
+    git(repo, 'update-ref', 'refs/remotes/origin/dev', 'HEAD');
+    fs.rmSync(path.join(repo, rel));
+    git(repo, 'add', '-A');
+    git(repo, 'commit', '-qm', 'target without baseline');
+    git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+    git(repo, 'restore', '--source=origin/dev', '--', rel);
+    assert.equal(run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/dev' }).status, 0);
+    const missing = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/main' });
+    assert.equal(missing.status, 1, missing.out);
+    assert.match(missing.out, /gate-error: .*Zielbranch-Baseline fehlt.*origin\/main/);
+    assert.ok(missing.out.includes(rel), missing.out);
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('ratchet CLI: invalid refs and shallow history cannot prove a comparison', () => {
+  const repo = makeRepo();
+  const invalid = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/missing' });
+  assert.equal(invalid.status, 1);
+  assert.match(invalid.out, /gate-error: .*Vergleichsref ungueltig.*origin\/missing/);
+  write(repo, '.git/shallow', git(repo, 'rev-parse', 'HEAD'));
+  const shallow = run(repo, ['ratchet']);
+  assert.equal(shallow.status, 1);
+  assert.match(shallow.out, /gate-error: .*vollstaendige Git-Historie/);
+  fs.rmSync(repo, { recursive: true, force: true });
+});
+
+test('ratchet CLI: impossible target coverage counts are red', () => {
+  for (const coverage of [{ covered: -1, statements: 100 }, { covered: 101, statements: 100 }, { covered: 80, statements: 0 }]) {
+    const repo = makeRepo({ baseline: { ...BASELINE, coverage } });
+    git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+    write(repo, 'scripts/gate/baseline.json', JSON.stringify(BASELINE));
+    const invalid = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/main' });
+    assert.equal(invalid.status, 1);
+    assert.match(invalid.out, /gate-error: Baseline ungueltig/);
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('ratchet CLI: corrupt target static baselines cannot prove a comparison', () => {
+  for (const rel of ['scripts/gate/phpstan/phpstan-baseline.neon', 'scripts/gate/deptrac/deptrac-baseline.yaml']) {
+    const repo = makeRepo();
+    git(repo, 'update-ref', 'refs/remotes/origin/dev', 'HEAD');
+    write(repo, rel, 'invalid baseline\n');
+    git(repo, 'add', '-A');
+    git(repo, 'commit', '-qm', 'corrupt target baseline');
+    git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+    git(repo, 'restore', '--source=origin/dev', '--', rel);
+    const invalid = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/main' });
+    assert.equal(invalid.status, 1);
+    assert.match(invalid.out, /gate-error: .*Baseline ungueltig/);
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('ratchet CLI: dev and main use target baselines and only the PR changes', () => {
+  const repo = makeRepo();
+  git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+  // Target-only changes must not become changed production files in the PR.
+  write(repo, `${PLUGIN}/classes/target.php`, SOURCE);
+  write(repo, 'scripts/gate/baseline.json', JSON.stringify({ ...BASELINE, coverage: { covered: 95, statements: 100 } }));
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-qm', 'dev advances');
+  git(repo, 'update-ref', 'refs/remotes/origin/dev', 'HEAD');
+  git(repo, 'checkout', '--detach', 'origin/main');
+  write(repo, 'pr.txt', 'PR change');
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-qm', 'PR');
+  const main = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/main' });
+  assert.equal(main.status, 0, main.out);
+  const dev = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/dev' });
+  assert.equal(dev.status, 1);
+  assert.match(dev.out, /ratchet-baseline-lowered: .*95\.00%/);
+  // Raise to the actual dev baseline, then prove target-only code is not checked.
+  write(repo, 'scripts/gate/baseline.json', JSON.stringify({ ...BASELINE, coverage: { covered: 95, statements: 100 } }));
+  write(repo, 'clover.xml', clover({ aCovered: 10, extraFiles: [{ name: 'classes/b.php', st: 90, cov: 90 }] }));
+  const noTargetChange = run(repo, ['ratchet', path.join(repo, 'clover.xml')], { GATE_BASE_REF: 'origin/dev' });
+  assert.equal(noTargetChange.status, 0, noTargetChange.out);
+  assert.doesNotMatch(noTargetChange.out, /target\.php/);
+  fs.rmSync(repo, { recursive: true, force: true });
+});
+
+test('ratchet CLI: armedAt remains local history; explicit targets and later merges win', () => {
+  const repo = makeRepo();
+  const start = git(repo, 'rev-parse', 'HEAD').trim();
+  git(repo, 'update-ref', 'refs/remotes/origin/dev', 'HEAD');
+  write(repo, `${PLUGIN}/classes/a.php`, SOURCE.replace('return 1;', 'return 11;'));
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-qm', 'arming cleanup');
+  const armedAt = git(repo, 'rev-parse', 'HEAD').trim();
+  write(repo, 'scripts/gate/baseline.json', JSON.stringify({ ...BASELINE, armedAt }));
+  write(repo, 'clover.xml', clover({ aCovered: 5, extraFiles: goodExtra }));
+  const args = ['ratchet', path.join(repo, 'clover.xml')];
+  assert.equal(run(repo, args, { GATE_BASE_REF: '' }).status, 0);
+  const explicit = run(repo, args, { GATE_BASE_REF: start });
+  assert.equal(explicit.status, 1);
+  assert.match(explicit.out, /ratchet-file-coverage/);
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-qm', 'armed baseline');
+  git(repo, 'update-ref', 'refs/remotes/origin/dev', 'HEAD');
+  write(repo, `${PLUGIN}/classes/a.php`, SOURCE.replace('return 1;', 'return 111;'));
+  const afterMerge = run(repo, args, { GATE_BASE_REF: '' });
+  assert.equal(afterMerge.status, 1);
+  assert.match(afterMerge.out, /ratchet-file-coverage/);
+  assert.ok(afterMerge.out.includes(git(repo, 'rev-parse', 'origin/dev').trim().slice(0, 12)), afterMerge.out);
+  fs.rmSync(repo, { recursive: true, force: true });
+});
+
 test('ratchet: unveraendertes Repo mit Coverage ueber der Baseline ist gruen', () => {
   const repo = makeRepo();
   const r = ratchet(repo, clover({ extraFiles: goodExtra, crapHard: 40 }));
@@ -431,6 +542,7 @@ if (args[0] === 'inspect') {
 } else if (args.includes('/var/www/html/vendor/bin/phpunit')) {
   fs.copyFileSync(path.join(process.env.GATE_REPO, 'clover-fixture.xml'), path.join(process.env.GATE_DIR, 'reports/clover.xml'));
   console.log('PHPUnit fixture: green');
+  process.exit(Number(process.env.GATE_PHPUNIT_EXIT || 0));
 } else if (args.includes('/opt/dev-tools/vendor/bin/phpstan')) {
   console.log(JSON.stringify({ totals: { errors: 0, file_errors: 0 }, files: {}, errors: [] }));
 } else if (args.includes('/opt/dev-tools/vendor/bin/deptrac')) {
@@ -479,6 +591,15 @@ if (args[0] === 'inspect') {
     assert.equal(green.status, 0, green.out);
     assert.match(green.out, /Node contract success/);
     assert.match(fs.readFileSync(path.join(repo, 'failures.log'), 'utf8'), /\tnode-tests\t-\tok/);
+    fs.rmSync(path.join(repo, 'gate-dir/reports/gate-report.json'));
+    const failedPhp = run(repo, ['full'], { ...env, GATE_PHPUNIT_EXIT: '1' });
+    assert.equal(failedPhp.status, 1, failedPhp.out);
+    assert.match(failedPhp.out, /summary: mode=full phpunit=fail/);
+    assert.equal(fs.existsSync(path.join(repo, 'gate-dir/reports/gate-report.json')), true,
+      'A failed PHPUnit run with valid Clover still publishes its measurement');
+    const failedTrend = JSON.parse(fs.readFileSync(path.join(repo, 'gate-dir/reports/gate-report.json'), 'utf8'));
+    assert.equal(failedTrend.summary.coverage, 90);
+    assert.equal(failedTrend.summary.methodsCrapOver8, 1);
     git(repo, 'add', '-A');
     const committed = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'Green Node contract'], { cwd: repo, encoding: 'utf8', env: { ...process.env, GATE_REPO: repo, GATE_BASE_REF: 'HEAD', GATE_FAILURE_LOG: path.join(repo, 'failures.log'), ...env } });
     assert.equal(committed.status, 0, `${committed.stdout}${committed.stderr}`);

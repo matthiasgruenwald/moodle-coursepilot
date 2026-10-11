@@ -11,7 +11,7 @@ Entscheidungen: [ADR 0029](../adr/0029-qualitaets-gate-als-ratsche.md) (Gate als
 
 **Vorbedingung:** Start nach dem Merge von PR #654 (`integration/release-2.1-issues`: #593,
 #598, #599, #603, #626) nach `dev`. Ab Start des ersten Tickets gibt es keine neuen
-Feature-PRs, bis das Gate scharf ist.
+Feature-PRs bis zur verbindlichen grünen CI-Abnahme des vollen Gates (#667).
 
 ## Problem Statement
 

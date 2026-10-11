@@ -67,6 +67,12 @@ function loweredFindings(baseline, base) {
  * tab-eingerueckt: je Eintrag `identifier:`, `count:` und `path:`.
  */
 function parsePhpstanBaseline(text) {
+  // Malformed text must not compare as an empty baseline.
+  const content = text.split('\n').filter(row => row.trim() && !/^\s*#/.test(row)).join('\n');
+  const layout = /^parameters:\n\tignoreErrors:(?: \[\]|(?:\n\t\t-\n\t\t\tmessage: '.+'\n\t\t\tidentifier: \S+\n\t\t\tcount: [1-9][0-9]*\n\t\t\tpath: \S+)+)$/;
+  if (!layout.test(content)) {
+    throw new Error('PHPStan-Baseline ungueltig: scripts/gate/phpstan/phpstan-baseline.neon');
+  }
   const counts = new Map();
   let entry = {};
   const flush = () => {

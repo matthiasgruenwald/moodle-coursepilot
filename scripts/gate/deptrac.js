@@ -53,6 +53,12 @@ function parseUnassigned(out) {
  * (`#nr`) steht in dem Kommentar, der den Eintrag einleitet und für die folgenden Schlüssel gilt.
  */
 function parseBaseline(text) {
+  // Malformed text must not compare as an empty baseline.
+  const content = text.split('\n').filter(row => row.trim() && !/^\s*#/.test(row)).join('\n');
+  const layout = /^deptrac:\n  skip_violations:(?: \{\}|(?:\n {4}[\w\\]+:(?:\n {6}- [\w\\]+)+)*)$/;
+  if (!layout.test(content)) {
+    throw new Error(`deptrac-Baseline ungueltig: ${BASELINE_REL}`);
+  }
   const entries = [];
   let from = null;
   let ticket = null;

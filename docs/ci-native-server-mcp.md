@@ -10,7 +10,7 @@ Workflow: [`.github/workflows/native-ci.yml`](../.github/workflows/native-ci.yml
 ## Stabiler Gesamtcheck
 
 Der einzige als Merge-Bedingung zu verwendende Check heißt **`Gate (required)`**
-(Job `gate`). Er aggregiert `phpunit`, `js-native` und `artifact` über
+(Job `gate`). Er aggregiert `quality`, `phpunit`, `js-native` und `artifact` über
 `needs.*.result` und schlägt explizit fehl, wenn einer dieser Jobs
 fehlschlägt **oder übersprungen wird** — ein übersprungener Pflichtjob zählt
 nicht als Erfolg. Matrix-Job-Namen (z. B. „PHPUnit (MOODLE_501_STABLE)“)
@@ -21,7 +21,7 @@ werden muss, weil diese ausschließlich auf `Gate (required)` zeigt.
 
 | Moodle | PHP | Datenbank | Pflichtprüfung |
 |---|---|---|---|
-| 5.1 (`MOODLE_501_STABLE`) | 8.4 | MariaDB 11.4 | volle Suite + 80%-Coverage |
+| 5.1 (`MOODLE_501_STABLE`) | 8.4 | MariaDB 11.4 | `full`-Gate mit Coverage-/CRAP-Ratsche |
 | 5.2 (`MOODLE_502_STABLE`) | 8.3 | MariaDB 11.4 | volle Suite |
 | 5.2 (`MOODLE_502_STABLE`) | 8.4 | PostgreSQL 17 | volle Suite |
 | 5.3 (`MOODLE_503_STABLE`) | 8.3 | MariaDB 11.4 | volle Suite |
@@ -34,37 +34,54 @@ Eine Kompatibilitätszusage setzt ein grünes vollständiges Gate und die
 Testinstanz-Abnahme voraus (ADR 0027). Andere Kombinationen sind dadurch
 nicht automatisch zugesagt.
 
-## Coverage: Quellumfang und Schwelle
+## Messender Mindestversions-Leg
 
-- Quellumfang: [`Plugin/src/local_coursepilot/tests/coverage.php`](../Plugin/src/local_coursepilot/tests/coverage.php)
-  listet jede PHP-tragende Produktionsdatei/-verzeichnis des Plugins.
-  Ausgeschlossen sind nur `tests/` (die Suite selbst), `amd/` und
-  `templates/` (kein PHP), sowie `LICENSE`/`README.md` (keine Programmdatei).
-  `lang/` ist bewusst **enthalten**.
-- Moodles `tool_phpunit`-Coverage-Mechanismus zählt jede dort gelistete Datei
-  auch dann in den Nenner, wenn kein einziger Test sie ausführt
-  („includeUncoveredFiles"-Verhalten) — eine nie besuchte Datei senkt die
-  Quote, statt aus der Zählung zu verschwinden.
-- Gemessen wird ausschließlich auf dem Matrix-Leg `MOODLE_501_STABLE`
-  (`measures-coverage: true` im Workflow) mit dem PCOV-Treiber. Die
-  übrigen Legs laufen die volle Suite, messen aber keine eigene Quote —
-  unterschiedliche Läufe werden nicht zu einer günstigeren Quote
-  zusammengerechnet.
-- Schwelle: `node scripts/ci/check-coverage.js <clover.xml> --threshold=80`
-  (Standardschwelle 80, `>=` besteht). Rot bei fehlendem, leerem oder
-  ungültigem Bericht sowie bei einem Nenner von 0 — siehe
-  `test/ci-check-coverage.test.js` für die geprüften Gate-Fälle (unter der
-  Schwelle, exakt 80 %, über der Schwelle, fehlender/leerer/ungültiger
-  Bericht, ungültiger Nenner).
+`quality` richtet einen isolierten Gate-Container mit Moodle 5.1, PHP 8.4, MariaDB 11.4
+und PCOV ein (`scripts/gate/setup-container.sh`, versionierte Composer-Lockfiles).
+Dort läuft derselbe `npm run gate -- full`-Einstieg wie lokal: Node-Verträge,
+volle PHPUnit-Suite, Coverage-/CRAP-Ratsche und alle statischen Prüfungen. Die übrigen
+vier PHPUnit-Kombinationen erheben keine zweite Coverage-Regel. Das frühere feste
+80-%-Skript samt Vertragstest ist entfernt.
 
-### Gemessener Stand
+Quellumfang und begründete Ausschlüsse folgen unverändert `tests/coverage.php` und
+`scripts/gate/baseline.json`, siehe [Gate-Doku](gate.md). Einstiegsskript- und
+Nennerumbau gehören zu #668. PostgreSQL 5.1 gehört zu #687.
 
-Erster grüner Gesamtlauf: Commit `9a92ef3`, Run
-[36530129453](https://github.com/matthiasgruenwald/moodle-coursepilot/actions/runs/36530129453)
-— **80,03 %** Line Coverage (10.364 von 12.950 Zeilen). Die Schwelle ist damit
-knapp erreicht; jede neue ungetestete Produktionszeile kann sie wieder
-unterschreiten. Sie bleibt trotzdem bei 80 % (Issue #268: nicht Tests
-weglassen oder Schwelle senken, um grün zu erzwingen).
+Bei PRs lädt Checkout alle Branch-Refs und die vollständige Historie. `GATE_BASE_REF`
+zeigt auf `origin/<PR-Zielbranch>`, bei Push auf den Commit vor dem Push. Manuelle
+Abnahmen wählen den Zielbranch `dev` oder `main`. Baseline-Vergleich am Zielstand,
+Datei-/Methodenänderungen an dessen Merge-Base; fehlender Ref oder erforderliche
+Baseline und flache/getrennte Historie sind Fehler. Der lokale historische Startpunkt
+`armedAt` überschreibt keinen expliziten CI-Zielref und bleibt unverändert erhalten.
+
+Der verpflichtende Upload `gate-trend-MOODLE_501_STABLE-<SHA>` läuft auch bei Fehlern.
+Er enthält den Messbericht (`gate-report.json`: Coverage, Methoden über CRAP 8),
+Clover, Statik, Git-Kontext und Setup-/full-Logs samt Exitcode, soweit erzeugt.
+MSI folgt erst in der Mutationsphase. Frühe Fehler liefern Diagnose, keine fingierten
+Trendwerte. `Gate (required)` ist auch bei fehlendem/übersprungenem `quality` rot.
+
+## Main-Bootstrap
+
+`main` besitzt beim Start von #667 noch keine Gate-Baselines. Ein Hotfix-PR gegen
+diesen Stand muss deshalb rot sein; weder ein stiller Vergleichsausfall noch eine
+ungemessene Kopie der dev-Coverage ist zulässig.
+
+Der erstmalige Release-Rollout braucht eine gesonderte, vom Maintainer ausgeführte
+Bootstrap-Abnahme ([#715](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/715)). Vorbereitung: den tatsächlichen Main-Quellstand auf derselben
+Mindestversion mit derselben Suite und demselben Ausschlussumfang messen; Coverage,
+CRAP, PHPStan und deptrac mit Commit und Werkzeugversionen dokumentieren. Die Baselines
+werden aus diesem gemessenen Kandidaten erzeugt, fachlich geprüft und zusammen mit
+dem Gate auf `main` veröffentlicht. Änderungen des Release-Kandidaten seit der Messung
+verlangen eine neue Messung. Erst danach sind normale Hotfix-Ratschenvergleiche und
+eine verbindliche grüne Main-CI-Abnahme möglich. Der Main-Rollout ist keine automatische
+Merge-Aktion dieses Integrationsbranches; der User übernimmt den Merge-Haltepunkt.
+
+Die [passende Vorbereitungsmessung](release/667-main-bootstrap-vorbereitung.md)
+enthält den tatsächlichen Main-Nenner, rohe Statikbefunde und die noch offenen
+Bootstrap-Blocker. Sie behauptet keine grüne Main-Gate-Abnahme.
+
+Feature-PR-Freigabe setzt die echte grüne CI-Abnahme aller Pflichtjobs voraus.
+Der historische 80-%-CI-Nachweis von #268 belegt ausschließlich das frühere Verhalten.
 
 ## Node-Suite
 

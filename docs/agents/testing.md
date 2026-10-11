@@ -44,7 +44,7 @@ set -a; source /opt/kurspilot-spike/docker/kurspilot-spike.env; set +a
 Die Mindestversion ist Moodle 5.1 (`$plugin->requires = 2025100600`); die
 Spike-Instanz läuft auf 5.1. Die verbindliche Matrix prüft Moodle 5.1/5.2/5.3
 mit PHP 8.3/8.4, MariaDB 11.4 und PostgreSQL 17. Die genauen Kombinationen
-und das 80%-Line-Coverage-Gate stehen in
+und das volle Qualitäts-Gate mit Ratsche stehen in
 [`docs/ci-native-server-mcp.md`](../ci-native-server-mcp.md) (#268).
 
 #### Der volle Lauf braucht einen abgekoppelten Prozess
