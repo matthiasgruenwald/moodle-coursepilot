@@ -415,6 +415,81 @@ const push = (repo, ...args) => {
   return { status: r.status, out: `${r.stdout}${r.stderr}` };
 };
 
+test('full CLI and pre-push: a failing Node contract blocks otherwise green checks', () => {
+  const repo = makeRepo({ pairs: [] });
+  try {
+    fs.mkdirSync(path.join(repo, PLUGIN, 'classes/external'));
+    write(repo, 'package.json', JSON.stringify({ scripts: { test: 'node --test test/contract.test.js' } }));
+    write(repo, 'test/contract.test.js', "const { test } = require('node:test');\ntest('Node contract failure', () => { throw new Error('contract rejected'); });\n");
+    write(repo, 'clover-fixture.xml', clover({ extraFiles: goodExtra }));
+    write(repo, 'bin/docker', `#!/usr/bin/env node
+const fs = require('node:fs');
+const path = require('node:path');
+const args = process.argv.slice(2);
+if (args[0] === 'inspect') {
+  console.log('true');
+} else if (args.includes('/var/www/html/vendor/bin/phpunit')) {
+  fs.copyFileSync(path.join(process.env.GATE_REPO, 'clover-fixture.xml'), path.join(process.env.GATE_DIR, 'reports/clover.xml'));
+  console.log('PHPUnit fixture: green');
+} else if (args.includes('/opt/dev-tools/vendor/bin/phpstan')) {
+  console.log(JSON.stringify({ totals: { errors: 0, file_errors: 0 }, files: {}, errors: [] }));
+} else if (args.includes('/opt/dev-tools/vendor/bin/deptrac')) {
+  if (args.includes('analyse')) console.log(JSON.stringify({ files: {} }));
+} else if (!args.includes('public/admin/tool/phpunit/cli/util.php') && !args.includes('/opt/plugin-ci/vendor/bin/moodle-plugin-ci')) {
+  console.error('Unexpected Docker command: ' + args.join(' '));
+  process.exit(1);
+}
+`);
+    fs.chmodSync(path.join(repo, 'bin/docker'), 0o755);
+    fs.mkdirSync(path.join(repo, 'gate-dir/reports'), { recursive: true });
+    git(repo, 'add', '-A');
+    git(repo, 'commit', '-qm', 'Node contract fixture');
+    // The fixture runs its own Node test process, outside this test runner's context.
+    const env = { NODE_TEST_CONTEXT: undefined, PATH: `${path.join(repo, 'bin')}${path.delimiter}${process.env.PATH}`, GATE_DIR: path.join(repo, 'gate-dir') };
+    for (const name of fs.readdirSync(path.join(ROOT, 'scripts/gate')).filter(n => n.endsWith('.js') || n === 'sync-plugin.sh')) {
+      fs.copyFileSync(path.join(ROOT, 'scripts/gate', name), path.join(repo, 'scripts/gate', name));
+    }
+    fs.cpSync(path.join(ROOT, 'scripts/githooks'), path.join(repo, 'scripts/githooks'), { recursive: true });
+    write(repo, '.gitignore', 'gate-dir/\nfailures.log\nremote.git/\n');
+    git(repo, 'add', '-A');
+    git(repo, 'commit', '-qm', 'Real gate and hooks');
+    git(repo, 'config', 'core.hooksPath', 'scripts/githooks');
+    git(repo, 'init', '-q', '--bare', path.join(repo, 'remote.git'));
+    git(repo, 'remote', 'add', 'origin', path.join(repo, 'remote.git'));
+    const blocked = spawnSync('git', ['push', 'origin', 'HEAD:refs/heads/work'], { cwd: repo, encoding: 'utf8', env: { ...process.env, GATE_REPO: repo, GATE_BASE_REF: 'HEAD', GATE_FAILURE_LOG: path.join(repo, 'failures.log'), ...env } });
+    const blockedOut = `${blocked.stdout}${blocked.stderr}`;
+    assert.match(blockedOut, /Node contract failure/);
+    assert.match(blockedOut, /PHPUnit fixture: green/);
+    assert.match(blockedOut, /summary: ratchet .* violations=0/);
+    assert.match(blockedOut, /summary: static .*phpstan=0 .*deptrac=0/);
+    assert.doesNotMatch(blockedOut, /gate-error|versionierte Dateien sind geaendert/);
+    assert.notEqual(blocked.status, 0, blockedOut);
+    assert.equal(git(repo, 'ls-remote', 'origin', 'refs/heads/work'), '');
+    const red = run(repo, ['full'], env);
+    assert.match(red.out, /PHPUnit fixture: green/);
+    assert.match(red.out, /summary: ratchet .* violations=0/);
+    assert.match(red.out, /summary: static .*phpstan=0 .*deptrac=0/);
+    assert.doesNotMatch(red.out, /gate-error/);
+    assert.equal(red.status, 1, red.out);
+    assert.match(red.out, /Node contract failure/);
+    assert.match(fs.readFileSync(path.join(repo, 'failures.log'), 'utf8'), /\tnode-tests\t-\tfail/);
+    write(repo, 'test/contract.test.js', "const { test } = require('node:test');\nconst assert = require('node:assert/strict');\ntest('Node contract success', () => assert.equal(1, 1));\n");
+    const green = run(repo, ['full'], env);
+    assert.equal(green.status, 0, green.out);
+    assert.match(green.out, /Node contract success/);
+    assert.match(fs.readFileSync(path.join(repo, 'failures.log'), 'utf8'), /\tnode-tests\t-\tok/);
+    git(repo, 'add', '-A');
+    const committed = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'Green Node contract'], { cwd: repo, encoding: 'utf8', env: { ...process.env, GATE_REPO: repo, GATE_BASE_REF: 'HEAD', GATE_FAILURE_LOG: path.join(repo, 'failures.log'), ...env } });
+    assert.equal(committed.status, 0, `${committed.stdout}${committed.stderr}`);
+    const pushed = spawnSync('git', ['push', 'origin', 'HEAD:refs/heads/work'], { cwd: repo, encoding: 'utf8', env: { ...process.env, GATE_REPO: repo, GATE_BASE_REF: 'HEAD', GATE_FAILURE_LOG: path.join(repo, 'failures.log'), ...env } });
+    assert.equal(pushed.status, 0, `${pushed.stdout}${pushed.stderr}`);
+    assert.match(`${pushed.stdout}${pushed.stderr}`, /Node contract success/);
+    assert.equal(git(repo, 'ls-remote', 'origin', 'refs/heads/work').split('\t')[0], git(repo, 'rev-parse', 'HEAD').trim());
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 test('pre-push: Gate full rot blockiert den Push, gruen laesst ihn durch', () => {
   const red = pushRepo(1);
   const blocked = push(red, 'HEAD:refs/heads/work');

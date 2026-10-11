@@ -4,7 +4,7 @@
  * Befund der statischen Pruefungen, bei fehlgeschlagenen Tests und bei Ratschenverletzung.
  *
  *   node scripts/gate/gate.js fast            Node-Tests + PHPUnit der Tests zu geaenderten Klassen
- *   node scripts/gate/gate.js full            volle PHPUnit-Suite mit pcov, danach Bericht
+ *   node scripts/gate/gate.js full            Node-Tests + volle PHPUnit-Suite mit pcov, danach Bericht
  *   node scripts/gate/gate.js report <clover> Bericht aus einem vorhandenen Clover-Bericht (nur Messwerte)
  *   node scripts/gate/gate.js ratchet [clover] Ratsche: Baselines nur besser; mit Clover zusaetzlich Coverage, geaenderte Dateien und Methoden
  *   node scripts/gate/gate.js baseline [clover] Coverage-Baseline anheben (verweigert, wenn der Messwert niedriger ist)
@@ -312,6 +312,7 @@ function runFast() {
 }
 
 function runFull() {
+  const nodePassed = nodeTests();
   requireContainer();
   preparePlugin();
   fs.rmSync(path.join(GATE_DIR, 'reports', 'clover.xml'), { force: true });
@@ -324,7 +325,7 @@ function runFull() {
   const clover = path.join(GATE_DIR, 'reports', 'clover.xml');
   printReport(clover, path.join(GATE_DIR, 'reports', 'gate-report.json'), true);
   const ratcheted = printRatchet(clover);
-  return printStatic(staticChecks.ALL_CHECKS) && ratcheted;
+  return printStatic(staticChecks.ALL_CHECKS) && ratcheted && nodePassed;
 }
 
 /** Statische Pruefungen: Befunde als Zeilen, vollstaendig als JSON; Werkzeugfehler sind rot. */

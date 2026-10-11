@@ -43,7 +43,7 @@ Container auf:
 
 ```bash
 npm run gate -- fast               # Node-Tests + PHPUnit der Tests zu geänderten Klassen
-npm run gate -- full               # volle Suite mit pcov, danach Bericht (rund 15 Minuten)
+npm run gate -- full               # Node-Tests + volle Suite mit pcov, danach Bericht (rund 15 Minuten)
 npm run gate -- report <clover.xml> # nur Bericht aus vorhandenem Clover-Bericht
 npm run gate -- ratchet [clover.xml] # Ratsche; ohne Clover nur die Baselines
 npm run gate -- baseline [clover.xml] # Coverage-Baseline anheben (nie senken)
@@ -53,7 +53,8 @@ npm run gate -- phpstan-baseline   # PHPStan-Baseline neu erzeugen
 npm run gate -- ranking [n]        # Fehlschlags-Rangliste nach Datei und Prüfung
 ```
 
-`full` spiegelt `Plugin/src/local_coursepilot` in den Container, baut die
+`full` führt zuerst die Node-Vertragstests aus. Ihr Fehler blockiert den Lauf auch bei
+grünen PHP- und Statikprüfungen. Danach spiegelt es `Plugin/src/local_coursepilot` in den Container, baut die
 PHPUnit-Konfiguration, schreibt den Clover-Bericht nach
 `/opt/kurspilot-gate/reports/clover.xml` und wertet ihn aus. Der volle Lauf
 braucht einen abgekoppelten Prozess, siehe [`agents/testing.md`](agents/testing.md).
@@ -231,7 +232,7 @@ npm run hooks:install
 | Hook | Ruft auf | Dauer |
 |---|---|---|
 | `pre-commit` | `gate fast` (Node-Tests, PHPUnit zu geänderten Klassen, statische Prüfungen, Baseline-Ratsche) | unter einer Minute plus zugeordnete PHPUnit-Tests |
-| `pre-push` | `gate full` (volle Suite, Coverage- und CRAP-Ratsche, alle statischen Prüfungen); einmal je Push, auch bei mehreren Refs | rund 15 Minuten |
+| `pre-push` | `gate full` (Node-Tests, volle PHPUnit-Suite, Coverage- und CRAP-Ratsche, alle statischen Prüfungen); einmal je Push, auch bei mehreren Refs | rund 15 Minuten |
 | Edit-Hook Claude/Codex | `gate edit`, startet `fast` bei Änderung an Plugin-PHP, `test/**/*.js` oder `scripts/gate/**` | wie `fast` |
 
 Der Edit-Hook (`.claude/settings.json`, `.codex/hooks.json`) schreibt Befunde auf stderr und
