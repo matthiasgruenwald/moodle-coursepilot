@@ -17,7 +17,7 @@
 namespace local_coursepilot;
 
 /**
- * Per-entry Core form write, with independent rollback and no existing-entry reads (#593).
+ * Creates glossary entries through Moodle's entry-edit API, with a transaction per entry.
  *
  * @package local_coursepilot
  * @copyright 2026 Coursepilot
@@ -25,14 +25,19 @@ namespace local_coursepilot;
  */
 final class glossary_entry_writer {
     /**
-     * Adds the glossary entry writer.
+     * Creates one glossary entry for the current user through Moodle's entry-edit API.
      *
-     * @param mixed[] $input Validated External entry
-     * @param \stdClass $course
-     * @param \stdClass $cm
-     * @param \stdClass $glossary
-     * @param \context_module $context
-     * @return mixed[]
+     * Validates the concept, definition, aliases and tag policy before writing. The entry
+     * transaction includes category assignment, material files, approval and tags.
+     * A Moodle failure returns an error result; failures inside the transaction roll it back.
+     * Other exceptions propagate to the caller.
+     *
+     * @param mixed[] $input External-API-validated entry fields, including defaults and optional approval.
+     * @param \stdClass $course Course containing the glossary, used for file limits and completion.
+     * @param \stdClass $cm Target glossary's course-module record.
+     * @param \stdClass $glossary Target glossary record with its duplicate, linking and completion settings.
+     * @param \context_module $context Target module context for permissions, files, tags and events.
+     * @return mixed[] Success, new entry ID and approval state, or entry ID 0 with an error code and message.
      */
     public static function add(
         array $input,
