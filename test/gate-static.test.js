@@ -104,7 +104,7 @@ test('runStatic: every check appears in report lines and summary; findings do no
   }
   assert.deepEqual(r.errors.map(e => e.split(':')[0]), ['deptrac']);
   assert.match(r.summary, /^summary: static moodle_cs_errors=10 moodle_cs_warnings=3 phpdoc=3 /);
-  assert.match(r.summary, /mustache=2 eslint=3 phpstan=2 covers=0/);
+  assert.match(r.summary, /mustache=2 eslint=3 phpstan=2 phpstan_reasons=0 covers=0/);
 });
 
 test('runStatic: tool that fails without parsable findings is a tool error, never clean', () => {

@@ -48,7 +48,7 @@ const BASELINE = {
   excluded: [{ path: 'lang/', reason: 'Sprachtabelle' }],
 };
 
-const PHPSTAN = (count) => `parameters:\n\tignoreErrors:\n\t\t-\n\t\t\tmessage: '#^x$#'\n\t\t\tidentifier: missingType.iterableValue\n\t\t\tcount: ${count}\n\t\t\tpath: ../html/public/local/coursepilot/classes/a.php\n`;
+const PHPSTAN = (count) => `parameters:\n\tignoreErrors:\n\t\t-\n\t\t\t# reason: This fixture represents existing iterable typing debt in the sample class.\n\t\t\t# evidence: {"classes/a.php":["public function easy(): int {"]}\n\t\t\t# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714\n\t\t\tmessage: '#^x$#'\n\t\t\tidentifier: missingType.iterableValue\n\t\t\tcount: ${count}\n\t\t\tpath: ../html/public/local/coursepilot/classes/a.php\n`;
 const DEPTRAC = (pairs) => `deptrac:\n  skip_violations:\n    # Grund -> #1\n${pairs.map(([f, t]) => `    ${f}:\n      - ${t}\n`).join('')}`;
 
 function run(cwd, args, extraEnv = {}, input) {
@@ -263,7 +263,7 @@ test('ratchet: fehlende Baseline, fehlender oder leerer Clover sind rot, nie gru
 });
 
 test('ratchet: reine Umbenennung (versioniert oder unversioniert) ist weder geaendert noch waechst die PHPStan-Baseline', () => {
-  const renamedBaseline = PHPSTAN(3).replace('classes/a.php', 'classes/z.php');
+  const renamedBaseline = PHPSTAN(3).replaceAll('classes/a.php', 'classes/z.php');
   for (const stage of [true, false]) {
     const repo = makeRepo();
     fs.renameSync(path.join(repo, PLUGIN, 'classes/a.php'), path.join(repo, PLUGIN, 'classes/z.php'));
@@ -282,7 +282,7 @@ test('ratchet CLI: missing Clover entries are allowed for exclusions and pure re
   for (const stage of [true, false]) {
     const repo = makeRepo({ baseline: { ...BASELINE, excluded: [...BASELINE.excluded, { path: 'db/access.php', reason: 'Capability declarations without logic' }] } });
     fs.renameSync(path.join(repo, PLUGIN, 'classes/a.php'), path.join(repo, PLUGIN, 'classes/z.php'));
-    write(repo, 'scripts/gate/phpstan/phpstan-baseline.neon', PHPSTAN(3).replace('classes/a.php', 'classes/z.php'));
+    write(repo, 'scripts/gate/phpstan/phpstan-baseline.neon', PHPSTAN(3).replaceAll('classes/a.php', 'classes/z.php'));
     write(repo, `${PLUGIN}/lang/en/local_coursepilot.php`, "<?php\n$string['a'] = 'changed';\n");
     write(repo, `${PLUGIN}/db/access.php`, "<?php\n$capabilities = [];\n");
     write(repo, `${PLUGIN}/tests/new_test.php`, "<?php\nclass new_test {}\n");
@@ -302,7 +302,7 @@ test('ratchet: umbenannte Datei mit Aenderung prueft nur die geaenderten Methode
   fs.renameSync(path.join(repo, PLUGIN, 'classes/a.php'), path.join(repo, PLUGIN, 'classes/z.php'));
   write(repo, `${PLUGIN}/classes/z.php`, SOURCE.replace('return 3;', 'return 33;'));
   git(repo, 'add', '-A');
-  write(repo, 'scripts/gate/phpstan/phpstan-baseline.neon', PHPSTAN(3).replace('classes/a.php', 'classes/z.php'));
+  write(repo, 'scripts/gate/phpstan/phpstan-baseline.neon', PHPSTAN(3).replaceAll('classes/a.php', 'classes/z.php'));
   const z = `<file name="${CONTAINER_PLUGIN}/classes/z.php"><line num="8" type="method" name="easy" complexity="1" crap="30" count="0"/><line num="12" type="method" name="hard" complexity="2" crap="30" count="0"/><metrics statements="10" coveredstatements="10"/></file>`;
   const full = `<?xml version="1.0"?><coverage><project>${z}<file name="${CONTAINER_PLUGIN}/classes/b.php"><metrics statements="90" coveredstatements="81"/></file><metrics statements="100" coveredstatements="91"/></project></coverage>`;
   const r = ratchet(repo, full);
@@ -449,6 +449,7 @@ if (args[0] === 'inspect') {
     for (const name of fs.readdirSync(path.join(ROOT, 'scripts/gate')).filter(n => n.endsWith('.js') || n === 'sync-plugin.sh')) {
       fs.copyFileSync(path.join(ROOT, 'scripts/gate', name), path.join(repo, 'scripts/gate', name));
     }
+    fs.copyFileSync(path.join(ROOT, 'scripts/gate/phpstan/reasons.js'), path.join(repo, 'scripts/gate/phpstan/reasons.js'));
     fs.cpSync(path.join(ROOT, 'scripts/githooks'), path.join(repo, 'scripts/githooks'), { recursive: true });
     write(repo, '.gitignore', 'gate-dir/\nfailures.log\nremote.git/\n');
     git(repo, 'add', '-A');

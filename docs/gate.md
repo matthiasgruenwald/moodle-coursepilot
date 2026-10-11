@@ -259,10 +259,24 @@ Ausnahme versioniert und begründet im Code oder im Gate, nie stillschweigend:
 - **Zeilenkommentare:** `// phpcs:ignore <Sniff> -- <Grund>` bzw. `phpcs:disable` mit Grund, nur dort, wo
   der Sniff das Muster nicht kennt (Entry-Shims, Kindprozess-Fixtures, abstrakte Testbasis,
   Heredoc-Fixtures, Markdown-Zitate in Strings).
-- **Typen in Docblocks:** `moodle-plugin-ci phpdoc` vergleicht den `@param`-Typ mit der Signatur und
-  moodle-cs verbietet `@phpstan-param`. Array-Parameter sind deshalb `mixed[]` oder `T[]`, die genaue
-  Form steht als `Type: …` in der Beschreibung; was sich so nicht ausdrücken lässt (nullable Arrays,
-  Test-Doubles), bleibt als `missingType.iterableValue` in der PHPStan-Baseline.
+- **PHPStan-Baseline:** Jeder Eintrag in `scripts/gate/phpstan/phpstan-baseline.neon` trägt
+  direkt `# reason:`, `# evidence:` (JSON-Objekt: Plugin-Pfad → wörtliche Quellbelege) und
+  `# resolution:` (vollständige URL des Auflösungstickets oder `permanent`). Die Prüfung
+  `phpstan-reasons` gehört zu `fast`, `full` und `static`; fehlende Gründe/Tickets,
+  fremde Pfadzuordnung oder veraltete Quellbelege blockieren. Belege anderer Dateien
+  sind nur für einen tatsächlich eingebundenen Trait erlaubt. Die Prüfung kontrolliert
+  die Zuordnung und vorhandene Quellbelege; die fachliche Richtigkeit des Grundes bleibt
+  Gegenstand des Reviews.
+- **Typisierungsschulden:** Nullable Arrays, verschachtelte Array-Shapes, Promoted Properties
+  und Adapter-Test-Doubles sind typisierbar. Ihre bestehenden Ausnahmen nennen die konkrete
+  fehlende Annotation und [#714](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714).
+  `pointer_scan::has_external_target()` benötigt etwa den Inhaltstyp des nullable Roh-Pointers
+  aus `raw_pointer_for()`. `moodle-plugin-ci phpdoc` und moodle-cs bleiben verbindlich;
+  `Type: …` als Prosa ersetzt keinen PHPStan-Typ.
+- **Neu erzeugte Baseline:** Der PHPStan-Generator schreibt keine Gründe. Nach
+  `phpstan-baseline` jeden verbleibenden Eintrag erneut mit Grund, Quellbeleg und
+  Auflösung kennzeichnen; ungeprüfte Generatorausgabe bleibt rot. Das Gate erwartet
+  das tab-eingerückte Generatorformat oder eine explizit leere `ignoreErrors: []`-Liste.
 
 ## Messwerte im Vergleich zur Spec-Baseline
 

@@ -18,6 +18,7 @@ const { checkEnglishComments } = require('./english');
 const { checkExternalCapabilities } = require('./capability');
 const failureLog = require('./failure-log');
 const deptrac = require('./deptrac');
+const { checkBaselineReasons } = require('./phpstan/reasons');
 
 const PLUGIN_REL = 'Plugin/src/local_coursepilot';
 const PLUGIN_IN_CONTAINER = '/var/www/html/public/local/coursepilot';
@@ -214,8 +215,8 @@ const CHECKS = {
   phpstan: { parse: null },
 };
 
-const FAST_CHECKS = ['moodle-cs', 'phpdoc', 'phpstan', 'covers', 'english', 'external', 'deptrac'];
-const ALL_CHECKS = ['moodle-cs', 'phpdoc', 'savepoints', 'mustache', 'eslint', 'phpstan', 'covers', 'english', 'external', 'deptrac'];
+const FAST_CHECKS = ['moodle-cs', 'phpdoc', 'phpstan', 'phpstan-reasons', 'covers', 'english', 'external', 'deptrac'];
+const ALL_CHECKS = ['moodle-cs', 'phpdoc', 'savepoints', 'mustache', 'eslint', 'phpstan', 'phpstan-reasons', 'covers', 'english', 'external', 'deptrac'];
 
 function containerExec(container, args) {
   const env = ['-e', 'MOODLE_DIR=/var/www/html', '-e', `PATH=${CONTAINER_PATH}`];
@@ -275,6 +276,10 @@ function runStatic(names, { container, repo, exec = containerExec }) {
 }
 
 function runOne(name, { container, repo, exec, results, errors }) {
+  if (name === 'phpstan-reasons') {
+    results[name] = checkBaselineReasons(repo);
+    return;
+  }
   if (name === 'covers') {
     results[name] = findMissingCovers(readPluginTests(repo));
     return;
