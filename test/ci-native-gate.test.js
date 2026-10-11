@@ -25,18 +25,36 @@ test('CI wiring: full on the minimum version is mandatory with target history an
   assert.equal(fs.existsSync(path.join(__dirname, '../scripts/ci/check-coverage.js')), false);
 });
 
-test('CI trend upload: the expanded reports path contains no relative path segments', () => {
+test('CI runtime paths: runner exports keep Gate, core and upload outside the checkout', () => {
   const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/native-ci.yml'), 'utf8');
   const quality = workflow.split('  quality:\n')[1].split('\n  phpunit:')[0];
-  const gateDir = quality.match(/GATE_DIR: (.+)/)[1]
-    .replace('${{ github.workspace }}', '/home/runner/work/moodle-coursepilot/moodle-coursepilot')
-    .replace('${{ runner.temp }}', '/home/runner/work/_temp');
-  const uploadPath = quality.match(/path: (.+)/)[1].replace('${{ env.GATE_DIR }}', gateDir);
-  assert.equal(path.posix.isAbsolute(uploadPath), true);
-  assert.equal(uploadPath.split('/').some(part => part === '.' || part === '..'), false,
-    `upload-artifact rejects relative path segments: ${uploadPath}`);
-  assert.equal(uploadPath.startsWith('/home/runner/work/moodle-coursepilot/moodle-coursepilot/'), false,
-    'Gate data must stay outside the Git comparison checkout');
+  const firstStep = quality.split('    steps:\n')[1].split('      - name: ')[1];
+  const run = firstStep.split('        run: |\n')[1];
+  assert.ok(run, 'the initial step must export runner paths at runtime');
+  const script = run.split('\n').map(line => line.replace(/^          /, '')).join('\n');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-ci-paths-'));
+  try {
+    const envFile = path.join(dir, 'github-env');
+    const runnerTemp = '/home/runner/work/_temp';
+    const result = spawnSync('/bin/bash', ['-e', '-c', script], {
+      encoding: 'utf8', env: { ...process.env, RUNNER_TEMP: runnerTemp, GITHUB_ENV: envFile },
+    });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const exported = Object.fromEntries(fs.readFileSync(envFile, 'utf8').trim().split('\n')
+      .map(line => line.split('=')));
+    assert.equal(exported.GATE_DIR, `${runnerTemp}/coursepilot-gate`);
+    assert.equal(exported.GATE_MOODLE_REPO, `${runnerTemp}/moodle-source`);
+    const uploadPath = quality.match(/path: (.+)/)[1].replace('${{ env.GATE_DIR }}', exported.GATE_DIR);
+    for (const value of [exported.GATE_DIR, exported.GATE_MOODLE_REPO, uploadPath]) {
+      assert.equal(path.posix.isAbsolute(value), true);
+      assert.equal(value.split('/').some(part => part === '.' || part === '..'), false,
+        `runner and upload paths must contain no relative segments: ${value}`);
+      assert.equal(value.startsWith('/home/runner/work/moodle-coursepilot/moodle-coursepilot/'), false,
+        'Gate data must stay outside the Git comparison checkout');
+    }
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('CI setup shell: a failed setup remains red through tee and retains its diagnostic', () => {

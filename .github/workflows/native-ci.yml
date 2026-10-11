@@ -49,12 +49,15 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     env:
-      GATE_DIR: ${{ runner.temp }}/coursepilot-gate
-      GATE_MOODLE_REPO: ${{ runner.temp }}/moodle-source
       GATE_MOODLE_REF: origin/MOODLE_501_STABLE
       # PR: actual target branch. Push: compare the state before the push.
       GATE_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event_name == 'push' && github.event.before || format('origin/{0}', inputs.target_branch) }}
     steps:
+      - name: Gate-Verzeichnisse zur Laufzeit festlegen
+        run: |
+          echo "GATE_DIR=$RUNNER_TEMP/coursepilot-gate" >> "$GITHUB_ENV"
+          echo "GATE_MOODLE_REPO=$RUNNER_TEMP/moodle-source" >> "$GITHUB_ENV"
+
       - name: Vollständige Plugin-Historie und Zielbranch-Refs auschecken
         uses: actions/checkout@v4
         with:
