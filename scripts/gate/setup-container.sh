@@ -25,6 +25,8 @@ if [[ ! -f "$GATE_DIR/.env" ]]; then
 fi
 set -a; source "$GATE_DIR/.env"; set +a
 compose() { docker compose -f "$HERE/compose.yml" "$@"; }
+# Bind-mounted tooling stays writable by the host runner, including Composer/npm caches.
+tool_container() { docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp "$@"; }
 
 # 2. Moodle-5.1-Core als eigener Worktree (fester Stand, kein Mitlaufen).
 if [[ ! -d "$GATE_DIR/moodle/.git" && ! -f "$GATE_DIR/moodle/.git" ]]; then
@@ -59,7 +61,7 @@ fi
 
 # 4. Core-Abhängigkeiten inkl. PHPUnit (einmalig; composer läuft im Wegwerf-Container).
 if [[ ! -x "$GATE_DIR/moodle/vendor/bin/phpunit" ]]; then
-  docker run --rm -v "$GATE_DIR/moodle:/app" -w /app composer:2 \
+  tool_container -v "$GATE_DIR/moodle:/app" -w /app composer:2 \
     install --ignore-platform-reqs --no-interaction --prefer-dist
 fi
 
@@ -71,36 +73,36 @@ if [[ ! -x "$GATE_DIR/ci/vendor/bin/moodle-plugin-ci" ]]; then
   mkdir -p "$GATE_DIR/ci"
   cp "$HERE/plugin-ci/composer.json" "$HERE/plugin-ci/composer.lock" "$GATE_DIR/ci/"
   # Optional GITHUB_TOKEN gegen das Anfrage-Limit von github.com (wird nie ausgegeben).
-  docker run --rm ${GITHUB_TOKEN:+-e COMPOSER_AUTH="{\"github-oauth\":{\"github.com\":\"$GITHUB_TOKEN\"}}"} \
+  tool_container ${GITHUB_TOKEN:+-e COMPOSER_AUTH="{\"github-oauth\":{\"github.com\":\"$GITHUB_TOKEN\"}}"} \
     -v "$GATE_DIR/ci:/app" -w /app composer:2 install --ignore-platform-reqs --no-interaction --no-dev
 fi
 # PHPStan, deptrac, Infection aus dem Root-composer.json.
 if [[ ! -x "$GATE_DIR/dev/vendor/bin/phpstan" ]]; then
   mkdir -p "$GATE_DIR/dev"
   cp "$REPO/composer.json" "$REPO/composer.lock" "$GATE_DIR/dev/"
-  docker run --rm -v "$GATE_DIR/dev:/app" -w /app composer:2 install --ignore-platform-reqs --no-interaction
+  tool_container -v "$GATE_DIR/dev:/app" -w /app composer:2 install --ignore-platform-reqs --no-interaction
 fi
 # moodle-plugin-ci sucht seine Hilfspakete unter moodle-plugin-ci/vendor.
 ln -sfn ../.. "$GATE_DIR/ci/vendor/moodlehq/moodle-plugin-ci/vendor"
 if [[ ! -x "$GATE_DIR/node/bin/node" ]]; then
   mkdir -p "$GATE_DIR/node"
-  docker run --rm -v "$GATE_DIR/node:/out" "$GATE_NODE_IMAGE" sh -c 'cp -a /usr/local/. /out/'
+  tool_container -v "$GATE_DIR/node:/out" "$GATE_NODE_IMAGE" sh -c 'cp -a /usr/local/. /out/'
 fi
 # Mustache-Lint braucht das globale vnu-jar (Node-Prefix) und Java 11 (vnu 17 nutzt eine
 # JavaScript-Engine, die ab Java 15 fehlt).
 if [[ ! -f "$GATE_DIR/node/lib/node_modules/vnu-jar/build/dist/vnu.jar" ]]; then
-  docker run --rm -v "$GATE_DIR/node:/usr/local" "$GATE_NODE_IMAGE" npm install -g --no-audit --no-fund 'vnu-jar@>=17.3.0 <18'
+  tool_container -v "$GATE_DIR/node:/usr/local" "$GATE_NODE_IMAGE" npm install -g --no-audit --no-fund 'vnu-jar@>=17.3.0 <18'
 fi
 if [[ ! -x "$GATE_DIR/java/bin/java" ]]; then
   mkdir -p "$GATE_DIR/java"
-  docker run --rm -v "$GATE_DIR/java:/out" "${GATE_JAVA_IMAGE:-eclipse-temurin:11-jre}" sh -c 'cp -a /opt/java/openjdk/. /out/'
+  tool_container -v "$GATE_DIR/java:/out" "${GATE_JAVA_IMAGE:-eclipse-temurin:11-jre}" sh -c 'cp -a /opt/java/openjdk/. /out/'
   # Nashorn-Warnung auf stderr würde die JSON-Ausgabe von vnu zerstören.
   mv "$GATE_DIR/java/bin/java" "$GATE_DIR/java/bin/java.real"
   printf '#!/bin/sh\nexec "$(dirname "$0")/java.real" -Dnashorn.args=--no-deprecation-warning "$@"\n' > "$GATE_DIR/java/bin/java"
   chmod +x "$GATE_DIR/java/bin/java"
 fi
 if [[ ! -d "$GATE_DIR/moodle/node_modules/.bin" ]]; then
-  docker run --rm -v "$GATE_DIR/moodle:/app" -w /app "$GATE_NODE_IMAGE" npm ci --no-audit --no-fund
+  tool_container -v "$GATE_DIR/moodle:/app" -w /app "$GATE_NODE_IMAGE" npm ci --no-audit --no-fund
 fi
 
 # 6. Plugin spiegeln, Stack starten, PHPUnit-Umgebung initialisieren.

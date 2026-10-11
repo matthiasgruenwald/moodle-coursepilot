@@ -49,8 +49,8 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     env:
-      GATE_DIR: ${{ github.workspace }}/../coursepilot-gate
-      GATE_MOODLE_REPO: ${{ github.workspace }}/../moodle-source
+      GATE_DIR: ${{ runner.temp }}/coursepilot-gate
+      GATE_MOODLE_REPO: ${{ runner.temp }}/moodle-source
       GATE_MOODLE_REF: origin/MOODLE_501_STABLE
       # PR: actual target branch. Push: compare the state before the push.
       GATE_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event_name == 'push' && github.event.before || format('origin/{0}', inputs.target_branch) }}
@@ -67,6 +67,7 @@ jobs:
 
       - name: Vergleich und Git-Historie protokollieren
         run: |
+          set -o pipefail
           mkdir -p "$GATE_DIR/reports"
           {
             git rev-parse HEAD
@@ -78,6 +79,7 @@ jobs:
 
       - name: Isoliertes Moodle-5.1-Gate mit versionierten Werkzeugen einrichten
         run: |
+          set -o pipefail
           git clone --branch MOODLE_501_STABLE https://github.com/moodle/moodle.git "$GATE_MOODLE_REPO"
           bash scripts/gate/setup-container.sh 2>&1 | tee "$GATE_DIR/reports/setup.log"
 
