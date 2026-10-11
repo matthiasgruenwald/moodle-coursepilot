@@ -22,12 +22,16 @@ werden muss, weil diese ausschließlich auf `Gate (required)` zeigt.
 | Moodle | PHP | Datenbank | Pflichtprüfung |
 |---|---|---|---|
 | 5.1 (`MOODLE_501_STABLE`) | 8.4 | MariaDB 11.4 | `full`-Gate mit Coverage-/CRAP-Ratsche |
+| 5.1 (`MOODLE_501_STABLE`) | 8.4 | PostgreSQL 17 | volle Suite |
 | 5.2 (`MOODLE_502_STABLE`) | 8.3 | MariaDB 11.4 | volle Suite |
 | 5.2 (`MOODLE_502_STABLE`) | 8.4 | PostgreSQL 17 | volle Suite |
 | 5.3 (`MOODLE_503_STABLE`) | 8.3 | MariaDB 11.4 | volle Suite |
 | 5.3 (`MOODLE_503_STABLE`) | 8.4 | PostgreSQL 17 | volle Suite |
 
-Alle fünf Kombinationen sind verpflichtend; ein Fehler sperrt den Gesamtcheck.
+Alle sechs Kombinationen sind verpflichtend; ein Fehler sperrt den Gesamtcheck.
+PostgreSQL 17 erfüllt auch die [Datenbankanforderungen von Moodle 5.1](https://moodledev.io/general/releases/5.1#database-requirements)
+(mindestens PostgreSQL 15). Dieselbe vollständige Plugin-Suite läuft auf beiden
+Datenbanktypen; PostgreSQL prüft grün/rot ohne Coverage oder zweite Ratsche.
 Die Artefaktprüfung installiert das Release-ZIP zusätzlich auf jeder der drei
 Moodle-Linien mit PHP 8.4 und MariaDB 11.4. Die Mindestversion bleibt Moodle 5.1.
 Eine Kompatibilitätszusage setzt ein grünes vollständiges Gate und die
@@ -40,12 +44,12 @@ nicht automatisch zugesagt.
 und PCOV ein (`scripts/gate/setup-container.sh`, versionierte Composer-Lockfiles).
 Dort läuft derselbe `npm run gate -- full`-Einstieg wie lokal: Node-Verträge,
 volle PHPUnit-Suite, Coverage-/CRAP-Ratsche und alle statischen Prüfungen. Die übrigen
-vier PHPUnit-Kombinationen erheben keine zweite Coverage-Regel. Das frühere feste
+fünf PHPUnit-Kombinationen erheben keine zweite Coverage-Regel. Das frühere feste
 80-%-Skript samt Vertragstest ist entfernt.
 
 Quellumfang und begründete Ausschlüsse folgen unverändert `tests/coverage.php` und
 `scripts/gate/baseline.json`, siehe [Gate-Doku](gate.md). Einstiegsskript- und
-Nennerumbau gehören zu #668. PostgreSQL 5.1 gehört zu #687.
+Nennerumbau gehören zu #668.
 
 Bei PRs lädt Checkout alle Branch-Refs und die vollständige Historie. `GATE_BASE_REF`
 zeigt auf `origin/<PR-Zielbranch>`, bei Push auf den Commit vor dem Push. Manuelle

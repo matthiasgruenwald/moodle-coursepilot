@@ -7,6 +7,20 @@ const path = require('node:path');
 const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 
+test('CI cross-DB: every supported Moodle line runs the full suite on PostgreSQL without coverage', () => {
+  const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/native-ci.yml'), 'utf8');
+  const phpunit = workflow.split('  phpunit:\n')[1].split('\n  js-native:')[0];
+  for (const branch of ['MOODLE_501_STABLE', 'MOODLE_502_STABLE', 'MOODLE_503_STABLE']) {
+    assert.match(phpunit, new RegExp(`moodle-branch: ${branch}\\n            database: pgsql\\n            php-version: '8.4'`));
+  }
+  assert.match(phpunit, /image: postgres:17/);
+  assert.match(phpunit, /DB: \$\{\{ matrix.database \}\}/);
+  assert.match(phpunit, /MOODLE_BRANCH: \$\{\{ matrix.moodle-branch \}\}/);
+  assert.match(phpunit, /coverage: none/);
+  assert.match(phpunit, /run: moodle-plugin-ci phpunit\s/);
+  assert.doesNotMatch(phpunit, /--filter|--testsuite|--coverage|continue-on-error/);
+});
+
 test('CI wiring: full on the minimum version is mandatory with target history and diagnostics', () => {
   const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/native-ci.yml'), 'utf8');
   const quality = workflow.split('  quality:\n')[1].split('\n  phpunit:')[0];
