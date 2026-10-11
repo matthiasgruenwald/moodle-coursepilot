@@ -67,6 +67,21 @@ Produktionsklasse `classes/…/foo.php` gehört zu Tests mit
 `#[CoversClass(…foo::class)]`, eine geänderte `*_test.php` steht für sich.
 Ohne Zuordnung meldet das Gate `no-test-mapped`.
 
+### Bewusste Leseausnahme bei eigenen Dateien
+
+Die Capability-Ausnahmen für `list_context_files`, `read_context_file`, `list_material_files`
+und `preview_material_file` in `scripts/gate/external-ignore.json` schützen den bestehenden
+Lesevertrag aus [ADR 0019](adr/0019-kontextbereich-in-private-files.md): Eigene Daten bleiben
+auch bei entzogener `moodle/user:manageownfiles`-Schreibberechtigung lesbar. Die vier externen
+Tests prüfen `execute()` und `clean_returnvalue()` mit `CAP_PROHIBIT`, eigenen Dateien und
+Benutzerwechsel. Nutzerkontext, externe Speicher-Eigentumsprüfung, Personenbezugs-Schalter
+und MCP-Fernzugriffsfreigabe gelten weiterhin.
+
+Kontext-Schreibwerkzeuge prüfen `manageownfiles` für die Moodle-Ablage. Externe Ablagen
+verwenden Anmeldung und Eigentumsprüfung am Speicher gemäß
+[ADR 0021](adr/0021-isolierung-und-personenbezug-am-externen-ablageort.md); die Moodle-Capability
+ist dort kein pauschaler Private-Files-Schalter.
+
 ### Ausgabe
 
 Eine Zeile pro Befund, `datei:zeile: regel: text`, zuletzt `summary:`:

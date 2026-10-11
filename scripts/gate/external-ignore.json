@@ -12,22 +12,22 @@
   {
     "file": "Plugin/src/local_coursepilot/classes/external/list_context_files.php",
     "missing": "capability",
-    "reason": "liest nur den eigenen Kontextbereich der Person; bewusst keine Zusatz-Capability, die normalen Nutzerrechte genügen (Kontext wird im eigenen Nutzerkontext validiert)"
+    "reason": "ADR 0019: bewusster Lesevertrag im validierten eigenen Nutzerkontext, auch bei CAP_PROHIBIT für moodle/user:manageownfiles; externe Instanzen bleiben eigentumsgeprüft (ADR 0021), Personenbezugs-Schalter und MCP-Fernzugriffsfreigabe gelten weiter"
   },
   {
     "file": "Plugin/src/local_coursepilot/classes/external/read_context_file.php",
     "missing": "capability",
-    "reason": "liest nur den eigenen Kontextbereich der Person; bewusst keine Zusatz-Capability, die normalen Nutzerrechte genügen (Kontext wird im eigenen Nutzerkontext validiert)"
+    "reason": "ADR 0019: bewusster Lesevertrag im validierten eigenen Nutzerkontext, auch bei CAP_PROHIBIT für moodle/user:manageownfiles; externe Instanzen bleiben eigentumsgeprüft (ADR 0021), Personenbezugs-Schalter und MCP-Fernzugriffsfreigabe gelten weiter"
   },
   {
     "file": "Plugin/src/local_coursepilot/classes/external/list_material_files.php",
     "missing": "capability",
-    "reason": "liest nur die eigenen Materialdateien der Person; reine Leseoperation im eigenen Nutzerkontext ohne Zusatz-Capability"
+    "reason": "bewusster Lesevertrag für eigene Materialdateien im validierten Nutzerkontext entsprechend ADR 0019, auch bei CAP_PROHIBIT für moodle/user:manageownfiles; externe Instanzen bleiben eigentumsgeprüft (ADR 0021), MCP-Fernzugriffsfreigabe gilt weiter"
   },
   {
     "file": "Plugin/src/local_coursepilot/classes/external/preview_material_file.php",
     "missing": "capability",
-    "reason": "liest nur die eigenen Materialdateien der Person; reine Leseoperation im eigenen Nutzerkontext ohne Zusatz-Capability"
+    "reason": "bewusster Lesevertrag für eigene Materialdateien im validierten Nutzerkontext entsprechend ADR 0019, auch bei CAP_PROHIBIT für moodle/user:manageownfiles; externe Instanzen bleiben eigentumsgeprüft (ADR 0021), MCP-Fernzugriffsfreigabe gilt weiter"
   },
   {
     "file": "Plugin/src/local_coursepilot/classes/external/write_context_file.php",

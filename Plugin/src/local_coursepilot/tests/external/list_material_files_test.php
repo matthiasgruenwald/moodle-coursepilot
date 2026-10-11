@@ -45,6 +45,35 @@ final class list_material_files_test extends \advanced_testcase {
         parent::tearDown();
     }
 
+    /**
+     * Prohibiting writes leaves each user's own material listing readable.
+     */
+    public function test_own_files_remain_readable_with_manageownfiles_prohibited(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid, \context_system::instance()->id, true);
+
+        foreach (['teacher-a.txt', 'teacher-b.txt'] as $filename) {
+            $user = $this->getDataGenerator()->create_user();
+            $this->setUser($user);
+            $this->assertFalse(has_capability('moodle/user:manageownfiles', \context_user::instance($user->id)));
+            get_file_storage()->create_file_from_string([
+                'contextid' => \context_user::instance($user->id)->id,
+                'component' => material_files::COMPONENT,
+                'filearea' => material_files::FILEAREA,
+                'itemid' => material_files::ITEMID,
+                'filepath' => '/coursepilot-material/',
+                'filename' => $filename,
+            ], 'Own teaching material');
+
+            $result = list_material_files::execute();
+            $result = external_api::clean_returnvalue(list_material_files::execute_returns(), $result);
+
+            $this->assertSame([$filename], array_column($result['entries'], 'name'));
+        }
+    }
+
     public function test_lists_empty_root(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());

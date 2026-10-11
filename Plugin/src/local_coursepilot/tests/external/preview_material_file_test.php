@@ -16,6 +16,7 @@
 
 namespace local_coursepilot\external;
 
+use core_external\external_api;
 use local_coursepilot\gd_support;
 use local_coursepilot\material_files;
 use local_coursepilot\storage_anchor;
@@ -45,7 +46,33 @@ final class preview_material_file_test extends \advanced_testcase {
     }
 
     /**
-     * Stores png.
+     * Preview reads the current user's image even when private-file writes are prohibited.
+     */
+    public function test_own_files_remain_readable_with_manageownfiles_prohibited(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid, \context_system::instance()->id, true);
+
+        foreach ([100, 200] as $width) {
+            $user = $this->getDataGenerator()->create_user();
+            $this->setUser($user);
+            $this->assertFalse(has_capability('moodle/user:manageownfiles', \context_user::instance($user->id)));
+            $this->store_png('own.png', $width, 50);
+
+            $result = preview_material_file::execute('own.png');
+            $result = external_api::clean_returnvalue(preview_material_file::execute_returns(), $result);
+
+            $this->assertTrue($result['available']);
+            $this->assertSame('image/jpeg', $result['mimetype']);
+            $info = getimagesizefromstring(base64_decode($result['image_base64'], true));
+            $this->assertSame($width, $info[0]);
+            $this->assertSame(50, $info[1]);
+        }
+    }
+
+    /**
+     * Stores a PNG in the signed-in user's core context, independently of the material resolver.
      *
      * @param string $filename
      * @param int $width
@@ -53,6 +80,7 @@ final class preview_material_file_test extends \advanced_testcase {
      * @return void
      */
     private function store_png(string $filename, int $width = 1600, int $height = 100): void {
+        global $USER;
         $image = imagecreatetruecolor($width, $height);
         imagefill($image, 0, 0, imagecolorallocate($image, 10, 120, 200));
         ob_start();
@@ -61,7 +89,7 @@ final class preview_material_file_test extends \advanced_testcase {
         imagedestroy($image);
 
         get_file_storage()->create_file_from_string([
-            'contextid' => material_files::own_context()->id,
+            'contextid' => \context_user::instance($USER->id)->id,
             'component' => material_files::COMPONENT,
             'filearea' => material_files::FILEAREA,
             'itemid' => material_files::ITEMID,
