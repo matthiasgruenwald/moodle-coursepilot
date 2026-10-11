@@ -118,4 +118,88 @@ final class history_page_test extends \advanced_testcase {
         $this->assertSame('Erste Fassung', $data['rows'][0]['name']);
         $this->assertSame('page', $data['rows'][0]['modname']);
     }
+    public function test_response_requires_confirmation_before_restoring_activity(): void {
+        $this->resetAfterTest();
+        [$course, $cm] = $this->create_page();
+        $result = history_page::response((int) $cm->id, 0, 1, false);
+        $this->assertStringEndsWith('/local/coursepilot/history.php', $result->confirmurl->get_path());
+        $this->assertSame('1', $result->confirmurl->get_param('restore'));
+        $this->assertSame('Erste Fassung', get_coursemodule_from_id('page', $cm->id)->name);
+    }
+    public function test_response_lists_course_and_module_history_and_restores_after_confirmation(): void {
+        $this->resetAfterTest();
+        [$course, $cm] = $this->create_page();
+        $list = history_page::response(0, (int) $course->id, 0, false);
+        $this->assertSame('local_coursepilot/history_activities', $list->template);
+        $this->assertSame('Erste Fassung', $list->data['rows'][0]['name']);
+        \local_coursepilot\external\update_module_settings::execute((int) $cm->id, '{"name":"Later edition"}');
+        $versions = history_page::response((int) $cm->id, 0, 0, false);
+        $this->assertSame('local_coursepilot/history_versions', $versions->template);
+        $this->assertTrue($versions->data['rows'][0]['canrestore']);
+        $_POST['sesskey'] = sesskey();
+        try {
+            $restored = history_page::response((int) $cm->id, 0, 1, true);
+            $this->assertNotNull($restored->redirecturl);
+            $this->assertNotEmpty($restored->message);
+            $this->assertSame('Erste Fassung', get_coursemodule_from_id('page', $cm->id)->name);
+        } finally {
+            unset($_POST['sesskey']);
+        }
+    }
+
+    public function test_response_rejects_requests_without_a_course_or_module(): void {
+        $this->resetAfterTest();
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage('Invalid course module ID');
+        history_page::response(0, 0, 0, false);
+    }
+
+    public function test_response_denies_course_history_without_view_permission(): void {
+        $this->resetAfterTest();
+        [$course] = $this->create_page();
+        $this->redirectMessages();
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $this->setUser($student);
+        $this->expectException(\required_capability_exception::class);
+        history_page::response(0, (int) $course->id, 0, false);
+    }
+    #[\PHPUnit\Framework\Attributes\DataProvider('restore_permissions')]
+    public function test_response_hides_and_refuses_restore_without_each_required_permission(string $capability): void {
+        global $DB, $USER;
+        $this->resetAfterTest();
+        [$course, $cm] = $this->create_page();
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
+        assign_capability($capability, CAP_PROHIBIT, $roleid, \context_module::instance($cm->id)->id);
+        accesslib_clear_all_caches_for_unit_testing();
+        $view = history_page::response((int) $cm->id, 0, 0, false);
+        $this->assertFalse($view->data['rows'][0]['canrestore']);
+        $this->expectException(\required_capability_exception::class);
+        history_page::response((int) $cm->id, 0, 1, true);
+    }
+
+    /**
+     * Both permissions are required independently for restoration.
+     *
+     * @return string[][] Required restore capabilities.
+     */
+    public static function restore_permissions(): array {
+        return [['local/coursepilot:restoreversion'], ['moodle/course:manageactivities']];
+    }
+
+    public function test_confirmed_restore_without_a_session_key_preserves_the_current_activity(): void {
+        $this->resetAfterTest();
+        [$course, $cm] = $this->create_page();
+        \local_coursepilot\external\update_module_settings::execute((int) $cm->id, '{"name":"Later edition"}');
+        $_POST['sesskey'] = 'invalid';
+        try {
+            history_page::response((int) $cm->id, 0, 1, true);
+            $this->fail('A confirmed restore still requires a valid session key.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidsesskey', $e->errorcode);
+        } finally {
+            unset($_POST['sesskey']);
+        }
+        $this->assertSame('Later edition', get_coursemodule_from_id('page', $cm->id)->name);
+    }
 }

@@ -28,7 +28,6 @@
 
 require(__DIR__ . '/../../../config.php');
 
-use local_coursepilot\oauth_lib;
 use local_coursepilot\output\admin_connections_page;
 
 require_login();
@@ -42,22 +41,7 @@ $PAGE->set_pagelayout('admin');
 $PAGE->set_title(get_string('connections', 'local_coursepilot'));
 $PAGE->set_heading(get_string('connections', 'local_coursepilot'));
 
-$revokeid = optional_param('revoke', 0, PARAM_INT);
-if ($revokeid) {
-    require_sesskey();
-    oauth_lib::revoke_token($revokeid);
-    redirect(new moodle_url('/local/coursepilot/admin/connections.php'));
-}
-
-$revokeall = optional_param('revokeall', 0, PARAM_BOOL);
-if ($revokeall) {
-    require_sesskey();
-    oauth_lib::revoke_all_tokens();
-    redirect(new moodle_url('/local/coursepilot/admin/connections.php'));
-}
-
-$tokens = oauth_lib::active_tokens();
-
-echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('local_coursepilot/admin_connections', admin_connections_page::page_data($tokens));
-echo $OUTPUT->footer();
+admin_connections_page::response(
+    optional_param('revoke', 0, PARAM_INT),
+    (bool) optional_param('revokeall', 0, PARAM_BOOL)
+)->send();

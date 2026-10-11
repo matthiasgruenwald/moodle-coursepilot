@@ -31,6 +31,31 @@ use local_coursepilot\admin\connection_storage_location;
  */
 final class admin_connections_page {
     /**
+     * Lists site connections or applies the requested revocation.
+     *
+     * @param int $revokeid Connection management identifier.
+     * @param bool $revokeall Whether all connections should be revoked.
+     * @return page_response Protected overview or redirect after a write.
+     */
+    public static function response(int $revokeid, bool $revokeall): page_response {
+        require_capability('moodle/site:config', \context_system::instance());
+        if ($revokeid) {
+            require_sesskey();
+            \local_coursepilot\oauth_lib::revoke_token($revokeid);
+            return new page_response(redirecturl: new \moodle_url('/local/coursepilot/admin/connections.php'));
+        }
+        if ($revokeall) {
+            require_sesskey();
+            \local_coursepilot\oauth_lib::revoke_all_tokens();
+            return new page_response(redirecturl: new \moodle_url('/local/coursepilot/admin/connections.php'));
+        }
+        return new page_response(
+            'local_coursepilot/admin_connections',
+            self::page_data(\local_coursepilot\oauth_lib::active_tokens())
+        );
+    }
+
+    /**
      * Provides page data.
      *
      * @param \stdClass[] $tokens

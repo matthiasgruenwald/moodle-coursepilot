@@ -29,6 +29,27 @@ namespace local_coursepilot\output;
  */
 final class connections_page {
     /**
+     * Displays owned connections or revokes one after checking the session key.
+     *
+     * @param int $revokeid Management identifier, zero for a read-only page.
+     * @return page_response Page data or a redirect after revocation.
+     */
+    public static function response(int $revokeid): page_response {
+        global $USER;
+        \local_coursepilot\remote_access::require_granted();
+        if ($revokeid) {
+            require_sesskey();
+            \local_coursepilot\oauth_lib::revoke_token($revokeid, (int) $USER->id);
+            return new page_response(redirecturl: new \moodle_url('/local/coursepilot/connections.php'));
+        }
+        return new page_response('local_coursepilot/connections', self::page_data(
+            \local_coursepilot\oauth_lib::active_tokens_for_user((int) $USER->id),
+            location_selection::current_locations_data(),
+            new \moodle_url(\local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE)
+        ));
+    }
+
+    /**
      * Provides page data.
      *
      * @param \stdClass[] $tokens

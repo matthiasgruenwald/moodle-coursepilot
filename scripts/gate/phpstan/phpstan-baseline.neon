@@ -1,15 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			# reason: $OUTPUT is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
-			# evidence: {"admin/connections.php":["echo $OUTPUT->header();"]}
-			# resolution: permanent
-			message: '#^Variable \$OUTPUT might not be defined\.$#'
-			identifier: variable.undefined
-			count: 3
-			path: ../html/public/local/coursepilot/admin/connections.php
-
-		-
 			# reason: $PAGE is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
 			# evidence: {"admin/connections.php":["$PAGE->set_context($context);"]}
 			# resolution: permanent
@@ -964,15 +955,6 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/webdav_storage_port.php
 
 		-
-			# reason: $OUTPUT is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
-			# evidence: {"connections.php":["echo $OUTPUT->header();"]}
-			# resolution: permanent
-			message: '#^Variable \$OUTPUT might not be defined\.$#'
-			identifier: variable.undefined
-			count: 3
-			path: ../html/public/local/coursepilot/connections.php
-
-		-
 			# reason: $PAGE is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
 			# evidence: {"connections.php":["$PAGE->set_context($context);"]}
 			# resolution: permanent
@@ -1036,51 +1018,6 @@ parameters:
 			path: ../html/public/local/coursepilot/db/upgradelib.php
 
 		-
-			# reason: The restore exception handler tests errorcode OR $confirmed after the prior confirmation branch; PHPStan knows confirmed is true. Review this redundant branch while preserving completion-data-loss confirmation.
-			# evidence: {"history.php":["$confirmed = optional_param('confirmed', 0, PARAM_BOOL);"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Right side of \|\| is always true\.$#'
-			identifier: booleanOr.rightAlwaysTrue
-			count: 1
-			path: ../html/public/local/coursepilot/history.php
-
-		-
-			# reason: A history action calls redirect() and then has statically unreachable continuation. Review the obsolete continuation while retaining the redirect/action behaviour.
-			# evidence: {"history.php":["redirect($viewurl, $result['message'], null, \\core\\output\\notification::NOTIFY_SUCCESS);"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Unreachable statement \- code above always terminates\.$#'
-			identifier: deadCode.unreachable
-			count: 1
-			path: ../html/public/local/coursepilot/history.php
-
-		-
-			# reason: $OUTPUT is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
-			# evidence: {"history.php":["echo $OUTPUT->header();"]}
-			# resolution: permanent
-			message: '#^Variable \$OUTPUT might not be defined\.$#'
-			identifier: variable.undefined
-			count: 7
-			path: ../html/public/local/coursepilot/history.php
-
-		-
-			# reason: $PAGE is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
-			# evidence: {"history.php":["$PAGE->set_context($cmid ? $modcontext : $coursecontext);"]}
-			# resolution: permanent
-			message: '#^Variable \$PAGE might not be defined\.$#'
-			identifier: variable.undefined
-			count: 5
-			path: ../html/public/local/coursepilot/history.php
-
-		-
-			# reason: local_coursepilot_handle_location_selection_finish($oauthreturn) documents the input as @param ?array $oauthreturn Type: array{client:\stdClass,params:array<string,string>}|null.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
-			# evidence: {"location_selection.php":["function local_coursepilot_handle_location_selection_finish(?array $oauthreturn): ?array {","* @param ?array $oauthreturn Type: array{client:\\stdClass,params:array<string,string>}|null."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Function local_coursepilot_handle_location_selection_finish\(\) has parameter \$oauthreturn with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/location_selection.php
-
-		-
 			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
 			# evidence: {"oauth.php":["$response = oauth_lib::handle_discovery($CFG->wwwroot, $pathinfo);"]}
 			# resolution: permanent
@@ -1088,15 +1025,6 @@ parameters:
 			identifier: variable.undefined
 			count: 1
 			path: ../html/public/local/coursepilot/oauth.php
-
-		-
-			# reason: $OUTPUT is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
-			# evidence: {"oauth/authorize.php":["echo $OUTPUT->header();"]}
-			# resolution: permanent
-			message: '#^Variable \$OUTPUT might not be defined\.$#'
-			identifier: variable.undefined
-			count: 4
-			path: ../html/public/local/coursepilot/oauth/authorize.php
 
 		-
 			# reason: $PAGE is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
@@ -1115,42 +1043,6 @@ parameters:
 			identifier: variable.undefined
 			count: 1
 			path: ../html/public/local/coursepilot/oauth/protected-resource.php
-
-		-
-			# reason: admin_setting_configcheckbox is constructed with a numeric default setting (0/retention days), while the core constructor annotates defaultsetting as string. Reconcile the default value type without changing the installed setting.
-			# evidence: {"settings.php":["$settings->add(new admin_setting_configcheckbox("]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Parameter \#4 \$defaultsetting of class admin_setting_configcheckbox constructor expects string, int given\.$#'
-			identifier: argument.type
-			count: 2
-			path: ../html/public/local/coursepilot/settings.php
-
-		-
-			# reason: admin_setting_configtext is constructed with a numeric default setting (0/retention days), while the core constructor annotates defaultsetting as string. Reconcile the default value type without changing the installed setting.
-			# evidence: {"settings.php":["$settings->add(new admin_setting_configtext("]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Parameter \#4 \$defaultsetting of class admin_setting_configtext constructor expects string, int given\.$#'
-			identifier: argument.type
-			count: 2
-			path: ../html/public/local/coursepilot/settings.php
-
-		-
-			# reason: $ADMIN is supplied by admin settings loader, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
-			# evidence: {"settings.php":["$ADMIN->add('localplugins', $settings);"]}
-			# resolution: permanent
-			message: '#^Variable \$ADMIN might not be defined\.$#'
-			identifier: variable.undefined
-			count: 2
-			path: ../html/public/local/coursepilot/settings.php
-
-		-
-			# reason: $hassiteconfig is supplied by admin settings loader, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
-			# evidence: {"settings.php":["if ($hassiteconfig) {"]}
-			# resolution: permanent
-			message: '#^Variable \$hassiteconfig might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: ../html/public/local/coursepilot/settings.php
 
 		-
 			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
@@ -1180,33 +1072,6 @@ parameters:
 			path: ../html/public/local/coursepilot/surface.php
 
 		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/activity_type_templates_test.php":["use \\local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\activity_type_templates_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/activity_type_templates_test.php":["use \\local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\activity_type_templates_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/activity_type_templates_test.php":["use \\local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\activity_type_templates_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
-
-		-
 			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
 			# evidence: {"tests/activity_type_templates_test.php":["public function request(","* @param array $headers The headers."]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
@@ -1223,60 +1088,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/admin/connection_storage_location_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\admin\\connection_storage_location_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/admin/connection_storage_location_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/admin/connection_storage_location_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\admin\\connection_storage_location_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/admin/connection_storage_location_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/admin/connection_storage_location_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\admin\\connection_storage_location_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/admin/connection_storage_location_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/admin/pointer_scan_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\admin\\pointer_scan_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/admin/pointer_scan_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/admin/pointer_scan_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\admin\\pointer_scan_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/admin/pointer_scan_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/admin/pointer_scan_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\admin\\pointer_scan_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/admin/pointer_scan_test.php
 
 		-
 			# reason: This runtime contract uses assertTrue() on the explicit Moodle FORUM constant comparison. PHPStan derives the expected value from the current declaration; the assertion guards changes in the real contract.
@@ -1340,87 +1151,6 @@ parameters:
 			identifier: method.alreadyNarrowedType
 			count: 1
 			path: ../html/public/local/coursepilot/tests/catalog/quiz_catalog_contract_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/check/webdav_capability_check_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\check\\webdav_capability_check_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/check/webdav_capability_check_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/check/webdav_capability_check_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\check\\webdav_capability_check_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/check/webdav_capability_check_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/check/webdav_capability_check_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\check\\webdav_capability_check_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/check/webdav_capability_check_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/check/webdav_repository_check_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\check\\webdav_repository_check_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/check/webdav_repository_check_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/check/webdav_repository_check_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\check\\webdav_repository_check_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/check/webdav_repository_check_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/check/webdav_repository_check_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\check\\webdav_repository_check_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/check/webdav_repository_check_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/check/webdav_user_instances_check_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\check\\webdav_user_instances_check_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/check/webdav_user_instances_check_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/check/webdav_user_instances_check_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\check\\webdav_user_instances_check_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/check/webdav_user_instances_check_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/check/webdav_user_instances_check_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\check\\webdav_user_instances_check_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/check/webdav_user_instances_check_test.php
 
 		-
 			# reason: COMPLETION_CRITERIA_TYPE_ACTIVITY is defined in completion/criteria/completion_criteria.php and used to select activity-completion references. That core directory is absent from phpstan.neon scanDirectories; scan its declaration to remove this loading debt.
@@ -1549,33 +1279,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/add_questions_to_quiz_test.php
 
 		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/append_context_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\append_context_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/append_context_file_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/append_context_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\append_context_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/append_context_file_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/append_context_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\append_context_file_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/append_context_file_test.php
-
-		-
 			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
 			# evidence: {"tests/external/append_context_file_test.php":["public function request(","* @param array $headers The headers."]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
@@ -1657,15 +1360,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/compare_activity_versions_test.php
 
 		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/compose_material_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\compose_material_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/compose_material_file_test.php
-
-		-
 			# reason: test_failures_leave_no_new_file_and_preserve_existing_target($parts) has an array input without a value-type docblock. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
 			# evidence: {"tests/external/compose_material_file_test.php":["public function test_failures_leave_no_new_file_and_preserve_existing_target(","array $parts,"]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
@@ -1673,33 +1367,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/compose_material_file_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/compose_material_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\compose_material_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/compose_material_file_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/compose_material_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\compose_material_file_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/compose_material_file_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/create_module_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\create_module_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/create_module_test.php
 
 		-
 			# reason: The invalid_intro_images data provider supplies malformed values of different types to $paths; the test parameter is untyped. Document mixed explicitly instead of treating data-provider inputs as untypable.
@@ -1711,83 +1378,11 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/create_module_test.php
 
 		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/create_module_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\create_module_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/create_module_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/create_module_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\create_module_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/create_module_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/crop_material_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\crop_material_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/crop_material_file_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/crop_material_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\crop_material_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/crop_material_file_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/crop_material_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\crop_material_file_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/crop_material_file_test.php
-
-		-
 			# reason: The foreign-owner rejection test contains assertTrue(true) after its exception check. This tautological assertion is existing test debt; remove or replace it with an observable outcome.
 			# evidence: {"tests/external/dismiss_previous_location_test.php":["$this->assertTrue(true);"]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
 			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with true will always evaluate to true\.$#'
 			identifier: method.alreadyNarrowedType
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/dismiss_previous_location_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/dismiss_previous_location_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\dismiss_previous_location_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/dismiss_previous_location_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/dismiss_previous_location_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\dismiss_previous_location_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/dismiss_previous_location_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/dismiss_previous_location_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\dismiss_previous_location_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/dismiss_previous_location_test.php
 
@@ -1900,33 +1495,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/get_skill_test.php
 
 		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/import_questions_xml_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\import_questions_xml_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/import_questions_xml_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/import_questions_xml_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\import_questions_xml_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/import_questions_xml_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/import_questions_xml_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\import_questions_xml_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/import_questions_xml_test.php
-
-		-
 			# reason: create_instance() is called on the concrete generator returned by 'mod_page', but Moodle declares get_plugin_generator() as component_generator_base, which lacks this method. The attached call and receiver assignment identify the concrete generator; improve its static return typing/stubs.
 			# evidence: {"tests/external/list_activity_versions_test.php":["$page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);"]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
@@ -1934,60 +1502,6 @@ parameters:
 			identifier: method.notFound
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/list_activity_versions_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/list_context_files_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\list_context_files_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/list_context_files_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/list_context_files_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\list_context_files_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/list_context_files_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/list_context_files_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\list_context_files_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/list_context_files_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/list_material_files_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\list_material_files_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/list_material_files_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/list_material_files_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\list_material_files_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/list_material_files_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/list_material_files_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\list_material_files_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/list_material_files_test.php
 
 		-
 			# reason: cohort_add_member() is Moodle cohort API from cohort/lib.php, loaded by the test bootstrap/remote_access code but outside phpstan.neon scanDirectories. Add the core declaration to the static scan to remove this loading debt.
@@ -1999,33 +1513,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/list_skills_test.php
 
 		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/list_skills_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\list_skills_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/list_skills_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/list_skills_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\list_skills_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/list_skills_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/list_skills_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\list_skills_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/list_skills_test.php
-
-		-
 			# reason: The test includes lang/en/local_coursepilot.php into $string and reads listskillspreviouslocationhint. PHPStan keeps the initial array{} because it does not infer assignments from that language-file include; explicitly type the loaded string table.
 			# evidence: {"tests/external/list_skills_test.php":["$this->assertDoesNotMatchRegularExpression('/\\d/', $string['listskillspreviouslocationhint']);"]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
@@ -2033,60 +1520,6 @@ parameters:
 			identifier: offsetAccess.notFound
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/list_skills_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/preview_material_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\preview_material_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/preview_material_file_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/preview_material_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\preview_material_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/preview_material_file_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/preview_material_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\preview_material_file_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/preview_material_file_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/read_context_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\read_context_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/read_context_file_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/read_context_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\read_context_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/read_context_file_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/read_context_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\read_context_file_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/read_context_file_test.php
 
 		-
 			# reason: The test includes lang/en/local_coursepilot.php into $string and reads webdavexternalerror. PHPStan keeps the initial array{} because it does not infer assignments from that language-file include; explicitly type the loaded string table.
@@ -2197,66 +1630,12 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/external/set_restriction_test.php
 
 		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/update_mc_question_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\update_mc_question_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/update_mc_question_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/update_mc_question_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\update_mc_question_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/update_mc_question_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/update_mc_question_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\update_mc_question_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/update_mc_question_test.php
-
-		-
 			# reason: create_instance() is called on the concrete generator returned by 'mod_page', 'mod_assign', 'mod_forum', 'mod_quiz', 'mod_wiki', 'mod_' . $modname, 'mod_resource', 'mod_folder', but Moodle declares get_plugin_generator() as component_generator_base, which lacks this method. The attached call and receiver assignment identify the concrete generator; improve its static return typing/stubs.
 			# evidence: {"tests/external/update_module_settings_test.php":["$page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance([","$assignment = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([","$forum = $this->getDataGenerator()->get_plugin_generator('mod_forum')->create_instance([","$assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([","$page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);","$forum = $this->getDataGenerator()->get_plugin_generator('mod_forum')->create_instance(['course' => $course->id]);","$quiz = $this->getDataGenerator()->get_plugin_generator('mod_quiz')->create_instance(['course' => $course->id]);","$wiki = $this->getDataGenerator()->get_plugin_generator('mod_wiki')->create_instance(['course' => $course->id]);","$instance = $this->getDataGenerator()->get_plugin_generator('mod_' . $modname)->create_instance([","$assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance(['course' => $course->id]);","$resource = $this->getDataGenerator()->get_plugin_generator('mod_resource')->create_instance(['course' => $course->id]);","$folder = $this->getDataGenerator()->get_plugin_generator('mod_folder')->create_instance(['course' => $course->id]);"]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
 			message: '#^Call to an undefined method component_generator_base\:\:create_instance\(\)\.$#'
 			identifier: method.notFound
 			count: 43
-			path: ../html/public/local/coursepilot/tests/external/update_module_settings_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/update_module_settings_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\update_module_settings_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/update_module_settings_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/update_module_settings_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\update_module_settings_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/update_module_settings_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/update_module_settings_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\update_module_settings_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
 			path: ../html/public/local/coursepilot/tests/external/update_module_settings_test.php
 
 		-
@@ -2285,33 +1664,6 @@ parameters:
 			identifier: method.notFound
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/update_quiz_settings_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/write_context_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\write_context_file_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/write_context_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\write_context_file_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/external/write_context_file_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\external\\write_context_file_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
 
 		-
 			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
@@ -2503,33 +1855,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/lib_test.php
 
 		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/location_selection_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\location_selection_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/location_selection_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/location_selection_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\location_selection_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/location_selection_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/location_selection_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\location_selection_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/location_selection_test.php
-
-		-
 			# reason: The previous-location test reads path after an expected retained location, while PHPStan derives null on a current() branch. Reconcile the nullable return/narrowing with the fixture result and assert the location before offsets.
 			# evidence: {"tests/location_selection_test.php":["$this->assertSame('coursepilot', $vorheriger['path']);"]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
@@ -2537,15 +1862,6 @@ parameters:
 			identifier: offsetAccess.notFound
 			count: 1
 			path: ../html/public/local/coursepilot/tests/location_selection_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/oauth_cimd_fetch_test.php":["use \\local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\oauth_cimd_fetch_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/oauth_cimd_fetch_test.php
 
 		-
 			# reason: race_on_site_budget($first) is inherited from oauth_budget_race; its @param array describes the child process arguments without their string value type. Type the shared race fixture input to remove this consuming-test suppression.
@@ -2561,24 +1877,6 @@ parameters:
 			# evidence: {"tests/oauth_cimd_fetch_test.php":["use \\local_coursepilot\\tests\\oauth_budget_race;"],"tests/classes/oauth_budget_race.php":["protected function race_on_site_budget(array $first, array $second): array {","* @param array $second Arguments for the second process."]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
 			message: '#^Method local_coursepilot\\oauth_cimd_fetch_test\:\:race_on_site_budget\(\) has parameter \$second with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/oauth_cimd_fetch_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/oauth_cimd_fetch_test.php":["use \\local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\oauth_cimd_fetch_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/oauth_cimd_fetch_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/oauth_cimd_fetch_test.php":["use \\local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\oauth_cimd_fetch_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/tests/oauth_cimd_fetch_test.php
@@ -2935,37 +2233,10 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/webdav/webdav_client_test.php
 
 		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/webdav/webdav_instance_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_instance_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav/webdav_instance_test.php
-
-		-
 			# reason: location($fingerprint) documents the input as @param ?array $fingerprint The fingerprint.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
 			# evidence: {"tests/webdav/webdav_instance_test.php":["private function location(int $instanceid, ?array $fingerprint = null): pointer_location {","* @param ?array $fingerprint The fingerprint."]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
 			message: '#^Method local_coursepilot\\webdav\\webdav_instance_test\:\:location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav/webdav_instance_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/webdav/webdav_instance_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_instance_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav/webdav_instance_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/webdav/webdav_instance_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_instance_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/tests/webdav/webdav_instance_test.php
@@ -2976,33 +2247,6 @@ parameters:
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
 			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertIsBool\(\) with bool will always evaluate to true\.$#'
 			identifier: method.alreadyNarrowedType
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav/webdav_setup_steps_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/webdav/webdav_setup_steps_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_setup_steps_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav/webdav_setup_steps_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/webdav/webdav_setup_steps_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_setup_steps_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav/webdav_setup_steps_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/webdav/webdav_setup_steps_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_setup_steps_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/tests/webdav/webdav_setup_steps_test.php
 
@@ -3020,33 +2264,6 @@ parameters:
 			# evidence: {"tests/webdav_storage_port_test.php":["public function request(","* @param array $headers The headers."]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
 			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav_storage_port_test\.php\:163\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php
-
-		-
-			# reason: create_webdav_instance() is inherited from webdav_instance_fixture: $overrides are WebDAV instance options (string|int values); @param array records the shape only as prose. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/webdav_storage_port_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function create_webdav_instance(\\stdClass $user, array $overrides = []): int {","* @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav_storage_port_test\:\:create_webdav_instance\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php
-
-		-
-			# reason: write_pointer_with_external_previous_location() is inherited from webdav_instance_fixture: $fingerprint is the nullable previous WebDAV location verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/webdav_storage_port_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_pointer_with_external_previous_location(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav_storage_port_test\:\:write_pointer_with_external_previous_location\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php
-
-		-
-			# reason: write_v2_pointer() is inherited from webdav_instance_fixture: $fingerprint is the nullable server/basepath/account verification marker; @param array|null leaves its element types unspecified. Type the shared trait once to remove this entry on the consuming test.
-			# evidence: {"tests/webdav_storage_port_test.php":["use local_coursepilot\\tests\\webdav\\webdav_instance_fixture;"],"tests/classes/webdav/webdav_instance_fixture.php":["protected function write_v2_pointer(","* @param array|null $fingerprint Default: {@see fixture_fingerprint()}."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav_storage_port_test\:\:write_v2_pointer\(\) has parameter \$fingerprint with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php

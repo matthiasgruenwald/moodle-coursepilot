@@ -1,8 +1,8 @@
 {
   "armedAt": "67c2026a1593a9832fd8efb545d8243906d525ca",
   "coverage": {
-    "covered": 11356,
-    "statements": 14006
+    "covered": 11990,
+    "statements": 13900
   },
   "excluded": [
     {
@@ -28,6 +28,78 @@
     {
       "path": "version.php",
       "reason": "Versionsangaben des Plugins ohne Logik."
+    },
+    {
+      "path": "admin/connections.php",
+      "reason": "Delegiert Zugriff, Widerruf und Ansicht an die getestete output/admin_connections_page; enthält nur Moodle-Seitenkonfiguration und Parameteraufrufe."
+    },
+    {
+      "path": "connections.php",
+      "reason": "Delegiert Eigentumsprüfung, Widerruf und Ansicht an die getestete output/connections_page; keine Fachverzweigung im Skript."
+    },
+    {
+      "path": "history.php",
+      "reason": "Delegiert Kurszugriff, Versionsansicht und bestätigte Wiederherstellung an die getestete output/history_page."
+    },
+    {
+      "path": "location_selection.php",
+      "reason": "Delegiert OAuth-Rückkehr, Formularentscheidungen und Darstellung an die getestete output/location_selection_page."
+    },
+    {
+      "path": "location_selection_browse.php",
+      "reason": "Delegiert Listing und Fehlerantwort an die getestete output/http_endpoint::browse; nur Login, Sesskey und Parameteraufrufe verbleiben."
+    },
+    {
+      "path": "mcp.php",
+      "reason": "Delegiert Bearer-Auswertung, JSON-Eingabe und HTTP-Antwort an die getesteten output/http_endpoint und output/http_response."
+    },
+    {
+      "path": "oauth.php",
+      "reason": "Ruft ausschließlich die getestete oauth_lib::handle_discovery und output/http_response auf."
+    },
+    {
+      "path": "oauth/authorize.php",
+      "reason": "Delegiert Clientvalidierung, Einwilligung und Codeausgabe an die getestete output/authorize_page; nur Seitenkonfiguration und parametrisierte Eingabe verbleiben."
+    },
+    {
+      "path": "oauth/jwks.php",
+      "reason": "Logikfreie Header- und JSON-Ausgabe der getesteten oauth_lib::jwks_document."
+    },
+    {
+      "path": "oauth/protected-resource.php",
+      "reason": "Logikfreie Header- und JSON-Ausgabe der getesteten oauth_lib::protected_resource_metadata."
+    },
+    {
+      "path": "oauth/register.php",
+      "reason": "Liest die bereits begrenzten Requestbytes und delegiert Budget, Registrierung und HTTP-Ausgabe an getestete Klassen."
+    },
+    {
+      "path": "oauth/token.php",
+      "reason": "Delegiert JSON-/Formularauswertung und HTTP-Ausgabe an die getesteten output/http_endpoint::token und output/http_response."
+    },
+    {
+      "path": "ortswahl.php",
+      "reason": "Logikfreie Weiterleitung der veröffentlichten Alt-URL zur Ortswahl."
+    },
+    {
+      "path": "ortswahl_browse.php",
+      "reason": "Logikfreier Include der veröffentlichten Browse-Alt-URL; Verarbeitung im getesteten HTTP-Adapter."
+    },
+    {
+      "path": "settings.php",
+      "reason": "Einziger Aufruf der getesteten admin/settings::register; Zugriffsentscheidung und Einstellungsaufbau liegen in der Klasse."
+    },
+    {
+      "path": "surface.php",
+      "reason": "Nur Zugriffskontrolle, Seitenkonfiguration und Aufrufe der getesteten privacy_surface, instance_check und output/surface_page."
+    },
+    {
+      "path": "werkbank/download.php",
+      "reason": "Logikfreier Include für veröffentlichte Download-Alt-URLs; Verarbeitung im getesteten HTTP-Adapter."
+    },
+    {
+      "path": "workbench/download.php",
+      "reason": "Delegiert Einmal-Download, Fehlerstatus, Protokollierung und Header an die getesteten output/http_endpoint::download und output/http_response."
     }
   ]
 }

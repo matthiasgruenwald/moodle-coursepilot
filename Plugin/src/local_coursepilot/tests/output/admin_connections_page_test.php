@@ -81,4 +81,40 @@ final class admin_connections_page_test extends \advanced_testcase {
             $data['revokeallonsubmit']
         );
     }
+    public function test_admin_response_revokes_all_connections_after_session_validation(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        global $USER;
+        $this->issue_token((int) $USER->id);
+        $this->assertFalse(admin_connections_page::response(0, false)->data['empty']);
+        $_POST['sesskey'] = sesskey();
+        try {
+            $result = admin_connections_page::response(0, true);
+            $this->assertStringEndsWith('/local/coursepilot/admin/connections.php', $result->redirecturl->get_path());
+            $this->assertSame([], oauth_lib::active_tokens());
+        } finally {
+            unset($_POST['sesskey']);
+        }
+    }
+    public function test_admin_response_revokes_one_connection_and_preserves_the_other(): void {
+        global $USER;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $tokenid = $this->issue_token((int) $USER->id);
+        $this->issue_token((int) $USER->id);
+        $_POST['sesskey'] = sesskey();
+        try {
+            $this->assertNotNull(admin_connections_page::response($tokenid, false)->redirecturl);
+            $this->assertCount(1, \local_coursepilot\oauth_lib::active_tokens());
+        } finally {
+            unset($_POST['sesskey']);
+        }
+    }
+
+    public function test_admin_response_refuses_non_administrators(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->expectException(\required_capability_exception::class);
+        admin_connections_page::response(0, true);
+    }
 }

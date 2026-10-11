@@ -50,4 +50,54 @@ final class connections_page_test extends \advanced_testcase {
         $this->assertSame('client-abc', $data['rows'][0]['clientname']);
         $this->assertStringContainsString('revoke=42', $data['rows'][0]['revokeurl']);
     }
+    public function test_response_displays_only_the_logged_in_users_connections(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $response = connections_page::response(0);
+        $this->assertSame('local_coursepilot/connections', $response->template);
+        $this->assertTrue($response->data['empty']);
+        $this->assertNull($response->redirecturl);
+    }
+    public function test_revocation_rejects_foreign_connections_and_requires_a_session_key(): void {
+        global $USER;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $other = $this->getDataGenerator()->create_user();
+        $ids = [];
+        foreach ([(int) $USER->id, (int) $other->id] as $userid) {
+            $verifier = str_repeat('v', 43);
+            $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
+            $code = \local_coursepilot\oauth_lib::issue_code('client', $userid, 'https://client.example/cb', $challenge);
+            \local_coursepilot\oauth_lib::exchange_code($code, 'client', 'https://client.example/cb', $verifier);
+            $ids[] = (int) array_key_first(\local_coursepilot\oauth_lib::active_tokens_for_user($userid));
+        }
+        $this->assertCount(1, connections_page::response(0)->data['rows']);
+        $_POST['sesskey'] = 'invalid';
+        try {
+            connections_page::response($ids[0]);
+            $this->fail('Revocation without a session key must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidsesskey', $e->errorcode);
+        } finally {
+            unset($_POST['sesskey']);
+        }
+        $this->assertCount(1, \local_coursepilot\oauth_lib::active_tokens_for_user((int) $USER->id));
+        $_POST['sesskey'] = sesskey();
+        try {
+            $this->assertNotNull(connections_page::response($ids[1])->redirecturl);
+            $this->assertCount(1, \local_coursepilot\oauth_lib::active_tokens_for_user((int) $other->id));
+            $this->assertNotNull(connections_page::response($ids[0])->redirecturl);
+            $this->assertTrue(connections_page::response(0)->data['empty']);
+        } finally {
+            unset($_POST['sesskey']);
+        }
+    }
+
+    public function test_response_denies_users_without_remote_access(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage('REMOTE_ACCESS_NOT_GRANTED');
+        connections_page::response(0);
+    }
 }

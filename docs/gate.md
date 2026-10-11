@@ -244,9 +244,13 @@ lassen sie sich keiner Klasse zuordnen; sie tauchten nur deshalb in der Messung 
 Testklassen ohne Covers-Angabe alles Ausgeführte gutschrieben. Mit der Covers-Pflicht
 (`covers-missing`) fiel die Gutschrift weg: Die Messung sank von 82,33 % auf 75,48 %, davon
 1005 Zeilen aus diesen Dateien, der Rest ist Zuwachs an Code. Ohne diese Dateien im Nenner liegt
-der Bestand bei 81,08 % (11356/14006); das ist die Baseline. Seiten-Einstiegsskripte
-(`mcp.php`, `settings.php` u. a.) stehen noch im Nenner und sind bei Änderung an die 90 %-Regel
-gebunden, bis ihre Logik in Klassen liegt.
+der Bestand bei 81,08 % (11356/14006); das ist die Baseline. Nach #668 sind zusätzlich 18 ausdrücklich aufgelistete delegierende Einstiegsskripte
+ausgenommen. Ihre Fachentscheidungen liegen in getesteten Klassen; der Node-Vertrag
+`test/gate-entry-scripts.test.js` schützt die Liste und Logikfreiheit. Upgrade, Upgrade-Helfer
+und `lib.php` bleiben im Nenner. Die vollständige Messung beträgt 11990/13900 = 86,26 %;
+davon stammen +3,94 Prozentpunkte aus neuer Testdeckung und separat +0,91 aus dem
+Ausschluss von 149 verbliebenen Delegationszeilen. Dateideltas, Upgrade-Verhalten und
+Baseline-Fortschreibung sind im [Messbericht zu #668](research/qualitaets-baseline-668.md) belegt.
 
 ## Hooks
 
