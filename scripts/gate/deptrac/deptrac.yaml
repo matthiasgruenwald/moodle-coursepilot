@@ -258,7 +258,7 @@ deptrac:
     - name: Ports
       collectors:
         - type: classNameRegex
-          value: '#^local_coursepilot\\(cimd_fetch_port|storage_port|storage_area|storage_conflict_exception|storage_anchor|pointer_location|pointer_reader|pointer_writer|access_log)$#'
+          value: '#^local_coursepilot\\(cimd_fetch_port|storage_failure|storage_port|storage_area|storage_conflict_exception|storage_anchor|pointer_location|pointer_reader|pointer_writer|access_log)$#'
         - type: classNameRegex
           value: '#^local_coursepilot\\event\\#'
     - name: Adapter

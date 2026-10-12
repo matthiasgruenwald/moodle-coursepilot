@@ -25,6 +25,7 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(context_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 final class context_files_test extends \advanced_testcase {
     public function test_resolve_directory_defaults_to_root(): void {
         $this->resetAfterTest();

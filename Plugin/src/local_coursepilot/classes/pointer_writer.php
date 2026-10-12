@@ -19,11 +19,11 @@ namespace local_coursepilot;
 use local_coursepilot\webdav\webdav_error;
 
 /**
- * Pending-note translation for external location failures (Issue #492, ADR
- * 0023): the WebDAV failure vocabulary and the five-part failure answer.
- * Writing itself runs through {@see webdav_storage_port} (Issue #645); this
- * class only records failures that {@see context_area} observes before the
- * adapter is reached (pointer resolution, preflight read).
+ * Pending-note translation for external location failures (ADR 0023):
+ * the WebDAV failure vocabulary and the five-part failure answer.
+ * Writing itself runs through {@see webdav_storage_port}; this
+ * class records outages observed by {@see context_area}, including persistence,
+ * pointer resolution and preflight reads. Adapters never record pending notes.
  *
  * A conflict is a caller error and never creates a pending note (ADR 0023
  * point 2). Every other failure at storage, connection or location records
@@ -103,16 +103,15 @@ final class pointer_writer {
     ];
 
     /**
-     * Handle a preflight read failure like a write failure (Issue #505 finding
-     * #10): the same pending note and five-part response. The personal-data
+     * Handle a preflight read failure like a write failure: the same pending
+     * note and five-part response. The personal-data
      * preflight checks in write_context_file and append_context_file call this
      * when GET fails at the connection or location before the actual write.
      *
      * Abort before attempting PUT. Continuing after a failed GET could overwrite
-     * a marked target without checking it when PUT happens to succeed, violating
-     * the preflight-read rule in Issue #515.
+     * a marked target without checking it when PUT happens to succeed.
      *
-     * @param webdav_error $e
+     * @param storage_failure $e
      * @param pointer_location $location
      * @param string $clientpath
      * @param string $operation One of the OP_* constants.
@@ -120,7 +119,7 @@ final class pointer_writer {
      * @return \moodle_exception
      */
     public static function record_preread_failure(
-        webdav_error $e,
+        storage_failure $e,
         pointer_location $location,
         string $clientpath,
         string $operation,
@@ -134,14 +133,14 @@ final class pointer_writer {
      * note (ADR 0023 point 2: caller error, not storage failure). Every other
      * failure records a pending write through {@see fail()}.
      *
-     * @param webdav_error $e The e.
+     * @param storage_failure $e The e.
      * @param string $clientpath The clientpath.
      * @param pointer_location $location The location.
      * @param string $operation The operation.
      * @param int $courseid The courseid.
      */
     private static function translate_or_record(
-        webdav_error $e,
+        storage_failure $e,
         string $clientpath,
         pointer_location $location,
         string $operation,
@@ -150,8 +149,44 @@ final class pointer_writer {
         if ($e->errorclass === webdav_error::CONFLICT) {
             return new \moodle_exception('contextfileexternalconflict', 'local_coursepilot', '', $clientpath);
         }
+        return self::record_storage_failure($e, $location, $clientpath, $operation, $courseid);
+    }
+
+    /**
+     * Records a persistence outage for either location with the established failure reply.
+     *
+     * @param \Throwable $e Storage outage or native Moodle persistence failure.
+     * @param pointer_location $location Selected location.
+     * @param string $clientpath Relative context path.
+     * @param string $operation Pending operation category.
+     * @param int $courseid Course ID for the pending note.
+     * @return \moodle_exception
+     */
+    public static function record_storage_failure(
+        \Throwable $e,
+        pointer_location $location,
+        string $clientpath,
+        string $operation,
+        int $courseid
+    ): \moodle_exception {
+        if ($e instanceof \moodle_exception && $location->kind !== pointer_location::MOODLE) {
+            return $e;
+        }
+        $errorclass = $e instanceof storage_failure ? $e->errorclass
+            : ($e instanceof \moodle_exception ? $e->errorcode : get_class($e));
+        if ($location->kind === pointer_location::MOODLE) {
+            return pending_write_translation::record_and_translate(
+                $errorclass,
+                'Private Files ' . $errorclass . ': ' . $e->getMessage(),
+                $clientpath,
+                $operation,
+                'Your private files in Moodle are currently not writable - something needs to be done about your storage',
+                'Your private files in Moodle',
+                $courseid
+            );
+        }
         return self::fail(
-            $e->errorclass,
+            $errorclass,
             $e->getMessage(),
             $clientpath,
             $operation,
@@ -238,10 +273,9 @@ final class pointer_writer {
     }
 
     /**
-     * Teacher-facing reason and retry/intervention advice (Issue #516,
-     * Spec #486 §8). Temporary failures can be retried later; other failures
-     * require action on the storage. Public for {@see webdav_storage_port}
-     * to share the WebDAV reason wording (Issue #540).
+     * Teacher-facing reason and retry/intervention advice. Temporary failures
+     * can be retried later; other failures
+     * require action on the storage.
      *
      * @param string $errorclass
      * @return string
@@ -268,8 +302,7 @@ final class pointer_writer {
      * Instance name and host (part 5 of the failure response). Never expose
      * the full base path. The fingerprint contains only the host, not secrets.
      * Read the name from the database; a deleted instance has no name, so only
-     * the supplied host remains. Shared with {@see webdav_storage_port}
-     * (Issue #540).
+     * the supplied host remains.
      *
      * @param string $host
      * @param int|null $instanceid

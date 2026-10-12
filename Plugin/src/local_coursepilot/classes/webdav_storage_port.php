@@ -100,7 +100,6 @@ final class webdav_storage_port implements storage_port {
      *        which this adapter works. Empty means: the instance root.
      * @param ?webdav_transport $transport The transport.
      * @param ?pointer_location $location The location.
-     * @param int $courseid The courseid.
      */
     public function __construct(
         /** @var int The WebDAV user instance, exclusively from */
@@ -111,8 +110,6 @@ final class webdav_storage_port implements storage_port {
         private readonly ?webdav_transport $transport = null,
         /** @var ?pointer_location The location. */
         private readonly ?pointer_location $location = null,
-        /** @var int The courseid. */
-        private readonly int $courseid = 0,
     ) {
     }
 
@@ -131,7 +128,11 @@ final class webdav_storage_port implements storage_port {
         try {
             $meta = $client->propfind($fileurl, 0);
         } catch (webdav_error $e) {
-            return webdav_error::empty_when_missing($e, null, static fn (webdav_error $err): webdav_error => $err);
+            return webdav_error::empty_when_missing(
+                $e,
+                null,
+                static fn (webdav_error $err): storage_failure => new storage_failure($err->errorclass, $err)
+            );
         }
 
         $entry = $meta[0] ?? null;
@@ -141,7 +142,11 @@ final class webdav_storage_port implements storage_port {
             return null;
         }
 
-        $content = $client->get($fileurl);
+        try {
+            $content = $client->get($fileurl);
+        } catch (webdav_error $e) {
+            throw new storage_failure($e->errorclass, $e);
+        }
         $mimetype = $entry['mimetype'];
         if ($mimetype === 'document/unknown') {
             // Location neutrality (Issue #560): Moodle core also sniffs the
@@ -173,7 +178,11 @@ final class webdav_storage_port implements storage_port {
         try {
             $raw = $resolved->client()->propfind($directoryurl, 1);
         } catch (webdav_error $e) {
-            return webdav_error::empty_when_missing($e, [], static fn (webdav_error $err): webdav_error => $err);
+            return webdav_error::empty_when_missing(
+                $e,
+                [],
+                static fn (webdav_error $err): storage_failure => new storage_failure($err->errorclass, $err)
+            );
         }
 
         return array_map(static fn (array $entry): array => [
@@ -200,7 +209,6 @@ final class webdav_storage_port implements storage_port {
     public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = implode('/', [...$folders, $filename]);
-        $operation = pending_write_translation::OP_CREATE;
 
         try {
             $resolved = $this->resolved_instance();
@@ -209,18 +217,14 @@ final class webdav_storage_port implements storage_port {
 
             $existing = $this->current_entry($client, $fileurl);
             $this->require_checksum_match($existing, $expectedchecksum, $clientpath);
-            if ($existing !== null) {
-                $operation = pending_write_translation::OP_OVERWRITE;
-            }
-
             $this->ensure_directory($resolved, $folders);
             $this->put($client, $fileurl, $content, $existing, $clientpath);
 
             $written = $this->current_entry($client, $fileurl);
         } catch (webdav_error $e) {
-            throw $this->fail($e->errorclass, $e->getMessage(), $clientpath, $operation);
+            throw new storage_failure($e->errorclass, $e);
         } catch (\moodle_exception $e) {
-            throw $this->translate_location_failure($e, $clientpath, $operation);
+            throw $this->location_failure($e);
         }
 
         return [
@@ -257,9 +261,9 @@ final class webdav_storage_port implements storage_port {
 
             $written = $this->current_entry($client, $fileurl);
         } catch (webdav_error $e) {
-            throw $this->fail($e->errorclass, $e->getMessage(), $clientpath, pending_write_translation::OP_APPEND);
+            throw new storage_failure($e->errorclass, $e);
         } catch (\moodle_exception $e) {
-            throw $this->translate_location_failure($e, $clientpath, pending_write_translation::OP_APPEND);
+            throw $this->location_failure($e);
         }
 
         return [
@@ -271,73 +275,16 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * Translates a failure on write/append (Issue #540, ADR
-     * 0023) just like {@see pointer_writer}: records a pending write before
-     * the error is returned - never passed through raw. `Conflict` (412) is
-     * already on its way here as {@see storage_conflict_exception} (see
-     * {@see put()}), so it never reaches this method.
+     * Caller and conflict errors pass through; unavailable locations are outages.
      *
-     * @param string $errorclass
-     * @param string $rawmessage
-     * @param string $clientpath
-     * @param string $operation One of the {@see pending_write_translation} OP_* constants.
-     * @return \moodle_exception
+     * @param \moodle_exception $e Original location or caller error.
+     * @return \Throwable
      */
-    private function fail(string $errorclass, string $rawmessage, string $clientpath, string $operation): \moodle_exception {
-        return pending_write_translation::record_and_translate(
-            $errorclass,
-            'WebDAV ' . $errorclass . ': ' . $rawmessage,
-            $clientpath,
-            $operation,
-            pointer_writer::reason_for($errorclass),
-            pointer_writer::describe_target($this->resolve_host(), $this->instanceid),
-            $this->courseid
-        );
-    }
-
-    /**
-     * Location failures from {@see resolved_instance()} also create a
-     * pending write (Issue #540); every other moodle_exception error key
-     * - in particular {@see storage_conflict_exception} and the quota check
-     * of the area - continues unchanged, it does not belong to this
-     * branch.
-     *
-     * @param \moodle_exception $e
-     * @param string $clientpath
-     * @param string $operation
-     * @return \moodle_exception
-     */
-    private function translate_location_failure(\moodle_exception $e, string $clientpath, string $operation): \moodle_exception {
-        if ($e instanceof storage_conflict_exception || !in_array($e->errorcode, self::LOCATION_FAILURE_CODES, true)) {
+    private function location_failure(\moodle_exception $e): \Throwable {
+        if (!in_array($e->errorcode, self::LOCATION_FAILURE_CODES, true)) {
             return $e;
         }
-        return pending_write_translation::record_and_translate(
-            $e->errorcode,
-            'WebDAV ' . $e->errorcode . ': ' . $e->getMessage(),
-            $clientpath,
-            $operation,
-            pointer_writer::reason_for($e->errorcode),
-            // Instance no longer resolvable - no fresh host available,
-            // unlike pointer_writer, which knows the host from the pointer
-            // fingerprint (this adapter knows no pointer).
-            pointer_writer::describe_target('', $this->instanceid),
-            $this->courseid
-        );
-    }
-
-    /**
-     * The host of the instance, best effort - for the target description of the
-     * failure response. Empty if the instance itself is no longer resolvable
-     * (then {@see translate_location_failure()} applies anyway, not this
-     * method).
-     * @return string
-     */
-    private function resolve_host(): string {
-        try {
-            return (string) (webdav_instance::fingerprint_of($this->instanceid)['server'] ?? '');
-        } catch (\Throwable $e) {
-            return '';
-        }
+        return new storage_failure($e->errorcode, $e);
     }
 
     /**
@@ -355,7 +302,11 @@ final class webdav_storage_port implements storage_port {
             $resolved->client()->delete($fileurl);
             return true;
         } catch (webdav_error $e) {
-            return webdav_error::empty_when_missing($e, false, static fn (webdav_error $err): webdav_error => $err);
+            return webdav_error::empty_when_missing(
+                $e,
+                false,
+                static fn (webdav_error $err): storage_failure => new storage_failure($err->errorclass, $err)
+            );
         }
     }
 
@@ -482,7 +433,11 @@ final class webdav_storage_port implements storage_port {
         try {
             $meta = $client->propfind($fileurl, 0);
         } catch (webdav_error $e) {
-            return webdav_error::empty_when_missing($e, null, static fn (webdav_error $err): webdav_error => $err);
+            return webdav_error::empty_when_missing(
+                $e,
+                null,
+                static fn (webdav_error $err): storage_failure => new storage_failure($err->errorclass, $err)
+            );
         }
         $entry = $meta[0] ?? null;
         if ($entry === null) {

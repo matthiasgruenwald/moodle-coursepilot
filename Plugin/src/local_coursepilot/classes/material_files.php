@@ -17,7 +17,6 @@
 namespace local_coursepilot;
 
 use core_external\external_value;
-use local_coursepilot\webdav\webdav_error;
 
 /**
  * Material folder anchor (Spec 0018 §2, #428). A sibling of context_files
@@ -333,10 +332,10 @@ final class material_files {
         [$area, $location, $contextlocation, $normalisedpath] = self::guarded_location($locationkey, $path);
         try {
             $entries = storage_anchor::port($area)->list($area, $path);
-        } catch (webdav_error $e) {
+        } catch (storage_failure $e) {
             // Use material-specific failure text instead of the AI-directed
-            // context-gap message (#526, Spec #486 §8).
-            throw pointer_reader::webdav_exception($e, 'materialexternalerror');
+            // context-gap message.
+            throw pointer_reader::storage_exception($e, 'materialexternalerror');
         }
 
         return [
@@ -367,8 +366,8 @@ final class material_files {
         [$area, $location, , $normalisedpath] = self::guarded_location($locationkey, $path);
         try {
             $file = storage_anchor::port($area)->read($area, $path);
-        } catch (webdav_error $e) {
-            throw pointer_reader::webdav_exception($e, 'materialexternalerror');
+        } catch (storage_failure $e) {
+            throw pointer_reader::storage_exception($e, 'materialexternalerror');
         }
         return $file === null ? null : self::with_contenthash($file, $location) + ['path' => $normalisedpath];
     }

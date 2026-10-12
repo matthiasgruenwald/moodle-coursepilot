@@ -40,6 +40,7 @@ use local_coursepilot\tests\storage_port_contract_test;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(private_files_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 final class private_files_storage_port_test extends storage_port_contract_test {
     /**
      * Provides port.

@@ -30,7 +30,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(location_selection::class)]
+#[CoversClass(webdav_storage_port::class)]
 #[CoversClass(\local_coursepilot\previous_location::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 final class location_selection_test extends \advanced_testcase {
     use webdav_instance_fixture;
 

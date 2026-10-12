@@ -16,28 +16,27 @@
 
 namespace local_coursepilot;
 
+use local_coursepilot\tests\webdav\fake_webdav_transport;
+use local_coursepilot\tests\webdav\webdav_instance_fixture;
+use local_coursepilot\webdav\webdav_instance;
+use PHPUnit\Framework\Attributes\DataProvider;
+
 /**
- * Failure handling of the Moodle branch of {@see context_area} (issue
- * #540, ADR 0023 "at both locations"): a failure while persisting itself -
- * not path/extension/quota validation, not a conflict - records a
- * pending write before the error is returned.
- *
- * A real failure of the Moodle file storage (database/file system) cannot
- * be provoked safely in a test environment - unlike for the external
- * location, there is no injectable fake transport for it. This test
- * therefore uses reflection to access the private static core method
- * ({@see context_area::persist_moodle_write()}/{@see context_area::persist_moodle_append()})
- * directly and passes it a test double of the {@see storage_port} contract
- * (the type the method accepts anyway, not the concrete
- * {@see private_files_storage_port}) - the same contract that
- * {@see private_files_storage_port_test} also checks against the real adapter.
+ * Context writes through the public storage-port seam. Adapter doubles fail at
+ * the unmanaged storage boundary; Moodle's pending-note storage runs for real.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(context_area::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(pointer_writer::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(private_files_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(webdav_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(storage_failure::class)]
 final class context_area_pending_test extends \advanced_testcase {
+    use webdav_instance_fixture;
+
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
@@ -53,7 +52,7 @@ final class context_area_pending_test extends \advanced_testcase {
         $port = $this->failing_port(new \RuntimeException('Disk full (simulated)'));
 
         try {
-            $this->invoke_persist_write($port, 'plan.md', '# Plan', pending_write_translation::OP_CREATE, 7);
+            context_area::write_to($port, pointer_location::moodle('/context/'), 'plan.md', '# Plan', courseid: 7);
             $this->fail('The failure should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
@@ -75,7 +74,7 @@ final class context_area_pending_test extends \advanced_testcase {
         $port = $this->failing_port(new \RuntimeException('Disk full (simulated)'));
 
         try {
-            $this->invoke_persist_append($port, 'journal.md', 'line', pending_write_translation::OP_APPEND, 0);
+            context_area::append_to($port, pointer_location::moodle('/context/'), 'journal.md', 'line', courseid: 0);
             $this->fail('The failure should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
@@ -97,7 +96,7 @@ final class context_area_pending_test extends \advanced_testcase {
         ]));
 
         try {
-            $this->invoke_persist_write($port, 'plan.md', '# Plan', pending_write_translation::OP_CREATE, 0);
+            context_area::write_to($port, pointer_location::moodle('/context/'), 'plan.md', '# Plan', courseid: 0);
             $this->fail('The quota check should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('contextquotaexceeded', $e->errorcode);
@@ -114,7 +113,7 @@ final class context_area_pending_test extends \advanced_testcase {
         $port = $this->failing_port(new storage_conflict_exception('plan.md'));
 
         try {
-            $this->invoke_persist_write($port, 'plan.md', '# Plan', pending_write_translation::OP_OVERWRITE, 0);
+            context_area::write_to($port, pointer_location::moodle('/context/'), 'plan.md', '# Plan', courseid: 0);
             $this->fail('The conflict should have been rejected.');
         } catch (storage_conflict_exception $e) {
             $this->addToAssertionCount(1);
@@ -126,12 +125,63 @@ final class context_area_pending_test extends \advanced_testcase {
     public function test_append_conflict_from_the_port_is_not_recorded_as_an_ausstand(): void {
         $port = $this->failing_port(new storage_conflict_exception('journal.md'));
         try {
-            $this->invoke_persist_append($port, 'journal.md', 'line', pending_write_translation::OP_APPEND, 0);
+            context_area::append_to($port, pointer_location::moodle('/context/'), 'journal.md', 'line', courseid: 0);
             $this->fail('A checksum conflict must remain a conflict.');
         } catch (storage_conflict_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
         }
         $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
+     * External errors outside the adapter outage contract retain their original code.
+     */
+    public function test_external_non_outage_error_keeps_original_code_without_pending_note(): void {
+        $port = $this->failing_port(new \moodle_exception('webdavfingerprintchanged', 'local_coursepilot'));
+        $location = pointer_location::external(0, 'context', ['server' => '', 'basepath' => '', 'account' => '']);
+        try {
+            context_area::write_to($port, $location, 'plan.md', '# Plan');
+            $this->fail('The changed connection must reject writing.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('webdavfingerprintchanged', $e->errorcode);
+        }
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
+     * Both production adapters keep context writes and appends behind the same seam.
+     *
+     * @param bool $external Use the WebDAV port instead of Private Files.
+     */
+    #[DataProvider('locations')]
+    public function test_both_ports_write_and_append_context_content(bool $external): void {
+        global $USER;
+        $location = pointer_location::moodle('/context/');
+        $port = new private_files_storage_port($location);
+        if ($external) {
+            $this->grant_webdav_capability($USER);
+            $instanceid = $this->create_webdav_instance($USER, ['webdav_path' => '']);
+            $location = pointer_location::external($instanceid, 'context', webdav_instance::fingerprint_of($instanceid));
+            $fake = new fake_webdav_transport();
+            $fake->seed_folder('/context');
+            $port = new webdav_storage_port($instanceid, 'context', $fake, $location);
+        }
+        $written = context_area::write_to($port, $location, 'plan.md', '# Plan');
+        $appended = context_area::append_to($port, $location, 'plan.md', "\nNext step");
+
+        $this->assertTrue($written['created']);
+        $this->assertFalse($appended['created']);
+        $this->assertSame("# Plan\nNext step", $port->read(context_files::area(), 'plan.md')['content']);
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
+     * Supplies the two supported storage locations.
+     *
+     * @return array<string, array{bool}>
+     */
+    public static function locations(): array {
+        return ['private files' => [false], 'webdav' => [true]];
     }
 
     /**
@@ -158,7 +208,7 @@ final class context_area_pending_test extends \advanced_testcase {
              *
              * @param storage_area $area The area.
              * @param string $path The path.
-             * @return ?array
+             * @return array{content: string, checksum: string, size: int, mimetype: string, timemodified: int}|null
              */
             public function read(storage_area $area, string $path): ?array {
                 return null;
@@ -169,7 +219,7 @@ final class context_area_pending_test extends \advanced_testcase {
              *
              * @param storage_area $area The area.
              * @param string $path The path.
-             * @return array
+             * @return array<int,array{name:string,type:string,size:int,mimetype:string,checksum:string,timemodified:int}>
              */
             public function list(storage_area $area, string $path): array {
                 return [];
@@ -182,7 +232,7 @@ final class context_area_pending_test extends \advanced_testcase {
              * @param string $path The path.
              * @param string $content The content.
              * @param ?string $expectedchecksum The expectedchecksum.
-             * @return array
+             * @return array{path: string, created: bool, size: int, checksum: string}
              */
             public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
                 throw $this->failure;
@@ -195,7 +245,7 @@ final class context_area_pending_test extends \advanced_testcase {
              * @param string $path The path.
              * @param string $content The content.
              * @param ?string $expectedchecksum The expectedchecksum.
-             * @return array
+             * @return array{path: string, created: bool, size: int, checksum: string}
              */
             public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
                 throw $this->failure;
@@ -212,49 +262,5 @@ final class context_area_pending_test extends \advanced_testcase {
                 return false;
             }
         };
-    }
-
-    /**
-     * Provides invoke persist write.
-     *
-     * @param storage_port $port
-     * @param string $path
-     * @param string $content
-     * @param string $operation
-     * @param int $courseid
-     * @return mixed[]
-     */
-    private function invoke_persist_write(
-        storage_port $port,
-        string $path,
-        string $content,
-        string $operation,
-        int $courseid
-    ): array {
-        $method = new \ReflectionMethod(context_area::class, 'persist_moodle_write');
-        $method->setAccessible(true);
-        return $method->invoke(null, $port, $path, $content, $operation, $courseid);
-    }
-
-    /**
-     * Provides invoke persist append.
-     *
-     * @param storage_port $port
-     * @param string $path
-     * @param string $content
-     * @param string $operation
-     * @param int $courseid
-     * @return mixed[]
-     */
-    private function invoke_persist_append(
-        storage_port $port,
-        string $path,
-        string $content,
-        string $operation,
-        int $courseid
-    ): array {
-        $method = new \ReflectionMethod(context_area::class, 'persist_moodle_append');
-        $method->setAccessible(true);
-        return $method->invoke(null, $port, $path, $content, $operation, $courseid);
     }
 }

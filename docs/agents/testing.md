@@ -188,3 +188,13 @@ npm run hooks:install   # git config core.hooksPath scripts/githooks
 `connection` kapselt Code-Tausch, Token-Rotation, Prüfung, Widerruf und die gemeinsame Zugriffsregel für MCP und Werkbank-Tickets. PHPUnit nutzt ihre öffentliche Schnittstelle mit der echten Testdatenbank; die Exchange-Race prüft zwei überlappende `exchange_code()`-Aufrufe. Discovery verbleibt in `oauth_lib`. Clientregistrierung, Client-Nachschlagen und exakte Redirect-Prüfung liegen in `client_registry`; `oauth_lib` delegiert seine bisherigen öffentlichen Einstiege. Registertests verwenden `cimd_fetch_port` mit einem speicherinternen Testadapter ohne Netz. `cimd_http_fetcher` erhält die bestehenden TLS-/Streaming-Regressionstests; sie schützen Moodle-Hostpolicy, CA-Vertrauen, Größenlimit und Deadline.
 
 `connection_event_test` prüft native Moodle-Ereignisse für Freigabe, Einzel-/Massenwiderruf und nachgewiesenes Refresh-Replay mit `redirectEvents()`. Normale Rotation, zurückgewiesene Zugriffe und fehlgeschlagene Code-Tausche erzeugen keine Ereignisse. Die bestehenden Prozess-Fixtures prüfen auch überlappenden Massenwiderruf und Rotation in beiden Reihenfolgen; ihre Named-Lock-Barriere erfordert MariaDB/MySQL.
+
+## Kontextablage und Ausstandsnotiz
+
+`context_area::write()` und `append()` lösen den aktuellen Ablageort auf und rufen die
+öffentlichen Port-Einstiege `write_to()` und `append_to()` auf. Diese prüfen Vorab-Lesen,
+Personenbezugs-Sperre und Schreibbedingung gemeinsam für Private Files und WebDAV. Tests
+ersetzen ausschließlich `storage_port` beziehungsweise den WebDAV-Transport; das Speichern
+der Ausstandsnotiz läuft gegen die echte Moodle-Testdatenbank. `storage_failure` trägt eine
+neutrale Fehlerklasse und interne Diagnostik. Adapter legen keine Ausstandsnotiz an; die
+Fachseite übersetzt Ausfälle einmal und erhält die bisherigen Werkzeugfehlercodes.

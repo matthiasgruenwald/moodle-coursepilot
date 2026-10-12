@@ -36,6 +36,8 @@ use local_coursepilot\webdav\webdav_instance;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(webdav_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(storage_failure::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 final class webdav_storage_port_test extends storage_port_contract_test {
     use webdav_instance_fixture;
 
@@ -99,10 +101,9 @@ final class webdav_storage_port_test extends storage_port_contract_test {
     }
 
     /**
-     * Storage outages (507, #540, ADR 0023) record a pending entry before
-     * returning a translated error, matching pointer_writer’s external path.
+     * The adapter reports an outage; recording pending writes belongs to its caller.
      */
-    public function test_write_records_ausstand_when_the_underlying_put_fails(): void {
+    public function test_write_reports_storage_failure_without_recording_a_pending_note(): void {
         $onlyputfails = new class (new fake_webdav_transport()) implements \local_coursepilot\webdav\webdav_transport {
             /**
              * Creates the webdav storage port test.
@@ -120,7 +121,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -140,26 +141,17 @@ final class webdav_storage_port_test extends storage_port_contract_test {
             (new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $onlyputfails))
                 ->write($this->area(), 'plan.md', '# Plan');
             $this->fail('Full storage should have been rejected.');
-        } catch (\moodle_exception $e) {
-            $this->assertSame('pendingwritefailed', $e->errorcode);
-            $this->assertStringContainsString('plan.md', $e->getMessage());
+        } catch (storage_failure $e) {
+            $this->assertSame('storage_full', $e->errorclass);
         }
 
-        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertCount(1, $ausstaende);
-        $this->assertSame('plan.md', $ausstaende[0]['path']);
-        $this->assertSame('create', $ausstaende[0]['entries'][0]['operation']);
-        $this->assertSame(
-            \local_coursepilot\webdav\webdav_error::STORAGE_FULL,
-            $ausstaende[0]['entries'][0]['error_class']
-        );
+        $this->assertSame([], pending_write_notice::list_grouped());
     }
 
     /**
-     * Failed read-modify-write append has the same pending-entry protection
-     * as writing.
+     * Appending reports the same neutral outage as writing.
      */
-    public function test_append_records_ausstand_when_the_underlying_put_fails(): void {
+    public function test_append_reports_storage_failure_without_recording_a_pending_note(): void {
         $onlyputfails = new class (new fake_webdav_transport()) implements \local_coursepilot\webdav\webdav_transport {
             /**
              * Creates the webdav storage port test.
@@ -177,7 +169,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -197,12 +189,10 @@ final class webdav_storage_port_test extends storage_port_contract_test {
             (new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $onlyputfails))
                 ->append($this->area(), 'journal.md', 'erste Zeile');
             $this->fail('Full storage should have been rejected.');
-        } catch (\moodle_exception $e) {
-            $this->assertSame('pendingwritefailed', $e->errorcode);
+        } catch (storage_failure $e) {
+            $this->assertSame('storage_full', $e->errorclass);
         }
-
-        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame('append', $ausstaende[0]['entries'][0]['operation']);
+        $this->assertSame([], pending_write_notice::list_grouped());
     }
 
     /**
@@ -227,21 +217,18 @@ final class webdav_storage_port_test extends storage_port_contract_test {
     }
 
     /**
-     * Deleted WebDAV instances also create pending entries (ADR 0023).
-     * This adapter has no pointer to catch a location failure earlier.
+     * A deleted instance is an outage; its caller owns pending-write recording.
      */
-    public function test_write_records_ausstand_when_the_instance_is_deleted(): void {
+    public function test_write_reports_unavailable_storage_when_the_instance_is_deleted(): void {
         global $DB;
         $DB->delete_records('repository_instances', ['id' => $this->instanceid]);
 
         try {
             $this->port()->write($this->area(), 'plan.md', '# Plan');
             $this->fail('Deleted instance should have been rejected.');
-        } catch (\moodle_exception $e) {
-            $this->assertSame('pendingwritefailed', $e->errorcode);
+        } catch (storage_failure $e) {
+            $this->assertSame('webdavinstancemissing', $e->errorclass);
         }
-
-        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame('webdavinstancemissing', $ausstaende[0]['entries'][0]['error_class']);
+        $this->assertSame([], pending_write_notice::list_grouped());
     }
 }

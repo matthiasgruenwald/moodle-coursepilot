@@ -35,6 +35,11 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(read_context_file::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\webdav_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_failure::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\pointer_reader::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_area::class)]
 final class read_context_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 

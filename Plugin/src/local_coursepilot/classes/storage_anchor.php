@@ -213,10 +213,9 @@ final class storage_anchor {
      * pointer; tools and area facades use the returned port.
      *
      * @param storage_area $area The area.
-     * @param int $courseid The courseid.
      */
-    public static function port(storage_area $area, int $courseid = 0): storage_port {
-        return self::port_at(self::effective_location($area), $courseid);
+    public static function port(storage_area $area): storage_port {
+        return self::port_at(self::effective_location($area));
     }
 
     /**
@@ -225,13 +224,12 @@ final class storage_anchor {
      * the pointer history instead of the current pointer.
      *
      * @param pointer_location $location The location.
-     * @param int $courseid The courseid.
      */
-    public static function port_at(pointer_location $location, int $courseid = 0): storage_port {
+    public static function port_at(pointer_location $location): storage_port {
         if ($location->kind === pointer_location::MOODLE) {
             return new private_files_storage_port($location);
         }
-        return new webdav_storage_port((int) $location->instanceid, (string) $location->relativepath, null, $location, $courseid);
+        return new webdav_storage_port((int) $location->instanceid, (string) $location->relativepath, null, $location);
     }
 
     /**

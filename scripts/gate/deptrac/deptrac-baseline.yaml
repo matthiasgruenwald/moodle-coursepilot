@@ -4,9 +4,6 @@
 # Jeder Eintrag nennt das Folgeticket, das ihn auflöst; Ziel ist eine leere Baseline.
 deptrac:
   skip_violations:
-    # Adapter nutzt Fachlogik (Ausstandsnotiz-Übersetzung) -> #693
-    local_coursepilot\webdav_storage_port:
-      - local_coursepilot\pending_write_translation
     # get_module_settings aus vier Werkzeugen -> #696
     local_coursepilot\external\create_module:
       - local_coursepilot\external\get_module_settings

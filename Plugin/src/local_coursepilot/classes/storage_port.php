@@ -31,6 +31,10 @@ namespace local_coursepilot;
  * without atomic guarantees in WebDAV. Callers compare plain strings;
  * the value does not identify a storage location (Spec 0021 Implementation Decisions).
  *
+ * Storage outages are reported as {@see storage_failure}; caller validation,
+ * native Moodle persistence exceptions and {@see storage_conflict_exception}
+ * remain distinct. Adapters never record a context pending-write note.
+ *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
@@ -46,6 +50,7 @@ interface storage_port {
      * @param string $path Client path, e.g. "plan.md" or "subjects/maths/profile.md".
      * @return array{content: string, checksum: string, size: int, mimetype: string,
      *         timemodified: int}|null
+     * @throws storage_failure Storage is unavailable.
      * @throws \moodle_exception Area invalidpathkey for an invalid path.
      */
     public function read(storage_area $area, string $path): ?array;
@@ -58,6 +63,7 @@ interface storage_port {
      * @param string $path Client subfolder, e.g. "" or "subjects/maths".
      * @return array<int, array{name: string, type: string, size: int, mimetype: string,
      *         checksum: string, timemodified: int}>
+     * @throws storage_failure Storage is unavailable.
      * @throws \moodle_exception Area invalidpathkey for an invalid path.
      */
     public function list(storage_area $area, string $path): array;
@@ -75,6 +81,7 @@ interface storage_port {
      *        A supplied checksum differing from current content, including a missing
      *        file, throws {@see storage_conflict_exception}.
      * @return array{path: string, created: bool, size: int, checksum: string}
+     * @throws storage_failure Storage is unavailable.
      * @throws \moodle_exception Area invalidpathkey/name error,
      *         area quotaerrorkey
      * @throws storage_conflict_exception On checksum mismatch.
@@ -89,6 +96,7 @@ interface storage_port {
      * @param string $content Content to append.
      * @param string|null $expectedchecksum Preflight condition, as for write().
      * @return array{path: string, created: bool, size: int, checksum: string}
+     * @throws storage_failure Storage is unavailable.
      * @throws \moodle_exception Area invalidpathkey/name error,
      *         area quotaerrorkey
      * @throws storage_conflict_exception For read-modify-write adapters (e.g.
@@ -103,6 +111,7 @@ interface storage_port {
      * @param storage_area $area
      * @param string $path
      * @return bool true if a file was deleted; false if none existed.
+     * @throws storage_failure Storage is unavailable.
      * @throws \moodle_exception Area invalidpathkey for an invalid path.
      */
     public function delete(storage_area $area, string $path): bool;

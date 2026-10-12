@@ -37,12 +37,32 @@ defined('MOODLE_INTERNAL') || die();
 #[\PHPUnit\Framework\Attributes\CoversClass(list_material_files::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\webdav_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_failure::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\pointer_reader::class)]
 final class list_material_files_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     protected function tearDown(): void {
         \core\di::reset_container();
         parent::tearDown();
+    }
+
+    /**
+     * A storage-port outage retains the material tool's public error code.
+     */
+    public function test_external_storage_outage_keeps_material_error_code(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_material();
+        $fake->deny_auth();
+        try {
+            list_material_files::execute();
+            $this->fail('Unavailable storage must reject the request.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialexternalerror', $e->errorcode);
+            $this->assertStringNotContainsString($fake->secret(), $e->getMessage());
+        }
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
     }
 
     /**

@@ -163,15 +163,6 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/cm_references.php
 
 		-
-			# reason: context_area translates webdav_error from storage_port read/list into pointer read/write errors; PHPStan does not infer the adapter exception through the port. Document the throwing port/adapter contract before removing these four catches.
-			# evidence: {"classes/context_area.php":["} catch (webdav_error $e) {","$file = $port->read($area, $path);","$entries = $port->list($area, $path);"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Dead catch \- local_coursepilot\\webdav\\webdav_error is never thrown in the try block\.$#'
-			identifier: catch.neverThrown
-			count: 4
-			path: ../html/public/local/coursepilot/classes/context_area.php
-
-		-
 			# reason: guard_existing_locked($existing) documents the input as @param ?array $existing Result of {@see private_files_storage_port::read()}. Type: array{content:string}|null.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
 			# evidence: {"classes/context_area.php":["private static function guard_existing_locked(?array $existing, string $path): void {","* @param ?array $existing Result of {@see private_files_storage_port::read()}. Type: array{content:string}|null."]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
@@ -910,15 +901,6 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/webdav_storage_port.php
 
 		-
-			# reason: resolve_host() coalesces fingerprint_of(instanceid)[server] to empty string for diagnostic output, although fingerprint_of() declares server required. Reconcile the defensive diagnostic lookup with the validated fingerprint contract.
-			# evidence: {"classes/webdav_storage_port.php":["return (string) (webdav_instance::fingerprint_of($this->instanceid)['server'] ?? '');"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Offset ''server'' on array\{server\: string, basepath\: string, account\: string\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: ../html/public/local/coursepilot/classes/webdav_storage_port.php
-
-		-
 			# reason: read()/write()/append() coalesce PROPFIND timemodified to zero when computing checksums; the WebDAV client declares that key always present. Reconcile the defensive checksum fallback with the actual metadata contract.
 			# evidence: {"classes/webdav_storage_port.php":["'checksum' => pointer_reader::external_checkvalue($entry['etag'] ?? null, $entry['timemodified'] ?? 0),","'checksum' => pointer_reader::external_checkvalue($written['etag'] ?? null, $written['timemodified'] ?? 0),"]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
@@ -1135,42 +1117,6 @@ parameters:
 			path: ../html/public/local/coursepilot/tests/cm_references_test.php
 
 		-
-			# reason: append() returns @return array; the outer or nested array still has no value type. Complete that return contract; this is typing debt, including on adapter doubles.
-			# evidence: {"tests/context_area_pending_test.php":["public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {","* @return array"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\storage_port@anonymous/tests/context_area_pending_test\.php\:144\:\:append\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/context_area_pending_test.php
-
-		-
-			# reason: list() returns @return array; the outer or nested array still has no value type. Complete that return contract; this is typing debt, including on adapter doubles.
-			# evidence: {"tests/context_area_pending_test.php":["public function list(storage_area $area, string $path): array {","* @return array"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\storage_port@anonymous/tests/context_area_pending_test\.php\:144\:\:list\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/context_area_pending_test.php
-
-		-
-			# reason: read() returns @return ?array; the outer or nested array still has no value type. Complete that return contract; this is typing debt, including on adapter doubles.
-			# evidence: {"tests/context_area_pending_test.php":["public function read(storage_area $area, string $path): ?array {","* @return ?array"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\storage_port@anonymous/tests/context_area_pending_test\.php\:144\:\:read\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/context_area_pending_test.php
-
-		-
-			# reason: write() returns @return array; the outer or nested array still has no value type. Complete that return contract; this is typing debt, including on adapter doubles.
-			# evidence: {"tests/context_area_pending_test.php":["public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {","* @return array"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\storage_port@anonymous/tests/context_area_pending_test\.php\:144\:\:write\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/context_area_pending_test.php
-
-		-
 			# reason: create_instance() is called on the concrete generator returned by 'mod_page', 'mod_quiz', but Moodle declares get_plugin_generator() as component_generator_base, which lacks this method. The attached call and receiver assignment identify the concrete generator; improve its static return typing/stubs.
 			# evidence: {"tests/dispatcher_test.php":["$page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance([","$quiz = $this->getDataGenerator()->get_plugin_generator('mod_quiz')->create_instance(['course' => $course->id]);","$page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);"]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
@@ -1250,15 +1196,6 @@ parameters:
 			identifier: method.notFound
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/add_questions_to_quiz_test.php
-
-		-
-			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
-			# evidence: {"tests/external/append_context_file_test.php":["public function request(","* @param array $headers The headers."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/external/append_context_file_test\.php\:473\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/append_context_file_test.php
 
 		-
 			# reason: The test includes lang/en/local_coursepilot.php into $string and reads contextfileappended. PHPStan keeps the initial array{} because it does not infer assignments from that language-file include; explicitly type the loaded string table.
@@ -1637,51 +1574,6 @@ parameters:
 			identifier: method.notFound
 			count: 1
 			path: ../html/public/local/coursepilot/tests/external/update_quiz_settings_test.php
-
-		-
-			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
-			# evidence: {"tests/external/write_context_file_test.php":["public function request(","* @param array $headers The headers."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/external/write_context_file_test\.php\:1016\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
-
-		-
-			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
-			# evidence: {"tests/external/write_context_file_test.php":["public function request(","* @param array $headers The headers."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/external/write_context_file_test\.php\:1078\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
-
-		-
-			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
-			# evidence: {"tests/external/write_context_file_test.php":["public function request(","* @param array $headers The headers."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/external/write_context_file_test\.php\:1140\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
-
-		-
-			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
-			# evidence: {"tests/external/write_context_file_test.php":["public function request(","* @param array $headers The headers."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/external/write_context_file_test\.php\:1601\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
-
-		-
-			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
-			# evidence: {"tests/external/write_context_file_test.php":["public function request(","* @param array $headers The headers."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/external/write_context_file_test\.php\:877\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/external/write_context_file_test.php
 
 		-
 			# reason: The test includes lang/en/local_coursepilot.php into $string and reads contextfilechanged. PHPStan keeps the initial array{} because it does not infer assignments from that language-file include; explicitly type the loaded string table.
@@ -2222,24 +2114,6 @@ parameters:
 			identifier: method.alreadyNarrowedType
 			count: 1
 			path: ../html/public/local/coursepilot/tests/webdav/webdav_setup_steps_test.php
-
-		-
-			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
-			# evidence: {"tests/webdav_storage_port_test.php":["public function request(","* @param array $headers The headers."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav_storage_port_test\.php\:106\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php
-
-		-
-			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
-			# evidence: {"tests/webdav_storage_port_test.php":["public function request(","* @param array $headers The headers."]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/webdav_storage_port_test\.php\:163\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../html/public/local/coursepilot/tests/webdav_storage_port_test.php
 
 		-
 			# reason: cohort_add_member() is Moodle cohort API from cohort/lib.php, loaded by the test bootstrap/remote_access code but outside phpstan.neon scanDirectories. Add the core declaration to the static scan to remove this loading debt.
