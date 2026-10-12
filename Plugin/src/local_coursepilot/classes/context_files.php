@@ -51,7 +51,7 @@ final class context_files {
     public const MAX_WRITE_BYTES = 1024 * 1024;
 
     /** @var string Temporary-file prefix used by {@see replace()}. */
-    public const TEMP_PREFIX = storage_anchor::TEMP_PREFIX;
+    public const TEMP_PREFIX = private_files_storage_port::TEMP_PREFIX;
 
     /** @var string Legacy component before migration (#407). */
     public const LEGACY_COMPONENT = 'local_coursepilot';
@@ -166,7 +166,7 @@ final class context_files {
      * @throws \required_capability_exception
      */
     public static function require_manage_own_files(): void {
-        storage_anchor::require_manage_own_files();
+        private_files_storage_port::require_manage_own_files();
     }
 
     /**
@@ -178,7 +178,7 @@ final class context_files {
      *         (quota disabled, unlimited, or moodle/user:ignoreuserquota).
      */
     public static function remaining_quota(): ?int {
-        return storage_anchor::remaining_quota();
+        return private_files_storage_port::remaining_quota();
     }
 
     /**
@@ -190,19 +190,19 @@ final class context_files {
      * @return mixed[]
      */
     public static function filerecord(int $contextid, string $directory, string $filename): array {
-        return storage_anchor::filerecord($contextid, $directory, $filename);
+        return private_files_storage_port::filerecord($contextid, $directory, $filename);
     }
 
     /**
      * Replaces a context file's content, shared by all write endpoints.
-     * See {@see storage_anchor::replace()} for temporary-file sequencing rationale.
+     * See {@see private_files_storage_port::replace()} for temporary-file sequencing rationale.
      *
      * @param \stored_file|null $existing Existing file, if present.
      * @param mixed[] $filerecord Target from {@see filerecord()}.
      * @param string $content Complete new content.
      */
     public static function replace(?\stored_file $existing, array $filerecord, string $content): void {
-        storage_anchor::replace($existing, $filerecord, $content);
+        private_files_storage_port::replace($existing, $filerecord, $content);
     }
 
     /**

@@ -198,3 +198,20 @@ ersetzen ausschließlich `storage_port` beziehungsweise den WebDAV-Transport; da
 der Ausstandsnotiz läuft gegen die echte Moodle-Testdatenbank. `storage_failure` trägt eine
 neutrale Fehlerklasse und interne Diagnostik. Adapter legen keine Ausstandsnotiz an; die
 Fachseite übersetzt Ausfälle einmal und erhält die bisherigen Werkzeugfehlercodes.
+
+## Ablageort-Anker und Datei-Grundfunktionen
+
+`storage_anchor` löst Ortszeiger und Pfade auf und wählt den Ablage-Port. Datei-I/O,
+Quota und sichere Ersetzung liegen in `private_files_storage_port`; bestehende
+Kontext-/Material-Fassaden delegieren dorthin. Die Ortswahl liest Kandidatenordner
+und legt Ordnerketten über `webdav_storage_port` an. Sie behält Bestätigung,
+Verlauf, Altdatenprüfung und ihre bisherigen Fehlercodes.
+
+Die Port-Vertragstests sowie `location_selection_test` prüfen das Verhalten gegen
+die echte Moodle-Testdatenbank; nur der externe WebDAV-Transport wird ersetzt.
+Die bisherigen Kontext-, Material- und Ausstandsnotiztests decken die verlagerten
+Datei-Grundfunktionen ausdrücklich per `CoversClass` ab.
+
+`file_storage.stub` korrigiert für PHPStan den als `int` dokumentierten
+Verzeichnispfad von Moodles `get_directory_files()` zu `string`. Der Stub
+unterdrückt keine Befunde; die bisherige Ausnahme im Anker entfällt.

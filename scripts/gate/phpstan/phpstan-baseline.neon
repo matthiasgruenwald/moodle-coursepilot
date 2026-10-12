@@ -856,15 +856,6 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/storage_anchor.php
 
 		-
-			# reason: directory_files() supplies its string $directory as the fifth filepath argument to get_directory_files(); the scanned core docblock types that path slot as int. Verify and correct this boundary contract.
-			# evidence: {"classes/storage_anchor.php":["            self::own_context()->id,\n            self::COMPONENT,\n            self::FILEAREA,\n            self::ITEMID,\n            $directory,\n            $recursive,\n            $includedirs,\n            'filepath, filename'\n        );\n    }","return get_file_storage()->get_directory_files("]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Parameter \#5 \$filepath of method file_storage\:\:get_directory_files\(\) expects int, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: ../html/public/local/coursepilot/classes/storage_anchor.php
-
-		-
 			# reason: schemas() returns @return array<string, array{properties: array, required?: array}>; the outer or nested array still has no value type. Complete that return contract; this is typing debt, including on adapter doubles.
 			# evidence: {"classes/tool_registry.php":["public static function schemas(): array {","* @return array<string, array{properties: array, required?: array}>"]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714

@@ -19,16 +19,10 @@ namespace local_coursepilot;
 use local_coursepilot\webdav\webdav_setup_steps;
 
 /**
- * Shared storage anchor (#444, storage specification #442 §1/§4/§5):
- * centralizes component/filearea/itemid, own user context, root/segment
- * validation, path conversion, capabilities, quota and file records, plus
- * temporary-file write sequencing formerly duplicated in
- * {@see context_files} and {@see material_files}.
- *
- * A {@see storage_area} is a value record, not a type. The original
- * Private-Files-only design required no separate adapter interface
- * (ADR #444). Area facades retain their existing public interfaces and
- * delegate shared operations here.
+ * Resolves owned storage locations from configured roots and context pointers.
+ * Paths remain inside the selected root; only this class selects an adapter.
+ * Pointer metadata is persisted through the Private Files adapter. File I/O,
+ * quota and replacement sequencing belong to {@see private_files_storage_port}.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -43,9 +37,6 @@ final class storage_anchor {
 
     /** @var int Fixed item ID; no area has other items. */
     public const ITEMID = 0;
-
-    /** @var string Temporary-file prefix in {@see replace()}. */
-    public const TEMP_PREFIX = '.coursepilot-new-';
 
     /**
      * @var string Anchor setting name (#445): the only location that cannot be
@@ -70,11 +61,11 @@ final class storage_anchor {
     public const POINTER_FILENAME = '.coursepilot-location.json';
 
     /**
-     * @var string Pending-note filename in the anchor folder (#492,
-     *      ADR 0023, Spec #486 §8/§10), beside the pointer.
+     * @var string Pending-note filename in the anchor folder (ADR 0023),
+     *      beside the pointer.
      *      For the same reason, leading dot and .json extension
      *      exclude it from the context-area .md rule and
-     *      listing ({@see list_entries()}).
+     *      listing ({@see private_files_storage_port::list_entries()}).
      */
     public const PENDING_FILENAME = '.coursepilot-pending.json';
 
@@ -158,25 +149,18 @@ final class storage_anchor {
 
         // Without a logged-in person there are no owned Private Files containing
         // a pointer. Pure resolution (tests without setUser()) stays DB-free
-        // as before #445: default root, without own_context() access.
+        // as before: default root, without own_context() access.
         if (empty($USER->id)) {
             return null;
         }
 
         $anchor = self::configured_root(self::ANCHOR_ROOTSETTING, self::ANCHOR_DEFAULT_ROOT);
-        $file = get_file_storage()->get_file(
-            self::own_context()->id,
-            self::COMPONENT,
-            self::FILEAREA,
-            self::ITEMID,
-            $anchor,
-            self::POINTER_FILENAME
-        );
+        $file = private_files_storage_port::read_content($anchor, self::POINTER_FILENAME);
         if (!$file) {
             return null;
         }
 
-        $decoded = json_decode($file->get_content(), true);
+        $decoded = json_decode($file['content'], true);
         if (!is_array($decoded) || json_last_error() !== JSON_ERROR_NONE || array_is_list($decoded)) {
             throw new \moodle_exception('pointerunreadable', 'local_coursepilot', '', self::POINTER_FILENAME);
         }
@@ -268,12 +252,12 @@ final class storage_anchor {
     }
 
     /**
-     * Writes a complete pointer (#494), exclusively through deliberate
+     * Writes a complete pointer, exclusively through deliberate
      * location selection on its Moodle profile page
-     * ({@see \local_coursepilot\location_selection}, Spec #442 §3). Never from
-     * consent or chat (CONTEXT.md, #476), and no Coursepilot tool calls it.
+     * ({@see \local_coursepilot\location_selection}, Spec §3). Never from
+     * consent or chat (CONTEXT.md), and no Coursepilot tool calls it.
      * Moves no files, only replaces the small pointer with the usual
-     * temporary-file choreography in {@see replace()}.
+     * temporary-file choreography in {@see private_files_storage_port::replace()}.
      *
      * @param mixed[] $document Complete pointer document (context_area,
      *        material_store, location_history).
@@ -320,16 +304,7 @@ final class storage_anchor {
      */
     private static function write_pointer_file(string $content): void {
         $anchor = self::configured_root(self::ANCHOR_ROOTSETTING, self::ANCHOR_DEFAULT_ROOT);
-        $contextid = self::own_context()->id;
-        $existing = get_file_storage()->get_file(
-            $contextid,
-            self::COMPONENT,
-            self::FILEAREA,
-            self::ITEMID,
-            $anchor,
-            self::POINTER_FILENAME
-        );
-        self::replace($existing ?: null, self::filerecord($contextid, $anchor, self::POINTER_FILENAME), $content);
+        private_files_storage_port::write_content($anchor, self::POINTER_FILENAME, $content);
     }
 
     /**
@@ -469,309 +444,6 @@ final class storage_anchor {
             return $extra;
         }
         return $extra === '' ? $base : $base . '/' . $extra;
-    }
-
-    /**
-     * Standard own-file capability for every write endpoint regardless of
-     * area: both use Moodle Private Files and its permissions.
-     *
-     * @throws \required_capability_exception
-     */
-    public static function require_manage_own_files(): void {
-        require_capability('moodle/user:manageownfiles', self::own_context());
-    }
-
-    /**
-     * Remaining user quota in bytes. file_storage does not itself enforce
-     * $CFG->userquota, unlike core UI. Independent of the area root: quota
-     * counts all user storage, not one subfolder.
-     *
-     * @return int|null Remaining bytes, or null if no limit applies
-     *         (quota disabled, unlimited or moodle/user:ignoreuserquota).
-     */
-    public static function remaining_quota(): ?int {
-        global $CFG;
-
-        $quota = (int) ($CFG->userquota ?? 0);
-        if ($quota <= 0 || has_capability('moodle/user:ignoreuserquota', self::own_context())) {
-            return null;
-        }
-        return max(0, $quota - (int) file_get_user_used_space());
-    }
-
-    /**
-     * Rejects writes that would exceed the user quota.
-     *
-     * @param storage_area $area
-     * @param int $additionalbytes Increase over the current size.
-     * @throws \moodle_exception area quotaerrorkey
-     */
-    public static function require_quota(storage_area $area, int $additionalbytes): void {
-        $remaining = self::remaining_quota();
-        if ($remaining === null || $additionalbytes <= $remaining) {
-            return;
-        }
-        // Deliberate shortcut - ponytail: include page for every area even though materialquotaexceeded
-        // does not currently use it. A per-area branch would cost more code than
-        // the unused key (get_string ignores it). Split only when another area
-        // must explicitly omit the page.
-        throw new \moodle_exception($area->quotaerrorkey, 'local_coursepilot', '', (object) [
-            'remaining' => format_float($remaining / 1048576, 1),
-            'needed' => format_float($additionalbytes / 1048576, 1),
-            'page' => webdav_setup_steps::LOCATION_SELECTION_PAGE,
-        ]);
-    }
-
-    /**
-     * Moodle file record for a file in an area.
-     *
-     * @param int $contextid
-     * @param string $directory
-     * @param string $filename
-     * @return mixed[]
-     */
-    public static function filerecord(int $contextid, string $directory, string $filename): array {
-        return [
-            'contextid' => $contextid,
-            'component' => self::COMPONENT,
-            'filearea' => self::FILEAREA,
-            'itemid' => self::ITEMID,
-            'filepath' => $directory,
-            'filename' => $filename,
-        ];
-    }
-
-    /**
-     * Lists one level as location-independent values (#487): name, type, size,
-     * MIME type, contenthash and modification time. No stored_file leaves
-     * this layer. The pointer is not a working file and stays excluded.
-     *
-     * No personal-data locked flag: that is context-area policy (ADR 0011),
-     * not anchor policy. Callers can use {@see read_content()} to inspect it.
-     *
-     * @param string $directory Result of {@see resolve_directory()}.
-     * @return array<int, array{name: string, type: string, size: int, mimetype: string,
-     *         contenthash: string, timemodified: int}>
-     */
-    /**
-     * Moodle file behind directory/filename, or null. Shared lookup for
-     * {@see read_content()}, {@see write()} and {@see append()}.
-     *
-     * @param string $directory
-     * @param string $filename
-     * @return \stored_file|null Never a directory placeholder.
-     */
-    private static function find_file(string $directory, string $filename): ?\stored_file {
-        $file = get_file_storage()->get_file(
-            self::own_context()->id,
-            self::COMPONENT,
-            self::FILEAREA,
-            self::ITEMID,
-            $directory,
-            $filename
-        );
-        return ($file && !$file->is_directory()) ? $file : null;
-    }
-
-    /**
-     * Recursively lists files without folders (#488) for
-     * {@see \local_coursepilot\external\report_loose_material_files}, which
-     * needs every file regardless of nesting. Uses timecreated rather than
-     * timemodified (age since creation), plus full directories so callers
-     * can derive client paths through {@see relative_file()}. The pointer
-     * is not filtered here (unchanged legacy behavior): it can only live
-     * in the anchor root, outside material cleanup's searched area.
-     *
-     * @param string $directory Result of {@see resolve_directory()}.
-     * @return array<int, array{directory: string, name: string, size: int,
-     *         contenthash: string, timecreated: int}>
-     */
-    public static function list_entries_recursive(string $directory): array {
-        $entries = [];
-        foreach (self::directory_files($directory, true, false) as $file) {
-            $entries[] = [
-                'directory' => $file->get_filepath(),
-                'name' => $file->get_filename(),
-                'size' => (int) $file->get_filesize(),
-                'contenthash' => $file->get_contenthash(),
-                'timecreated' => (int) $file->get_timecreated(),
-            ];
-        }
-        return $entries;
-    }
-
-    /**
-     * Shared get_directory_files() for {@see list_entries()} and
-     * {@see list_entries_recursive()} (#488 standards review). Only recursive,
-     * includedirs and the result shape differ.
-     *
-     * @param string $directory
-     * @param bool $recursive
-     * @param bool $includedirs
-     * @return \stored_file[]
-     */
-    private static function directory_files(string $directory, bool $recursive, bool $includedirs): array {
-        return get_file_storage()->get_directory_files(
-            self::own_context()->id,
-            self::COMPONENT,
-            self::FILEAREA,
-            self::ITEMID,
-            $directory,
-            $recursive,
-            $includedirs,
-            'filepath, filename'
-        );
-    }
-
-    /**
-     * Lists entries.
-     *
-     * @param string $directory The directory.
-     * @return mixed[]
-     */
-    public static function list_entries(string $directory): array {
-        $entries = [];
-        foreach (self::directory_files($directory, false, true) as $file) {
-            if (
-                !$file->is_directory()
-                    && ($file->get_filename() === self::POINTER_FILENAME || $file->get_filename() === self::PENDING_FILENAME)
-            ) {
-                continue;
-            }
-            if ($file->is_directory()) {
-                // Note: get_directory_files() excludes the requested directory's own
-                // placeholder (:dirid); only immediate subfolders appear here.
-                $entries[] = [
-                    'name' => trim(substr($file->get_filepath(), strlen($directory)), '/'),
-                    'type' => 'folder',
-                    'size' => 0,
-                    'mimetype' => '',
-                    'contenthash' => '',
-                    'timemodified' => 0,
-                ];
-                continue;
-            }
-            $entries[] = [
-                'name' => $file->get_filename(),
-                'type' => 'file',
-                'size' => (int) $file->get_filesize(),
-                'mimetype' => (string) $file->get_mimetype(),
-                'contenthash' => $file->get_contenthash(),
-                'timemodified' => (int) $file->get_timemodified(),
-            ];
-        }
-        return $entries;
-    }
-
-    /**
-     * Reads location-independent file values (#487), never returns a Moodle file object.
-     *
-     * @param string $directory Result of {@see resolve_directory()}.
-     * @param string $filename
-     * @return array{content: string, mimetype: string, size: int, contenthash: string,
-     *         timemodified: int}|null null for missing files or directory placeholders.
-     */
-    public static function read_content(string $directory, string $filename): ?array {
-        $file = self::find_file($directory, $filename);
-        if (!$file) {
-            return null;
-        }
-        return [
-            'content' => $file->get_content(),
-            'mimetype' => (string) $file->get_mimetype(),
-            'size' => (int) $file->get_filesize(),
-            'contenthash' => $file->get_contenthash(),
-            'timemodified' => (int) $file->get_timemodified(),
-        ];
-    }
-
-    /**
-     * Creates/replaces full file content (#487). Callers validate path, extension,
-     * size, personal-data policy, concurrency and quota using
-     * {@see read_content()} before writing. This method only persists the write.
-     *
-     * @param string $directory Result of {@see resolve_directory()}.
-     * @param string $filename
-     * @param string $content Complete new content.
-     * @param mixed[] $recordoverrides Additional/overriding file-record fields
-     *        (#488), e.g. the source field for an image crop
-     *        ({@see \local_coursepilot\external\crop_material_file}).
-     *        Empty leaves the ordinary {@see filerecord()} record
-     *        unchanged.
-     */
-    public static function write(string $directory, string $filename, string $content, array $recordoverrides = []): void {
-        $contextid = self::own_context()->id;
-        $existing = self::find_file($directory, $filename);
-        $filerecord = array_merge(self::filerecord($contextid, $directory, $filename), $recordoverrides);
-        self::replace($existing, $filerecord, $content);
-    }
-
-    /**
-     * Deletes a file if present (#488). Callers validate capability and existence
-     * of every requested path through {@see read_content()} before deleting.
-     *
-     * @param string $directory Result of {@see resolve_directory()}.
-     * @param string $filename
-     * @return bool true if deleted; false if no file existed.
-     */
-    public static function delete(string $directory, string $filename): bool {
-        $file = self::find_file($directory, $filename);
-        if (!$file) {
-            return false;
-        }
-        $file->delete();
-        return true;
-    }
-
-    /**
-     * Appends content, creating the file if absent (#487). Like {@see write()},
-     * validation belongs to callers. Rereads stored content to concatenate it:
-     * the caller received values, not a reusable stored_file. Returns the
-     * actual persisted total size, not an estimate from the earlier read;
-     * concurrent changes can differ (Spec 0016 §5.3 excludes locks).
-     *
-     * @param string $directory Result of {@see resolve_directory()}.
-     * @param string $filename
-     * @param string $content Content to append.
-     * @return int Total file size after appending, in bytes.
-     */
-    public static function append(string $directory, string $filename, string $content): int {
-        $contextid = self::own_context()->id;
-        $existing = self::find_file($directory, $filename);
-        $newcontent = $existing ? $existing->get_content() . $content : $content;
-        self::replace($existing, self::filerecord($contextid, $directory, $filename), $newcontent);
-        return strlen($newcontent);
-    }
-
-    /**
-     * Shared content replacement for all write endpoints.
-     *
-     * Put new bytes into the file pool under a temporary name before deleting
-     * the old reference. Delete-then-create cannot be safely rolled back:
-     * stored_file::delete() physically removes the last referenced blob,
-     * while a DB transaction restores only its row, leaving a missing blob
-     * and a lost teacher file without a successful overwrite.
-     *
-     * If interrupted between deletion and rename, the complete new content
-     * remains visible under the temporary name in Private Files. Untidy,
-     * but preserves the content.
-     *
-     * @param \stored_file|null $existing Existing file, if present.
-     * @param mixed[] $filerecord Target from {@see filerecord()}.
-     * @param string $content Complete new content.
-     */
-    public static function replace(?\stored_file $existing, array $filerecord, string $content): void {
-        $fs = get_file_storage();
-        if (!$existing) {
-            $fs->create_file_from_string($filerecord, $content);
-            return;
-        }
-
-        $temprecord = $filerecord;
-        $temprecord['filename'] = self::TEMP_PREFIX . uniqid() . '-' . $filerecord['filename'];
-        $new = $fs->create_file_from_string($temprecord, $content);
-        $existing->delete();
-        $new->rename($filerecord['filepath'], $filerecord['filename']);
     }
 
     /**

@@ -26,6 +26,7 @@ namespace local_coursepilot;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(material_files::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
 final class material_files_test extends \advanced_testcase {
     public function test_resolve_directory_defaults_to_root(): void {
         $this->resetAfterTest();

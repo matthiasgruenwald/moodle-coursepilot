@@ -55,16 +55,12 @@ final class webdav_storage_port implements storage_port {
      * @throws webdav_error
      */
     public static function browse_location(int $instanceid, string $path): array {
-        $instance = webdav_instance::resolve_owned($instanceid);
-        try {
-            $entries = $instance->client()->propfind($instance->directory_url($path), 1);
-        } catch (webdav_error $e) {
-            $entries = webdav_error::empty_when_missing($e, [], static fn (webdav_error $error): webdav_error => $error);
-        }
+        $entries = self::list_location($instanceid, $path);
         if ($path === '') {
             return ['entries' => $entries, 'iserv' => webdav_instance::is_iserv_listing($entries)];
         }
         try {
+            $instance = webdav_instance::resolve_owned($instanceid);
             $root = $instance->client()->propfind($instance->directory_url(''), 1);
             $iserv = webdav_instance::is_iserv_listing($root);
         } catch (webdav_error $e) {
@@ -72,6 +68,40 @@ final class webdav_storage_port implements storage_port {
             $iserv = false;
         }
         return ['entries' => $entries, 'iserv' => $iserv];
+    }
+
+    /**
+     * Lists a candidate location without pointer checks or IServ detection.
+     * Missing directories are empty; other transport failures remain explicit.
+     *
+     * @param int $instanceid Owned repository instance.
+     * @param string $path Validated instance-relative directory.
+     * @return array<int, array{name: string, type: string}>
+     * @throws webdav_error
+     */
+    public static function list_location(int $instanceid, string $path): array {
+        $instance = webdav_instance::resolve_owned($instanceid);
+        try {
+            return $instance->client()->propfind($instance->directory_url($path), 1);
+        } catch (webdav_error $e) {
+            return webdav_error::empty_when_missing($e, [], static fn (webdav_error $error): webdav_error => $error);
+        }
+    }
+
+    /**
+     * Creates missing folder levels for an explicit location selection.
+     * Existing directories remain untouched; no pointer is resolved here.
+     *
+     * @param int $instanceid Owned repository instance.
+     * @param string[] $segments Validated instance-relative folder segments.
+     * @throws webdav_error
+     */
+    public static function create_location_directory(int $instanceid, array $segments): void {
+        if (empty($segments)) {
+            return;
+        }
+        $instance = webdav_instance::resolve_owned($instanceid);
+        $instance->client()->mkcol_chain($instance->directory_url(''), $segments);
     }
 
     /**

@@ -237,18 +237,18 @@ final class material_files {
 
     /**
      * Recursively list material files, without directories, regardless of
-     * location (#488), for external\report_loose_material_files.
+     * location, for external\report_loose_material_files.
      *
      * @param string $directory Result of {@see resolve_directory()}.
      * @return array<int, array{directory: string, name: string, size: int,
      *         contenthash: string, timecreated: int}>
      */
     public static function list_entries_recursive(string $directory): array {
-        return storage_anchor::list_entries_recursive($directory);
+        return private_files_storage_port::list_entries_recursive($directory);
     }
 
     /**
-     * Read material content regardless of location (#488).
+     * Read material content regardless of location.
      *
      * @param string $directory Result of {@see resolve_directory()}.
      * @param string $filename
@@ -256,7 +256,7 @@ final class material_files {
      *         timemodified: int}|null null if the file is missing or is a directory.
      */
     public static function read_content(string $directory, string $filename): ?array {
-        return storage_anchor::read_content($directory, $filename);
+        return private_files_storage_port::read_content($directory, $filename);
     }
 
     /**
@@ -487,18 +487,18 @@ final class material_files {
      * @throws \required_capability_exception
      */
     public static function require_manage_own_files(): void {
-        storage_anchor::require_manage_own_files();
+        private_files_storage_port::require_manage_own_files();
     }
 
     /**
      * Remaining user quota in bytes, independent of root, as in
-     * context_files::remaining_quota(). Reuse storage_anchor because the quota
+     * context_files::remaining_quota(). Reuse private_files_storage_port because the quota
      * covers the whole user rather than a subdirectory.
      *
      * @return int|null Remaining bytes, or null when unlimited.
      */
     public static function remaining_quota(): ?int {
-        return storage_anchor::remaining_quota();
+        return private_files_storage_port::remaining_quota();
     }
 
     /**
@@ -509,7 +509,7 @@ final class material_files {
      * @throws \moodle_exception materialquotaexceeded
      */
     public static function require_quota(int $additionalbytes): void {
-        storage_anchor::require_quota(self::area(), $additionalbytes);
+        private_files_storage_port::require_quota(self::area(), $additionalbytes);
     }
 
     /**
@@ -567,7 +567,7 @@ final class material_files {
      * @return mixed[]
      */
     public static function filerecord(int $contextid, string $directory, string $filename): array {
-        return storage_anchor::filerecord($contextid, $directory, $filename);
+        return private_files_storage_port::filerecord($contextid, $directory, $filename);
     }
 
     /**
@@ -659,8 +659,8 @@ final class material_files {
             // The same filename was referenced again: newest content wins.
             $existing->delete();
         }
-        // Deliberate shortcut - ponytail: read_content() intentionally returns no stored_file (#487/#488;
-        // see storage_anchor::read_content()). Copy only MIME type explicitly,
+        // Deliberate shortcut - ponytail: read_content() intentionally returns no stored_file;
+        // see private_files_storage_port::read_content(). Copy only MIME type explicitly,
         // leaving license/author to draft defaults. Material uploads through these
         // tools already use default metadata. Upgrade to stored_file copies with
         // full metadata when a real case demonstrates the difference.
@@ -755,7 +755,7 @@ final class material_files {
     }
 
     /**
-     * Replace material content through storage_anchor::replace(), avoiding
+     * Replace material content through private_files_storage_port::replace(), avoiding
      * duplicated file-system logic. It stages a temporary file before deleting
      * the old file (Spec 0016 §5.3), regardless of context/material roots.
      *
@@ -764,7 +764,7 @@ final class material_files {
      * @param string $content Complete new content.
      */
     public static function replace(?\stored_file $existing, array $filerecord, string $content): void {
-        storage_anchor::replace($existing, $filerecord, $content);
+        private_files_storage_port::replace($existing, $filerecord, $content);
     }
 
     /**
@@ -772,8 +772,6 @@ final class material_files {
      * attachments with preceding extension/concurrency checks) and
      * export_questions_xml (complete XML export without the upload allowlist,
      * which deliberately excludes .xml; see resolve_writable_file()).
-     * Previously these endpoints duplicated size/quota/write orchestration
-     * (#437 standards review).
      *
      * @param string $directory Result of resolve_file()/resolve_writable_file().
      * @param string $filename
@@ -782,7 +780,7 @@ final class material_files {
      *        (usually already known by the caller, e.g. from its own concurrency or
      *        created check through read_content()).
      * @param mixed[] $recordoverrides Additional/overriding file record fields; see
-     *        storage_anchor::write(), e.g. a crop's source field.
+     *        private_files_storage_port::write_content(), e.g. a crop's source field.
      * @return string|null Quota warning, or null when no warning is needed.
      * @throws \moodle_exception materialquotaexceeded
      */
@@ -798,7 +796,7 @@ final class material_files {
         self::require_quota($additionalbytes);
         $warning = self::quota_warning($additionalbytes);
 
-        storage_anchor::write($directory, $filename, $content, $recordoverrides);
+        private_files_storage_port::write_content($directory, $filename, $content, $recordoverrides);
 
         return $warning;
     }

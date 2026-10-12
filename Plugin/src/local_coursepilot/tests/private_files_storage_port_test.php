@@ -43,6 +43,31 @@ use local_coursepilot\tests\storage_port_contract_test;
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 final class private_files_storage_port_test extends storage_port_contract_test {
     /**
+     * Shared file writes retain metadata and stay isolated to the current person.
+     */
+    public function test_file_primitives_replace_content_and_isolate_users(): void {
+        $directory = '/storageport-contract-test/';
+        private_files_storage_port::write_content($directory, 'plan.md', '# First', ['source' => 'original']);
+        private_files_storage_port::write_content($directory, 'plan.md', '# Updated', ['source' => 'retained']);
+
+        $this->assertSame('# Updated', $this->port()->read($this->area(), 'plan.md')['content']);
+        $this->assertSame('plan.md', private_files_storage_port::list_entries_recursive($directory)[0]['name']);
+        $file = get_file_storage()->get_file(
+            storage_anchor::own_context()->id,
+            'user',
+            'private',
+            0,
+            $directory,
+            'plan.md'
+        );
+        $this->assertSame('retained', $file->get_source());
+
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->assertNull($this->port()->read($this->area(), 'plan.md'));
+        $this->assertSame([], private_files_storage_port::list_entries_recursive($directory));
+    }
+
+    /**
      * Provides port.
      *
      * @return storage_port

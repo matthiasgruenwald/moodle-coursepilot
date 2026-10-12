@@ -60,6 +60,21 @@ final class webdav_storage_port_test extends storage_port_contract_test {
     }
 
     /**
+     * Location selection creates every missing level and preserves existing files.
+     */
+    public function test_create_location_directory_preserves_existing_content(): void {
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $this->transport);
+        webdav_storage_port::create_location_directory($this->instanceid, ['Teaching', 'Context']);
+        $port = new webdav_storage_port($this->instanceid, 'Teaching/Context', $this->transport);
+        $port->write($this->area(), 'plan.md', '# Kept');
+
+        webdav_storage_port::create_location_directory($this->instanceid, ['Teaching', 'Context']);
+
+        $this->assertSame('# Kept', $port->read($this->area(), 'plan.md')['content']);
+        $this->assertSame('plan.md', $port->list($this->area(), '')[0]['name']);
+    }
+
+    /**
      * Provides port.
      *
      * @return storage_port

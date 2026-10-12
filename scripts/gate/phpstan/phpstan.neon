@@ -21,6 +21,8 @@ parameters:
         - /var/www/html/vendor/phpunit
     bootstrapFiles:
         - /var/www/phpstan-config/bootstrap.php
+    stubFiles:
+        - /var/www/phpstan-config/file_storage.stub
     tmpDir: /tmp/phpstan
     # Entfaellt, sobald die Baseline schrumpft und die Ratsche (Folgeticket) veraltete Eintraege meldet.
     reportUnmatchedIgnoredErrors: false

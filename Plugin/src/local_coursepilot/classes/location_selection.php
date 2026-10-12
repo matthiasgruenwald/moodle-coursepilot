@@ -240,31 +240,17 @@ final class location_selection {
     }
 
     /**
-     * Shared PROPFIND for legacy detection and {@see old_location_has_entries()}
-     * (#517). Missing directories are empty; actual access/network failures
-     * return the location-selection error.
+     * Reads candidate-folder entries through the adapter, preserving page error keys.
      *
-     * @param \local_coursepilot\webdav\resolved_webdav_instance $instance
-     * @param string $relative
-     * @return mixed[]
+     * @param int $instanceid Owned repository instance.
+     * @param string $relative Validated instance-relative directory.
+     * @return array<int, array{name: string, type: string}>
      */
-    private static function fetch_raw_entries(
-        \local_coursepilot\webdav\resolved_webdav_instance $instance,
-        string $relative
-    ): array {
+    private static function fetch_raw_entries(int $instanceid, string $relative): array {
         try {
-            return $instance->client()->propfind($instance->directory_url($relative), 1);
+            return webdav_storage_port::list_location($instanceid, $relative);
         } catch (webdav_error $e) {
-            // Teacher-facing error instead of the model-oriented context-gap wording
-            // (#526, Spec #486 §5/§8): shown directly on location selection.
-            return webdav_error::empty_when_missing(
-                $e,
-                [],
-                static fn (webdav_error $e): \moodle_exception => pointer_reader::webdav_exception(
-                    $e,
-                    'locationselectionexternalerror'
-                )
-            );
+            throw pointer_reader::webdav_exception($e, 'locationselectionexternalerror');
         }
     }
 
@@ -522,7 +508,7 @@ final class location_selection {
     ];
 
     /**
-     * Whether the old context location contains provable entries (#498, Spec §5).
+     * Whether the old context location contains provable entries (Spec §5).
      * Location selection already communicates with both stores while choosing.
      *
      * @param mixed[] $old Type: array{location:string,path:string,instanceid?:int,fingerprint?:array}.
@@ -533,12 +519,13 @@ final class location_selection {
     private static function old_location_has_entries(array $old): bool {
         if ($old['location'] === pointer_location::MOODLE) {
             $directory = '/' . trim((string) $old['path'], '/') . '/';
-            return self::has_context_file(storage_anchor::list_entries($directory));
+            $port = storage_anchor::port_at(pointer_location::moodle($directory));
+            return self::has_context_file($port->list(self::area('context_area'), ''));
         }
         try {
-            $instance = webdav_instance::resolve_owned((int) $old['instanceid']);
             $relative = implode('/', self::validate_segments((string) $old['path']));
-            return self::has_context_file(self::fetch_raw_entries($instance, $relative));
+            $entries = self::fetch_raw_entries((int) $old['instanceid'], $relative);
+            return self::has_context_file($entries);
         } catch (\moodle_exception $e) {
             if (in_array($e->errorcode, self::OLD_LOCATION_INVALID_CODES, true)) {
                 return false;
@@ -662,7 +649,7 @@ final class location_selection {
 
     /**
      * Requires explicit populated context-folder handover on the server
-     * (#518, Spec §5), not only in JavaScript. Empty or unchanged selections
+     * (Spec §5), not only in JavaScript. Empty or unchanged selections
      * need no confirmation, only moves to populated external context folders.
      *
      * Only context_area needs confirmation; material-store changes do not.
@@ -680,9 +667,8 @@ final class location_selection {
         if (!empty($selection[$target]['confirmed'] ?? false)) {
             return;
         }
-        $instance = webdav_instance::resolve_owned((int) $wanted[$target]['instanceid']);
         $relative = (string) $wanted[$target]['path'];
-        if (count(self::fetch_raw_entries($instance, $relative)) > 0) {
+        if (count(self::fetch_raw_entries((int) $wanted[$target]['instanceid'], $relative)) > 0) {
             throw new \moodle_exception('locationselectionfolderconfirmrequired', 'local_coursepilot');
         }
     }
@@ -707,7 +693,7 @@ final class location_selection {
     /**
      * Creates missing instance folder levels through MKCOL (Spec §5).
      * An existing directory counts as success; see
-     * {@see \local_coursepilot\webdav\webdav_client::mkcol()}.
+     * {@see webdav_storage_port::create_location_directory()}.
      *
      * @param int $instanceid
      * @param string $path
@@ -718,9 +704,8 @@ final class location_selection {
         if (empty($segments)) {
             return;
         }
-        $instance = webdav_instance::resolve_owned($instanceid);
         try {
-            $instance->client()->mkcol_chain($instance->directory_url(''), $segments);
+            webdav_storage_port::create_location_directory($instanceid, $segments);
         } catch (webdav_error $e) {
             throw pointer_reader::webdav_exception($e, 'locationselectionexternalerror');
         }
