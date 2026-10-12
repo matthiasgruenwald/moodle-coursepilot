@@ -30,6 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * Real TLS/streaming regressions at the public client lookup boundary.
  */
 #[CoversClass(oauth_lib::class)]
+#[CoversClass(connection::class)]
 final class oauth_cimd_fetch_test extends \advanced_testcase {
     use \local_coursepilot\tests\webdav\webdav_instance_fixture;
     use \local_coursepilot\tests\oauth_budget_race;
@@ -124,7 +125,7 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
             $this->assertSame(3, $this->gets($requests));
 
             $_SERVER['REMOTE_ADDR'] = '192.0.2.3';
-            $token = oauth_lib::handle_token('POST', ['grant_type' => 'authorization_code', 'client_id' => $base . '/c1']);
+            $token = connection::handle_token('POST', ['grant_type' => 'authorization_code', 'client_id' => $base . '/c1']);
             $this->assertSame(429, $token['status'], 'First fetch beyond the site budget.');
             $this->assertSame('temporarily_unavailable', $token['body']['error']);
             $this->assertGreaterThan(0, (int) $token['headers']['Retry-After']);
@@ -136,7 +137,7 @@ final class oauth_cimd_fetch_test extends \advanced_testcase {
 
             // Stored clients keep working without a new fetch while the budget is exhausted.
             $this->assertArrayHasKey('client', oauth_lib::validate_authorize_request($this->authorize_params($base . '/a1')));
-            $this->assertSame(400, oauth_lib::handle_token('POST', ['grant_type' => 'authorization_code',
+            $this->assertSame(400, connection::handle_token('POST', ['grant_type' => 'authorization_code',
                 'client_id' => $base . '/b1'])['status'], 'Known client reaches grant validation, not the budget.');
             $this->assertSame(3, $this->gets($requests));
             $this->assert_no_raw_identifiers();

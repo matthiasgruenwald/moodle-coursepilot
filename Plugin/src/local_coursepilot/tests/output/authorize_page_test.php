@@ -108,13 +108,13 @@ final class authorize_page_test extends \advanced_testcase {
             $this->assertNull(authorize_page::response($params, '', 'deny')->redirecturl->get_param('state'));
             $allowed = authorize_page::response($params, 'opaque-state', 'allow');
             $this->assertSame('opaque-state', $allowed->redirecturl->get_param('state'));
-            $tokens = \local_coursepilot\oauth_lib::exchange_code(
+            $tokens = \local_coursepilot\connection::exchange_code(
                 $allowed->redirecturl->get_param('code'),
                 $clientid,
                 'https://client.example/cb',
                 $verifier
             );
-            $this->assertSame((int) $USER->id, \local_coursepilot\oauth_lib::authenticate_access_token($tokens['access_token']));
+            $this->assertSame((int) $USER->id, \local_coursepilot\connection::authenticate_access_token($tokens['access_token']));
             $this->assertNull(authorize_page::response($params, '', 'allow')->redirecturl->get_param('state'));
         } finally {
             unset($_POST['sesskey']);

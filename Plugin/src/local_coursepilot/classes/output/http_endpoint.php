@@ -96,7 +96,7 @@ final class http_endpoint {
         } else {
             $body = $post;
         }
-        return http_response::json(\local_coursepilot\oauth_lib::handle_token($method, $body));
+        return http_response::json(\local_coursepilot\connection::handle_token($method, $body));
     }
 
     /**

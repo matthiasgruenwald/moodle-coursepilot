@@ -76,7 +76,7 @@ final class remote_access_test extends \advanced_testcase {
     private function issue_access_token(int $userid): string {
         global $DB;
 
-        $accesstoken = oauth_lib::random_token(32);
+        $accesstoken = bin2hex(random_bytes(32));
         $connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
             'userid' => $userid, 'clientid' => 'test-client', 'revoked' => 0,
             'statehash' => bin2hex(random_bytes(32)), 'timecreated' => time(),
@@ -84,11 +84,11 @@ final class remote_access_test extends \advanced_testcase {
         $DB->insert_record('local_coursepilot_oauth_token', (object) [
             'connectionid' => $connectionid,
             'accesstokenhash' => hash('sha256', $accesstoken),
-            'refreshtokenhash' => hash('sha256', oauth_lib::random_token(32)),
+            'refreshtokenhash' => hash('sha256', bin2hex(random_bytes(32))),
             'clientid' => 'test-client',
             'userid' => $userid,
-            'expires' => time() + oauth_lib::ACCESS_TOKEN_TTL,
-            'refreshexpires' => time() + oauth_lib::REFRESH_TOKEN_TTL,
+            'expires' => time() + connection::ACCESS_TOKEN_TTL,
+            'refreshexpires' => time() + connection::REFRESH_TOKEN_TTL,
             'revoked' => 0,
             'timecreated' => time(),
         ]);

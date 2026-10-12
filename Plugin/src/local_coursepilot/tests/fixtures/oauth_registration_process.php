@@ -28,7 +28,7 @@
 require_once(__DIR__ . '/phpunit_process_bootstrap.php');
 if (isset($argv[2])) {
     $_SERVER['REMOTE_ADDR'] = $argv[1];
-    echo \local_coursepilot\oauth_lib::handle_token(
+    echo \local_coursepilot\connection::handle_token(
         'POST',
         ['grant_type' => 'authorization_code', 'client_id' => $argv[2]]
     )['status'];

@@ -132,7 +132,7 @@ KURSPILOT_E2E_PROFILE=spike npx playwright test test/e2e/quiz-local-questions.sp
 
 Das Servermodell-Plugin spricht kein Webservice-Token, sondern **OAuth**: der
 MCP-Endpunkt `/local/coursepilot/mcp.php` akzeptiert ausschließlich ein
-Zugriffstoken aus `oauth_lib`. Für Testläufe muss deshalb kein Browser-Flow
+Zugriffstoken aus `connection`. Für Testläufe muss deshalb kein Browser-Flow
 durchlaufen werden:
 
 ```bash
@@ -182,3 +182,9 @@ npm run hooks:install   # git config core.hooksPath scripts/githooks
   `gate edit` auf (Plugin-PHP, `test/**/*.js`, `scripts/gate/**`). Codex führt
   Hooks nicht in jeder Konfiguration automatisch aus; dann vor dem Commit
   `npm run gate -- fast` selbst starten, der `pre-commit`-Hook greift in jedem Fall.
+
+## Verbindung testen
+
+`connection` kapselt Code-Tausch, Token-Rotation, Prüfung, Widerruf und die gemeinsame Zugriffsregel für MCP und Werkbank-Tickets. PHPUnit nutzt ihre öffentliche Schnittstelle mit der echten Testdatenbank; die Exchange-Race prüft zwei überlappende `exchange_code()`-Aufrufe. Discovery, Clientregistrierung und CIMD-Abruf verbleiben in `oauth_lib`.
+
+`connection_event_test` prüft native Moodle-Ereignisse für Freigabe, Einzel-/Massenwiderruf und nachgewiesenes Refresh-Replay mit `redirectEvents()`. Normale Rotation, zurückgewiesene Zugriffe und fehlgeschlagene Code-Tausche erzeugen keine Ereignisse. Die bestehenden Prozess-Fixtures prüfen auch überlappenden Massenwiderruf und Rotation in beiden Reihenfolgen; ihre Named-Lock-Barriere erfordert MariaDB/MySQL.

@@ -39,11 +39,11 @@ final class connections_page {
         \local_coursepilot\remote_access::require_granted();
         if ($revokeid) {
             require_sesskey();
-            \local_coursepilot\oauth_lib::revoke_token($revokeid, (int) $USER->id);
+            \local_coursepilot\connection::revoke_token($revokeid, (int) $USER->id);
             return new page_response(redirecturl: new \moodle_url('/local/coursepilot/connections.php'));
         }
         return new page_response('local_coursepilot/connections', self::page_data(
-            \local_coursepilot\oauth_lib::active_tokens_for_user((int) $USER->id),
+            \local_coursepilot\connection::active_tokens_for_user((int) $USER->id),
             location_selection::current_locations_data(),
             new \moodle_url(\local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE)
         ));

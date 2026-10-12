@@ -15,14 +15,14 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Token endpoint (#336): authorization code and rotated refresh tokens,
+ * Token endpoint: authorization code and rotated refresh tokens,
  * with one-hour access and 30-day refresh lifetimes.
  *
- * Thin I/O shell (#334): reads method, Content-Type and form/JSON body
- * and delegates to {@see \local_coursepilot\oauth_lib::handle_token()}.
+ * Thin I/O shell: reads method, Content-Type and form/JSON body
+ * and delegates to {@see \local_coursepilot\connection::handle_token()}.
  * Grant dispatch, client_secret_post checks and required-field validation
  * are PHPUnit-testable without a web server. Only this shell exits.
- * Errors always use JSON: Moodle HTML 404 breaks opencode parsing (#312).
+ * Errors always use JSON: Moodle HTML 404 breaks opencode parsing.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

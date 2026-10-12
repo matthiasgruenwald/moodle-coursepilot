@@ -17,7 +17,7 @@
 namespace local_coursepilot\check;
 
 use core\check\result;
-use local_coursepilot\oauth_lib;
+use local_coursepilot\connection;
 use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -48,12 +48,12 @@ final class webdav_capability_check_test extends \advanced_testcase {
         ]);
         $DB->insert_record('local_coursepilot_oauth_token', (object) [
             'connectionid' => $connectionid,
-            'accesstokenhash' => hash('sha256', oauth_lib::random_token(32)),
-            'refreshtokenhash' => hash('sha256', oauth_lib::random_token(32)),
+            'accesstokenhash' => hash('sha256', bin2hex(random_bytes(32))),
+            'refreshtokenhash' => hash('sha256', bin2hex(random_bytes(32))),
             'clientid' => 'test-client',
             'userid' => $userid,
-            'expires' => time() + oauth_lib::ACCESS_TOKEN_TTL,
-            'refreshexpires' => time() + oauth_lib::REFRESH_TOKEN_TTL,
+            'expires' => time() + connection::ACCESS_TOKEN_TTL,
+            'refreshexpires' => time() + connection::REFRESH_TOKEN_TTL,
             'revoked' => 0,
             'timecreated' => time(),
         ]);

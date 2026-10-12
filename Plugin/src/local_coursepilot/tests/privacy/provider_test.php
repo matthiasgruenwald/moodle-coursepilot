@@ -22,7 +22,7 @@ use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use local_coursepilot\context_files;
-use local_coursepilot\oauth_lib;
+use local_coursepilot\connection;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -67,15 +67,15 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     private function issue_token(int $userid, string $clientid = 'test-client'): \stdClass {
         global $DB;
 
-        $accesstoken = oauth_lib::random_token(32);
-        $refreshtoken = oauth_lib::random_token(32);
+        $accesstoken = bin2hex(random_bytes(32));
+        $refreshtoken = bin2hex(random_bytes(32));
         $record = new \stdClass();
         $record->accesstokenhash = hash('sha256', $accesstoken);
         $record->refreshtokenhash = hash('sha256', $refreshtoken);
         $record->clientid = $clientid;
         $record->userid = $userid;
-        $record->expires = time() + oauth_lib::ACCESS_TOKEN_TTL;
-        $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
+        $record->expires = time() + connection::ACCESS_TOKEN_TTL;
+        $record->refreshexpires = time() + connection::REFRESH_TOKEN_TTL;
         $record->revoked = 0;
         $record->timecreated = time();
         $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [

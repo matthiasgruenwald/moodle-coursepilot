@@ -114,11 +114,11 @@ if (empty($client['client_id'])) {
 }
 $verifier = bin2hex(random_bytes(32));
 $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
-$code = \local_coursepilot\oauth_lib::issue_code($client['client_id'], (int) $user->id, 'http://127.0.0.1/callback', $challenge);
+$code = \local_coursepilot\connection::issue_code($client['client_id'], (int) $user->id, 'http://127.0.0.1/callback', $challenge);
 if ($code === '') {
     verify_native_artifact_fail('OAuth-Autorisierungscode wurde nicht ausgestellt.');
 }
-$tokens = \local_coursepilot\oauth_lib::exchange_code($code, $client['client_id'], 'http://127.0.0.1/callback', $verifier);
+$tokens = \local_coursepilot\connection::exchange_code($code, $client['client_id'], 'http://127.0.0.1/callback', $verifier);
 if (empty($tokens['access_token'])) {
     verify_native_artifact_fail('OAuth-Code-Einloesung lieferte kein Access-Token.');
 }

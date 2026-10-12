@@ -67,9 +67,9 @@ final class connections_page_test extends \advanced_testcase {
         foreach ([(int) $USER->id, (int) $other->id] as $userid) {
             $verifier = str_repeat('v', 43);
             $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
-            $code = \local_coursepilot\oauth_lib::issue_code('client', $userid, 'https://client.example/cb', $challenge);
-            \local_coursepilot\oauth_lib::exchange_code($code, 'client', 'https://client.example/cb', $verifier);
-            $ids[] = (int) array_key_first(\local_coursepilot\oauth_lib::active_tokens_for_user($userid));
+            $code = \local_coursepilot\connection::issue_code('client', $userid, 'https://client.example/cb', $challenge);
+            \local_coursepilot\connection::exchange_code($code, 'client', 'https://client.example/cb', $verifier);
+            $ids[] = (int) array_key_first(\local_coursepilot\connection::active_tokens_for_user($userid));
         }
         $this->assertCount(1, connections_page::response(0)->data['rows']);
         $_POST['sesskey'] = 'invalid';
@@ -81,11 +81,11 @@ final class connections_page_test extends \advanced_testcase {
         } finally {
             unset($_POST['sesskey']);
         }
-        $this->assertCount(1, \local_coursepilot\oauth_lib::active_tokens_for_user((int) $USER->id));
+        $this->assertCount(1, \local_coursepilot\connection::active_tokens_for_user((int) $USER->id));
         $_POST['sesskey'] = sesskey();
         try {
             $this->assertNotNull(connections_page::response($ids[1])->redirecturl);
-            $this->assertCount(1, \local_coursepilot\oauth_lib::active_tokens_for_user((int) $other->id));
+            $this->assertCount(1, \local_coursepilot\connection::active_tokens_for_user((int) $other->id));
             $this->assertNotNull(connections_page::response($ids[0])->redirecturl);
             $this->assertTrue(connections_page::response(0)->data['empty']);
         } finally {

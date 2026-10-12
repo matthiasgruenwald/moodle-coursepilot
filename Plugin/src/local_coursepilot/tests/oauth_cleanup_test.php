@@ -59,8 +59,8 @@ final class oauth_cleanup_test extends \advanced_testcase {
     private function tokens(string $clientid, int $userid): array {
         $verifier = str_repeat('v', 43);
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
-        $code = oauth_lib::issue_code($clientid, $userid, self::CALLBACK, $challenge);
-        return oauth_lib::exchange_code($code, $clientid, self::CALLBACK, $verifier);
+        $code = connection::issue_code($clientid, $userid, self::CALLBACK, $challenge);
+        return connection::exchange_code($code, $clientid, self::CALLBACK, $verifier);
     }
 
     /**
@@ -70,8 +70,8 @@ final class oauth_cleanup_test extends \advanced_testcase {
      * @return int
      */
     private function connection(array $pair): int {
-        oauth_lib::authenticate_access_token($pair['access_token']);
-        return oauth_lib::current_connection_id();
+        connection::authenticate_access_token($pair['access_token']);
+        return connection::current_connection_id();
     }
 
     /**
@@ -84,7 +84,7 @@ final class oauth_cleanup_test extends \advanced_testcase {
      */
     private function code(string $clientid, int $expires, int $used = 0): int {
         global $DB;
-        return $DB->insert_record(self::CODE, (object) ['code' => oauth_lib::random_token(16),
+        return $DB->insert_record(self::CODE, (object) ['code' => bin2hex(random_bytes(16)),
             'clientid' => $clientid, 'userid' => 2, 'redirecturi' => self::CALLBACK,
             'codechallenge' => 'c', 'expires' => $expires, 'used' => $used]);
     }
@@ -134,7 +134,7 @@ final class oauth_cleanup_test extends \advanced_testcase {
         $this->setAdminUser();
         $original = $this->tokens('client-a', (int) $USER->id);
         $active = $this->connection($original);
-        $rotated = oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a');
+        $rotated = connection::rotate_refresh_token($original['refresh_token'], 'client-a');
         [$directory, $filename] = material_files::resolve_file('synthetic.txt');
         get_file_storage()->create_file_from_string(['contextid' => material_files::own_context()->id,
             'component' => material_files::COMPONENT, 'filearea' => material_files::FILEAREA,
@@ -143,7 +143,7 @@ final class oauth_cleanup_test extends \advanced_testcase {
         parse_str(parse_url(workbench_ticket::issue('synthetic.txt')['url'], PHP_URL_QUERY), $query);
 
         $revoked = $this->connection($this->tokens('client-a', (int) $USER->id));
-        oauth_lib::revoke_token(oauth_lib::current_token_id());
+        connection::revoke_token((int) max(array_keys(connection::active_tokens_for_user((int) $USER->id))));
         $stale = $this->tokens('client-a', (int) $USER->id);
         $expired = $this->connection($stale);
         $staletokens = $DB->get_records(self::TOKEN, ['connectionid' => $expired]);
@@ -172,11 +172,11 @@ final class oauth_cleanup_test extends \advanced_testcase {
 
         // The cleaned system keeps working: ticket, renewal, then replay revokes the whole connection.
         $this->assertSame('synthetic bytes', workbench_ticket::redeem($query['ticket'])['content']);
-        $renewed = oauth_lib::rotate_refresh_token($rotated['refresh_token'], 'client-a');
+        $renewed = connection::rotate_refresh_token($rotated['refresh_token'], 'client-a');
         $this->assertNotNull($renewed);
         oauth_cleanup::run(time());
-        $this->assertNull(oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a'));
-        $this->assertNull(oauth_lib::authenticate_access_token($renewed['access_token']));
+        $this->assertNull(connection::rotate_refresh_token($original['refresh_token'], 'client-a'));
+        $this->assertNull(connection::authenticate_access_token($renewed['access_token']));
         $this->assertTrue($DB->record_exists(self::GRANT, ['id' => $active, 'revoked' => 1]));
     }
 
@@ -196,7 +196,7 @@ final class oauth_cleanup_test extends \advanced_testcase {
         $this->tokens('foreign-active', (int) $other->id);
         $this->code('pending-code', $now + 60);
         $this->connection($this->tokens('revoked-only', (int) $other->id));
-        oauth_lib::revoke_token(oauth_lib::current_token_id());
+        connection::revoke_token((int) max(array_keys(connection::active_tokens_for_user((int) $other->id))));
         // Redeemed codes of the connections must not be what protects a client.
         $DB->set_field_select(self::CODE, 'expires', $now - 1, "clientid <> 'pending-code'");
 

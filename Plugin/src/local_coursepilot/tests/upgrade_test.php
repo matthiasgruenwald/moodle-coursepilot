@@ -66,9 +66,9 @@ final class upgrade_test extends \advanced_testcase {
         $this->setAdminUser();
         $verifier = str_repeat('v', 43);
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
-        $code = oauth_lib::issue_code('retained-client', (int) $USER->id, 'https://client.example/cb', $challenge);
-        $tokens = oauth_lib::exchange_code($code, 'retained-client', 'https://client.example/cb', $verifier);
-        $this->assertSame((int) $USER->id, oauth_lib::authenticate_access_token($tokens['access_token']));
+        $code = connection::issue_code('retained-client', (int) $USER->id, 'https://client.example/cb', $challenge);
+        $tokens = connection::exchange_code($code, 'retained-client', 'https://client.example/cb', $verifier);
+        $this->assertSame((int) $USER->id, connection::authenticate_access_token($tokens['access_token']));
         $dbman = $DB->get_manager();
         $file = new \xmldb_file($CFG->dirroot . '/local/coursepilot/db/install.xml');
         $file->loadXMLStructure();
@@ -78,12 +78,12 @@ final class upgrade_test extends \advanced_testcase {
         try {
             $this->assertTrue(\xmldb_local_coursepilot_upgrade(2026100339));
             $this->assertTrue($dbman->table_exists($budgettable));
-            $this->assertSame((int) $USER->id, oauth_lib::authenticate_access_token($tokens['access_token']));
-            $rotated = oauth_lib::rotate_refresh_token($tokens['refresh_token'], 'retained-client');
+            $this->assertSame((int) $USER->id, connection::authenticate_access_token($tokens['access_token']));
+            $rotated = connection::rotate_refresh_token($tokens['refresh_token'], 'retained-client');
             $this->assertNotNull($rotated);
             $this->assertTrue(\xmldb_local_coursepilot_upgrade(2026100344));
             $this->assertSame('2026100344', get_config('local_coursepilot', 'version'));
-            $this->assertSame((int) $USER->id, oauth_lib::authenticate_access_token($rotated['access_token']));
+            $this->assertSame((int) $USER->id, connection::authenticate_access_token($rotated['access_token']));
         } finally {
             if (!$dbman->table_exists($budgettable)) {
                 $dbman->create_table($budgettable);

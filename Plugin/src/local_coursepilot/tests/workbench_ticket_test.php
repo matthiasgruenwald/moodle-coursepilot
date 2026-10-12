@@ -30,10 +30,11 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(workbench_ticket::class)]
 #[CoversClass(\local_coursepilot\oauth_lib::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\connection::class)]
 final class workbench_ticket_test extends \advanced_testcase {
     public function setUp(): void {
         parent::setUp();
-        oauth_lib::reset_current_token_id();
+        connection::authenticate_access_token('');
     }
 
     public function test_issue_and_redeem_delivers_original_bytes_with_matching_sha1(): void {
@@ -194,7 +195,7 @@ final class workbench_ticket_test extends \advanced_testcase {
 
         $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
 
-        $this->assertTrue(oauth_lib::revoke_token($tokenid));
+        $this->assertTrue(connection::revoke_token($tokenid));
 
         $this->expectException(\moodle_exception::class);
         $this->expectExceptionMessageMatches(
@@ -274,7 +275,7 @@ final class workbench_ticket_test extends \advanced_testcase {
         // Create a connection after issuance without authenticating this request;
         // the ticket's oauthtokenid remains null.
         $this->issue_connection((int) $user->id);
-        oauth_lib::reset_current_token_id();
+        connection::authenticate_access_token('');
 
         $delivery = workbench_ticket::redeem($secret);
 
@@ -368,7 +369,7 @@ final class workbench_ticket_test extends \advanced_testcase {
 
         cohort_remove_member($cohort->id, $user->id);
         $this->setUser();
-        $this->assertTrue(oauth_lib::connection_active($tokenid));
+        $this->assertSame('remoteaccessnotgranted', connection::access_error((int) $user->id, null, $tokenid));
         $this->expectException(workbench_ticket_redemption_failed::class);
         $this->expectExceptionMessageMatches(
             '/' . preg_quote(get_string('remoteaccessnotgranted', 'local_coursepilot'), '/') . '/'
@@ -391,7 +392,7 @@ final class workbench_ticket_test extends \advanced_testcase {
         accesslib_clear_all_caches(true);
         $this->setAdminUser();
         $this->assertTrue(remote_access::is_granted());
-        $this->assertTrue(oauth_lib::connection_active($tokenid));
+        $this->assertSame('remoteaccessnotgranted', connection::access_error((int) $user->id, null, $tokenid));
         $this->assertTrue(has_capability('local/coursepilot:use', \context_course::instance($course->id), $user->id));
         $this->expectException(workbench_ticket_redemption_failed::class);
         $this->expectExceptionMessageMatches(
@@ -438,14 +439,14 @@ final class workbench_ticket_test extends \advanced_testcase {
         if ($grant) {
             $this->grant_remote_access($userid);
         }
-        $accesstoken = oauth_lib::random_token(32);
+        $accesstoken = bin2hex(random_bytes(32));
         $record = new \stdClass();
         $record->accesstokenhash = hash('sha256', $accesstoken);
-        $record->refreshtokenhash = hash('sha256', oauth_lib::random_token(32));
+        $record->refreshtokenhash = hash('sha256', bin2hex(random_bytes(32)));
         $record->clientid = 'test-client';
         $record->userid = $userid;
-        $record->expires = time() + oauth_lib::ACCESS_TOKEN_TTL;
-        $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
+        $record->expires = time() + connection::ACCESS_TOKEN_TTL;
+        $record->refreshexpires = time() + connection::REFRESH_TOKEN_TTL;
         $record->revoked = 0;
         $record->timecreated = time();
         $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
@@ -454,7 +455,7 @@ final class workbench_ticket_test extends \advanced_testcase {
         ]);
         $id = (int) $DB->insert_record('local_coursepilot_oauth_token', $record);
 
-        oauth_lib::authenticate_access_token($accesstoken);
+        connection::authenticate_access_token($accesstoken);
 
         return $id;
     }

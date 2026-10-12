@@ -61,9 +61,9 @@ final class http_endpoint_test extends \advanced_testcase {
         $this->assertSame(403, http_endpoint::download('unknown')->status);
         $verifier = str_repeat('v', 43);
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
-        $code = \local_coursepilot\oauth_lib::issue_code('client', (int) $USER->id, 'https://client.example/cb', $challenge);
-        $tokens = \local_coursepilot\oauth_lib::exchange_code($code, 'client', 'https://client.example/cb', $verifier);
-        \local_coursepilot\oauth_lib::authenticate_access_token($tokens['access_token']);
+        $code = \local_coursepilot\connection::issue_code('client', (int) $USER->id, 'https://client.example/cb', $challenge);
+        $tokens = \local_coursepilot\connection::exchange_code($code, 'client', 'https://client.example/cb', $verifier);
+        \local_coursepilot\connection::authenticate_access_token($tokens['access_token']);
         [$directory, $filename] = \local_coursepilot\material_files::resolve_file('lesson.txt');
         get_file_storage()->create_file_from_string(\local_coursepilot\material_files::filerecord(
             \local_coursepilot\material_files::own_context()->id,
@@ -122,8 +122,8 @@ final class http_endpoint_test extends \advanced_testcase {
         $this->setAdminUser();
         $verifier = str_repeat('v', 43);
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
-        $code = \local_coursepilot\oauth_lib::issue_code('client', (int) $USER->id, 'https://client.example/cb', $challenge);
-        $tokens = \local_coursepilot\oauth_lib::exchange_code($code, 'client', 'https://client.example/cb', $verifier);
+        $code = \local_coursepilot\connection::issue_code('client', (int) $USER->id, 'https://client.example/cb', $challenge);
+        $tokens = \local_coursepilot\connection::exchange_code($code, 'client', 'https://client.example/cb', $verifier);
         $request = '{"jsonrpc":"2.0","id":1,"method":"initialize"}';
         $this->assertSame(200, http_endpoint::mcp($request, [
             'REDIRECT_HTTP_AUTHORIZATION' => 'Bearer ' . $tokens['access_token'],

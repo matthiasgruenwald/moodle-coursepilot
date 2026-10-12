@@ -15,12 +15,12 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Connection self-service (#338): teachers see and revoke only their own
- * active remote connections. oauth_lib::active_tokens_for_user()/revoke_token()
+ * Connection self-service: teachers see and revoke only their own
+ * active remote connections. connection::active_tokens_for_user()/revoke_token()
  * enforce ownership in database queries, not merely in display. Linked
  * from the profile by local_coursepilot_myprofile_navigation() in lib.php.
  *
- * Thin I/O shell (#334): {@see \local_coursepilot\oauth_lib} owns testable logic.
+ * Thin I/O shell: {@see \local_coursepilot\connection} owns the connection lifecycle.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

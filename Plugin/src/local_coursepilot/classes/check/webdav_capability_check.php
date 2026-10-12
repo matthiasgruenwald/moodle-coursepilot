@@ -19,7 +19,7 @@ namespace local_coursepilot\check;
 use core\check\check;
 use core\check\result;
 use core\output\action_link;
-use local_coursepilot\oauth_lib;
+use local_coursepilot\connection;
 use local_coursepilot\webdav\webdav_setup_steps;
 
 /**
@@ -72,7 +72,7 @@ final class webdav_capability_check extends check {
 
         $connecteduserids = array_unique(array_map(
             static fn (\stdClass $token): int => (int) $token->userid,
-            oauth_lib::active_tokens()
+            connection::active_tokens()
         ));
         if (empty($connecteduserids)) {
             return new result(result::NA, get_string('webdavcheck3na', 'local_coursepilot'));

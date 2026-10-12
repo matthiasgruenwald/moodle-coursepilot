@@ -62,7 +62,7 @@ final class authorize_page {
             require_sesskey();
 
             global $USER;
-            $code = \local_coursepilot\oauth_lib::issue_code(
+            $code = \local_coursepilot\connection::issue_code(
                 $params['client_id'],
                 (int) $USER->id,
                 $params['redirect_uri'],

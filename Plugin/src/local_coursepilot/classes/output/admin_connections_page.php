@@ -41,17 +41,17 @@ final class admin_connections_page {
         require_capability('moodle/site:config', \context_system::instance());
         if ($revokeid) {
             require_sesskey();
-            \local_coursepilot\oauth_lib::revoke_token($revokeid);
+            \local_coursepilot\connection::revoke_token($revokeid);
             return new page_response(redirecturl: new \moodle_url('/local/coursepilot/admin/connections.php'));
         }
         if ($revokeall) {
             require_sesskey();
-            \local_coursepilot\oauth_lib::revoke_all_tokens();
+            \local_coursepilot\connection::revoke_all_tokens();
             return new page_response(redirecturl: new \moodle_url('/local/coursepilot/admin/connections.php'));
         }
         return new page_response(
             'local_coursepilot/admin_connections',
-            self::page_data(\local_coursepilot\oauth_lib::active_tokens())
+            self::page_data(\local_coursepilot\connection::active_tokens())
         );
     }
 

@@ -24,7 +24,18 @@
 // phpcs:disable moodle.Files.MoodleInternal.MoodleInternalGlobalState -- Standalone child process, runs before or without a Moodle bootstrap.
 
 require_once(__DIR__ . '/phpunit_process_bootstrap.php');
-$result = $argv[1] !== 'revoke'
-    ? \local_coursepilot\oauth_lib::rotate_refresh_token($argv[2], 'client-a')
-    : \local_coursepilot\oauth_lib::revoke_token((int) $argv[3]);
+if ($argv[1] === 'exchange') {
+    $result = \local_coursepilot\connection::exchange_code(
+        $argv[2],
+        'client-a',
+        'https://client.example/callback',
+        'abc'
+    );
+} else if ($argv[1] === 'bulk') {
+    $result = \local_coursepilot\connection::revoke_all_tokens() > 0;
+} else {
+    $result = $argv[1] !== 'revoke'
+        ? \local_coursepilot\connection::rotate_refresh_token($argv[2], 'client-a')
+        : \local_coursepilot\connection::revoke_token((int) $argv[3]);
+}
 echo json_encode($result);

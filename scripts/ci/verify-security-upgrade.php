@@ -95,16 +95,16 @@ foreach ($fixture['ticketrows'] as $old) {
         'Ticket migrated without extending its deadline');
 }
 $original = $fixture['pairs'][0];
-check648(local_coursepilot\oauth_lib::authenticate_access_token($original['access_token']) === $userid,
+check648(local_coursepilot\connection::authenticate_access_token($original['access_token']) === $userid,
     'Migrated access token works');
-$rotated = local_coursepilot\oauth_lib::rotate_refresh_token($original['refresh_token'], $fixture['clientid']);
+$rotated = local_coursepilot\connection::rotate_refresh_token($original['refresh_token'], $fixture['clientid']);
 check648($rotated !== null, 'Migrated refresh token rotates');
 check648(local_coursepilot\workbench_ticket::redeem($fixture['tickets'][0])['content'] === 'synthetic download bytes',
     'Migrated ticket survives normal rotation');
 require_once($CFG->dirroot . '/cohort/lib.php');
 cohort_remove_member($fixture['cohortid'], $userid);
 check648(!local_coursepilot\remote_access::is_granted($userid), 'Remote grant withdrawal after migration');
-check648(local_coursepilot\oauth_lib::authenticate_access_token($rotated['access_token']) === $userid,
+check648(local_coursepilot\connection::authenticate_access_token($rotated['access_token']) === $userid,
     'Token remains active while remote grant is withdrawn');
 try {
     local_coursepilot\workbench_ticket::redeem($fixture['tickets'][1]);
@@ -114,11 +114,11 @@ try {
 }
 cohort_add_member($fixture['cohortid'], $userid);
 local_coursepilot\oauth_cleanup::run(time());
-check648(local_coursepilot\oauth_lib::rotate_refresh_token($original['refresh_token'], $fixture['clientid']) === null,
+check648(local_coursepilot\connection::rotate_refresh_token($original['refresh_token'], $fixture['clientid']) === null,
     'Cleanup preserves migrated consumed-refresh replay evidence');
-check648(local_coursepilot\oauth_lib::authenticate_access_token($rotated['access_token']) === null,
+check648(local_coursepilot\connection::authenticate_access_token($rotated['access_token']) === null,
     'Replay blocks migrated successor');
-check648(local_coursepilot\oauth_lib::authenticate_access_token($fixture['pairs'][1]['access_token']) === $userid,
+check648(local_coursepilot\connection::authenticate_access_token($fixture['pairs'][1]['access_token']) === $userid,
     'Replay leaves other migrated connection active');
 $comparison = local_coursepilot\external\compare_activity_versions::execute($fixture['cmid'], 1, 2);
 $encoded = json_encode($comparison);
