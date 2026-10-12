@@ -67,14 +67,14 @@ final class dispatcher_test extends \advanced_testcase {
     private function issue_access_token(int $userid, int $expiresoffset = 3600, bool $revoked = false): string {
         global $DB;
 
-        $accesstoken = oauth_lib::random_token(32);
+        $accesstoken = bin2hex(random_bytes(32));
         $record = new \stdClass();
         $record->accesstokenhash = hash('sha256', $accesstoken);
-        $record->refreshtokenhash = hash('sha256', oauth_lib::random_token(32));
+        $record->refreshtokenhash = hash('sha256', bin2hex(random_bytes(32)));
         $record->clientid = 'test-client';
         $record->userid = $userid;
         $record->expires = time() + $expiresoffset;
-        $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
+        $record->refreshexpires = time() + connection::REFRESH_TOKEN_TTL;
         $record->revoked = $revoked ? 1 : 0;
         $record->timecreated = time();
         $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
@@ -2095,7 +2095,7 @@ XML;
         $this->resetAfterTest();
         [, $token] = $this->create_authenticated_user();
 
-        oauth_lib::revoke_all_tokens();
+        connection::revoke_all_tokens();
         $response = dispatcher::handle(['id' => 1, 'method' => 'initialize'], $token, $this->headers());
 
         $this->assertSame(401, $response['status']);
@@ -2202,7 +2202,7 @@ XML;
     public function test_access_token_never_appears_in_a_logged_event(): void {
         $this->resetAfterTest();
         $sink = $this->redirectEvents();
-        $secrettoken = oauth_lib::random_token(32);
+        $secrettoken = bin2hex(random_bytes(32));
 
         dispatcher::handle(['id' => 1, 'method' => 'initialize'], $secrettoken, $this->headers());
 

@@ -74,7 +74,7 @@ final class workbench_ticket {
 
         self::purge_expired();
 
-        $secret = oauth_lib::random_token(32);
+        $secret = bin2hex(random_bytes(32));
         $relativepath = material_files::relative_file($directory, $filename);
 
         $record = new \stdClass();
@@ -82,7 +82,7 @@ final class workbench_ticket {
         $record->path = $relativepath;
         $record->contenthash = $info['contenthash'];
         $record->tickethash = hash('sha256', $secret);
-        $record->oauthconnectionid = oauth_lib::current_connection_id();
+        $record->oauthconnectionid = connection::current_connection_id();
         $record->expires = time() + self::TTL_SECONDS;
         $record->timecreated = time();
         $DB->insert_record(self::TABLE, $record);
@@ -115,7 +115,7 @@ final class workbench_ticket {
     public static function redeem(string $secret): array {
         global $USER;
 
-        if ((string) get_config('local_coursepilot', 'remoteaccessenabled') === '0') {
+        if (!connection::remote_access_enabled()) {
             throw new workbench_ticket_redemption_failed('remoteaccessdisabled', null);
         }
 
@@ -151,46 +151,23 @@ final class workbench_ticket {
     }
 
     /**
-     * Checks expiry, connection and account of the ticket owner (issue #523:
-     * extracted from redeem() to keep the function under the 50-line limit).
+     * Checks ticket expiry and delegates the connection owner’s current access.
      *
      * @param \stdClass $ticket
      * @throws workbench_ticket_redemption_failed
      */
     private static function assert_still_valid(\stdClass $ticket): void {
-        global $DB;
-
         if ((int) $ticket->expires < time()) {
             throw new workbench_ticket_redemption_failed('workbenchticketexpired', $ticket->path);
         }
 
-        // Never stronger than its connection (spec #486 §13): a ticket with
-        // a known issuing connection needs it to still exist.
-        // A ticket WITHOUT a known connection (#512: e.g. because the
-        // issuing request never ran through the OAuth dispatcher) is
-        // therefore not automatically stronger - it requires, as a substitute,
-        // any still existing connection of the person. It can still be issued
-        // (no additional issuance check needed),
-        // but it survives a bulk revocation (#338) just as little as
-        // a ticket with a known connection.
-        $hasconnection = $ticket->oauthconnectionid !== null
-            ? oauth_lib::grant_active((int) $ticket->oauthconnectionid, (int) $ticket->userid)
-            : ($ticket->oauthtokenid !== null
-            ? oauth_lib::connection_active((int) $ticket->oauthtokenid, (int) $ticket->userid)
-            : oauth_lib::has_active_connection((int) $ticket->userid));
-        if (!$hasconnection) {
-            throw new workbench_ticket_redemption_failed('workbenchticketconnectionrevoked', $ticket->path);
-        }
-
-        $user = $DB->get_record('user', ['id' => (int) $ticket->userid, 'deleted' => 0, 'suspended' => 0]);
-        if (!$user) {
-            throw new workbench_ticket_redemption_failed('workbenchticketaccountinactive', $ticket->path);
-        }
-
-        // The anonymous download request is not the permission identity.
-        // A ticket never outlives its owner's remote access grant (ADR 0026).
-        if (!remote_access::is_granted((int) $ticket->userid)) {
-            throw new workbench_ticket_redemption_failed('remoteaccessnotgranted', $ticket->path);
+        $error = connection::access_error(
+            (int) $ticket->userid,
+            $ticket->oauthconnectionid !== null ? (int) $ticket->oauthconnectionid : null,
+            $ticket->oauthtokenid !== null ? (int) $ticket->oauthtokenid : null
+        );
+        if ($error !== null) {
+            throw new workbench_ticket_redemption_failed($error, $ticket->path);
         }
     }
 

@@ -4,7 +4,7 @@
  * Befund der statischen Pruefungen, bei fehlgeschlagenen Tests und bei Ratschenverletzung.
  *
  *   node scripts/gate/gate.js fast            Node-Tests + PHPUnit der Tests zu geaenderten Klassen
- *   node scripts/gate/gate.js full            volle PHPUnit-Suite mit pcov, danach Bericht
+ *   node scripts/gate/gate.js full            Node-Tests + volle PHPUnit-Suite mit pcov, danach Bericht
  *   node scripts/gate/gate.js report <clover> Bericht aus einem vorhandenen Clover-Bericht (nur Messwerte)
  *   node scripts/gate/gate.js ratchet [clover] Ratsche: Baselines nur besser; mit Clover zusaetzlich Coverage, geaenderte Dateien und Methoden
  *   node scripts/gate/gate.js baseline [clover] Coverage-Baseline anheben (verweigert, wenn der Messwert niedriger ist)
@@ -55,10 +55,20 @@ function attrs(tag) {
 
 function num(value, what) {
   const n = Number(value);
-  if (value === undefined || value === '' || !Number.isFinite(n)) {
-    throw new Error(`Clover ungueltig: ${what} fehlt oder ist keine Zahl`);
+  if (value === undefined || value.trim() === '' || !Number.isFinite(n) || n < 0) {
+    throw new Error(`Clover ungueltig: ${what} fehlt oder ist keine nichtnegative Zahl`);
   }
   return n;
+}
+
+/** Coverage counts must describe a possible measurement. */
+function coverageMetrics(metrics, where) {
+  const statements = num(metrics.statements, `statements ${where}`);
+  const covered = num(metrics.coveredstatements, `coveredstatements ${where}`);
+  if (covered > statements) {
+    throw new Error(`Clover ungueltig: coveredstatements > statements ${where}`);
+  }
+  return { statements, covered };
 }
 
 /**
@@ -75,7 +85,7 @@ function parseClover(xml) {
     throw new Error('Clover ungueltig: keine Projektsumme (<metrics> vor </project>)');
   }
   const pm = attrs(project[1]);
-  const total = { statements: num(pm.statements, 'statements'), covered: num(pm.coveredstatements, 'coveredstatements') };
+  const total = coverageMetrics(pm, 'im Projekt');
   if (total.statements <= 0) {
     throw new Error('Clover ungueltig: 0 ausfuehrbare Zeilen');
   }
@@ -88,7 +98,7 @@ function parseClover(xml) {
       throw new Error(`Clover ungueltig: Datei ohne <metrics>: ${name}`);
     }
     const fm = attrs(metricTags[metricTags.length - 1][1]);
-    files.push({ name, statements: num(fm.statements, `statements in ${name}`), covered: num(fm.coveredstatements, `coveredstatements in ${name}`) });
+    files.push({ name, ...coverageMetrics(fm, `in ${name}`) });
     for (const line of body.matchAll(/<line\s+([^>]*type="method"[^>]*)\/>/g)) {
       const a = attrs(line[1]);
       methods.push({
@@ -179,8 +189,15 @@ function loadBaseline() {
   if (!fs.existsSync(file)) {
     throw new Error(`Baseline fehlt: ${BASELINE_REL}`);
   }
-  const b = JSON.parse(fs.readFileSync(file, 'utf8'));
-  if (!b.coverage || !(b.coverage.statements > 0) || !Array.isArray(b.excluded)) {
+  return parseBaseline(fs.readFileSync(file, 'utf8'));
+}
+
+/** Reject impossible coverage counts in both working and target baselines. */
+function parseBaseline(text) {
+  const b = JSON.parse(text);
+  if (!Number.isInteger(b.coverage?.covered) || !Number.isInteger(b.coverage?.statements)
+      || b.coverage.covered < 0 || b.coverage.statements <= 0 || b.coverage.covered > b.coverage.statements
+      || !Array.isArray(b.excluded)) {
     throw new Error(`Baseline ungueltig: ${BASELINE_REL} braucht coverage.{covered,statements} und excluded[]`);
   }
   return b;
@@ -302,6 +319,7 @@ function runFast() {
 }
 
 function runFull() {
+  const nodePassed = nodeTests();
   requireContainer();
   preparePlugin();
   fs.rmSync(path.join(GATE_DIR, 'reports', 'clover.xml'), { force: true });
@@ -309,12 +327,11 @@ function runFull() {
   logOutcome('phpunit', passed);
   if (!passed) {
     console.log('summary: mode=full phpunit=fail');
-    return false;
   }
   const clover = path.join(GATE_DIR, 'reports', 'clover.xml');
   printReport(clover, path.join(GATE_DIR, 'reports', 'gate-report.json'), true);
   const ratcheted = printRatchet(clover);
-  return printStatic(staticChecks.ALL_CHECKS) && ratcheted;
+  return printStatic(staticChecks.ALL_CHECKS) && ratcheted && nodePassed && passed;
 }
 
 /** Statische Pruefungen: Befunde als Zeilen, vollstaendig als JSON; Werkzeugfehler sind rot. */
@@ -379,7 +396,13 @@ const isAncestor = (a, b) => sh('git', ['merge-base', '--is-ancestor', a, b]).st
  * "geaendert" gilt; nach dem Merge ist die Merge-Base juenger und gewinnt.
  */
 function resolveBase(armedAt) {
+  if ((git(['rev-parse', '--is-shallow-repository']) || '').trim() !== 'false') {
+    throw new Error('Ratsche braucht vollstaendige Git-Historie (fetch-depth: 0)');
+  }
   if (process.env.GATE_BASE_REF) {
+    if (!git(['rev-parse', '--verify', `${process.env.GATE_BASE_REF}^{commit}`])) {
+      throw new Error(`Vergleichsref ungueltig: ${process.env.GATE_BASE_REF}`);
+    }
     return process.env.GATE_BASE_REF;
   }
   const heads = ['origin/dev', 'dev'].map(ref => (git(['merge-base', 'HEAD', ref]) || '').trim()).filter(Boolean);
@@ -435,22 +458,34 @@ function runRatchet(cloverPath) {
   const baseline = loadBaseline();
   const base = resolveBase(baseline.armedAt);
   const found = [];
-  const baseBaseline = gitShow(base, BASELINE_REL);
+  const requiredBaseline = rel => {
+    const text = gitShow(base, rel);
+    if (text === null) {
+      throw new Error(`Zielbranch-Baseline fehlt: ${rel} in ${base}; explizite Bootstrap-Abnahme erforderlich`);
+    }
+    return text;
+  };
+  const baseBaseline = parseBaseline(requiredBaseline(BASELINE_REL));
+  const phpstanBase = requiredBaseline(PHPSTAN_BASELINE_REL);
   const phpstanNow = fs.readFileSync(path.join(REPO, PHPSTAN_BASELINE_REL), 'utf8');
   const pairs = text => deptrac.parseBaseline(text).map(e => `${e.from} -> ${e.to}`);
   const deptracNow = fs.readFileSync(path.join(REPO, DEPTRAC_BASELINE_REL), 'utf8');
-  const deptracBase = gitShow(base, DEPTRAC_BASELINE_REL);
-  const { changed, renames } = changesSince(base);
+  const deptracBase = requiredBaseline(DEPTRAC_BASELINE_REL);
+  const changeBase = (git(['merge-base', 'HEAD', base]) || '').trim();
+  if (!changeBase) {
+    throw new Error(`Keine gemeinsame Git-Historie mit Vergleichsref ${base}`);
+  }
+  const { changed, renames } = changesSince(changeBase);
   // Baseline-Pfade sind Container-relativ (`../html/public/local/coursepilot/...`).
   const baselinePrefix = '../html/public/local/coursepilot/';
   const renamedBaselinePath = p => {
     const to = p.startsWith(baselinePrefix) && renames.get(PLUGIN_PREFIX + p.slice(baselinePrefix.length));
     return to ? baselinePrefix + to.slice(PLUGIN_PREFIX.length) : p;
   };
-  found.push(...ratchet.phpstanFindings(phpstanNow, gitShow(base, PHPSTAN_BASELINE_REL), PHPSTAN_BASELINE_REL, renamedBaselinePath));
-  found.push(...ratchet.deptracFindings(pairs(deptracNow), deptracBase === null ? null : pairs(deptracBase), DEPTRAC_BASELINE_REL));
+  found.push(...ratchet.phpstanFindings(phpstanNow, phpstanBase, PHPSTAN_BASELINE_REL, renamedBaselinePath));
+  found.push(...ratchet.deptracFindings(pairs(deptracNow), pairs(deptracBase), DEPTRAC_BASELINE_REL));
   let measuredNote = 'ohne Clover (nur Baselines)';
-  const baseCoverage = baseBaseline === null ? null : JSON.parse(baseBaseline).coverage;
+  const baseCoverage = baseBaseline.coverage;
   found.push(...ratchet.loweredFindings(baseline.coverage, baseCoverage));
   if (cloverPath) {
     const { files, methods } = repoClover(loadParsed(cloverPath));

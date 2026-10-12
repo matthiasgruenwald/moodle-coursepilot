@@ -27,6 +27,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(oauth_budget::class)]
 #[CoversClass(oauth_lib::class)]
+#[CoversClass(client_registry::class)]
+#[CoversClass(connection::class)]
 #[CoversClass(task\oauth_cleanup::class)]
 final class oauth_registration_budget_test extends \advanced_testcase {
     use \local_coursepilot\tests\oauth_budget_race;
@@ -215,15 +217,15 @@ final class oauth_registration_budget_test extends \advanced_testcase {
             'client_id' => $clientid, 'redirect_uri' => self::CALLBACK, 'code_challenge' => $challenge,
             'code_challenge_method' => 'plain'])['error'], 'PKCE stays mandatory.');
 
-        $code = oauth_lib::issue_code($clientid, (int) $user->id, self::CALLBACK, $challenge);
-        $this->assertSame(400, oauth_lib::handle_token('POST', ['grant_type' => 'authorization_code',
+        $code = connection::issue_code($clientid, (int) $user->id, self::CALLBACK, $challenge);
+        $this->assertSame(400, connection::handle_token('POST', ['grant_type' => 'authorization_code',
             'client_id' => $clientid, 'code' => $code, 'redirect_uri' => self::CALLBACK,
             'code_verifier' => 'wrong-verifier'])['status'], 'Grant checks are not relaxed.');
-        $code = oauth_lib::issue_code($clientid, (int) $user->id, self::CALLBACK, $challenge);
-        $tokens = oauth_lib::handle_token('POST', ['grant_type' => 'authorization_code', 'client_id' => $clientid,
+        $code = connection::issue_code($clientid, (int) $user->id, self::CALLBACK, $challenge);
+        $tokens = connection::handle_token('POST', ['grant_type' => 'authorization_code', 'client_id' => $clientid,
             'code' => $code, 'redirect_uri' => self::CALLBACK, 'code_verifier' => $verifier]);
         $this->assertSame(200, $tokens['status']);
-        $this->assertSame(200, oauth_lib::handle_token('POST', ['grant_type' => 'refresh_token',
+        $this->assertSame(200, connection::handle_token('POST', ['grant_type' => 'refresh_token',
             'client_id' => $clientid, 'refresh_token' => $tokens['body']['refresh_token']])['status']);
     }
 

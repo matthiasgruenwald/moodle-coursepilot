@@ -18,6 +18,7 @@ namespace local_coursepilot\external;
 
 use local_coursepilot\material_files;
 use local_coursepilot\oauth_lib;
+use local_coursepilot\connection;
 use local_coursepilot\workbench_ticket;
 
 defined('MOODLE_INTERNAL') || die();
@@ -31,10 +32,11 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(create_workbench_download_links::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\oauth_lib::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\connection::class)]
 final class create_workbench_download_links_test extends \advanced_testcase {
     public function setUp(): void {
         parent::setUp();
-        oauth_lib::reset_current_token_id();
+        connection::authenticate_access_token('');
     }
 
     public function test_returns_url_name_size_and_sha1_per_file(): void {
@@ -62,10 +64,10 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
         // Without a known connection, redemption requires another active user
-        // connection (#512). Like other tests, simulate the external function
+        // connection. Like other tests, simulate the external function
         // without MCP dispatch; the ticket’s oauthtokenid remains null.
         $this->issue_connection((int) $user->id);
-        oauth_lib::reset_current_token_id();
+        connection::authenticate_access_token('');
         $this->store('blatt.pdf', 'originalbytes');
 
         $link = create_workbench_download_links::execute(['blatt.pdf'])['links'][0];
@@ -107,12 +109,12 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         assign_capability(\local_coursepilot\remote_access::CAPABILITY, CAP_ALLOW, $roleid, \context_system::instance()->id, true);
         role_assign($roleid, $userid, \context_system::instance()->id);
         $record = new \stdClass();
-        $record->accesstokenhash = hash('sha256', oauth_lib::random_token(32));
-        $record->refreshtokenhash = hash('sha256', oauth_lib::random_token(32));
+        $record->accesstokenhash = hash('sha256', bin2hex(random_bytes(32)));
+        $record->refreshtokenhash = hash('sha256', bin2hex(random_bytes(32)));
         $record->clientid = 'test-client';
         $record->userid = $userid;
-        $record->expires = time() + oauth_lib::ACCESS_TOKEN_TTL;
-        $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
+        $record->expires = time() + connection::ACCESS_TOKEN_TTL;
+        $record->refreshexpires = time() + connection::REFRESH_TOKEN_TTL;
         $record->revoked = 0;
         $record->timecreated = time();
         $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [

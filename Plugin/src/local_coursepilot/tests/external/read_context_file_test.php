@@ -44,6 +44,29 @@ final class read_context_file_test extends \advanced_testcase {
     }
 
     /**
+     * Read permission follows the current user, even when writing is prohibited for both users.
+     */
+    public function test_own_files_remain_readable_with_manageownfiles_prohibited(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid, \context_system::instance()->id, true);
+
+        foreach (['# Teacher A context', '# Teacher B context'] as $content) {
+            $user = $this->getDataGenerator()->create_user();
+            $this->setUser($user);
+            $this->assertFalse(has_capability('moodle/user:manageownfiles', \context_user::instance($user->id)));
+            $this->create_context_file($user, '/coursepilot/', 'plan.md', $content);
+
+            $result = read_context_file::execute('plan.md');
+            $result = external_api::clean_returnvalue(read_context_file::execute_returns(), $result);
+
+            $this->assertSame($content, $result['content']);
+            $this->assertSame('plan.md', $result['path']);
+        }
+    }
+
+    /**
      * Canonical names resolve existing German files without migrating storage.
      */
     public function test_canonical_names_read_legacy_files_and_return_actual_paths(): void {
@@ -321,17 +344,26 @@ final class read_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * With the switch off, marked personal content is unreadable and returns a clear error.
+     * The personal-data switch still blocks marked content when private-file writes are prohibited.
      */
     public function test_personal_data_marked_file_unreadable_when_switch_off(): void {
+        global $DB;
         $this->resetAfterTest();
+        set_config('allowpersonaldata', 0, 'local_coursepilot');
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid, \context_user::instance($user->id)->id, true);
+        $this->assertFalse(has_capability('moodle/user:manageownfiles', \context_user::instance($user->id)));
 
         $this->create_context_file($user, '/coursepilot/', 'lerngruppe.md', $this->marked_content());
 
-        $this->expectException(\moodle_exception::class);
-        read_context_file::execute('lerngruppe.md');
+        try {
+            read_context_file::execute('lerngruppe.md');
+            $this->fail('Marked personal content must remain locked.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilelocked', $e->errorcode);
+        }
     }
 
     /**

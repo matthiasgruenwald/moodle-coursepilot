@@ -44,7 +44,7 @@ set -a; source /opt/kurspilot-spike/docker/kurspilot-spike.env; set +a
 Die Mindestversion ist Moodle 5.1 (`$plugin->requires = 2025100600`); die
 Spike-Instanz läuft auf 5.1. Die verbindliche Matrix prüft Moodle 5.1/5.2/5.3
 mit PHP 8.3/8.4, MariaDB 11.4 und PostgreSQL 17. Die genauen Kombinationen
-und das 80%-Line-Coverage-Gate stehen in
+und das volle Qualitäts-Gate mit Ratsche stehen in
 [`docs/ci-native-server-mcp.md`](../ci-native-server-mcp.md) (#268).
 
 #### Der volle Lauf braucht einen abgekoppelten Prozess
@@ -132,7 +132,7 @@ KURSPILOT_E2E_PROFILE=spike npx playwright test test/e2e/quiz-local-questions.sp
 
 Das Servermodell-Plugin spricht kein Webservice-Token, sondern **OAuth**: der
 MCP-Endpunkt `/local/coursepilot/mcp.php` akzeptiert ausschließlich ein
-Zugriffstoken aus `oauth_lib`. Für Testläufe muss deshalb kein Browser-Flow
+Zugriffstoken aus `connection`. Für Testläufe muss deshalb kein Browser-Flow
 durchlaufen werden:
 
 ```bash
@@ -182,3 +182,9 @@ npm run hooks:install   # git config core.hooksPath scripts/githooks
   `gate edit` auf (Plugin-PHP, `test/**/*.js`, `scripts/gate/**`). Codex führt
   Hooks nicht in jeder Konfiguration automatisch aus; dann vor dem Commit
   `npm run gate -- fast` selbst starten, der `pre-commit`-Hook greift in jedem Fall.
+
+## Verbindung testen
+
+`connection` kapselt Code-Tausch, Token-Rotation, Prüfung, Widerruf und die gemeinsame Zugriffsregel für MCP und Werkbank-Tickets. PHPUnit nutzt ihre öffentliche Schnittstelle mit der echten Testdatenbank; die Exchange-Race prüft zwei überlappende `exchange_code()`-Aufrufe. Discovery verbleibt in `oauth_lib`. Clientregistrierung, Client-Nachschlagen und exakte Redirect-Prüfung liegen in `client_registry`; `oauth_lib` delegiert seine bisherigen öffentlichen Einstiege. Registertests verwenden `cimd_fetch_port` mit einem speicherinternen Testadapter ohne Netz. `cimd_http_fetcher` erhält die bestehenden TLS-/Streaming-Regressionstests; sie schützen Moodle-Hostpolicy, CA-Vertrauen, Größenlimit und Deadline.
+
+`connection_event_test` prüft native Moodle-Ereignisse für Freigabe, Einzel-/Massenwiderruf und nachgewiesenes Refresh-Replay mit `redirectEvents()`. Normale Rotation, zurückgewiesene Zugriffe und fehlgeschlagene Code-Tausche erzeugen keine Ereignisse. Die bestehenden Prozess-Fixtures prüfen auch überlappenden Massenwiderruf und Rotation in beiden Reihenfolgen; ihre Named-Lock-Barriere erfordert MariaDB/MySQL.

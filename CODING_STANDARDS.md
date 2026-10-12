@@ -84,18 +84,7 @@ validate what they store, such as `availability` JSON; a hand-written copy has t
 maintained by the plugin and risks broken records.
 Source: Moodle course API (`course/modlib.php`); ADR 0016.
 
-**D2. Database access goes through the DML API and works on every supported database.**
-`Moodle` · **Must**
-Custom SQL uses `$DB` with placeholders (`?` or `:name`), never concatenated values, and
-avoids engine-specific syntax; where SQL differs, use the `$DB->sql_*()` helpers. It runs
-on every database Moodle supports; as of Moodle 5.0 (unchanged through 5.2): MySQL,
-MariaDB, PostgreSQL, Microsoft SQL Server and Amazon Aurora MySQL.
-Why: SQL that fails on one supported database blocks approval even when it works on the
-others.
-Source: Moodle plugin contribution checklist (Cross-DB compatibility, approval blockers);
-Moodle security guidelines (SQL injection); `admin/environment.xml` (Moodle 5.0–5.2 database
-vendors). CI tests MariaDB, and PostgreSQL for Moodle 5.2 and 5.3 (#679); #687 tracks
-the rest.
+**D2. → [Gate: MariaDB/PostgreSQL full-suite CI](docs/ci-native-server-mcp.md#supportmatrix), #687.**
 
 **D3. Write actions raise Moodle events.** `Moodle` · **Must**
 Every action a person triggers that changes domain data, and every security-relevant
@@ -460,7 +449,7 @@ surviving mutants on changed lines, moodle-cs (including coverage metadata on ev
 boilerplate and `@copyright`, naming, `require_login()` in page scripts, forbidden functions
 such as `eval` and `unserialize`, and the TODO issue format), phpdoc, savepoints, Mustache,
 ESLint, PHPStan level and baseline, layer dependencies and the class list. See ADR 0029, ADR
-0030 and Spec 0029. Planned gate checks that will retire rules here (A1): D2 on PostgreSQL → #687.
+0030 and Spec 0029. MariaDB/PostgreSQL full-suite CI enforces D2 (#687).
 
 **Architecture:** layer placement in Coursepilot (ADR 0030), MCP access vs. Moodle AI access,
 moving large data around the model's context — see the ADRs and the architecture

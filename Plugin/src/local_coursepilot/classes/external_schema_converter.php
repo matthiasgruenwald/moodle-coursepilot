@@ -31,10 +31,13 @@ use core_external\external_value;
  */
 final class external_schema_converter {
     /**
-     * Provides from parameters.
+     * Builds MCP input properties and required names from Moodle's parameter declaration.
      *
-     * @param external_function_parameters $parameters The parameters.
-     * @return array{properties: array<string, array>, required?: string[]}
+     * Nested declarations retain their schema types; the root object type is omitted
+     * because the dispatcher supplies it when publishing the tool's input schema.
+     *
+     * @param external_function_parameters $parameters Named inputs declared by an external function.
+     * @return array{properties: array<string, array>, required?: string[]} Input schemas and any required input names.
      */
     public static function from_parameters(external_function_parameters $parameters): array {
         $schema = self::from_structure($parameters);
@@ -43,10 +46,14 @@ final class external_schema_converter {
     }
 
     /**
-     * Provides from description.
+     * Converts a Moodle value, repeated structure or single structure into a JSON Schema fragment.
      *
-     * @param external_description $description The description.
-     * @return array<string, mixed>
+     * Integer, float and boolean values map to their JSON types; other values map to strings.
+     * Repeated structures recursively become array items, single structures become object properties.
+     * The declaration's description is preserved, with a default only for VALUE_DEFAULT.
+     *
+     * @param external_description $description Moodle declaration for one value or nested structure.
+     * @return array<string, mixed> Schema fragment including its type, description and any declared default.
      */
     private static function from_description(external_description $description): array {
         if ($description instanceof external_value) {
@@ -77,10 +84,12 @@ final class external_schema_converter {
     }
 
     /**
-     * Provides from structure.
+     * Builds an object schema by recursively converting each named member declaration.
      *
-     * @param external_single_structure $structure The structure.
-     * @return array{type: string, properties: array<string, array>, required?: string[]}
+     * Only VALUE_REQUIRED members enter the required list; the list is omitted when empty.
+     *
+     * @param external_single_structure $structure Named member declarations, including external-function parameters.
+     * @return array{type: string, properties: array<string, array>, required?: string[]} Object schema and required names.
      */
     private static function from_structure(external_single_structure $structure): array {
         $schema = ['type' => 'object', 'properties' => []];

@@ -31,6 +31,63 @@ use local_coursepilot\location_selection;
  */
 final class authorize_page {
     /**
+     * Validates consent input before rendering or issuing an authorization code.
+     *
+     * @param string[] $params OAuth authorization parameters.
+     * @param string $state Client state carried unchanged in redirects.
+     * @param string $action Consent action, allow, deny or empty for display.
+     * @return page_response Consent view or redirect to the registered client.
+     */
+    public static function response(array $params, string $state, string $action): page_response {
+        global $PAGE;
+        \local_coursepilot\remote_access::require_granted();
+        $validation = \local_coursepilot\oauth_lib::validate_authorize_request($params);
+        if (isset($validation['error'])) {
+            throw new \moodle_exception('authorizeerror', 'local_coursepilot', '', $validation['error_description']);
+        }
+        $client = $validation['client'];
+        $clientname = $client->clientname ?: $client->clientid;
+        $title = get_string('authorizetitleclient', 'local_coursepilot', $clientname);
+        $PAGE->set_title($title);
+
+        if ($action === 'deny') {
+            require_sesskey();
+            return new page_response(redirecturl: new \moodle_url(\local_coursepilot\oauth_lib::denial_redirect_url(
+                $params['redirect_uri'],
+                $state !== '' ? $state : null
+            )));
+        }
+
+        if ($action === 'allow') {
+            require_sesskey();
+
+            global $USER;
+            $code = \local_coursepilot\connection::issue_code(
+                $params['client_id'],
+                (int) $USER->id,
+                $params['redirect_uri'],
+                $params['code_challenge']
+            );
+            $url = \local_coursepilot\oauth_lib::build_redirect_url($params['redirect_uri'], [
+                'code' => $code,
+                'state' => $state !== '' ? $state : null,
+            ]);
+            return new page_response(redirecturl: new \moodle_url($url));
+        }
+
+        $locationselectionurl = new \moodle_url('/local/coursepilot/location_selection.php', array_merge($params, [
+            'state' => $state,
+            'oauthflow' => 1,
+        ]));
+        $formurl = new \moodle_url('/local/coursepilot/oauth/authorize.php');
+        return new page_response(
+            'local_coursepilot/authorize',
+            self::page_data($clientname, $params, $state, $formurl, $locationselectionurl),
+            heading: $title
+        );
+    }
+
+    /**
      * Provides page data.
      *
      * @param string $clientname

@@ -47,7 +47,7 @@ Alle vier tragen den Server-MCP, das Altplugin ist entfernt.
 ## Consequences
 
 - Hotfixes auf `main` müssen nach `dev` zurückgeführt werden.
-- Die CI läuft auf `main` und `dev`: fünf PHPUnit-Kombinationen für Moodle
+- Die CI läuft auf `main` und `dev`: sechs PHPUnit-Kombinationen für Moodle
   5.1/5.2/5.3 und frische Release-ZIP-Installationen auf allen drei Linien.
   `requires` ist 5.1 (`2025100600`). Eine reine Metadatenänderung ist keine
   Kompatibilitätsabnahme.

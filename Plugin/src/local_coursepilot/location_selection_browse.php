@@ -30,33 +30,12 @@
 
 require(__DIR__ . '/../../config.php');
 
-use local_coursepilot\location_selection;
 
 require_login(null, false);
 require_sesskey();
 \local_coursepilot\remote_access::require_granted();
 
-global $USER;
-
-header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store');
-
-$instanceid = required_param('instanceid', PARAM_INT);
-$path = optional_param('path', '', PARAM_RAW_TRIMMED);
-
-try {
-    $result = location_selection::browse($instanceid, $path);
-    echo json_encode(['ok' => true, 'state' => location_selection::page_state((int) $USER->id, $result)]);
-} catch (moodle_exception $e) {
-    http_response_code(400);
-    // The client translates errorkey on display through core/str,
-    // never stores a rendered sentence in page state. It needs the same
-    // placeholders as server rendering: named error class and location-page
-    // reference; see pointer_reader::webdav_exception().
-    echo json_encode([
-        'ok' => false,
-        'errorkey' => $e->errorcode,
-        'errorclass' => $e->a->errorclass ?? '',
-        'page' => $e->a->page ?? '',
-    ]);
-}
+\local_coursepilot\output\http_endpoint::browse(
+    required_param('instanceid', PARAM_INT),
+    optional_param('path', '', PARAM_RAW_TRIMMED)
+)->send();

@@ -268,9 +268,9 @@ final class tool_registry {
     }
 
     /**
-     * Provides schemas.
+     * Derives MCP input properties and required names from each registered tool's Moodle parameters.
      *
-     * @return array<string, array{properties: array, required?: array}>
+     * @return array<string, array{properties: array, required?: array}> Input schema fragments keyed by MCP tool name.
      */
     public static function schemas(): array {
         $schemas = [];
@@ -300,10 +300,10 @@ final class tool_registry {
     }
 
     /**
-     * Tells whether the tool registry is write.
+     * Classifies a registered MCP tool as a write operation for access logging.
      *
-     * @param string $toolname The toolname.
-     * @return bool
+     * @param string $toolname Registered MCP tool name.
+     * @return bool Whether the registered action is classified as writing data.
      */
     public static function is_write(string $toolname): bool {
         return self::is_write_class(self::TOOLS[$toolname]['classname']);
@@ -329,10 +329,10 @@ final class tool_registry {
     }
 
     /**
-     * Tells whether the tool registry is write class.
+     * Classifies an external-function class by its action prefix, with explicit read-only exceptions.
      *
-     * @param string $classname The classname.
-     * @return bool
+     * @param string $classname External-function class name from the tool registry.
+     * @return bool Whether the registered action is classified as writing data.
      */
     private static function is_write_class(string $classname): bool {
         // Read-only despite the "export_" prefix: hands out XML, writes nothing.

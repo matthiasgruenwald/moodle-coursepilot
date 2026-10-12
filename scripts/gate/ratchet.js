@@ -67,6 +67,12 @@ function loweredFindings(baseline, base) {
  * tab-eingerueckt: je Eintrag `identifier:`, `count:` und `path:`.
  */
 function parsePhpstanBaseline(text) {
+  // Malformed text must not compare as an empty baseline.
+  const content = text.split('\n').filter(row => row.trim() && !/^\s*#/.test(row)).join('\n');
+  const layout = /^parameters:\n\tignoreErrors:(?: \[\]|(?:\n\t\t-\n\t\t\tmessage: '.+'\n\t\t\tidentifier: \S+\n\t\t\tcount: [1-9][0-9]*\n\t\t\tpath: \S+)+)$/;
+  if (!layout.test(content)) {
+    throw new Error('PHPStan-Baseline ungueltig: scripts/gate/phpstan/phpstan-baseline.neon');
+  }
   const counts = new Map();
   let entry = {};
   const flush = () => {
@@ -173,9 +179,17 @@ const touches = (ranges, start, end) => ranges === 'all' || ranges.some(([a, b])
  */
 function changedFindings({ files, methods, changed, readSource, exclusions, pluginPrefix }) {
   const found = [];
-  for (const f of files) {
-    const ranges = changed.get(f.name);
-    if (!ranges || !f.name.startsWith(pluginPrefix) || f.name.startsWith(`${pluginPrefix}tests/`) || isExcluded(f.name, exclusions, pluginPrefix) || f.statements === 0) {
+  const byName = new Map(files.map(f => [f.name, f]));
+  for (const [name, ranges] of changed) {
+    if (!name.startsWith(pluginPrefix) || !name.endsWith('.php') || name.startsWith(`${pluginPrefix}tests/`) || isExcluded(name, exclusions, pluginPrefix) || ranges.length === 0) {
+      continue;
+    }
+    const f = byName.get(name);
+    if (!f) {
+      found.push(finding(name, 0, 'ratchet-clover-missing', 'geaenderte Produktionsdatei fehlt im Clover-Bericht, Coverage und CRAP sind ungemessen'));
+      continue;
+    }
+    if (f.statements === 0) {
       continue;
     }
     const p = pct(f.covered, f.statements);

@@ -75,7 +75,7 @@ trait webdav_instance_fixture {
      * their own user context.
      *
      * @param \stdClass $user
-     * @param array $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:
+     * @param string[]|int[] $overrides Override instance options, e.g. webdav_auth=digest for the auth edge case. Type:
      * array<string,string|int>.
      * @return int Instance ID.
      */
@@ -134,7 +134,7 @@ trait webdav_instance_fixture {
      * @param string $externtarget "context_area" or "material_store".
      * @param int $instanceid
      * @param string $relativepath
-     * @param array|null $fingerprint Default: {@see fixture_fingerprint()}.
+     * @param mixed[]|null $fingerprint Verification fields; booleans allow malformed-input regression cases.
      */
     protected function write_v2_pointer(
         \stdClass $user,
@@ -243,7 +243,7 @@ trait webdav_instance_fixture {
      * @param \stdClass $user
      * @param int $instanceid
      * @param string $relativepath Previous root within the instance.
-     * @param array|null $fingerprint Default: {@see fixture_fingerprint()}.
+     * @param mixed[]|null $fingerprint Verification fields; booleans allow malformed-input regression cases.
      */
     protected function write_pointer_with_external_previous_location(
         \stdClass $user,

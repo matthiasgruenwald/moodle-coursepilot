@@ -43,7 +43,7 @@ Container auf:
 
 ```bash
 npm run gate -- fast               # Node-Tests + PHPUnit der Tests zu geänderten Klassen
-npm run gate -- full               # volle Suite mit pcov, danach Bericht (rund 15 Minuten)
+npm run gate -- full               # Node-Tests + volle Suite mit pcov, danach Bericht (rund 15 Minuten)
 npm run gate -- report <clover.xml> # nur Bericht aus vorhandenem Clover-Bericht
 npm run gate -- ratchet [clover.xml] # Ratsche; ohne Clover nur die Baselines
 npm run gate -- baseline [clover.xml] # Coverage-Baseline anheben (nie senken)
@@ -53,7 +53,8 @@ npm run gate -- phpstan-baseline   # PHPStan-Baseline neu erzeugen
 npm run gate -- ranking [n]        # Fehlschlags-Rangliste nach Datei und Prüfung
 ```
 
-`full` spiegelt `Plugin/src/local_coursepilot` in den Container, baut die
+`full` führt zuerst die Node-Vertragstests aus. Ihr Fehler blockiert den Lauf auch bei
+grünen PHP- und Statikprüfungen. Danach spiegelt es `Plugin/src/local_coursepilot` in den Container, baut die
 PHPUnit-Konfiguration, schreibt den Clover-Bericht nach
 `/opt/kurspilot-gate/reports/clover.xml` und wertet ihn aus. Der volle Lauf
 braucht einen abgekoppelten Prozess, siehe [`agents/testing.md`](agents/testing.md).
@@ -65,6 +66,21 @@ Suite die Ratsche mit dem Clover-Bericht aus. Exitcode 1 bei jedem blockierenden
 Produktionsklasse `classes/…/foo.php` gehört zu Tests mit
 `#[CoversClass(…foo::class)]`, eine geänderte `*_test.php` steht für sich.
 Ohne Zuordnung meldet das Gate `no-test-mapped`.
+
+### Bewusste Leseausnahme bei eigenen Dateien
+
+Die Capability-Ausnahmen für `list_context_files`, `read_context_file`, `list_material_files`
+und `preview_material_file` in `scripts/gate/external-ignore.json` schützen den bestehenden
+Lesevertrag aus [ADR 0019](adr/0019-kontextbereich-in-private-files.md): Eigene Daten bleiben
+auch bei entzogener `moodle/user:manageownfiles`-Schreibberechtigung lesbar. Die vier externen
+Tests prüfen `execute()` und `clean_returnvalue()` mit `CAP_PROHIBIT`, eigenen Dateien und
+Benutzerwechsel. Nutzerkontext, externe Speicher-Eigentumsprüfung, Personenbezugs-Schalter
+und MCP-Fernzugriffsfreigabe gelten weiterhin.
+
+Kontext-Schreibwerkzeuge prüfen `manageownfiles` für die Moodle-Ablage. Externe Ablagen
+verwenden Anmeldung und Eigentumsprüfung am Speicher gemäß
+[ADR 0021](adr/0021-isolierung-und-personenbezug-am-externen-ablageort.md); die Moodle-Capability
+ist dort kein pauschaler Private-Files-Schalter.
 
 ### Ausgabe
 
@@ -80,7 +96,7 @@ Messwerte im Bericht (blockieren nicht, die Ratsche blockiert nur Geändertes):
 `coverage-file` (Datei unter 90 %), `crap-method` (CRAP über 8), `no-test-mapped`
 (Hinweis). `gate-error` ist immer rot. Ein fehlender, leerer oder
 ungültiger Clover-Bericht, 0 ausführbare Zeilen, Methoden ohne CRAP-Wert,
-fehlgeschlagene Tests oder ein nicht laufender Container enden mit Exitcode 1,
+negative Metriken, mehr gedeckte als ausführbare Zeilen, fehlgeschlagene Tests oder ein nicht laufender Container enden mit Exitcode 1,
 nie grün. Tests: `test/gate.test.js` mit Fixtures unter `test/fixtures/gate/`.
 
 ## Fehlschlagslog und Rangliste
@@ -101,6 +117,10 @@ Laufen im Gate-Container. **Jeder Befund blockiert**, ausgenommen `deptrac-basel
 (PHPStan über seine Baseline). Ein Werkzeug, das ohne auswertbaren Befund mit Fehlercode endet, ist
 rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-cs, phpdoc, PHPStan, die Covers-Prüfung, die Kommentarsprache und die Kontext-/Capability-Prüfung externer Funktionen aus,
 `full` und `static` zusätzlich savepoints, Mustache und ESLint.
+
+PHPStan wird über Exitcode und JSON-Bericht gemeinsam bewertet: Nur ein vollständiger,
+sauberer Bericht mit Exit 0 ist grün. Fehlende oder widersprüchliche Summen und beschädigte
+Einträge sind Werkzeugfehler; auswertbare Befunde und interne Fehler bleiben im Bericht erhalten.
 
 | Prüfung | Regel im Bericht | Werkzeug |
 |---|---|---|
@@ -166,6 +186,7 @@ Bestand über der Regel blockiert erst, wenn jemand ihn anfasst.
 |---|---|
 | `ratchet-coverage` | Gesamt-Coverage unter dem Wert in `scripts/gate/baseline.json` (nach Ausschlussliste) |
 | `ratchet-baseline-lowered` | `baseline.json` niedriger als im Vergleichsstand |
+| `ratchet-clover-missing` | eine relevante geänderte Produktionsdatei im Clover fehlt (Coverage und CRAP ungemessen) |
 | `ratchet-file-coverage` | eine geänderte Produktionsdatei unter 90 % Line-Coverage |
 | `ratchet-method-crap` | eine geänderte Methode mit CRAP über 8 |
 | `ratchet-phpstan-grown` | die PHPStan-Baseline hat je Datei und Befundart mehr Einträge als im Vergleichsstand |
@@ -190,11 +211,23 @@ Umbenennung mit Änderung prüft nur die geänderten Zeilen. Wird eine Klasse (n
 umbenannt, erscheint ihr deptrac-Baseline-Eintrag als neues Paar; Eintrag und Umbenennung
 gehören in dasselbe Ticket und der Eintrag wird dort mit umbenannt.
 
-**Vergleichsstand:** `GATE_BASE_REF`, sonst der jüngere von Merge-Base mit `origin/dev` und
-`armedAt` aus der Baseline, sonst `HEAD`. `armedAt` ist der Stand der Messung beim
-Scharfschalten; er verhindert, dass das einmalige Aufräumen davor als „geändert“ zählt. Nach dem
-Merge nach `dev` ist die Merge-Base jünger und gewinnt. Gibt es die Baseline-Dateien im
-Vergleichsstand nicht, entfällt der Vergleich.
+**Vergleichsstand:** Ein explizites `GATE_BASE_REF` gewinnt immer: CI setzt bei PRs
+`origin/<tatsächlicher Zielbranch>` (auch `origin/main`), bei Push auf `dev`/`main` den
+Commit vor dem Push. Manuelle CI-Abnahmen wählen `dev` oder `main` ausdrücklich.
+CI lädt die vollständige Historie und alle Branch-Refs (`fetch-depth: 0`). Ein ungültiger
+Ref, flache Historie, fehlende gemeinsame Historie oder eine fehlende erforderliche
+Coverage-/PHPStan-/deptrac-Baseline im Vergleichsstand ist ein Fehler, kein grüner Vergleich.
+Die Baselines werden gegen den Zielbranch-Stand verglichen; geänderte Zeilen gegen die
+Merge-Base mit diesem Stand. So werden ausschließlich auf dem Zielbranch hinzugekommene
+Dateien nicht als PR-Änderung behandelt.
+
+Ohne expliziten Ref bleibt lokal der jüngere von Merge-Base mit `origin/dev` und `armedAt`,
+sonst `HEAD`. `armedAt` bleibt als historischer Startpunkt des einmaligen Scharfschaltens
+begründet erhalten. CLI-Nachweise prüfen die ältere Entwicklungsbasis, den expliziten
+Zielref (der `armedAt` ignoriert) und den neueren übernommenen Stand: nach Übernahme gewinnt
+die jüngere Merge-Base und neue Änderungen werden wieder geprüft. `armedAt` wird nicht
+verschoben. Der erstmalige Rollout auf `main` braucht seine eigene Messung und Abnahme,
+siehe [CI und Main-Bootstrap](ci-native-server-mcp.md#main-bootstrap).
 
 **Baseline-Datei** `scripts/gate/baseline.json`: `coverage` (`covered`/`statements`, Wert des
 vollen Laufs ohne die ausgeschlossenen Dateien), `excluded` (Pfad relativ zum Plugin, `/` am Ende
@@ -211,9 +244,13 @@ lassen sie sich keiner Klasse zuordnen; sie tauchten nur deshalb in der Messung 
 Testklassen ohne Covers-Angabe alles Ausgeführte gutschrieben. Mit der Covers-Pflicht
 (`covers-missing`) fiel die Gutschrift weg: Die Messung sank von 82,33 % auf 75,48 %, davon
 1005 Zeilen aus diesen Dateien, der Rest ist Zuwachs an Code. Ohne diese Dateien im Nenner liegt
-der Bestand bei 81,08 % (11356/14006); das ist die Baseline. Seiten-Einstiegsskripte
-(`mcp.php`, `settings.php` u. a.) stehen noch im Nenner und sind bei Änderung an die 90 %-Regel
-gebunden, bis ihre Logik in Klassen liegt.
+der Bestand bei 81,08 % (11356/14006); das ist die Baseline. Nach #668 sind zusätzlich 18 ausdrücklich aufgelistete delegierende Einstiegsskripte
+ausgenommen. Ihre Fachentscheidungen liegen in getesteten Klassen; der Node-Vertrag
+`test/gate-entry-scripts.test.js` schützt die Liste und Logikfreiheit. Upgrade, Upgrade-Helfer
+und `lib.php` bleiben im Nenner. Die vollständige Messung beträgt 11990/13900 = 86,26 %;
+davon stammen +3,94 Prozentpunkte aus neuer Testdeckung und separat +0,91 aus dem
+Ausschluss von 149 verbliebenen Delegationszeilen. Dateideltas, Upgrade-Verhalten und
+Baseline-Fortschreibung sind im [Messbericht zu #668](research/qualitaets-baseline-668.md) belegt.
 
 ## Hooks
 
@@ -226,7 +263,7 @@ npm run hooks:install
 | Hook | Ruft auf | Dauer |
 |---|---|---|
 | `pre-commit` | `gate fast` (Node-Tests, PHPUnit zu geänderten Klassen, statische Prüfungen, Baseline-Ratsche) | unter einer Minute plus zugeordnete PHPUnit-Tests |
-| `pre-push` | `gate full` (volle Suite, Coverage- und CRAP-Ratsche, alle statischen Prüfungen); einmal je Push, auch bei mehreren Refs | rund 15 Minuten |
+| `pre-push` | `gate full` (Node-Tests, volle PHPUnit-Suite, Coverage- und CRAP-Ratsche, alle statischen Prüfungen); einmal je Push, auch bei mehreren Refs | rund 15 Minuten |
 | Edit-Hook Claude/Codex | `gate edit`, startet `fast` bei Änderung an Plugin-PHP, `test/**/*.js` oder `scripts/gate/**` | wie `fast` |
 
 Der Edit-Hook (`.claude/settings.json`, `.codex/hooks.json`) schreibt Befunde auf stderr und
@@ -253,10 +290,24 @@ Ausnahme versioniert und begründet im Code oder im Gate, nie stillschweigend:
 - **Zeilenkommentare:** `// phpcs:ignore <Sniff> -- <Grund>` bzw. `phpcs:disable` mit Grund, nur dort, wo
   der Sniff das Muster nicht kennt (Entry-Shims, Kindprozess-Fixtures, abstrakte Testbasis,
   Heredoc-Fixtures, Markdown-Zitate in Strings).
-- **Typen in Docblocks:** `moodle-plugin-ci phpdoc` vergleicht den `@param`-Typ mit der Signatur und
-  moodle-cs verbietet `@phpstan-param`. Array-Parameter sind deshalb `mixed[]` oder `T[]`, die genaue
-  Form steht als `Type: …` in der Beschreibung; was sich so nicht ausdrücken lässt (nullable Arrays,
-  Test-Doubles), bleibt als `missingType.iterableValue` in der PHPStan-Baseline.
+- **PHPStan-Baseline:** Jeder Eintrag in `scripts/gate/phpstan/phpstan-baseline.neon` trägt
+  direkt `# reason:`, `# evidence:` (JSON-Objekt: Plugin-Pfad → wörtliche Quellbelege) und
+  `# resolution:` (vollständige URL des Auflösungstickets oder `permanent`). Die Prüfung
+  `phpstan-reasons` gehört zu `fast`, `full` und `static`; fehlende Gründe/Tickets,
+  fremde Pfadzuordnung oder veraltete Quellbelege blockieren. Belege anderer Dateien
+  sind nur für einen tatsächlich eingebundenen Trait erlaubt. Die Prüfung kontrolliert
+  die Zuordnung und vorhandene Quellbelege; die fachliche Richtigkeit des Grundes bleibt
+  Gegenstand des Reviews.
+- **Typisierungsschulden:** Nullable Arrays, verschachtelte Array-Shapes, Promoted Properties
+  und Adapter-Test-Doubles sind typisierbar. Ihre bestehenden Ausnahmen nennen die konkrete
+  fehlende Annotation und [#714](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714).
+  `pointer_scan::has_external_target()` benötigt etwa den Inhaltstyp des nullable Roh-Pointers
+  aus `raw_pointer_for()`. `moodle-plugin-ci phpdoc` und moodle-cs bleiben verbindlich;
+  `Type: …` als Prosa ersetzt keinen PHPStan-Typ.
+- **Neu erzeugte Baseline:** Der PHPStan-Generator schreibt keine Gründe. Nach
+  `phpstan-baseline` jeden verbleibenden Eintrag erneut mit Grund, Quellbeleg und
+  Auflösung kennzeichnen; ungeprüfte Generatorausgabe bleibt rot. Das Gate erwartet
+  das tab-eingerückte Generatorformat oder eine explizit leere `ignoreErrors: []`-Liste.
 
 ## Messwerte im Vergleich zur Spec-Baseline
 
@@ -282,3 +333,20 @@ statt 5.0 gemessen wird; neue Dateien und Methoden erhöhen Nenner und Zähler.
 sind dev-only. Das Release-ZIP entsteht ausschließlich aus
 `Plugin/src/local_coursepilot/`; `test/native-release-artifact.test.js` prüft,
 dass kein Dev-Tool darin landet. `vendor/` ist gitignoriert.
+
+## Verbindliche CI und Artefakte
+
+Native CI führt denselben `npm run gate -- full`-Einstieg auf einem frisch eingerichteten,
+isolierten Moodle-5.1-/MariaDB-/PHP-8.4-Gate aus. Der Job `quality` gehört zusammen mit
+`phpunit`, `js-native` und `artifact` zu `Gate (required)`. Ausschließlich `success` für
+alle vier Jobs ist grün; fehlend, übersprungen, abgebrochen und fehlgeschlagen bleiben rot.
+
+`gate-trend-MOODLE_501_STABLE-<SHA>` enthält `gate-report.json` mit Gesamt-Coverage und
+`summary.methodsCrapOver8` sowie den Datei-/Methodenmesswerten. MSI kommt erst mit der
+Mutationsphase. Auch bei roten Läufen wird das vorhandene Berichtsverzeichnis hochgeladen:
+Clover, `gate-static.json`, Git-Kontext, Setup-/full-Log und Exitdatei. Bei einem frühen
+Setup-/Testfehler können Messwerte fehlen; die vorhandenen Logs sind dann der Fehlernachweis,
+keine ersatzweise erfolgreiche Messung. Der Upload ist selbst verpflichtend.
+
+Feature-PRs sind erst nach der echten grünen Abnahme des gesamten Pflichtchecks zugelassen.
+Lokales Grün, Workflow-Vertragstests oder ein einzelner grüner Matrix-Leg reichen nicht.

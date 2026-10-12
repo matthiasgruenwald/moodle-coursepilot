@@ -44,6 +44,29 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
+     * Own context files remain readable without write permission, including after a user switch.
+     */
+    public function test_own_files_remain_readable_with_manageownfiles_prohibited(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid, \context_system::instance()->id, true);
+
+        foreach (['teacher-a.md', 'teacher-b.md'] as $filename) {
+            $user = $this->getDataGenerator()->create_user();
+            $this->setUser($user);
+            $this->assertFalse(has_capability('moodle/user:manageownfiles', \context_user::instance($user->id)));
+            $this->create_context_file($user, '/coursepilot/', $filename, '# Own context');
+
+            $result = list_context_files::execute();
+            $result = external_api::clean_returnvalue(list_context_files::execute_returns(), $result);
+
+            $this->assertSame([$filename], array_column($result['entries'], 'name'));
+            $this->assertFalse($result['entries'][0]['locked']);
+        }
+    }
+
+    /**
      * The template file is accessible at the root. Omitting path lists the root.
      */
     public function test_lists_root_including_template_file(): void {

@@ -17,6 +17,7 @@
 namespace local_coursepilot\output;
 
 use local_coursepilot\oauth_lib;
+use local_coursepilot\connection;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -40,9 +41,9 @@ final class admin_connections_page_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user(['firstname' => 'Ada', 'lastname' => 'Lovelace']);
         $tokenid = $this->issue_token((int) $user->id);
 
-        // Use actual oauth_lib::active_tokens() rows to catch missing name fields
-        // required by fullname(), which caused the notice in #578.
-        $data = admin_connections_page::page_data(oauth_lib::active_tokens());
+        // Use actual connection::active_tokens() rows to catch missing name fields
+        // required by fullname(), so incomplete rows cannot emit debugging notices.
+        $data = admin_connections_page::page_data(connection::active_tokens());
 
         $this->assertDebuggingNotCalled();
         $this->assertFalse($data['empty']);
@@ -67,9 +68,9 @@ final class admin_connections_page_test extends \advanced_testcase {
         $clientid = $registration['body']['client_id'];
         $verifier = bin2hex(random_bytes(32));
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
-        $code = oauth_lib::issue_code($clientid, $userid, 'https://claude.ai/api/mcp/auth_callback', $challenge);
-        $this->assertNotNull(oauth_lib::exchange_code($code, $clientid, 'https://claude.ai/api/mcp/auth_callback', $verifier));
-        return (int) array_key_first(oauth_lib::active_tokens_for_user($userid));
+        $code = connection::issue_code($clientid, $userid, 'https://claude.ai/api/mcp/auth_callback', $challenge);
+        $this->assertNotNull(connection::exchange_code($code, $clientid, 'https://claude.ai/api/mcp/auth_callback', $verifier));
+        return (int) array_key_first(connection::active_tokens_for_user($userid));
     }
 
     public function test_revokeall_onsubmit_embeds_confirm_text_as_json(): void {
@@ -80,5 +81,41 @@ final class admin_connections_page_test extends \advanced_testcase {
             get_string('connectionrevokeallconfirm', 'local_coursepilot'),
             $data['revokeallonsubmit']
         );
+    }
+    public function test_admin_response_revokes_all_connections_after_session_validation(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        global $USER;
+        $this->issue_token((int) $USER->id);
+        $this->assertFalse(admin_connections_page::response(0, false)->data['empty']);
+        $_POST['sesskey'] = sesskey();
+        try {
+            $result = admin_connections_page::response(0, true);
+            $this->assertStringEndsWith('/local/coursepilot/admin/connections.php', $result->redirecturl->get_path());
+            $this->assertSame([], connection::active_tokens());
+        } finally {
+            unset($_POST['sesskey']);
+        }
+    }
+    public function test_admin_response_revokes_one_connection_and_preserves_the_other(): void {
+        global $USER;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $tokenid = $this->issue_token((int) $USER->id);
+        $this->issue_token((int) $USER->id);
+        $_POST['sesskey'] = sesskey();
+        try {
+            $this->assertNotNull(admin_connections_page::response($tokenid, false)->redirecturl);
+            $this->assertCount(1, \local_coursepilot\connection::active_tokens());
+        } finally {
+            unset($_POST['sesskey']);
+        }
+    }
+
+    public function test_admin_response_refuses_non_administrators(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->expectException(\required_capability_exception::class);
+        admin_connections_page::response(0, true);
     }
 }

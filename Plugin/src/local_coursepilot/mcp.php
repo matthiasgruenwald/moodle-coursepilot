@@ -39,58 +39,12 @@ define('NO_DEBUG_DISPLAY', true);
 // phpcs:ignore moodle.Files.RequireLogin.Missing -- Bearer-token endpoint; dispatcher authenticates every request itself.
 require(__DIR__ . '/../../config.php');
 
-use local_coursepilot\dispatcher;
 
 raise_memory_limit(MEMORY_EXTRA);
 \core_external\external_api::set_timeout();
 
-/**
- * Reads the Bearer token. Under CGI/FastCGI the Authorization header
- * may arrive only as REDIRECT_HTTP_AUTHORIZATION (research #290, §6.1).
- *
- * @return string|null
- */
-function coursepilot_mcp_bearer_token(): ?string {
-    $header = $_SERVER['HTTP_AUTHORIZATION']
-        ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
-        ?? '';
-    if ($header === '' && function_exists('getallheaders')) {
-        foreach (getallheaders() as $name => $value) {
-            if (strcasecmp($name, 'Authorization') === 0) {
-                $header = $value;
-                break;
-            }
-        }
-    }
-    if (preg_match('/^Bearer\s+(\S+)$/i', trim($header), $matches)) {
-        return $matches[1];
-    }
-    return null;
-}
-
-$decoded = json_decode(file_get_contents('php://input'), true);
-$request = is_array($decoded) ? $decoded : null;
-
-$response = dispatcher::handle($request, coursepilot_mcp_bearer_token(), [
-    'origin' => $_SERVER['HTTP_ORIGIN'] ?? null,
-    'pathinfo' => $_SERVER['PATH_INFO'] ?? '',
-    'method' => $_SERVER['REQUEST_METHOD'] ?? 'POST',
-    // Negotiated protocol revision after handshake (#400): controls
-    // 2026-07-28 result metadata; see dispatcher::resultmeta().
-    'protocolversion' => $_SERVER['HTTP_MCP_PROTOCOL_VERSION'] ?? null,
-]);
-
-http_response_code($response['status']);
-foreach ($response['headers'] as $name => $value) {
-    header($name . ': ' . $value);
-}
-if ($response['body'] !== null) {
-    header('Content-Type: application/json');
-    // JSON_INVALID_UTF8_SUBSTITUTE handles invalid bytes instead of silently
-    // returning false: otherwise even a 200 application/json reply has an
-    // empty body when any result text has invalid UTF-8, such as restored
-    // course/section names with old Latin-1 bytes. The client receives
-    // no JSON-RPC error, just an unparseable empty body.
-    echo json_encode($response['body'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-}
-exit;
+\local_coursepilot\output\http_endpoint::mcp(
+    (string) file_get_contents('php://input'),
+    $_SERVER,
+    \local_coursepilot\output\http_endpoint::request_headers()
+)->send();

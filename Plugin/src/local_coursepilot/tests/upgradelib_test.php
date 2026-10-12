@@ -130,8 +130,8 @@ final class upgradelib_test extends \advanced_testcase {
         $dbman->drop_field($tokentable, $accesshash);
         $dbman->drop_field($tokentable, $refreshhash);
 
-        $access = oauth_lib::random_token(32);
-        $refresh = oauth_lib::random_token(32);
+        $access = bin2hex(random_bytes(32));
+        $refresh = bin2hex(random_bytes(32));
         $accessfield = new \xmldb_field('accesstoken', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null, 'id');
         $refreshfield = new \xmldb_field('refreshtoken', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null, 'accesstoken');
         $dbman->add_field($tokentable, $accessfield);
@@ -144,8 +144,8 @@ final class upgradelib_test extends \advanced_testcase {
             'refreshtoken' => $refresh,
             'clientid' => 'legacy-client',
             'userid' => $user->id,
-            'expires' => time() + oauth_lib::ACCESS_TOKEN_TTL,
-            'refreshexpires' => time() + oauth_lib::REFRESH_TOKEN_TTL,
+            'expires' => time() + connection::ACCESS_TOKEN_TTL,
+            'refreshexpires' => time() + connection::REFRESH_TOKEN_TTL,
             'revoked' => 0,
             'timecreated' => time(),
         ]);
@@ -155,8 +155,8 @@ final class upgradelib_test extends \advanced_testcase {
 
         $this->assertFalse($dbman->field_exists($tokentable, $accessfield));
         $this->assertFalse($dbman->field_exists($tokentable, $refreshfield));
-        $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token($access));
-        $this->assertNotNull(oauth_lib::rotate_refresh_token($refresh, 'legacy-client'));
+        $this->assertSame((int) $user->id, connection::authenticate_access_token($access));
+        $this->assertNotNull(connection::rotate_refresh_token($refresh, 'legacy-client'));
         $this->assertSame([], $this->schema_errors());
     }
 

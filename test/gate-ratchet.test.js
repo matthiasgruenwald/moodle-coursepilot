@@ -48,7 +48,7 @@ const BASELINE = {
   excluded: [{ path: 'lang/', reason: 'Sprachtabelle' }],
 };
 
-const PHPSTAN = (count) => `parameters:\n\tignoreErrors:\n\t\t-\n\t\t\tmessage: '#^x$#'\n\t\t\tidentifier: missingType.iterableValue\n\t\t\tcount: ${count}\n\t\t\tpath: ../html/public/local/coursepilot/classes/a.php\n`;
+const PHPSTAN = (count) => `parameters:\n\tignoreErrors:\n\t\t-\n\t\t\t# reason: This fixture represents existing iterable typing debt in the sample class.\n\t\t\t# evidence: {"classes/a.php":["public function easy(): int {"]}\n\t\t\t# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714\n\t\t\tmessage: '#^x$#'\n\t\t\tidentifier: missingType.iterableValue\n\t\t\tcount: ${count}\n\t\t\tpath: ../html/public/local/coursepilot/classes/a.php\n`;
 const DEPTRAC = (pairs) => `deptrac:\n  skip_violations:\n    # Grund -> #1\n${pairs.map(([f, t]) => `    ${f}:\n      - ${t}\n`).join('')}`;
 
 function run(cwd, args, extraEnv = {}, input) {
@@ -103,6 +103,117 @@ function ratchet(repo, xml) {
 
 // Der Bestand misst 90/100 = 90 % gesamt; Baseline 80 %. a.php: 9/10.
 const goodExtra = [{ name: 'classes/b.php', st: 90, cov: 81 }];
+
+test('ratchet CLI: every required target baseline must exist', () => {
+  for (const rel of ['scripts/gate/baseline.json', 'scripts/gate/phpstan/phpstan-baseline.neon', 'scripts/gate/deptrac/deptrac-baseline.yaml']) {
+    const repo = makeRepo();
+    git(repo, 'update-ref', 'refs/remotes/origin/dev', 'HEAD');
+    fs.rmSync(path.join(repo, rel));
+    git(repo, 'add', '-A');
+    git(repo, 'commit', '-qm', 'target without baseline');
+    git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+    git(repo, 'restore', '--source=origin/dev', '--', rel);
+    assert.equal(run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/dev' }).status, 0);
+    const missing = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/main' });
+    assert.equal(missing.status, 1, missing.out);
+    assert.match(missing.out, /gate-error: .*Zielbranch-Baseline fehlt.*origin\/main/);
+    assert.ok(missing.out.includes(rel), missing.out);
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('ratchet CLI: invalid refs and shallow history cannot prove a comparison', () => {
+  const repo = makeRepo();
+  const invalid = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/missing' });
+  assert.equal(invalid.status, 1);
+  assert.match(invalid.out, /gate-error: .*Vergleichsref ungueltig.*origin\/missing/);
+  write(repo, '.git/shallow', git(repo, 'rev-parse', 'HEAD'));
+  const shallow = run(repo, ['ratchet']);
+  assert.equal(shallow.status, 1);
+  assert.match(shallow.out, /gate-error: .*vollstaendige Git-Historie/);
+  fs.rmSync(repo, { recursive: true, force: true });
+});
+
+test('ratchet CLI: impossible target coverage counts are red', () => {
+  for (const coverage of [{ covered: -1, statements: 100 }, { covered: 101, statements: 100 }, { covered: 80, statements: 0 }]) {
+    const repo = makeRepo({ baseline: { ...BASELINE, coverage } });
+    git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+    write(repo, 'scripts/gate/baseline.json', JSON.stringify(BASELINE));
+    const invalid = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/main' });
+    assert.equal(invalid.status, 1);
+    assert.match(invalid.out, /gate-error: Baseline ungueltig/);
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('ratchet CLI: corrupt target static baselines cannot prove a comparison', () => {
+  for (const rel of ['scripts/gate/phpstan/phpstan-baseline.neon', 'scripts/gate/deptrac/deptrac-baseline.yaml']) {
+    const repo = makeRepo();
+    git(repo, 'update-ref', 'refs/remotes/origin/dev', 'HEAD');
+    write(repo, rel, 'invalid baseline\n');
+    git(repo, 'add', '-A');
+    git(repo, 'commit', '-qm', 'corrupt target baseline');
+    git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+    git(repo, 'restore', '--source=origin/dev', '--', rel);
+    const invalid = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/main' });
+    assert.equal(invalid.status, 1);
+    assert.match(invalid.out, /gate-error: .*Baseline ungueltig/);
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('ratchet CLI: dev and main use target baselines and only the PR changes', () => {
+  const repo = makeRepo();
+  git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+  // Target-only changes must not become changed production files in the PR.
+  write(repo, `${PLUGIN}/classes/target.php`, SOURCE);
+  write(repo, 'scripts/gate/baseline.json', JSON.stringify({ ...BASELINE, coverage: { covered: 95, statements: 100 } }));
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-qm', 'dev advances');
+  git(repo, 'update-ref', 'refs/remotes/origin/dev', 'HEAD');
+  git(repo, 'checkout', '--detach', 'origin/main');
+  write(repo, 'pr.txt', 'PR change');
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-qm', 'PR');
+  const main = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/main' });
+  assert.equal(main.status, 0, main.out);
+  const dev = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/dev' });
+  assert.equal(dev.status, 1);
+  assert.match(dev.out, /ratchet-baseline-lowered: .*95\.00%/);
+  // Raise to the actual dev baseline, then prove target-only code is not checked.
+  write(repo, 'scripts/gate/baseline.json', JSON.stringify({ ...BASELINE, coverage: { covered: 95, statements: 100 } }));
+  write(repo, 'clover.xml', clover({ aCovered: 10, extraFiles: [{ name: 'classes/b.php', st: 90, cov: 90 }] }));
+  const noTargetChange = run(repo, ['ratchet', path.join(repo, 'clover.xml')], { GATE_BASE_REF: 'origin/dev' });
+  assert.equal(noTargetChange.status, 0, noTargetChange.out);
+  assert.doesNotMatch(noTargetChange.out, /target\.php/);
+  fs.rmSync(repo, { recursive: true, force: true });
+});
+
+test('ratchet CLI: armedAt remains local history; explicit targets and later merges win', () => {
+  const repo = makeRepo();
+  const start = git(repo, 'rev-parse', 'HEAD').trim();
+  git(repo, 'update-ref', 'refs/remotes/origin/dev', 'HEAD');
+  write(repo, `${PLUGIN}/classes/a.php`, SOURCE.replace('return 1;', 'return 11;'));
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-qm', 'arming cleanup');
+  const armedAt = git(repo, 'rev-parse', 'HEAD').trim();
+  write(repo, 'scripts/gate/baseline.json', JSON.stringify({ ...BASELINE, armedAt }));
+  write(repo, 'clover.xml', clover({ aCovered: 5, extraFiles: goodExtra }));
+  const args = ['ratchet', path.join(repo, 'clover.xml')];
+  assert.equal(run(repo, args, { GATE_BASE_REF: '' }).status, 0);
+  const explicit = run(repo, args, { GATE_BASE_REF: start });
+  assert.equal(explicit.status, 1);
+  assert.match(explicit.out, /ratchet-file-coverage/);
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-qm', 'armed baseline');
+  git(repo, 'update-ref', 'refs/remotes/origin/dev', 'HEAD');
+  write(repo, `${PLUGIN}/classes/a.php`, SOURCE.replace('return 1;', 'return 111;'));
+  const afterMerge = run(repo, args, { GATE_BASE_REF: '' });
+  assert.equal(afterMerge.status, 1);
+  assert.match(afterMerge.out, /ratchet-file-coverage/);
+  assert.ok(afterMerge.out.includes(git(repo, 'rev-parse', 'origin/dev').trim().slice(0, 12)), afterMerge.out);
+  fs.rmSync(repo, { recursive: true, force: true });
+});
 
 test('ratchet: unveraendertes Repo mit Coverage ueber der Baseline ist gruen', () => {
   const repo = makeRepo();
@@ -161,6 +272,46 @@ test('ratchet: Aenderung nur im Docblock der naechsten Methode trifft nicht die 
   const repo = makeRepo();
   write(repo, `${PLUGIN}/classes/a.php`, SOURCE.replace('Docblock of next.', 'Docblock of next, geaendert.'));
   assert.equal(ratchet(repo, clover({ crapHard: 40, extraFiles: goodExtra })).status, 0);
+});
+
+test('ratchet CLI: changed production files missing from Clover block coverage and CRAP', () => {
+  for (const tracked of [false, true]) {
+    const repo = makeRepo();
+    const file = tracked ? 'classes/a.php' : 'classes/new.php';
+    write(repo, `${PLUGIN}/${file}`, SOURCE.replace('return 1;', 'return 11;'));
+    const r = ratchet(repo, clover({ withA: !tracked, extraFiles: [{ ...goodExtra[0], methods: '<line num="8" type="method" name="easy" complexity="1" crap="1" count="1"/>' }] }));
+    assert.equal(r.status, 1, r.out);
+    assert.match(r.out, new RegExp(`${file}:0: ratchet-clover-missing:`));
+    assert.match(r.out, /Coverage.*CRAP/);
+  }
+});
+
+test('report and ratchet CLI: impossible Clover metrics are rejected', () => {
+  const repo = makeRepo();
+  const valid = clover({ extraFiles: goodExtra });
+  const invalid = [
+    ['negative file statements', valid.replace('statements="10"', 'statements="-10"')],
+    ['negative file covered', valid.replace('coveredstatements="9"', 'coveredstatements="-1"')],
+    ['file covered exceeds statements', valid.replace('coveredstatements="9"', 'coveredstatements="11"')],
+    ['negative project statements', valid.replace('statements="100"', 'statements="-100"')],
+    ['negative project covered', valid.replace('coveredstatements="90"', 'coveredstatements="-1"')],
+    ['project covered exceeds statements', valid.replace('coveredstatements="90"', 'coveredstatements="101"')],
+    ['negative method complexity', valid.replace('complexity="2"', 'complexity="-2"')],
+    ['negative method CRAP', valid.replace('crap="12"', 'crap="-12"')],
+    ['negative method line', valid.replace('num="8"', 'num="-8"')],
+  ];
+  for (const [scenario, xml] of invalid) {
+    write(repo, 'clover.xml', xml);
+    for (const mode of ['report', 'ratchet']) {
+      const r = run(repo, [mode, path.join(repo, 'clover.xml')]);
+      assert.equal(r.status, 1, `${scenario}, ${mode}: ${r.out}`);
+      assert.match(r.out, /gate-error: Clover ungueltig/);
+      assert.doesNotMatch(r.out, /^summary:/m);
+    }
+  }
+  write(repo, 'clover.xml', valid);
+  assert.equal(run(repo, ['report', path.join(repo, 'clover.xml')]).status, 0);
+  assert.equal(ratchet(repo, valid).status, 0);
 });
 
 test('ratchet: neue unversionierte Datei zaehlt komplett als geaendert', () => {
@@ -223,7 +374,7 @@ test('ratchet: fehlende Baseline, fehlender oder leerer Clover sind rot, nie gru
 });
 
 test('ratchet: reine Umbenennung (versioniert oder unversioniert) ist weder geaendert noch waechst die PHPStan-Baseline', () => {
-  const renamedBaseline = PHPSTAN(3).replace('classes/a.php', 'classes/z.php');
+  const renamedBaseline = PHPSTAN(3).replaceAll('classes/a.php', 'classes/z.php');
   for (const stage of [true, false]) {
     const repo = makeRepo();
     fs.renameSync(path.join(repo, PLUGIN, 'classes/a.php'), path.join(repo, PLUGIN, 'classes/z.php'));
@@ -238,12 +389,31 @@ test('ratchet: reine Umbenennung (versioniert oder unversioniert) ist weder geae
   }
 });
 
+test('ratchet CLI: missing Clover entries are allowed for exclusions and pure renames', () => {
+  for (const stage of [true, false]) {
+    const repo = makeRepo({ baseline: { ...BASELINE, excluded: [...BASELINE.excluded, { path: 'db/access.php', reason: 'Capability declarations without logic' }] } });
+    fs.renameSync(path.join(repo, PLUGIN, 'classes/a.php'), path.join(repo, PLUGIN, 'classes/z.php'));
+    write(repo, 'scripts/gate/phpstan/phpstan-baseline.neon', PHPSTAN(3).replaceAll('classes/a.php', 'classes/z.php'));
+    write(repo, `${PLUGIN}/lang/en/local_coursepilot.php`, "<?php\n$string['a'] = 'changed';\n");
+    write(repo, `${PLUGIN}/db/access.php`, "<?php\n$capabilities = [];\n");
+    write(repo, `${PLUGIN}/tests/new_test.php`, "<?php\nclass new_test {}\n");
+    write(repo, `${PLUGIN}/classes/schema.json`, '{}');
+    if (stage) {
+      git(repo, 'add', '-A');
+    }
+    const other = [{ ...goodExtra[0], methods: '<line num="3" type="method" name="m" complexity="1" crap="1" count="1"/>' }];
+    const r = ratchet(repo, clover({ withA: false, extraFiles: other }));
+    assert.equal(r.status, 0, `stage=${stage}: ${r.out}`);
+    assert.match(r.out, /violations=0/);
+  }
+});
+
 test('ratchet: umbenannte Datei mit Aenderung prueft nur die geaenderten Methoden', () => {
   const repo = makeRepo();
   fs.renameSync(path.join(repo, PLUGIN, 'classes/a.php'), path.join(repo, PLUGIN, 'classes/z.php'));
   write(repo, `${PLUGIN}/classes/z.php`, SOURCE.replace('return 3;', 'return 33;'));
   git(repo, 'add', '-A');
-  write(repo, 'scripts/gate/phpstan/phpstan-baseline.neon', PHPSTAN(3).replace('classes/a.php', 'classes/z.php'));
+  write(repo, 'scripts/gate/phpstan/phpstan-baseline.neon', PHPSTAN(3).replaceAll('classes/a.php', 'classes/z.php'));
   const z = `<file name="${CONTAINER_PLUGIN}/classes/z.php"><line num="8" type="method" name="easy" complexity="1" crap="30" count="0"/><line num="12" type="method" name="hard" complexity="2" crap="30" count="0"/><metrics statements="10" coveredstatements="10"/></file>`;
   const full = `<?xml version="1.0"?><coverage><project>${z}<file name="${CONTAINER_PLUGIN}/classes/b.php"><metrics statements="90" coveredstatements="81"/></file><metrics statements="100" coveredstatements="91"/></project></coverage>`;
   const r = ratchet(repo, full);
@@ -355,6 +525,92 @@ const push = (repo, ...args) => {
   const r = spawnSync('git', ['push', 'origin', ...args], { cwd: repo, encoding: 'utf8' });
   return { status: r.status, out: `${r.stdout}${r.stderr}` };
 };
+
+test('full CLI and pre-push: a failing Node contract blocks otherwise green checks', () => {
+  const repo = makeRepo({ pairs: [] });
+  try {
+    fs.mkdirSync(path.join(repo, PLUGIN, 'classes/external'));
+    write(repo, 'package.json', JSON.stringify({ scripts: { test: 'node --test test/contract.test.js' } }));
+    write(repo, 'test/contract.test.js', "const { test } = require('node:test');\ntest('Node contract failure', () => { throw new Error('contract rejected'); });\n");
+    write(repo, 'clover-fixture.xml', clover({ extraFiles: goodExtra }));
+    write(repo, 'bin/docker', `#!/usr/bin/env node
+const fs = require('node:fs');
+const path = require('node:path');
+const args = process.argv.slice(2);
+if (args[0] === 'inspect') {
+  console.log('true');
+} else if (args.includes('/var/www/html/vendor/bin/phpunit')) {
+  fs.copyFileSync(path.join(process.env.GATE_REPO, 'clover-fixture.xml'), path.join(process.env.GATE_DIR, 'reports/clover.xml'));
+  console.log('PHPUnit fixture: green');
+  process.exit(Number(process.env.GATE_PHPUNIT_EXIT || 0));
+} else if (args.includes('/opt/dev-tools/vendor/bin/phpstan')) {
+  console.log(JSON.stringify({ totals: { errors: 0, file_errors: 0 }, files: {}, errors: [] }));
+} else if (args.includes('/opt/dev-tools/vendor/bin/deptrac')) {
+  if (args.includes('analyse')) console.log(JSON.stringify({ files: {} }));
+} else if (!args.includes('public/admin/tool/phpunit/cli/util.php') && !args.includes('/opt/plugin-ci/vendor/bin/moodle-plugin-ci')) {
+  console.error('Unexpected Docker command: ' + args.join(' '));
+  process.exit(1);
+}
+`);
+    fs.chmodSync(path.join(repo, 'bin/docker'), 0o755);
+    fs.mkdirSync(path.join(repo, 'gate-dir/reports'), { recursive: true });
+    git(repo, 'add', '-A');
+    git(repo, 'commit', '-qm', 'Node contract fixture');
+    // The fixture runs its own Node test process, outside this test runner's context.
+    const env = { NODE_TEST_CONTEXT: undefined, PATH: `${path.join(repo, 'bin')}${path.delimiter}${process.env.PATH}`, GATE_DIR: path.join(repo, 'gate-dir') };
+    for (const name of fs.readdirSync(path.join(ROOT, 'scripts/gate')).filter(n => n.endsWith('.js') || n === 'sync-plugin.sh')) {
+      fs.copyFileSync(path.join(ROOT, 'scripts/gate', name), path.join(repo, 'scripts/gate', name));
+    }
+    fs.copyFileSync(path.join(ROOT, 'scripts/gate/phpstan/reasons.js'), path.join(repo, 'scripts/gate/phpstan/reasons.js'));
+    fs.cpSync(path.join(ROOT, 'scripts/githooks'), path.join(repo, 'scripts/githooks'), { recursive: true });
+    write(repo, '.gitignore', 'gate-dir/\nfailures.log\nremote.git/\n');
+    git(repo, 'add', '-A');
+    git(repo, 'commit', '-qm', 'Real gate and hooks');
+    git(repo, 'config', 'core.hooksPath', 'scripts/githooks');
+    git(repo, 'init', '-q', '--bare', path.join(repo, 'remote.git'));
+    git(repo, 'remote', 'add', 'origin', path.join(repo, 'remote.git'));
+    const blocked = spawnSync('git', ['push', 'origin', 'HEAD:refs/heads/work'], { cwd: repo, encoding: 'utf8', env: { ...process.env, GATE_REPO: repo, GATE_BASE_REF: 'HEAD', GATE_FAILURE_LOG: path.join(repo, 'failures.log'), ...env } });
+    const blockedOut = `${blocked.stdout}${blocked.stderr}`;
+    assert.match(blockedOut, /Node contract failure/);
+    assert.match(blockedOut, /PHPUnit fixture: green/);
+    assert.match(blockedOut, /summary: ratchet .* violations=0/);
+    assert.match(blockedOut, /summary: static .*phpstan=0 .*deptrac=0/);
+    assert.doesNotMatch(blockedOut, /gate-error|versionierte Dateien sind geaendert/);
+    assert.notEqual(blocked.status, 0, blockedOut);
+    assert.equal(git(repo, 'ls-remote', 'origin', 'refs/heads/work'), '');
+    const red = run(repo, ['full'], env);
+    assert.match(red.out, /PHPUnit fixture: green/);
+    assert.match(red.out, /summary: ratchet .* violations=0/);
+    assert.match(red.out, /summary: static .*phpstan=0 .*deptrac=0/);
+    assert.doesNotMatch(red.out, /gate-error/);
+    assert.equal(red.status, 1, red.out);
+    assert.match(red.out, /Node contract failure/);
+    assert.match(fs.readFileSync(path.join(repo, 'failures.log'), 'utf8'), /\tnode-tests\t-\tfail/);
+    write(repo, 'test/contract.test.js', "const { test } = require('node:test');\nconst assert = require('node:assert/strict');\ntest('Node contract success', () => assert.equal(1, 1));\n");
+    const green = run(repo, ['full'], env);
+    assert.equal(green.status, 0, green.out);
+    assert.match(green.out, /Node contract success/);
+    assert.match(fs.readFileSync(path.join(repo, 'failures.log'), 'utf8'), /\tnode-tests\t-\tok/);
+    fs.rmSync(path.join(repo, 'gate-dir/reports/gate-report.json'));
+    const failedPhp = run(repo, ['full'], { ...env, GATE_PHPUNIT_EXIT: '1' });
+    assert.equal(failedPhp.status, 1, failedPhp.out);
+    assert.match(failedPhp.out, /summary: mode=full phpunit=fail/);
+    assert.equal(fs.existsSync(path.join(repo, 'gate-dir/reports/gate-report.json')), true,
+      'A failed PHPUnit run with valid Clover still publishes its measurement');
+    const failedTrend = JSON.parse(fs.readFileSync(path.join(repo, 'gate-dir/reports/gate-report.json'), 'utf8'));
+    assert.equal(failedTrend.summary.coverage, 90);
+    assert.equal(failedTrend.summary.methodsCrapOver8, 1);
+    git(repo, 'add', '-A');
+    const committed = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'Green Node contract'], { cwd: repo, encoding: 'utf8', env: { ...process.env, GATE_REPO: repo, GATE_BASE_REF: 'HEAD', GATE_FAILURE_LOG: path.join(repo, 'failures.log'), ...env } });
+    assert.equal(committed.status, 0, `${committed.stdout}${committed.stderr}`);
+    const pushed = spawnSync('git', ['push', 'origin', 'HEAD:refs/heads/work'], { cwd: repo, encoding: 'utf8', env: { ...process.env, GATE_REPO: repo, GATE_BASE_REF: 'HEAD', GATE_FAILURE_LOG: path.join(repo, 'failures.log'), ...env } });
+    assert.equal(pushed.status, 0, `${pushed.stdout}${pushed.stderr}`);
+    assert.match(`${pushed.stdout}${pushed.stderr}`, /Node contract success/);
+    assert.equal(git(repo, 'ls-remote', 'origin', 'refs/heads/work').split('\t')[0], git(repo, 'rev-parse', 'HEAD').trim());
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
 
 test('pre-push: Gate full rot blockiert den Push, gruen laesst ihn durch', () => {
   const red = pushRepo(1);

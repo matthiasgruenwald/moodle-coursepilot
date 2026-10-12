@@ -15,7 +15,7 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Synthetic regressions at the existing OAuth and download boundaries (#638, #639).
+ * Synthetic regressions at the connection and download boundaries.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -25,9 +25,9 @@
 namespace local_coursepilot;
 
 /**
- * Synthetic regressions at the existing OAuth and download boundaries (#638, #639).
+ * Synthetic regressions at the connection and download boundaries.
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(oauth_lib::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(connection::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(workbench_ticket::class)]
 final class oauth_connection_test extends \advanced_testcase {
     /**
@@ -40,8 +40,8 @@ final class oauth_connection_test extends \advanced_testcase {
     private function tokens(string $clientid, int $userid): array {
         $verifier = str_repeat('v', 43);
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
-        $code = oauth_lib::issue_code($clientid, $userid, 'https://client.example/callback', $challenge);
-        return oauth_lib::exchange_code($code, $clientid, 'https://client.example/callback', $verifier);
+        $code = connection::issue_code($clientid, $userid, 'https://client.example/callback', $challenge);
+        return connection::exchange_code($code, $clientid, 'https://client.example/callback', $verifier);
     }
 
     public function test_rotation_preserves_connection_and_consumed_refresh_hash(): void {
@@ -49,24 +49,24 @@ final class oauth_connection_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $original = $this->tokens('client-a', (int) $user->id);
-        oauth_lib::authenticate_access_token($original['access_token']);
-        $connection = oauth_lib::current_connection_id();
+        connection::authenticate_access_token($original['access_token']);
+        $connection = connection::current_connection_id();
         $this->assertNotNull($connection);
         $other = $this->tokens('client-a', (int) $user->id);
-        oauth_lib::authenticate_access_token($other['access_token']);
-        $this->assertNotSame($connection, oauth_lib::current_connection_id());
-        $rotated = oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a');
-        $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token($rotated['access_token']));
-        $this->assertSame($connection, oauth_lib::current_connection_id());
+        connection::authenticate_access_token($other['access_token']);
+        $this->assertNotSame($connection, connection::current_connection_id());
+        $rotated = connection::rotate_refresh_token($original['refresh_token'], 'client-a');
+        $this->assertSame((int) $user->id, connection::authenticate_access_token($rotated['access_token']));
+        $this->assertSame($connection, connection::current_connection_id());
         $history = $DB->get_record(
             'local_coursepilot_oauth_token',
             ['refreshtokenhash' => hash('sha256', $original['refresh_token'])]
         );
         $this->assertNotFalse($history);
         $this->assertSame($connection, (int) $history->connectionid);
-        $this->assertNull(oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a'));
-        $this->assertNull(oauth_lib::authenticate_access_token($rotated['access_token']));
-        $this->assertNull(oauth_lib::rotate_refresh_token($rotated['refresh_token'], 'client-a'));
+        $this->assertNull(connection::rotate_refresh_token($original['refresh_token'], 'client-a'));
+        $this->assertNull(connection::authenticate_access_token($rotated['access_token']));
+        $this->assertNull(connection::rotate_refresh_token($rotated['refresh_token'], 'client-a'));
     }
 
     public function test_stolen_refresh_replay_revokes_every_successor_and_ticket(): void {
@@ -74,22 +74,22 @@ final class oauth_connection_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         $original = $this->tokens('client-a', (int) $USER->id);
-        oauth_lib::authenticate_access_token($original['access_token']);
+        connection::authenticate_access_token($original['access_token']);
         $this->create_file();
         $originalticket = $this->ticket();
-        $attacker = oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a');
-        oauth_lib::authenticate_access_token($attacker['access_token']);
+        $attacker = connection::rotate_refresh_token($original['refresh_token'], 'client-a');
+        connection::authenticate_access_token($attacker['access_token']);
         $attackerticket = $this->ticket();
-        $successor = oauth_lib::rotate_refresh_token($attacker['refresh_token'], 'client-a');
-        oauth_lib::authenticate_access_token($successor['access_token']);
+        $successor = connection::rotate_refresh_token($attacker['refresh_token'], 'client-a');
+        connection::authenticate_access_token($successor['access_token']);
         $successorticket = $this->ticket();
         $other = $this->tokens('client-a', (int) $USER->id);
-        oauth_lib::authenticate_access_token($other['access_token']);
+        connection::authenticate_access_token($other['access_token']);
         $otherticket = $this->ticket();
 
         // A mismatched client cannot revoke a proven connection, even with a consumed secret.
-        $this->assertNull(oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-b'));
-        $this->assertNotNull(oauth_lib::authenticate_access_token($successor['access_token']));
+        $this->assertNull(connection::rotate_refresh_token($original['refresh_token'], 'client-b'));
+        $this->assertNotNull(connection::authenticate_access_token($successor['access_token']));
         // Consumed evidence survives its old expiry; descendants have their own lifetimes.
         $DB->set_field(
             'local_coursepilot_oauth_token',
@@ -97,17 +97,17 @@ final class oauth_connection_test extends \advanced_testcase {
             time() - 1,
             ['refreshtokenhash' => hash('sha256', $original['refresh_token'])]
         );
-        $this->assertNull(oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a'));
+        $this->assertNull(connection::rotate_refresh_token($original['refresh_token'], 'client-a'));
         foreach ([$original, $attacker, $successor] as $pair) {
-            $this->assertNull(oauth_lib::authenticate_access_token($pair['access_token']));
-            $this->assertNull(oauth_lib::rotate_refresh_token($pair['refresh_token'], 'client-a'));
+            $this->assertNull(connection::authenticate_access_token($pair['access_token']));
+            $this->assertNull(connection::rotate_refresh_token($pair['refresh_token'], 'client-a'));
         }
         foreach ([$originalticket, $attackerticket, $successorticket] as $ticket) {
             $this->assert_ticket_revoked($ticket);
         }
-        $this->assertNotNull(oauth_lib::authenticate_access_token($other['access_token']));
+        $this->assertNotNull(connection::authenticate_access_token($other['access_token']));
         $this->assertSame('synthetic bytes', workbench_ticket::redeem($otherticket)['content']);
-        $this->assertNotNull(oauth_lib::rotate_refresh_token($other['refresh_token'], 'client-a'));
+        $this->assertNotNull(connection::rotate_refresh_token($other['refresh_token'], 'client-a'));
     }
 
     /**
@@ -140,20 +140,20 @@ final class oauth_connection_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         $original = $this->tokens('client-a', (int) $USER->id);
-        oauth_lib::authenticate_access_token($original['access_token']);
-        $oldid = oauth_lib::current_token_id();
+        connection::authenticate_access_token($original['access_token']);
+        $oldid = (int) max(array_keys(connection::active_tokens_for_user((int) $USER->id)));
         $this->create_file();
         $live = $this->ticket();
         $revoked = $this->ticket();
         $other = $this->tokens('client-a', (int) $USER->id);
-        oauth_lib::authenticate_access_token($other['access_token']);
+        connection::authenticate_access_token($other['access_token']);
         $otherticket = $this->ticket();
-        $rotated = oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a');
+        $rotated = connection::rotate_refresh_token($original['refresh_token'], 'client-a');
         $this->assertSame('synthetic bytes', workbench_ticket::redeem($live)['content']);
-        $this->assertTrue(oauth_lib::revoke_token($oldid, (int) $USER->id), 'A stale management id must revoke its successor.');
-        $this->assertNull(oauth_lib::authenticate_access_token($rotated['access_token']));
-        $this->assertNull(oauth_lib::rotate_refresh_token($rotated['refresh_token'], 'client-a'));
-        $this->assertNotNull(oauth_lib::authenticate_access_token($other['access_token']));
+        $this->assertTrue(connection::revoke_token($oldid, (int) $USER->id), 'A stale management id must revoke its successor.');
+        $this->assertNull(connection::authenticate_access_token($rotated['access_token']));
+        $this->assertNull(connection::rotate_refresh_token($rotated['refresh_token'], 'client-a'));
+        $this->assertNotNull(connection::authenticate_access_token($other['access_token']));
         $this->assertSame('synthetic bytes', workbench_ticket::redeem($otherticket)['content']);
         try {
             workbench_ticket::redeem($revoked);
@@ -181,9 +181,9 @@ final class oauth_connection_test extends \advanced_testcase {
         }
         $this->setAdminUser();
         $original = $this->tokens('client-a', (int) $USER->id);
-        $successor = oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a');
-        oauth_lib::authenticate_access_token($successor['access_token']);
-        $connectionid = oauth_lib::current_connection_id();
+        $successor = connection::rotate_refresh_token($original['refresh_token'], 'client-a');
+        connection::authenticate_access_token($successor['access_token']);
+        $connectionid = connection::current_connection_id();
         $this->create_file();
         $survivor = $this->ticket();
         $revoked = $this->ticket();
@@ -197,20 +197,20 @@ final class oauth_connection_test extends \advanced_testcase {
         END");
         try {
             try {
-                oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a');
+                connection::rotate_refresh_token($original['refresh_token'], 'client-a');
                 $this->fail('The injected revocation failure must roll back the grant change.');
             } catch (\dml_exception $e) {
                 $this->assertStringContainsString('Synthetic revocation failure', $e->debuginfo);
             }
-            $this->assertSame((int) $USER->id, oauth_lib::authenticate_access_token($successor['access_token']));
+            $this->assertSame((int) $USER->id, connection::authenticate_access_token($successor['access_token']));
             $this->assertSame('synthetic bytes', workbench_ticket::redeem($survivor)['content']);
         } finally {
             $ddl->query("DROP TRIGGER IF EXISTS $trigger");
             $ddl->close();
         }
-        $this->assertNull(oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a'));
-        $this->assertNull(oauth_lib::authenticate_access_token($successor['access_token']));
-        $this->assertNull(oauth_lib::rotate_refresh_token($successor['refresh_token'], 'client-a'));
+        $this->assertNull(connection::rotate_refresh_token($original['refresh_token'], 'client-a'));
+        $this->assertNull(connection::authenticate_access_token($successor['access_token']));
+        $this->assertNull(connection::rotate_refresh_token($successor['refresh_token'], 'client-a'));
         $this->assert_ticket_revoked($revoked);
     }
 
@@ -223,16 +223,16 @@ final class oauth_connection_test extends \advanced_testcase {
         $original = $this->tokens($client, (int) $user->id);
         $request = ['grant_type' => 'refresh_token', 'client_id' => $client,
             'refresh_token' => $original['refresh_token']];
-        $rotation = oauth_lib::handle_token('POST', $request);
+        $rotation = connection::handle_token('POST', $request);
         $this->assertSame(200, $rotation['status']);
-        $replay = oauth_lib::handle_token('POST', $request);
+        $replay = connection::handle_token('POST', $request);
         $this->assertSame(400, $replay['status']);
         $this->assertSame(['error' => 'invalid_grant'], $replay['body']);
         foreach (['unknown-synthetic-token', $rotation['body']['refresh_token']] as $token) {
             $request['refresh_token'] = $token;
-            $this->assertSame($replay, oauth_lib::handle_token('POST', $request));
+            $this->assertSame($replay, connection::handle_token('POST', $request));
         }
-        $this->assertNull(oauth_lib::authenticate_access_token($rotation['body']['access_token']));
+        $this->assertNull(connection::authenticate_access_token($rotation['body']['access_token']));
     }
 
     /**
@@ -270,14 +270,14 @@ final class oauth_connection_test extends \advanced_testcase {
         }
         $this->setAdminUser();
         $original = $this->tokens('client-a', (int) $USER->id);
-        oauth_lib::authenticate_access_token($original['access_token']);
-        $tokenid = oauth_lib::current_token_id();
-        $connectionid = oauth_lib::current_connection_id();
+        connection::authenticate_access_token($original['access_token']);
+        $tokenid = (int) max(array_keys(connection::active_tokens_for_user((int) $USER->id)));
+        $connectionid = connection::current_connection_id();
         $this->create_file();
         $tickets = [$this->ticket()];
         $active = in_array('replay', [$first, $second], true)
-            ? oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a') : $original;
-        oauth_lib::authenticate_access_token($active['access_token']);
+            ? connection::rotate_refresh_token($original['refresh_token'], 'client-a') : $original;
+        connection::authenticate_access_token($active['access_token']);
         $tickets[] = $this->ticket();
         $key = 'cp638' . bin2hex(random_bytes(8));
         $gate = $key . 'gate';
@@ -327,7 +327,7 @@ final class oauth_connection_test extends \advanced_testcase {
             );
             $this->assertSame(
                 (int) $USER->id,
-                oauth_lib::authenticate_access_token($active['access_token']),
+                connection::authenticate_access_token($active['access_token']),
                 'An uncommitted revocation must not expose partially changed connection state.'
             );
             $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);
@@ -345,8 +345,8 @@ final class oauth_connection_test extends \advanced_testcase {
             if ($second === 'rotate' && $first === 'rotate') {
                 $this->assertNotNull($results[0]);
                 $this->assertNull($results[1]);
-            } else if (in_array('revoke', [$first, $second], true)) {
-                $this->assertTrue($results[$first === 'revoke' ? 0 : 1]);
+            } else if (in_array('revoke', [$first, $second], true) || in_array('bulk', [$first, $second], true)) {
+                $this->assertTrue($results[in_array($first, ['revoke', 'bulk'], true) ? 0 : 1]);
             } else {
                 $this->assertNull($results[$first === 'replay' ? 0 : 1]);
                 if ($first === 'rotate') {
@@ -357,13 +357,13 @@ final class oauth_connection_test extends \advanced_testcase {
             }
             foreach ($results as $successor) {
                 if (is_array($successor)) {
-                    $this->assertNull(oauth_lib::authenticate_access_token($successor['access_token']));
-                    $this->assertNull(oauth_lib::rotate_refresh_token($successor['refresh_token'], 'client-a'));
+                    $this->assertNull(connection::authenticate_access_token($successor['access_token']));
+                    $this->assertNull(connection::rotate_refresh_token($successor['refresh_token'], 'client-a'));
                 }
             }
-            $this->assertNull(oauth_lib::authenticate_access_token($active['access_token']));
-            $this->assertNull(oauth_lib::rotate_refresh_token($active['refresh_token'], 'client-a'));
-            $this->assertFalse(oauth_lib::grant_active($connectionid, (int) $USER->id));
+            $this->assertNull(connection::authenticate_access_token($active['access_token']));
+            $this->assertNull(connection::rotate_refresh_token($active['refresh_token'], 'client-a'));
+            $this->assertSame('workbenchticketconnectionrevoked', connection::access_error((int) $USER->id, $connectionid));
             foreach ($tickets as $ticket) {
                 $this->assert_ticket_revoked($ticket);
             }
@@ -377,6 +377,75 @@ final class oauth_connection_test extends \advanced_testcase {
             }
             $ddl->query("DROP TRIGGER IF EXISTS $key");
             $ddl->close();
+        }
+    }
+
+    /**
+     * Concurrent code exchanges execute the real connection boundary, never a copied claim statement.
+     */
+    public function test_parallel_code_exchange_issues_only_one_token_pair(): void {
+        global $DB, $USER;
+        $this->resetAfterTest();
+        if ($DB->get_dbfamily() !== 'mysql') {
+            $this->markTestSkipped('MariaDB/MySQL named-lock fixture required.');
+        }
+        $this->setAdminUser();
+        $challenge = 'ungWv48Bz-pBQUDeXa4iI7ADYaOWF3qctBD_YfIAFa0';
+        $code = connection::issue_code('client-a', (int) $USER->id, 'https://client.example/callback', $challenge);
+        $key = 'cpexchange' . bin2hex(random_bytes(8));
+        $gate = $key . 'gate';
+        $ready = $key . 'ready';
+        $DB->get_field_sql('SELECT GET_LOCK(?, 10)', [$gate]);
+        $ddl = $this->ddl_connection();
+        $table = $DB->get_prefix() . 'local_coursepilot_oauth_token';
+        $ddl->query("CREATE TRIGGER $key BEFORE INSERT ON $table FOR EACH ROW BEGIN
+            SET @cp_ready = GET_LOCK('$ready', 10);
+            SET @cp_gate = GET_LOCK('$gate', 30);
+        END");
+        $processes = [];
+        $pipes = [];
+        try {
+            $command = [PHP_BINARY, __DIR__ . '/fixtures/oauth_connection_process.php', 'exchange', $code];
+            $processes[0] = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[0]);
+            $this->await_condition(
+                fn() => $DB->get_field_sql('SELECT IS_USED_LOCK(?)', [$ready]),
+                'First code exchange did not reach token issuance'
+            );
+            $processes[1] = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[1]);
+            $codetable = $DB->get_prefix() . 'local_coursepilot_oauth_code';
+            $this->await_condition(fn() => (int) $DB->get_field_sql(
+                'SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE INFO LIKE :query',
+                ['query' => 'UPDATE ' . $codetable . '%']
+            ) > 0, 'Second code exchange did not contend for the code');
+            $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);
+            $results = [];
+            foreach ($processes as $i => $process) {
+                $output = stream_get_contents($pipes[$i][1]);
+                $error = stream_get_contents($pipes[$i][2]);
+                fclose($pipes[$i][1]);
+                fclose($pipes[$i][2]);
+                $this->assertSame(0, proc_close($process), $error);
+                $processes[$i] = null;
+                $results[] = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+            }
+            $this->assertNotNull($results[0]);
+            $this->assertNull($results[1]);
+            $this->assertSame((int) $USER->id, connection::authenticate_access_token($results[0]['access_token']));
+            $this->assertCount(1, connection::active_tokens_for_user((int) $USER->id));
+            $this->assertNull(connection::exchange_code($code, 'client-a', 'https://client.example/callback', 'abc'));
+        } finally {
+            $DB->get_field_sql('SELECT RELEASE_LOCK(?)', [$gate]);
+            foreach ($processes as $process) {
+                if (is_resource($process)) {
+                    proc_terminate($process);
+                    proc_close($process);
+                }
+            }
+            $ddl->query("DROP TRIGGER IF EXISTS $key");
+            $ddl->close();
+            foreach (['local_coursepilot_oauth_code', 'local_coursepilot_oauth_token', 'local_coursepilot_oauth_grant'] as $table) {
+                \phpunit_util::set_table_modified_by_sql('UPDATE ' . $DB->get_prefix() . $table);
+            }
         }
     }
 
@@ -404,6 +473,6 @@ final class oauth_connection_test extends \advanced_testcase {
      */
     public static function races(): array {
         return [['rotate', 'revoke'], ['revoke', 'rotate'], ['rotate', 'rotate'],
-            ['rotate', 'replay'], ['replay', 'rotate']];
+            ['rotate', 'replay'], ['replay', 'rotate'], ['bulk', 'rotate'], ['rotate', 'bulk']];
     }
 }

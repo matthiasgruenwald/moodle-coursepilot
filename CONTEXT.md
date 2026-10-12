@@ -81,6 +81,16 @@ _Avoid_: „Abo-Anbindung“ (die Abrechnung ist nicht das Unterscheidungsmerkma
 Der Weg, auf dem Moodle selbst KI aufruft, über einen serverseitig eingerichteten Anbieter: Moodles KI-Subsystem mit Anbietern und Platzierungen oder Erweiterungen darauf wie der bayerische KI-Manager mit Einsatzzwecken und Kontingenten. Schlüssel und Nutzungsregeln verwaltet die Schule. Gegenstück zum **MCP-Zugang**.
 _Avoid_: „API-Anbindung“ (die Abrechnung ist nicht das Unterscheidungsmerkmal), den KI-Anbieter selbst mit dem Zugang gleichsetzen
 
+**Client-Register**:
+Das Modul, das OAuth-Clients registriert, gespeicherte Clients oder CIMD-Metadaten auflöst und Redirect-URIs exakt mit den registrierten Werten vergleicht. Der CIMD-Abruf erfolgt über einen Abrufport; positive und negative Caches sowie Abrufbudgets gehören zum Register. Das Register enthält keine Verbindungen oder Tokens.
+Code: `client_registry`
+_Avoid_: Client und Verbindung gleichsetzen, Netzabruf mit dem OAuth-Ablauf vermischen
+
+**Verbindung**:
+Die nach Einwilligung der Lehrkraft bestehende OAuth-Verbindung zu einem KI-Client. Sie behält ihre Identität beim Erneuern der Zugriffstokens. Ein Widerruf beendet alle Token-Generationen und die daran gebundenen Werkbank-Downloads; eine neue Einwilligung erzeugt eine unabhängige Verbindung. Die **Fernzugriffsfreigabe** und das aktive Moodle-Konto werden bei jedem Zugriff zusätzlich geprüft. Freigabe und tatsächlicher Widerruf erscheinen als native Moodle-Ereignisse; normale Token-Rotation erzeugt kein Ereignis.
+Code: `connection`
+_Avoid_: Token und Verbindung gleichsetzen, Fernzugriffsfreigabe mit Einwilligung verwechseln
+
 **Fernzugriffsfreigabe**:
 Die gezielte, entziehbare Erlaubnis der Administration, dass eine Lehrkraft einen KI-Chat mit Moodle verbindet, also den **MCP-Zugang** nutzt. Die Administration erteilt sie auf zwei Wegen: Sie wählt eine oder mehrere bestehende Systemkohorten aus, deren Mitglieder freigegeben sind, oder sie erlaubt das Fernzugriffsrecht in einer Rolle, die die Schule systemweit ohnehin vergibt. Coursepilot legt dafür weder Kohorte noch Rolle an. Die Freigabe ist ein Zustand **je Lehrkraft** und wird bei jedem Aufruf geprüft: Wer aus der Kohorte fällt, ist beim nächsten Aufruf abgewiesen, auch über eine schon bestehende Verbindung. Sie gibt keine Kursrechte; was die Lehrkraft in einem Kurs tun darf, regelt weiter allein ihre Kursrolle ([#579](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/579)).
 _Avoid_: „Freigabe“ oder „Freischaltung“ ohne Zusatz (mehrfach belegt), eine eigene Coursepilot-Rolle im Systemkontext, eine systemweite Lehrkraftrolle als Einrichtungsweg, Fernzugriffsfreigabe als Kursrecht lesen

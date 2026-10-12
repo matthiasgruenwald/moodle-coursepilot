@@ -104,7 +104,7 @@ final class dispatcher {
     }
 
     /**
-     * Request flow after origin validation and CORS preflight (#337 addendum).
+     * Request flow after origin validation and CORS preflight.
      * Extracted from handle() so one place adds CORS headers to every response.
      *
      * @param array|null $request
@@ -115,15 +115,15 @@ final class dispatcher {
     private static function handle_authorized(?array $request, ?string $token, array $headers): array {
         global $CFG;
 
-        // Global emergency switch (#338): deny all MCP access immediately, before
+        // Global emergency switch: deny all MCP access immediately, before
         // token or capability checks. Issued tokens survive, unlike bulk revocation
-        // in oauth_lib::revoke_all_tokens(). This endpoint setting does not affect
+        // in connection::revoke_all_tokens(). This endpoint setting does not affect
         // normal Moodle login. Enabled by default, hence comparison to explicit 0.
-        if ((string) get_config('local_coursepilot', 'remoteaccessenabled') === '0') {
+        if (!connection::remote_access_enabled()) {
             return self::error(403, $request['id'] ?? null, -32003, get_string('remoteaccessdisabled', 'local_coursepilot'));
         }
 
-        // Protected-resource metadata on the resource path itself (RFC 9728 §3, #312).
+        // Protected-resource metadata on the resource path itself (RFC 9728 §3).
         $pathinfo = trim($headers['pathinfo'] ?? '', '/');
         if ($pathinfo === '.well-known/oauth-protected-resource') {
             return self::result(
@@ -144,27 +144,110 @@ final class dispatcher {
             return self::error(400, null, -32700, 'Parse error');
         }
 
+        return self::handle_authenticated($request, $token, $headers);
+    }
+
+    /**
+     * Authenticate a parsed request before any protocol or tool response.
+     *
+     * @param mixed[] $request JSON-RPC request.
+     * @param string|null $token Bearer token.
+     * @param mixed[] $headers Request transport metadata.
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
+     */
+    private static function handle_authenticated(array $request, ?string $token, array $headers): array {
+        global $CFG;
+
         $id = $request['id'] ?? null;
-        $rpcmethod = $request['method'] ?? '';
-        $params = $request['params'] ?? [];
 
         // Authenticate before handshake: 401 with resource_metadata prompts
-        // clients to start the discovery chain (RFC 9728, #302).
-        if (!self::authenticate($token)) {
+        // clients to start the discovery chain (RFC 9728).
+        $accesserror = self::authenticate($token);
+        if ($accesserror === 'AUTHENTICATION_FAILED') {
             return self::error(401, $id, -32001, 'AUTHENTICATION_FAILED', [
                 'WWW-Authenticate' => 'Bearer resource_metadata="'
                     . $CFG->wwwroot . '/local/coursepilot/oauth/protected-resource.php"',
             ]);
         }
 
-        // Remote access (#296, #337, #579) is separate from local/coursepilot:use,
-        // so admins can revoke it per person without changing courses. Checked
-        // on every call, including existing connections. The specific error names
-        // both grant methods (cohort or capability), unlike the generic auth error.
-        if (!remote_access::is_granted()) {
-            return self::error(403, $id, -32002, get_string('remoteaccessnotgranted', 'local_coursepilot'));
+        if ($accesserror !== null) {
+            return self::error(403, $id, -32002, get_string($accesserror, 'local_coursepilot'));
         }
 
+        return self::dispatch_rpc($request, $headers);
+    }
+
+    /**
+     * Route authenticated JSON-RPC requests to protocol or resource responses.
+     *
+     * @param mixed[] $request JSON-RPC request.
+     * @param mixed[] $headers Request transport metadata.
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
+     */
+    private static function dispatch_rpc(array $request, array $headers): array {
+        $id = $request['id'] ?? null;
+        $rpcmethod = $request['method'] ?? '';
+        $params = $request['params'] ?? [];
+
+        if (
+            in_array($rpcmethod, ['initialize', 'notifications/initialized', 'notifications/cancelled', 'ping', 'server/discover'])
+        ) {
+            return self::handle_protocol($request, $headers);
+        }
+
+        switch ($rpcmethod) {
+            case 'tools/list':
+                return self::result(200, [], [
+                    'jsonrpc' => '2.0',
+                    'id' => $id,
+                    'result' => [
+                        'tools' => self::tools(),
+                        // The full tool list is not paginated, so use complete.
+                    ] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
+                ]);
+
+            case 'tools/call':
+                return self::handle_tools_call($id, $params, $headers);
+
+            // We expose no resources or prompts, but clients request these
+            // discovery methods after a handshake. Empty responses avoid a 404.
+            case 'resources/list':
+                return self::result(200, [], [
+                    'jsonrpc' => '2.0',
+                    'id' => $id,
+                    'result' => ['resources' => []] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
+                ]);
+
+            case 'resources/templates/list':
+                return self::result(200, [], [
+                    'jsonrpc' => '2.0',
+                    'id' => $id,
+                    'result' => ['resourceTemplates' => []] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
+                ]);
+
+            case 'prompts/list':
+                return self::result(200, [], [
+                    'jsonrpc' => '2.0',
+                    'id' => $id,
+                    'result' => ['prompts' => []] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
+                ]);
+
+            default:
+                return self::error(404, $id, -32601, 'Method not found: ' . $rpcmethod);
+        }
+    }
+
+    /**
+     * Respond to handshake, discovery, ping and protocol notifications.
+     *
+     * @param mixed[] $request JSON-RPC request.
+     * @param mixed[] $headers Request transport metadata.
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
+     */
+    private static function handle_protocol(array $request, array $headers): array {
+        $id = $request['id'] ?? null;
+        $rpcmethod = $request['method'] ?? '';
+        $params = $request['params'] ?? [];
         $serverinfo = ['name' => 'local_coursepilot', 'version' => self::plugin_release()];
 
         switch ($rpcmethod) {
@@ -180,10 +263,6 @@ final class dispatcher {
                         'instructions' => self::HANDSHAKE_INSTRUCTIONS,
                     ] + self::resultmeta($headers, 'complete'),
                 ]);
-
-            case 'notifications/initialized':
-            case 'notifications/cancelled':
-                return self::result(202, [], null);
 
             case 'ping':
                 // The legacy ping result is an empty object. json_encode() would encode
@@ -208,46 +287,8 @@ final class dispatcher {
                     ] + self::resultmeta($headers, 'complete'),
                 ]);
 
-            case 'tools/list':
-                return self::result(200, [], [
-                    'jsonrpc' => '2.0',
-                    'id' => $id,
-                    'result' => [
-                        'tools' => self::tools(),
-                        // Note: data is invalid for tools/list ("Unsupported result type data for
-                        // tools/list"). The full list is not paginated, so use complete.
-                    ] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
-                ]);
-
-            case 'tools/call':
-                return self::handle_tools_call($id, $params, $headers);
-
-            // Empty responses instead of 404. We expose no resources or
-            // prompts and advertise neither capability, but Codex requests these
-            // three discovery methods after every handshake.
-            case 'resources/list':
-                return self::result(200, [], [
-                    'jsonrpc' => '2.0',
-                    'id' => $id,
-                    'result' => ['resources' => []] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
-                ]);
-
-            case 'resources/templates/list':
-                return self::result(200, [], [
-                    'jsonrpc' => '2.0',
-                    'id' => $id,
-                    'result' => ['resourceTemplates' => []] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
-                ]);
-
-            case 'prompts/list':
-                return self::result(200, [], [
-                    'jsonrpc' => '2.0',
-                    'id' => $id,
-                    'result' => ['prompts' => []] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
-                ]);
-
             default:
-                return self::error(404, $id, -32601, 'Method not found: ' . $rpcmethod);
+                return self::result(202, [], null);
         }
     }
 
@@ -416,33 +457,34 @@ final class dispatcher {
     }
 
     /**
-     * Maps a Bearer token to a Moodle user and sets $USER (#337).
+     * Maps a Bearer token to a Moodle user and sets $USER.
      *
-     * Only OAuth access tokens from {@see oauth_lib::authenticate_access_token()}
-     * are accepted. The prototype external_tokens workaround is removed;
-     * the OAuth 2.1 authorization server (#335/#336) is its sole replacement.
+     * Only OAuth access tokens from {@see connection::authenticate_access_token()}
+     * are accepted. Moodle web service tokens cannot grant MCP access;
+     * the OAuth 2.1 authorization server is the sole token issuer.
      *
      * @param string|null $token
-     * @return bool
+     * @return string|null Authentication or access refusal, otherwise null.
      */
-    private static function authenticate(?string $token): bool {
+    private static function authenticate(?string $token): ?string {
         global $DB, $USER;
 
         if ($token === null) {
-            return false;
+            return 'AUTHENTICATION_FAILED';
         }
-        $userid = oauth_lib::authenticate_access_token($token);
+        $userid = connection::authenticate_access_token($token);
         if ($userid === null) {
-            return false;
+            return 'AUTHENTICATION_FAILED';
         }
-        $usr = $DB->get_record('user', ['id' => $userid, 'deleted' => 0, 'suspended' => 0]);
-        if (!$usr) {
-            return false;
+        $error = connection::access_error($userid, connection::current_connection_id());
+        if ($error !== null && $error !== 'remoteaccessnotgranted') {
+            return 'AUTHENTICATION_FAILED';
         }
+        $usr = $DB->get_record('user', ['id' => $userid], '*', MUST_EXIST);
 
         \core\session\manager::set_user($usr);
         // Bearer authentication is stateless: each POST validates its token
-        // without trusting cookies/sessions (#337, Spec 0012 §3). sesskey guards
+        // without trusting cookies/sessions (Spec 0012 §3). sesskey guards
         // ambient browser-cookie authority, which is absent here: attackers cannot
         // forge the Authorization header through a cross-site request.
         // external_api::call_external_function() skips sesskey only with WS_SERVER=true
@@ -450,7 +492,7 @@ final class dispatcher {
         // constant to false, requiring this override. See dispatcher_test.php.
         $USER->ignoresesskey = true;
         external_api::set_context_restriction(\context_system::instance());
-        return true;
+        return $error;
     }
 
     /**
