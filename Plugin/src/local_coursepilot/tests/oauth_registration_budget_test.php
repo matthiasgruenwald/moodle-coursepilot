@@ -27,6 +27,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(oauth_budget::class)]
 #[CoversClass(oauth_lib::class)]
+#[CoversClass(client_registry::class)]
 #[CoversClass(connection::class)]
 #[CoversClass(task\oauth_cleanup::class)]
 final class oauth_registration_budget_test extends \advanced_testcase {

@@ -81,6 +81,11 @@ _Avoid_: „Abo-Anbindung“ (die Abrechnung ist nicht das Unterscheidungsmerkma
 Der Weg, auf dem Moodle selbst KI aufruft, über einen serverseitig eingerichteten Anbieter: Moodles KI-Subsystem mit Anbietern und Platzierungen oder Erweiterungen darauf wie der bayerische KI-Manager mit Einsatzzwecken und Kontingenten. Schlüssel und Nutzungsregeln verwaltet die Schule. Gegenstück zum **MCP-Zugang**.
 _Avoid_: „API-Anbindung“ (die Abrechnung ist nicht das Unterscheidungsmerkmal), den KI-Anbieter selbst mit dem Zugang gleichsetzen
 
+**Client-Register**:
+Das Modul, das OAuth-Clients registriert, gespeicherte Clients oder CIMD-Metadaten auflöst und Redirect-URIs exakt mit den registrierten Werten vergleicht. Der CIMD-Abruf erfolgt über einen Abrufport; positive und negative Caches sowie Abrufbudgets gehören zum Register. Das Register enthält keine Verbindungen oder Tokens.
+Code: `client_registry`
+_Avoid_: Client und Verbindung gleichsetzen, Netzabruf mit dem OAuth-Ablauf vermischen
+
 **Verbindung**:
 Die nach Einwilligung der Lehrkraft bestehende OAuth-Verbindung zu einem KI-Client. Sie behält ihre Identität beim Erneuern der Zugriffstokens. Ein Widerruf beendet alle Token-Generationen und die daran gebundenen Werkbank-Downloads; eine neue Einwilligung erzeugt eine unabhängige Verbindung. Die **Fernzugriffsfreigabe** und das aktive Moodle-Konto werden bei jedem Zugriff zusätzlich geprüft. Freigabe und tatsächlicher Widerruf erscheinen als native Moodle-Ereignisse; normale Token-Rotation erzeugt kein Ereignis.
 Code: `connection`

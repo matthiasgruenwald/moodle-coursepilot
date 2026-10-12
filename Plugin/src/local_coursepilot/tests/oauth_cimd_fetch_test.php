@@ -30,7 +30,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * Real TLS/streaming regressions at the public client lookup boundary.
  */
 #[CoversClass(oauth_lib::class)]
+#[CoversClass(client_registry::class)]
 #[CoversClass(connection::class)]
+#[CoversClass(cimd_http_fetcher::class)]
 final class oauth_cimd_fetch_test extends \advanced_testcase {
     use \local_coursepilot\tests\webdav\webdav_instance_fixture;
     use \local_coursepilot\tests\oauth_budget_race;

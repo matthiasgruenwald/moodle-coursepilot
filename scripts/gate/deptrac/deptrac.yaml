@@ -250,7 +250,7 @@ deptrac:
     - name: Fachmodule
       collectors:
         - type: classNameRegex
-          value: '#^local_coursepilot\\(remote_access|location_selection|activity_backup|activity_file_supplement|activity_file_trash|availability_privacy|cm_references|context_area|context_files|context_pointer|course_module_placement|gd_support|glossary_entry_writer|image_preview|instance_check|mark_memory|material_area|material_composition|material_files|oauth_budget|oauth_cleanup|oauth_lib|connection|pending_write_notice|pending_write_translation|personal_data|personal_data_hosts|plugin_meta|previous_location|question_bank_context|question_suspect_gate|skill_corpus|workbench_ticket|workbench_ticket_redemption_failed|write_gate|xml_activity_creator)$#'
+          value: '#^local_coursepilot\\(remote_access|location_selection|activity_backup|activity_file_supplement|activity_file_trash|availability_privacy|cm_references|context_area|context_files|context_pointer|course_module_placement|gd_support|glossary_entry_writer|image_preview|instance_check|mark_memory|material_area|material_composition|material_files|oauth_budget|oauth_cleanup|oauth_lib|connection|client_registry|pending_write_notice|pending_write_translation|personal_data|personal_data_hosts|plugin_meta|previous_location|question_bank_context|question_suspect_gate|skill_corpus|workbench_ticket|workbench_ticket_redemption_failed|write_gate|xml_activity_creator)$#'
         - type: classNameRegex
           value: '#^local_coursepilot\\(catalog|history|quiz|activity_files)\\#'
     # Ports: Ablageort-Kern (Port, Anker, Pointer, Zugriffsprotokoll, Ereignisse) als Teil der Fachmodule;
@@ -258,13 +258,13 @@ deptrac:
     - name: Ports
       collectors:
         - type: classNameRegex
-          value: '#^local_coursepilot\\(storage_port|storage_area|storage_conflict_exception|storage_anchor|pointer_location|pointer_reader|pointer_writer|access_log)$#'
+          value: '#^local_coursepilot\\(cimd_fetch_port|storage_port|storage_area|storage_conflict_exception|storage_anchor|pointer_location|pointer_reader|pointer_writer|access_log)$#'
         - type: classNameRegex
           value: '#^local_coursepilot\\event\\#'
     - name: Adapter
       collectors:
         - type: classNameRegex
-          value: '#^local_coursepilot\\(webdav_storage_port|private_files_storage_port)$#'
+          value: '#^local_coursepilot\\(cimd_http_fetcher|webdav_storage_port|private_files_storage_port)$#'
         - type: classNameRegex
           value: '#^local_coursepilot\\webdav\\#'
   ruleset:

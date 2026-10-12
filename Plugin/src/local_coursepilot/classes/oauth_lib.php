@@ -17,7 +17,8 @@
 namespace local_coursepilot;
 
 /**
- * OAuth discovery, client registration, CIMD lookup and consent request validation.
+ * OAuth discovery, registration HTTP handling and consent request validation.
+ * Client registration, metadata lookup and redirect policy belong to client_registry.
  * Connection lifetime, token exchange and access decisions belong to connection.
  * HTTP handlers return responses without writing headers or ending the request.
  *
@@ -26,35 +27,29 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class oauth_lib {
-    /** @var string Database table for DCR/CIMD-registered clients. */
-    private const CLIENT_TABLE = 'local_coursepilot_oauth_client';
-
-    /** @var int Maximum decoded CIMD response size: 1 MiB, enforced while receiving. */
-    private const CIMD_MAX_BYTES = 1048576;
-
-    /** @var int Maximum CIMD client_id URL length, the clientid column size (#643). */
-    public const CIMD_MAX_URI_LENGTH = 255;
+    /** @var int Maximum CIMD client_id URL length, the clientid column size. */
+    public const CIMD_MAX_URI_LENGTH = client_registry::CIMD_MAX_URI_LENGTH;
 
     /** @var int Default first-time CIMD fetches per window for the whole site (setting oauthcimdsitelimit). */
-    public const CIMD_SITE_LIMIT = 100;
+    public const CIMD_SITE_LIMIT = client_registry::CIMD_SITE_LIMIT;
 
     /** @var int Default first-time CIMD fetches per window for one source (setting oauthcimdsourcelimit). */
-    public const CIMD_SOURCE_LIMIT = 20;
+    public const CIMD_SOURCE_LIMIT = client_registry::CIMD_SOURCE_LIMIT;
 
     /** @var int Default CIMD fetch budget window in seconds (setting oauthcimdwindow). */
-    public const CIMD_WINDOW = 3600;
+    public const CIMD_WINDOW = client_registry::CIMD_WINDOW;
 
-    /** @var int Fixed window of the CIMD negative cache: a failed URL is not fetched again until it ends (#643). */
-    public const CIMD_NEGATIVE_WINDOW = 600;
+    /** @var int Fixed window of the CIMD negative cache: a failed URL is not fetched again until it ends. */
+    public const CIMD_NEGATIVE_WINDOW = client_registry::CIMD_NEGATIVE_WINDOW;
 
-    /** @var int Maximum raw DCR request body; larger requests are rejected before decoding (#642). */
+    /** @var int Maximum raw DCR request body; larger requests are rejected before decoding. */
     public const REGISTRATION_MAX_BODY_BYTES = 16384;
 
-    /** @var int Maximum length of one registered redirect URI (#642). */
-    public const REGISTRATION_MAX_URI_LENGTH = 2048;
+    /** @var int Maximum length of one registered redirect URI. */
+    public const REGISTRATION_MAX_URI_LENGTH = client_registry::REGISTRATION_MAX_URI_LENGTH;
 
-    /** @var int Maximum number of redirect URIs per registration (#642). */
-    public const REGISTRATION_MAX_REDIRECT_URIS = 10;
+    /** @var int Maximum number of redirect URIs per registration. */
+    public const REGISTRATION_MAX_REDIRECT_URIS = client_registry::REGISTRATION_MAX_REDIRECT_URIS;
 
     /** @var int Default registrations per window for the whole site (setting oauthregistersitelimit). */
     public const REGISTRATION_SITE_LIMIT = 200;
@@ -134,91 +129,13 @@ final class oauth_lib {
      *               On success: complete client record including client_id.
      */
     public static function register_client(array $metadata): array {
-        $error = self::registration_error($metadata);
-        if ($error !== null) {
-            return $error;
-        }
-        $redirecturis = $metadata['redirect_uris'];
-
-        $authmethod = $metadata['token_endpoint_auth_method'] ?? 'none';
-        if (!in_array($authmethod, ['none', 'client_secret_post'], true)) {
-            $authmethod = 'none';
-        }
-        $clientname = \core_text::substr(clean_param($metadata['client_name'] ?? '', PARAM_TEXT), 0, 255) ?: null;
-        $clientsecret = $authmethod === 'client_secret_post' ? bin2hex(random_bytes(32)) : null;
-
-        $record = self::persist_client(bin2hex(random_bytes(24)), $clientname, $redirecturis, $authmethod, $clientsecret, 'dcr');
-        return self::client_registration_response($record);
-    }
-
-    /**
-     * Validate DCR metadata without side effects, so invalid requests are
-     * rejected before they consume budget (#642).
-     *
-     * @param mixed[] $metadata
-     * @return mixed[]|null RFC 7591 error, or null when valid.
-     */
-    private static function registration_error(array $metadata): ?array {
-        $redirecturis = $metadata['redirect_uris'] ?? null;
-        if (!is_array($redirecturis) || empty($redirecturis)) {
-            return ['error' => 'invalid_client_metadata', 'error_description' => 'redirect_uris is required.'];
-        }
-        if (count($redirecturis) > self::REGISTRATION_MAX_REDIRECT_URIS) {
-            return ['error' => 'invalid_client_metadata', 'error_description' => 'Too many redirect_uris.'];
-        }
-        foreach ($redirecturis as $uri) {
-            if (is_string($uri) && strlen($uri) > self::REGISTRATION_MAX_URI_LENGTH) {
-                return ['error' => 'invalid_redirect_uri', 'error_description' => 'redirect_uri is too long.'];
-            }
-            if (!self::is_allowed_redirect_uri($uri)) {
-                return [
-                    'error' => 'invalid_redirect_uri',
-                    'error_description' => 'redirect_uri must use https or a loopback address (http://127.0.0.1 / '
-                        . 'http://localhost).',
-                ];
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Persist a client: the shared final step for DCR (register_client()) and
-     * CIMD (cache_cimd_client()), differing only in origin and some field values.
-     *
-     * @param string $clientid
-     * @param string|null $clientname
-     * @param mixed[] $redirecturis
-     * @param string $tokenendpointauthmethod
-     * @param string|null $clientsecret
-     * @param string $source 'dcr' or 'cimd'.
-     * @return \stdClass
-     */
-    private static function persist_client(
-        string $clientid,
-        ?string $clientname,
-        array $redirecturis,
-        string $tokenendpointauthmethod,
-        ?string $clientsecret,
-        string $source
-    ): \stdClass {
-        global $DB;
-
-        $record = new \stdClass();
-        $record->clientid = $clientid;
-        $record->clientname = $clientname;
-        $record->redirecturis = json_encode(array_values($redirecturis));
-        $record->tokenendpointauthmethod = $tokenendpointauthmethod;
-        $record->clientsecret = $clientsecret;
-        $record->source = $source;
-        $record->timecreated = time();
-        $record->id = $DB->insert_record(self::CLIENT_TABLE, $record);
-        return $record;
+        return (new client_registry())->register_client($metadata);
     }
 
     /**
      * Registration handler for oauth/register.php; errors are always JSON
      * (RFC 7591, section 3.2.2). Size is checked before decoding and metadata
-     * before the budget (#642); any rejection persists no client.
+     * before the budget; any rejection persists no client.
      *
      * @param string $method
      * @param string $rawbody Raw request body, read at most one byte beyond
@@ -246,7 +163,7 @@ final class oauth_lib {
                 'error_description' => 'Invalid JSON.',
             ]);
         }
-        $error = self::registration_error($body);
+        $error = client_registry::registration_error($body);
         if ($error !== null) {
             return self::result(400, [], $error);
         }
@@ -274,18 +191,7 @@ final class oauth_lib {
      * @return mixed[]
      */
     public static function client_registration_response(\stdClass $record): array {
-        $response = [
-            'client_id' => $record->clientid,
-            'client_name' => $record->clientname,
-            'redirect_uris' => json_decode($record->redirecturis, true),
-            'token_endpoint_auth_method' => $record->tokenendpointauthmethod,
-            'grant_types' => ['authorization_code', 'refresh_token'],
-            'response_types' => ['code'],
-        ];
-        if ($record->clientsecret !== null) {
-            $response['client_secret'] = $record->clientsecret;
-        }
-        return $response;
+        return client_registry::client_registration_response($record);
     }
 
     /**
@@ -296,149 +202,33 @@ final class oauth_lib {
      * @return bool
      */
     public static function is_allowed_redirect_uri($uri): bool {
-        if (!is_string($uri) || $uri === '') {
-            return false;
-        }
-        $parts = parse_url($uri);
-        if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
-            return false;
-        }
-        if ($parts['scheme'] === 'https') {
-            return true;
-        }
-        if ($parts['scheme'] === 'http' && in_array($parts['host'], ['127.0.0.1', 'localhost', '::1'], true)) {
-            return true;
-        }
-        return false;
+        return client_registry::is_allowed_redirect_uri($uri);
     }
 
     /**
-     * Find a client by client_id. When it is absent locally and looks like a
-     * URL, fetch and cache its CIMD document: the second registration route
-     * without DCR (#291, #335). Otherwise each new CIMD connection would create
-     * another DCR client.
-     *
-     * Stored clients consume no budget. Before a first fetch (#643), reject
-     * long URLs and negative-cache entries, then consume the site/source budget
-     * (scope cimd). Rejection starts no network work. A failed fetch creates a
-     * cimdfail entry lasting CIMD_NEGATIVE_WINDOW; their count per window is
-     * capped by the site fetch limit.
+     * Resolve a registered or CIMD client through the client registry.
      *
      * @param string $clientid
-     * @param int $retryafter Set to the seconds until the CIMD budget window
-     *        ends when the budget refused the fetch, otherwise 0.
+     * @param int $retryafter Seconds until the CIMD budget window ends, otherwise 0.
      * @return \stdClass|null
      */
     public static function get_client(string $clientid, int &$retryafter = 0): ?\stdClass {
-        global $DB;
-
-        $retryafter = 0;
-        $record = $DB->get_record(self::CLIENT_TABLE, ['clientid' => $clientid]);
-        if ($record) {
-            return $record;
-        }
-        if (
-            !self::looks_like_cimd_url($clientid) || strlen($clientid) > self::CIMD_MAX_URI_LENGTH
-                || oauth_budget::active('cimdfail', $clientid)
-        ) {
-            return null;
-        }
-        $sitelimit = oauth_budget::setting('oauthcimdsitelimit', self::CIMD_SITE_LIMIT);
-        $retryafter = oauth_budget::consume(
-            'cimd',
-            oauth_budget::request_source(),
-            $sitelimit,
-            oauth_budget::setting('oauthcimdsourcelimit', self::CIMD_SOURCE_LIMIT),
-            oauth_budget::setting('oauthcimdwindow', self::CIMD_WINDOW)
-        );
-        if ($retryafter > 0) {
-            return null;
-        }
-        $client = self::fetch_and_cache_cimd_client($clientid);
-        if ($client === null) {
-            oauth_budget::consume('cimdfail', $clientid, $sitelimit, 1, self::CIMD_NEGATIVE_WINDOW);
-        }
-        return $client;
+        return (new client_registry())->get_client($clientid, $retryafter);
     }
 
     /**
-     * Whether client_id is an HTTPS URL and thus a CIMD candidate.
+     * Validate and cache decoded CIMD metadata through the client registry.
      *
-     * @param string $clientid
-     * @return bool
-     */
-    protected static function looks_like_cimd_url(string $clientid): bool {
-        $parts = parse_url($clientid);
-        return $parts !== false && ($parts['scheme'] ?? '') === 'https' && !empty($parts['host']);
-    }
-
-    /**
-     * Fetch public HTTPS metadata using Moodle's host/port policy and CA trust.
-     * Verify the peer and hostname, refuse redirects, and retain at most 1 MiB
-     * of decoded response data within five seconds. No storage credentials are
-     * attached. Only a complete, successful response reaches metadata validation
-     * and persistence in {@see cache_cimd_client()}.
-     *
-     * @param string $url
-     * @return \stdClass|null
-     */
-    protected static function fetch_and_cache_cimd_client(string $url): ?\stdClass {
-        $curl = new \curl();
-        $body = '';
-        $curl->get($url, [], [
-            'CURLOPT_TIMEOUT' => 5,
-            'CURLOPT_FOLLOWLOCATION' => false,
-            'CURLOPT_SSL_VERIFYPEER' => true,
-            'CURLOPT_SSL_VERIFYHOST' => 2,
-            'CURLOPT_WRITEFUNCTION' => static function ($handle, string $chunk) use (&$body): int {
-                $length = strlen($chunk);
-                if (strlen($body) + $length > self::CIMD_MAX_BYTES) {
-                    return 0; // Abort the transfer before retaining an oversized chunk.
-                }
-                $body .= $chunk;
-                return $length;
-            },
-        ]);
-        $info = $curl->get_info();
-        if ($curl->get_errno() !== 0 || ($info['http_code'] ?? 0) !== 200) {
-            return null;
-        }
-        $metadata = json_decode($body, true);
-        if (!is_array($metadata)) {
-            return null;
-        }
-        return self::cache_cimd_client($url, $metadata);
-    }
-
-    /**
-     * Validate decoded CIMD metadata and, when valid, persist a client whose
-     * clientid is the URL itself.
-     *
-     * ponytail: no cache refresh. A cached CIMD client retains its first values;
-     * add refresh only if changing documents prove necessary in practice.
-     *
-     * @param string $url client_id (the CIMD URL).
-     * @param mixed[] $metadata Decoded CIMD metadata.
-     * @return \stdClass|null null for invalid or missing redirect_uris.
+     * @param string $url Public client identifier.
+     * @param mixed[] $metadata Decoded metadata.
+     * @return \stdClass|null Registered client or null for invalid metadata.
      */
     public static function cache_cimd_client(string $url, array $metadata): ?\stdClass {
-        // Same redirect URI count/length limits as DCR (#643).
-        if (self::registration_error($metadata) !== null) {
-            return null;
-        }
-
-        $clientname = \core_text::substr(clean_param($metadata['client_name'] ?? '', PARAM_TEXT), 0, 255) ?: null;
-        try {
-            return self::persist_client($url, $clientname, $metadata['redirect_uris'], 'none', null, 'cimd');
-        } catch (\dml_write_exception $e) {
-            // A parallel first lookup of the same URL stored it first (#643).
-            global $DB;
-            return $DB->get_record(self::CLIENT_TABLE, ['clientid' => $url], '*', MUST_EXIST);
-        }
+        return (new client_registry())->cache_cimd_client($url, $metadata);
     }
 
     /**
-     * Validate authorization parameters (#336): response_type, mandatory
+     * Validate authorization parameters: response_type, mandatory
      * PKCE/S256, a known client and its registered redirect. No login, HTML or
      * HTTP response writes: PHPUnit can call this seam without a web server,
      * as with handle_discovery()/handle_registration(). oauth/authorize.php
@@ -495,8 +285,7 @@ final class oauth_lib {
      * @return bool
      */
     public static function redirect_uri_matches(\stdClass $client, string $redirecturi): bool {
-        $registered = json_decode($client->redirecturis, true) ?? [];
-        return in_array($redirecturi, $registered, true);
+        return client_registry::redirect_uri_matches($client, $redirecturi);
     }
 
     /**
@@ -518,7 +307,7 @@ final class oauth_lib {
 
     /**
      * Build the denial redirect (RFC 6749 §4.1.2.1: error=access_denied):
-     * a client error response without an authorization code or token (#336).
+     * a client error response without an authorization code or token.
      *
      * @param string $redirecturi
      * @param string|null $state
@@ -533,7 +322,7 @@ final class oauth_lib {
     }
 
     /**
-     * Valid empty JWKS (#336). jwks_uri is declared only because the OIDC
+     * Valid empty JWKS. jwks_uri is declared only because the OIDC
      * namespace requires it (#302, item 2). Coursepilot is not an OIDC provider:
      * it issues no signed ID tokens, and access tokens are opaque database values.
      *
