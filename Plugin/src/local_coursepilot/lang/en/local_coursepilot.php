@@ -271,6 +271,11 @@ $string['materialstoreincontext'] = 'The material store lies inside the context 
 $string['mcquestioncreated'] = 'MC question "{$a->name}" created (bank entry {$a->entryid}, version {$a->version}).';
 $string['mcquestionsuspect'] = 'Suspect case: The target category already contains an entry named "{$a}". Nothing was created. To create a new entry anyway, call again with confirmed=true.';
 $string['modnamedriftlocked'] = 'I cannot change activity type "{$a->modname}" right now - please report this to the administration. Other activity types remain writable, reading and lookups also remain possible.';
+$string['modulechangedfields'] = 'Changed: {$a}.';
+$string['modulefieldchange'] = '"{$a->field}" from {$a->before} to {$a->after}';
+$string['modulenochange'] = 'No change: the patch already matched the current state.';
+$string['modulepseudofield'] = '"{$a->field}" = {$a->value}';
+$string['modulepseudofieldswritten'] = 'Set, but without a database field and therefore not comparable with the previous state: {$a}.';
 $string['modulesettingsdescription'] = 'Current activity settings as JSON, including coursepagevisibility/availability_status; profile conditions in availabilityconditionsjson are masked (ADR 0011). For quizzes, gradepass and grademax are persisted gradebook values in grade points, not percent; null means the primary grade item is missing.';
 $string['myconnections'] = 'My Coursepilot connections';
 $string['myconnectionsintro'] = 'AI applications you have connected to Coursepilot. Revoking a connection invalidates it immediately.';
@@ -377,6 +382,14 @@ $string['readonlyvocabularyfield'] = 'Field "{$a->field}" is read vocabulary of 
 $string['remoteaccessdisabled'] = 'Remote access has been temporarily disabled by the administration.';
 $string['remoteaccessnotgranted'] = 'REMOTE_ACCESS_NOT_GRANTED: you are neither a member of a remote access cohort nor granted local/coursepilot:useremote through a system role. Ask your Moodle administration to grant remote access.';
 $string['requiredfieldwithoutdefault'] = 'These required fields for activity type "{$a->modname}" have no form default and must be supplied: {$a->field}. Nothing was created.';
+$string['restorearrangement'] = 'The question arrangement was also restored to version {$a}. Note: questions appear in their latest version; no version is pinned retroactively.';
+$string['restorecompletionwarning'] = 'Completion fields not restored: {$a} Calling restore_activity_version again with "confirmed": true restores them as well.';
+$string['restorefile'] = 'File restored from the recycle bin: {$a}.';
+$string['restorefiles'] = 'Files restored from the recycle bin: {$a}.';
+$string['restorenochange'] = 'No change: the activity already matches version {$a}.';
+$string['restorenosettings'] = 'Restored to version {$a} - no settings fields differ.';
+$string['restoresettings'] = 'Restored to version {$a->version} - the old state becomes the new latest version: {$a->changes}.';
+$string['restoreversion'] = 'Restored to version {$a}.';
 $string['restrictionactivitynotfound'] = 'Invalid value {$a->value} for "{$a->field}": no activity with this cmid in the same course. Nothing was written.';
 $string['restrictiongroupnotfound'] = 'Invalid value {$a->value} for "{$a->field}": no group with this id in the same course. Nothing was written.';
 $string['restrictioninvaliddate'] = 'Invalid date condition ({$a->value}). "direction" must be "from" or "until", "timestamp" a Unix timestamp (integer). Nothing was written.';

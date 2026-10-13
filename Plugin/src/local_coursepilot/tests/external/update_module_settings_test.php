@@ -30,6 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(update_module_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\module_settings::class)]
 #[CoversClass(\local_coursepilot\activity_file_trash::class)]
 #[CoversClass(\local_coursepilot\catalog\catalog_fields::class)]
 #[CoversClass(\local_coursepilot\catalog\assign::class)]

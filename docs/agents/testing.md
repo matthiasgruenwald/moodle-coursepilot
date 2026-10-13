@@ -244,3 +244,22 @@ Werkzeugantworten und beide Bestätigungen. `completionminattempts` gilt nur fü
 überschreiten. Der notwendige native Form-Schalter wird abgeleitet; ein unveränderter Wert
 setzt keinen Abschluss zurück. Die Regeln folgen ADR 0016 und Spec 0015 §8; die bestehende
 Restore-Abfolge bleibt bis zum eigenen Folgeticket erhalten.
+
+## Wiederherstellen über den Änderungsverlauf
+
+`history/version_restore::restore()` besitzt das Fortschreiben früherer Stände. Es nutzt
+`catalog/module_settings::write()`, dessen Material-Felddefinition und Pseudofeld-Entwürfe
+sowie `completion_settings::write()`. Die externen Werkzeuge validieren ihre veröffentlichten
+Parameter und delegieren. Beide Fachoperationen prüfen Kontext und Berechtigungen selbst.
+
+Die bisherige Reihenfolge bleibt bestehen: Einstellungen, Dateien, Abschlussbedingungen.
+Eine fehlende Abschlussbestätigung liefert weiterhin den bestehenden Warnhinweis nach den
+anderen Teiländerungen. Quiz stellt weiterhin ausschließlich die Fragenanordnung wieder her;
+Dateilücken und Lernendensperren behalten ihre bisherigen Regeln. Dies ist die Umsetzung
+von ADR 0016/0030 und #700, keine neue Atomaritäts- oder Produktentscheidung.
+Die vorhandenen Werkzeugtests bleiben erhalten und decken die neuen Eigentümer zusätzlich
+mit `CoversClass` ab; öffentliche Fachmodultests prüfen dieselben Schreib-/Restore-Ergebnisse.
+
+Die übernommenen Meldungen liegen wortgleich in englischen Moodle-Sprachstrings.
+Die öffentlichen Fachmodultests sichern auch den exakten bisherigen Meldungswortlaut;
+Parameter- und Rückgabeschemata bleiben unverändert.

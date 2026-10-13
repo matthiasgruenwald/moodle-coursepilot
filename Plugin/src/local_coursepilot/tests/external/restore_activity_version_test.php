@@ -29,7 +29,36 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(restore_activity_version::class)]
 #[CoversClass(update_module_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\module_settings::class)]
+#[CoversClass(\local_coursepilot\history\version_restore::class)]
 final class restore_activity_version_test extends \advanced_testcase {
+    /**
+     * History can carry a saved state forward without entering an external tool.
+     */
+    public function test_history_restore_carries_saved_state_forward(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'name' => 'Saved state',
+        ]);
+        update_module_settings::execute($page->cmid, '{"name":"Later state"}');
+
+        $result = \local_coursepilot\history\version_restore::restore($page->cmid, 1);
+        $this->assertSame('Saved state', $this->read($page->cmid)['name']);
+        $this->assertSame($page->cmid, $result['cmid']);
+        $this->assertSame(
+            'Restored to version 1 - the old state becomes the new latest version: '
+                . '"name" from "Later state" to "Saved state".',
+            $result['message']
+        );
+        $this->assertSame([[
+            'field' => 'name',
+            'before_json' => '"Later state"',
+            'after_json' => '"Saved state"',
+        ]], $result['changes']);
+    }
+
     /**
      * Provides course with editing teacher.
      *

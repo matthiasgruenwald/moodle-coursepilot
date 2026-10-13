@@ -37,6 +37,7 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(restore_activity_version::class)]
+#[CoversClass(\local_coursepilot\history\version_restore::class)]
 #[CoversClass(arrangement::class)]
 final class restore_activity_version_quiz_test extends \advanced_testcase {
     /**

@@ -39,6 +39,18 @@
       "validates": true,
       "requires": true,
       "reason": "löst das Kursmodul auf, validiert den Modulkontext und prüft local/coursepilot:use sowie moodle/course:manageactivities vor Patchprüfung und Schreiben"
+    },
+    {
+      "call": "module_settings::write",
+      "validates": true,
+      "requires": true,
+      "reason": "validiert den Modulkontext und prüft local/coursepilot:use sowie moodle/course:manageactivities vor Patchprüfung und Schreiben"
+    },
+    {
+      "call": "version_restore::restore",
+      "validates": true,
+      "requires": true,
+      "reason": "validiert den Modulkontext und prüft local/coursepilot:restoreversion sowie moodle/course:manageactivities vor dem Lesen des Zielstands und dem Schreiben"
     }
   ]
 }

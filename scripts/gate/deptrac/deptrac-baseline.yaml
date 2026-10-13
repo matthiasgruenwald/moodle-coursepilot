@@ -3,8 +3,4 @@
 # den der Code nicht mehr braucht, ist selbst rot (Gate: deptrac-baseline-stale).
 # Jeder Eintrag nennt das Folgeticket, das ihn auflöst; Ziel ist eine leere Baseline.
 deptrac:
-  skip_violations:
-    # Wiederherstellen ruft zwei Werkzeuge -> #700
-    local_coursepilot\external\restore_activity_version:
-      - local_coursepilot\external\set_completion
-      - local_coursepilot\external\update_module_settings
+  skip_violations: {}
