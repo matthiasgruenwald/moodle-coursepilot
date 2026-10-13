@@ -26,6 +26,8 @@ use core_external\external_api;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(create_mc_question::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_xml::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_import::class)]
 final class create_mc_question_test extends \advanced_testcase {
     /**
      * Creating from plain fields generates an idnumber and version 1.

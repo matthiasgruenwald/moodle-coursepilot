@@ -16,7 +16,6 @@
 
 namespace local_coursepilot\external;
 
-use context;
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
@@ -24,33 +23,13 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\material_files;
 use local_coursepilot\material_area;
-use qformat_xml;
-use question_bank;
-
-defined('MOODLE_INTERNAL') || die();
-
-require_once($CFG->libdir . '/questionlib.php');
-require_once($CFG->dirroot . '/question/format.php');
-require_once($CFG->dirroot . '/question/format/xml/format.php');
+use local_coursepilot\question_xml;
 
 /**
- * Export counterpart of the XML core (Spec 0017 §7.1, ticket #417; full
- * file in Spec 0018 §7.2, ticket #437): reads one or more questions as Moodle
- * XML through qformat_xml, the same server-side formatter used for the
- * round-trip check in {@see import_questions_xml}, exposed as its own tool.
- *
- * Standard mode (placeholder=false, default): writes COMPLETE, standard
- * XML with actual base64 in <file> blocks to the material store (Spec 0018
- * §2). The response names only the path; no image bytes enter AI context.
- * The file can be imported into any other Moodle for sharing or read again
- * through the reference input of {@see import_questions_xml} for a round trip.
- *
- * Placeholder mode (placeholder=true): the original export from Spec 0017
- * §4.2 replaces <file> blocks with named XML comment placeholders and returns
- * XML directly. Suitable for templates (learning structure rather than a
- * 400 KB image), NOT for sharing; the message states this explicitly.
- * The placeholder deliberately does NOT start with "<file", so reimporting
- * it cannot mistake it for an embedded file.
+ * Export native questions through the shared question XML serializer.
+ * Standard mode writes complete XML and base64 files to the material store; the
+ * response names only its path. Placeholder mode returns inline XML with named
+ * file comments and reports that this incomplete output is unsuitable for sharing.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -173,7 +152,7 @@ final class export_questions_xml extends external_api {
      * @return array{0: string, 1: string, 2: string[]} [XML fragment, question name, removed filenames (placeholder mode only)]
      */
     private static function export_one(int $questionid, bool $placeholder): array {
-        [$question, $category, $context] = self::resolve_native_question($questionid);
+        [$question, $category, $context] = question_xml::resolve_native_question($questionid);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
         // Note: moodle/question:view no longer exists; Moodle only knows
@@ -181,7 +160,7 @@ final class export_questions_xml extends external_api {
         // read permission here: export is a read operation.
         require_capability('moodle/question:viewall', $context);
 
-        [$xml, $filenames] = self::question_to_xml($question, $category, $context, $placeholder);
+        [$xml, $filenames] = question_xml::question_to_xml($question, $category, $context, $placeholder);
 
         return [$xml, (string) $question->name, $filenames];
     }
@@ -207,113 +186,6 @@ final class export_questions_xml extends external_api {
 
         $written = material_area::write_export($targetpath, $content);
         return [$written['path'], $written['warning']];
-    }
-
-    /**
-     * Loads the latest question version in the native object shape expected
-     * by {@see \qformat_xml::writequestion()}: the question row plus qtype options
-     * from {@see \question_type::get_question_options()}. No capability check;
-     * the caller checks read permission for export or write permission for
-     * {@see \local_coursepilot\external\update_mc_question}.
-     *
-     * Reused by update_mc_question (ticket #419): instead of patching XML, it
-     * overrides selected native properties (name/questiontext/generalfeedback/
-     * defaultmark/options->single/options->answers). Other values (penalty,
-     * shuffleanswers, answernumbering, combined feedback, tags, hints, etc.)
-     * automatically remain untouched because they are never modified.
-     *
-     * @param int $questionid
-     * @return array{0: \stdClass, 1: \stdClass, 2: \context} [native question object, category, context]
-     */
-    public static function resolve_native_question(int $questionid): array {
-        global $DB;
-
-        $version = $DB->get_record('question_versions', ['questionid' => $questionid]);
-        if (!$version) {
-            throw new \moodle_exception(
-                'notfound',
-                'error',
-                '',
-                null,
-                'No question with questionid ' . $questionid . ' found.'
-            );
-        }
-
-        $latest = $DB->get_record_sql(
-            'SELECT * FROM {question_versions} WHERE questionbankentryid = ? ORDER BY version DESC',
-            [$version->questionbankentryid],
-            IGNORE_MULTIPLE
-        );
-
-        $entry = $DB->get_record('question_bank_entries', ['id' => $latest->questionbankentryid], '*', MUST_EXIST);
-        $category = $DB->get_record('question_categories', ['id' => $entry->questioncategoryid], '*', MUST_EXIST);
-        $context = context::instance_by_id((int) $category->contextid);
-
-        $question = $DB->get_record('question', ['id' => $latest->questionid], '*', MUST_EXIST);
-        $question->export_process = true;
-        $question->categoryobject = $category;
-
-        $qtype = question_bank::get_qtype($question->qtype);
-        $qtype->get_question_options($question);
-
-        $question->contextid = (int) $context->id;
-        $question->idnumber = (string) $entry->idnumber;
-
-        return [$question, $category, $context];
-    }
-
-    /**
-     * Writes a native question object (see {@see self::resolve_native_question()})
-     * as XML through qformat_xml. Public for reuse outside this class.
-     *
-     * @param \stdClass $question
-     * @param \stdClass $category
-     * @param \context $context
-     * @param bool $stripfiles true (default, backward-compatible for existing callers such as
-     *        update_mc_question): replace embedded files with placeholders (see class documentation).
-     *        false: retain actual base64 unchanged (standard export mode, Spec 0018 §7.2).
-     * @return array{0: string, 1: string[]} [XML fragment, removed filenames (empty when not stripped)]
-     */
-    public static function question_to_xml(
-        \stdClass $question,
-        \stdClass $category,
-        \context $context,
-        bool $stripfiles = true
-    ): array {
-        $qformat = new qformat_xml();
-        $qformat->setCategory($category);
-        $qformat->setContexts([$context]);
-
-        $xml = $qformat->writequestion($question);
-        if (!$stripfiles) {
-            return [$xml, []];
-        }
-        return self::strip_embedded_files($xml);
-    }
-
-    /**
-     * Replaces each <file> block (base64 file content) with an XML comment
-     * placeholder naming the original file. Never strip without a trace:
-     * the teacher/AI must see which file is missing (Spec 0017, image and size rules).
-     *
-     * @param string $xml
-     * @return array{0: string, 1: string[]} [cleaned XML, removed filenames]
-     */
-    private static function strip_embedded_files(string $xml): array {
-        $filenames = [];
-        $cleaned = preg_replace_callback(
-            '/<file\b[^>]*\bname="([^"]*)"[^>]*>.*?<\/file>\n?/s',
-            static function (array $m) use (&$filenames): string {
-                $filename = $m[1];
-                $filenames[] = $filename;
-                // Note: "--" would prematurely close the XML comment.
-                $safe = str_replace('--', '- -', $filename);
-                return '<!-- File removed (no binary transport in export): ' . $safe . " -->\n";
-            },
-            $xml
-        );
-
-        return [$cleaned ?? $xml, $filenames];
     }
 
     /**

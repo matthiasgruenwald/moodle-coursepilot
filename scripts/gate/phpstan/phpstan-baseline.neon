@@ -235,15 +235,6 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/external/clone_activity.php
 
 		-
-			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
-			# evidence: {"classes/external/create_mc_question.php":["require_once($CFG->libdir . '/questionlib.php');"]}
-			# resolution: permanent
-			message: '#^Variable \$CFG might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: ../html/public/local/coursepilot/classes/external/create_mc_question.php
-
-		-
 			# reason: build_crop_response($existing) documents the input as @param ?array $existing. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
 			# evidence: {"classes/external/crop_material_file.php":["private static function build_crop_response(","* @param ?array $existing"]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
@@ -289,33 +280,6 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/external/ensure_question_category.php
 
 		-
-			# reason: setCategory() configures qformat_xml through its qformat_default base API; analysis does not resolve this setter at the current scan boundary. Repair the scanned inheritance/loading contract rather than silently assuming an arbitrary method.
-			# evidence: {"classes/external/export_questions_xml.php":["$qformat->setCategory($category);"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Call to an undefined method qformat_xml\:\:setCategory\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: ../html/public/local/coursepilot/classes/external/export_questions_xml.php
-
-		-
-			# reason: setContexts() configures qformat_xml through its qformat_default base API; analysis does not resolve this setter at the current scan boundary. Repair the scanned inheritance/loading contract rather than silently assuming an arbitrary method.
-			# evidence: {"classes/external/export_questions_xml.php":["$qformat->setContexts([$context]);"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Call to an undefined method qformat_xml\:\:setContexts\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: ../html/public/local/coursepilot/classes/external/export_questions_xml.php
-
-		-
-			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
-			# evidence: {"classes/external/export_questions_xml.php":["require_once($CFG->libdir . '/questionlib.php');"]}
-			# resolution: permanent
-			message: '#^Variable \$CFG might not be defined\.$#'
-			identifier: variable.undefined
-			count: 3
-			path: ../html/public/local/coursepilot/classes/external/export_questions_xml.php
-
-		-
 			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
 			# evidence: {"classes/external/get_question.php":["require_once($CFG->libdir . '/questionlib.php');"]}
 			# resolution: permanent
@@ -341,105 +305,6 @@ parameters:
 			identifier: variable.undefined
 			count: 1
 			path: ../html/public/local/coursepilot/classes/external/get_quiz_cleanup_plan.php
-
-		-
-			# reason: XML import checks qformat_xml::$importerrors after each parse; PHPStan does not resolve the inherited qformat_default error counter. Correct the scanned base-property contract instead of masking arbitrary undefined properties.
-			# evidence: {"classes/external/import_questions_xml.php":["if ($questions === false || !is_array($questions) || $qformat->importerrors > 0) {"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Access to an undefined property qformat_xml\:\:\$importerrors\.$#'
-			identifier: property.notFound
-			count: 2
-			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
-
-		-
-			# reason: setCategory() configures qformat_xml through its qformat_default base API; analysis does not resolve this setter at the current scan boundary. Repair the scanned inheritance/loading contract rather than silently assuming an arbitrary method.
-			# evidence: {"classes/external/import_questions_xml.php":["$qformat->setCategory($category);"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Call to an undefined method qformat_xml\:\:setCategory\(\)\.$#'
-			identifier: method.notFound
-			count: 3
-			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
-
-		-
-			# reason: setCatfromfile() configures qformat_xml through its qformat_default base API; analysis does not resolve this setter at the current scan boundary. Repair the scanned inheritance/loading contract rather than silently assuming an arbitrary method.
-			# evidence: {"classes/external/import_questions_xml.php":["$qformat->setCatfromfile(false);"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Call to an undefined method qformat_xml\:\:setCatfromfile\(\)\.$#'
-			identifier: method.notFound
-			count: 2
-			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
-
-		-
-			# reason: setContextfromfile() configures qformat_xml through its qformat_default base API; analysis does not resolve this setter at the current scan boundary. Repair the scanned inheritance/loading contract rather than silently assuming an arbitrary method.
-			# evidence: {"classes/external/import_questions_xml.php":["$qformat->setContextfromfile(false);"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Call to an undefined method qformat_xml\:\:setContextfromfile\(\)\.$#'
-			identifier: method.notFound
-			count: 2
-			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
-
-		-
-			# reason: setContexts() configures qformat_xml through its qformat_default base API; analysis does not resolve this setter at the current scan boundary. Repair the scanned inheritance/loading contract rather than silently assuming an arbitrary method.
-			# evidence: {"classes/external/import_questions_xml.php":["$qformat->setContexts([$context]);"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Call to an undefined method qformat_xml\:\:setContexts\(\)\.$#'
-			identifier: method.notFound
-			count: 3
-			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
-
-		-
-			# reason: setMatchgrades() configures qformat_xml through its qformat_default base API; analysis does not resolve this setter at the current scan boundary. Repair the scanned inheritance/loading contract rather than silently assuming an arbitrary method.
-			# evidence: {"classes/external/import_questions_xml.php":["$qformat->setMatchgrades('grade');"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Call to an undefined method qformat_xml\:\:setMatchgrades\(\)\.$#'
-			identifier: method.notFound
-			count: 2
-			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
-
-		-
-			# reason: setStoponerror() configures qformat_xml through its qformat_default base API; analysis does not resolve this setter at the current scan boundary. Repair the scanned inheritance/loading contract rather than silently assuming an arbitrary method.
-			# evidence: {"classes/external/import_questions_xml.php":["$qformat->setStoponerror(true);"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Call to an undefined method qformat_xml\:\:setStoponerror\(\)\.$#'
-			identifier: method.notFound
-			count: 2
-			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
-
-		-
-			# reason: The XML import and round-trip parse check qformat_xml::readquestions() results for false/non-array before accepting importerrors=0. The scanned return says array, making function.alreadyNarrowedType redundant statically; verify its error-result contract before simplifying these guards.
-			# evidence: {"classes/external/import_questions_xml.php":["if ($questions === false || !is_array($questions) || $qformat->importerrors > 0) {","if ($reparsed === false || !is_array($reparsed) || $reparser->importerrors > 0) {"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 2
-			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
-
-		-
-			# reason: The XML import and round-trip parse check qformat_xml::readquestions() results for false/non-array before accepting importerrors=0. The scanned return says array, making booleanOr.alwaysFalse redundant statically; verify its error-result contract before simplifying these guards.
-			# evidence: {"classes/external/import_questions_xml.php":["if ($questions === false || !is_array($questions) || $qformat->importerrors > 0) {","if ($reparsed === false || !is_array($reparsed) || $reparser->importerrors > 0) {"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Result of \|\| is always false\.$#'
-			identifier: booleanOr.alwaysFalse
-			count: 2
-			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
-
-		-
-			# reason: The XML import and round-trip parse check qformat_xml::readquestions() results for false/non-array before accepting importerrors=0. The scanned return says array, making identical.alwaysFalse redundant statically; verify its error-result contract before simplifying these guards.
-			# evidence: {"classes/external/import_questions_xml.php":["if ($questions === false || !is_array($questions) || $qformat->importerrors > 0) {","if ($reparsed === false || !is_array($reparsed) || $reparser->importerrors > 0) {"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Strict comparison using \=\=\= between array and false will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 2
-			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
-
-		-
-			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
-			# evidence: {"classes/external/import_questions_xml.php":["require_once($CFG->libdir . '/questionlib.php');"]}
-			# resolution: permanent
-			message: '#^Variable \$CFG might not be defined\.$#'
-			identifier: variable.undefined
-			count: 3
-			path: ../html/public/local/coursepilot/classes/external/import_questions_xml.php
 
 		-
 			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.

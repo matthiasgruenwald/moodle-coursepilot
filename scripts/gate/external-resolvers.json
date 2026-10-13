@@ -27,6 +27,12 @@
       "validates": true,
       "requires": true,
       "reason": "löst das Kursmodul auf, validiert den Modulkontext und verlangt local/coursepilot:use vor dem Lesen der Einstellungen"
+    },
+    {
+      "call": "question_import::import",
+      "validates": true,
+      "requires": true,
+      "reason": "validiert den Zielkategoriekontext und verlangt local/coursepilot:use sowie moodle/question:add vor XML-Auflösung, Parse und Schreibtransaktion"
     }
   ]
 }

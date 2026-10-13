@@ -4,13 +4,6 @@
 # Jeder Eintrag nennt das Folgeticket, das ihn auflöst; Ziel ist eine leere Baseline.
 deptrac:
   skip_violations:
-    # MC-Fragen: update_mc_question und create_mc_question rufen Werkzeuge -> #697
-    local_coursepilot\external\create_mc_question:
-      - local_coursepilot\external\import_questions_xml
-    local_coursepilot\external\update_mc_question:
-      - local_coursepilot\external\create_mc_question
-      - local_coursepilot\external\export_questions_xml
-      - local_coursepilot\external\import_questions_xml
     # Wiederherstellen ruft zwei Werkzeuge -> #700
     local_coursepilot\external\restore_activity_version:
       - local_coursepilot\external\set_completion

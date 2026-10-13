@@ -26,6 +26,8 @@ use core_external\external_api;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(export_questions_xml::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_xml::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_import::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_files::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_area::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_write::class)]
@@ -33,6 +35,17 @@ use core_external\external_api;
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
 final class export_questions_xml_test extends \advanced_testcase {
+    /**
+     * An unknown question ID fails with the existing not-found error.
+     */
+    public function test_rejects_unknown_question_id(): void {
+        $this->resetAfterTest();
+        $this->setup_course_and_category();
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage('Not found');
+        export_questions_xml::execute([PHP_INT_MAX], '', true);
+    }
+
     /**
      * Standard-mode round trip (Spec 0018 §7.2, #437): export a complete XML
      * file into material storage, returning only its path, and reimport via
