@@ -219,3 +219,14 @@ Datei-Grundfunktionen ausdrücklich per `CoversClass` ab.
 `file_storage.stub` korrigiert für PHPStan den als `int` dokumentierten
 Verzeichnispfad von Moodles `get_directory_files()` zu `string`. Der Stub
 unterdrückt keine Befunde; die bisherige Ausnahme im Anker entfällt.
+
+## Atomare Quiz-Einstellungen
+
+`catalog/quiz_write` übernimmt für `create_quiz` und `update_quiz_settings` die
+Modusauflösung, Zielprüfung und komplette native Schreibfolge in einer Moodle-Transaktion.
+Die Höchstbewertung wird vor dem Modulupdate skaliert, damit ausdrücklich gesetzte
+Feedbackgrenzen bereits für die neue Bewertung gelten. Quiz-Kombinationsprüfung und
+Formübersetzung bleiben im Katalog (`quiz_write_bridge`, `write_target`).
+Die öffentlichen Werkzeugtests prüfen einen späten Core-Hook-Fehler nach Bewertung und
+Einstellungen sowie die native Ablehnung nach dem Anlegen einer Kurssektion. Beides
+muss den vorherigen Datenbankstand erhalten; die Werkzeugverträge bleiben unverändert.

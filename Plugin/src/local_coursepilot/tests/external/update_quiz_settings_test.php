@@ -28,7 +28,42 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(update_quiz_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz_write::class)]
 final class update_quiz_settings_test extends \advanced_testcase {
+    /**
+     * A native failure after grading and settings were written restores the entire quiz.
+     */
+    public function test_late_native_failure_rolls_back_grade_feedback_and_settings(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->preventResetByRollback();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'grade' => 100]);
+        $this->patch($quiz->cmid, ['feedbacktext' => ['Pass', 'Retry'], 'feedbackboundaries' => [50]]);
+        $before = get_module_settings::execute($quiz->cmid)['settings_json'];
+        $feedback = $DB->get_records('quiz_feedback', ['quizid' => $quiz->id], 'id');
+        $items = $DB->get_records('grade_items', ['itemmodule' => 'quiz', 'iteminstance' => $quiz->id], 'id');
+        $versions = $DB->get_records('local_coursepilot_cm_version', ['cmid' => $quiz->cmid], 'id');
+        $failure = new \RuntimeException('Native update failed after writing.');
+        $this->redirectHook(\core_courseformat\hook\after_cm_name_edited::class, function () use ($quiz, $failure): void {
+            $this->assertEquals(50, $this->raw_quiz($quiz->cmid)->grade);
+            $this->assertSame('Must roll back', $this->raw_quiz($quiz->cmid)->name);
+            throw $failure;
+        });
+
+        try {
+            $this->patch($quiz->cmid, ['name' => 'Must roll back', 'intro' => 'Must also roll back'], '', 50.0);
+            $this->fail('The native failure must reach the caller.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame($failure, $e);
+        }
+        $this->assertSame($before, get_module_settings::execute($quiz->cmid)['settings_json']);
+        $this->assertEquals($feedback, $DB->get_records('quiz_feedback', ['quizid' => $quiz->id], 'id'));
+        $this->assertEquals($items, $DB->get_records('grade_items', ['itemmodule' => 'quiz', 'iteminstance' => $quiz->id], 'id'));
+        $this->assertEquals($versions, $DB->get_records('local_coursepilot_cm_version', ['cmid' => $quiz->cmid], 'id'));
+        $this->assertFalse($DB->is_transaction_started());
+    }
+
     /**
      * Moodle 5.3's informational due date survives a later unrelated patch.
      */
@@ -557,7 +592,9 @@ final class update_quiz_settings_test extends \advanced_testcase {
     public function test_source_never_writes_the_quiz_table_directly(): void {
         $source = file_get_contents(__DIR__ . '/../../classes/external/update_quiz_settings.php');
         $this->assertStringNotContainsString("update_record('quiz'", $source);
-        $this->assertStringContainsString('update_moduleinfo(', $source);
+        $catalog = file_get_contents(__DIR__ . '/../../classes/catalog/quiz_write.php');
+        $this->assertStringContainsString('update_moduleinfo(', $catalog);
+        $this->assertStringContainsString('quiz_write::update(', $source);
     }
 
     /**

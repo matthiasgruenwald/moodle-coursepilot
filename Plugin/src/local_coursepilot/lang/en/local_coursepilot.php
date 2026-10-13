@@ -363,9 +363,15 @@ $string['questionexportplaceholder'] = 'PLACEHOLDER MODE: This output is incompl
 $string['questionimportcreated'] = 'Question "{$a->name}" created (version {$a->version}).';
 $string['questionimportsuspect'] = 'Suspect case: The supplied idnumber "{$a}" has no match in the target category. Nothing was imported. To create a new entry anyway, call again with confirmed=true.';
 $string['questionimportversion'] = 'Question "{$a->name}" imported as a new version (version {$a->version}) of the same bank entry.';
+$string['quizcalendarcreated'] = 'The calendar entry for the quiz was created.';
+$string['quizcalendarupdated'] = 'The calendar event for the quiz was updated.';
+$string['quizchangedfields'] = 'Changed: {$a}.';
 $string['quizcreatedfields'] = 'Quiz created: {$a}.';
+$string['quizfieldchange'] = '"{$a->field}" from {$a->before} to {$a->after}';
 $string['quizgradepassmeaning'] = 'Passing grade in quiz grade points, NOT percent: a finite JSON number from 0 to the maximum grade (inclusive); 0 disables the passing threshold. For 80%, read the current grade with get_module_settings and supply 0.8 * grade (10 -> 8, 25 -> 20). If the grade parameter changes the maximum in the same call, use that new maximum.';
 $string['quizgradepassrule'] = '"gradepass" must be a finite JSON number from 0 to the effective maximum grade inclusive, in grade points, not percent. Coursepilot enforces this range for every question behaviour. 0 disables the passing threshold; a simultaneous grade change supplies the new maximum.';
+$string['quizgradesrescaled'] = 'Existing attempt grades and overall feedback boundaries were rescaled proportionally to the new grade.';
+$string['quiznochange'] = 'No change: the patch already matched the current state.';
 $string['quizpatchfields'] = 'JSON object field name => new value - only the fields to change (patch, not a full state). "grade"/"sumgrades" are NOT possible here (blocked), see the "grade" parameter. "gradepass" is a finite JSON number in grade points, NOT percent, from 0 to the maximum grade inclusive (0 disables the threshold). Read grade with get_module_settings: 80% of grade 10 is {"gradepass":8}, of grade 25 is {"gradepass":20}. When grade changes in this call, gradepass refers to the new maximum.';
 $string['readonlyvocabularyfield'] = 'Field "{$a->field}" is read vocabulary of the reading tools, not a writable field for activity type "{$a->modname}". To set it, use: {$a->hint}. Nothing was written.';
 $string['remoteaccessdisabled'] = 'Remote access has been temporarily disabled by the administration.';

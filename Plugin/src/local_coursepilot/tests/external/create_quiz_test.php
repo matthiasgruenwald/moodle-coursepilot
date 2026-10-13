@@ -27,7 +27,34 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(create_quiz::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz_write::class)]
 final class create_quiz_test extends \advanced_testcase {
+    /**
+     * Native module rejection also rolls back a section created during preparation.
+     */
+    public function test_native_creation_rejection_leaves_no_section_or_quiz(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->preventResetByRollback();
+        [$course] = $this->course_with_editing_teacher();
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
+        assign_capability('mod/quiz:addinstance', CAP_PROHIBIT, $roleid, \context_course::instance($course->id)->id, true);
+        $sections = $DB->get_records('course_sections', ['course' => $course->id], 'id');
+        $modules = $DB->get_records('course_modules', ['course' => $course->id], 'id');
+        $versions = $DB->count_records('local_coursepilot_cm_version');
+        try {
+            $this->create($course->id, 7, $this->minimal_fields_without_mode());
+            $this->fail('The native module restriction must reject creation.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('moduledisable', $e->errorcode);
+        }
+        $this->assertEquals($sections, $DB->get_records('course_sections', ['course' => $course->id], 'id'));
+        $this->assertEquals($modules, $DB->get_records('course_modules', ['course' => $course->id], 'id'));
+        $this->assertFalse($DB->record_exists('quiz', ['course' => $course->id]));
+        $this->assertSame($versions, $DB->count_records('local_coursepilot_cm_version'));
+        $this->assertFalse($DB->is_transaction_started());
+    }
+
     /**
      * Provides course with editing teacher.
      *
@@ -292,7 +319,9 @@ final class create_quiz_test extends \advanced_testcase {
         $source = file_get_contents(__DIR__ . '/../../classes/external/create_quiz.php');
         $this->assertStringNotContainsString('$DB->update_record', $source);
         $this->assertStringNotContainsString("insert_record('quiz'", $source);
-        $this->assertStringContainsString('add_moduleinfo(', $source);
+        $catalog = file_get_contents(__DIR__ . '/../../classes/catalog/quiz_write.php');
+        $this->assertStringContainsString('add_moduleinfo(', $catalog);
+        $this->assertStringContainsString('quiz_write::create(', $source);
     }
 
     /**
