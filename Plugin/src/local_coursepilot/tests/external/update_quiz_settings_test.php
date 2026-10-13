@@ -29,6 +29,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 #[CoversClass(update_quiz_settings::class)]
 #[CoversClass(\local_coursepilot\catalog\quiz_write::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz::class)]
 final class update_quiz_settings_test extends \advanced_testcase {
     /**
      * A native failure after grading and settings were written restores the entire quiz.

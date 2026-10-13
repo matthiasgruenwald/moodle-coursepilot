@@ -135,7 +135,7 @@ final class drift_check {
             ['id'],
             array_map(static fn (field $f): string => $f->name, $catalog::fields()),
             $blockedrealcolumns,
-            array_intersect(shared_block::BLOCKLIST, $realcolumns)
+            array_intersect(shared_block::blocked_fields(), $realcolumns)
         );
         $known = array_values(array_unique($known));
         sort($known);

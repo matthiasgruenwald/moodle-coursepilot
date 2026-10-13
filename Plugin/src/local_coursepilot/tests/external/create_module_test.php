@@ -31,6 +31,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(create_module::class)]
+#[CoversClass(\local_coursepilot\catalog\catalog_fields::class)]
+#[CoversClass(\local_coursepilot\catalog\assign::class)]
+#[CoversClass(\local_coursepilot\catalog\label::class)]
 final class create_module_test extends \advanced_testcase {
     use webdav_instance_fixture;
 

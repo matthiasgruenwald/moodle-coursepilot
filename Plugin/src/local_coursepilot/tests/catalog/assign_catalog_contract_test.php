@@ -45,7 +45,7 @@ final class assign_catalog_contract_test extends \advanced_testcase {
             ['id'],
             array_map(static fn (field $f): string => $f->name, assign::fields()),
             assign::blocklist(),
-            array_intersect(shared_block::BLOCKLIST, $realcolumns)
+            array_intersect(shared_block::blocked_fields(), $realcolumns)
         );
         sort($known);
 
@@ -145,11 +145,11 @@ final class assign_catalog_contract_test extends \advanced_testcase {
         $this->assertContains('nosubmissions', assign::blocklist());
         $this->assertContains('completionsubmit', assign::blocklist());
 
-        $this->assertContains('completion', shared_block::BLOCKLIST);
-        $this->assertContains('completionview', shared_block::BLOCKLIST);
-        $this->assertContains('completionexpected', shared_block::BLOCKLIST);
-        $this->assertContains('completiongradeitemnumber', shared_block::BLOCKLIST);
-        $this->assertContains('completionpassgrade', shared_block::BLOCKLIST);
+        $this->assertContains('completion', shared_block::blocked_fields());
+        $this->assertContains('completionview', shared_block::blocked_fields());
+        $this->assertContains('completionexpected', shared_block::blocked_fields());
+        $this->assertContains('completiongradeitemnumber', shared_block::blocked_fields());
+        $this->assertContains('completionpassgrade', shared_block::blocked_fields());
     }
 
     /**

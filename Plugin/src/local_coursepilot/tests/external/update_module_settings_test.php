@@ -31,6 +31,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(update_module_settings::class)]
 #[CoversClass(\local_coursepilot\activity_file_trash::class)]
+#[CoversClass(\local_coursepilot\catalog\catalog_fields::class)]
+#[CoversClass(\local_coursepilot\catalog\assign::class)]
+#[CoversClass(\local_coursepilot\catalog\shared_block::class)]
 final class update_module_settings_test extends \advanced_testcase {
     use webdav_instance_fixture;
 

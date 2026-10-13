@@ -28,6 +28,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(describe_module_fields::class)]
+#[CoversClass(\local_coursepilot\catalog\shared_block::class)]
+#[CoversClass(\local_coursepilot\catalog\assign::class)]
+#[CoversClass(\local_coursepilot\catalog\label::class)]
 final class describe_module_fields_test extends \advanced_testcase {
     /**
      * Without modname, list supported activity types (user story 13).

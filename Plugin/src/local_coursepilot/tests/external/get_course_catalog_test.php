@@ -31,6 +31,9 @@ use local_coursepilot\catalog\registry;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(get_course_catalog::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(module_state::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\catalog\assign::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\catalog\label::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\catalog\quiz::class)]
 final class get_course_catalog_test extends \advanced_testcase {
     /**
      * All supported module types return catalog-backed state. Preserve

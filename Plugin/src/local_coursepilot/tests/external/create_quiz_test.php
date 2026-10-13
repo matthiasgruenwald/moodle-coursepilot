@@ -28,6 +28,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(create_quiz::class)]
 #[CoversClass(\local_coursepilot\catalog\quiz_write::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz::class)]
 final class create_quiz_test extends \advanced_testcase {
     /**
      * Native module rejection also rolls back a section created during preparation.

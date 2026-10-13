@@ -47,7 +47,7 @@ use stdClass;
  * the next page view.
  *
  * "availability"/"availabilityconditionsjson" stays on the blocklist of
- * update_module_settings (shared_block::BLOCKLIST does not list it as a
+ * update_module_settings (shared_block::blocked_fields() does not list it as a
  * field at all) - this endpoint is the only write path.
  *
  * Writing goes through get_moduleinfo_data()/update_moduleinfo() (ADR

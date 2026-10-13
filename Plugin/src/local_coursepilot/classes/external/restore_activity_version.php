@@ -23,6 +23,7 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\activity_file_trash;
+use local_coursepilot\catalog\completion_settings;
 use local_coursepilot\catalog\module_state;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\shared_block;
@@ -70,27 +71,6 @@ use moodle_exception;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class restore_activity_version extends external_api {
-    /**
-     * The completion fields (identical to
-     * {@see set_completion}::ALLOWED_FIELDS plus its module-specific
-     * fields, ticket #461) - kept separately here because set_completion
-     * holds them as private constants and this endpoint only needs them to
-     * keep them out of the generic patch and handle them separately.
-     * "completionsubmit" is not in the version state at all for any other
-     * activity type, so it drops out there already via the
-     * array_key_exists() check.
-     *
-     * @var string[]
-     */
-    private const COMPLETION_FIELDS = [
-        'completion',
-        'completionview',
-        'completionusegrade',
-        'completionpassgrade',
-        'completionexpected',
-        'completionsubmit',
-    ];
-
     /**
      * Describes the parameters of execute.
      *
@@ -396,7 +376,7 @@ final class restore_activity_version extends external_api {
      * @return mixed[]
      */
     private static function build_normal_patch(string $catalogclass, array $before, array $target): array {
-        $blocklist = array_unique(array_merge(shared_block::BLOCKLIST, $catalogclass::blocklist()));
+        $blocklist = array_unique(array_merge(shared_block::blocked_fields(), $catalogclass::blocklist()));
         $fields = array_merge(shared_block::fields(), $catalogclass::fields(), $catalogclass::pseudofields());
 
         $patch = [];
@@ -425,10 +405,8 @@ final class restore_activity_version extends external_api {
      */
     private static function build_completion_patch(array $before, array $target): array {
         $patch = [];
-        foreach (self::COMPLETION_FIELDS as $name) {
-            if (!array_key_exists($name, $target)) {
-                continue;
-            }
+        $fields = array_intersect_key(completion_settings::allowed_fields((string) $before['modulename']), $target);
+        foreach (array_keys($fields) as $name) {
             $newvalue = (int) $target[$name];
             if ((int) ($before[$name] ?? 0) !== $newvalue) {
                 $patch[$name] = $newvalue;

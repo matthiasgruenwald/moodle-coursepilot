@@ -28,7 +28,68 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(set_completion::class)]
+#[CoversClass(\local_coursepilot\catalog\completion_settings::class)]
 final class set_completion_test extends \advanced_testcase {
+    /**
+     * Minimum quiz attempts are written and readable through the public tools.
+     */
+    public function test_quiz_minimum_attempts_are_written(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        $result = external_api::clean_returnvalue(
+            set_completion::execute_returns(),
+            set_completion::execute($quiz->cmid, json_encode([
+                'completion' => COMPLETION_TRACKING_AUTOMATIC,
+                'completionminattempts' => 2,
+            ]))
+        );
+
+        $this->assertSame(2, (int) $this->read($quiz->cmid)['completionminattempts']);
+        $this->assertContains([
+            'field' => 'completionminattempts', 'before_json' => '"0"', 'after_json' => '"2"',
+        ], $result['changes']);
+    }
+
+    /**
+     * A negative attempt requirement is refused without changing the activity.
+     */
+    public function test_quiz_negative_minimum_attempts_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        try {
+            set_completion::execute($quiz->cmid, json_encode([
+                'completion' => COMPLETION_TRACKING_AUTOMATIC,
+                'completionminattempts' => -1,
+            ]));
+            $this->fail('A negative minimum must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('completioninvalidfieldvalue', $e->errorcode);
+        }
+        $this->assertSame(0, (int) $this->read($quiz->cmid)['completionminattempts']);
+    }
+
+    /**
+     * A blocked quiz field keeps the published unknown-field error for every type.
+     */
+    public function test_blocked_quiz_field_keeps_unknown_completion_error(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        foreach (['page', 'quiz'] as $modname) {
+            $activity = $this->getDataGenerator()->create_module($modname, ['course' => $course->id]);
+            try {
+                set_completion::execute($activity->cmid, '{"completionview":1,"completionattemptsexhausted":1}');
+                $this->fail('Blocked fields must remain unknown to the completion write operation.');
+            } catch (\moodle_exception $e) {
+                $this->assertSame('completionunknownfield', $e->errorcode);
+            }
+            $this->assertSame(0, (int) $this->read($activity->cmid)['completionview']);
+        }
+    }
+
     /**
      * Provides course with editing teacher.
      *

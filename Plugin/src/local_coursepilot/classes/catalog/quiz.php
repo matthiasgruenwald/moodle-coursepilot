@@ -669,7 +669,7 @@ final class quiz implements module_catalog {
      * @return mixed[]
      */
     public static function blocklist(): array {
-        return [
+        return array_merge([
             'grade',
             'sumgrades',
             'password',
@@ -681,9 +681,7 @@ final class quiz implements module_catalog {
             'reviewgeneralfeedback',
             'reviewrightanswer',
             'reviewoverallfeedback',
-            'completionattemptsexhausted',
-            'completionminattempts',
-        ];
+        ], completion_settings::module_fields('quiz'));
     }
 
     /**

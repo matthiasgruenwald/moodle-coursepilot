@@ -230,3 +230,17 @@ Formübersetzung bleiben im Katalog (`quiz_write_bridge`, `write_target`).
 Die öffentlichen Werkzeugtests prüfen einen späten Core-Hook-Fehler nach Bewertung und
 Einstellungen sowie die native Ablehnung nach dem Anlegen einer Kurssektion. Beides
 muss den vorherigen Datenbankstand erhalten; die Werkzeugverträge bleiben unverändert.
+
+## Abschlussbedingungen im Modulkatalog
+
+`catalog/completion_settings` besitzt die einzige Abschluss-Felddefinition sowie Lesen,
+Validierung und die native Schreibfolge. `set_completion` validiert nur die externen
+Parameter und delegiert. Blocklisten, Restore-Feldwahl und gemeinsame Abschlusswerte in
+Lesern und Verlaufssnapshots werden aus dieser Definition abgeleitet.
+
+Die öffentlichen Tests `set_completion_test` und `quiz_completion_test` prüfen weiterhin
+Werkzeugantworten und beide Bestätigungen. `completionminattempts` gilt nur für Quiz;
+0 schaltet die Bedingung aus, positive Werte dürfen das konfigurierte Versuchslimit nicht
+überschreiten. Der notwendige native Form-Schalter wird abgeleitet; ein unveränderter Wert
+setzt keinen Abschluss zurück. Die Regeln folgen ADR 0016 und Spec 0015 §8; die bestehende
+Restore-Abfolge bleibt bis zum eigenen Folgeticket erhalten.

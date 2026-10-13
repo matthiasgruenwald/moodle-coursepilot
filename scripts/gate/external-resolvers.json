@@ -33,6 +33,12 @@
       "validates": true,
       "requires": true,
       "reason": "validiert den Zielkategoriekontext und verlangt local/coursepilot:use sowie moodle/question:add vor XML-Auflösung, Parse und Schreibtransaktion"
+    },
+    {
+      "call": "completion_settings::write",
+      "validates": true,
+      "requires": true,
+      "reason": "löst das Kursmodul auf, validiert den Modulkontext und prüft local/coursepilot:use sowie moodle/course:manageactivities vor Patchprüfung und Schreiben"
     }
   ]
 }

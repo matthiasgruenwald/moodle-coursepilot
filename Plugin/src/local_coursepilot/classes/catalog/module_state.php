@@ -81,17 +81,14 @@ final class module_state {
             'module' => (int) $cm->module,
             'modulename' => (string) $cm->modname,
             'instance' => (int) $cm->instance,
-            'completion' => (int) $cm->completion,
-            'completionview' => (int) $cm->completionview,
-            'completionexpected' => (int) $cm->completionexpected,
-            'completionusegrade' => $cm->completiongradeitemnumber === null ? 0 : 1,
-            'completionpassgrade' => (int) $cm->completionpassgrade,
-            'completiongradeitemnumber' => $cm->completiongradeitemnumber,
             'showdescription' => (int) $cm->showdescription,
             'downloadcontent' => $cm->downloadcontent,
             'lang' => (string) $cm->lang,
             'tags' => \core_tag_tag::get_item_tags_array('core', 'course_modules', $cm->id),
-        ], shared_block::derive_visibility((int) $cm->visible, (int) $cm->visibleoncoursepage));
+        ], completion_settings::course_settings($cm), shared_block::derive_visibility(
+            (int) $cm->visible,
+            (int) $cm->visibleoncoursepage
+        ));
         if (!empty($CFG->enableavailability)) {
             $data['availabilityconditionsjson'] = availability_privacy::sanitize((string) ($cm->availability ?? ''));
         }
