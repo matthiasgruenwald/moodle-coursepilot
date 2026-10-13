@@ -26,6 +26,7 @@ use core_external\external_value;
 use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\field;
 use local_coursepilot\catalog\learner_locks;
+use local_coursepilot\catalog\module_state;
 use local_coursepilot\catalog\registry;
 use moodle_exception;
 
@@ -398,7 +399,7 @@ final class set_completion extends external_api {
      *         all five completion* fields).
      */
     private static function read_settings(int $cmid): array {
-        $result = get_module_settings::execute($cmid);
+        $result = module_state::read_settings($cmid);
         return json_decode($result['settings_json'], true);
     }
 

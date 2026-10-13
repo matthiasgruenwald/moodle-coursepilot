@@ -23,6 +23,7 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\activity_file_trash;
+use local_coursepilot\catalog\module_state;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\shared_block;
 use local_coursepilot\history\version_history;
@@ -377,7 +378,7 @@ final class restore_activity_version extends external_api {
      * @return mixed[]
      */
     private static function read_settings(int $cmid): array {
-        $result = get_module_settings::execute($cmid);
+        $result = module_state::read_settings($cmid);
         return json_decode($result['settings_json'], true);
     }
 

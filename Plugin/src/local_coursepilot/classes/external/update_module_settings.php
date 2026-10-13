@@ -24,6 +24,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\module_catalog;
 use local_coursepilot\catalog\learner_locks;
+use local_coursepilot\catalog\module_state;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\pseudofield_carry_forward;
 use local_coursepilot\catalog\write_target;
@@ -235,16 +236,13 @@ class update_module_settings extends external_api {
     }
 
     /**
-     * Current state as an associative array - the same composition as
-     * {@see get_module_settings}, reused via its settings_json
-     * instead of duplicated (ticket #384: "same shape reusable for the
-     * read part").
+     * Current catalog state as an associative array for the before/after comparison.
      *
      * @param int $cmid
      * @return mixed[]
      */
     private static function read_settings(int $cmid): array {
-        $result = get_module_settings::execute($cmid);
+        $result = module_state::read_settings($cmid);
         return json_decode($result['settings_json'], true);
     }
 

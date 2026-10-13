@@ -16,6 +16,8 @@
 
 namespace local_coursepilot\catalog;
 
+use context_module;
+use core_external\external_api;
 use local_coursepilot\availability_privacy;
 
 /**
@@ -26,6 +28,35 @@ use local_coursepilot\availability_privacy;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class module_state {
+    /**
+     * Read the complete activity state and existing learner locks for an
+     * authorised catalog client. Read access needs only local/coursepilot:use,
+     * unlike get_moduleinfo_data(), which requires manageactivities.
+     *
+     * Settings retain raw instance fields and the catalog vocabulary. Draft
+     * editor helpers and derived gradebook fields are omitted; quiz passing
+     * grades are read from its primary grade item by effective_settings().
+     *
+     * @param int $cmid Course module ID.
+     * @return mixed[] Module identity, JSON settings and existing learner locks.
+     */
+    public static function read_settings(int $cmid): array {
+        $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+        external_api::validate_context($context);
+        require_capability('local/coursepilot:use', $context);
+
+        $data = self::effective_settings($cm);
+        $catalogclass = registry::for((string) $cm->modname);
+
+        return [
+            'cmid' => (int) $cm->id,
+            'modname' => (string) $cm->modname,
+            'settings_json' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'learner_locks' => $catalogclass === null ? [] : learner_locks::existing($catalogclass, $data),
+        ];
+    }
+
     /**
      * Full state in catalog vocabulary for read-modify-write. External tools
      * need no knowledge of module tables or pseudofield readers.

@@ -28,6 +28,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(restore_activity_version::class)]
+#[CoversClass(update_module_settings::class)]
 final class restore_activity_version_test extends \advanced_testcase {
     /**
      * Provides course with editing teacher.

@@ -27,6 +27,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(get_module_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\module_state::class)]
 final class get_module_settings_test extends \advanced_testcase {
     /**
      * Return raw instance fields, such as intro, without a custom Coursepilot schema.

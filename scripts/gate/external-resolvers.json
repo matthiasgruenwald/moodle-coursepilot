@@ -21,6 +21,12 @@
       "call": "remote_access::require_granted",
       "requires": true,
       "reason": "verlangt die Fernzugriffsfreigabe (Capability local/coursepilot:remoteaccess bzw. gewählte Kohorten) im Systemkontext"
+    },
+    {
+      "call": "module_state::read_settings",
+      "validates": true,
+      "requires": true,
+      "reason": "löst das Kursmodul auf, validiert den Modulkontext und verlangt local/coursepilot:use vor dem Lesen der Einstellungen"
     }
   ]
 }
