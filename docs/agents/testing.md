@@ -192,8 +192,12 @@ npm run hooks:install   # git config core.hooksPath scripts/githooks
 ## Kontextablage und Ausstandsnotiz
 
 `context_area::write()` und `append()` lösen den aktuellen Ablageort auf und rufen die
-öffentlichen Port-Einstiege `write_to()` und `append_to()` auf. Diese prüfen Vorab-Lesen,
-Personenbezugs-Sperre und Schreibbedingung gemeinsam für Private Files und WebDAV. Tests
+öffentlichen Port-Einstiege `write_to()` und `append_to()` auf. Die Kontext-Schutzregeln liegen in `context_files`; `storage_write` hält Vorab-Lesen,
+Schreibbedingung und Ausfallübersetzung gemeinsam für Kontext und Material zusammen.
+`material_area::write()` und `write_to()` nutzen denselben Ablauf. compose/crop erhalten
+ihre Provenienz über das typisierte `source`-Argument des Ablage-Ports.
+Der XML-Export nutzt denselben Schreiber mit einer eigenen Bereichspolitik, die
+seine bisher permissiven Datei- und Ordnernamen erhält; Traversal bleibt gesperrt. Tests
 ersetzen ausschließlich `storage_port` beziehungsweise den WebDAV-Transport; das Speichern
 der Ausstandsnotiz läuft gegen die echte Moodle-Testdatenbank. `storage_failure` trägt eine
 neutrale Fehlerklasse und interne Diagnostik. Adapter legen keine Ausstandsnotiz an; die
@@ -209,7 +213,7 @@ Verlauf, Altdatenprüfung und ihre bisherigen Fehlercodes.
 
 Die Port-Vertragstests sowie `location_selection_test` prüfen das Verhalten gegen
 die echte Moodle-Testdatenbank; nur der externe WebDAV-Transport wird ersetzt.
-Die bisherigen Kontext-, Material- und Ausstandsnotiztests decken die verlagerten
+Die bisherigen Kontext-, Material- und Ausstandsnotiztests bleiben erhalten und decken die verlagerten
 Datei-Grundfunktionen ausdrücklich per `CoversClass` ab.
 
 `file_storage.stub` korrigiert für PHPStan den als `int` dokumentierten

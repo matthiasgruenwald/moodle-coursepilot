@@ -80,13 +80,20 @@ interface storage_port {
      *        conditional write. Null (default) keeps unconditional overwrite/create.
      *        A supplied checksum differing from current content, including a missing
      *        file, throws {@see storage_conflict_exception}.
+     * @param string $source Optional serialised provenance; supported by Private Files only.
      * @return array{path: string, created: bool, size: int, checksum: string}
      * @throws storage_failure Storage is unavailable.
      * @throws \moodle_exception Area invalidpathkey/name error,
      *         area quotaerrorkey
      * @throws storage_conflict_exception On checksum mismatch.
      */
-    public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array;
+    public function write(
+        storage_area $area,
+        string $path,
+        string $content,
+        ?string $expectedchecksum = null,
+        string $source = ''
+    ): array;
 
     /**
      * Appends content to a file, creating it when absent.

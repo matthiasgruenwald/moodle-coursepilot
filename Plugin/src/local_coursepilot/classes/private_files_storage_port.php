@@ -100,8 +100,15 @@ final class private_files_storage_port implements storage_port {
      * @param string $path The path.
      * @param string $content The content.
      * @param ?string $expectedchecksum The expectedchecksum.
+     * @param string $source Optional serialised provenance; supported by Private Files only.
      */
-    public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
+    public function write(
+        storage_area $area,
+        string $path,
+        string $content,
+        ?string $expectedchecksum = null,
+        string $source = ''
+    ): array {
         [$directory, $filename] = $this->resolve_writable_file($area, $path);
         $clientpath = storage_anchor::normalise_client_path($area, $path);
         $existing = self::read_content($directory, $filename);
@@ -112,7 +119,7 @@ final class private_files_storage_port implements storage_port {
         if ($expectedchecksum === storage_port::MISSING_CHECKSUM) {
             // A missing preflight must stay create-only through persistence.
             // self::write_content() rereads and may replace a concurrent file.
-            $record = self::filerecord(storage_anchor::own_context()->id, $directory, $filename);
+            $record = self::filerecord(storage_anchor::own_context()->id, $directory, $filename) + ['source' => $source];
             try {
                 get_file_storage()->create_file_from_string($record, $content);
             } catch (\stored_file_creation_exception $e) {
@@ -122,7 +129,7 @@ final class private_files_storage_port implements storage_port {
                 throw $e;
             }
         } else {
-            self::write_content($directory, $filename, $content);
+            self::write_content($directory, $filename, $content, ['source' => $source]);
         }
 
         $written = self::read_content($directory, $filename);

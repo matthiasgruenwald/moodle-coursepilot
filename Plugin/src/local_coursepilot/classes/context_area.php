@@ -24,7 +24,7 @@ namespace local_coursepilot;
  * Separate from {@see context_files} to stay below the 800-line guideline,
  * following the split of {@see pointer_reader}/{@see pointer_writer} from
  * {@see storage_anchor}. Unlike those helpers, this class intentionally
- * fixes context_files::area(): no second area needs it (YAGNI, ADR 0020).
+ * fixes context_files::area(); common conditional persistence lives in storage_write.
  *
  * All operations use {@see storage_anchor::port()} with the
  * {@see private_files_storage_port} and {@see webdav_storage_port} adapters
@@ -195,10 +195,10 @@ final class context_area {
      *
      * @param string $path
      * @param string $content
-     * @param string $expectedcontenthash See {@see context_files::write_pointer_aware()}.
-     * @param string $pendingentry See {@see context_files::write_pointer_aware()}.
-     * @param bool $createonly See {@see context_files::write_pointer_aware()}.
-     * @param int $courseid See {@see context_files::write_pointer_aware()}.
+     * @param string $expectedcontenthash Explicit checksum from an earlier read.
+     * @param string $pendingentry Pending retry identifier.
+     * @param bool $createonly Reject existing targets.
+     * @param int $courseid Course for pending writes.
      * @return array{path: string, created: bool, size: int, oldsize: int}
      */
     public static function write(
@@ -260,68 +260,21 @@ final class context_area {
         $area = context_files::area();
         storage_anchor::writable_segments($area, $path);
         self::require_write_access($location);
-        $existing = self::preread($port, $location, $path, pointer_writer::OP_UNKNOWN, $courseid);
+        $writer = new storage_write($port, $area, $location, $path, $courseid);
+        $existing = $writer->existing();
         if ($existing !== null && $createonly) {
             throw new \moodle_exception('contextfilealreadyexists', 'local_coursepilot', '', $path);
         }
-        self::guard_existing_locked($existing, $path);
-        self::guard_new_content($location, $path, $content);
+        context_files::guard_existing_locked($existing['content'] ?? null, $path);
+        context_files::guard_new_content($location, $path, $content);
         self::guard_pending_retry($path, $pendingentry, $existing !== null, $expectedcontenthash);
-        // Reuse the preflight read as the write condition. This closes the
-        // read-write window without exposing location-specific concurrency.
-        $checksum = $expectedcontenthash !== '' ? $expectedcontenthash : ($existing['checksum'] ?? storage_port::MISSING_CHECKSUM);
-        $operation = $existing === null ? pending_write_translation::OP_CREATE : pending_write_translation::OP_OVERWRITE;
-        $written = self::persist($port, $location, $path, $content, $operation, $courseid, $checksum);
+        $written = $writer->write($content, $expectedcontenthash);
         return [
             'path' => $written['path'],
             'created' => $written['created'],
             'size' => $written['size'],
             'oldsize' => $existing['size'] ?? 0,
         ];
-    }
-
-    /**
-     * Reads the target before any mutation; an outage aborts and records the pending operation.
-     *
-     * @param storage_port $port Selected adapter.
-     * @param pointer_location $location Selected location.
-     * @param string $path Relative context path.
-     * @param string $operation Pending operation if the target cannot be read.
-     * @param int $courseid Course ID for the pending note.
-     * @return array{content: string, checksum: string, size: int, mimetype: string, timemodified: int}|null
-     */
-    private static function preread(
-        storage_port $port,
-        pointer_location $location,
-        string $path,
-        string $operation,
-        int $courseid
-    ): ?array {
-        try {
-            return $port->read(context_files::area(), $path);
-        } catch (storage_failure $e) {
-            throw pointer_writer::record_preread_failure($e, $location, $path, $operation, $courseid);
-        } catch (\moodle_exception $e) {
-            $locationoperation = $operation === pointer_writer::OP_UNKNOWN ? pointer_writer::OP_CREATE : $operation;
-            throw pointer_writer::record_location_failure($e, $path, $location, $locationoperation, $courseid);
-        }
-    }
-
-    /**
-     * Rejects new personal data when disabled or at a disallowed host.
-     *
-     * @param pointer_location $location Selected location.
-     * @param string $path Relative context path.
-     * @param string $content Complete replacement content.
-     */
-    private static function guard_new_content(pointer_location $location, string $path, string $content): void {
-        if (!personal_data::is_marked($content)) {
-            return;
-        }
-        if (!personal_data::allowed()) {
-            throw new \moodle_exception('contextfilelocked', 'local_coursepilot', '', $path);
-        }
-        personal_data_hosts::require_allowed_location($location, $path);
     }
 
     /**
@@ -355,66 +308,13 @@ final class context_area {
     }
 
     /**
-     * Persists either operation and records storage outages once on the domain side.
-     * Caller errors and conflicts keep their original codes and create no pending note.
-     *
-     * @param storage_port $port Selected adapter.
-     * @param pointer_location $location Selected location.
-     * @param string $path Relative context path.
-     * @param string $content Content to write or append.
-     * @param string $operation Pending operation category.
-     * @param int $courseid Course ID for pending writes.
-     * @param string $expectedchecksum Authorised preflight state.
-     * @return array{path: string, created: bool, size: int, checksum: string}
-     */
-    private static function persist(
-        storage_port $port,
-        pointer_location $location,
-        string $path,
-        string $content,
-        string $operation,
-        int $courseid,
-        string $expectedchecksum
-    ): array {
-        try {
-            return $operation === pending_write_translation::OP_APPEND
-                ? $port->append(context_files::area(), $path, $content, $expectedchecksum)
-                : $port->write(context_files::area(), $path, $content, $expectedchecksum);
-        } catch (storage_conflict_exception $e) {
-            throw $e;
-        } catch (\moodle_exception $e) {
-            $area = context_files::area();
-            if (in_array($e->errorcode, [$area->invalidpathkey, $area->quotaerrorkey, 'contextfilenotmarkdown'], true)) {
-                throw $e;
-            }
-            throw pointer_writer::record_storage_failure($e, $location, $path, $operation, $courseid);
-        } catch (\Throwable $e) {
-            throw pointer_writer::record_storage_failure($e, $location, $path, $operation, $courseid);
-        }
-    }
-
-    /**
-     * Rejects an existing personal-data-marked target when the #344 switch
-     * is off. Shared by {@see write()} and {@see append()} at both locations.
-     *
-     * @param ?array $existing Result of {@see private_files_storage_port::read()}. Type: array{content:string}|null.
-     * @param string $path
-     * @throws \moodle_exception contextfilelocked
-     */
-    private static function guard_existing_locked(?array $existing, string $path): void {
-        if ($existing !== null && !personal_data::allowed() && personal_data::is_marked($existing['content'])) {
-            throw new \moodle_exception('contextfilelocked', 'local_coursepilot', '', $path);
-        }
-    }
-
-    /**
      * Appends to a context file independently of its location; see {@see write()}.
      *
      * @param string $path
      * @param string $content
-     * @param string $expectedcontenthash See {@see context_files::append_pointer_aware()}.
-     * @param string $pendingentry See {@see context_files::append_pointer_aware()}.
-     * @param int $courseid See {@see context_files::append_pointer_aware()}.
+     * @param string $expectedcontenthash Explicit checksum from an earlier read.
+     * @param string $pendingentry Pending retry identifier.
+     * @param int $courseid Course for pending writes.
      * @return array{path: string, created: bool, size: int}
      */
     public static function append(
@@ -469,26 +369,16 @@ final class context_area {
         $area = context_files::area();
         storage_anchor::writable_segments($area, $path);
         self::require_write_access($location);
-        $existing = self::preread($port, $location, $path, pointer_writer::OP_APPEND, $courseid);
-        self::guard_existing_locked($existing, $path);
+        $writer = new storage_write($port, $area, $location, $path, $courseid, pointer_writer::OP_APPEND);
+        $existing = $writer->existing();
+        context_files::guard_existing_locked($existing['content'] ?? null, $path);
         $finalcontent = ($existing['content'] ?? '') . $content;
-        self::guard_new_content($location, $path, $finalcontent);
+        context_files::guard_new_content($location, $path, $finalcontent);
         if ($expectedcontenthash !== '' && ($existing === null || $existing['checksum'] !== $expectedcontenthash)) {
             throw new storage_conflict_exception($path);
         }
         self::guard_pending_retry($path, $pendingentry, $existing !== null, $expectedcontenthash);
-        // Keep the authorised preflight state through the adapter's conditional write,
-        // even when the caller supplied no checksum (personal-data guard).
-        $condition = $existing['checksum'] ?? storage_port::MISSING_CHECKSUM;
-        $written = self::persist(
-            $port,
-            $location,
-            $path,
-            $content,
-            pending_write_translation::OP_APPEND,
-            $courseid,
-            $condition
-        );
+        $written = $writer->write($content, append: true);
         return ['path' => $written['path'], 'created' => $written['created'], 'size' => $written['size']];
     }
 }

@@ -41,6 +41,7 @@ use local_coursepilot\tests\storage_port_contract_test;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(private_files_storage_port::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
+#[\PHPUnit\Framework\Attributes\Group('storage_port')]
 final class private_files_storage_port_test extends storage_port_contract_test {
     /**
      * Shared file writes retain metadata and stay isolated to the current person.
@@ -65,6 +66,27 @@ final class private_files_storage_port_test extends storage_port_contract_test {
         $this->setUser($this->getDataGenerator()->create_user());
         $this->assertNull($this->port()->read($this->area(), 'plan.md'));
         $this->assertSame([], private_files_storage_port::list_entries_recursive($directory));
+    }
+
+    /**
+     * Conditional creation and replacement retain image provenance through the port.
+     */
+    public function test_conditional_writes_retain_source_metadata(): void {
+        $port = $this->port();
+        $area = $this->area();
+        $source = serialize((object) ['original' => 'store:page.png']);
+        $first = $port->write($area, 'plan.md', '# First', storage_port::MISSING_CHECKSUM, $source);
+        $port->write($area, 'plan.md', '# Updated', $first['checksum'], $source);
+        $file = get_file_storage()->get_file(
+            storage_anchor::own_context()->id,
+            'user',
+            'private',
+            0,
+            '/storageport-contract-test/',
+            'plan.md'
+        );
+        $this->assertSame($source, $file->get_source());
+        $this->assertSame('# Updated', $port->read($area, 'plan.md')['content']);
     }
 
     /**

@@ -23,6 +23,7 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\material_files;
+use local_coursepilot\material_area;
 use qformat_xml;
 use question_bank;
 
@@ -189,11 +190,11 @@ final class export_questions_xml extends external_api {
      * Writes complete export XML (actual base64, standard mode) to the calling
      * teacher's material store, without its extension allowlist: ".xml" is
      * intentionally absent from the upload allowlist (Spec 0018 §6, see
-     * {@see material_files::resolve_writable_file()}). This uses
-     * {@see material_files::resolve_file()}, the same path read by the reference
-     * input of {@see import_questions_xml}. Size, quota and write handling are
+     * {@see material_files::resolve_writable_file()}). The generated-export area
+     * retains permissive read-path names, matching the reference input of
+     * {@see import_questions_xml}. Size, quota and write handling are
      * shared with {@see \local_coursepilot\external\upload_material_file};
-     * see {@see material_files::write()}.
+     * see {@see material_area::write_export()}.
      *
      * @param string $targetpath
      * @param string $content
@@ -204,14 +205,8 @@ final class export_questions_xml extends external_api {
         self::validate_context($context);
         material_files::require_manage_own_files();
 
-        [$directory, $filename] = material_files::resolve_file($targetpath);
-
-        $existing = material_files::read_content($directory, $filename);
-        $oldsize = $existing !== null ? $existing['size'] : 0;
-
-        $warning = material_files::write($directory, $filename, $content, $oldsize);
-
-        return [material_files::relative_file($directory, $filename), $warning];
+        $written = material_area::write_export($targetpath, $content);
+        return [$written['path'], $written['warning']];
     }
 
     /**

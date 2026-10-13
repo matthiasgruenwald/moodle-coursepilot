@@ -38,6 +38,7 @@ use local_coursepilot\webdav\webdav_instance;
 #[\PHPUnit\Framework\Attributes\CoversClass(webdav_storage_port::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(storage_failure::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
+#[\PHPUnit\Framework\Attributes\Group('storage_port')]
 final class webdav_storage_port_test extends storage_port_contract_test {
     use webdav_instance_fixture;
 

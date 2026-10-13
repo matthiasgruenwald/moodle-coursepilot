@@ -70,3 +70,17 @@ test('changed class maps to tests that cover it, changed test maps to itself', (
   assert.deepEqual(r.tests, ['bar_test', 'foo_test']);
   assert.deepEqual(r.unmapped, ['Plugin/src/local_coursepilot/classes/lonely.php']);
 });
+
+
+test('changed interface maps to adapter contract groups without targeting interface coverage', () => {
+  const file = 'Plugin/src/local_coursepilot/classes/storage_port.php';
+  const tests = [
+    {file: 'x/tests/private_files_storage_port_test.php', content: "#[Group('storage_port')]\n#[CoversClass(private_files_storage_port::class)]"},
+    {file: 'x/tests/webdav_storage_port_test.php', content: "#[\\PHPUnit\\Framework\\Attributes\\Group('storage_port')]\n#[CoversClass(webdav_storage_port::class)]"},
+    {file: 'x/tests/unrelated_test.php', content: "#[Group('other_port')]\n#[CoversClass(unrelated::class)]"},
+  ];
+  assert.deepEqual(mapChangedToTests([file], tests, [file]), {
+    tests: ['private_files_storage_port_test', 'webdav_storage_port_test'], unmapped: [],
+  });
+  assert.deepEqual(mapChangedToTests([file], tests), {tests: [], unmapped: [file]});
+});

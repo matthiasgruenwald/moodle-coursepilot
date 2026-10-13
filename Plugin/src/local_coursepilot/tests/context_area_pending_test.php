@@ -34,6 +34,12 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[\PHPUnit\Framework\Attributes\CoversClass(private_files_storage_port::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(webdav_storage_port::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(storage_failure::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(storage_write::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(material_area::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(context_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_area::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 final class context_area_pending_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -65,6 +71,89 @@ final class context_area_pending_test extends \advanced_testcase {
         $entry = $ausstaende[0]['entries'][0];
         $this->assertSame(pending_write_translation::OP_CREATE, $entry['operation']);
         $this->assertSame(7, $entry['course_id']);
+    }
+
+    /**
+     * Material outages retain the same pending-write outcome as context outages.
+     */
+    public function test_material_write_records_pending_note_when_storage_fails(): void {
+        $port = $this->failing_port(new \RuntimeException('Disk unavailable'));
+        try {
+            material_area::write_to($port, pointer_location::moodle('/material/'), 'sheet.txt', 'Lesson');
+            $this->fail('Unavailable storage must reject the write.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('pendingwritefailed', $e->errorcode);
+        }
+        $notes = pending_write_notice::list_grouped();
+        $this->assertCount(1, $notes);
+        $this->assertSame('sheet.txt', $notes[0]['path']);
+        $this->assertSame(pending_write_translation::OP_CREATE, $notes[0]['entries'][0]['operation']);
+    }
+
+    /**
+     * Failed preflight reads never attempt a material write and record the unknown operation.
+     */
+    public function test_material_preread_outage_records_pending_note(): void {
+        $port = $this->failing_port(new \RuntimeException('Read unavailable'), failread: true);
+        try {
+            material_area::write_to($port, pointer_location::moodle('/material/'), 'sheet.txt', 'Lesson');
+            $this->fail('A failed preflight must reject writing.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('pendingwritefailed', $e->errorcode);
+        }
+        $notes = pending_write_notice::list_grouped();
+        $this->assertCount(1, $notes);
+        $this->assertSame(pending_write_translation::OP_UNKNOWN, $notes[0]['entries'][0]['operation']);
+    }
+
+    /**
+     * Intervening creation and replacement preserve the newer material content.
+     *
+     * @param bool $exists Whether the preflight observes an existing target.
+     */
+    #[DataProvider('target_states')]
+    public function test_material_preflight_rejects_intervening_changes(bool $exists): void {
+        $location = pointer_location::moodle('/material/');
+        $inner = new private_files_storage_port($location);
+        $area = material_files::workbench_area();
+        if ($exists) {
+            $inner->write($area, 'sheet.txt', 'Before');
+        }
+        $port = new \local_coursepilot\tests\interleaved_storage_port(
+            $inner,
+            static function () use ($inner, $area): void {
+                $inner->write($area, 'sheet.txt', 'Teacher edit');
+            }
+        );
+        try {
+            material_area::write_to($port, $location, 'sheet.txt', 'AI replacement');
+            $this->fail('A changed target must reject replacement.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialfilechanged', $e->errorcode);
+        }
+        $this->assertSame('Teacher edit', $inner->read($area, 'sheet.txt')['content']);
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
+     * Supplies missing and existing preflight states.
+     *
+     * @return array<string, array{bool}>
+     */
+    public static function target_states(): array {
+        return ['missing' => [false], 'existing' => [true]];
+    }
+
+    /**
+     * Generated XML retains the export's permissive path contract and can be replaced.
+     */
+    public function test_xml_export_write_preserves_permissive_paths(): void {
+        $first = material_area::write_export('My questions/Überblick.xml', '<quiz/>');
+        $second = material_area::write_export('My questions/Überblick.xml', '<quiz>Updated</quiz>');
+        $this->assertTrue($first['created']);
+        $this->assertFalse($second['created']);
+        $this->assertSame('My questions/Überblick.xml', $second['path']);
+        $this->assertSame('<quiz>Updated</quiz>', material_area::read('My questions/Überblick.xml')['content']);
     }
 
     /**
@@ -187,19 +276,23 @@ final class context_area_pending_test extends \advanced_testcase {
     /**
      * Provides failing port.
      *
-     * @param \Throwable $failure Thrown by write()/append() of the test double.
+     * @param \Throwable $failure Thrown at the unmanaged boundary.
+     * @param bool $failread Fail during preflight instead of persistence.
      * @return storage_port
      */
-    private function failing_port(\Throwable $failure): storage_port {
-        return new class ($failure) implements storage_port {
+    private function failing_port(\Throwable $failure, bool $failread = false): storage_port {
+        return new class ($failure, $failread) implements storage_port {
             /**
              * Creates the context area pending test.
              *
              * @param \Throwable $failure The failure.
+             * @param bool $failread Fail during preflight.
              */
             public function __construct(
                 /** @var \Throwable The failure. */
                 private readonly \Throwable $failure,
+                /** @var bool Fail the preflight read instead of persistence. */
+                private readonly bool $failread,
             ) {
             }
 
@@ -211,6 +304,9 @@ final class context_area_pending_test extends \advanced_testcase {
              * @return array{content: string, checksum: string, size: int, mimetype: string, timemodified: int}|null
              */
             public function read(storage_area $area, string $path): ?array {
+                if ($this->failread) {
+                    throw $this->failure;
+                }
                 return null;
             }
 
@@ -233,8 +329,15 @@ final class context_area_pending_test extends \advanced_testcase {
              * @param string $content The content.
              * @param ?string $expectedchecksum The expectedchecksum.
              * @return array{path: string, created: bool, size: int, checksum: string}
+             * @param string $source Serialised provenance.
              */
-            public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
+            public function write(
+                storage_area $area,
+                string $path,
+                string $content,
+                ?string $expectedchecksum = null,
+                string $source = ''
+            ): array {
                 throw $this->failure;
             }
 

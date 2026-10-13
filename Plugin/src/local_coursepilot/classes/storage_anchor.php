@@ -402,9 +402,9 @@ final class storage_anchor {
 
     /**
      * Write validation from {@see resolve_writable_file()} without root
-     * resolution, for external writes (#491) needing no Moodle directory.
+     * resolution, for external writes needing no Moodle directory.
      * Avoids {@see root()}, which rejects external targets. Folder segments
-     * use [A-Za-z0-9_-]; filenames use {@see storage_area::$checkwritablename}.
+     * use [A-Za-z0-9_-] when the area requires it; filenames use its write-name policy.
      *
      * @param storage_area $area
      * @param string $path For example "plan.md" or "subjects/math/profile.md".
@@ -418,7 +418,7 @@ final class storage_anchor {
         }
         $filename = array_pop($segments);
         foreach ($segments as $segment) {
-            if (!preg_match('/^[A-Za-z0-9_-]+$/', $segment)) {
+            if ($area->strictwritefolders && !preg_match('/^[A-Za-z0-9_-]+$/', $segment)) {
                 throw new \moodle_exception($area->invalidpathkey, 'local_coursepilot');
             }
         }

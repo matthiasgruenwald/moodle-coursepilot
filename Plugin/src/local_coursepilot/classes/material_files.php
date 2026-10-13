@@ -182,6 +182,28 @@ final class material_files {
     }
 
     /**
+     * Workbench policy for generated exports, retaining their existing permissive names.
+     * Traversal and area isolation remain enforced by the anchor and port.
+     *
+     * @return storage_area
+     */
+    public static function export_area(): storage_area {
+        $area = self::workbench_area();
+        return new storage_area(
+            rootsetting: $area->rootsetting,
+            defaultroot: $area->defaultroot,
+            invalidpathkey: $area->invalidpathkey,
+            quotaerrorkey: $area->quotaerrorkey,
+            checkwritablename: static function (string $filename): void {
+                // Generated XML has always used read-path names without the upload extension allowlist.
+            },
+            pointerkey: $area->pointerkey,
+            externalfallback: $area->externalfallback,
+            strictwritefolders: false,
+        );
+    }
+
+    /**
      * The signed-in user's own context, never derived from client input.
      *
      * @return \context_user
@@ -765,39 +787,5 @@ final class material_files {
      */
     public static function replace(?\stored_file $existing, array $filerecord, string $content): void {
         private_files_storage_port::replace($existing, $filerecord, $content);
-    }
-
-    /**
-     * Quota-checked material write shared by upload_material_file (chat
-     * attachments with preceding extension/concurrency checks) and
-     * export_questions_xml (complete XML export without the upload allowlist,
-     * which deliberately excludes .xml; see resolve_writable_file()).
-     *
-     * @param string $directory Result of resolve_file()/resolve_writable_file().
-     * @param string $filename
-     * @param string $content Complete new content.
-     * @param int $oldsize Previous file size in bytes, zero if absent
-     *        (usually already known by the caller, e.g. from its own concurrency or
-     *        created check through read_content()).
-     * @param mixed[] $recordoverrides Additional/overriding file record fields; see
-     *        private_files_storage_port::write_content(), e.g. a crop's source field.
-     * @return string|null Quota warning, or null when no warning is needed.
-     * @throws \moodle_exception materialquotaexceeded
-     */
-    public static function write(
-        string $directory,
-        string $filename,
-        string $content,
-        int $oldsize,
-        array $recordoverrides = []
-    ): ?string {
-        $additionalbytes = strlen($content) - $oldsize;
-
-        self::require_quota($additionalbytes);
-        $warning = self::quota_warning($additionalbytes);
-
-        private_files_storage_port::write_content($directory, $filename, $content, $recordoverrides);
-
-        return $warning;
     }
 }

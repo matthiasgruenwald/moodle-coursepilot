@@ -16,6 +16,7 @@
 
 namespace local_coursepilot\external;
 
+use core_external\external_api;
 use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 use local_coursepilot\tests\webdav\webdav_instance_fixture;
@@ -32,6 +33,9 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(compose_material_file::class)]
 #[CoversClass(\local_coursepilot\material_composition::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_area::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_write::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
 final class compose_material_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -116,6 +120,8 @@ final class compose_material_file_test extends \advanced_testcase {
             'crop' => ['x0' => 0.5, 'y0' => 0.5, 'x1' => 0.75, 'y1' => 0.75],
             'source_header_text' => 'ML S. 36',
         ]], 'vertical', 'composed.png');
+
+        $result = external_api::clean_returnvalue(compose_material_file::execute_returns(), $result);
 
         $this->assertSame('composed.png', $result['path']);
         $this->assertTrue($result['created']);

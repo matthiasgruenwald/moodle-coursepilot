@@ -235,8 +235,19 @@ final class webdav_storage_port implements storage_port {
      * @param string $path The path.
      * @param string $content The content.
      * @param ?string $expectedchecksum The expectedchecksum.
+     * @param string $source Optional serialised provenance; supported by Private Files only.
      */
-    public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
+    public function write(
+        storage_area $area,
+        string $path,
+        string $content,
+        ?string $expectedchecksum = null,
+        string $source = ''
+    ): array {
+        if ($source !== '') {
+            throw new \coding_exception('WebDAV does not support Private Files provenance.');
+        }
+
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = implode('/', [...$folders, $filename]);
 

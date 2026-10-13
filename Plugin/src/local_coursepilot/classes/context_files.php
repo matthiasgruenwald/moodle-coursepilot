@@ -17,21 +17,13 @@
 namespace local_coursepilot;
 
 /**
- * Context-area anchor (#297, #343, migration #407): the calling teacher's
- * Moodle Private Files, component=user, filearea=private, itemid=0 and
- * contextid=context_user::instance($USER->id), limited to {@see area()}
- * (default coursepilot).
+ * Context-area policy in the calling teacher's Moodle Private Files.
+ * The fixed root, user context and file area isolate the teacher's content.
  *
- * Isolation comes from component/filearea/itemid/contextid never being
- * client inputs: no parameter can address another area. Since migration
- * to user/private (Spec 0016 §1), a fixed root also excludes other Private
- * Files subfolders. {@see resolve_directory()}/{@see resolve_file()}
- * reject ../ traversal outside it.
- *
- * Since #444 this class defines the area over shared {@see storage_anchor}:
- * root setting, default root, write-name rule and error keys distinguish
- * it from {@see material_files}. All other operations delegate unchanged;
- * constants, signatures and error keys remain compatible with existing callers.
+ * Owns the Markdown filename rule, write-size limit, legacy migration and
+ * personal-data/host guards. Area-independent paths and file operations use
+ * the common anchor and port; replacing this module with them would lose
+ * the context-specific authorisation decisions.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -262,5 +254,36 @@ final class context_files {
         $legacy->close();
 
         return $copied;
+    }
+
+    /**
+     * Rejects new personal data when disabled or at a disallowed host.
+     *
+     * @param pointer_location $location Selected location.
+     * @param string $path Relative context path.
+     * @param string $content Complete replacement content.
+     */
+    public static function guard_new_content(pointer_location $location, string $path, string $content): void {
+        if (!personal_data::is_marked($content)) {
+            return;
+        }
+        if (!personal_data::allowed()) {
+            throw new \moodle_exception('contextfilelocked', 'local_coursepilot', '', $path);
+        }
+        personal_data_hosts::require_allowed_location($location, $path);
+    }
+
+    /**
+     * Rejects an existing personal-data-marked target when personal data is disabled.
+     * Shared by context writes and appends at both locations.
+     *
+     * @param string|null $existingcontent Preflight content.
+     * @param string $path
+     * @throws \moodle_exception contextfilelocked
+     */
+    public static function guard_existing_locked(?string $existingcontent, string $path): void {
+        if ($existingcontent !== null && !personal_data::allowed() && personal_data::is_marked($existingcontent)) {
+            throw new \moodle_exception('contextfilelocked', 'local_coursepilot', '', $path);
+        }
     }
 }

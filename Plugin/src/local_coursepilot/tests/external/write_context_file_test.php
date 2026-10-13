@@ -42,6 +42,7 @@ defined('MOODLE_INTERNAL') || die();
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\webdav_storage_port::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_failure::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_write::class)]
 final class write_context_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 

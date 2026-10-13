@@ -214,9 +214,10 @@ function reportFromFile(cloverPath) {
  * `#[CoversClass(...foo::class)]`; eine geaenderte Testdatei steht fuer sich.
  * @param {string[]} changed Repo-relative Pfade
  * @param {{file: string, content: string}[]} tests Testdateien (Pfad unter Plugin/)
+ * @param {string[]} interfaces Changed interface paths, tested via adapter contract groups.
  * @returns {{tests: string[], unmapped: string[]}}
  */
-function mapChangedToTests(changed, tests) {
+function mapChangedToTests(changed, tests, interfaces = []) {
   const picked = new Set();
   const unmapped = [];
   const prefix = `${PLUGIN_REL}/`;
@@ -229,7 +230,11 @@ function mapChangedToTests(changed, tests) {
       continue;
     }
     const short = path.basename(inner, '.php');
-    const hits = tests.filter(t => new RegExp(`CoversClass\\([^)]*\\b${short}::class`).test(t.content));
+    // Interfaces have no executable coverage target; adapters declare their contract group.
+    const target = interfaces.includes(rel)
+      ? new RegExp(`\\bGroup\\(['"]${short}['"]\\)`)
+      : new RegExp(`CoversClass\\([^)]*\\b${short}::class`);
+    const hits = tests.filter(t => target.test(t.content));
     if (hits.length === 0) {
       unmapped.push(rel);
     }
@@ -301,7 +306,14 @@ function changedFiles() {
 
 function runFast() {
   let ok = nodeTests();
-  const { tests, unmapped } = mapChangedToTests(changedFiles(), staticChecks.readPluginTests(REPO));
+  const changed = changedFiles();
+  const interfaces = changed.filter(rel => {
+    if (!rel.startsWith(`${PLUGIN_PREFIX}classes/`) || !rel.endsWith('.php')) return false;
+    const file = path.join(REPO, rel);
+    return fs.existsSync(file) && new RegExp(`^interface\\s+${path.basename(rel, '.php')}\\b`, 'm')
+      .test(fs.readFileSync(file, 'utf8'));
+  });
+  const { tests, unmapped } = mapChangedToTests(changed, staticChecks.readPluginTests(REPO), interfaces);
   unmapped.forEach(f => console.log(`${f}:0: no-test-mapped: keine Testklasse mit CoversClass fuer diese Datei`));
   requireContainer();
   if (tests.length > 0) {

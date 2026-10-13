@@ -199,6 +199,11 @@ Tests und wachsenden Baselines (`ratchet-phpstan-grown`, `ratchet-deptrac-grown`
 `ratchet-baseline-lowered`). Die Regeln, die einen Coverage-Bericht brauchen, also
 Gesamt-Coverage, Datei ≥ 90 % und Methode CRAP ≤ 8, greifen erst bei `pre-push` (`full`) und in CI.
 
+Geänderte Interfaces haben kein ausführbares PHPUnit-Coverage-Ziel. Ihre Adapter-Vertragstests
+tragen `#[Group('interface_name')]` und weiterhin `CoversClass` für die jeweilige Implementierung;
+`fast` wählt diese Gruppe für eine geänderte Interface-Datei. Eine konkrete Klasse braucht
+weiterhin ihre eigene `CoversClass`-Zuordnung. Coverage-Ratsche und Schwellen bleiben gleich.
+
 **Geänderte Datei und Methode:** Das Kommando liest `git diff -U0` des Arbeitsbaums gegen den
 Vergleichsstand und nimmt neue, unversionierte Dateien komplett als geändert. Eine Methode
 gilt als geändert, wenn eine geänderte Zeile zwischen ihrer Startzeile (aus dem Clover-Bericht)
