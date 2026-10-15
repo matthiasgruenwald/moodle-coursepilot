@@ -50,6 +50,192 @@ final class context_area_pending_test extends \advanced_testcase {
     }
 
     /**
+     * Invalid context paths remain caller errors even when the selected adapter is unavailable.
+     *
+     * @param bool $append
+     */
+    #[DataProvider('context_write_operations')]
+    public function test_context_path_is_checked_before_the_storage_preread(bool $append): void {
+        $port = $this->failing_port(new \RuntimeException('Unavailable remote storage'), failread: true);
+        $location = pointer_location::moodle('/context/');
+        try {
+            if ($append) {
+                context_area::append_to($port, $location, '../plan.md', 'Content');
+            } else {
+                context_area::write_to($port, $location, '../plan.md', 'Content');
+            }
+            $this->fail('Invalid paths must not reach the unavailable adapter.');
+        } catch (\moodle_exception $error) {
+            $this->assertSame('invalidcontextpath', $error->errorcode);
+        }
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
+     * Both operations validate the same context path before reading storage.
+     *
+     * @return array<string, array{bool}>
+     */
+    public static function context_write_operations(): array {
+        return ['replace' => [false], 'append' => [true]];
+    }
+
+    /**
+     * An omitted course identifier records a course-neutral retry for either context operation.
+     *
+     * @param bool $append
+     */
+    #[DataProvider('context_write_operations')]
+    public function test_failed_context_write_defaults_to_no_course(bool $append): void {
+        $port = $this->failing_port(new \RuntimeException('Unavailable remote storage'));
+        $location = pointer_location::moodle('/context/');
+        try {
+            if ($append) {
+                context_area::append_to($port, $location, 'plan.md', 'Content');
+            } else {
+                context_area::write_to($port, $location, 'plan.md', 'Content');
+            }
+            $this->fail('Unavailable storage must reject the write.');
+        } catch (\moodle_exception $error) {
+            $this->assertSame('pendingwritefailed', $error->errorcode);
+        }
+        $notes = pending_write_notice::list_grouped();
+        $this->assertCount(1, $notes);
+        $entry = $notes[0]['entries'][0];
+        $this->assertSame(0, $entry['course_id']);
+        $this->assertSame($append ? 'append' : 'create', $entry['operation']);
+    }
+
+    /**
+     * A conflict detected by an external adapter during preflight remains a merge request, not an outage.
+     */
+    public function test_preread_conflict_creates_no_pending_outage_note(): void {
+        $failure = new storage_failure(\local_coursepilot\webdav\webdav_error::CONFLICT, new \RuntimeException('Changed target'));
+        $port = $this->failing_port($failure, failread: true);
+        $location = pointer_location::external(0, 'context', ['server' => '', 'basepath' => '', 'account' => '']);
+        try {
+            context_area::write_to($port, $location, 'plan.md', 'Content');
+            $this->fail('A changed target must reject the write.');
+        } catch (\moodle_exception $error) {
+            $this->assertSame('contextfileexternalconflict', $error->errorcode);
+        }
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
+     * Adapter diagnostics reach the private access event while the teacher receives only the recovery response.
+     */
+    public function test_preread_outage_retains_the_private_adapter_diagnostic(): void {
+        set_config('loglevel', access_log::LEVEL_ALL, 'local_coursepilot');
+        $sink = $this->redirectEvents();
+        $failure = new storage_failure(
+            \local_coursepilot\webdav\webdav_error::UNREACHABLE,
+            new \RuntimeException('Remote connection lost')
+        );
+        $port = $this->failing_port($failure, failread: true);
+        $location = pointer_location::external(0, 'context', [
+            'server' => 'https://storage.example', 'basepath' => '', 'account' => '',
+        ]);
+        try {
+            context_area::write_to($port, $location, 'plan.md', 'Content', courseid: 42);
+            $this->fail('An unavailable adapter must reject the write.');
+        } catch (\moodle_exception $error) {
+            $this->assertSame('pendingwritefailed', $error->errorcode);
+            $this->assertStringNotContainsString('Remote connection lost', $error->getMessage());
+        }
+        $events = array_values(array_filter(
+            $sink->get_events(),
+            static fn($event) => $event instanceof \local_coursepilot\event\tool_access_failed
+        ));
+        $this->assertCount(1, $events);
+        $this->assertSame('WebDAV unreachable: Remote connection lost', $events[0]->other['reason']);
+        $notes = pending_write_notice::list_grouped();
+        $this->assertCount(1, $notes);
+        $this->assertSame('unreachable', $notes[0]['entries'][0]['error_class']);
+        $this->assertSame(42, $notes[0]['entries'][0]['course_id']);
+        $this->assertSame('unknown', $notes[0]['entries'][0]['operation']);
+    }
+
+    /**
+     * A missing external root retains the intended retry operation during preflight.
+     *
+     * @param bool $append
+     */
+    #[DataProvider('context_write_operations')]
+    public function test_preread_location_failure_keeps_the_retry_operation(bool $append): void {
+        $failure = new \moodle_exception('contextrootmissing', 'local_coursepilot', '', 'location');
+        $port = $this->failing_port($failure, failread: true);
+        $location = pointer_location::external(0, 'context', [
+            'server' => 'https://storage.example', 'basepath' => '', 'account' => '',
+        ]);
+        try {
+            if ($append) {
+                context_area::append_to($port, $location, 'plan.md', 'Content');
+            } else {
+                material_area::write_to($port, $location, 'sheet.txt', 'Content');
+            }
+            $this->fail('A missing storage root must reject the write.');
+        } catch (\moodle_exception $error) {
+            $this->assertSame('pendingwritefailed', $error->errorcode);
+        }
+        $notes = pending_write_notice::list_grouped();
+        $this->assertCount(1, $notes);
+        $this->assertSame($append ? 'append' : 'create', $notes[0]['entries'][0]['operation']);
+        $this->assertSame('contextrootmissing', $notes[0]['entries'][0]['error_class']);
+    }
+
+    /**
+     * A path rejected during persistence remains a caller error without a retry note.
+     */
+    public function test_adapter_path_error_creates_no_pending_outage_note(): void {
+        $failure = new \moodle_exception('invalidcontextpath', 'local_coursepilot', '', 'plan.md');
+        $port = $this->failing_port($failure);
+        try {
+            context_area::write_to($port, pointer_location::moodle('/context/'), 'plan.md', 'Content');
+            $this->fail('A rejected adapter path must not be written.');
+        } catch (\moodle_exception $error) {
+            $this->assertSame('invalidcontextpath', $error->errorcode);
+        }
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
+     * Invalid material names are refused before an unavailable adapter can hide the input error.
+     */
+    public function test_material_name_is_checked_before_the_storage_preread(): void {
+        $port = $this->failing_port(new \RuntimeException('Unavailable remote storage'), failread: true);
+        try {
+            material_area::write_to($port, pointer_location::moodle('/material/'), 'blocked.php', 'Content');
+            $this->fail('Disallowed material names must be refused.');
+        } catch (\moodle_exception $error) {
+            $this->assertSame('materialfiledisallowedtype', $error->errorcode);
+        }
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
+     * Material access is checked before a preread can create an outage note for an unauthorized user.
+     */
+    public function test_material_write_requires_permission_before_the_storage_preread(): void {
+        global $CFG;
+        assign_capability(
+            'moodle/user:manageownfiles',
+            CAP_PROHIBIT,
+            $CFG->defaultuserroleid,
+            storage_anchor::own_context()->id,
+            true
+        );
+        $port = $this->failing_port(new \RuntimeException('Unavailable remote storage'), failread: true);
+        try {
+            material_area::write_to($port, pointer_location::moodle('/material/'), 'sheet.txt', 'Content');
+            $this->fail('An unauthorized user must not reach storage.');
+        } catch (\required_capability_exception $error) {
+            $this->assertSame(get_capability_string('moodle/user:manageownfiles'), $error->a);
+        }
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
      * A failure while persisting (simulated here: an arbitrary adapter
      * error) records a pending write before the error is returned -
      * never passed through raw (issue #540 acceptance criteria 1+5).
@@ -104,6 +290,7 @@ final class context_area_pending_test extends \advanced_testcase {
         $notes = pending_write_notice::list_grouped();
         $this->assertCount(1, $notes);
         $this->assertSame(pending_write_translation::OP_UNKNOWN, $notes[0]['entries'][0]['operation']);
+        $this->assertSame(0, $notes[0]['entries'][0]['course_id']);
     }
 
     /**
@@ -258,9 +445,12 @@ final class context_area_pending_test extends \advanced_testcase {
         $written = context_area::write_to($port, $location, 'plan.md', '# Plan');
         $appended = context_area::append_to($port, $location, 'plan.md', "\nNext step");
 
-        $this->assertTrue($written['created']);
+        $this->assertSame(['path' => 'plan.md', 'created' => true, 'size' => 6, 'oldsize' => 0], $written);
         $this->assertFalse($appended['created']);
         $this->assertSame("# Plan\nNext step", $port->read(context_files::area(), 'plan.md')['content']);
+        $replaced = context_area::write_to($port, $location, 'plan.md', '# Replaced');
+        $this->assertSame(['path' => 'plan.md', 'created' => false, 'size' => 10, 'oldsize' => 16], $replaced);
+        $this->assertSame('# Replaced', $port->read(context_files::area(), 'plan.md')['content']);
         $this->assertSame([], pending_write_notice::list_grouped());
     }
 

@@ -76,6 +76,11 @@ final class update_mc_question_test extends \advanced_testcase {
             'malformed JSON' => ['{', 'valid JSON object'],
             'list instead of object' => ['[1]', 'valid JSON object'],
             'unknown field' => ['{"penalty":0.5}', 'Unknown field "penalty"'],
+            'array name' => ['{"name":[]}', '"name" must be a scalar text value or null.'],
+            'object question text' => ['{"questiontext":{"text":"Nested"}}',
+                '"questiontext" must be a scalar text value or null.'],
+            'array general feedback' => ['{"generalfeedback":["Nested"]}',
+                '"generalfeedback" must be a scalar text value or null.'],
             'invalid mode' => ['{"selectionmode":"other"}', 'single or multiple'],
             'empty answers' => ['{"answers":[]}', 'non-empty list'],
             'missing answer' => ['{"answers":[{"fraction":1}]}', 'needs "answer" and "fraction"'],
@@ -84,6 +89,44 @@ final class update_mc_question_test extends \advanced_testcase {
             'invalid feedback images' => ['{"answers":[{"feedback_images":"image.png"}]}', 'list of material folder paths'],
             'invalid total' => ['{"answers":[{"answer":"A","fraction":0.5},{"answer":"B","fraction":0}]}',
                 'sum to exactly 1'],
+        ];
+    }
+
+    /**
+     * Scalar text values retain their established string conversion without accepting nested JSON.
+     *
+     * @param string $field
+     * @param mixed $value
+     * @param string $expected
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('scalar_text_patches')]
+    public function test_scalar_text_patch_keeps_its_text(string $field, mixed $value, string $expected): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $created = create_mc_question::execute($categoryid, 'Original', 'Original text', 'single', [
+            ['answer' => 'A', 'fraction' => 1], ['answer' => 'B', 'fraction' => 0],
+        ]);
+        $created = external_api::clean_returnvalue(create_mc_question::execute_returns(), $created);
+        $result = update_mc_question::execute($created['questionid'], json_encode([$field => $value]));
+        $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
+        $this->assertSame('updated', $result['status']);
+        $question = get_question::execute($categoryid, '', $result['questionid']);
+        $question = external_api::clean_returnvalue(get_question::execute_returns(), $question);
+        $this->assertSame($expected, $question[$field]);
+    }
+
+    /**
+     * Existing JSON scalar coercions at the text-field boundary.
+     *
+     * @return array<string, array{string, mixed, string}>
+     */
+    public static function scalar_text_patches(): array {
+        return [
+            'integer' => ['questiontext', 42, '42'],
+            'decimal' => ['questiontext', 12.5, '12.5'],
+            'true' => ['questiontext', true, '1'],
+            'false' => ['generalfeedback', false, ''],
+            'null' => ['generalfeedback', null, ''],
         ];
     }
 

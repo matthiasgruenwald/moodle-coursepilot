@@ -28,6 +28,38 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(module_state::class)]
 final class module_state_test extends \advanced_testcase {
     /**
+     * A restricted external client cannot read an activity in another course.
+     */
+    public function test_respects_external_context_restriction(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $other = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        \core_external\external_api::set_context_restriction(\context_course::instance($other->id));
+        try {
+            $this->expectException(\core_external\restricted_context_exception::class);
+            module_state::read_settings((int) $page->cmid);
+        } finally {
+            \core_external\external_api::set_context_restriction(\context_system::instance());
+        }
+    }
+
+    /**
+     * Native module clients retain the complete identity for read-modify-write.
+     */
+    public function test_native_settings_include_the_course_module_identity(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $cm = get_coursemodule_from_id('page', $page->cmid, 0, false, MUST_EXIST);
+        $settings = module_state::effective_settings($cm);
+        $this->assertSame((int) $page->cmid, $settings['coursemodule']);
+        $this->assertSame((int) $page->id, $settings['instance']);
+        $this->assertSame('page', $settings['modulename']);
+    }
+
+    /**
      * Catalog clients can read full page content and shared settings.
      */
     public function test_reads_complete_activity_settings(): void {

@@ -60,7 +60,7 @@ final class quiz_write {
         quiz_write_bridge::validate_combination_rules($target->state, $merged, $newgrade);
 
         return self::in_transaction(static function () use ($courseid, $sectionnum, $target, $merged, $newgrade): array {
-            global $CFG;
+            global $CFG, $DB;
             $course = get_course($courseid);
             require_once($CFG->dirroot . '/course/modlib.php');
             [$module] = \can_add_moduleinfo($course, 'quiz', $sectionnum);
@@ -89,7 +89,8 @@ final class quiz_write {
             $created = \add_moduleinfo($moduleinfo, $course);
 
             $cmid = (int) $created->coursemodule;
-            [$createdfields, $sideeffects] = self::report_and_side_effects($merged, $newgrade);
+            $calendarcreated = $DB->record_exists('event', ['modulename' => 'quiz', 'instance' => $created->instance]);
+            [$createdfields, $sideeffects] = self::report_and_side_effects($merged, $newgrade, $calendarcreated);
 
             return [
                 'cmid' => $cmid,
@@ -262,9 +263,10 @@ final class quiz_write {
      *
      * @param mixed[] $merged
      * @param float $grade
+     * @param bool $calendarcreated Whether the native write actually created a calendar event.
      * @return array{0: mixed[], 1: string[]}
      */
-    private static function report_and_side_effects(array $merged, float $grade): array {
+    private static function report_and_side_effects(array $merged, float $grade, bool $calendarcreated): array {
         $createdfields = [];
         foreach ($merged as $fieldname => $value) {
             $createdfields[] = [
@@ -278,7 +280,7 @@ final class quiz_write {
         ];
 
         $sideeffects = [];
-        if ((int) ($merged['timeopen'] ?? 0) > 0 || (int) ($merged['timeclose'] ?? 0) > 0) {
+        if ($calendarcreated) {
             $sideeffects[] = get_string('quizcalendarcreated', 'local_coursepilot');
         }
 

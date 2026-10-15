@@ -32,6 +32,61 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[CoversClass(\local_coursepilot\catalog\quiz::class)]
 final class update_quiz_settings_test extends \advanced_testcase {
     /**
+     * Calendar effects refer to enabled dates in this patch, not unrelated stored dates.
+     *
+     * @param mixed[] $existing
+     * @param mixed[] $timing
+     * @param bool $calendar
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('calendar_update_inputs')]
+    public function test_calendar_report_matches_the_requested_dates(array $existing, array $timing, bool $calendar): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', $existing + [
+            'course' => $course->id, 'name' => 'Before / Übung',
+        ]);
+        $result = $this->patch(
+            $quiz->cmid,
+            ['name' => 'After / Übung'] + $timing,
+            confirmlearnerlocks: ['timeclose']
+        );
+        $this->assertSame($calendar ? ['The calendar event for the quiz was updated.'] : [], $result['side_effects']);
+        $this->assertStringStartsWith(
+            'Changed: "name" from "Before / Übung" to "After / Übung"',
+            $result['message']
+        );
+        $this->assertContains([
+            'field' => 'name', 'before_json' => '"Before / Übung"', 'after_json' => '"After / Übung"',
+        ], $result['changes']);
+        $this->assertSame('After / Übung', $this->raw_quiz($quiz->cmid)->name);
+        foreach ($timing as $field => $value) {
+            $this->assertEquals($value, $this->raw_quiz($quiz->cmid)->{$field});
+        }
+        if ($calendar) {
+            $this->assertStringEndsWith('. The calendar event for the quiz was updated.', $result['message']);
+        } else if (!$timing) {
+            $this->assertSame('Changed: "name" from "Before / Übung" to "After / Übung".', $result['message']);
+        }
+    }
+
+    /**
+     * Only an explicitly patched positive opening or closing time gets a calendar notice.
+     *
+     * @return array<string, array{mixed[], mixed[], bool}>
+     */
+    public static function calendar_update_inputs(): array {
+        return [
+            'no dates' => [[], [], false],
+            'stored opening only' => [['timeopen' => 2000000000], [], false],
+            'stored closing only' => [['timeclose' => 2000003600], [], false],
+            'opening enabled' => [[], ['timeopen' => 2000000000], true],
+            'closing enabled' => [[], ['timeclose' => 2000003600], true],
+            'opening disabled' => [['timeclose' => 2000003600], ['timeopen' => 0], false],
+            'closing disabled' => [['timeopen' => 2000000000], ['timeclose' => 0], false],
+        ];
+    }
+
+    /**
      * A native failure after grading and settings were written restores the entire quiz.
      */
     public function test_late_native_failure_rolls_back_grade_feedback_and_settings(): void {

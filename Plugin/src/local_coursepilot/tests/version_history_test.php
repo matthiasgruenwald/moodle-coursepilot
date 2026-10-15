@@ -30,6 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(version_history::class)]
+#[CoversClass(version_writer::class)]
 final class version_history_test extends \advanced_testcase {
     /**
      * Create a course, page and editing teacher. Creation already fires
@@ -88,6 +89,21 @@ final class version_history_test extends \advanced_testcase {
         [$insql, $inparams] = $DB->get_in_or_equal($versionids);
         $DB->delete_records_select('local_coursepilot_cm_version_file', "versionid $insql", $inparams);
         $DB->delete_records('local_coursepilot_cm_version', ['cmid' => $cmid]);
+    }
+
+    /**
+     * Native history snapshots retain the activity identity as an integer across edits.
+     */
+    public function test_native_snapshot_keeps_its_integer_activity_identity(): void {
+        $this->resetAfterTest();
+        [$course, $cm] = $this->create_page();
+        $before = version_history::state_at((int) $cm->id, 1);
+        $this->assertSame((int) $cm->instance, $before['instance']);
+        $this->assertSame('Erste Fassung', $before['name']);
+        $this->update_page($course, $cm, 'Later title');
+        $after = version_history::state_at((int) $cm->id, 2);
+        $this->assertSame((int) $cm->instance, $after['instance']);
+        $this->assertSame('Later title', $after['name']);
     }
 
     /**

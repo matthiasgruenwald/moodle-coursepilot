@@ -66,6 +66,11 @@ final class question_import {
         require_capability('local/coursepilot:use', $context);
         require_capability('moodle/question:add', $context);
 
+        // Native wizard-backed types select their save operation from ambient HTTP parameters.
+        if (optional_param('wizardnow', '', PARAM_ALPHA) !== '') {
+            throw new \invalid_parameter_exception('Question XML import cannot run with Moodle question editing wizard state.');
+        }
+
         $xml = self::resolve_door($xmlcontent, $xmlpath, $location);
         self::guard_server_size_limit($xml);
         self::guard_quiz_root($xml);
@@ -86,9 +91,7 @@ final class question_import {
     private static function import_all(\stdClass $category, \context $context, array $questions, bool $confirmed): array {
         global $DB;
 
-        // Note: moodle_transaction has no destructor. Explicitly roll back here because
-        // round-trip mismatches intentionally occur AFTER the write rather than
-        // in its preceding validation.
+        $nested = $DB->is_transaction_started();
         $transaction = $DB->start_delegated_transaction();
 
         try {
@@ -97,7 +100,12 @@ final class question_import {
                 $results[] = self::import_one($category, $context, $question, $confirmed);
             }
         } catch (\Throwable $e) {
-            $transaction->rollback($e);
+            if ($nested) {
+                $transaction->rollback($e);
+            }
+            // A native question type may leave an inner transaction open on failure.
+            $DB->force_transaction_rollback();
+            throw $e;
         }
 
         $transaction->allow_commit();
@@ -251,7 +259,7 @@ final class question_import {
      * @return void
      */
     private static function guard_quiz_root(string $xmlcontent): void {
-        if (preg_match('/<quiz[\s>]/i', $xmlcontent)) {
+        if (preg_match('/<quiz[\s>]/', $xmlcontent)) {
             return;
         }
 
@@ -301,14 +309,12 @@ final class question_import {
         $qformat->setCatfromfile(false);
         $qformat->setContextfromfile(false);
 
-        $lines = explode("\n", str_replace(["\r\n", "\r"], "\n", $xmlcontent));
-
         // Note: qformat_xml::readquestions() does NOT throw for parse errors. It echoes
         // a message via qformat_default::error() and returns false. Capture that
         // output to avoid HTML in the web service response, then throw instead.
         ob_start();
         try {
-            $questions = $qformat->readquestions($lines);
+            $questions = $qformat->readquestions([$xmlcontent]);
         } catch (\Throwable $e) {
             ob_end_clean();
             throw new \invalid_parameter_exception(self::parse_failure_message($e));
@@ -579,7 +585,7 @@ final class question_import {
 
         ob_start();
         try {
-            $reparsed = $reparser->readquestions(explode("\n", $wrapped));
+            $reparsed = $reparser->readquestions([$wrapped]);
         } catch (\Throwable $e) {
             ob_end_clean();
             throw self::roundtrip_exception('parse', $e->getMessage());
@@ -673,6 +679,7 @@ final class question_import {
      * question type. Handles the parallel arrays used by multichoice,
      * shortanswer, numerical, etc., and the special truefalse shape. Both sides
      * of the round-trip use the same qformat_xml importer and thus the same shape.
+     * Pre-rounding fractions can amplify native database rounding beyond the comparison tolerance.
      *
      * @param \stdClass $qo
      * @return array<int, array{text: string, fraction: float, feedback: string}>
@@ -683,7 +690,7 @@ final class question_import {
             foreach ($qo->answer as $i => $answer) {
                 $list[] = [
                     'text' => self::text_of($answer),
-                    'fraction' => round((float) ($qo->fraction[$i] ?? 0), 5),
+                    'fraction' => (float) ($qo->fraction[$i] ?? 0),
                     'feedback' => self::text_of($qo->feedback[$i] ?? ''),
                 ];
             }

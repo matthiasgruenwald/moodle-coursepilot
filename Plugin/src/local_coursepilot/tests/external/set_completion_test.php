@@ -31,6 +31,20 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(\local_coursepilot\catalog\completion_settings::class)]
 final class set_completion_test extends \advanced_testcase {
     /**
+     * Clients receive the complete field and patch instructions in the public schema.
+     */
+    public function test_parameter_schema_explains_every_supported_completion_field(): void {
+        $parameters = set_completion::execute_parameters();
+        $this->assertSame(
+            'JSON object with "completion" (0=off,1=manual,2=automatic), "completionview", '
+                . '"completionusegrade", "completionpassgrade", "completionexpected" and - for "assign" and '
+                . '"choice" - "completionsubmit" (1=submission/response required), for "quiz" - '
+                . '"completionminattempts" (0=off, positive minimum) - only the fields to change (patch)',
+            $parameters->keys['fields_json']->desc
+        );
+    }
+
+    /**
      * Minimum quiz attempts are written and readable through the public tools.
      */
     public function test_quiz_minimum_attempts_are_written(): void {

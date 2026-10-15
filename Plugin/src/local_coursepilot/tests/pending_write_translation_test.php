@@ -27,11 +27,40 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(pending_write_translation::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(pointer_writer::class)]
 final class pending_write_translation_test extends \advanced_testcase {
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
+    }
+
+    /**
+     * Native storage failures keep their error code and full diagnostic in the access event only.
+     */
+    public function test_native_storage_failure_keeps_the_complete_private_diagnostic(): void {
+        set_config('loglevel', access_log::LEVEL_ALL, 'local_coursepilot');
+        $sink = $this->redirectEvents();
+        $cause = new \moodle_exception('dmlwriteexception', 'error', '', null, 'Native persistence failed');
+        $result = pointer_writer::record_storage_failure(
+            $cause,
+            pointer_location::moodle('/coursepilot-context/'),
+            'plan.md',
+            pending_write_translation::OP_OVERWRITE,
+            0
+        );
+        $this->assertSame('pendingwritefailed', $result->errorcode);
+        $this->assertStringNotContainsString($cause->getMessage(), $result->getMessage());
+        $events = array_values(array_filter(
+            $sink->get_events(),
+            static fn($event) => $event instanceof \local_coursepilot\event\tool_access_failed
+        ));
+        $this->assertCount(1, $events);
+        $this->assertSame('Private Files dmlwriteexception: ' . $cause->getMessage(), $events[0]->other['reason']);
+        $pending = pending_write_notice::list_grouped();
+        $this->assertCount(1, $pending);
+        $this->assertSame('dmlwriteexception', $pending[0]['entries'][0]['error_class']);
+        $this->assertSame('overwrite', $pending[0]['entries'][0]['operation']);
     }
 
     /**

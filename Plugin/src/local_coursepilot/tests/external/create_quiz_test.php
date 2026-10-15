@@ -31,6 +31,75 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(\local_coursepilot\catalog\quiz::class)]
 final class create_quiz_test extends \advanced_testcase {
     /**
+     * Editing permission does not authorize quiz creation when Coursepilot access is prohibited.
+     */
+    public function test_creation_requires_coursepilot_access(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $context = \context_course::instance($course->id);
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
+        assign_capability('local/coursepilot:use', CAP_PROHIBIT, $roleid, $context->id, true);
+        try {
+            create_quiz::execute($course->id, 0, json_encode($this->minimal_fields_without_mode()));
+            $this->fail('Coursepilot access must be checked before creating the quiz.');
+        } catch (\required_capability_exception $error) {
+            $this->assertSame(get_capability_string('local/coursepilot:use'), $error->a);
+        }
+        $this->assertSame(0, $DB->count_records('quiz', ['course' => $course->id]));
+    }
+
+    /**
+     * Creation reports every explicit field and only the calendar effects actually requested.
+     *
+     * @param mixed[] $timing
+     * @param bool $calendar
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('calendar_creation_inputs')]
+    public function test_creation_report_keeps_values_and_calendar_effects(array $timing, bool $calendar): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $patch = array_merge($this->minimal_fields_without_mode(), [
+            'name' => 'Übung / quiz', 'intro' => '<p>Üben / lernen</p>',
+        ], $timing);
+        $result = $this->create($course->id, 0, $patch, grade: 0, confirmlearnerlocks: ['timeclose']);
+        $expected = [];
+        $descriptions = [];
+        foreach ($patch + ['grade' => 0] as $field => $value) {
+            $json = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $expected[] = ['field' => $field, 'value_json' => $json];
+            $descriptions[] = '"' . $field . '" = ' . $json;
+        }
+        $quiz = $this->raw_quiz($result['cmid']);
+        $this->assertSame($calendar, $DB->record_exists('event', ['modulename' => 'quiz', 'instance' => $quiz->id]));
+        $effects = $calendar ? ['The calendar entry for the quiz was created.'] : [];
+        $this->assertSame($expected, $result['created_fields']);
+        $this->assertSame($effects, $result['side_effects']);
+        $this->assertSame(
+            'Quiz created: ' . implode(', ', $descriptions) . '.' . ($calendar ? ' ' . $effects[0] : ''),
+            $result['message']
+        );
+        $this->assertEquals(0, $this->raw_quiz($result['cmid'])->grade);
+    }
+
+    /**
+     * Absent, explicitly disabled and individually enabled calendar fields.
+     *
+     * @return array<string, array{mixed[], bool}>
+     */
+    public static function calendar_creation_inputs(): array {
+        return [
+            'absent' => [[], false],
+            'disabled' => [['timeopen' => 0, 'timeclose' => 0], false],
+            'opening only' => [['timeopen' => 2000000000], true],
+            'closing only' => [['timeclose' => 2000003600], true],
+            'fractional opening' => [['timeopen' => 0.1], true],
+            'fractional closing' => [['timeclose' => 0.1], true],
+        ];
+    }
+
+    /**
      * Native module rejection also rolls back a section created during preparation.
      */
     public function test_native_creation_rejection_leaves_no_section_or_quiz(): void {

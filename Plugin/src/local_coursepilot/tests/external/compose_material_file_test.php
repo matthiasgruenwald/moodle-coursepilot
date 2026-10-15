@@ -130,6 +130,16 @@ final class compose_material_file_test extends \advanced_testcase {
         $stored = material_area::read_for_location('workbench', $result['path']);
         $this->assertSame($stored['contenthash'], $result['contenthash']);
         $this->assertStringStartsWith('workbench:page.png', $result['sources'][0]);
+        $file = get_file_storage()->get_file(
+            material_files::own_context()->id,
+            material_files::COMPONENT,
+            material_files::FILEAREA,
+            material_files::ITEMID,
+            '/coursepilot-material/',
+            'composed.png'
+        );
+        $provenance = unserialize_object($file->get_source());
+        $this->assertSame(implode('; ', $result['sources']), $provenance->original);
         $image = $this->result_image('composed.png');
         $blue = 0;
         for ($y = 0; $y < 48; $y++) {

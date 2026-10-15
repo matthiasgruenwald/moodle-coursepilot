@@ -362,6 +362,9 @@ final class update_mc_question extends external_api {
     private static function apply_patch(\stdClass $question, array $patch): void {
         foreach (['name', 'questiontext', 'generalfeedback'] as $field) {
             if (array_key_exists($field, $patch)) {
+                if (is_array($patch[$field])) {
+                    throw new \invalid_parameter_exception('"' . $field . '" must be a scalar text value or null.');
+                }
                 $question->{$field} = (string) $patch[$field];
             }
         }

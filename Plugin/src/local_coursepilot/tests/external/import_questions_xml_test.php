@@ -125,9 +125,17 @@ final class import_questions_xml_test extends \advanced_testcase {
     public function test_rejects_malformed_quiz_xml(): void {
         $this->resetAfterTest();
         [, $categoryid] = $this->setup_course_and_category();
-        $this->expectException(\invalid_parameter_exception::class);
-        $this->expectExceptionMessage('Invalid Moodle XML');
-        import_questions_xml::execute($categoryid, '<quiz><question type="multichoice"></answer></quiz>');
+        try {
+            import_questions_xml::execute($categoryid, '<quiz><question type="multichoice"></answer></quiz>');
+            $this->fail('Malformed XML must be refused.');
+        } catch (\invalid_parameter_exception $error) {
+            $this->assertStringStartsWith(
+                'Invalid Moodle XML: ' . get_string('importerrorquestion', 'question') . ' ',
+                $error->debuginfo
+            );
+            $this->assertStringContainsString('Mismatched tag at line 1, char 45', $error->debuginfo);
+            $this->assertStringNotContainsString('<', $error->debuginfo);
+        }
     }
 
     /**
@@ -322,6 +330,11 @@ final class import_questions_xml_test extends \advanced_testcase {
         $this->place_material_file('diagramm.png', self::PNG_BYTES);
 
         $xml = self::multichoice_xml_with_material_file('Frage mit Bild', 'Fragetext', 'Feedback');
+        $xml = str_replace(
+            '</generalfeedback>',
+            '<file name="feedback.png" path="/" material="diagramm.png"></file></generalfeedback>',
+            $xml
+        );
 
         $result = import_questions_xml::execute($categoryid, $xml);
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
@@ -330,6 +343,18 @@ final class import_questions_xml_test extends \advanced_testcase {
         // Keep resolved Base64 on the server; the response contains no image
         // bytes regardless of image count in the XML.
         $this->assertStringNotContainsString(base64_encode(self::PNG_BYTES), json_encode($result));
+        $question = get_question::execute($categoryid, 'Frage mit Bild');
+        $question = external_api::clean_returnvalue(get_question::execute_returns(), $question);
+        $export = export_questions_xml::execute([$question['questionid']], 'roundtrip.xml');
+        $export = external_api::clean_returnvalue(export_questions_xml::execute_returns(), $export);
+        $saved = \local_coursepilot\material_area::read_for_location('workbench', $export['path']);
+        $xml = simplexml_load_string($saved['content']);
+        $files = $xml->xpath('//questiontext/file[@name="diagramm.png"]');
+        $this->assertCount(1, $files);
+        $this->assertSame(self::PNG_BYTES, base64_decode((string) $files[0], true));
+        $feedbackfiles = $xml->xpath('//generalfeedback/file[@name="feedback.png"]');
+        $this->assertCount(1, $feedbackfiles);
+        $this->assertSame(self::PNG_BYTES, base64_decode((string) $feedbackfiles[0], true));
     }
 
     /**
@@ -340,11 +365,11 @@ final class import_questions_xml_test extends \advanced_testcase {
         $this->resetAfterTest();
 
         [, $categoryid] = $this->setup_course_and_category();
-        $this->place_material_file('diagramm.png', self::PNG_BYTES);
+        $this->place_material_file("diagramm's.png", self::PNG_BYTES);
 
         $xml = str_replace(
             'material="diagramm.png"',
-            "material='diagramm.png'",
+            "material='diagramm&apos;s.png'",
             self::multichoice_xml_with_material_file('Frage mit Bild', 'Fragetext', 'Feedback')
         );
 
@@ -643,6 +668,12 @@ final class import_questions_xml_test extends \advanced_testcase {
         $method->setAccessible(true);
 
         $internal = $method->invoke(null, new \Error('Cannot access offset of type string on string'));
+        $this->assertSame(
+            'Invalid Moodle XML: The file could not be read as Moodle question XML. Common '
+                . 'causes: the file is incomplete or truncated, an element is not closed, or '
+                . 'the structure differs from a Moodle export. Send a complete, unmodified export.',
+            $internal
+        );
         $this->assertStringNotContainsString('offset', $internal);
         $this->assertStringContainsString('Moodle XML', $internal);
 
@@ -676,6 +707,13 @@ final class import_questions_xml_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertStringNotContainsString('stdClass', $e->getMessage());
             $this->assertStringContainsString('calculated', $e->getMessage());
+            $this->assertSame(
+                'Question type "calculated" could not be saved with this XML structure. Common cause: '
+                    . 'a question-type-specific structure (e.g. dataset definitions for "calculated") differs from the '
+                    . 'internal form this question type expects when saving. Check the question type reference '
+                    . 'or simplify the structure.',
+                $e->debuginfo
+            );
         }
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);

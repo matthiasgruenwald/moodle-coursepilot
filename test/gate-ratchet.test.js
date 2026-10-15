@@ -72,6 +72,7 @@ function makeRepo({ baseline = BASELINE, phpstan = 3, pairs = [['a\\x', 'a\\y']]
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-ratchet-'));
   git(repo, 'init', '-q');
   write(repo, 'scripts/gate/baseline.json', JSON.stringify(baseline));
+  write(repo, 'scripts/gate/mutation-ignore.json', '[]');
   write(repo, 'scripts/gate/phpstan/phpstan-baseline.neon', PHPSTAN(phpstan));
   write(repo, 'scripts/gate/deptrac/deptrac-baseline.yaml', DEPTRAC(pairs));
   write(repo, `${PLUGIN}/classes/a.php`, SOURCE);

@@ -33,6 +33,21 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(\local_coursepilot\catalog\label::class)]
 final class describe_module_fields_test extends \advanced_testcase {
     /**
+     * A client sees each blocked field exactly once across shared and module-specific rules.
+     */
+    public function test_full_catalog_blocklists_have_no_duplicate_fields(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        foreach (\local_coursepilot\catalog\registry::known_modnames() as $modname) {
+            $result = describe_module_fields::execute($modname, true);
+            $result = external_api::clean_returnvalue(describe_module_fields::execute_returns(), $result);
+            $blocked = $result['module']['blocked_fields'];
+            $this->assertNotEmpty($blocked);
+            $this->assertCount(count(array_unique($blocked)), $blocked, $modname);
+        }
+    }
+
+    /**
      * Without modname, list supported activity types (user story 13).
      */
     public function test_without_modname_lists_known_activity_types(): void {

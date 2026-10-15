@@ -35,6 +35,7 @@ if (args[0] === 'run') {
     fs.mkdirSync(host + '/vendor/moodlehq/moodle-plugin-ci', { recursive: true });
     write(host + '/vendor/bin/phpunit');
     write(host + '/vendor/bin/phpstan');
+    write(host + '/vendor/bin/infection');
   } else if (args.includes('npm')) {
     fs.mkdirSync(host + '/node_modules/.bin', { recursive: true });
     write(host + '/lib/node_modules/vnu-jar/build/dist/vnu.jar');

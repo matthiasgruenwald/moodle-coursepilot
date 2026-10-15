@@ -534,7 +534,8 @@ final class private_files_storage_port implements storage_port {
         }
 
         $temprecord = $filerecord;
-        $temprecord['filename'] = self::TEMP_PREFIX . uniqid() . '-' . $filerecord['filename'];
+        // Keep the staging name bounded even when the teacher's valid filename is near the database limit.
+        $temprecord['filename'] = uniqid(self::TEMP_PREFIX, true);
         $new = $fs->create_file_from_string($temprecord, $content);
         $existing->delete();
         $new->rename($filerecord['filepath'], $filerecord['filename']);

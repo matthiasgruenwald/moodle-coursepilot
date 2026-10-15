@@ -30,6 +30,46 @@ use core_external\external_api;
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_import::class)]
 final class create_mc_question_test extends \advanced_testcase {
     /**
+     * Single selection refuses two positive answers before creating a bank entry.
+     */
+    public function test_single_selection_rejects_two_positive_answers_without_writing(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->preventResetByRollback();
+        [, $categoryid] = $this->setup_course_and_category();
+        try {
+            create_mc_question::execute($categoryid, 'Ambiguous answer', 'Choose one.', 'single', [
+                ['answer' => 'First', 'fraction' => 0.5, 'feedback' => 'First feedback'],
+                ['answer' => 'Second', 'fraction' => 0.5, 'feedback' => 'Second feedback'],
+            ]);
+            $this->fail('Single selection must have exactly one positive answer.');
+        } catch (\invalid_parameter_exception $error) {
+            $this->assertStringContainsString('Single selection needs exactly one correct answer.', $error->getMessage());
+        }
+        $this->assertSame(0, $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]));
+    }
+
+    /**
+     * Positive weights use Moodle's two-decimal total without changing individual fractions.
+     */
+    public function test_multiple_choice_accepts_a_total_that_rounds_to_one(): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $result = create_mc_question::execute($categoryid, 'Rounded total', 'Choose both.', 'multiple', [
+            ['answer' => 'First', 'fraction' => 0.504, 'feedback' => 'First feedback'],
+            ['answer' => 'Second', 'fraction' => 0.5, 'feedback' => 'Second feedback'],
+        ]);
+        $result = external_api::clean_returnvalue(create_mc_question::execute_returns(), $result);
+        $this->assertSame('first_import', $result['status']);
+        $read = get_question::execute($categoryid, 'Rounded total');
+        $read = external_api::clean_returnvalue(get_question::execute_returns(), $read);
+        $this->assertSame('multiple', $read['selectionmode']);
+        $this->assertCount(2, $read['answers']);
+        $this->assertEqualsWithDelta(0.504, $read['answers'][0]['fraction'], 0.000001);
+        $this->assertEqualsWithDelta(0.5, $read['answers'][1]['fraction'], 0.000001);
+    }
+
+    /**
      * Creating from plain fields generates an idnumber and version 1.
      * Reading through get_question returns the same core fields.
      */
