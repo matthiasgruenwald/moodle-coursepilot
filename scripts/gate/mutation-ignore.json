@@ -1134,5 +1134,16 @@
       "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
       "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "759627c6a1a0cf969c9665e3c4410bbbba79ea5bc324e1db6db7444fb03a37ca"
     }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 397,
+    "mutator": "CastString",
+    "hash": "88477c05a062a8c90389b6c07672cc4443fbe941548d67e4bcf1d632308e8e79",
+    "reason": "The patched text property is consumed only by question_xml::question_to_xml(), which calls qformat_xml::writequestion(); that method passes name, questiontext and generalfeedback to writetext()/xml_escape(), which test emptiness, compare with htmlspecialchars() and interpolate the value into a string. Neither the plugin nor Moodle core declares strict_types, so int, float, bool and null JSON scalars are coerced exactly as the explicit (string) cast does (42 -> \"42\", true -> \"1\", false/null -> \"\"). The native update_mc_question_test scalar cases (integer, decimal, true, false, null) all pass with the cast removed. Bound to the measured Moodle question/format sources via qtypeSourceHash and to the exact plugin export source.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/question_xml.php": "9d82dde80dabd3dfa6f4f9e99760dec36d27e49f7649fe921c06d21664fbac32"
+    }
   }
 ]
