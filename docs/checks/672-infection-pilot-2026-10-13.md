@@ -70,3 +70,12 @@ historischen Zähllaufs werden dabei vorsorglich wie ausführbare Kandidaten
 behandelt; das ist eine Hochrechnung für den gesamten Quellbestand und kein
 gemessener vollständiger Mutationslauf. Der aktuelle PR-Diff wurde dagegen
 tatsächlich ohne übersprungene Mutanten ausgeführt.
+
+## Gemessener vollständiger Gate-Lauf (15.10.2026)
+
+Echter `gate full` beim Push von `ce484c5` (Original: `/tmp/coursepilot-672-sonnet-full-1.log`,
+`/tmp/coursepilot-672-sonnet-full-1-original/`): 1.808 Tests, 132.051 Assertions, Coverage
+90,54 %, **1.164 Mutanten, 139 überlebt (131 begründet ignoriert), 0 Fehler, 0 übersprungen**,
+Mutationsphase **9.995,06 s** (rund 8,6 s je Mutant). Ergebnis rot: 8 Survivor und ein
+CRAP-Verstoß, die danach per Test beziehungsweise Extraktion behoben wurden. Das ist die
+tatsächlich gemessene Dauer des Diff-Laufs für diesen Branch gegen die PR-Basis.

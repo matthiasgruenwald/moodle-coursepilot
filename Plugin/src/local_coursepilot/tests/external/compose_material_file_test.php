@@ -138,6 +138,11 @@ final class compose_material_file_test extends \advanced_testcase {
             '/coursepilot-material/',
             'composed.png'
         );
+        $this->assertSame(
+            serialize((object) ['original' => implode('; ', $result['sources'])]),
+            $file->get_source(),
+            'Provenance is stored as a serialized stdClass, not an array.'
+        );
         $provenance = unserialize_object($file->get_source());
         $this->assertSame(implode('; ', $result['sources']), $provenance->original);
         $image = $this->result_image('composed.png');

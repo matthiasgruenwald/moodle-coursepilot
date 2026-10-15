@@ -65,6 +65,36 @@ final class question_import_contract_test extends \advanced_testcase {
     }
 
     /**
+     * A resolved material reference keeps the file block but drops the material attribute.
+     */
+    public function test_material_reference_attribute_is_removed_from_the_resolved_block(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $bytes = "\x89PNG\r\n\x1a\nstub";
+        [$directory, $name] = \local_coursepilot\material_files::resolve_file('diagramm.png');
+        get_file_storage()->create_file_from_string(
+            \local_coursepilot\material_files::filerecord(
+                \local_coursepilot\material_files::own_context()->id,
+                $directory,
+                $name
+            ),
+            $bytes
+        );
+        $resolve = new \ReflectionMethod(question_import::class, 'resolve_material_file_references');
+
+        $resolved = $resolve->invoke(
+            null,
+            '<q><file name="a.png" path="/" material="diagramm.png" encoding="base64"></file></q>',
+            \local_coursepilot\material_files::LOCATION_STORE
+        );
+
+        $this->assertSame(
+            '<q><file name="a.png" path="/" encoding="base64">' . base64_encode($bytes) . '</file></q>',
+            $resolved
+        );
+    }
+
+    /**
      * Omitting the module's optional confirmation never authorizes a new supplied identity.
      */
     public function test_module_default_does_not_confirm_a_supplied_identity(): void {

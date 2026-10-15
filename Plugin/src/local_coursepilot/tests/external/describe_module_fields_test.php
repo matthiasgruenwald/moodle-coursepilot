@@ -40,6 +40,7 @@ final class describe_module_fields_test extends \advanced_testcase {
         $this->setUser($this->getDataGenerator()->create_user());
         foreach (\local_coursepilot\catalog\registry::known_modnames() as $modname) {
             $result = describe_module_fields::execute($modname, true);
+            $this->assertTrue(array_is_list($result['module']['blocked_fields']), "$modname: blocked_fields is a JSON list.");
             $result = external_api::clean_returnvalue(describe_module_fields::execute_returns(), $result);
             $blocked = $result['module']['blocked_fields'];
             $this->assertNotEmpty($blocked);

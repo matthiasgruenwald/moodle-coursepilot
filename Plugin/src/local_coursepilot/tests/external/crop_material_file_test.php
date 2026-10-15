@@ -165,6 +165,11 @@ final class crop_material_file_test extends \advanced_testcase {
             '/coursepilot-material/',
             'ausschnitt.png'
         );
+        $this->assertSame(
+            serialize((object) ['original' => 'buchseite.png']),
+            $stored->get_source(),
+            'Provenance is stored as a serialized stdClass, not an array.'
+        );
         $source = unserialize_object($stored->get_source());
         $this->assertSame('buchseite.png', $source->original);
     }

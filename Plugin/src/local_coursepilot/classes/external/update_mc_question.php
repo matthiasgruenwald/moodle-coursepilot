@@ -360,14 +360,7 @@ final class update_mc_question extends external_api {
      * @return void
      */
     private static function apply_patch(\stdClass $question, array $patch): void {
-        foreach (['name', 'questiontext', 'generalfeedback'] as $field) {
-            if (array_key_exists($field, $patch)) {
-                if (is_array($patch[$field])) {
-                    throw new \invalid_parameter_exception('"' . $field . '" must be a scalar text value or null.');
-                }
-                $question->{$field} = (string) $patch[$field];
-            }
-        }
+        self::apply_text_fields($question, $patch);
         if (array_key_exists('defaultmark', $patch)) {
             $question->defaultmark = (float) $patch['defaultmark'];
         }
@@ -383,6 +376,26 @@ final class update_mc_question extends external_api {
         }
 
         self::validate_patched_answers($question, $patch);
+    }
+
+    /**
+     * Overwrites the plain text properties named in the patch.
+     *
+     * @param \stdClass $question Is modified in place.
+     * @param mixed[] $patch
+     * @return void
+     * @throws \invalid_parameter_exception a text value is an array
+     */
+    private static function apply_text_fields(\stdClass $question, array $patch): void {
+        foreach (['name', 'questiontext', 'generalfeedback'] as $field) {
+            if (!array_key_exists($field, $patch)) {
+                continue;
+            }
+            if (is_array($patch[$field])) {
+                throw new \invalid_parameter_exception('"' . $field . '" must be a scalar text value or null.');
+            }
+            $question->{$field} = (string) $patch[$field];
+        }
     }
 
     /**

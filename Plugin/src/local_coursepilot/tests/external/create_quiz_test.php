@@ -100,6 +100,27 @@ final class create_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * A calendar event of another module type with the same instance id is no quiz calendar entry.
+     */
+    public function test_foreign_module_event_is_not_reported_as_quiz_calendar_entry(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $first = $this->create($course->id, 0, $this->minimal_fields_without_mode(), grade: 0);
+        $nextid = (int) $this->raw_quiz($first['cmid'])->id + 1;
+        $DB->insert_record('event', (object) [
+            'name' => 'Foreign', 'description' => '', 'format' => 1, 'courseid' => $course->id, 'groupid' => 0,
+            'userid' => 0, 'modulename' => 'assign', 'instance' => $nextid, 'type' => 1, 'eventtype' => 'due',
+            'timestart' => 2000000000, 'timeduration' => 0, 'visible' => 1, 'timemodified' => time(),
+        ]);
+
+        $second = $this->create($course->id, 0, $this->minimal_fields_without_mode(), grade: 0);
+
+        $this->assertSame($nextid, (int) $this->raw_quiz($second['cmid'])->id);
+        $this->assertSame([], $second['side_effects']);
+    }
+
+    /**
      * Native module rejection also rolls back a section created during preparation.
      */
     public function test_native_creation_rejection_leaves_no_section_or_quiz(): void {

@@ -1101,5 +1101,38 @@
     "hash": "537c6da39e9d76ffd5359bddccca55663bfc050e5a5c0c7e3297d0576a8d896c",
     "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup/DML/file sources (qtypeSourceHash): The exact mutant source includes the TDD-enforced public rejection of native editing-wizard state before parsing or writing. Therefore each reached base save creates a fresh native question/version. The numeric-array producers supply numeric int/float values or legacy calculated numeric strings; nonnumeric/out-of-range legacy values fail strict database saving before comparison. After successful DECIMAL(12,7) storage the compared magnitude is below approximately100000. If either operand is floating or a numeric string treated as floating by PHP arithmetic, PHP subtraction already performs that same float conversion; if both are integral, integer subtraction is exact and its absolute distance is either0 or at least1, giving the same 1e-5 decision as explicit float conversion. This private list is consumed only by the mismatch predicate; no raw scalar type is published. No rounded predecessor identity is reused. Full finite constructor/database proof: docs/checks/672-infection-equivalence.md.",
     "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/describe_module_fields.php",
+    "line": 151,
+    "mutator": "UnwrapArrayValues",
+    "hash": "ca8c6132cdc7874c6bbeea3f2125b49e8c1d9aeeb401de4d866f0a8d19dc96ae",
+    "reason": "array_values only renumbers keys after array_unique. array_merge of the two blocklists yields a zero-based list, and array_unique can leave a gap only when a duplicate is dropped; test_full_catalog_blocklists_have_no_duplicate_fields proves that no registered catalog duplicates a shared blocked field (and the raw result is asserted to be a list for every module). The registry is closed, and the exact catalog and shared-block sources are bound by sourceHashes, so any new or changed blocklist source makes this survivor block again.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/activity_kind.php": "c8eb56502be95192982cd8fe82c0a360e28d600f9896254e745527a04c59bb88",
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
+      "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
+      "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
+      "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
+      "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
+      "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
+      "Plugin/src/local_coursepilot/classes/catalog/label.php": "b4a2398e80e7b2345ba32cb911c760ea0c45a516662437cd6363f8cbdfd12e24",
+      "Plugin/src/local_coursepilot/classes/catalog/learner_locks.php": "d4f5b4c2c833f4e60483e0087fc21531bbd22d52f475050a05c432c332ad52bc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_catalog.php": "eea30a7b3674b7458b75463045ed76a64a90c69f9898c69f5eba8cf0d27b7862",
+      "Plugin/src/local_coursepilot/classes/catalog/module_settings.php": "b8c703b21c542a31d8150121ee0c688b97dc10d8e8a744ace919a0728d0e2fde",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "02f2ecaf3204830427c269d142438883936e5efacb15c4c70eaaca9e45f0688c",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "01ba320d56f67dfaf95f6c0d62dd88f5065fbd9bbfefdfb22fdec840ef624540",
+      "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
+      "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
+      "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
+      "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "759627c6a1a0cf969c9665e3c4410bbbba79ea5bc324e1db6db7444fb03a37ca"
+    }
   }
 ]
