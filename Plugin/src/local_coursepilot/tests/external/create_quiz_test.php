@@ -94,8 +94,8 @@ final class create_quiz_test extends \advanced_testcase {
             'disabled' => [['timeopen' => 0, 'timeclose' => 0], false],
             'opening only' => [['timeopen' => 2000000000], true],
             'closing only' => [['timeclose' => 2000003600], true],
-            'fractional opening' => [['timeopen' => 0.1], true],
-            'fractional closing' => [['timeclose' => 0.1], true],
+            'earliest opening' => [['timeopen' => 1], true],
+            'earliest closing' => [['timeclose' => 1], true],
         ];
     }
 

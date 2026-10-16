@@ -101,7 +101,9 @@ function parseEnvironment(text) {
 }
 
 function evaluate(report, changed, ignores, diffSelected = false, environment = null, sourceHashes = {}) {
-  const findings = [...report.errored, ...report.syntaxErrors].map(row => ({
+  // A Moodle bootstrap fatal means PHPUnit never ran the mutant: that is no kill.
+  const bootstrapKills = report.killed.filter(row => /^\s*Fatal error: \$CFG->/m.test(row.processOutput));
+  const findings = [...report.errored, ...report.syntaxErrors, ...bootstrapKills].map(row => ({
     file: repoPath(row.mutator.originalFilePath), line: row.mutator.originalStartLine,
     rule: 'mutation-error', text: `${row.mutator.mutatorName}: ${row.processOutput.slice(-1000).replace(/\s+/g, ' ')}`,
   }));

@@ -177,6 +177,36 @@ test('Gate CLI blocks errored mutant processes and retains their cause', () => {
   }
 });
 
+test('Gate CLI rejects a mutant killed only by a Moodle bootstrap failure', () => {
+  const f = fixture();
+  try {
+    f.report.escaped = [];
+    f.report.killed = [{ ...f.escaped, processOutput: 'Fatal error: $CFG->dataroot is not writable, admin has to fix directory permissions! Exiting.' }];
+    f.report.stats.escapedCount = 0;
+    f.report.stats.killedCount = 1;
+    f.write('infection.json', JSON.stringify(f.report));
+    const result = f.run();
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /mutation-error:.*dataroot is not writable/);
+  } finally {
+    fs.rmSync(f.repo, { recursive: true, force: true });
+  }
+});
+
+test('Gate CLI keeps a mutant killed by a real failing assertion', () => {
+  const f = fixture();
+  try {
+    f.report.escaped = [];
+    f.report.killed = [{ ...f.escaped, processOutput: 'FAILURES!\nTests: 1, Assertions: 1, Failures: 1.' }];
+    f.report.stats.escapedCount = 0;
+    f.report.stats.killedCount = 1;
+    f.write('infection.json', JSON.stringify(f.report));
+    assert.equal(f.run().status, 0);
+  } finally {
+    fs.rmSync(f.repo, { recursive: true, force: true });
+  }
+});
+
 test('Gate CLI fails closed when a raw report has no original AST end point', () => {
   const f = fixture();
   try {
