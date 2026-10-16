@@ -62,6 +62,10 @@ PHPUnit-Konfiguration, schreibt den Clover-Bericht nach
 `/opt/kurspilot-gate/reports/clover.xml` und wertet ihn aus. Der volle Lauf
 braucht einen abgekoppelten Prozess, siehe [`agents/testing.md`](agents/testing.md).
 
+`full` und `mutation` starten nur auf einem Host mit Platz: unter `GATE_MIN_MEM_MB` (Standard 4096)
+verfügbarem Speicher oder bei laufenden fremden PHPUnit-/Infection-Containern endet der Lauf sofort
+mit `gate-error: host overloaded` (`scripts/gate/host-load.js`). Fremde Läufe abwarten, nicht umgehen.
+
 `fast` führt zusätzlich die Baseline-Ratsche aus (ohne Messwert). `full` wertet nach der
 Suite die Ratsche mit dem Clover-Bericht aus. Exitcode 1 bei jedem blockierenden Befund.
 

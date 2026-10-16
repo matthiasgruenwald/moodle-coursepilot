@@ -558,7 +558,7 @@ if (args[0] === 'inspect') {
     git(repo, 'add', '-A');
     git(repo, 'commit', '-qm', 'Node contract fixture');
     // The fixture runs its own Node test process, outside this test runner's context.
-    const env = { NODE_TEST_CONTEXT: undefined, PATH: `${path.join(repo, 'bin')}${path.delimiter}${process.env.PATH}`, GATE_DIR: path.join(repo, 'gate-dir') };
+    const env = { NODE_TEST_CONTEXT: undefined, GATE_MIN_MEM_MB: '0', PATH: `${path.join(repo, 'bin')}${path.delimiter}${process.env.PATH}`, GATE_DIR: path.join(repo, 'gate-dir') };
     for (const name of fs.readdirSync(path.join(ROOT, 'scripts/gate')).filter(n => n.endsWith('.js') || n === 'sync-plugin.sh')) {
       fs.copyFileSync(path.join(ROOT, 'scripts/gate', name), path.join(repo, 'scripts/gate', name));
     }

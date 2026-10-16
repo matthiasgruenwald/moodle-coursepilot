@@ -34,6 +34,7 @@ const failureLog = require('./failure-log');
 const ratchet = require('./ratchet');
 const deptrac = require('./deptrac');
 const mutation = require('./mutation');
+const hostLoad = require('./host-load');
 
 const { PLUGIN_REL, PLUGIN_IN_CONTAINER, repoPath } = staticChecks;
 // GATE_REPO nur fuer Tests: das Repo, dessen Git-Stand und Baselines ausgewertet werden.
@@ -336,6 +337,7 @@ function runFast() {
 }
 
 function runFull() {
+  hostLoad.assertHostCapacity();
   const nodePassed = nodeTests();
   requireContainer();
   preparePlugin();
@@ -727,6 +729,7 @@ function main(argv) {
       return printMutationReport(arg);
     }
     if (mode === 'mutation') {
+      hostLoad.assertHostCapacity();
       return runMutation();
     }
     if (mode === 'mutation-pilot') {
