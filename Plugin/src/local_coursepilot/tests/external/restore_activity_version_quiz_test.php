@@ -37,6 +37,7 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(restore_activity_version::class)]
+#[CoversClass(\local_coursepilot\history\version_restore::class)]
 #[CoversClass(arrangement::class)]
 final class restore_activity_version_quiz_test extends \advanced_testcase {
     /**
@@ -137,6 +138,27 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
         $this->assertSame($originalorder, array_column($this->slots((int) $quiz->id), 'id'));
         $this->assertStringContainsString('question arrangement', $result['message']);
         $this->assertStringContainsString('latest version', $result['message']);
+        $this->assertSame(
+            'Restored to version ' . $baselineversion . ' - no settings fields differ. '
+                . 'The question arrangement was also restored to version ' . $baselineversion . '. '
+                . 'Note: questions appear in their latest version; no version is pinned retroactively.',
+            $result['message']
+        );
+    }
+
+    /**
+     * Native history clients receive a numeric activity identity after restoring quiz arrangement.
+     */
+    public function test_native_quiz_restore_returns_an_integer_activity_identity(): void {
+        $this->resetAfterTest();
+        [, $quiz, , , $baselineversion] = $this->create_quiz_with_two_questions();
+        $cm = get_coursemodule_from_instance('quiz', $quiz->id, $quiz->course, false, MUST_EXIST);
+        $originalorder = array_column($this->slots((int) $quiz->id), 'id');
+        $quizobj = \mod_quiz\quiz_settings::create($quiz->id);
+        \mod_quiz\structure::create_for_quiz($quizobj)->move_slot($originalorder[1], 0, 1);
+        $result = \local_coursepilot\history\version_restore::restore((int) $cm->id, $baselineversion);
+        $this->assertSame((int) $cm->id, $result['cmid']);
+        $this->assertSame($originalorder, array_column($this->slots((int) $quiz->id), 'id'));
     }
 
     /**

@@ -1,0 +1,1177 @@
+[
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 448,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "0e8c27e24b9e0b813d28e3bb84ecea0719857afc2d6b2c89ab7b008218690fb7",
+    "reason": "Only for the exact captured native qtype implementation set (qtypeSourceHash), not arbitrary installed qtypes: question_type::save_question discards the second comma-separated category component before context lookup and all persistence; description delegates without reading category, random reads only the first component, multianswer copies category but parent overwrites it before use, and calculated delegates before category-dependent first-page dataset processing (other wizard saves do not read form category). All remaining installed types inherit these paths. Adding or changing a qtype/support source invalidates this entry. Finite source proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 743,
+    "mutator": "CastObject",
+    "hash": "d94e321940b137f9d7aa62b4e175bcbfc50a955185cddfc9ba4a56273155a8e9",
+    "reason": "Moodle core_string_manager_standard::get_string() handles both an associative array and stdClass by converting the argument to (array) before replacing {$a->name} and {$a->version} (lib/classes/string_manager_standard.php:365-387). Removing only this object cast preserves both keys and values and thus the complete first-import message."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 744,
+    "mutator": "CastObject",
+    "hash": "130fc2a25f3b0c18c26b3eca6150e79f7db2969e73aa5f1a6026d67f20cab49e",
+    "reason": "Moodle core_string_manager_standard::get_string() converts both associative array and stdClass arguments to (array) before the same named placeholder replacements (lib/classes/string_manager_standard.php:365-387). Removing only this object cast preserves the name/version substitutions and complete reimport message."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_xml.php",
+    "line": 65,
+    "mutator": "GreaterThan",
+    "hash": "431fabd497fbd309f5fb80025277a3db53595dba48ff4ae3b3fb705f4c13fe69",
+    "reason": "validate_answers first rounds the finite positive-weight sum to two decimal places. Its distance from 1 is therefore either zero or at least approximately 0.01, never exactly 0.001; changing > 0.001 to >= 0.001 cannot alter rejection. Each individual input weight is already bounded to [-1,1]."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 393,
+    "mutator": "CastObject",
+    "hash": "2d0b2ee6eba2f49d0013313e1675640f5a5a078824c26a741aa65faad125fd16",
+    "reason": "Moodle core_string_manager_standard::get_string() converts both an associative array and stdClass to (array) before replacing named placeholders (lib/classes/string_manager_standard.php:365-387). Removing this object cast preserves field/before/after and the complete change message."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 387,
+    "mutator": "CastObject",
+    "hash": "8de57345e4d2e8cf805c6a6bf5f8f6ff7a8e3cdfecb062a24f227a4ce8755b11",
+    "reason": "Moodle core_string_manager_standard::get_string() casts array and stdClass interpolation arguments to the same associative array (lib/classes/string_manager_standard.php:365-387). The field/before/after values and their named replacements are unchanged without this object cast."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 392,
+    "mutator": "CastObject",
+    "hash": "7e92472572c7cee0009f262f932bfb703c745da8c6c534c8045b8da493fe6820",
+    "reason": "Moodle core_string_manager_standard::get_string() handles array and stdClass interpolation arguments identically by casting to (array) (lib/classes/string_manager_standard.php:365-387). Both version and changes are preserved, so the complete restoration message is identical."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 618,
+    "mutator": "CastObject",
+    "hash": "8cee1f320d3caa371278edd45e3226908786b41fcde494e600a699b9ac5c984d",
+    "reason": "The moodle_exception interpolation argument reaches core_string_manager_standard::get_string(), which casts both array and stdClass to (array) for named replacements (lib/classes/string_manager_standard.php:365-387). Removing this object cast preserves field and detail and thus the full round-trip error."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 75,
+    "mutator": "BitwiseOr",
+    "hash": "d8bb608459df0ce821c178c45e89f6dee5af7229d003d1ee1e8d6fed067a8775",
+    "reason": "The JSON string is passed only to module_settings::write(), which immediately json_decodes it into the patch (classes/catalog/module_settings.php:108). Switching Unicode/slash escape flags to zero changes the transport spelling only: JSON decoding restores the exact same keys, strings and numbers before validation or persistence."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 87,
+    "mutator": "BitwiseOr",
+    "hash": "789d72e73a94b2bd5814b0b7f5af839d1fff4b5edef471ee9b30ebdfb58fb13b",
+    "reason": "completion_settings::write() decodes the JSON patch before interpreting it (classes/catalog/completion_settings.php:149). Unicode/slash escaping changes only the JSON representation, never the decoded fields or values; the encoded string is not returned or persisted as an observable artifact."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 279,
+    "mutator": "BitwiseOr",
+    "hash": "462c2515d98fb8662e591a36f818f00dbc6a7df8637b85da287a6e1d415e9f46",
+    "reason": "This json_encode argument is the declared float $grade, not a string or collection. JSON_UNESCAPED_UNICODE and JSON_UNESCAPED_SLASHES affect only string escaping; their OR or AND therefore emits the identical numeric JSON for every allowed grade."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 138,
+    "mutator": "CastFloat",
+    "hash": "64d5ff0fe789cee0c50af691eada13f14714ec6ed6907b9b1a065e5588a6d314",
+    "reason": "$grade is declared float and $quiz->grade is a numeric database decimal. PHP subtraction already coerces that numeric operand to the same floating value; removing only the explicit float cast leaves the absolute grade difference and its threshold comparison identical."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 135,
+    "mutator": "CastFloat",
+    "hash": "5b3d3709fcad979db4d1361cc5f75676d22f74b6df2e478a954b8121c8a7f5ea",
+    "reason": "$quiz->grade is a numeric database decimal and the resulting $newgrade is used only as the float parameter of quiz_write_bridge::validate_combination_rules(array,array,float) (classes/catalog/quiz_write_bridge.php:191). With no strict_types declaration, that call applies the identical scalar float coercion when the explicit cast is absent."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 143,
+    "mutator": "CastInt",
+    "hash": "db413bb69ed1169f5906a5ad7c54db08fc054d48730c65385a544abf373af9f1",
+    "reason": "quiz_write_bridge::apply_grade_change declares its first parameter int (classes/catalog/quiz_write_bridge.php:162). $quiz->id is a native numeric primary key and this caller has no strict_types declaration; PHP applies exactly the removed int conversion at the call boundary."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 206,
+    "mutator": "CastInt",
+    "hash": "9e22185ed66be7fbf7a82a863efd3e36553f651c64962a88fa15a0b91aaf88e9",
+    "reason": "carry_feedback declares int $quizid (classes/catalog/quiz_write.php:222). Its input is the native quiz numeric primary key; PHP weak scalar parameter coercion applies the identical conversion when the caller-side int cast is removed."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 132,
+    "mutator": "CastInt",
+    "hash": "1e6bbe849893a162f40c43d00854b1e1e8b61691db64e2495f62bbdff8add2f7",
+    "reason": "version_history::files_at declares int $cmid (classes/history/version_history.php:115). The numeric native course-module primary key is converted identically at this non-strict PHP call boundary when the explicit int cast is absent."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 155,
+    "mutator": "CastInt",
+    "hash": "c010b8bce0e9aa4bb5b3312490641894b9a7e6ad654a47aad4a7e190f2744473",
+    "reason": "module_settings::write_pseudofield_draft declares int $cmid (classes/catalog/module_settings.php:63). The native numeric course-module ID therefore receives the same integer conversion at the non-strict scalar parameter boundary with or without this caller-side cast."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 237,
+    "mutator": "CastInt",
+    "hash": "9f1da479b497a8ee3952ca851c9c4a30c86af13cd97504c8bc355b569525f98f",
+    "reason": "version_history::arrangement_at declares int $cmid (classes/history/version_history.php:153). For the native numeric course-module primary key, PHP applies the identical integer conversion at this non-strict call when the explicit cast is removed."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_xml.php",
+    "line": 54,
+    "mutator": "CastFloat",
+    "hash": "49631cfa337daffa574440770b20c67d514101280768893663f42a899995d43b",
+    "reason": "All production callers pass numeric fractions: create_mc_question uses external_value(PARAM_FLOAT); update_mc_question builds numeric answer objects or reads native numeric question_answers fractions. For that supported numeric domain, PHP compares numeric strings and floats to zero numerically, so removing this float cast cannot change which answers are positive."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_xml.php",
+    "line": 62,
+    "mutator": "CastFloat",
+    "hash": "9ce059f90b275c3570adfdc10bc171c202c7aa8d85a0d2786f85c8c75ba2ff2c",
+    "reason": "The callers supply numeric weights (create_mc_question PARAM_FLOAT, update_mc_question numeric answer objects/native decimal fractions). max(0.0, numeric weight) compares those values numerically and array_sum then coerces the returned numeric value; the removed float cast therefore leaves the rounded positive total identical."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_xml.php",
+    "line": 133,
+    "mutator": "CastInt",
+    "hash": "42c9972498ac032041d291998fed3a98170c588cf7db8217b97eb7c819b6cfea",
+    "reason": "context::__construct stores _id as (int)$record->id and context::__get(\"id\") returns exactly that integer (Moodle lib/classes/context.php:371,291-293). The context returned by instance_by_id therefore already exposes an int ID; removing the additional cast cannot change the native question contextid value or type."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_state.php",
+    "line": 44,
+    "mutator": "FalseValue",
+    "hash": "fc994ea007ac87b0b5fb2e35f293aaffb4eb265b1a96fa83b5a2ef264192d3e1",
+    "reason": "The fourth argument of Moodle get_coursemodule_from_id is sectionnum: true only adds cw.section AS sectionnum through a LEFT JOIN (lib/datalib.php:1263-1275). module_state never reads that extra property; effective_settings obtains the section through its existing course_sections lookup. Both calls therefore supply the identical values consumed by this operation."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 48,
+    "mutator": "FalseValue",
+    "hash": "86b57802367fbeb73ad432fcc4af211210153fcd9f147ce9170ba6ee543866b0",
+    "reason": "Moodle get_coursemodule_from_id(..., sectionnum=true, ...) only adds the unused sectionnum property via a LEFT JOIN (lib/datalib.php:1263-1275). version_restore and the operations receiving this object consume id, instance, modname, course and section, never sectionnum; every consumed value and all restore behavior remain identical."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_state.php",
+    "line": 50,
+    "mutator": "CastString",
+    "hash": "78f56f6b2bcc0919c4b5dd4c3e267b264a893a09da733b91f2bb9540002f4b9a",
+    "reason": "get_coursemodule_from_id obtains modname from modules.name (lib/datalib.php:1269), a non-null character column, and registry::for additionally declares a string parameter. This value is already a string; removing its caller-side string cast cannot change registry lookup or the returned module state."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_state.php",
+    "line": 54,
+    "mutator": "CastString",
+    "hash": "cf3d9970f8d18c246b04800ab9495748902124ba319f61bde059c7d0a51f018c",
+    "reason": "The returned modname is md.name from Moodle get_coursemodule_from_id, backed by the non-null modules.name character column (lib/datalib.php:1269). It is already a string, so the extra string cast changes neither the value nor type in the public result."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 55,
+    "mutator": "CastString",
+    "hash": "6395057f2f79a010a48ad62bee7b6d6a7ea9442fadb8473b275282b996602912",
+    "reason": "The native get_coursemodule_from_id supplies modname as modules.name, a non-null character column (lib/datalib.php:1269). This value is already a string before catalog selection and result construction; removing this cast changes neither."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 126,
+    "mutator": "CastString",
+    "hash": "9b41488c1f241e7b76bfccd99179dc58563ec3ae757c11a2fe1af18db8867b12",
+    "reason": "restore_files receives the native course-module object whose modname comes from modules.name, a non-null character column (Moodle lib/datalib.php:1269). It is already a string and material_reference_specs also accepts a string; the removed cast cannot affect file selection or restoration."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_state.php",
+    "line": 89,
+    "mutator": "CastInt",
+    "hash": "591732eb68547839a0243623432e131b1d07eacf1e817a5759b1e3c044ca0699",
+    "reason": "shared_block::derive_visibility declares int $visible (classes/catalog/shared_block.php:216). PHP weak scalar parameter coercion applies the identical integer conversion to the native course-module flag when this explicit caller-side cast is removed."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_state.php",
+    "line": 90,
+    "mutator": "CastInt",
+    "hash": "4a81b7a677e48717ba6c2a030745f2058825095478157e44c26c98dce9af6595",
+    "reason": "shared_block::derive_visibility declares int $visibleoncoursepage (classes/catalog/shared_block.php:216). Removing the explicit caller-side int cast leaves the identical integer conversion at that non-strict scalar parameter boundary."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 330,
+    "mutator": "UnwrapArrayUnique",
+    "hash": "4266917093adbe61554d2243c0da4f286d6f88d63f083a0d13c939515bf4e53d",
+    "reason": "The list is array_keys($merged), whose keys are unique by PHP array semantics. The only appended key is grade, which quiz::blocklist explicitly forbids in the validated patch (classes/catalog/quiz.php:672) and no bundle supplies. Hence no duplicate key can reach this array_unique; removing it cannot duplicate a reported change."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 358,
+    "mutator": "CastString",
+    "hash": "3a2c18023ae514e0a9914d0a85c680ebbb7a5f566b22792df5a39ff16ecd2e79",
+    "reason": "Moodle question data defines name as text. Native qformat_xml import_headers/clean_question_name returns a string (question/format/xml/format.php:227; question/format.php:809-817), and custom import_from_xml implementations must return a string name in the same question-data shape. The fallback is an empty string, so this explicit cast changes neither value nor type for supported names; it does not remove name trimming or mismatch checks."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 634,
+    "mutator": "CastString",
+    "hash": "2c466458f7316b76569de009cf76dcd92a2c0612f62de245c7e8d742d4bbf005",
+    "reason": "Moodle question data defines name as text. Native qformat_xml import_headers/clean_question_name returns a string (question/format/xml/format.php:227; question/format.php:809-817), and custom import_from_xml implementations must return a string name in the same question-data shape. The fallback is an empty string, so this explicit cast changes neither value nor type for supported names; it does not remove name trimming or mismatch checks."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 634,
+    "mutator": "CastString",
+    "hash": "ea52f1515319c090af06d944b375fd51b946b6cdec639f122d4c4b9fe85bf055",
+    "reason": "Moodle question data defines name as text. Native qformat_xml import_headers/clean_question_name returns a string (question/format/xml/format.php:227; question/format.php:809-817), and custom import_from_xml implementations must return a string name in the same question-data shape. The fallback is an empty string, so this explicit cast changes neither value nor type for supported names; it does not remove name trimming or mismatch checks."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php",
+    "line": 39,
+    "mutator": "UnwrapArrayUnique",
+    "hash": "0601c3e9ed85ab4daacc3dfc579eb9b67dca1c201afb6d9beaf6e4903472331d",
+    "reason": "The deduplicated blocklist is a local variable used only by in_array(..., true) in assert_writable(); duplicate entries cannot change membership or any returned diagnostic. No blocklist array is returned by validate()."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz.php",
+    "line": 672,
+    "mutator": "UnwrapArrayMerge",
+    "hash": "d7e8962ccb64f0c5e46dbacd531111f781e1b946bcbf400119e904fead892009",
+    "reason": "completion_settings::module_fields(quiz) is a subset of completion_settings::blocked_fields(). Every production consumer unions this blocklist with shared_block::blocked_fields(): catalog_fields, version_restore, describe_module_fields and drift_check::column_violations (the latter intersects the shared list with real columns). Removing this duplicate subset changes none of those consumers."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 77,
+    "mutator": "UnwrapArrayMerge",
+    "hash": "539b0b33661f9c958c2120c27f9690941e24cff4b0af43970ecb36767b9cb4f0",
+    "reason": "At this exact first normal-patch assignment, changes has just been initialized to [] and has no prior writes. array_merge([], result[changes]) equals result[changes] because module_settings returns its changes as a zero-based list. Completion changes are merged later, unchanged by this mutation."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 282,
+    "mutator": "UnwrapArrayUnique",
+    "hash": "59ce3a30013ec7babb2573bce6b12271cff1582a73ef24d66b7bbb2e4e1a2de6",
+    "reason": "This local blocklist is used only for strict in_array membership while building the normal patch. Removing array_unique cannot alter membership; duplicates are not returned or iterated for effects."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/private_files_storage_port.php",
+    "line": 273,
+    "mutator": "DecrementInteger",
+    "hash": "2cc79263836780ba1af25bca8085a42e318937623aad39731b3c97f38c9c2f33",
+    "reason": "The missing userquota fallback changes from 0 to -1. Both satisfy the immediate <= 0 unlimited-quota return; the value is never used after that branch. Configured quota and capability branches are unchanged."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/private_files_storage_port.php",
+    "line": 277,
+    "mutator": "CastInt",
+    "hash": "e6975e6b42bb1f29d01341df48650bf33cb16bbc9251dc38de5c3ccfd59015de",
+    "reason": "Moodle file_get_user_used_space() (lib/filelib.php) itself returns (int)$record->totalbytes. Casting that already-integer result a second time cannot change the quota subtraction for any database driver."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/private_files_storage_port.php",
+    "line": 296,
+    "mutator": "CastObject",
+    "hash": "9bc9ba6dcf4f228bcd5ad1f4ff580e71c6b2600364d5273c46157dc89906f7a4",
+    "reason": "Moodle get_string placeholders accept both arrays and objects and format the same remaining/needed/page values; no code inspects this temporary argument object. This is the same documented placeholder contract used by the other exact get_string cast entries."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 307,
+    "mutator": "MethodCallRemoval",
+    "hash": "01d2890014bf568544cfeddd0253bc624821898d4e67075fd0c1effb50fcbf4c",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): The directly constructed native qformat_xml inherits qformat_default::$stoponerror = true and has no constructor changing it. setStoponerror(true) only assigns that same boolean before readquestions(); removing this redundant setter preserves the public formatter state even for custom import_from_xml callbacks.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 322,
+    "mutator": "CastString",
+    "hash": "cba763ea6817c95d6852203e87bd97137cd120ac57420fcbab1524a6e4ef6d74",
+    "reason": "ob_get_clean() returns string|false. strip_tags accepts a string under this file's weak PHP typing, converting false to the same empty string as the explicit cast. No array, object or null is possible here."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 359,
+    "mutator": "CastString",
+    "hash": "44b9ad95374ff09e2c57674a9a86d779ffbecfc4209b4c6b157c27ab6a4fabcf",
+    "reason": "The value passed to trim is the idnumber string (or the explicit empty-string fallback) from the question XML contract. trim itself performs the same weak string conversion as the removed cast; neither native nor supported contract-valid custom idnumbers change."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 376,
+    "mutator": "CastInt",
+    "hash": "22c7b165ff7e03b63be8a51e720c72dcf446517f18b10c87e4c19c513e42c99e",
+    "reason": "question_suspect_gate::latest_version_question declares int $entryid. Under the caller's weak PHP typing, the valid native database integer ID undergoes the same integer conversion at that parameter boundary as the explicit cast."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 377,
+    "mutator": "CastInt",
+    "hash": "80c0dd5b518a74f860c65973fbc5eca2164f187128253e00f3aedfee9ea82d23",
+    "reason": "The private save() parameter for an existing question is ?int $oldquestionid. A required native question record has a non-null integer ID; weak conversion at this parameter boundary is identical to the removed explicit cast."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 408,
+    "mutator": "CastInt",
+    "hash": "e29d2f5795b09344fc229a4df1582713726369eb71c76f5b927487cdefc89a52",
+    "reason": "question_suspect_gate::find_name_candidates declares int $categoryid. The valid category ID therefore receives the same integer conversion at that call boundary with or without the explicit cast."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 555,
+    "mutator": "CastInt",
+    "hash": "dd7c0551420f80db8ec900b929663321e793fb5adfacbd1cc8b54779a6c6dfe1",
+    "reason": "Moodle get_question_bank_entry declares int $questionid. The required reloaded question ID is non-null; weak conversion at that native boundary is identical to the explicit cast."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 581,
+    "mutator": "MethodCallRemoval",
+    "hash": "b084436932671e04deeac02f903457fe177caca2781dff57813416e54a161257",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): This fresh qformat_xml inherits qformat_default::$stoponerror = true; setStoponerror(true) only writes the identical initial boolean. Unlike changing true to false, deleting this redundant setter does not alter formatter state visible to any custom importer.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 593,
+    "mutator": "CastString",
+    "hash": "c663edd478bf831aac032a2c863a695fb5c02a2288994f8e5d849e81d3fb8911",
+    "reason": "ob_get_clean() returns string|false, and strip_tags performs the same weak string conversion as the removed cast (false becomes the empty string). No other value type reaches this expression."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 637,
+    "mutator": "CastString",
+    "hash": "4a105db59b3286d371d351ed273e26e19dd12a73aa2d61da7b7bdd2d118cbe0e",
+    "reason": "The reparsed idnumber is a contract-valid string or the explicit empty-string fallback. trim performs the same weak string conversion as the explicit cast, so identity comparison and diagnostics remain unchanged."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 781,
+    "mutator": "DecrementInteger",
+    "hash": "3ae27be8738b5e04c894fa14c7138ee4127e4bca66b96db01275684f6d45aff9",
+    "reason": "as_text_array is private. Both and only production call sites (questiontext and generalfeedback in save()) explicitly pass all three arguments, including itemid. The default itemid value is never evaluated."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 781,
+    "mutator": "IncrementInteger",
+    "hash": "67d29631f42827ca44ec9ab9c38ad4b7edce75562226d0cf7f6fd3207dd79b26",
+    "reason": "as_text_array is private; both production calls in save() explicitly supply itemid as the third argument. Increasing the unused default cannot affect any reachable import."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/storage_anchor.php",
+    "line": 216,
+    "mutator": "CastInt",
+    "hash": "8681fe10b0215a51b4ee0505ff149962bd84b5b4799c7daab1586f24462e04f0",
+    "reason": "pointer_location has a private constructor. Its external() factory requires int instanceid and stores it in a readonly ?int property; the non-Moodle branch is reachable only with that non-null int. The webdav_storage_port constructor also requires int instanceid."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/storage_anchor.php",
+    "line": 216,
+    "mutator": "CastString",
+    "hash": "c4af592a65ffcfd40ec7c87687ea0dfaac8d88d65ad0edb0e2192d32eeb97e58",
+    "reason": "For the external branch, pointer_location::external() requires string relativepath and stores it in a readonly ?string property. No other factory creates external locations, so this branch already supplies a non-null string to the adapter's string constructor parameter."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/context_area.php",
+    "line": 374,
+    "mutator": "MethodCallRemoval",
+    "hash": "3ff9e969e61adb814dd569a674b474d01af7f800db97c2c1813d78ae4be39362",
+    "reason": "append_to always follows this guard with guard_new_content(location, path, existing_content + appended_content). Appending cannot remove the already-matched leading personal-data front matter. When personal data is disabled, guard_new_content therefore raises the identical contextfilelocked error for the same path before any checksum check or write. When enabled, this removed guard does nothing. The replacement write guard is not covered by this argument."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 141,
+    "mutator": "LessThanOrEqualTo",
+    "hash": "36e581c26f7a17329c76516d623c30c80dab2f24de77c28d14f1ad0a1c9979a4",
+    "reason": "This private helper has exactly one caller: guard_server_size_limit. It passes MAX_XML_BYTES (> 0) when the server limit is nonpositive, otherwise min(MAX_XML_BYTES, positive_serverlimit). maxbytes is therefore always positive here; changing the unreachable <= 0 alternative to < 0 cannot change any reachable import."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 217,
+    "mutator": "UnwrapTrim",
+    "hash": "f81d9dde96729f2361d669e281db1fa30e2754cece947aaa1da8f2e77a492cc8",
+    "reason": "For valid Moodle XML, trimming only the outer attribute whitespace after removing material/encoding changes no attribute name or quoted value. Without trim, the same XML whitespace remains between the file tag name, its attributes and the added encoding attribute. The XML parser produces identical attributes and content before dispatching any qtype callback; this does not claim invalid XML control bytes are part of the supported contract."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 305,
+    "mutator": "MethodCallRemoval",
+    "hash": "383fc3ead83a0560e6fcfa460db947b68675d5e067dd125c09a14ba928a02f4e",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): category is formatter process state unused by the direct initial readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read category. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 306,
+    "mutator": "ArrayItemRemoval",
+    "hash": "5e231f531139cb26daa9cc75c27246e8a71f52208a70389b762a864a6f76aaa3",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): contexts is formatter process state unused by the direct initial readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read contexts. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 306,
+    "mutator": "MethodCallRemoval",
+    "hash": "9ea7365f08df7bf2cce4230ed7f6758c05ad4a22d84fd3d0e455ab4b1009f832",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): contexts is formatter process state unused by the direct initial readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read contexts. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 307,
+    "mutator": "TrueValue",
+    "hash": "0130fba52b49c199499e59754db1fd0172cb003b881d66167788ec2671442d69",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): stoponerror is formatter process state unused by the direct initial readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read stoponerror. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 308,
+    "mutator": "MethodCallRemoval",
+    "hash": "8c9509733531710fdf1b88281237db0b593a8b357be77e511924e2b8ca06c3c1",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): matchgrades is formatter process state unused by the direct initial readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read matchgrades. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 309,
+    "mutator": "FalseValue",
+    "hash": "d337ed6b98c9c7bc12f2026806ac24a880b103ef41a2aab43790f28cef5e36d5",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): catfromfile is formatter process state unused by the direct initial readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read catfromfile. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 309,
+    "mutator": "MethodCallRemoval",
+    "hash": "3f479d9eaebabd958a5046da14131c4b00bab0bed1d53eb86549ead50b874e98",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): catfromfile is formatter process state unused by the direct initial readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read catfromfile. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 310,
+    "mutator": "FalseValue",
+    "hash": "f6ea0002e8ec107f53638b1055c3e5cbb968b7632092d39ea22e1a89eb4cf2a0",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): contextfromfile is formatter process state unused by the direct initial readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read contextfromfile. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 310,
+    "mutator": "MethodCallRemoval",
+    "hash": "e3ca18e83ca8621cfbbaf9d5eded8148ba5ec11f5b66f03edfcf94307ffff536",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): contextfromfile is formatter process state unused by the direct initial readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read contextfromfile. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 559,
+    "mutator": "MethodCallRemoval",
+    "hash": "34012a42c33ea98924ca8432fd9734b594df08af1a836940bb2451fcc07dce32",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): category is formatter process state unused by the direct round-trip writequestion path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read category. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 560,
+    "mutator": "ArrayItemRemoval",
+    "hash": "256fcda406c59b5d9b2fd052b53ef686023012244cc6f4dde6b1e1870327a1e3",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): contexts is formatter process state unused by the direct round-trip writequestion path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read contexts. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 560,
+    "mutator": "MethodCallRemoval",
+    "hash": "200be50f73f97283f33d7613cdbb760fbcee1b652d980a1139c6470547b9936b",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): contexts is formatter process state unused by the direct round-trip writequestion path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read contexts. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 579,
+    "mutator": "MethodCallRemoval",
+    "hash": "a22962b3ff9d2948c4e2c1a7f3a58dbe361167ec7c6c644e74cfe98bf528ae82",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): category is formatter process state unused by the direct round-trip readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read category. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 580,
+    "mutator": "ArrayItemRemoval",
+    "hash": "cdb876192484295e547bae14855df164638301e122d3dfa7483c2d24afd93b4f",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): contexts is formatter process state unused by the direct round-trip readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read contexts. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 580,
+    "mutator": "MethodCallRemoval",
+    "hash": "782d24d3213090daa071d4e68e84f56c34ed806a2ef80e52e16f047e13df3a1b",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): contexts is formatter process state unused by the direct round-trip readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read contexts. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 581,
+    "mutator": "TrueValue",
+    "hash": "3db6be7b8ca096bb33e6616420eecc67a2ff9f5da02b8491b0b14cde8c465a8f",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): stoponerror is formatter process state unused by the direct round-trip readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read stoponerror. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 582,
+    "mutator": "MethodCallRemoval",
+    "hash": "c7bfbc5a3e543031324e161a3dbb746221038907028ee0ab4d1a928b5bfec6a4",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): matchgrades is formatter process state unused by the direct round-trip readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read matchgrades. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 583,
+    "mutator": "FalseValue",
+    "hash": "392850f76e34f85b11efe9383a8091568b76648d6cdb2c78dc0e535f0fe1cd08",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): catfromfile is formatter process state unused by the direct round-trip readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read catfromfile. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 583,
+    "mutator": "MethodCallRemoval",
+    "hash": "93cd3d126d26d0afb0e7b54c96a14ac32725dec9a7b418e8f9bd77b26618ebc6",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): catfromfile is formatter process state unused by the direct round-trip readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read catfromfile. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 584,
+    "mutator": "FalseValue",
+    "hash": "aaddf6b77f9d2e2266241c4cc142a0324cbbfce7c4761e3561f24ac4f7f88723",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): contextfromfile is formatter process state unused by the direct round-trip readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read contextfromfile. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 584,
+    "mutator": "MethodCallRemoval",
+    "hash": "888ae0721ac623e96901dcbbf371d0f8d855e6bd29de57e788df5c2fab830a0f",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): contextfromfile is formatter process state unused by the direct round-trip readquestions path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read contextfromfile. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_xml.php",
+    "line": 158,
+    "mutator": "MethodCallRemoval",
+    "hash": "39cfd67fc19dbc194ffe252bd33da499c3aa6ed56f23327265980445ca698f75",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): category is formatter process state unused by the direct question_to_xml writequestion path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read category. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_xml.php",
+    "line": 159,
+    "mutator": "ArrayItemRemoval",
+    "hash": "197c61ddd9237aea11ad2ac796db96cf50909da4a6f428cb73155b28eac6fe9b",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): contexts is formatter process state unused by the direct question_to_xml writequestion path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read contexts. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_xml.php",
+    "line": 159,
+    "mutator": "MethodCallRemoval",
+    "hash": "88e0213ccacc150996e4d2236d5505c80252b8e865c8cb01460b83f5745c92fd",
+    "reason": "Only for the exact captured qtype/import support sources (qtypeSourceHash): contexts is formatter process state unused by the direct question_to_xml writequestion path. The 14 installed XML callbacks use only the explicitly audited XML helper methods and never inspect or forward the formatter object; neither those helpers nor native error()/dispatch read contexts. Thus this exact state mutation changes no parsed question, export, error counter or diagnostic for this finite source set. A changed/added qtype or formatter source disables this entry. Detailed source/callback proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/create_mc_question.php",
+    "line": 139,
+    "mutator": "CastInt",
+    "hash": "6a4cee658e16a51495327430ed16dc7e453f35b5cc8580423388204df80688c3",
+    "reason": "execute_parameters declares categoryid as external_value(PARAM_INT), and execute uses the value returned by validate_parameters. Moodle PARAM_INT cleaning returns an int; casting that already-cleaned integer again before the typed import() call cannot change it."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/import_questions_xml.php",
+    "line": 100,
+    "mutator": "CastInt",
+    "hash": "e237f8671b9de06df846f6bc0d4c7222412d44ed9224150d9a898d38db79c339",
+    "reason": "The categoryid used here is the return of external_api::validate_parameters for external_value(PARAM_INT), whose cleaner returns int. question_import::import also declares int categoryid. Removing the second conversion preserves the same validated target identity."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 139,
+    "mutator": "Continue_",
+    "hash": "5c99518ad9dd52f35211fe37587d7234e3982faa7943baf95e54316b1f32f3fa",
+    "reason": "registry::CATALOGS is a closed constant map, and material_reference_specs returns its material_reference_fields option. Every registered catalog has zero such fields except assign (introattachments), folder (files) and resource (files), each with exactly one. This foreach therefore has at most one iteration; continue and break at this point both leave the same loop with no further work.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/activity_kind.php": "c8eb56502be95192982cd8fe82c0a360e28d600f9896254e745527a04c59bb88",
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
+      "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
+      "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
+      "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
+      "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
+      "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
+      "Plugin/src/local_coursepilot/classes/catalog/label.php": "b4a2398e80e7b2345ba32cb911c760ea0c45a516662437cd6363f8cbdfd12e24",
+      "Plugin/src/local_coursepilot/classes/catalog/learner_locks.php": "d4f5b4c2c833f4e60483e0087fc21531bbd22d52f475050a05c432c332ad52bc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_catalog.php": "eea30a7b3674b7458b75463045ed76a64a90c69f9898c69f5eba8cf0d27b7862",
+      "Plugin/src/local_coursepilot/classes/catalog/module_settings.php": "b8c703b21c542a31d8150121ee0c688b97dc10d8e8a744ace919a0728d0e2fde",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
+      "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
+      "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
+      "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
+      "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "a071e41bbcd3e2b2670c6fed00281bbb6bfb6b664c91b2da48d1190485fcd496"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 146,
+    "mutator": "Continue_",
+    "hash": "4ad82d80be1c8c97a111f77c8f8b735f5cad98ec4be8046d81e954beef67ce2d",
+    "reason": "For the closed registry, material_reference_specs yields at most one field: assign introattachments, folder files or resource files; all other catalogs yield []. With exactly one iteration, continue and break after an unchanged file set are identical. No dynamic catalog registration exists.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/activity_kind.php": "c8eb56502be95192982cd8fe82c0a360e28d600f9896254e745527a04c59bb88",
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
+      "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
+      "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
+      "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
+      "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
+      "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
+      "Plugin/src/local_coursepilot/classes/catalog/label.php": "b4a2398e80e7b2345ba32cb911c760ea0c45a516662437cd6363f8cbdfd12e24",
+      "Plugin/src/local_coursepilot/classes/catalog/learner_locks.php": "d4f5b4c2c833f4e60483e0087fc21531bbd22d52f475050a05c432c332ad52bc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_catalog.php": "eea30a7b3674b7458b75463045ed76a64a90c69f9898c69f5eba8cf0d27b7862",
+      "Plugin/src/local_coursepilot/classes/catalog/module_settings.php": "b8c703b21c542a31d8150121ee0c688b97dc10d8e8a744ace919a0728d0e2fde",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
+      "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
+      "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
+      "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
+      "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "a071e41bbcd3e2b2670c6fed00281bbb6bfb6b664c91b2da48d1190485fcd496"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 156,
+    "mutator": "UnwrapArrayMerge",
+    "hash": "f0be317063c591c5b76e71a31afd85bb4d61dc748683028ec4faa7ec5c97fea8",
+    "reason": "The closed registry supplies at most one material-reference field per activity (assign introattachments, folder/resource files). restoredfilenames is [] before that sole possible iteration, and changedfilenames is a zero-based list built with []. array_merge([], changedfilenames) therefore equals direct assignment; no earlier restored field can be discarded.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/activity_kind.php": "c8eb56502be95192982cd8fe82c0a360e28d600f9896254e745527a04c59bb88",
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
+      "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
+      "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
+      "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
+      "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
+      "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
+      "Plugin/src/local_coursepilot/classes/catalog/label.php": "b4a2398e80e7b2345ba32cb911c760ea0c45a516662437cd6363f8cbdfd12e24",
+      "Plugin/src/local_coursepilot/classes/catalog/learner_locks.php": "d4f5b4c2c833f4e60483e0087fc21531bbd22d52f475050a05c432c332ad52bc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_catalog.php": "eea30a7b3674b7458b75463045ed76a64a90c69f9898c69f5eba8cf0d27b7862",
+      "Plugin/src/local_coursepilot/classes/catalog/module_settings.php": "b8c703b21c542a31d8150121ee0c688b97dc10d8e8a744ace919a0728d0e2fde",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
+      "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
+      "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
+      "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
+      "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "a071e41bbcd3e2b2670c6fed00281bbb6bfb6b664c91b2da48d1190485fcd496"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 184,
+    "mutator": "CastInt",
+    "hash": "9d76e8f98673b5fe6bfa002af97b1000a9a1b4c91e050de05762f5418288eb12",
+    "reason": "activity_file_trash::find_for_restore explicitly declares int cmid. The valid required native course-module ID receives the identical weak integer conversion at that parameter boundary with or without this explicit cast."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 311,
+    "mutator": "CastString",
+    "hash": "620336d3c7b4fa5528bd431b641e84bf7d8c164bd225edfeb45c445c90c4f8e7",
+    "reason": "The only caller supplies before from read_settings(), which decodes module_state::read_settings(). module_state::effective_settings explicitly sets modulename = (string)cm->modname after merging the instance row; later merges do not override that key. allowed_fields therefore receives an already-string activity name."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 554,
+    "mutator": "CastInt",
+    "hash": "984507db95039a922c9c7af112c9bcb81d7ff300655a4bddcdf9b3825b1f2752",
+    "reason": "The actual context object is a Moodle core context. Its constructor explicitly sets _id = (int)record->id and its id getter returns that same _id (lib/classes/context.php:370 and :288). This value is already int independently of the database driver; the extra contextid cast cannot change the qtype export input."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 91,
+    "mutator": "CastInt",
+    "hash": "b744eeab578457b4248e7ccb38f4edc66162d82dab9ff2d43a9052167c6c280b",
+    "reason": "Moodle add_moduleinfo assigns coursemodule from add_course_module, which returns the insert_record ID unchanged; both supported native drivers return an explicit integer for an insert ID (mysqli_native_moodle_database::insert_record_raw casts its insert_id, pgsql_native_moodle_database casts the returned id). Removing this second cast does not change the raw module result or the external integer ID. This is an insertion ID, not an untyped ID read from an existing row."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 146,
+    "mutator": "CastInt",
+    "hash": "dbaa6975e0baf4d8005300f56e8295a90a3b0f0829e787cc3ae6a14265730b70",
+    "reason": "The sole value is the valid numeric course foreign key read from the native course_modules row. get_course uses loose numeric equality for COURSE/SITE caches and otherwise the same parameterized course.id lookup (lib/datalib.php). Canonical numeric database strings and their integer casts address the identical cache/row; no value of this local ID is returned to the client."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 367,
+    "mutator": "CastInt",
+    "hash": "b87d6d7cc73af828c236a8028c4140f2f9fe4b582abea1ec992344f1cf9ad60d",
+    "reason": "The after-state timeopen comes from the native quiz integer timestamp column. The only changed use is a numeric > 0 calendar-effect predicate: an integer or its canonical database numeric string has the same sign. The native state and reported field values remain untouched."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 368,
+    "mutator": "CastInt",
+    "hash": "7b4d01646907b94716a7fabd91a17e2b86de0a591d1afbfb5f9e9910ba1dedf8",
+    "reason": "The after-state timeclose comes from the native quiz integer timestamp column. Removing only this cast in its numeric > 0 calendar-effect predicate preserves that comparison for positive, zero and negative integer timestamps; no output or persisted timestamp is converted here."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 64,
+    "mutator": "CastInt",
+    "hash": "7a16a5963d6f608c4df231cddef6b3380fab32542afbd7e2c6c78ff8c3fbc66d",
+    "reason": "category.contextid is a native integer-column foreign key. context::instance_by_id uses numeric system-ID comparison, PHP integer-keyed context caches and the same parameterized context.id lookup; canonical database numeric strings and their integer casts select the identical context (lib/classes/context.php:448-472). Unlike an output cast, this conversion cannot change a returned field."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 324,
+    "mutator": "FalseValue",
+    "hash": "00e738a8867b9f1c5bff132994434d23d3f06fac55652ccf9061245e3f8037ef",
+    "reason": "For the exact captured qformat_xml source, readquestions returns an array from import_questions, or false only after catching xml_format_exception and calling error(), which increments importerrors. It never returns true. Replacing the redundant === false with === true therefore leaves the OR predicate unchanged: every false return still has importerrors > 0. Any change to the formatter/support/qtype source set invalidates this finite proof (docs/checks/672-infection-equivalence.md).",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 330,
+    "mutator": "CastArray",
+    "hash": "d17a4f57e90672902eef108e0bda1178fb383f7b49aff1f6dd5966018022cbc0",
+    "reason": "For the exact captured qformat_xml source, readquestions returns only an array or false. The preceding original parse guard throws on false; thus this array_filter input is already an array on every reachable continuation. Removing the cast preserves all values/keys and filtering, independently of which objects callbacks append. A formatter/source change invalidates this finite proof (docs/checks/672-infection-equivalence.md).",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 330,
+    "mutator": "UnwrapArrayValues",
+    "hash": "c13a66dd12eec25d4697d7c89e9e987b26b934b01a56795caa9a03bb86239930",
+    "reason": "parse returns the filtered question array only to private import_all, which observes emptiness and iterates values with foreach ($questions as $question); it never observes the numeric keys and constructs results with $results[]. Removing array_values preserves the selected questions, order, empty-input error and dense public result even when category directives leave key gaps."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 595,
+    "mutator": "FalseValue",
+    "hash": "36a3c2dff4ac8e73c3c47ff83c3ed9a36567f1ef5e58d3ee8eece81d08295521",
+    "reason": "For the exact captured qformat_xml source, readquestions returns an array or false; its only false-return branch calls error() before returning and importerrors is then positive. It cannot return true. The unchanged OR importerrors > 0 therefore catches exactly the same reparse failures after replacing === false with === true. Source changes invalidate this finite proof (docs/checks/672-infection-equivalence.md).",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_xml.php",
+    "line": 124,
+    "mutator": "CastInt",
+    "hash": "1f7433ba70c973cfc2a4a00080e81ecac22a0b31f57b1730098dd9fbee6f6bc6",
+    "reason": "The category contextid is a native integer-column foreign key. context::instance_by_id treats a canonical numeric database string and its integer cast identically: loose system-ID comparison, integer-keyed PHP cache and parameterized context.id lookup (lib/classes/context.php:448-472). It returns the same native context; no raw ID type is exposed by this expression."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 566,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "780205e1f496285113f1dd875f2f883da8d8cbe2b9a643a1a8b91143e569f7cf",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): rewrite_saved_question wraps one fully closed native question block. The captured core xml_parser calls xml_parse on chunks without finalizing the parse. Removing only the last closing quiz tag therefore changes neither the already-built question tree nor a preceding inner parse failure; the wrapper itself is private. The root body has named question children, so its end handler performs no numeric text-node collapse. A parser change invalidates this finite proof. Native dependency probe and structural proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 634,
+    "mutator": "UnwrapTrim",
+    "hash": "12984d2d947e706f0d82444e2324d31315395333200ee74addf2f1d41b0df20e",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): Every reachable native XML name producer uses import_headers/clean_question_name, or the multianswer clean/default-name path. These trim the name before this comparison; shortening preserves the trimmed prefix and ends in text/ellipsis. Removing only the expected-name trim preserves this predicate, including an empty supplied name. New callback implementations invalidate this producer proof.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 634,
+    "mutator": "UnwrapTrim",
+    "hash": "11ba340d0a626ec45fe91d3785ee83c7cc8aa33c682f347d2f6b2966d0837007",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): The exported native name is reparsed through import_headers/clean_question_name or the multianswer clean-name path. This actual name is already trimmed; removing only its second trim changes neither equality nor the name mismatch. The finite callback closure is recorded in docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 637,
+    "mutator": "UnwrapTrim",
+    "hash": "bffad483c400fc895fee305c163f9e75b0537ad63c6a01b9cd411f6815fc7897",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): The assigned bank identity is generated without surrounding whitespace or explicitly trimmed by import_one, then copied unchanged through the five native save paths. Native writequestion emits that bank identity without padding. All actual reparse paths trim it through headers, except multianswer which reads the already-unpadded emitted identity. Thus this final actual-idnumber trim is redundant for the captured producers, not arbitrary callbacks.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 693,
+    "mutator": "DecrementInteger",
+    "hash": "c7b72ff1599cec861c9e774dc1cb38ef4d0930ed08354bf22dabf66b36604072",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): Every nonempty native answer array appends its fraction at the same index: built-in multichoice/shortanswer/numerical/calculated imports, the generic base XML loop, and ordering (constant 1 per answer). ddwtos/gapselect use empty answer placeholders; other installed types have no such array or use the separate boolean branch. No iterated answer can lack a fraction, so changing only the unused coalesced zero to -1 has no effect. See the complete producer table in docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 693,
+    "mutator": "IncrementInteger",
+    "hash": "75c8493b4e72a86fffe652922b99f912929a7476ec8753efb0b533d5563c551c",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): Every iterated native array-answer index has an aligned fraction from the same import loop; ordering supplies 1 explicitly. Empty placeholders and non-array shapes cannot reach this lookup. Only the unreachable coalesced fallback changes from 0 to 1. This is a finite constructor proof for the captured sources, not a claim about newly installed qtypes.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 719,
+    "mutator": "OneZeroFloat",
+    "hash": "bb82779bb220960eeef50430c0f9ef85017ba46435b85f1e3c0eeafb44cb146a",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): The only boolean-answer producer is import_truefalse, and the native save/export/reparse path keeps that type; both comparison sides therefore use truefalse_answers. This mutant makes the true score constantly 0. The untouched false option is still an injective map of that same boolean, so every boolean change remains detectable; reversing an option also preserves its absolute difference. Both feedback checks, texts and answer count remain unchanged. The 96-case algebra proof and mixed-representation counterexample are recorded in docs/checks/672-infection-equivalence.md. This does not cover removal of an option/feedback or arbitrary new qtypes.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 719,
+    "mutator": "OneZeroFloat",
+    "hash": "49bf6e823e4f740fd15eb9261045243d053a40da0090fa41fe296ff0c21fe29c",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): The only boolean-answer producer is import_truefalse, and the native save/export/reparse path keeps that type; both comparison sides therefore use truefalse_answers. This mutant makes the true score constantly 1. The untouched false option is still an injective map of that same boolean, so every boolean change remains detectable; reversing an option also preserves its absolute difference. Both feedback checks, texts and answer count remain unchanged. The 96-case algebra proof and mixed-representation counterexample are recorded in docs/checks/672-infection-equivalence.md. This does not cover removal of an option/feedback or arbitrary new qtypes.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 719,
+    "mutator": "Ternary",
+    "hash": "ca95f5298cc2d49a39a0e747943e6c73150eaeece5de909e12de78323933e061",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): The only boolean-answer producer is import_truefalse, and the native save/export/reparse path keeps that type; both comparison sides therefore use truefalse_answers. This mutant reverses the true score. The untouched false option is still an injective map of that same boolean, so every boolean change remains detectable; reversing an option also preserves its absolute difference. Both feedback checks, texts and answer count remain unchanged. The 96-case algebra proof and mixed-representation counterexample are recorded in docs/checks/672-infection-equivalence.md. This does not cover removal of an option/feedback or arbitrary new qtypes.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 724,
+    "mutator": "OneZeroFloat",
+    "hash": "2c75a445ad3fbf69433e07c3516a2a95594245267b9a73cd2ff836140f784eb8",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): The only boolean-answer producer is import_truefalse, and the native save/export/reparse path keeps that type; both comparison sides therefore use truefalse_answers. This mutant makes the false score constantly 1. The untouched true option is still an injective map of that same boolean, so every boolean change remains detectable; reversing an option also preserves its absolute difference. Both feedback checks, texts and answer count remain unchanged. The 96-case algebra proof and mixed-representation counterexample are recorded in docs/checks/672-infection-equivalence.md. This does not cover removal of an option/feedback or arbitrary new qtypes.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 724,
+    "mutator": "OneZeroFloat",
+    "hash": "4a73c8b5bb81403fb24b772d813038fcd8fd62e047d6ae755db7e4df1992cea8",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): The only boolean-answer producer is import_truefalse, and the native save/export/reparse path keeps that type; both comparison sides therefore use truefalse_answers. This mutant makes the false score constantly 0. The untouched true option is still an injective map of that same boolean, so every boolean change remains detectable; reversing an option also preserves its absolute difference. Both feedback checks, texts and answer count remain unchanged. The 96-case algebra proof and mixed-representation counterexample are recorded in docs/checks/672-infection-equivalence.md. This does not cover removal of an option/feedback or arbitrary new qtypes.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 724,
+    "mutator": "Ternary",
+    "hash": "340dfe5db9f96ac36f668a7fc3acf882e8456e2be6818518ceb84a8418cb5cb6",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): The only boolean-answer producer is import_truefalse, and the native save/export/reparse path keeps that type; both comparison sides therefore use truefalse_answers. This mutant reverses the false score. The untouched true option is still an injective map of that same boolean, so every boolean change remains detectable; reversing an option also preserves its absolute difference. Both feedback checks, texts and answer count remain unchanged. The 96-case algebra proof and mixed-representation counterexample are recorded in docs/checks/672-infection-equivalence.md. This does not cover removal of an option/feedback or arbitrary new qtypes.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 765,
+    "mutator": "CastString",
+    "hash": "c9147c389c33cfed3d6698e4ded673ed8dd136f7c982bd67690a5e202e851b0a",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): All reachable text-keyed arrays come from native import_answer/import_text_with_files and contain string text. getpath reports an import error on non-string XML text, and parse/reparse abort before this comparison. Removing the array text string cast therefore returns the identical string. This does not remove the coalesced text value itself; that distinct mutant is caught by the real ordering fidelity test.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 767,
+    "mutator": "LogicalAnd",
+    "hash": "0e8ad83259afc8442840a75a97b06837c7031b35ad96240e40ff0819480e6589",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): The complete native field producers pass strings or text-keyed arrays to text_of, never objects. Arrays return in the first branch; on the remaining strings, both is_object and isset(value->text) are false. Replacing this AND by OR cannot enter the object branch. An object-producing third-party callback changes the source condition and receives no exception.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 767,
+    "mutator": "LogicalAndSingleSubExprNegation",
+    "hash": "6e6a33dfd9705bae3938ca2dc63040670a8eba7d3662245f35b3c6a135a7e6cb",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): Native common text fields and answer feedback are strings or string-text arrays; none of the captured XML callbacks produces an object for text_of. The preceding array return is unchanged. For remaining strings isset(value->text) is false under either object predicate, so negating is_object alone cannot alter a result. See the finite producer table.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 770,
+    "mutator": "CastString",
+    "hash": "7c00d97d01185092ee5153335897774ca80b778fd7f307022c5cdb24b369c63a",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): After its array branch, text_of receives only native string fields in the captured constructor closure. Returning that existing string without the final explicit string cast preserves all bytes and the declared string return contract. This is not justified for arbitrary object/scalar callback output.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 782,
+    "mutator": "LogicalAndSingleSubExprNegation",
+    "hash": "b6590b8be02f41163bd5fdcd23a2e8436aa0e0c0a9ec692c0abdd17e00d4afaa",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup sources (qtypeSourceHash): Both as_text_array inputs are questiontext/generalfeedback from import_headers, or the multianswer path which explicitly unwraps questiontext to its string text. All captured callbacks preserve these common string fields. is_array is therefore false here, and negating only the unexecuted array_key_exists operand changes nothing. Dynamic callback changes invalidate the exception.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 70,
+    "mutator": "CastInt",
+    "hash": "1ffd5c6a38eeaef5ac7d7507ea114e948933cb2aa88f9933d516d8065cc323ad",
+    "reason": "The module identity comes only from can_add_moduleinfo for the fixed native quiz module. add_moduleinfo uses this canonical positive integer or decimal integer string only as the course_modules.module database foreign key, while modulename remains the identical quiz string. Removing the preliminary cast preserves the same integer lookup/storage value; there is no published raw module property in the result."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 203,
+    "mutator": "CastString",
+    "hash": "9ccb4308abb51f1e286556a7d43eac65c0ba3fc996be2ff277dbe6d01076bd71",
+    "reason": "quiz.password is a non-null varchar column read directly through the native database API. Both supported Moodle database drivers return varchar data as strings, including empty and numeric-looking passwords. The existing string cast is therefore an identity, unlike casts on numeric columns; the whole review/password carry-forward contract remains unchanged."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php",
+    "line": 211,
+    "mutator": "MethodCallRemoval",
+    "hash": "b9bd48466938b86976015a2d6709522cedc2ecd05a2ff66afbd1fce512adfbbb",
+    "reason": "Before apply_patch, update replaces the sole native quiz gradepass form property with quiz::grade_settings primary gradepass, explicitly a float whenever the item exists. An explicit replacement must pass quiz_write_bridge::validate_combination_rules, which accepts only finite JSON ints/floats. With no grade item there is no gradepass form property to unformat. None of these admitted values is a nonempty string, the only input unformat_localised_gradepass changes. This is specific to the dedicated quiz route; it does not excuse removing the same helper from generic module writes."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 242,
+    "mutator": "CastInt",
+    "hash": "2e70c6e17a76f6b27799c41e01e2480418c5cf79b63761738a9358e37fdd0210",
+    "reason": "The canonical positive quiz instance ID is passed only to arrangement::capture(int) and arrangement::restore(int). This caller is weakly typed; both typed callees coerce the same database decimal integer string to the same integer themselves. Removing the earlier cast changes neither lookup, arrangement, write nor published result."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 314,
+    "mutator": "DecrementInteger",
+    "hash": "3129d1babcdd19d39004136af1546233f2bf6d3c557a825b83fdc40095e927e5",
+    "reason": "Every allowed non-quiz completion field is present and non-null in the current state: course_settings supplies shared course-module columns and the derived 0/1 completionusegrade; assign/choice supply their non-null completionsubmit column. Quiz takes the earlier arrangement-only branch. Thus this before-value coalesced fallback is never read; changing only 0 to -1 cannot create a patch. This does not excuse removing the int cast on the actual database value, which the real disabled-completion restore test detects."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 314,
+    "mutator": "IncrementInteger",
+    "hash": "cc9b9804e2931f9a6ca7a962702f1f0abd8b8d47e6bb57689684031bba19fe20",
+    "reason": "All fields iterated by allowed_fields are non-null in current module_state: shared fields come from course_settings and non-null course_modules columns, completionusegrade is explicitly 0/1, and completionsubmit comes from the non-null assign/choice column. Quiz exits on its arrangement route. Only the unreachable coalesced before-value fallback changes from 0 to 1; a missing field in the historical target is independently excluded by array_intersect_key."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/private_files_storage_port.php",
+    "line": 273,
+    "mutator": "CastInt",
+    "hash": "895393542f59ce2179adf6ba661888ed8668270d270a39074ba908c6570591f4",
+    "reason": "The native userquota filesize setting stores only nonnegative integer bytes: core_admin\\local\\settings\\filesize::write_setting requires is_int(bytes) before config_write and rejects overflow/fractions. Configuration returns those canonical integer bytes or their decimal string. Numeric comparison/subtraction produces the same integer with or without this cast, and remaining_quota has an int return. This does not claim arbitrary fractional timestamps are normalised by catalog write_target."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 282,
+    "mutator": "UnwrapArrayMerge",
+    "hash": "0760a0a0c749f52d54942f2e4e9857b5b5edbe5d2967d3cb07923cd1a7357b1a",
+    "reason": "Only for the exact repository catalog sources in sourceHashes: the closed nine-type registry and its field/pseudofield constructors produce no writable name in either blocklist. Therefore removing only the shared arm of this private merge cannot change any iterated field, patch or write. The real native read-only catalog audit checked both intersections for every registered type. Every catalog source, registry and shared definition is bound; a changed dependency disables this exception. Proof: docs/checks/672-infection-equivalence.md.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/activity_kind.php": "c8eb56502be95192982cd8fe82c0a360e28d600f9896254e745527a04c59bb88",
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
+      "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
+      "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
+      "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
+      "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
+      "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
+      "Plugin/src/local_coursepilot/classes/catalog/label.php": "b4a2398e80e7b2345ba32cb911c760ea0c45a516662437cd6363f8cbdfd12e24",
+      "Plugin/src/local_coursepilot/classes/catalog/learner_locks.php": "d4f5b4c2c833f4e60483e0087fc21531bbd22d52f475050a05c432c332ad52bc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_catalog.php": "eea30a7b3674b7458b75463045ed76a64a90c69f9898c69f5eba8cf0d27b7862",
+      "Plugin/src/local_coursepilot/classes/catalog/module_settings.php": "b8c703b21c542a31d8150121ee0c688b97dc10d8e8a744ace919a0728d0e2fde",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
+      "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
+      "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
+      "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
+      "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "a071e41bbcd3e2b2670c6fed00281bbb6bfb6b664c91b2da48d1190485fcd496"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 282,
+    "mutator": "UnwrapArrayMerge",
+    "hash": "f95efa16579107df3e0f4090aab2c17fd19ee910f352e810e27523b050b3ee98",
+    "reason": "Only for the exact repository catalog sources in sourceHashes: the closed nine-type registry and its field/pseudofield constructors produce no writable name in either blocklist. Therefore removing only the module-specific arm of this private merge cannot change any iterated field, patch or write. The real native read-only catalog audit checked both intersections for every registered type. Every catalog source, registry and shared definition is bound; a changed dependency disables this exception. Proof: docs/checks/672-infection-equivalence.md.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/activity_kind.php": "c8eb56502be95192982cd8fe82c0a360e28d600f9896254e745527a04c59bb88",
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
+      "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
+      "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
+      "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
+      "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
+      "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
+      "Plugin/src/local_coursepilot/classes/catalog/label.php": "b4a2398e80e7b2345ba32cb911c760ea0c45a516662437cd6363f8cbdfd12e24",
+      "Plugin/src/local_coursepilot/classes/catalog/learner_locks.php": "d4f5b4c2c833f4e60483e0087fc21531bbd22d52f475050a05c432c332ad52bc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_catalog.php": "eea30a7b3674b7458b75463045ed76a64a90c69f9898c69f5eba8cf0d27b7862",
+      "Plugin/src/local_coursepilot/classes/catalog/module_settings.php": "b8c703b21c542a31d8150121ee0c688b97dc10d8e8a744ace919a0728d0e2fde",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
+      "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
+      "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
+      "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
+      "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "a071e41bbcd3e2b2670c6fed00281bbb6bfb6b664c91b2da48d1190485fcd496"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 460,
+    "mutator": "DecrementInteger",
+    "hash": "a7010e8343101f98066afb0d664f41acbb8e646c8c92cfbea55554677c093224",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup/DML/file sources (qtypeSourceHash): when this missing editor-item fallback is used, the captured native common field is a string. The base save path skips file merging for itemid 0; changing only that absent ID to integer -1 invokes file_save_draft_area_files, whose first strict IGNORE_FILE_MERGE=-1 branch returns that same text unchanged before any file work. All save overrides delegate through that path or leave this field untouched. This is specific to the negative sentinel; positive fallback 1 is genuinely unsafe and is caught by the foreign-draft contract. See docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 465,
+    "mutator": "DecrementInteger",
+    "hash": "0b379c887b50c0c90bfc91cb372ba76e713b84e15e687d5ba177630a3af38079",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup/DML/file sources (qtypeSourceHash): when this missing editor-item fallback is used, the captured native common field is a string. The base save path skips file merging for itemid 0; changing only that absent ID to integer -1 invokes file_save_draft_area_files, whose first strict IGNORE_FILE_MERGE=-1 branch returns that same text unchanged before any file work. All save overrides delegate through that path or leave this field untouched. This is specific to the negative sentinel; positive fallback 1 is genuinely unsafe and is caught by the foreign-draft contract. See docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 368,
+    "mutator": "CastString",
+    "hash": "0895587cd50cb1efdd92c79bb95e357d22f53515862c69eb0bfa0792401313ae",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup/DML/file sources (qtypeSourceHash): decode_patch yields JSON arrays/scalars/null and the same apply_patch branch now rejects nested text arrays/objects before assignment. For every admitted scalar/null, question_xml passes the field only to native qformat_xml::writetext/xml_escape, whose XML interpolation/escaping yields the same text as its preceding string conversion (empty null/false/zero included). The name is additionally concatenated as text in the response, with the same coercion; published fields come from the reparsed question. No unconverted scalar is otherwise exposed. The wrapper helper is independently bound in sourceHashes; this is not a claim that arbitrary JSON arrays are valid text.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/question_xml.php": "9d82dde80dabd3dfa6f4f9e99760dec36d27e49f7649fe921c06d21664fbac32"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 667,
+    "mutator": "GreaterThan",
+    "hash": "5af83be13aeb1ee4e53f8efeb8a8fe6fd755307d7cd7a42cf79902ba321ff048",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup/DML/file sources (qtypeSourceHash): The exact mutant source includes the TDD-enforced public rejection of native editing-wizard state before parsing or writing. Therefore each reached base save creates a fresh native question/version. All successful numeric-array-answer writes preserve each aligned fraction in DECIMAL(12,7); the six numeric families read it back in input order, ordering reconstructs its constant 1. Strict native MariaDB/PostgreSQL writes reject unrepresentable values before comparison. Database rounding plus precision14 XML percent output/reparse and double arithmetic bounds the score difference below 1e-7, so equality to the 1e-5 mismatch threshold is unreachable. This changes only > to >=, not text/count/feedback checks. The full producer, database and error-bound proof is in docs/checks/672-infection-equivalence.md. The separate true/false projection has only exact 0/1 scores, so its distance is 0 or 1 and never 1e-5.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 693,
+    "mutator": "Coalesce",
+    "hash": "6521d64bad689b1f3e2bf2166d7b53835620ea62733e9f16f8839fbd0678737d",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup/DML/file sources (qtypeSourceHash): The exact mutant source includes the TDD-enforced public rejection of native editing-wizard state before parsing or writing. Therefore each reached base save creates a fresh native question/version. For this finite constructor/save/export closure, both sides of every aligned numeric-array fraction comparison differ by less than 1e-7 (DECIMAL(12,7), unchanged numeric saves, precision14 XML; strict out-of-range writes abort). Ordering reparses 1 on both sides. The unchanged comparison therefore never reports a fraction mismatch at tolerance1e-5; zeroing both of these private numeric comparison projections cannot hide a reachable fraction loss in the captured closure. Texts, counts and feedback and the separate boolean branch remain checked. This is NOT true for arbitrary qtype callbacks; dependency changes disable the exception. Complete scoped proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_import.php",
+    "line": 693,
+    "mutator": "CastFloat",
+    "hash": "537c6da39e9d76ffd5359bddccca55663bfc050e5a5c0c7e3297d0576a8d896c",
+    "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup/DML/file sources (qtypeSourceHash): The exact mutant source includes the TDD-enforced public rejection of native editing-wizard state before parsing or writing. Therefore each reached base save creates a fresh native question/version. The numeric-array producers supply numeric int/float values or legacy calculated numeric strings; nonnumeric/out-of-range legacy values fail strict database saving before comparison. After successful DECIMAL(12,7) storage the compared magnitude is below approximately100000. If either operand is floating or a numeric string treated as floating by PHP arithmetic, PHP subtraction already performs that same float conversion; if both are integral, integer subtraction is exact and its absolute distance is either0 or at least1, giving the same 1e-5 decision as explicit float conversion. This private list is consumed only by the mismatch predicate; no raw scalar type is published. No rounded predecessor identity is reused. Full finite constructor/database proof: docs/checks/672-infection-equivalence.md.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/describe_module_fields.php",
+    "line": 151,
+    "mutator": "UnwrapArrayValues",
+    "hash": "ca8c6132cdc7874c6bbeea3f2125b49e8c1d9aeeb401de4d866f0a8d19dc96ae",
+    "reason": "array_values only renumbers keys after array_unique. array_merge of the two blocklists yields a zero-based list, and array_unique can leave a gap only when a duplicate is dropped; test_full_catalog_blocklists_have_no_duplicate_fields proves that no registered catalog duplicates a shared blocked field (and the raw result is asserted to be a list for every module). The registry is closed, and the exact catalog and shared-block sources are bound by sourceHashes, so any new or changed blocklist source makes this survivor block again.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/activity_kind.php": "c8eb56502be95192982cd8fe82c0a360e28d600f9896254e745527a04c59bb88",
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
+      "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
+      "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
+      "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
+      "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
+      "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
+      "Plugin/src/local_coursepilot/classes/catalog/label.php": "b4a2398e80e7b2345ba32cb911c760ea0c45a516662437cd6363f8cbdfd12e24",
+      "Plugin/src/local_coursepilot/classes/catalog/learner_locks.php": "d4f5b4c2c833f4e60483e0087fc21531bbd22d52f475050a05c432c332ad52bc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_catalog.php": "eea30a7b3674b7458b75463045ed76a64a90c69f9898c69f5eba8cf0d27b7862",
+      "Plugin/src/local_coursepilot/classes/catalog/module_settings.php": "b8c703b21c542a31d8150121ee0c688b97dc10d8e8a744ace919a0728d0e2fde",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
+      "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
+      "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
+      "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
+      "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "a071e41bbcd3e2b2670c6fed00281bbb6bfb6b664c91b2da48d1190485fcd496"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 397,
+    "mutator": "CastString",
+    "hash": "88477c05a062a8c90389b6c07672cc4443fbe941548d67e4bcf1d632308e8e79",
+    "reason": "The patched text property is consumed only by question_xml::question_to_xml(), which calls qformat_xml::writequestion(); that method passes name, questiontext and generalfeedback to writetext()/xml_escape(), which test emptiness, compare with htmlspecialchars() and interpolate the value into a string. Neither the plugin nor Moodle core declares strict_types, so int, float, bool and null JSON scalars are coerced exactly as the explicit (string) cast does (42 -> \"42\", true -> \"1\", false/null -> \"\"). The native update_mc_question_test scalar cases (integer, decimal, true, false, null) all pass with the cast removed. Bound to the measured Moodle question/format sources via qtypeSourceHash and to the exact plugin export source.",
+    "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/question_xml.php": "9d82dde80dabd3dfa6f4f9e99760dec36d27e49f7649fe921c06d21664fbac32"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php",
+    "line": 215,
+    "mutator": "CastInt",
+    "hash": "c7b2c914d311d45c5d77e9bf195a5fc11cee396c641a4d48f89b36c52594e86d",
+    "reason": "get_config('quiz', 'graceperiodmin') returns the admin duration setting as a numeric string (mod/quiz/settings.php, install default 60). The cast only matters for the comparison with the integer grace period and the concatenation into the message: PHP 8 compares an integer with a numeric string numerically and concatenation renders both the same text, so removing the cast changes neither the verdict nor the message. Only an unset setting (false) would differ, and the quiz plugin installs its default."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php",
+    "line": 382,
+    "mutator": "CastString",
+    "hash": "d9cb3da4fcd96ecea736023444c21801450e53dd8f0e1dad6d62578767bb7023",
+    "reason": "PHP coerces a SimpleXMLElement to string for the string parameter of normalised_path() (the file declares no strict_types), and (string) of the same element yields the identical text, so removing the explicit cast changes neither the path nor any entry."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php",
+    "line": 405,
+    "mutator": "CastString",
+    "hash": "521882fd2f12ae5a195b030219d03d88e9703411eb0fbfa39915f43af0c59cc7",
+    "reason": "Without the cast $lastmodifiedraw is the SimpleXMLElement. The !== comparison with the empty string is then always true, but strtotime() coerces the element to its text and returns false for an empty element, so (int) strtotime() is 0 exactly as the guarded branch yields. The listed timemodified is identical for present, empty and missing properties."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php",
+    "line": 411,
+    "mutator": "CastString",
+    "hash": "d61b527d8a86e991e03b36e47b660b1751a913660cebdaed5899496959c38708",
+    "reason": "(int) applied directly to the SimpleXMLElement $prop->getcontentlength converts its text to the same integer as (int) (string) of that element (SimpleXML supports the integer cast), so the redundant inner string cast does not change the listed size."
+  }
+]

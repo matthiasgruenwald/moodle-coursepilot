@@ -30,6 +30,8 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(report_loose_material_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(material_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 final class report_loose_material_files_test extends \advanced_testcase {
     public function test_lists_unused_file_as_loose(): void {
         $this->resetAfterTest();

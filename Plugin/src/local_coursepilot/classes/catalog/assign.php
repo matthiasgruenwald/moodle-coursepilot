@@ -59,9 +59,9 @@ require_once($CFG->dirroot . '/grade/grading/lib.php');
  *   and without "completionunlocked" a write deletes the learners'
  *   completion data according to Spec 0015
  *   §8. Therefore, like the generic completion fields (course_modules, see
- *   {@see shared_block::BLOCKLIST}), it is on the blocklist - it is written
- *   via `set_completion` in the two-beat flow (ticket #461; unlocked there as a
- *   module-specific completion field for "assign" and "choice").
+ *   {@see shared_block::blocked_fields()}), it is on the blocklist - it is written
+ *   via `set_completion` in the two-step flow, unlocked there as a
+ *   module-specific completion field for "assign" and "choice".
  * - **"teamsubmissiongroupingid"** lists only groupings of the
  *   own course in the form (mod/assign/mod_form.php:195:
  *   `groups_get_all_groupings($assignment->get_course()->id)`), but neither
@@ -855,7 +855,7 @@ final class assign implements module_catalog {
     public static function blocklist(): array {
         global $CFG;
 
-        $fields = ['nosubmissions', 'revealidentities', 'completionsubmit'];
+        $fields = array_merge(['nosubmissions', 'revealidentities'], completion_settings::module_fields('assign'));
         // Marker changes require allocation checks and an explicit grade-recalculation
         // action from Moodle's form. Keep these settings in that native UI.
         if ((int) $CFG->branch >= 502) {

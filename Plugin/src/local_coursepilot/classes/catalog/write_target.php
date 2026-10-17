@@ -230,7 +230,26 @@ final class write_target {
      */
     private function assert_rules(string $catalogclass): void {
         $options = $catalogclass::write_options();
-        foreach ($options['parallel_array_lengths'] ?? [] as $rule) {
+        $this->assert_parallel_array_lengths($catalogclass, $options['parallel_array_lengths'] ?? []);
+        $this->assert_date_order($catalogclass, $options['date_order_rules'] ?? []);
+        // Moodle's form path silently falls back to visible without
+        // allowstealth (set_moduleinfo_defaults()); only an explicit request
+        // for stealth is affected, returning to 1 always works.
+        if (($this->changes['visibleoncoursepage'] ?? null) === 0 && !get_config(null, 'allowstealth')) {
+            throw new moodle_exception('stealthnotallowed', 'local_coursepilot');
+        }
+    }
+
+    /**
+     * Named dependent lists need as many entries as their reference list.
+     *
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param mixed[] $rules Type: list<array{reference:string,field:string}>.
+     * @return void
+     * @throws moodle_exception combinationruleviolation
+     */
+    private function assert_parallel_array_lengths(string $catalogclass, array $rules): void {
+        foreach ($rules as $rule) {
             // Only a named dependent list is judged: the native write guards a
             // missing entry (choice_update_instance(): isset($choice->limit[$key])),
             // so changing the reference list alone stays valid.
@@ -244,26 +263,30 @@ final class write_target {
                     . $rule['reference'] . '".');
             }
         }
-        foreach ($options['date_order_rules'] ?? [] as $rule) {
-            if (!$this->touches($rule)) {
-                continue;
-            }
+    }
+
+    /**
+     * A date rule only fires when a change names one of its fields, and only
+     * when both dates are set.
+     *
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param mixed[] $rules Type: list<array{reference:string,field:string,mode:string}>.
+     * @return void
+     * @throws moodle_exception combinationruleviolation
+     */
+    private function assert_date_order(string $catalogclass, array $rules): void {
+        foreach ($rules as $rule) {
             $reference = (int) ($this->state[$rule['reference']] ?? 0);
             $value = (int) ($this->state[$rule['field']] ?? 0);
-            if ($reference === 0 || $value === 0) {
+            if (!$this->touches($rule) || $reference === 0 || $value === 0) {
                 continue;
             }
-            if ($rule['mode'] === 'must_be_after' ? $value <= $reference : $value < $reference) {
-                self::violation($catalogclass, $rule['mode'] === 'must_be_after'
+            $after = $rule['mode'] === 'must_be_after';
+            if ($after ? $value <= $reference : $value < $reference) {
+                self::violation($catalogclass, $after
                     ? '"' . $rule['field'] . '" must be after "' . $rule['reference'] . '".'
                     : '"' . $rule['field'] . '" must not precede "' . $rule['reference'] . '".');
             }
-        }
-        // Moodle's form path silently falls back to visible without
-        // allowstealth (set_moduleinfo_defaults()); only an explicit request
-        // for stealth is affected, returning to 1 always works.
-        if (($this->changes['visibleoncoursepage'] ?? null) === 0 && !get_config(null, 'allowstealth')) {
-            throw new moodle_exception('stealthnotallowed', 'local_coursepilot');
         }
     }
 
@@ -451,12 +474,22 @@ final class write_target {
                 throw new moodle_exception('invalidmaterialreferencelist', 'local_coursepilot', '', $fieldname);
             }
         }
-        if (!$hasimages) {
-            return;
+        if ($hasimages) {
+            self::assert_embed_images($imagefield, $changes[$imagefield]);
         }
-        $paths = $changes[$imagefield];
+    }
+
+    /**
+     * Intro images must be a list of paths with an allowed image extension.
+     *
+     * @param string $fieldname
+     * @param mixed $paths
+     * @return void
+     * @throws moodle_exception invalidmaterialreferencelist|materialfiledisallowedtype
+     */
+    private static function assert_embed_images(string $fieldname, mixed $paths): void {
         if (!is_array($paths) || !array_is_list($paths)) {
-            throw new moodle_exception('invalidmaterialreferencelist', 'local_coursepilot', '', $imagefield);
+            throw new moodle_exception('invalidmaterialreferencelist', 'local_coursepilot', '', $fieldname);
         }
         foreach ($paths as $path) {
             if (!is_string($path) || !material_files::is_allowed_embed_image_extension($path)) {
@@ -478,9 +511,30 @@ final class write_target {
      */
     private static function normalise_create_fields(string $catalogclass, array &$fields): void {
         $options = $catalogclass::write_options();
-        // A bundle carries e.g. choice "limit" as one value for every option;
-        // the form field is one entry per option.
-        foreach ($options['scalar_to_repeated'] ?? [] as $field => $reference) {
+        self::expand_scalar_to_repeated($options['scalar_to_repeated'] ?? [], $fields);
+        // Before deriving content: a non-array editor value would otherwise
+        // create an empty page silently.
+        pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $fields);
+        self::derive_editor_columns($options['editor_content'] ?? [], $fields);
+        // An empty path list counts as not named, so a resource without main
+        // file fails the required-field check instead of getting an empty draft.
+        foreach (array_keys($options['material_reference_fields'] ?? []) as $fieldname) {
+            if (array_key_exists($fieldname, $fields) && $fields[$fieldname] === []) {
+                unset($fields[$fieldname]);
+            }
+        }
+    }
+
+    /**
+     * A bundle carries e.g. choice "limit" as one value for every option; the
+     * form field is one entry per option.
+     *
+     * @param mixed[] $rules Type: array<string,string> field => reference list field.
+     * @param mixed[] $fields Normalised in place.
+     * @return void
+     */
+    private static function expand_scalar_to_repeated(array $rules, array &$fields): void {
+        foreach ($rules as $field => $reference) {
             if (
                 array_key_exists($field, $fields) && !is_array($fields[$field])
                     && isset($fields[$reference]) && is_array($fields[$reference])
@@ -488,12 +542,18 @@ final class write_target {
                 $fields[$field] = array_fill(0, count($fields[$reference]), (int) $fields[$field]);
             }
         }
-        // Before deriving content: a non-array editor value would otherwise
-        // create an empty page silently (#405).
-        pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $fields);
-        // Note: add_moduleinfo() runs *_add_instance() without $mform, so e.g.
-        // page_add_instance() never copies the editor into its columns.
-        foreach ($options['editor_content'] ?? [] as $editor => [$textfield, $formatfield]) {
+    }
+
+    /**
+     * add_moduleinfo() runs *_add_instance() without $mform, so e.g.
+     * page_add_instance() never copies the editor into its columns.
+     *
+     * @param mixed[] $editors Type: array<string,array{0:string,1:string}> editor => [text, format] columns.
+     * @param mixed[] $fields Normalised in place.
+     * @return void
+     */
+    private static function derive_editor_columns(array $editors, array &$fields): void {
+        foreach ($editors as $editor => [$textfield, $formatfield]) {
             if (!isset($fields[$editor]) || !is_array($fields[$editor])) {
                 continue;
             }
@@ -502,13 +562,6 @@ final class write_target {
             }
             if (!array_key_exists($formatfield, $fields)) {
                 $fields[$formatfield] = (int) ($fields[$editor]['format'] ?? FORMAT_HTML);
-            }
-        }
-        // An empty path list counts as not named, so a resource without main
-        // file fails the required-field check instead of getting an empty draft (#434).
-        foreach (array_keys($options['material_reference_fields'] ?? []) as $fieldname) {
-            if (array_key_exists($fieldname, $fields) && $fields[$fieldname] === []) {
-                unset($fields[$fieldname]);
             }
         }
     }

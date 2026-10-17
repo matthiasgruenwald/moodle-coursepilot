@@ -27,6 +27,7 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(pending_write_notice::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
 final class pending_write_notice_test extends \advanced_testcase {
     /**
      * One entry per failed operation: identifier, time, path, operation and

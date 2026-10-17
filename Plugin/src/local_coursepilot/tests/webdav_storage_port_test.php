@@ -36,6 +36,9 @@ use local_coursepilot\webdav\webdav_instance;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(webdav_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(storage_failure::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
+#[\PHPUnit\Framework\Attributes\Group('storage_port')]
 final class webdav_storage_port_test extends storage_port_contract_test {
     use webdav_instance_fixture;
 
@@ -55,6 +58,21 @@ final class webdav_storage_port_test extends storage_port_contract_test {
         // would be an existing server root; the fake initially has only root "".
         $this->instanceid = $this->create_webdav_instance($USER, ['webdav_path' => '']);
         $this->transport = new fake_webdav_transport();
+    }
+
+    /**
+     * Location selection creates every missing level and preserves existing files.
+     */
+    public function test_create_location_directory_preserves_existing_content(): void {
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $this->transport);
+        webdav_storage_port::create_location_directory($this->instanceid, ['Teaching', 'Context']);
+        $port = new webdav_storage_port($this->instanceid, 'Teaching/Context', $this->transport);
+        $port->write($this->area(), 'plan.md', '# Kept');
+
+        webdav_storage_port::create_location_directory($this->instanceid, ['Teaching', 'Context']);
+
+        $this->assertSame('# Kept', $port->read($this->area(), 'plan.md')['content']);
+        $this->assertSame('plan.md', $port->list($this->area(), '')[0]['name']);
     }
 
     /**
@@ -99,10 +117,9 @@ final class webdav_storage_port_test extends storage_port_contract_test {
     }
 
     /**
-     * Storage outages (507, #540, ADR 0023) record a pending entry before
-     * returning a translated error, matching pointer_writer’s external path.
+     * The adapter reports an outage; recording pending writes belongs to its caller.
      */
-    public function test_write_records_ausstand_when_the_underlying_put_fails(): void {
+    public function test_write_reports_storage_failure_without_recording_a_pending_note(): void {
         $onlyputfails = new class (new fake_webdav_transport()) implements \local_coursepilot\webdav\webdav_transport {
             /**
              * Creates the webdav storage port test.
@@ -120,7 +137,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -140,26 +157,17 @@ final class webdav_storage_port_test extends storage_port_contract_test {
             (new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $onlyputfails))
                 ->write($this->area(), 'plan.md', '# Plan');
             $this->fail('Full storage should have been rejected.');
-        } catch (\moodle_exception $e) {
-            $this->assertSame('pendingwritefailed', $e->errorcode);
-            $this->assertStringContainsString('plan.md', $e->getMessage());
+        } catch (storage_failure $e) {
+            $this->assertSame('storage_full', $e->errorclass);
         }
 
-        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertCount(1, $ausstaende);
-        $this->assertSame('plan.md', $ausstaende[0]['path']);
-        $this->assertSame('create', $ausstaende[0]['entries'][0]['operation']);
-        $this->assertSame(
-            \local_coursepilot\webdav\webdav_error::STORAGE_FULL,
-            $ausstaende[0]['entries'][0]['error_class']
-        );
+        $this->assertSame([], pending_write_notice::list_grouped());
     }
 
     /**
-     * Failed read-modify-write append has the same pending-entry protection
-     * as writing.
+     * Appending reports the same neutral outage as writing.
      */
-    public function test_append_records_ausstand_when_the_underlying_put_fails(): void {
+    public function test_append_reports_storage_failure_without_recording_a_pending_note(): void {
         $onlyputfails = new class (new fake_webdav_transport()) implements \local_coursepilot\webdav\webdav_transport {
             /**
              * Creates the webdav storage port test.
@@ -177,7 +185,7 @@ final class webdav_storage_port_test extends storage_port_contract_test {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -197,12 +205,10 @@ final class webdav_storage_port_test extends storage_port_contract_test {
             (new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $onlyputfails))
                 ->append($this->area(), 'journal.md', 'erste Zeile');
             $this->fail('Full storage should have been rejected.');
-        } catch (\moodle_exception $e) {
-            $this->assertSame('pendingwritefailed', $e->errorcode);
+        } catch (storage_failure $e) {
+            $this->assertSame('storage_full', $e->errorclass);
         }
-
-        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame('append', $ausstaende[0]['entries'][0]['operation']);
+        $this->assertSame([], pending_write_notice::list_grouped());
     }
 
     /**
@@ -227,21 +233,149 @@ final class webdav_storage_port_test extends storage_port_contract_test {
     }
 
     /**
-     * Deleted WebDAV instances also create pending entries (ADR 0023).
-     * This adapter has no pointer to catch a location failure earlier.
+     * A deleted instance is an outage; its caller owns pending-write recording.
      */
-    public function test_write_records_ausstand_when_the_instance_is_deleted(): void {
+    public function test_write_reports_unavailable_storage_when_the_instance_is_deleted(): void {
         global $DB;
         $DB->delete_records('repository_instances', ['id' => $this->instanceid]);
 
         try {
             $this->port()->write($this->area(), 'plan.md', '# Plan');
             $this->fail('Deleted instance should have been rejected.');
-        } catch (\moodle_exception $e) {
-            $this->assertSame('pendingwritefailed', $e->errorcode);
+        } catch (storage_failure $e) {
+            $this->assertSame('webdavinstancemissing', $e->errorclass);
         }
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
 
-        $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
-        $this->assertSame('webdavinstancemissing', $ausstaende[0]['entries'][0]['error_class']);
+    /**
+     * A write that loses against a concurrent creation is a conflict, not a storage outage.
+     */
+    public function test_create_losing_against_a_concurrent_creation_raises_conflict(): void {
+        $stale = new \local_coursepilot\tests\webdav\stale_read_transport(
+            $this->transport,
+            '/storageport-webdav-contract-test/plan.md',
+            $this->transport
+        );
+        $port = new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $stale);
+
+        $this->expectException(storage_conflict_exception::class);
+        $port->write($this->area(), 'plan.md', 'meine Fassung');
+    }
+
+    /**
+     * An overwrite based on a state that changed in the meantime is a conflict and keeps the other change.
+     */
+    public function test_overwrite_losing_against_a_concurrent_edit_raises_conflict(): void {
+        $this->port()->write($this->area(), 'plan.md', 'erste Fassung');
+        $stale = new \local_coursepilot\tests\webdav\stale_read_transport(
+            $this->transport,
+            '/storageport-webdav-contract-test/plan.md',
+            $this->transport
+        );
+        $port = new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $stale);
+
+        try {
+            $port->write($this->area(), 'plan.md', 'meine Fassung');
+            $this->fail('A concurrent edit must be reported as conflict.');
+        } catch (storage_conflict_exception $e) {
+            $this->assertSame('handaenderung', $this->port()->read($this->area(), 'plan.md')['content']);
+        }
+    }
+
+    /**
+     * Reading a folder path yields no file, without fetching the collection.
+     */
+    public function test_read_of_a_folder_is_null(): void {
+        $port = $this->port();
+        $port->write($this->area(), 'ordner/plan.md', 'Inhalt');
+
+        $this->assertNull($port->read($this->area(), 'ordner'));
+    }
+
+    /**
+     * WebDAV has no place for image provenance; asking for it is a programming error.
+     */
+    public function test_write_with_provenance_is_a_coding_error(): void {
+        $this->expectException(\coding_exception::class);
+        $this->port()->write($this->area(), 'plan.md', 'Inhalt', null, '{"origin":"x"}');
+    }
+
+    /**
+     * Creating no folder levels sends no request at all.
+     */
+    public function test_create_location_directory_without_segments_sends_nothing(): void {
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $this->transport);
+
+        webdav_storage_port::create_location_directory($this->instanceid, []);
+
+        $this->assertSame([], $this->transport->requests());
+    }
+
+    /**
+     * A multistatus without a usable property set counts as a missing file; the write then creates it.
+     */
+    public function test_write_creates_the_file_when_the_server_reports_no_properties(): void {
+        $inner = $this->transport;
+        $emptyproperties = new class ($inner) implements \local_coursepilot\webdav\webdav_transport {
+            /**
+             * Creates the double.
+             *
+             * @param fake_webdav_transport $inner Real storage fake.
+             */
+            public function __construct(
+                /** @var fake_webdav_transport Real storage fake. */
+                private readonly fake_webdav_transport $inner,
+            ) {
+            }
+
+            /**
+             * Answers the first file lookup with an empty multistatus.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param string[] $headers The headers.
+             * @param ?string $body The body.
+             * @return \local_coursepilot\webdav\webdav_response
+             */
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                ?string $body = null
+            ): \local_coursepilot\webdav\webdav_response {
+                if ($method === 'PROPFIND' && str_ends_with($url, '/plan.md')) {
+                    return new \local_coursepilot\webdav\webdav_response(
+                        207,
+                        ['content-type' => 'application/xml'],
+                        '<?xml version="1.0"?><d:multistatus xmlns:d="DAV:"/>'
+                    );
+                }
+                return $this->inner->request($method, $url, $headers, $body);
+            }
+        };
+        $port = new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $emptyproperties);
+
+        $result = $port->write($this->area(), 'plan.md', 'Inhalt');
+
+        $this->assertTrue($result['created']);
+        $this->assertSame('Inhalt', $this->port()->read($this->area(), 'plan.md')['content']);
+    }
+
+    /**
+     * A selected folder whose root check is refused (not "missing") stays a named storage failure.
+     */
+    public function test_write_below_a_selected_folder_reports_a_refused_root_check(): void {
+        $this->transport->seed_folder('/Kontext');
+        $this->transport->fail_once('/Kontext', 401);
+        $location = pointer_location::external($this->instanceid, 'Kontext', webdav_instance::fingerprint_of($this->instanceid));
+        $port = new webdav_storage_port($this->instanceid, 'Kontext', $this->transport, $location);
+
+        try {
+            $port->write($this->area(), 'plan.md', 'Inhalt');
+            $this->fail('A refused root check must not create the file.');
+        } catch (storage_failure $e) {
+            $this->assertSame(webdav\webdav_error::AUTH_REJECTED, $e->errorclass);
+        }
     }
 }

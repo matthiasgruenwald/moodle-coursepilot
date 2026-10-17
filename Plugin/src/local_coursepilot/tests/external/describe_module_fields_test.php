@@ -28,7 +28,35 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(describe_module_fields::class)]
+#[CoversClass(\local_coursepilot\catalog\shared_block::class)]
+#[CoversClass(\local_coursepilot\catalog\assign::class)]
+#[CoversClass(\local_coursepilot\catalog\label::class)]
+#[CoversClass(\local_coursepilot\catalog\field::class)]
+#[CoversClass(\local_coursepilot\catalog\choice::class)]
+#[CoversClass(\local_coursepilot\catalog\folder::class)]
+#[CoversClass(\local_coursepilot\catalog\forum::class)]
+#[CoversClass(\local_coursepilot\catalog\page::class)]
+#[CoversClass(\local_coursepilot\catalog\resource::class)]
+#[CoversClass(\local_coursepilot\catalog\url::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz::class)]
+#[CoversClass(\local_coursepilot\catalog\registry::class)]
 final class describe_module_fields_test extends \advanced_testcase {
+    /**
+     * A client sees each blocked field exactly once across shared and module-specific rules.
+     */
+    public function test_full_catalog_blocklists_have_no_duplicate_fields(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        foreach (\local_coursepilot\catalog\registry::known_modnames() as $modname) {
+            $result = describe_module_fields::execute($modname, true);
+            $this->assertTrue(array_is_list($result['module']['blocked_fields']), "$modname: blocked_fields is a JSON list.");
+            $result = external_api::clean_returnvalue(describe_module_fields::execute_returns(), $result);
+            $blocked = $result['module']['blocked_fields'];
+            $this->assertNotEmpty($blocked);
+            $this->assertCount(count(array_unique($blocked)), $blocked, $modname);
+        }
+    }
+
     /**
      * Without modname, list supported activity types (user story 13).
      */

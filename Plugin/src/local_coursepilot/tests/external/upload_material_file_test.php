@@ -29,6 +29,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(upload_material_file::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_area::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_write::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
 final class upload_material_file_test extends \advanced_testcase {
     public function test_creates_new_file(): void {
         $this->resetAfterTest();

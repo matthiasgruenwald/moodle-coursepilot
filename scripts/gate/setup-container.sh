@@ -17,7 +17,8 @@ REPO="$(cd "$HERE/../.." && pwd)"
 export GATE_DIR
 case "$GATE_DIR" in /tmp|/tmp/*) echo "GATE_DIR darf nicht unter /tmp liegen" >&2; exit 1;; esac
 mkdir -p "$GATE_DIR"/{moodledata,phpunitdata,reports,plugin,db,ci,dev,phpstan,deptrac,node,java}
-chmod 777 "$GATE_DIR/phpunitdata"
+# Mutant test processes may run without root; Moodle checks dataroot writability at bootstrap.
+chmod 777 "$GATE_DIR/moodledata" "$GATE_DIR/phpunitdata"
 
 # 1. Passwort einmalig erzeugen (nie ausgeben).
 if [[ ! -f "$GATE_DIR/.env" ]]; then
@@ -77,7 +78,7 @@ if [[ ! -x "$GATE_DIR/ci/vendor/bin/moodle-plugin-ci" ]]; then
     -v "$GATE_DIR/ci:/app" -w /app composer:2 install --ignore-platform-reqs --no-interaction --no-dev
 fi
 # PHPStan, deptrac, Infection aus dem Root-composer.json.
-if [[ ! -x "$GATE_DIR/dev/vendor/bin/phpstan" ]]; then
+if [[ ! -x "$GATE_DIR/dev/vendor/bin/phpstan" || ! -x "$GATE_DIR/dev/vendor/bin/infection" ]]; then
   mkdir -p "$GATE_DIR/dev"
   cp "$REPO/composer.json" "$REPO/composer.lock" "$GATE_DIR/dev/"
   tool_container -v "$GATE_DIR/dev:/app" -w /app composer:2 install --ignore-platform-reqs --no-interaction

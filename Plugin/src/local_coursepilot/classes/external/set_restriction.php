@@ -25,6 +25,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\pseudofield_carry_forward;
+use local_coursepilot\catalog\module_state;
 use local_coursepilot\catalog\registry;
 use moodle_exception;
 use stdClass;
@@ -46,7 +47,7 @@ use stdClass;
  * the next page view.
  *
  * "availability"/"availabilityconditionsjson" stays on the blocklist of
- * update_module_settings (shared_block::BLOCKLIST does not list it as a
+ * update_module_settings (shared_block::blocked_fields() does not list it as a
  * field at all) - this endpoint is the only write path.
  *
  * Writing goes through get_moduleinfo_data()/update_moduleinfo() (ADR
@@ -195,7 +196,7 @@ final class set_restriction extends external_api {
      * @return mixed[] Current state, same shape as get_module_settings.
      */
     private static function read_settings(int $cmid): array {
-        $result = get_module_settings::execute($cmid);
+        $result = module_state::read_settings($cmid);
         return json_decode($result['settings_json'], true);
     }
 

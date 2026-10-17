@@ -17,11 +17,14 @@ If yes, run the workflow after creating all activities.
 |---|---|---|
 | assign | completion=2, completionsubmit=1 | Automatic on submission |
 | choice | completion=2, completionsubmit=1 | Automatic on voting |
+| quiz | completion=2, completionminattempts=2 | Automatic after at least two attempts |
 | page | completion=1 | Learners manually mark complete |
 | url | None | Skip links |
 | label | None | Skip headers |
 
 completionsubmit exists only for assign/choice; other types are rejected.
+For quiz, completionminattempts=0 disables the minimum-attempt rule.
+Changing it uses the same data-loss confirmation as other completion rules.
 All completion* fields use coursepilot_set_completion exclusively.
 Generic create/update tools block them because Moodle silently discards
 them without completionunlocked, while setting it deletes learner

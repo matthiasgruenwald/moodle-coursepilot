@@ -30,6 +30,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(delete_material_files::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_area::class)]
 final class delete_material_files_test extends \advanced_testcase {
     public function test_deletes_exactly_named_files(): void {
         $this->resetAfterTest();

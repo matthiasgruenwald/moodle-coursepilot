@@ -51,6 +51,9 @@ npm run gate -- edit               # Edit-Hook: Hook-JSON von stdin, ruft fast
 npm run gate -- static             # alle statischen Prüfungen (rund 1 Minute)
 npm run gate -- phpstan-baseline   # PHPStan-Baseline neu erzeugen
 npm run gate -- ranking [n]        # Fehlschlags-Rangliste nach Datei und Prüfung
+npm run gate -- mutation           # echte Infection-Prüfung geänderter Produktionszeilen
+npm run gate -- mutation-pilot classes/check # Verzeichnis-Pilot, Überlebende nur als Trend
+npm run gate -- mutation-report <infection.json> # Originalbericht gegen aktuellen Git-Diff prüfen
 ```
 
 `full` führt zuerst die Node-Vertragstests aus. Ihr Fehler blockiert den Lauf auch bei
@@ -59,6 +62,10 @@ PHPUnit-Konfiguration, schreibt den Clover-Bericht nach
 `/opt/kurspilot-gate/reports/clover.xml` und wertet ihn aus. Der volle Lauf
 braucht einen abgekoppelten Prozess, siehe [`agents/testing.md`](agents/testing.md).
 
+`full` und `mutation` starten nur auf einem Host mit Platz: unter `GATE_MIN_MEM_MB` (Standard 4096)
+verfügbarem Speicher oder bei laufenden fremden PHPUnit-/Infection-Containern endet der Lauf sofort
+mit `gate-error: host overloaded` (`scripts/gate/host-load.js`). Fremde Läufe abwarten, nicht umgehen.
+
 `fast` führt zusätzlich die Baseline-Ratsche aus (ohne Messwert). `full` wertet nach der
 Suite die Ratsche mit dem Clover-Bericht aus. Exitcode 1 bei jedem blockierenden Befund.
 
@@ -66,6 +73,83 @@ Suite die Ratsche mit dem Clover-Bericht aus. Exitcode 1 bei jedem blockierenden
 Produktionsklasse `classes/…/foo.php` gehört zu Tests mit
 `#[CoversClass(…foo::class)]`, eine geänderte `*_test.php` steht für sich.
 Ohne Zuordnung meldet das Gate `no-test-mapped`.
+
+### Mutationsprüfung
+
+`full` erzeugt neben Clover auch PHPUnit-XML-Coverage und JUnit unter
+`reports/infection-coverage/`. Infection 0.29 aus dem versionierten Composer-Lockfile
+verwendet diese Messung desselben Quellstands; ein zweiter vollständiger Testlauf entfällt.
+Es läuft im Gate-Container mit `--threads=1` und `--only-covering-test-cases`:
+Nur Testfälle, die die mutierte Zeile abdecken, werden pro Mutant ausgeführt.
+Es gibt keine MSI-Gesamtschwelle. Ein überlebender Mutant auf einer geänderten
+Produktionszeile blockiert mit `mutation-survived` und Exit 1.
+Nicht abgedeckte Mutanten blockiert die Mutationsprüfung nicht selbst: Sie sind
+Bereich der Coverage-Ratsche. Zeitüberschreitende Mutanten zählen wie in Infection als
+getötet; vorab übersprungene Mutanten machen den Report dagegen rot.
+
+Der Vergleich verwendet dieselbe vollständige Host-Git-Historie und denselben
+Vergleichsstand wie die Coverage-Ratsche. Im Plugin-Mount liegt keine Git-Historie.
+`infection-git.sh` liefert deshalb nur die auf Mount-Pfade übersetzten Dateiüberschriften
+und unveränderten Zeilenbereiche des Host-Diffs an Infection. Unbekannte Git-Anfragen
+sind Fehler. Infection verwendet sein natives `--git-diff-lines` zur Auswahl der
+Mutationen **vor** der Testausführung. Neue unversionierte PHP-Dateien zählen vollständig.
+Tests und die bereits begründeten Coverage-Ausschlüsse werden nicht mutiert.
+
+Der Infection-Parent lädt Moodles PHPUnit-Utility-Bootstrap für die Klassenreflexion.
+Er hält keinen PHPUnit-Testlock; jeder echte PHPUnit-Kindprozess verwendet den regulären
+Bootstrap und Lock. Gemeinsame Testdatenbanken werden weiterhin ausschließlich seriell benutzt.
+
+Die Ausführungsgrenze pro Mutant beträgt 1.800 Sekunden: Die reale breite Initialsuite
+benötigte bereits rund 1.031 Sekunden. Infection verwendet diese Grenze auch, um
+Mutanten mit längerer nominaler Testdauer vorab auszulassen. Solche ausgelassenen
+Kandidaten machen den Report ausdrücklich rot. Der CI-Qualitätsjob erhält 360 Minuten;
+der erste unvollständige PR-Difflauf benötigte bereits 165 Minuten. Diese Zeitbudgets
+ändern keine Qualitätsgrenze und machen abgebrochene oder unvollständige Läufe nicht grün.
+
+`scripts/gate/mutation-ignore.json` ist die versionierte Liste äquivalenter Mutanten,
+mit einzeln nachgewiesener Äquivalenz. Jeder Eintrag braucht `file` (Repo-Pfad), `line`, `mutator`, `hash`
+und eine konkrete `reason`. Der SHA-256 bezieht sich auf das JSON-Quellpaar
+`[originalSourceCode, mutatedSourceCode]` des Infection-Originalreports. Die Diagnose
+zeigt die Identität. Änderungen am Quellpaar lassen den Ignore nicht mehr passen;
+Wildcards und pauschale Mutator-Ausnahmen gibt es nicht. Ein fehlender/leer begründeter,
+doppelter oder ungültiger Eintrag ist rot. Äquivalenz muss im Review nachgewiesen werden.
+
+Eine ausschließlich für einen geprüften installierten Fragetypbestand belegte
+Äquivalenz trägt zusätzlich `qtypeSourceHash`. Der Gate-Prozess misst dafür die
+tatsächlichen Fragetyp-/Importquellen sowie XML-Parser, Datenbankschema und PHP-Präzisionssetup
+im Container und speichert das vollständige
+Pfad-/SHA256-Manifest in `infection-environment.json`. Nur derselbe Quellenhash
+aktiviert diesen einzelnen Ignore. Neue/geänderte Fragetypquellen oder fehlende
+Metadaten lassen den Survivor blockieren; ungültige Bedingungen und beschädigte
+Manifeste sind rot. Auch `mutation-report` benötigt die passende Original-Sidecar-
+Datei neben dem Report. Der [begrenzte Suffixnachweis](checks/672-infection-equivalence.md)
+behauptet keine allgemeine Äquivalenz für dynamische Drittanbieter-Fragetypen.
+
+Originale: `reports/infection.json`, `.log`, `.exit`, `infection-config.json`,
+`infection-timer.json` (gemessene Wandzeit, Argumente, Vergleichs-SHA) und
+`infection-sources.json` (SHA-256). Fehlende, ungültige oder unvollständige Reports und
+Werkzeugfehler sind rot. `mutation` erzeugt seine Coverage frisch; `mutation-report`
+prüft nur den übergebenen Report und führt keine Mutationen aus. Bei separater
+Reportprüfung braucht ein überlebender Mutant in einer teilweise geänderten Datei
+den ursprünglichen AST-Endpunkt `originalEndLine`; fehlen diese Bereichsdaten
+(wie im unveränderten Infection-0.29-JSON), ist `mutation-range-unknown` rot.
+Formatierte Gesamtquelltexte werden niemals in ursprüngliche Zeilenbereiche zurückgerechnet.
+Der native Lauf benötigt diese zusätzliche Angabe nicht: Infection hat dort bereits
+Knotenstart und Knotenende gegen den Diff geprüft; jeder ausgewählte Überlebende blockiert.
+Fehlerhafte Mutantenprozesse und Syntaxfehler blockieren mit `mutation-error` und Ursache,
+auch wenn der Infection-Hauptprozess Exit 0 liefert. Ignores können solche Fehler nicht verdecken.
+
+CI führt zusätzlich `node scripts/gate/mutation-proof.js` im isolierten QA-Mount aus.
+Ein kleines Fixture mit zunächst grüner, zu schwacher Assertion erzeugt echte überlebende
+Infection-Mutanten: Gate-Exit 1. Ein Ignore ohne Begründung erzeugt Gate-Exit 1.
+Nach der stärkeren Assertion werden echte Mutanten getötet und das Gate ist grün.
+Alle Originale, Befehlszeiten und Exits liegen unter `reports/mutation-proof/`;
+der Quell-Mount wird im `finally` wiederhergestellt. Der Nachweis erzeugt keine
+Repository-Branches oder Commits. Danach läuft das reguläre blockierende `full`.
+CI lädt sämtliche Reports auch bei Fehler hoch; `Gate (required)` fordert weiterhin
+Erfolg des Qualitätsjobs. Der Pilot und der Fixture-Nachweis ersetzen keinen vollen Lauf.
+Der erste [Pilotbericht](checks/672-infection-pilot-2026-10-13.md) enthält gemessene
+Einzelzeiten, Originalpfade und die Grenzen der Volllauf-Hochrechnung.
 
 ### Bewusste Leseausnahme bei eigenen Dateien
 
@@ -198,6 +282,11 @@ Dazu kommen die statischen Prüfungen (siehe oben) und die Schichtregeln.
 Tests und wachsenden Baselines (`ratchet-phpstan-grown`, `ratchet-deptrac-grown`,
 `ratchet-baseline-lowered`). Die Regeln, die einen Coverage-Bericht brauchen, also
 Gesamt-Coverage, Datei ≥ 90 % und Methode CRAP ≤ 8, greifen erst bei `pre-push` (`full`) und in CI.
+
+Geänderte Interfaces haben kein ausführbares PHPUnit-Coverage-Ziel. Ihre Adapter-Vertragstests
+tragen `#[Group('interface_name')]` und weiterhin `CoversClass` für die jeweilige Implementierung;
+`fast` wählt diese Gruppe für eine geänderte Interface-Datei. Eine konkrete Klasse braucht
+weiterhin ihre eigene `CoversClass`-Zuordnung. Coverage-Ratsche und Schwellen bleiben gleich.
 
 **Geänderte Datei und Methode:** Das Kommando liest `git diff -U0` des Arbeitsbaums gegen den
 Vergleichsstand und nimmt neue, unversionierte Dateien komplett als geändert. Eine Methode

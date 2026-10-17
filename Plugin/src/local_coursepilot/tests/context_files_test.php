@@ -25,6 +25,8 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(context_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
 final class context_files_test extends \advanced_testcase {
     public function test_resolve_directory_defaults_to_root(): void {
         $this->resetAfterTest();
@@ -48,6 +50,23 @@ final class context_files_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->expectException(\moodle_exception::class);
         context_files::resolve_directory('./faecher');
+    }
+
+    public function test_resolve_writable_file_splits_directory_and_markdown_filename(): void {
+        $this->resetAfterTest();
+        [$directory, $filename] = context_files::resolve_writable_file('plan/woche1.md');
+        $this->assertSame('/coursepilot/plan/', $directory);
+        $this->assertSame('woche1.md', $filename);
+    }
+
+    public function test_resolve_writable_file_rejects_non_markdown_files(): void {
+        $this->resetAfterTest();
+        try {
+            context_files::resolve_writable_file('plan/woche1.exe');
+            $this->fail('Only markdown files may be written to the context area.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilenotmarkdown', $e->errorcode);
+        }
     }
 
     public function test_resolve_file_splits_directory_and_filename(): void {

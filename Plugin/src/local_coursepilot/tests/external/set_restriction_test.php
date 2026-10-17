@@ -18,6 +18,7 @@ namespace local_coursepilot\external;
 
 use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * The only write path for restrictions, from teacher-friendly
@@ -28,6 +29,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(set_restriction::class)]
+#[CoversClass(\local_coursepilot\catalog\pseudofield_carry_forward::class)]
 final class set_restriction_test extends \advanced_testcase {
     /**
      * Provides course with editing teacher.
@@ -362,5 +364,58 @@ final class set_restriction_test extends \advanced_testcase {
         ]));
 
         $this->assertStringContainsString('"completion"', $this->read($ziel->cmid)['availabilityconditionsjson']);
+    }
+    /**
+     * Invalid restriction values leave all existing activity settings intact.
+     *
+     * @param mixed[] $condition
+     * @param string $errorcode
+     */
+    #[DataProvider('invalid_conditions')]
+    public function test_invalid_condition_preserves_current_settings(array $condition, string $errorcode): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'content' => '<p>Keep this content.</p>',
+        ]);
+        if ($condition['type'] === 'completion') {
+            $condition['activity_cmid'] = (int) $page->cmid;
+        }
+        $before = $this->read((int) $page->cmid);
+
+        try {
+            set_restriction::execute((int) $page->cmid, json_encode([$condition]));
+            $this->fail('Invalid restriction was accepted.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame($errorcode, $e->errorcode);
+        }
+
+        $this->assertSame($before, $this->read((int) $page->cmid));
+    }
+
+    /**
+     * Invalid teacher-facing values for the three supported restriction types.
+     *
+     * @return array<string, array{0: mixed[], 1: string}>
+     */
+    public static function invalid_conditions(): array {
+        return [
+            'unknown completion status' => [
+                ['type' => 'completion', 'status' => 'unknown'], 'restrictioninvalidstatus',
+            ],
+            'unknown date direction' => [
+                ['type' => 'date', 'direction' => 'unknown', 'timestamp' => 1767225600], 'restrictioninvaliddate',
+            ],
+            'invalid date timestamp' => [
+                ['type' => 'date', 'direction' => 'from', 'timestamp' => 'tomorrow'], 'restrictioninvaliddate',
+            ],
+            'invalid group ID' => [
+                ['type' => 'group', 'group_id' => '3abc'], 'restrictiongroupnotfound',
+            ],
+            'missing group' => [
+                ['type' => 'group', 'group_id' => 999999], 'restrictiongroupnotfound',
+            ],
+        ];
     }
 }

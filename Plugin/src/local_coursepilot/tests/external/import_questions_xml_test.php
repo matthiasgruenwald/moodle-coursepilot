@@ -29,12 +29,133 @@ use local_coursepilot\webdav\webdav_instance;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(import_questions_xml::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_xml::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_import::class)]
 final class import_questions_xml_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     protected function tearDown(): void {
         \core\di::reset_container();
         parent::tearDown();
+    }
+
+    /**
+     * The shared importer refuses writes when the teacher lacks question-add permission.
+     */
+    public function test_module_import_requires_question_add_capability(): void {
+        $this->resetAfterTest();
+        [$course, $categoryid] = $this->setup_course_and_category();
+        global $DB;
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
+        assign_capability(
+            'moodle/question:add',
+            CAP_PROHIBIT,
+            $roleid,
+            \context_course::instance($course->id)->id,
+            true
+        );
+        $this->expectException(\required_capability_exception::class);
+        \local_coursepilot\question_import::import($categoryid, self::multichoice_xml('Refused', 'Question', 'Feedback'));
+    }
+
+    /**
+     * True/false questions retain both feedback options through import and export.
+     */
+    public function test_import_preserves_truefalse_feedback(): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $xml = '<quiz><question type="truefalse"><name><text>Truth</text></name>'
+            . '<questiontext format="html"><text>Two plus two equals four.</text></questiontext>'
+            . '<answer fraction="100"><text>true</text><feedback format="html"><text>Correct.</text></feedback></answer>'
+            . '<answer fraction="0"><text>false</text><feedback format="html"><text>Try again.</text></feedback></answer>'
+            . '</question></quiz>';
+        $result = import_questions_xml::execute($categoryid, $xml);
+        $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
+        $this->assertSame('first_import', $result['questions'][0]['status']);
+        $question = \local_coursepilot\question_suspect_gate::latest_version_question(
+            $result['questions'][0]['questionbankentryid']
+        );
+        $export = export_questions_xml::execute([(int) $question->id], '', true);
+        $export = external_api::clean_returnvalue(export_questions_xml::execute_returns(), $export);
+        $this->assertStringContainsString('type="truefalse"', $export['xml']);
+        $this->assertStringContainsString('Correct.', $export['xml']);
+        $this->assertStringContainsString('Try again.', $export['xml']);
+    }
+
+    /**
+     * An essay without answer options remains a readable essay after import.
+     */
+    public function test_import_preserves_essay_without_answers(): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $xml = '<quiz><question type="essay"><name><text>Explain</text></name>'
+            . '<questiontext format="html"><text>Explain your reasoning.</text></questiontext>'
+            . '<responseformat>editor</responseformat><responsefieldlines>10</responsefieldlines>'
+            . '<graderinfo format="html"><text>Look for a reason.</text></graderinfo>'
+            . '<responsetemplate format="html"><text></text></responsetemplate>'
+            . '</question></quiz>';
+        $result = import_questions_xml::execute($categoryid, $xml);
+        $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
+        $this->assertSame('first_import', $result['questions'][0]['status']);
+        $question = \local_coursepilot\question_suspect_gate::latest_version_question(
+            $result['questions'][0]['questionbankentryid']
+        );
+        $export = export_questions_xml::execute([(int) $question->id], '', true);
+        $export = external_api::clean_returnvalue(export_questions_xml::execute_returns(), $export);
+        $this->assertStringContainsString('type="essay"', $export['xml']);
+        $this->assertStringContainsString('Explain your reasoning.', $export['xml']);
+        $this->assertStringContainsString('Look for a reason.', $export['xml']);
+    }
+
+    /**
+     * Category directives alone do not create questions or change the target category.
+     */
+    public function test_rejects_category_only_xml(): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $this->expectException(\invalid_parameter_exception::class);
+        $this->expectExceptionMessage('no importable questions');
+        import_questions_xml::execute($categoryid, '<quiz><question type="category">'
+            . '<category><text>$course$/Other</text></category></question></quiz>');
+    }
+
+    /**
+     * Broken XML is rejected without leaking parser output into the response.
+     */
+    public function test_rejects_malformed_quiz_xml(): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        try {
+            import_questions_xml::execute($categoryid, '<quiz><question type="multichoice"></answer></quiz>');
+            $this->fail('Malformed XML must be refused.');
+        } catch (\invalid_parameter_exception $error) {
+            $this->assertStringStartsWith(
+                'Invalid Moodle XML: ' . get_string('importerrorquestion', 'question') . ' ',
+                $error->debuginfo
+            );
+            $this->assertStringContainsString('Mismatched tag at line 1, char 45', $error->debuginfo);
+            $this->assertStringNotContainsString('<', $error->debuginfo);
+        }
+    }
+
+    /**
+     * The question module imports without invoking an external tool.
+     */
+    public function test_module_import_creates_a_readable_question(): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $result = \local_coursepilot\question_import::import(
+            $categoryid,
+            self::multichoice_xml('Module question', 'What is 2 + 2?', 'Check the sum.')
+        );
+        $this->assertSame('first_import', $result['questions'][0]['status']);
+        $this->assertSame(1, $result['questions'][0]['version']);
+        $read = get_question::execute($categoryid, 'Module question');
+        $read = external_api::clean_returnvalue(get_question::execute_returns(), $read);
+        $this->assertSame('What is 2 + 2?', $read['questiontext']);
+        $this->assertSame('Check the sum.', $read['generalfeedback']);
+        $this->assertSame('4', $read['answers'][0]['answer']);
+        $this->assertSame($result['questions'][0]['questionbankentryid'], $read['questionbankentryid']);
     }
 
     /**
@@ -209,6 +330,11 @@ final class import_questions_xml_test extends \advanced_testcase {
         $this->place_material_file('diagramm.png', self::PNG_BYTES);
 
         $xml = self::multichoice_xml_with_material_file('Frage mit Bild', 'Fragetext', 'Feedback');
+        $xml = str_replace(
+            '</generalfeedback>',
+            '<file name="feedback.png" path="/" material="diagramm.png"></file></generalfeedback>',
+            $xml
+        );
 
         $result = import_questions_xml::execute($categoryid, $xml);
         $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
@@ -217,6 +343,18 @@ final class import_questions_xml_test extends \advanced_testcase {
         // Keep resolved Base64 on the server; the response contains no image
         // bytes regardless of image count in the XML.
         $this->assertStringNotContainsString(base64_encode(self::PNG_BYTES), json_encode($result));
+        $question = get_question::execute($categoryid, 'Frage mit Bild');
+        $question = external_api::clean_returnvalue(get_question::execute_returns(), $question);
+        $export = export_questions_xml::execute([$question['questionid']], 'roundtrip.xml');
+        $export = external_api::clean_returnvalue(export_questions_xml::execute_returns(), $export);
+        $saved = \local_coursepilot\material_area::read_for_location('workbench', $export['path']);
+        $xml = simplexml_load_string($saved['content']);
+        $files = $xml->xpath('//questiontext/file[@name="diagramm.png"]');
+        $this->assertCount(1, $files);
+        $this->assertSame(self::PNG_BYTES, base64_decode((string) $files[0], true));
+        $feedbackfiles = $xml->xpath('//generalfeedback/file[@name="feedback.png"]');
+        $this->assertCount(1, $feedbackfiles);
+        $this->assertSame(self::PNG_BYTES, base64_decode((string) $feedbackfiles[0], true));
     }
 
     /**
@@ -227,11 +365,11 @@ final class import_questions_xml_test extends \advanced_testcase {
         $this->resetAfterTest();
 
         [, $categoryid] = $this->setup_course_and_category();
-        $this->place_material_file('diagramm.png', self::PNG_BYTES);
+        $this->place_material_file("diagramm's.png", self::PNG_BYTES);
 
         $xml = str_replace(
             'material="diagramm.png"',
-            "material='diagramm.png'",
+            "material='diagramm&apos;s.png'",
             self::multichoice_xml_with_material_file('Frage mit Bild', 'Fragetext', 'Feedback')
         );
 
@@ -454,37 +592,35 @@ final class import_questions_xml_test extends \advanced_testcase {
     }
 
     /**
-     * Reject oversized XML with its actual size, limit and suggested remedy
-     * (#416). Inject the threshold through guard_size_against_limit using
-     * Reflection instead of constructing a multi-megabyte string.
+     * Oversized input reports its actual size and limit; smaller input is imported.
      */
     public function test_oversized_xml_reports_size_and_limit(): void {
-        $method = new \ReflectionMethod(import_questions_xml::class, 'guard_size_against_limit');
-        $method->setAccessible(true);
-
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $bytes = import_questions_xml::MAX_XML_BYTES + 1;
         try {
-            $method->invoke(null, 2048, 1024);
+            import_questions_xml::execute($categoryid, str_repeat('x', $bytes));
             $this->fail('Expected invalid_parameter_exception because the size limit was exceeded.');
         } catch (\invalid_parameter_exception $e) {
-            $this->assertStringContainsString(display_size(2048), $e->getMessage());
-            $this->assertStringContainsString(display_size(1024), $e->getMessage());
+            $this->assertStringContainsString(display_size($bytes), $e->getMessage());
+            $this->assertStringContainsString(display_size(import_questions_xml::MAX_XML_BYTES), $e->getMessage());
             $this->assertStringContainsString('Split', $e->getMessage());
         }
 
-        // The method does not throw below the limit.
-        $method->invoke(null, 100, 1024);
-        $this->addToAssertionCount(1);
+        $result = import_questions_xml::execute($categoryid, self::multichoice_xml('Below limit', 'Question', 'Feedback'));
+        $result = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $result);
+        $this->assertSame('first_import', $result['questions'][0]['status']);
+        $read = get_question::execute($categoryid, 'Below limit');
+        $read = external_api::clean_returnvalue(get_question::execute_returns(), $read);
+        $this->assertSame('Question', $read['questiontext']);
     }
 
     /**
-     * Use the domain limit MAX_XML_BYTES, not get_max_upload_file_size().
-     * The upload limit (200 MB alongside post_max_size 206 MB) practically
-     * never triggered this guard (#424 follow-up 2).
+     * The domain limit still applies when the server's upload limit is higher.
      */
     public function test_effective_limit_is_the_plugin_constant(): void {
-        $method = new \ReflectionMethod(import_questions_xml::class, 'guard_server_size_limit');
-        $method->setAccessible(true);
-
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
         $this->assertGreaterThan(
             import_questions_xml::MAX_XML_BYTES,
             get_max_upload_file_size(),
@@ -492,8 +628,8 @@ final class import_questions_xml_test extends \advanced_testcase {
         );
 
         try {
-            $method->invoke(null, str_repeat('x', import_questions_xml::MAX_XML_BYTES + 1));
-            $this->fail('Erwartete invalid_parameter_exception wegen Ueberschreitung von MAX_XML_BYTES.');
+            import_questions_xml::execute($categoryid, str_repeat('x', import_questions_xml::MAX_XML_BYTES + 1));
+            $this->fail('Expected invalid_parameter_exception because MAX_XML_BYTES was exceeded.');
         } catch (\invalid_parameter_exception $e) {
             $this->assertStringContainsString(display_size(import_questions_xml::MAX_XML_BYTES), $e->getMessage());
         }
@@ -522,14 +658,22 @@ final class import_questions_xml_test extends \advanced_testcase {
 
     /**
      * Replace internal XML-core PHP errors with actionable teacher-facing
-     * text (#424 follow-up 1). Preserve actual moodle_exception messages,
+     * text. Preserve actual moodle_exception messages,
      * such as xmlize format errors, because they describe the file.
+     * This retained regression injects exception kinds without replacing managed
+     * Moodle parsing or adding a test-only port; see the documented T1 exception.
      */
     public function test_php_internal_parse_errors_are_replaced(): void {
-        $method = new \ReflectionMethod(import_questions_xml::class, 'parse_failure_message');
+        $method = new \ReflectionMethod(\local_coursepilot\question_import::class, 'parse_failure_message');
         $method->setAccessible(true);
 
         $internal = $method->invoke(null, new \Error('Cannot access offset of type string on string'));
+        $this->assertSame(
+            'Invalid Moodle XML: The file could not be read as Moodle question XML. Common '
+                . 'causes: the file is incomplete or truncated, an element is not closed, or '
+                . 'the structure differs from a Moodle export. Send a complete, unmodified export.',
+            $internal
+        );
         $this->assertStringNotContainsString('offset', $internal);
         $this->assertStringContainsString('Moodle XML', $internal);
 
@@ -563,6 +707,13 @@ final class import_questions_xml_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertStringNotContainsString('stdClass', $e->getMessage());
             $this->assertStringContainsString('calculated', $e->getMessage());
+            $this->assertSame(
+                'Question type "calculated" could not be saved with this XML structure. Common cause: '
+                    . 'a question-type-specific structure (e.g. dataset definitions for "calculated") differs from the '
+                    . 'internal form this question type expects when saving. Check the question type reference '
+                    . 'or simplify the structure.',
+                $e->debuginfo
+            );
         }
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);

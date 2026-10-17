@@ -28,7 +28,101 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(update_quiz_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz_write::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz_write_bridge::class)]
+#[CoversClass(\local_coursepilot\catalog\pseudofield_carry_forward::class)]
+#[CoversClass(\local_coursepilot\catalog\write_target::class)]
 final class update_quiz_settings_test extends \advanced_testcase {
+    /**
+     * Calendar effects refer to enabled dates in this patch, not unrelated stored dates.
+     *
+     * @param mixed[] $existing
+     * @param mixed[] $timing
+     * @param bool $calendar
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('calendar_update_inputs')]
+    public function test_calendar_report_matches_the_requested_dates(array $existing, array $timing, bool $calendar): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', $existing + [
+            'course' => $course->id, 'name' => 'Before / Übung',
+        ]);
+        $result = $this->patch(
+            $quiz->cmid,
+            ['name' => 'After / Übung'] + $timing,
+            confirmlearnerlocks: ['timeclose']
+        );
+        $this->assertSame($calendar ? ['The calendar event for the quiz was updated.'] : [], $result['side_effects']);
+        $this->assertStringStartsWith(
+            'Changed: "name" from "Before / Übung" to "After / Übung"',
+            $result['message']
+        );
+        $this->assertContains([
+            'field' => 'name', 'before_json' => '"Before / Übung"', 'after_json' => '"After / Übung"',
+        ], $result['changes']);
+        $this->assertSame('After / Übung', $this->raw_quiz($quiz->cmid)->name);
+        foreach ($timing as $field => $value) {
+            $this->assertEquals($value, $this->raw_quiz($quiz->cmid)->{$field});
+        }
+        if ($calendar) {
+            $this->assertStringEndsWith('. The calendar event for the quiz was updated.', $result['message']);
+        } else if (!$timing) {
+            $this->assertSame('Changed: "name" from "Before / Übung" to "After / Übung".', $result['message']);
+        }
+    }
+
+    /**
+     * Only an explicitly patched positive opening or closing time gets a calendar notice.
+     *
+     * @return array<string, array{mixed[], mixed[], bool}>
+     */
+    public static function calendar_update_inputs(): array {
+        return [
+            'no dates' => [[], [], false],
+            'stored opening only' => [['timeopen' => 2000000000], [], false],
+            'stored closing only' => [['timeclose' => 2000003600], [], false],
+            'opening enabled' => [[], ['timeopen' => 2000000000], true],
+            'closing enabled' => [[], ['timeclose' => 2000003600], true],
+            'opening disabled' => [['timeclose' => 2000003600], ['timeopen' => 0], false],
+            'closing disabled' => [['timeopen' => 2000000000], ['timeclose' => 0], false],
+        ];
+    }
+
+    /**
+     * A native failure after grading and settings were written restores the entire quiz.
+     */
+    public function test_late_native_failure_rolls_back_grade_feedback_and_settings(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->preventResetByRollback();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'grade' => 100]);
+        $this->patch($quiz->cmid, ['feedbacktext' => ['Pass', 'Retry'], 'feedbackboundaries' => [50]]);
+        $before = get_module_settings::execute($quiz->cmid)['settings_json'];
+        $feedback = $DB->get_records('quiz_feedback', ['quizid' => $quiz->id], 'id');
+        $items = $DB->get_records('grade_items', ['itemmodule' => 'quiz', 'iteminstance' => $quiz->id], 'id');
+        $versions = $DB->get_records('local_coursepilot_cm_version', ['cmid' => $quiz->cmid], 'id');
+        $failure = new \RuntimeException('Native update failed after writing.');
+        $this->redirectHook(\core_courseformat\hook\after_cm_name_edited::class, function () use ($quiz, $failure): void {
+            $this->assertEquals(50, $this->raw_quiz($quiz->cmid)->grade);
+            $this->assertSame('Must roll back', $this->raw_quiz($quiz->cmid)->name);
+            throw $failure;
+        });
+
+        try {
+            $this->patch($quiz->cmid, ['name' => 'Must roll back', 'intro' => 'Must also roll back'], '', 50.0);
+            $this->fail('The native failure must reach the caller.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame($failure, $e);
+        }
+        $this->assertSame($before, get_module_settings::execute($quiz->cmid)['settings_json']);
+        $this->assertEquals($feedback, $DB->get_records('quiz_feedback', ['quizid' => $quiz->id], 'id'));
+        $this->assertEquals($items, $DB->get_records('grade_items', ['itemmodule' => 'quiz', 'iteminstance' => $quiz->id], 'id'));
+        $this->assertEquals($versions, $DB->get_records('local_coursepilot_cm_version', ['cmid' => $quiz->cmid], 'id'));
+        $this->assertFalse($DB->is_transaction_started());
+    }
+
     /**
      * Moodle 5.3's informational due date survives a later unrelated patch.
      */
@@ -508,6 +602,129 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Each quiz-only combination rule names its cause and leaves the quiz untouched.
+     *
+     * @param mixed[] $patch
+     * @param string $expected Fragment of the rule message.
+     */
+    #[DataProvider('combination_violation_provider')]
+    public function test_each_combination_rule_names_its_cause_and_writes_nothing(array $patch, string $expected): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'grade' => 100]);
+        $before = $this->raw_quiz($quiz->cmid);
+
+        try {
+            $this->patch($quiz->cmid, $patch);
+            $this->fail('Expected moodle_exception was not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('combinationruleviolation', $e->errorcode);
+            $this->assertStringContainsString($expected, $e->getMessage());
+        }
+
+        $this->assertEquals($before, $this->raw_quiz($quiz->cmid));
+    }
+
+    /**
+     * Provides quiz patches that break one combination rule each.
+     *
+     * @return array<string, array{0: mixed[], 1: string}>
+     */
+    public static function combination_violation_provider(): array {
+        return [
+            'empty feedback list' => [['feedbacktext' => []], '"feedbacktext" must contain at least one entry.'],
+            'boundary count mismatch' => [
+                ['feedbacktext' => ['Pass', 'Retry'], 'feedbackboundaries' => [50, 20]],
+                '"feedbackboundaries" must have exactly one fewer entry than "feedbacktext" (2 text(s), 2 boundary/boundaries).',
+            ],
+            'boundary at zero' => [
+                ['feedbacktext' => ['Pass', 'Retry'], 'feedbackboundaries' => [0]],
+                '"feedbackboundaries" must be between 0 and the maximum grade (100).',
+            ],
+            'percentage above the maximum' => [
+                ['feedbacktext' => ['Pass', 'Retry'], 'feedbackboundaries' => ['150%']],
+                '"feedbackboundaries" must be between 0 and the maximum grade (100).',
+            ],
+            'boundaries ascending' => [
+                ['feedbacktext' => ['A', 'B', 'C'], 'feedbackboundaries' => [30, 60]],
+                '"feedbackboundaries" must be sorted descending.',
+            ],
+            'grace period below the server minimum' => [
+                ['overduehandling' => 'graceperiod', 'graceperiod' => 10],
+                '"graceperiod" must exceed the server-wide minimum duration (60 seconds) when "overduehandling"="graceperiod".',
+            ],
+            'grace period equal to the server minimum' => [
+                ['overduehandling' => 'graceperiod', 'graceperiod' => 60],
+                '"graceperiod" must exceed the server-wide minimum duration (60 seconds) when "overduehandling"="graceperiod".',
+            ],
+        ];
+    }
+
+    /**
+     * The grace-period minimum only binds quizzes whose overdue handling uses the grace period.
+     */
+    public function test_grace_period_minimum_does_not_bind_other_overdue_handling(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        $this->patch($quiz->cmid, ['graceperiod' => 10]);
+
+        $this->assertSame('autosubmit', $this->raw_quiz($quiz->cmid)->overduehandling);
+    }
+
+    /**
+     * The grace-period rule judges the effective state: a lone grace period is
+     * checked against the stored overdue handling and a lone handling against
+     * the stored period; a period above the minimum is written.
+     */
+    public function test_grace_period_rule_judges_the_effective_state(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'graceperiod' => 0]);
+
+        $this->assert_grace_refused($quiz->cmid, ['overduehandling' => 'graceperiod']);
+
+        $this->patch($quiz->cmid, ['overduehandling' => 'graceperiod', 'graceperiod' => 61]);
+        $this->assertSame(61, (int) $this->raw_quiz($quiz->cmid)->graceperiod);
+
+        $this->assert_grace_refused($quiz->cmid, ['graceperiod' => 10]);
+        $this->assertSame(61, (int) $this->raw_quiz($quiz->cmid)->graceperiod);
+    }
+
+    /**
+     * Asserts that a patch is refused by the grace-period rule.
+     *
+     * @param int $cmid
+     * @param mixed[] $patch
+     * @return void
+     */
+    private function assert_grace_refused(int $cmid, array $patch): void {
+        try {
+            $this->patch($cmid, $patch);
+            $this->fail('A grace period at or below the minimum must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('combinationruleviolation', $e->errorcode);
+            $this->assertStringContainsString('"graceperiod" must exceed', $e->getMessage());
+        }
+    }
+
+    /**
+     * A percentage boundary is resolved against the maximum grade, like the quiz form does.
+     */
+    public function test_percentage_boundary_is_resolved_against_the_maximum_grade(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'grade' => 80]);
+
+        $this->patch($quiz->cmid, ['feedbacktext' => ['Pass', 'Retry'], 'feedbackboundaries' => ['25%']]);
+
+        $feedback = \local_coursepilot\catalog\quiz_write_bridge::read_feedback((int) $this->raw_quiz($quiz->cmid)->id);
+        $this->assertSame(['Pass', 'Retry'], $feedback['feedbacktext']);
+        $this->assertEqualsWithDelta([20.0], $feedback['feedbackboundaries'], 0.001);
+    }
+
+    /**
      * Require moodle/course:manageactivities to write in the course
      * context; read-only Coursepilot access remains available.
      */
@@ -557,7 +774,9 @@ final class update_quiz_settings_test extends \advanced_testcase {
     public function test_source_never_writes_the_quiz_table_directly(): void {
         $source = file_get_contents(__DIR__ . '/../../classes/external/update_quiz_settings.php');
         $this->assertStringNotContainsString("update_record('quiz'", $source);
-        $this->assertStringContainsString('update_moduleinfo(', $source);
+        $catalog = file_get_contents(__DIR__ . '/../../classes/catalog/quiz_write.php');
+        $this->assertStringContainsString('update_moduleinfo(', $catalog);
+        $this->assertStringContainsString('quiz_write::update(', $source);
     }
 
     /**
