@@ -38,7 +38,10 @@ final class report_loose_material_files_test extends \advanced_testcase {
         $this->setUser($this->getDataGenerator()->create_user());
         $this->store_material_file('screenshot.png', 'Inhalt A');
 
-        $result = report_loose_material_files::execute();
+        $result = \core_external\external_api::clean_returnvalue(
+            report_loose_material_files::execute_returns(),
+            report_loose_material_files::execute()
+        );
 
         $this->assertCount(1, $result['files']);
         $this->assertSame('screenshot.png', $result['files'][0]['path']);

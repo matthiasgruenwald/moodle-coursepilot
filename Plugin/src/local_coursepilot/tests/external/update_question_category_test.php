@@ -263,6 +263,29 @@ final class update_question_category_test extends \advanced_testcase {
         update_question_category::execute($category['id'], 'Belegter Name');
     }
 
+    public function test_unchanged_name_and_parent_report_no_change(): void {
+        $this->resetAfterTest();
+        [, $topcategoryid] = $this->setup_course_and_bank();
+        $category = ensure_question_category::execute('7.2 Stoffe', $topcategoryid);
+        $category = external_api::clean_returnvalue(ensure_question_category::execute_returns(), $category);
+
+        $result = update_question_category::execute($category['id'], '7.2 Stoffe');
+
+        $this->assertFalse($result['renamed']);
+        $this->assertFalse($result['moved']);
+        $this->assertSame('No change: name and parent category are unchanged.', $result['message']);
+    }
+
+    public function test_rejects_category_as_its_own_parent(): void {
+        $this->resetAfterTest();
+        [, $topcategoryid] = $this->setup_course_and_bank();
+        $category = ensure_question_category::execute('7.2 Stoffe', $topcategoryid);
+        $category = external_api::clean_returnvalue(ensure_question_category::execute_returns(), $category);
+
+        $this->expectExceptionMessage('A category cannot be its own parent category.');
+        update_question_category::execute($category['id'], '', $category['id']);
+    }
+
     /**
      * Create a course, teacher and fresh question bank; return
      * [$course, $topcategoryid].

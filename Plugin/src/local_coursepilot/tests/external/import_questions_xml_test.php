@@ -31,6 +31,7 @@ use local_coursepilot\webdav\webdav_instance;
 #[\PHPUnit\Framework\Attributes\CoversClass(import_questions_xml::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_xml::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_import::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_suspect_gate::class)]
 final class import_questions_xml_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -355,6 +356,25 @@ final class import_questions_xml_test extends \advanced_testcase {
         $feedbackfiles = $xml->xpath('//generalfeedback/file[@name="feedback.png"]');
         $this->assertCount(1, $feedbackfiles);
         $this->assertSame(self::PNG_BYTES, base64_decode((string) $feedbackfiles[0], true));
+    }
+
+    /**
+     * Text input: an embedded file that already carries real Base64 is imported as is,
+     * without a material lookup.
+     */
+    public function test_text_door_keeps_embedded_base64_files_unchanged(): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+
+        $xml = self::multichoice_xml_with_embedded_base64('Frage mit Base64', 'Fragetext', 'Feedback');
+        $result = import_questions_xml::execute($categoryid, $xml);
+
+        $this->assertSame('first_import', $result['questions'][0]['status']);
+        $question = get_question::execute($categoryid, 'Frage mit Base64');
+        $export = export_questions_xml::execute([$question['questionid']], 'base64.xml');
+        $saved = \local_coursepilot\material_area::read_for_location('workbench', $export['path']);
+        $files = simplexml_load_string($saved['content'])->xpath('//questiontext/file[@name="diagramm.png"]');
+        $this->assertSame(self::PNG_BYTES, base64_decode((string) $files[0], true));
     }
 
     /**

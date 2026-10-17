@@ -244,4 +244,38 @@ final class arrangement_test extends \advanced_testcase {
             'timemodifiedoffline' => 0,
         ]);
     }
+
+    /**
+     * Restore brings back every recorded slot field, section setting and the feedback bands.
+     */
+    public function test_restore_recovers_slot_fields_sections_and_feedback(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        [, $quiz] = $this->create_quiz_with_two_questions();
+        $DB->insert_record('quiz_feedback', (object) [
+            'quizid' => $quiz->id, 'feedbacktext' => 'Gut', 'feedbacktextformat' => FORMAT_HTML,
+            'mingrade' => 0, 'maxgrade' => 50,
+        ]);
+        $before = arrangement::capture((int) $quiz->id);
+
+        $structure = \mod_quiz\structure::create_for_quiz(\mod_quiz\quiz_settings::create($quiz->id));
+        $slots = $this->slots((int) $quiz->id);
+        $structure->update_question_dependency($slots[1]->id, true);
+        $structure->update_slot_maxmark($structure->get_slot_by_id($slots[1]->id), 7.5);
+        $structure->update_slot_display_number($slots[0]->id, 'A1');
+        $section = array_values($structure->get_sections())[0];
+        $structure->set_section_heading($section->id, 'Neuer Abschnitt');
+        $structure->set_section_shuffle($section->id, true);
+        $DB->delete_records('quiz_feedback', ['quizid' => $quiz->id]);
+        $this->assertTrue(arrangement::differs(arrangement::capture((int) $quiz->id), $before));
+
+        arrangement::restore((int) $quiz->id, $before);
+
+        $after = arrangement::capture((int) $quiz->id);
+        $this->assertFalse(arrangement::differs($after, $before));
+        $this->assertSame('Gut', $after['feedback'][0]['feedbacktext']);
+        $this->assertSame(0, $after['slots'][1]['requireprevious']);
+        $this->assertSame('', $after['slots'][0]['displaynumber']);
+    }
 }

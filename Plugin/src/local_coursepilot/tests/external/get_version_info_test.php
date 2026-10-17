@@ -29,6 +29,7 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(get_version_info::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\plugin_meta::class)]
 final class get_version_info_test extends \advanced_testcase {
     /**
      * Return nonempty Moodle release/version/branch and plugin version/release
@@ -81,5 +82,30 @@ final class get_version_info_test extends \advanced_testcase {
 
         $this->assertStringContainsString($CFG->release, $result['message']);
         $this->assertStringContainsString((string) $result['plugin_version'], $result['message']);
+    }
+
+    /**
+     * A stored plugin version that lags behind version.php is flagged, so a deployment
+     * without upgrade.php stays visible to support.
+     */
+    public function test_warns_when_the_installed_version_lags_behind_the_code(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        set_config('version', 2020010100, 'local_coursepilot');
+
+        $result = external_api::clean_returnvalue(get_version_info::execute_returns(), get_version_info::execute());
+
+        $this->assertSame(2020010100, $result['plugin_version_db']);
+        $this->assertStringContainsString(
+            get_string('versioninfoupgradewarning', 'local_coursepilot', 2020010100),
+            $result['message']
+        );
+    }
+
+    /**
+     * The tool takes no arguments.
+     */
+    public function test_declares_no_parameters(): void {
+        $this->assertSame([], get_version_info::execute_parameters()->keys);
     }
 }

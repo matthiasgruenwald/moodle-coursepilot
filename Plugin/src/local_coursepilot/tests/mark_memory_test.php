@@ -124,4 +124,18 @@ final class mark_memory_test extends \advanced_testcase {
         $this->setUser($userb);
         $this->assertNull(mark_memory::lookup('lerngruppe.md', 42, 100, 'etag-1'));
     }
+
+    /**
+     * Without a logged-in user nothing is remembered or returned.
+     */
+    public function test_nothing_is_remembered_without_a_user(): void {
+        $this->resetAfterTest();
+        $this->setUser(0);
+
+        mark_memory::remember('lerngruppe.md', 42, 100, 'etag-1', true);
+
+        $this->assertNull(mark_memory::lookup('lerngruppe.md', 42, 100, 'etag-1'));
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->assertNull(mark_memory::lookup('lerngruppe.md', 42, 100, 'etag-1'));
+    }
 }

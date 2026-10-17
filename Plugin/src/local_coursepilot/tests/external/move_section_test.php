@@ -136,4 +136,16 @@ final class move_section_test extends \advanced_testcase {
         global $DB;
         return (int) $DB->get_field('role', 'id', ['shortname' => $shortname], MUST_EXIST);
     }
+
+    public function test_moving_a_section_onto_its_own_position_changes_nothing(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $result = $this->move($course->id, 2, 2);
+
+        $this->assertSame(2, $result['sectionnum']);
+        $this->assertStringContainsString('is already at position 2', $result['message']);
+        $names = $this->names_by_sectionnum($course);
+        $this->assertSame(['LS 1', 'LS 2', 'LS 3', 'LS 4'], [$names[1], $names[2], $names[3], $names[4]]);
+    }
 }

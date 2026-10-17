@@ -31,6 +31,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(version_history::class)]
 #[CoversClass(version_writer::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\history\version_source::class)]
 final class version_history_test extends \advanced_testcase {
     /**
      * Create a course, page and editing teacher. Creation already fires
@@ -182,6 +183,29 @@ final class version_history_test extends \advanced_testcase {
 
         $this->assertStringContainsString(fullname($teacher), $einzeiler);
         $this->assertStringContainsString('name', $einzeiler);
+    }
+
+    /**
+     * Beyond four changed fields the summary names four and counts the rest.
+     */
+    public function test_einzeiler_counts_fields_beyond_the_first_four(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        require_once($CFG->dirroot . '/course/modlib.php');
+        [$course, $cm] = $this->create_page();
+
+        [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
+        $moduleinfo->name = 'Neu';
+        $moduleinfo->intro = '<p>Neue Einleitung</p>';
+        $moduleinfo->page = ['text' => '<p>Neuer Inhalt</p>', 'format' => FORMAT_HTML, 'itemid' => 0];
+        $moduleinfo->printintro = 1;
+        $moduleinfo->printlastmodified = 0;
+        $moduleinfo->visible = 0;
+        \update_moduleinfo($cm, $moduleinfo, $course, null);
+
+        $einzeiler = version_history::list_versions($cm->id)['versions'][1]['summary_line'];
+
+        $this->assertMatchesRegularExpression('/ and \d+ more fields/', $einzeiler);
     }
 
     /**

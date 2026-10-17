@@ -1173,5 +1173,12 @@
     "mutator": "CastString",
     "hash": "d61b527d8a86e991e03b36e47b660b1751a913660cebdaed5899496959c38708",
     "reason": "(int) applied directly to the SimpleXMLElement $prop->getcontentlength converts its text to the same integer as (int) (string) of that element (SimpleXML supports the integer cast), so the redundant inner string cast does not change the listed size."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/admin/connection_storage_location.php",
+    "line": 68,
+    "mutator": "CastString",
+    "hash": "9d401346423623cdb16539049e308f0b17b9d63a829a6cea9c9e2ed5a5e74d60",
+    "reason": "pointer_scan::target_state() builds the host of an external state as (string) of the fingerprint server, so $state['host'] is always a string there; the cast only narrows the declared ?string type for personal_data_hosts::allowed() and removing it passes the same value."
   }
 ]

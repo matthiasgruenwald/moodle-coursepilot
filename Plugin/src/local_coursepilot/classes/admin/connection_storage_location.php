@@ -48,19 +48,36 @@ final class connection_storage_location {
             $state = pointer_scan::target_state($userid, $decoded, $target);
             $targets[$target] = get_string('storagelocationtarget' . str_replace('_', '', $target), 'local_coursepilot')
                 . ': ' . self::state_label($state);
-
-            if (
-                $state['state'] === pointer_scan::STATE_EXTERNAL
-                && $state['host'] !== null
-                && !personal_data_hosts::allowed($state['host'])
-            ) {
-                $hostblocked = true;
-            }
+            $hostblocked = $hostblocked || self::host_not_allowed($state);
             if ($state['defect'] !== null) {
                 $defects[] = $state['defect'];
             }
         }
 
+        return ['targets' => $targets, 'markers' => self::markers($userid, $decoded, $hostblocked, $defects)];
+    }
+
+    /**
+     * Whether the target points to an external host that is not approved for personal data.
+     *
+     * @param mixed[] $state Type: array{state:string,host:?string,defect:?string}.
+     * @return bool
+     */
+    private static function host_not_allowed(array $state): bool {
+        return $state['state'] === pointer_scan::STATE_EXTERNAL
+            && !personal_data_hosts::allowed((string) $state['host']);
+    }
+
+    /**
+     * Marker lines for host policy, open pending notes, open previous location and defects.
+     *
+     * @param int $userid
+     * @param mixed[]|null $decoded Raw pointer of the user.
+     * @param bool $hostblocked
+     * @param string[] $defects
+     * @return string[]
+     */
+    private static function markers(int $userid, ?array $decoded, bool $hostblocked, array $defects): array {
         $markers = [];
         if ($hostblocked) {
             $markers[] = get_string('storagelocationmarkernotallowed', 'local_coursepilot');
@@ -74,8 +91,7 @@ final class connection_storage_location {
         foreach (array_unique($defects) as $defect) {
             $markers[] = get_string('storagelocationmarkerdefect', 'local_coursepilot', self::defect_label($defect));
         }
-
-        return ['targets' => $targets, 'markers' => $markers];
+        return $markers;
     }
 
     /**

@@ -27,6 +27,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(oauth_cleanup::class)]
 #[CoversClass(task\oauth_cleanup::class)]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_oauth_cleanup_indexes')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_add_oauth_cleanup_indexes')]
 final class oauth_cleanup_test extends \advanced_testcase {
     /**
      * Code.
@@ -239,5 +241,9 @@ final class oauth_cleanup_test extends \advanced_testcase {
         foreach ($indexes as $table => $index) {
             $this->assertTrue($dbman->index_exists(new \xmldb_table($table), $index), "$table upgrade");
         }
+    }
+
+    public function test_scheduled_tasks_are_named_for_the_admin_overview(): void {
+        $this->assertSame(get_string('taskoauthcleanup', 'local_coursepilot'), (new task\oauth_cleanup())->get_name());
     }
 }

@@ -341,4 +341,100 @@ final class add_glossary_entries_test extends \advanced_testcase {
         $this->assertSame('glossaryentrystandardtags', $result['entries'][0]['errorcode']);
         $this->assertFalse($DB->record_exists('tag', ['name' => 'brand-new']));
     }
+
+    public function test_pending_entry_in_a_dynamically_linked_glossary_is_saved_unapproved(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $CFG->glossary_linkentries = 1;
+        $course = $this->getDataGenerator()->create_course();
+        $glossary = $this->getDataGenerator()->create_module('glossary', ['course' => $course->id, 'usedynalink' => 1]);
+
+        $result = $this->call($glossary->cmid, [[
+            'concept' => 'Unfreigegeben', 'definition' => 'Wartet auf Freigabe', 'approved' => false,
+        ]]);
+
+        $this->assertTrue($result['entries'][0]['success']);
+        $this->assertFalse($result['entries'][0]['approved']);
+        $this->assertSame('0', $DB->get_field('glossary_entries', 'approved', ['id' => $result['entries'][0]['entryid']]));
+    }
+
+    /**
+     * Writes one entry through the writer with parameters normalised as the tool does.
+     *
+     * @param \stdClass $glossary Glossary module as returned by the generator.
+     * @param mixed[] $entry Entry fields.
+     * @return mixed[] Writer result.
+     */
+    private function write_entry(\stdClass $glossary, array $entry): array {
+        global $DB;
+        $cm = get_coursemodule_from_id('glossary', $glossary->cmid, 0, false, MUST_EXIST);
+        $params = external_api::validate_parameters(add_glossary_entries::execute_parameters(), [
+            'cmid' => $cm->id, 'entries' => [$entry],
+        ]);
+        return \local_coursepilot\glossary_entry_writer::add(
+            $params['entries'][0],
+            get_course($cm->course),
+            $cm,
+            $DB->get_record('glossary', ['id' => $cm->instance], '*', MUST_EXIST),
+            \context_module::instance($cm->id)
+        );
+    }
+
+    public function test_writer_reports_typed_identity_and_state(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $glossary = $this->getDataGenerator()->create_module('glossary', [
+            'course' => $this->getDataGenerator()->create_course()->id,
+        ]);
+
+        $result = $this->write_entry($glossary, ['concept' => 'Typ', 'definition' => 'Text']);
+
+        $this->assertTrue($result['success']);
+        $this->assertIsInt($result['entryid']);
+        $this->assertTrue($result['approved']);
+        $pending = $this->write_entry($glossary, ['concept' => 'Offen', 'definition' => 'Text', 'approved' => false]);
+        $this->assertFalse($pending['approved']);
+    }
+
+    /**
+     * Only Moodle's four text formats are accepted for the definition.
+     */
+    public function test_definition_format_must_be_one_of_the_four_moodle_text_formats(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $glossary = $this->getDataGenerator()->create_module('glossary', [
+            'course' => $this->getDataGenerator()->create_course()->id,
+        ]);
+
+        foreach ([FORMAT_MOODLE, FORMAT_HTML, FORMAT_PLAIN, FORMAT_MARKDOWN] as $format) {
+            $result = $this->write_entry($glossary, [
+                'concept' => 'Format ' . $format, 'definition' => 'Text', 'definitionformat' => $format,
+            ]);
+            $this->assertTrue($result['success'], 'format ' . $format);
+        }
+        foreach ([FORMAT_WIKI, 5, -1] as $format) {
+            $result = $this->write_entry($glossary, [
+                'concept' => 'Falsch ' . $format, 'definition' => 'Text', 'definitionformat' => $format,
+            ]);
+            $this->assertSame('glossaryentryformat', $result['errorcode'], 'format ' . $format);
+        }
+    }
+
+    /**
+     * Reserved single characters are refused (also after trimming); longer aliases may contain them.
+     */
+    public function test_reserved_single_character_aliases_are_refused_after_trimming(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $glossary = $this->getDataGenerator()->create_module('glossary', [
+            'course' => $this->getDataGenerator()->create_course()->id,
+        ]);
+
+        $trimmed = $this->write_entry($glossary, ['concept' => 'A', 'definition' => 'Text', 'aliases' => [' ! ']]);
+        $allowed = $this->write_entry($glossary, ['concept' => 'B', 'definition' => 'Text', 'aliases' => ['x', 'a$b']]);
+
+        $this->assertSame('errreservedkeywords', $trimmed['errorcode']);
+        $this->assertTrue($allowed['success'], json_encode($allowed));
+    }
 }

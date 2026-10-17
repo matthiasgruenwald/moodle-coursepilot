@@ -39,6 +39,7 @@ defined('MOODLE_INTERNAL') || die();
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_area::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_write::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\gd_support::class)]
 final class crop_material_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 

@@ -91,6 +91,35 @@ final class skill_corpus_test extends \advanced_testcase {
     }
 
     /**
+     * The trigger is the frontmatter description; without one the first nonempty line, without heading marks.
+     */
+    public function test_trigger_falls_back_when_frontmatter_has_no_usable_description(): void {
+        global $CFG;
+        $dir = $CFG->dirroot . '/local/coursepilot/skills/reference/';
+        $files = [
+            'zzz-trigger-leer' => '',
+            'zzz-trigger-offen' => "---\ndescription: nie geschlossen\n",
+            'zzz-trigger-ohne' => "---\nname: x\n---\n\n## Erste Zeile\n",
+            'zzz-trigger-mit' => "---\ndescription: Beschreibung hier\n---\nInhalt\n",
+        ];
+        foreach ($files as $name => $content) {
+            file_put_contents($dir . $name . '.md', $content);
+        }
+
+        try {
+            $triggers = array_column(skill_corpus::list(), 'trigger', 'name');
+            $this->assertSame('', $triggers['zzz-trigger-leer']);
+            $this->assertSame('---', $triggers['zzz-trigger-offen']);
+            $this->assertSame('---', $triggers['zzz-trigger-ohne']);
+            $this->assertSame('Beschreibung hier', $triggers['zzz-trigger-mit']);
+        } finally {
+            foreach (array_keys($files) as $name) {
+                unlink($dir . $name . '.md');
+            }
+        }
+    }
+
+    /**
      * get() returns content, parts referenced via skills/<name>.md and corpus version.
      */
     public function test_get_returns_content_referenced_parts_and_corpus_stand(): void {

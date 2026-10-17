@@ -28,6 +28,7 @@ use core_external\external_api;
 #[\PHPUnit\Framework\Attributes\CoversClass(create_mc_question::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_xml::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_import::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_suspect_gate::class)]
 final class create_mc_question_test extends \advanced_testcase {
     /**
      * Single selection refuses two positive answers before creating a bank entry.

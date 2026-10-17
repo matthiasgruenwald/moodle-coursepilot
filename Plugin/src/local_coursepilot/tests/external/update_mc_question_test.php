@@ -31,6 +31,7 @@ use local_coursepilot\webdav\webdav_instance;
 #[\PHPUnit\Framework\Attributes\CoversClass(update_mc_question::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_xml::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_import::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_suspect_gate::class)]
 final class update_mc_question_test extends \advanced_testcase {
     use webdav_instance_fixture;
 

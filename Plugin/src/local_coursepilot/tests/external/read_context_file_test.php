@@ -40,6 +40,7 @@ defined('MOODLE_INTERNAL') || die();
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\pointer_reader::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_area::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\personal_data::class)]
 final class read_context_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -584,5 +585,17 @@ final class read_context_file_test extends \advanced_testcase {
             'filepath' => $filepath,
             'filename' => $filename,
         ], $content);
+    }
+
+    public function test_legacy_fallback_keeps_the_subfolder_of_the_requested_path(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/faecher/', 'vorlagen.md', '# Fach-Vorlagen');
+
+        $result = read_context_file::execute('faecher/templates.md');
+
+        $this->assertSame('faecher/vorlagen.md', $result['path']);
+        $this->assertSame('# Fach-Vorlagen', $result['content']);
     }
 }

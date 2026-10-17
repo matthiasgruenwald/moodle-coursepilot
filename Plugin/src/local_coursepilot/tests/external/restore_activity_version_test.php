@@ -31,6 +31,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(update_module_settings::class)]
 #[CoversClass(\local_coursepilot\catalog\module_settings::class)]
 #[CoversClass(\local_coursepilot\history\version_restore::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\activity_file_trash::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\history\version_history::class)]
 final class restore_activity_version_test extends \advanced_testcase {
     /**
      * A restricted token is refused before looking up a version in another course.

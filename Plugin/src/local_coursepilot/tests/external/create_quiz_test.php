@@ -475,4 +475,12 @@ final class create_quiz_test extends \advanced_testcase {
             $this->assertStringContainsString('attempts', $e->getMessage());
         }
     }
+
+    public function test_unparseable_field_json_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $this->expectExceptionMessage(get_string('invalidpatchjson', 'local_coursepilot'));
+        create_quiz::execute($course->id, 0, 'kein json');
+    }
 }

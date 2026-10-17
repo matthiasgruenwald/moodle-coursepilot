@@ -276,4 +276,50 @@ final class get_course_catalog_test extends \advanced_testcase {
         }
         return null;
     }
+
+    /**
+     * Section and module-type filters narrow the catalog; long summaries are shortened to a preview.
+     */
+    public function test_filters_narrow_the_catalog_and_long_summaries_are_shortened(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course(['numsections' => 2]);
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id], ['section' => 1]);
+        $label = $this->getDataGenerator()->create_module('label', ['course' => $course->id], ['section' => 1]);
+        $this->getDataGenerator()->create_module('page', ['course' => $course->id], ['section' => 2]);
+        $DB->set_field('course_sections', 'summary', '<p>' . str_repeat('lang ', 100) . '</p>', [
+            'course' => $course->id, 'section' => 1,
+        ]);
+
+        $result = get_course_catalog::execute($course->id, 1, 'page');
+
+        $this->assertSame([1], array_column($result['sections'], 'sectionnum'));
+        $this->assertSame([(int) $page->cmid], array_column($result['sections'][0]['modules'], 'cmid'));
+        $this->assertNotContains((int) $label->cmid, array_column($result['sections'][0]['modules'], 'cmid'));
+        $preview = $result['sections'][0]['summary']['preview'];
+        $this->assertSame(280, strlen($preview));
+        $this->assertStringEndsWith('...', $preview);
+    }
+
+    /**
+     * Activity types without a catalog entry are still listed, with a marker instead of settings.
+     */
+    public function test_uncatalogued_activity_types_are_listed_as_unknown(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $data = $this->getDataGenerator()->create_module('data', ['course' => $course->id, 'name' => 'Datenbank X']);
+
+        $result = get_course_catalog::execute($course->id);
+
+        $module = self::find_module($result, (int) $data->cmid);
+        $this->assertSame('data', $module['modname']);
+        $this->assertSame('Datenbank X', $module['name']);
+        $this->assertSame([], $module['settings']);
+    }
 }

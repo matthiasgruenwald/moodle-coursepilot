@@ -27,6 +27,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(access_log::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\event\tool_access_failed::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\event\tool_access_succeeded::class)]
 final class access_log_test extends \advanced_testcase {
     /**
      * Fresh installs without a configured value default to read access
@@ -205,5 +207,55 @@ final class access_log_test extends \advanced_testcase {
         $this->assertStringNotContainsString($token, $encoded);
         $this->assertStringNotContainsString('sk-', $encoded);
         $sink->close();
+    }
+
+    /**
+     * Events carry the given user, describe themselves for the log report and keep diagnostics at full logging.
+     */
+    public function test_events_describe_themselves_for_the_log_report(): void {
+        $this->resetAfterTest();
+        set_config('loglevel', access_log::LEVEL_ALL, 'local_coursepilot');
+        $user = $this->getDataGenerator()->create_user();
+        $sink = $this->redirectEvents();
+
+        access_log::log_success('coursepilot_list_courses', false, 'a.md', (int) $user->id);
+        access_log::log_failure('Origin not allowed', 'coursepilot_list_courses', null, (int) $user->id, 'Details');
+        access_log::log_failure('AUTHENTICATION_FAILED');
+
+        [$success, $failure, $anonymous] = $sink->get_events();
+        $sink->close();
+        $this->assertSame((int) $user->id, (int) $success->userid);
+        $this->assertStringContainsString("'coursepilot_list_courses'", $success->get_description());
+        $this->assertSame(get_string('event_tool_access_succeeded', 'local_coursepilot'), $success::get_name());
+        $this->assertSame((int) $user->id, (int) $failure->userid);
+        $this->assertStringContainsString('Origin not allowed (tool: coursepilot_list_courses)', $failure->get_description());
+        $this->assertSame('Details', $failure->other['detail']);
+        $this->assertSame(get_string('event_tool_access_failed', 'local_coursepilot'), $failure::get_name());
+        $this->assertSame('A Coursepilot access failed: AUTHENTICATION_FAILED.', $anonymous->get_description());
+        $this->assertFalse($failure::get_other_mapping());
+        $this->assertFalse($success::get_other_mapping());
+    }
+
+    /**
+     * Events cannot be created without the value their description depends on.
+     */
+    public function test_events_require_their_identifying_value(): void {
+        $this->resetAfterTest();
+
+        foreach ([event\tool_access_failed::class, event\tool_access_succeeded::class] as $class) {
+            try {
+                $class::create(['other' => []]);
+                $this->fail($class . ' accepted an empty other.');
+            } catch (\coding_exception $e) {
+                $this->assertStringContainsString('must be set in other', $e->getMessage());
+            }
+        }
+    }
+
+    public function test_an_empty_stored_level_falls_back_to_reads_and_errors(): void {
+        $this->resetAfterTest();
+        set_config('loglevel', '', 'local_coursepilot');
+
+        $this->assertSame(access_log::LEVEL_READS, access_log::current_level());
     }
 }

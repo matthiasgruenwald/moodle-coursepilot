@@ -105,7 +105,10 @@ final class upload_material_file_test extends \advanced_testcase {
         $first = $this->upload('blatt.pdf', 'alt');
         $stored = $this->read_file_object(material_files::own_context()->id, '/coursepilot-material/', 'blatt.pdf');
 
-        $result = upload_material_file::execute('blatt.pdf', base64_encode('neu'), $stored->get_contenthash());
+        $result = \core_external\external_api::clean_returnvalue(
+            upload_material_file::execute_returns(),
+            upload_material_file::execute('blatt.pdf', base64_encode('neu'), $stored->get_contenthash())
+        );
 
         $this->assertFalse($result['created']);
     }

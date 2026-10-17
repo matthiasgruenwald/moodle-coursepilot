@@ -39,7 +39,10 @@ final class delete_material_files_test extends \advanced_testcase {
         $this->store('loeschen.pdf', 'weg damit');
         $this->store('behalten.pdf', 'bleibt');
 
-        $result = delete_material_files::execute(['loeschen.pdf']);
+        $result = \core_external\external_api::clean_returnvalue(
+            delete_material_files::execute_returns(),
+            delete_material_files::execute(['loeschen.pdf'])
+        );
 
         $this->assertSame(['loeschen.pdf'], $result['deleted']);
         $this->assertSame(strlen('weg damit'), $result['freed_bytes']);

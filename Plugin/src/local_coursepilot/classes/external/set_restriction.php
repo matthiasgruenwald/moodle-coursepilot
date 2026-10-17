@@ -362,19 +362,13 @@ final class set_restriction extends external_api {
      */
     private static function grade_condition_locks(array $conditions, string $currentavailability): array {
         $existing = \local_coursepilot\cm_references::completion_pairs(json_decode($currentavailability, true) ?: []);
-        $gradedstatus = [self::COMPLETION_STATUS['pass'], self::COMPLETION_STATUS['fail']];
         $locks = [];
         foreach ($conditions as $condition) {
             if ($condition->type !== 'completion' || in_array($condition->cm . ':' . $condition->e, $existing, true)) {
                 continue;
             }
             $target = get_coursemodule_from_id('', $condition->cm, 0, false, MUST_EXIST);
-            $catalogclass = registry::for((string) $target->modname);
-            if ($catalogclass === null || $catalogclass::grade_origin((int) $target->instance) !== learner_locks::GRADE_TEACHER) {
-                continue;
-            }
-            $bygrade = $target->completiongradeitemnumber !== null || !empty($target->completionpassgrade);
-            if (!in_array($condition->e, $gradedstatus, true) && !$bygrade) {
+            if (!self::waits_for_teacher_grade($condition, $target)) {
                 continue;
             }
             $locks[] = [
@@ -384,6 +378,25 @@ final class set_restriction extends external_api {
             ];
         }
         return $locks;
+    }
+
+    /**
+     * Whether a completion condition makes learners wait for a teacher's grade: the activity's grade
+     * comes from the teacher and the condition depends on the grade (pass/fail) or the activity's
+     * own completion runs via the grade.
+     *
+     * @param stdClass $condition Native completion condition.
+     * @param stdClass $target Course module the condition refers to.
+     * @return bool
+     */
+    private static function waits_for_teacher_grade(stdClass $condition, stdClass $target): bool {
+        $catalogclass = registry::for($target->modname);
+        if ($catalogclass === null || $catalogclass::grade_origin($target->instance) !== learner_locks::GRADE_TEACHER) {
+            return false;
+        }
+        $gradedstatus = [self::COMPLETION_STATUS['pass'], self::COMPLETION_STATUS['fail']];
+        $bygrade = $target->completiongradeitemnumber !== null || !empty($target->completionpassgrade);
+        return in_array($condition->e, $gradedstatus, true) || $bygrade;
     }
 
     /**

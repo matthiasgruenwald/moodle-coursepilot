@@ -366,6 +366,49 @@ final class set_restriction_test extends \advanced_testcase {
         $this->assertStringContainsString('"completion"', $this->read($ziel->cmid)['availabilityconditionsjson']);
     }
     /**
+     * A plain "complete" condition on a teacher-graded assignment only waits for the teacher when the
+     * assignment's own completion runs through the grade.
+     *
+     * @param array<string, int|null> $completionfields Completion columns of the assignment's course module.
+     * @param bool $locked Whether confirmation is expected.
+     */
+    #[DataProvider('completion_by_grade_cases')]
+    public function test_plain_completion_waits_for_the_teacher_only_when_completion_uses_the_grade(
+        array $completionfields,
+        bool $locked
+    ): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $aufgabe = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $ziel = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        foreach ($completionfields as $field => $value) {
+            $DB->set_field('course_modules', $field, $value, ['id' => $aufgabe->cmid]);
+        }
+        $conditions = json_encode([['type' => 'completion', 'activity_cmid' => (int) $aufgabe->cmid, 'status' => 'complete']]);
+
+        if ($locked) {
+            $this->expectExceptionMessage('teacher_grade:' . $aufgabe->cmid);
+        }
+        set_restriction::execute($ziel->cmid, $conditions);
+
+        $this->assertStringContainsString('"completion"', $this->read($ziel->cmid)['availabilityconditionsjson']);
+    }
+
+    /**
+     * Completion columns and the expected lock.
+     *
+     * @return array<string, array{0: array<string, int|null>, 1: bool}>
+     */
+    public static function completion_by_grade_cases(): array {
+        return [
+            'completion without grade' => [['completiongradeitemnumber' => null, 'completionpassgrade' => 0], false],
+            'completion by grade item' => [['completiongradeitemnumber' => 0, 'completionpassgrade' => 0], true],
+            'completion by pass grade' => [['completiongradeitemnumber' => null, 'completionpassgrade' => 1], true],
+        ];
+    }
+
+    /**
      * Invalid restriction values leave all existing activity settings intact.
      *
      * @param mixed[] $condition
@@ -417,5 +460,42 @@ final class set_restriction_test extends \advanced_testcase {
                 ['type' => 'group', 'group_id' => 999999], 'restrictiongroupnotfound',
             ],
         ];
+    }
+
+    /**
+     * Without site-wide availability Moodle would drop the field silently; the tool refuses clearly.
+     */
+    public function test_refuses_when_conditional_availability_is_disabled(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        set_config('enableavailability', 0);
+
+        $this->expectExceptionMessage(get_string('restrictionsnotenabled', 'local_coursepilot'));
+        set_restriction::execute((int) $page->cmid, '[]');
+    }
+
+    /**
+     * The conditions must be a JSON list of objects; objects as list and scalars as elements are rejected.
+     */
+    public function test_conditions_must_be_a_list_of_objects(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+
+        try {
+            set_restriction::execute((int) $page->cmid, '{"type":"date"}');
+            $this->fail('A JSON object was accepted as the condition list.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidrestrictionjson', $e->errorcode);
+        }
+        try {
+            set_restriction::execute((int) $page->cmid, 'kein json');
+            $this->fail('Invalid JSON was accepted.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidrestrictionjson', $e->errorcode);
+        }
+        $this->expectException(\coding_exception::class);
+        set_restriction::execute((int) $page->cmid, '["text"]');
     }
 }

@@ -277,6 +277,21 @@ final class version_history {
     }
 
     /**
+     * The first four changed field names, followed by the number of the remaining ones.
+     *
+     * @param string[] $fields
+     * @param string $lang
+     * @return string
+     */
+    private static function field_names(array $fields, string $lang): string {
+        $names = implode(', ', array_slice($fields, 0, 4));
+        if (count($fields) > 4) {
+            $names .= get_string_manager()->get_string('historymorefields', 'local_coursepilot', count($fields) - 4, $lang);
+        }
+        return $names;
+    }
+
+    /**
      * Localized summary of field and file changes compared with the predecessor.
      *
      * @param \stdClass $before
@@ -290,16 +305,12 @@ final class version_history {
 
         $parts = [];
         if ($fields) {
-            $fieldnames = implode(', ', array_slice($fields, 0, 4));
-            if (count($fields) > 4) {
-                $fieldnames .= get_string_manager()->get_string(
-                    'historymorefields',
-                    'local_coursepilot',
-                    count($fields) - 4,
-                    $lang
-                );
-            }
-            $parts[] = get_string_manager()->get_string('historyfieldschanged', 'local_coursepilot', $fieldnames, $lang);
+            $parts[] = get_string_manager()->get_string(
+                'historyfieldschanged',
+                'local_coursepilot',
+                self::field_names($fields, $lang),
+                $lang
+            );
         }
 
         $added = count(array_filter($filechanges, static fn(array $c): bool => $c['change_type'] === 'added'));

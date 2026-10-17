@@ -89,4 +89,23 @@ final class instance_check_test extends \advanced_testcase {
     public function test_requirements_name_the_three_prerequisites(): void {
         $this->assertSame(['https', 'egress', 'pathinfo'], instance_check::REQUIREMENTS);
     }
+
+    public function test_self_check_judges_a_reachable_discovery_document_as_ok(): void {
+        \curl::mock_response('{"issuer":"https://moodle.example"}');
+
+        $result = instance_check::self_check('https://moodle.example');
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(200, $result['httpcode']);
+        $this->assertSame(instance_check::discovery_url('https://moodle.example'), $result['url']);
+    }
+
+    public function test_self_check_reports_a_blocked_request_without_httpcode(): void {
+        // Moodle's default curl blocklist refuses loopback addresses, so no connection is attempted.
+        $result = instance_check::self_check('https://127.0.0.1');
+
+        $this->assertFalse($result['ok']);
+        $this->assertNull($result['httpcode']);
+        $this->assertSame('selfcheckrequestfailed', $result['detail']);
+    }
 }

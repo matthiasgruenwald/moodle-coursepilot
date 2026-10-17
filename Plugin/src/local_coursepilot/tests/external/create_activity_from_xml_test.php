@@ -160,4 +160,15 @@ final class create_activity_from_xml_test extends \advanced_testcase {
     public function test_is_registered_as_write_tool(): void {
         $this->assertTrue(tool_registry::is_write('coursepilot_create_activity_from_xml'));
     }
+
+    public function test_negative_section_is_rejected_before_anything_is_restored(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+
+        $this->expectException(\invalid_parameter_exception::class);
+        create_activity_from_xml::execute($course->id, 'label', -1, '<activity/>');
+    }
 }

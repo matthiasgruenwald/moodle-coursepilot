@@ -842,4 +842,13 @@ final class update_quiz_settings_test extends \advanced_testcase {
 
         $this->assertSame(2, (int) $DB->get_field('quiz', 'attempts', ['id' => $quiz->id]));
     }
+
+    public function test_unparseable_field_json_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        $this->expectExceptionMessage(get_string('invalidpatchjson', 'local_coursepilot'));
+        update_quiz_settings::execute($quiz->cmid, 'kein json');
+    }
 }

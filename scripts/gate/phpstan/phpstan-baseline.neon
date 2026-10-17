@@ -434,7 +434,7 @@ parameters:
 
 		-
 			# reason: Version-history summaries pass integer counts to core_string_manager::get_string() as the $a substitution value; its static union omits int. Use the supported string/object substitution contract for those counts.
-			# evidence: {"classes/history/version_history.php":["                $fieldnames .= get_string_manager()->get_string(\n                    'historymorefields',\n                    'local_coursepilot',\n                    count($fields) - 4,\n                    $lang\n                );\n            }","            $parts[] = get_string_manager()->get_string(\n                $added === 1 ? 'historyfileadded' : 'historyfilesadded',\n                'local_coursepilot',\n                $added,\n                $lang\n            );\n        }"]}
+			# evidence: {"classes/history/version_history.php":["            $names .= get_string_manager()->get_string('historymorefields', 'local_coursepilot', count($fields) - 4, $lang);","            $parts[] = get_string_manager()->get_string(\n                $added === 1 ? 'historyfileadded' : 'historyfilesadded',\n                'local_coursepilot',\n                $added,\n                $lang\n            );\n        }"]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
 			message: '#^Parameter \#3 \$a of method core_string_manager\:\:get_string\(\) expects array\|object\|string\|null, int\<1, max\> given\.$#'
 			identifier: argument.type
@@ -877,7 +877,7 @@ parameters:
 			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
 			# evidence: {"tests/activity_type_templates_test.php":["public function request(","* @param array $headers The headers."]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/activity_type_templates_test\.php\:196\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/activity_type_templates_test\.php\:197\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
@@ -886,7 +886,7 @@ parameters:
 			# reason: request($headers) documents the input as @param array $headers The headers.. The array element type is missing from static metadata; type this parameter rather than treating nullable arrays or test doubles as untypable.
 			# evidence: {"tests/activity_type_templates_test.php":["public function request(","* @param array $headers The headers."]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/activity_type_templates_test\.php\:300\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
+			message: '#^Method local_coursepilot\\webdav\\webdav_transport@anonymous/tests/activity_type_templates_test\.php\:301\:\:request\(\) has parameter \$headers with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: ../html/public/local/coursepilot/tests/activity_type_templates_test.php
