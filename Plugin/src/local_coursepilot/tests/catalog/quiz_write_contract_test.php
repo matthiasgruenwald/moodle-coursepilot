@@ -30,6 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(quiz_write::class)]
 #[CoversClass(\local_coursepilot\external\create_quiz::class)]
 #[CoversClass(update_quiz_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz_write_bridge::class)]
 final class quiz_write_contract_test extends \advanced_testcase {
     /**
      * Creation rejects a passing grade above the maximum before persisting an activity.

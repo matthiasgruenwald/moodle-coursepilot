@@ -29,6 +29,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(set_completion::class)]
 #[CoversClass(\local_coursepilot\catalog\completion_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\pseudofield_carry_forward::class)]
 final class set_completion_test extends \advanced_testcase {
     /**
      * Clients receive the complete field and patch instructions in the public schema.
@@ -102,6 +103,23 @@ final class set_completion_test extends \advanced_testcase {
             }
             $this->assertSame(0, (int) $this->read($activity->cmid)['completionview']);
         }
+    }
+
+    /**
+     * A patch that is not a JSON object is refused before anything is read or written.
+     */
+    public function test_patch_that_is_not_json_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+
+        try {
+            set_completion::execute($page->cmid, 'not json');
+            $this->fail('Expected moodle_exception was not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidpatchjson', $e->errorcode);
+        }
+        $this->assertSame(COMPLETION_TRACKING_NONE, (int) $this->read($page->cmid)['completion']);
     }
 
     /**

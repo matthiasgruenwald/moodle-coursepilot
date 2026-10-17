@@ -481,25 +481,33 @@ final class quiz implements module_catalog {
                 . '{question_bank_entries} qbe ON qbe.id = qr.questionbankentryid WHERE qs.quizid = :quizid ORDER BY qs.slot',
             ['component' => 'mod_quiz', 'area' => 'slot', 'quizid' => $quizid]
         );
-        $slots = [];
-        foreach ($rows as $row) {
-            $latest = empty($row->questionbankentryid) ? null : $DB->get_record_sql(
-                'SELECT qv.questionid, qv.version, q.name, q.qtype FROM {question_versions} qv JOIN {question} q ON q.id = '
-                    . 'qv.questionid WHERE qv.questionbankentryid = ? ORDER BY qv.version DESC',
-                [$row->questionbankentryid],
-                IGNORE_MULTIPLE
-            );
-            $slots[] = [
-                'slot' => (int) $row->slot,
-                'categoryid' => empty($row->questioncategoryid) ? 0 : (int) $row->questioncategoryid,
-                'questionbankentryid' => empty($row->questionbankentryid) ? 0 : (int) $row->questionbankentryid,
-                'questionid' => $latest ? (int) $latest->questionid : 0,
-                'version' => $latest ? (int) $latest->version : 0,
-                'questionname' => $latest ? (string) $latest->name : '',
-                'qtype' => $latest ? (string) $latest->qtype : '',
-            ];
-        }
-        return $slots;
+        return array_values(array_map(static fn(\stdClass $row): array => self::slot_row($row), $rows));
+    }
+
+    /**
+     * One slot in catalog vocabulary, with the newest version of its referenced question.
+     *
+     * @param \stdClass $row Slot joined with its question reference and category.
+     * @return mixed[]
+     */
+    private static function slot_row(\stdClass $row): array {
+        global $DB;
+        $entryid = (int) ($row->questionbankentryid ?? 0);
+        $latest = $entryid ? $DB->get_record_sql(
+            'SELECT qv.questionid, qv.version, q.name, q.qtype FROM {question_versions} qv JOIN {question} q ON q.id = '
+                . 'qv.questionid WHERE qv.questionbankentryid = ? ORDER BY qv.version DESC',
+            [$entryid],
+            IGNORE_MULTIPLE
+        ) : null;
+        return [
+            'slot' => (int) $row->slot,
+            'categoryid' => (int) ($row->questioncategoryid ?? 0),
+            'questionbankentryid' => $entryid,
+            'questionid' => (int) ($latest->questionid ?? 0),
+            'version' => (int) ($latest->version ?? 0),
+            'questionname' => $latest->name ?? '',
+            'qtype' => $latest->qtype ?? '',
+        ];
     }
 
     /**

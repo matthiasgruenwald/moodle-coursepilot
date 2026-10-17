@@ -31,6 +31,15 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(\local_coursepilot\catalog\shared_block::class)]
 #[CoversClass(\local_coursepilot\catalog\assign::class)]
 #[CoversClass(\local_coursepilot\catalog\label::class)]
+#[CoversClass(\local_coursepilot\catalog\field::class)]
+#[CoversClass(\local_coursepilot\catalog\choice::class)]
+#[CoversClass(\local_coursepilot\catalog\folder::class)]
+#[CoversClass(\local_coursepilot\catalog\forum::class)]
+#[CoversClass(\local_coursepilot\catalog\page::class)]
+#[CoversClass(\local_coursepilot\catalog\resource::class)]
+#[CoversClass(\local_coursepilot\catalog\url::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz::class)]
+#[CoversClass(\local_coursepilot\catalog\registry::class)]
 final class describe_module_fields_test extends \advanced_testcase {
     /**
      * A client sees each blocked field exactly once across shared and module-specific rules.

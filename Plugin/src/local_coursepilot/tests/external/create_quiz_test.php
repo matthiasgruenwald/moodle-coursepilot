@@ -29,6 +29,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(create_quiz::class)]
 #[CoversClass(\local_coursepilot\catalog\quiz_write::class)]
 #[CoversClass(\local_coursepilot\catalog\quiz::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz_write_bridge::class)]
+#[CoversClass(\local_coursepilot\catalog\write_target::class)]
 final class create_quiz_test extends \advanced_testcase {
     /**
      * Editing permission does not authorize quiz creation when Coursepilot access is prohibited.
@@ -243,6 +245,25 @@ final class create_quiz_test extends \advanced_testcase {
             }
             $this->assertStringContainsString('created', $result['message']);
         }
+    }
+
+    /**
+     * An unknown mode names the valid modes and creates nothing.
+     */
+    public function test_unknown_mode_names_the_valid_modes_and_creates_nothing(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        try {
+            $this->create($course->id, 0, $this->minimal_fields(), 'no-such-mode');
+            $this->fail('Expected moodle_exception was not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('unknownmode', $e->errorcode);
+            $this->assertStringContainsString('Unknown mode "no-such-mode". Allowed: ', $e->getMessage());
+            $this->assertStringContainsString('mini-check, progress-check, final-test', $e->getMessage());
+        }
+        $this->assertSame(0, $DB->count_records('quiz', ['course' => $course->id]));
     }
 
     /**

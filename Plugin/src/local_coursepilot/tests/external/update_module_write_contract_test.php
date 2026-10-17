@@ -30,6 +30,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[CoversClass(update_module_settings::class)]
 #[CoversClass(\local_coursepilot\catalog\catalog_fields::class)]
 #[CoversClass(\local_coursepilot\catalog\module_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\write_target::class)]
+#[CoversClass(\local_coursepilot\catalog\page::class)]
 final class update_module_write_contract_test extends \advanced_testcase {
     /**
      * Rejected writes distinguish reserved metadata from the dedicated completion route.

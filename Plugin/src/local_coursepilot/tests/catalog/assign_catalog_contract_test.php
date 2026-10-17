@@ -226,4 +226,44 @@ final class assign_catalog_contract_test extends \advanced_testcase {
         $this->assertStringContainsString('gradingduedate', $joined);
         $this->assertStringContainsString('attemptreopenmethod', $joined);
     }
+
+    /**
+     * A catalogue read of an instance that no longer exists is empty, not an error.
+     */
+    public function test_state_of_a_missing_assignment_is_empty(): void {
+        $this->resetAfterTest();
+
+        $state = assign::state(999999, 0, false);
+
+        $this->assertSame('', $state['name']);
+        $this->assertSame([], $state['settings']);
+    }
+
+    /**
+     * Intro attachments are listed with name, size and type in the additionalfiles setting.
+     */
+    public function test_state_lists_the_intro_attachments(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $module = $this->getDataGenerator()->create_module('assign', ['course' => $course->id, 'name' => 'Aufgabe mit Anhang']);
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_module::instance($module->cmid)->id,
+            'component' => 'mod_assign',
+            'filearea' => 'introattachment',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'vorlage.txt',
+        ], 'Inhalt');
+
+        $state = assign::state((int) $module->id, (int) $module->cmid, false);
+
+        $settings = array_column($state['settings'], 'value', 'name');
+        $files = json_decode($settings['additionalfiles'], true);
+        $this->assertSame('Aufgabe mit Anhang', $state['name']);
+        $this->assertCount(1, $files);
+        $this->assertSame('vorlage.txt', $files[0]['filename']);
+        $this->assertEquals(strlen('Inhalt'), $files[0]['filesize']);
+        $this->assertSame('text/plain', $files[0]['mimetype']);
+    }
 }

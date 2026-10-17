@@ -630,14 +630,14 @@
       "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
       "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
       "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "02f2ecaf3204830427c269d142438883936e5efacb15c4c70eaaca9e45f0688c",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
       "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "01ba320d56f67dfaf95f6c0d62dd88f5065fbd9bbfefdfb22fdec840ef624540",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
       "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
       "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
       "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
       "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
-      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "759627c6a1a0cf969c9665e3c4410bbbba79ea5bc324e1db6db7444fb03a37ca"
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "a071e41bbcd3e2b2670c6fed00281bbb6bfb6b664c91b2da48d1190485fcd496"
     }
   },
   {
@@ -663,14 +663,14 @@
       "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
       "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
       "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "02f2ecaf3204830427c269d142438883936e5efacb15c4c70eaaca9e45f0688c",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
       "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "01ba320d56f67dfaf95f6c0d62dd88f5065fbd9bbfefdfb22fdec840ef624540",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
       "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
       "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
       "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
       "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
-      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "759627c6a1a0cf969c9665e3c4410bbbba79ea5bc324e1db6db7444fb03a37ca"
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "a071e41bbcd3e2b2670c6fed00281bbb6bfb6b664c91b2da48d1190485fcd496"
     }
   },
   {
@@ -696,14 +696,14 @@
       "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
       "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
       "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "02f2ecaf3204830427c269d142438883936e5efacb15c4c70eaaca9e45f0688c",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
       "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "01ba320d56f67dfaf95f6c0d62dd88f5065fbd9bbfefdfb22fdec840ef624540",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
       "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
       "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
       "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
       "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
-      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "759627c6a1a0cf969c9665e3c4410bbbba79ea5bc324e1db6db7444fb03a37ca"
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "a071e41bbcd3e2b2670c6fed00281bbb6bfb6b664c91b2da48d1190485fcd496"
     }
   },
   {
@@ -1008,14 +1008,14 @@
       "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
       "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
       "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "02f2ecaf3204830427c269d142438883936e5efacb15c4c70eaaca9e45f0688c",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
       "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "01ba320d56f67dfaf95f6c0d62dd88f5065fbd9bbfefdfb22fdec840ef624540",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
       "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
       "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
       "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
       "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
-      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "759627c6a1a0cf969c9665e3c4410bbbba79ea5bc324e1db6db7444fb03a37ca"
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "a071e41bbcd3e2b2670c6fed00281bbb6bfb6b664c91b2da48d1190485fcd496"
     }
   },
   {
@@ -1041,14 +1041,14 @@
       "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
       "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
       "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "02f2ecaf3204830427c269d142438883936e5efacb15c4c70eaaca9e45f0688c",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
       "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "01ba320d56f67dfaf95f6c0d62dd88f5065fbd9bbfefdfb22fdec840ef624540",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
       "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
       "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
       "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
       "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
-      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "759627c6a1a0cf969c9665e3c4410bbbba79ea5bc324e1db6db7444fb03a37ca"
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "a071e41bbcd3e2b2670c6fed00281bbb6bfb6b664c91b2da48d1190485fcd496"
     }
   },
   {
@@ -1125,14 +1125,14 @@
       "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
       "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
       "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "02f2ecaf3204830427c269d142438883936e5efacb15c4c70eaaca9e45f0688c",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
       "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "01ba320d56f67dfaf95f6c0d62dd88f5065fbd9bbfefdfb22fdec840ef624540",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
       "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
       "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
       "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
       "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
-      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "759627c6a1a0cf969c9665e3c4410bbbba79ea5bc324e1db6db7444fb03a37ca"
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "a071e41bbcd3e2b2670c6fed00281bbb6bfb6b664c91b2da48d1190485fcd496"
     }
   },
   {
@@ -1145,5 +1145,12 @@
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/question_xml.php": "9d82dde80dabd3dfa6f4f9e99760dec36d27e49f7649fe921c06d21664fbac32"
     }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php",
+    "line": 215,
+    "mutator": "CastInt",
+    "hash": "c7b2c914d311d45c5d77e9bf195a5fc11cee396c641a4d48f89b36c52594e86d",
+    "reason": "get_config('quiz', 'graceperiodmin') returns the admin duration setting as a numeric string (mod/quiz/settings.php, install default 60). The cast only matters for the comparison with the integer grace period and the concatenation into the message: PHP 8 compares an integer with a numeric string numerically and concatenation renders both the same text, so removing the cast changes neither the verdict nor the message. Only an unset setting (false) would differ, and the quiz plugin installs its default."
   }
 ]
