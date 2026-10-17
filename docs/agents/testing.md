@@ -162,6 +162,26 @@ curl -s -X POST https://spike.gruenwald.fun/local/coursepilot/mcp.php \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
+## Spike-Zugang und Sicherheitsgrenzen
+
+- **Zugangsdaten:** `/opt/moodle-devstack-secrets/kurspilot-spike.env` (0600) ist
+  **nicht per `. file` ladbar** (Zeile `URL_INTERNAL=… (Host: …)` ist ein Syntaxfehler).
+  Variablen einzeln exportieren, nie ausgeben:
+  `export TEACHER_PASSWORD="$(sed -n 's/^TEACHER_PASSWORD=//p' /opt/moodle-devstack-secrets/kurspilot-spike.env)"`
+  (analog `TEACHER_USERNAME`, `URL_INTERNAL`). Live-Checks, die einen Ausfall per
+  Passwort-Manipulation simulieren, selbst ausführen, solange der Klartext nie in die
+  eigene Ausgabe gelangt (Backup in lokale Datei, Restore aus ihr).
+- **Container:** direkt per Name, z. B. `docker exec moodle-kurspilot-spike-webserver-1 php …`
+  (Moodle unter `/var/www/html`). `moodle-docker-compose ps -q webserver` liefert nach
+  Sourcen von `docker/kurspilot-spike.env` eine leere ID und ist nicht zu nutzen.
+- **Playwright-Headless:** `require('/opt/local_ai_task_guide/tests/playwright/node_modules/playwright-core')`,
+  Login über `/login/index.php` (`#username`, `#password`, `#loginbtn`).
+- **WebDAV-Testinstanz NC-Zuhause (`nc.gruenwald.fun`, Konto `teacher_edit`):** ist die
+  **private Cloud** des Maintainers. Proben, Skripte und Tests **nur** unter `/spiketest/`
+  (darin schreiben, verschieben, löschen erlaubt). Die Wurzel wird **nie** gelistet, und
+  andere Ordner werden nie angefasst, auch nicht lesend. Materialbestand für den
+  Merkzettel-Test (#483): `/spiketest/material`.
+
 ## Hook-Checks manuell spiegeln
 
 Codex führt Claude-Hooks nicht zuverlässig automatisch aus. Nach passenden Änderungen manuell ausführen:
