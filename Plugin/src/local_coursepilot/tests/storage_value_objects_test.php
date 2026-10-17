@@ -33,6 +33,7 @@ namespace local_coursepilot;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(storage_area::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(storage_failure::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(storage_conflict_exception::class)]
 final class storage_value_objects_test extends \basic_testcase {
     /**
      * Write folder names use the strict upload allowlist unless an area opts out.
@@ -63,5 +64,15 @@ final class storage_value_objects_test extends \basic_testcase {
         $this->assertSame('Disk gone', $failure->getMessage());
         $this->assertSame(0, $failure->getCode());
         $this->assertSame($cause, $failure->getPrevious());
+    }
+
+    /**
+     * The conflict exception names the affected path in its message and error code.
+     */
+    public function test_storage_conflict_exception_names_the_path(): void {
+        $conflict = new storage_conflict_exception('plan/woche1.md');
+
+        $this->assertSame('storageconflict', $conflict->errorcode);
+        $this->assertStringContainsString('plan/woche1.md', $conflict->getMessage());
     }
 }

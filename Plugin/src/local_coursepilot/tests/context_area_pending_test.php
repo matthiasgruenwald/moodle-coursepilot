@@ -72,6 +72,37 @@ final class context_area_pending_test extends \advanced_testcase {
     }
 
     /**
+     * An unreadable location pointer is reported as such and is neither turned into a
+     * pending note nor hidden behind the files-only rule.
+     *
+     * @param bool $append
+     */
+    #[DataProvider('context_write_operations')]
+    public function test_unreadable_pointer_is_reported_unchanged_by_context_writes(bool $append): void {
+        global $USER;
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_user::instance($USER->id)->id,
+            'component' => 'user',
+            'filearea' => 'private',
+            'itemid' => 0,
+            'filepath' => '/coursepilot/',
+            'filename' => storage_anchor::POINTER_FILENAME,
+        ], '{not json');
+
+        try {
+            if ($append) {
+                context_area::append('plan.md', 'Content');
+            } else {
+                context_area::write('plan.md', 'Content');
+            }
+            $this->fail('An unreadable pointer must stop the write.');
+        } catch (\moodle_exception $error) {
+            $this->assertSame('pointerunreadable', $error->errorcode);
+        }
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
      * Both operations validate the same context path before reading storage.
      *
      * @return array<string, array{bool}>

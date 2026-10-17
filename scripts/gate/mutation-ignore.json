@@ -1152,5 +1152,26 @@
     "mutator": "CastInt",
     "hash": "c7b2c914d311d45c5d77e9bf195a5fc11cee396c641a4d48f89b36c52594e86d",
     "reason": "get_config('quiz', 'graceperiodmin') returns the admin duration setting as a numeric string (mod/quiz/settings.php, install default 60). The cast only matters for the comparison with the integer grace period and the concatenation into the message: PHP 8 compares an integer with a numeric string numerically and concatenation renders both the same text, so removing the cast changes neither the verdict nor the message. Only an unset setting (false) would differ, and the quiz plugin installs its default."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php",
+    "line": 382,
+    "mutator": "CastString",
+    "hash": "d9cb3da4fcd96ecea736023444c21801450e53dd8f0e1dad6d62578767bb7023",
+    "reason": "PHP coerces a SimpleXMLElement to string for the string parameter of normalised_path() (the file declares no strict_types), and (string) of the same element yields the identical text, so removing the explicit cast changes neither the path nor any entry."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php",
+    "line": 405,
+    "mutator": "CastString",
+    "hash": "521882fd2f12ae5a195b030219d03d88e9703411eb0fbfa39915f43af0c59cc7",
+    "reason": "Without the cast $lastmodifiedraw is the SimpleXMLElement. The !== comparison with the empty string is then always true, but strtotime() coerces the element to its text and returns false for an empty element, so (int) strtotime() is 0 exactly as the guarded branch yields. The listed timemodified is identical for present, empty and missing properties."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php",
+    "line": 411,
+    "mutator": "CastString",
+    "hash": "d61b527d8a86e991e03b36e47b660b1751a913660cebdaed5899496959c38708",
+    "reason": "(int) applied directly to the SimpleXMLElement $prop->getcontentlength converts its text to the same integer as (int) (string) of that element (SimpleXML supports the integer cast), so the redundant inner string cast does not change the listed size."
   }
 ]

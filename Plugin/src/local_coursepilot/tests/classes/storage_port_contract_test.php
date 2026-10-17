@@ -188,6 +188,16 @@ abstract class storage_port_contract_test extends \advanced_testcase {
         }
     }
 
+    public function test_read_rejects_an_empty_path(): void {
+        $area = $this->area();
+        try {
+            $this->port()->read($area, '');
+            $this->fail('An empty path names no file.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame($area->invalidpathkey, $e->errorcode);
+        }
+    }
+
     public function test_write_applies_the_areas_own_writable_name_rule(): void {
         $area = $this->area();
         try {

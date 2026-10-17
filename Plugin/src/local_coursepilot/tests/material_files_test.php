@@ -114,6 +114,15 @@ final class material_files_test extends \advanced_testcase {
         $this->assertFalse(material_files::is_allowed_extension('programm.exe'));
     }
 
+    public function test_embed_image_allowlist_accepts_images_and_rejects_documents(): void {
+        $this->assertContains('png', material_files::allowed_embed_image_extensions());
+        $this->assertNotContains('pdf', material_files::allowed_embed_image_extensions());
+        $this->assertTrue(material_files::is_allowed_embed_image_extension('Bild.PNG'));
+        $this->assertTrue(material_files::is_allowed_embed_image_extension('ordner/foto.webp'));
+        $this->assertFalse(material_files::is_allowed_embed_image_extension('blatt.pdf'));
+        $this->assertFalse(material_files::is_allowed_embed_image_extension('ohneendung'));
+    }
+
     public function test_resolve_writable_file_accepts_allowed_extension(): void {
         $this->resetAfterTest();
         [$directory, $filename] = material_files::resolve_writable_file('screenshot.png');
@@ -386,6 +395,86 @@ final class material_files_test extends \advanced_testcase {
         $usercontextid = material_files::own_context()->id;
         $this->assertNotFalse($fs->get_file($usercontextid, 'user', 'draft', $draftitemid, '/', 'schon-da.pdf'));
         $this->assertNotFalse($fs->get_file($usercontextid, 'user', 'draft', $draftitemid, '/', 'neu.pdf'));
+    }
+
+    /**
+     * The same file referenced twice lands once in the draft (newest content wins).
+     */
+    public function test_resolve_into_draft_keeps_one_file_when_a_name_is_referenced_twice(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        material_files::replace(
+            null,
+            material_files::filerecord(material_files::own_context()->id, '/coursepilot-material/', 'blatt.pdf'),
+            'Inhalt'
+        );
+
+        $draftitemid = material_files::resolve_into_draft(
+            \context_system::instance()->id,
+            'mod_assign',
+            'introattachment',
+            0,
+            ['blatt.pdf', 'blatt.pdf']
+        );
+
+        $files = get_file_storage()->get_area_files(
+            material_files::own_context()->id,
+            'user',
+            'draft',
+            $draftitemid,
+            'filename',
+            false
+        );
+        $this->assertCount(1, $files);
+        $this->assertSame('Inhalt', reset($files)->get_content());
+    }
+
+    /**
+     * A target folder that is not a string is refused as an invalid path.
+     */
+    public function test_resolve_into_draft_rejects_non_string_target_folder(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        try {
+            material_files::resolve_into_draft(
+                \context_system::instance()->id,
+                'mod_assign',
+                'introattachment',
+                0,
+                [['path' => 'blatt.pdf', 'target_folder' => ['x']]]
+            );
+            $this->fail('A non-string target folder must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidmaterialpath', $e->errorcode);
+        }
+    }
+
+    /**
+     * Only courses where the person may use Coursepilot contribute to the used-content hashes.
+     */
+    public function test_used_contenthashes_count_only_courses_with_coursepilot_capability(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $coursecontext = \context_course::instance($course->id);
+        get_file_storage()->create_file_from_string([
+            'contextid' => $coursecontext->id,
+            'component' => 'course',
+            'filearea' => 'legacy',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'blatt.txt',
+        ], 'Kursinhalt');
+        $hash = \file_storage::hash_from_string('Kursinhalt');
+
+        $student = $generator->create_and_enrol($course, 'student');
+        $this->setUser($student);
+        $this->assertSame([], material_files::used_contenthashes());
+
+        $teacher = $generator->create_and_enrol($course, 'editingteacher');
+        $this->setUser($teacher);
+        $this->assertContains($hash, material_files::used_contenthashes());
     }
 
     /**

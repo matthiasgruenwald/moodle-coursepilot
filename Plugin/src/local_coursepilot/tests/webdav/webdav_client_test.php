@@ -695,4 +695,103 @@ final class webdav_client_test extends \advanced_testcase {
             $this->assertStringNotContainsString($secret, $e->getMessage());
         }
     }
+
+    public function test_propfind_rejects_an_unsupported_depth(): void {
+        [$client] = $this->client(new fake_webdav_transport());
+
+        $this->expectException(\InvalidArgumentException::class);
+        $client->propfind($this->url('/ordner'), 2);
+    }
+
+    public function test_propfind_of_the_unnamed_root_returns_no_entry(): void {
+        [$client] = $this->client(new fake_webdav_transport());
+
+        $this->assertSame([], $client->propfind('https://fake.example/', 0));
+    }
+
+    /**
+     * Without injected clock and sleeper the client waits for real before retrying a throttled request.
+     */
+    public function test_default_clock_and_sleeper_retry_a_throttled_request(): void {
+        $fake = new fake_webdav_transport();
+        $fake->seed_file('/dav/x.md', 'ok');
+        $fake->throttle(1);
+        $client = new webdav_client($fake);
+        $start = microtime(true);
+
+        $this->assertSame('ok', $client->get($this->url('/x.md')));
+
+        $this->assertCount(2, $fake->requests());
+        $this->assertGreaterThanOrEqual(0.19, microtime(true) - $start);
+    }
+
+    public function test_sniff_mimetype_from_content_recognises_svg_as_svg_xml(): void {
+        $svg = '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
+
+        $this->assertSame('image/svg+xml', webdav_client::sniff_mimetype_from_content($svg));
+    }
+
+    /**
+     * Folders list size 0, files without modification time or ETag list 0 / null, and an
+     * unreadable modification time is 0 rather than a failure value.
+     */
+    public function test_propfind_lists_fallback_values_for_missing_or_unreadable_properties(): void {
+        $xml = '<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">'
+            . $this->multistatus_entry('/dav/ordner/', '<d:resourcetype><d:collection/></d:resourcetype>'
+                . '<d:getlastmodified>Wed, 01 Jan 2025 10:00:00 GMT</d:getlastmodified><d:getetag>"f1"</d:getetag>')
+            . $this->multistatus_entry('/dav/roh.md', '<d:resourcetype/><d:getcontentlength>12</d:getcontentlength>')
+            . $this->multistatus_entry('/dav/kaputt.md', '<d:resourcetype/><d:getcontentlength>3</d:getcontentlength>'
+                . '<d:getlastmodified>kein Datum</d:getlastmodified>')
+            . '</d:multistatus>';
+        $transport = new class ($xml) implements webdav_transport {
+            /**
+             * Creates the double.
+             *
+             * @param string $xml Fixed multistatus answer.
+             */
+            public function __construct(
+                /** @var string Fixed multistatus answer. */
+                private readonly string $xml,
+            ) {
+            }
+
+            /**
+             * Answers every request with the fixed multistatus.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param string[] $headers The headers.
+             * @param ?string $body The body.
+             * @return webdav_response
+             */
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
+                return new webdav_response(207, ['content-type' => 'application/xml'], $this->xml);
+            }
+        };
+
+        $entries = (new webdav_client($transport))->propfind('https://fake.example/dav/', 1);
+
+        $this->assertSame(['ordner', 'roh.md', 'kaputt.md'], array_column($entries, 'name'));
+        $this->assertSame(['folder', 0, strtotime('Wed, 01 Jan 2025 10:00:00 GMT'), '"f1"', ''], [
+            $entries[0]['type'], $entries[0]['size'], $entries[0]['timemodified'], $entries[0]['etag'], $entries[0]['mimetype'],
+        ]);
+        $this->assertSame(['file', 12, 0, null], [
+            $entries[1]['type'], $entries[1]['size'], $entries[1]['timemodified'], $entries[1]['etag'],
+        ]);
+        $this->assertSame(['file', 3, 0, null], [
+            $entries[2]['type'], $entries[2]['size'], $entries[2]['timemodified'], $entries[2]['etag'],
+        ]);
+    }
+
+    /**
+     * One `response` node with a successful property set.
+     *
+     * @param string $href
+     * @param string $props Inner XML of the `prop` node.
+     * @return string
+     */
+    private function multistatus_entry(string $href, string $props): string {
+        return '<d:response><d:href>' . $href . '</d:href><d:propstat><d:prop>' . $props . '</d:prop>'
+            . '<d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>';
+    }
 }

@@ -36,6 +36,35 @@ final class pending_write_translation_test extends \advanced_testcase {
     }
 
     /**
+     * An error that is not a location failure is handed back unchanged and records no note.
+     */
+    public function test_unrelated_error_is_returned_unchanged_by_record_location_failure(): void {
+        $error = new \moodle_exception('invalidcontextpath', 'local_coursepilot');
+
+        $result = pointer_writer::record_location_failure($error, 'plan.md', null, pointer_writer::OP_CREATE, 0);
+
+        $this->assertSame($error, $result);
+        $this->assertSame([], pending_write_notice::list_grouped());
+    }
+
+    /**
+     * The target description shows the instance name and host, or only the host
+     * when the instance is unknown or deleted.
+     */
+    public function test_describe_target_falls_back_to_the_host(): void {
+        global $DB;
+        $typeid = $DB->insert_record('repository', (object) ['type' => 'webdav', 'visible' => 1, 'sortorder' => 1]);
+        $instanceid = $DB->insert_record('repository_instances', (object) [
+            'name' => 'Schulcloud', 'typeid' => $typeid, 'userid' => 0,
+            'contextid' => \context_system::instance()->id, 'timecreated' => time(), 'timemodified' => time(), 'readonly' => 0,
+        ]);
+
+        $this->assertSame('Schulcloud (cloud.example)', pointer_writer::describe_target('cloud.example', $instanceid));
+        $this->assertSame('cloud.example', pointer_writer::describe_target('cloud.example', null));
+        $this->assertSame('cloud.example', pointer_writer::describe_target('cloud.example', $instanceid + 1000));
+    }
+
+    /**
      * Native storage failures keep their error code and full diagnostic in the access event only.
      */
     public function test_native_storage_failure_keeps_the_complete_private_diagnostic(): void {

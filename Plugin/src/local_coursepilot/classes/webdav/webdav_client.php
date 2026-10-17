@@ -52,6 +52,15 @@ final class webdav_client {
     /** @var int[] HTTP statuses that count as success unless specified otherwise. */
     private const DEFAULT_SUCCESS = [200, 201, 204, 207];
 
+    /** @var string[] Error class of the statuses that map one-to-one. */
+    private const STATUS_ERRORS = [
+        401 => webdav_error::AUTH_REJECTED,
+        403 => webdav_error::AUTH_REJECTED,
+        507 => webdav_error::STORAGE_FULL,
+        409 => webdav_error::CONFLICT,
+        412 => webdav_error::CONFLICT,
+    ];
+
     /** @var string Minimal PROPFIND body: all properties. */
     private const PROPFIND_BODY = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><allprop/></propfind>';
 
@@ -275,14 +284,8 @@ final class webdav_client {
         if (in_array($code, $successcodes, true)) {
             return null;
         }
-        if ($code === 401 || $code === 403) {
-            return webdav_error::AUTH_REJECTED;
-        }
-        if ($code === 507) {
-            return webdav_error::STORAGE_FULL;
-        }
-        if ($code === 409 || $code === 412) {
-            return webdav_error::CONFLICT;
+        if (isset(self::STATUS_ERRORS[$code])) {
+            return self::STATUS_ERRORS[$code];
         }
         if ($code === 404) {
             return $this->is_dav_xml_body($response) ? webdav_error::NOT_FOUND : webdav_error::UNCLEAR;
@@ -357,37 +360,59 @@ final class webdav_client {
         $requestpath = $this->normalised_path($requesturl);
         $entries = [];
         foreach ($sxe->children('DAV:')->response as $responsenode) {
-            $davresponse = $responsenode->children('DAV:');
-            $path = $this->normalised_path((string) $davresponse->href);
-            if ($depth === 1 && $path === $requestpath) {
-                // The resolved level itself, not its content.
-                continue;
+            $entry = $this->entry_of($responsenode->children('DAV:'), $requestpath, $depth);
+            if ($entry !== null) {
+                $entries[] = $entry;
             }
-
-            $prop = $this->successful_prop($davresponse);
-            if ($prop === null) {
-                continue;
-            }
-
-            $name = basename($path);
-            if ($name === '') {
-                continue;
-            }
-
-            $iscollection = isset($prop->resourcetype->children('DAV:')->collection);
-            $lastmodifiedraw = (string) $prop->getlastmodified;
-            $etagraw = (string) $prop->getetag;
-
-            $entries[] = [
-                'name' => $name,
-                'type' => $iscollection ? 'folder' : 'file',
-                'size' => $iscollection ? 0 : (int) (string) $prop->getcontentlength,
-                'timemodified' => $lastmodifiedraw !== '' ? (int) strtotime($lastmodifiedraw) : 0,
-                'etag' => $etagraw !== '' ? $etagraw : null,
-                'mimetype' => $iscollection ? '' : mimeinfo('type', $name),
-            ];
         }
         return $entries;
+    }
+
+    /**
+     * One PROPFIND entry from a `response` node, or null for the requested
+     * level itself (depth 1), an entry without successful properties and
+     * the unnamed root.
+     *
+     * @param \SimpleXMLElement $davresponse The `response` node in the DAV namespace.
+     * @param string $requestpath Normalised path of the request URL.
+     * @param int $depth
+     * @return array{name: string, type: string, size: int, timemodified: int, etag: ?string, mimetype: string}|null
+     */
+    private function entry_of(\SimpleXMLElement $davresponse, string $requestpath, int $depth): ?array {
+        $path = $this->normalised_path((string) $davresponse->href);
+        if ($depth === 1 && $path === $requestpath) {
+            // The resolved level itself, not its content.
+            return null;
+        }
+
+        $prop = $this->successful_prop($davresponse);
+        $name = basename($path);
+        if ($prop === null || $name === '') {
+            return null;
+        }
+        return $this->entry_from_prop($prop, $name);
+    }
+
+    /**
+     * The listing fields of one entry from its successful property set.
+     *
+     * @param \SimpleXMLElement $prop The `prop` node with status 200.
+     * @param string $name Decoded entry name.
+     * @return array{name: string, type: string, size: int, timemodified: int, etag: ?string, mimetype: string}
+     */
+    private function entry_from_prop(\SimpleXMLElement $prop, string $name): array {
+        $iscollection = isset($prop->resourcetype->children('DAV:')->collection);
+        $lastmodifiedraw = (string) $prop->getlastmodified;
+        $etagraw = (string) $prop->getetag;
+
+        return [
+            'name' => $name,
+            'type' => $iscollection ? 'folder' : 'file',
+            'size' => $iscollection ? 0 : (int) (string) $prop->getcontentlength,
+            'timemodified' => $lastmodifiedraw !== '' ? (int) strtotime($lastmodifiedraw) : 0,
+            'etag' => $etagraw !== '' ? $etagraw : null,
+            'mimetype' => $iscollection ? '' : mimeinfo('type', $name),
+        ];
     }
 
     /**

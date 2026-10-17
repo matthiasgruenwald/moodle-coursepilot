@@ -1132,6 +1132,195 @@ final class location_selection_test extends \advanced_testcase {
     private int $lastinstanceid = 0;
 
     /**
+     * A folder level that the storage rejects while browsing is a named error, not an empty level.
+     */
+    public function test_browse_rejected_by_storage_is_a_named_error(): void {
+        $this->resetAfterTest();
+        [, $fake] = $this->prepare_instance();
+        $fake->deny_auth();
+
+        try {
+            location_selection::browse($this->lastinstanceid, '');
+            $this->fail('A rejected account must not look like an empty folder.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('locationselectionexternalerror', $e->errorcode);
+        } finally {
+            \core\di::reset_container();
+        }
+    }
+
+    /**
+     * An external selection without an instance is refused before anything is written.
+     */
+    public function test_apply_rejects_external_selection_without_instance(): void {
+        $this->resetAfterTest();
+        [$user] = $this->prepare_instance();
+
+        try {
+            location_selection::apply([
+                'context_area' => ['type' => 'external', 'path' => 'Kontext'],
+                'material_store' => ['type' => 'moodle'],
+            ]);
+            $this->fail('A selection without instance must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('locationselectionselectioninvalid', $e->errorcode);
+        } finally {
+            \core\di::reset_container();
+        }
+        $this->assertSame(
+            'not_selected',
+            location_selection::page_state((int) $user->id)['locations']['context_area']['state']
+        );
+    }
+
+    /**
+     * Relative segments cannot leave the chosen folder.
+     */
+    public function test_apply_rejects_dot_segments_in_the_external_path(): void {
+        $this->resetAfterTest();
+        $this->prepare_instance();
+
+        try {
+            location_selection::apply([
+                'context_area' => ['type' => 'external', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext/../Fremd'],
+                'material_store' => ['type' => 'moodle'],
+            ]);
+            $this->fail('Dot segments must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidcontextpath', $e->errorcode);
+        } finally {
+            \core\di::reset_container();
+        }
+    }
+
+    /**
+     * Storage that refuses the new folder keeps the pointer unchanged and names the error.
+     */
+    public function test_apply_names_the_error_when_the_storage_is_full_for_new_folders(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->prepare_instance();
+        $fake->fill_storage();
+
+        try {
+            location_selection::apply([
+                'context_area' => ['type' => 'external', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
+                'material_store' => ['type' => 'moodle'],
+            ]);
+            $this->fail('A full storage cannot create the folder.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('locationselectionexternalerror', $e->errorcode);
+        } finally {
+            \core\di::reset_container();
+        }
+        $this->assertSame(
+            'not_selected',
+            location_selection::page_state((int) $user->id)['locations']['context_area']['state']
+        );
+    }
+
+    /**
+     * Moving away from an external location whose storage rejects the account
+     * is a named error, not "no old content" - the check could not prove it.
+     */
+    public function test_apply_names_the_error_when_the_old_external_location_cannot_be_checked(): void {
+        $this->resetAfterTest();
+        [, $fake] = $this->prepare_instance();
+        try {
+            location_selection::apply([
+                'context_area' => ['type' => 'external', 'instanceid' => $this->lastinstanceid, 'path' => 'Alt'],
+                'material_store' => ['type' => 'moodle'],
+            ]);
+            $fake->deny_auth();
+
+            location_selection::apply([
+                'context_area' => ['type' => 'moodle'],
+                'material_store' => ['type' => 'moodle'],
+            ]);
+            $this->fail('An unverifiable old location must not be dropped silently.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('locationselectionexternalerror', $e->errorcode);
+        } finally {
+            \core\di::reset_container();
+        }
+    }
+
+    /**
+     * A filled folder is detected through the storage before handover; a storage failure there is named.
+     */
+    public function test_apply_names_the_error_when_the_handover_check_fails(): void {
+        $this->resetAfterTest();
+        [, $fake] = $this->prepare_instance();
+        $fake->seed_folder('/' . $this->fixturebasispfad . '/Kontext');
+        $fake->fail_once('/' . $this->fixturebasispfad . '/Kontext', 401);
+
+        try {
+            location_selection::apply([
+                'context_area' => ['type' => 'external', 'instanceid' => $this->lastinstanceid, 'path' => 'Kontext'],
+                'material_store' => ['type' => 'moodle'],
+            ]);
+            $this->fail('The handover check must not pass on a storage failure.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('locationselectionexternalerror', $e->errorcode);
+        } finally {
+            \core\di::reset_container();
+        }
+    }
+
+    /**
+     * Locations are described with the instance name, an unknown-instance label or the root wording.
+     */
+    public function test_describe_location_names_instance_path_and_root(): void {
+        $this->resetAfterTest();
+        $this->prepare_instance();
+        $id = $this->lastinstanceid;
+        $external = static fn (int $instanceid, string $path): array => [
+            'location' => 'external', 'instanceid' => $instanceid, 'path' => $path,
+        ];
+
+        $this->assertStringContainsString('Meine Cloud', location_selection::describe_location($external($id, 'Kontext')));
+        $this->assertStringContainsString('Kontext', location_selection::describe_location($external($id, 'Kontext')));
+        $this->assertSame(
+            get_string('locationselectionlocationexternalalroot', 'local_coursepilot', 'Meine Cloud'),
+            location_selection::describe_location($external($id, ''))
+        );
+        $this->assertStringContainsString(
+            get_string('locationselectioninstanceunknown', 'local_coursepilot'),
+            location_selection::describe_location($external($id + 1000, ''))
+        );
+        \core\di::reset_container();
+    }
+
+    /**
+     * The school hint is trimmed configuration text and empty when unconfigured.
+     */
+    public function test_school_hint_is_trimmed_and_empty_by_default(): void {
+        $this->resetAfterTest();
+        $this->assertSame('', location_selection::school_hint());
+
+        set_config('webdavhint', "  Bitte Schulcloud nutzen \n", 'local_coursepilot');
+
+        $this->assertSame('Bitte Schulcloud nutzen', location_selection::school_hint());
+    }
+
+    /**
+     * History entries without from/to (older format) are reported as legacy entries.
+     */
+    public function test_page_state_reports_old_history_entries_as_legacy(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        storage_anchor::write_pointer_document([
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot-material'],
+            'location_history' => [['date' => 1700000000, 'target' => 'context_area']],
+        ]);
+
+        $history = location_selection::page_state((int) $user->id)['history'];
+
+        $this->assertSame([['at' => 1700000000, 'target' => 'context_area', 'state' => 'legacy']], $history);
+    }
+
+    /**
      * Prepares instance.
      *
      * @return array{0: \stdClass, 1: fake_webdav_transport}

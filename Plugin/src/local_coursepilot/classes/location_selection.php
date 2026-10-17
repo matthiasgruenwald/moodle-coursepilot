@@ -93,6 +93,28 @@ final class location_selection {
      */
     public static function page_state(int $userid, ?array $browse = null): array {
         $setup = self::setup_state($userid);
+        $steps = [];
+        foreach ($setup['steps'] as $key => $step) {
+            $steps[$key] = ['state' => $step['ok'] ? 'complete' : 'missing'];
+        }
+        return [
+            'webdav' => ['state' => $setup['state'], 'steps' => $steps],
+            'locations' => self::location_states(),
+            'instances' => self::own_instances(),
+            'browse' => $browse === null ? ['state' => 'idle'] : ['state' => 'ready'] + $browse,
+            'previous_location' => ['state' => previous_location::open() ? 'open' : 'closed'],
+            'history' => array_map(self::history_state(...), self::history()),
+            'notices' => [],
+            'errors' => [],
+        ];
+    }
+
+    /**
+     * Presentation-independent state of both targets.
+     *
+     * @return array<string, mixed[]>
+     */
+    private static function location_states(): array {
         $locations = [];
         foreach (self::TARGETS as $target) {
             $current = self::current($target);
@@ -103,30 +125,26 @@ final class location_selection {
                 'allowed' => $current['allowed'] ? 'allowed' : 'not_allowed',
             ] + (isset($current['instanceid']) ? ['instanceid' => $current['instanceid']] : []);
         }
-        $steps = [];
-        foreach ($setup['steps'] as $key => $step) {
-            $steps[$key] = ['state' => $step['ok'] ? 'complete' : 'missing'];
+        return $locations;
+    }
+
+    /**
+     * State of one history entry; entries of the older format without
+     * from/to are reported as legacy.
+     *
+     * @param mixed[] $entry
+     * @return mixed[]
+     */
+    private static function history_state(array $entry): array {
+        if (isset($entry['from'], $entry['to'])) {
+            return [
+                'at' => (int) ($entry['date'] ?? 0),
+                'target' => (string) ($entry['target'] ?? ''),
+                'from' => $entry['from'],
+                'to' => $entry['to'],
+            ];
         }
-        return [
-            'webdav' => ['state' => $setup['state'], 'steps' => $steps],
-            'locations' => $locations,
-            'instances' => self::own_instances(),
-            'browse' => $browse === null ? ['state' => 'idle'] : ['state' => 'ready'] + $browse,
-            'previous_location' => ['state' => previous_location::open() ? 'open' : 'closed'],
-            'history' => array_map(static function (array $entry): array {
-                if (isset($entry['from'], $entry['to'])) {
-                    return [
-                        'at' => (int) ($entry['date'] ?? 0),
-                        'target' => (string) ($entry['target'] ?? ''),
-                        'from' => $entry['from'],
-                        'to' => $entry['to'],
-                    ];
-                }
-                return ['at' => (int) ($entry['date'] ?? 0), 'target' => (string) ($entry['target'] ?? ''), 'state' => 'legacy'];
-            }, self::history()),
-            'notices' => [],
-            'errors' => [],
-        ];
+        return ['at' => (int) ($entry['date'] ?? 0), 'target' => (string) ($entry['target'] ?? ''), 'state' => 'legacy'];
     }
 
     /**
@@ -700,12 +718,8 @@ final class location_selection {
      * @throws \moodle_exception locationselectionexternalerror, or errors from {@see webdav_instance::resolve_owned()}.
      */
     private static function ensure_directory(int $instanceid, string $path): void {
-        $segments = self::validate_segments($path);
-        if (empty($segments)) {
-            return;
-        }
         try {
-            webdav_storage_port::create_location_directory($instanceid, $segments);
+            webdav_storage_port::create_location_directory($instanceid, self::validate_segments($path));
         } catch (webdav_error $e) {
             throw pointer_reader::webdav_exception($e, 'locationselectionexternalerror');
         }
