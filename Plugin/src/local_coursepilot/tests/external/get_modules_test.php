@@ -59,8 +59,6 @@ final class get_modules_test extends \advanced_testcase {
      * Activities come in course order: by section, then by position inside the section.
      */
     public function test_lists_activities_in_section_and_sequence_order(): void {
-        global $CFG;
-        require_once($CFG->dirroot . '/course/lib.php');
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course(['numsections' => 2]);
         $teacher = $this->getDataGenerator()->create_user();
@@ -69,8 +67,7 @@ final class get_modules_test extends \advanced_testcase {
         $later = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'B'], ['section' => 2]);
         $first = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'A'], ['section' => 1]);
         $second = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'C'], ['section' => 1]);
-        $modinfo = get_fast_modinfo($course);
-        moveto_module($modinfo->get_cm($second->cmid), $modinfo->get_section_info(1), (int) $first->cmid);
+        \local_coursepilot\course_module_placement::place_after((int) $first->cmid, (int) $second->cmid);
 
         $result = get_modules::execute($course->id);
 
