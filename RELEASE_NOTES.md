@@ -6,6 +6,12 @@ lokalen Coursepilot-MCP. Entwicklungs- und Issue-Repository ist
 (primäres Repository); der Plugin-Quellbaum wird separat als Mirror für das Moodle Plugin
 Directory veröffentlicht.
 
+## Coursepilot 2.1.3-beta — Aufgaben ohne Bewertung
+
+- Über `create_module` angelegte und über `update_module_settings` bearbeitete Aufgaben besitzen nach erfolgreichem Schreiben ein primäres Grade-Item. Damit funktionieren Lerneransicht, Versuchshistorie und Moodle Mobile auch ohne Bewertung und ohne Gradebook-Feedback.
+- Workaround für [MDL-89461](https://moodle.atlassian.net/browse/MDL-89461): Fehlt das Item, legt die Moodle-Grade-API es zunächst als TEXT an; anschließend bestimmt `assign_grade_item_update()` den endgültigen Typ anhand der unveränderten Aufgaben- und Feedback-Einstellungen. Vorhandene Items werden von der zusätzlichen Absicherung nicht verändert. API-Fehler oder eine unerfüllte Postcondition rollen die gesamte Schreibaktion zurück.
+- Keine Sammelreparatur bestehender Aufgaben und keine Schemaänderung. Die Moodle-Buildnummer ist `2026101801`; Installationen führen das reguläre Plugin-Upgrade aus. Moodle 5.1, 5.2 und 5.3 bleiben unterstützt, Reifegrad Beta.
+
 ## Coursepilot 2.1.2-beta — Quiz-lokale Fragen
 
 - Fragen können auf Wunsch zuerst im eigenen Quiz-Kontext angelegt werden. Das neue Werkzeug `coursepilot_ensure_quiz_question_categories` prüft Kurs, Quiz und Moodle-Rechte und stellt die native Standardkategorie bereit.
