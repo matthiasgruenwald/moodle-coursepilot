@@ -45,6 +45,7 @@ final class assign_grade_item_write_test extends \advanced_testcase {
         require_once($CFG->dirroot . '/mod/assign/locallib.php');
         require_once($CFG->dirroot . '/mod/assign/externallib.php');
         $PAGE->set_url('/mod/assign/view.php');
+        set_config('feedback_plugin_for_gradebook', 'assignfeedback_comments', 'assign');
         $this->course = $this->getDataGenerator()->create_course();
         $this->teacher = $this->getDataGenerator()->create_and_enrol($this->course, 'editingteacher');
         $this->student = $this->getDataGenerator()->create_and_enrol($this->course, 'student');
@@ -69,11 +70,9 @@ final class assign_grade_item_write_test extends \advanced_testcase {
 
     /**
      * @param int $grade
-     * @param string $feedbackplugin
      * @return array<string, mixed>
      */
-    private function fields(int $grade, string $feedbackplugin): array {
-        set_config('feedback_plugin_for_gradebook', 'assignfeedback_' . $feedbackplugin, 'assign');
+    private function fields(int $grade): array {
         return [
             'name' => 'Assignment', 'intro' => 'Practice', 'grade' => $grade,
             'assignfeedback_comments_enabled' => 0,
@@ -121,7 +120,8 @@ final class assign_grade_item_write_test extends \advanced_testcase {
      */
     #[\PHPUnit\Framework\Attributes\DataProvider('grade_configurations')]
     public function test_create_has_usable_primary_item(int $grade, string $feedbackplugin, bool $enabled, int $gradetype): void {
-        $fields = $this->fields($grade, $feedbackplugin);
+        $fields = $this->fields($grade);
+        set_config('feedback_plugin_for_gradebook', 'assignfeedback_' . $feedbackplugin, 'assign');
         $fields['assignfeedback_' . $feedbackplugin . '_enabled'] = (int) $enabled;
         $result = external_api::clean_returnvalue(create_module::execute_returns(), create_module::execute(
             $this->course->id, 0, 'assign', json_encode($fields)
@@ -138,7 +138,8 @@ final class assign_grade_item_write_test extends \advanced_testcase {
     #[\PHPUnit\Framework\Attributes\DataProvider('grade_configurations')]
     public function test_update_repairs_missing_item_once(int $grade, string $feedbackplugin, bool $enabled, int $gradetype): void {
         global $DB;
-        $fields = $this->fields($grade, $feedbackplugin);
+        $fields = $this->fields($grade);
+        set_config('feedback_plugin_for_gradebook', 'assignfeedback_' . $feedbackplugin, 'assign');
         $fields['assignfeedback_' . $feedbackplugin . '_enabled'] = (int) $enabled;
         $instance = $this->getDataGenerator()->create_module('assign', ['course' => $this->course->id] + $fields);
         foreach (\grade_item::fetch_all(['itemtype' => 'mod', 'itemmodule' => 'assign',
@@ -173,6 +174,10 @@ final class assign_grade_item_write_test extends \advanced_testcase {
      * @param \core\event\base $event
      */
     public static function lock_seed(\core\event\base $event): void {
+        // Updated and deleted events inherit from created, but only the seed should be locked.
+        if ($event::class !== \core\event\grade_item_created::class) {
+            return;
+        }
         $item = \grade_item::fetch(['id' => $event->objectid]);
         if ($item && $item->itemmodule === 'assign' && (int) $item->gradetype === GRADE_TYPE_TEXT) {
             $item->needsupdate = 0;
@@ -202,7 +207,7 @@ final class assign_grade_item_write_test extends \advanced_testcase {
     public function test_failed_repair_rolls_back_entire_write(string $callback, bool $updating): void {
         global $DB;
         $this->preventResetByRollback();
-        $fields = $this->fields(0, 'comments');
+        $fields = $this->fields(0);
         if ($updating) {
             $instance = $this->getDataGenerator()->create_module('assign', ['course' => $this->course->id] + $fields);
         }
@@ -250,11 +255,11 @@ final class assign_grade_item_write_test extends \advanced_testcase {
             'value' => 1,
             'scale' => -$this->getDataGenerator()->create_scale(['scale' => 'Try again,Done'])->id,
         };
-        $fields = $this->fields($grade, 'comments');
+        $fields = $this->fields($grade);
         $instance = $this->getDataGenerator()->create_module('assign', ['course' => $this->course->id] + $fields);
         if ($type === 'none') {
             \grade_update('mod/assign', $this->course->id, 'mod', 'assign', $instance->id, 0, null,
-                ['gradetype' => GRADE_TYPE_TEXT]);
+                ['gradetype' => GRADE_TYPE_TEXT, 'idnumber' => '']);
             $instance->cmidnumber = '';
             \assign_grade_item_update($instance);
         }
@@ -263,6 +268,7 @@ final class assign_grade_item_write_test extends \advanced_testcase {
             'finalgrade' => 1, 'overridden' => 1]);
         $gradeentry->insert();
         $item->gradepass = 0.5;
+        $item->needsupdate = 0;
         $item->set_hidden(1);
         $item->set_locked(1);
         $before = $DB->get_record('grade_items', ['id' => $item->id]);
