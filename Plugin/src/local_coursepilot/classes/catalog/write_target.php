@@ -158,7 +158,9 @@ final class write_target {
             // The module context does not exist yet: drafts are prepared
             // against the course context, add_moduleinfo() saves them.
             $target->apply_changes($catalogclass, $moduleinfo, context_course::instance($course->id), $location, false);
-            return (int) \add_moduleinfo($moduleinfo, $course)->coursemodule;
+            $created = \add_moduleinfo($moduleinfo, $course);
+            self::ensure_assign_grade_item($catalogclass::modname(), (int) $created->coursemodule);
+            return (int) $created->coursemodule;
         });
         return ['cmid' => $cmid, 'changes' => $fields];
     }
@@ -201,8 +203,45 @@ final class write_target {
                 $target->changes);
             $target->apply_changes($catalogclass, $moduleinfo, context_module::instance($cm->id), $location, true);
             \update_moduleinfo($cm, $moduleinfo, $course);
+            self::ensure_assign_grade_item($catalogclass::modname(), (int) $cm->id);
         });
         return $patch;
+    }
+
+    /**
+     * Ensures assignment reads can load the primary grade item before the write commits.
+     *
+     * @param string $modname
+     * @param int $cmid
+     * @throws moodle_exception when the grade API cannot establish the postcondition.
+     */
+    private static function ensure_assign_grade_item(string $modname, int $cmid): void {
+        global $CFG, $DB;
+        if ($modname !== 'assign') {
+            return;
+        }
+        $cm = get_coursemodule_from_id('assign', $cmid, 0, false, MUST_EXIST);
+        $params = ['courseid' => $cm->course, 'itemtype' => 'mod', 'itemmodule' => 'assign',
+            'iteminstance' => $cm->instance, 'itemnumber' => 0];
+        $count = $DB->count_records('grade_items', $params);
+        if ($count === 1) {
+            return;
+        }
+        if ($count > 1) {
+            throw new moodle_exception('assignmentgradeitemfailed', 'local_coursepilot');
+        }
+        require_once($CFG->dirroot . '/mod/assign/lib.php');
+        require_once($CFG->libdir . '/gradelib.php');
+        $assignment = $DB->get_record('assign', ['id' => $cm->instance], '*', MUST_EXIST);
+        $assignment->cmidnumber = $cm->idnumber;
+        // Core skips inserting NONE items, but assignment reads require one. Seed TEXT, then let Core choose the final type.
+        $status = \grade_update('mod/assign', $assignment->course, 'mod', 'assign', $assignment->id, 0, null, [
+            'itemname' => $assignment->name, 'idnumber' => $cm->idnumber, 'gradetype' => GRADE_TYPE_TEXT,
+        ]);
+        if ($status !== GRADE_UPDATE_OK || \assign_grade_item_update($assignment) !== GRADE_UPDATE_OK
+                || $DB->count_records('grade_items', $params) !== 1) {
+            throw new moodle_exception('assignmentgradeitemfailed', 'local_coursepilot');
+        }
     }
 
     /**

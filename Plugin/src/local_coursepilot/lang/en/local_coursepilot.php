@@ -691,3 +691,4 @@ $string['glossaryentrystandardtags'] = 'This glossary allows only existing stand
 
 // Verified activity-type knowledge supplied at location selection (#603).
 $string['activitytypetemplatesprovided'] = 'Activity-type templates supplied: {$a}.';
+$string['assignmentgradeitemfailed'] = 'The assignment could not be saved because Moodle could not provide its primary grade item. The changes have been rolled back.';
