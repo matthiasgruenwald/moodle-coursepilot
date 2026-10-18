@@ -527,7 +527,6 @@ $string['unknownmodname'] = 'Unknown activity type "{$a->modname}". Coursepilot 
 $string['unknownskillname'] = 'Unknown skill name "{$a->name}". Valid names: {$a->names}.';
 $string['versioninfosummary'] = 'Moodle {$a->moodlerelease} (branch {$a->branch}), Coursepilot plugin {$a->pluginrelease} (version {$a->pluginversion}).';
 $string['versioninfoupgradewarning'] = 'Warning: The database records version {$a} - upgrade.php was not run after the last deployment.';
-$string['assignmentgradeitemfailed'] = 'The assignment could not be saved because Moodle could not provide its primary grade item. The changes have been rolled back.';
 $string['versionnotfound'] = 'Version {$a->version} does not exist for this activity (cmid {$a->cmid}).';
 $string['webdavauthunsupported'] = 'This WebDAV connection no longer uses https with basic authentication — Coursepilot does not support that. Please fix it on the location page ({$a}).';
 $string['webdavcheck1infooptional'] = 'The "WebDAV" repository type is not active. That is harmless as long as nobody has chosen an external storage location.';

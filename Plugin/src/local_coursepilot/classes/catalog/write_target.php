@@ -245,8 +245,11 @@ final class write_target {
         $status = \grade_update('mod/assign', $assignment->course, 'mod', 'assign', $assignment->id, 0, null, [
             'itemname' => $assignment->name, 'idnumber' => $cm->idnumber, 'gradetype' => GRADE_TYPE_TEXT,
         ]);
-        if ($status !== GRADE_UPDATE_OK || \assign_grade_item_update($assignment) !== GRADE_UPDATE_OK
-                || $DB->count_records('grade_items', $params) !== 1) {
+        if (
+            $status !== GRADE_UPDATE_OK
+            || \assign_grade_item_update($assignment) !== GRADE_UPDATE_OK
+            || $DB->count_records('grade_items', $params) !== 1
+        ) {
             throw new moodle_exception('assignmentgradeitemfailed', 'local_coursepilot');
         }
     }
