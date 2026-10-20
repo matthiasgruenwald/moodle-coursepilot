@@ -1,0 +1,183 @@
+{
+    "modname": "resource",
+    "fields": [
+        {
+            "name": "name",
+            "type": "PARAM_TEXT",
+            "meaning": "Display name of the file activity.",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/resource/mod_form.php:51-54 (PARAM_TEXT or PARAM_CLEANHTML depending on $CFG->formatstringstriptags)"
+            }
+        },
+        {
+            "name": "intro",
+            "type": "PARAM_RAW",
+            "meaning": "Description (intro), optionally shown above the file (pseudofield \"printintro\" controls whether it is shown; only effective for certain display values).",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/resource/db/install.xml (resource.intro, NOTNULL=false)"
+            }
+        },
+        {
+            "name": "introformat",
+            "type": "PARAM_INT",
+            "meaning": "Text format of the intro.",
+            "required": false,
+            "default_json": "\"1\"",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "format_text_menu()",
+                "source": "lib/weblib.php:464 (format_text_menu()); column mod/resource/db/install.xml (resource.introformat)"
+            }
+        },
+        {
+            "name": "display",
+            "type": "PARAM_INT",
+            "meaning": "File display (e.g. automatic, embedded, new window, popup, direct open/download). Available options are a subset configured by Moodle administration, not a fixed list.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "resourcelib_get_displayoptions()",
+                "source": "lib/resourcelib.php:30-42 (RESOURCELIB_DISPLAY_*-constants), :111 (resourcelib_get_displayoptions()); Subset from admin_setting_configmultiselect('resource/displayoptions', ...) in mod/resource/settings.php:28-42; column mod/resource/db/install.xml (resource.display)"
+            }
+        },
+        {
+            "name": "filterfiles",
+            "type": "PARAM_INT",
+            "meaning": "Apply text filters to file content: no filter (0), all files (1), or HTML files only (2).",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1,2]",
+                "source_callable": null,
+                "source": "mod/resource/mod_form.php:132-134 (option list none/allfiles/htmlfilesonly); column mod/resource/db/install.xml (resource.filterfiles)"
+            }
+        }
+    ],
+    "write_options": {
+        "material_reference_fields": {
+            "files": {
+                "component": "mod_resource",
+                "filearea": "content"
+            }
+        }
+    },
+    "common_field_names": [
+        "name",
+        "intro",
+        "introformat",
+        "display",
+        "filterfiles"
+    ],
+    "pseudofields": [
+        {
+            "name": "files",
+            "type": "List of material store paths (JSON array)",
+            "meaning": "Files to attach, including the main file - each entry is a path in the material store (Spec 0018 §4.2, e.g. [\"worksheet.pdf\"]), uploaded there first using upload_material_file. REQUIRED FIELD: WITHOUT a main file, resource creates a broken activity page - unlike folder, an empty state is invalid here.",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/resource/locallib.php: resource_set_mainfile(); mod/resource/view.php:69-71 (resource_print_filenotfound() without a file); local_coursepilot\\material_files::resolve_into_draft()"
+            }
+        },
+        {
+            "name": "printintro",
+            "type": "PARAM_BOOL",
+            "meaning": "Show intro as well - only effective for display=0 (auto), 1 (embed) or 2 (frame). Not a DB field - stored in the serialized \"displayoptions\" column.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/resource/lib.php (resource_set_display_options(): only set when display in [AUTO, EMBED, FRAME])"
+            }
+        },
+        {
+            "name": "popupwidth",
+            "type": "PARAM_INT",
+            "meaning": "Window width in pixels, only effective for display=6 (popup). Not a DB field - stored in \"displayoptions\".",
+            "required": false,
+            "default_json": "620",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/resource/lib.php (resource_set_display_options(): only set when display==RESOURCELIB_DISPLAY_POPUP)"
+            }
+        },
+        {
+            "name": "popupheight",
+            "type": "PARAM_INT",
+            "meaning": "Window height in pixels, only effective for display=6 (popup). Not a DB field - stored in \"displayoptions\".",
+            "required": false,
+            "default_json": "450",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/resource/lib.php (resource_set_display_options(): only set when display==RESOURCELIB_DISPLAY_POPUP)"
+            }
+        },
+        {
+            "name": "showsize",
+            "type": "PARAM_BOOL",
+            "meaning": "Dateigroesse anzeigen. Kein DB-Feld - fliesst in \"displayoptions\".",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/resource/lib.php (resource_set_display_options(): `$displayoptions['showsize']`)"
+            }
+        },
+        {
+            "name": "showtype",
+            "type": "PARAM_BOOL",
+            "meaning": "Dateityp anzeigen. Kein DB-Feld - fliesst in \"displayoptions\".",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/resource/lib.php (resource_set_display_options(): `$displayoptions['showtype']`)"
+            }
+        },
+        {
+            "name": "showdate",
+            "type": "PARAM_BOOL",
+            "meaning": "Show file creation/modification date. Not a DB field - stored in \"displayoptions\".",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/resource/lib.php (resource_set_display_options(): `$displayoptions['showdate']`)"
+            }
+        }
+    ],
+    "blocklist": [
+        "revision",
+        "displayoptions",
+        "tobemigrated",
+        "legacyfiles",
+        "legacyfileslast"
+    ],
+    "combination_rules": [],
+    "side_effects": [
+        "resource requires \"files\" on creation (list of material store paths, Spec 0018 §4.2): without a main file, the activity page is broken (Spec 0015 §4.3), so create_module fails without \"files\" before anything is created."
+    ],
+    "bundles": [],
+    "write_route": null,
+    "checked_constants": [],
+    "learner_locks": [],
+    "reviewed_up_to_major": 500,
+    "grade_origin": "none"
+}
