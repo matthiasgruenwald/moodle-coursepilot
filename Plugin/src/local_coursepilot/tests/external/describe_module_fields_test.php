@@ -58,6 +58,24 @@ final class describe_module_fields_test extends \advanced_testcase {
     }
 
     /**
+     * Assignment marker fields remain a list after a duplicate shared completion field is removed.
+     */
+    public function test_assignment_marker_blocklist_has_consecutive_keys(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $CFG->branch = '502';
+
+        $result = describe_module_fields::execute('assign', true);
+
+        $this->assertTrue(array_is_list($result['module']['blocked_fields']));
+        $result = external_api::clean_returnvalue(describe_module_fields::execute_returns(), $result);
+        $this->assertContains('completionsubmit', $result['module']['blocked_fields']);
+        $this->assertContains('markercount', $result['module']['blocked_fields']);
+    }
+
+    /**
      * Without modname, list supported activity types (user story 13).
      */
     public function test_without_modname_lists_known_activity_types(): void {

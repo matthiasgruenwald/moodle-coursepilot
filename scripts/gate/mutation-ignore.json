@@ -619,7 +619,7 @@
       "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
       "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
       "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
-      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404",
       "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
       "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
       "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
@@ -652,7 +652,7 @@
       "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
       "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
       "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
-      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404",
       "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
       "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
       "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
@@ -685,7 +685,7 @@
       "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
       "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
       "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
-      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404",
       "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
       "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
       "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
@@ -990,14 +990,14 @@
     "line": 282,
     "mutator": "UnwrapArrayMerge",
     "hash": "0760a0a0c749f52d54942f2e4e9857b5b5edbe5d2967d3cb07923cd1a7357b1a",
-    "reason": "Only for the exact repository catalog sources in sourceHashes: the closed nine-type registry and its field/pseudofield constructors produce no writable name in either blocklist. Therefore removing only the shared arm of this private merge cannot change any iterated field, patch or write. The real native read-only catalog audit checked both intersections for every registered type. Every catalog source, registry and shared definition is bound; a changed dependency disables this exception. Proof: docs/checks/672-infection-equivalence.md.",
+    "reason": "Only for the exact repository catalog sources in sourceHashes: the closed nine-type registry and its field/pseudofield constructors produce no writable name in either blocklist. Therefore removing only the module-specific arm of this private merge cannot change any iterated field, patch or write. The real native read-only catalog audit checked both intersections for every registered type. Every catalog source, registry and shared definition is bound; a changed dependency disables this exception. Proof: docs/checks/672-infection-equivalence.md.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/catalog/activity_kind.php": "c8eb56502be95192982cd8fe82c0a360e28d600f9896254e745527a04c59bb88",
       "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
       "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
       "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
       "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
-      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404",
       "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
       "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
       "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
@@ -1023,14 +1023,14 @@
     "line": 282,
     "mutator": "UnwrapArrayMerge",
     "hash": "f95efa16579107df3e0f4090aab2c17fd19ee910f352e810e27523b050b3ee98",
-    "reason": "Only for the exact repository catalog sources in sourceHashes: the closed nine-type registry and its field/pseudofield constructors produce no writable name in either blocklist. Therefore removing only the module-specific arm of this private merge cannot change any iterated field, patch or write. The real native read-only catalog audit checked both intersections for every registered type. Every catalog source, registry and shared definition is bound; a changed dependency disables this exception. Proof: docs/checks/672-infection-equivalence.md.",
+    "reason": "Only for the exact repository catalog sources in sourceHashes: the closed nine-type registry and its field/pseudofield constructors produce no writable name in either blocklist. Therefore removing only the shared arm of this private merge cannot change any iterated field, patch or write. The real native read-only catalog audit checked both intersections for every registered type. Every catalog source, registry and shared definition is bound; a changed dependency disables this exception. Proof: docs/checks/672-infection-equivalence.md.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/catalog/activity_kind.php": "c8eb56502be95192982cd8fe82c0a360e28d600f9896254e745527a04c59bb88",
       "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
       "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
       "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
       "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
-      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404",
       "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
       "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
       "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
@@ -1101,39 +1101,6 @@
     "hash": "537c6da39e9d76ffd5359bddccca55663bfc050e5a5c0c7e3297d0576a8d896c",
     "reason": "Only for the exact captured native qtype/formatter/parser/schema/setup/DML/file sources (qtypeSourceHash): The exact mutant source includes the TDD-enforced public rejection of native editing-wizard state before parsing or writing. Therefore each reached base save creates a fresh native question/version. The numeric-array producers supply numeric int/float values or legacy calculated numeric strings; nonnumeric/out-of-range legacy values fail strict database saving before comparison. After successful DECIMAL(12,7) storage the compared magnitude is below approximately100000. If either operand is floating or a numeric string treated as floating by PHP arithmetic, PHP subtraction already performs that same float conversion; if both are integral, integer subtraction is exact and its absolute distance is either0 or at least1, giving the same 1e-5 decision as explicit float conversion. This private list is consumed only by the mismatch predicate; no raw scalar type is published. No rounded predecessor identity is reused. Full finite constructor/database proof: docs/checks/672-infection-equivalence.md.",
     "qtypeSourceHash": "a4202fdd0d146ab327992a53365530ab728c64f74cc069bb73bbc4287f72eac8"
-  },
-  {
-    "file": "Plugin/src/local_coursepilot/classes/external/describe_module_fields.php",
-    "line": 151,
-    "mutator": "UnwrapArrayValues",
-    "hash": "ca8c6132cdc7874c6bbeea3f2125b49e8c1d9aeeb401de4d866f0a8d19dc96ae",
-    "reason": "array_values only renumbers keys after array_unique. array_merge of the two blocklists yields a zero-based list, and array_unique can leave a gap only when a duplicate is dropped; test_full_catalog_blocklists_have_no_duplicate_fields proves that no registered catalog duplicates a shared blocked field (and the raw result is asserted to be a list for every module). The registry is closed, and the exact catalog and shared-block sources are bound by sourceHashes, so any new or changed blocklist source makes this survivor block again.",
-    "sourceHashes": {
-      "Plugin/src/local_coursepilot/classes/catalog/activity_kind.php": "c8eb56502be95192982cd8fe82c0a360e28d600f9896254e745527a04c59bb88",
-      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
-      "Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php": "b825134236827416d470486dde0a171bbf0397804c57a0ad10aa96d3056fc9f8",
-      "Plugin/src/local_coursepilot/classes/catalog/choice.php": "2e0eb2a3f7267ae84bd0cdd789e100023d0c0c90763d62b7ab7008daa977f14e",
-      "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php": "5baa2c686e6f90230d527ddfa030b835c500dfed27a7bab4f5904c888e94bf56",
-      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "f487a3ebd4bf660a70690fc73a153475dd663cd24ce5ca0422319a6dd5e61e4e",
-      "Plugin/src/local_coursepilot/classes/catalog/field.php": "5bdf75c36646029d4e998de8b64745f0dcf63013802d9b25a5b541596927071c",
-      "Plugin/src/local_coursepilot/classes/catalog/folder.php": "3c6f22ad317eedbd94e595ff843bb20b1643c1b025e597503da4dd1caed74cc7",
-      "Plugin/src/local_coursepilot/classes/catalog/forum.php": "26c22408a6988d3dd7c93d728d4d8d4fdc4321427335c698163dd1f20dcfb7dd",
-      "Plugin/src/local_coursepilot/classes/catalog/label.php": "b4a2398e80e7b2345ba32cb911c760ea0c45a516662437cd6363f8cbdfd12e24",
-      "Plugin/src/local_coursepilot/classes/catalog/learner_locks.php": "d4f5b4c2c833f4e60483e0087fc21531bbd22d52f475050a05c432c332ad52bc",
-      "Plugin/src/local_coursepilot/classes/catalog/module_catalog.php": "eea30a7b3674b7458b75463045ed76a64a90c69f9898c69f5eba8cf0d27b7862",
-      "Plugin/src/local_coursepilot/classes/catalog/module_settings.php": "b8c703b21c542a31d8150121ee0c688b97dc10d8e8a744ace919a0728d0e2fde",
-      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
-      "Plugin/src/local_coursepilot/classes/catalog/page.php": "2f2af3d153c644c65a79626b590d6e1ab6e0146431c1294fd9186d781ffa4141",
-      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz_write.php": "9e9c3a3d932184f3f8f5fd30f0a5ba4e794890423380ae75cfb6fd00b33baff6",
-      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda",
-      "Plugin/src/local_coursepilot/classes/catalog/registry.php": "8de42484ac58d8f4d1d31f7d0210467831ae18c32027e9764a2174dd1eab3140",
-      "Plugin/src/local_coursepilot/classes/catalog/resource.php": "4bd9d0b5a2d62161d48e669330e77a97a26b382bca0a7d7d68bbc5dde66af4f8",
-      "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334",
-      "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464",
-      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
-    }
   },
   {
     "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
@@ -1266,6 +1233,585 @@
     "reason": "delete_context_files() is private and has exactly three callers (delete_data_for_user, delete_data_for_all_users_in_context, delete_data_for_users); each calls it only inside an $context instanceof \\context_user branch, so the inner instanceof check is always true and replacing it by true cannot change any call.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/privacy/provider.php": "34fde412090e0ac04e35f6792227a1243313f7791944950f273e792021d5e9e3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 499,
+    "mutator": "Concat",
+    "hash": "d764d05ea1dcc636e16ddb7781fafa9eb766d5ed32b636193062a6fd26e2b6bc",
+    "reason": "This mutation only permutes two fragments of the SQL SELECT column list. Each named column still appears once; get_record() returns an object accessed solely by property name in state(), and the response settings are constructed in an explicit order independent of SELECT order. Thus all returned values and their ordering are preserved. Change: ' => $instanceid], 'id, name, intro, allowsubmissionsfromdate, duedate, cutoffdate, gradingduedate, completionsubmit, grade, ' . 'submissiondrafts, requiresubmissionstatement, maxattempts, attemptreop",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 499,
+    "mutator": "Concat",
+    "hash": "1992b603012a045a234e532e2253b1f733d2d2b1c8348809d890054b1a8ac536",
+    "reason": "This mutation only permutes two fragments of the SQL SELECT column list. Each named column still appears once; get_record() returns an object accessed solely by property name in state(), and the response settings are constructed in an explicit order independent of SELECT order. Thus all returned values and their ordering are preserved. Change: submit, grade, ' . 'submissiondrafts, requiresubmissionstatement, maxattempts, attemptreopenmethod, teamsubmission, ' . 'requireallteammemberssubmit, teamsubmissiongroupingid, sendnotifications, sendl",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 516,
+    "mutator": "CastString",
+    "hash": "8f806c800026887aa1237dfca3572c0418b5be3cdb90207fe22c91744bde46bf",
+    "reason": "assign.name is a non-null character column returned by Moodle DML as a string. Removing the cast before placing it in the name response preserves that string; no array key or other normalization changes.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 517,
+    "mutator": "CastString",
+    "hash": "5092ffa2d654f19e0c7314129b6b65f9f8a30c7a047bbc1785be07ad3646f644",
+    "reason": "assign.intro is a text column returned as a string; content_field(string $html, bool $fullcontent) also receives the same value through scalar parameter coercion in this non-strict caller. Dropping this cast preserves both HTML and preview.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 541,
+    "mutator": "CastInt",
+    "hash": "d322b81f95c9d58b2160e3901c8548369d257fda86cafafbb5833c561fffbcc4",
+    "reason": "The native assign.duedate column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 541,
+    "mutator": "CastString",
+    "hash": "7063876b5a15a37d8b9473a34d81a0d4d1f8061e7583553bd6752011e262f952",
+    "reason": "The 'duedate' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 542,
+    "mutator": "CastInt",
+    "hash": "4279f39a9bdf938f68d5f09b55463196eb47bafcbbec4b9468a5ae4df586c9c9",
+    "reason": "The native assign.allowsubmissionsfromdate column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 542,
+    "mutator": "CastString",
+    "hash": "c6deeff5d23c079a99758c3aa01a7c2c388f5418d5be291f1710a2ac14ad3d8c",
+    "reason": "The 'allowsubmissionsfromdate' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 543,
+    "mutator": "CastInt",
+    "hash": "d479caa4e5dee94ba583c98318ce9a0d68d3d63a3ae92f53c6d7082966a872c2",
+    "reason": "The native assign.cutoffdate column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 543,
+    "mutator": "CastString",
+    "hash": "5044d1cc7996f694e5ea6fae1c23895b0f9b2ade5f4312b3f14c1a00b31d33c0",
+    "reason": "The 'cutoffdate' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 544,
+    "mutator": "CastInt",
+    "hash": "3497360670f1c89dc7044b3b6d915640534d2431b4799da06f2a95b1f94603ae",
+    "reason": "The native assign.gradingduedate column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 544,
+    "mutator": "CastString",
+    "hash": "a5b1b82d55d50a9165fd561dac13f1af0bb699285057c9c1e858403bae403aee",
+    "reason": "The 'gradingduedate' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 545,
+    "mutator": "CastInt",
+    "hash": "0580e3b3b506050d7cce5e059e016d2a58c79e9498cd70244f2dfe2dab7dcaa9",
+    "reason": "The native assign.completionsubmit column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 545,
+    "mutator": "CastString",
+    "hash": "bb3311f53abc9c2cebfbfd77945993d36b3444717ce7465f0b588b8b2a2156cb",
+    "reason": "The 'completionsubmit' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 546,
+    "mutator": "CastInt",
+    "hash": "81d35f254ca3ae9f7127c544187e8fee37a96891df2856ae48b4151805dc32d6",
+    "reason": "The native assign.grade column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 546,
+    "mutator": "CastString",
+    "hash": "742edd3711d7781f73c7018de622418f6e9dfbd7c28a852247f807ac3caee608",
+    "reason": "The 'grade' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 547,
+    "mutator": "CastString",
+    "hash": "4638e438622d6ae9652508ddb4c298e7c7953e3724859cdc00190a71b15ef5f3",
+    "reason": "The 'gradepass' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 548,
+    "mutator": "CastInt",
+    "hash": "4295151cc8063f099bab0e6b28f86333448128d1165a1f05ac32e499f967f79b",
+    "reason": "The native assign.submissiondrafts column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 548,
+    "mutator": "CastString",
+    "hash": "3dd1868ad6bdc0d4588c580d0c4d69c2a0ee93fbe71ba06980867339bd4759d3",
+    "reason": "The 'submissiondrafts' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 549,
+    "mutator": "CastInt",
+    "hash": "b47a163488189ef2732c132d50e090ba27824b6ef97f75a6319491e6b5edca96",
+    "reason": "The native assign.maxattempts column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 549,
+    "mutator": "CastString",
+    "hash": "5edc34af776efff27a526a6a8a4b7ba0ae60e41a536c1519cad8870f831407a0",
+    "reason": "The 'maxattempts' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 550,
+    "mutator": "CastString",
+    "hash": "3aa121095938a0611236be197322f5b7d020829c2b4bfc70efa51867c0ed2f8c",
+    "reason": "The 'attemptreopenmethod' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 551,
+    "mutator": "CastInt",
+    "hash": "8f161ca477345c94e322539f3b2d62b893fb09436aff5b38282a04ef96d84c4b",
+    "reason": "The native assign.requiresubmissionstatement column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 551,
+    "mutator": "CastString",
+    "hash": "c95fbea88019fe1e5ef6d2a27cbb6b13130581d2a262cc29f0c57c4a21caab4b",
+    "reason": "The 'requiresubmissionstatement' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 552,
+    "mutator": "CastInt",
+    "hash": "20737e24dc4eba91d7dd7e6ecc4c320be894614a5ce4f916789cc2472beffd4d",
+    "reason": "The native assign.teamsubmission column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 552,
+    "mutator": "CastString",
+    "hash": "05e18767dceeffbf19fd172ee7aa1cf14ba973b4f6619a4926f5dd9239102887",
+    "reason": "The 'teamsubmission' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 553,
+    "mutator": "CastInt",
+    "hash": "1dd6f0362d6f76c8f8e19632940d6e3729d7ba319b611d4fae709ee4e084b327",
+    "reason": "The native assign.requireallteammemberssubmit column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 553,
+    "mutator": "CastString",
+    "hash": "32e17644e3d5ba3ee18bbe251ec09c31124e8a6a8a9ede58c97c9c439432b593",
+    "reason": "The 'requireallteammemberssubmit' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 554,
+    "mutator": "CastInt",
+    "hash": "7762cfb1d5e60461d233ee9eeb7ef86694441fac4db69118e7fd7b2ae3c19de2",
+    "reason": "The native assign.teamsubmissiongroupingid column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 554,
+    "mutator": "CastString",
+    "hash": "869b9d135efa9534b4ff188889b6daa48403c307ff96906bafbc430c6c68df28",
+    "reason": "The 'teamsubmissiongroupingid' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 555,
+    "mutator": "CastInt",
+    "hash": "6d59540a4b077e5ec32a9d14e8a8ea2f1b1b9829f8a4c6a0531abc725bc94b4f",
+    "reason": "The native assign.sendnotifications column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 555,
+    "mutator": "CastString",
+    "hash": "a4142edf3aa6b897eeccb46e504c35cecfca193343972323cef868181ea84e71",
+    "reason": "The 'sendnotifications' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 556,
+    "mutator": "CastInt",
+    "hash": "f07ccd5de62004571a1579617fb2b8f4e246145b9090c7a453873be933953ab5",
+    "reason": "The native assign.sendlatenotifications column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 556,
+    "mutator": "CastString",
+    "hash": "a8ee9a15b9fc483c14ceb4246e4082ca2018eb5e73c2fb215a604b4e201c339a",
+    "reason": "The 'sendlatenotifications' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 557,
+    "mutator": "CastInt",
+    "hash": "48fab9804fca6267abfc04169a47a9f84a3dc7406e8a2c20901f0c4098998f07",
+    "reason": "The native assign.sendstudentnotifications column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 557,
+    "mutator": "CastString",
+    "hash": "102a1e99fdf14309b9e89a187f55e65e7968fe22ddcd762f6172f45eeb78588f",
+    "reason": "The 'sendstudentnotifications' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 558,
+    "mutator": "CastInt",
+    "hash": "3330b47bd2bcab0d66a2697250e5c7c033e5766c3277cc5c040f3bd0ad45b1d0",
+    "reason": "The native assign.blindmarking column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 558,
+    "mutator": "CastString",
+    "hash": "aa7a2c2337b1de85b6556b3363b181bed36443b49f0a314771fe8d12396d933d",
+    "reason": "The 'blindmarking' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 559,
+    "mutator": "CastInt",
+    "hash": "52cd21a6d9622ab9d2128bf92adcefb1c1d05bdcab357fa9948e44516691aa93",
+    "reason": "The native assign.markingworkflow column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 559,
+    "mutator": "CastString",
+    "hash": "a211f79eca1018274d50aa0795d6f9489ea28e1bd8b670062aa1ce368c90c90a",
+    "reason": "The 'markingworkflow' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 560,
+    "mutator": "CastInt",
+    "hash": "336866aec5871731774c8e5c1984a52689b57209daf274cdb2c3cfeac76d9a41",
+    "reason": "The native assign.markingallocation column is NOT NULL integer in mod/assign/db/install.xml. Moodle DML returns its integer or canonical decimal string, so converting it straight to string yields the same response as first converting to int. This claim concerns persisted integer column values, not arbitrary in-memory replacements.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 560,
+    "mutator": "CastString",
+    "hash": "5f1ad70eb7c177e069643b5a1795b58a0eedeb5ed4a0978bfb199f751f29eeae",
+    "reason": "The 'markingallocation' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 561,
+    "mutator": "CastInt",
+    "hash": "58dff3f3a17c5a8f32c3a566100de2761dda530bd38a868981b5d492d7164b84",
+    "reason": "grade_items.categoryid is a nullable integer identifier; Moodle DML returns an integer, its canonical numeric string or null. The existing null-coalescing expression maps both a null category and a missing grade item to integer 0 before the cast. Removing the inner int cast therefore preserves present category ids and both '0' fallback responses.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 561,
+    "mutator": "CastString",
+    "hash": "155050674d19b86c9e19333818acde055ba1132c3e730b7bd3d0022b9f6c8528",
+    "reason": "The 'gradecat' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 562,
+    "mutator": "CastString",
+    "hash": "06a0e082dabe7ceca642b1b714af3d0bd5e6d38bf4c18e62c578a3bb82c43ecf",
+    "reason": "The 'gradingmethod' value goes directly into module_state::settings(), which unconditionally casts each value to string at its final response boundary. Removing this earlier (string) cast leaves the identical scalar for that final conversion, with no intervening type-sensitive operation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 861,
+    "mutator": "CastInt",
+    "hash": "47d2b9e05464ce7858bd278408a508571d75ce2465cae592f1bea84029bb0196",
+    "reason": "Moodle CFG.branch is the supported whole-number release string (for example '501', '502', '503'). Comparing that numeric string to integer 502 already uses numeric comparison, so the explicit int conversion cannot change the release gate for any valid Moodle branch. Fractional/non-numeric branch overrides are outside the release contract.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 864,
+    "mutator": "CastInt",
+    "hash": "affd7e75372aff56afe246c07d00b7914896fac827bd4a766581a27f2d837a07",
+    "reason": "Moodle CFG.branch is the supported whole-number release string (for example '501', '502', '503'). Comparing that numeric string to integer 503 already uses numeric comparison, so the explicit int conversion cannot change the release gate for any valid Moodle branch. Fractional/non-numeric branch overrides are outside the release contract.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/assign.php",
+    "line": 1029,
+    "mutator": "DecrementInteger",
+    "hash": "6e76777368d9329dd87f2b3f2a8600de400e120f5018025f97ae9853526c2656",
+    "reason": "Changing grade_origin()'s omitted instanceid from 0 to -1 leaves instanceid > 0 false. Both defaults skip the database lookup and return GRADE_TEACHER; calls providing an explicit instance id are unaffected.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/assign.php": "979ae7b2b138810b1300bb01852ccda8c6bebe8861a666f636e271f93f1569cc",
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/drift_check.php",
+    "line": 171,
+    "mutator": "UnwrapArrayValues",
+    "hash": "e46ccc82a667a6ea72607b10ba813fe0b61e90f089e8e5ebc82ccffc5bbfa616",
+    "reason": "The only subsequent use of $known before comparison is sort($known), which unconditionally renumbers integer keys. array_unique retains the same ordered values with or without this array_values call. sort therefore produces the identical indexed list and the same column-parity decision for every definition.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/drift_check.php",
+    "line": 178,
+    "mutator": "UnwrapArrayValues",
+    "hash": "4721a10b0794b3ff3ea685fa7029d19afae6907eaaae6de04026316c4135de9f",
+    "reason": "The private $added array is consumed only by its truth value and implode(\", \", $added). Renumbering keys changes neither emptiness nor the ordered values emitted by implode. No keys or raw array escape this method; the returned violation text is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/drift_check.php",
+    "line": 179,
+    "mutator": "UnwrapArrayValues",
+    "hash": "b0b0c694717c98d3b246cb88e4781d3aaef1a28041d5e7a104404a62d6cbac5e",
+    "reason": "The private $removed array is consumed only by its truth value and implode(\", \", $removed). Renumbering keys changes neither emptiness nor the ordered values emitted by implode. No keys or raw array escape this method; the returned violation text is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/drift_check.php",
+    "line": 227,
+    "mutator": "UnwrapArrayMerge",
+    "hash": "3295f6f786edf18861ab02bf3d251fd88c209dc4f709c5e432dc794977e8b0a2",
+    "reason": "The exact bound shared_block::checked_constants() returns only NOGROUPS, SEPARATEGROUPS and VISIBLEGROUPS. Moodle setup.php unconditionally loads lib/grouplib.php, which defines all three before any plugin entry point runs. Removing these already-defined names from this private validation cannot produce or suppress a violation on a supported initialized Moodle instance. Module-supplied constants remain checked unchanged. The shared-block producer and drift validator are both source-bound.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404",
+      "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/drift_check.php",
+    "line": 257,
+    "mutator": "ArrayItemRemoval",
+    "hash": "00245b92f83828740161679c52860f0f6263bf480acefd2344a41a51cdf0164d",
+    "reason": "For missing or null editor_content, the original spreads one empty array into array_merge, while this mutant spreads zero arguments. On supported PHP 8 runtimes array_merge([]) and array_merge() both return the same empty array. For an explicitly supplied editor_content value the fallback is unused, so all referenced names and violation messages remain identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404"
     }
   }
 ]

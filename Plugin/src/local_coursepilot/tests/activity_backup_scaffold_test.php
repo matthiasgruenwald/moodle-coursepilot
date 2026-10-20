@@ -361,7 +361,9 @@ final class activity_backup_scaffold_test extends \advanced_testcase {
     public function test_backup_releases_its_controller_resources(): void {
         $this->resetAfterTest();
         $course = $this->course_as_editing_teacher();
-        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id, 'name' => 'Resource-safe backup', 'content' => '<p>Preserved backup content</p>',
+        ]);
         $cm = get_coursemodule_from_id('page', $page->cmid, 0, false, MUST_EXIST);
         // Warm up lazily opened handles (caches, session) once, then measure.
         $this->discard(activity_backup::backup($cm));
@@ -377,9 +379,13 @@ final class activity_backup_scaffold_test extends \advanced_testcase {
                 gc_enable();
             }
         }
-        $this->discard($backupid);
-
         $this->assertSame($before, $after);
+        $restoredid = activity_backup::restore((int) $course->id, null, $backupid);
+        $restored = get_coursemodule_from_id('page', $restoredid, (int) $course->id, false, MUST_EXIST);
+        $state = \local_coursepilot\catalog\page::state((int) $restored->instance, $restoredid, true);
+
+        $this->assertSame('Resource-safe backup', $state['name']);
+        $this->assertSame('<p>Preserved backup content</p>', $state['content']['html']);
     }
 
     /**

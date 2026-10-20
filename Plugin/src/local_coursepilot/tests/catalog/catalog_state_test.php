@@ -119,6 +119,74 @@ final class catalog_state_test extends \advanced_testcase {
     }
 
     /**
+     * A missing gradebook item has no passing grade or category in the catalog state.
+     */
+    public function test_assign_state_without_a_grade_item_uses_zero_defaults(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $module = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $DB->delete_records('grade_items', ['itemtype' => 'mod', 'itemmodule' => 'assign', 'iteminstance' => $module->id]);
+
+        $state = assign::state((int) $module->id, (int) $module->cmid, false);
+        $settings = array_column($state['settings'], 'value', 'name');
+
+        $this->assertSame('0', $settings['gradepass']);
+        $this->assertSame('0', $settings['gradecat']);
+    }
+
+    /**
+     * Feedback configuration belongs to its assignment, including non-default values.
+     */
+    public function test_assign_state_keeps_feedback_settings_separate_between_assignments(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $first = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $second = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        foreach ([[$first, '3', '2048', '.pdf', '1'], [$second, '7', '4096', '.txt', '0']] as $fixture) {
+            [$module, $maxfiles, $maxbytes, $types, $enabled] = $fixture;
+            $context = \context_module::instance($module->cmid);
+            $cm = get_coursemodule_from_id('assign', $module->cmid, 0, false, MUST_EXIST);
+            $assignment = new \assign($context, $cm, $course);
+            $fileplugin = $assignment->get_feedback_plugin_by_type('file');
+            $fileplugin->set_config('maxfiles', $maxfiles);
+            $fileplugin->set_config('maxsizebytes', $maxbytes);
+            $fileplugin->set_config('filetypes', $types);
+            $assignment->get_feedback_plugin_by_type('editpdf')->set_config('enabled', $enabled);
+        }
+
+        $state = assign::state((int) $first->id, (int) $first->cmid, false);
+        $settings = array_column($state['settings'], 'value', 'name');
+
+        $this->assertSame('3', $settings['feedback_file_maxfiles']);
+        $this->assertSame('2048', $settings['feedback_file_maxsizebytes']);
+        $this->assertSame('.pdf', $settings['feedback_file_filetypes']);
+        $this->assertSame('1', $settings['feedback_editpdf_enabled']);
+    }
+
+    /**
+     * A present plugin setting with a null value is empty text, rather than the missing-setting default.
+     */
+    public function test_assign_state_distinguishes_a_null_plugin_value_from_a_missing_setting(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $module = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $context = \context_module::instance($module->cmid);
+        $cm = get_coursemodule_from_id('assign', $module->cmid, 0, false, MUST_EXIST);
+        $assignment = new \assign($context, $cm, $course);
+        $assignment->get_feedback_plugin_by_type('file')->set_config('maxfiles', null);
+
+        $state = assign::state((int) $module->id, (int) $module->cmid, false);
+        $settings = array_column($state['settings'], 'value', 'name');
+
+        $this->assertSame('', $settings['feedback_file_maxfiles']);
+    }
+
+    /**
      * The grade origin of an assignment is the teacher, or none when it is not graded.
      */
     public function test_assign_grade_origin_follows_the_grade_setting(): void {

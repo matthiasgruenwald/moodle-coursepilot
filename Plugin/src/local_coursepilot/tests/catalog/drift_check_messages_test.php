@@ -28,8 +28,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 
 defined('MOODLE_INTERNAL') || die();
 
-// phpcs:disable PSR1.Classes.ClassDeclaration.MultipleClasses -- The probe catalog is a test double of this one test.
-
 /**
  * The exact violations the drift check reports for a divergent catalog: table columns, callable
  * sources, required constants and fields that write options reference outside the catalog.
@@ -40,20 +38,22 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(drift_check::class)]
 final class drift_check_messages_test extends \advanced_testcase {
-    protected function setUp(): void {
-        parent::setUp();
-        drift_probe_catalog::$config = [];
-    }
-
     /**
-     * Checks the probe catalog against the label table.
+     * Checks catalog definition data against the real label table.
      *
      * @param mixed[] $config
      * @return string[]
      */
     private function violations(array $config): array {
-        drift_probe_catalog::$config = $config;
-        return drift_check::check_catalog('label', drift_probe_catalog::class);
+        return drift_check::check_definition(
+            'label',
+            $config['fields'] ?? label::fields(),
+            $config['pseudofields'] ?? [],
+            $config['blocklist'] ?? label::blocklist(),
+            $config['constants'] ?? [],
+            $config['write_options'] ?? [],
+            $config['locks'] ?? []
+        );
     }
 
     /**
@@ -118,7 +118,7 @@ final class drift_check_messages_test extends \advanced_testcase {
         $this->assertSame([], $this->violations(['fields' => $this->label_fields_with_callable('intro', 'clean_param()')]));
         $this->assertSame([], $this->violations(['fields' => $this->label_fields_with_callable(
             'intro',
-            'local_coursepilot\catalog\drift_probe_catalog::modname()'
+            'local_coursepilot\catalog\label::modname()'
         )]));
         $this->assertSame(
             ['Callable source "no_such_function_a()" no longer exists on this instance.'],
@@ -129,11 +129,18 @@ final class drift_check_messages_test extends \advanced_testcase {
             $this->violations(['fields' => $this->label_fields_with_callable('intro', 'no_such_class_x::method()')])
         );
         $this->assertSame(
-            ['Callable source "local_coursepilot\catalog\drift_probe_catalog::no_such_method()" no longer exists on '
+            ['Callable source "local_coursepilot\catalog\label::no_such_method()" no longer exists on '
                 . 'this instance.'],
             $this->violations(['fields' => $this->label_fields_with_callable(
                 'intro',
-                'local_coursepilot\catalog\drift_probe_catalog::no_such_method()'
+                'local_coursepilot\catalog\label::no_such_method()'
+            )])
+        );
+        $this->assertSame(
+            ['Callable source "local_coursepilot\catalog\label::modname::extra()" no longer exists on this instance.'],
+            $this->violations(['fields' => $this->label_fields_with_callable(
+                'intro',
+                'local_coursepilot\catalog\label::modname::extra()'
             )])
         );
     }
@@ -208,6 +215,17 @@ final class drift_check_messages_test extends \advanced_testcase {
                 'u_editor_b', 'u_read', 'u_patch', 'u_intro_image', 'u_alias', 'u_lock', 'u_par_ref', 'u_par_field',
                 'u_date_ref', 'u_date_field', 'u_trigger', 'u_group_a', 'u_group_b']
         ), $violations);
+        $this->assertSame([
+            'Field "u_scalar_key" is referenced outside the catalog.',
+            'Field "u_scalar_value" is referenced outside the catalog.',
+            'Field "u_read" is referenced outside the catalog.',
+        ], $this->violations(['write_options' => [
+            'scalar_to_repeated' => ['u_scalar_key' => 'u_scalar_value'],
+            'read_fields' => ['u_scalar_key' => 'u_read'],
+        ]]));
+        $this->assertSame([
+            'Field "ghost" is referenced outside the catalog.',
+        ], $this->violations(['write_options' => ['read_fields' => ['intro', 'ghost']]]));
     }
 
     /**
@@ -220,163 +238,5 @@ final class drift_check_messages_test extends \advanced_testcase {
             'repeated_group' => ['g' => ['fields' => ['intro' => 'a']]],
             'editor_content' => [],
         ]]));
-    }
-}
-
-/**
- * Configurable test double: the real label catalog unless the test overrides a part.
- */
-final class drift_probe_catalog implements module_catalog {
-    /** @var mixed[] Overrides by part name. */
-    public static array $config = [];
-
-    /**
-     * The override or the label catalog's own value.
-     *
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
-     */
-    private static function part(string $key, mixed $default): mixed {
-        return self::$config[$key] ?? $default;
-    }
-
-    /**
-     * Provides modname.
-     *
-     * @return string
-     */
-    public static function modname(): string {
-        return 'label';
-    }
-
-    /**
-     * Provides fields.
-     *
-     * @return mixed[]
-     */
-    public static function fields(): array {
-        return self::part('fields', label::fields());
-    }
-
-    /**
-     * Provides state.
-     *
-     * @param int $instanceid
-     * @param int $cmid
-     * @param bool $fullcontent
-     * @return mixed[]
-     */
-    public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
-        return [];
-    }
-
-    /**
-     * Writes options.
-     *
-     * @return mixed[]
-     */
-    public static function write_options(): array {
-        return self::part('write_options', []);
-    }
-
-    /**
-     * Provides common field names.
-     *
-     * @return mixed[]
-     */
-    public static function common_field_names(): array {
-        return [];
-    }
-
-    /**
-     * Provides pseudofields.
-     *
-     * @return mixed[]
-     */
-    public static function pseudofields(): array {
-        return self::part('pseudofields', []);
-    }
-
-    /**
-     * Provides blocklist.
-     *
-     * @return mixed[]
-     */
-    public static function blocklist(): array {
-        return self::part('blocklist', label::blocklist());
-    }
-
-    /**
-     * Provides combination rules.
-     *
-     * @return mixed[]
-     */
-    public static function combination_rules(): array {
-        return [];
-    }
-
-    /**
-     * Provides side effects.
-     *
-     * @return mixed[]
-     */
-    public static function side_effects(): array {
-        return [];
-    }
-
-    /**
-     * Provides bundles.
-     *
-     * @return mixed[]
-     */
-    public static function bundles(): array {
-        return [];
-    }
-
-    /**
-     * Writes route.
-     *
-     * @return ?string
-     */
-    public static function write_route(): ?string {
-        return null;
-    }
-
-    /**
-     * Provides checked constants.
-     *
-     * @return mixed[]
-     */
-    public static function checked_constants(): array {
-        return self::part('constants', []);
-    }
-
-    /**
-     * Provides learner locks.
-     *
-     * @return mixed[]
-     */
-    public static function learner_locks(): array {
-        return self::part('locks', []);
-    }
-
-    /**
-     * Provides grade origin.
-     *
-     * @param int $instanceid
-     * @return string
-     */
-    public static function grade_origin(int $instanceid = 0): string {
-        return learner_locks::GRADE_NONE;
-    }
-
-    /**
-     * Provides reviewed up to major.
-     *
-     * @return int
-     */
-    public static function reviewed_up_to_major(): int {
-        return 500;
     }
 }

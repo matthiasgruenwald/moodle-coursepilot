@@ -507,6 +507,32 @@ final class provider_stores_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
+     * User and module ids belong to different tables: deleting user files must not purge
+     * history whose module id happens to equal the user id.
+     */
+    public function test_deleting_user_data_preserves_history_with_a_matching_numeric_module_id(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $course = $this->getDataGenerator()->create_course();
+        $context = \context_user::instance($user->id);
+        $versionid = $DB->insert_record('local_coursepilot_cm_version', (object) [
+            'cmid' => $user->id, 'courseid' => $course->id, 'version' => 1, 'source' => 'moodle',
+            'userid' => $user->id, 'moduleinfo_json' => '{}', 'coursemodule_json' => '{}', 'timecreated' => 1,
+        ]);
+        $DB->insert_record('local_coursepilot_context_mark', (object) [
+            'userid' => $user->id, 'path' => 'own.md', 'pathhash' => sha1('own.md'), 'filesize' => 1,
+            'timemodified' => 1, 'etag' => 'e', 'ismarked' => 1,
+        ]);
+
+        provider::delete_data_for_user($this->approved_contexts($user, [$context->id]));
+
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['id' => $versionid]));
+        $this->assertFalse($DB->record_exists('local_coursepilot_context_mark', ['userid' => $user->id]));
+    }
+
+    /**
      * Deleting a user's data in a module context removes that user's history states there and no one else's.
      */
     public function test_delete_for_user_in_a_module_context_removes_only_own_states(): void {
