@@ -1,0 +1,292 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "cmid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "fromversion",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "toversion",
+                "type": "int",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the activity",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "from_version": {
+                "class": "core_external\\external_value",
+                "desc": "First version number to compare",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "to_version": {
+                "class": "core_external\\external_value",
+                "desc": "Second version number to compare",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Activity type",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "before": {
+                "class": "core_external\\external_single_structure",
+                "desc": "",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "keys": {
+                    "version": {
+                        "class": "core_external\\external_value",
+                        "desc": "Version number",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "int"
+                    },
+                    "source": {
+                        "class": "core_external\\external_value",
+                        "desc": "\"moodle\", \"discovered\", \"cloned\", \"from_xml\" or \"superseded\"",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "text"
+                    },
+                    "discovered": {
+                        "class": "core_external\\external_value",
+                        "desc": "true if retroactively recorded as a starting state",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "bool"
+                    },
+                    "source_cmid": {
+                        "class": "core_external\\external_value",
+                        "desc": "Reference course module ID: clone origin (source = \"cloned\") or replacing activity (source = \"superseded\"), null otherwise",
+                        "required": 0,
+                        "default": null,
+                        "allownull": true,
+                        "type": "int"
+                    },
+                    "userid": {
+                        "class": "core_external\\external_value",
+                        "desc": "User ID that made the write",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "int"
+                    },
+                    "user": {
+                        "class": "core_external\\external_value",
+                        "desc": "Full name of that user",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "text"
+                    },
+                    "timestamp": {
+                        "class": "core_external\\external_value",
+                        "desc": "Unix timestamp of the write",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "int"
+                    }
+                }
+            },
+            "after": {
+                "class": "core_external\\external_single_structure",
+                "desc": "",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "keys": {
+                    "version": {
+                        "class": "core_external\\external_value",
+                        "desc": "Version number",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "int"
+                    },
+                    "source": {
+                        "class": "core_external\\external_value",
+                        "desc": "\"moodle\", \"discovered\", \"cloned\", \"from_xml\" or \"superseded\"",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "text"
+                    },
+                    "discovered": {
+                        "class": "core_external\\external_value",
+                        "desc": "true if retroactively recorded as a starting state",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "bool"
+                    },
+                    "source_cmid": {
+                        "class": "core_external\\external_value",
+                        "desc": "Reference course module ID: clone origin (source = \"cloned\") or replacing activity (source = \"superseded\"), null otherwise",
+                        "required": 0,
+                        "default": null,
+                        "allownull": true,
+                        "type": "int"
+                    },
+                    "userid": {
+                        "class": "core_external\\external_value",
+                        "desc": "User ID that made the write",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "int"
+                    },
+                    "user": {
+                        "class": "core_external\\external_value",
+                        "desc": "Full name of that user",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "text"
+                    },
+                    "timestamp": {
+                        "class": "core_external\\external_value",
+                        "desc": "Unix timestamp of the write",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "int"
+                    }
+                }
+            },
+            "changes": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "One entry per field that actually differs",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "field": {
+                            "class": "core_external\\external_value",
+                            "desc": "Field name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "before_json": {
+                            "class": "core_external\\external_value",
+                            "desc": "JSON-encoded value in the \"before\" state",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "after_json": {
+                            "class": "core_external\\external_value",
+                            "desc": "JSON-encoded value in the \"after\" state",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        }
+                    }
+                }
+            },
+            "files": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Files that were added or removed between the two states",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "change_type": {
+                            "class": "core_external\\external_value",
+                            "desc": "\"added\" (added) or \"removed\" (removed)",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "filename": {
+                            "class": "core_external\\external_value",
+                            "desc": "File name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    }
+                }
+            },
+            "gap_notice": {
+                "class": "core_external\\external_value",
+                "desc": "Fixed notice about the structural gaps of the history - not computed per comparison",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            }
+        }
+    }
+}

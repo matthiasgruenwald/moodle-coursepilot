@@ -1,0 +1,183 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "courseid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "sectionnum",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "modname",
+                "type": "string",
+                "default": "(none)"
+            },
+            {
+                "name": "fieldsjson",
+                "type": "string",
+                "default": "(none)"
+            },
+            {
+                "name": "location",
+                "type": "string",
+                "default": "store"
+            },
+            {
+                "name": "confirmlearnerlocks",
+                "type": "array",
+                "default": []
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "courseid": {
+                "class": "core_external\\external_value",
+                "desc": "Course ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "sectionnum": {
+                "class": "core_external\\external_value",
+                "desc": "Section number (0-based)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Activity type, e.g. page, label, url, choice, forum, assign",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "plugin"
+            },
+            "fields_json": {
+                "class": "core_external\\external_value",
+                "desc": "JSON object field name => value - missing fields are filled with the catalog form default. A field bundle (describe_module_fields) is mixed in here BEFORE the call (Spec 0015 §2.4: bundles are not an endpoint parameter) - a bundle value only applies to fields this object does not already name itself.",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "location": {
+                "class": "core_external\\external_value",
+                "desc": "\"store\" (default, the teacher's grown material store, read-only) or \"workbench\" (Coursepilot's own staging area)",
+                "required": 0,
+                "default": "store",
+                "allownull": true,
+                "type": "alpha"
+            },
+            "confirm_learner_locks": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Learner locks this call sets on purpose. A learner lock is a setting after which a learner needs an action by the teacher to continue or resubmit. A call that would set an unconfirmed lock is rejected with each lock and its reason, and nothing is written. Name a lock here only when the teacher explicitly asked for it; otherwise leave the field out or choose an open value.",
+                "required": 0,
+                "default": [],
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Lock id as named in a rejection: a field name, or \"teacher_grade:<cmid>\"",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                }
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the newly created activity",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Activity type",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing creation message",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "created_fields": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "One entry per field set by the patch/bundle - silent catalog defaults are deliberately absent here",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "field": {
+                            "class": "core_external\\external_value",
+                            "desc": "Field name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "value_json": {
+                            "class": "core_external\\external_value",
+                            "desc": "JSON-encoded, actually persisted value",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        }
+                    }
+                }
+            },
+            "side_effects": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Triggered side effects from catalog category 5, empty when none were triggered",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Teacher-facing side-effect note",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                }
+            }
+        }
+    }
+}
