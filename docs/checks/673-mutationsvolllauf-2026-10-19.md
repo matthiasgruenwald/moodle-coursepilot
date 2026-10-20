@@ -83,3 +83,12 @@ Berichte:
    Überlebenden-Bericht und liefern keinen Töter für den Prune-Bericht. Ob die Warnungen schon im unveränderten Lauf auftreten, wurde nicht geprüft.
    Der Abschnitt `db` (2 Dateien) enthält keine mutierbaren Anweisungen (0 Mutanten).
 8. Kein Schwellenwert, keine Gate-Konfiguration geändert, keine Baseline gelockert. MSI ist ein Trendwert.
+
+## Nachtrag: Merge mit dev (20.10.2026)
+
+Die Messung beschreibt ausschließlich den Stand `4161c4f`. Danach wurde `origin/dev` per normalem Merge-Commit in den Branch geholt
+(Hotfix #721: `classes/catalog/write_target.php` +44 Zeilen, neuer Test `tests/external/assign_grade_item_write_test.php`,
+Sprachzeichenkette, Version 2.1.3-beta). Der CI-Lauf auf dem Merge-Stand zeigte sechs Überlebende, die bereits in
+`scripts/gate/mutation-ignore.json` stehen: Ihre `sourceHashes`-Bindung an `write_target.php` passte nach der Änderung nicht mehr. Die
+sechs Einträge wurden mit dem neuen SHA-256 von `write_target.php` neu gebunden; Mutant-Identität und Begründung blieben unverändert, es kamen
+keine Ignores hinzu. Die Volllauf-Zahlen oben wurden nicht neu gemessen; `write_target.php` wurde im Volllauf auf dem alten Stand gemutet.
