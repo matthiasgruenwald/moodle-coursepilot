@@ -51,22 +51,34 @@ final class catalog_definition_snapshot_test extends \advanced_testcase {
     ];
 
     /**
-     * Every cataloged module type.
+     * Every cataloged module type on Moodle 5.1, plus the branches where a catalog reacts to the
+     * Moodle version (assign markers from 5.2 and 5.3, forum from 5.2, quiz date rules from 5.3).
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string, int}>
      */
     public static function catalogs(): array {
-        $modnames = registry::known_modnames();
-        return array_combine($modnames, array_map(static fn (string $m): array => [$m], $modnames));
+        $cases = [];
+        foreach (registry::known_modnames() as $modname) {
+            $cases["$modname 5.1"] = [$modname, 501];
+        }
+        foreach ([['assign', 502], ['assign', 503], ['forum', 502], ['quiz', 503]] as [$modname, $branch]) {
+            $cases["$modname $branch"] = [$modname, $branch];
+        }
+        return $cases;
     }
 
     /**
      * The delivered definition of a catalog equals its recorded fixture.
      *
      * @param string $modname
+     * @param int $branch Moodle branch the catalog is evaluated for.
      */
     #[DataProvider('catalogs')]
-    public function test_catalog_definition_matches_the_fixture(string $modname): void {
+    public function test_catalog_definition_matches_the_fixture(string $modname, int $branch): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->branch = (string) $branch;
         $class = registry::for($modname);
         $actual = [];
         foreach (self::SECTIONS as $section) {
@@ -74,7 +86,7 @@ final class catalog_definition_snapshot_test extends \advanced_testcase {
                 $actual[$section] = self::normalise($class::$section());
             }
         }
-        $path = __DIR__ . "/../fixtures/catalog/{$modname}.json";
+        $path = __DIR__ . '/../fixtures/catalog/' . ($branch === 501 ? $modname : "{$modname}-{$branch}") . '.json';
         if (getenv('COURSEPILOT_UPDATE_CATALOG_SNAPSHOTS')) {
             $flags = JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
             file_put_contents($path, json_encode($actual, $flags) . "\n");
@@ -85,7 +97,7 @@ final class catalog_definition_snapshot_test extends \advanced_testcase {
         $this->assertSame(
             $expected,
             json_decode(json_encode($actual), true),
-            "Catalog '{$modname}' no longer matches its fixture."
+            "Catalog '{$modname}' (branch {$branch}) no longer matches its fixture."
         );
     }
 
