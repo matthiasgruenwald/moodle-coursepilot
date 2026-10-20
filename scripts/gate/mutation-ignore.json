@@ -1186,6 +1186,86 @@
     "line": 60,
     "mutator": "CastInt",
     "hash": "5a9b2997b584dcc702bb05c6cdd5f5988fae254e5dc5e45768218fe34889f00d",
-    "reason": "current_level() declares the return type int and the file has no declare(strict_types=1) (nor does any plugin class), so PHP coerces the numeric string from get_config() to the same int on return; removing the explicit (int) cast returns an identical value for every stored loglevel (tested for '0')."
+    "reason": "The supported loglevel domain is the four numeric choices 0..3 in admin/settings::register(), plus unset/empty values handled before this return. For each configured numeric string, current_level(): int coerces the returned value to the same integer in this non-strict file; removing the explicit cast therefore preserves all supported levels. Arbitrary invalid configuration strings are outside this equivalence claim.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/access_log.php": "4e5253b9e12dae2b15d2461c2a116b349dba9bcfc0027755d2defe6ed361a672",
+      "Plugin/src/local_coursepilot/classes/admin/settings.php": "87815877f51a4cc7c55dbb290fd33eefa842a841fc83bc581a20d4aace1495d5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 318,
+    "mutator": "FalseValue",
+    "hash": "839ba45bf7f5e3dde57f644fba9a375b6b951f1e00fee15625a505e3e3612290",
+    "reason": "get_coursemodule_from_id()'s fourth parameter $sectionnum only appends 'cw.section AS sectionnum' and a LEFT JOIN on course_sections to the select (lib/datalib.php, get_coursemodule_from_id); export_history() reads only ->modname, which the query selects in both variants, so the result used here is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/privacy/provider.php": "34fde412090e0ac04e35f6792227a1243313f7791944950f273e792021d5e9e3",
+      "Plugin/src/local_coursepilot/classes/history/version_history.php": "6cf89459485fd4eac4badfbd0ba549d4cd006c40a7f9545a87640eccaf906126"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 318,
+    "mutator": "CastString",
+    "hash": "b8dca802397bcf4902c8784490e6b236fa291275fb7b7e61e1cca1b8e9c460c6",
+    "reason": "The value is md.name AS modname, a varchar column that Moodle's DML layer returns as a PHP string, so the (string) cast is the identity; it is then passed to version_history::allowed_files(int, string $modname), whose string parameter would coerce anyway (no declare(strict_types) in the plugin).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/privacy/provider.php": "34fde412090e0ac04e35f6792227a1243313f7791944950f273e792021d5e9e3",
+      "Plugin/src/local_coursepilot/classes/history/version_history.php": "6cf89459485fd4eac4badfbd0ba549d4cd006c40a7f9545a87640eccaf906126"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 329,
+    "mutator": "CastInt",
+    "hash": "6a28cdc2a2806d12b6c6a7721ee39006626ef3f0614d5c24d9ad92114a5a1dca",
+    "reason": "$record->id comes from get_records() as a numeric string and is passed to version_history::allowed_files(int $versionid, ...); PHP (no declare(strict_types) in the file) coerces the numeric string to the same int, so removing the explicit (int) cast changes nothing observable.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/privacy/provider.php": "34fde412090e0ac04e35f6792227a1243313f7791944950f273e792021d5e9e3",
+      "Plugin/src/local_coursepilot/classes/history/version_history.php": "6cf89459485fd4eac4badfbd0ba549d4cd006c40a7f9545a87640eccaf906126"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 434,
+    "mutator": "CastInt",
+    "hash": "f95154700b0825af7a85017cae529036a992db379148960e15d0dd0d89d9d76f",
+    "reason": "context->instanceid is a numeric string and retention::purge_cm(int $cmid) declares an int parameter; without declare(strict_types) PHP coerces it to the identical int, so dropping the (int) cast is not observable.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/privacy/provider.php": "34fde412090e0ac04e35f6792227a1243313f7791944950f273e792021d5e9e3",
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 481,
+    "mutator": "CastInt",
+    "hash": "da192086ee13247c30e278a813eceef6097568e661298bd9db6dceb63618321e",
+    "reason": "context->instanceid is a numeric string and retention::purge_cm_for_users(int $cmid, array $userids) declares an int parameter; without declare(strict_types) PHP coerces it to the identical int, so dropping the (int) cast is not observable.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/privacy/provider.php": "34fde412090e0ac04e35f6792227a1243313f7791944950f273e792021d5e9e3",
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 514,
+    "mutator": "CastInt",
+    "hash": "8e423cb40fe6c29323e13a37d0151d9842abd058a8ab833ab620c9747fd68b10",
+    "reason": "context->instanceid is a numeric string and retention::purge_cm_for_users(int $cmid, array $userids) declares an int parameter; without declare(strict_types) PHP coerces it to the identical int, so dropping the (int) cast is not observable.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/privacy/provider.php": "34fde412090e0ac04e35f6792227a1243313f7791944950f273e792021d5e9e3",
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 462,
+    "mutator": "InstanceOf_",
+    "hash": "a2bc98e8cf781d95467b45bfb9f827720f565db68212ef95ee47dad557e73db4",
+    "reason": "delete_context_files() is private and has exactly three callers (delete_data_for_user, delete_data_for_all_users_in_context, delete_data_for_users); each calls it only inside an $context instanceof \\context_user branch, so the inner instanceof check is always true and replacing it by true cannot change any call.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/privacy/provider.php": "34fde412090e0ac04e35f6792227a1243313f7791944950f273e792021d5e9e3"
+    }
   }
 ]
