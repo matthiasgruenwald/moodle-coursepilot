@@ -1180,5 +1180,12 @@
     "mutator": "CastString",
     "hash": "9d401346423623cdb16539049e308f0b17b9d63a829a6cea9c9e2ed5a5e74d60",
     "reason": "pointer_scan::target_state() builds the host of an external state as (string) of the fingerprint server, so $state['host'] is always a string there; the cast only narrows the declared ?string type for personal_data_hosts::allowed() and removing it passes the same value."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/access_log.php",
+    "line": 60,
+    "mutator": "CastInt",
+    "hash": "5a9b2997b584dcc702bb05c6cdd5f5988fae254e5dc5e45768218fe34889f00d",
+    "reason": "current_level() declares the return type int and the file has no declare(strict_types=1) (nor does any plugin class), so PHP coerces the numeric string from get_config() to the same int on return; removing the explicit (int) cast returns an identical value for every stored loglevel (tested for '0')."
   }
 ]

@@ -41,6 +41,24 @@ final class access_log_test extends \advanced_testcase {
     }
 
     /**
+     * A never-set and an empty config value both fall back to reads and errors;
+     * a stored level is returned as an integer.
+     */
+    public function test_unset_or_empty_level_falls_back_to_reads_and_stored_level_is_int(): void {
+        $this->resetAfterTest();
+
+        $levels = [];
+        unset_config('loglevel', 'local_coursepilot');
+        $levels[] = access_log::current_level();
+        set_config('loglevel', '', 'local_coursepilot');
+        $levels[] = access_log::current_level();
+        set_config('loglevel', '0', 'local_coursepilot');
+        $levels[] = access_log::current_level();
+
+        $this->assertSame([access_log::LEVEL_READS, access_log::LEVEL_READS, access_log::LEVEL_NONE], $levels);
+    }
+
+    /**
      * With logging disabled, neither success nor failure creates an event.
      */
     public function test_level_none_logs_nothing(): void {
