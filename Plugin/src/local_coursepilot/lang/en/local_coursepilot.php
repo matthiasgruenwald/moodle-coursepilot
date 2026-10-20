@@ -34,6 +34,7 @@ $string['activityrestorefailed'] = 'Restoring the activity failed - Moodle did n
 $string['activitytypetemplatesprovided'] = 'Activity-type templates supplied: {$a}.';
 $string['addquestionstoquizblocked'] = 'No questions can be added to this quiz (quizid {$a->quizid}) any more: attempts already exist. Nothing was changed.';
 $string['arrangementrestoreblocked'] = 'The question arrangement of this quiz (quizid {$a->quizid}) cannot be restored: attempts already exist. From now on the recorded arrangement is history only, no longer restorable.';
+$string['assignmentgradeitemfailed'] = 'The assignment could not be saved because Moodle could not provide its primary grade item. The changes have been rolled back.';
 $string['authorizeerror'] = 'Authorization error: {$a}';
 $string['authorizetitle'] = 'Connect Coursepilot';
 $string['authorizetitleclient'] = 'Connect Coursepilot with {$a}';
