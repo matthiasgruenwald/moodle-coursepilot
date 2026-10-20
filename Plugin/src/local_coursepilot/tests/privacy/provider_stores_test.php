@@ -361,7 +361,7 @@ final class provider_stores_test extends \core_privacy\tests\provider_testcase {
 
         provider::delete_data_for_all_users_in_context($coursectx);
         provider::delete_data_for_users($this->approved_users($coursectx, [2]));
-        provider::delete_data_for_user($this->approved_contexts((object) ['id' => 2], [$coursectx->id]));
+        provider::delete_data_for_user($this->approved_contexts((object) ['id' => $course->id], [$coursectx->id]));
 
         $this->assertTrue(get_file_storage()->file_exists(
             $coursectx->id,
